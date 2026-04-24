@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+build/
+out/
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.nyc_output
+
+# Bun
+bun.lockb
+
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+
+# Cache
+.cache/
+.eslintcache
+
+# Temp
+tmp/
+temp/
