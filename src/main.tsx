@@ -16,7 +16,7 @@ try {
 
 // Define MACRO for build (normally replaced by macro processor)
 globalThis.MACRO = {
-  VERSION: '2.1.119'
+  VERSION: '2.1.121'
 };
 
 // These side-effects must run before all other imports:

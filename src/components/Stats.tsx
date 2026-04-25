@@ -280,25 +280,14 @@ function StatsContent(t0) {
   } else {
     t8 = $[25];
   }
-  let t10;
-  if ($[26] !== dateRange || $[27] !== displayStats || $[28] !== isLoadingFiltered) {
-    t10 = <Tab title="Providers"><ProvidersTab stats={displayStats} dateRange={dateRange} isLoading={isLoadingFiltered} /></Tab>;
-    $[26] = dateRange;
-    $[27] = displayStats;
-    $[28] = isLoadingFiltered;
-    $[29] = t10;
-  } else {
-    t10 = $[29];
-  }
   let t9;
-  if ($[30] !== t7 || $[31] !== t8 || $[32] !== t10) {
-    t9 = <Box flexDirection="row" gap={1} marginBottom={1}><Tabs title="" color="claude" defaultTab="Overview">{t7}{t8}{t10}</Tabs></Box>;
-    $[30] = t7;
-    $[31] = t8;
-    $[32] = t10;
-    $[33] = t9;
+  if ($[22] !== t7 || $[23] !== t8) {
+    t9 = <Box flexDirection="row" gap={1} marginBottom={1}><Tabs title="" color="claude" defaultTab="Overview">{t7}{t8}</Tabs></Box>;
+    $[22] = t7;
+    $[23] = t8;
+    $[24] = t9;
   } else {
-    t9 = $[33];
+    t9 = $[24];
   }
   const t13 = copyStatus ? ` · ${copyStatus}` : "";
   let t11;

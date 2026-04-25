@@ -255,7 +255,7 @@ export function buildAPIProviderProperties(): Property[] {
     const anthropicBaseUrl = process.env.ANTHROPIC_BASE_URL;
     if (anthropicBaseUrl) {
       properties.push({
-        label: 'Anthropic base URL',
+        label: 'Provider base URL',
         value: anthropicBaseUrl
       });
     }

@@ -1,6 +1,6 @@
 {
   "name": "claude-code",
-  "version": "2.1.120",
+  "version": "2.1.121",
   "description": "Official Claude Code CLI — AI-powered coding assistant",
   "main": "src/main.tsx",
   "type": "module",

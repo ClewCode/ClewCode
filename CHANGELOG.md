@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.121
+
+- Fixed ProvidersTab import error in Stats.tsx (removed non-existent tab)
+- Changed 'Anthropic base URL' to 'Provider base URL' in /status display
+- Fixed version display to match package.json (2.1.121)
+
 ## 2.1.120
 
 - `/model` - Switch AI model (shows provider-specific models when not using Anthropic)
