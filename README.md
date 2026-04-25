@@ -88,6 +88,17 @@ bun run src/main.tsx session --provider anthropic --model claude-sonnet-4
 bun run src/main.tsx session --provider ollama --model llama3
 ```
 
+### Demo Video
+
+A short demo video is included in the repository assets:
+
+- `D:\Projects\Github\claude-code-mark1\assets\claude.mp4`
+
+You can also download the demo directly from:
+
+- https://github.com/user-attachments/assets/f7d84050-a61c-4b20-a988-edaa93a4deb8
+
+
 ### Set API Keys
 
 ```bash
@@ -379,6 +390,49 @@ In-session diagnostics:
 - `/doctor` — Run diagnostics
 - `/doctor --fix` — Auto-fix issues
 - `/context` — View context window usage
+
+### Run from another directory
+
+You can run the project's scripts from a different directory in several ways:
+
+- Use Bun's `--cwd` to run a script with a specified working directory:
+
+```powershell
+bun run --cwd "D:\path\to\project" dev
+```
+
+- Change directory (PowerShell):
+
+```powershell
+Set-Location -Path 'D:\path\to\project'; bun run dev
+# or temporarily:
+Push-Location 'D:\path\to\project'; bun run dev; Pop-Location
+```
+
+- Run in the background (PowerShell):
+
+```powershell
+Start-Process -FilePath bun -ArgumentList 'run','dev' -WorkingDirectory 'D:\path\to\project' -NoNewWindow
+```
+
+- Use package manager prefixes:
+
+```powershell
+pnpm --prefix 'D:\path\to\project' run dev
+npm --prefix 'D:\path\to\project' run dev
+```
+
+- POSIX shells:
+
+```bash
+cd /path/to/project && bun run dev
+# or
+bun run --cwd /path/to/project dev
+```
+
+Tips:
+- Quote paths on PowerShell to avoid globbing and to handle spaces.
+- Use the `--cwd` flag when you need an atomic single-command invocation.
 
 ### Contributing
 
