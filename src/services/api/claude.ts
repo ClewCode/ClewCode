@@ -467,10 +467,11 @@ async function callOpenAICompatibleProvider({
 
 async function loadProviderConfig(): Promise<ProviderConfig | null> {
   try {
-    return JSON.parse(
-      await readFile(PROVIDER_CONFIG_PATH, 'utf8'),
-    ) as ProviderConfig
-  } catch {
+    const content = await readFile(PROVIDER_CONFIG_PATH, 'utf8')
+    logForDebugging(`[Query] Loaded provider config from ${PROVIDER_CONFIG_PATH}: ${content.substring(0, 200)}...`)
+    return JSON.parse(content) as ProviderConfig
+  } catch (error) {
+    logForDebugging(`[Query] Failed to load provider config: ${(error as Error).message}`)
     return null
   }
 }
@@ -746,6 +747,7 @@ export async function verifyApiKey(
         async (anthropic: any) => {
           const messages: MessageParam[] = [{ role: 'user', content: 'test' }]
           // biome-ignore lint/plugin: API key verification is intentionally a minimal direct call
+          console.error(`[verifyApiKey] anthropic type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, has messages: ${anthropic?.beta?.messages !== undefined}`)
           await anthropic.beta.messages.create({
             model,
             max_tokens: 1,
@@ -1056,6 +1058,7 @@ export async function* executeNonStreamingRequest(
 
       try {
         // biome-ignore lint/plugin: non-streaming API call
+        console.error(`[executeNonStreamingRequest] anthropic type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, beta type: ${typeof anthropic?.beta}, has messages: ${anthropic?.beta?.messages !== undefined}`)
         return await anthropic.beta.messages.create(
           {
             ...adjustedParams,
@@ -2440,6 +2443,7 @@ async function* queryModel(
   const providerConfig = getActiveProviderConfig(
     await loadProviderConfig(),
   )
+  logForDebugging(`[Query] Provider config: ${JSON.stringify(providerConfig)}`)
 
   if (providerConfig.provider !== 'anthropic') {
     if (!isOpenAICompatibleProvider(providerConfig.provider)) {
@@ -2530,6 +2534,7 @@ async function* queryModel(
 
   try {
     queryCheckpoint('query_client_creation_start')
+    logForDebugging('[Query] Creating client for streaming request')
     const generator = withRetry(
       () =>
         getAIProviderClient({
@@ -2540,6 +2545,7 @@ async function* queryModel(
           source: options.querySource,
         }) as Promise<any>,
       async (anthropic: any, attempt, context) => {
+        logForDebugging(`[Query] Client received, type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, beta type: ${typeof anthropic?.beta}, has messages: ${anthropic?.beta?.messages !== undefined}`)
         attemptNumber = attempt
         isFastModeRequest = context.fastMode ?? false
         start = Date.now()
@@ -2575,6 +2581,7 @@ async function* queryModel(
         // BetaMessageStream calls partialParse() on every input_json_delta, which we don't need
         // since we handle tool input accumulation ourselves
         // biome-ignore lint/plugin: main conversation loop handles attribution separately
+        console.error(`[streaming] anthropic type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, has messages: ${anthropic?.beta?.messages !== undefined}`)
         const result = await anthropic.beta.messages
           .create(
             { ...params, stream: true },

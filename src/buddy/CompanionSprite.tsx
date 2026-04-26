@@ -149,7 +149,7 @@ function SpeechBubble(t0) {
   }
   return t9;
 }
-export const MIN_COLS_FOR_FULL_SPRITE = 100;
+export const MIN_COLS_FOR_FULL_SPRITE = 60;
 const SPRITE_BODY_WIDTH = 12;
 const NAME_ROW_PAD = 2; // focused state wraps name in spaces: ` name `
 const SPRITE_PADDING_X = 2;
@@ -165,7 +165,6 @@ function spriteColWidth(nameWidth: number): number {
 // Narrow terminals: 0 — REPL.tsx stacks the one-liner on its own row
 // (above input in fullscreen, below in scrollback), so no reservation.
 export function companionReservedColumns(terminalColumns: number, speaking: boolean): number {
-  if (!feature('BUDDY')) return 0;
   const companion = getCompanion();
   if (!companion || getGlobalConfig().companionMuted) return 0;
   if (terminalColumns < MIN_COLS_FOR_FULL_SPRITE) return 0;
@@ -174,9 +173,10 @@ export function companionReservedColumns(terminalColumns: number, speaking: bool
   return spriteColWidth(nameWidth) + SPRITE_PADDING_X + bubble;
 }
 export function CompanionSprite(): React.ReactNode {
-  const reaction = useAppState(s => s.companionReaction);
-  const petAt = useAppState(s => s.companionPetAt);
-  const focused = useAppState(s => s.footerSelection === 'companion');
+  const reaction = useAppState((s: AppState) => s.companionReaction);
+  const petAt = useAppState((s: AppState) => s.companionPetAt);
+  const focused = useAppState((s: AppState) => s.footerSelection === 'companion');
+  const companionVisibleState = useAppState((s: AppState) => s.companionVisible);
   const setAppState = useSetAppState();
   const {
     columns
@@ -212,9 +212,9 @@ export function CompanionSprite(): React.ReactNode {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tick intentionally captured at reaction-change, not tracked
   }, [reaction, setAppState]);
-  if (!feature('BUDDY')) return null;
   const companion = getCompanion();
-  if (!companion || getGlobalConfig().companionMuted) return null;
+  const isVisible = companionVisibleState !== undefined ? companionVisibleState : companion?.visible !== false;
+  if (!companion || getGlobalConfig().companionMuted || !isVisible) return null;
   const color = RARITY_COLORS[companion.rarity];
   const colWidth = spriteColWidth(stringWidth(companion.name));
   const bubbleAge = reaction ? tick - lastSpokeTick.current : 0;
@@ -295,7 +295,8 @@ export function CompanionSprite(): React.ReactNode {
 // just reads companionReaction and renders the fade.
 export function CompanionFloatingBubble() {
   const $ = _c(8);
-  const reaction = useAppState(_temp);
+  const reaction = useAppState((s: AppState) => s.companionReaction);
+  const companionVisibleState = useAppState((s: AppState) => s.companionVisible);
   let t0;
   if ($[0] !== reaction) {
     t0 = {
@@ -337,11 +338,12 @@ export function CompanionFloatingBubble() {
     t3 = $[4];
   }
   useEffect(t2, t3);
-  if (!feature("BUDDY") || !reaction) {
+  if (!reaction) {
     return null;
   }
   const companion = getCompanion();
-  if (!companion || getGlobalConfig().companionMuted) {
+  const isVisible = companionVisibleState !== undefined ? companionVisibleState : companion?.visible !== false;
+  if (!companion || getGlobalConfig().companionMuted || !isVisible) {
     return null;
   }
   const t4 = tick >= BUBBLE_SHOW - FADE_WINDOW;

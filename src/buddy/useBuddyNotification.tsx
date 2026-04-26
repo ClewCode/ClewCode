@@ -50,9 +50,6 @@ export function useBuddyNotification() {
   let t1;
   if ($[0] !== addNotification || $[1] !== removeNotification) {
     t0 = () => {
-      if (!feature("BUDDY")) {
-        return;
-      }
       const config = getGlobalConfig();
       if (config.companion || !isBuddyTeaserWindow()) {
         return;
@@ -80,7 +77,6 @@ export function findBuddyTriggerPositions(text: string): Array<{
   start: number;
   end: number;
 }> {
-  if (!feature('BUDDY')) return [];
   const triggers: Array<{
     start: number;
     end: number;

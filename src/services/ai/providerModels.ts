@@ -42,7 +42,7 @@ export async function fetchProviderModels(
   }
 
   if (!apiKey && !info.isLocal) {
-    return cacheAndReturn(provider, getFallbackModels(provider))
+    throw new Error(`API key required. Run: /providers key ${provider} <your-api-key>`)
   }
 
   const headers: Record<string, string> = {
@@ -53,32 +53,43 @@ export async function fetchProviderModels(
     if (provider === 'anthropic') {
       headers['x-api-key'] = apiKey
       headers['anthropic-version'] = '2023-06-01'
-    } else if (provider === 'google' || provider === 'gemini') {
-      headers['x-goog-api-key'] = apiKey
     } else {
       headers.Authorization = `Bearer ${apiKey}`
     }
   }
 
   try {
+    console.log(`[fetchProviderModels] Fetching from: ${info.modelsUrl}`)
     const response = await fetch(info.modelsUrl, {
       headers,
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(5000), // 5s timeout instead of 30s
     })
+
+    console.log(`[fetchProviderModels] Response status: ${response.status}`)
+
+    if (!response.ok) {
+      console.error(`[fetchProviderModels] HTTP error: ${response.status} ${response.statusText}`)
+    }
 
     const data = (await response.json()) as {
       data?: RemoteModelPayload[]
       models?: RemoteModelPayload[]
     }
 
+    console.log(`[fetchProviderModels] Response data keys:`, Object.keys(data))
+    console.log(`[fetchProviderModels] Raw data count:`, (data.data ?? data.models ?? []).length)
+
     const models = (data.data ?? data.models ?? [])
       .map(model => toProviderModelInfo(provider, model))
       .filter((model): model is ProviderModelInfo => Boolean(model))
 
+    console.log(`[fetchProviderModels] Parsed models count: ${models.length}`)
+
     if (models.length > 0) {
       return cacheAndReturn(provider, models)
     }
-  } catch {
+  } catch (error) {
+    console.error(`[fetchProviderModels] Error fetching for ${provider}:`, error)
     // Fall back to registry models below.
   }
 

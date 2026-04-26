@@ -1299,12 +1299,10 @@ export function REPL({
       // Dismiss the companion bubble on scroll — it's absolute-positioned
       // at bottom-right and covers transcript content. Scrolling = user is
       // trying to read something under it.
-      if (feature('BUDDY')) {
-        setAppState(prev => prev.companionReaction === undefined ? prev : {
-          ...prev,
-          companionReaction: undefined
-        });
-      }
+      setAppState(prev => prev.companionReaction === undefined ? prev : {
+        ...prev,
+        companionReaction: undefined
+      });
     }
   }, [onRepin, onScrollAway, maybeLoadOlder, setAppState]);
   // Deferred SessionStart hook messages — REPL renders immediately and
@@ -2034,8 +2032,8 @@ export function REPL({
     if (allowDialogsWithAnimation && elicitation.queue[0]) return 'elicitation';
     if (allowDialogsWithAnimation && showingCostDialog) return 'cost';
     if (allowDialogsWithAnimation && idleReturnPending) return 'idle-return';
-    if (feature('ULTRAPLAN') && allowDialogsWithAnimation && !isLoading && ultraplanPendingChoice) return 'ultraplan-choice';
-    if (feature('ULTRAPLAN') && allowDialogsWithAnimation && !isLoading && ultraplanLaunchPending) return 'ultraplan-launch';
+    if (allowDialogsWithAnimation && !isLoading && ultraplanPendingChoice) return 'ultraplan-choice';
+    if (allowDialogsWithAnimation && !isLoading && ultraplanLaunchPending) return 'ultraplan-launch';
 
     // Onboarding dialogs (special conditions)
     if (allowDialogsWithAnimation && showIdeOnboarding) return 'ide-onboarding';
@@ -2801,12 +2799,10 @@ export function REPL({
     })) {
       onQueryEvent(event);
     }
-    if (feature('BUDDY')) {
-      void fireCompanionObserver(messagesRef.current, reaction => setAppState(prev => prev.companionReaction === reaction ? prev : {
-        ...prev,
-        companionReaction: reaction
-      }));
-    }
+    void fireCompanionObserver(messagesRef.current, reaction => setAppState(prev => prev.companionReaction === reaction ? prev : {
+      ...prev,
+      companionReaction: reaction
+    }));
     queryCheckpoint('query_end');
 
     // Capture ant-only API metrics before resetLoadingState clears the ref.
@@ -4528,7 +4524,7 @@ export function REPL({
   // spriteWidth — divider stops short and dialog text wraps early. Don't
   // check footerSelection: pill FOCUS (arrow-down to tasks pill) must keep
   // the sprite visible so arrow-right can navigate to it.
-  const companionVisible = !toolJSX?.shouldHidePromptInput && !focusedInputDialog && !showBashesDialog;
+  const companionVisible = true;
 
   // In fullscreen, ALL local-jsx slash commands float in the modal slot —
   // FullscreenLayout wraps them in an absolute-positioned bottom-anchored
@@ -4562,7 +4558,7 @@ export function REPL({
       {feature('MESSAGE_ACTIONS') && isFullscreenEnvEnabled() && !disableMessageActions ? <MessageActionsKeybindings handlers={messageActionHandlers} isActive={cursor !== null} /> : null}
       <CancelRequestHandler {...cancelRequestProps} />
       <MCPConnectionManager key={remountKey} dynamicMcpConfig={dynamicMcpConfig} isStrictMcpConfig={strictMcpConfig}>
-        <FullscreenLayout scrollRef={scrollRef} overlay={toolPermissionOverlay} bottomFloat={feature('BUDDY') && companionVisible && !companionNarrow ? <CompanionFloatingBubble /> : undefined} modal={centeredModal} modalScrollRef={modalScrollRef} dividerYRef={dividerYRef} hidePill={!!viewedAgentTask} hideSticky={!!viewedTeammateTask} newMessageCount={unseenDivider?.count ?? 0} onPillClick={() => {
+        <FullscreenLayout scrollRef={scrollRef} overlay={toolPermissionOverlay} bottomFloat={companionVisible && !companionNarrow ? <CompanionFloatingBubble /> : undefined} modal={centeredModal} modalScrollRef={modalScrollRef} dividerYRef={dividerYRef} hidePill={!!viewedAgentTask} hideSticky={!!viewedTeammateTask} newMessageCount={unseenDivider?.count ?? 0} onPillClick={() => {
         setCursor(null);
         jumpToNew(scrollRef.current);
       }} scrollable={<>
@@ -4587,8 +4583,8 @@ export function REPL({
               {showSpinner && <SpinnerWithVerb mode={streamMode} spinnerTip={spinnerTip} responseLengthRef={responseLengthRef} apiMetricsRef={apiMetricsRef} overrideMessage={spinnerMessage} spinnerSuffix={stopHookSpinnerSuffix} verbose={verbose} loadingStartTimeRef={loadingStartTimeRef} totalPausedMsRef={totalPausedMsRef} pauseStartTimeRef={pauseStartTimeRef} overrideColor={spinnerColor} overrideShimmerColor={spinnerShimmerColor} hasActiveTools={inProgressToolUseIDs.size > 0} leaderIsIdle={!isLoading} />}
               {!showSpinner && !isLoading && !userInputOnProcessing && !hasRunningTeammates && isBriefOnly && !viewedAgentTask && <BriefIdleStatus />}
               {isFullscreenEnvEnabled() && <PromptInputQueuedCommands />}
-            </>} bottom={<Box flexDirection={feature('BUDDY') && companionNarrow ? 'column' : 'row'} width="100%" alignItems={feature('BUDDY') && companionNarrow ? undefined : 'flex-end'}>
-              {feature('BUDDY') && companionNarrow && isFullscreenEnvEnabled() && companionVisible ? <CompanionSprite /> : null}
+            </>} bottom={<Box flexDirection={companionNarrow ? 'column' : 'row'} width="100%" alignItems={companionNarrow ? undefined : 'flex-end'}>
+              {companionNarrow && companionVisible ? <CompanionSprite /> : null}
               <Box flexDirection="column" flexGrow={1}>
                 {permissionStickyFooter}
                 {/* Immediate local-jsx commands (/btw, /sandbox, /assistant,
@@ -4847,9 +4843,9 @@ export function REPL({
 
                 {focusedInputDialog === 'desktop-upsell' && <DesktopUpsellStartup onDone={() => setShowDesktopUpsellStartup(false)} />}
 
-                {feature('ULTRAPLAN') ? focusedInputDialog === 'ultraplan-choice' && ultraplanPendingChoice && <UltraplanChoiceDialog plan={ultraplanPendingChoice.plan} sessionId={ultraplanPendingChoice.sessionId} taskId={ultraplanPendingChoice.taskId} setMessages={setMessages} readFileState={readFileState.current} getAppState={() => store.getState()} setConversationId={setConversationId} /> : null}
+                {focusedInputDialog === 'ultraplan-choice' && ultraplanPendingChoice && <UltraplanChoiceDialog plan={ultraplanPendingChoice.plan} sessionId={ultraplanPendingChoice.sessionId} taskId={ultraplanPendingChoice.taskId} setMessages={setMessages} readFileState={readFileState.current} getAppState={() => store.getState()} setConversationId={setConversationId} />}
 
-                {feature('ULTRAPLAN') ? focusedInputDialog === 'ultraplan-launch' && ultraplanLaunchPending && <UltraplanLaunchDialog onChoice={(choice, opts) => {
+                {focusedInputDialog === 'ultraplan-launch' && ultraplanLaunchPending && <UltraplanLaunchDialog onChoice={(choice, opts) => {
             const blurb = ultraplanLaunchPending.blurb;
             setAppState(prev => prev.ultraplanLaunchPending ? {
               ...prev,
@@ -4887,7 +4883,7 @@ export function REPL({
               disconnectedBridge: opts?.disconnectedBridge,
               onSessionReady: appendWhenIdle
             }).then(appendStdout).catch(logError);
-          }} /> : null}
+          }} />}
 
                 {mrRender()}
 
@@ -4992,7 +4988,7 @@ export function REPL({
           }} />}
                 {"external" === 'ant' && <DevBar />}
               </Box>
-              {feature('BUDDY') && !(companionNarrow && isFullscreenEnvEnabled()) && companionVisible ? <CompanionSprite /> : null}
+              {!(companionNarrow) && companionVisible ? <CompanionSprite /> : null}
             </Box>} />
       </MCPConnectionManager>
     </KeybindingSetup>;

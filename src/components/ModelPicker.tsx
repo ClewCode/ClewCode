@@ -1,7 +1,7 @@
 import { c as _c } from "react/compiler-runtime";
 import capitalize from 'lodash-es/capitalize.js';
 import * as React from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useExitOnCtrlCDWithKeybindings } from 'src/hooks/useExitOnCtrlCDWithKeybindings.js';
 import { ProviderManager } from 'src/services/ai/ProviderManager.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from 'src/services/analytics/index.js';
@@ -13,6 +13,7 @@ import { useAppState, useSetAppState } from '../state/AppState.js';
 import { convertEffortValueToLevel, type EffortLevel, getDefaultEffortForModel, modelSupportsEffort, modelSupportsMaxEffort, resolvePickerEffortPersistence, toPersistableEffort } from '../utils/effort.js';
 import { getDefaultMainLoopModel, type ModelSetting, modelDisplayString, parseUserSpecifiedModel } from '../utils/model/model.js';
 import { getModelOptions } from '../utils/model/modelOptions.js';
+import { fetchProviderModels, supportsModelFetching, type FetchedModel } from '../utils/model/fetchProviderModels.js';
 import { getSettingsForSource, updateSettingsForSource } from '../utils/settings/settings.js';
 import { ConfigurableShortcutHint } from './ConfigurableShortcutHint.js';
 import { Select } from './CustomSelect/index.js';
@@ -55,6 +56,8 @@ export function ModelPicker(t0) {
   const initialValue = initial === null ? NO_PREFERENCE : initial;
   const [focusedValue, setFocusedValue] = useState(initialValue);
   const isFastMode = useAppState(_temp);
+  const fetchedModelsData = useAppState((s: { fetchedModels?: { provider: string; models: FetchedModel[]; fetchedAt: number } }) => s.fetchedModels);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [hasToggledEffort, setHasToggledEffort] = useState(false);
   const effortValue = useAppState(_temp2);
   let t1;
@@ -66,16 +69,62 @@ export function ModelPicker(t0) {
     t1 = $[1];
   }
   const [effort, setEffort] = useState(t1);
+  const [customModelId, setCustomModelId] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const t2 = Boolean(isFastMode);
-  let t3;
-  if ($[2] !== t2) {
-    t3 = getEffectiveModelOptions(t2);
-    $[2] = t2;
-    $[3] = t3;
-  } else {
-    t3 = $[3];
-  }
-  const modelOptions = t3;
+
+  // Fetch models from provider on mount
+  useEffect(() => {
+    const loadModels = async () => {
+      const providerInfo = getActiveProviderInfo();
+      if (!providerInfo) return;
+
+      // Check if we already have fresh fetched models for this provider
+      const currentFetched = fetchedModelsData as { provider?: string; models?: FetchedModel[] } | undefined;
+      if (currentFetched?.provider === providerInfo.providerId) {
+        // Models already fetched for this provider
+        return;
+      }
+
+      if (!supportsModelFetching(providerInfo.providerId as any)) {
+        return;
+      }
+
+      setIsFetchingModels(true);
+      try {
+        const models = await fetchProviderModels(providerInfo.providerId as any);
+        if (models && models.length > 0) {
+          setAppState((prev) => ({
+            ...prev,
+            fetchedModels: {
+              provider: providerInfo.providerId,
+              models,
+              fetchedAt: Date.now(),
+            },
+          }));
+        }
+      } finally {
+        setIsFetchingModels(false);
+      }
+    };
+
+    loadModels();
+  }, [setAppState, fetchedModelsData]);
+
+  // Get fetched models for current provider
+  const providerInfo = getActiveProviderInfo();
+  const currentFetchedModels = useMemo(() => {
+    const data = fetchedModelsData as { provider?: string; models?: FetchedModel[] } | undefined;
+    if (!data || data.provider !== providerInfo?.providerId) {
+      return null;
+    }
+    return data.models ?? null;
+  }, [fetchedModelsData, providerInfo?.providerId]);
+
+  // Compute model options with fetched models
+  const modelOptions = useMemo(() => {
+    return getEffectiveModelOptions(t2, currentFetchedModels, providerInfo?.entry);
+  }, [t2, currentFetchedModels, providerInfo?.entry]);
   let t4;
   bb0: {
     if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {
@@ -267,7 +316,13 @@ export function ModelPicker(t0) {
   } else {
     t15 = $[41];
   }
-  const t16 = headerText ?? getDefaultHeaderText();
+  let t16;
+  const baseHeaderText = headerText ?? getDefaultHeaderText();
+  if (isFetchingModels) {
+    t16 = `${baseHeaderText} (fetching models...)`;
+  } else {
+    t16 = baseHeaderText;
+  }
   let t17;
   if ($[42] !== t16) {
     t17 = <Text dimColor={true}>{t16}</Text>;
@@ -411,7 +466,7 @@ function getDefaultHeaderText(): string {
 function getActiveProviderInfo(): { entry: ReturnType<typeof getProviderRegistryEntry>; selectedModel: string | undefined; providerId: string } | null {
   const providerManager = ProviderManager.getInstance();
   const config = providerManager.getSelectedProviderConfig(true);
-  if (!config.provider || config.provider === 'anthropic') {
+  if (!config.provider) {
     return null;
   }
   const entry = getProviderRegistryEntry(config.provider);
@@ -422,22 +477,68 @@ function getActiveProviderInfo(): { entry: ReturnType<typeof getProviderRegistry
   };
 }
 
-function getEffectiveModelOptions(fastMode: boolean): Array<{
+function getEffectiveModelOptions(
+  fastMode: boolean,
+  fetchedModels?: FetchedModel[] | null,
+  entry?: ReturnType<typeof getProviderRegistryEntry>
+): Array<{
   value: ModelSetting;
   label: string;
   description: string;
   descriptionForModel?: string;
 }> {
   const providerInfo = getActiveProviderInfo();
-  if (!providerInfo) {
+  if (!providerInfo && !entry) {
     return getModelOptions(fastMode);
   }
-  const defaultModel = providerInfo.selectedModel ?? providerInfo.entry.defaultModel ?? 'provider default';
+  const providerEntry = entry ?? providerInfo!.entry;
+  const defaultModel = providerInfo?.selectedModel ?? providerEntry.defaultModel ?? 'provider default';
+
+  // Start with static models from registry
+  const staticModels = providerEntry.models.map(model => toProviderModelOption(model));
+
+  // Merge with fetched models if available (deduplicate by id)
+  const allModels = [...staticModels];
+  if (fetchedModels && fetchedModels.length > 0) {
+    const existingIds = new Set(staticModels.map(m => m.value));
+    for (const fetched of fetchedModels) {
+      if (!existingIds.has(fetched.id)) {
+        allModels.push({
+          value: fetched.id,
+          label: fetched.label,
+          description: fetched.description || fetched.id,
+          descriptionForModel: fetched.id
+        });
+        existingIds.add(fetched.id);
+      }
+    }
+  }
+
+  // Check if provider supports API model fetching
+  const hasModelsEndpoint = 'modelsUrl' in providerEntry && providerEntry.modelsUrl;
+
+  // For providers without /models endpoint, add custom input option
+  if (!hasModelsEndpoint) {
+    return [
+      {
+        value: null,
+        label: 'Default (recommended)',
+        description: `Use ${providerEntry.label} default (${defaultModel})`
+      },
+      ...allModels,
+      {
+        value: '__CUSTOM_INPUT__',
+        label: '✏️  Type custom model ID',
+        description: `Use: /model your-model-id`
+      }
+    ];
+  }
+
   return [{
     value: null,
     label: 'Default (recommended)',
-    description: `Use ${providerInfo.entry.label} default (${defaultModel})`
-  }, ...providerInfo.entry.models.map(model => toProviderModelOption(model))];
+    description: `Use ${providerEntry.label} default (${defaultModel})`
+  }, ...allModels];
 }
 function toProviderModelOption(model: ProviderModelInfo) {
   const label = model.label ?? model.id;

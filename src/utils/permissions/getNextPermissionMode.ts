@@ -44,6 +44,9 @@ export function getNextPermissionMode(
         }
         return 'default'
       }
+      return 'ask'
+
+    case 'ask':
       return 'acceptEdits'
 
     case 'acceptEdits':
@@ -53,13 +56,25 @@ export function getNextPermissionMode(
       if (canCycleToAuto(toolPermissionContext)) {
         return 'auto'
       }
+      return 'yoloLite'
+
+    case 'auto':
+      return 'yoloLite'
+
+    case 'yoloLite':
+      return 'yolo'
+
+    case 'yolo':
+      return 'yoloMax'
+
+    case 'yoloMax':
+      return 'yoloGod'
+
+    case 'yoloGod':
       return 'default'
 
     case 'bypassPermissions':
-      if (canCycleToAuto(toolPermissionContext)) {
-        return 'auto'
-      }
-      return 'default'
+      return 'yoloLite'
 
     case 'dontAsk':
       // Not exposed in UI cycle yet, but return default if somehow reached
@@ -67,7 +82,7 @@ export function getNextPermissionMode(
 
 
     default:
-      // Covers auto (when TRANSCRIPT_CLASSIFIER is enabled) and any future modes — always fall back to default
+      // Covers any future modes — always fall back to default
       return 'default'
   }
 }

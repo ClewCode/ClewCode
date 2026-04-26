@@ -31,7 +31,7 @@ import type { FileHistoryState } from '../utils/fileHistory.js'
 import type { REPLHookContext } from '../utils/hooks/postSamplingHooks.js'
 import type { SessionHooksState } from '../utils/hooks/sessionHooks.js'
 import type { ModelSetting } from '../utils/model/model.js'
-import type { DenialTrackingState } from '../utils/permissions/denialTracking.js'
+import type { DenialTrackingState, YoloStatsState } from '../utils/permissions/denialTracking.js'
 import type { PermissionMode } from '../utils/permissions/PermissionMode.js'
 import { getInitialSettings } from '../utils/settings/settings.js'
 import type { SettingsJson } from '../utils/settings/types.js'
@@ -169,6 +169,19 @@ export type AppState = DeepImmutable<{
   companionReaction?: string
   // Timestamp of last /buddy pet — CompanionSprite renders hearts while recent
   companionPetAt?: number
+  // Companion visibility state for re-rendering when /buddy show/hide is used
+  companionVisible?: boolean
+  // Fetched models from provider /models endpoint (keyed by providerId)
+  fetchedModels?: {
+    provider: string
+    models: Array<{
+      id: string
+      label: string
+      description?: string
+      contextWindow?: number
+    }>
+    fetchedAt: number
+  }
   // TODO (ashwin): see if we can use utility-types DeepReadonly for this
   mcp: {
     clients: MCPServerConnection[]
@@ -417,6 +430,8 @@ export type AppState = DeepImmutable<{
   }
   // Denial tracking for classifier modes (YOLO, headless, etc.) - falls back to prompting when limits exceeded
   denialTracking?: DenialTrackingState
+  // YOLO stats tracking for YOLO modes
+  yoloStats?: YoloStatsState
   // Active overlays (Select dialogs, etc.) for Escape key coordination
   activeOverlays: ReadonlySet<string>
   // Fast mode

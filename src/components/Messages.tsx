@@ -273,7 +273,7 @@ type Props = {
    *  Measured Mar 2026: 538-msg session, 20 slices → −55% plateau RSS. */
   renderRange?: readonly [start: number, end: number];
 };
-const MAX_MESSAGES_TO_SHOW_IN_TRANSCRIPT_MODE = 30;
+const MAX_MESSAGES_TO_SHOW_IN_TRANSCRIPT_MODE = 100;
 
 // Safety cap for the non-virtualized render path (fullscreen off or
 // explicitly disabled). Ink mounts a full fiber tree per message (~250 KB

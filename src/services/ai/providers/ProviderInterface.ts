@@ -3,8 +3,6 @@ import type { ClientOptions } from '@anthropic-ai/sdk'
 export type ProviderId =
   | 'anthropic'
   | 'openai'
-  | 'google'
-  | 'gemini'
   | 'openrouter'
   | 'opencode'
   | 'cline'
@@ -13,9 +11,6 @@ export type ProviderId =
   | 'mistral'
   | 'kilocode'
   | 'ollama'
-  | 'openai_browser'
-  | 'openai_headless'
-  | 'gemini_oauth'
   | 'copilot'
   | 'deepseek'
 

@@ -401,14 +401,23 @@ function StatusLineInner({
       switch (permissionMode) {
         case 'bypassPermissions':
         case 'dontAsk':
+          return <Ansi>{chalk.bgWhite.black.bold(' YOLO ')}</Ansi>;
+        case 'ask':
+          return <Ansi>{chalk.bgWhite.black.bold(' ASK ')}</Ansi>;
+        case 'yoloLite':
+          return <Ansi>{chalk.bgWhite.black.bold(' LITE ')}</Ansi>;
         case 'yolo':
-          return <Ansi>{chalk.bgRed.white.bold(' YOLO ')}</Ansi>;
+          return <Ansi>{chalk.bgWhite.black.bold(' YOLO ')}</Ansi>;
+        case 'yoloMax':
+          return <Ansi>{chalk.bgWhite.black.bold(' MAX ')}</Ansi>;
+        case 'yoloGod':
+          return <Ansi>{chalk.bgWhite.black.bold(' GOD ')}</Ansi>;
         case 'acceptEdits':
-          return <Ansi>{chalk.bgBlue.white.bold(' ACCEPT ')}</Ansi>;
+          return <Ansi>{chalk.bgWhite.black.bold(' ACCEPT ')}</Ansi>;
         case 'plan':
-          return <Ansi>{chalk.bgCyan.black.bold(' PLAN ')}</Ansi>;
+          return <Ansi>{chalk.bgWhite.black.bold(' PLAN ')}</Ansi>;
         case 'auto':
-          return <Ansi>{chalk.bgYellow.black.bold(' AUTO ')}</Ansi>;
+          return <Ansi>{chalk.bgWhite.black.bold(' AUTO ')}</Ansi>;
         default:
           return null;
       }
@@ -455,7 +464,14 @@ function StatusLineInner({
                     case 'acceptEdits': return <Ansi>{chalk.white.bold('ACCEPT ')}</Ansi>;
                     case 'plan': return <Ansi>{chalk.white.bold('PLAN ')}</Ansi>;
                     case 'auto': return <Ansi>{chalk.white.bold('AUTO ')}</Ansi>;
-                    default: return <Ansi>{chalk.gray.bold('NORMAL ')}</Ansi>;
+                    case 'ask': return <Ansi>{chalk.white.bold('ASK ')}</Ansi>;
+                    case 'yoloLite': return <Ansi>{chalk.white.bold('YOLO-LITE ')}</Ansi>;
+                    case 'yolo': return <Ansi>{chalk.white.bold('YOLO ')}</Ansi>;
+                    case 'yoloMax': return <Ansi>{chalk.white.bold('YOLO-MAX ')}</Ansi>;
+                    case 'yoloGod': return <Ansi>{chalk.white.bold('YOLO-GOD ')}</Ansi>;
+                    case 'bypassPermissions': return <Ansi>{chalk.white.bold('BYPASS ')}</Ansi>;
+                    case 'dontAsk': return <Ansi>{chalk.white.bold('DONT-ASK ')}</Ansi>;
+                    default: return <Ansi>{chalk.white.bold('NORMAL ')}</Ansi>;
                   }
                 })()}
                 <Ansi>{chalk.gray.dim('| ')}</Ansi>

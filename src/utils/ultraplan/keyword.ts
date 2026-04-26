@@ -104,12 +104,36 @@ export function findUltrareviewTriggerPositions(
   return findKeywordTriggerPositions(text, 'ultrareview')
 }
 
+export function findExplainTriggerPositions(text: string): TriggerPosition[] {
+  return findKeywordTriggerPositions(text, 'explain')
+}
+
+export function findFixTriggerPositions(text: string): TriggerPosition[] {
+  return findKeywordTriggerPositions(text, 'fix')
+}
+
+export function findDebugTriggerPositions(text: string): TriggerPosition[] {
+  return findKeywordTriggerPositions(text, 'debug')
+}
+
 export function hasUltraplanKeyword(text: string): boolean {
   return findUltraplanTriggerPositions(text).length > 0
 }
 
 export function hasUltrareviewKeyword(text: string): boolean {
   return findUltrareviewTriggerPositions(text).length > 0
+}
+
+export function hasExplainKeyword(text: string): boolean {
+  return findExplainTriggerPositions(text).length > 0
+}
+
+export function hasFixKeyword(text: string): boolean {
+  return findFixTriggerPositions(text).length > 0
+}
+
+export function hasDebugKeyword(text: string): boolean {
+  return findDebugTriggerPositions(text).length > 0
 }
 
 /**

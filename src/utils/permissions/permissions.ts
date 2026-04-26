@@ -88,16 +88,25 @@ import {
   buildYoloRejectionMessage,
   DONT_ASK_REJECT_MESSAGE,
 } from '../messages.js'
+import {
+  checkYoloGuardian,
+  getYoloGuardianWarning,
+} from './yoloGuardian.js'
 import { calculateCostFromTokens } from '../modelCost.js'
 /* eslint-enable @typescript-eslint/no-require-imports */
 import { jsonStringify } from '../slowOperations.js'
 import {
+  addYoloTimeSaved,
   createDenialTrackingState,
+  createYoloStatsState,
   DENIAL_LIMITS,
   type DenialTrackingState,
   recordDenial,
   recordSuccess,
+  recordYoloAutoApproved,
+  recordYoloGuardianBlock,
   shouldFallbackToPrompting,
+  type YoloStatsState,
 } from './denialTracking.js'
 import {
   classifyYoloAction,
@@ -1250,16 +1259,77 @@ async function hasPermissionsToUseToolInner(
   // 2a. Check if mode allows the tool to run
   // IMPORTANT: Call getAppState() to get the latest value
   appState = context.getAppState()
+  
+  // Ask mode: always ask for confirmation
+  if (appState.toolPermissionContext.mode === 'ask') {
+    return {
+      behavior: 'ask',
+      message: 'Ask mode: Always requires confirmation',
+      decisionReason: {
+        type: 'mode',
+        mode: appState.toolPermissionContext.mode,
+      },
+    }
+  }
+  
   // Check if permissions should be bypassed:
   // - Direct bypassPermissions mode
   // - Plan mode when the user originally started with bypass mode (isBypassPermissionsModeAvailable)
+  // - YOLO tiers (with different safety levels)
   const shouldBypassPermissions =
     appState.toolPermissionContext.mode === 'bypassPermissions' ||
     appState.toolPermissionContext.mode === 'dontAsk' ||
     appState.toolPermissionContext.mode === 'yolo' ||
+    appState.toolPermissionContext.mode === 'yoloMax' ||
+    appState.toolPermissionContext.mode === 'yoloGod' ||
     (appState.toolPermissionContext.mode === 'plan' &&
       appState.toolPermissionContext.isBypassPermissionsModeAvailable)
-  if (shouldBypassPermissions) {
+  
+  // YOLO Lite has safety checks - don't bypass completely
+  const isYoloLite = appState.toolPermissionContext.mode === 'yoloLite'
+  
+  if (shouldBypassPermissions && !isYoloLite) {
+    return {
+      behavior: 'allow',
+      updatedInput: getUpdatedInputOrFallback(toolPermissionResult, input),
+      decisionReason: {
+        type: 'mode',
+        mode: appState.toolPermissionContext.mode,
+      },
+    }
+  }
+
+  // YOLO Lite: Run guardian safety checks
+  if (isYoloLite) {
+    const guardianCheck = checkYoloGuardian(tool, input)
+    if (guardianCheck.isDangerous && guardianCheck.requiresConfirmation) {
+      logForDebugging(
+        `YOLO Guardian blocked dangerous action: ${guardianCheck.reason}`,
+        { level: 'warn' },
+      )
+      // Track YOLO stats
+      const currentYoloStats = appState.yoloStats || createYoloStatsState()
+      const newYoloStats = recordYoloGuardianBlock(currentYoloStats)
+      context.setAppState(prev => ({
+        ...prev,
+        yoloStats: newYoloStats,
+      }))
+      return {
+        behavior: 'ask',
+        message: getYoloGuardianWarning(guardianCheck),
+        decisionReason: {
+          type: 'other',
+          reason: `YOLO Guardian: ${guardianCheck.reason}`,
+        },
+      }
+    }
+    // Allow if not dangerous or only requires backup - track auto-approval
+    const currentYoloStats = appState.yoloStats || createYoloStatsState()
+    const newYoloStats = recordYoloAutoApproved(currentYoloStats)
+    context.setAppState(prev => ({
+      ...prev,
+      yoloStats: newYoloStats,
+    }))
     return {
       behavior: 'allow',
       updatedInput: getUpdatedInputOrFallback(toolPermissionResult, input),

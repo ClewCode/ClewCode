@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **License**: Proprietary — See `LICENSE.md`
 - **Current Version**: `2.1.121`
 - **Runtime**: Bun 1.0+ (recommended) or Node.js 18+
-- **Language**: TypeScript 5.x (`strict: false`, `module: ESNext`, `target: ES2022`)
+- **Language**: TypeScript 5.x (`strict: false`, `jsx: "react-jsx"`, `module: "ESNext"`, `target: ES2022`)
 - **UI Framework**: React 19 + Ink 6 (React for CLIs)
 - **Build**: `bun build src/main.tsx --outdir ./dist --target bun`
 
@@ -28,6 +28,15 @@ bun test --coverage      # With coverage
 bun test --watch         # Watch mode
 bun test --bail          # Stop on first failure
 bun x tsc --noEmit       # Type check
+
+# CLI Flags
+
+```bash
+bun run src/main.tsx session --provider openai --model gpt-4o    # Set provider and model
+bun run src/main.tsx session --provider anthropic --model claude-opus-4-7
+bun run src/main.tsx session --provider ollama --model llama3
+bun run src/main.tsx session --print                              # Non-interactive mode
+bun run src/main.tsx session --verbose                       # Verbose output
 ```
 
 ## Architecture
@@ -86,14 +95,18 @@ export type ProviderId =
   | 'anthropic' | 'openai' | 'google' | 'gemini'
   | 'openrouter' | 'opencode' | 'cline' | 'groq'
   | 'xai' | 'mistral' | 'kilocode' | 'ollama'
+  | 'copilot' | 'chatgpt-session'
 
 export interface ProviderInterface {
   readonly providerId: ProviderId
   readonly label: string
-  getProviderId(): ProviderId
-  getProviderLabel(): string
-  getProviderApiKeyEnvVar(): string
-  createClient(options: ProviderInitOptions): Promise<ProviderClient>
+  streamMessage(): Promise<ProviderStreamResult>
+  nonStreamingMessage(): Promise<ProviderNonStreamResult>
+  getModels(): Promise<ProviderModelInfo[]>
+  getToolResultSchema(): z.ZodSchema
+  normalizeError(error: unknown): NormalizedError
+  normalizeUsage(usage: unknown): NormalizedUsage
+  normalizeToolCall(toolCall: unknown): NormalizedToolCall
 }
 ```
 
@@ -104,7 +117,6 @@ export interface ProviderInterface {
 - `defaultBaseUrl`, `modelsUrl` (for model discovery)
 - `defaultModel`, `capabilities` (tool calling, streaming, vision, etc.)
 - `models[]` — Array of `ProviderModelInfo` with per-model capabilities
-- `provider` — The `ProviderInterface` instance
 
 ### Provider Implementations
 
@@ -121,6 +133,8 @@ export interface ProviderInterface {
 | Mistral | OpenAI-compatible | Native | `MISTRAL_API_KEY` |
 | Cline | OpenAI-compatible | Native | `CLINE_API_KEY` |
 | OpenCode | OpenAI-compatible | Native | `OPENCODE_API_KEY` |
+| Copilot | OpenAI-compatible | Native | `COPILOT_API_KEY` |
+| ChatGPT Session | OpenAI-compatible | Native | `CHATGPT_SESSION_KEY` |
 
 ### Key Normalizers
 
@@ -174,6 +188,10 @@ Multi-layer security controlling what the AI can do.
 | `auto` | Auto-allow based on rules |
 | `accept-edits` | Auto-allow file edits, prompt for other tools |
 | `bypass-permissions` | No prompts (dangerous) |
+| `yolo` | YOLO Mode - auto-allow most tools |
+| `yoloLite` | YOLO Lite - reduced auto-allow |
+| `yoloMax` | YOLO Max - maximum auto-allow |
+| `yoloGod` | YOLO God - maximum power, no limits |
 
 ## Storage Layout
 

@@ -47,6 +47,14 @@ function ModelPickerWrapper(t0) {
   let t2;
   if ($[3] !== isFastMode || $[4] !== mainLoopModel || $[5] !== onDone || $[6] !== setAppState) {
     t2 = function handleSelect(model: string | null, effort: EffortLevel | undefined) {
+      // Handle custom model input option
+      if (model === '__CUSTOM_INPUT__') {
+        onDone('To use a custom model, type: /model your-model-id', {
+          display: 'system'
+        });
+        return;
+      }
+
       logEvent("tengu_model_command_menu", {
         action: model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         from_model: mainLoopModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,

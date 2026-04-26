@@ -10,6 +10,7 @@ import {
   AuthenticationError,
 } from '@anthropic-ai/sdk'
 import { getModelStrings } from './modelStrings.js'
+import { ProviderManager } from '../../services/ai/ProviderManager.js'
 
 // Cache valid models to avoid repeated API calls
 const validModelCache = new Map<string, boolean>()
@@ -51,6 +52,17 @@ export async function validateModel(
     return { valid: true }
   }
 
+  // For non-Anthropic providers (cline, openrouter, etc.), skip API validation
+  // since they use different authentication methods and API formats
+  const providerManager = ProviderManager.getInstance()
+  const activeProvider = providerManager.getActiveProviderName()
+  const nonAnthropicProviders = ['cline', 'openrouter', 'openai', 'gemini', 'groq', 'xai', 'mistral', 'deepseek', 'kilocode', 'opencode', 'ollama', 'copilot']
+  if (nonAnthropicProviders.includes(activeProvider)) {
+    // For non-Anthropic providers, accept any model ID that is in the allowlist
+    // or matches the provider's model format (e.g., provider/model for Cline/OpenRouter)
+    validModelCache.set(normalizedModel, true)
+    return { valid: true }
+  }
 
   // Try to make an actual API call with minimal parameters
   try {

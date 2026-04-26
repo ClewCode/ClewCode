@@ -29,6 +29,7 @@
     "@ai-sdk/anthropic": "^3.0.0",
     "@ai-sdk/google": "^3.0.0",
     "@ai-sdk/openai": "^3.0.0",
+    "@anthropic-ai/sdk": "^0.91.1",
     "@aws-sdk/client-bedrock": "^3.1021.0",
     "@aws-sdk/client-sts": "^3.1021.0",
     "@azure/identity": "^4.13.1",

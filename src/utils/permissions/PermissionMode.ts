@@ -49,6 +49,13 @@ const PERMISSION_MODE_CONFIG: Partial<
     color: 'text',
     external: 'default',
   },
+  ask: {
+    title: 'Ask Mode',
+    shortTitle: 'Ask',
+    symbol: '?',
+    color: 'permission',
+    external: 'ask',
+  },
   plan: {
     title: 'Plan Mode',
     shortTitle: 'Plan',
@@ -83,6 +90,27 @@ const PERMISSION_MODE_CONFIG: Partial<
     symbol: '⚡️',
     color: 'error',
     external: 'yolo',
+  },
+  yoloLite: {
+    title: 'YOLO Lite',
+    shortTitle: 'Lite',
+    symbol: '⚡',
+    color: 'warning',
+    external: 'yoloLite',
+  },
+  yoloMax: {
+    title: 'YOLO Max',
+    shortTitle: 'Max',
+    symbol: '⚡⚡',
+    color: 'error',
+    external: 'yoloMax',
+  },
+  yoloGod: {
+    title: 'YOLO God',
+    shortTitle: 'God',
+    symbol: '🔥',
+    color: 'error',
+    external: 'yoloGod',
   },
   ...(feature('TRANSCRIPT_CLASSIFIER')
     ? {

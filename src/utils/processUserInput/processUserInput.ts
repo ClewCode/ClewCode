@@ -55,6 +55,9 @@ import {
 import { queryCheckpoint } from '../queryProfiler.js'
 import { parseSlashCommand } from '../slashCommandParsing.js'
 import {
+  hasDebugKeyword,
+  hasExplainKeyword,
+  hasFixKeyword,
   hasUltraplanKeyword,
   replaceUltraplanKeyword,
 } from '../ultraplan/keyword.js'
@@ -465,7 +468,6 @@ async function processUserInputBase(
   // path below (no await between setUserInputOnProcessing and setAppState —
   // React batches both into one render, no flash).
   if (
-    feature('ULTRAPLAN') &&
     mode === 'prompt' &&
     !context.options.isNonInteractiveSession &&
     inputString !== null &&
@@ -487,9 +489,123 @@ async function processUserInputBase(
       setToolJSX,
       uuid,
       isAlreadyProcessing,
+      querySource,
       canUseTool,
+      skipSlashCommands,
+      bridgeOrigin,
+      isMeta,
+      skipAttachments,
     )
-    return addImageMetadataMessage(slashResult, imageMetadataTexts)
+    if (slashResult.type === 'text') {
+      return {
+        messages: [
+          createCommandInputMessage(formatCommandInputTags('ultraplan', rewritten)),
+          createSystemMessage(slashResult.value),
+        ],
+        shouldQuery: false,
+        resultText: slashResult.value,
+      }
+    }
+    // Fallback to normal processing if slash command fails
+  }
+
+  // Explain keyword — enable explanation mode with system prompt, ask mode, and high effort
+  if (
+    mode === 'prompt' &&
+    !context.options.isNonInteractiveSession &&
+    inputString !== null &&
+    !effectiveSkipSlash &&
+    !inputString.startsWith('/') &&
+    hasExplainKeyword(preExpansionInput ?? inputString)
+  ) {
+    logEvent('tengu_explain_keyword', {})
+    
+    // Switch to ask mode
+    context.setAppState(prev => ({
+      ...prev,
+      toolPermissionContext: {
+        ...prev.toolPermissionContext,
+        mode: 'ask',
+      },
+    }))
+    
+    // Set high effort
+    context.setAppState(prev => ({
+      ...prev,
+      effort: 'high',
+    }))
+    
+    // Add explanation system prompt
+    const explainSystemPrompt = 'Please provide detailed explanations for everything you do. Explain your reasoning, the steps you take, and the rationale behind your decisions. Be thorough and clear in your explanations.'
+    
+    // Prepend system prompt to messages
+    context.setMessages(prev => [
+      createSystemMessage(explainSystemPrompt),
+      ...prev,
+    ])
+    
+    // Remove "explain" from input and continue processing
+    inputString = inputString.replace(/explain/gi, '').trim()
+  }
+
+  // Fix keyword — enable high effort + yolo-lite mode for fixing bugs
+  if (
+    mode === 'prompt' &&
+    !context.options.isNonInteractiveSession &&
+    inputString !== null &&
+    !effectiveSkipSlash &&
+    !inputString.startsWith('/') &&
+    hasFixKeyword(preExpansionInput ?? inputString)
+  ) {
+    logEvent('tengu_fix_keyword', {})
+    
+    // Switch to yolo-lite mode
+    context.setAppState(prev => ({
+      ...prev,
+      toolPermissionContext: {
+        ...prev.toolPermissionContext,
+        mode: 'yoloLite',
+      },
+    }))
+    
+    // Set high effort
+    context.setAppState(prev => ({
+      ...prev,
+      effort: 'high',
+    }))
+    
+    // Remove "fix" from input and continue processing
+    inputString = inputString.replace(/fix/gi, '').trim()
+  }
+
+  // Debug keyword — enable high effort + ask mode for debugging
+  if (
+    mode === 'prompt' &&
+    !context.options.isNonInteractiveSession &&
+    inputString !== null &&
+    !effectiveSkipSlash &&
+    !inputString.startsWith('/') &&
+    hasDebugKeyword(preExpansionInput ?? inputString)
+  ) {
+    logEvent('tengu_debug_keyword', {})
+    
+    // Switch to ask mode
+    context.setAppState(prev => ({
+      ...prev,
+      toolPermissionContext: {
+        ...prev.toolPermissionContext,
+        mode: 'ask',
+      },
+    }))
+    
+    // Set high effort
+    context.setAppState(prev => ({
+      ...prev,
+      effort: 'high',
+    }))
+    
+    // Remove "debug" from input and continue processing
+    inputString = inputString.replace(/debug/gi, '').trim()
   }
 
   // For slash commands, attachments will be extracted within getMessagesForSlashCommand

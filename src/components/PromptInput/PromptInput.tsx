@@ -92,7 +92,7 @@ import type { TextHighlight } from '../../utils/textHighlighting.js';
 import type { Theme } from '../../utils/theme.js';
 import { findThinkingTriggerPositions, getRainbowColor, isUltrathinkEnabled } from '../../utils/thinking.js';
 import { findTokenBudgetPositions } from '../../utils/tokenBudget.js';
-import { findUltraplanTriggerPositions, findUltrareviewTriggerPositions } from '../../utils/ultraplan/keyword.js';
+import { findDebugTriggerPositions, findExplainTriggerPositions, findFixTriggerPositions, findUltraplanTriggerPositions, findUltrareviewTriggerPositions } from '../../utils/ultraplan/keyword.js';
 import { AutoModeOptInDialog } from '../AutoModeOptInDialog.js';
 import { BridgeDialog } from '../BridgeDialog.js';
 import { ConfigurableShortcutHint } from '../ConfigurableShortcutHint.js';
@@ -309,11 +309,8 @@ function PromptInput({
   const {
     companion: _companion,
     companionMuted
-  } = feature('BUDDY') ? getGlobalConfig() : {
-    companion: undefined,
-    companionMuted: undefined
-  };
-  const companionFooterVisible = !!_companion && !companionMuted;
+  } = getGlobalConfig();
+  const companionFooterVisible = true; // Always show companion
   // Brief mode: BriefSpinner/BriefIdleStatus own the 2-row footprint above
   // the input. Dropping marginTop here lets the spinner sit flush against
   // the input bar. viewingAgentTaskId mirrors the gate on both (Spinner.tsx,
@@ -519,8 +516,11 @@ function PromptInput({
   const thinkTriggers = useMemo(() => findThinkingTriggerPositions(displayedValue), [displayedValue]);
   const ultraplanSessionUrl = useAppState(s => s.ultraplanSessionUrl);
   const ultraplanLaunching = useAppState(s => s.ultraplanLaunching);
-  const ultraplanTriggers = useMemo(() => feature('ULTRAPLAN') && !ultraplanSessionUrl && !ultraplanLaunching ? findUltraplanTriggerPositions(displayedValue) : [], [displayedValue, ultraplanSessionUrl, ultraplanLaunching]);
+  const ultraplanTriggers = useMemo(() => !ultraplanSessionUrl && !ultraplanLaunching ? findUltraplanTriggerPositions(displayedValue) : [], [displayedValue, ultraplanSessionUrl, ultraplanLaunching]);
   const ultrareviewTriggers = useMemo(() => isUltrareviewEnabled() ? findUltrareviewTriggerPositions(displayedValue) : [], [displayedValue]);
+  const explainTriggers = useMemo(() => findExplainTriggerPositions(displayedValue), [displayedValue]);
+  const fixTriggers = useMemo(() => findFixTriggerPositions(displayedValue), [displayedValue]);
+  const debugTriggers = useMemo(() => findDebugTriggerPositions(displayedValue), [displayedValue]);
   const btwTriggers = useMemo(() => findBtwTriggerPositions(displayedValue), [displayedValue]);
   const buddyTriggers = useMemo(() => findBuddyTriggerPositions(displayedValue), [displayedValue]);
   const slashCommandTriggers = useMemo(() => {
@@ -698,17 +698,54 @@ function PromptInput({
     }
 
     // Same rainbow treatment for the ultraplan keyword
-    if (feature('ULTRAPLAN')) {
-      for (const trigger of ultraplanTriggers) {
-        for (let i = trigger.start; i < trigger.end; i++) {
-          highlights.push({
-            start: i,
-            end: i + 1,
-            color: getRainbowColor(i - trigger.start),
-            shimmerColor: getRainbowColor(i - trigger.start, true),
-            priority: 10
-          });
-        }
+    for (const trigger of ultraplanTriggers) {
+      for (let i = trigger.start; i < trigger.end; i++) {
+        highlights.push({
+          start: i,
+          end: i + 1,
+          color: getRainbowColor(i - trigger.start),
+          shimmerColor: getRainbowColor(i - trigger.start, true),
+          priority: 10
+        });
+      }
+    }
+
+    // Same rainbow treatment for the explain keyword
+    for (const trigger of explainTriggers) {
+      for (let i = trigger.start; i < trigger.end; i++) {
+        highlights.push({
+          start: i,
+          end: i + 1,
+          color: getRainbowColor(i - trigger.start),
+          shimmerColor: getRainbowColor(i - trigger.start, true),
+          priority: 10
+        });
+      }
+    }
+
+    // Same rainbow treatment for the fix keyword
+    for (const trigger of fixTriggers) {
+      for (let i = trigger.start; i < trigger.end; i++) {
+        highlights.push({
+          start: i,
+          end: i + 1,
+          color: getRainbowColor(i - trigger.start),
+          shimmerColor: getRainbowColor(i - trigger.start, true),
+          priority: 10
+        });
+      }
+    }
+
+    // Same rainbow treatment for the debug keyword
+    for (const trigger of debugTriggers) {
+      for (let i = trigger.start; i < trigger.end; i++) {
+        highlights.push({
+          start: i,
+          end: i + 1,
+          color: getRainbowColor(i - trigger.start),
+          shimmerColor: getRainbowColor(i - trigger.start, true),
+          priority: 10
+        });
       }
     }
 
@@ -758,7 +795,7 @@ function PromptInput({
     }
   }, [addNotification, removeNotification, thinkTriggers.length]);
   useEffect(() => {
-    if (feature('ULTRAPLAN') && ultraplanTriggers.length) {
+    if (ultraplanTriggers.length) {
       addNotification({
         key: 'ultraplan-active',
         text: 'This prompt will launch an ultraplan session in Claude Code on the web',
@@ -769,6 +806,42 @@ function PromptInput({
       removeNotification('ultraplan-active');
     }
   }, [addNotification, removeNotification, ultraplanTriggers.length]);
+  useEffect(() => {
+    if (explainTriggers.length) {
+      addNotification({
+        key: 'explain-active',
+        text: 'Explanation mode enabled - detailed explanations will be provided',
+        priority: 'immediate',
+        timeoutMs: 5000
+      });
+    } else {
+      removeNotification('explain-active');
+    }
+  }, [addNotification, removeNotification, explainTriggers.length]);
+  useEffect(() => {
+    if (fixTriggers.length) {
+      addNotification({
+        key: 'fix-active',
+        text: 'Fix mode enabled - high effort + yolo-lite for bug fixing',
+        priority: 'immediate',
+        timeoutMs: 5000
+      });
+    } else {
+      removeNotification('fix-active');
+    }
+  }, [addNotification, removeNotification, fixTriggers.length]);
+  useEffect(() => {
+    if (debugTriggers.length) {
+      addNotification({
+        key: 'debug-active',
+        text: 'Debug mode enabled - high effort + ask mode for debugging',
+        priority: 'immediate',
+        timeoutMs: 5000
+      });
+    } else {
+      removeNotification('debug-active');
+    }
+  }, [addNotification, removeNotification, debugTriggers.length]);
   useEffect(() => {
     if (isUltrareviewEnabled() && ultrareviewTriggers.length) {
       addNotification({
@@ -1786,10 +1859,8 @@ function PromptInput({
       }
       switch (footerItemSelected) {
         case 'companion':
-          if (feature('BUDDY')) {
-            selectFooterItem(null);
-            void onSubmit('/buddy');
-          }
+          selectFooterItem(null);
+          void onSubmit('/buddy');
           break;
         case 'tasks':
           if (isTeammateMode) {
@@ -1981,9 +2052,7 @@ function PromptInput({
     });
   }, [effortNotificationText, addNotification, removeNotification]);
   useBuddyNotification();
-  const companionSpeaking = feature('BUDDY') ?
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
-  useAppState(s => s.companionReaction !== undefined) : false;
+  const companionSpeaking = useAppState(s => s.companionReaction !== undefined);
   const {
     columns,
     rows

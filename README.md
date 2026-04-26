@@ -57,7 +57,6 @@ Claude Code By Dek1MillionToken is a fork of Anthropic's Claude Code CLI that ad
 |----------|--------|---------|-------------|-----------|
 | **Anthropic** | Claude Opus 4.7, Sonnet 4.6, Haiku 4.5 | `ANTHROPIC_API_KEY` | Native | Full SSE |
 | **OpenAI** | GPT-5.5, GPT-5.5 Pro | `OPENAI_API_KEY` | Native | Full SSE |
-| **Google** | Gemini 3.1 Pro/Flash | `GOOGLE_API_KEY` | Native | Full SSE |
 | **OpenRouter** | 100+ models | `OPENROUTER_API_KEY` | Native | Full SSE |
 | **KiloCode** | 500+ models via gateway | `KILOCODE_API_KEY` | Native | Full SSE |
 | **Ollama** | Local models (Llama, Mistral, etc.) | None required | JSON-text | Partial |
@@ -66,6 +65,10 @@ Claude Code By Dek1MillionToken is a fork of Anthropic's Claude Code CLI that ad
 | **Mistral** | Mistral Large, Small | `MISTRAL_API_KEY` | Native | Full |
 | **Cline** | Cline API | `CLINE_API_KEY` | Native | Full |
 | **OpenCode** | OpenCode AI Gateway | `OPENCODE_API_KEY` | Native | Full |
+| **DeepSeek** | DeepSeek V4 Pro/Flash | `DEEPSEEK_API_KEY` | Native | Full |
+| **GitHub Copilot** | GPT-5.5, GPT-4o | `COPILOT_GITHUB_TOKEN` | Native | Full |
+
+**Note**: Google (Gemini) and ChatGPT Browser providers have been removed due to authentication complexity. Use OpenAI API or other providers instead.
 
 **Enterprise deployments**: AWS Bedrock, Google Vertex AI, Azure Foundry are also supported via environment variables.
 
@@ -119,9 +122,10 @@ https://github.com/user-attachments/assets/f7d84050-a61c-4b20-a988-edaa93a4deb8
 # Choose one or more providers
 export ANTHROPIC_API_KEY="sk-ant-..."      # Anthropic Claude
 export OPENAI_API_KEY="sk-..."             # OpenAI GPT
-export GOOGLE_API_KEY="AIza..."            # Google Gemini
 export OPENROUTER_API_KEY="sk-or-..."      # OpenRouter
 export KILOCODE_API_KEY="kilo-..."         # KiloCode
+export DEEPSEEK_API_KEY="sk-..."           # DeepSeek
+export COPILOT_GITHUB_TOKEN="ghp_..."      # GitHub Copilot (use gh auth login)
 
 # Ollama: no API key needed, just run Ollama locally
 # Ensure Ollama is running on http://localhost:11434
@@ -137,8 +141,10 @@ Claude Code provides 100+ slash commands. Type `/` in the prompt to explore.
 
 | Command | Description |
 |---------|-------------|
-| `/model` | Switch AI model (interactive picker) |
+| `/model` | Switch AI model (interactive picker with dynamic model fetching) |
 | `/provider` | Manage AI provider (set, list, key, models, reset) |
+| `/provider set <provider>` | Set active provider |
+| `/provider key <provider> <api-key>` | Save API key for provider |
 | `/resume` | Resume a previous session |
 | `/continue` | Continue most recent session |
 | `/new` | Start a fresh conversation |
@@ -224,9 +230,10 @@ Settings are loaded from multiple sources (lowest -> highest precedence):
 |----------|---------|
 | `ANTHROPIC_API_KEY` | Anthropic Claude API key |
 | `OPENAI_API_KEY` | OpenAI GPT API key |
-| `GOOGLE_API_KEY` | Google Gemini API key |
 | `OPENROUTER_API_KEY` | OpenRouter API key |
 | `KILOCODE_API_KEY` | KiloCode API key |
+| `DEEPSEEK_API_KEY` | DeepSeek API key |
+| `COPILOT_GITHUB_TOKEN` | GitHub Copilot token (use `gh auth login`) |
 | `ANTHROPIC_BASE_URL` | Custom Anthropic endpoint |
 | `OPENAI_BASE_URL` | Custom OpenAI-compatible endpoint |
 | `BRIDGE_MODE=1` | Enable bridge commands |
@@ -240,15 +247,45 @@ Settings are loaded from multiple sources (lowest -> highest precedence):
 
 ```bash
 # Interactive (in session)
-/provider set anthropic claude-sonnet-4
-/provider set openai gpt-4o
-/provider set ollama llama3
-
-# CLI flags
-bun run src/main.tsx session --provider openai --model gpt-4o
+/provider                    # List all providers
+/provider set anthropic       # Set provider
+/provider set openai         # Set provider
+/provider set openrouter      # Set provider
 
 # Save API key for provider
 /provider key anthropic sk-ant-...
+/provider key openai sk-...
+/provider key openrouter sk-or-...
+
+# GitHub Copilot: use GitHub CLI for authentication
+gh auth login                 # Login to GitHub
+/provider key copilot       # Will use gh auth token automatically
+
+# CLI flags
+bun run src/main.tsx session --provider openai --model gpt-4o
+bun run src/main.tsx session --provider anthropic --model claude-sonnet-4
+bun run src/main.tsx session --provider ollama --model llama3
+```
+
+### Model Selection
+
+```bash
+# Interactive model picker (fetches from provider API)
+/model                       # Shows models for current provider
+/model gpt-5.5              # Set specific model
+/model claude-opus-4-7      # Set specific model
+
+# Model picker automatically fetches available models from:
+# - Anthropic: /v1/models
+# - OpenAI: /v1/models
+# - OpenRouter: /v1/models
+# - KiloCode: /v1/models
+# - OpenCode: /zen/v1/models
+# - DeepSeek: /v1/models
+# - And others with /models endpoint
+
+# For providers without /models endpoint (Cline, Copilot):
+# Model picker shows manual input option
 ```
 
 ### Custom Base URLs

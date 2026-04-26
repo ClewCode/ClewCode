@@ -128,6 +128,7 @@ export function getCompanion(): Companion | undefined {
   const stored = getGlobalConfig().companion
   if (!stored) return undefined
   const { bones } = roll(companionUserId())
-  // bones last so stale bones fields in old-format configs get overridden
-  return { ...stored, ...bones }
+  // Merge: bones (deterministic) + stored (soul + visible + animation)
+  // Stored last so visible/animation overrides work
+  return { ...bones, ...stored }
 }

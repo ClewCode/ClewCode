@@ -85,9 +85,7 @@ const forceSnip = null
 const webCmd = null
 const clearSkillIndexCache = null
 const subscribePr = null
-const ultraplan = _hasFeature('ULTRAPLAN')
-  ? (require('./commands/ultraplan.tsx') as typeof import('./commands/ultraplan.tsx')).default
-  : null
+const ultraplan = (require('./commands/ultraplan.tsx') as typeof import('./commands/ultraplan.tsx')).default
 const torch = null
 const workflowsCmd = null
 const peersCmd = null
@@ -98,6 +96,10 @@ import thinkbackPlay from './commands/thinkback-play/index.js'
 import permissions from './commands/permissions/index.js'
 import plan from './commands/plan/index.js'
 import fast from './commands/fast/index.js'
+import yolo from './commands/yolo/index.js'
+import yoloLite from './commands/yolo-lite/index.js'
+import yoloMax from './commands/yolo-max/index.js'
+import yoloGod from './commands/yolo-god/index.js'
 import passes from './commands/passes/index.js'
 import privacySettings from './commands/privacy-settings/index.js'
 import hooks from './commands/hooks/index.js'
@@ -208,7 +210,7 @@ export const INTERNAL_ONLY_COMMANDS = [
   mockLimits,
   bridgeKick,
   version,
-  ...(ultraplan ? [ultraplan] : []),
+  ultraplan,
   ...(subscribePr ? [subscribePr] : []),
   resetLimits,
   resetLimitsNonInteractive,
@@ -292,7 +294,7 @@ const COMMANDS = memoize((): Command[] => [
   vim,
   ...(webCmd ? [webCmd] : []),
   ...(forkCmd ? [forkCmd] : []),
-  ...(buddy ? [buddy] : []),
+  buddy,
   ...(proactive ? [proactive] : []),
   ...(briefCommand ? [briefCommand] : []),
   ...(assistantCommand ? [assistantCommand] : []),

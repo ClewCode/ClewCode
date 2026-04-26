@@ -14,11 +14,11 @@ export class CopilotProvider implements ProviderInterface {
   }
 
   getProviderApiKeyEnvVar() {
-    return 'GITHUB_COPILOT_TOKEN'
+    return 'COPILOT_GITHUB_TOKEN'
   }
 
   async createClient(options: ProviderInitOptions): Promise<ProviderClient> {
-    const githubToken = options.apiKey ?? process.env.GITHUB_COPILOT_TOKEN
+    const githubToken = options.apiKey ?? process.env.COPILOT_GITHUB_TOKEN
 
     // First, exchange GitHub token for a Copilot token
     const tokenResponse = await axios.get('https://api.github.com/copilot_internal/v2/token', {

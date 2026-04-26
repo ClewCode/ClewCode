@@ -18,6 +18,7 @@ import {
   type ProviderRegistryEntry,
 } from '../../services/ai/providerRegistry.js'
 import { clearProviderModelsCache, fetchProviderModels } from '../../services/ai/providerModels.js'
+import { ProviderManager } from '../../services/ai/ProviderManager.js'
 
 type SerializableProviderRegistryEntry = Omit<ProviderRegistryEntry, 'provider'>
 
@@ -371,41 +372,68 @@ function ProviderPicker({
   onDone: LocalJSXCommandOnDone
 }): React.ReactNode {
   const [provider, setProvider] = React.useState<ProviderKey | null>(null)
-  const [models, setModels] = React.useState<string[] | null>(null)
-  const [selectedModel, setSelectedModel] = React.useState<string | null>(null)
   const [apiKeyInput, setApiKeyInput] = React.useState('')
   const [apiKeyCursorOffset, setApiKeyCursorOffset] = React.useState(0)
   const [apiKeyError, setApiKeyError] = React.useState<string | null>(null)
-  const [error, setError] = React.useState<string | null>(null)
   const [config, setConfig] = React.useState<ProviderConfig | null>(null)
+  const [showChangeKey, setShowChangeKey] = React.useState(false)
+  const [isGhLogin, setIsGhLogin] = React.useState(false)
   const setAppState = useSetAppState()
 
   React.useEffect(() => {
-    void loadConfig().then(setConfig)
+    void loadConfig().then(loadedConfig => {
+      setConfig(loadedConfig)
+    })
   }, [])
 
-  React.useEffect(() => {
-    if (!provider) return
+  async function handleGhLogin() {
+    setIsGhLogin(true)
+    try {
+      const { spawn } = await import('child_process')
+      
+      // Check if gh is installed
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const check = spawn('gh', ['--version'], { stdio: 'inherit' })
+          check.on('close', (code) => {
+            if (code === 0) resolve()
+            else reject(new Error('gh command failed'))
+          })
+        })
+      } catch {
+        setApiKeyError('GitHub CLI not installed. Install from https://cli.github.com/')
+        setIsGhLogin(false)
+        return
+      }
 
-    let cancelled = false
-    setModels(null)
-    setError(null)
-
-    void fetchModelInfos(provider)
-      .then(nextModels => {
-        if (!cancelled) setModels(nextModels.map(model => model.id))
+      // Just get token directly (user should have already run gh auth login)
+      const token = await new Promise<string>((resolve, reject) => {
+        const tokenCmd = spawn('gh', ['auth', 'token'], { stdio: ['ignore', 'pipe', 'inherit'] })
+        let stdout = ''
+        tokenCmd.stdout.on('data', (data) => {
+          stdout += data.toString()
+        })
+        tokenCmd.on('close', (code) => {
+          if (code === 0) resolve(stdout.trim())
+          else reject(new Error('gh auth token failed - please run "gh auth login" first'))
+        })
       })
-      .catch(err => {
-        if (!cancelled) setError((err as Error).message)
-      })
 
-    return () => {
-      cancelled = true
+      if (!token) {
+        setApiKeyError('Failed to get GitHub token. Please run "gh auth login" in your terminal first.')
+        setIsGhLogin(false)
+        return
+      }
+
+      await saveProviderSelection(token)
+    } catch (error) {
+      setApiKeyError(`GitHub CLI login failed: ${(error as Error).message}`)
+      setIsGhLogin(false)
     }
-  }, [provider])
+  }
 
   async function saveProviderSelection(apiKey?: string) {
-    if (!provider || !selectedModel) return
+    if (!provider) return
 
     const trimmedApiKey = apiKey?.trim()
     const nextApiKeys = {
@@ -413,24 +441,31 @@ function ProviderPicker({
       ...(trimmedApiKey ? { [provider]: trimmedApiKey } : {}),
     }
 
-    const providerInfo = getSerializableProviderInfo(provider)
-    const newConfig: ProviderConfig = {
+    const info = getProviderInfo(provider)
+    const nextConfig: ProviderConfig = {
       provider,
-      model: selectedModel,
-      providerConfig: providerInfo,
+      model: config?.model ?? info.defaultModel ?? '', // Keep existing model or use default
+      providerConfig: getSerializableProviderInfo(provider),
       apiKeys: nextApiKeys,
     }
-    await saveConfig(newConfig)
+
+    await saveConfig(nextConfig)
     clearProviderModelsCache(provider)
 
-    setConfig(newConfig)
+    // Invalidate provider config cache to force reload
+    const providerManager = ProviderManager.getInstance()
+    providerManager.invalidateConfigCache()
 
-    applyProviderSelectionToSession(setAppState, newConfig)
+    const currentModel = nextConfig.model || info.defaultModel
+    setAppState(prev => ({
+      ...prev,
+      mainLoopModel: currentModel,
+      mainLoopModelForSession: null,
+    }))
 
     onDone(
-      `Set provider to ${provider}\nSet model to ${selectedModel}${
-        trimmedApiKey ? `\nSaved API key for ${provider}` : ''
-      }`,
+      `Set provider to ${provider}\nModel: ${currentModel}\nConfig: ${CONFIG_PATH}`,
+      { display: 'system' },
     )
   }
 
@@ -453,36 +488,85 @@ function ProviderPicker({
       visibleOptionCount: 10,
       onChange: value => {
         setProvider(value as ProviderKey)
-        setSelectedModel(null)
         setApiKeyInput('')
         setApiKeyCursorOffset(0)
         setApiKeyError(null)
       },
-      onCancel: () => onDone('Provider selection cancelled', { display: 'system' }),
+      onCancel: () => {
+        setShowChangeKey(false)
+        onDone('Provider selection cancelled', { display: 'system' })
+      },
     })
   }
 
-  if (selectedModel) {
-    const info = getProviderInfo(provider)
-    const hasExistingKey = Boolean(config?.apiKeys?.[provider] || process.env[info.envKey])
+  const info = getProviderInfo(provider)
+  const hasExistingKey = Boolean(config?.apiKeys?.[provider] || process.env[info.envKey])
 
+  // Show GitHub CLI login option for copilot
+  if (provider === 'copilot' && !hasExistingKey && !info.isLocal && !showChangeKey && !isGhLogin) {
     return React.createElement(
       Box,
       { flexDirection: 'column' },
       React.createElement(
         Text,
-        null,
-        `API key for ${info.label} (${info.envKey})`,
+        { marginBottom: 1 },
+        `API key required for ${info.label} (${info.envKey})`,
       ),
-      hasExistingKey
-        ? React.createElement(
-            Text,
-            { dimColor: true },
-            'Press Enter without typing to keep the existing key.',
-          )
-        : null,
+      React.createElement(Select, {
+        options: [
+          {
+            label: 'Login with GitHub CLI',
+            value: 'gh_login',
+            description: 'Use gh auth login to authenticate',
+          },
+          {
+            label: 'Enter token manually',
+            value: 'manual',
+            description: `Paste ${info.envKey} directly`,
+          },
+        ],
+        visibleOptionCount: 2,
+        onChange: value => {
+          if (value === 'gh_login') {
+            void handleGhLogin()
+          } else {
+            setShowChangeKey(true)
+          }
+        },
+        onCancel: () => {
+          setProvider(null)
+          setShowChangeKey(false)
+        },
+      }),
+    )
+  }
+
+  // Show loading state for gh login
+  if (isGhLogin) {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(Text, { color: 'yellow' }, 'Getting GitHub token from CLI...'),
+      React.createElement(Text, { dimColor: true }, 'If not logged in, run this in a separate terminal:'),
+      React.createElement(Text, { color: 'cyan' }, '  gh auth login'),
+      React.createElement(Text, { dimColor: true }, 'Then press Enter here to get the token'),
+    )
+  }
+
+  // Show input field when: (no existing key) OR (user chose to change key)
+  if ((!hasExistingKey && !info.isLocal) || (showChangeKey && !info.isLocal)) {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(
+        Text,
+        { marginBottom: 1 },
+        showChangeKey
+          ? `Enter new ${info.envKey} for ${info.label}`
+          : `API key required for ${info.label} (${info.envKey})`,
+      ),
       apiKeyError
-        ? React.createElement(Text, { color: 'error' }, apiKeyError)
+        ? React.createElement(Text, { color: 'error', marginBottom: 1 }, apiKeyError)
         : null,
       React.createElement(TextInput, {
         value: apiKeyInput,
@@ -492,18 +576,19 @@ function ProviderPicker({
         },
         onSubmit: async value => {
           const trimmed = value.trim()
-          if (!trimmed && !hasExistingKey) {
+          if (!trimmed) {
             setApiKeyError(`Enter ${info.envKey} or cancel to go back.`)
             return
           }
-
-          await saveProviderSelection(trimmed || undefined)
+          await saveProviderSelection(trimmed)
         },
         onExit: () => {
-          setSelectedModel(null)
+          setProvider(null)
           setApiKeyInput('')
           setApiKeyCursorOffset(0)
           setApiKeyError(null)
+          setShowChangeKey(false)
+          setIsGhLogin(false)
         },
         placeholder: `Paste ${info.envKey}`,
         mask: '*',
@@ -516,60 +601,47 @@ function ProviderPicker({
     )
   }
 
-  if (error) {
-    return React.createElement(Select, {
-      options: [
-        {
-          label: `Back to providers (${error})`,
-          value: 'back',
+  // Provider has existing key - show options to use existing or change
+  if (hasExistingKey && !info.isLocal && !showChangeKey) {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(
+        Text,
+        { marginBottom: 1 },
+        `${info.label} has an API key configured (${info.envKey})`,
+      ),
+      React.createElement(Select, {
+        options: [
+          {
+            label: 'Use existing key',
+            value: 'use_existing',
+            description: `Keep current ${info.envKey}`,
+          },
+          {
+            label: 'Change key',
+            value: 'change_key',
+            description: `Enter new ${info.envKey}`,
+          },
+        ],
+        visibleOptionCount: 2,
+        onChange: value => {
+          if (value === 'change_key') {
+            setShowChangeKey(true)
+          } else {
+            void saveProviderSelection()
+          }
         },
-      ],
-      onChange: () => setProvider(null),
-      onCancel: () => onDone('Provider selection cancelled', { display: 'system' }),
-    })
+        onCancel: () => {
+          setProvider(null)
+          setShowChangeKey(false)
+        },
+      }),
+    )
   }
 
-  if (!models) {
-    return React.createElement(Select, {
-      options: [
-        {
-          label: `Loading models from ${getProviderInfo(provider).label}...`,
-          value: 'loading',
-        },
-      ],
-      disableSelection: true,
-    })
-  }
-
-  const options = models.map(model => ({
-    label: model,
-    value: model,
-  }))
-
-  return React.createElement(Select, {
-    options,
-    visibleOptionCount: 12,
-    onChange: async value => {
-      const model = String(value)
-      const info = getProviderInfo(provider)
-      if (info.isLocal) {
-        await saveConfig({
-          provider,
-          model,
-          providerConfig: getSerializableProviderInfo(provider),
-          apiKeys: config?.apiKeys,
-        })
-        onDone(`Set provider to ${provider}\nSet model to ${model}`)
-        return
-      }
-
-      setSelectedModel(model)
-      setApiKeyInput('')
-      setApiKeyCursorOffset(0)
-      setApiKeyError(null)
-    },
-    onCancel: () => setProvider(null),
-  })
+  void saveProviderSelection()
+  return null
 }
 
 function ProviderCommandRunner({

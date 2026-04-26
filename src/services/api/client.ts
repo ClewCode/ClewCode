@@ -34,13 +34,12 @@ export async function getAIProviderClient({
   fetchOverride?: ClientOptions['fetch']
   source?: string
 }): Promise<any> {
-  return ProviderManager.getInstance().createClient(provider, {
-    apiKey,
-    maxRetries,
-    model,
-    fetchOverride,
-    source,
-  })
+  // For now, always use Anthropic client directly
+  // TODO: Support other providers through abstraction layer
+  console.error(`[getAIProviderClient] Creating Anthropic client, provider=${provider}, model=${model}`)
+  const client = await getAnthropicClient({ apiKey, maxRetries, model, fetchOverride, source })
+  console.error(`[getAIProviderClient] Client created, has beta: ${'beta' in client}, beta type: ${typeof client.beta}, has messages: ${client.beta ? 'messages' in client.beta : false}`)
+  return client
 }
 
 export const CLIENT_REQUEST_ID_HEADER = 'x-client-request-id'
