@@ -4,13 +4,17 @@
 
 **READ LEGAL DISCLAIMER BEFORE USING**
 
-Before using this software, you **MUST** read and accept:
-- **[NOTICE.md](NOTICE.md)** — Quick legal summary (required reading)
-- **[LEGAL.md](LEGAL.md)** — Full legal disclaimer and liability terms
+</div>
+
+Before using this software, you **MUST** read and accept:  
+- **[NOTICE.md](NOTICE.md)** — Quick legal summary (required reading)  
+- **[LEGAL.md](LEGAL.md)** — Full legal disclaimer and liability terms  
 
 This project contains code from Anthropic's **accidental March 31, 2026 npm source disclosure** and operates in a legal gray area. By using this software, you assume all risk of copyright claims and agree to indemnify the maintainers.
 
 ---
+
+
 
 # Claude Code By Dek1MillionToken
 
