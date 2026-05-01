@@ -62,10 +62,9 @@ function ModelPickerWrapper(t0) {
       });
       setAppState(prev => ({
         ...prev,
-        mainLoopModel: model,
-        mainLoopModelForSession: null
+        mainLoopModelForSession: model
       }));
-      syncSelectedProviderModel(model);
+      syncSelectedProviderModel(model, false);
       let message = `Set model to ${chalk.bold(renderModelLabel(model))}`;
       if (effort !== undefined) {
         message = message + ` with ${chalk.bold(effort)} effort`;
@@ -138,8 +137,13 @@ function _temp2(s_0) {
 function _temp(s) {
   return s.mainLoopModel;
 }
-function syncSelectedProviderModel(model: string | null): void {
+function syncSelectedProviderModel(model: string | null, isGlobal = false): void {
   const providerManager = ProviderManager.getInstance();
+  if (!isGlobal) {
+    providerManager.setSessionModel(model);
+    return;
+  }
+
   const currentConfig = providerManager.getSelectedProviderConfig(true);
   if (!currentConfig.provider) {
     return;
@@ -161,7 +165,10 @@ function SetModelAndClose({
 }): React.ReactNode {
   const isFastMode = useAppState(s => s.fastMode);
   const setAppState = useSetAppState();
-  const model = args === 'default' ? null : args;
+  const parts = args.split(/\s+/);
+  const isGlobal = parts.includes('--global') || parts.includes('-g');
+  const actualArgs = parts.filter(p => p !== '--global' && p !== '-g').join(' ');
+  const model = actualArgs === 'default' ? null : actualArgs;
   React.useEffect(() => {
     async function handleModelChange(): Promise<void> {
       if (model && !isModelAllowed(model)) {
@@ -221,10 +228,10 @@ function SetModelAndClose({
     function setModel(modelValue: string | null): void {
       setAppState(prev => ({
         ...prev,
-        mainLoopModel: modelValue,
-        mainLoopModelForSession: null
+        mainLoopModel: isGlobal ? modelValue : prev.mainLoopModel,
+        mainLoopModelForSession: isGlobal ? null : modelValue
       }));
-      syncSelectedProviderModel(modelValue);
+      syncSelectedProviderModel(modelValue, isGlobal);
       let message = `Set model to ${chalk.bold(renderModelLabel(modelValue))}`;
       let wasFastModeToggledOn = undefined;
       if (isFastModeEnabled()) {
@@ -277,7 +284,7 @@ function ShowModelAndClose(t0) {
   const displayModel = renderModelLabel(mainLoopModel as string | null);
   const effortInfo = effortValue !== undefined ? ` (effort: ${effortValue})` : "";
   if (mainLoopModelForSession) {
-    onDone(`Current model: ${chalk.bold(renderModelLabel(mainLoopModelForSession as string | null))} (session override from plan mode)\nBase model: ${displayModel}${effortInfo}`);
+    onDone(`Current model: ${chalk.bold(renderModelLabel(mainLoopModelForSession as string | null))} (session override)\nBase model: ${displayModel}${effortInfo}`);
   } else {
     onDone(`Current model: ${displayModel}${effortInfo}`);
   }

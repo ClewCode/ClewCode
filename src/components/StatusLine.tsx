@@ -44,7 +44,8 @@ function buildStatusLineCommandInput(
   messages: Message[],
   addedDirs: string[],
   mainLoopModel: ModelName,
-  vimMode?: VimMode
+  vimMode?: VimMode,
+  providerOverride?: string
 ): StatusLineCommandInput {
   const agentType = getMainThreadAgentType();
   const worktreeSession = getCurrentWorktreeSession();
@@ -81,7 +82,7 @@ function buildStatusLineCommandInput(
     }),
     model: {
       id: runtimeModel,
-      display_name: renderModelName(runtimeModel)
+      display_name: renderModelName(runtimeModel, providerOverride)
     },
     workspace: {
       current_dir: getCwd(),
@@ -165,6 +166,8 @@ function StatusLineInner({
   }>>([]);
   const mcpCount = useAppState(s => s.mcp.clients.length) as number;
   const thinkingEnabled = useAppState(s => s.thinkingEnabled);
+  const mainLoopProvider = useAppState(s => s.mainLoopProvider);
+  const mainLoopProviderForSession = useAppState(s => s.mainLoopProviderForSession);
   const [currentTime, setCurrentTime] = React.useState(new Date());
 
   React.useEffect(() => {
@@ -194,7 +197,8 @@ function StatusLineInner({
     exceeds200kTokens: false,
     permissionMode,
     vimMode,
-    mainLoopModel
+    mainLoopModel,
+    provider: mainLoopProviderForSession ?? mainLoopProvider
   });
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -223,7 +227,8 @@ function StatusLineInner({
         removed: fileStats.deletions
       }));
       setModifiedFiles(nextModifiedFiles.slice(0, 5));
-      const statusInput = buildStatusLineCommandInput(permissionModeRef.current, exceeds200kTokens, settingsRef.current, msgs, Array.from(addedDirsRef.current.keys()), mainLoopModelRef.current, vimModeRef.current);
+      const activeProvider = mainLoopProviderForSession ?? mainLoopProvider;
+      const statusInput = buildStatusLineCommandInput(permissionModeRef.current, exceeds200kTokens, settingsRef.current, msgs, Array.from(addedDirsRef.current.keys()), mainLoopModelRef.current, vimModeRef.current, activeProvider);
       const text = await executeStatusLineCommand(statusInput, controller.signal, undefined, logResult);
       if (!controller.signal.aborted) {
         setAppState(prev => {
@@ -243,13 +248,15 @@ function StatusLineInner({
   }, [doUpdate]);
 
   useEffect(() => {
-    if (lastAssistantMessageId !== previousStateRef.current.messageId || permissionMode !== previousStateRef.current.permissionMode || vimMode !== previousStateRef.current.vimMode || mainLoopModel !== previousStateRef.current.mainLoopModel) {
+    const activeProvider = mainLoopProviderForSession ?? mainLoopProvider;
+    if (lastAssistantMessageId !== previousStateRef.current.messageId || permissionMode !== previousStateRef.current.permissionMode || vimMode !== previousStateRef.current.vimMode || mainLoopModel !== previousStateRef.current.mainLoopModel || activeProvider !== (previousStateRef.current as any).provider) {
       previousStateRef.current.permissionMode = permissionMode;
       previousStateRef.current.vimMode = vimMode;
       previousStateRef.current.mainLoopModel = mainLoopModel;
+      (previousStateRef.current as any).provider = activeProvider;
       scheduleUpdate();
     }
-  }, [lastAssistantMessageId, permissionMode, vimMode, mainLoopModel, scheduleUpdate]);
+  }, [lastAssistantMessageId, permissionMode, vimMode, mainLoopModel, mainLoopProvider, mainLoopProviderForSession, scheduleUpdate]);
 
   useEffect(() => {
     const statusLine = settings?.statusLine;
@@ -341,7 +348,7 @@ function StatusLineInner({
             <Text color="white">{projectName} {gitBranch ? chalk.blue(`(${gitBranch})`) : ''}</Text>
           </Box>
           <Box paddingX={1} backgroundColor="#333333">
-            <Text color="cyan">{renderModelName(runtimeModel)}</Text>
+            <Text color="cyan">{renderModelName(runtimeModel, mainLoopProviderForSession ?? mainLoopProvider)}</Text>
           </Box>
           <Box paddingX={1} backgroundColor="#444444">
             <Text color="yellow">{(approxContextTokens / 1000).toFixed(1)}k ({usedPercentage.toFixed(0)}%)</Text>

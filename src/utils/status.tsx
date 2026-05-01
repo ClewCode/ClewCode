@@ -23,7 +23,7 @@ import type { ThemeName } from './theme.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { PROVIDER_REGISTRY } from '../services/ai/providerRegistry.js';
-import { PROVIDER_CONFIG_PATH } from '../services/ai/ProviderManager.js';
+import { PROVIDER_CONFIG_PATH, ProviderManager } from '../services/ai/ProviderManager.js';
 export type Property = {
   label?: string;
   value: React.ReactNode | Array<string>;
@@ -242,33 +242,30 @@ export function buildAccountProperties(): Property[] {
   return properties;
 }
 
-function getProviderConfig() {
-  try {
-    return JSON.parse(readFileSync(PROVIDER_CONFIG_PATH, 'utf8'));
-  } catch {
-    return null;
-  }
-}
 
 export function buildAPIProviderProperties(): Property[] {
-  const providerConfig = getProviderConfig();
-  const apiProvider = getAPIProvider();
+  const providerManager = ProviderManager.getInstance();
+  const providerConfig = providerManager.getSelectedProviderConfig();
+  const apiProvider = providerManager.getAnthropicProviderType();
+  const activeProvider = providerManager.getActiveProviderName();
   const properties: Property[] = [];
 
-  if (providerConfig?.provider && PROVIDER_REGISTRY[providerConfig.provider as keyof typeof PROVIDER_REGISTRY]) {
-    const registryEntry = PROVIDER_REGISTRY[providerConfig.provider as keyof typeof PROVIDER_REGISTRY];
-    properties.push({
-      label: 'API provider',
-      value: registryEntry.label
-    });
-
-    if (registryEntry.defaultBaseUrl) {
+  if (activeProvider !== 'anthropic') {
+    const registryEntry = PROVIDER_REGISTRY[activeProvider] as any;
+    if (registryEntry) {
       properties.push({
-        label: 'Provider base URL',
-        value: registryEntry.defaultBaseUrl
+        label: 'API provider',
+        value: registryEntry.label
       });
+
+      if (registryEntry.defaultBaseUrl) {
+        properties.push({
+          label: 'Provider base URL',
+          value: registryEntry.defaultBaseUrl
+        });
+      }
+      return properties;
     }
-    return properties;
   }
 
   if (apiProvider !== 'firstParty') {

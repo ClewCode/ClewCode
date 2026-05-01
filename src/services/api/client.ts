@@ -1,4 +1,4 @@
-﻿import type { ClientOptions } from '@anthropic-ai/sdk'
+import type { ClientOptions } from '@anthropic-ai/sdk'
 import type { ProviderId } from '../ai/providers/ProviderInterface.js'
 import { ProviderManager } from '../ai/ProviderManager.js'
 import { createAnthropicClient } from './anthropicClient.js'
@@ -19,6 +19,8 @@ export async function getAnthropicClient({
   return createAnthropicClient({ apiKey, maxRetries, model, fetchOverride, source })
 }
 
+import { AnthropicAdapter } from '../ai/adapter/AnthropicAdapter.js'
+
 export async function getAIProviderClient({
   provider,
   apiKey,
@@ -34,12 +36,24 @@ export async function getAIProviderClient({
   fetchOverride?: ClientOptions['fetch']
   source?: string
 }): Promise<any> {
-  // For now, always use Anthropic client directly
-  // TODO: Support other providers through abstraction layer
-  console.error(`[getAIProviderClient] Creating Anthropic client, provider=${provider}, model=${model}`)
-  const client = await getAnthropicClient({ apiKey, maxRetries, model, fetchOverride, source })
-  console.error(`[getAIProviderClient] Client created, has beta: ${'beta' in client}, beta type: ${typeof client.beta}, has messages: ${client.beta ? 'messages' in client.beta : false}`)
-  return client
+  const providerManager = ProviderManager.getInstance()
+  const effectiveProvider = provider ?? providerManager.getActiveProviderName()
+
+  if (effectiveProvider === 'anthropic') {
+    return getAnthropicClient({ apiKey, maxRetries, model, fetchOverride, source })
+  }
+
+  // Use ProviderManager for other providers
+  const client = await providerManager.createClient(effectiveProvider, {
+    apiKey,
+    model,
+    fetchOverride,
+    source,
+    maxRetries
+  })
+
+  // Wrap in AnthropicAdapter to maintain compatibility with existing code
+  return new AnthropicAdapter(client, effectiveProvider)
 }
 
 export const CLIENT_REQUEST_ID_HEADER = 'x-client-request-id'

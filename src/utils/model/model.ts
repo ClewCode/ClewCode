@@ -32,7 +32,7 @@ import { type ModelAlias, isModelAlias } from './aliases.js'
 import { capitalize } from '../stringUtils.js'
 import { getAntModelOverrideConfig, resolveAntModel } from './antModels.js'
 import { PROVIDER_REGISTRY } from '../../services/ai/providerRegistry.js'
-import { PROVIDER_CONFIG_PATH } from '../../services/ai/ProviderManager.js'
+import { PROVIDER_CONFIG_PATH, ProviderManager } from '../../services/ai/ProviderManager.js'
 
 export type ModelShortName = string
 export type ModelName = string
@@ -51,17 +51,8 @@ export function isNonCustomOpusModel(model: ModelName): boolean {
   )
 }
 
-export function getProviderConfig(): { provider?: string; model?: string; apiKeys?: Record<string, string> } | null {
-  try {
-    const configData = readFileSync(PROVIDER_CONFIG_PATH, 'utf8')
-    return JSON.parse(configData)
-  } catch {
-    return null
-  }
-}
-
 export function getActiveProviderKeyStatus(): 'valid' | 'missing' | 'not-required' {
-  const config = getProviderConfig()
+  const config = ProviderManager.getInstance().getSelectedProviderConfig()
   if (!config?.provider) return 'missing'
 
   const registryEntry = (PROVIDER_REGISTRY as any)[config.provider]
@@ -94,10 +85,14 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
   } else {
     const settings = getSettings_DEPRECATED() || {}
     
-    const providerConfig = getProviderConfig()
-    const providerConfigModel = providerConfig?.model
-
-    specifiedModel = process.env.ANTHROPIC_MODEL || providerConfigModel || settings.model || undefined
+    // Check environment variable first
+    if (process.env.ANTHROPIC_MODEL) {
+      specifiedModel = process.env.ANTHROPIC_MODEL
+    } else {
+      // Use ProviderManager to get the model
+      const providerManager = ProviderManager.getInstance()
+      specifiedModel = providerManager.getModelForProvider() || settings.model || undefined
+    }
   }
 
   // Ignore the user-specified model if it's not in the availableModels allowlist.
@@ -106,6 +101,40 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
   }
 
   return specifiedModel
+}
+
+/**
+ * The Unified Model Resolver:
+ * Returns the best model to use based on the current context (Provider, Session, Env, Settings).
+ */
+export function getUnifiedModel(): ModelName {
+  const providerManager = ProviderManager.getInstance()
+  const activeProvider = providerManager.getActiveProviderName()
+  
+  // 1. Check for session override from /model
+  const modelOverride = getMainLoopModelOverride()
+  if (modelOverride) {
+    return parseUserSpecifiedModel(modelOverride)
+  }
+
+  // 2. Check for environment variable
+  if (process.env.ANTHROPIC_MODEL) {
+    return parseUserSpecifiedModel(process.env.ANTHROPIC_MODEL)
+  }
+
+  // 3. Check for provider-specific model in config
+  const providerModel = providerManager.getModelForProvider()
+  if (providerModel) {
+    return parseUserSpecifiedModel(providerModel)
+  }
+
+  // 4. Default to provider-specific default or built-in default
+  const registryEntry = PROVIDER_REGISTRY[activeProvider] as any
+  if (registryEntry?.defaultModel && activeProvider !== 'anthropic') {
+    return parseUserSpecifiedModel(registryEntry.defaultModel)
+  }
+
+  return getDefaultMainLoopModel()
 }
 
 /**
@@ -121,11 +150,7 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
  * @returns The resolved model name to use
  */
 export function getMainLoopModel(): ModelName {
-  const model = getUserSpecifiedModelSetting()
-  if (model !== undefined && model !== null) {
-    return parseUserSpecifiedModel(model)
-  }
-  return getDefaultMainLoopModel()
+  return getUnifiedModel()
 }
 
 export function getBestModel(): ModelName {
@@ -362,14 +387,14 @@ export function isOpus1mMergeEnabled(): boolean {
   return true
 }
 
-export function renderModelSetting(setting: ModelName | ModelAlias): string {
+export function renderModelSetting(setting: ModelName | ModelAlias, providerOverride?: string): string {
   if (setting === 'opusplan') {
     return 'Opus Plan'
   }
   if (isModelAlias(setting)) {
     return capitalize(setting)
   }
-  return renderModelName(setting)
+  return renderModelName(setting, providerOverride)
 }
 
 // @[MODEL LAUNCH]: Add display name cases for the new model (base + [1m] variant if applicable).
@@ -423,16 +448,19 @@ function maskModelCodename(baseName: string): string {
   return [masked, ...rest].join('-')
 }
 
-export function renderModelName(model: ModelName): string {
+export function renderModelName(model: ModelName, providerOverride?: string): string {
   const publicName = getPublicModelDisplayName(model)
   if (publicName) {
     return publicName
   }
 
-  // Check if we have a provider label to prefix
-  const providerConfig = getProviderConfig()
-  if (providerConfig?.provider) {
-    const registryEntry = PROVIDER_REGISTRY[providerConfig.provider as keyof typeof PROVIDER_REGISTRY]
+  // Use the provided override, or get it from ProviderManager (session-aware)
+  const provider = providerOverride || 
+                 (typeof window === 'undefined' ? ProviderManager.getInstance().getActiveProviderName() : undefined) ||
+                 ProviderManager.getInstance().getSelectedProviderConfig()?.provider
+
+  if (provider) {
+    const registryEntry = PROVIDER_REGISTRY[provider as keyof typeof PROVIDER_REGISTRY]
     if (registryEntry) {
       return `${registryEntry.label}: ${model}`
     }

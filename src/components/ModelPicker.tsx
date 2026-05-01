@@ -1,4 +1,5 @@
 import { c as _c } from "react/compiler-runtime";
+import chalk from 'chalk';
 import capitalize from 'lodash-es/capitalize.js';
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -85,10 +86,11 @@ export function ModelPicker(t0) {
   });
   const t2 = Boolean(isFastMode);
 
+  const providerInfo = useMemo(() => getActiveProviderInfo(), [fetchedModelsData]);
+  
   // Fetch models from provider on mount
   useEffect(() => {
     const loadModels = async () => {
-      const providerInfo = getActiveProviderInfo();
       if (!providerInfo) return;
 
       // Check if we already have fresh fetched models for this provider
@@ -121,10 +123,9 @@ export function ModelPicker(t0) {
     };
 
     loadModels();
-  }, [setAppState, fetchedModelsData]);
+  }, [setAppState, fetchedModelsData, providerInfo?.providerId]);
 
   // Get fetched models for current provider
-  const providerInfo = getActiveProviderInfo();
   const currentFetchedModels = useMemo(() => {
     const data = fetchedModelsData as { provider?: string; models?: FetchedModel[] } | undefined;
     if (!data || data.provider !== providerInfo?.providerId) {
@@ -270,6 +271,28 @@ export function ModelPicker(t0) {
   // Search is now focused by default, no need for / trigger.
   // We keep a small useInput to re-focus search if the user starts typing while in the list.
   useInput((input, key) => {
+    if (showCustomInput) {
+      if (key.escape) {
+        setShowCustomInput(false);
+        setIsSearchActive(true);
+        return;
+      }
+      if (key.return) {
+        if (customModelId.trim()) {
+           onSelect(customModelId.trim(), effort);
+        }
+        return;
+      }
+      if (key.backspace) {
+        setCustomModelId(prev => prev.slice(0, -1));
+        return;
+      }
+      if (input.length === 1 && !key.ctrl && !key.meta) {
+        setCustomModelId(prev => prev + input);
+      }
+      return;
+    }
+
     if (!isSearchActive && input.length === 1 && !key.ctrl && !key.meta && !key.return && !key.tab && !key.backspace && !key.delete) {
       setIsSearchActive(true);
     }
@@ -300,6 +323,12 @@ export function ModelPicker(t0) {
   let t14;
   if ($[35] !== effort || $[36] !== hasToggledEffort || $[37] !== onSelect || $[38] !== setAppState || $[39] !== skipSettingsWrite) {
     t14 = function handleSelect(value_0) {
+      if (value_0 === '__CUSTOM_INPUT__') {
+        setShowCustomInput(true);
+        setIsSearchActive(false); // Deactivate model search to focus on custom input
+        return;
+      }
+
       logEvent("tengu_model_command_menu_effort", {
         effort: effort as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS
       });
@@ -337,6 +366,28 @@ export function ModelPicker(t0) {
   const baseHeaderText = headerText ?? getDefaultHeaderText();
   const displayHeaderText = isFetchingModels ? `${baseHeaderText} (fetching models...)` : baseHeaderText;
   const t20 = onCancel ?? _temp4;
+
+  if (showCustomInput) {
+    return (
+      <Pane color="permission">
+        <Box flexDirection="column" padding={1}>
+          <Text color="remember" bold={true}>Enter Custom Model ID</Text>
+          <Text dimColor={true}>Type the exact ID of the model you want to use (e.g. claude-3-5-sonnet-20240620)</Text>
+          <Box marginTop={1} borderStyle="round" paddingX={1}>
+             <SearchBox
+               query={customModelId}
+               cursorOffset={customModelId.length}
+               placeholder="Model ID..."
+               isFocused={true}
+               isTerminalFocused={true}
+             />
+          </Box>
+          <Text dimColor={true} italic={true}>Press {chalk.bold('Enter')} to confirm or {chalk.bold('Esc')} to go back</Text>
+        </Box>
+      </Pane>
+    );
+  }
+
   const content = <Box flexDirection="column">
     <Box flexDirection="column">
       <Box marginBottom={1} flexDirection="column">
@@ -379,22 +430,23 @@ function _temp(s) {
 function getDefaultHeaderText(): string {
   const providerInfo = getActiveProviderInfo();
   if (!providerInfo) {
-    return "Switch between Claude models. Applies to this session and future sessions.";
+    return "Switch between Claude models. Applies to this session.";
   }
-  return `Switch to ${providerInfo.entry.label} model. Applies to current session and future sessions.`;
+  return `Switch to ${providerInfo.entry.label} model. Applies to the current session.`;
 }
 
 function getActiveProviderInfo(): { entry: ReturnType<typeof getProviderRegistryEntry>; selectedModel: string | undefined; providerId: string } | null {
   const providerManager = ProviderManager.getInstance();
+  const providerId = providerManager.getActiveProviderName();
   const config = providerManager.getSelectedProviderConfig(true);
-  if (!config.provider) {
-    return null;
-  }
-  const entry = getProviderRegistryEntry(config.provider);
+  
+  const entry = getProviderRegistryEntry(providerId);
+  if (!entry) return null;
+
   return {
     entry,
-    selectedModel: config.model,
-    providerId: config.provider
+    selectedModel: providerManager.getModelForProvider(providerId),
+    providerId
   };
 }
 
@@ -412,11 +464,23 @@ function getEffectiveModelOptions(
   if (!providerInfo && !entry) {
     return getModelOptions(fastMode);
   }
-  const providerEntry = entry ?? providerInfo!.entry;
+  const providerEntry = entry ?? providerInfo?.entry;
+  if (!providerEntry || !providerEntry.models) {
+    return fetchedModels ? fetchedModels.map(fetched => ({
+      value: fetched.id,
+      label: fetched.label,
+      description: fetched.description || fetched.id,
+      descriptionForModel: fetched.id
+    })) : [];
+  }
+
+  const implementationType = ProviderManager.getInstance().getImplementationType();
   const defaultModel = providerInfo?.selectedModel ?? providerEntry.defaultModel ?? 'provider default';
 
-  // Start with static models from registry
-  const staticModels = providerEntry.models.map(model => toProviderModelOption(model));
+  // Start with static models from registry, filtered by implementation type
+  const staticModels = providerEntry.models
+    .filter(model => !model.supportedTypes || model.supportedTypes.includes(implementationType))
+    .map(model => toProviderModelOption(model));
 
   // Merge with fetched models if available (deduplicate by id)
   const allModels = [...staticModels];
@@ -438,28 +502,23 @@ function getEffectiveModelOptions(
   // Check if provider supports API model fetching
   const hasModelsEndpoint = 'modelsUrl' in providerEntry && providerEntry.modelsUrl;
 
-  // For providers without /models endpoint, add custom input option
-  if (!hasModelsEndpoint) {
-    return [
-      {
-        value: null,
-        label: 'Default (recommended)',
-        description: `Use ${providerEntry.label} default (${defaultModel})`
-      },
-      ...allModels,
-      {
-        value: '__CUSTOM_INPUT__',
-        label: '✏️  Type custom model ID',
-        description: `Use: /model your-model-id`
-      }
-    ];
-  }
+  const options = [
+    {
+      value: null,
+      label: 'Default (recommended)',
+      description: `Use ${providerEntry.label} default (${defaultModel})`
+    },
+    ...allModels
+  ];
 
-  return [{
-    value: null,
-    label: 'Default (recommended)',
-    description: `Use ${providerEntry.label} default (${defaultModel})`
-  }, ...allModels];
+  // Always add custom input option as the last item
+  options.push({
+    value: '__CUSTOM_INPUT__',
+    label: '✏️  Type custom model ID',
+    description: `Use: /model your-model-id`
+  });
+
+  return options as any;
 }
 function toProviderModelOption(model: ProviderModelInfo) {
   const label = model.label ?? model.id;

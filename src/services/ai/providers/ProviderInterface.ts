@@ -3,6 +3,7 @@ import type { ClientOptions } from '@anthropic-ai/sdk'
 export type ProviderId =
   | 'anthropic'
   | 'openai'
+  | 'google'
   | 'openrouter'
   | 'opencode'
   | 'cline'

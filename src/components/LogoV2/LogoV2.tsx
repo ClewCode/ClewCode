@@ -71,6 +71,9 @@ export function LogoV2() {
   const showOverageCreditUpsell = useShowOverageCreditUpsell();
   const agent = useAppState(_temp);
   const effortValue = useAppState(_temp2);
+  const mainLoopProvider = useAppState(s => s.mainLoopProvider);
+  const mainLoopProviderForSession = useAppState(s => s.mainLoopProviderForSession);
+  const activeProvider = mainLoopProviderForSession ?? mainLoopProvider;
   const config = getGlobalConfig();
   let changelog;
   try {
@@ -157,7 +160,7 @@ export function LogoV2() {
   }
   useEffect(t7, t8);
   const model = useMainLoopModel();
-  const fullModelDisplayName = renderModelSetting(model);
+  const fullModelDisplayName = renderModelSetting(model, activeProvider);
   const {
     version,
     cwd,

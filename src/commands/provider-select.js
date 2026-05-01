@@ -4,7 +4,11 @@ import { Command } from '@commander-js/extra-typings'
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
-const CONFIG_PATH = join(process.env.HOME || process.env.USERPROFILE || '', '.claude-code-provider.json')
+import { homedir } from 'os'
+const getClaudeConfigHomeDir = () => {
+  return process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude')
+}
+const CONFIG_PATH = join(getClaudeConfigHomeDir(), 'provider.json')
 
 const PROVIDERS = {
   openai: {

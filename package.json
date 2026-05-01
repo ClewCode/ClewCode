@@ -5,8 +5,8 @@
   "main": "src/main.tsx",
   "type": "module",
   "scripts": {
-    "cli": "bun run src/main.tsx",
     "dev": "bun --watch run src/main.tsx",
+    "start": "bun run src/main.tsx",
     "build": "bun build src/main.tsx --outdir ./dist --target bun --external electron --external chromium-bidi --external chromium-bidi/*",
     "test": "bun test"
   },

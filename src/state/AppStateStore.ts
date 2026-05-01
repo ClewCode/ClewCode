@@ -91,6 +91,8 @@ export type AppState = DeepImmutable<{
   verbose: boolean
   mainLoopModel: ModelSetting
   mainLoopModelForSession: ModelSetting
+  mainLoopProvider: string | undefined
+  mainLoopProviderForSession: string | undefined
   statusLineText: string | undefined
   expandedView: 'none' | 'tasks' | 'teammates'
   isBriefOnly: boolean
@@ -489,6 +491,8 @@ export function getDefaultAppState(): AppState {
     verbose: false,
     mainLoopModel: null, // alias, full name (as with --model or env var), or null (default)
     mainLoopModelForSession: null,
+    mainLoopProvider: undefined,
+    mainLoopProviderForSession: undefined,
     statusLineText: undefined,
     expandedView: 'none',
     isBriefOnly: false,

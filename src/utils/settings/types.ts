@@ -1115,6 +1115,10 @@ export const SettingsSchema = lazySchema(() =>
             'Useful for enterprise administrators to add organization-specific context ' +
             '(e.g., "All plugins from our internal marketplace are vetted and approved.").',
         ),
+      explorerMode: z
+        .enum(['none', 'fullscreen', 'sidebar'])
+        .optional()
+        .describe('Preferred file explorer mode. sidebar: shows a tree on the side, fullscreen: interactive explorer.'),
     })
     .passthrough(),
 )

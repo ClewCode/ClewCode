@@ -5,7 +5,7 @@ import * as React from 'react'
 import { Select } from '../../components/CustomSelect/select.js'
 import TextInput from '../../components/TextInput.js'
 import { Box, Text } from '../../ink.js'
-import { useSetAppState } from '../../state/AppState.js'
+import { useAppState, useSetAppState } from '../../state/AppState.js'
 import type {
   LocalCommandResult,
   LocalJSXCommandCall,
@@ -18,7 +18,7 @@ import {
   type ProviderRegistryEntry,
 } from '../../services/ai/providerRegistry.js'
 import { clearProviderModelsCache, fetchProviderModels } from '../../services/ai/providerModels.js'
-import { ProviderManager, PROVIDER_CONFIG_PATH } from '../../services/ai/ProviderManager.js'
+import { ProviderManager, getProjectProviderConfigPath, getEffectiveProviderConfigPath, PROVIDER_CONFIG_PATH } from '../../services/ai/ProviderManager.js'
 
 type SerializableProviderRegistryEntry = Omit<ProviderRegistryEntry, 'provider'>
 
@@ -26,7 +26,11 @@ type ProviderConfig = {
   provider: typeof PROVIDER_IDS[number]
   model: string
   apiKeys?: Partial<Record<typeof PROVIDER_IDS[number], string>>
-  providerConfig?: SerializableProviderRegistryEntry
+  providerConfig?: SerializableProviderRegistryEntry & { 
+    anthropicType?: 'direct' | 'bedrock' | 'vertex' | 'foundry' | 'subscriber',
+    googleType?: 'direct' | 'vertex',
+    openaiType?: 'direct' | 'subscriber' | 'azure'
+  }
 }
 
 const PROVIDER_KEYS = PROVIDER_IDS
@@ -50,14 +54,17 @@ function getSerializableProviderInfo(
 
 async function loadConfig(): Promise<ProviderConfig | null> {
   try {
-    return JSON.parse(await readFile(PROVIDER_CONFIG_PATH, 'utf8')) as ProviderConfig
+    const configPath = getEffectiveProviderConfigPath()
+    return JSON.parse(await readFile(configPath, 'utf8')) as ProviderConfig
   } catch {
     return null
   }
 }
 
 async function saveConfig(config: ProviderConfig): Promise<void> {
-  await writeFile(PROVIDER_CONFIG_PATH, JSON.stringify(config, null, 2))
+  const projectPath = getProjectProviderConfigPath()
+  const savePath = projectPath ?? PROVIDER_CONFIG_PATH
+  await writeFile(savePath, JSON.stringify(config, null, 2))
 }
 
 function help(): string {
@@ -66,9 +73,12 @@ function help(): string {
     '  /providers',
     '  /providers list',
     '  /providers key <provider> <api-key>',
-    '  /providers set <provider> [model]',
-    '  /providers reset',
+    '  /providers set <provider> [model] [--global|-g]',
+    '  /providers reset [--global|-g]',
     '  /providers models <provider>',
+    '',
+    'Flags:',
+    '  --global, -g  Persist changes to the global config file (affects new sessions)',
     '',
     `Available providers: ${PROVIDER_KEYS.join(', ')}`,
   ].join('\n')
@@ -90,42 +100,27 @@ async function fetchModelInfos(
 
 async function providerList(): Promise<string> {
   const config = await loadConfig()
-  const entries = await Promise.all(
-    PROVIDER_KEYS.map(async provider => {
-      const info = getProviderInfo(provider)
-      const hasKey = Boolean(config?.apiKeys?.[provider] || process.env[info.envKey])
+  const currentProvider = ProviderManager.getInstance().getActiveProviderName()
+  
+  const entries = PROVIDER_KEYS.map(provider => {
+    const info = getProviderInfo(provider)
+    const hasKey = Boolean(config?.apiKeys?.[provider] || process.env[info.envKey])
+    const isActive = provider === currentProvider
 
-      try {
-        const models = await fetchModelInfos(provider)
-        const visible = models
-          .slice(0, 12)
-          .map(model =>
-            `${model.id}${model.supportsToolCalling === false ? ' (no tools)' : ''}`,
-          )
-          .join('\n    ')
-        const suffix =
-          models.length > 12 ? `\n    ... and ${models.length - 12} more` : ''
+    return [
+      `${isActive ? chalk.bold.green('●') : ' '} ${provider} (${info.label})${isActive ? chalk.dim(' (active)') : ''}`,
+      `    key: ${hasKey ? chalk.green('saved') : info.isLocal ? chalk.dim('not required') : chalk.yellow(`missing ${info.envKey}`)}`,
+    ].join('\n')
+  })
 
-        return [
-          `${provider} (${info.label})`,
-          `  key: ${hasKey ? 'saved' : info.isLocal ? 'not required' : `missing ${info.envKey}`}`,
-          `  models from API (${models.length}):`,
-          `    ${visible || '(none returned)'}`,
-          suffix,
-        ]
-          .filter(Boolean)
-          .join('\n')
-      } catch (error) {
-        return [
-          `${provider} (${info.label})`,
-          `  key: ${hasKey ? 'saved' : info.isLocal ? 'not required' : `missing ${info.envKey}`}`,
-          `  models: unavailable (${(error as Error).message})`,
-        ].join('\n')
-      }
-    }),
-  )
-
-  return entries.join('\n\n')
+  return [
+    'Available Providers:',
+    '',
+    ...entries,
+    '',
+    'Use /providers set <provider> to switch.',
+    'Use /providers models <provider> to see available models.',
+  ].join('\n')
 }
 
 type ProviderCommandRunResult = {
@@ -139,16 +134,27 @@ function getDefaultModelForProvider(provider: ProviderKey): string {
 
 function applyProviderSelectionToSession(
   setAppState: ReturnType<typeof useSetAppState>,
-  config: Pick<ProviderConfig, 'model'>,
+  config: Pick<ProviderConfig, 'model' | 'provider' | 'apiKeys'>,
+  isGlobal = false,
 ): void {
-  if (!config.model) {
-    return
+  const providerManager = ProviderManager.getInstance()
+  
+  if (config.provider) {
+    providerManager.setSessionProvider(config.provider as any)
+  }
+  if (config.model) {
+    providerManager.setSessionModel(config.model)
+  }
+  if (config.apiKeys) {
+    providerManager.setSessionApiKeys(config.apiKeys)
   }
 
   setAppState(prev => ({
     ...prev,
-    mainLoopModel: config.model,
-    mainLoopModelForSession: null,
+    mainLoopModel: isGlobal ? config.model : prev.mainLoopModel,
+    mainLoopModelForSession: isGlobal ? null : config.model,
+    mainLoopProvider: isGlobal ? config.provider : prev.mainLoopProvider,
+    mainLoopProviderForSession: isGlobal ? null : config.provider,
   }))
 }
 
@@ -175,10 +181,11 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
         },
       }
     }
+    const currentPath = getEffectiveProviderConfigPath()
     return {
       result: {
         type: 'text',
-        value: `Current provider: ${config.provider}\nCurrent model: ${config.model}\nSaved API keys: ${Object.keys(config.apiKeys ?? {}).join(', ') || 'none'}\nConfig: ${PROVIDER_CONFIG_PATH}`,
+        value: `Current provider: ${config.provider}\nCurrent model: ${config.model}\nSaved API keys: ${Object.keys(config.apiKeys ?? {}).join(', ') || 'none'}\nConfig: ${currentPath}`,
       },
     }
   }
@@ -216,6 +223,7 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
       }
     }
 
+    const isGlobal = modelParts.includes('--global') || modelParts.includes('-g')
     const currentConfig = await loadConfig()
     const nextProvider = (setProvider ?? currentConfig?.provider ?? provider) as ProviderKey
     const nextModel =
@@ -236,21 +244,27 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
         [provider]: apiKey,
       },
     }
-    await saveConfig(nextConfig)
+    
+    if (isGlobal) {
+      await saveConfig(nextConfig)
+    }
+    
     clearProviderModelsCache(nextProvider)
 
+    const currentPath = getEffectiveProviderConfigPath()
     return {
       result: {
         type: 'text',
         value: setProvider
-          ? `Saved API key for ${provider}\nSet provider to ${nextProvider}\nSet model to ${nextModel}\nConfig: ${PROVIDER_CONFIG_PATH}`
-          : `Saved API key for ${provider} to ${PROVIDER_CONFIG_PATH}`,
+          ? `Saved API key for ${provider}\nSet provider to ${nextProvider}\nSet model to ${nextModel}${isGlobal ? `\nConfig saved: ${currentPath}` : '\n(Session only)'}`
+          : `Saved API key for ${provider} ${isGlobal ? `to ${currentPath}` : '(Session only)'}`,
       },
       appliedConfig: setProvider ? nextConfig : undefined,
     }
   }
 
   if (command === 'reset' || command === '--reset' || command === '-r') {
+    const isGlobal = modelParts.includes('--global') || modelParts.includes('-g')
     const currentConfig = await loadConfig()
     const defaultProviderInfo = getSerializableProviderInfo('openai')
     const config: ProviderConfig = {
@@ -259,12 +273,17 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
       providerConfig: defaultProviderInfo,
       apiKeys: currentConfig?.apiKeys,
     }
-    await saveConfig(config)
+    
+    if (isGlobal) {
+      await saveConfig(config)
+    }
+    
     clearProviderModelsCache(config.provider)
+    const currentPath = getEffectiveProviderConfigPath()
     return {
       result: {
         type: 'text',
-        value: `Reset provider to ${config.provider} (${config.model})\nConfig: ${PROVIDER_CONFIG_PATH}`,
+        value: `Reset provider to ${config.provider} (${config.model})${isGlobal ? `\nConfig saved: ${currentPath}` : '\n(Session only)'}`,
       },
       appliedConfig: config,
     }
@@ -281,7 +300,10 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
       }
     }
 
-    let model = modelParts.join(' ')
+    const isGlobal = modelParts.includes('--global') || modelParts.includes('-g')
+    const actualModelParts = modelParts.filter(p => p !== '--global' && p !== '-g')
+
+    let model = actualModelParts.join(' ')
     if (!model) {
       try {
         model = (await fetchModels(provider))[0] ?? ''
@@ -304,13 +326,18 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
       providerConfig: getSerializableProviderInfo(provider),
       apiKeys: currentConfig?.apiKeys,
     }
-    await saveConfig(config)
+    
+    if (isGlobal) {
+      await saveConfig(config)
+    }
+    
     clearProviderModelsCache(provider)
 
+    const currentPath = getEffectiveProviderConfigPath()
     return {
       result: {
         type: 'text',
-        value: `Set provider to ${provider}\nSet model to ${model}\nConfig: ${PROVIDER_CONFIG_PATH}`,
+        value: `Set provider to ${provider}\nSet model to ${model}${isGlobal ? `\nConfig saved: ${currentPath}` : '\n(Session only)'}`,
       },
       appliedConfig: config,
     }
@@ -373,11 +400,24 @@ function ProviderPicker({
   const [config, setConfig] = React.useState<ProviderConfig | null>(null)
   const [showChangeKey, setShowChangeKey] = React.useState(false)
   const [isGhLogin, setIsGhLogin] = React.useState(false)
+  const [anthropicType, setAnthropicType] = React.useState<'direct' | 'bedrock' | 'vertex' | 'foundry' | 'subscriber' | null>(null)
+  const [googleType, setGoogleType] = React.useState<'direct' | 'vertex' | null>(null)
+  const [openaiType, setOpenaiType] = React.useState<'direct' | 'subscriber' | 'azure' | null>(null)
   const setAppState = useSetAppState()
+  const currentSessionModel = useAppState(s => (s.mainLoopModelForSession || s.mainLoopModel) as string | null)
 
   React.useEffect(() => {
     void loadConfig().then(loadedConfig => {
       setConfig(loadedConfig)
+      if (loadedConfig?.provider === 'anthropic' && loadedConfig.providerConfig?.anthropicType) {
+        setAnthropicType(loadedConfig.providerConfig.anthropicType)
+      }
+      if (loadedConfig?.provider === 'google' && (loadedConfig.providerConfig as any)?.googleType) {
+        setGoogleType((loadedConfig.providerConfig as any).googleType)
+      }
+      if (loadedConfig?.provider === 'openai' && (loadedConfig.providerConfig as any)?.openaiType) {
+        setOpenaiType((loadedConfig.providerConfig as any).openaiType)
+      }
     })
   }, [])
 
@@ -439,8 +479,16 @@ function ProviderPicker({
     const info = getProviderInfo(provider)
     const nextConfig: ProviderConfig = {
       provider,
-      model: config?.model ?? info.defaultModel ?? '', // Keep existing model or use default
-      providerConfig: getSerializableProviderInfo(provider),
+      model: (currentSessionModel as string) || config?.model || info.defaultModel || '', // Keep session model or fall back
+      providerConfig: {
+        ...getSerializableProviderInfo(provider),
+        ...(provider === 'anthropic' && anthropicType ? { anthropicType } : {}),
+        ...(provider === 'google' && googleType ? { googleType } : {}),
+        ...(provider === 'openai' && openaiType ? { openaiType } : {}),
+        // Store the value from prompt if needed
+        ...(provider === 'openai' && openaiType === 'azure' && apiKey ? { baseUrl: apiKey } : {}),
+        ...(provider === 'google' && googleType === 'vertex' && apiKey ? { projectId: apiKey } : {}),
+      } as any,
       apiKeys: nextApiKeys,
     }
 
@@ -452,14 +500,10 @@ function ProviderPicker({
     providerManager.invalidateConfigCache()
 
     const currentModel = nextConfig.model || info.defaultModel
-    setAppState(prev => ({
-      ...prev,
-      mainLoopModel: currentModel,
-      mainLoopModelForSession: null,
-    }))
+    applyProviderSelectionToSession(setAppState, { model: currentModel, provider }, false)
 
     onDone(
-      `Set provider to ${provider}\nModel: ${currentModel}\nConfig: ${PROVIDER_CONFIG_PATH}`,
+      `Set provider to ${provider}\nModel: ${currentModel}\n(Session only)`,
       { display: 'system' },
     )
   }
@@ -495,6 +539,85 @@ function ProviderPicker({
   }
 
   const info = getProviderInfo(provider)
+
+  // Sub-menu for Anthropic implementation type
+  if (provider === 'anthropic' && !anthropicType && !showChangeKey) {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(
+        Text,
+        { marginBottom: 1 },
+        `Select implementation for ${info.label}:`,
+      ),
+      React.createElement(Select, {
+        options: [
+          { label: 'Direct API', value: 'direct', description: 'Use ANTHROPIC_API_KEY' },
+          { label: 'Claude.ai (Subscription)', value: 'subscriber', description: 'Use your Claude.ai account (requires /login)' },
+          { label: 'AWS Bedrock', value: 'bedrock', description: 'Use AWS credentials' },
+          { label: 'Google Vertex AI', value: 'vertex', description: 'Use GCP credentials' },
+          { label: 'Microsoft Foundry', value: 'foundry', description: 'Use Azure credentials' },
+        ],
+        visibleOptionCount: 5,
+        onChange: value => {
+          setAnthropicType(value as any)
+          if (value !== 'direct') {
+            // Bedrock/Vertex/Foundry usually don't need a single API key in the same way
+            // or they use different env vars.
+          }
+        },
+        onCancel: () => {
+          setProvider(null)
+        },
+      }),
+    )
+  }
+
+  // Sub-menu for Google implementation type
+  if (provider === 'google' && !googleType && !showChangeKey) {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(
+        Text,
+        { marginBottom: 1 },
+        `Select implementation for ${info.label}:`,
+      ),
+      React.createElement(Select, {
+        options: [
+          { label: 'Google AI Studio', value: 'direct', description: 'Use GOOGLE_API_KEY (Free/AI Premium)' },
+          { label: 'Google Vertex AI', value: 'vertex', description: 'Use GCP credentials' },
+        ],
+        visibleOptionCount: 2,
+        onChange: value => setGoogleType(value as any),
+        onCancel: () => setProvider(null),
+      }),
+    )
+  }
+
+  // Sub-menu for OpenAI implementation type
+  if (provider === 'openai' && !openaiType && !showChangeKey) {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(
+        Text,
+        { marginBottom: 1 },
+        `Select implementation for ${info.label}:`,
+      ),
+      React.createElement(Select, {
+        options: [
+          { label: 'Direct API', value: 'direct', description: 'Use OPENAI_API_KEY' },
+          { label: 'ChatGPT Plus (Web)', value: 'subscriber', description: 'Use ChatGPT session token' },
+          { label: 'Azure OpenAI', value: 'azure', description: 'Use Azure OpenAI credentials' },
+        ],
+        visibleOptionCount: 3,
+        onChange: value => setOpenaiType(value as any),
+        onCancel: () => setProvider(null),
+      }),
+    )
+  }
+
   const hasExistingKey = Boolean(config?.apiKeys?.[provider] || process.env[info.envKey])
 
   // Show GitHub CLI login option for copilot
@@ -558,7 +681,17 @@ function ProviderPicker({
         { marginBottom: 1 },
         showChangeKey
           ? `Enter new ${info.envKey} for ${info.label}`
-          : `API key required for ${info.label} (${info.envKey})`,
+          : anthropicType && anthropicType !== 'direct' && anthropicType !== 'subscriber'
+            ? `API key/Token (Optional) for ${info.label} ${anthropicType} (Press Enter to skip)`
+            : anthropicType === 'subscriber'
+              ? `Note: Subscription mode uses OAuth. Please run /login if you haven't already. (Press Enter to continue)`
+              : openaiType === 'subscriber'
+                ? `Enter CHATGPT_SESSION_TOKEN for ChatGPT Plus (Web)`
+                : googleType === 'vertex'
+                  ? `Enter Google Cloud Project ID for Vertex AI (or press Enter to use GCLOUD_PROJECT env)`
+                  : openaiType === 'azure'
+                    ? `Enter Azure OpenAI Endpoint URL (e.g. https://res-name.openai.azure.com/)`
+                    : `API key required for ${info.label} (${info.envKey})`,
       ),
       apiKeyError
         ? React.createElement(Text, { color: 'error', marginBottom: 1 }, apiKeyError)
@@ -571,7 +704,12 @@ function ProviderPicker({
         },
         onSubmit: async value => {
           const trimmed = value.trim()
-          if (!trimmed) {
+          const needsKey = 
+            (!anthropicType || anthropicType === 'direct') &&
+            (!googleType || googleType === 'direct') &&
+            (!openaiType || openaiType === 'direct')
+
+          if (!trimmed && needsKey) {
             setApiKeyError(`Enter ${info.envKey} or cancel to go back.`)
             return
           }
@@ -584,6 +722,9 @@ function ProviderPicker({
           setApiKeyError(null)
           setShowChangeKey(false)
           setIsGhLogin(false)
+          setAnthropicType(null)
+          setGoogleType(null)
+          setOpenaiType(null)
         },
         placeholder: `Paste ${info.envKey}`,
         mask: '*',
@@ -652,7 +793,9 @@ function ProviderCommandRunner({
     void runProviderCommand(args)
       .then(({ result, appliedConfig }) => {
         if (appliedConfig) {
-          applyProviderSelectionToSession(setAppState, appliedConfig)
+          const parts = args.trim().split(/\s+/)
+          const isGlobal = parts.includes('--global') || parts.includes('-g')
+          applyProviderSelectionToSession(setAppState, appliedConfig, isGlobal)
         }
         if (result.type === 'text') {
           onDone(result.value)

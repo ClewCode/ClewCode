@@ -34,8 +34,7 @@ export async function fetchProviderModels(
 
   const info = getProviderRegistryEntry(provider)
   const providerManager = ProviderManager.getInstance()
-  const config = providerManager.getSelectedProviderConfig(true)
-  const apiKey = config.apiKeys?.[provider] || process.env[info.envKey]
+  const apiKey = providerManager.getApiKeyForProvider(provider)
 
   if (!info.modelsUrl) {
     return cacheAndReturn(provider, info.models)
@@ -59,16 +58,13 @@ export async function fetchProviderModels(
   }
 
   try {
-    console.log(`[fetchProviderModels] Fetching from: ${info.modelsUrl}`)
     const response = await fetch(info.modelsUrl, {
       headers,
       signal: AbortSignal.timeout(5000), // 5s timeout instead of 30s
     })
 
-    console.log(`[fetchProviderModels] Response status: ${response.status}`)
-
     if (!response.ok) {
-      console.error(`[fetchProviderModels] HTTP error: ${response.status} ${response.statusText}`)
+      return cacheAndReturn(provider, getFallbackModels(provider))
     }
 
     const data = (await response.json()) as {
@@ -76,20 +72,14 @@ export async function fetchProviderModels(
       models?: RemoteModelPayload[]
     }
 
-    console.log(`[fetchProviderModels] Response data keys:`, Object.keys(data))
-    console.log(`[fetchProviderModels] Raw data count:`, (data.data ?? data.models ?? []).length)
-
     const models = (data.data ?? data.models ?? [])
       .map(model => toProviderModelInfo(provider, model))
       .filter((model): model is ProviderModelInfo => Boolean(model))
-
-    console.log(`[fetchProviderModels] Parsed models count: ${models.length}`)
 
     if (models.length > 0) {
       return cacheAndReturn(provider, models)
     }
   } catch (error) {
-    console.error(`[fetchProviderModels] Error fetching for ${provider}:`, error)
     // Fall back to registry models below.
   }
 

@@ -10,7 +10,8 @@
       "Bash(git branch:*)",
       "Bash(ls:*)",
       "WebSearch",
-      "Bash(find D:/Projects/Github/Mibu-101 -maxdepth 3 -type f -name *.md)"
+      "Bash(find D:/Projects/Github/Mibu-101 -maxdepth 3 -type f -name *.md)",
+      "Bash(cd:*)"
     ]
   }
 }

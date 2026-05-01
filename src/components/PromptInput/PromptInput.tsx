@@ -191,6 +191,7 @@ type Props = {
     start: number;
     end: number;
   } | null;
+  isActive?: boolean;
 };
 
 // Bottom slot has maxHeight="50%"; reserve lines for footer, border, status.
@@ -238,7 +239,8 @@ function PromptInput({
   hasSuppressedDialogs,
   isLocalJSXCommandActive = false,
   insertTextRef,
-  voiceInterimRange
+  voiceInterimRange,
+  isActive = true
 }: Props): React.ReactNode {
   const mainLoopModel = useMainLoopModel();
   // A local-jsx command (e.g., /mcp while agent is running) renders a full-
@@ -1997,6 +1999,8 @@ function PromptInput({
       setHelpOpen(false);
     }
 
+    if (!isActive) return;
+
     // Exit help mode when backspace is pressed and input is empty
     if (helpOpen && input === '' && (key.backspace || key.delete)) {
       setHelpOpen(false);
@@ -2284,8 +2288,8 @@ function PromptInput({
     onChangeCursorOffset: setCursorOffset,
     onPaste: onTextPaste,
     onIsPastingChange: setIsPasting,
-    focus: !isSearchingHistory && !isModalOverlayActive && !footerItemSelected,
-    showCursor: !footerItemSelected && !isSearchingHistory && !cursorAtImageChip,
+    focus: isActive && !isSearchingHistory && !isModalOverlayActive && !footerItemSelected,
+    showCursor: isActive && !footerItemSelected && !isSearchingHistory && !cursorAtImageChip,
     argumentHint: commandArgumentHint,
     onUndo: canUndo ? () => {
       const previousState = undo();

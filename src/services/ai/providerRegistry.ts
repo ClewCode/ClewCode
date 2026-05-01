@@ -1,10 +1,12 @@
 import { AnthropicProvider } from './providers/AnthropicProvider.js'
 import { GoogleProvider } from './providers/GoogleProvider.js'
 import { OpenAICompatibleProvider } from './providers/OpenAICompatibleProvider.js'
+import { OpenAIResponsesProvider } from './providers/OpenAIResponsesProvider.js'
 import { OpenAIProvider } from './providers/OpenAIProvider.js'
 import { OllamaProvider } from './providers/OllamaProvider.js'
 import { OpenRouterProvider } from './providers/OpenRouterProvider.js'
 import { ChatGPTSessionProvider } from './providers/ChatGPTSessionProvider.js'
+import { KiloCodeProvider } from './providers/KiloCodeProvider.js'
 import { CopilotProvider } from './providers/CopilotProvider.js'
 import type { ProviderId, ProviderInterface } from './providers/ProviderInterface.js'
 
@@ -38,6 +40,7 @@ export interface ProviderModelInfo {
   label?: string
   capabilities: ModelCapabilities
   tags?: string[]
+  supportedTypes?: string[]
 }
 
 export interface ProviderRegistryEntry {
@@ -79,6 +82,7 @@ export const PROVIDER_REGISTRY = {
         id: 'claude-opus-4-7',
         label: 'Claude Opus 4.7 (2026-04-14)',
         tags: ['tools', 'vision', 'native', 'verified', 'latest'],
+        supportedTypes: ['direct', 'subscriber', 'bedrock', 'vertex', 'foundry'],
         capabilities: {
           toolCalling: 'native',
           vision: true,
@@ -93,6 +97,7 @@ export const PROVIDER_REGISTRY = {
         id: 'claude-sonnet-4-6',
         label: 'Claude Sonnet 4.6 (2026-02-17)',
         tags: ['tools', 'vision', 'native', 'verified', 'recommended'],
+        supportedTypes: ['direct', 'subscriber', 'bedrock', 'vertex', 'foundry'],
         capabilities: {
           toolCalling: 'native',
           vision: true,
@@ -107,6 +112,7 @@ export const PROVIDER_REGISTRY = {
         id: 'claude-opus-4-6',
         label: 'Claude Opus 4.6 (2026-02-04)',
         tags: ['tools', 'vision', 'native', 'verified'],
+        supportedTypes: ['direct', 'subscriber', 'bedrock', 'vertex', 'foundry'],
         capabilities: {
           toolCalling: 'native',
           vision: true,
@@ -185,6 +191,7 @@ export const PROVIDER_REGISTRY = {
         id: 'gpt-5.5-pro',
         label: 'GPT-5.5 Pro (2026-04-23)',
         tags: ['tools', 'vision', 'native', 'verified', 'latest', 'reasoning'],
+        supportedTypes: ['direct', 'azure'],
         capabilities: {
           toolCalling: 'native',
           vision: true,
@@ -213,6 +220,7 @@ export const PROVIDER_REGISTRY = {
         id: 'gpt-5.5',
         label: 'GPT-5.5 (2026-04)',
         tags: ['tools', 'vision', 'native', 'verified', 'latest'],
+        supportedTypes: ['direct', 'azure', 'subscriber'],
         capabilities: {
           toolCalling: 'native',
           vision: true,
@@ -253,6 +261,59 @@ export const PROVIDER_REGISTRY = {
       },
     ],
     provider: new OpenAIProvider(),
+  },
+  google: {
+    providerId: 'google',
+    label: 'Google',
+    envKey: 'GOOGLE_API_KEY',
+    defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    modelsUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/v1/models',
+    // Native SDK does not use HTTP models endpoint; hardcoded models below
+    defaultModel: 'gemini-3.1-flash',
+    defaultModelVerified: true,
+    note: 'Google Gemini via native SDK (GoogleProvider). Updated 2026-04-25.',
+    capabilities: {
+      chat: true,
+      streaming: 'partial',
+      toolCalling: true,
+      vision: true,
+      jsonSchema: true,
+      reasoningEffort: true,
+      contextLength: '1M+',
+    },
+    models: [
+      {
+        id: 'gemini-3.1-flash',
+        label: 'Gemini 3.1 Flash (2026-04-14)',
+        tags: ['tools', 'vision', 'native', 'fast'],
+        supportedTypes: ['direct', 'vertex'],
+        capabilities: {
+          toolCalling: 'native',
+          vision: true,
+          streaming: 'partial',
+          maxContext: 1000000,
+          maxOutput: 8192,
+          reasoning: true,
+          supportsSystemPrompt: true,
+        },
+      },
+      {
+        id: 'gemini-3.1-pro',
+        label: 'Gemini 3.1 Pro (2026-02-15)',
+        tags: ['tools', 'vision', 'native', 'recommended'],
+        supportedTypes: ['direct', 'vertex'],
+        capabilities: {
+          toolCalling: 'native',
+          vision: true,
+          streaming: 'partial',
+          maxContext: 2000000,
+          maxOutput: 8192,
+          reasoning: true,
+          supportsSystemPrompt: true,
+        },
+      },
+    ],
+    provider: new GoogleProvider(),
   },
   // openai_browser and openai_headless removed - require session token from browser
   // Use OpenAI API (openai) instead for direct API access
@@ -915,12 +976,7 @@ export const PROVIDER_REGISTRY = {
         },
       },
     ],
-    provider: new OpenAICompatibleProvider(
-      'kilocode',
-      'KiloCode',
-      'KILOCODE_API_KEY',
-      'https://api.kilo.ai/api/gateway',
-    ),
+    provider: new KiloCodeProvider(),
   },
   ollama: {
     providerId: 'ollama',

@@ -64,6 +64,8 @@ type Props = {
   newMessageCount?: number;
   /** Called when the user clicks the "N new" pill. */
   onPillClick?: () => void;
+  /** Sidebar content (optional) */
+  sidebar?: ReactNode;
 };
 
 /**
@@ -268,7 +270,7 @@ export function computeUnseenDivider(messages: readonly Message[], dividerIndex:
  * so nothing can accidentally render outside it.
  */
 export function FullscreenLayout(t0) {
-  const $ = _c(47);
+  const $ = _c(50);
   const {
     scrollable,
     bottom,
@@ -281,7 +283,8 @@ export function FullscreenLayout(t0) {
     hidePill: t1,
     hideSticky: t2,
     newMessageCount: t3,
-    onPillClick
+    onPillClick,
+    sidebar
   } = t0;
   const hidePill = t1 === undefined ? false : t1;
   const hideSticky = t2 === undefined ? false : t2;
@@ -387,17 +390,8 @@ export function FullscreenLayout(t0) {
     } else {
       t13 = $[23];
     }
-    let t14;
-    if ($[24] !== t11 || $[25] !== t12 || $[26] !== t13 || $[27] !== t8) {
-      t14 = <Box flexGrow={1} flexDirection="column" overflow="hidden">{t8}{t11}{t12}{t13}</Box>;
-      $[24] = t11;
-      $[25] = t12;
-      $[26] = t13;
-      $[27] = t8;
-      $[28] = t14;
-    } else {
-      t14 = $[28];
-    }
+    const mainContent = <Box flexGrow={1} flexDirection="column" overflow="hidden">{t8}{t11}{t12}{t13}</Box>;
+    const t14 = sidebar ? <Box flexDirection="row" flexGrow={1} overflow="hidden">{sidebar}{mainContent}</Box> : mainContent;
     let t15;
     let t16;
     if ($[29] === Symbol.for("react.memo_cache_sentinel")) {

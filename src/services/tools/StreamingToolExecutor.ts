@@ -481,6 +481,10 @@ export class StreamingToolExecutor {
         if (executingPromises.length > 0) {
           await Promise.race([...executingPromises, progressPromise])
         }
+      } else {
+        // Safety: If we have unfinished tools (e.g. queued) but none are executing,
+        // yield to the event loop to prevent a busy loop.
+        await new Promise(resolve => setTimeout(resolve, 10))
       }
     }
 

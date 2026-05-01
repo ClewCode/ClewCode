@@ -82,9 +82,11 @@ export const PROVIDER_PRICING: Record<string, ProviderPricing> = {
     'gemini-2.5-flash-lite': { inputTokens: 0.10, outputTokens: 0.40, promptCacheWriteTokens: 0, promptCacheReadTokens: 0, webSearchRequests: 0 },
   },
   deepseek: {
-    'deepseek-chat': { inputTokens: 0.14, outputTokens: 0.28, promptCacheWriteTokens: 0, promptCacheReadTokens: 0, webSearchRequests: 0 },
-    'deepseek-coder': { inputTokens: 0.14, outputTokens: 0.28, promptCacheWriteTokens: 0, promptCacheReadTokens: 0, webSearchRequests: 0 },
-    'deepseek-reasoner': { inputTokens: 0.55, outputTokens: 1.10, promptCacheWriteTokens: 0, promptCacheReadTokens: 0, webSearchRequests: 0 },
+    'deepseek-chat': { inputTokens: 0.14, outputTokens: 0.28, promptCacheWriteTokens: 0.14, promptCacheReadTokens: 0.028, webSearchRequests: 0 },
+    'deepseek-coder': { inputTokens: 0.14, outputTokens: 0.28, promptCacheWriteTokens: 0.14, promptCacheReadTokens: 0.028, webSearchRequests: 0 },
+    'deepseek-reasoner': { inputTokens: 0.55, outputTokens: 1.10, promptCacheWriteTokens: 0.55, promptCacheReadTokens: 0.11, webSearchRequests: 0 },
+    'deepseek-v4-flash': { inputTokens: 0.14, outputTokens: 0.28, promptCacheWriteTokens: 0.14, promptCacheReadTokens: 0.028, webSearchRequests: 0 },
+    'deepseek-v4-pro': { inputTokens: 0.435, outputTokens: 0.87, promptCacheWriteTokens: 0.435, promptCacheReadTokens: 0.03625, webSearchRequests: 0 },
   },
   xai: {
     'grok-2': { inputTokens: 2, outputTokens: 10, promptCacheWriteTokens: 0, promptCacheReadTokens: 0, webSearchRequests: 0 },

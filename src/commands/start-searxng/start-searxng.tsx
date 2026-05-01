@@ -80,7 +80,14 @@ async function startSearxng(): Promise<SearxngStatus> {
         running: true,
       }
     } catch {
-      // Container doesn't exist, create a new one
+      // If start failed, check if it exists but is stopped/conflicted
+      try {
+        await execAsync(`docker rm -f ${CONTAINER_NAME}`)
+      } catch {
+        // Ignore errors from rm if it truly doesn't exist
+      }
+
+      // Now create a new one
       const path = await import('path')
       const settingsPath = path.resolve(process.cwd(), 'searxng-active-config.yml').replace(/\\/g, '/')
       await execAsync(

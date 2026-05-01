@@ -22,6 +22,7 @@ import type { TextBlockParam } from '@anthropic-ai/sdk/resources/index.mjs'
 import type { Stream } from '@anthropic-ai/sdk/streaming.mjs'
 import { randomUUID } from 'crypto'
 import { readFile } from 'fs/promises'
+import { readFileSync } from 'fs'
 import { jsonrepair } from 'jsonrepair'
 import { join } from 'path'
 import {
@@ -241,7 +242,7 @@ import {
   getProviderRegistryEntry,
   DEFAULT_PROVIDER,
 } from '../ai/providerRegistry.js'
-import { PROVIDER_CONFIG_PATH } from '../ai/ProviderManager.js'
+import { PROVIDER_CONFIG_PATH, ProviderManager } from '../ai/ProviderManager.js'
 import { parseToolCalls } from '../ai/toolCallParser.js'
 import {
   API_ERROR_MESSAGE_PREFIX,
@@ -275,40 +276,10 @@ type JsonValue = string | number | boolean | null | JsonObject | JsonArray
 type JsonObject = { [key: string]: JsonValue }
 type JsonArray = JsonValue[]
 
-type ProviderConfig = {
-  provider?: ProviderId
-  model?: string
-  apiKeys?: Partial<Record<ProviderId, string>>
-  providerConfig?: {
-    baseUrl?: string
-    envKey?: string
-  }
-}
-
-function getProviderConfig(): ProviderConfig | null {
-  try {
-    return JSON.parse(readFileSync(PROVIDER_CONFIG_PATH, 'utf8')) as ProviderConfig
-  } catch {
-    return null
-  }
-}
-
 function isOpenAICompatibleProvider(
   provider: ProviderId,
 ): boolean {
   return provider !== 'anthropic' && provider !== 'google'
-}
-
-function getActiveProviderConfig(
-  config: ProviderConfig | null,
-): ProviderConfig & { provider: ProviderId } {
-  if (config?.provider) {
-    return config as ProviderConfig & { provider: ProviderId }
-  }
-
-  return {
-    provider: DEFAULT_PROVIDER,
-  }
 }
 
 function getOpenAICompatibleChatCompletionsUrl(baseUrl: string): string {
@@ -319,7 +290,6 @@ function getOpenAICompatibleChatCompletionsUrl(baseUrl: string): string {
 }
 
 async function callOpenAICompatibleProvider({
-  config,
   messages,
   systemPrompt,
   tools,
@@ -327,9 +297,7 @@ async function callOpenAICompatibleProvider({
   temperature,
   toolChoice,
   model,
-  signal,
 }: {
-  config: ProviderConfig & { provider: ProviderId }
   messages: unknown[]
   systemPrompt: SystemPrompt
   tools: BetaToolUnion[]
@@ -339,8 +307,10 @@ async function callOpenAICompatibleProvider({
   model?: string
   signal?: AbortSignal
 }): Promise<AssistantMessage> {
-  const provider = config.provider
-  const resolvedModel = model ?? config.model
+  const providerManager = ProviderManager.getInstance()
+  const provider = providerManager.getActiveProviderName()
+  const resolvedModel = model ?? providerManager.getModelForProvider()
+  
   if (!resolvedModel) {
     throw new Error(
       `No model selected for provider ${provider}. Set model in provider config or pass a model explicitly.`,
@@ -360,125 +330,57 @@ async function callOpenAICompatibleProvider({
     : undefined
   const openAIToolChoiceValue = openAIToolChoice(toolChoice)
 
-  if (provider === 'openai') {
-    const client = await getAIProviderClient({
-      provider: 'openai',
-      apiKey: config.apiKeys?.openai,
+  // Get the provider client
+  const client = await providerManager.createClient(provider, {
+    model: resolvedModel,
+    maxRetries: 0,
+  })
+
+  // Try Responses API first (for providers like kilocode that use /responses endpoint)
+  if (client && typeof client === 'object' && 'responses' in client && (client as any).responses?.create) {
+    const responsesInput = openAIMessages.map((msg: any) => ({
+      role: msg.role === 'system' ? 'developer' : msg.role,
+      content: msg.content,
+    }))
+    const response = await (client as any).responses.create({
       model: resolvedModel,
-      maxRetries: 0,
+      input: responsesInput,
+      ...(maxTokens ? { max_output_tokens: maxTokens } : {}),
+      ...(temperature !== undefined ? { temperature } : {}),
+      ...(openAITools ? { tools: openAITools } : {}),
+    })
+    const assistantMessage = createAssistantMessageFromOpenAIResponse(response, tools)
+    const openAIUsage = extractOpenAIUsage(response)
+    if (openAIUsage) {
+      const costUSD = calculateUSDCost(resolvedModel, openAIUsage)
+      addToTotalSessionCost(costUSD, openAIUsage, resolvedModel)
+    }
+    return assistantMessage
+  }
+
+  // Standard OpenAI-compatible chat completion
+  if (client && typeof client === 'object' && 'chat' in client && (client as any).chat?.completions?.create) {
+    const response = await (client as any).chat.completions.create({
+      model: resolvedModel,
+      messages: openAIMessages as any,
+      max_tokens: maxTokens,
+      temperature,
+      tools: openAITools as any,
+      tool_choice: openAIToolChoiceValue as any,
     })
 
-    if (client?.chat?.completions?.create) {
-      const response = await client.chat.completions.create({
-        model: resolvedModel,
-        messages: openAIMessages,
-        max_tokens: maxTokens,
-        temperature,
-        ...(openAITools ? { tools: openAITools } : {}),
-        ...(openAIToolChoiceValue !== undefined
-          ? { tool_choice: openAIToolChoiceValue }
-          : {}),
-      })
-      const assistantMessage = createAssistantMessageFromOpenAIResponse(response, tools)
-      const openAIUsage = extractOpenAIUsage(response)
-      if (openAIUsage) {
-        const costUSD = calculateUSDCost(resolvedModel, openAIUsage)
-        addToTotalSessionCost(costUSD, openAIUsage, resolvedModel)
-      }
-      return assistantMessage
+    const assistantMessage = createAssistantMessageFromOpenAIResponse(response, tools)
+    const openAIUsage = extractOpenAIUsage(response)
+    if (openAIUsage) {
+      const costUSD = calculateUSDCost(resolvedModel, openAIUsage)
+      addToTotalSessionCost(costUSD, openAIUsage, resolvedModel)
     }
-
-    if (client?.responses?.create) {
-      const response = await client.responses.create({
-        model: resolvedModel,
-        input: openAIMessages,
-        max_output_tokens: maxTokens,
-        temperature,
-      })
-      const assistantMessage = createAssistantMessageFromOpenAIResponse(response, tools)
-      const openAIUsage = extractOpenAIUsage(response)
-      if (openAIUsage) {
-        const costUSD = calculateUSDCost(resolvedModel, openAIUsage)
-        addToTotalSessionCost(costUSD, openAIUsage, resolvedModel)
-      }
-      return assistantMessage
-    }
-
-    throw new Error(
-      'OpenAI client does not support chat completions or responses.create',
-    )
+    return assistantMessage
   }
 
-  const providerEntry = getProviderRegistryEntry(provider)
-  const envKey = config.providerConfig?.envKey ?? providerEntry.envKey
-  const apiKey =
-    config.apiKeys?.[provider] ?? process.env[envKey]
-
-  if (!apiKey) {
-    throw new Error(
-      `Missing API key for provider ${provider}. Set ${envKey}.`,
-    )
-  }
-
-  const body: Record<string, unknown> = {
-    model: resolvedModel,
-    messages: openAIMessages,
-    max_tokens: maxTokens,
-    temperature,
-  }
-
-  if (openAITools) {
-    body.tools = openAITools
-  }
-  if (openAIToolChoiceValue !== undefined) {
-    body.tool_choice = openAIToolChoiceValue
-  }
-
-  const response = await fetch(
-    getOpenAICompatibleChatCompletionsUrl(
-      config.providerConfig?.baseUrl ?? providerEntry.defaultBaseUrl,
-    ),
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal,
-    },
-  )
-
-  if (!response.ok) {
-    const bodyText = await response.text()
-    throw new Error(
-      `Provider ${provider} request failed: ${response.status} ${response.statusText} - ${bodyText}`,
-    )
-  }
-
-  const data = await response.json()
-  const assistantMessage = createAssistantMessageFromOpenAIResponse(data, tools)
-
-  // Track cost for non-Anthropic providers
-  const openAIUsage = extractOpenAIUsage(data)
-  if (openAIUsage) {
-    const costUSD = calculateUSDCost(resolvedModel, openAIUsage)
-    addToTotalSessionCost(costUSD, openAIUsage, resolvedModel)
-  }
-
-  return assistantMessage
+  throw new Error(`Client for provider ${provider} does not support chat completions or responses API.`)
 }
 
-async function loadProviderConfig(): Promise<ProviderConfig | null> {
-  try {
-    const content = await readFile(PROVIDER_CONFIG_PATH, 'utf8')
-    logForDebugging(`[Query] Loaded provider config from ${PROVIDER_CONFIG_PATH}: ${content.substring(0, 200)}...`)
-    return JSON.parse(content) as ProviderConfig
-  } catch (error) {
-    logForDebugging(`[Query] Failed to load provider config: ${(error as Error).message}`)
-    return null
-  }
-}
 
 /**
  * Assemble the extra body parameters for the API request, based on the
@@ -671,7 +573,7 @@ function configureEffortParams(
     betas.push(EFFORT_BETA_HEADER)
   } else if (typeof effortValue === 'string') {
     // Send string effort level as is
-    outputConfig.effort = effortValue
+    outputConfig.effort = effortValue as any
     betas.push(EFFORT_BETA_HEADER)
   } else if (process.env.USER_TYPE === 'ant') {
     // Numeric effort override - ant-only (uses anthropic_internal)
@@ -742,7 +644,7 @@ export async function verifyApiKey(
       withRetry(
         () =>
           getAIProviderClient({
-            provider: 'anthropic',
+            provider: ProviderManager.getInstance().getActiveProviderName(),
             apiKey,
             maxRetries: 3,
             model,
@@ -1043,7 +945,7 @@ export async function* executeNonStreamingRequest(
   const generator = withRetry(
     () =>
       getAIProviderClient({
-        provider: 'anthropic',
+        provider: ProviderManager.getInstance().getActiveProviderName(),
         maxRetries: 0,
         model: clientOptions.model,
         fetchOverride: clientOptions.fetchOverride,
@@ -1153,22 +1055,18 @@ function isToolResult(
 
 function contentBlocksToOpenAIContent(content: unknown): string {
   if (typeof content === 'string') return content
-  if (!Array.isArray(content)) return ''
-
-  return content
-    .map(block => {
-      if (!block || typeof block !== 'object') return ''
-      const typed = block as Record<string, unknown>
-      if (typed.type === 'text') return String(typed.text ?? '')
-      if (typed.type === 'tool_result') {
-        const nested = typed.content
-        if (typeof nested === 'string') return nested
-        if (Array.isArray(nested)) return contentBlocksToOpenAIContent(nested)
-      }
-      return ''
-    })
-    .filter(Boolean)
-    .join('\n')
+  if (Array.isArray(content)) {
+    return content
+      .map(block => {
+        if (!block || typeof block !== 'object') return ''
+        const b = block as Record<string, unknown>
+        if (b.type === 'text') return String(b.text ?? '')
+        if (b.type === 'image') return '[Image]'
+        return ''
+      })
+      .join('')
+  }
+  return jsonStringify(content)
 }
 
 function findToolNameForToolResult(
@@ -1182,17 +1080,18 @@ function findToolNameForToolResult(
   }
 
   for (let i = messageIndex; i >= 0; i--) {
-    const msg = messages[i] as Record<string, unknown>
+    const msg = messages[i] as unknown as Record<string, unknown>
     if (msg.role !== 'assistant' || !Array.isArray(msg.content)) continue
 
-    for (const block of msg.content as Array<Record<string, unknown>>) {
+    for (const block of msg.content) {
+      const b = block as Record<string, unknown>
       if (
-        block &&
-        typeof block === 'object' &&
-        block.type === 'tool_use' &&
-        String(block.id ?? '') === toolUseId
+        b &&
+        typeof b === 'object' &&
+        b.type === 'tool_use' &&
+        String(b.id ?? '') === toolUseId
       ) {
-        return String(block.name ?? '') || undefined
+        return String(b.name ?? '') || undefined
       }
     }
   }
@@ -1206,12 +1105,12 @@ function openAIToolResultContent(content: unknown): string {
   return jsonStringify(content)
 }
 
-function messagesToOpenAI(messages: MessageParam[]): Record<string, unknown>[] {
-  const result: Record<string, unknown>[] = []
+function messagesToOpenAI(messages: MessageParam[]): any[] {
+  const result: any[] = []
 
   for (let messageIndex = 0; messageIndex < messages.length; messageIndex++) {
     const msg = messages[messageIndex] as unknown as Record<string, unknown>
-    const role = msg.role as 'user' | 'assistant'
+    const role = msg.role
     const content = msg.content
 
     if (role === 'assistant') {
@@ -1239,61 +1138,58 @@ function messagesToOpenAI(messages: MessageParam[]): Record<string, unknown>[] {
           }
         })
 
-      const assistantMsg: Record<string, unknown> = { role: 'assistant' }
+      const assistantMsg: any = { role: 'assistant' }
       if (textContent) {
         assistantMsg.content = textContent
       }
       if (toolCalls.length > 0) {
         assistantMsg.tool_calls = toolCalls
       }
+      // OpenAI requires content to be present if tool_calls are present (can be null or empty string depending on provider)
+      if (toolCalls.length > 0 && !assistantMsg.content) {
+        assistantMsg.content = null
+      }
       result.push(assistantMsg)
       continue
     }
 
     if (typeof content === 'string') {
-      result.push({ role: 'user', content })
+      result.push({ role, content })
       continue
     }
 
-    let accumulatedText = ''
-    const flushText = () => {
-      if (accumulatedText.trim().length > 0) {
-        result.push({ role: 'user', content: accumulatedText })
-        accumulatedText = ''
-      }
-    }
+    if (Array.isArray(content)) {
+      const textParts: string[] = []
+      const toolResults: any[] = []
 
-    for (const block of Array.isArray(content) ? content : []) {
-      if (!block || typeof block !== 'object') {
-        continue
-      }
+      for (const block of content) {
+        if (!block || typeof block !== 'object') continue
+        const b = block as Record<string, unknown>
 
-      if ((block as Record<string, unknown>).type === 'tool_result') {
-        flushText()
-        const toolResult = block as Record<string, unknown>
-        const toolName = findToolNameForToolResult(
-          messages,
-          messageIndex,
-          toolResult,
-        )
-        const toolContent = openAIToolResultContent(toolResult.content)
-        if (toolName) {
-          result.push({
+        if (b.type === 'text') {
+          textParts.push(String(b.text ?? ''))
+        } else if (b.type === 'tool_result') {
+          const toolName = findToolNameForToolResult(
+            messages,
+            messageIndex,
+            b,
+          )
+          const toolContent = openAIToolResultContent(b.content)
+          toolResults.push({
             role: 'tool',
-            tool_call_id: String(toolResult.tool_use_id ?? randomUUID()),
+            tool_call_id: String(b.tool_use_id ?? randomUUID()),
             name: toolName,
             content: toolContent,
           })
-        } else if (toolContent) {
-          result.push({ role: 'user', content: toolContent })
         }
-        continue
       }
 
-      accumulatedText += contentBlocksToOpenAIContent([block])
+      if (toolResults.length > 0) {
+        result.push(...toolResults)
+      } else {
+        result.push({ role, content: textParts.join('\n') })
+      }
     }
-
-    flushText()
   }
 
   return result
@@ -1314,27 +1210,20 @@ function normalizeOpenAIToolInputSchema(
   if (schema.type === undefined) {
     schema.type = 'object'
   }
-  if (schema.properties === undefined) {
-    schema.properties = {}
-  }
-  if (schema.required === undefined) {
-    schema.required = []
-  }
-  if (schema.additionalProperties === undefined) {
-    schema.additionalProperties = true
-  }
-
   return schema
 }
 
 function openAIToolSchemasFromBetaTools(
   tools: BetaToolUnion[],
 ): Array<Record<string, unknown>> {
-  return tools.map(tool => ({
-    name: tool.name,
-    description: tool.description,
-    parameters: normalizeOpenAIToolInputSchema(tool.input_schema),
-  }))
+  return tools.map(tool => {
+    const t = tool as any
+    return {
+      name: t.name,
+      description: t.description,
+      parameters: normalizeOpenAIToolInputSchema(t.input_schema),
+    }
+  })
 }
 
 function openAIToolsFromBetaTools(
@@ -1428,7 +1317,7 @@ function createToolUseBlocks(
   calls: TextToolCall[],
   tools: BetaToolUnion[],
 ): BetaContentBlock[] {
-  const allowedNames = new Set(tools.map(tool => tool.name))
+  const allowedNames = new Set(tools.map(tool => (tool as any).name))
 
   return calls
     .filter(call => allowedNames.has(call.name))
@@ -1573,11 +1462,18 @@ function extractOpenAIUsage(response: any): Usage | undefined {
 
   if (!promptTokens && !completionTokens) return undefined
 
+  const cacheHitTokens =
+    usage.prompt_cache_hit_tokens ?? usage.cacheReadInputTokens ?? null
+  const cacheMissTokens =
+    usage.prompt_cache_miss_tokens ?? usage.cacheCreationInputTokens ?? null
+
   return {
     input_tokens: Number(promptTokens) || 0,
     output_tokens: Number(completionTokens) || 0,
-    cache_creation_input_tokens: null,
-    cache_read_input_tokens: null,
+    cache_creation_input_tokens:
+      cacheMissTokens !== null ? Number(cacheMissTokens) || 0 : null,
+    cache_read_input_tokens:
+      cacheHitTokens !== null ? Number(cacheHitTokens) || 0 : null,
   }
 }
 
@@ -1588,6 +1484,24 @@ function createAssistantMessageFromOpenAIResponse(
   const choice = response?.choices?.[0]
   const message = choice?.message ?? choice
   const usage = extractOpenAIUsage(response)
+  const reasoningContent =
+    typeof message?.reasoning_content === 'string'
+      ? message.reasoning_content
+      : typeof message?.reasoning === 'string'
+        ? message.reasoning
+        : undefined
+
+  const createAssistantMessageWithReasoning = (
+    content: string | BetaContentBlock[],
+  ): AssistantMessage => {
+    const assistantMessage = createAssistantMessage({ content, usage })
+    if (reasoningContent) {
+      ;(
+        assistantMessage.message as any
+      ).reasoning_content = reasoningContent
+    }
+    return assistantMessage
+  }
 
   // Try parsing tool calls using toolCallParser
   const parsedCalls = parseToolCalls(message)
@@ -1599,10 +1513,7 @@ function createAssistantMessageFromOpenAIResponse(
     }))
     const toolUseBlocks = createToolUseBlocks(toolCalls, tools)
     if (toolUseBlocks.length > 0) {
-      return createAssistantMessage({
-        content: toolUseBlocks,
-        usage,
-      })
+      return createAssistantMessageWithReasoning(toolUseBlocks)
     }
   }
 
@@ -1612,10 +1523,7 @@ function createAssistantMessageFromOpenAIResponse(
     tools,
   )
   if (nativeToolCalls.length > 0) {
-    return createAssistantMessage({
-      content: nativeToolCalls,
-      usage,
-    })
+    return createAssistantMessageWithReasoning(nativeToolCalls)
   }
 
   if (Array.isArray(response?.output?.items)) {
@@ -1624,7 +1532,7 @@ function createAssistantMessageFromOpenAIResponse(
       .map((item: any) => String(item?.text ?? ''))
       .join('')
     if (outputText.trim().length > 0) {
-      return createAssistantMessage({ content: outputText, usage })
+      return createAssistantMessageWithReasoning(outputText)
     }
   }
 
@@ -1632,8 +1540,6 @@ function createAssistantMessageFromOpenAIResponse(
     Array.isArray(message?.content?.parts)
       ? message.content.parts.join('')
       : stringifyOpenAIContent(message?.content),
-    stringifyOpenAIContent(message?.reasoning_content),
-    stringifyOpenAIContent(message?.reasoning),
     stringifyOpenAIContent(choice?.text),
     stringifyOpenAIContent(response?.output_text),
     stringifyOpenAIContent(response?.text),
@@ -1642,12 +1548,11 @@ function createAssistantMessageFromOpenAIResponse(
 
   if (!content) {
     const finishReason = choice?.finish_reason ?? response?.finish_reason
-    return createAssistantMessage({
-      content: finishReason
+    return createAssistantMessageWithReasoning(
+      finishReason
         ? `Provider returned an empty response (finish_reason: ${finishReason}).`
         : 'Provider returned an empty response.',
-      usage,
-    })
+    )
   }
 
   // Try parsing JSON tool calls from text
@@ -1656,13 +1561,10 @@ function createAssistantMessageFromOpenAIResponse(
     tools,
   )
   if (textJSONToolCalls.length > 0) {
-    return createAssistantMessage({
-      content: textJSONToolCalls,
-      usage,
-    })
+    return createAssistantMessageWithReasoning(textJSONToolCalls)
   }
 
-  return createAssistantMessage({ content, usage })
+  return createAssistantMessageWithReasoning(content)
 }
 
 /**
@@ -2444,52 +2346,12 @@ async function* queryModel(
     }
   }
 
-  const providerConfig = getActiveProviderConfig(
-    await loadProviderConfig(),
-  )
-  logForDebugging(`[Query] Provider config: ${JSON.stringify(providerConfig)}`)
+  const providerManager = ProviderManager.getInstance()
+  const providerId = providerManager.getActiveProviderName()
+  const providerConfig = providerManager.getSelectedProviderConfig()
+  logForDebugging(`[Query] Active provider: ${providerId}, config: ${JSON.stringify(providerConfig)}`)
 
-  if (providerConfig.provider !== 'anthropic') {
-    if (!isOpenAICompatibleProvider(providerConfig.provider)) {
-      yield createAssistantAPIErrorMessage({
-        content: `${API_ERROR_MESSAGE_PREFIX}: The selected provider is not supported by the generic OpenAI-compatible adapter. Use a supported provider or add a provider-specific route for this model endpoint.`,
-        error: 'unknown',
-      })
-      return
-    }
-
-    const params = paramsFromContext({
-      model: providerConfig.model || options.model,
-      thinkingConfig,
-    })
-
-    try {
-      queryCheckpoint('query_provider_api_request_start')
-      const message = await callOpenAICompatibleProvider({
-        config: {
-          ...providerConfig,
-          provider: providerConfig.provider,
-        },
-        messages: params.messages,
-        systemPrompt,
-        tools: allTools,
-        maxTokens: params.max_tokens,
-        temperature: params.temperature,
-        toolChoice: options.toolChoice,
-        model: params.model,
-        signal,
-      })
-      queryCheckpoint('query_provider_api_request_end')
-      yield message
-      return
-    } catch (error) {
-      yield createAssistantAPIErrorMessage({
-        content: `${API_ERROR_MESSAGE_PREFIX}: ${(error as Error).message}`,
-        error: 'unknown',
-      })
-      return
-    }
-  }
+  // Logic to handle providers is now centralized in getAIProviderClient and AnthropicAdapter
 
   // Compute log scalars synchronously so the fire-and-forget .then() closure
   // captures only primitives instead of paramsFromContext's full closure scope
@@ -2542,7 +2404,7 @@ async function* queryModel(
     const generator = withRetry(
       () =>
         getAIProviderClient({
-          provider: 'anthropic',
+          provider: ProviderManager.getInstance().getActiveProviderName(),
           maxRetries: 0, // Disabled auto-retry in favor of manual implementation
           model: options.model,
           fetchOverride: options.fetchOverride,

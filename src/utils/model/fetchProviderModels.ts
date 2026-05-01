@@ -69,12 +69,18 @@ export async function fetchProviderModels(
   try {
     console.log(`[fetchProviderModels] Fetching from: ${modelsUrl}`)
 
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    }
+
+    if (activeProvider === 'google') {
+      headers['x-goog-api-key'] = apiKey;
+    }
+
     const response = await fetch(modelsUrl, {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers,
     })
 
     if (!response.ok) {
@@ -158,6 +164,7 @@ export function supportsModelFetching(provider?: ProviderId): boolean {
       'deepseek',
       'opencode',
       'kilocode',
+      'google',
     ]
 
     return supportedProviders.includes(activeProvider)
