@@ -338,7 +338,11 @@ export function useTextInput({
           ? killWordBefore
           : () => cursor.deleteTokenBefore() ?? cursor.backspace()
       case key.delete:
-        return key.meta ? killToLineEnd : () => cursor.del()
+        return key.meta
+          ? killToLineEnd
+          : key.super
+            ? killToLineStart
+            : () => cursor.del()
       case key.ctrl:
         return handleCtrl
       case key.home:
@@ -417,7 +421,10 @@ export function useTextInput({
     if (key.ctrl && (input === 'k' || input === 'u' || input === 'w')) {
       return true
     }
-    if (key.meta && (key.backspace || key.delete)) {
+    if ((key.meta || key.super) && key.delete) {
+      return true
+    }
+    if (key.meta && key.backspace) {
       return true
     }
     return false

@@ -577,6 +577,19 @@ function processHookJSONOutput({
     result.hookPermissionDecisionReason = json.reason
   }
 
+  // SECURITY: If the hook exited with code 2, it MUST block even if it
+  // didn't explicitly say so in the JSON (or if it said 'approve' in JSON).
+  // This matches the non-JSON path's security policy.
+  if (exitCode === 2) {
+    result.permissionBehavior = 'deny'
+    if (!result.blockingError) {
+      result.blockingError = {
+        blockingError: json.reason || 'Blocked by hook (exit code 2)',
+        command,
+      }
+    }
+  }
+
   // Handle hookSpecificOutput
   if (json.hookSpecificOutput) {
     // Validate hook event name matches expected if provided
@@ -610,6 +623,9 @@ function processHookJSONOutput({
             case 'ask':
               result.permissionBehavior = 'ask'
               break
+            case 'defer':
+              result.permissionBehavior = 'defer'
+              break
           }
         }
         result.hookPermissionDecisionReason =
@@ -617,6 +633,10 @@ function processHookJSONOutput({
         // Extract updatedInput if provided
         if (json.hookSpecificOutput.updatedInput) {
           result.updatedInput = json.hookSpecificOutput.updatedInput
+        }
+        // Extract deferredMarker if provided
+        if (json.hookSpecificOutput.deferredMarker) {
+          result.deferredMarker = json.hookSpecificOutput.deferredMarker
         }
         // Extract additionalContext if provided
         result.additionalContext = json.hookSpecificOutput.additionalContext
@@ -2590,6 +2610,35 @@ async function* executeHooks({
                 durationMs,
               }),
             outcome: 'success' as const,
+            hook,
+          }
+          return
+        }
+
+        // SECURITY: Hooks that emit valid JSON to stdout AND exit with code 2
+        // must still block the tool call. The exit code 2 is the canonical
+        // "block" signal in the hook protocol.
+        if (result.status === 2) {
+          emitHookResponse({
+            hookId,
+            hookName,
+            hookEvent,
+            output: result.output,
+            stdout: result.stdout,
+            stderr: result.stderr,
+            exitCode: result.status,
+            outcome: 'error',
+          })
+          yield {
+            ...processed,
+            blockingError: {
+              blockingError:
+                processed.hookPermissionDecisionReason ||
+                result.stderr.trim() ||
+                `Hook ${hookName} blocked this tool call`,
+              command: hook.command,
+            },
+            outcome: 'blocking' as const,
             hook,
           }
           return

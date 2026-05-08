@@ -71,7 +71,18 @@ export async function executeShellCommandsInPrompt(
   context: ToolUseContext,
   slashCommandName: string,
   shell?: FrontmatterShell,
+  options?: { source?: 'skill' | 'command' },
 ): Promise<string> {
+  const settings = context.getAppState().settings
+  if (
+    options?.source === 'skill' &&
+    settings?.permissions?.disableSkillShellExecution === 'disable'
+  ) {
+    throw new Error(
+      "Shell command execution from skills is disabled by permissions.disableSkillShellExecution setting",
+    )
+  }
+
   let result = text
 
   // Resolve the tool once. `shell === undefined` and `shell === 'bash'` both
@@ -87,7 +98,9 @@ export async function executeShellCommandsInPrompt(
   // so gate the expensive scan on a cheap substring check. BLOCK_PATTERN
   // (```!) doesn't require !` in the text, so it's always scanned.
   const blockMatches = text.matchAll(BLOCK_PATTERN)
-  const inlineMatches = text.includes('!`') ? text.matchAll(INLINE_PATTERN) : []
+  const inlineMatches = text.includes('!`')
+    ? text.matchAll(INLINE_PATTERN)
+    : []
 
   await Promise.all(
     [...blockMatches, ...inlineMatches].map(async match => {

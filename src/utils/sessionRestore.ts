@@ -60,6 +60,7 @@ import {
   getCurrentWorktreeSession,
   restoreWorktreeSession,
 } from './worktree.js'
+import { setSessionContext } from '../context.js'
 
 type ResumeResult = {
   messages?: Message[]
@@ -312,6 +313,8 @@ type ResumeLoadResult = {
   prNumber?: number
   prUrl?: string
   prRepository?: string
+  pinnedDate?: string
+  pinnedGitStatus?: string | null
 }
 
 /**
@@ -430,6 +433,12 @@ export async function processResumedConversation(
     if (modeWarning) {
       result.messages.push(createSystemMessage(modeWarning, 'warning'))
     }
+  }
+
+  // Inject pinned session context for prompt cache stability on resume.
+  // Done early so the first system prompt generated after resume picks it up.
+  if (result.pinnedDate) {
+    setSessionContext(result.pinnedDate, result.pinnedGitStatus ?? null)
   }
 
   // Reuse the resumed session's ID unless --fork-session is specified

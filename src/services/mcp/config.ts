@@ -56,6 +56,12 @@ import {
 } from './types.js'
 import { getProjectMcpServerStatus } from './utils.js'
 
+export const WORKSPACE_MCP_SERVER_NAME = 'workspace'
+
+export function isWorkspaceMCPServer(name: string): boolean {
+  return name.toLowerCase() === WORKSPACE_MCP_SERVER_NAME
+}
+
 /**
  * Get the path to the managed MCP configuration file
  */
@@ -634,7 +640,7 @@ export async function addMcpConfig(
   }
 
   // Block reserved server name "claude-in-chrome"
-  if (isClaudeInChromeMCPServer(name)) {
+  if (isClaudeInChromeMCPServer(name) || isWorkspaceMCPServer(name)) {
     throw new Error(`Cannot add MCP server "${name}": this name is reserved.`)
   }
 
@@ -1097,19 +1103,42 @@ export async function getClaudeCodeMcpConfigs(
 
   // Load other scopes — unless the managed policy locks MCP to plugin-only.
   // Unlike the enterprise-exclusive block above, this keeps plugin servers.
+  // Load other servers
   const mcpLocked = isRestrictedToPluginOnly('mcp')
   const noServers: { servers: Record<string, ScopedMcpServerConfig> } = {
     servers: {},
   }
-  const { servers: userServers } = mcpLocked
+  const { servers: rawUserServers } = mcpLocked
     ? noServers
     : getMcpConfigsByScope('user')
-  const { servers: projectServers } = mcpLocked
+  const { servers: rawProjectServers } = mcpLocked
     ? noServers
     : getMcpConfigsByScope('project')
-  const { servers: localServers } = mcpLocked
+  const { servers: rawLocalServers } = mcpLocked
     ? noServers
     : getMcpConfigsByScope('local')
+
+  const filterReserved = (
+    servers: Record<string, ScopedMcpServerConfig>,
+  ): Record<string, ScopedMcpServerConfig> => {
+    const filtered: Record<string, ScopedMcpServerConfig> = {}
+    for (const [name, config] of Object.entries(servers)) {
+      if (isWorkspaceMCPServer(name)) {
+        logError(
+          new Error(
+            `MCP server "${name}" is using a reserved name and will be skipped. Please rename this server in your configuration.`,
+          ),
+        )
+        continue
+      }
+      filtered[name] = config
+    }
+    return filtered
+  }
+
+  const userServers = filterReserved(rawUserServers)
+  const projectServers = filterReserved(rawProjectServers)
+  const localServers = filterReserved(rawLocalServers)
 
   // Load plugin MCP servers
   const pluginMcpServers: Record<string, ScopedMcpServerConfig> = {}

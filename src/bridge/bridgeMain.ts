@@ -19,6 +19,7 @@ import { errorMessage } from '../utils/errors.js'
 import { truncateToWidth } from '../utils/format.js'
 import { logError } from '../utils/log.js'
 import { sleep } from '../utils/sleep.js'
+import { generateShortWordSlug } from '../utils/words.js'
 import { createAgentWorktree, removeAgentWorktree } from '../utils/worktree.js'
 import {
   BridgeFatalError,
@@ -1703,6 +1704,7 @@ export type ParsedArgs = {
   sessionTimeoutMs?: number
   permissionMode?: string
   name?: string
+  remoteControlSessionNamePrefix?: string
   /** Value passed to --spawn (if any); undefined if no --spawn flag was given. */
   spawnMode: SpawnMode | undefined
   /** Value passed to --capacity (if any); undefined if no --capacity flag was given. */
@@ -1741,6 +1743,7 @@ export function parseArgs(args: string[]): ParsedArgs {
   let sessionTimeoutMs: number | undefined
   let permissionMode: string | undefined
   let name: string | undefined
+  let remoteControlSessionNamePrefix: string | undefined
   let help = false
   let spawnMode: SpawnMode | undefined
   let capacity: number | undefined
@@ -1775,6 +1778,10 @@ export function parseArgs(args: string[]): ParsedArgs {
       name = args[++i]!
     } else if (arg.startsWith('--name=')) {
       name = arg.slice('--name='.length)
+    } else if (arg === '--remote-control-session-name-prefix' && i + 1 < args.length) {
+      remoteControlSessionNamePrefix = args[++i]!
+    } else if (arg.startsWith('--remote-control-session-name-prefix=')) {
+      remoteControlSessionNamePrefix = arg.slice('--remote-control-session-name-prefix='.length)
     } else if (
       feature('KAIROS') &&
       arg === '--session-id' &&
@@ -1859,6 +1866,7 @@ export function parseArgs(args: string[]): ParsedArgs {
     sessionTimeoutMs,
     permissionMode,
     name,
+    remoteControlSessionNamePrefix,
     spawnMode,
     capacity,
     createSessionInDir,
@@ -1875,6 +1883,7 @@ export function parseArgs(args: string[]): ParsedArgs {
       sessionTimeoutMs,
       permissionMode,
       name,
+      remoteControlSessionNamePrefix,
       spawnMode,
       capacity,
       createSessionInDir,
@@ -1998,6 +2007,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     sessionTimeoutMs,
     permissionMode,
     name,
+    remoteControlSessionNamePrefix,
     spawnMode: parsedSpawnMode,
     capacity: parsedCapacity,
     createSessionInDir: parsedCreateSessionInDir,
@@ -2340,6 +2350,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
   const branch = await getBranch()
   const gitRepoUrl = await getRemoteUrl()
   const machineName = hostname()
+  const defaultSessionName = `${remoteControlSessionNamePrefix || machineName}-${generateShortWordSlug()}`
   const bridgeId = randomUUID()
 
   const { handleOAuth401Error } = await import('../utils/auth.js')
@@ -2676,7 +2687,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     try {
       initialSessionId = await createBridgeSession({
         environmentId,
-        title: name,
+        title: name ?? defaultSessionName,
         events: [],
         gitRepoUrl,
         branch,

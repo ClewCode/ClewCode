@@ -1207,7 +1207,7 @@ function normalizeOpenAIToolInputSchema(
   }
 
   const schema = { ...(inputSchema as Record<string, unknown>) }
-  if (schema.type === undefined) {
+  if (schema.type !== 'object') {
     schema.type = 'object'
   }
   return schema

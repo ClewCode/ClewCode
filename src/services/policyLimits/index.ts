@@ -502,12 +502,37 @@ async function fetchAndLoadPolicyLimits(): Promise<
 const ESSENTIAL_TRAFFIC_DENY_ON_MISS = new Set(['allow_product_feedback'])
 
 /**
+ * Policies that require fail-closed behavior when forceRemoteSettingsRefresh
+ * is set. These will block startup if remote settings cannot be fetched.
+ */
+const FORCE_REFRESH_FAIL_CLOSED = new Set(['forceRemoteSettingsRefresh'])
+
+/**
  * Check if a specific policy is allowed
  * Returns true if the policy is unknown, unavailable, or explicitly allowed (fail open).
  * Exception: policies in ESSENTIAL_TRAFFIC_DENY_ON_MISS fail closed when
  * essential-traffic-only mode is active and the cache is unavailable.
+ * Exception: forceRemoteSettingsRefresh returns false (fail closed) if not yet loaded.
  */
 export function isPolicyAllowed(policy: string): boolean {
+  // Special handling for forceRemoteSettingsRefresh - fail closed until loaded
+  if (FORCE_REFRESH_FAIL_CLOSED.has(policy)) {
+    const restrictions = getRestrictionsFromCache()
+    // If not loaded yet AND cache doesn't exist, fail closed
+    if (!restrictions && !hasLoadedFromRemote()) {
+      return false
+      }
+    // If no cache exists, fail closed
+    if (!restrictions) {
+      return false
+    }
+    const restriction = restrictions[policy]
+    if (!restriction) {
+      return true
+    }
+    return restriction.allowed
+  }
+
   const restrictions = getRestrictionsFromCache()
   if (!restrictions) {
     if (
@@ -523,6 +548,14 @@ export function isPolicyAllowed(policy: string): boolean {
     return true // unknown policy = allowed
   }
   return restriction.allowed
+}
+
+/**
+ * Check if remote settings have been loaded at least once
+ */
+function hasLoadedFromRemote(): boolean {
+  // Check if we have either session cache or loaded from cache file
+  return sessionCache !== null || loadCachedRestrictions() !== null
 }
 
 /**

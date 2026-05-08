@@ -89,6 +89,8 @@ export function registerMcpAddCommand(mcp: Command): void {
           'Error: Server name is required.\n' +
             'Usage: claude mcp add <name> <command> [args...]',
         )
+      } else if (name === 'workspace') {
+        cliError('Error: "workspace" is a reserved MCP server name.')
       } else if (!actualCommand) {
         cliError(
           'Error: Command is required when server name is provided.\n' +

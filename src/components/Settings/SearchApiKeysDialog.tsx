@@ -12,10 +12,9 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
   const settings = getSettings_DEPRECATED() || {}
   const env = settings.env || {}
 
-  const [searxngUrl, setSearxngUrl] = useState(env.SEARXNG_URL || '')
   const [tavilyKey, setTavilyKey] = useState(env.TAVILY_API_KEY || '')
   const [braveKey, setBraveKey] = useState(env.BRAVE_API_KEY || '')
-  const [focusedField, setFocusedField] = useState<'searxng' | 'tavily' | 'brave' | 'buttons'>('searxng')
+  const [focusedField, setFocusedField] = useState<'tavily' | 'brave' | 'buttons'>('tavily')
   const [showTavily, setShowTavily] = useState(false)
   const [showBrave, setShowBrave] = useState(false)
 
@@ -23,15 +22,11 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
     // Update settings with new API keys and URLs
     const newEnv = {
       ...env,
-      ...(searxngUrl.trim() && { SEARXNG_URL: searxngUrl.trim() }),
       ...(tavilyKey.trim() && { TAVILY_API_KEY: tavilyKey.trim() }),
       ...(braveKey.trim() && { BRAVE_API_KEY: braveKey.trim() }),
     }
 
     // Remove keys if empty
-    if (!searxngUrl.trim()) {
-      delete newEnv.SEARXNG_URL
-    }
     if (!tavilyKey.trim()) {
       delete newEnv.TAVILY_API_KEY
     }
@@ -44,13 +39,12 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
     })
 
     logEvent('tengu_search_api_keys_updated', {
-      hasSearXNG: String(!!searxngUrl.trim()) as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       hasTavily: String(!!tavilyKey.trim()) as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       hasBrave: String(!!braveKey.trim()) as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     })
 
     onDone()
-  }, [searxngUrl, tavilyKey, braveKey, env, onDone])
+  }, [tavilyKey, braveKey, env, onDone])
 
   const handleCancel = useCallback(() => {
     logEvent('tengu_search_api_keys_cancelled', {})
@@ -60,14 +54,12 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
   useInput((input, key) => {
     if (key.tab) {
       // Cycle through fields
-      if (focusedField === 'searxng') {
-        setFocusedField('tavily')
-      } else if (focusedField === 'tavily') {
+      if (focusedField === 'tavily') {
         setFocusedField('brave')
       } else if (focusedField === 'brave') {
         setFocusedField('buttons')
       } else {
-        setFocusedField('searxng')
+        setFocusedField('tavily')
       }
       return
     }
@@ -83,14 +75,11 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
     }
 
     // Handle character input for text fields
-    if (focusedField === 'searxng' || focusedField === 'tavily' || focusedField === 'brave') {
+    if (focusedField === 'tavily' || focusedField === 'brave') {
       let setter: (value: string) => void
       let current: string
 
-      if (focusedField === 'searxng') {
-        setter = setSearxngUrl
-        current = searxngUrl
-      } else if (focusedField === 'tavily') {
+      if (focusedField === 'tavily') {
         setter = setTavilyKey
         current = tavilyKey
       } else {
@@ -116,32 +105,11 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
     <Dialog title="Search Configuration" onEscape={handleCancel}>
       <Box flexDirection="column" gap={1} paddingX={1}>
         <Text dimColor>
-          Configure search providers for inResearch. Priority: SearXNG (free) →
-          DuckDuckGo (free) → Tavily → Brave (API keys optional).
+          Configure search providers for inResearch. Priority: DuckDuckGo (free) →
+          Tavily → Brave (API keys optional).
         </Text>
 
         <Box flexDirection="column" marginY={1}>
-          {/* SearXNG URL */}
-          <Box flexDirection="column" marginBottom={1}>
-            <Text
-              bold={focusedField === 'searxng'}
-              color={focusedField === 'searxng' ? 'suggestion' : undefined}
-            >
-              {focusedField === 'searxng' ? '> ' : '  '}SearXNG Base URL (optional)
-              {searxngUrl && ' (set)'}
-            </Text>
-            <Box marginLeft={2}>
-              <Text dimColor={!searxngUrl}>
-                {searxngUrl || 'http://localhost:8888'}
-              </Text>
-            </Box>
-            {focusedField === 'searxng' && (
-              <Text dimColor marginLeft={2}>
-                Enter SearXNG URL (e.g., http://localhost:8888) • Tab to move
-              </Text>
-            )}
-          </Box>
-
           {/* Tavily API Key */}
           <Box flexDirection="column" marginBottom={1}>
             <Text

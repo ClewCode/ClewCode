@@ -75,6 +75,8 @@ export const syncHookResponseSchema = lazySchema(() =>
           permissionDecisionReason: z.string().optional(),
           updatedInput: z.record(z.string(), z.unknown()).optional(),
           additionalContext: z.string().optional(),
+          deferredInput: z.record(z.string(), z.unknown()).optional(),
+          deferredMarker: z.string().optional(),
         }),
         z.object({
           hookEventName: z.literal('UserPromptSubmit'),
@@ -264,7 +266,7 @@ export type HookResult = {
   outcome: 'success' | 'blocking' | 'non_blocking_error' | 'cancelled'
   preventContinuation?: boolean
   stopReason?: string
-  permissionBehavior?: 'ask' | 'deny' | 'allow' | 'passthrough'
+  permissionBehavior?: 'ask' | 'deny' | 'allow' | 'passthrough' | 'defer'
   hookPermissionDecisionReason?: string
   additionalContext?: string
   initialUserMessage?: string
@@ -272,6 +274,7 @@ export type HookResult = {
   updatedMCPToolOutput?: unknown
   permissionRequestResult?: PermissionRequestResult
   retry?: boolean
+  deferredMarker?: string
 }
 
 export type AggregatedHookResult = {
@@ -287,4 +290,5 @@ export type AggregatedHookResult = {
   updatedMCPToolOutput?: unknown
   permissionRequestResult?: PermissionRequestResult
   retry?: boolean
+  deferredMarker?: string
 }

@@ -426,13 +426,24 @@ export class TmuxBackend implements PaneBackend {
 
   /**
    * Gets the number of panes in a window.
+   * Returns null if unable to determine (e.g., window was deleted).
+   * On failure, attempts to refresh the window target and retry once.
    */
   private async getCurrentWindowPaneCount(
     windowTarget?: string,
     useSwarmSocket = false,
+    retried = false,
   ): Promise<number | null> {
-    const target = windowTarget || (await this.getCurrentWindowTarget())
+    let target = windowTarget || (await this.getCurrentWindowTarget())
     if (!target) {
+      // If no target and we haven't retried, try to refresh the window target
+      if (!retried) {
+        cachedLeaderWindowTarget = null // Force refresh
+        target = await this.getCurrentWindowTarget()
+        if (target) {
+          return this.getCurrentWindowPaneCount(target, useSwarmSocket, true)
+        }
+      }
       return null
     }
 
@@ -442,6 +453,14 @@ export class TmuxBackend implements PaneBackend {
       : await runTmuxInUserSession(args)
 
     if (result.code !== 0) {
+      // Window may have been deleted - try refreshing once
+      if (!retried && !windowTarget) {
+        cachedLeaderWindowTarget = null // Force refresh
+        const newTarget = await this.getCurrentWindowTarget()
+        if (newTarget && newTarget !== target) {
+          return this.getCurrentWindowPaneCount(newTarget, useSwarmSocket, true)
+        }
+      }
       logError(
         new Error(
           `[TmuxBackend] Failed to get pane count for ${target} (exit ${result.code}): ${result.stderr}`,

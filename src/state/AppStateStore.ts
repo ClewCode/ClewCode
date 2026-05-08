@@ -159,6 +159,8 @@ export type AppState = DeepImmutable<{
   showRemoteCallout: boolean
   // Computer Use tool enabled (controlled by /enableComputer or --computer)
   computerUseEnabled: boolean
+  // Track if rate limit options have been opened in this turn to prevent infinite loops
+  rateLimitOptionsOpened: boolean
 }> & {
   // Unified task state - excluded from DeepImmutable because TaskState contains function types
   tasks: { [taskId: string]: TaskState }
@@ -587,5 +589,6 @@ export function getDefaultAppState(): AppState {
     activeOverlays: new Set<string>(),
     fastMode: false,
     computerUseEnabled: process.env.ENABLE_COMPUTER_USE === '1',
+    rateLimitOptionsOpened: false,
   }
 }

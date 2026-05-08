@@ -607,11 +607,7 @@ export const CMDLET_ALLOWLIST: Record<string, CommandConfig> = Object.assign(
         '-DestinationPrefix',
       ],
     },
-    'get-dnsclientcache': {
-      // SECURITY: -CimSession/-ThrottleLimit excluded. -CimSession connects to
-      // a remote host (network request). Previously empty config = all flags OK.
-      safeFlags: ['-Entry', '-Name', '-Type', '-Status', '-Section', '-Data'],
-    },
+    // SECURITY: Get-DnsClientCache removed — reads DNS cache (privacy-sensitive).
     'get-dnsclient': {
       safeFlags: ['-InterfaceIndex', '-InterfaceAlias'],
     },
@@ -701,7 +697,8 @@ export const CMDLET_ALLOWLIST: Record<string, CommandConfig> = Object.assign(
       // are SKIPPED. Reject any positional argument — only bare `ipconfig` or
       // `ipconfig /all` (read-only display) allowed. Windows ipconfig only uses
       // /flags (display), macOS ipconfig uses subcommands (get/set/waitall).
-      safeFlags: ['/all', '/displaydns', '/allcompartments'],
+      // SECURITY: /displaydns removed — reads DNS cache (privacy-sensitive).
+      safeFlags: ['/all', '/allcompartments'],
       additionalCommandIsDangerousCallback: (
         _cmd: string,
         element?: ParsedCommandElement,
@@ -1155,6 +1152,13 @@ export function hasSyncSecurityConcerns(command: string): boolean {
     return true
   }
 
+  // SECURITY: Trailing & runs command as background job, bypassing sync
+  // permission checks and returning immediately. The job continues in the
+  // background outside our validation/tracking.
+  if (/&\s*$/.test(trimmed)) {
+    return true
+  }
+
   return false
 }
 
@@ -1330,6 +1334,16 @@ export function isAllowlistedCommand(
     }
     // Fall through to lookupAllowlist — CMDLET_ALLOWLIST['where.exe'] handles
     // flag validation (empty config = all flags OK, matching bash's `which`).
+
+    // SECURITY: PS 5.1 argument-splitting hardening. External commands with
+    // arguments containing BOTH double-quotes AND whitespace are unsafe to
+    // auto-allow — PowerShell 5.1's argument splitting is inconsistent in
+    // these cases and can lead to injection. Prompt instead.
+    for (const arg of cmd.args) {
+      if (arg.includes('"') && /\s/.test(arg)) {
+        return false
+      }
+    }
   }
 
   const config = lookupAllowlist(cmd.name)

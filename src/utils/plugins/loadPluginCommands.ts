@@ -395,6 +395,7 @@ function createPluginCommand(
           },
           `/${commandName}`,
           shell,
+          { source: 'command' },
         )
 
         return [{ type: 'text', text: finalContent }]

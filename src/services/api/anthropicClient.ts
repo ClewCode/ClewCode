@@ -87,7 +87,7 @@ export async function createAnthropicClient({
       fetch: resolvedFetch,
     }),
   }
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK)) {
+  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) || isEnvTruthy(process.env.CLAUDE_CODE_USE_MANTLE)) {
     const { AnthropicBedrock } = await import('@anthropic-ai/bedrock-sdk')
     const awsRegion =
       model === getSmallFastModel() &&
@@ -102,6 +102,24 @@ export async function createAnthropicClient({
         skipAuth: true,
       }),
       ...(isDebugToStdErr() && { logger: createStderrLogger() }),
+    }
+
+    const skipBedrockAuth = isEnvTruthy(
+      process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH,
+    )
+    const bedrockAuthorizationHeader = process.env.AWS_BEARER_TOKEN_BEDROCK
+      ? `Bearer ${process.env.AWS_BEARER_TOKEN_BEDROCK}`
+      : defaultHeaders['Authorization']
+
+    if ((skipBedrockAuth || process.env.AWS_BEARER_TOKEN_BEDROCK) && bedrockAuthorizationHeader) {
+      const innerFetch = resolvedFetch ?? globalThis.fetch
+      bedrockArgs.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = new Headers(init?.headers)
+        if (!headers.has('Authorization')) {
+          headers.set('Authorization', bedrockAuthorizationHeader)
+        }
+        return innerFetch(input as any, { ...init, headers })
+      }
     }
 
     if (process.env.AWS_BEARER_TOKEN_BEDROCK) {

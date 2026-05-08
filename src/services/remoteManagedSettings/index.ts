@@ -43,10 +43,15 @@ import {
   getSettingsPath,
   setSessionCache,
 } from './syncCacheState.js'
-import {
-  type RemoteManagedSettingsFetchResult,
-  RemoteManagedSettingsResponseSchema,
-} from './types.js'
+export {
+  checkManagedSettingsSecurity,
+  handleSecurityCheckResult,
+  isRemoteManagedSettingsEligible,
+  getRemoteManagedSettingsSyncFromCache,
+  resetSyncCache,
+  getSettingsPath,
+  setSessionCache,
+}
 
 // Constants
 const SETTINGS_TIMEOUT_MS = 10000 // 10 seconds for settings fetch

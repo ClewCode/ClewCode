@@ -1,5 +1,6 @@
 import { feature } from 'bun:bundle'
 import memoize from 'lodash-es/memoize.js'
+import { getCwd } from './utils/cwd.js';
 import {
   getAdditionalDirectoriesForClaudeMd,
   setCachedClaudeMdContent,
@@ -22,6 +23,15 @@ const MAX_STATUS_CHARS = 2000
 
 // System prompt injection for cache breaking (ant-only, ephemeral debugging state)
 let systemPromptInjection: string | null = null
+let pinnedDate: string | undefined;
+let pinnedGitStatus: string | null | undefined;
+
+export function setSessionContext(date: string | undefined, gitStatus: string | null | undefined): void {
+  pinnedDate = date;
+  pinnedGitStatus = gitStatus;
+  getUserContext.cache.clear?.()
+  getSystemContext.cache.clear?.()
+}
 
 export function getSystemPromptInjection(): string | null {
   return systemPromptInjection
@@ -122,11 +132,12 @@ export const getSystemContext = memoize(
     logForDiagnosticsNoPII('info', 'system_context_started')
 
     // Skip git status in CCR (unnecessary overhead on resume) or when git instructions are disabled
-    const gitStatus =
+    const gitStatus = pinnedGitStatus ?? (
       isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) ||
       !shouldIncludeGitInstructions()
         ? null
         : await getGitStatus()
+    )
 
     // Discover system capabilities proactively
     const capabilitiesContext = !isEnvTruthy(process.env.CLAUDE_CODE_REMOTE)
@@ -195,7 +206,7 @@ export const getUserContext = memoize(
 
     return {
       ...(claudeMd && { claudeMd }),
-      currentDate: `Today's date is ${getLocalISODate()}.`,
+      currentDate: `Today's date is ${pinnedDate ?? getLocalISODate()}.`,
     }
   },
 )

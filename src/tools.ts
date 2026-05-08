@@ -23,7 +23,14 @@ const getCronTools = () => feature("AGENT_TRIGGERS") ? [
   require("./tools/ScheduleCronTool/CronListTool.js").CronListTool,
 ] : [];
 const getRemoteTriggerTool = () => feature("AGENT_TRIGGERS_REMOTE") ? require("./tools/RemoteTriggerTool/RemoteTriggerTool.js").RemoteTriggerTool : null;
-const getMonitorTool = () => feature("MONITOR_TOOL") ? require("./tools/MonitorTool/MonitorTool.js").MonitorTool : null;
+// Monitor tool always enabled (v2.1.98+)
+const getMonitorTool = () => {
+  try {
+    return require("./tools/MonitorTool/MonitorTool.js").MonitorTool
+  } catch {
+    return null
+  }
+}
 const getSendUserFileTool = () => feature("KAIROS") ? require("./tools/SendUserFileTool/SendUserFileTool.js").SendUserFileTool : null;
 const getPushNotificationTool = () => (feature("KAIROS") || feature("KAIROS_PUSH_NOTIFICATION")) ? require("./tools/PushNotificationTool/PushNotificationTool.js").PushNotificationTool : null;
 const getSubscribePRTool = () => feature("KAIROS_GITHUB_WEBHOOKS") ? require("./tools/SubscribePRTool/SubscribePRTool.js").SubscribePRTool : null;
@@ -68,7 +75,6 @@ import { TaskCreateTool } from "./tools/TaskCreateTool/TaskCreateTool.js";
 import { TaskGetTool } from "./tools/TaskGetTool/TaskGetTool.js";
 import { TaskUpdateTool } from "./tools/TaskUpdateTool/TaskUpdateTool.js";
 import { TaskListTool } from "./tools/TaskListTool/TaskListTool.js";
-import { SearXNGTool } from "./tools/SearXNGTool/SearXNGTool.js";
 import { BrowserTool } from "./tools/BrowserTool/BrowserTool.js";
 import uniqBy from "lodash-es/uniqBy.js";
 import { isToolSearchEnabledOptimistic } from "./utils/toolSearch.js";
@@ -200,7 +206,6 @@ export function getAllBaseTools(): Tools {
     ListMcpResourcesTool,
     ReadMcpResourceTool,
     ...(isToolSearchEnabledOptimistic() ? [ToolSearchTool] : []),
-    SearXNGTool,
     ResearchTool,
     ...(getComputerUseTool() ? [getComputerUseTool()] : []),
     BrowserTool,

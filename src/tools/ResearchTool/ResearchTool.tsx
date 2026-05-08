@@ -12,7 +12,7 @@ import { saveDossier, generateDossierData, type DossierData } from './dossierGen
 import { rankSources, calculateSourceScore, generateRankingReport, type SourceScore } from './smartSourceRanking.js'
 
 interface WebResult {
-  type: 'searxng' | 'duckduckgo' | 'tavily' | 'brave';
+  type: 'duckduckgo' | 'tavily' | 'brave';
   title: string;
   url: string;
   excerpt: string;
@@ -166,7 +166,7 @@ export const ResearchTool = buildTool({
       let allWebResults: WebResult[] = dedupeResults(
         providerResults.flatMap((provider: SearchProviderResult) =>
           provider.results.map(result => ({
-            type: provider.source as 'searxng' | 'duckduckgo' | 'tavily' | 'brave',
+            type: provider.source as 'duckduckgo' | 'tavily' | 'brave',
             title: result.title,
             url: result.url || '',
             excerpt: result.excerpt,
@@ -201,7 +201,7 @@ export const ResearchTool = buildTool({
         rankingReport = generateRankingReport(scores)
 
         allWebResults = rankedSources.map(r => ({
-          type: (r.type as 'searxng' | 'duckduckgo' | 'tavily' | 'brave') || 'searxng',
+          type: (r.type as 'duckduckgo' | 'tavily' | 'brave') || 'duckduckgo',
           title: r.title,
           url: r.url,
           excerpt: r.excerpt,

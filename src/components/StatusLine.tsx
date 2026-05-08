@@ -87,7 +87,8 @@ function buildStatusLineCommandInput(
     workspace: {
       current_dir: getCwd(),
       project_dir: getOriginalCwd(),
-      added_dirs: addedDirs
+      added_dirs: addedDirs,
+      git_worktree: getCurrentWorktreeSession() !== null
     },
     version: MACRO.VERSION,
     output_style: {

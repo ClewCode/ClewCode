@@ -546,6 +546,8 @@ class Project {
   currentSessionPrNumber: number | undefined
   currentSessionPrUrl: string | undefined
   currentSessionPrRepository: string | undefined
+  currentSessionDate: string | undefined
+  currentSessionGitStatus: string | null | undefined
 
   sessionFile: string | null = null
   // Entries buffered while sessionFile is null. Flushed by materializeSessionFile
@@ -837,6 +839,14 @@ class Project {
         timestamp: new Date().toISOString(),
       })
     }
+    if (this.currentSessionDate && this.currentSessionGitStatus !== undefined) {
+      appendEntryToFile(this.sessionFile, {
+        type: 'session-context',
+        sessionId,
+        date: this.currentSessionDate,
+        gitStatus: this.currentSessionGitStatus,
+      })
+    }
   }
 
   async flush(): Promise<void> {
@@ -1121,6 +1131,20 @@ class Project {
         sessionId: getSessionId() as UUID,
         agentId,
         replacements,
+      }
+      await this.appendEntry(entry)
+    })
+  }
+
+  async insertSessionContext(date: string, gitStatus: string | null) {
+    return this.trackWrite(async () => {
+      this.currentSessionDate = date
+      this.currentSessionGitStatus = gitStatus
+      const entry: SessionContextEntry = {
+        type: 'session-context',
+        sessionId: getSessionId() as UUID,
+        date,
+        gitStatus,
       }
       await this.appendEntry(entry)
     })
@@ -3016,6 +3040,8 @@ export async function loadFullLog(log: LogOption): Promise<LogOption> {
       contentReplacements,
       contextCollapseCommits,
       contextCollapseSnapshot,
+      pinnedDates,
+      pinnedGitStatuses,
       leafUuids,
     } = await loadTranscriptFile(sessionFile)
 
@@ -3087,6 +3113,10 @@ export async function loadFullLog(log: LogOption): Promise<LogOption> {
         sessionId && contextCollapseSnapshot?.sessionId === sessionId
           ? contextCollapseSnapshot
           : undefined,
+      pinnedDate: sessionId ? pinnedDates.get(sessionId) : log.pinnedDate,
+      pinnedGitStatus: sessionId
+        ? pinnedGitStatuses.get(sessionId)
+        : log.pinnedGitStatus,
     }
   } catch {
     // If loading fails, return the original log
@@ -3159,6 +3189,7 @@ const METADATA_TYPE_MARKERS = [
   '"type":"mode"',
   '"type":"worktree-state"',
   '"type":"pr-link"',
+  '"type":"session-context"',
 ]
 const METADATA_MARKER_BUFS = METADATA_TYPE_MARKERS.map(m => Buffer.from(m))
 // Longest marker is 22 bytes; +1 for leading `{` = 23.
@@ -3530,6 +3561,8 @@ export async function loadTranscriptFile(
   agentContentReplacements: Map<AgentId, ContentReplacementRecord[]>
   contextCollapseCommits: ContextCollapseCommitEntry[]
   contextCollapseSnapshot: ContextCollapseSnapshotEntry | undefined
+  pinnedDates: Map<UUID, string>
+  pinnedGitStatuses: Map<UUID, string | null>
   leafUuids: Set<UUID>
 }> {
   const messages = new Map<UUID, TranscriptMessage>()
@@ -3555,6 +3588,8 @@ export async function loadTranscriptFile(
   const contextCollapseCommits: ContextCollapseCommitEntry[] = []
   // Last-wins — later entries supersede.
   let contextCollapseSnapshot: ContextCollapseSnapshotEntry | undefined
+  const pinnedDates = new Map<UUID, string>()
+  const pinnedGitStatuses = new Map<UUID, string | null>()
 
   try {
     // For large transcripts, avoid materializing megabytes of stale content.
@@ -3642,10 +3677,10 @@ export async function loadTranscriptFile(
           modes.set(entry.sessionId, entry.mode)
         } else if (entry.type === 'worktree-state' && entry.sessionId) {
           worktreeStates.set(entry.sessionId, entry.worktreeSession)
-        } else if (entry.type === 'pr-link' && entry.sessionId) {
-          prNumbers.set(entry.sessionId, entry.prNumber)
-          prUrls.set(entry.sessionId, entry.prUrl)
           prRepositories.set(entry.sessionId, entry.prRepository)
+        } else if (entry.type === 'session-context' && entry.sessionId) {
+          pinnedDates.set(entry.sessionId, entry.date)
+          pinnedGitStatuses.set(entry.sessionId, entry.gitStatus)
         }
       }
     }
@@ -3734,6 +3769,9 @@ export async function loadTranscriptFile(
         contextCollapseCommits.push(entry)
       } else if (entry.type === 'marble-origami-snapshot') {
         contextCollapseSnapshot = entry
+      } else if (entry.type === 'session-context' && entry.sessionId) {
+        pinnedDates.set(entry.sessionId, entry.date)
+        pinnedGitStatuses.set(entry.sessionId, entry.gitStatus)
       }
     }
   } catch {
@@ -3847,6 +3885,8 @@ export async function loadTranscriptFile(
     agentContentReplacements,
     contextCollapseCommits,
     contextCollapseSnapshot,
+    pinnedDates,
+    pinnedGitStatuses,
     leafUuids,
   }
 }
@@ -3921,6 +3961,8 @@ export async function getLastSessionLog(
     contentReplacements,
     contextCollapseCommits,
     contextCollapseSnapshot,
+    pinnedDates,
+    pinnedGitStatuses,
   } = await loadSessionFile(sessionId)
   if (messages.size === 0) return null
   // Prime getSessionMessages cache so recordTranscript (called after REPL
@@ -3967,6 +4009,8 @@ export async function getLastSessionLog(
       contextCollapseSnapshot?.sessionId === sessionId
         ? contextCollapseSnapshot
         : undefined,
+    pinnedDate: pinnedDates.get(sessionId),
+    pinnedGitStatus: pinnedGitStatuses.get(sessionId),
   }
 }
 

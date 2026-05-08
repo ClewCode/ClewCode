@@ -476,6 +476,8 @@ export async function loadConversationForResume(
   prNumber?: number
   prUrl?: string
   prRepository?: string
+  pinnedDate?: string
+  pinnedGitStatus?: string | null
   // Full path to the session file (for cross-directory resume)
   fullPath?: string
 } | null> {
@@ -587,6 +589,8 @@ export async function loadConversationForResume(
       prNumber: log?.prNumber,
       prUrl: log?.prUrl,
       prRepository: log?.prRepository,
+      pinnedDate: log?.pinnedDate,
+      pinnedGitStatus: log?.pinnedGitStatus,
       // Include full path for cross-directory resume
       fullPath: log?.fullPath,
     }

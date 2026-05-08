@@ -699,6 +699,12 @@ function shouldRetry(error: APIError): boolean {
     return false
   }
 
+  if (
+    error.message.toLowerCase().includes('please wait a moment and try again')
+  ) {
+    return true
+  }
+
   // Persistent mode: 429/529 always retryable, bypass subscriber gates and
   // x-should-retry header.
   if (isPersistentRetryEnabled() && isTransientCapacityError(error)) {

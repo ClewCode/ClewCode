@@ -10,6 +10,8 @@
 
 import type { Tool } from '../../Tool.js'
 import { BASH_TOOL_NAME } from '../../tools/BashTool/toolName.js'
+import { FILE_EDIT_TOOL_NAME } from '../../tools/FileEditTool/constants.js'
+import { FILE_WRITE_TOOL_NAME } from '../../tools/FileWriteTool/prompt.js'
 import { POWERSHELL_TOOL_NAME } from '../../tools/PowerShellTool/toolName.js'
 import { logForDebugging } from '../debug.js'
 import type { z } from 'zod/v4'
@@ -149,8 +151,8 @@ export function checkYoloGuardian(
   }
 
   // Check file operations for sensitive files
-  if (tool.name === 'FileEditTool' || tool.name === 'FileWriteTool') {
-    const filePath = input.path as string
+  if (tool.name === FILE_EDIT_TOOL_NAME || tool.name === FILE_WRITE_TOOL_NAME) {
+    const filePath = input.file_path as string
     if (typeof filePath === 'string') {
       const fileCheck = checkSensitiveFile(filePath, settings)
       if (fileCheck.isDangerous) {
@@ -252,10 +254,11 @@ function checkPowerShellCommand(command: string, settings?: YoloGuardianSettings
 
 function checkSensitiveFile(filePath: string, settings?: YoloGuardianSettings): YoloGuardianCheck {
   const fileName = filePath.split(/[/\\]/).pop() || ''
+  const normalizedPath = filePath.replace(/\\/g, '/')
 
   // Check built-in patterns
   for (const pattern of SENSITIVE_FILE_PATTERNS) {
-    if (pattern.test(fileName)) {
+    if (pattern.test(fileName) || pattern.test(normalizedPath)) {
       const customMessage = settings?.customDenyMessages?.[pattern.source]
       return {
         isDangerous: true,
@@ -271,7 +274,7 @@ function checkSensitiveFile(filePath: string, settings?: YoloGuardianSettings): 
     for (const patternStr of settings.customFilePatterns) {
       try {
         const pattern = new RegExp(patternStr, 'i')
-        if (pattern.test(fileName)) {
+        if (pattern.test(fileName) || pattern.test(normalizedPath)) {
           const customMessage = settings.customDenyMessages?.[patternStr]
           return {
             isDangerous: true,

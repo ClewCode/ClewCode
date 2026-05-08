@@ -1029,6 +1029,45 @@ function checkWmiProcessSpawn(
 }
 
 /**
+ * Checks for -ErrorAction Break which can hang the debugger.
+ * -ErrorAction Break enters the interactive debugger on error, causing
+ * the session to hang waiting for debugger input that will never come.
+ */
+function checkErrorActionBreak(
+  parsed: ParsedPowerShellCommand,
+): PowerShellSecurityResult {
+  for (const cmd of getAllCommands(parsed)) {
+    // Check for -ErrorAction:Break or -ErrorAction Break
+    for (let i = 0; i < cmd.args.length; i++) {
+      const arg = cmd.args[i]!
+      const lower = arg.toLowerCase()
+      // Check colon-bound form: -ErrorAction:Break or -ea:Break
+      if (
+        /^-e[a]*:/i.test(arg) &&
+        (lower.includes(':break') || arg.toLowerCase().endsWith(':break'))
+      ) {
+        return {
+          behavior: 'ask',
+          message: 'Command uses -ErrorAction:Break which enters the interactive debugger and hangs the session',
+        }
+      }
+      // Check space-separated form: -ErrorAction Break or -ea Break
+      if (
+        /^-e[a]*$/i.test(arg) &&
+        i + 1 < cmd.args.length &&
+        cmd.args[i + 1]?.toLowerCase() === 'break'
+      ) {
+        return {
+          behavior: 'ask',
+          message: 'Command uses -ErrorAction Break which enters the interactive debugger and hangs the session',
+        }
+      }
+    }
+  }
+  return { behavior: 'passthrough' }
+}
+
+/**
  * Main entry point for PowerShell security validation.
  * Checks a PowerShell command against known dangerous patterns.
  *
@@ -1076,6 +1115,7 @@ export function powershellCommandIsSafe(
     checkModuleLoading,
     checkRuntimeStateManipulation,
     checkWmiProcessSpawn,
+    checkErrorActionBreak,
   ]
 
   for (const validator of validators) {

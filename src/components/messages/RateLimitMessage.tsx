@@ -7,6 +7,7 @@ import { shouldProcessMockLimits } from 'src/services/rateLimitMocking.js'; // U
 import { getRateLimitTier, getSubscriptionType, isClaudeAISubscriber } from 'src/utils/auth.js';
 import { hasClaudeAiBillingAccess } from 'src/utils/billing.js';
 import { MessageResponse } from '../MessageResponse.js';
+import { useAppState, useSetAppState } from 'src/state/AppState.js';
 type UpsellParams = {
   shouldShowUpsell: boolean;
   isMax20x: boolean;
@@ -49,12 +50,16 @@ type RateLimitMessageProps = {
   text: string;
   onOpenRateLimitOptions?: () => void;
 };
-export function RateLimitMessage(t0) {
+
+export function RateLimitMessage(t0: RateLimitMessageProps) {
   const $ = _c(16);
   const {
     text,
     onOpenRateLimitOptions
   } = t0;
+  const rateLimitOptionsOpened = useAppState(s => s.rateLimitOptionsOpened);
+  const setAppState = useSetAppState();
+  const claudeAiLimits = useClaudeAiLimits();
   let t1;
   if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
     t1 = getSubscriptionType();
@@ -82,27 +87,29 @@ export function RateLimitMessage(t0) {
   }
   const shouldShowUpsell = t3;
   const canSeeRateLimitOptionsUpsell = shouldShowUpsell && !isMax20x;
-  const [hasOpenedInteractiveMenu, setHasOpenedInteractiveMenu] = useState(false);
-  const claudeAiLimits = useClaudeAiLimits();
-  const isCurrentlyRateLimited = claudeAiLimits.status === "rejected" && claudeAiLimits.resetsAt !== undefined && !claudeAiLimits.isUsingOverage;
+  const resetsAt = claudeAiLimits.resetsAt;
+  const isCurrentlyRateLimited = claudeAiLimits.status === "rejected" && resetsAt !== undefined && !claudeAiLimits.isUsingOverage;
+  const hasOpenedInteractiveMenu = rateLimitOptionsOpened;
   const shouldAutoOpenRateLimitOptionsMenu = canSeeRateLimitOptionsUpsell && !hasOpenedInteractiveMenu && isCurrentlyRateLimited && onOpenRateLimitOptions;
   let t4;
   let t5;
-  if ($[3] !== onOpenRateLimitOptions || $[4] !== shouldAutoOpenRateLimitOptionsMenu) {
+  if ($[3] !== onOpenRateLimitOptions || $[4] !== resetsAt || $[5] !== shouldAutoOpenRateLimitOptionsMenu || $[6] !== setAppState) {
     t4 = () => {
-      if (shouldAutoOpenRateLimitOptionsMenu) {
-        setHasOpenedInteractiveMenu(true);
+      if (shouldAutoOpenRateLimitOptionsMenu && resetsAt !== undefined) {
+        setAppState(prev => ({ ...prev, rateLimitOptionsOpened: true }));
         onOpenRateLimitOptions();
       }
     };
-    t5 = [shouldAutoOpenRateLimitOptionsMenu, onOpenRateLimitOptions];
+    t5 = [shouldAutoOpenRateLimitOptionsMenu, onOpenRateLimitOptions, resetsAt, setAppState];
     $[3] = onOpenRateLimitOptions;
-    $[4] = shouldAutoOpenRateLimitOptionsMenu;
-    $[5] = t4;
-    $[6] = t5;
+    $[4] = resetsAt;
+    $[5] = shouldAutoOpenRateLimitOptionsMenu;
+    $[6] = setAppState;
+    $[7] = t4;
+    $[8] = t5;
   } else {
-    t4 = $[5];
-    t5 = $[6];
+    t4 = $[7];
+    t5 = $[8];
   }
   useEffect(t4, t5);
   let t6;

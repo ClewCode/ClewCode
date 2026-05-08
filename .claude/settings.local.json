@@ -42,7 +42,18 @@
       "Bash(gh search:*)",
       "Bash(gh api:*)",
       "Bash(gh run:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(bun install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(bun:*)",
+      "Bash(bunx drizzle-kit:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(bunx tsc:*)",
+      "Bash(netstat -ano)"
     ]
-  }
+  },
+  "outputStyle": "Explanatory",
+  "spinnerTipsEnabled": false
 }

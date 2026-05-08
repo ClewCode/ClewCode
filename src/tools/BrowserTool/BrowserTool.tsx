@@ -2,6 +2,7 @@
  * Browser Tool — Tool Definition (Extended Control)
  */
 
+import type { ToolResultBlockParam } from '@anthropic-ai/sdk/resources/index.mjs'
 import * as React from 'react'
 import { z } from 'zod/v4'
 import { Text } from '../../ink.js'
@@ -128,6 +129,39 @@ SESSION: close (saves cookies for next session)`
 
   isEnabled(): boolean {
     return true
+  },
+
+  mapToolResultToToolResultBlockParam(
+    data: any,
+    toolUseID: string,
+  ): ToolResultBlockParam {
+    const content: ToolResultBlockParam['content'] = []
+
+    // Add screenshot as image block if present
+    if (data.screenshot) {
+      content.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: 'image/jpeg',
+          data: data.screenshot,
+        },
+      })
+    }
+
+    // Add text result
+    if (data.result) {
+      content.push({
+        type: 'text',
+        text: data.result,
+      })
+    }
+
+    return {
+      tool_use_id: toolUseID,
+      type: 'tool_result' as const,
+      content: content.length > 0 ? content : data.result || 'Browser action completed',
+    }
   },
 
   async call(input: any): Promise<{ data: any }> {

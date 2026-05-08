@@ -50,6 +50,8 @@ export type LogOption = {
   mode?: 'coordinator' | 'normal' // Session mode for coordinator/normal detection
   worktreeSession?: PersistedWorktreeSession | null // Worktree state at session end (null = exited, undefined = never entered)
   contentReplacements?: ContentReplacementRecord[] // Replacement decisions for resume reconstruction
+  pinnedDate?: string // Persisted date for system prompt stability
+  pinnedGitStatus?: string | null // Persisted git status for system prompt stability
 }
 
 export type SummaryMessage = {
@@ -185,6 +187,19 @@ export type ContentReplacementEntry = {
   replacements: ContentReplacementRecord[]
 }
 
+/**
+ * Persisted session context for prompt cache stability on resume.
+ * Records the date and git status used in the first turn's system prompt.
+ * Re-using these on resume ensures the system prompt hash matches,
+ * enabling a 100% cache hit for the conversation history.
+ */
+export type SessionContextEntry = {
+  type: 'session-context'
+  sessionId: UUID
+  date: string
+  gitStatus: string | null
+}
+
 export type FileHistorySnapshotMessage = {
   type: 'file-history-snapshot'
   messageId: UUID
@@ -315,6 +330,7 @@ export type Entry =
   | ContentReplacementEntry
   | ContextCollapseCommitEntry
   | ContextCollapseSnapshotEntry
+  | SessionContextEntry
 
 export function sortLogs(logs: LogOption[]): LogOption[] {
   return logs.sort((a, b) => {

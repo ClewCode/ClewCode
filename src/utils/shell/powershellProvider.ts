@@ -1,8 +1,10 @@
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { join as posixJoin } from 'path/posix'
+import { getPlatform } from '../platform.js'
 import { getSessionEnvVars } from '../sessionEnvVars.js'
 import type { ShellProvider } from './shellProvider.js'
+import { loadAllPluginsCacheOnly } from '../../utils/plugins/pluginLoader.js'
 
 /**
  * PowerShell invocation flags + command. Shared by the provider's getSpawnArgs
@@ -100,24 +102,39 @@ export function createPowerShellProvider(shellPath: string): ShellProvider {
       return buildPowerShellArgs(commandString)
     },
 
-    async getEnvironmentOverrides(): Promise<Record<string, string>> {
-      const env: Record<string, string> = {}
-      // Apply session env vars set via /env (child processes only, not
-      // the REPL). Without this, `/env PATH=...` affects Bash tool
-      // commands but not PowerShell — so PyCharm users with a stripped
-      // PATH can't self-rescue.
-      // Ordering: session vars FIRST so the sandbox TMPDIR below can't be
-      // overridden by `/env TMPDIR=...`. bashProvider.ts has these in the
-      // opposite order (pre-existing), but sandbox isolation should win.
-      for (const [key, value] of getSessionEnvVars()) {
-        env[key] = value
-      }
-      if (currentSandboxTmpDir) {
-        // PowerShell on Linux/macOS honors TMPDIR for [System.IO.Path]::GetTempPath()
-        env.TMPDIR = currentSandboxTmpDir
-        env.CLAUDE_CODE_TMPDIR = currentSandboxTmpDir
-      }
-      return env
-    },
+async getEnvironmentOverrides(): Promise<Record<string, string>> {
+       const env: Record<string, string> = {}
+       // Apply session env vars set via /env (child processes only, not
+       // the REPL). Without this, `/env PATH=...` affects Bash tool
+       // commands but not PowerShell — so PyCharm users with a stripped
+       // PATH can't self-rescue.
+       // Ordering: session vars FIRST so the sandbox TMPDIR below can't be
+       // overridden by `/env TMPDIR=...`. bashProvider.ts has these in the
+       // opposite order (pre-existing), but sandbox isolation should win.
+       for (const [key, value] of getSessionEnvVars()) {
+         env[key] = value
+       }
+       if (currentSandboxTmpDir) {
+         // PowerShell on Linux/macOS honors TMPDIR for [System.IO.Path]::GetTempPath()
+         env.TMPDIR = currentSandboxTmpDir
+         env.CLAUDE_CODE_TMPDIR = currentSandboxTmpDir
+       }
+// Add plugin bin directories to PATH for plugin executables
+        try {
+          const { enabled: loadedPlugins } = loadAllPluginsCacheOnly()
+          const binPaths = loadedPlugins
+            .filter(p => p.binPath)
+            .map(p => p.binPath!)
+            .reverse()
+          if (binPaths.length > 0) {
+            env.PATH = [...binPaths, process.env.PATH]
+              .filter(Boolean)
+              .join(getPlatform() === 'windows' ? ';' : ':')
+          }
+        } catch {
+          // Ignore plugin loading errors - don't block shell execution
+        }
+        return env
+      },
+    }
   }
-}

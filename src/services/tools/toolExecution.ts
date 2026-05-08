@@ -111,6 +111,10 @@ import {
   isToolSearchEnabledOptimistic,
   isToolSearchToolAvailable,
 } from '../../utils/toolSearch.js'
+import { getFsImplementation } from '../../utils/fsOperations.js'
+import { expandPath } from '../../utils/path.js'
+import { getFileModificationTime } from '../../utils/file.js'
+
 import {
   McpAuthError,
   McpToolCallError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -1400,6 +1404,14 @@ async function checkPermissionsAndCallTool(
     const toolContextModifier = result.contextModifier
     const mcpMeta = result.mcpMeta
 
+    // MCP tools can override maxResultSizeChars via _meta["anthropic/maxResultSizeChars"]
+    // Cap at 500K as per changelog
+    const mcpMaxResultSizeChars = mcpMeta?._meta?.['anthropic/maxResultSizeChars']
+    const effectiveMaxResultSizeChars =
+      typeof mcpMaxResultSizeChars === 'number'
+        ? Math.min(mcpMaxResultSizeChars, 500_000)
+        : tool.maxResultSizeChars
+
     async function addToolResult(
       toolUseResult: unknown,
       preMappedBlock?: ToolResultBlockParam,
@@ -1410,9 +1422,14 @@ async function checkPermissionsAndCallTool(
         ? await processPreMappedToolResultBlock(
             preMappedBlock,
             tool.name,
-            tool.maxResultSizeChars,
+            effectiveMaxResultSizeChars,
           )
-        : await processToolResultBlock(tool, toolUseResult, toolUseID)
+        : await processToolResultBlock(
+            tool,
+            toolUseResult,
+            toolUseID,
+            effectiveMaxResultSizeChars,
+          )
 
       // Build content blocks - tool result first, then optional feedback
       const contentBlocks: ContentBlockParam[] = [toolResultBlock]
@@ -1559,6 +1576,35 @@ async function checkPermissionsAndCallTool(
             postToolHookDurationMs,
           ),
         })
+      }
+    }
+
+    // Refresh readFileState if PostToolUse hooks ran and this is a file tool,
+    // so format-on-save hooks don't cause "File content has changed" errors on the next edit.
+    if (
+      postToolHookInfos.length > 0 &&
+      (tool.name === FILE_EDIT_TOOL_NAME || tool.name === FILE_WRITE_TOOL_NAME) &&
+      processedInput &&
+      typeof processedInput === 'object' &&
+      'file_path' in processedInput
+    ) {
+      const absoluteFilePath = expandPath(String(processedInput.file_path))
+      const fs = getFsImplementation()
+      try {
+        const fileBuffer = await fs.readFileBytes(absoluteFilePath)
+        const encoding =
+          fileBuffer.length >= 2 && fileBuffer[0] === 0xff && fileBuffer[1] === 0xfe
+            ? 'utf16le'
+            : 'utf8'
+        const content = fileBuffer.toString(encoding).replaceAll('\r\n', '\n')
+        toolUseContext.readFileState.set(absoluteFilePath, {
+          content,
+          timestamp: getFileModificationTime(absoluteFilePath),
+          offset: undefined,
+          limit: undefined,
+        })
+      } catch (e) {
+        // Ignore if file doesn't exist or can't be read
       }
     }
 

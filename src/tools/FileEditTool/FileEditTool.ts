@@ -140,6 +140,27 @@ export const FileEditTool = buildTool({
     // where "/" vs "\" can cause readFileState lookup mismatches)
     const fullFilePath = expandPath(file_path)
 
+    // PERFORCE_MODE: Check if file is read-only
+    if (isEnvTruthy(process.env.CLAUDE_CODE_PERFORCE_MODE)) {
+      try {
+        // Try to open file for writing to check if it's read-only
+        const fd = await open(fullFilePath, 'r+')
+        await fd.close()
+      } catch (err) {
+        if (isENOENT(err)) {
+          // File doesn't exist, allow create
+        } else {
+          // File is read-only or can't be written
+          return {
+            result: false,
+            behavior: 'deny',
+            message: `File "${file_path}" is read-only. In Perforce mode, use 'p4 edit "${file_path}" to open for edit first.`,
+            errorCode: 0,
+          }
+        }
+      }
+    }
+
     // Reject edits to team memory files that introduce secrets
     const secretError = checkTeamMemSecrets(fullFilePath, new_string)
     if (secretError) {
@@ -312,13 +333,20 @@ export const FileEditTool = buildTool({
 
     const file = fileContent
 
+    // Truncate old_string for error messages to reduce output tokens
+    const truncateForError = (s: string, maxChars = 200): string => {
+      if (s.length <= maxChars) return s
+      const half = Math.floor(maxChars / 2) - 2
+      return `${s.slice(0, half)}...${s.slice(-half)}`
+    }
+
     // Use findActualString to handle quote normalization
     const actualOldString = findActualString(file, old_string)
     if (!actualOldString) {
       return {
         result: false,
         behavior: 'ask',
-        message: `String to replace not found in file.\nString: ${old_string}`,
+        message: `String to replace not found in file.\nString: ${truncateForError(old_string)}`,
         meta: {
           isFilePathAbsolute: String(isAbsolute(file_path)),
         },
@@ -333,7 +361,7 @@ export const FileEditTool = buildTool({
       return {
         result: false,
         behavior: 'ask',
-        message: `Found ${matches} matches of the string to replace, but replace_all is false. To replace all occurrences, set replace_all to true. To replace only one occurrence, please provide more context to uniquely identify the instance.\nString: ${old_string}`,
+        message: `Found ${matches} matches of the string to replace, but replace_all is false. To replace all occurrences, set replace_all to true. To replace only one occurrence, please provide more context to uniquely identify the instance.\nString: ${truncateForError(old_string)}`,
         meta: {
           isFilePathAbsolute: String(isAbsolute(file_path)),
           actualOldString,

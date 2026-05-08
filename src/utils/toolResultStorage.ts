@@ -213,6 +213,7 @@ export async function processToolResultBlock<T>(
   },
   toolUseResult: T,
   toolUseID: string,
+  maxResultSizeCharsOverride?: number,
 ): Promise<ToolResultBlockParam> {
   const toolResultBlock = tool.mapToolResultToToolResultBlockParam(
     toolUseResult,
@@ -221,7 +222,10 @@ export async function processToolResultBlock<T>(
   return maybePersistLargeToolResult(
     toolResultBlock,
     tool.name,
-    getPersistenceThreshold(tool.name, tool.maxResultSizeChars),
+    getPersistenceThreshold(
+      tool.name,
+      maxResultSizeCharsOverride ?? tool.maxResultSizeChars,
+    ),
   )
 }
 

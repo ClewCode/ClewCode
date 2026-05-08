@@ -46,7 +46,6 @@ import status from './commands/status/index.js'
 import tasks from './commands/tasks/index.js'
 import teleport from './commands/teleport/index.js'
 import providerSelect from './commands/provider-select/index.js'
-import enableComputer from './commands/enable-computer/index.js'
 /* eslint-disable @typescript-eslint/no-require-imports */
 const agentsPlatform =
   process.env.USER_TYPE === 'ant'
@@ -58,7 +57,6 @@ import bughunter from './commands/bughunter/index.js'
 import terminalSetup from './commands/terminalSetup/index.js'
 import usage from './commands/usage/index.js'
 import theme from './commands/theme/index.js'
-import vim from './commands/vim/index.js'
 import { feature } from 'bun:bundle'
 // Dead code elimination: conditional imports
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -127,7 +125,6 @@ import chrome from './commands/chrome/index.js'
 import stickers from './commands/stickers/index.js'
 import advisor from './commands/advisor.js'
 import capabilities from './commands/capabilities/index.js'
-import startSearxng from './commands/start-searxng/index.js'
 import { logError } from './utils/log.js'
 import { toError } from './utils/errors.js'
 import { logForDebugging } from './utils/debug.js'
@@ -151,10 +148,10 @@ import env from './commands/env/index.js'
 import exit from './commands/exit/index.js'
 import exportCommand from './commands/export/index.js'
 import model from './commands/model/index.js'
-import tag from './commands/tag/index.js'
 import outputStyle from './commands/output-style/index.js'
 import setpath from './commands/path/index.js'
 import skill from './commands/skill/index.js'
+import powerup from './commands/powerup/index.js'
 import remoteEnv from './commands/remote-env/index.js'
 import upgrade from './commands/upgrade/index.js'
 import {
@@ -255,7 +252,6 @@ const COMMANDS = memoize((): Command[] => [
   diff,
   doctor,
   effort,
-  enableComputer,
   exit,
   explorer,
   fast,
@@ -272,8 +268,9 @@ const COMMANDS = memoize((): Command[] => [
   mobile,
   model,
   outputStyle,
-  setpath,
-  skill,
+setpath,
+   skill,
+   powerup,
   providerSelect,
   remoteEnv,
   plugin,
@@ -287,9 +284,7 @@ const COMMANDS = memoize((): Command[] => [
   stats,
   status,
   statusline,
-  startSearxng,
   stickers,
-  tag,
   theme,
   feedback,
   review,
@@ -303,7 +298,6 @@ const COMMANDS = memoize((): Command[] => [
   rateLimitOptions,
   usage,
   usageReport,
-  vim,
   ...(webCmd ? [webCmd] : []),
   ...(forkCmd ? [forkCmd] : []),
   buddy,
@@ -610,7 +604,6 @@ export const REMOTE_SAFE_COMMANDS: Set<Command> = new Set([
   help, // Show help
   theme, // Change terminal theme
   color, // Change agent color
-  vim, // Toggle vim mode
   cost, // Show session cost (local cost tracking)
   usage, // Show usage info
   stats, // Show usage statistics

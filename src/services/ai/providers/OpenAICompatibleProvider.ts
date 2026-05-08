@@ -1,13 +1,46 @@
+import { APIError } from '@anthropic-ai/sdk'
 import type {
   ProviderClient,
   ProviderInitOptions,
   ProviderInterface,
   ProviderId,
 } from './ProviderInterface.js'
-import { normalizeProviderError } from '../errorNormalizer.js'
 import { normalizeUsage } from '../usageNormalizer.js'
 
 const CHAT_COMPLETIONS_PATH = '/chat/completions'
+
+function safeParseErrorBody(text: string): Record<string, unknown> | undefined {
+  try {
+    const parsed = JSON.parse(text)
+    return parsed && typeof parsed === 'object'
+      ? (parsed as Record<string, unknown>)
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function extractErrorMessage(
+  body: Record<string, unknown> | undefined,
+  fallback: string,
+): string {
+  const nestedError = body?.error
+  if (nestedError && typeof nestedError === 'object') {
+    const message = (nestedError as Record<string, unknown>).message
+    if (typeof message === 'string' && message.length > 0) return message
+  }
+
+  const message = body?.message
+  if (typeof message === 'string' && message.length > 0) return message
+
+  const detail = body?.detail
+  if (typeof detail === 'string' && detail.length > 0) return detail
+
+  const error = body?.error
+  if (typeof error === 'string' && error.length > 0) return error
+
+  return fallback
+}
 
 function getChatCompletionsUrl(baseUrl: string): string {
   const normalized = baseUrl.replace(/\/$/, '')
@@ -93,10 +126,22 @@ export class OpenAICompatibleProvider implements ProviderInterface {
 
             if (!response.ok) {
               const text = await response.text()
-              const error = new Error(
-                `${this.providerId} request failed: ${response.status} ${response.statusText} - ${text}`,
+              const body = safeParseErrorBody(text)
+              const message = extractErrorMessage(
+                body,
+                text || `${response.status} ${response.statusText}`,
               )
-              throw normalizeProviderError(error, this.providerId)
+              throw APIError.generate(
+                response.status,
+                body ?? {
+                  error: {
+                    message,
+                    type: response.status === 429 ? 'rate_limit_error' : 'api_error',
+                  },
+                },
+                message,
+                response.headers,
+              )
             }
 
             if (isStreaming) {

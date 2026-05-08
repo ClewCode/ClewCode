@@ -29,14 +29,15 @@ export type DeepLinkAction = {
 }
 
 /**
- * Check if a string contains ASCII control characters (0x00-0x1F, 0x7F).
- * These can act as command separators in shells (newlines, carriage returns, etc.).
- * Allows printable ASCII and Unicode (CJK, emoji, accented chars, etc.).
+ * Check if a string contains disallowed control characters.
+ * - Disallowed: 0x00-0x09, 0x0B-0x1F, 0x7F (including CR, but not LF)
+ * - Allowed: LF (0x0A) — enables multi-line prompts via %0A in deep links
+ * - Also allows printable ASCII and Unicode (CJK, emoji, accented chars, etc.).
  */
 function containsControlChars(s: string): boolean {
   for (let i = 0; i < s.length; i++) {
     const code = s.charCodeAt(i)
-    if (code <= 0x1f || code === 0x7f) {
+    if ((code <= 0x09 || (code >= 0x0b && code <= 0x1f) || code === 0x7f)) {
       return true
     }
   }

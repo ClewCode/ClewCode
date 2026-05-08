@@ -1,3 +1,4 @@
+import { context as otelContext, propagation } from '@opentelemetry/api'
 import { isEnvTruthy } from './envUtils.js'
 
 /**
@@ -83,12 +84,30 @@ export function subprocessEnv(): NodeJS.ProcessEnv {
   // CCR containers.
   const proxyEnv = _getUpstreamProxyEnv?.() ?? {}
 
-  if (!isEnvTruthy(process.env.CLAUDE_CODE_SUBPROCESS_ENV_SCRUB)) {
-    return Object.keys(proxyEnv).length > 0
-      ? { ...process.env, ...proxyEnv }
-      : process.env
-  }
   const env = { ...process.env, ...proxyEnv }
+
+  const otelCarrier: Record<string, string> = {}
+  propagation.inject(otelContext.active(), otelCarrier)
+  if (otelCarrier.traceparent) {
+    env.TRACEPARENT = otelCarrier.traceparent
+  }
+  if (otelCarrier.tracestate) {
+    env.TRACESTATE = otelCarrier.tracestate
+  }
+
+  // Always strip OTEL_* vars so subprocesses don't inherit the CLI's telemetry
+  // configuration. This prevents instrumented apps run via the Bash tool from
+  // trying to send spans to the CLI's own OTLP endpoint.
+  for (const key of Object.keys(env)) {
+    if (key.startsWith('OTEL_')) {
+      delete env[key]
+    }
+  }
+
+  if (!isEnvTruthy(process.env.CLAUDE_CODE_SUBPROCESS_ENV_SCRUB)) {
+    return env
+  }
+
   for (const k of GHA_SUBPROCESS_SCRUB) {
     delete env[k]
     // GitHub Actions auto-creates INPUT_<NAME> for `with:` inputs, duplicating

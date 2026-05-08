@@ -23,7 +23,7 @@ export type {
  * 'ask' means the rule forces a prompt to be shown to the user.
  */
 export const permissionBehaviorSchema = lazySchema(() =>
-  z.enum(['allow', 'deny', 'ask']),
+  z.enum(['allow', 'deny', 'ask', 'defer']),
 )
 
 /**

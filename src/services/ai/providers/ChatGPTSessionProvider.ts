@@ -1,9 +1,10 @@
 import type { ProviderClient, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js'
-import axios from 'axios'
 
 export class ChatGPTSessionProvider implements ProviderInterface {
-  readonly providerId = 'openai_browser' as const
-  readonly label = 'ChatGPT Plus (Web)'
+  readonly providerId = 'chatgpt_plus' as const
+  readonly label = 'ChatGPT Plus (Responses API)'
+  readonly envKey = 'CHATGPT_SUBSCRIPTION_KEY'
+  readonly defaultBaseUrl = 'https://api.openai.com'
 
   getProviderId() {
     return this.providerId
@@ -14,24 +15,30 @@ export class ChatGPTSessionProvider implements ProviderInterface {
   }
 
   getProviderApiKeyEnvVar() {
-    return 'CHATGPT_SESSION_TOKEN'
+    return this.envKey
   }
 
   async createClient(options: ProviderInitOptions): Promise<ProviderClient> {
-    const sessionToken = options.apiKey ?? process.env.CHATGPT_SESSION_TOKEN
+    const apiKey = options.apiKey ?? process.env[this.envKey]
 
-    // This is a simplified client that proxies requests to chatgpt.com
+    if (!apiKey) {
+      throw new Error(
+        `Missing API key for ${this.providerId}. Set ${this.envKey}. ` +
+        `Get your subscription key from https://platform.openai.com/settings/organization/overview`,
+      )
+    }
+
+    const baseUrl = options.baseUrl ?? this.defaultBaseUrl
+
+    const { default: OpenAI } = await import('openai')
+
+    const client = new OpenAI({
+      apiKey,
+      baseURL: `${baseUrl}/v1`,
+    })
+
     return {
-      createMessage: async (params: any) => {
-        const response = await axios.post('https://chatgpt.com/backend-api/conversation', params, {
-          headers: {
-            'Authorization': `Bearer ${sessionToken}`,
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          }
-        })
-        return response.data
-      }
-    } as any
+      responses: client.responses,
+    }
   }
 }

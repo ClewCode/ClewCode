@@ -65,7 +65,7 @@ export const PROVIDER_REGISTRY = {
     envKey: 'ANTHROPIC_API_KEY',
     defaultBaseUrl: 'https://api.anthropic.com/v1',
     modelsUrl: 'https://api.anthropic.com/v1/models',
-    defaultModel: 'claude-sonnet-4-6',
+    defaultModel: 'claude-sonnet-4-7',
     defaultModelVerified: true,
     note: 'Full Anthropic Claude support with native tool calling and reasoning. Updated 2026.',
     capabilities: {
@@ -80,7 +80,7 @@ export const PROVIDER_REGISTRY = {
     models: [
       {
         id: 'claude-opus-4-7',
-        label: 'Claude Opus 4.7 (2026-04-14)',
+        label: 'Claude Opus',
         tags: ['tools', 'vision', 'native', 'verified', 'latest'],
         supportedTypes: ['direct', 'subscriber', 'bedrock', 'vertex', 'foundry'],
         capabilities: {
@@ -94,8 +94,8 @@ export const PROVIDER_REGISTRY = {
         },
       },
       {
-        id: 'claude-sonnet-4-6',
-        label: 'Claude Sonnet 4.6 (2026-02-17)',
+        id: 'claude-sonnet-4-7',
+        label: 'Claude Sonnet',
         tags: ['tools', 'vision', 'native', 'verified', 'recommended'],
         supportedTypes: ['direct', 'subscriber', 'bedrock', 'vertex', 'foundry'],
         capabilities: {
@@ -110,7 +110,7 @@ export const PROVIDER_REGISTRY = {
       },
       {
         id: 'claude-opus-4-6',
-        label: 'Claude Opus 4.6 (2026-02-04)',
+        label: 'Claude Opus (Legacy)',
         tags: ['tools', 'vision', 'native', 'verified'],
         supportedTypes: ['direct', 'subscriber', 'bedrock', 'vertex', 'foundry'],
         capabilities: {
@@ -977,6 +977,42 @@ export const PROVIDER_REGISTRY = {
       },
     ],
     provider: new KiloCodeProvider(),
+  },
+  chatgpt_plus: {
+    providerId: 'chatgpt_plus',
+    label: 'ChatGPT Plus',
+    envKey: 'CHATGPT_SUBSCRIPTION_KEY',
+    defaultBaseUrl: 'https://api.openai.com/v1',
+    defaultModel: 'gpt-5.5',
+    defaultModelVerified: false,
+    note: 'OpenAI Responses API for ChatGPT Plus subscribers. Get key from platform.openai.com',
+    capabilities: {
+      chat: true,
+      streaming: 'full',
+      toolCalling: true,
+      vision: true,
+      jsonSchema: true,
+      reasoningEffort: true,
+      contextLength: '1M+',
+    },
+    models: [
+      {
+        id: 'gpt-5.5',
+        label: 'GPT-5.5 (ChatGPT Plus)',
+        tags: ['tools', 'vision', 'native', 'verified'],
+        supportedTypes: ['subscriber'],
+        capabilities: {
+          toolCalling: 'native',
+          vision: true,
+          streaming: 'full',
+          maxContext: 1050000,
+          maxOutput: 128000,
+          reasoning: true,
+          supportsSystemPrompt: true,
+        },
+      },
+    ],
+    provider: new ChatGPTSessionProvider(),
   },
   ollama: {
     providerId: 'ollama',

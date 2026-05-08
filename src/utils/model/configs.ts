@@ -69,18 +69,18 @@ export const CLAUDE_OPUS_4_5_CONFIG = {
   foundry: 'claude-opus-4-5',
 } as const satisfies ModelConfig
 
-export const CLAUDE_OPUS_4_6_CONFIG = {
-  firstParty: 'claude-opus-4-6',
-  bedrock: 'us.anthropic.claude-opus-4-6-v1',
-  vertex: 'claude-opus-4-6',
-  foundry: 'claude-opus-4-6',
+export const CLAUDE_OPUS_4_7_CONFIG = {
+  firstParty: 'claude-opus-4-7',
+  bedrock: 'us.anthropic.claude-opus-4-7-v1',
+  vertex: 'claude-opus-4-7',
+  foundry: 'claude-opus-4-7',
 } as const satisfies ModelConfig
 
-export const CLAUDE_SONNET_4_6_CONFIG = {
-  firstParty: 'claude-sonnet-4-6',
-  bedrock: 'us.anthropic.claude-sonnet-4-6',
-  vertex: 'claude-sonnet-4-6',
-  foundry: 'claude-sonnet-4-6',
+export const CLAUDE_SONNET_4_7_CONFIG = {
+  firstParty: 'claude-sonnet-4-7',
+  bedrock: 'us.anthropic.claude-sonnet-4-7',
+  vertex: 'claude-sonnet-4-7',
+  foundry: 'claude-sonnet-4-7',
 } as const satisfies ModelConfig
 
 // @[MODEL LAUNCH]: Register the new config here.
@@ -91,11 +91,13 @@ export const ALL_MODEL_CONFIGS = {
   sonnet37: CLAUDE_3_7_SONNET_CONFIG,
   sonnet40: CLAUDE_SONNET_4_CONFIG,
   sonnet45: CLAUDE_SONNET_4_5_CONFIG,
-  sonnet46: CLAUDE_SONNET_4_6_CONFIG,
+  sonnet46: CLAUDE_SONNET_4_7_CONFIG,
+  sonnet47: CLAUDE_SONNET_4_7_CONFIG,
   opus40: CLAUDE_OPUS_4_CONFIG,
   opus41: CLAUDE_OPUS_4_1_CONFIG,
   opus45: CLAUDE_OPUS_4_5_CONFIG,
-  opus46: CLAUDE_OPUS_4_6_CONFIG,
+  opus46: CLAUDE_OPUS_4_7_CONFIG,
+  opus47: CLAUDE_OPUS_4_7_CONFIG,
 } as const satisfies Record<string, ModelConfig>
 
 export type ModelKey = keyof typeof ALL_MODEL_CONFIGS

@@ -393,6 +393,7 @@ export function createSkillCommand({
           },
           `/${skillName}`,
           shell,
+          { source: 'skill' },
         )
       }
 

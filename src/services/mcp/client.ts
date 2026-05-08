@@ -454,6 +454,11 @@ const IMAGE_MIME_TYPES = new Set([
 ])
 
 function getConnectionTimeoutMs(): number {
+  // MCP_CONNECTION_NONBLOCKING=true uses a 5s timeout for -p mode
+  // to skip waiting for slow servers instead of blocking on the slowest
+  if (isEnvTruthy(process.env.MCP_CONNECTION_NONBLOCKING)) {
+    return 5000
+  }
   return parseInt(process.env.MCP_TIMEOUT || '', 10) || 30000
 }
 

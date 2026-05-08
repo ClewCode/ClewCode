@@ -16,6 +16,34 @@ import { homedir } from 'os'
 import { mkdirSync } from 'fs'
 import type { BrowserContext, Page } from 'playwright'
 
+// ---------------------------------------------------------------------------
+// Workaround for Bun + Playwright on Windows (oven-sh/bun#15679)
+// Bun's net.Socket.connect() when given an fd sets this.connecting = true
+// but never emits 'connect', causing all writes to buffer and Playwright
+// to time out after 180s. This monkey-patch forces the connect event
+// when an fd is passed, which matches Node.js behaviour.
+// Must run BEFORE playwright is imported (first dynamic import in getBrowser).
+// ---------------------------------------------------------------------------
+import net from 'node:net'
+const _originalSocketConnect = net.Socket.prototype.connect
+net.Socket.prototype.connect = function (...args: any[]) {
+  let options = args[0]
+  if (Array.isArray(options)) options = options[0]
+  const hasFd = options && typeof options === 'object' && 'fd' in options && options.fd != null
+  const result = _originalSocketConnect.apply(this, args)
+  if (hasFd && this.connecting) {
+    this.connecting = false
+    process.nextTick(() => {
+      if (!this.destroyed && !this.connected) {
+        this.connected = true
+        this.emit('connect')
+      }
+    })
+  }
+  return result
+}
+// ---------------------------------------------------------------------------
+
 let browserContext: BrowserContext | null = null
 let pageInstance: Page | null = null
 
@@ -45,7 +73,6 @@ async function getBrowser(input?: BrowserActionInput) {
           '--disable-blink-features=AutomationControlled',
           '--no-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-gpu', // Often helps on Windows
         ],
       })
       logForDebugging('BrowserTool: Context launched successfully')
@@ -82,14 +109,17 @@ async function getBrowser(input?: BrowserActionInput) {
 }
 
 // ── Helper: take screenshot and return result ───────────────────
-async function successResult(page: Page, extra?: Partial<BrowserResult>): Promise<BrowserResult> {
-  const screenshot = await page.screenshot({ type: 'jpeg', quality: 70 })
-  return {
+async function successResult(page: Page, opts?: { extra?: Partial<BrowserResult>; skipScreenshot?: boolean }): Promise<BrowserResult> {
+  const result: BrowserResult = {
     url: page.url(),
     title: await page.title(),
-    screenshot: screenshot.toString('base64'),
-    ...extra,
   }
+  if (!opts?.skipScreenshot) {
+    const screenshot = await page.screenshot({ type: 'jpeg', quality: 70 })
+    result.screenshot = screenshot.toString('base64')
+  }
+  if (opts?.extra) Object.assign(result, opts.extra)
+  return result
 }
 
 // ── Main Handler ────────────────────────────────────────────────
@@ -308,13 +338,17 @@ export async function handleBrowserAction(input: BrowserActionInput): Promise<Br
 
       case 'handle_dialog': {
         const action = input.dialogAction || 'accept'
-        page.once('dialog', async (dialog) => {
+        // Use on+self-remove instead of once so it catches dialogs that are
+        // already open at the time this handler is registered.
+        const onDialog = async (dialog: any) => {
+          page.removeListener('dialog', onDialog)
           if (action === 'accept') {
             await dialog.accept(input.dialogText || '')
           } else {
             await dialog.dismiss()
           }
-        })
+        }
+        page.on('dialog', onDialog)
         return { url: page.url(), title: await page.title(), content: `Dialog handler set: ${action}` }
       }
 
@@ -388,113 +422,181 @@ export async function handleBrowserAction(input: BrowserActionInput): Promise<Br
         const engine = input.engine || 'google'
         const query = input.query
 
-        const searchEngines: Record<string, { url: string; selector: string; extract: (el: any) => any }> = {
-          google: {
-            url: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-            selector: 'div.g',
-            extract: (el: any) => ({
-              title: el.querySelector('h3')?.innerText,
-              link: el.querySelector('a')?.href,
-              snippet: el.querySelector('div[style*="-webkit-line-clamp"]')?.innerText || el.querySelector('.VwiC3b')?.innerText
-            })
-          },
-          bing: {
-            url: `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
-            selector: 'li.b_algo',
-            extract: (el: any) => ({
-              title: el.querySelector('h2')?.innerText,
-              link: el.querySelector('a')?.href,
-              snippet: el.querySelector('.b_caption p')?.innerText
-            })
-          },
-          duckduckgo: {
-            url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
-            selector: 'article',
-            extract: (el: any) => ({
-              title: el.querySelector('h2')?.innerText,
-              link: el.querySelector('a[data-testid="result-title-a"]')?.href,
-              snippet: el.querySelector('div[data-testid="result-snippet"]')?.innerText
-            })
-          },
-          twitter: {
-            url: `https://x.com/search?q=${encodeURIComponent(query)}&src=typed_query`,
-            selector: 'article[data-testid="tweet"]',
-            extract: (el: any) => ({
-              title: el.querySelector('div[data-testid="User-Names"]')?.innerText?.replace(/\n/g, ' '),
-              link: el.querySelector('a[href*="/status/"]')?.href,
-              snippet: el.querySelector('div[data-testid="tweetText"]')?.innerText
-            })
-          },
-          reddit: {
-            url: `https://www.reddit.com/search/?q=${encodeURIComponent(query)}`,
-            selector: 'faceplate-tracker[source="search_results"]',
-            extract: (el: any) => ({
-              title: el.querySelector('a[slot="title"]')?.innerText || el.querySelector('h3')?.innerText,
-              link: el.querySelector('a[slot="full-post-link"]')?.href || el.querySelector('a')?.href,
-              snippet: el.querySelector('div[slot="text-body"]')?.innerText
-            })
-          },
-          github: {
-            url: `https://github.com/search?q=${encodeURIComponent(query)}&type=repositories`,
-            selector: 'div.search-title',
-            extract: (el: any) => ({
-              title: el.innerText.trim(),
-              link: el.querySelector('a')?.href,
-              snippet: el.closest('div.Box-sc-1z9be74-0')?.querySelector('p.Box-sc-1z9be74-0')?.innerText
-            })
-          }
+        const searchUrls: Record<string, (q: string) => string> = {
+          google: (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}&hl=en`,
+          bing: (q: string) => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
+          duckduckgo: (q: string) => `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(q)}`,
+          twitter: (q: string) => `https://x.com/search?q=${encodeURIComponent(q)}&src=typed_query`,
+          reddit: (q: string) => `https://www.reddit.com/search/?q=${encodeURIComponent(q)}`,
+          github: (q: string) => `https://github.com/search?q=${encodeURIComponent(q)}&type=repositories`,
         }
 
-        logForDebugging(`BrowserTool: Searching ${engine} for "${query}"`)
-        const selected = searchEngines[engine] || searchEngines.google
-        
-        logForDebugging(`BrowserTool: Navigating to ${selected.url}`)
-        await page.goto(selected.url, { waitUntil: 'domcontentloaded', timeout: 60000 })
-        logForDebugging('BrowserTool: Navigation complete, waiting for delay')
-        
-        await page.waitForTimeout(humanDelay(1500, 3000))
-        logForDebugging('BrowserTool: Extracting results')
+        const urlBuilder = searchUrls[engine] || searchUrls.google
+        const searchUrl = urlBuilder(query)
 
-        // Extract results using evaluate
-        const results = await page.$$eval(selected.selector, (elements: any[], engineKey: string) => {
-          // Re-define extractors inside evaluate context
-          const extractors: Record<string, (el: any) => any> = {
-            google: (el: any) => ({
-              title: el.querySelector('h3')?.innerText,
-              link: el.querySelector('a')?.href,
-              snippet: el.querySelector('.VwiC3b')?.innerText
-            }),
-            bing: (el: any) => ({
-              title: el.querySelector('h2')?.innerText,
-              link: el.querySelector('a')?.href,
-              snippet: el.querySelector('.b_caption p')?.innerText || el.querySelector('.b_algo p')?.innerText
-            }),
-            duckduckgo: (el: any) => ({
-              title: el.querySelector('h2')?.innerText,
-              link: el.querySelector('a[data-testid="result-title-a"]')?.href || el.querySelector('a')?.href,
-              snippet: el.querySelector('div[data-testid="result-snippet"]')?.innerText
-            }),
-            twitter: (el: any) => ({
-              title: el.querySelector('div[data-testid="User-Names"]')?.innerText?.replace(/\n/g, ' '),
-              link: el.querySelector('a[href*="/status/"]')?.href,
-              snippet: el.querySelector('div[data-testid="tweetText"]')?.innerText
-            }),
-            reddit: (el: any) => ({
-              title: el.querySelector('a[slot="title"]')?.innerText || el.querySelector('h3')?.innerText,
-              link: el.querySelector('a[slot="full-post-link"]')?.href || el.querySelector('a')?.href,
-              snippet: el.querySelector('div[slot="text-body"]')?.innerText
-            }),
-            github: (el: any) => ({
-              title: el.innerText.trim(),
-              link: el.querySelector('a')?.href,
-              snippet: el.closest('div.Box-sc-1z9be74-0')?.querySelector('p.Box-sc-1z9be74-0')?.innerText
-            })
+        logForDebugging(`BrowserTool: Searching ${engine} for "${query}"`)
+        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
+        await page.waitForTimeout(humanDelay(1500, 3000))
+
+        // Extract results using evaluate with multi-strategy fallback selectors.
+        // Each engine tries its known selectors first, falls back to generic link+h3 extraction.
+        const results = await page.evaluate((engineKey: string) => {
+          interface Result { title: string; link: string; snippet: string }
+          const items: Result[] = []
+
+          // ── Multi-strategy extraction by engine ──
+          const strategies: Record<string, Array<() => Result[]>> = {
+            google: [
+              // Strategy 1: current Google layout — div.tF2Cxc containers
+              () => {
+                const out: Result[] = []
+                const containers = document.querySelectorAll('div.tF2Cxc')
+                for (const c of containers) {
+                  const link = c.querySelector('a[href^="http"]')
+                  const heading = c.querySelector('h3')
+                  if (link && heading) {
+                    out.push({
+                      title: heading.innerText.trim(),
+                      link: link.href,
+                      snippet: c.querySelector('.VwiC3b, span.aCOpRe, div[data-sncf], div[role="heading"] + div')?.textContent?.trim() || '',
+                    })
+                  }
+                }
+                return out
+              },
+              // Strategy 2: older Google layout — div.g containers
+              () => {
+                const out: Result[] = []
+                const containers = document.querySelectorAll('div.g')
+                for (const c of containers) {
+                  const link = c.querySelector('a[href^="http"]')
+                  const heading = c.querySelector('h3')
+                  if (link && heading) {
+                    out.push({ title: heading.innerText.trim(), link: link.href, snippet: c.querySelector('.VwiC3b')?.textContent?.trim() || '' })
+                  }
+                }
+                return out
+              },
+            ],
+            bing: [
+              () => {
+                const out: Result[] = []
+                const items_ = document.querySelectorAll('li.b_algo')
+                for (const el of items_) {
+                  const link = el.querySelector('a[href^="http"]')
+                  const heading = el.querySelector('h2')
+                  if (link && heading) {
+                    out.push({ title: heading.innerText.trim(), link: link.href, snippet: el.querySelector('.b_caption p, .b_algo p')?.textContent?.trim() || '' })
+                  }
+                }
+                return out
+              },
+            ],
+            duckduckgo: [
+              // Lite version — simple table rows
+              () => {
+                const out: Result[] = []
+                const rows = document.querySelectorAll('table tr')
+                for (const row of rows) {
+                  const link = row.querySelector('a[rel="nofollow"]') as HTMLAnchorElement
+                  if (link && link.href && link.innerText.trim()) {
+                    const snippetTd = row.querySelectorAll('td')
+                    const snippet = snippetTd.length >= 3 ? snippetTd[snippetTd.length - 1]?.innerText?.trim() : ''
+                    out.push({ title: link.innerText.trim(), link: link.href, snippet: snippet || '' })
+                  }
+                }
+                return out
+              },
+              // Fallback: regular DDG
+              () => {
+                const out: Result[] = []
+                const articles = document.querySelectorAll('article')
+                for (const art of articles) {
+                  const link = art.querySelector('a[data-testid="result-title-a"]') || art.querySelector('a[href^="http"]')
+                  const heading = art.querySelector('h2')
+                  if (link && heading) {
+                    out.push({ title: heading.innerText.trim(), link: (link as HTMLAnchorElement).href, snippet: art.querySelector('div[data-testid="result-snippet"]')?.textContent?.trim() || '' })
+                  }
+                }
+                return out
+              },
+            ],
+            twitter: [
+              () => {
+                const out: Result[] = []
+                const tweets = document.querySelectorAll('article[data-testid="tweet"]')
+                for (const t of tweets) {
+                  const link = t.querySelector('a[href*="/status/"]') as HTMLAnchorElement
+                  const text = t.querySelector('div[data-testid="tweetText"]')
+                  if (link && text) {
+                    out.push({ title: text.innerText.substring(0, 80), link: link.href, snippet: text.innerText })
+                  }
+                }
+                return out
+              },
+            ],
+            reddit: [
+              () => {
+                const out: Result[] = []
+                const posts = document.querySelectorAll('faceplate-tracker[source="search_results"]')
+                for (const p of posts) {
+                  const link = p.querySelector('a[slot="full-post-link"]') || p.querySelector('a[slot="title"]') || p.querySelector('a[href^="http"]')
+                  const title = p.querySelector('a[slot="title"]') || p.querySelector('h3')
+                  if (link && title) {
+                    out.push({ title: title.innerText.trim(), link: (link as HTMLAnchorElement).href, snippet: p.querySelector('div[slot="text-body"]')?.textContent?.trim() || '' })
+                  }
+                }
+                return out
+              },
+            ],
+            github: [
+              () => {
+                const out: Result[] = []
+                const titles = document.querySelectorAll('div.search-title')
+                for (const t of titles) {
+                  const link = t.querySelector('a') as HTMLAnchorElement
+                  if (link) {
+                    out.push({ title: t.innerText.trim(), link: link.href, snippet: '' })
+                  }
+                }
+                return out
+              },
+            ],
           }
-          const extractor = extractors[engineKey] || extractors.google
-          return elements.slice(0, 10).map(extractor).filter(r => r.title && r.link)
+
+          // ── Run engine-specific strategies ──
+          const engineStrategies = strategies[engineKey] || strategies.google || []
+          for (const strategy of engineStrategies) {
+            const stratResults = strategy()
+            if (stratResults.length > 0) {
+              items.push(...stratResults)
+              break // Stop at first successful strategy
+            }
+          }
+
+          // ── Generic fallback: find any link+h3 pairs ──
+          if (items.length === 0) {
+            const seen = new Set<string>()
+            const h3s = document.querySelectorAll('h3')
+            for (const h3 of h3s) {
+              const link = h3.closest('a') as HTMLAnchorElement
+              if (link && link.href && link.href.startsWith('http') && !seen.has(link.href)) {
+                const parent = link.closest('div')
+                seen.add(link.href)
+                items.push({
+                  title: h3.innerText.trim(),
+                  link: link.href,
+                  snippet: parent?.querySelector('p, span, div[class*="snippet"], div[class*="desc"]')?.textContent?.trim() || '',
+                })
+              }
+            }
+          }
+
+          return items.slice(0, 10).filter(r => r.title && r.link)
         }, engine)
 
-        return successResult(page, { content: JSON.stringify(results, null, 2) })
+        logForDebugging(`BrowserTool: Search found ${results.length} results`)
+        return successResult(page, { extra: { content: JSON.stringify(results, null, 2) } })
       }
 
       default:

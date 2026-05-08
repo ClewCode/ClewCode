@@ -21,6 +21,7 @@ import {
   getSettingSourceDisplayNameLowercase,
   SETTING_SOURCES,
 } from '../settings/constants.js'
+import { getSettings_DEPRECATED } from '../settings/settings.js'
 import { plural } from '../stringUtils.js'
 import { permissionModeTitle } from './PermissionMode.js'
 import type {
@@ -1291,7 +1292,12 @@ async function hasPermissionsToUseToolInner(
   if (shouldBypassPermissions && !isYoloLite) {
     return {
       behavior: 'allow',
-      updatedInput: getUpdatedInputOrFallback(toolPermissionResult, input),
+      updatedInput: getYoloUpdatedInputOrFallback(
+        appState.toolPermissionContext.mode,
+        tool,
+        toolPermissionResult,
+        input,
+      ),
       decisionReason: {
         type: 'mode',
         mode: appState.toolPermissionContext.mode,
@@ -1301,7 +1307,11 @@ async function hasPermissionsToUseToolInner(
 
   // YOLO Lite: Run guardian safety checks
   if (isYoloLite) {
-    const guardianCheck = checkYoloGuardian(tool, input)
+    const guardianCheck = checkYoloGuardian(
+      tool,
+      input,
+      getSettings_DEPRECATED()?.permissions?.yoloGuardian,
+    )
     if (guardianCheck.isDangerous && guardianCheck.requiresConfirmation) {
       logForDebugging(
         `YOLO Guardian blocked dangerous action: ${guardianCheck.reason}`,
@@ -1332,7 +1342,12 @@ async function hasPermissionsToUseToolInner(
     }))
     return {
       behavior: 'allow',
-      updatedInput: getUpdatedInputOrFallback(toolPermissionResult, input),
+      updatedInput: getYoloUpdatedInputOrFallback(
+        appState.toolPermissionContext.mode,
+        tool,
+        toolPermissionResult,
+        input,
+      ),
       decisionReason: {
         type: 'mode',
         mode: appState.toolPermissionContext.mode,
@@ -1543,4 +1558,24 @@ function getUpdatedInputOrFallback(
       ? permissionResult.updatedInput
       : undefined) ?? fallback
   )
+}
+
+function getYoloUpdatedInputOrFallback(
+  mode: ToolPermissionContext['mode'],
+  tool: Tool,
+  permissionResult: PermissionResult,
+  fallback: Record<string, unknown>,
+): Record<string, unknown> {
+  const updatedInput = getUpdatedInputOrFallback(permissionResult, fallback)
+  if (
+    (mode === 'yoloMax' || mode === 'yoloGod') &&
+    (tool.name === BASH_TOOL_NAME || tool.name === POWERSHELL_TOOL_NAME) &&
+    SandboxManager.areUnsandboxedCommandsAllowed()
+  ) {
+    return {
+      ...updatedInput,
+      dangerouslyDisableSandbox: true,
+    }
+  }
+  return updatedInput
 }

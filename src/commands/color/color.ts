@@ -32,11 +32,8 @@ export async function call(
   }
 
   if (!args || args.trim() === '') {
-    const colorList = AGENT_COLORS.join(', ')
-    onDone(`Please provide a color. Available colors: ${colorList}, default`, {
-      display: 'system',
-    })
-    return null
+    const randomColor = AGENT_COLORS[Math.floor(Math.random() * AGENT_COLORS.length)]!
+    args = randomColor
   }
 
   const colorArg = args.trim().toLowerCase()

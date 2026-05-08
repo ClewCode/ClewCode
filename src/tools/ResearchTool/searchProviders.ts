@@ -2,87 +2,6 @@ import axios from 'axios';
 import { logError } from '../../utils/log.js';
 import { calculateSourceScore, type SourceScore } from "./smartSourceRanking.js";
 
-// SearXNG Integration (Self-hosted, free)
-// Docs: https://docs.searxng.org/
-const SEARXNG_BASE = process.env.SEARXNG_URL || "http://localhost:8888";
-
-export interface SearXNGSearchResult {
-  title: string;
-  url: string;
-  content: string;
-  excerpt: string;
-  engine?: string;
-  score?: SourceScore;
-}
-
-export interface SearXNGSearchResponse {
-  query: string;
-  results: SearXNGSearchResult[];
-  answers?: string[];
-  response_time: number;
-}
-
-export async function searchSearXNG(
-  query: string,
-  options: {
-    maxResults?: number;
-    timeout?: number;
-  } = {},
-): Promise<SearXNGSearchResponse | null> {
-  const { maxResults = 10, timeout = 10000 } = options;
-
-  try {
-    const startTime = performance.now();
-    const url = new URL(`${SEARXNG_BASE}/search`);
-    url.searchParams.append("q", query);
-    url.searchParams.append("format", "json");
-    url.searchParams.append("pageno", "1");
-
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-      signal: AbortSignal.timeout(timeout),
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `SearXNG error: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const data = (await response.json()) as any;
-    const rawResults = Array.isArray(data.results) ? data.results : [];
-    const results = rawResults.slice(0, maxResults);
-
-    return {
-      query,
-      results: results.map((r: any) => {
-        const title = r.title || "Untitled";
-        const url = r.url || "";
-        const content = r.content || r.snippet || "";
-        const excerpt = content.substring(0, 500);
-        return {
-          title,
-          url,
-          content,
-          excerpt,
-          engine: r.engine,
-          score: calculateSourceScore(url, title, excerpt, content),
-        };
-      }),
-      answers: data.answers,
-      response_time: performance.now() - startTime,
-    };
-  } catch (error) {
-    console.error("SearXNG search error:", error);
-    logError(error as Error);
-    return null;
-  }
-}
-
 // DuckDuckGo Integration (Free, no API key)
 // Docs: https://duckduckgo.com/
 export interface DDGSearchResult {
@@ -319,7 +238,7 @@ export async function searchBrave(
 
 // Unified search function that tries multiple providers in priority order
 export interface SearchProviderResult {
-  source: "searxng" | "duckduckgo" | "tavily" | "brave";
+  source: "duckduckgo" | "tavily" | "brave";
   query: string;
   results: Array<{
     title: string;
@@ -335,20 +254,16 @@ export interface SearchProviderResult {
 
 /**
  * Get search providers in priority order:
- * 1. SearXNG (default, free, self-hosted)
- * 2. DuckDuckGo (fallback, free)
- * 3. Tavily (if API key available)
- * 4. Brave (if API key available)
+ * 1. DuckDuckGo (free, no API key)
+ * 2. Tavily (if API key available)
+ * 3. Brave (if API key available)
  */
 export function getSearchProviderPriority(): Array<
-  "searxng" | "duckduckgo" | "tavily" | "brave"
+  "duckduckgo" | "tavily" | "brave"
 > {
-  const providers: Array<"searxng" | "duckduckgo" | "tavily" | "brave"> = [];
+  const providers: Array<"duckduckgo" | "tavily" | "brave"> = [];
 
-  // SearXNG is attempted by default. Actual availability is determined at request time.
-  providers.push("searxng");
-
-  // DuckDuckGo as free fallback (no API key needed)
+  // DuckDuckGo as free default (no API key needed)
   providers.push("duckduckgo");
 
   // API-based providers (if configured)
@@ -366,7 +281,7 @@ export function getSearchProviderPriority(): Array<
 export async function searchWithProviders(
   query: string,
   options: {
-    providers?: Array<"searxng" | "duckduckgo" | "tavily" | "brave">;
+    providers?: Array<"duckduckgo" | "tavily" | "brave">;
     maxResults?: number;
     timeout?: number;
   } = {},
@@ -378,23 +293,6 @@ export async function searchWithProviders(
   const searchPromises = providersToUse.map(
     async (provider): Promise<SearchProviderResult | null> => {
       try {
-        if (provider === "searxng") {
-          const searxngResult = await searchSearXNG(query, {
-            maxResults,
-            timeout,
-          });
-
-          if (searxngResult && searxngResult.results.length > 0) {
-            return {
-              source: "searxng",
-              query: searxngResult.query,
-              results: searxngResult.results,
-              answer: searxngResult.answers?.[0],
-              responseTime: searxngResult.response_time,
-            };
-          }
-        }
-
         if (provider === "duckduckgo") {
           const ddgResult = await searchDuckDuckGo(query, {
             maxResults,
@@ -472,12 +370,9 @@ export async function searchWithProviders(
 
 // Check which providers are available
 export function getAvailableSearchProviders(): Array<
-  "searxng" | "duckduckgo" | "tavily" | "brave"
+  "duckduckgo" | "tavily" | "brave"
 > {
-  const providers: Array<"searxng" | "duckduckgo" | "tavily" | "brave"> = [];
-
-  // SearXNG is attempted by default. Actual availability is determined at request time.
-  providers.push("searxng");
+  const providers: Array<"duckduckgo" | "tavily" | "brave"> = [];
 
   // DuckDuckGo is always available (free)
   providers.push("duckduckgo");

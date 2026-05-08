@@ -1118,6 +1118,15 @@ async function cacheMarketplaceFromGit(
       pullResult.code === 0 ? undefined : classifyFetchError(pullResult.stderr),
     )
     if (pullResult.code === 0) return
+
+    if (isEnvTruthy('CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE')) {
+      logForDebugging(
+        `git pull failed but CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE is set, keeping existing cache: ${pullResult.stderr}`,
+        { level: 'warn' },
+      )
+      return
+    }
+
     logForDebugging(`git pull failed, will re-clone: ${pullResult.stderr}`, {
       level: 'warn',
     })

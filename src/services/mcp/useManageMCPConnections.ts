@@ -324,6 +324,15 @@ export function useManageMCPConnections(
       // Handle side effects based on client state
       switch (client.type) {
         case 'connected': {
+          if (client.name !== 'ide') {
+            const toolCount = tools.length
+            addNotification({
+              key: `mcp-connected-${client.name}`,
+              text: `Connected to ${client.name} (${toolCount} tool${toolCount === 1 ? '' : 's'})${toolCount === 0 ? ' ⚠' : ''}`,
+              priority: 'low',
+            })
+          }
+
           // Overwrite the default elicitation handler registered in connectToServer
           // with the real one (queues elicitation in AppState for UI). Registering
           // here (once per connect) instead of in a [mcpClients] effect avoids
@@ -654,6 +663,14 @@ export function useManageMCPConnections(
                     })
                   }
                   updateServer({ ...client, tools: newTools })
+
+                  if (client.name !== 'ide') {
+                    addNotification({
+                      key: `mcp-connected-${client.name}`,
+                      text: `Connected to ${client.name} (${newCount} tool${newCount === 1 ? '' : 's'})${newCount === 0 ? ' ⚠' : ''}`,
+                      priority: 'low',
+                    })
+                  }
                 } catch (error) {
                   logMCPError(
                     client.name,

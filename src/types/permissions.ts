@@ -46,7 +46,7 @@ export const PERMISSION_MODES = INTERNAL_PERMISSION_MODES
 // Permission Behaviors
 // ============================================================================
 
-export type PermissionBehavior = 'allow' | 'deny' | 'ask'
+export type PermissionBehavior = 'allow' | 'deny' | 'ask' | 'defer'
 
 // ============================================================================
 // Permission Rules
@@ -269,6 +269,12 @@ export type PermissionResult<
        */
       pendingClassifierCheck?: PendingClassifierCheck
     }
+  | {
+      behavior: 'defer'
+      message: string
+      updatedInput?: Input
+      decisionReason?: PermissionDecisionReason
+    }
 
 /**
  * Explanation of why a permission decision was made
@@ -326,6 +332,11 @@ export type PermissionDecisionReason =
   | {
       type: 'other'
       reason: string
+    }
+  | {
+      type: 'deferred'
+      reason: string
+      resumeCommand: string
     }
 
 // ============================================================================

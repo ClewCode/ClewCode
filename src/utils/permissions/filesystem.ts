@@ -76,6 +76,7 @@ export const DANGEROUS_DIRECTORIES = [
   '.vscode',
   '.idea',
   '.claude',
+  '.husky',
 ] as const
 
 /**
@@ -1031,7 +1032,7 @@ export function checkReadPermissionForTool(
   tool: Tool,
   input: { [key: string]: unknown },
   toolPermissionContext: ToolPermissionContext,
-): PermissionDecision {
+): PermissionResult {
   if (typeof tool.getPath !== 'function') {
     return {
       behavior: 'ask',
@@ -1207,7 +1208,7 @@ export function checkWritePermissionForTool<Input extends AnyObject>(
   input: z.infer<Input>,
   toolPermissionContext: ToolPermissionContext,
   precomputedPathsToCheck?: readonly string[],
-): PermissionDecision {
+): PermissionResult {
   if (typeof tool.getPath !== 'function') {
     return {
       behavior: 'ask',
@@ -1303,7 +1304,7 @@ export function checkWritePermissionForTool<Input extends AnyObject>(
   // This MUST come before checking allow rules to prevent users from accidentally granting
   // permission to edit protected files
   const safetyCheck = checkPathSafetyForAutoEdit(path, pathsToCheck)
-  if (!safetyCheck.safe) {
+  if (safetyCheck.safe === false) {
     // SDK suggestion: if under .claude/skills/{name}/, emit the narrowed
     // session-scoped addRules that step 1.6 will honor on the next call.
     // Everything else (.claude/settings.json, .git/, .vscode/, .idea/) falls

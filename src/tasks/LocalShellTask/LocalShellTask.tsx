@@ -126,7 +126,8 @@ function enqueueShellNotification(taskId: string, description: string, status: '
   // preserved; only the pre-computed response is discarded.
   abortSpeculation(setAppState);
   let summary: string;
-  if (feature('MONITOR_TOOL') && kind === 'monitor') {
+  // Monitor tool always enabled (v2.1.98+)
+  if (kind === 'monitor') {
     // Monitor is streaming-only (post-#22764) — the script exiting means
     // the stream ended, not "condition met". Distinct from the bash prefix
     // so Monitor completions don't fold into the "N background commands
@@ -166,7 +167,7 @@ function enqueueShellNotification(taskId: string, description: string, status: '
   enqueuePendingNotification({
     value: message,
     mode: 'task-notification',
-    priority: feature('MONITOR_TOOL') ? 'next' : 'later',
+    priority: 'next', // Monitor always enabled
     agentId
   });
 }

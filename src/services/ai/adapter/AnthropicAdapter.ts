@@ -1,5 +1,38 @@
 import type { BetaMessageStreamParams, BetaMessage } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs'
 
+function normalizeOpenAIToolInputSchema(inputSchema: unknown): Record<string, unknown> {
+  if (!inputSchema || typeof inputSchema !== 'object') {
+    return {
+      type: 'object',
+      properties: {},
+      additionalProperties: true,
+    }
+  }
+
+  const schema = { ...(inputSchema as Record<string, unknown>) }
+  if (schema.type !== 'object') {
+    schema.type = 'object'
+  }
+  return schema
+}
+
+function stringifyReasoningContent(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) {
+    return value
+      .map(item => {
+        if (typeof item === 'string') return item
+        if (item && typeof item === 'object') {
+          const text = (item as Record<string, unknown>).text
+          if (typeof text === 'string') return text
+        }
+        return ''
+      })
+      .join('')
+  }
+  return ''
+}
+
 export class AnthropicAdapter {
   private client: any
   private providerId: string
@@ -87,27 +120,55 @@ export class AnthropicAdapter {
     }
 
     let activeIndex: number | null = null
+    let sentMessageDelta = false
+    let hasStartedThinkingBlock = false
 
     for await (const chunk of stream) {
       if (chunk.choices && chunk.choices[0].delta) {
         const delta = chunk.choices[0].delta
-        
-        // Handle text content
-        if (delta.content) {
-          if (activeIndex !== 0) {
+        const reasoningContent = stringifyReasoningContent(
+          delta.reasoning_content ?? delta.reasoning,
+        )
+        if (reasoningContent) {
+          if (activeIndex !== 0 || !hasStartedThinkingBlock) {
             if (activeIndex !== null) {
               yield { type: 'content_block_stop', index: activeIndex }
             }
             yield {
               type: 'content_block_start',
               index: 0,
-              content_block: { type: 'text', text: '' }
+              content_block: { type: 'thinking', thinking: '', signature: '' }
             }
             activeIndex = 0
+            hasStartedThinkingBlock = true
           }
           yield {
             type: 'content_block_delta',
             index: 0,
+            delta: {
+              type: 'thinking_delta',
+              thinking: reasoningContent
+            }
+          }
+        }
+        
+        // Handle text content
+        if (delta.content) {
+          const textIndex = hasStartedThinkingBlock ? 1 : 0
+          if (activeIndex !== textIndex) {
+            if (activeIndex !== null) {
+              yield { type: 'content_block_stop', index: activeIndex }
+            }
+            yield {
+              type: 'content_block_start',
+              index: textIndex,
+              content_block: { type: 'text', text: '' }
+            }
+            activeIndex = textIndex
+          }
+          yield {
+            type: 'content_block_delta',
+            index: textIndex,
             delta: {
               type: 'text_delta',
               text: delta.content
@@ -119,8 +180,8 @@ export class AnthropicAdapter {
         if (delta.tool_calls) {
           for (const tc of delta.tool_calls) {
             // OpenAI indices are 0-based, but we might want to offset them 
-            // if we already used index 0 for text. For simplicity, we'll use tc.index + 1
-            const index = (tc.index ?? 0) + 1
+            // if we already used earlier indices for thinking/text blocks.
+            const index = (tc.index ?? 0) + (hasStartedThinkingBlock ? 2 : 1)
             
             if (tc.function?.name) {
               if (activeIndex !== null && activeIndex !== index) {
@@ -154,10 +215,15 @@ export class AnthropicAdapter {
       }
 
       if (chunk.usage) {
+        if (activeIndex !== null) {
+          yield { type: 'content_block_stop', index: activeIndex }
+          activeIndex = null
+        }
+        const finishReason = chunk.choices?.[0]?.finish_reason
         yield {
           type: 'message_delta',
           delta: {
-            stop_reason: chunk.choices?.[0]?.finish_reason ? this.mapFinishReason(chunk.choices[0].finish_reason) : 'stop'
+            stop_reason: finishReason ? this.mapFinishReason(finishReason) : 'end_turn'
           },
           usage: {
             output_tokens: chunk.usage.completion_tokens ?? 0,
@@ -166,6 +232,7 @@ export class AnthropicAdapter {
             cache_read_input_tokens: chunk.usage.cache_read_input_tokens ?? 0
           }
         }
+        sentMessageDelta = true
       } else if (chunk.choices && chunk.choices[0].finish_reason) {
         if (activeIndex !== null) {
           yield { type: 'content_block_stop', index: activeIndex }
@@ -180,9 +247,25 @@ export class AnthropicAdapter {
             output_tokens: 0 // Will be updated if chunk.usage is present in a later chunk
           }
         }
+        sentMessageDelta = true
       }
     }
 
+    if (activeIndex !== null) {
+      yield { type: 'content_block_stop', index: activeIndex }
+      activeIndex = null
+    }
+    if (!sentMessageDelta) {
+      yield {
+        type: 'message_delta',
+        delta: {
+          stop_reason: 'end_turn'
+        },
+        usage: {
+          output_tokens: 0
+        }
+      }
+    }
     yield {
       type: 'message_stop'
     }
@@ -202,10 +285,13 @@ export class AnthropicAdapter {
       } else if (Array.isArray(m.content)) {
         const textParts: string[] = []
         const toolCalls: any[] = []
+        const reasoningParts: string[] = []
 
         for (const c of m.content) {
           if (c.type === 'text') {
             textParts.push(c.text)
+          } else if (c.type === 'thinking') {
+            reasoningParts.push(c.thinking)
           } else if (c.type === 'tool_use') {
             toolCalls.push({
               id: c.id,
@@ -235,11 +321,18 @@ export class AnthropicAdapter {
         if (toolCalls.length > 0) {
           openAIMessage.tool_calls = toolCalls
         }
+        if (reasoningParts.length > 0) {
+          openAIMessage.reasoning_content = reasoningParts.join('')
+        }
       }
 
       // Only push the assistant/user message if it has content or tool_calls
       // (Tool results were already pushed inside the loop)
-      if (openAIMessage.content !== '' || openAIMessage.tool_calls) {
+      if (
+        openAIMessage.content !== '' ||
+        openAIMessage.tool_calls ||
+        openAIMessage.reasoning_content
+      ) {
         messages.push(openAIMessage)
       }
     }
@@ -266,7 +359,7 @@ export class AnthropicAdapter {
           function: {
             name: t.name,
             description: t.description,
-            parameters: t.input_schema
+            parameters: normalizeOpenAIToolInputSchema(t.input_schema)
           }
         }))
       }),
@@ -281,6 +374,16 @@ export class AnthropicAdapter {
     const message = choice.message
     
     const content: any[] = []
+    const reasoningContent = stringifyReasoningContent(
+      message.reasoning_content ?? message.reasoning,
+    )
+    if (reasoningContent) {
+      content.push({
+        type: 'thinking',
+        thinking: reasoningContent,
+        signature: ''
+      })
+    }
     if (message.content) {
       content.push({
         type: 'text',

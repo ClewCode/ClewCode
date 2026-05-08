@@ -81,43 +81,46 @@ export function MCPSettings(t0) {
             const hasToolsAndConnected = client_0.type === "connected" && filterToolsByServer(mcp.tools, client_0.name).length > 0;
             isAuthenticated = Boolean(tokens) || hasSessionAuth || hasToolsAndConnected;
           }
-          const baseInfo = {
-            name: client_0.name,
-            client: client_0,
-            scope
-          };
-          if (isClaudeAIProxy) {
-            return {
-              ...baseInfo,
-              transport: "claudeai-proxy" as const,
-              isAuthenticated: false,
-              config: client_0.config as McpClaudeAIProxyServerConfig
+            const tools = filterToolsByServer(mcp.tools, client_0.name);
+            const toolsCount = tools.length;
+            const baseInfo = {
+              name: client_0.name,
+              client: client_0,
+              scope,
+              toolsCount
             };
-          } else {
-            if (isSSE) {
+            if (isClaudeAIProxy) {
               return {
                 ...baseInfo,
-                transport: "sse" as const,
-                isAuthenticated,
-                config: client_0.config as McpSSEServerConfig
+                transport: "claudeai-proxy" as const,
+                isAuthenticated: false,
+                config: client_0.config as McpClaudeAIProxyServerConfig
               };
             } else {
-              if (isHTTP) {
+              if (isSSE) {
                 return {
                   ...baseInfo,
-                  transport: "http" as const,
+                  transport: "sse" as const,
                   isAuthenticated,
-                  config: client_0.config as McpHTTPServerConfig
+                  config: client_0.config as McpSSEServerConfig
                 };
               } else {
-                return {
-                  ...baseInfo,
-                  transport: "stdio" as const,
-                  config: client_0.config as McpStdioServerConfig
-                };
+                if (isHTTP) {
+                  return {
+                    ...baseInfo,
+                    transport: "http" as const,
+                    isAuthenticated,
+                    config: client_0.config as McpHTTPServerConfig
+                  };
+                } else {
+                  return {
+                    ...baseInfo,
+                    transport: "stdio" as const,
+                    config: client_0.config as McpStdioServerConfig
+                  };
+                }
               }
             }
-          }
         }));
         if (cancelled) {
           return;

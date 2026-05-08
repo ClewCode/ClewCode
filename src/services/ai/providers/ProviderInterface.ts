@@ -14,6 +14,7 @@ export type ProviderId =
   | 'ollama'
   | 'copilot'
   | 'deepseek'
+  | 'chatgpt_plus'
 
 export interface ProviderInitOptions {
   apiKey?: string

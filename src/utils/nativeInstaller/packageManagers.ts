@@ -121,6 +121,29 @@ export function detectHomebrew(): boolean {
   return false
 }
 
+export function detectHomebrewCaskChannel(): 'stable' | 'latest' | null {
+  const platform = getPlatform()
+
+  if (platform !== 'macos' && platform !== 'linux' && platform !== 'wsl') {
+    return null
+  }
+
+  const execPath = process.execPath || process.argv[0] || ''
+  if (!execPath.includes('/Caskroom/')) {
+    return null
+  }
+
+  if (execPath.includes('/claude-code@latest/')) {
+    return 'latest'
+  }
+
+  if (execPath.includes('/claude-code/')) {
+    return 'stable'
+  }
+
+  return null
+}
+
 /**
  * Detects if the currently running Claude instance was installed via winget
  * by checking if the executable path is within a WinGet directory.

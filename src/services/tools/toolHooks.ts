@@ -538,6 +538,22 @@ export async function* runPreToolUseHooks(
                 decisionReason,
               },
             }
+          } else if (result.permissionBehavior === 'defer') {
+            yield {
+              type: 'hookPermissionResult',
+              hookPermissionResult: {
+                behavior: 'defer',
+                updatedInput: result.updatedInput,
+                message:
+                  result.hookPermissionDecisionReason ||
+                  `Hook PreToolUse:${tool.name} deferred this tool for later review`,
+                decisionReason: {
+                  type: 'deferred',
+                  reason: result.hookPermissionDecisionReason || 'Deferred by hook',
+                  resumeCommand: `claude -p --resume ${result.deferredMarker || ''}`,
+                },
+              },
+            }
           } else {
             // deny - updatedInput is irrelevant since tool won't run
             yield {

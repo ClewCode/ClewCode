@@ -1,15 +1,29 @@
 import chalk from 'chalk'
 import { marked, type Token, type Tokens } from 'marked'
-import stripAnsi from 'strip-ansi'
-import { color } from '../components/design-system/color.js'
-import { BLOCKQUOTE_BAR } from '../constants/figures.js'
-import { stringWidth } from '../ink/stringWidth.js'
-import { supportsHyperlinks } from '../ink/supports-hyperlinks.js'
 import type { CliHighlight } from './cliHighlight.js'
 import { logForDebugging } from './debug.js'
 import { createHyperlink } from './hyperlink.js'
 import { stripPromptXMLTags } from './messages.js'
 import type { ThemeName } from './theme.js'
+import { color } from '../components/design-system/color.js'
+import { BLOCKQUOTE_BAR } from '../constants/figures.js'
+import { stringWidth } from '../ink/stringWidth.js'
+import { supportsHyperlinks } from '../ink/supports-hyperlinks.js'
+
+// Use Bun's native stripANSI when available (faster on Bun)
+let _stripAnsi: ((str: string) => string) | null = null
+function getStripAnsi(): (str: string) => string {
+  if (_stripAnsi === null) {
+    if (typeof Bun !== 'undefined' && 'stripANSI' in Bun && Bun.stripANSI) {
+      _stripAnsi = (str: string) => Bun.stripANSI(str)
+    } else {
+      // Lazy require for bundled builds
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      _stripAnsi = require('strip-ansi') as (str: string) => string
+    }
+  }
+  return _stripAnsi
+}
 
 // Use \n unconditionally — os.EOL is \r\n on Windows, and the extra \r
 // breaks the character-to-segment mapping in applyStylesToWrappedText,
@@ -65,7 +79,7 @@ export function formatToken(
       return inner
         .split(EOL)
         .map(line =>
-          stripAnsi(line).trim() ? `${bar} ${chalk.italic(line)}` : line,
+          getStripAnsi()(line).trim() ? `${bar} ${chalk.italic(line)}` : line,
         )
         .join(EOL)
     }
@@ -149,7 +163,7 @@ export function formatToken(
       const linkText = (token.tokens ?? [])
         .map(_ => formatToken(_, theme, 0, null, token, highlight))
         .join('')
-      const plainLinkText = stripAnsi(linkText)
+      const plainLinkText = getStripAnsi()(linkText)
       // If the link has meaningful display text (different from the URL),
       // show it as a clickable hyperlink. In terminals that support OSC 8,
       // users see the text and can hover/click to see the URL.
@@ -207,7 +221,7 @@ export function formatToken(
 
       // Helper function to get the text content that will be displayed (after stripAnsi)
       function getDisplayText(tokens: Token[] | undefined): string {
-        return stripAnsi(
+        return getStripAnsi()(
           tokens
             ?.map(_ => formatToken(_, theme, 0, null, null, highlight))
             .join('') ?? '',
