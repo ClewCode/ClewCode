@@ -626,12 +626,16 @@ function StatusLineInner({
         ? chalk.hex('#ffaa00')(`${usedPercentage.toFixed(0)}%`)
         : chalk.green(`${usedPercentage.toFixed(0)}%`);
 
-    const activeProvider = mainLoopProviderForSession ?? mainLoopProvider ?? ProviderManager.getInstance().getActiveProviderName()
+const activeProvider = mainLoopProviderForSession ?? mainLoopProvider ?? ProviderManager.getInstance().getActiveProviderName()
     const activeProviderDisplay = activeProvider ? chalk.hex('#888888')(`[${activeProvider}]`) : ''
+    const cwdShort = cwd.length > 40 ? '...' + cwd.slice(-37) : cwd
+    const cwdDisplay = chalk.hex('#666666')(cwdShort)
     const line1 =
       chalk.cyan(`[${modelName}]`) +
       activeProviderDisplay +
-      ' ' +
+      chalk.dim(' ') +
+      cwdDisplay +
+      chalk.dim(' | ') +
       bar +
       ' ' +
       percentText +

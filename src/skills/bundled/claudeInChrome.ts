@@ -1,11 +1,26 @@
-import { BROWSER_TOOLS } from '@ant/claude-for-chrome-mcp'
 import { BASE_CHROME_PROMPT } from '../../utils/claudeInChrome/prompt.js'
 import { shouldAutoEnableClaudeInChrome } from '../../utils/claudeInChrome/setup.js'
 import { registerBundledSkill } from '../bundledSkills.js'
 
-const CLAUDE_IN_CHROME_MCP_TOOLS = BROWSER_TOOLS.map(
-  tool => `mcp__claude-in-chrome__${tool.name}`,
-)
+const CLAUDE_IN_CHROME_MCP_TOOLS = [
+  'mcp__claude-in-chrome__javascript_tool',
+  'mcp__claude-in-chrome__read_page',
+  'mcp__claude-in-chrome__find',
+  'mcp__claude-in-chrome__form_input',
+  'mcp__claude-in-chrome__computer',
+  'mcp__claude-in-chrome__navigate',
+  'mcp__claude-in-chrome__resize_window',
+  'mcp__claude-in-chrome__gif_creator',
+  'mcp__claude-in-chrome__upload_image',
+  'mcp__claude-in-chrome__get_page_text',
+  'mcp__claude-in-chrome__tabs_context_mcp',
+  'mcp__claude-in-chrome__tabs_create_mcp',
+  'mcp__claude-in-chrome__update_plan',
+  'mcp__claude-in-chrome__read_console_messages',
+  'mcp__claude-in-chrome__read_network_requests',
+  'mcp__claude-in-chrome__shortcuts_list',
+  'mcp__claude-in-chrome__shortcuts_execute',
+]
 
 const SKILL_ACTIVATION_MESSAGE = `
 Now that this skill is invoked, you have access to Chrome browser automation tools. You can now use the mcp__claude-in-chrome__* tools to interact with web pages.

@@ -1,9 +1,3 @@
-import {
-  type ClaudeForChromeContext,
-  createClaudeForChromeMcpServer,
-  type Logger,
-  type PermissionMode,
-} from '@ant/claude-for-chrome-mcp'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { format } from 'util'
 import { shutdownDatadog } from '../../services/analytics/datadog.js'
@@ -33,11 +27,23 @@ const SAFE_BRIDGE_STRING_KEYS = new Set([
   'tool_name',
 ])
 
+type PermissionMode = 'ask' | 'skip_all_permission_checks' | 'follow_a_plan'
+
 const PERMISSION_MODES: readonly PermissionMode[] = [
   'ask',
   'skip_all_permission_checks',
   'follow_a_plan',
 ]
+
+type Logger = {
+  silly(message: string, ...args: unknown[]): void
+  debug(message: string, ...args: unknown[]): void
+  info(message: string, ...args: unknown[]): void
+  warn(message: string, ...args: unknown[]): void
+  error(message: string, ...args: unknown[]): void
+}
+
+type ClaudeForChromeContext = Record<string, unknown>
 
 function isPermissionMode(raw: string): raw is PermissionMode {
   return PERMISSION_MODES.some(m => m === raw)
@@ -249,6 +255,9 @@ export async function runClaudeInChromeMcpServer(): Promise<void> {
   enableConfigs()
   initializeAnalyticsSink()
   const context = createChromeContext()
+  const { createClaudeForChromeMcpServer } = await import(
+    '@ant/claude-for-chrome-mcp'
+  )
 
   const server = createClaudeForChromeMcpServer(context)
   const transport = new StdioServerTransport()

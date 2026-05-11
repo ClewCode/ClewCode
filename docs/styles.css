@@ -5,22 +5,22 @@
 }
 
 :root {
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --accent: #22d3ee;
-  --bg-dark: #09090b;
-  --bg-card: #18181b;
-  --bg-hover: #27272a;
+  --primary: #f97316;
+  --primary-light: #fb923c;
+  --primary-dark: #ea580c;
+  --accent: #fbbf24;
+  --bg-dark: #0a0a0a;
+  --bg-card: #171717;
+  --bg-hover: #262626;
   --text: #fafafa;
-  --text-muted: #a1a1aa;
-  --text-dim: #71717a;
-  --border: #27272a;
-  --code-bg: #0d0d0f;
-  --code-text: #e2e8f0;
-  --success: #34d399;
+  --text-muted: #a3a3a3;
+  --text-dim: #737373;
+  --border: #262626;
+  --code-bg: #0d0d0d;
+  --code-text: #e5e5e5;
+  --success: #22c55e;
   --warning: #fbbf24;
-  --error: #f87171;
+  --error: #ef4444;
 }
 
 body {
@@ -166,7 +166,7 @@ a:hover {
 
 .sidebar-link.active {
   color: var(--primary-light);
-  background: rgba(139, 92, 246, 0.15);
+  background: rgba(249, 115, 22, 0.15);
 }
 
 /* Main Content */
@@ -216,13 +216,13 @@ a:hover {
 
 /* Hero */
 .hero {
-  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: linear-gradient(135deg, #451a03 0%, #7c2d12 100%);
+  border: 1px solid rgba(249, 115, 22, 0.3);
   color: white;
   padding: 2.5rem;
   border-radius: 16px;
   margin: 2rem 0 3rem;
-  box-shadow: 0 4px 30px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 30px rgba(249, 115, 22, 0.2);
 }
 
 .hero h2 {
@@ -276,7 +276,7 @@ a:hover {
 .feature-card:hover {
   transform: translateY(-3px);
   border-color: var(--primary);
-  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 8px 30px rgba(249, 115, 22, 0.15);
 }
 
 .feature-card h3 {
@@ -436,6 +436,7 @@ a:hover {
 
 .plugin-card:hover {
   border-color: var(--primary);
+  box-shadow: 0 8px 30px rgba(249, 115, 22, 0.15);
 }
 
 .plugin-card h3 {
