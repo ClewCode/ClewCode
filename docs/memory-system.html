@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory System - Learn from Claude Code</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Claude Code</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="architecture.html" class="nav-link active">Learn</a>
+        <a href="commands.html" class="nav-link">Commands</a>
+        <a href="providers.html" class="nav-link">Providers</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Learn from Claude Code</h3>
+        <ul class="sidebar-nav">
+          <li><a href="architecture.html" class="sidebar-link">Architecture</a></li>
+          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
+          <li><a href="command-system.html" class="sidebar-link">Command System</a></li>
+          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
+          <li><a href="permission-model.html" class="sidebar-link">Permission Model</a></li>
+          <li><a href="memory-system.html" class="sidebar-link active">Memory System</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-content page-content">
+      <h1>Memory System</h1>
+      <p class="lead">How Claude Code remembers user preferences and project context across sessions.</p>
+
+      <h2>Memory Types</h2>
+
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Scope</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>user</strong></td><td>private</td><td>User's role, goals, preferences</td></tr>
+          <tr><td><strong>feedback</strong></td><td>private/team</td><td>Guidance from user about how to work</td></tr>
+          <tr><td><strong>project</strong></td><td>team</td><td>Project-specific conventions</td></tr>
+          <tr><td><strong>reference</strong></td><td>team</td><td>External references, docs</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Memory Files</h2>
+      <pre><code>.claude/
+└── memory/
+    ├── MEMORY.md           # Main entry point (auto-loaded)
+    ├── user/              # User memories
+    │   └── *.md
+    ├── feedback/           # Feedback memories
+    │   └── *.md
+    ├── project/            # Project memories
+    │   └── *.md
+    └── reference/          # Reference memories
+        └── *.md</code></pre>
+
+      <h2>How It Works</h2>
+
+      <h3>1. Loading</h3>
+      <pre><code>src/memdir/memdir.ts</code></pre>
+      <p>At session start, MEMORY.md is loaded into system prompt:</p>
+      <pre><code>// Load memory prompt for system prompt
+await loadMemoryPrompt()
+
+// Returns formatted memory content
+// Included in system prompt automatically</code></pre>
+
+      <h3>2. Finding Relevant Memories</h3>
+      <pre><code>src/memdir/findRelevantMemories.ts</code></pre>
+      <p>AI can find relevant memories based on context:</p>
+      <pre><code>// Search memory files for relevant content
+const memories = await findRelevantMemories(query)</code></pre>
+
+      <h3>3. Memory Detection</h3>
+      <pre><code>src/utils/memoryFileDetection.ts</code></pre>
+      <p>Detects if file operations target memory:</p>
+      <pre><code>isMemoryFile(path): boolean      // Is this a memory file?
+isMemoryDirectory(path): boolean // Is this memory dir?
+isMemorySearch(toolInput): boolean  // Is search targeting memory?</code></pre>
+
+      <h3>4. Memory Command</h3>
+      <pre><code>src/commands/memory/</code></pre>
+      <p>User can manage memories via:</p>
+      <pre><code>/memory              # Open memory manager
+/memory write       # Write new memory
+/memory search      # Search memories</code></pre>
+
+      <h2>Memory Frontmatter</h2>
+      <p>Each memory file can have frontmatter:</p>
+      <pre><code>---
+type: user
+owner: private
+---
+
+# My Memory Title
+
+Memory content here...
+</code></pre>
+
+      <h2>Memory System Files</h2>
+      <pre><code>src/memdir/
+├── memdir.ts              # Main memory loading
+├── memoryTypes.ts         # Type definitions
+├── memoryScan.ts          # Memory file scanning
+├── memoryAge.ts          # Age tracking
+├── findRelevantMemories.ts # Search memories
+├── paths.ts               # Memory paths
+├── teamMemPrompts.ts      # Team memory prompts
+└── teamMemPaths.ts       # Team memory paths
+
+src/commands/memory/
+├── index.ts               # Command registration
+└── memory.tsx            # Memory UI
+
+src/utils/
+├── memoryFileDetection.ts  # Detection logic
+├── teamMemorySync.ts       # Team memory sync
+└── hooks.ts                # Memory hooks</code></pre>
+
+      <h2>Auto Memory</h2>
+      <p>Claude Code can automatically remember important context:</p>
+      <pre><code>// settings.json
+{
+  "autoMemoryEnabled": true,
+  "autoMemoryDirectory": "~/.claude/projects/myproject/memory/"
+}</code></pre>
+
+      <h2>Context Compaction</h2>
+      <p>When context gets too large, memories help preserve important info:</p>
+      <pre><code>src/services/compact/
+├── compact.ts            # Main compaction
+├── sessionMemoryCompact.ts # Compact session
+├── autoCompact.ts        # Auto-compact
+└── microCompact.ts      # Incremental compact</code></pre>
+
+      <h2>Key Learnings</h2>
+      <ol>
+        <li><strong>Memory is separate from context</strong> — Loaded at session start, not part of rolling window</li>
+        <li><strong>Type-based organization</strong> — user, feedback, project, reference</li>
+        <li><strong>Scoped access</strong> — private vs team memories</li>
+        <li><strong>Frontmatter metadata</strong> — type, owner, tags</li>
+        <li><strong>Auto-loading</strong> — MEMORY.md loaded automatically</li>
+        <li><strong>Detection</strong> — Can detect memory file operations for special handling</li>
+      </ol>
+
+      <div class="callout callout-tip">
+        <strong>Pattern:</strong> Memory system is a hybrid approach — explicit files (user controls) + implicit loading (automatic at session start).
+      </div>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>Claude Code Documentation • <a href="https://github.com/anomalyco/claude-code">GitHub</a></p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bridge Mode - Learn from Claude Code</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Claude Code</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="architecture.html" class="nav-link active">Learn</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Learn from Claude Code</h3>
+        <ul class="sidebar-nav">
+          <li><a href="architecture.html" class="sidebar-link">Architecture</a></li>
+          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
+          <li><a href="command-system.html" class="sidebar-link">Command System</a></li>
+          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
+          <li><a href="permission-model.html" class="sidebar-link">Permission Model</a></li>
+          <li><a href="memory-system.html" class="sidebar-link">Memory System</a></li>
+          <li><a href="session-system.html" class="sidebar-link">Session System</a></li>
+          <li><a href="context-compaction.html" class="sidebar-link">Context Compaction</a></li>
+          <li><a href="plugin-system.html" class="sidebar-link">Plugin System</a></li>
+          <li><a href="skill-system.html" class="sidebar-link">Skill System</a></li>
+          <li><a href="mcp-integration.html" class="sidebar-link">MCP Integration</a></li>
+          <li><a href="bridge-mode.html" class="sidebar-link active">Bridge Mode</a></li>
+          <li><a href="agent-system.html" class="sidebar-link">Agent System</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-content page-content">
+      <h1>Bridge Mode</h1>
+      <p class="lead">How Claude Code enables remote collaboration through shared session URLs.</p>
+
+      <h2>What is Bridge Mode?</h2>
+      <p>Bridge Mode allows users to share their Claude Code session with others via a URL. Remote users can view and control the session.</p>
+
+      <h2>Bridge Files</h2>
+      <pre><code>src/bridge/
+├── bridgeMain.ts              # Main bridge logic
+├── bridgeConfig.ts            # Bridge configuration
+├── bridgeEnabled.ts           # Enable/disable
+├── bridgeUI.ts                # Bridge UI components
+├── bridgeApi.ts               # API endpoints
+├── bridgeMessaging.ts         # Message handling
+├── replBridge.ts              # REPL bridge
+├── remoteBridgeCore.ts        # Remote session handling
+├── sessionRunner.ts           # Session execution
+├── createSession.ts           # Session creation
+├── bridgePermissions.ts       # Permission callbacks
+├── trustedDevice.ts           # Device trust
+├── workSecret.ts              # Work secrets
+├── jwtUtils.ts                # JWT utilities
+└── inboundMessages.ts         # Inbound message handling</code></pre>
+
+      <h2>Starting Bridge</h2>
+      <pre><code>// Start bridge mode
+/bridge
+
+// Or via command line
+claude --bridge</code></pre>
+
+      <h2>How It Works</h2>
+      <pre><code>// 1. User starts bridge mode
+await startBridge()
+
+// 2. Generate shareable URL
+const bridgeUrl = generateBridgeUrl(sessionId)
+
+// 3. Remote user opens URL
+// 4. WebSocket connection established
+// 5. Messages relayed between sessions
+// 6. Both users see same UI
+// 7. Either can take control</code></pre>
+
+      <h2>Bridge Architecture</h2>
+      <pre><code>┌──────────────┐     WebSocket      ┌──────────────┐
+│  Local User  │ ◄──────────────► │ Remote User  │
+└──────┬───────┘                   └──────┬───────┘
+       │                                    │
+       ▼                                    ▼
+┌─────────────────────────────────────────────┐
+│              Bridge Server                  │
+│  • Session management                      │
+│  • Message routing                         │
+│  • State sync                              │
+│  • Permission control                      │
+└─────────────────────────────────────────────┘</code></pre>
+
+      <h2>Session URL</h2>
+      <pre><code>// Bridge session URL format
+https://claude.ai/bridge/{sessionId}?token={accessToken}
+
+// Or local bridge
+http://localhost:PORT/bridge/{sessionId}</code></pre>
+
+      <h2>Key Learnings</h2>
+      <ol>
+        <li><strong>WebSocket-based</strong> — Real-time message sync</li>
+        <li><strong>Shareable URLs</strong> — Easy to share sessions</li>
+        <li><strong>State synchronization</strong> — Both users see same state</li>
+        <li><strong>Permission control</strong> — Can restrict remote actions</li>
+        <li><strong>Device trust</strong> — Trusted devices get more access</li>
+        <li><strong>JWT authentication</strong> — Secure token-based auth</li>
+      </ol>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>Claude Code Documentation • <a href="https://github.com/anomalyco/claude-code">GitHub</a></p>
+  </footer>
+</body>
+</html>

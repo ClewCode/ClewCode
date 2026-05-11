@@ -14,9 +14,8 @@
         <span class="logo-text">Claude Code</span>
       </a>
       <nav class="nav">
-        <a href="index.html" class="nav-link">Home</a>
-        <a href="installation.html" class="nav-link">Installation</a>
-        <a href="configuration.html" class="nav-link">Configuration</a>
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="installation.html" class="nav-link">Install</a>
         <a href="commands.html" class="nav-link">Commands</a>
         <a href="providers.html" class="nav-link active">Providers</a>
         <a href="plugins.html" class="nav-link">Plugins</a>
@@ -38,61 +37,76 @@
 
     <main class="main-content page-content">
       <h1>AI Providers</h1>
-      <p>Claude Code supports 11 AI providers with a unified interface. Switch between providers seamlessly.</p>
+      <p class="lead">Claude Code supports 11 AI providers with a unified interface. Switch between providers seamlessly.</p>
 
       <h2 id="supported-providers">Supported Providers</h2>
 
-      <h3>1. Anthropic (Default)</h3>
-      <pre><code>ANTHROPIC_API_KEY=sk-ant-...</code></pre>
-      <p><strong>Models:</strong> claude-sonnet-4-20250514, claude-opus-4-5-20250514, claude-3-5-sonnet-20241022, claude-3-haiku-20240307</p>
-      <p>The default provider with best tool-use capabilities.</p>
+      <div class="feature-card">
+        <h3>1. Anthropic <span style="color: var(--text-dim); font-weight: normal;">(Default)</span></h3>
+        <pre><code>ANTHROPIC_API_KEY=sk-ant-...</code></pre>
+        <p><strong>Models:</strong> claude-sonnet-4-20250514, claude-opus-4-5-20250514, claude-3-5-sonnet-20241022, claude-3-haiku-20240307</p>
+      </div>
 
-      <h3>2. OpenAI</h3>
-      <pre><code>OPENAI_API_KEY=sk-...</code></pre>
-      <p><strong>Models:</strong> gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo</p>
-      <p>OpenAI's latest models including GPT-4o.</p>
+      <div class="feature-card">
+        <h3>2. OpenAI</h3>
+        <pre><code>OPENAI_API_KEY=sk-...</code></pre>
+        <p><strong>Models:</strong> gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo</p>
+      </div>
 
-      <h3>3. Google Gemini</h3>
-      <pre><code>GOOGLE_GENERATIVE_API_KEY=...</code></pre>
-      <p><strong>Models:</strong> gemini-2.0-flash-exp, gemini-1.5-pro, gemini-1.5-flash</p>
-      <p>Google's Gemini models with strong vision capabilities.</p>
+      <div class="feature-card">
+        <h3>3. Google Gemini</h3>
+        <pre><code>GOOGLE_GENERATIVE_API_KEY=...</code></pre>
+        <p><strong>Models:</strong> gemini-2.0-flash-exp, gemini-1.5-pro, gemini-1.5-flash</p>
+      </div>
 
-      <h3>4. OpenRouter</h3>
-      <pre><code>OPENROUTER_API_KEY=sk-or-...</code></pre>
-      <p><strong>Models:</strong> 100+ models including anthropic/claude-*, openai/gpt-*, google/gemini-*, meta/llama-*, mistral/*</p>
-      <p>Access to 100+ models through unified API.</p>
+      <div class="feature-card">
+        <h3>4. OpenRouter</h3>
+        <pre><code>OPENROUTER_API_KEY=sk-or-...</code></pre>
+        <p><strong>Models:</strong> 100+ models — anthropic/claude-*, openai/gpt-*, google/gemini-*, meta/llama-*, mistral/*</p>
+      </div>
 
-      <h3>5. Ollama (Local)</h3>
-      <pre><code>OLLAMA_HOST=http://localhost:11434</code></pre>
-      <p><strong>Models:</strong> llama3, llama3.1, mistral, codellama, phi3, qwen2</p>
-      <p>Run models locally on your machine. No API costs.</p>
+      <div class="feature-card">
+        <h3>5. Ollama <span style="color: var(--text-dim); font-weight: normal;">(Local)</span></h3>
+        <pre><code>OLLAMA_HOST=http://localhost:11434</code></pre>
+        <p><strong>Models:</strong> llama3, llama3.1, mistral, codellama, phi3, qwen2</p>
+      </div>
 
-      <h3>6. xAI Grok</h3>
-      <pre><code>XAI_API_KEY=...</code></pre>
-      <p><strong>Models:</strong> grok-2, grok-2-vision</p>
-      <p>Elon's xAI Grok models.</p>
+      <div class="feature-card">
+        <h3>6. xAI Grok</h3>
+        <pre><code>XAI_API_KEY=...</code></pre>
+        <p><strong>Models:</strong> grok-2, grok-2-vision</p>
+      </div>
 
-      <h3>7. Mistral</h3>
-      <pre><code>MISTRAL_API_KEY=...</code></pre>
-      <p><strong>Models:</strong> mistral-large-latest, codestral-latest</p>
-      <p>Mistral's large language models.</p>
+      <div class="feature-card">
+        <h3>7. Mistral</h3>
+        <pre><code>MISTRAL_API_KEY=...</code></pre>
+        <p><strong>Models:</strong> mistral-large-latest, codestral-latest</p>
+      </div>
 
-      <h3>8. OpenAI Compatible</h3>
-      <pre><code>OPENAI_COMPATIBLE_API_KEY=...
+      <div class="feature-card">
+        <h3>8. OpenAI Compatible</h3>
+        <pre><code>OPENAI_COMPATIBLE_API_KEY=...
 OPENAI_COMPATIBLE_BASE_URL=https://your-api.com/v1</code></pre>
-      <p>Connect to any OpenAI-compatible API (LM Studio, local APIs, etc.)</p>
+        <p>Connect to any OpenAI-compatible API (LM Studio, local APIs, etc.)</p>
+      </div>
 
-      <h3>9. ChatGPT Session (OAuth)</h3>
-      <pre><code>CHATGPT_SESSION_TOKEN=...</code></pre>
-      <p>Use your ChatGPT Plus/Pro subscription via browser session token.</p>
+      <div class="feature-card">
+        <h3>9. ChatGPT Session <span style="color: var(--text-dim); font-weight: normal;">(OAuth)</span></h3>
+        <pre><code>CHATGPT_SESSION_TOKEN=...</code></pre>
+        <p>Use your ChatGPT Plus/Pro subscription via browser session token.</p>
+      </div>
 
-      <h3>10. Copilot</h3>
-      <pre><code>GITHUB_TOKEN=ghp_...</code></pre>
-      <p>Use GitHub Copilot for code completion.</p>
+      <div class="feature-card">
+        <h3>10. Copilot</h3>
+        <pre><code>GITHUB_TOKEN=ghp_...</code></pre>
+        <p>Use GitHub Copilot for code completion.</p>
+      </div>
 
-      <h3>11. KiloCode</h3>
-      <pre><code>KILOCODE_API_KEY=...</code></pre>
-      <p>KiloCode provider for specialized tasks.</p>
+      <div class="feature-card">
+        <h3>11. KiloCode</h3>
+        <pre><code>KILOCODE_API_KEY=...</code></pre>
+        <p>KiloCode provider for specialized tasks.</p>
+      </div>
 
       <h2 id="switching-providers">Switching Providers</h2>
 
@@ -120,7 +134,7 @@ OPENAI_COMPATIBLE_BASE_URL=https://your-api.com/v1</code></pre>
         <strong>Note:</strong> Not all providers support all features. Some models may not support tools/messages.
       </div>
 
-      <h2 id="pricing">Provider Comparison</h2>
+      <h2 id="provider-comparison">Provider Comparison</h2>
       <table>
         <thead>
           <tr><th>Provider</th><th>Best For</th><th>Cost</th></tr>
@@ -134,21 +148,6 @@ OPENAI_COMPATIBLE_BASE_URL=https://your-api.com/v1</code></pre>
           <tr><td>ChatGPT OAuth</td><td>Existing subscription</td><td>Included</td></tr>
         </tbody>
       </table>
-
-      <h2 id="environment-variables">Environment Variables</h2>
-      <pre><code># Required per provider
-ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...
-GOOGLE_GENERATIVE_API_KEY=...
-OPENROUTER_API_KEY=sk-or-...
-OLLAMA_HOST=http://localhost:11434
-XAI_API_KEY=...
-MISTRAL_API_KEY=...
-GITHUB_TOKEN=ghp_...
-
-# Optional
-ANTHROPIC_MODEL=claude-sonnet-4-20250514
-OPENAI_BASE_URL=https://api.openai.com/v1</code></pre>
     </main>
   </div>
 

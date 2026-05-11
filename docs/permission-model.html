@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Permission Model - Learn from Claude Code</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Claude Code</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="architecture.html" class="nav-link active">Learn</a>
+        <a href="commands.html" class="nav-link">Commands</a>
+        <a href="providers.html" class="nav-link">Providers</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Learn from Claude Code</h3>
+        <ul class="sidebar-nav">
+          <li><a href="architecture.html" class="sidebar-link">Architecture</a></li>
+          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
+          <li><a href="command-system.html" class="sidebar-link">Command System</a></li>
+          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
+          <li><a href="permission-model.html" class="sidebar-link active">Permission Model</a></li>
+          <li><a href="memory-system.html" class="sidebar-link">Memory System</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-content page-content">
+      <h1>Permission Model</h1>
+      <p class="lead">How Claude Code balances safety with usability.</p>
+
+      <h2>Permission Modes</h2>
+
+      <table>
+        <thead>
+          <tr><th>Mode</th><th>Behavior</th><th>Use Case</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Default</td><td>Ask before dangerous tools</td><td>Production</td></tr>
+          <tr><td>Auto</td><td>Auto-approve safe tools</td><td>Quick workflow</td></tr>
+          <tr><td>yoloLite</td><td>Read-only auto (Glob, Grep, Read)</td><td>Exploration</td></tr>
+          <tr><td>yolo</td><td>Most tools auto</td><td>Automation</td></tr>
+          <tr><td>yoloMax</td><td>Including destructive ops</td><td>Full automation</td></tr>
+          <tr><td>yoloGod</td><td>Complete autonomy + auto web</td><td>Fully autonomous</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Permission Check Flow</h2>
+      <pre><code>1. User triggers tool (via AI request)
+2. Get current permission mode
+3. Check tool risk level (read/write/dangerous)
+4. If allowed → execute
+5. If blocked → prompt user
+6. User approves/denies
+7. Continue or abort</code></pre>
+
+      <h2>Permission Files</h2>
+      <pre><code>src/utils/permissions/
+├── permissions.ts              # Main logic
+├── permissionSetup.ts          # Mode transitions
+├── permissionHooks.ts          # Pre/post checks
+├── PermissionMode.ts           # Mode definitions
+├── getNextPermissionMode.ts     # Transition logic
+└── permissionContext.ts         # Context management</code></pre>
+
+      <h2>Safety Gates</h2>
+      <pre><code>// Security restriction gates
+function checkSecurityRestrictionGate(gateName: string): boolean {
+  // Check org policy, settings, etc.
+  return !isBlocked(gateName)
+}
+
+// Usage
+if (!checkSecurityRestrictionGate('tengu_disable_bypass_permissions')) {
+  // Block bypass mode
+}</code></pre>
+
+      <h2>YOLO Mode Extension</h2>
+      <p>In this fork, we added YoloGod mode:</p>
+      <pre><code>// YoloGod: Highest level of bypass
+if (process.env.CLAUDE_CODE_YOLO_GOD === 'true') {
+  // Skip ALL safety checks
+  // Allow autonomous web search
+}</code></pre>
+
+      <h2>Key Learnings</h2>
+      <ol>
+        <li><strong>Progressive bypass</strong> — Users can choose safety level</li>
+        <li><strong>Risk-based</strong> — Tools categorized by risk level</li>
+        <li><strong>Policy-aware</strong> — Organization settings can override</li>
+        <li><strong>Transparent</strong> — Users see what's being blocked</li>
+        <li><strong>Override-able</strong> — Can switch modes mid-session</li>
+      </ol>
+
+      <div class="callout callout-warning">
+        <strong>Warning:</strong> YOLO modes bypass safety. Use with caution — especially YoloGod.
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>Pattern:</strong> The permission system shows how to balance security with usability — give users control while preventing accidents.
+      </div>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>Claude Code Documentation • <a href="https://github.com/anomalyco/claude-code">GitHub</a></p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent System - Learn from Claude Code</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Claude Code</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="architecture.html" class="nav-link active">Learn</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Learn from Claude Code</h3>
+        <ul class="sidebar-nav">
+          <li><a href="architecture.html" class="sidebar-link">Architecture</a></li>
+          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
+          <li><a href="command-system.html" class="sidebar-link">Command System</a></li>
+          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
+          <li><a href="permission-model.html" class="sidebar-link">Permission Model</a></li>
+          <li><a href="memory-system.html" class="sidebar-link">Memory System</a></li>
+          <li><a href="session-system.html" class="sidebar-link">Session System</a></li>
+          <li><a href="context-compaction.html" class="sidebar-link">Context Compaction</a></li>
+          <li><a href="plugin-system.html" class="sidebar-link">Plugin System</a></li>
+          <li><a href="skill-system.html" class="sidebar-link">Skill System</a></li>
+          <li><a href="mcp-integration.html" class="sidebar-link">MCP Integration</a></li>
+          <li><a href="bridge-mode.html" class="sidebar-link">Bridge Mode</a></li>
+          <li><a href="agent-system.html" class="sidebar-link active">Agent System</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-content page-content">
+      <h1>Agent System</h1>
+      <p class="lead">How Claude Code manages subagents for parallel task execution.</p>
+
+      <h2>What are Agents?</h2>
+      <p>Agents are sub-Claudes that run in the background, allowing parallel task execution. Each agent has its own conversation and can work independently.</p>
+
+      <h2>Agent Types</h2>
+
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>general-purpose</td><td>General coding tasks</td></tr>
+          <tr><td>explore</td><td>Explore codebase</td></tr>
+          <tr><td>plan</td><td>Plan complex tasks</td></tr>
+          <tr><td>verification</td><td>Verify code correctness</td></tr>
+          <tr><td>custom</td><td>User-defined agents</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Agent Files</h2>
+      <pre><code>src/tools/AgentTool/
+├── AgentTool.tsx            # Main tool
+├── runAgent.ts             # Run agent
+├── prompt.ts               # Agent prompt
+├── resumeAgent.ts          # Resume agent
+├── forkSubagent.ts         # Fork new agent
+├── builtInAgents.ts        # Built-in definitions
+├── loadAgentsDir.ts        # Load custom agents
+├── agentMemory.ts          # Agent memory
+├── agentMemorySnapshot.ts  # Memory snapshots
+├── agentDisplay.ts         # UI display
+├── agentColorManager.ts   # Color management
+├── agentToolUtils.ts      # Utilities
+└── constants.ts           # Constants
+
+src/tasks/LocalAgentTask/
+└── LocalAgentTask.tsx      # Task state management</code></pre>
+
+      <h2>Creating an Agent</h2>
+      <pre><code>// Use /agent command
+/agent Write tests for the auth module</code></pre>
+
+      <h2>Agent Lifecycle</h2>
+      <pre><code>1. Create agent with task description
+2. Initialize agent state (taskId, status, messages)
+3. Spawn agent process (separate conversation)
+4. Agent runs in background
+5. Progress updates via callbacks
+6. Complete/fail → report results
+7. Cleanup (remove from state)</code></pre>
+
+      <h2>Agent State</h2>
+      <pre><code>// Agent state in LocalAgentTask.tsx
+interface LocalAgentTaskState {
+  id: string
+  type: 'local_agent'
+  status: 'running' | 'completed' | 'failed'
+  prompt: string
+  messages: Message[]
+  result?: AgentToolResult
+  progress?: AgentProgress
+  agentType: string
+  startTime: number
+  // ... more
+}</code></pre>
+
+      <h2>Background vs Foreground</h2>
+      <pre><code>// Background agent (immediate return)
+const agent = registerAsyncAgent({...})
+
+// Foreground agent (waits for backgrounding)
+const { taskId, backgroundSignal } = registerAgentForeground({...})
+// Can continue main conversation while agent runs</code></pre>
+
+      <h2>Agent Communication</h2>
+      <pre><code>// Progress updates
+agent.onProgress = (progress) => {
+  // Update UI with tool count, tokens, summary
+}
+
+// Completion
+agent.onComplete = (result) => {
+  // Report results back to main conversation
+}</code></pre>
+
+      <h2>Custom Agents</h2>
+      <pre><code>// Define custom agent in .claude/agents/
+// .claude/agents/test-runner.md
+---
+name: test-runner
+description: Run tests and report results
+---
+
+# Test Runner Agent
+
+You are a testing specialist.
+
+## Your Task
+1. Understand the code to test
+2. Write appropriate tests
+3. Run tests
+4. Report results
+
+## Output Format
+- Tests written
+- Test results
+- Any failures</code></pre>
+
+      <h2>Key Learnings</h2>
+      <ol>
+        <li><strong>Parallel execution</strong> — Multiple agents run simultaneously</li>
+        <li><strong>State isolation</strong> — Each agent has own conversation</li>
+        <li><strong>Progress tracking</strong> — Real-time progress updates</li>
+        <li><strong>Background/foreground</strong> — Flexible execution modes</li>
+        <li><strong>Custom definitions</strong> — User can define specialized agents</li>
+        <li><strong>Resource management</strong> — Proper cleanup on completion</li>
+      </ol>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>Claude Code Documentation • <a href="https://github.com/anomalyco/claude-code">GitHub</a></p>
+  </footer>
+</body>
+</html>

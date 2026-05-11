@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command System - Learn from Claude Code</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Claude Code</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="architecture.html" class="nav-link active">Learn</a>
+        <a href="commands.html" class="nav-link">Commands</a>
+        <a href="providers.html" class="nav-link">Providers</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Learn from Claude Code</h3>
+        <ul class="sidebar-nav">
+          <li><a href="architecture.html" class="sidebar-link">Architecture</a></li>
+          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
+          <li><a href="command-system.html" class="sidebar-link active">Command System</a></li>
+          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
+          <li><a href="permission-model.html" class="sidebar-link">Permission Model</a></li>
+          <li><a href="memory-system.html" class="sidebar-link">Memory System</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-content page-content">
+      <h1>Command System</h1>
+      <p class="lead">How 90+ slash commands are implemented.</p>
+
+      <h2>Command Registration</h2>
+      <pre><code>src/commands.ts</code></pre>
+
+      <p>All commands registered in one file:</p>
+      <pre><code>// Import command modules
+import agent from './commands/agent/index.js'
+import git from './commands/git/index.js'
+import model from './commands/model/index.js'
+import mcp from './commands/mcp/index.js'
+// ... 90+ more
+
+// Register with command registry
+export function registerAllCommands() {
+  registerCommand('agent', agent)
+  registerCommand('git', git)
+  registerCommand('model', model)
+  // ...
+}</code></pre>
+
+      <h2>Command Structure</h2>
+      <p>Each command follows the same pattern:</p>
+      <pre><code>command-name/
+├── index.ts        # Entry point (load function)
+├── name.ts         # Command name
+├── description.ts  # Help text
+├── prompt.ts       # Interactive UI (JSX)
+├── noninteractive.ts # CLI fallback (optional)
+└── execute.ts      # Implementation (optional)
+                   # (often inline in prompt.ts)</code></pre>
+
+      <h2>Command Types</h2>
+
+      <h3>1. JSX Commands (Interactive)</h3>
+      <pre><code>// Most common - returns React component
+export const call: LocalJSXCommandCall = async onDone => {
+  return &lt;MyCommandUI onDone={onDone} /&gt;
+}</code></pre>
+
+      <h3>2. Direct Commands (Non-interactive)</h3>
+      <pre><code>// Simpler commands - just execute
+export async function call(args: string[]): Promise&lt;CommandResult&gt; {
+  // Do work
+  return { content: 'Done!' }
+}</code></pre>
+
+      <h3>3. Hybrid Commands</h3>
+      <pre><code>// Interactive with fallback
+export const call: LocalJSXCommandCall = async (onDone, args) => {
+  if (args.length > 0) {
+    // Non-interactive mode
+    return executeDirect(args)
+  }
+  // Interactive mode
+  return &lt;InteractiveUI onDone={onDone} /&gt;
+}</code></pre>
+
+      <h2>Command Categories</h2>
+
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Count</th><th>Examples</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>File Ops</td><td>10+</td><td>read, write, edit, glob, grep</td></tr>
+          <tr><td>Git</td><td>6</td><td>git, branch, diff, commit</td></tr>
+          <tr><td>AI/Model</td><td>8</td><td>model, provider, cost, usage</td></tr>
+          <tr><td>Development</td><td>10+</td><td>test, build, npm, agent</td></tr>
+          <tr><td>Permissions</td><td>6</td><td>yolo, yolo-lite, yolo-max, yolo-god</td></tr>
+          <tr><td>Session</td><td>10+</td><td>session, clear, context, resume</td></tr>
+          <tr><td>Settings</td><td>10+</td><td>config, theme, keybindings, hooks</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Key Learnings</h2>
+      <ol>
+        <li><strong>Lazy loading</strong> — Commands loaded on-demand via dynamic import</li>
+        <li><strong>JSX for UI</strong> — Interactive prompts built with React/Ink</li>
+        <li><strong>Callback pattern</strong> — <code>onDone</code> callback closes command</li>
+        <li><strong>Type-safe</strong> — TypeScript ensures command interface consistency</li>
+      </ol>
+
+      <div class="callout callout-tip">
+        <strong>Pattern:</strong> The command system uses a plugin-like architecture — each command is independent and self-contained.
+      </div>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>Claude Code Documentation • <a href="https://github.com/anomalyco/claude-code">GitHub</a></p>
+  </footer>
+</body>
+</html>

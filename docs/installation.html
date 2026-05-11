@@ -14,9 +14,8 @@
         <span class="logo-text">Claude Code</span>
       </a>
       <nav class="nav">
-        <a href="index.html" class="nav-link">Home</a>
-        <a href="installation.html" class="nav-link active">Installation</a>
-        <a href="configuration.html" class="nav-link">Configuration</a>
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="installation.html" class="nav-link active">Install</a>
         <a href="commands.html" class="nav-link">Commands</a>
         <a href="providers.html" class="nav-link">Providers</a>
         <a href="plugins.html" class="nav-link">Plugins</a>
@@ -49,12 +48,12 @@
 
       <h2>Prerequisites</h2>
       <ul>
-        <li><strong>Bun</strong> (required) - JavaScript runtime <a href="https://bun.sh">https://bun.sh</a></li>
-        <li><strong>Git</strong> - For version control</li>
+        <li><strong>Bun</strong> — JavaScript runtime (<a href="https://bun.sh">bun.sh</a>)</li>
+        <li><strong>Git</strong> — For version control</li>
       </ul>
 
       <div class="callout callout-info">
-        <strong>Note:</strong> Claude Code is primarily built and tested with Bun. Node.js may work but is not fully tested.
+        <strong>Note:</strong> Claude Code is built and tested with Bun. Node.js may work but is not fully tested.
       </div>
 
       <h2>Install Steps</h2>
@@ -92,8 +91,7 @@ echo "ANTHROPIC_API_KEY=sk-ant-..." > .env</code></pre>
       <h3>Option 3: Multiple Providers</h3>
       <pre><code>ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
-GOOGLE_GENERATIVE_API_KEY=...
-OPENROUTER_API_KEY=sk-or-...</code></pre>
+GOOGLE_GENERATIVE_API_KEY=...</code></pre>
 
       <h2>Verifying Installation</h2>
       <pre><code># Run dev mode
@@ -104,19 +102,11 @@ bun run dev
 /stats
 /help</code></pre>
 
-      <h2>Troubleshooting</h2>
-      <ul>
-        <li><strong>Build errors?</strong> Try <code>rm -rf node_modules && bun install</code></li>
-        <li><strong>TypeScript errors?</strong> Run <code>bun x tsc --noEmit</code></li>
-        <li><strong>API key not working?</strong> Check environment variables with <code>/status</code></li>
-      </ul>
-
       <h2>Next Steps</h2>
       <ul>
         <li><a href="quick-start.html">Quick Start Guide</a></li>
         <li><a href="configuration.html">Configure Settings</a></li>
         <li><a href="providers.html">Set up AI Providers</a></li>
-        <li><a href="commands.html">Learn Commands</a></li>
       </ul>
     </main>
   </div>

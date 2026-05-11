@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plugin System - Learn from Claude Code</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Claude Code</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="architecture.html" class="nav-link active">Learn</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Learn from Claude Code</h3>
+        <ul class="sidebar-nav">
+          <li><a href="architecture.html" class="sidebar-link">Architecture</a></li>
+          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
+          <li><a href="command-system.html" class="sidebar-link">Command System</a></li>
+          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
+          <li><a href="permission-model.html" class="sidebar-link">Permission Model</a></li>
+          <li><a href="memory-system.html" class="sidebar-link">Memory System</a></li>
+          <li><a href="session-system.html" class="sidebar-link">Session System</a></li>
+          <li><a href="context-compaction.html" class="sidebar-link">Context Compaction</a></li>
+          <li><a href="plugin-system.html" class="sidebar-link active">Plugin System</a></li>
+          <li><a href="skill-system.html" class="sidebar-link">Skill System</a></li>
+          <li><a href="mcp-integration.html" class="sidebar-link">MCP Integration</a></li>
+          <li><a href="bridge-mode.html" class="sidebar-link">Bridge Mode</a></li>
+          <li><a href="agent-system.html" class="sidebar-link">Agent System</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-content page-content">
+      <h1>Plugin System</h1>
+      <p class="lead">How Claude Code extends functionality through plugins.</p>
+
+      <h2>Plugin Structure</h2>
+      <pre><code>my-plugin/
+├── .claude-plugin/
+│   └── plugin.json          # Manifest
+├── commands/
+│   └── my-command.md        # Custom slash command
+├── agents/
+│   └── my-agent.md          # Custom agent
+├── skills/
+│   └── my-skill.md          # Custom skill
+├── hooks/
+│   └── hooks.json           # Hook definitions
+└── settings/
+    └── settings.json        # Plugin settings</code></pre>
+
+      <h2>Plugin Manifest</h2>
+      <pre><code>// .claude-plugin/plugin.json
+{
+  "name": "my-plugin",
+  "description": "My custom plugin",
+  "version": "1.0.0",
+  "authors": ["Your Name"],
+  "homepage": "https://github.com/...",
+  "tags": ["productivity", "git"],
+  "commands": ["build", "deploy"],
+  "agents": ["test-runner"],
+  "skills": ["my-skill"],
+  "hooks": {
+    "PreToolUse": "./hooks/pre-tool.js",
+    "PostToolUse": "./hooks/post-tool.js"
+  },
+  "mcpServers": {
+    "my-server": {
+      "command": "npx",
+      "args": ["-y", "@my/mcp-server"]
+    }
+  }
+}</code></pre>
+
+      <h2>Plugin Files</h2>
+      <pre><code>src/utils/plugins/
+├── pluginLoader.ts          # Main loader
+├── loadPluginCommands.ts    # Load plugin commands
+├── loadPluginHooks.ts       # Load hook handlers
+├── loadPluginAgents.ts      # Load agent definitions
+├── loadPluginMcpServers.ts  # Load MCP servers
+├── pluginOptionsStorage.ts # Settings storage
+├── installedPluginsManager.ts # Track installed
+├── mcpPluginIntegration.ts  # MCP integration
+├── lspPluginIntegration.ts  # LSP integration
+└── refresh.ts               # Reload plugins</code></pre>
+
+      <h2>Plugin Loading</h2>
+      <pre><code>// src/utils/plugins/pluginLoader.ts
+
+async function loadPlugins() {
+  // 1. Discover plugins from settings
+  const plugins = getConfiguredPlugins()
+
+  // 2. Load each plugin manifest
+  for (const plugin of plugins) {
+    const manifest = await loadPluginManifest(plugin.path)
+
+    // 3. Load components
+    const commands = await loadPluginCommands(plugin.path)
+    const agents = await loadPluginAgents(plugin.path)
+    const hooks = await loadPluginHooks(plugin.path)
+    const mcpServers = await loadPluginMcpServers(plugin.path)
+
+    // 4. Register with system
+    registerPlugin(manifest, { commands, agents, hooks, mcpServers })
+  }
+}</code></pre>
+
+      <h2>Plugin Types</h2>
+
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Commands</td><td>Custom slash commands</td></tr>
+          <tr><td>Agents</td><td>Custom AI agents</td></tr>
+          <tr><td>Skills</td><td>Specialized instruction sets</td></tr>
+          <tr><td>Hooks</td><td>Pre/post execution hooks</td></tr>
+          <tr><td>MCP Servers</td><td>Model Context Protocol servers</td></tr>
+          <tr><td>LSP Servers</td><td>Language servers</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Plugin Hooks</h2>
+      <pre><code>// Available hook points
+type HookPoint =
+  | 'PreToolUse'      // Before tool execution
+  | 'PostToolUse'    // After tool execution
+  | 'PreBash'        // Before bash command
+  | 'PostBash'       // After bash command
+  | 'PrePrompt'       // Before building prompt
+  | 'PostPrompt'      // After building prompt
+  | 'PreAcceptEdit'  // Before accepting edit</code></pre>
+
+      <h2>Key Learnings</h2>
+      <ol>
+        <li><strong>Manifest-based</strong> — Each plugin declares its capabilities</li>
+        <li><strong>Component-based</strong> — Commands, agents, skills, hooks, MCP</li>
+        <li><strong>Lazy loading</strong> — Plugins loaded on-demand</li>
+        <li><strong>Hook system</strong> — Extend behavior at key points</li>
+        <li><strong>Settings support</strong> — Plugins can have user config</li>
+        <li><strong>Marketplace integration</strong> — Install from marketplace</li>
+      </ol>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>Claude Code Documentation • <a href="https://github.com/anomalyco/claude-code">GitHub</a></p>
+  </footer>
+</body>
+</html>

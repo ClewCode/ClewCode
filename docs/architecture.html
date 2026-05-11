@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture - Learn from Claude Code</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Claude Code</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="architecture.html" class="nav-link active">Learn</a>
+        <a href="commands.html" class="nav-link">Commands</a>
+        <a href="providers.html" class="nav-link">Providers</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Learn from Claude Code</h3>
+        <ul class="sidebar-nav">
+          <li><a href="architecture.html" class="sidebar-link active">Architecture</a></li>
+          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
+          <li><a href="command-system.html" class="sidebar-link">Command System</a></li>
+          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
+          <li><a href="permission-model.html" class="sidebar-link">Permission Model</a></li>
+          <li><a href="memory-system.html" class="sidebar-link">Memory System</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-content page-content">
+      <h1>Learn from Claude Code</h1>
+      <p class="lead">Understanding the architecture by studying the source code.</p>
+
+      <h2>High-Level Architecture</h2>
+      <pre><code>┌─────────────────────────────────────────────────────────────┐
+│                      Terminal UI (Ink/React)                   │
+│                    (Components, Hooks, State)                  │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Command Handler Layer                    │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐  │
+│  │  Files   │  │   Git    │  │   MCP    │  │   Agent     │  │
+│  │Commands  │  │Commands  │  │ Servers  │  │  System     │  │
+│  └──────────┘  └──────────┘  └──────────┘  └─────────────┘  │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      AI Provider Layer                       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐  │
+│  │Anthropic │  │ OpenAI   │  │ Google   │  │  OpenRouter │  │
+│  │Provider  │  │Provider  │  │Provider  │  │   Provider  │  │
+│  └──────────┘  └──────────┘  └──────────┘  └─────────────┘  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐  │
+│  │  Ollama  │  │   xAI    │  │ Mistral  │  │   Custom    │  │
+│  │Provider  │  │Provider  │  │Provider  │  │   (OpenAI)  │  │
+│  └──────────┘  └──────────┘  └──────────┘  └─────────────┘  │
+└─────────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Core Services                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │ Provider     │  │   Session    │  │   Permission     │  │
+│  │ Registry     │  │   Manager    │  │   Manager        │  │
+│  └──────────────┘  └──────────────┘  └──────────────────┘  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │   Plugin     │  │   Tool       │  │   Config         │  │
+│  │   Manager    │  │   Executor   │  │   Manager        │  │
+│  └──────────────┘  └──────────────┘  └──────────────────┘  │
+└───────────────────────────────────────────────────────────────┘</code></pre>
+
+      <h2>Directory Structure</h2>
+      <pre><code>src/
+├── main.tsx                    # Entry point
+├── cli/
+│   └── App.tsx                 # Root React component
+├── commands/                   # 90+ slash commands
+│   ├── agent/                 # /agent command
+│   ├── git/                   # /git command
+│   ├── model/                 # /model command
+│   ├── mcp/                   # /mcp command
+│   ├── yolo/                  # /yolo command
+│   └── [90+ more...]
+├── services/
+│   ├── ai/                    # AI Provider system
+│   │   ├── ProviderManager.ts # Orchestrates providers
+│   │   ├── providerRegistry.ts # Singleton registry
+│   │   ├── providerModels.ts # Model discovery
+│   │   └── providers/        # 11 provider adapters
+│   │       ├── AnthropicProvider.ts
+│   │       ├── OpenAIProvider.ts
+│   │       ├── GoogleProvider.ts
+│   │       ├── OpenRouterProvider.ts
+│   │       ├── OllamaProvider.ts
+│   │       └── ...
+│   ├── tools/                 # Tool execution
+│   ├── plugins/               # Plugin management
+│   ├── compact/               # Context compaction
+│   └── [50+ more services...]
+├── tools/                     # 40+ built-in tools
+│   ├── AgentTool/             # Subagent execution
+│   ├── BashTool/              # Shell commands
+│   ├── WebSearchTool/          # Web search
+│   ├── WebFetchTool/           # URL fetching
+│   ├── FileEditTool/           # File editing
+│   └── [40+ more tools...]
+├── components/                # React UI components
+│   ├── Stats.tsx              # Usage stats display
+│   ├── YoloModePicker.tsx     # Permission mode picker
+│   ├── [100+ more components...]
+├── utils/                     # Utilities
+│   ├── permissions/            # Permission system
+│   ├── config.ts              # Configuration
+│   └── [100+ more utils...]
+├── plugins/                   # Plugin system
+│   └── bundled/               # Built-in plugins
+├── skills/                    # Skill system
+│   └── bundled/               # Built-in skills
+├── bootstrap/                 # App initialization
+│   └── state.ts               # App state management
+└── entrypoints/               # SDK entry points
+
+docs/                          # HTML documentation
+plugins/                       # Community plugins</code></pre>
+
+      <h2>Key Components</h2>
+
+      <h3>1. Provider System</h3>
+      <pre><code>services/ai/
+├── providers/
+│   ├── ProviderInterface.ts   # Common interface
+│   ├── AnthropicProvider.ts    # Anthropic adapter
+│   ├── OpenAIProvider.ts       # OpenAI adapter
+│   ├── GoogleProvider.ts       # Google Gemini adapter
+│   ├── OpenRouterProvider.ts   # OpenRouter adapter
+│   └── OllamaProvider.ts       # Local Ollama adapter
+├── ProviderManager.ts          # Routing & orchestration
+├── providerRegistry.ts         # Singleton registry
+└── providerModels.ts           # Model discovery (5-min cache)</code></pre>
+
+      <h3>2. Tool System</h3>
+      <pre><code>tools/
+├── AgentTool/                  # Subagent creation
+├── BashTool/                    # Shell execution
+├── WebSearchTool/               # Web search
+├── WebFetchTool/                # URL fetching
+├── FileEditTool/                # File editing
+├── ConfigTool/                  # Configuration
+├── LSPTool/                     # Language server
+├── MCPTool/                     # Model Context Protocol
+└── [40+ more tools...]</code></pre>
+
+      <h3>3. Command System</h3>
+      <pre><code>commands/
+├── index.ts                    # Command registration
+├── agent/                      # /agent - create subagent
+├── git/                        # /git - git operations
+├── model/                      # /model - switch models
+├── mcp/                        # /mcp - MCP servers
+├── yolo/                       # /yolo - permission modes
+├── session/                    # /session - new session
+├── config/                     # /config - edit settings
+└── [90+ commands...]</code></pre>
+
+      <h3>4. Permission System</h3>
+      <pre><code>utils/permissions/
+├── permissions.ts              # Main permission logic
+├── permissionSetup.ts           # Mode transitions
+├── permissionHooks.ts           # Permission hooks
+├── PermissionMode.ts            # Mode definitions
+└── getNextPermissionMode.ts     # Mode transition logic</code></pre>
+
+      <h2>Data Flow</h2>
+      <pre><code>User Input (/)
+
+    ▼
+
+Command Parser
+
+    ▼
+
+┌─────────────────────────────────────┐
+│  Check Permissions (YOLO/Default)   │
+└─────────────────────────────────────┘
+
+    ▼
+
+┌─────────────────────────────────────┐
+│  Execute Tool / Route to AI         │
+└─────────────────────────────────────┘
+
+    ▼
+
+AI Provider (streamMsg/nonStreamingMsg)
+
+    ▼
+
+Tool Result Parser
+
+    ▼
+
+Response to User</code></pre>
+
+      <h2>Learning Highlights</h2>
+
+      <h3>1. Multi-Provider Pattern</h3>
+      <p>Each provider implements a common interface, enabling seamless switching:</p>
+      <pre><code>interface Provider {
+  streamMsg(messages, options): AsyncIterable<any>
+  nonStreamingMsg(messages, options): Promise<any>
+  getModels(): Promise<Model[]>
+  getToolResultSchema(): JSONSchema
+}</code></pre>
+
+      <h3>2. Tool Permission System</h3>
+      <p>Permission modes control tool execution safety:</p>
+      <ul>
+        <li><strong>Default:</strong> Ask before dangerous tools</li>
+        <li><strong>Auto:</strong> Auto-approve safe tools</li>
+        <li><strong>YOLO:</strong> Progressive bypass levels</li>
+      </ul>
+
+      <h3>3. Plugin Architecture</h3>
+      <p>Plugins can extend functionality through:</p>
+      <ul>
+        <li>Custom commands</li>
+        <li>Skills (instruction sets)</li>
+        <li>Hooks (pre/post tool execution)</li>
+        <li>Agent definitions</li>
+      </ul>
+
+      <h3>4. Context Management</h3>
+      <p>Claude Code manages context window through:</p>
+      <ul>
+        <li><strong>Session Memory:</strong> Current conversation</li>
+        <li><strong>Compact:</strong> Reduce context size</li>
+        <li><strong>Token Estimation:</strong> Track usage</li>
+      </ul>
+
+      <div class="callout callout-tip">
+        <strong>Tip:</strong> Explore <code>src/services/ai/</code> to understand the provider pattern, and <code>src/utils/permissions/</code> for the security model.
+      </div>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>Claude Code Documentation • <a href="https://github.com/anomalyco/claude-code">GitHub</a></p>
+  </footer>
+</body>
+</html>

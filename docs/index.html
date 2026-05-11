@@ -14,9 +14,8 @@
         <span class="logo-text">Claude Code</span>
       </a>
       <nav class="nav">
-        <a href="index.html" class="nav-link active">Home</a>
-        <a href="installation.html" class="nav-link">Installation</a>
-        <a href="configuration.html" class="nav-link">Configuration</a>
+        <a href="index.html" class="nav-link active">Docs</a>
+        <a href="installation.html" class="nav-link">Install</a>
         <a href="commands.html" class="nav-link">Commands</a>
         <a href="providers.html" class="nav-link">Providers</a>
         <a href="plugins.html" class="nav-link">Plugins</a>
@@ -53,21 +52,41 @@
         </ul>
       </div>
       <div class="sidebar-section">
+        <h3 class="sidebar-title">Learn from Claude Code</h3>
+        <ul class="sidebar-nav">
+          <li><a href="architecture.html" class="sidebar-link">Architecture</a></li>
+          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
+          <li><a href="command-system.html" class="sidebar-link">Command System</a></li>
+          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
+          <li><a href="permission-model.html" class="sidebar-link">Permission Model</a></li>
+          <li><a href="memory-system.html" class="sidebar-link">Memory System</a></li>
+          <li><a href="session-system.html" class="sidebar-link">Session System</a></li>
+          <li><a href="context-compaction.html" class="sidebar-link">Context Compaction</a></li>
+          <li><a href="plugin-system.html" class="sidebar-link">Plugin System</a></li>
+          <li><a href="skill-system.html" class="sidebar-link">Skill System</a></li>
+          <li><a href="mcp-integration.html" class="sidebar-link">MCP Integration</a></li>
+          <li><a href="bridge-mode.html" class="sidebar-link">Bridge Mode</a></li>
+          <li><a href="agent-system.html" class="sidebar-link">Agent System</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-section">
         <h3 class="sidebar-title">Reference</h3>
         <ul class="sidebar-nav">
           <li><a href="faq.html" class="sidebar-link">FAQ</a></li>
           <li><a href="troubleshooting.html" class="sidebar-link">Troubleshooting</a></li>
-          <li><a href="changelog.html" class="sidebar-link">Changelog</a></li>
         </ul>
       </div>
     </aside>
 
     <main class="main-content">
-      <h1>Welcome to Claude Code</h1>
-      <p class="lead">A research-focused fork of Anthropic's Claude Code CLI with multi-provider routing, extensible plugin architecture, and enhanced AI capabilities.</p>
+      <h1>Claude Code</h1>
+      <p class="lead">
+        A research-focused fork of Anthropic's Claude Code CLI with multi-provider routing, 
+        extensible plugin architecture, and enhanced AI capabilities.
+      </p>
 
       <div class="hero">
-        <h2>Get Started</h2>
+        <h2>🚀 Get Started</h2>
         <p>Start using Claude Code in minutes:</p>
         <div class="code-block">
           <pre><code># Install dependencies
@@ -81,15 +100,15 @@ bun run src/main.tsx session</code></pre>
         </div>
       </div>
 
-      <h2>What's New (2025)</h2>
+      <h2>✨ What's New (2026)</h2>
       <ul>
-        <li><strong>11 AI Providers</strong> - Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, xAI, Mistral, and more</li>
-        <li><strong>90+ Commands</strong> - File ops, git, search, npm, agents, MCP, and more</li>
-        <li><strong>40+ Built-in Tools</strong> - Read, Edit, Write, Glob, Grep, Bash, WebSearch, Agent, and more</li>
-        <li><strong>Plugin System</strong> - Extend functionality with plugins and skills</li>
-        <li><strong>YOLO Modes</strong> - Progressive permission bypass (yoloLite → yolo → yoloMax → yoloGod)</li>
-        <li><strong>Bridge Mode</strong> - Remote collaboration via session URLs</li>
-        <li><strong>Subagents</strong> - Background AI agents for parallel work</li>
+        <li><strong>11 AI Providers</strong> — Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, xAI, Mistral, and more</li>
+        <li><strong>90+ Commands</strong> — File ops, git, search, npm, agents, MCP, and more</li>
+        <li><strong>40+ Built-in Tools</strong> — Read, Edit, Write, Glob, Grep, Bash, WebSearch, Agent, and more</li>
+        <li><strong>Plugin System</strong> — Extend functionality with 12+ plugins and custom skills</li>
+        <li><strong>YOLO Modes</strong> — Progressive permission bypass (yoloLite → yolo → yoloMax → yoloGod)</li>
+        <li><strong>Bridge Mode</strong> — Remote collaboration via session URLs</li>
+        <li><strong>Subagents</strong> — Background AI agents for parallel task execution</li>
       </ul>
 
       <div class="features-grid">
@@ -127,12 +146,12 @@ bun run src/main.tsx session</code></pre>
 
       <h2>Quick Links</h2>
       <ul class="quick-links">
-        <li><a href="installation.html">Installation Guide →</a></li>
-        <li><a href="configuration.html">Configuration Options →</a></li>
-        <li><a href="providers.html#api-keys">API Keys Setup →</a></li>
-        <li><a href="commands.html">All Commands →</a></li>
-        <li><a href="plugins.html">Plugin List →</a></li>
-        <li><a href="faq.html">Frequently Asked Questions →</a></li>
+        <li><a href="installation.html">→ Installation Guide</a></li>
+        <li><a href="configuration.html">→ Configuration Options</a></li>
+        <li><a href="providers.html#api-keys">→ API Keys Setup</a></li>
+        <li><a href="commands.html">→ All Commands</a></li>
+        <li><a href="plugins.html">→ Plugin List</a></li>
+        <li><a href="faq.html">→ Frequently Asked Questions</a></li>
       </ul>
     </main>
   </div>

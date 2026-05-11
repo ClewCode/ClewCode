@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session System - Learn from Claude Code</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Claude Code</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="nav-link">Docs</a>
+        <a href="architecture.html" class="nav-link active">Learn</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-title">Learn from Claude Code</h3>
+        <ul class="sidebar-nav">
+          <li><a href="architecture.html" class="sidebar-link">Architecture</a></li>
+          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
+          <li><a href="command-system.html" class="sidebar-link">Command System</a></li>
+          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
+          <li><a href="permission-model.html" class="sidebar-link">Permission Model</a></li>
+          <li><a href="memory-system.html" class="sidebar-link">Memory System</a></li>
+          <li><a href="session-system.html" class="sidebar-link active">Session System</a></li>
+          <li><a href="context-compaction.html" class="sidebar-link">Context Compaction</a></li>
+          <li><a href="plugin-system.html" class="sidebar-link">Plugin System</a></li>
+          <li><a href="skill-system.html" class="sidebar-link">Skill System</a></li>
+          <li><a href="mcp-integration.html" class="sidebar-link">MCP Integration</a></li>
+          <li><a href="bridge-mode.html" class="sidebar-link">Bridge Mode</a></li>
+          <li><a href="agent-system.html" class="sidebar-link">Agent System</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-content page-content">
+      <h1>Session System</h1>
+      <p class="lead">How Claude Code manages sessions, state, and persistence.</p>
+
+      <h2>Session Lifecycle</h2>
+      <pre><code>Session Start → Active → Compact/Suspend → Resume → End</code></pre>
+
+      <h2>Key Files</h2>
+      <pre><code>src/utils/
+├── sessionStart.ts          # Session initialization
+├── sessionRestore.ts       # Resume previous session
+├── sessionStorage.ts       # Session data persistence
+├── sessionState.ts         # Session state management
+├── sessionTitle.ts         # Auto-generate titles
+├── sessionActivity.ts      # Track activity
+├── sessionUrl.ts           # Session URLs
+└── sessionEnvironment.ts   # Environment variables
+
+src/services/
+└── SessionMemory/
+    ├── sessionMemory.ts        # Session memory
+    └── sessionMemoryUtils.ts   # Utilities</code></pre>
+
+      <h2>Session Storage</h2>
+      <pre><code>// Where sessions are stored
+~/.claude/sessions/
+├── session-id-1/
+│   ├── transcript.jsonl    # Message history
+│   ├── attachements/       # File attachments
+│   └── metadata.json       # Session info
+└── session-id-2/
+    └── ...</code></pre>
+
+      <h2>Session Start</h2>
+      <pre><code>src/utils/sessionStart.ts</code></pre>
+      <pre><code>async function startSession() {
+  // 1. Load settings
+  const settings = await loadSettings()
+
+  // 2. Load memories
+  const memories = await loadMemoryPrompt()
+
+  // 3. Load plugins
+  await loadPluginHooks()
+
+  // 4. Build system prompt
+  const systemPrompt = buildSystemPrompt(settings, memories)
+
+  // 5. Start message loop
+  await messageLoop(systemPrompt)
+}</code></pre>
+
+      <h2>Session Resume</h2>
+      <pre><code>src/utils/sessionRestore.ts</code></pre>
+      <pre><code>async function resumeSession(sessionId: string) {
+  // 1. Load transcript
+  const transcript = await loadTranscript(sessionId)
+
+  // 2. Restore state
+  const state = await loadSessionState(sessionId)
+
+  // 3. Reconstruct context
+  const messages = rebuildMessages(transcript, state)
+
+  // 4. Continue session
+  return messages
+}</code></pre>
+
+      <h2>Session State</h2>
+      <pre><code>// What gets saved per session
+interface SessionState {
+  id: string
+  createdAt: number
+  lastActiveAt: number
+  model: string
+  provider: string
+  permissions: PermissionMode
+  tasks: TaskState[]
+  // ... more
+}</code></pre>
+
+      <h2>Key Learnings</h2>
+      <ol>
+        <li><strong>JSONL transcript</strong> — Messages stored as JSONL for efficient appending</li>
+        <li><strong>State separate from transcript</strong> — Metadata stored separately</li>
+        <li><strong>Resume capability</strong> — Full state reconstruction possible</li>
+        <li><strong>Session URLs</strong> — Bridge mode uses shareable URLs</li>
+        <li><strong>Activity tracking</strong> — Last active timestamp for cleanup</li>
+      </ol>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>Claude Code Documentation • <a href="https://github.com/anomalyco/claude-code">GitHub</a></p>
+  </footer>
+</body>
+</html>
