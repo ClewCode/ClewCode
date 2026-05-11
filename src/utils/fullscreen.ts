@@ -110,6 +110,10 @@ export function _resetTmuxControlModeProbeForTesting(): void {
  * opt in).
  */
 export function isFullscreenEnvEnabled(): boolean {
+  // CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1: complete opt-out of the alt-screen
+  // renderer. Overrides all other detection. Useful for terminals where the
+  // alt-screen causes issues (VS Code integrated terminal, certain tmux setups).
+  if (isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN)) return false
   // Explicit user opt-out always wins.
   if (isEnvDefinedFalsy(process.env.CLAUDE_CODE_NO_FLICKER)) return false
   // Explicit opt-in overrides auto-detection (escape hatch).

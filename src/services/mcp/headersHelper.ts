@@ -12,6 +12,7 @@ import type {
   McpWebSocketServerConfig,
   ScopedMcpServerConfig,
 } from './types.js'
+import { expandEnvVarsInString } from './envExpansion.js'
 
 /**
  * Check if the MCP server config comes from project settings (projectSettings or localSettings)
@@ -130,9 +131,21 @@ export async function getMcpServerHeaders(
   const dynamicHeaders =
     (await getMcpHeadersFromHelper(serverName, config)) || {}
 
-  // Dynamic headers override static headers if both are present
-  return {
+  const combinedHeaders: Record<string, string> = {
     ...staticHeaders,
     ...dynamicHeaders,
   }
+
+  // Safety net: expand ${ENV_VAR} placeholders in all header values.
+  // While config parsing already expands env vars for most sources, dynamic
+  // configs (--mcp-config, in-memory) and headersHelper output may still
+  // contain unexpanded placeholders. Applying expansion here ensures headers
+  // are always resolved before being sent in requests.
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(combinedHeaders)) {
+    const { expanded } = expandEnvVarsInString(value ?? '')
+    result[key] = expanded
+  }
+
+  return result
 }

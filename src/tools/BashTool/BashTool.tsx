@@ -858,7 +858,7 @@ async function* runShellCommand({
     timeout,
     run_in_background
   } = input;
-  const timeoutMs = timeout || getDefaultTimeoutMs();
+  const timeoutMs = Math.min(timeout || getDefaultTimeoutMs(), getMaxTimeoutMs());
   let fullOutput = '';
   let lastProgressOutput = '';
   let lastTotalLines = 0;

@@ -4,6 +4,7 @@ import { Box, Text } from '../../ink.js'
 import type { LocalJSXCommandCall } from '../../types/command.js'
 import {
   CHANGELOG_URL,
+  _resetChangelogCacheForTesting,
   fetchAndStoreChangelog,
   getAllReleaseNotes,
   getStoredChangelog,
@@ -61,6 +62,8 @@ export const call: LocalJSXCommandCall = async onDone => {
     await Promise.race([fetchAndStoreChangelog(), timeoutPromise])
     notes = getAllReleaseNotes(await getStoredChangelog())
   } catch {
+    // E19: Clear cache on fetch failure so stale version isn't stuck
+    _resetChangelogCacheForTesting()
     notes = getAllReleaseNotes(await getStoredChangelog())
   }
 

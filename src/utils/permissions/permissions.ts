@@ -9,6 +9,9 @@ import type { Tool, ToolPermissionContext, ToolUseContext } from '../../Tool.js'
 import { AGENT_TOOL_NAME } from '../../tools/AgentTool/constants.js'
 import { shouldUseSandbox } from '../../tools/BashTool/shouldUseSandbox.js'
 import { BASH_TOOL_NAME } from '../../tools/BashTool/toolName.js'
+import { FILE_EDIT_TOOL_NAME } from '../../tools/FileEditTool/constants.js'
+import { FILE_WRITE_TOOL_NAME } from '../../tools/FileWriteTool/prompt.js'
+import { NOTEBOOK_EDIT_TOOL_NAME } from '../../tools/NotebookEditTool/constants.js'
 import { POWERSHELL_TOOL_NAME } from '../../tools/PowerShellTool/toolName.js'
 import { REPL_TOOL_NAME } from '../../tools/REPLTool/constants.js'
 import type { AssistantMessage } from '../../types/message.js'
@@ -814,6 +817,33 @@ export const hasPermissionsToUseTool: CanUseToolFn = async (
       }
 
       if (classifierResult.shouldBlock) {
+        // Hard-deny rules (autoMode.hard_deny) match unconditionally — the
+        // user explicitly said "never allow this". Skip denial tracking,
+        // denial limit checks, and fallback-to-prompting: deny immediately.
+        if (classifierResult.isHardDeny) {
+          logForDebugging(
+            `Auto mode hard-deny blocked action: ${classifierResult.reason}`,
+            { level: 'warn' },
+          )
+          logEvent('tengu_auto_mode_decision', {
+            decision:
+              'hard_deny' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+            toolName: sanitizeToolNameForAnalytics(tool.name),
+            inProtectedNamespace: isInProtectedNamespace(),
+            agentMsgId: assistantMessage.message
+              .id as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+          })
+          return {
+            behavior: 'deny',
+            decisionReason: {
+              type: 'classifier',
+              classifier: 'auto-mode',
+              reason: classifierResult.reason,
+            },
+            message: buildYoloRejectionMessage(classifierResult.reason),
+          }
+        }
+
         // Transcript exceeded the classifier's context window — deterministic
         // error, won't recover on retry. Skip iron_gate and fall back to
         // normal prompting so the user can approve/deny manually.
@@ -1291,7 +1321,28 @@ async function hasPermissionsToUseToolInner(
   
   // YOLO Lite has safety checks - don't bypass completely
   const isYoloLite = appState.toolPermissionContext.mode === 'yoloLite'
-  
+
+  // Plan mode is read-only: even with bypass permissions, block file editing
+  // tools (Edit, Write, NotebookEdit). This prevents an Edit allow rule from
+  // bypassing plan mode's write block — the user must exit plan mode first.
+  if (
+    appState.toolPermissionContext.mode === 'plan' &&
+    shouldBypassPermissions &&
+    (tool.name === FILE_EDIT_TOOL_NAME ||
+      tool.name === FILE_WRITE_TOOL_NAME ||
+      tool.name === NOTEBOOK_EDIT_TOOL_NAME)
+  ) {
+    return {
+      behavior: 'deny',
+      message:
+        'Writing or editing files is not allowed in plan mode. Please exit plan mode first to make changes.',
+      decisionReason: {
+        type: 'mode',
+        mode: 'plan',
+      },
+    }
+  }
+
   if (shouldBypassPermissions && !isYoloLite) {
     return {
       behavior: 'allow',

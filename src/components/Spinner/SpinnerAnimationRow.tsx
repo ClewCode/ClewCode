@@ -18,6 +18,10 @@ const SEP_WIDTH = stringWidth(' · ');
 const THINKING_BARE_WIDTH = stringWidth('thinking');
 const SHOW_TOKENS_AFTER_MS = 30_000;
 
+// Rotating progress hints for extended thinking
+const THINKING_PROGRESS_HINTS = ['.', '..', '...'];
+const THINKING_PROGRESS_CYCLE_MS = 600; // Cycle through hints every 600ms
+
 // Thinking shimmer constants. Previously lived in a separate ThinkingShimmerText
 // component with its own useAnimationFrame(50) — inlined here to reuse our
 // existing 50ms clock and eliminate the redundant subscriber.
@@ -31,7 +35,7 @@ const THINKING_INACTIVE_SHIMMER = {
   g: 185,
   b: 185
 };
-const THINKING_DELAY_MS = 3000;
+const THINKING_DELAY_MS = 1000; // Reduced from 3000ms to show thinking hints sooner
 const THINKING_GLOW_PERIOD_S = 2;
 export type SpinnerAnimationRowProps = {
   // Animation inputs
@@ -168,8 +172,14 @@ export function SpinnerAnimationRow({
   const tokensText = hasRunningTeammates ? `${tokenCount} tokens` : `${figures.arrowDown} ${tokenCount} tokens`;
   const tokensWidth = stringWidth(tokensText);
 
-  // === Thinking text (may shrink to fit) ===
-  let thinkingText = thinkingStatus === 'thinking' ? `thinking${effortSuffix}` : typeof thinkingStatus === 'number' ? `thought for ${Math.max(1, Math.round(thinkingStatus / 1000))}s` : null;
+  // === Thinking text (may shrink to fit) with rotating progress hint ===
+  // Calculate rotating progress hint for extended thinking
+  const thinkingProgressIndex = thinkingStatus === 'thinking'
+    ? Math.floor((time - THINKING_DELAY_MS) / THINKING_PROGRESS_CYCLE_MS) % THINKING_PROGRESS_HINTS.length
+    : -1;
+  const thinkingProgressHint = thinkingProgressIndex >= 0 ? THINKING_PROGRESS_HINTS[thinkingProgressIndex] : '';
+
+  let thinkingText = thinkingStatus === 'thinking' ? `thinking${effortSuffix}${thinkingProgressHint}` : typeof thinkingStatus === 'number' ? `thought for ${Math.max(1, Math.round(thinkingStatus / 1000))}s` : null;
   let thinkingWidthValue = thinkingText ? stringWidth(thinkingText) : 0;
 
   // === Progressive width gating ===

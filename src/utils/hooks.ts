@@ -376,6 +376,31 @@ export type AggregatedHookResult = {
 }
 
 /**
+ * Check whether an AggregatedHookResult contains meaningful data that should
+ * be recorded as a hook entry. PostToolUse hooks that return no message, no
+ * blockingError, no updatedInput, and no other payload would otherwise write
+ * empty entries to the session transcript.
+ */
+function hasMeaningfulHookResult(result: AggregatedHookResult): boolean {
+  return !!(
+    result.message ||
+    result.blockingError ||
+    result.updatedInput ||
+    result.updatedMCPToolOutput ||
+    result.permissionRequestResult ||
+    result.stopReason ||
+    result.watchPaths ||
+    result.elicitationResponse ||
+    result.elicitationResultResponse ||
+    result.retry ||
+    result.preventContinuation ||
+    result.permissionBehavior ||
+    result.additionalContexts?.length ||
+    result.hookPermissionDecisionReason
+  )
+}
+
+/**
  * Parse and validate a JSON string against the hook output Zod schema.
  * Returns the validated output or formatted validation errors.
  */
@@ -2964,8 +2989,16 @@ async function* executeHooks({
         matcher,
         result.hook,
       )
-      // Invoke onHookSuccess only on success outcome
-      if (hookEntry?.onHookSuccess && result.outcome === 'success') {
+      // Invoke onHookSuccess only on success outcome AND when the result
+      // contains meaningful data. PostToolUse hooks that return no message,
+      // no blockingError, no updatedInput, and no other payload still trigger
+      // the callback, which writes empty entries to the session transcript.
+      // Skip those to avoid polluting the transcript with empty hook entries.
+      if (
+        hookEntry?.onHookSuccess &&
+        result.outcome === 'success' &&
+        hasMeaningfulHookResult(result as AggregatedHookResult)
+      ) {
         try {
           hookEntry.onHookSuccess(result.hook, result as AggregatedHookResult)
         } catch (error) {

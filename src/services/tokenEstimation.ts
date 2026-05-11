@@ -158,16 +158,18 @@ export async function countMessagesTokensWithAPI(
         })
       }
 
+      // Vertex AI proxy gateways commonly reject the count_tokens endpoint
+      // with 400 errors. Skip the API call entirely for Vertex and fall back
+      // to estimation/Haiku fallback rather than logging noisy errors.
+      if (getAPIProvider() === 'vertex') {
+        return null
+      }
+
       const anthropic = await getAnthropicClient({
         maxRetries: 1,
         model,
         source: 'count_tokens',
       })
-
-      const filteredBetas =
-        getAPIProvider() === 'vertex'
-          ? betas.filter(b => VERTEX_COUNT_TOKENS_ALLOWED_BETAS.has(b))
-          : betas
 
       const response = await anthropic.beta.messages.countTokens({
         model: normalizeModelStringForAPI(model),
@@ -176,7 +178,7 @@ export async function countMessagesTokensWithAPI(
           // to get an accurate tool token count.
           messages.length > 0 ? messages : [{ role: 'user', content: 'foo' }],
         tools,
-        ...(filteredBetas.length > 0 && { betas: filteredBetas }),
+        ...(betas.length > 0 && { betas }),
         // Enable thinking if messages contain thinking blocks
         ...(containsThinking && {
           thinking: {

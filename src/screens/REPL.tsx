@@ -1251,7 +1251,7 @@ export function REPL({
   } = useUnseenDivider(messages.length);
   if (feature('AWAY_SUMMARY')) {
     // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
-    useAwaySummary(messages, setMessages, isLoading);
+    useAwaySummary(messages, setMessages, isLoading, inputValue);
   }
   const [cursor, setCursor] = useState<MessageActionsState | null>(null);
   const cursorNavRef = useRef<MessageActionsNav | null>(null);

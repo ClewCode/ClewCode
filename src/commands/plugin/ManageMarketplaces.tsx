@@ -6,7 +6,7 @@ import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEve
 import { ConfigurableShortcutHint } from '../../components/ConfigurableShortcutHint.js';
 import { Byline } from '../../components/design-system/Byline.js';
 import { KeyboardShortcutHint } from '../../components/design-system/KeyboardShortcutHint.js';
-// eslint-disable-next-line custom-rules/prefer-use-keybindings -- useInput needed for marketplace-specific u/r shortcuts and y/n confirmation not in keybinding schema
+// eslint-disable-next-line custom-rules/prefer-use-keybindings -- useInput needed for marketplace-specific u/d shortcuts and y/n confirmation not in keybinding schema
 import { Box, Text, useInput } from '../../ink.js';
 import { useKeybinding, useKeybindings } from '../../keybindings/useKeybinding.js';
 import type { LoadedPlugin } from '../../types/plugin.js';
@@ -470,7 +470,7 @@ export function ManageMarketplaces({
     isActive: !isProcessing && internalView === 'list'
   });
 
-  // List view — marketplace-specific actions (u/r shortcuts)
+  // List view — marketplace-specific actions (u/d shortcuts)
   useInput(input => {
     const marketplaceIndex = selectedIndex - 1;
     if ((input === 'u' || input === 'U') && marketplaceIndex >= 0) {
@@ -479,7 +479,7 @@ export function ManageMarketplaces({
         pendingUpdate: !state.pendingUpdate,
         pendingRemove: state.pendingUpdate ? state.pendingRemove : false
       } : state));
-    } else if ((input === 'r' || input === 'R') && marketplaceIndex >= 0) {
+    } else if ((input === 'd' || input === 'D') && marketplaceIndex >= 0) {
       const marketplace = marketplaceStates[marketplaceIndex];
       if (marketplace) {
         setSelectedMarketplace(marketplace);
@@ -806,7 +806,7 @@ function ManageMarketplacesKeyHints(t0) {
   }
   let t4;
   if ($[8] !== hasPendingActions) {
-    t4 = !hasPendingActions && <KeyboardShortcutHint shortcut="r" action="remove" />;
+    t4 = !hasPendingActions && <KeyboardShortcutHint shortcut="d" action="remove" />;
     $[8] = hasPendingActions;
     $[9] = t4;
   } else {

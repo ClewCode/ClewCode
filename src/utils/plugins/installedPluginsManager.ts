@@ -310,6 +310,46 @@ function migrateV1ToV2(v1Data: InstalledPluginsFileV1): InstalledPluginsFileV2 {
  * Reads from installed_plugins.json. If file has version=1,
  * converts to V2 format in memory.
  *
+ * Remove stale plugin entries whose install directories no longer exist.
+ * Prevents stale entries in installed_plugins.json from polluting references
+ * after plugins are manually deleted or cache is cleaned.
+ */
+function cleanupStalePluginEntries(
+  data: InstalledPluginsFileV2,
+): InstalledPluginsFileV2 {
+  const fs = getFsImplementation()
+  let changed = false
+
+  for (const [pluginId, installations] of Object.entries(data.plugins)) {
+    const valid = installations.filter(entry => {
+      if (!entry.installPath) return true
+      try {
+        return fs.existsSync(entry.installPath)
+      } catch {
+        return false
+      }
+    })
+
+    if (valid.length !== installations.length) {
+      changed = true
+      if (valid.length > 0) {
+        data.plugins[pluginId] = valid
+      } else {
+        delete data.plugins[pluginId]
+      }
+    }
+  }
+
+  if (changed) {
+    logForDebugging(
+      `[E41] Cleaned up stale plugin entries (missing install directories)`,
+    )
+  }
+
+  return data
+}
+
+/**
  * @returns V2 format data with array-per-plugin structure
  */
 export function loadInstalledPluginsV2(): InstalledPluginsFileV2 {
@@ -327,7 +367,7 @@ export function loadInstalledPluginsV2(): InstalledPluginsFileV2 {
       if (rawData.version === 2) {
         // V2 format - validate and return
         const validated = InstalledPluginsFileSchemaV2().parse(rawData.data)
-        installedPluginsCacheV2 = validated
+        installedPluginsCacheV2 = cleanupStalePluginEntries(validated)
         logForDebugging(
           `Loaded ${Object.keys(validated.plugins).length} installed plugins from ${filePath}`,
         )

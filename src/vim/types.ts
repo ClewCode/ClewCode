@@ -145,7 +145,8 @@ export const SIMPLE_MOTIONS = new Set([
   'E', // Word motions
   '0',
   '^',
-  '$', // Line positions
+  '$',
+  ' ', // Space — simple forward motion (like vim)
 ])
 
 export const FIND_KEYS = new Set(['f', 'F', 't', 'T'])

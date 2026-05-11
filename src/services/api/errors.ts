@@ -548,11 +548,36 @@ export function getAssistantMessageFromError(
     }
     // SDK's APIError.makeMessage prepends "429 " and JSON-stringifies the body
     // when there's no top-level .message — extract the inner error.message.
+    // Avoid showing raw JSON dumps to users.
     const stripped = error.message.replace(/^429\s+/, '')
-    const innerMessage = stripped.match(/"message"\s*:\s*"([^"]*)"/)?.[1]
-    const detail = innerMessage || stripped
+    let detail: string | undefined
+
+    // Try to extract message from JSON
+    const jsonMatch = stripped.match(/"message"\s*:\s*"([^"]*)"/)
+    if (jsonMatch) {
+      detail = jsonMatch[1]
+    } else {
+      // If not valid JSON with a message field, check if it's short enough to show
+      // otherwise show a generic message
+      try {
+        const parsed = JSON.parse(stripped)
+        // Extract most useful field from the error response
+        detail = parsed.error?.message || parsed.message || parsed.type || parsed.code
+      } catch {
+        // Not JSON - use as-is if it's short and readable
+        detail = stripped.length < 200 ? stripped : undefined
+      }
+    }
+
+    const provider = getAPIProvider()
+    const retryHint =
+      provider === 'bedrock'
+        ? 'Check the AWS Health Dashboard for Bedrock service status.'
+        : provider === 'vertex'
+          ? 'Check the GCP Status Dashboard for Vertex AI service status.'
+          : 'Check status.anthropic.com for current API status.'
     return createAssistantAPIErrorMessage({
-      content: `${API_ERROR_MESSAGE_PREFIX}: Request rejected (429) · ${detail || 'this may be a temporary capacity issue — check status.anthropic.com'}`,
+      content: `${API_ERROR_MESSAGE_PREFIX}: Rate limited (429)${detail ? ` · ${detail}` : ''} · ${retryHint}`,
       error: 'rate_limit',
     })
   }
@@ -918,6 +943,33 @@ export function getAssistantMessageFromError(
     return createAssistantAPIErrorMessage({
       content: `${API_ERROR_MESSAGE_PREFIX}: ${formatAPIError(error)}`,
       error: 'unknown',
+    })
+  }
+
+  // Generic 400 handler — extract underlying error from JSON body
+  // to avoid showing raw JSON dumps to users.
+  if (error instanceof APIError && error.status === 400) {
+    const stripped = error.message.replace(/^400\s+/, '')
+    let detail: string | undefined
+
+    // Try to extract message from JSON body
+    try {
+      const parsed = JSON.parse(stripped)
+      detail =
+        parsed.error?.message ||
+        parsed.message ||
+        parsed.error?.type ||
+        parsed.type ||
+        parsed.error?.code ||
+        parsed.code
+    } catch {
+      // Not JSON — use as-is if it's short and readable
+      detail = stripped.length < 200 ? stripped : undefined
+    }
+
+    return createAssistantAPIErrorMessage({
+      content: `${API_ERROR_MESSAGE_PREFIX}: 400${detail ? ` · ${detail}` : ''}`,
+      error: 'invalid_request',
     })
   }
 

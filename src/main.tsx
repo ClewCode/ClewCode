@@ -331,7 +331,7 @@ import { type AppState, getDefaultAppState, IDLE_SPECULATION_STATE } from './sta
 import { onChangeAppState } from './state/onChangeAppState.js';
 import { createStore } from './state/store.js';
 import { asSessionId } from './types/ids.js';
-import { filterAllowedSdkBetas } from './utils/betas.js';
+import { filterAllowedSdkBetas, warnIfPromptCachingDisabled } from './utils/betas.js';
 import { isInBundledMode, isRunningWithBun } from './utils/bundledMode.js';
 import { logForDiagnosticsNoPII } from './utils/diagLogs.js';
 import { filterExistingPaths, getKnownPathsForRepo } from './utils/githubRepoPathMapping.js';
@@ -742,7 +742,29 @@ export async function main() {
     if (process.argv.includes('-p') || process.argv.includes('--print')) {
       return;
     }
-    process.exit(0);
+    gracefulShutdown(0);
+  });
+  // SIGCONT: re-draw fullscreen after sleep/wake or Ctrl+Z (SIGTSTP).
+  // Without this the terminal stays blank until the next keystroke or output.
+  process.on('SIGCONT', () => {
+    // Write a terminal-reset sequence to force the fullscreen re-renderer to
+    // refresh its alt-screen content on the next frame.
+    process.stdout.write('\x1b[2J\x1b[1;1H');
+  });
+  // Catch uncaught exceptions and unhandled rejections so terminal-closing
+  // events (SSH disconnect, terminal close) don't leave the TTY in a broken
+  // state. gracefulShutdown sync handles cleanup before exit.
+  process.on('uncaughtException', (error) => {
+    // eslint-disable-next-line no-console
+    console.error('Uncaught exception:', error);
+    gracefulShutdownSync(1);
+  });
+  process.on('unhandledRejection', (reason) => {
+    // eslint-disable-next-line no-console
+    console.error('Unhandled rejection:', reason);
+    // Don't exit — many pre-existing unhandled rejections in this codebase
+    // (e.g. git command API changes, optional-backend timeouts) were silently
+    // ignored before. Exiting on them would break interactive sessions.
   });
   profileCheckpoint('main_warning_handler_initialized');
 
@@ -2089,6 +2111,7 @@ async function run(): Promise<CommanderCommand> {
       if (process.env.CLAUDE_CODE_ENTRYPOINT !== 'local-agent') {
         initBuiltinPlugins();
         initBundledSkills();
+        warnIfPromptCachingDisabled();
       }
       const setupPromise = setup(preSetupCwd, permissionMode, allowDangerouslySkipPermissions, worktreeEnabled, worktreeName, tmuxEnabled, sessionId ? validateUuid(sessionId) : undefined, worktreePRNumber, messagingSocketPath);
       const commandsPromise = worktreeEnabled ? null : getCommands(preSetupCwd);
@@ -4035,8 +4058,8 @@ async function run(): Promise<CommanderCommand> {
   program.addOption(new Option('--teleport [session]', 'Resume a teleport session, optionally specify session ID').hideHelp());
   program.addOption(new Option('--remote [description]', 'Create a remote session with the given description').hideHelp());
   if (feature('BRIDGE_MODE')) {
-    program.addOption(new Option('--remote-control [name]', 'Start an interactive session with Remote Control enabled (optionally named)').argParser(value => value || true).hideHelp());
-    program.addOption(new Option('--rc [name]', 'Alias for --remote-control').argParser(value => value || true).hideHelp());
+    program.addOption(new Option('--remote-control [name]', 'Start an interactive session with Remote Control enabled (optionally named)').argParser(value => value || true));
+    program.addOption(new Option('--rc [name]', 'Alias for --remote-control').argParser(value => value || true));
     program.addOption(new Option('--remote-control-session-name-prefix <prefix>', 'Override the hostname prefix used for remote control session names (default: hostname)').hideHelp());
   }
   if (feature('HARD_FAIL')) {

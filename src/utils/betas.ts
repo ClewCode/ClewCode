@@ -440,3 +440,35 @@ export function clearBetasCaches(): void {
   getModelBetas.cache?.clear?.()
   getBedrockExtraBodyParamsBetas.cache?.clear?.()
 }
+
+/**
+ * Check and warn if prompt caching is disabled via environment variables.
+ * Should be called once at startup to alert users.
+ */
+let cachingWarningShown = false
+export function warnIfPromptCachingDisabled(): void {
+  if (cachingWarningShown) return
+  cachingWarningShown = true
+
+  const disabledVars: string[] = []
+
+  if (isEnvTruthy(process.env.DISABLE_PROMPT_CACHING)) {
+    disabledVars.push('DISABLE_PROMPT_CACHING')
+  }
+  if (isEnvTruthy(process.env.DISABLE_PROMPT_CACHING_HAIKU)) {
+    disabledVars.push('DISABLE_PROMPT_CACHING_HAIKU')
+  }
+  if (isEnvTruthy(process.env.DISABLE_PROMPT_CACHING_SONNET)) {
+    disabledVars.push('DISABLE_PROMPT_CACHING_SONNET')
+  }
+  if (isEnvTruthy(process.env.DISABLE_PROMPT_CACHING_OPUS)) {
+    disabledVars.push('DISABLE_PROMPT_CACHING_OPUS')
+  }
+
+  if (disabledVars.length > 0) {
+    // biome-ignore lint/suspicious/noConsole: intentional warning
+    console.warn(
+      `Warning: Prompt caching is disabled via ${disabledVars.join(', ')}. This may reduce performance and increase API costs.`,
+    )
+  }
+}

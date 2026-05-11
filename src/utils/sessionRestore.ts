@@ -555,6 +555,22 @@ export async function processResumedConversation(
       ...(restoredAttribution && { attribution: restoredAttribution }),
       ...(standaloneAgentContext && { standaloneAgentContext }),
       agentDefinitions: refreshedAgentDefs,
+      // Clear stale bridge state on resume — the bridge won't
+      // reconnect until /remote-control is re-invoked or the env
+      // drives a fresh bridge setup via useReplBridge.
+      replBridgeEnabled: false,
+      replBridgeExplicit: false,
+      replBridgeOutboundOnly: false,
+      replBridgeConnected: false,
+      replBridgeSessionActive: false,
+      replBridgeReconnecting: false,
+      replBridgeConnectUrl: undefined,
+      replBridgeSessionUrl: undefined,
+      replBridgeEnvironmentId: undefined,
+      replBridgeSessionId: undefined,
+      replBridgeError: undefined,
+      replBridgeInitialName: undefined,
+      showRemoteCallout: false,
     },
   }
 }

@@ -182,6 +182,7 @@ function findPluginInSettings(plugin: string): {
   scope: InstallableScope
 } | null {
   const hasMarketplace = plugin.includes('@')
+  const pluginLower = plugin.toLowerCase()
   // Most specific first — first match wins
   const searchOrder: InstallableScope[] = ['local', 'project', 'user']
 
@@ -192,7 +193,8 @@ function findPluginInSettings(plugin: string): {
     if (!enabledPlugins) continue
 
     for (const key of Object.keys(enabledPlugins)) {
-      if (hasMarketplace ? key === plugin : key.startsWith(`${plugin}@`)) {
+      const keyLower = key.toLowerCase()
+      if (hasMarketplace ? keyLower === pluginLower : keyLower.startsWith(`${pluginLower}@`)) {
         return { pluginId: key, scope }
       }
     }
@@ -208,14 +210,16 @@ function findPluginByIdentifier(
   plugins: LoadedPlugin[],
 ): LoadedPlugin | undefined {
   const { name, marketplace } = parsePluginIdentifier(plugin)
+  const pluginLower = plugin.toLowerCase()
+  const nameLower = name.toLowerCase()
 
   return plugins.find(p => {
-    // Check exact name match
-    if (p.name === plugin || p.name === name) return true
+    // Check exact name match (case-insensitive)
+    if (p.name.toLowerCase() === pluginLower || p.name.toLowerCase() === nameLower) return true
 
     // If marketplace specified, check if it matches the source
     if (marketplace && p.source) {
-      return p.name === name && p.source.includes(`@${marketplace}`)
+      return p.name.toLowerCase() === nameLower && p.source.toLowerCase().includes(`@${marketplace.toLowerCase()}`)
     }
 
     return false

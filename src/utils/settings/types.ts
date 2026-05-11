@@ -103,7 +103,7 @@ export const PermissionsSchema = lazySchema(() =>
             feature("TRANSCRIPT_CLASSIFIER")
               ? PERMISSION_MODES
               : EXTERNAL_PERMISSION_MODES,
-          ),
+          ).catch(undefined),
         )
         .optional()
         .describe("Default permission mode when Claude Code needs access"),
@@ -504,6 +504,15 @@ export const SettingsSchema = lazySchema(() =>
               "Directories to include when creating worktrees, via git sparse-checkout (cone mode). " +
                 "Dramatically faster in large monorepos — only the listed paths are written to disk.",
             ),
+          baseRef: z
+            .enum(['fresh', 'head'])
+            .optional()
+            .describe(
+              "Controls which git ref new worktrees are based on. " +
+                "'fresh' (default) uses origin/<default-branch> (remote tracking branch). " +
+                "'head' uses the local HEAD. " +
+                "Use 'head' when you want worktrees to include local commits not yet pushed.",
+            ),
         })
         .optional()
         .describe("Git worktree configuration for --worktree flag."),
@@ -803,6 +812,16 @@ export const SettingsSchema = lazySchema(() =>
           "Name of an agent (built-in or custom) to use for the main thread. " +
             "Applies the agent's system prompt, tool restrictions, and model.",
         ),
+      maxWorkers: z
+        .number()
+        .int()
+        .positive()
+        .max(20)
+        .optional()
+        .describe(
+          "Maximum number of concurrent sub-agent workers (default: 5). " +
+            "Limits parallel agent/teammate execution. Higher values may increase memory usage.",
+        ),
       companyAnnouncements: z
         .array(z.string())
         .optional()
@@ -1047,6 +1066,10 @@ export const SettingsSchema = lazySchema(() =>
                   .array(z.string())
                   .optional()
                   .describe("Rules for the auto mode classifier deny section"),
+                hard_deny: z
+                  .array(z.string())
+                  .optional()
+                  .describe("Hard deny rules — actions matching these are blocked unconditionally, without user override"),
                 ...(process.env.USER_TYPE === "ant"
                   ? {
                       // Back-compat alias for ant users; external users use soft_deny

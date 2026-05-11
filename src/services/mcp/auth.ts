@@ -65,6 +65,16 @@ import {
 const AUTH_REQUEST_TIMEOUT_MS = 30000
 
 /**
+ * Default `expires_in` (seconds) for OAuth tokens when the server does not
+ * include the field in its token response (RFC 6749 §5.1 marks it RECOMMENDED
+ * but not required). 1h was too short — servers without expires_in triggered a
+ * re-auth cycle every hour. 24h is a safe cross-provider default: long enough
+ * that the refresh_threshold (5 min before expiry) retriggers refresh naturally
+ * via refresh_token, but short enough that stale tokens are bounded.
+ */
+const DEFAULT_TOKEN_TTL_S = 86400
+
+/**
  * Failure reasons for the `tengu_mcp_oauth_refresh_failure` event. Values
  * are emitted to analytics — keep them stable (do not rename; add new ones).
  */
@@ -160,7 +170,16 @@ export async function normalizeOAuthErrorBody(
   if (!response.ok) {
     return response
   }
+  // 204 No Content: return as-is, no body to normalize.
+  // Some OAuth servers return 204 with empty body for successful operations;
+  // attempting to parse the empty body would crash with a JSON syntax error.
+  if (response.status === 204) {
+    return response
+  }
   const text = await response.text()
+  if (!text) {
+    return response
+  }
   let parsed: unknown
   try {
     parsed = jsonParse(text)
@@ -808,7 +827,7 @@ async function performMCPXaaAuth(
           accessToken: tokens.access_token,
           // AS may omit refresh_token on jwt-bearer — preserve any existing one
           refreshToken: tokens.refresh_token ?? prev?.refreshToken,
-          expiresAt: Date.now() + (tokens.expires_in || 3600) * 1000,
+          expiresAt: Date.now() + (tokens.expires_in || DEFAULT_TOKEN_TTL_S) * 1000,
           scope: tokens.scope,
           clientId,
           clientSecret,
@@ -1415,15 +1434,23 @@ export class ClaudeAuthProvider implements OAuthClientProvider {
   }
 
   get clientMetadata(): OAuthClientMetadata {
+    // When a --client-secret is pre-configured, the DCR metadata must advertise
+    // client_secret_post so the auth server registers the client as confidential.
+    // Without this, DCR creates a public-client registration and the token
+    // exchange at the AS will reject client_secret_post from an unknown client.
+    const clientConfig = getMcpClientConfig(this.serverName, this.serverConfig)
+    const hasSecret =
+      clientConfig?.clientSecret !== undefined
+
     const metadata: OAuthClientMetadata = {
       client_name: `Claude Code (${this.serverName})`,
       redirect_uris: [this.redirectUri],
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
-      token_endpoint_auth_method: 'none', // Public client
+      token_endpoint_auth_method: hasSecret
+        ? 'client_secret_post'
+        : 'none',
     }
-
-    // Include scope from metadata if available
     const metadataScope = getScopeFromMetadata(this._metadata)
     if (metadataScope) {
       metadata.scope = metadataScope
@@ -1721,7 +1748,7 @@ export class ClaudeAuthProvider implements OAuthClientProvider {
           serverUrl: this.serverConfig.url,
           accessToken: tokens.access_token,
           refreshToken: tokens.refresh_token,
-          expiresAt: Date.now() + (tokens.expires_in || 3600) * 1000,
+          expiresAt: Date.now() + (tokens.expires_in || DEFAULT_TOKEN_TTL_S) * 1000,
           scope: tokens.scope,
         },
       },
@@ -1820,7 +1847,7 @@ export class ClaudeAuthProvider implements OAuthClientProvider {
             serverUrl: this.serverConfig.url,
             accessToken: tokens.access_token,
             refreshToken: tokens.refresh_token ?? prev?.refreshToken,
-            expiresAt: Date.now() + (tokens.expires_in || 3600) * 1000,
+            expiresAt: Date.now() + (tokens.expires_in || DEFAULT_TOKEN_TTL_S) * 1000,
             scope: tokens.scope,
             clientId,
             clientSecret: clientConfig.clientSecret,
@@ -2131,8 +2158,9 @@ export class ClaudeAuthProvider implements OAuthClientProvider {
     if (!release) {
       logMCPDebug(
         this.serverName,
-        `Could not acquire refresh lock after ${MAX_LOCK_RETRIES} retries, proceeding without lock`,
+        `Could not acquire refresh lock after ${MAX_LOCK_RETRIES} retries, skipping refresh to avoid concurrent write race`,
       )
+      return undefined
     }
 
     try {

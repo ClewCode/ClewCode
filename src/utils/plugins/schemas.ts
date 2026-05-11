@@ -1319,7 +1319,12 @@ export const PluginMarketplaceSchema = lazySchema(() =>
       "Marketplace maintainer or curator information",
     ),
     plugins: z
-      .array(PluginMarketplaceEntrySchema())
+      .array(PluginMarketplaceEntrySchema().catch(undefined))
+      .transform(arr =>
+        arr.filter(
+          (x): x is NonNullable<typeof x> => x !== undefined,
+        ),
+      )
       .describe("Collection of available plugins in this marketplace"),
     forceRemoveDeletedPlugins: z
       .boolean()

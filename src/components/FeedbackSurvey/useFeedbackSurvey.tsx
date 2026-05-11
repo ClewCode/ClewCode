@@ -229,7 +229,14 @@ export function useFeedbackSurvey(messages: Message[], isLoading: boolean, submi
     if (isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY)) {
       return false;
     }
-    if (isFeedbackSurveyDisabled()) {
+    // CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL: OTel enterprise opt-in.
+    // When set, overrides isFeedbackSurveyDisabled() so that enterprises
+    // using OTel (which disables the default analytics-backed survey gate)
+    // can re-enable session quality surveys.
+    if (
+      !isEnvTruthy(process.env.CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL) &&
+      isFeedbackSurveyDisabled()
+    ) {
       return false;
     }
 

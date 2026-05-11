@@ -35,8 +35,10 @@ import { buildEffectiveSystemPrompt } from '../../utils/systemPrompt.js';
 import { asSystemPrompt } from '../../utils/systemPromptType.js';
 import { getTaskOutputPath } from '../../utils/task/diskOutput.js';
 import { getParentSessionId, isTeammate } from '../../utils/teammate.js';
+import type { TaskState } from '../../tasks/types.js';
 import { isInProcessTeammate } from '../../utils/teammateContext.js';
 import { teleportToRemote } from '../../utils/teleport.js';
+import { getInitialSettings } from '../../utils/settings/settings.js';
 import { getAssistantMessageContentLength } from '../../utils/tokens.js';
 import { createAgentId } from '../../utils/uuid.js';
 import { createAgentWorktree, hasWorktreeChanges, removeAgentWorktree } from '../../utils/worktree.js';
@@ -684,6 +686,21 @@ export const AgentTool = buildTool({
         worktreeBranch
       };
     };
+    // Enforce maxWorkers: count running agent tasks and reject if limit reached
+    const maxWorkers = getInitialSettings().maxWorkers ?? 5;
+    if (maxWorkers > 0 && shouldRunAsync) {
+      const runningAgentCount = Object.values(appState.tasks).filter(
+        (t): t is TaskState & { status: 'running'; type: 'local_agent' } =>
+          t.type === 'local_agent' && t.status === 'running'
+      ).length;
+      if (runningAgentCount >= maxWorkers) {
+        throw new Error(
+          `Maximum concurrent sub-agent workers reached (${maxWorkers}). ` +
+          `Cannot spawn "${description}" — ${runningAgentCount} agent(s) currently running. ` +
+          `Wait for agents to complete or increase the maxWorkers setting (max: 20).`
+        );
+      }
+    }
     if (shouldRunAsync) {
       const asyncAgentId = earlyAgentId;
       const agentBackgroundTask = registerAsyncAgent({

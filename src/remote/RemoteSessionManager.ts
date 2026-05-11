@@ -5,6 +5,7 @@ import type {
   SDKControlRequest,
   SDKControlResponse,
 } from '../entrypoints/sdk/controlTypes.js'
+import type { PermissionUpdate } from '../utils/permissions/PermissionUpdateSchema.js'
 import { logForDebugging } from '../utils/debug.js'
 import { logError } from '../utils/log.js'
 import {
@@ -41,6 +42,8 @@ export type RemotePermissionResponse =
   | {
       behavior: 'allow'
       updatedInput: Record<string, unknown>
+      /** Permission updates (e.g. "always allow" rules) to persist on the daemon side. */
+      permissionUpdates?: PermissionUpdate[]
     }
   | {
       behavior: 'deny'
@@ -268,7 +271,12 @@ export class RemoteSessionManager {
         response: {
           behavior: result.behavior,
           ...(result.behavior === 'allow'
-            ? { updatedInput: result.updatedInput }
+            ? {
+                updatedInput: result.updatedInput,
+                ...(result.permissionUpdates?.length
+                  ? { permissionUpdates: result.permissionUpdates }
+                  : {}),
+              }
             : { message: result.message }),
         },
       },

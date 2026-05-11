@@ -316,6 +316,45 @@ export function clearMcpAuthCache(): void {
 }
 
 /**
+ * Clears all MCP server caches across connection, tool, command, resource,
+ * and auth caches. Used during /clear to ensure fresh reconnection instead
+ * of reusing stale cached connections from the previous session.
+ *
+ * Only cleans up entries that are already in the connectToServer cache —
+ * does NOT create new connections (unlike clearServerCache for a single server).
+ */
+export async function clearAllMcpServerCaches(): Promise<void> {
+  // Collect cleanup promises from cached connections
+  const cleanupPromises: Promise<void>[] = []
+  for (const [, promise] of connectToServer.cache.entries()) {
+    cleanupPromises.push(
+      promise
+        .then((wrappedClient: MCPServerConnection) => {
+          if (wrappedClient.type === 'connected') {
+            wrappedClient.cleanup?.()
+          }
+        })
+        .catch(() => {
+          // Best-effort cleanup
+        }),
+    )
+  }
+  await Promise.all(cleanupPromises)
+
+  // Clear all memoized caches
+  connectToServer.cache.clear()
+  fetchToolsForClient.cache.clear()
+  fetchResourcesForClient.cache.clear()
+  fetchCommandsForClient.cache.clear()
+  if (feature('MCP_SKILLS')) {
+    fetchMcpSkillsForClient!.cache.clear()
+  }
+
+  // Clear the needs-auth cache so servers aren't skipped on reconnect
+  clearMcpAuthCache()
+}
+
+/**
  * Spread-ready analytics field for the server's base URL. Calls
  * getLoggingSafeMcpBaseUrl once (not twice like the inline ternary it replaces).
  * Typed as AnalyticsMetadata since the URL is query-stripped and safe to log.
@@ -356,7 +395,13 @@ function handleRemoteAuthFailure(
     name,
     `Authentication required for ${label[transportType]} server`,
   )
-  setMcpAuthCacheEntry(name)
+  // For servers with headersHelper, the auth mechanism is external — the
+  // helper script can be re-run at any time to produce fresh credentials.
+  // Caching them as needs-auth would suppress reconnection for the full TTL
+  // even after valid headers become available, so skip the cache.
+  if (!serverRef.headersHelper) {
+    setMcpAuthCacheEntry(name)
+  }
   return { name, type: 'needs-auth', config: serverRef }
 }
 
@@ -592,11 +637,37 @@ export function getServerCacheKey(
 
 /**
  * TODO (ollie): The memoization here increases complexity by a lot, and im not sure it really improves performance
- * Attempts to connect to a single MCP server
+ * Attempts to connect to a single MCP server, retrying up to 3 times on
+ * transient startup errors (connection refused, timeout, reset, etc.).
+ * Permanent errors (auth failures, bad config, missing commands) fail fast.
  * @param name Server name
  * @param serverRef Scoped server configuration
  * @returns A wrapped client (either connected or failed)
  */
+
+/** Maximum transient-connection retries before giving up */
+const MAX_CONNECT_RETRIES = 3
+
+/** Base delay (ms) for exponential backoff between retry attempts */
+const CONNECT_RETRY_BASE_MS = 1000
+
+/**
+ * Returns true for errors that may resolve without user intervention
+ * (server not ready, network glitch). Permanent errors like missing
+ * binaries, auth failures, or bad configs are not retried.
+ */
+function isTransientConnectionError(error: unknown): boolean {
+  const msg = errorMessage(error).toLowerCase()
+  return (
+    msg.includes('econnrefused') ||
+    msg.includes('econnreset') ||
+    msg.includes('etimedout') ||
+    msg.includes('ehostunreach') ||
+    msg.includes('epipe') ||
+    msg.includes('esrch')
+  )
+}
+
 export const connectToServer = memoize(
   async (
     name: string,
@@ -611,15 +682,36 @@ export const connectToServer = memoize(
     },
   ): Promise<MCPServerConnection> => {
     const connectStartTime = Date.now()
-    let inProcessServer:
+    let lastError: unknown
+    let lastInProcessServer:
       | { connect(t: Transport): Promise<void>; close(): Promise<void> }
       | undefined
-    try {
-      let transport
 
-      // If we have the session ingress JWT, we will connect via the session ingress rather than
-      // to remote MCP's directly.
-      const sessionIngressToken = getSessionIngressAuthToken()
+    for (let attempt = 0; attempt <= MAX_CONNECT_RETRIES; attempt++) {
+      if (attempt > 0) {
+        const backoffMs = CONNECT_RETRY_BASE_MS * 2 ** (attempt - 1)
+        logMCPDebug(
+          name,
+          `Retrying connection (attempt ${attempt + 1}/${MAX_CONNECT_RETRIES + 1}) in ${backoffMs}ms...`,
+        )
+        await sleep(backoffMs)
+      }
+
+      // Clean up any in-process server from a previous attempt
+      if (lastInProcessServer) {
+        lastInProcessServer.close().catch(() => {})
+        lastInProcessServer = undefined
+      }
+
+      let inProcessServer:
+        | { connect(t: Transport): Promise<void>; close(): Promise<void> }
+        | undefined
+      try {
+        let transport
+
+        // If we have the session ingress JWT, we will connect via the session ingress rather than
+        // to remote MCP's directly.
+        const sessionIngressToken = getSessionIngressAuthToken()
 
       if (serverRef.type === 'sse') {
         // Create an auth provider for this server
@@ -1110,6 +1202,16 @@ export const connectToServer = memoize(
           if (error instanceof UnauthorizedError) {
             return handleRemoteAuthFailure(name, serverRef, 'sse')
           }
+          // Servers with headersHelper rely on script-provided credentials;
+          // a connection failure likely means the helper returned bad headers.
+          // Show as needs-auth so the user knows to re-run the helper script.
+          if (serverRef.headersHelper) {
+            logMCPDebug(
+              name,
+              `SSE connection failed for headersHelper server — routing to needs-auth`,
+            )
+            return handleRemoteAuthFailure(name, serverRef, 'sse')
+          }
         } else if (serverRef.type === 'http' && error instanceof Error) {
           const errorObj = error as Error & {
             cause?: unknown
@@ -1126,6 +1228,16 @@ export const connectToServer = memoize(
           if (error instanceof UnauthorizedError) {
             return handleRemoteAuthFailure(name, serverRef, 'http')
           }
+          // Servers with headersHelper rely on script-provided credentials;
+          // a connection failure likely means the helper returned bad headers.
+          // Show as needs-auth so the user knows to re-run the helper script.
+          if (serverRef.headersHelper) {
+            logMCPDebug(
+              name,
+              `HTTP connection failed for headersHelper server — routing to needs-auth`,
+            )
+            return handleRemoteAuthFailure(name, serverRef, 'http')
+          }
         } else if (
           serverRef.type === 'claudeai-proxy' &&
           error instanceof Error
@@ -1140,6 +1252,26 @@ export const connectToServer = memoize(
           const errorCode = (error as Error & { code?: number }).code
           if (errorCode === 401) {
             return handleRemoteAuthFailure(name, serverRef, 'claudeai-proxy')
+          }
+
+          // Missing or expired OAuth token should show as "needs auth",
+          // not "failed", so the user knows to re-authenticate.
+          const msg = error.message.toLowerCase()
+          if (
+            msg.includes('oauth token') ||
+            msg.includes('unauthorized') ||
+            msg.includes('token expired') ||
+            msg.includes('authentication')
+          ) {
+            logMCPDebug(
+              name,
+              `claude.ai proxy needs auth: ${error.message}`,
+            )
+            return handleRemoteAuthFailure(
+              name,
+              serverRef,
+              'claudeai-proxy',
+            )
           }
         } else if (
           serverRef.type === 'sse-ide' ||
@@ -1608,6 +1740,21 @@ export const connectToServer = memoize(
         cleanup: wrappedCleanup,
       }
     } catch (error) {
+      // Log the attempt failure for debugging
+      logMCPDebug(
+        name,
+        `Connection attempt ${attempt + 1}/${MAX_CONNECT_RETRIES + 1} failed after ${Date.now() - connectStartTime}ms: ${errorMessage(error)}`,
+      )
+
+      // Transient errors (refused, reset, timeout, etc.) should be retried;
+      // permanent errors (bad config, missing binary, auth) fail immediately.
+      if (isTransientConnectionError(error) && attempt < MAX_CONNECT_RETRIES) {
+        lastError = error
+        lastInProcessServer = inProcessServer
+        // Fall through to the for-loop head for retry with backoff
+        continue
+      }
+
       const connectionDurationMs = Date.now() - connectStartTime
       logEvent('tengu_mcp_server_connection_failed', {
         connectionDurationMs,
@@ -1641,8 +1788,23 @@ export const connectToServer = memoize(
         error: errorMessage(error),
       }
     }
-  },
-  getServerCacheKey,
+  }
+
+  // All retries exhausted — return the last failure.  We can't assign to a
+  // 'failed' result that memoize stores, so return the transient failure with
+  // an added hint about retries.
+  logMCPError(
+    name,
+    `Connection failed after ${MAX_CONNECT_RETRIES} retries: ${errorMessage(lastError)}`,
+  )
+  return {
+    name,
+    type: 'failed' as const,
+    config: serverRef,
+    error: errorMessage(lastError),
+  }
+},
+getServerCacheKey,
 )
 
 /**
@@ -2346,7 +2508,8 @@ export async function getMcpToolsCommandsAndResources(
 
       const supportsResources = !!client.capabilities?.resources
 
-      const [tools, mcpCommands, mcpSkills, resources] = await Promise.all([
+      // Fetch tools, commands, and resources concurrently
+      let [tools, mcpCommands, mcpSkills, resources] = await Promise.all([
         fetchToolsForClient(client),
         fetchCommandsForClient(client),
         // Discover skills from skill:// resources
@@ -2358,6 +2521,40 @@ export async function getMcpToolsCommandsAndResources(
           ? fetchResourcesForClient(client)
           : Promise.resolve([]),
       ])
+
+      // D3: Retry once when tools/list returns empty despite server advertising tool support.
+      // Some servers (e.g. ones with lazy initialization) may return 0 tools on the first call
+      // but have tools ready on retry. If the retry also fails, proceed with empty tools
+      // and show the connection as established (the user can check /mcp for details).
+      if (
+        tools.length === 0 &&
+        client.capabilities?.tools &&
+        !(
+          (config.type === 'sse' || config.type === 'http') &&
+          (await isMcpAuthCached(name))
+        )
+      ) {
+        logMCPDebug(
+          name,
+          `tools/list returned 0 tools, retrying once in 1s...`,
+        )
+        await sleep(1000)
+        fetchToolsForClient.cache.delete(name)
+        const retryTools = await fetchToolsForClient(client)
+        if (retryTools.length > 0) {
+          logMCPDebug(name, `Retry succeeded: found ${retryTools.length} tools`)
+          tools = retryTools
+          // Re-fetch commands too in case they depend on tools
+          fetchCommandsForClient.cache.delete(name)
+          mcpCommands = await fetchCommandsForClient(client)
+        } else {
+          logMCPDebug(
+            name,
+            `Retry failed: tools/list still returned 0 tools`,
+          )
+        }
+      }
+
       const commands = [...mcpCommands, ...mcpSkills]
 
       // If this server resources and we haven't added resource tools yet,
@@ -3070,14 +3267,30 @@ async function callMCPTool({
       tool,
     )
 
-    // Use Promise.race with our own timeout to handle cases where SDK's
-    // internal timeout doesn't work (e.g., SSE stream breaks mid-request)
+    // Use Promise.race with our own timeout instead of relying on the SDK's
+    // internal timeout. The SDK's timeout tracks via a single instance variable
+    // (`_timeoutId`), so when concurrent tool calls race on the same Client, one
+    // call's timeout overwrites the other's — the earlier call's watchdog is
+    // disarmed before it fires. Our per-call timeoutPromise ensures each call has
+    // isolated timeout tracking regardless of SDK internals.
     const timeoutMs = getMcpToolTimeoutMs()
+
+    // Composite abort controller: links parent signal cancellation to our own so
+    // we can abort the SDK request on timeout as well (the Promise.race alone
+    // would leave the underlying request running in the background).
+    const callController = new AbortController()
+    const onParentAbort = () => callController.abort(signal?.reason)
+    signal?.addEventListener('abort', onParentAbort)
+    if (signal?.aborted) {
+      callController.abort(signal.reason)
+    }
+
     let timeoutId: NodeJS.Timeout | undefined
 
     const timeoutPromise = new Promise<never>((_, reject) => {
       timeoutId = setTimeout(
-        (reject, name, tool, timeoutMs) => {
+        (controller, reject, name, tool, timeoutMs) => {
+          controller.abort()
           reject(
             new TelemetrySafeError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS(
               `MCP server "${name}" tool "${tool}" timed out after ${Math.floor(timeoutMs / 1000)}s`,
@@ -3086,6 +3299,7 @@ async function callMCPTool({
           )
         },
         timeoutMs,
+        callController,
         reject,
         name,
         tool,
@@ -3102,8 +3316,10 @@ async function callMCPTool({
         },
         CallToolResultSchema,
         {
-          signal,
-          timeout: timeoutMs,
+          signal: callController.signal,
+          // Intentionally omit `timeout` — the SDK's single-instance timer
+          // disarms concurrent tool calls. Our per-call Promise.race above is
+          // the sole timeout mechanism.
           onprogress: onProgress
             ? sdkProgress => {
                 onProgress({
@@ -3124,6 +3340,7 @@ async function callMCPTool({
       if (timeoutId) {
         clearTimeout(timeoutId)
       }
+      signal?.removeEventListener('abort', onParentAbort)
     })
 
     if ('isError' in result && result.isError) {

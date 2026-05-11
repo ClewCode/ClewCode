@@ -60,7 +60,7 @@ type Props<T> = {
   selectAction?: string;
   extraHints?: React.ReactNode;
 };
-const DEFAULT_VISIBLE = 8;
+const DEFAULT_VISIBLE = 15;
 // Pane (paddingTop + Divider) + title + 3 gaps + SearchBox (rounded border = 3
 // rows) + hints. matchLabel adds +1 when present, accounted for separately.
 const CHROME_ROWS = 10;

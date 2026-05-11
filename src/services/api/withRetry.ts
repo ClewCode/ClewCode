@@ -22,6 +22,7 @@ import {
   isEnterpriseSubscriber,
 } from '../../utils/auth.js'
 import { isEnvTruthy } from '../../utils/envUtils.js'
+import { getIsNonInteractiveSession } from '../../bootstrap/state.js'
 import { errorMessage } from '../../utils/errors.js'
 import {
   type CooldownReason,
@@ -703,6 +704,23 @@ function shouldRetry(error: APIError): boolean {
     error.message.toLowerCase().includes('please wait a moment and try again')
   ) {
     return true
+  }
+
+  // Non-interactive (headless) mode: fail fast on non-transient 4xx errors.
+  // 4xx errors are client errors that won't succeed on retry (e.g., bad request,
+  // model not found). 401/403 auth errors, 408 timeouts, and 429 rate limits
+  // are still retried since they may be transient.
+  if (
+    getIsNonInteractiveSession() &&
+    error.status !== undefined &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    error.status !== 401 &&
+    error.status !== 403 &&
+    error.status !== 408 &&
+    error.status !== 429
+  ) {
+    return false
   }
 
   // Persistent mode: 429/529 always retryable, bypass subscriber gates and

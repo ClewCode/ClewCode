@@ -107,6 +107,11 @@ export function isSynchronizedOutputSupported(): boolean {
   // Windows Terminal
   if (process.env.WT_SESSION) return true
 
+  // macOS Terminal.app does not support DEC 2026 — BSU/ESU sequences cause
+  // garbled output since the native terminal renderer ignores the sequences but
+  // they may interfere with character output.
+  if (termProgram === 'Apple_Terminal') return false
+
   // VTE-based terminals (GNOME Terminal, Tilix, etc.) since VTE 0.68
   const vteVersion = process.env.VTE_VERSION
   if (vteVersion) {

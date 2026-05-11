@@ -111,6 +111,45 @@ export async function createAnthropicClient({
       ? `Bearer ${process.env.AWS_BEARER_TOKEN_BEDROCK}`
       : defaultHeaders['Authorization']
 
+    // Mantle endpoint authentication: uses x-api-key header instead of
+    // AWS Signature V4 or Bearer token. When ANTHROPIC_MANTLE_API_KEY is set,
+    // skip AWS credential resolution and inject the key in API requests.
+    const mantleApiKey = process.env.ANTHROPIC_MANTLE_API_KEY
+    const isMantle = isEnvTruthy(process.env.CLAUDE_CODE_USE_MANTLE)
+
+    if (isMantle && mantleApiKey) {
+      bedrockArgs.skipAuth = true
+      bedrockArgs.defaultHeaders = {
+        ...bedrockArgs.defaultHeaders,
+        'x-api-key': mantleApiKey,
+      }
+    }
+
+    // Bedrock service tier: when ANTHROPIC_BEDROCK_SERVICE_TIER is set,
+    // inject it as the X-Amzn-Bedrock-Service-Tier header on every request.
+    // This lets Bedrock users opt into cross-region inference profiles
+    // without modifying their AWS infrastructure.
+    const bedrockServiceTier = process.env.ANTHROPIC_BEDROCK_SERVICE_TIER
+    if (bedrockServiceTier && !isMantle) {
+      const innerFetch = resolvedFetch ?? globalThis.fetch
+      const existingFetch = bedrockArgs.fetch
+      bedrockArgs.fetch = existingFetch
+        ? (input: RequestInfo | URL, init?: RequestInit) => {
+            const headers = new Headers(init?.headers)
+            if (!headers.has('X-Amzn-Bedrock-Service-Tier')) {
+              headers.set('X-Amzn-Bedrock-Service-Tier', bedrockServiceTier)
+            }
+            return existingFetch(input, { ...init, headers })
+          }
+        : (input: RequestInfo | URL, init?: RequestInit) => {
+            const headers = new Headers(init?.headers)
+            if (!headers.has('X-Amzn-Bedrock-Service-Tier')) {
+              headers.set('X-Amzn-Bedrock-Service-Tier', bedrockServiceTier)
+            }
+            return innerFetch(input as any, { ...init, headers })
+          }
+    }
+
     if ((skipBedrockAuth || process.env.AWS_BEARER_TOKEN_BEDROCK) && bedrockAuthorizationHeader) {
       const innerFetch = resolvedFetch ?? globalThis.fetch
       bedrockArgs.fetch = (input: RequestInfo | URL, init?: RequestInit) => {

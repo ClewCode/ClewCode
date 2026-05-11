@@ -24,7 +24,7 @@ const getRemoteTriggerTool = () => feature("AGENT_TRIGGERS_REMOTE") ? require(".
 // Monitor tool always enabled (v2.1.98+)
 const getMonitorTool = () => {
   try {
-    return require("./tools/MonitorTool/MonitorTool.js").MonitorTool
+    return require("./tools/MonitorTool/MonitorTool.tsx").MonitorTool
   } catch {
     return null
   }

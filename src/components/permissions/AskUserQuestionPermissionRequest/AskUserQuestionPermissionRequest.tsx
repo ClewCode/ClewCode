@@ -289,14 +289,21 @@ function AskUserQuestionPermissionRequestBody(t0) {
   }
   const handleCancel = t12;
   let t13;
-  if ($[32] !== allImageAttachments || $[33] !== answers || $[34] !== isInPlanMode || $[35] !== metadataSource || $[36] !== onDone || $[37] !== questions || $[38] !== toolUseConfirm) {
+  if ($[32] !== allImageAttachments || $[33] !== answers || $[34] !== isInPlanMode || $[35] !== metadataSource || $[36] !== onDone || $[37] !== questions || $[38] !== toolUseConfirm || $[39] !== questionStates) {
     t13 = async () => {
       const questionsWithAnswers = questions.map(q_1 => {
         const answer = answers[q_1.question];
+        const textInput = questionStates[q_1.question]?.textInputValue;
+        let result;
         if (answer) {
-          return `- "${q_1.question}"\n  Answer: ${answer}`;
+          result = `- "${q_1.question}"\n  Answer: ${answer}`;
+        } else {
+          result = `- "${q_1.question}"\n  (No answer provided)`;
         }
-        return `- "${q_1.question}"\n  (No answer provided)`;
+        if (textInput && (!answer || answer === "__other__")) {
+          result += `\n  User typed: ${textInput}`;
+        }
+        return result;
       }).join("\n");
       const feedback = `The user wants to clarify these questions.
     This means they may have additional information, context or questions for you.
@@ -323,20 +330,28 @@ function AskUserQuestionPermissionRequestBody(t0) {
     $[36] = onDone;
     $[37] = questions;
     $[38] = toolUseConfirm;
-    $[39] = t13;
+    $[39] = questionStates;
+    $[40] = t13;
   } else {
-    t13 = $[39];
+    t13 = $[40];
   }
   const handleRespondToClaude = t13;
   let t14;
-  if ($[40] !== allImageAttachments || $[41] !== answers || $[42] !== isInPlanMode || $[43] !== metadataSource || $[44] !== onDone || $[45] !== questions || $[46] !== toolUseConfirm) {
+  if ($[41] !== allImageAttachments || $[42] !== answers || $[43] !== isInPlanMode || $[44] !== metadataSource || $[45] !== onDone || $[46] !== questions || $[47] !== toolUseConfirm) {
     t14 = async () => {
       const questionsWithAnswers_0 = questions.map(q_2 => {
         const answer_0 = answers[q_2.question];
+        const textInput_1 = questionStates[q_2.question]?.textInputValue;
+        let result_0;
         if (answer_0) {
-          return `- "${q_2.question}"\n  Answer: ${answer_0}`;
+          result_0 = `- "${q_2.question}"\n  Answer: ${answer_0}`;
+        } else {
+          result_0 = `- "${q_2.question}"\n  (No answer provided)`;
         }
-        return `- "${q_2.question}"\n  (No answer provided)`;
+        if (textInput_1 && (!answer_0 || answer_0 === "__other__")) {
+          result_0 += `\n  User typed: ${textInput_1}`;
+        }
+        return result_0;
       }).join("\n");
       const feedback_0 = `The user has indicated they have provided enough answers for the plan interview.
 Stop asking clarifying questions and proceed to finish the plan with the information you have.
@@ -354,20 +369,20 @@ Questions asked and answers provided:\n${questionsWithAnswers_0}`;
       onDone();
       toolUseConfirm.onReject(feedback_0, imageBlocks_0 && imageBlocks_0.length > 0 ? imageBlocks_0 : undefined);
     };
-    $[40] = allImageAttachments;
-    $[41] = answers;
-    $[42] = isInPlanMode;
-    $[43] = metadataSource;
-    $[44] = onDone;
-    $[45] = questions;
-    $[46] = toolUseConfirm;
-    $[47] = t14;
+    $[41] = allImageAttachments;
+    $[42] = answers;
+    $[43] = isInPlanMode;
+    $[44] = metadataSource;
+    $[45] = onDone;
+    $[46] = questions;
+    $[47] = toolUseConfirm;
+    $[48] = t14;
   } else {
-    t14 = $[47];
+    t14 = $[48];
   }
   const handleFinishPlanInterview = t14;
   let t15;
-  if ($[48] !== allImageAttachments || $[49] !== isInPlanMode || $[50] !== metadataSource || $[51] !== onDone || $[52] !== questionStates || $[53] !== questions || $[54] !== toolUseConfirm) {
+  if ($[49] !== allImageAttachments || $[50] !== isInPlanMode || $[51] !== metadataSource || $[52] !== onDone || $[53] !== questionStates || $[54] !== questions || $[55] !== toolUseConfirm) {
     t15 = async answersToSubmit => {
       if (metadataSource) {
         logEvent("tengu_ask_user_question_accepted", {

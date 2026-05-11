@@ -183,6 +183,24 @@ export const SUPPORTED_SETTINGS: Record<string, SettingConfig> = {
         },
       }
     : {}),
+  autoScrollEnabled: {
+    source: 'global',
+    type: 'boolean',
+    description:
+      'Enable automatic scrolling during Claude output in fullscreen mode',
+  },
+  showResponseInExternalEditor: {
+    source: 'global',
+    type: 'boolean',
+    description:
+      'Show Claude\'s last response as commented context in the Ctrl+G external editor',
+  },
+  maxWorkers: {
+    source: 'settings',
+    type: 'string',
+    description:
+      'Maximum concurrent sub-agent workers (default: 5). Set a number 1-20.',
+  },
 }
 
 export function isSupported(key: string): boolean {

@@ -85,6 +85,7 @@ function isUsingExternalPermissions(): boolean {
 export type AutoModeRules = {
   allow: string[]
   soft_deny: string[]
+  hard_deny: string[]
   environment: string[]
 }
 
@@ -101,6 +102,7 @@ export function getDefaultExternalAutoModeRules(): AutoModeRules {
   return {
     allow: extractTaggedBullets('user_allow_rules_to_replace'),
     soft_deny: extractTaggedBullets('user_deny_rules_to_replace'),
+    hard_deny: extractTaggedBullets('user_hard_deny_rules_to_replace'),
     environment: extractTaggedBullets('user_environment_to_replace'),
   }
 }
@@ -137,6 +139,10 @@ export function buildDefaultExternalSystemPrompt(): string {
     )
     .replace(
       /<user_environment_to_replace>([\s\S]*?)<\/user_environment_to_replace>/,
+      (_m, defaults: string) => defaults,
+    )
+    .replace(
+      /<user_hard_deny_rules_to_replace>([\s\S]*?)<\/user_hard_deny_rules_to_replace>/,
       (_m, defaults: string) => defaults,
     )
 }
@@ -254,6 +260,7 @@ const yoloClassifierResponseSchema = lazySchema(() =>
     thinking: z.string(),
     shouldBlock: z.boolean(),
     reason: z.string(),
+    isHardDeny: z.boolean().optional(),
   }),
 )
 
@@ -520,6 +527,9 @@ export async function buildYoloSystemPrompt(
   const userDeny = denyDescriptions.length
     ? denyDescriptions.map(d => `- ${d}`).join('\n')
     : undefined
+  const hardDeny = autoMode?.hard_deny?.length
+    ? autoMode.hard_deny.map(d => `- ${d}`).join('\n')
+    : undefined
   const userEnvironment = autoMode?.environment?.length
     ? autoMode.environment.map(e => `- ${e}`).join('\n')
     : undefined
@@ -536,6 +546,10 @@ export async function buildYoloSystemPrompt(
     .replace(
       /<user_environment_to_replace>([\s\S]*?)<\/user_environment_to_replace>/,
       (_m, defaults: string) => userEnvironment ?? defaults,
+    )
+    .replace(
+      /<user_hard_deny_rules_to_replace>([\s\S]*?)<\/user_hard_deny_rules_to_replace>/,
+      (_m, defaults: string) => hardDeny ?? defaults,
     )
 }
 // ============================================================================
@@ -601,6 +615,19 @@ function parseXmlReason(text: string): string | null {
 function parseXmlThinking(text: string): string | null {
   const match = /<thinking>([\s\S]*?)<\/thinking>/.exec(text)
   return match ? match[1]!.trim() : null
+}
+
+/**
+ * Parse XML hard_deny tag: <hard_deny>yes/no</hard_deny>
+ * Indicates that a hard_deny rule was matched — the block is unconditional
+ * and should not fall back to prompting even if the denial limit is exceeded.
+ */
+function parseXmlHardDeny(text: string): boolean {
+  const matches = [
+    ...stripThinking(text).matchAll(/<hard_deny>(yes|no)\b(<\/hard_deny>)?/gi),
+  ]
+  if (matches.length === 0) return false
+  return matches[0]![1]!.toLowerCase() === 'yes'
 }
 
 /**
@@ -845,6 +872,7 @@ async function classifyYoloActionXml(
         })
         return {
           shouldBlock: true,
+          isHardDeny: parseXmlHardDeny(stage1Text),
           reason: parseXmlReason(stage1Text) ?? 'Blocked by fast classifier',
           model,
           usage: stage1Usage,
@@ -923,6 +951,7 @@ async function classifyYoloActionXml(
     return {
       thinking: parseXmlThinking(stage2Text) ?? undefined,
       shouldBlock: stage2Block,
+      isHardDeny: parseXmlHardDeny(stage2Text),
       reason: parseXmlReason(stage2Text) ?? 'No reason provided',
       model,
       usage: totalUsage,
@@ -1240,6 +1269,7 @@ export async function classifyYoloAction(
       thinking: parsed.thinking,
       shouldBlock: parsed.shouldBlock,
       reason: parsed.reason ?? 'No reason provided',
+      isHardDeny: parsed.isHardDeny === true,
       model,
       usage,
       durationMs,

@@ -20,6 +20,7 @@ import type { AssistantMessage, Message } from '../../types/message.js';
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { extractTextContent, stripPromptXMLTags } from '../../utils/messages.js';
 import { countCharInString } from '../../utils/stringUtils.js';
+import { getGraphemeSegmenter } from '../../utils/intl.js';
 const COPY_DIR = join(tmpdir(), 'claude');
 const RESPONSE_FILENAME = 'response.md';
 const MAX_LOOKBACK = 20;
@@ -79,10 +80,14 @@ async function writeToFile(text: string, filename: string): Promise<string> {
   return filePath;
 }
 async function copyOrWriteToFile(text: string, filename: string): Promise<string> {
-  const raw = await setClipboard(text);
+  // E14: Trim trailing whitespace from each line before clipboard copy
+  const trimmed = text.split('\n').map(l => l.trimEnd()).join('\n');
+  const raw = await setClipboard(trimmed);
   if (raw) process.stdout.write(raw);
-  const lineCount = countCharInString(text, '\n') + 1;
-  const charCount = text.length;
+  const lineCount = countCharInString(trimmed, '\n') + 1;
+  // E72: Use Intl.Segmenter for grapheme-aware counting so multi-code-point
+  // emoji (e.g. 👍, 👨‍👩‍👧‍👦) are counted as a single character, not N code units.
+  const charCount = [...getGraphemeSegmenter().segment(trimmed)].length;
   // Also write to a temp file — clipboard paths are best-effort (OSC 52 needs
   // terminal support), so the file provides a reliable fallback.
   try {

@@ -174,9 +174,13 @@ export function createMcpAuthTool(
       try {
         // Race: get the URL, or the flow completes without needing one
         // (e.g. XAA with cached IdP token — silent auth).
+        // NOTE: .catch(() => null) prevents an unhandled rejection when
+        // oauthPromise rejects after authUrlPromise already won the race
+        // (Promise.race doesn't ignore rejections of losers — they can
+        // become unhandled without a .catch silencer).
         const authUrl = await Promise.race([
           authUrlPromise,
-          oauthPromise.then(() => null as string | null),
+          oauthPromise.then(() => null as string | null).catch(() => null as string | null),
         ])
 
         if (authUrl) {

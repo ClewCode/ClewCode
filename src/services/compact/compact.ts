@@ -292,6 +292,8 @@ export function truncateHeadForPTLRetry(
 
 export const ERROR_MESSAGE_PROMPT_TOO_LONG =
   'Conversation too long. Press esc twice to go up a few messages and try again.'
+export const ERROR_MESSAGE_EXTRA_USAGE_REQUIRED =
+  'Extra usage is required to compact this long-context session. Run /extra-usage to enable, or switch to a standard context model with /model.'
 export const ERROR_MESSAGE_USER_ABORT = 'API Error: Request was aborted.'
 export const ERROR_MESSAGE_INCOMPLETE_RESPONSE =
   'Compaction interrupted · This may be due to network issues — please try again.'
@@ -457,7 +459,18 @@ export async function compactConversation(
         cacheSafeParams: retryCacheSafeParams,
       })
       summary = getAssistantMessageText(summaryResponse)
-      if (!summary?.startsWith(PROMPT_TOO_LONG_ERROR_MESSAGE)) break
+      if (!summary?.startsWith(PROMPT_TOO_LONG_ERROR_MESSAGE)) {
+        // Not a PTL error — check for the Extra-usage entitlement error which
+        // occurs when the compact API call itself exceeds the available context
+        // window (e.g. 1M context without Extra Usage enabled).
+        if (
+          summary?.includes('Extra usage is required') ||
+          summary?.includes('extra usage')
+        ) {
+          throw new Error(ERROR_MESSAGE_EXTRA_USAGE_REQUIRED)
+        }
+        break
+      }
 
       // CC-1180: compact request itself hit prompt-too-long. Truncate the
       // oldest API-round groups and retry rather than leaving the user stuck.
@@ -869,7 +882,15 @@ export async function partialCompactConversation(
         cacheSafeParams: retryCacheSafeParams,
       })
       summary = getAssistantMessageText(summaryResponse)
-      if (!summary?.startsWith(PROMPT_TOO_LONG_ERROR_MESSAGE)) break
+      if (!summary?.startsWith(PROMPT_TOO_LONG_ERROR_MESSAGE)) {
+        if (
+          summary?.includes('Extra usage is required') ||
+          summary?.includes('extra usage')
+        ) {
+          throw new Error(ERROR_MESSAGE_EXTRA_USAGE_REQUIRED)
+        }
+        break
+      }
 
       ptlAttempts++
       const truncated =

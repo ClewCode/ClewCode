@@ -502,7 +502,12 @@ export async function installFromNpm(
     ? `${packageName}@${options.version}`
     : packageName;
   const packagePath = join(npmCachePath, "node_modules", packageName);
-  const needsInstall = !(await pathExists(packagePath));
+  // When a specific version is requested, always install to ensure we get
+  // the requested version (not a stale cache entry from a previous install).
+  // Without this, the cache-only check (`pathExists`) would skip the download
+  // for update checks, returning the same outdated version every time.
+  const needsInstall =
+    !!options.version || !(await pathExists(packagePath));
 
   if (needsInstall) {
     logForDebugging(`Installing npm package ${packageSpec} to cache`);

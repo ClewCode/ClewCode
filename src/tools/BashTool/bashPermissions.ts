@@ -557,6 +557,17 @@ export function stripSafeWrappers(command: string): string {
     // above so not over-stripping here is safe. Main need: `stdbuf -o0 cmd`.
     /^stdbuf(?:[ \t]+-[ioe][LN0-9]+)+[ \t]+(?:--[ \t]+)?/,
     /^nohup[ \t]+(?:--[ \t]+)?/,
+    // ionize: set IO scheduling class and priority, then exec the command.
+    // Syntax: ionice [-c class] [-n level] [-t] command [args].
+    // Safe to strip because ionice does not alter security context.
+    /^ionice(?:[ \t]+-[cndt][ \t]+[A-Za-z0-9]+)*(?:[ \t]+-[t])?[ \t]+(?:--[ \t]+)?/,
+    // setsid: run a command in a new session. Does not alter security context.
+    /^setsid[ \t]+(?:-w[ \t]+)?(?:--[ \t]+)?/,
+    // watch: run a command periodically. Safe to strip because watch exec's the
+    // same command, and the deny rule should apply to the inner command.
+    // Syntax: watch [options] command [args]. Options are like -n interval, -d,
+    // -t, etc. which are all flags that don't affect the command identity.
+    /^watch[ \t]+(?:-[nwdebtgchp][ \t]*[A-Za-z0-9._-]*[ \t]+)*(?:--[ \t]+)?/,
   ] as const
 
   // Pattern for environment variables:
@@ -890,6 +901,22 @@ function filterRulesByContentsMatchingInput(
                 // Re-splitting the candidate here catches those cases.
                 if (isCompoundCommand.get(cmdToMatch)) {
                   return false
+                }
+                // SECURITY: Bash(find:*) prefix rules must NOT auto-allow find
+                // commands with -exec, -execdir, or -delete — these execute
+                // arbitrary commands or delete files, making them write
+                // operations, not read-only searches. Without this guard, a
+                // Bash(find:*) allow rule would silently permit
+                // `find . -exec rm {} \;` or `find . -delete`.
+                if (bashRule.prefix === 'find') {
+                  const rest = cmdToMatch.slice(4).trimStart()
+                  if (
+                    /\s+-exec\b/.test(' ' + rest) ||
+                    /\s+-execdir\b/.test(' ' + rest) ||
+                    /\s+-delete\b/.test(' ' + rest)
+                  ) {
+                    return false
+                  }
                 }
                 // Ensure word boundary: prefix must be followed by space or end of string
                 // This prevents "ls:*" from matching "lsof" or "lsattr"
@@ -1667,6 +1694,26 @@ export async function bashToolHasPermission(
 ): Promise<PermissionResult> {
   let appState = context.getAppState()
 
+  // C8: When the model explicitly sets dangerouslyDisableSandbox, always require
+  // a permission prompt — the user must consent to running outside the sandbox.
+  // This prevents the model from silently bypassing sandbox protection.
+  if (
+    input.dangerouslyDisableSandbox &&
+    SandboxManager.isSandboxingEnabled() &&
+    SandboxManager.areUnsandboxedCommandsAllowed() &&
+    appState.toolPermissionContext.mode !== 'yoloMax'
+  ) {
+    const decisionReason: PermissionDecisionReason = {
+      type: 'sandboxOverride',
+      reason: 'The model requested to disable the sandbox for this command',
+    }
+    return {
+      behavior: 'ask',
+      decisionReason,
+      message: createPermissionRequestMessage(BashTool.name, decisionReason),
+    }
+  }
+
   // 0. AST-based security parse. This replaces both tryParseShellCommand
   // (the shell-quote pre-check) and the bashCommandIsSafe misparsing gate.
   // tree-sitter produces either a clean SimpleCommand[] (quotes resolved,
@@ -1816,7 +1863,8 @@ export async function bashToolHasPermission(
     if (!parseResult.success) {
       const decisionReason = {
         type: 'other' as const,
-        reason: `Command contains malformed syntax that cannot be parsed: ${parseResult.error}`,
+        reason:
+          'The shell command contains syntax that cannot be safely analyzed. Please review before approving.',
       }
       return {
         behavior: 'ask',

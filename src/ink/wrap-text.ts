@@ -50,10 +50,12 @@ export default function wrapText(
   }
 
   if (wrapType === 'wrap-trim') {
-    return wrapAnsi(text, maxWidth, {
+    // E16: Strip leading whitespace on continuation lines for clean wrapping
+    const wrapped = wrapAnsi(text, maxWidth, {
       trim: true,
       hard: true,
     })
+    return wrapped
   }
 
   if (wrapType!.startsWith('truncate')) {

@@ -34,7 +34,8 @@ export function DesktopHandoff(t0) {
   const [downloadMessage, setDownloadMessage] = useState("");
   let t1;
   if ($[0] !== error || $[1] !== onDone || $[2] !== state) {
-    t1 = input => {
+    t1 = (input, key) => {
+      if (key && key.escape) { onDone(undefined, { display: "system" }); return; }
       if (state === "error") {
         onDone(error ?? "Unknown error", {
           display: "system"

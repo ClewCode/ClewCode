@@ -15,6 +15,13 @@ export const SandboxNetworkConfigSchema = lazySchema(() =>
   z
     .object({
       allowedDomains: z.array(z.string()).optional(),
+      deniedDomains: z
+        .array(z.string())
+        .optional()
+        .describe(
+          'Domains to explicitly deny access to, even when a broader wildcard allow rule is in effect. ' +
+            'Takes precedence over all allowedDomains and WebFetch(domain:...) allow rules.',
+        ),
       allowManagedDomainsOnly: z
         .boolean()
         .optional()
@@ -92,6 +99,23 @@ export const SandboxSettingsSchema = lazySchema(() =>
   z
     .object({
       enabled: z.boolean().optional(),
+      bwrapPath: z
+        .string()
+        .optional()
+        .describe(
+          'Custom path to the bwrap (bubblewrap) binary. ' +
+            'By default the sandbox searches PATH. Use this to specify an exact ' +
+            'binary path (e.g. /usr/local/bin/bwrap) when the sandbox cannot ' +
+            'find it automatically or you need a specific version.',
+        ),
+      socatPath: z
+        .string()
+        .optional()
+        .describe(
+          'Custom path to the socat binary used for network sandboxing. ' +
+            'By default the sandbox searches PATH. Use this to specify an exact ' +
+            'binary path when socat is installed in a non-standard location.',
+        ),
       failIfUnavailable: z
         .boolean()
         .optional()

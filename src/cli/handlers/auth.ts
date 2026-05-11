@@ -192,10 +192,17 @@ export async function authLogin({
   try {
     logEvent('tengu_oauth_flow_start', { loginWithClaudeAi })
 
+    // The OAuthService races automatic (browser callback via AuthCodeListener)
+    // and manual (paste via handleManualAuthCodeInput) code capture. Show the
+    // URL and tell the user they can paste the code if the browser fails.
     const result = await oauthService.startOAuthFlow(
       async url => {
-        process.stdout.write('Opening browser to sign in…\n')
-        process.stdout.write(`If the browser didn't open, visit: ${url}\n`)
+        process.stdout.write('Opening browser to sign in\u2026\n')
+        process.stdout.write(
+          `If the browser didn't open, visit:\n${url}\n\n` +
+            `If the automatic callback fails, visit the URL in your browser, ` +
+            `then paste the authorization code here and press Enter:\n`,
+        )
       },
       {
         loginWithClaudeAi,

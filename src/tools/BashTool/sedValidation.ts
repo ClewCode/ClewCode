@@ -402,8 +402,8 @@ export function extractSedExpressions(command: string): string[] {
   // Use shell-quote to parse the arguments properly
   const parseResult = tryParseShellCommand(withoutSed)
   if (!parseResult.success) {
-    // Malformed shell syntax - throw error to be caught by caller
-    throw new Error(`Malformed shell syntax: ${parseResult.error}`)
+    // Malformed shell syntax - throw a user-friendly error
+    throw new Error('The command contains shell syntax that could not be safely analyzed')
   }
   const parsed = parseResult.tokens
   try {

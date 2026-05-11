@@ -1211,7 +1211,17 @@ export function saveOAuthTokensIfNeeded(tokens: OAuthTokens): {
     secureStorage.name as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS
 
   try {
-    const storageData = secureStorage.read() || {}
+    // Re-read storage data at write time and merge to prevent concurrent writers
+    // (e.g., MCP OAuth saveTokens) from overwriting changes made between the
+    // initial read and this write. Without this, two processes can interleave:
+    //   1. Main OAuth reads {claudeAiOauth, mcpOauth}
+    //   2. MCP OAuth saves {mcpOauth: new} → writes entire storage
+    //   3. Main OAuth writes {claudeAiOauth: new, mcpOauth: stale}
+    //   3. MCP OAuth's update at step 2 is lost → MCP servers need re-auth.
+    // This also handles the wake-from-sleep case where multiple processes
+    // detect expiry simultaneously (A4).
+    const freshData = secureStorage.read() || {}
+    const storageData = { ...freshData }
     const existingOauth = storageData.claudeAiOauth
 
     storageData.claudeAiOauth = {

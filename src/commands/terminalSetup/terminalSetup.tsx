@@ -28,7 +28,8 @@ const NATIVE_CSIU_TERMINALS: Record<string, string> = {
   kitty: 'Kitty',
   'iTerm.app': 'iTerm2',
   WezTerm: 'WezTerm',
-  WarpTerminal: 'Warp'
+  WarpTerminal: 'Warp',
+  'windows-terminal': 'Windows Terminal',
 };
 
 /**

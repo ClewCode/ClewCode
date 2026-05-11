@@ -129,6 +129,18 @@ async function loadMcpServers() {
         <li><strong>Config-driven</strong> — Servers defined in settings</li>
         <li><strong>Plugin integration</strong> — Plugins can provide MCP servers</li>
       </ol>
+
+      <h2>Recent Improvements (v2.1.136)</h2>
+      <ul>
+        <li><strong>Per-call timeout isolation</strong> — Each tool call has its own timeout via composite AbortController, preventing one call's watchdog from disarming another's</li>
+        <li><strong>3× retry on transient errors</strong> — ECONNREFUSED/ECONNRESET/ETIMEDOUT retried with exponential backoff before failing</li>
+        <li><strong>OAuth client_secret_post</strong> — DCR metadata advertises <code>client_secret_post</code> when <code>--client-secret</code> is configured</li>
+        <li><strong>Default token TTL</strong> — Changed 1h → 24h to prevent unnecessary re-auth when servers omit <code>expires_in</code></li>
+        <li><strong>alwaysLoad</strong> — tools with <code>_meta['anthropic/alwaysLoad']</code> skip tool-search deferral</li>
+        <li><strong>headersHelper auth</strong> — servers with headersHelper show as needs-auth, skip the needs-auth cache for instant retry</li>
+        <li><strong>Env var expansion</strong> — <code>${ENV_VAR}</code> in header values expanded before requests</li>
+        <li><strong>0-tools retry</strong> — empty <code>tools/list</code> retried once after 1s</li>
+      </ul>
     </main>
   </div>
 

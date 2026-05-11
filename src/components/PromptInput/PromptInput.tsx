@@ -1099,12 +1099,13 @@ function PromptInput({
     // Check for images early - we need this for suggestion logic below
     const hasImages = Object.values(pastedContents).some(c => c.type === 'image');
 
-    // If input is empty OR matches the suggestion, submit it
+    // If input matches the suggestion text exactly, submit it
     // But if there are images attached, don't auto-accept the suggestion -
     // the user wants to submit just the image(s).
+    // E23: Don't auto-submit on empty input — require Tab/arrow to accept suggestion.
     // Only in leader view — promptSuggestion is leader-context, not teammate.
     const suggestionText = promptSuggestionState.text;
-    const inputMatchesSuggestion = inputParam.trim() === '' || inputParam === suggestionText;
+    const inputMatchesSuggestion = inputParam === suggestionText;
     if (inputMatchesSuggestion && suggestionText && !hasImages && !state.viewingAgentTaskId) {
       // If speculation is active, inject messages immediately as they stream
       if (speculation.status === 'active') {
@@ -1331,6 +1332,24 @@ function PromptInput({
     } else {
       // For shorter pastes, just insert the text normally
       insertTextAtCursor(text);
+    }
+    // E30: Pasted text starting with / must not trigger slash command suggestions.
+    // Without this, Enter is blocked by the suggestions early-return guard,
+    // making the paste appear "swallowed" (nothing happens on submit).
+    if (text.startsWith('/')) {
+      // Use setTimeout to clear suggestions on the next tick, after
+      // useTypeahead's effect has computed suggestions from the new input.
+      setTimeout(() => {
+        setSuggestionsState(prev => {
+          // Only clear if suggestions are actually showing and the input still
+          // starts with / — let useTypeahead handle normal typing.
+          if (prev.suggestions.length === 0) return prev;
+          return typeof lastInternalInputRef.current === 'string' &&
+            lastInternalInputRef.current.startsWith('/')
+            ? { suggestions: [], selectedSuggestion: -1, commandArgumentHint: undefined }
+            : prev;
+        });
+      }, 0);
     }
   }
   const lazySpaceInputFilter = useCallback((input: string, key: Key): string => {

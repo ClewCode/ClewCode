@@ -205,6 +205,14 @@
       <div class="callout callout-info">
         <strong>Info:</strong> See <code>plugins/</code> directory for plugin examples.
       </div>
+
+      <h2>Plugin Improvements (v2.1.136)</h2>
+      <ul>
+        <li><strong>Windows MCPB path fix</strong> — MCPB <code>pathSeparator</code> now uses platform-native <code>sep</code>, fixing server spawn on Windows</li>
+        <li><strong>npm update detection</strong> — <code>installFromNpm</code> forces install when a specific version is requested instead of reusing stale cache</li>
+        <li><strong>Hook version locking</strong> — Orphaned plugin versions with active hooks are not deleted during cache cleanup</li>
+        <li><strong>Re-install re-resolves deps</strong> — Root plugin is never skipped in the <code>alreadyEnabled</code> check, ensuring re-cache on reinstall</li>
+      </ul>
     </main>
   </div>
 

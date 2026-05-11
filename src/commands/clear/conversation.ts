@@ -45,6 +45,8 @@ import {
 } from '../../utils/task/diskOutput.js'
 import { getCurrentWorktreeSession } from '../../utils/worktree.js'
 import { clearSessionCaches } from './caches.js'
+import { invalidateSessionEnvCache } from '../../utils/sessionEnvironment.js'
+import { clearAllMcpServerCaches } from '../../services/mcp/client.js'
 
 export async function clearConversation({
   setMessages,
@@ -131,6 +133,10 @@ export async function clearConversation({
   discoveredSkillNames?.clear()
   loadedNestedMemoryPaths?.clear()
 
+  // Clear MCP connection and fetch caches so the new session starts fresh
+  // instead of reusing stale cached connections and tool lists.
+  await clearAllMcpServerCaches()
+
   // Clean out necessary items from App State
   if (setAppState) {
     setAppState(prev => {
@@ -193,6 +199,10 @@ export async function clearConversation({
 
   // Clear plan slug cache so a new plan file is used after /clear
   clearAllPlanSlugs()
+
+  // Clear cached CLAUDE_ENV_FILE and hook environment scripts so SessionStart
+  // hooks reload fresh env vars for the new session context after /clear or /resume
+  invalidateSessionEnvCache()
 
   // Clear cached session metadata (title, tag, agent name/color)
   // so the new session doesn't inherit the previous session's identity

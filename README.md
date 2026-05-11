@@ -75,6 +75,14 @@ The dev script runs:
 bun --watch run src/main.tsx
 ```
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history. Key recent improvements:
+
+- **MCP Stability**: per-call timeout isolation, 3× retry on transient errors, OAuth `client_secret_post` support, `alwaysLoad` option, auth error recovery, and header expansion.
+- **Plugin fixes**: Windows path resolution for MCPB, npm update detection, hook version locking, and re-install dependency re-resolution.
+- **OAuth fixes**: default TTL 24h (was 1h), unhandled rejection fix, needs-auth visibility for headersHelper servers.
+
 ## Provider Configuration
 
 The repo contains provider implementations for:

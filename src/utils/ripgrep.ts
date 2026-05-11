@@ -342,6 +342,34 @@ export async function ripGrepStream(
   })
 }
 
+/**
+ * Execute ripgrep with a specific command path (for fallback scenarios).
+ * This is used when the default ripgrep binary fails (e.g., path becomes stale).
+ */
+function ripGrepWithCommand(
+  command: string,
+  args: string[],
+  target: string,
+  abortSignal: AbortSignal,
+  callback: (
+    error: ExecFileException | null,
+    stdout: string,
+    stderr: string,
+  ) => void,
+): void {
+  execFile(
+    command,
+    [...args, target],
+    {
+      maxBuffer: MAX_BUFFER_SIZE,
+      signal: abortSignal,
+      timeout: getPlatform() === 'wsl' ? 60_000 : 20_000,
+      killSignal: process.platform === 'win32' ? undefined : 'SIGKILL',
+    },
+    callback,
+  )
+}
+
 export async function ripGrep(
   args: string[],
   target: string,
@@ -354,15 +382,23 @@ export async function ripGrep(
     logError(error)
   })
 
+  // Fallback to system rg when embedded/builtin binary fails (e.g., path becomes stale)
+  let triedSystemRipgrepFallback = false
+
   return new Promise((resolve, reject) => {
     const handleResult = (
       error: ExecFileException | null,
       stdout: string,
       stderr: string,
       isRetry: boolean,
+      isFallback = false,
     ): void => {
       // Success case
       if (!error) {
+        // If this was a fallback from system rg, log it
+        if (isFallback) {
+          logForDebugging('Ripgrep fallback to system rg succeeded')
+        }
         resolve(
           stdout
             .trim()
@@ -377,6 +413,26 @@ export async function ripGrep(
       if (error.code === 1) {
         resolve([])
         return
+      }
+
+      // ENOENT: Binary not found - try system rg as fallback
+      if (error.code === 'ENOENT' && !isFallback && !triedSystemRipgrepFallback) {
+        const { cmd: systemPath } = findExecutable('rg', [])
+        if (systemPath !== 'rg') {
+          logForDebugging(`Ripgrep binary not found (${ripgrepCommand().rgPath}), falling back to system rg`)
+          triedSystemRipgrepFallback = true
+          // Retry with system rg
+          ripGrepWithCommand(
+            systemPath,
+            args,
+            target,
+            abortSignal,
+            (retryError, retryStdout, retryStderr) => {
+              handleResult(retryError, retryStdout, retryStderr, false, true)
+            },
+          )
+          return
+        }
       }
 
       // Critical errors that indicate ripgrep is broken, not "no matches"

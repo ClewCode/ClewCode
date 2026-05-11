@@ -86,6 +86,23 @@ export function subprocessEnv(): NodeJS.ProcessEnv {
 
   const env = { ...process.env, ...proxyEnv }
 
+  // Always propagate CLAUDE_CODE_SESSION_ID so subprocesses (Bash tool, hooks,
+  // MCP stdio servers, LSP servers) can correlate their execution context back
+  // to the parent session. Required for telemetry, log correlation, and tool
+  // execution tracing.
+  const sessionId = process.env.CLAUDE_CODE_SESSION_ID
+  if (sessionId) {
+    env.CLAUDE_CODE_SESSION_ID = sessionId
+  }
+
+  // Propagate CLAUDE_EFFORT so subprocess hooks and scripts can adapt their
+  // behavior to the current effort level (e.g., skip expensive validation at
+  // low effort, run exhaustive checks at high effort).
+  const effortLevel = process.env.CLAUDE_CODE_EFFORT_LEVEL
+  if (effortLevel) {
+    env.CLAUDE_EFFORT = effortLevel
+  }
+
   const otelCarrier: Record<string, string> = {}
   propagation.inject(otelContext.active(), otelCarrier)
   if (otelCarrier.traceparent) {

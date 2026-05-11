@@ -1,13 +1,13 @@
 {
   "name": "claude-code",
-  "version": "2.1.129",
+  "version": "2.1.136",
   "description": "Official Claude Code CLI — AI-powered coding assistant",
   "main": "src/main.tsx",
   "type": "module",
   "scripts": {
     "dev": "bun --watch run src/main.tsx",
     "start": "bun run src/main.tsx",
-    "build": "bun build src/main.tsx --outdir ./dist --target bun --external electron --external 'chromium-bidi*'",
+    "build": "bun build src/main.tsx --outdir ./dist --target bun --external electron --external 'chromium-bidi*' --external '@ant/claude-for-chrome-mcp' --external '@anthropic-ai/bedrock-sdk' --external '@anthropic-ai/foundry-sdk' --external '@anthropic-ai/vertex-sdk' --external '@anthropic-ai/mcpb' --external '@aws-sdk/client-bedrock-runtime' --external 'google-auth-library' --external 'sharp' --external 'asciichart' --external 'audio-capture-napi' --external 'modifiers-napi' --external 'react-devtools-core'",
     "test": "bun test"
   },
   "keywords": [
@@ -106,6 +106,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/lodash-es": "^4.17.12",
+    "@types/semver": "^7.7.1"
   }
 }

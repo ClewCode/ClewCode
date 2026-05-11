@@ -2,7 +2,7 @@ import type { Command } from '../../commands.js';
 const plugin = {
   type: 'local-jsx',
   name: 'plugin',
-  aliases: ['plugins', 'marketplace'],
+  aliases: ['plugins', 'marketplace', 'marketplace-browse', 'browse-plugins', 'browse-marketplace'],
   description: 'Manage Claude Code plugins',
   immediate: true,
   load: () => import('./plugin.js')

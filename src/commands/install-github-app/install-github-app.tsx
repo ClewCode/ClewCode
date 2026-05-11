@@ -5,7 +5,7 @@ import { WorkflowMultiselectDialog } from '../../components/WorkflowMultiselectD
 import { GITHUB_ACTION_SETUP_DOCS_URL } from '../../constants/github-app.js';
 import { useExitOnCtrlCDWithKeybindings } from '../../hooks/useExitOnCtrlCDWithKeybindings.js';
 import type { KeyboardEvent } from '../../ink/events/keyboard-event.js';
-import { Box } from '../../ink.js';
+import { Box, useInput } from '../../ink.js';
 import type { LocalJSXCommandOnDone } from '../../types/command.js';
 import { getAnthropicApiKey, isAnthropicAuthEnabled } from '../../utils/auth.js';
 import { openBrowser } from '../../utils/browser.js';
@@ -53,6 +53,12 @@ function InstallGitHubApp(props: {
     selectedApiKeyOption: (existingApiKey ? 'existing' : isAnthropicAuthEnabled() ? 'oauth' : 'new') as 'existing' | 'new' | 'oauth'
   });
   useExitOnCtrlCDWithKeybindings();
+  // E15: Esc dismisses the dialog
+  useInput((input, key) => {
+    if (key.escape) {
+      props.onDone('Installation cancelled');
+    }
+  });
   React.useEffect(() => {
     logEvent('tengu_install_github_app_started', {});
   }, []);

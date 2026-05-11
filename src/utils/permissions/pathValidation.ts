@@ -319,6 +319,19 @@ const WINDOWS_DRIVE_ROOT_REGEX = /^[A-Za-z]:\/?$/
 const WINDOWS_DRIVE_CHILD_REGEX = /^[A-Za-z]:\/[^/]+$/
 
 /**
+ * macOS private-system-root prefix. On macOS, `/tmp`, `/var`, `/etc` are
+ * symlinks to `/private/tmp`, `/private/var`, `/private/etc`. When a command
+ * uses the explicit `/private/*` path, the directory's parent is `/private`
+ * (not `/`), so the direct-root-child check below doesn't catch it.
+ *
+ * We strip this prefix and re-run the danger checks against the remainder so
+ * that `/private/tmp`, `/private/var/log`, etc. are treated the same as their
+ * un-prefixed equivalents without maintaining an explicit allowlist of macOS
+ * system directories.
+ */
+const MACOS_PRIVATE_PREFIX = '/private/'
+
+/**
  * Checks if a resolved path is dangerous for removal operations (rm/rmdir).
  * Dangerous paths are:
  * - Wildcard '*' (removes all files in directory)
@@ -326,6 +339,7 @@ const WINDOWS_DRIVE_CHILD_REGEX = /^[A-Za-z]:\/[^/]+$/
  * - Root directory (/)
  * - Home directory (~)
  * - Direct children of root (/usr, /tmp, /etc, etc.)
+ * - macOS /private/* equivalents (/private/tmp, /private/var, /private/etc)
  * - Windows drive root (C:\, D:\) and direct children (C:\Windows, C:\Users)
  */
 export function isDangerousRemovalPath(resolvedPath: string): boolean {
@@ -357,6 +371,19 @@ export function isDangerousRemovalPath(resolvedPath: string): boolean {
   const parentDir = dirname(normalizedPath)
   if (parentDir === '/') {
     return true
+  }
+
+  // macOS /private/* equivalents: strip the prefix and re-run checks.
+  // On macOS, /tmp → /private/tmp (symlink). The /private/* paths are NOT
+  // direct children of /, so the parentDir check above misses them.
+  // By stripping the prefix and re-checking, we catch /private/tmp,
+  // /private/var, /private/var/log, /private/etc/passwd, etc. without
+  // maintaining an explicit list of macOS system directory names.
+  if (normalizedPath.startsWith(MACOS_PRIVATE_PREFIX)) {
+    const stripped = '/' + normalizedPath.slice(MACOS_PRIVATE_PREFIX.length)
+    if (isDangerousRemovalPath(stripped)) {
+      return true
+    }
   }
 
   if (WINDOWS_DRIVE_CHILD_REGEX.test(normalizedPath)) {

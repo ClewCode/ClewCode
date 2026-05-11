@@ -328,11 +328,12 @@ function urlPatternToRegex(pattern: string): RegExp {
   const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
   // Replace * with regex equivalent (match any characters)
   const regexStr = escaped.replace(/\*/g, '.*')
-  return new RegExp(`^${regexStr}$`)
+  return new RegExp(`^${regexStr}$`, 'i')
 }
 
 /**
- * Check if a URL matches a pattern with wildcard support
+ * Check if a URL matches a pattern with wildcard support.
+ * Matches case-insensitively so *://MyServer.COM/* matches http://myserver.com/path.
  */
 function urlMatchesPattern(url: string, pattern: string): boolean {
   const regex = urlPatternToRegex(pattern)

@@ -7,6 +7,9 @@ import {
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js'
 import { generateAwaySummary } from '../services/awaySummary.js'
 import type { Message } from '../types/message.js'
+import { isEnvDefinedFalsy, isEnvTruthy } from '../utils/envUtils.js'
+import { isTelemetryDisabled } from '../utils/privacyLevel.js'
+import { getAPIProvider } from '../utils/model/providers.js'
 import { createAwaySummaryMessage } from '../utils/messages.js'
 
 const BLUR_DELAY_MS = 5 * 60_000
@@ -33,16 +36,21 @@ export function useAwaySummary(
   messages: readonly Message[],
   setMessages: SetMessages,
   isLoading: boolean,
+  /** Current prompt input value. When non-empty, the recap is suppressed
+   *  to avoid inserting a summary while the user is composing text (E68). */
+  inputValue?: string,
 ): void {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const messagesRef = useRef(messages)
   const isLoadingRef = useRef(isLoading)
+  const inputValueRef = useRef(inputValue)
   const pendingRef = useRef(false)
   const generateRef = useRef<(() => Promise<void>) | null>(null)
 
   messagesRef.current = messages
   isLoadingRef.current = isLoading
+  inputValueRef.current = inputValue
 
   // 3P default: false
   const gbEnabled = getFeatureValue_CACHED_MAY_BE_STALE(
@@ -52,7 +60,14 @@ export function useAwaySummary(
 
   useEffect(() => {
     if (!feature('AWAY_SUMMARY')) return
-    if (!gbEnabled) return
+    // Opt-out via env var (CLAUDE_CODE_ENABLE_AWAY_SUMMARY=0) or /config setting
+    if (isEnvDefinedFalsy(process.env.CLAUDE_CODE_ENABLE_AWAY_SUMMARY)) return
+    // GB-bucketed users always get it. Telemetry-disabled users (DISABLE_TELEMETRY)
+    // and users on providers that typically disable telemetry (Bedrock, Vertex,
+    // Foundry) also get it — they weren't in the GB cohort.
+    const provider = getAPIProvider()
+    const noTelemetryProvider = provider === 'bedrock' || provider === 'vertex' || provider === 'foundry'
+    if (!gbEnabled && !isTelemetryDisabled() && !noTelemetryProvider) return
 
     function clearTimer(): void {
       if (timerRef.current !== null) {
@@ -84,6 +99,10 @@ export function useAwaySummary(
       timerRef.current = null
       if (isLoadingRef.current) {
         pendingRef.current = true
+        return
+      }
+      // E68: Don't fire away summary while user has unsent text in the prompt.
+      if (inputValueRef.current && inputValueRef.current.trim().length > 0) {
         return
       }
       void generate()

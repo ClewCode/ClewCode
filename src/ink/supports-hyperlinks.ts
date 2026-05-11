@@ -9,6 +9,7 @@ export const ADDITIONAL_HYPERLINK_TERMINALS = [
   'alacritty',
   'iTerm.app',
   'iTerm2',
+  'windows-terminal', // Windows Terminal (WT_SESSION env var)
 ]
 
 type EnvLike = Record<string, string | undefined>

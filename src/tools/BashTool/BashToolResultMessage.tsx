@@ -111,7 +111,7 @@ export default function BashToolResultMessage(t0) {
       T0 = Box;
       t4 = "column";
       if ($[12] !== stdout || $[13] !== verbose) {
-        t5 = stdout !== "" ? <OutputLine content={stdout} verbose={verbose} /> : null;
+        t5 = stdout !== "" ? <OutputLine content={stdout} verbose={verbose} linkifyUrls={true} /> : null;
         $[12] = stdout;
         $[13] = verbose;
         $[14] = t5;

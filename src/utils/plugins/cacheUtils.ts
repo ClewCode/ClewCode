@@ -8,6 +8,7 @@ import { resetSentSkillNames } from '../attachments.js'
 import { logForDebugging } from '../debug.js'
 import { getErrnoCode } from '../errors.js'
 import { logError } from '../log.js'
+import { resetSettingsCache } from '../settings/settingsCache.js'
 import { loadInstalledPluginsFromDisk } from './installedPluginsManager.js'
 import { clearPluginAgentCache } from './loadPluginAgents.js'
 import { clearPluginCommandCache } from './loadPluginCommands.js'
@@ -19,6 +20,7 @@ import { clearPluginOutputStyleCache } from './loadPluginOutputStyles.js'
 import { clearPluginCache, getPluginCachePath } from './pluginLoader.js'
 import { clearPluginOptionsCache } from './pluginOptionsStorage.js'
 import { isPluginZipCacheEnabled } from './zipCache.js'
+import { getRegisteredHooks } from '../../bootstrap/state.js'
 
 const ORPHANED_AT_FILENAME = '.orphaned_at'
 const CLEANUP_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -47,6 +49,8 @@ export function clearAllCaches(): void {
   clearAgentDefinitionsCache()
   clearPromptCache()
   resetSentSkillNames()
+  // Reset settings cache so in-app writes (e.g., /add-dir, /config) refresh immediately
+  resetSettingsCache()
 }
 
 /**
@@ -146,6 +150,32 @@ function getInstalledVersionPaths(): Set<string> | null {
   }
 }
 
+/**
+ * Check if any registered plugin hook references this version path.
+ * Prevents deletion of a version that still has active hooks.
+ */
+function isPluginVersionInUse(versionPath: string): boolean {
+  const hooks = getRegisteredHooks()
+  if (!hooks) return false
+
+  // Normalize paths for comparison (handle trailing slashes, etc.)
+  const normalized = versionPath.replace(/[\\/]+$/, '')
+
+  for (const matchers of Object.values(hooks)) {
+    for (const m of matchers) {
+      if ('pluginRoot' in m && m.pluginRoot === normalized) {
+        return true
+      }
+      // For any hook matcher missing pluginRoot (unlikely but defensive),
+      // check if the path is a prefix of the matcher's config path
+      if ('file' in m && typeof m.file === 'string' && m.file.startsWith(normalized)) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
 async function processOrphanedPluginVersion(
   versionPath: string,
   now: number,
@@ -166,6 +196,16 @@ async function processOrphanedPluginVersion(
   }
 
   if (now - orphanedAt > CLEANUP_AGE_MS) {
+    // Don't delete a version that still has registered hooks pointing to it.
+    // Hooks are loaded from the version directory at startup and refer to
+    // scripts inside that path. Deleting the directory while a hook is active
+    // causes Stop/UserPromptSubmit/etc. to fail with "script not found".
+    if (isPluginVersionInUse(versionPath)) {
+      logForDebugging(
+        `Skipping deletion of in-use version: ${versionPath}`,
+      )
+      return
+    }
     try {
       await rm(versionPath, { recursive: true, force: true })
     } catch (error) {

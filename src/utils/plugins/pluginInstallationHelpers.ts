@@ -404,7 +404,12 @@ export async function installResolvedPlugin({
       if (info) depInfo.set(id, info)
       return info?.entry ?? null
     },
-    getEnabledPluginIdsForScope(settingSource),
+    // Exclude the root plugin from alreadyEnabled so re-install always
+    // re-resolves its dependencies (D13). Without this, a plugin that was
+    // previously installed is treated as "already enabled" and its dependency
+    // closure is skipped entirely — even if the marketplace entry has new or
+    // changed dependencies since the last install.
+    getEnabledPluginIdsForScope(settingSource).filter(id => id !== pluginId),
     allowedCrossMarketplaces,
   )
   if (!resolution.ok) {

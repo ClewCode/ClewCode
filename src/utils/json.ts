@@ -9,6 +9,21 @@ import { logError } from './log.js'
 import { memoizeWithLRU } from './memoize.js'
 import { jsonStringify } from './slowOperations.js'
 
+/**
+ * Remove lone surrogate characters from a string. These can appear when a
+ * session is truncated mid-emoji by an unclean shutdown, and will crash
+ * downstream operations (TextEncoder, Buffer.from) with "no low surrogate".
+ */
+function sanitizeSurrogates(text: string): string {
+  // Matches lone high surrogates (0xD800–0xDBFF) not followed by a low
+  // surrogate (0xDC00–0xDFFF), and lone low surrogates not preceded by a
+  // high surrogate. Both cases are invalid in UTF-8/UTF-16.
+  return text.replace(
+    /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[\uDC00-\uDFFF]/g,
+    '',
+  )
+}
+
 type CachedParse = { ok: true; value: unknown } | { ok: false }
 
 // Memoized inner parse. Uses a discriminated-union wrapper because:
@@ -140,7 +155,8 @@ function parseJSONLBuffer<T>(buf: Buffer): T[] {
     let end = buf.indexOf(0x0a, start)
     if (end === -1) end = bufLen
 
-    const line = buf.toString('utf8', start, end).trim()
+    const raw = buf.toString('utf8', start, end)
+    const line = sanitizeSurrogates(raw).trim()
     start = end + 1
     if (!line) continue
     try {
@@ -162,7 +178,7 @@ function parseJSONLString<T>(data: string): T[] {
     let end = stripped.indexOf('\n', start)
     if (end === -1) end = len
 
-    const line = stripped.substring(start, end).trim()
+    const line = sanitizeSurrogates(stripped.substring(start, end)).trim()
     start = end + 1
     if (!line) continue
     try {

@@ -356,10 +356,19 @@ export function convertToSandboxRuntimeConfig(
     argv0,
   }
 
+  // Merge deniedDomains from sandbox.network settings with WebFetch deny rules.
+  // sandbox.network.deniedDomains allow blocking specific domains even when a
+  // broader wildcard allow rule is in effect (e.g. allow *.example.com but
+  // deny bad.example.com).
+  const networkDeniedDomains = [
+    ...deniedDomains,
+    ...(settings.sandbox?.network?.deniedDomains || []),
+  ]
+
   return {
     network: {
       allowedDomains,
-      deniedDomains,
+      deniedDomains: networkDeniedDomains,
       allowUnixSockets: settings.sandbox?.network?.allowUnixSockets,
       allowAllUnixSockets: settings.sandbox?.network?.allowAllUnixSockets,
       allowLocalBinding: settings.sandbox?.network?.allowLocalBinding,
@@ -372,6 +381,8 @@ export function convertToSandboxRuntimeConfig(
       allowWrite,
       denyWrite,
     },
+    bwrapPath: settings.sandbox?.bwrapPath,
+    socatPath: settings.sandbox?.socatPath,
     ignoreViolations: settings.sandbox?.ignoreViolations,
     enableWeakerNestedSandbox: settings.sandbox?.enableWeakerNestedSandbox,
     enableWeakerNetworkIsolation:

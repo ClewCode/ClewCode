@@ -5,7 +5,7 @@ import type {
 import axios from 'axios'
 import { createHash } from 'crypto'
 import { chmod, writeFile } from 'fs/promises'
-import { dirname, join } from 'path'
+import { dirname, join, sep } from 'path'
 import type { McpServerConfig } from '../../services/mcp/types.js'
 import { logForDebugging } from '../debug.js'
 import { parseAndValidateManifestFromBytes } from '../dxt/helpers.js'
@@ -423,7 +423,10 @@ async function generateMcpConfig(
     extensionPath: extractedPath,
     systemDirs: getSystemDirectories(),
     userConfig,
-    pathSeparator: '/',
+    // On Windows, extracted paths contain backslashes (C:\Users\...).
+    // Using the platform-native separator ensures the spawned command's
+    // path resolves correctly in the shell.
+    pathSeparator: sep,
   })
 
   if (!mcpConfig) {

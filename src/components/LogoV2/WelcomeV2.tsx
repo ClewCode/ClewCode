@@ -29,7 +29,7 @@ export function WelcomeV2() {
     let t8;
     if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
       t0 = <Text><Text color="claude">{"Welcome to Claude Code"} </Text><Text dimColor={true}>v{MACRO.VERSION} </Text></Text>;
-      t1 = <Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}</Text>;
+      t1 = <Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}</Text>;
       t2 = <Text>{"                                                          "}</Text>;
       t3 = <Text>{"                                                          "}</Text>;
       t4 = <Text>{"                                                          "}</Text>;
@@ -98,7 +98,7 @@ export function WelcomeV2() {
     }
     let t15;
     if ($[17] === Symbol.for("react.memo_cache_sentinel")) {
-      t15 = <Box width={WELCOME_V2_WIDTH}><Text>{t0}{t1}{t2}{t3}{t4}{t5}{t6}{t7}{t8}{t9}{t10}{t11}{t12}{t13}{t14}<Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}<Text color="clawd_body">{"\u2588 \u2588   \u2588 \u2588"}</Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2591\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2592\u2026\u2026\u2026\u2026"}</Text></Text></Box>;
+      t15 = <Box width={WELCOME_V2_WIDTH}><Text>{t0}{t1}{t2}{t3}{t4}{t5}{t6}{t7}{t8}{t9}{t10}{t11}{t12}{t13}{t14}<Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}<Text color="clawd_body">{"\u2588 \u2588   \u2588 \u2588"}</Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u2591\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u2592\u007e\u007e\u007e\u007e"}</Text></Text></Box>;
       $[17] = t15;
     } else {
       t15 = $[17];
@@ -114,7 +114,7 @@ export function WelcomeV2() {
   let t6;
   if ($[18] === Symbol.for("react.memo_cache_sentinel")) {
     t0 = <Text><Text color="claude">{"Welcome to Claude Code"} </Text><Text dimColor={true}>v{MACRO.VERSION} </Text></Text>;
-    t1 = <Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}</Text>;
+    t1 = <Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}</Text>;
     t2 = <Text>{"                                                          "}</Text>;
     t3 = <Text>{"     *                                       \u2588\u2588\u2588\u2588\u2588\u2593\u2593\u2591     "}</Text>;
     t4 = <Text>{"                                 *         \u2588\u2588\u2588\u2593\u2591     \u2591\u2591   "}</Text>;
@@ -189,7 +189,7 @@ export function WelcomeV2() {
   }
   let t16;
   if ($[34] === Symbol.for("react.memo_cache_sentinel")) {
-    t16 = <Box width={WELCOME_V2_WIDTH}><Text>{t0}{t1}{t2}{t3}{t4}{t5}{t6}{t7}{t8}{t9}{t10}{t11}{t13}{t14}{t15}<Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}<Text color="clawd_body">{"\u2588 \u2588   \u2588 \u2588"}</Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}</Text></Text></Box>;
+    t16 = <Box width={WELCOME_V2_WIDTH}><Text>{t0}{t1}{t2}{t3}{t4}{t5}{t6}{t7}{t8}{t9}{t10}{t11}{t13}{t14}{t15}<Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}<Text color="clawd_body">{"\u2588 \u2588   \u2588 \u2588"}</Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}</Text></Text></Box>;
     $[34] = t16;
   } else {
     t16 = $[34];
@@ -240,7 +240,7 @@ function AppleTerminalWelcomeV2(t0) {
     let t8;
     let t9;
     if ($[5] === Symbol.for("react.memo_cache_sentinel")) {
-      t4 = <Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}</Text>;
+      t4 = <Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}</Text>;
       t5 = <Text>{"                                                          "}</Text>;
       t6 = <Text>{"                                                          "}</Text>;
       t7 = <Text>{"                                                          "}</Text>;
@@ -304,7 +304,7 @@ function AppleTerminalWelcomeV2(t0) {
     }
     let t18;
     if ($[19] === Symbol.for("react.memo_cache_sentinel")) {
-      t18 = <Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}<Text backgroundColor="clawd_body"> </Text><Text> </Text><Text backgroundColor="clawd_body"> </Text><Text>{"   "}</Text><Text backgroundColor="clawd_body"> </Text><Text> </Text><Text backgroundColor="clawd_body"> </Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2591\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2592\u2026\u2026\u2026\u2026"}</Text>;
+      t18 = <Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}<Text backgroundColor="clawd_body"> </Text><Text> </Text><Text backgroundColor="clawd_body"> </Text><Text>{"   "}</Text><Text backgroundColor="clawd_body"> </Text><Text> </Text><Text backgroundColor="clawd_body"> </Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u2591\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u2592\u007e\u007e\u007e\u007e"}</Text>;
       $[19] = t18;
     } else {
       t18 = $[19];
@@ -349,7 +349,7 @@ function AppleTerminalWelcomeV2(t0) {
   let t8;
   let t9;
   if ($[27] === Symbol.for("react.memo_cache_sentinel")) {
-    t4 = <Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}</Text>;
+    t4 = <Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}</Text>;
     t5 = <Text>{"                                                          "}</Text>;
     t6 = <Text>{"     *                                       \u2588\u2588\u2588\u2588\u2588\u2593\u2593\u2591     "}</Text>;
     t7 = <Text>{"                                 *         \u2588\u2588\u2588\u2593\u2591     \u2591\u2591   "}</Text>;
@@ -415,7 +415,7 @@ function AppleTerminalWelcomeV2(t0) {
   }
   let t18;
   if ($[41] === Symbol.for("react.memo_cache_sentinel")) {
-    t18 = <Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}<Text backgroundColor="clawd_body"> </Text><Text> </Text><Text backgroundColor="clawd_body"> </Text><Text>{"   "}</Text><Text backgroundColor="clawd_body"> </Text><Text> </Text><Text backgroundColor="clawd_body"> </Text>{"\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026"}</Text>;
+    t18 = <Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}<Text backgroundColor="clawd_body"> </Text><Text> </Text><Text backgroundColor="clawd_body"> </Text><Text>{"   "}</Text><Text backgroundColor="clawd_body"> </Text><Text> </Text><Text backgroundColor="clawd_body"> </Text>{"\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e\u007e"}</Text>;
     $[41] = t18;
   } else {
     t18 = $[41];

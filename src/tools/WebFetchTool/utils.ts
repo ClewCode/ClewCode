@@ -92,8 +92,24 @@ let turndownServicePromise: Promise<InstanceType<TurndownCtor>> | undefined
 function getTurndownService(): Promise<InstanceType<TurndownCtor>> {
   return (turndownServicePromise ??= import('turndown').then(m => {
     const Turndown = (m as unknown as { default: TurndownCtor }).default
-    return new Turndown()
+    const service = new Turndown()
+    // Remove style and script tags before conversion to prevent CSS-heavy
+    // pages from exhausting the content budget before reaching actual text
+    service.remove(['style', 'script'])
+    return service
   }))
+}
+
+/**
+ * Strip <style> and <script> tags from HTML content.
+ * CSS-heavy pages can exhaust the content budget before reaching actual text.
+ */
+function stripStyleScriptTags(html: string): string {
+  // Remove <style>...</style> tags (case-insensitive, handles multiline)
+  html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+  // Remove <script>...</script> tags (case-insensitive, handles multiline)
+  html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+  return html
 }
 
 // PSR requested limiting the length of URLs to 250 to lower the potential
@@ -454,7 +470,10 @@ export async function getURLMarkdownContent(
   let markdownContent: string
   let contentBytes: number
   if (contentType.includes('text/html')) {
-    markdownContent = (await getTurndownService()).turndown(htmlContent)
+    // Strip style and script tags before conversion to prevent
+    // CSS-heavy pages from exhausting the content budget
+    const strippedHtml = stripStyleScriptTags(htmlContent)
+    markdownContent = (await getTurndownService()).turndown(strippedHtml)
     contentBytes = Buffer.byteLength(markdownContent)
   } else {
     // It's not HTML - just use it raw. The decoded string's UTF-8 byte

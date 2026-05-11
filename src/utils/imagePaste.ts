@@ -203,8 +203,13 @@ export async function getImageFromClipboard(): Promise<ImageWithDimensions | nul
       return null
     }
 
-    // Read the image and convert to base64
-    let imageBuffer = getFsImplementation().readFileBytesSync(screenshotPath)
+    // Read the image and convert to base64 (E45: wrap with timeout to prevent hanging)
+    let imageBuffer = await Promise.race([
+      getFsImplementation().readFileBytes(screenshotPath),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Image read timed out')), 10000)
+      ),
+    ])
 
     // BMP is not supported by the API — convert to PNG via Sharp.
     // This handles WSL2 where Windows copies images as BMP by default.

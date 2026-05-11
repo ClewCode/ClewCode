@@ -309,7 +309,13 @@ function simpleHash(str: string): string {
  * @returns A safe name (e.g., '-Users-foo-my-project' or 'plugin-name-server')
  */
 export function sanitizePath(name: string): string {
-  const sanitized = name.replace(/[^a-zA-Z0-9]/g, '-')
+  // Preserve alphanumeric chars and underscores (valid in directory names on all
+  // major platforms). Replaces everything else (colons, backslashes, etc.) with
+  // hyphens. This ensures project paths with underscores (e.g., "my_project_dir")
+  // map to deterministic directories rather than being collapsed into hyphens,
+  // which previously caused --resume / --continue to miss sessions from repos
+  // with underscores in their on-disk path.
+  const sanitized = name.replace(/[^a-zA-Z0-9_]/g, '-')
   if (sanitized.length <= MAX_SANITIZED_LENGTH) {
     return sanitized
   }

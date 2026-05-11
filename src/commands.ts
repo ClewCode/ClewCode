@@ -672,11 +672,21 @@ export function findCommand(
   commandName: string,
   commands: Command[],
 ): Command | undefined {
-  return commands.find(
+  // E26: Try exact match first (name, registered name, aliases)
+  const exact = commands.find(
     _ =>
       _.name === commandName ||
       getCommandName(_) === commandName ||
       _.aliases?.includes(commandName),
+  )
+  if (exact) return exact
+
+  // E26: Fall back to prefix match so "term" matches "terminal-setup"
+  return commands.find(
+    _ =>
+      _.name.startsWith(commandName) ||
+      getCommandName(_).startsWith(commandName) ||
+      _.aliases?.some(a => a.startsWith(commandName)),
   )
 }
 

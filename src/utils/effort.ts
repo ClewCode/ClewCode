@@ -14,6 +14,7 @@ export const EFFORT_LEVELS = [
   'low',
   'medium',
   'high',
+  'xhigh',
   'max',
 ] as const satisfies readonly EffortLevel[]
 
@@ -30,12 +31,21 @@ export function modelSupportsEffort(model: string): boolean {
     return supported3P
   }
   // Supported by a subset of Claude 4 models
-  if (m.includes('opus-4-6') || m.includes('sonnet-4-6')) {
+  if (m.includes('opus-4-7') || m.includes('opus-4-6') || m.includes('sonnet-4-6')) {
     return true
   }
   // Exclude any other known legacy models (haiku, older opus/sonnet variants)
   if (m.includes('haiku') || m.includes('sonnet') || m.includes('opus')) {
     return false
+  }
+
+  // Bedrock application inference profile ARNs resolve to capable Claude models
+  // (Sonnet/Opus). The ARN UUID won't match any of the name-based checks above.
+  if (
+    m.includes('application-inference-profile') &&
+    getAPIProvider() === 'bedrock'
+  ) {
+    return true
   }
 
   // IMPORTANT: Do not change the default effort support without notifying
@@ -55,13 +65,36 @@ export function modelSupportsMaxEffort(model: string): boolean {
   if (supported3P !== undefined) {
     return supported3P
   }
-  if (model.toLowerCase().includes('opus-4-6')) {
+  const m = model.toLowerCase()
+  if (m.includes('opus-4-7') || m.includes('opus-4-6')) {
+    return true
+  }
+  // Bedrock application inference profile ARNs resolve to capable Claude models
+  // (Sonnet/Opus). The ARN format is a UUID so we can't match on model name;
+  // instead check the ARN pattern which Bedrock inference profiles always use.
+  if (
+    m.includes('application-inference-profile') &&
+    getAPIProvider() === 'bedrock'
+  ) {
     return true
   }
   if (process.env.USER_TYPE === 'ant' && resolveAntModel(model)) {
     return true
   }
   return false
+}
+
+/**
+ * Check if the model supports 'xhigh' effort level.
+ * Currently Opus 4.7 and Opus 4.6 support xhigh.
+ * Falls back to modelSupportsMaxEffort since xhigh sits between high and max.
+ */
+export function modelSupportsXhighEffort(model: string): boolean {
+  const supported3P = get3PModelCapabilityOverride(model, 'xhigh_effort')
+  if (supported3P !== undefined) {
+    return supported3P
+  }
+  return modelSupportsMaxEffort(model)
 }
 
 export function isEffortLevel(value: string): value is EffortLevel {
@@ -96,6 +129,9 @@ export function toPersistableEffort(
   value: EffortValue | undefined,
 ): EffortLevel | undefined {
   if (value === 'low' || value === 'medium' || value === 'high') {
+    return value
+  }
+  if (value === 'xhigh' && process.env.USER_TYPE === 'ant') {
     return value
   }
   if (value === 'max' && process.env.USER_TYPE === 'ant') {
@@ -163,6 +199,10 @@ export function resolveAppliedEffort(
   if (resolved === 'max' && !modelSupportsMaxEffort(model)) {
     return 'high'
   }
+  // API rejects 'xhigh' on non-Opus-4.7 models — downgrade to 'high'.
+  if (resolved === 'xhigh' && !modelSupportsXhighEffort(model)) {
+    return 'high'
+  }
   return resolved
 }
 
@@ -190,6 +230,8 @@ export function getEffortSuffix(
   effortValue: EffortValue | undefined,
 ): string {
   if (effortValue === undefined) return ''
+  // E88: Don't show effort suffix on models that don't support effort at all
+  if (!modelSupportsEffort(model)) return ''
   const resolved = resolveAppliedEffort(model, effortValue)
   if (resolved === undefined) return ''
   return ` with ${convertEffortValueToLevel(resolved)} effort`
@@ -208,8 +250,9 @@ export function convertEffortValueToLevel(value: EffortValue): EffortLevel {
   }
   if (process.env.USER_TYPE === 'ant' && typeof value === 'number') {
     if (value <= 50) return 'low'
-    if (value <= 85) return 'medium'
-    if (value <= 100) return 'high'
+    if (value <= 80) return 'medium'
+    if (value <= 95) return 'high'
+    if (value <= 100) return 'xhigh'
     return 'max'
   }
   return 'high'
@@ -229,8 +272,10 @@ export function getEffortLevelDescription(level: EffortLevel): string {
       return 'Balanced approach with standard implementation and testing'
     case 'high':
       return 'Comprehensive implementation with extensive testing and documentation'
+    case 'xhigh':
+      return 'Enhanced reasoning capability balanced between high and max (Opus 4.7+)'
     case 'max':
-      return 'Maximum capability with deepest reasoning (Opus 4.6 only)'
+      return 'Maximum capability with deepest reasoning (Opus 4.6+)'
   }
 }
 
@@ -304,9 +349,13 @@ export function getDefaultEffortForModel(
   // the model launch DRI and research. Default effort is a sensitive setting
   // that can greatly affect model quality and bashing.
 
-  // Default effort on Opus 4.6 to medium for Pro.
+  // Default effort on Opus 4.6/4.7 to medium for Pro.
   // Max/Team also get medium when the tengu_grey_step2 config is enabled.
-  if (model.toLowerCase().includes('opus-4-6')) {
+  // B9: Opus 4.7 Max subscribers get xhigh in auto mode.
+  if (
+    model.toLowerCase().includes('opus-4-6') ||
+    model.toLowerCase().includes('opus-4-7')
+  ) {
     if (isProSubscriber()) {
       return 'medium'
     }
@@ -314,6 +363,9 @@ export function getDefaultEffortForModel(
       getOpusDefaultEffortConfig().enabled &&
       (isMaxSubscriber() || isTeamSubscriber())
     ) {
+      if (model.toLowerCase().includes('opus-4-7') && isMaxSubscriber()) {
+        return 'xhigh'
+      }
       return 'medium'
     }
   }

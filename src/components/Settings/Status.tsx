@@ -5,6 +5,7 @@ import { Suspense, use } from 'react';
 import { getSessionId } from '../../bootstrap/state.js';
 import type { LocalJSXCommandContext } from '../../commands.js';
 import { useIsInsideModal } from '../../context/modalContext.js';
+import { useMainLoopModel } from '../../hooks/useMainLoopModel.js';
 import { Box, Text, useTheme } from '../../ink.js';
 import { type AppState, useAppState } from '../../state/AppState.js';
 import { getCwd } from '../../utils/cwd.js';
@@ -105,7 +106,7 @@ export function Status(t0) {
     context,
     diagnosticsPromise
   } = t0;
-  const mainLoopModel = useAppState(_temp);
+  const mainLoopModel = useMainLoopModel();
   const mcp = useAppState(_temp2);
   const [theme] = useTheme();
   let t1;
@@ -197,9 +198,6 @@ function _temp3(t0, j) {
 }
 function _temp2(s_0) {
   return s_0.mcp;
-}
-function _temp(s) {
-  return s.mainLoopModel;
 }
 function Diagnostics(t0) {
   const $ = _c(5);

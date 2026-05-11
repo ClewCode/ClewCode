@@ -24,20 +24,60 @@ import { generateWordSlug } from './words.js'
 
 const MAX_SLUG_RETRIES = 10
 
+// Cache of prompt-prefixes keyed by session ID.
+// Set via setPlanSlugPrefix before the first getPlanSlug call so that the
+// generated filename incorporates words from the user's prompt rather than
+// being a purely random word slug (e.g. "fix-auth-snug-otter.md").
+const planSlugPrefixCache = new Map<string, string>()
+
+/**
+ * Sanitize a prompt string for use as a slug prefix: lowercase, keep only
+ * alphanumeric and hyphens, limit to ~30 chars, take at most 3 meaningful words.
+ */
+function sanitizePromptForSlug(prompt: string): string {
+  const words = prompt
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .split(/\s+/)
+    .filter(w => w.length > 2 && w.length < 20) // skip very short/long words
+    .slice(0, 3)
+  return words.join('-')
+}
+
+/**
+ * Set a prompt-based prefix for the session's plan slug so the generated
+ * plan filename includes meaningful words from the prompt.
+ * Must be called BEFORE the first getPlanSlug() call for the session.
+ */
+export function setPlanSlugPrefix(prefix: string, sessionId?: SessionId): void {
+  const id = sessionId ?? getSessionId()
+  const sanitized = sanitizePromptForSlug(prefix)
+  if (sanitized) {
+    planSlugPrefixCache.set(id, sanitized)
+  }
+}
+
 /**
  * Get or generate a word slug for the current session's plan.
  * The slug is generated lazily on first access and cached for the session.
  * If a plan file with the generated slug already exists, retries up to 10 times.
+ * When a prompt prefix has been set via setPlanSlugPrefix, it is prepended to
+ * the random word slug (e.g. "fix-auth-snug-otter" instead of "snug-otter").
  */
 export function getPlanSlug(sessionId?: SessionId): string {
   const id = sessionId ?? getSessionId()
   const cache = getPlanSlugCache()
   let slug = cache.get(id)
   if (!slug) {
+    const prefix = planSlugPrefixCache.get(id)
     const plansDir = getPlansDirectory()
     // Try to find a unique slug that doesn't conflict with existing files
     for (let i = 0; i < MAX_SLUG_RETRIES; i++) {
       slug = generateWordSlug()
+      if (prefix) {
+        slug = `${prefix}-${slug}`
+      }
       const filePath = join(plansDir, `${slug}.md`)
       if (!getFsImplementation().existsSync(filePath)) {
         break

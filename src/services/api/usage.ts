@@ -35,9 +35,23 @@ export async function fetchUtilization(): Promise<Utilization | null> {
     return {}
   }
 
-  // Skip API call if OAuth token is expired to avoid 401 errors
+  // Refresh OAuth token before fetching usage to avoid "rate limited" errors
+  // from a stale token. If the token won't refresh, fall through to the
+  // expired-token early-return below.
   const tokens = getClaudeAIOAuthTokens()
-  if (tokens && isOAuthTokenExpired(tokens.expiresAt)) {
+  const { refreshOAuthToken } = await import('../oauth/client.js')
+  if (tokens?.refreshToken) {
+    try {
+      await refreshOAuthToken(tokens.refreshToken)
+    } catch {
+      // Token refresh failed — the current token may still work, so don't
+      // abort. The API call below will fail with a proper error if not.
+    }
+  }
+
+  // Skip API call if OAuth token is expired to avoid 401 errors
+  const freshTokens = getClaudeAIOAuthTokens()
+  if (freshTokens && isOAuthTokenExpired(freshTokens.expiresAt)) {
     return null
   }
 

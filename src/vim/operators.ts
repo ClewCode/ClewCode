@@ -497,6 +497,9 @@ function applyOperator(
   ctx: OperatorContext,
   linewise: boolean = false,
 ): void {
+  // E47: Normalize text to NFC so decomposed (NFD) accented characters
+  // aren't split apart by character-wise vim operations.
+  ctx.text = ctx.text.normalize('NFC')
   let content = ctx.text.slice(from, to)
   // Ensure linewise content ends with newline for paste detection
   if (linewise && !content.endsWith('\n')) {

@@ -362,6 +362,12 @@ export type YoloClassifierResult = {
   thinking?: string
   shouldBlock: boolean
   reason: string
+  /**
+   * When true, the classifier matched a hard_deny rule — an unconditional block
+   * that should NOT fall back to prompting even if the denial limit is exceeded.
+   * Hard denies are irreducible: the user must update their settings to proceed.
+   */
+  isHardDeny?: boolean
   unavailable?: boolean
   /**
    * API returned "prompt is too long" — the classifier transcript exceeded

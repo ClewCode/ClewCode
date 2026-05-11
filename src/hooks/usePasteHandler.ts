@@ -109,9 +109,12 @@ export function usePasteHandler({
           pastePendingRef.current = false
           setPasteState(({ chunks }) => {
             // Join chunks and filter out orphaned focus sequences
-            // These can appear when focus events split during paste
+            // These can appear when focus events split during paste.
+            // Strip complete CSI sequences (\x1b[I, \x1b[O) and trailing
+            // orphaned tails ([I, [O) whose \x1b was lost at chunk boundaries.
             const pastedText = chunks
               .join('')
+              .replace(/\x1b\[[\d;]*[A-Za-z]/g, '')
               .replace(/\[I$/, '')
               .replace(/\[O$/, '')
 

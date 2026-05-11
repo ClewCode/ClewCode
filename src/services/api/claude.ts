@@ -1793,7 +1793,17 @@ async function* queryModel(
   // Header differs by provider: 1P/Foundry use advanced-tool-use, Vertex/Bedrock use tool-search-tool
   // For Bedrock, this header must go in extraBodyParams, not the betas array
   const toolSearchHeader = useToolSearch ? getToolSearchBetaHeader() : null
-  if (toolSearchHeader && getAPIProvider() !== 'bedrock') {
+  // Bedrock and Vertex don't support the tool-search beta header in the standard
+  // betas array — Bedrock requires it in extraBodyParams, Vertex doesn't support
+  // it at all (gate behind ENABLE_TOOL_SEARCH env var for Vertex).
+  const provider = getAPIProvider()
+  const toolSearchEnabledForVertex =
+    provider !== 'vertex' || isEnvTruthy(process.env.ENABLE_TOOL_SEARCH)
+  if (
+    toolSearchHeader &&
+    provider !== 'bedrock' &&
+    toolSearchEnabledForVertex
+  ) {
     if (!betas.includes(toolSearchHeader)) {
       betas.push(toolSearchHeader)
     }
@@ -2665,6 +2675,12 @@ async function* queryModel(
                   signature: '',
                 }
                 break
+              case 'redacted_thinking':
+                // redacted_thinking blocks are sent as complete blocks from the
+                // API (no deltas). Preserve the server-provided data including
+                // signature so it can be validated on subsequent requests.
+                contentBlocks[part.index] = { ...part.content_block }
+                break
               default:
                 // even more awkwardly, the sdk mutates the contents of text blocks
                 // as it works. we want the blocks to be immutable, so that we can
@@ -2761,7 +2777,10 @@ async function* queryModel(
                     contentBlock.signature = delta.signature
                     break
                   }
-                  if (contentBlock.type !== 'thinking') {
+                  if (
+                    contentBlock.type !== 'thinking' &&
+                    contentBlock.type !== 'redacted_thinking'
+                  ) {
                     logEvent('tengu_streaming_error', {
                       error_type:
                         'content_block_type_mismatch_thinking_signature' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,

@@ -2,7 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.1.129] - 2026-05-11
+## [2.1.136] - 2026-05-12
+
+### Changed
+
+- **MCP Concurrent Call Timeout Disarming**: Replaced shared SDK timeout with per-call `AbortController` + `Promise.race` isolation. Each tool call now has independent timeout tracking — one call's watchdog can no longer overwrite another's.
+- **MCP Server Retry on Transient Errors**: `connectToServer` now retries up to 3× with exponential backoff on transient errors (ECONNREFUSED, ECONNRESET, ETIMEDOUT, EPIPE, EHOSTUNREACH, ESRCH) before marking a server as failed.
+- **MCP default `expires_in` TTL**: Changed from 3600s (1h) to 86400s (24h) to prevent unnecessary re-auth cycles when OAuth servers omit `expires_in`.
+- **MCP OAuth client_secret_post**: DCR metadata now dynamically advertises `client_secret_post` when a `--client-secret` is pre-configured, instead of always claiming `none`.
+- **MCP headersHelper env var expansion**: Header values containing `${ENV_VAR}` placeholders are now expanded before being sent in requests.
+- **MCP OAuth 204 No Content**: `normalizeOAuthErrorBody` now returns early for HTTP 204 responses instead of crashing on empty-body JSON parse.
+- **Plugin MCPB Windows path handling**: Changed hardcoded `pathSeparator: '/'` to platform-native `sep`, fixing MCP server spawn on Windows.
+- **Plugin npm update detection**: `installFromNpm` now forces npm install when a specific version is requested, instead of reusing a stale global cache.
+- **Plugin hooks version locking**: Orphaned plugin versions with active registered hooks are no longer deleted during cache cleanup.
+- **Auth error keyword detection (D4)**: Extended 401 detection to include OAuth/token/auth keywords, routing more auth failures to `needs-auth` instead of `failed`.
+- **MCP headersHelper auth visibility (D27)**: SSE/HTTP servers with `headersHelper` now route connection failures to `needs-auth` instead of `failed`, so the UI shows Authenticate/Re-authenticate actions.
+- **MCP headersHelper stuck-in-auth fix (D28)**: Servers with `headersHelper` skip the 15-min needs-auth cache, allowing instant retry when the helper script produces fresh credentials.
+- **Custom headers servers stuck-in-auth fix (D28)**: Same skip for SSE/HTTP servers with `headersHelper`: transient 401s no longer get stuck in `needs-auth` for the full cache TTL.
+- **Plugin re-install re-resolves dependencies**: `resolveDependencyClosure` explicitly ensures the root plugin is never skipped in the `alreadyEnabled` check, so re-installing a plugin always re-caches it.
+
+### Added
+
+- **`clearAllMcpServerCaches()`**: New export that disposes all cached MCP connections and clears tool/resource/command caches. Called automatically on `/clear` to prevent stale connections from reappearing.
+- **MCP 0-tools retry**: When `tools/list` returns empty despite the server advertising tool support, the client retries once after 1s.
+- **MCP `alwaysLoad` support**: Tools with `_meta['anthropic/alwaysLoad']` now skip tool-search deferral and are always loaded.
+- **MCP reconnect summary notification**: Reconnect events show a count summary ("N tools") instead of re-announcing the full tool list.
+- **Plugin orphan version in-use detection**: `isPluginVersionInUse()` checks registered hooks before deleting orphaned plugin versions.
+- **`DEFAULT_TOKEN_TTL_S` constant**: Centralized default TTL for OAuth token expiry when servers omit `expires_in`.
+
+### Fixed
+
+- **Unhandled promise rejection on OAuth timeout/cancel**: Added `.catch(() => null)` to `Promise.race` branches that race OAuth promises, preventing orphan rejections when the other branch wins first.
+- **MCP URL wildcard case-sensitivity**: `urlPatternToRegex` now uses the `i` flag so `*://MyServer.COM/*` matches lowercase URLs.
+- **Bun build: added --external for missing optional deps**: Added `--external` flags for `@anthropic-ai/*`, `@aws-sdk/*`, `sharp`, and other optional packages that fail `bun build`.
+- **MonitorTool `const` reassignment**: Fixed `Cannot assign to "task" because it is a constant` in `MonitorTool.tsx`.
+- **MonitorPermissionRequest import path**: Corrected `../../ink.js` → `../../../ink.js` for the nested directory depth.
+- **Unhandled rejection causing process exit**: Changed `unhandledRejection` handler to log-only (no `gracefulShutdownSync(1)`) since many pre-existing unhandled rejections (e.g. git API changes, optional backend timeouts) were previously silent.
 
 ### Added
 

@@ -1759,6 +1759,7 @@ async function checkPermissionsAndCallTool(
     }
 
     return [
+      ...resultingMessages,
       {
         message: createUserMessage({
           content: [

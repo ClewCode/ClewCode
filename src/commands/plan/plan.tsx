@@ -8,7 +8,7 @@ import { getExternalEditor } from '../../utils/editor.js';
 import { toIDEDisplayName } from '../../utils/ide.js';
 import { applyPermissionUpdate } from '../../utils/permissions/PermissionUpdate.js';
 import { prepareContextForPlanMode } from '../../utils/permissions/permissionSetup.js';
-import { getPlan, getPlanFilePath } from '../../utils/plans.js';
+import { getPlan, getPlanFilePath, setPlanSlugPrefix } from '../../utils/plans.js';
 import { editFileInEditor } from '../../utils/promptEditor.js';
 import { renderToString } from '../../utils/staticRender.js';
 function PlanDisplay(t0) {
@@ -82,6 +82,8 @@ export async function call(onDone: LocalJSXCommandOnDone, context: LocalJSXComma
     }));
     const description = args.trim();
     if (description && description !== 'open') {
+      // Set prompt-based prefix so the plan file uses a meaningful name
+      setPlanSlugPrefix(description)
       onDone('Enabled plan mode', {
         shouldQuery: true
       });

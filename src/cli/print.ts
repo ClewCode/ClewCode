@@ -3353,7 +3353,7 @@ function runHeadlessStreaming(
               // Wait for the auth URL (or the flow to complete without needing redirect)
               const authUrl = await Promise.race([
                 authUrlPromise,
-                oauthPromise.then(() => null as string | null),
+                oauthPromise.then(() => null as string | null).catch(() => null as string | null),
               ])
 
               if (authUrl) {

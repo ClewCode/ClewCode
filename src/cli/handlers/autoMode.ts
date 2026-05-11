@@ -40,6 +40,9 @@ export function autoModeConfigHandler(): void {
     soft_deny: config?.soft_deny?.length
       ? config.soft_deny
       : defaults.soft_deny,
+    hard_deny: config?.hard_deny?.length
+      ? config.hard_deny
+      : defaults.hard_deny,
     environment: config?.environment?.length
       ? config.environment
       : defaults.environment,
@@ -77,12 +80,13 @@ export async function autoModeCritiqueHandler(options: {
   const hasCustomRules =
     (config?.allow?.length ?? 0) > 0 ||
     (config?.soft_deny?.length ?? 0) > 0 ||
+    (config?.hard_deny?.length ?? 0) > 0 ||
     (config?.environment?.length ?? 0) > 0
 
   if (!hasCustomRules) {
     process.stdout.write(
       'No custom auto mode rules found.\n\n' +
-        'Add rules to your settings file under autoMode.{allow, soft_deny, environment}.\n' +
+        'Add rules to your settings file under autoMode.{allow, soft_deny, hard_deny, environment}.\n' +
         'Run `claude auto-mode defaults` to see the default rules for reference.\n',
     )
     return
@@ -101,6 +105,11 @@ export async function autoModeCritiqueHandler(options: {
       'soft_deny',
       config?.soft_deny ?? [],
       defaults.soft_deny,
+    ) +
+    formatRulesForCritique(
+      'hard_deny',
+      config?.hard_deny ?? [],
+      defaults.hard_deny,
     ) +
     formatRulesForCritique(
       'environment',

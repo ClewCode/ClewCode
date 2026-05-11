@@ -8,6 +8,7 @@ import { notifyCompaction } from '../../services/api/promptCacheBreakDetection.j
 import {
   type CompactionResult,
   compactConversation,
+  ERROR_MESSAGE_EXTRA_USAGE_REQUIRED,
   ERROR_MESSAGE_INCOMPLETE_RESPONSE,
   ERROR_MESSAGE_NOT_ENOUGH_MESSAGES,
   ERROR_MESSAGE_USER_ABORT,
@@ -129,6 +130,8 @@ export const call: LocalCommandCall = async (args, context) => {
       throw new Error(ERROR_MESSAGE_NOT_ENOUGH_MESSAGES)
     } else if (hasExactErrorMessage(error, ERROR_MESSAGE_INCOMPLETE_RESPONSE)) {
       throw new Error(ERROR_MESSAGE_INCOMPLETE_RESPONSE)
+    } else if (hasExactErrorMessage(error, ERROR_MESSAGE_EXTRA_USAGE_REQUIRED)) {
+      throw new Error(ERROR_MESSAGE_EXTRA_USAGE_REQUIRED)
     } else {
       logError(error)
       throw new Error(`Error during compaction: ${error}`)

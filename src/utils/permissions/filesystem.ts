@@ -1049,18 +1049,19 @@ export function checkReadPermissionForTool(
   const pathsToCheck = getPathsForPermissionCheck(path)
 
   // 1. Defense-in-depth: Block UNC paths early (before other checks)
-  // This catches paths starting with \\ or // that could access network resources
-  // This may catch some UNC patterns not detected by containsVulnerableUncPath
-  for (const pathToCheck of pathsToCheck) {
-    if (pathToCheck.startsWith('\\\\') || pathToCheck.startsWith('//')) {
-      return {
-        behavior: 'ask',
-        message: `Claude requested permissions to read from ${path}, which appears to be a UNC path that could access network resources.`,
-        decisionReason: {
-          type: 'other',
-          reason: 'UNC path detected (defense-in-depth check)',
-        },
-      }
+  // This catches paths starting with \\ or // that could access network resources.
+  // Only check the ORIGINAL tool input — getPathsForPermissionCheck may also
+  // return resolved UNC forms for mapped network drives (e.g. Z:\project →
+  // \\server\share\project), which should NOT be blocked when the user
+  // explicitly granted access via the drive letter.
+  if (path.startsWith('\\\\') || path.startsWith('//')) {
+    return {
+      behavior: 'ask',
+      message: `Claude requested permissions to read from ${path}, which appears to be a UNC path that could access network resources.`,
+      decisionReason: {
+        type: 'other',
+        reason: 'UNC path detected (defense-in-depth check)',
+      },
     }
   }
 

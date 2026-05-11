@@ -1,3 +1,4 @@
+import { dirname } from 'path';
 import React, { useEffect, useState } from 'react';
 import type { CommandResultDisplay } from 'src/commands.js';
 import { logEvent } from 'src/services/analytics/index.js';
@@ -14,6 +15,27 @@ import { saveWorktreeState } from '../utils/sessionStorage.js';
 
 function recordWorktreeExit(): void {
   saveWorktreeState(null);
+}
+
+/**
+ * After a worktree is removed from disk, try to chdir into the original CWD.
+ * If that directory was the worktree itself (common for --worktree startup),
+ * it no longer exists — fall back to the parent of the worktree path.
+ * This prevents ENOENT from crashing the exit dialog.
+ */
+function chdirAfterWorktreeRemoval(
+  originalCwd: string,
+  worktreePath: string,
+): void {
+  try {
+    process.chdir(originalCwd);
+  } catch {
+    const parent = dirname(worktreePath);
+    process.chdir(parent);
+    setCwd(parent);
+    return;
+  }
+  setCwd(originalCwd);
 }
 type Props = {
   onDone: (result?: string, options?: {
@@ -52,8 +74,7 @@ export function WorktreeExitDialog({
         if (changeLines.length === 0 && count === 0) {
           setStatus('removing');
           void cleanupWorktree().then(() => {
-            process.chdir(worktreeSession.originalCwd);
-            setCwd(worktreeSession.originalCwd);
+            chdirAfterWorktreeRemoval(worktreeSession.originalCwd, worktreeSession.worktreePath);
             recordWorktreeExit();
             getPlansDirectory.cache.clear?.();
             setResultMessage('Worktree removed (no changes)');
@@ -136,8 +157,7 @@ export function WorktreeExitDialog({
       }
       try {
         await cleanupWorktree();
-        process.chdir(worktreeSession.originalCwd);
-        setCwd(worktreeSession.originalCwd);
+        chdirAfterWorktreeRemoval(worktreeSession.originalCwd, worktreeSession.worktreePath);
         recordWorktreeExit();
         getPlansDirectory.cache.clear?.();
       } catch (error) {
