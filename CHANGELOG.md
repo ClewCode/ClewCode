@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.137] - 2026-05-12
+
+### Added
+
+- **Bundled /commit skill**: New skill for Claude in Chrome compatibility with conventional commit messages.
+- **Per-model provider tracking**: ModelUsage now records which provider was used for each model. /stats displays the correct provider prefix per model.
+- **renderModelName() style parameter**: Supports short mode for model-only display (no provider prefix).
+
+### Fixed
+
+- **E18**: Backspace/Ctrl+Backspace swapped after Ctrl+G - reset Kitty keyboard protocol mode on alt-screen exit.
+- **E62**: /resume now always shows the picker dialog, preventing tab-complete from immediately resuming.
+- **E80**: Idle sub-agent summaries no longer fire every 30s. After 3 identical summaries, the interval extends to 5 minutes.
+- **E82**: claude.ai MCP connectors survive /clear - claudeai-proxy servers skip the needs-auth cache.
+- **E96**: Fork transcript no longer creates invalid transcripts with dangling tool_use blocks.
+- **/stats**: unknown model name now shows just the provider label instead of Provider: unknown.
+- **Status line**: Percentage no longer drops to 0% during streaming. Added max context window display.
+
+
+
 ## [2.1.136] - 2026-05-12
 
 ### Changed

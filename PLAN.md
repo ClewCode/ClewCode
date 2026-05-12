@@ -212,8 +212,8 @@ E1-E7, E11-E13, E17, E20-E22, E24-E25, E28-E29, E32-E34, E37, E43-E44, E46, E49-
 
 ### 🔧 High Priority
 
-**G1. MCP stdio servers receive CLAUDE_PROJECT_DIR** ✅ `src/services/mcp/client.ts` — already implemented via subprocessEnv
-**G2. Remote MCP reconnect retry on transient failures** ✅ — already implemented (D24)
+**G1. ✅ MCP stdio servers receive CLAUDE_PROJECT_DIR** ✅ `src/services/mcp/client.ts` — already implemented via subprocessEnv
+**G2. ✅ Remote MCP reconnect retry on transient failures** ✅ — already implemented (D24)
 **G3. MCP resources from disconnected servers lingering in @server** ❌
 **G4. MCP stdio unbounded memory growth (16 MB cap per SSE frame)** ❌
 
