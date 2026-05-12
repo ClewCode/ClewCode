@@ -236,7 +236,7 @@ E1-E7, E11-E13, E17, E20-E22, E24-E25, E28-E29, E32-E34, E37, E43-E44, E46, E49-
 **G16. Fixed task polling/fs.watch resurrection bug** ❌
 **G17. Fixed plugin dependency resolution stale count** ❌
 **G18. Fixed Insights Time-of-Day chart unparseable timestamp** ❌
-**G19. Fixed keybindings cmd/super/win modifier flagged unparseable** ❌
+**G19. ✅ Fixed keybindings cmd/super/win modifier flagged unparseable** ✅ `src/keybindings/validate.ts` — added `super` to validator check
 **G20. Fixed claude plugin update not preserving cross-plugin symlinks** ❌
 
 ### 📦 New Commands

@@ -111,7 +111,7 @@ function validateKeystroke(keystroke: string): KeybindingWarning | null {
     !parsed.ctrl &&
     !parsed.alt &&
     !parsed.shift &&
-    !parsed.meta
+    !parsed.meta && !parsed.super
   ) {
     return {
       type: 'parse_error',
