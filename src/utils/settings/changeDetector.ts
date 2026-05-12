@@ -1,5 +1,5 @@
 import chokidar, { type FSWatcher } from 'chokidar'
-import { stat } from 'fs/promises'
+import { realpath, stat } from 'fs/promises'
 import * as platformPath from 'path'
 import { getIsRemoteMode } from '../../bootstrap/state.js'
 import { registerCleanup } from '../cleanupRegistry.js'
@@ -194,9 +194,15 @@ async function getWatchTargets(): Promise<{
     if (source === 'flagSettings') {
       continue
     }
-    const path = getSettingsFilePathForSource(source)
+    let path = getSettingsFilePathForSource(source)
     if (!path) {
       continue
+    }
+    // Resolve symlinks so chokidar watches the actual file location.
+    try {
+      path = await realpath(path)
+    } catch {
+      // realpath fails if the file doesn't exist yet — that's fine
     }
 
     const dir = platformPath.dirname(path)

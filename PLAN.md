@@ -222,11 +222,11 @@ E1-E7, E11-E13, E17, E20-E22, E24-E25, E28-E29, E32-E34, E37, E43-E44, E46, E49-
 **G5. Added hook args: string[] field (exec form)** ❌
 **G6. Added hook continueOnBlock config option for PostToolUse** ❌
 **G7. Hook terminal access fixed** ❌
-**G8. Fixed settings hot-reload not detecting symlinked settings.json** ❌
+**G8. ✅ Fixed settings hot-reload not detecting symlinked settings.json** ✅ src/utils/settings/changeDetector.ts
 
 ### 🔧 Low Priority / Bugs
 
-**G9. Fixed autoAllowBashIfSandboxed with shell expansions ($VAR, $(cmd))** ❌
+**G9. Fixed autoAllowBashIfSandboxed with shell expansions ($VAR, $(cmd))** ✅ ✅ src/tools/BashTool/bashPermissions.ts
 **G10. Fixed Skill(name *) permission rules prefix match** ❌
 **G11. Fixed spurious "stream idle timeout" after completion** ❌
 **G12. Fixed silent exit 1 with 10+ MCP servers + unwritable cache** ❌

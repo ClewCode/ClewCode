@@ -1792,6 +1792,23 @@ export async function bashToolHasPermission(
     // fall through to ask if no deny matched — don't downgrade deny to ask.
     const earlyExit = checkEarlyExitDeny(input, appState.toolPermissionContext)
     if (earlyExit !== null) return earlyExit
+
+    // Commands with shell expansions ($VAR, $(cmd)) are blocked by default.
+    // When sandbox is enabled with autoAllowBashIfSandboxed, the sandbox
+    // provides sufficient containment — let auto-allow handle it.
+    if (
+      SandboxManager.isSandboxingEnabled() &&
+      SandboxManager.isAutoAllowBashIfSandboxedEnabled() &&
+      shouldUseSandbox(input)
+    ) {
+      const sandboxResult = checkSandboxAutoAllow(
+        input,
+        appState.toolPermissionContext,
+      )
+      if (sandboxResult.behavior !== 'passthrough') {
+        return sandboxResult
+      }
+    }
     const decisionReason: PermissionDecisionReason = {
       type: 'other' as const,
       reason: astResult.reason,
