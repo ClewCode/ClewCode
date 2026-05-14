@@ -1037,7 +1037,7 @@ export function PluginSettings(t0) {
   }
   let t27;
   if ($[67] !== activeTab || $[68] !== childSearchActive || $[69] !== t16 || $[70] !== t17 || $[71] !== t21 || $[72] !== t24 || $[73] !== t26) {
-    t27 = <Pane color="suggestion"><Tabs title="Plugins" selectedTab={activeTab} onTabChange={handleTabChange} color="suggestion" disableNavigation={childSearchActive} banner={t16}>{t17}{t21}{t24}{t26}</Tabs></Pane>;
+    t27 = <Pane color="suggestion"><Tabs title="Plugins" selectedTab={activeTab} onTabChange={handleTabChange} color="suggestion" disableNavigation={childSearchActive} navFromContent={!childSearchActive} banner={t16}>{t17}{t21}{t24}{t26}</Tabs></Pane>;
     $[67] = activeTab;
     $[68] = childSearchActive;
     $[69] = t16;

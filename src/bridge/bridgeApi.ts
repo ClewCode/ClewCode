@@ -33,6 +33,12 @@ type BridgeApiDeps = {
    * gate is tengu_sessions_elevated_auth_enforcement (see trustedDevice.ts).
    */
   getTrustedDeviceToken?: () => string | undefined
+  /**
+   * Called when the server rejects the trusted device token as stale
+   * (403 stale_session). Clears the stored token so subsequent requests
+   * don't re-send it, and the user is prompted to /login for a fresh one.
+   */
+  clearTrustedDeviceToken?: () => void
 }
 
 const BETA_HEADER = 'environments-2025-11-01'
@@ -138,6 +144,9 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
     return response
   }
 
+  const handleApiErrorStatus = (status: number, data: unknown, context: string) =>
+    handleErrorStatus(status, data, context, deps.clearTrustedDeviceToken)
+
   return {
     async registerBridgeEnvironment(
       config: BridgeConfig,
@@ -185,7 +194,7 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
         'Registration',
       )
 
-      handleErrorStatus(response.status, response.data, 'Registration')
+      handleApiErrorStatus(response.status, response.data, 'Registration')
       debug(
         `[bridge:api] POST /v1/environments/bridge -> ${response.status} environment_id=${response.data.environment_id}`,
       )
@@ -223,7 +232,7 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
         },
       )
 
-      handleErrorStatus(response.status, response.data, 'Poll')
+      handleApiErrorStatus(response.status, response.data, 'Poll')
 
       // Empty body or null = no work available
       if (!response.data) {
@@ -266,7 +275,7 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
         },
       )
 
-      handleErrorStatus(response.status, response.data, 'Acknowledge')
+      handleApiErrorStatus(response.status, response.data, 'Acknowledge')
       debug(`[bridge:api] POST .../work/${workId}/ack -> ${response.status}`)
     },
 
@@ -294,7 +303,7 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
         'StopWork',
       )
 
-      handleErrorStatus(response.status, response.data, 'StopWork')
+      handleApiErrorStatus(response.status, response.data, 'StopWork')
       debug(`[bridge:api] POST .../work/${workId}/stop -> ${response.status}`)
     },
 
@@ -316,7 +325,7 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
         'Deregister',
       )
 
-      handleErrorStatus(response.status, response.data, 'Deregister')
+      handleApiErrorStatus(response.status, response.data, 'Deregister')
       debug(
         `[bridge:api] DELETE /v1/environments/bridge/${environmentId} -> ${response.status}`,
       )
@@ -349,7 +358,7 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
         return
       }
 
-      handleErrorStatus(response.status, response.data, 'ArchiveSession')
+      handleApiErrorStatus(response.status, response.data, 'ArchiveSession')
       debug(
         `[bridge:api] POST /v1/sessions/${sessionId}/archive -> ${response.status}`,
       )
@@ -380,7 +389,7 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
         'ReconnectSession',
       )
 
-      handleErrorStatus(response.status, response.data, 'ReconnectSession')
+      handleApiErrorStatus(response.status, response.data, 'ReconnectSession')
       debug(`[bridge:api] POST .../bridge/reconnect -> ${response.status}`)
     },
 
@@ -409,7 +418,7 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
         },
       )
 
-      handleErrorStatus(response.status, response.data, 'Heartbeat')
+      handleApiErrorStatus(response.status, response.data, 'Heartbeat')
       debug(
         `[bridge:api] POST .../work/${workId}/heartbeat -> ${response.status} lease_extended=${response.data.lease_extended} state=${response.data.state}`,
       )
@@ -455,6 +464,7 @@ function handleErrorStatus(
   status: number,
   data: unknown,
   context: string,
+  clearTrustedDeviceToken?: () => void,
 ): void {
   if (status === 200 || status === 204) {
     return
@@ -469,9 +479,16 @@ function handleErrorStatus(
         errorType,
       )
     case 403:
+      // Clear stale trusted device token so subsequent requests don't
+      // re-send it — the user needs to run /login for a fresh token.
+      if (errorType === 'stale_session' && clearTrustedDeviceToken) {
+        clearTrustedDeviceToken()
+      }
       throw new BridgeFatalError(
         isExpiredErrorType(errorType)
-          ? 'Remote Control session has expired. Please restart with `claude remote-control` or /remote-control.'
+          ? errorType === 'stale_session'
+            ? `Remote Control trusted device session expired. Run /login to re-authenticate.`
+            : 'Remote Control session has expired. Please restart with `claude remote-control` or /remote-control.'
           : `${context}: Access denied (403)${detail ? `: ${detail}` : ''}. Check your organization permissions.`,
         403,
         errorType,
@@ -504,7 +521,11 @@ export function isExpiredErrorType(errorType: string | undefined): boolean {
   if (!errorType) {
     return false
   }
-  return errorType.includes('expired') || errorType.includes('lifetime')
+  return (
+    errorType.includes('expired') ||
+    errorType.includes('lifetime') ||
+    errorType.includes('stale') // stale_session → trusted device token needs /login
+  )
 }
 
 /**

@@ -76,6 +76,9 @@ export function getErrorGuidance(error: PluginError): string | null {
     case 'marketplace-not-found':
       return error.availableMarketplaces.length > 0 ? `Available marketplaces: ${error.availableMarketplaces.join(', ')}` : 'Add the marketplace first using /plugin marketplace add';
     case 'mcp-config-invalid':
+      if (error.validationError?.startsWith('Missing environment variables')) {
+        return `Set the missing environment variables or provide defaults with \${VAR:-default}`;
+      }
       return 'Check MCP server configuration in .mcp.json or manifest';
     case 'mcp-server-suppressed-duplicate':
       {

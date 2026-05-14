@@ -17,6 +17,7 @@ import {
   getLastAssistantMessage,
 } from '../../utils/messages.js'
 import { getInitialSettings } from '../../utils/settings/settings.js'
+import { DEFAULT_OUTPUT_STYLE_NAME } from '../../constants/outputStyles.js'
 import { isTeammate } from '../../utils/teammate.js'
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js'
 import {
@@ -110,6 +111,11 @@ export function getSuggestionSuppressReason(appState: AppState): string | null {
     return 'pending_permission'
   if (appState.elicitation.queue.length > 0) return 'elicitation_active'
   if (appState.toolPermissionContext.mode === 'plan') return 'plan_mode'
+  // When a non-default output style (e.g. Explanatory, Learning) is active,
+  // the model already gets style-specific instructions in its system prompt.
+  // Prompt suggestions would compete with / contradict those instructions.
+  const outputStyle = getInitialSettings()?.outputStyle
+  if (outputStyle && outputStyle !== DEFAULT_OUTPUT_STYLE_NAME) return 'output_style'
   if (
     process.env.USER_TYPE === 'external' &&
     currentLimits.status !== 'allowed'

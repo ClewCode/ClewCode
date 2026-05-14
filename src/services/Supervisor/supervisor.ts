@@ -37,6 +37,14 @@ const PIPE_NAME = process.platform === 'win32'
 // How long to wait before auto-exiting after last session finishes
 const IDLE_EXIT_MS = 60 * 60 * 1000 // 1 hour
 
+// How long to wait for a spawned session to become healthy before
+// considering it unhealthy (milliseconds)
+const SPAWN_HEALTH_TIMEOUT_MS = 5_000
+
+// Auto-retire sessions that have been idle (completed/stopped/failed)
+// with no attached process for this duration
+const IDLE_SESSION_RETIRE_MS = 5 * 60 * 1000 // 5 minutes
+
 // ─── Types ────────────────────────────────────────────────────
 
 interface SessionEntry {
@@ -197,6 +205,25 @@ function spawnSessionProcess(entry: SessionEntry): ChildProcess {
     }
     childProcesses.delete(entry.id)
     checkIdleExit()
+  })
+
+  // Health check: if the process exits very soon after spawn (before the
+  // health timeout), it was unhealthy. Mark as failed so callers can
+  // fall back to a fresh spawn rather than hanging on a dead worker.
+  const healthTimer = setTimeout(() => {
+    // Process survived long enough — consider it healthy
+  }, SPAWN_HEALTH_TIMEOUT_MS)
+  child.once('exit', (code) => {
+    clearTimeout(healthTimer)
+    if (code !== null && Date.now() - entry.startedAt < SPAWN_HEALTH_TIMEOUT_MS) {
+      log(`Session ${shortId} exited early (code ${code}) — marking as failed for health fallback`)
+      const session = roster.sessions[entry.id]
+      if (session) {
+        session.status = 'failed'
+        session.updatedAt = Date.now()
+        saveRoster()
+      }
+    }
   })
 
   return child
@@ -594,6 +621,29 @@ async function start(): Promise<void> {
 
   // Start idle timer
   checkIdleExit()
+
+  // Periodically retire idle (completed/stopped/failed) sessions that
+  // have no running process and have been idle for >5 minutes.
+  // Cleans up empty placeholder sessions left over from ← on fresh REPL.
+  setInterval(() => {
+    const now = Date.now()
+    let retired = 0
+    for (const [id, entry] of Object.entries(roster.sessions)) {
+      if (entry.status === 'running') continue
+      const child = childProcesses.get(id)
+      if (child && !child.killed && child.exitCode === null) continue
+      if (now - entry.updatedAt > IDLE_SESSION_RETIRE_MS) {
+        delete roster.sessions[id]
+        childProcesses.delete(id)
+        retired++
+        log(`Retired idle session ${id.slice(0, 8)} (${entry.status}, idle ${Math.round((now - entry.updatedAt) / 1000)}s)`)
+      }
+    }
+    if (retired > 0) {
+      saveRoster()
+      log(`Retired ${retired} idle session(s)`)
+    }
+  }, IDLE_SESSION_RETIRE_MS)
 
   // Handle process signals
   process.on('SIGTERM', () => {

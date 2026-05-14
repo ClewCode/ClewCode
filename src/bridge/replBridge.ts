@@ -30,7 +30,10 @@ import {
 } from './workSecret.js'
 import { toCompatSessionId, toInfraSessionId } from './sessionIdCompat.js'
 import { updateSessionBridgeId } from '../utils/concurrentSessions.js'
-import { getTrustedDeviceToken } from './trustedDevice.js'
+import {
+  clearTrustedDeviceToken,
+  getTrustedDeviceToken,
+} from './trustedDevice.js'
 import { HybridTransport } from '../cli/transports/HybridTransport.js'
 import {
   type ReplBridgeTransport,
@@ -323,6 +326,7 @@ export async function initBridgeCore(
     onDebug: logForDebugging,
     onAuth401,
     getTrustedDeviceToken,
+    clearTrustedDeviceToken,
   })
   // Ant-only: interpose so /bridge-kick can inject poll/register/heartbeat
   // failures. Zero cost in external builds (rawApi passes through unchanged).

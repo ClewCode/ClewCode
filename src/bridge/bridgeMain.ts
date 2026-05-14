@@ -36,7 +36,10 @@ import { createTokenRefreshScheduler } from './jwtUtils.js'
 import { getPollIntervalConfig } from './pollConfig.js'
 import { toCompatSessionId, toInfraSessionId } from './sessionIdCompat.js'
 import { createSessionSpawner, safeFilenameId } from './sessionRunner.js'
-import { getTrustedDeviceToken } from './trustedDevice.js'
+import {
+  clearTrustedDeviceToken,
+  getTrustedDeviceToken,
+} from './trustedDevice.js'
 import {
   BRIDGE_LOGIN_ERROR,
   type BridgeApiClient,
@@ -2361,6 +2364,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     onDebug: logForDebugging,
     onAuth401: handleOAuth401Error,
     getTrustedDeviceToken,
+    clearTrustedDeviceToken,
   })
 
   // When resuming a session via --session-id, fetch it to learn its
@@ -2911,6 +2915,7 @@ export async function runBridgeHeadless(
     onDebug: log,
     onAuth401: opts.onAuth401,
     getTrustedDeviceToken,
+    clearTrustedDeviceToken,
   })
 
   let environmentId: string

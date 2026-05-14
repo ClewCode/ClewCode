@@ -567,7 +567,40 @@ export async function gitClone(
   const cloneStarted = performance.now();
   const cloneResult = await execFileNoThrow(gitExe(), args);
 
-  if (cloneResult.code !== 0) {
+  // When both ref and sha are specified, the ref may no longer exist upstream
+  // (deleted branch, removed tag). Retry without --branch since sha pins the
+  // exact commit — the ref is only needed for positional convenience.
+  if (cloneResult.code !== 0 && ref && sha) {
+    logForDebugging(
+      `Clone with branch "${ref}" failed for ${gitUrl}, retrying without --branch (sha ${sha} pins the target)`,
+    );
+    const fallbackArgs = [
+      "clone",
+      "--depth",
+      "1",
+      "--recurse-submodules",
+      "--shallow-submodules",
+      "--no-checkout",
+      gitUrl,
+      targetPath,
+    ];
+    const fallbackResult = await execFileNoThrow(gitExe(), fallbackArgs);
+    if (fallbackResult.code === 0) {
+      // Fallback succeeded — proceed to fetch+checkout sha below
+      // (the clone started at HEAD of default branch; the sha fetch step handles the rest)
+    } else {
+      logPluginFetch(
+        "plugin_clone",
+        gitUrl,
+        "failure",
+        performance.now() - cloneStarted,
+        classifyFetchError(fallbackResult.stderr),
+      );
+      throw new Error(
+        `Failed to clone repository (with and without --branch): ${fallbackResult.stderr}`,
+      );
+    }
+  } else if (cloneResult.code !== 0) {
     logPluginFetch(
       "plugin_clone",
       gitUrl,
@@ -675,8 +708,11 @@ async function installFromGitHub(
       `Invalid GitHub repository format: ${repo}. Expected format: owner/repo`,
     );
   }
-  // Use HTTPS for CCR (no SSH keys), SSH for normal CLI
-  const gitUrl = isEnvTruthy(process.env.CLAUDE_CODE_REMOTE)
+  // Use HTTPS for CCR (no SSH keys) or when PREFER_HTTPS is set, SSH for normal CLI
+  const preferHttps =
+    isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) ||
+    isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS)
+  const gitUrl = preferHttps
     ? `https://github.com/${repo}.git`
     : `git@github.com:${repo}.git`;
   return installFromGit(gitUrl, targetPath, ref, sha);
@@ -690,7 +726,10 @@ async function installFromGitHub(
  */
 function resolveGitSubdirUrl(url: string): string {
   if (/^[a-zA-Z0-9-_.]+\/[a-zA-Z0-9-_.]+$/.test(url)) {
-    return isEnvTruthy(process.env.CLAUDE_CODE_REMOTE)
+    const preferHttps =
+      isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) ||
+      isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS)
+    return preferHttps
       ? `https://github.com/${url}.git`
       : `git@github.com:${url}.git`;
   }
@@ -751,7 +790,29 @@ export async function installFromGitSubdir(
   cloneArgs.push(gitUrl, cloneDir);
 
   const cloneResult = await execFileNoThrow(gitExe(), cloneArgs);
-  if (cloneResult.code !== 0) {
+  // When both ref and sha are specified, the ref may no longer exist upstream.
+  // Retry without --branch since sha pins the exact commit.
+  if (cloneResult.code !== 0 && ref && sha) {
+    logForDebugging(
+      `git-subdir clone with branch "${ref}" failed for ${gitUrl}, retrying without --branch (sha ${sha} pins the target)`,
+    );
+    const fallbackArgs = [
+      "clone",
+      "--depth",
+      "1",
+      "--filter=tree:0",
+      "--no-checkout",
+      gitUrl,
+      cloneDir,
+    ];
+    const fallbackResult = await execFileNoThrow(gitExe(), fallbackArgs);
+    if (fallbackResult.code !== 0) {
+      throw new Error(
+        `Failed to clone repository for git-subdir source (with and without --branch): ${fallbackResult.stderr}`,
+      );
+    }
+    // Fallback succeeded — proceed with sparse-checkout + sha fetch below
+  } else if (cloneResult.code !== 0) {
     throw new Error(
       `Failed to clone repository for git-subdir source: ${cloneResult.stderr}`,
     );

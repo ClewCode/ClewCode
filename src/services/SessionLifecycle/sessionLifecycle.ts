@@ -103,12 +103,11 @@ export function isProcessEffectivelyAlive(
     return true
   }
 
-  // If task is completed/failed/stopped and idle for > 1 hour, process may have exited
+  // If task is completed/failed/killed, consider it no longer alive regardless
+  // of background shell processes. This ensures agents with background shells
+  // still move to the Completed state in the agent view.
   if (task && (task.status === 'completed' || task.status === 'failed' || task.status === 'killed')) {
-    const idleTime = Date.now() - lifecycle.lastActivityAt
-    if (idleTime > IDLE_PROCESS_TIMEOUT_MS && lifecycle.lastAttachedAt < lifecycle.lastActivityAt) {
-      return false
-    }
+    return false
   }
 
   return true

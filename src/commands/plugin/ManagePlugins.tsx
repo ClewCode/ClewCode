@@ -34,6 +34,7 @@ import { clearAllCaches } from '../../utils/plugins/cacheUtils.js';
 import { loadInstalledPluginsV2 } from '../../utils/plugins/installedPluginsManager.js';
 import { getMarketplace } from '../../utils/plugins/marketplaceManager.js';
 import { isMcpbSource, loadMcpbFile, type McpbNeedsConfigResult, type UserConfigValues } from '../../utils/plugins/mcpbHandler.js';
+import { loadPluginMcpServers } from '../../utils/plugins/mcpPluginIntegration.js';
 import { getPluginDataDirSize, pluginDataDirPath } from '../../utils/plugins/pluginDirectories.js';
 import { getFlaggedPlugins, markFlaggedPluginsSeen, removeFlaggedPlugin } from '../../utils/plugins/pluginFlagging.js';
 import { type PersistablePluginScope, parsePluginIdentifier } from '../../utils/plugins/pluginIdentifier.js';
@@ -311,6 +312,15 @@ function PluginComponentsDisplay({
           const mcpServersList = [];
           if (plugin.mcpServers) {
             mcpServersList.push(Object.keys(plugin.mcpServers));
+          } else {
+            // Lazily load MCP servers from .mcp.json / manifest if not yet
+            // populated (loadAllPlugins doesn't fill this — refreshActivePlugins
+            // does, but it may not have run yet when this component mounts).
+            const servers = await loadPluginMcpServers(plugin, []);
+            if (servers) {
+              plugin.mcpServers = servers;
+              mcpServersList.push(Object.keys(servers));
+            }
           }
           if (pluginEntry.mcpServers) {
             mcpServersList.push(pluginEntry.mcpServers);
