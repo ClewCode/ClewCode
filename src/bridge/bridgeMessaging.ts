@@ -240,6 +240,11 @@ const OUTBOUND_ONLY_ERROR =
  * Previously a closure inside initBridgeCore's onWorkReceived; now takes
  * collaborators as params so both cores can use it.
  */
+
+// Tracks the last model set per session ID to suppress redundant set_model
+// requests that would inject duplicate /model breadcrumbs into the transcript.
+const lastSetModelBySession = new Map<string, string | undefined>()
+
 export function handleServerControlRequest(
   request: SDKControlRequest,
   handlers: ServerControlRequestHandlers,
@@ -303,8 +308,13 @@ export function handleServerControlRequest(
       }
       break
 
-    case 'set_model':
-      onSetModel?.(request.request.model)
+    case 'set_model': {
+      const newModel = request.request.model
+      const lastModel = lastSetModelBySession.get(sessionId)
+      if (newModel !== lastModel) {
+        lastSetModelBySession.set(sessionId, newModel)
+        onSetModel?.(newModel)
+      }
       response = {
         type: 'control_response',
         response: {
@@ -313,6 +323,7 @@ export function handleServerControlRequest(
         },
       }
       break
+    }
 
     case 'set_max_thinking_tokens':
       onSetMaxThinkingTokens?.(request.request.max_thinking_tokens)

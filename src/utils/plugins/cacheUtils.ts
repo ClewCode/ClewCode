@@ -140,9 +140,16 @@ function getInstalledVersionPaths(): Set<string> | null {
     const diskData = loadInstalledPluginsFromDisk()
     for (const installations of Object.values(diskData.plugins)) {
       for (const entry of installations) {
-        paths.add(entry.installPath)
+        if (entry.installPath) {
+          paths.add(entry.installPath)
+        }
       }
     }
+    // When no installation metadata is present, returning an empty set would
+    // cause all cached versions to be treated as orphans and eventually deleted.
+    // Return null to skip cleanup entirely — safer to leave stale cache dirs
+    // than to delete an active plugin version whose metadata is missing.
+    if (paths.size === 0) return null
     return paths
   } catch (error) {
     logForDebugging(`Failed to load installed plugins: ${error}`)

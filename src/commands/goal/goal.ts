@@ -3,8 +3,13 @@ import type {
   LocalJSXCommandContext,
   LocalJSXCommandOnDone,
 } from '../../types/command.js'
-import { getSessionGoal, setSessionGoal } from '../../utils/sessionGoalState.js'
+import {
+  getFullGoalState,
+  setFullGoalState,
+  type GoalState,
+} from '../../utils/sessionGoalState.js'
 import { getSettings_DEPRECATED } from '../../utils/settings/settings.js'
+import { parseGoalBounds } from '../../services/goal/goalEvaluator.js'
 
 /**
  * /goal command — sets a session goal that is shown in the footer status line.
@@ -25,7 +30,7 @@ export async function call(
   // Check if hooks are disabled — goal turn tracking depends on hooks for
   // counting, and a missing hook can cause the indicator to hang instead of
   // resolving. Show a clear message rather than silently stalling.
-  if (trimmed) {
+  if (trimmed && trimmed.toLowerCase() !== 'clear') {
     const settings = getSettings_DEPRECATED()
     if (settings.disableAllHooks || settings.allowManagedHooksOnly) {
       onDone(
@@ -42,6 +47,7 @@ export async function call(
   if (!trimmed) {
     const currentGoal = state.sessionGoal
     if (currentGoal) {
+      const goalState = getFullGoalState()
       const elapsed = state.sessionGoalStartTime
         ? Math.floor((Date.now() - state.sessionGoalStartTime) / 1000)
         : 0
@@ -49,8 +55,19 @@ export async function call(
       const elapsedStr = elapsed > 0
         ? `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`
         : '0s'
+      const tokens = goalState?.evalTokens ?? 0
+      const tokenStr = tokens > 0
+        ? ` · Eval tokens: ${tokens.toLocaleString()}`
+        : ''
+      const reason = goalState?.lastReason
+        ? `\nLast check: ${goalState.lastReason}`
+        : ''
+      const bounds: string[] = []
+      if (goalState?.maxTurns) bounds.push(`${goalState.maxTurns} turns`)
+      if (goalState?.maxMinutes) bounds.push(`${goalState.maxMinutes} min`)
+      const boundsStr = bounds.length > 0 ? ` [limits: ${bounds.join(', ')}]` : ''
       onDone(
-        `Goal: ${currentGoal}\nElapsed: ${elapsedStr} · Turns: ${turns}`,
+        `Goal: ${currentGoal}${boundsStr}\nElapsed: ${elapsedStr} · Turns: ${turns}${tokenStr}${reason}`,
         { display: 'system' },
       )
     } else {
@@ -67,13 +84,28 @@ export async function call(
       sessionGoalStartTime: undefined,
       sessionGoalTurnCount: undefined,
     }))
-    setSessionGoal(null)
+    setFullGoalState(null)
 
     onDone('Session goal cleared.', { display: 'system' })
     return null
   }
 
+  // Parse goal condition and bounds
+  const { condition, maxTurns, maxMinutes } = parseGoalBounds(trimmed)
+
   // Set goal
+  const goalState: GoalState = {
+    goal: trimmed,
+    condition,
+    maxTurns,
+    maxMinutes,
+    setAt: Date.now(),
+    turnCount: 0,
+    evalTokens: 0,
+    lastReason: undefined,
+    achieved: false,
+  }
+
   context.setAppState(prev => ({
     ...prev,
     sessionGoal: trimmed,
@@ -83,8 +115,12 @@ export async function call(
       ? { ...prev.standaloneAgentContext }
       : undefined,
   }))
-  setSessionGoal(trimmed) // sync to singleton so system prompt can read it
+  setFullGoalState(goalState)
 
-  onDone(`Goal set: ${trimmed}`, { display: 'system' })
+  const bounds: string[] = []
+  if (maxTurns) bounds.push(`stop after ${maxTurns} turns`)
+  if (maxMinutes) bounds.push(`stop after ${maxMinutes} min`)
+  const boundsStr = bounds.length > 0 ? ` (${bounds.join(', ')})` : ''
+  onDone(`Goal set: ${trimmed}${boundsStr}`, { display: 'system' })
   return null
 }

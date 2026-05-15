@@ -7,6 +7,7 @@ import * as React from 'react';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
 import { useAppState, useSetAppState } from 'src/state/AppState.js';
+import { getClaudeConfigHomeDir } from '../utils/envUtils.js';
 import type { PermissionMode } from 'src/utils/permissions/PermissionMode.js';
 import { getKairosActive, getMainThreadAgentType, getOriginalCwd, getSdkBetas, getSessionId } from '../bootstrap/state.js';
 import { DEFAULT_OUTPUT_STYLE_NAME } from '../constants/outputStyles.js';
@@ -150,19 +151,26 @@ export function getLastAssistantMessageId(messages: Message[]): string | null {
 
 // ─── Claude-HUD-inspired helpers ───────────────────────────────────────────
 
-/** Visual context bar like claude-hud's coloredBar */
+/** Visual context bar like claude-hud's coloredBar (Smooth fractional version) */
 function coloredBar(percent: number, width: number = 10): string {
   const safePercent = Math.min(100, Math.max(0, percent));
-  const filled = Math.round((safePercent / 100) * width);
-  const empty = width - filled;
+  const filledWidth = (safePercent / 100) * width;
+  const fullBlocks = Math.floor(filledWidth);
+  const partialBlocks = [' ', '▏', '▎', '▍', '▌', '▋', '▊', '▉', '█'];
+  const partialChar = partialBlocks[Math.floor((filledWidth % 1) * 8)] || '';
 
-  let colorFn: (text: string) => string;
-  if (percent > 85) colorFn = chalk.hex('#ff4444');       // red
-  else if (percent > 70) colorFn = chalk.hex('#ffaa00');  // yellow/warning
-  else colorFn = chalk.white;                              // white
+  const emptyWidth = width - fullBlocks - (partialChar.trim() ? 1 : 0);
 
-  const emptyFn = chalk.hex('#555555');
-  return colorFn('█'.repeat(filled)) + emptyFn('░'.repeat(empty));
+  let color: string;
+  if (percent > 90) color = '#FF0055';      // Neon Red (Critical)
+  else if (percent > 75) color = '#FFCC00'; // Cyber Amber (Warning)
+  else if (percent > 50) color = '#00CCFF'; // Sky Blue (Moderate)
+  else color = '#00FFCC';                    // Electric Teal (Healthy)
+
+  const filledPart = '█'.repeat(fullBlocks) + (fullBlocks < width ? partialChar : '');
+  const emptyPart = '░'.repeat(Math.max(0, emptyWidth));
+
+  return chalk.hex(color)(filledPart) + chalk.hex('#2A2A2A')(emptyPart);
 }
 
 interface ToolActivity {
@@ -292,7 +300,7 @@ function countClaudeFiles(cwd: string): number {
     dir = dirname(dir);
   }
   addIfExists(join(dir, 'CLAUDE.md'));
-  addIfExists(join(homedir(), '.claude', 'CLAUDE.md'));
+  addIfExists(join(getClaudeConfigHomeDir(), 'CLAUDE.md'));
   return seen.size;
 }
 

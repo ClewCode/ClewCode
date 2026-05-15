@@ -37,6 +37,7 @@ import {
 import type { SystemPrompt } from '../utils/systemPromptType.js'
 import { getTaskListId, listTasks } from '../utils/tasks.js'
 import { getAgentName, getTeamName, isTeammate } from '../utils/teammate.js'
+import { getFullGoalState, updateGoalState } from '../utils/sessionGoalState.js'
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const extractMemoriesModule = feature('EXTRACT_MEMORIES')
@@ -47,6 +48,9 @@ const jobClassifierModule = feature('TEMPLATES')
   : null
 
 /* eslint-enable @typescript-eslint/no-require-imports */
+
+// Goal evaluator is always enabled — loaded eagerly for clean imports
+import { evaluateGoal } from '../services/goal/goalEvaluator.js'
 
 import type { QuerySource } from '../constants/querySource.js'
 import { executeAutoDream } from '../services/autoDream/autoDream.js'
@@ -448,6 +452,54 @@ export async function* handleStopHooks(
         return {
           blockingErrors: teammateBlockingErrors,
           preventContinuation: false,
+        }
+      }
+    }
+
+    // Goal evaluator: check if the active session goal is met
+    // Only runs on main thread (not subagents) and when goal is active
+    if (!toolUseContext.agentId && querySource.startsWith('repl_main_thread')) {
+      const goalState = getFullGoalState()
+      if (goalState && goalState.goal && !goalState.achieved) {
+        const allMessages = [...messagesForQuery, ...assistantMessages]
+        const turnCount = toolUseContext.getAppState().sessionGoalTurnCount ?? 0
+        const startTime = goalState.setAt ?? Date.now()
+
+        try {
+          const result = await evaluateGoal(
+            goalState.condition || goalState.goal,
+            allMessages,
+            turnCount,
+            startTime,
+            goalState.maxTurns,
+            goalState.maxMinutes,
+          )
+
+          // Update goal state with evaluation results
+          updateGoalState({
+            turnCount,
+            evalTokens: (goalState.evalTokens ?? 0) + result.inputTokens + result.outputTokens,
+            lastReason: result.reason,
+          })
+
+          if (result.met) {
+            // Goal achieved — record and let session end naturally
+            updateGoalState({ achieved: true, endedAt: Date.now() })
+            logForDebugging(`[goal] achieved: ${result.reason}`)
+            yield createSystemMessage(
+              `◎ Goal achieved: ${result.reason}`,
+              'info',
+            )
+          } else {
+            // Goal not met — inject nudge to continue working
+            logForDebugging(`[goal] not met: ${result.reason}`)
+            yield createSystemMessage(
+              `◎ /goal active · ${result.reason}`,
+              'info',
+            )
+          }
+        } catch (error) {
+          logForDebugging(`[goal] evaluator error: ${errorMessage(error)}`, { level: 'error' })
         }
       }
     }

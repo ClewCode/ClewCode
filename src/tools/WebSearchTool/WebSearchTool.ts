@@ -3,6 +3,7 @@ import type {
   BetaWebSearchTool20250305,
 } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs'
 import { getAPIProvider } from 'src/utils/model/providers.js'
+import { isAnthropicProvider } from 'src/utils/model/providers.js'
 import type { PermissionResult } from 'src/utils/permissions/PermissionResult.js'
 import { z } from 'zod/v4'
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js'
@@ -174,6 +175,60 @@ function makeOutputFromSearchResponse(
   }
 }
 
+/**
+ * Direct search fallback for non-Anthropic providers.
+ * Skips the Anthropic server-side web_search model call and goes
+ * straight to Tavily/Brave/Serper/DuckDuckGo.
+ */
+async function directSearchFallback(
+  query: string,
+  startTime: number,
+  onProgress?: any,
+): Promise<{ data: Output }> {
+  const fallbackProvider = selectBestDirectProvider()
+
+  if (onProgress) {
+    onProgress({
+      toolUseID: 'search-direct',
+      data: { type: 'query_update', query: `[${fallbackProvider}] ${query}` },
+    })
+  }
+
+  const response = await searchWithProvider(fallbackProvider, query, { num: 10 })
+
+  if (onProgress) {
+    onProgress({
+      toolUseID: 'search-direct-results',
+      data: {
+        type: 'search_results_received',
+        resultCount: response.results.length,
+        query: `[${fallbackProvider}] ${query}`,
+      },
+    })
+  }
+
+  const durationSeconds = (performance.now() - startTime) / 1000
+  const results: (SearchResult | string)[] = []
+
+  if (response.results.length > 0) {
+    results.push({
+      tool_use_id: `direct-${fallbackProvider}`,
+      content: response.results.map(r => ({
+        title: r.title,
+        url: r.url,
+      })),
+    })
+  }
+
+  return {
+    data: {
+      query,
+      results,
+      durationSeconds,
+    },
+  }
+}
+
 export const WebSearchTool = buildTool({
   name: WEB_SEARCH_TOOL_NAME,
   searchHint: 'search the web for current information',
@@ -277,6 +332,16 @@ export const WebSearchTool = buildTool({
   async call(input, context, _canUseTool, _parentMessage, onProgress) {
     const startTime = performance.now()
     const { query } = input
+
+    // For non-Anthropic providers (OpenAI, Google, OpenRouter, DeepSeek,
+    // OpenCode, KiloCode, Ollama, etc.), the Anthropic server-side
+    // web_search_20250305 tool is not supported. Skip directly to the
+    // direct-search fallback instead of making an expensive model API
+    // call that will inevitably fail or hang.
+    if (!isAnthropicProvider()) {
+      return directSearchFallback(query, startTime, onProgress)
+    }
+
     const userMessage = createUserMessage({
       content: 'Perform a web search for the query: ' + query,
     })

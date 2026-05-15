@@ -108,6 +108,9 @@ export const FileWriteTool = buildTool({
   async prompt() {
     return getWriteToolDescription()
   },
+  isConcurrencySafe() {
+    return true
+  },
   renderToolUseMessage,
   isResultTruncated,
   get inputSchema(): InputSchema {

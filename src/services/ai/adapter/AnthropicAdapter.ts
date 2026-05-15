@@ -419,7 +419,12 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
         if (toolCalls.length > 0) {
           openAIMessage.tool_calls = toolCalls
         }
-        if (reasoningParts.length > 0) {
+        // Prefer raw reasoning_content preserved from prior API responses
+        // (some providers like Xiaomi require it passed back unchanged)
+        const rawReasoning = (m as any).reasoning_content
+        if (typeof rawReasoning === 'string' && rawReasoning.length > 0) {
+          openAIMessage.reasoning_content = rawReasoning
+        } else if (reasoningParts.length > 0) {
           openAIMessage.reasoning_content = reasoningParts.join('')
         }
       }
@@ -536,6 +541,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     let activeIndex: number | null = null
     let sentMessageDelta = false
     let hasStartedThinkingBlock = false
+    let streamUsage: { prompt_tokens?: number; completion_tokens?: number } | null = null
 
     try {
     for await (const chunk of stream) {
@@ -556,6 +562,12 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       // Tool calls arrived as full array (non-streaming tool mode) — emit start/delta/stop
       if (finishReason === 'tool_calls' && !chunk.choices?.[0]?.delta?.tool_calls) {
         // Handled below via usage / message_delta
+      }
+
+      // Capture usage from the final streaming chunk (emitted by
+      // stream_options: { include_usage: true })
+      if (chunk.usage) {
+        streamUsage = chunk.usage
       }
 
       if (!chunk.choices?.[0]?.delta) continue
@@ -654,7 +666,10 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       yield {
         type: 'message_delta',
         delta: { stop_reason: 'end_turn' },
-        usage: { output_tokens: 0 },
+        usage: {
+          input_tokens: streamUsage?.prompt_tokens ?? 0,
+          output_tokens: streamUsage?.completion_tokens ?? 0,
+        },
       }
     }
     yield { type: 'message_stop' }

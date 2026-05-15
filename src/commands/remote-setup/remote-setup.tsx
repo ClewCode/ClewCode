@@ -9,7 +9,7 @@ import { logEvent, type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPAT
 import type { LocalJSXCommandOnDone } from '../../types/command.js';
 import { openBrowser } from '../../utils/browser.js';
 import { getGhAuthStatus } from '../../utils/github/ghAuthStatus.js';
-import { createDefaultEnvironment, getCodeWebUrl, type ImportTokenError, importGithubToken, isSignedIn, RedactedGithubToken } from './api.js';
+import { createDefaultEnvironment, getCodeWebUrl, hasExistingEnvironment, type ImportTokenError, importGithubToken, isSignedIn, RedactedGithubToken } from './api.js';
 type CheckResult = {
   status: 'not_signed_in';
 } | {
@@ -76,6 +76,7 @@ type Step = {
 } | {
   name: 'confirm';
   token: RedactedGithubToken;
+  hasExistingEnv: boolean;
 } | {
   name: 'uploading';
 };
@@ -109,10 +110,14 @@ function Web({
             return;
           }
         case 'has_gh_token':
-          setStep({
-            name: 'confirm',
-            token: result.token
-          });
+          {
+            const existingEnv = await hasExistingEnvironment();
+            setStep({
+              name: 'confirm',
+              token: result.token,
+              hasExistingEnv: existingEnv
+            });
+          }
       }
     });
     // onDone is stable across renders; intentionally not in deps.
@@ -158,6 +163,13 @@ function Web({
   const token = step.token;
   return <Dialog title="Connect Claude on the web to GitHub?" onCancel={handleCancel} hideInputGuide>
       <Box flexDirection="column">
+        {step.hasExistingEnv && <Box marginBottom={1} paddingY={1}>
+            <Text color="warn">
+              ⚠ You already have a GitHub App connection. Replacing it will
+              disconnect the previous connection and link your GitHub account
+              to a different Claude App on the web.
+            </Text>
+          </Box>}
         <Text>
           Claude on the web requires connecting to your GitHub account to clone
           and push code on your behalf.

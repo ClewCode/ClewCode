@@ -45,8 +45,9 @@ export type ModelSetting = ModelName | ModelAlias | null
  */
 export function getSmallFastModel(): ModelName {
   // Anthropic-specific env var
-  if (process.env.ANTHROPIC_SMALL_FAST_MODEL) {
-    return process.env.ANTHROPIC_SMALL_FAST_MODEL
+  const envSmallModel = process.env.CLAUDE_CODE_SMALL_FAST_MODEL || process.env.ANTHROPIC_SMALL_FAST_MODEL
+  if (envSmallModel) {
+    return envSmallModel
   }
   // Check provider registry for non-Anthropic small model
   const activeProvider = ProviderManager.getInstance().getActiveProviderName()
@@ -98,9 +99,10 @@ export function getActiveProviderKeyStatus(): 'valid' | 'missing' | 'not-require
  * Priority order within this function:
  * 1. Model override during session (from /model command) - highest priority
  * 2. Model override at startup (from --model flag)
- * 3. ANTHROPIC_MODEL environment variable
- * 4. Saved provider config (from /provider command)
- * 5. Settings (from user's saved settings)
+ * 3. CLAUDE_CODE_MODEL environment variable (provider-neutral)
+ * 4. ANTHROPIC_MODEL environment variable (legacy, Anthropic-specific)
+ * 5. Saved provider config (from /provider command)
+ * 6. Settings (from user's saved settings)
  */
 export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
   let specifiedModel: ModelSetting | undefined
@@ -111,9 +113,11 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
   } else {
     const settings = getSettings_DEPRECATED() || {}
     
-    // Check environment variable first
-    if (process.env.ANTHROPIC_MODEL) {
-      specifiedModel = process.env.ANTHROPIC_MODEL
+    // Check environment variables — CLAUDE_CODE_MODEL is provider-neutral
+    // and takes priority over the Anthropic-specific ANTHROPIC_MODEL
+    const envModel = process.env.CLAUDE_CODE_MODEL || process.env.ANTHROPIC_MODEL
+    if (envModel) {
+      specifiedModel = envModel
     } else {
       // Use ProviderManager to get the model
       const providerManager = ProviderManager.getInstance()
@@ -144,8 +148,9 @@ export function getUnifiedModel(): ModelName {
   }
 
   // 2. Check for environment variable
-  if (process.env.ANTHROPIC_MODEL) {
-    return parseUserSpecifiedModel(process.env.ANTHROPIC_MODEL)
+  const envModel = process.env.CLAUDE_CODE_MODEL || process.env.ANTHROPIC_MODEL
+  if (envModel) {
+    return parseUserSpecifiedModel(envModel)
   }
 
   // 3. Check for provider-specific model in config
@@ -196,8 +201,9 @@ export function getBestModel(): ModelName {
 
 // @[MODEL LAUNCH]: Update the default Opus model (3P providers may lag so keep defaults unchanged).
 export function getDefaultOpusModel(): ModelName {
-  if (process.env.ANTHROPIC_DEFAULT_OPUS_MODEL) {
-    return process.env.ANTHROPIC_DEFAULT_OPUS_MODEL
+  const customOpusModel = process.env.CLAUDE_CODE_DEFAULT_OPUS_MODEL || process.env.ANTHROPIC_DEFAULT_OPUS_MODEL
+  if (customOpusModel) {
+    return customOpusModel
   }
   // 3P providers (Bedrock, Vertex, Foundry) — kept as a separate branch
   // even when values match, since 3P availability lags firstParty and
@@ -210,8 +216,9 @@ export function getDefaultOpusModel(): ModelName {
 
 // @[MODEL LAUNCH]: Update the default Sonnet model (3P providers may lag so keep defaults unchanged).
 export function getDefaultSonnetModel(): ModelName {
-  if (process.env.ANTHROPIC_DEFAULT_SONNET_MODEL) {
-    return process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
+  const customSonnetModel = process.env.CLAUDE_CODE_DEFAULT_SONNET_MODEL || process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
+  if (customSonnetModel) {
+    return customSonnetModel
   }
   // Default to Sonnet 4.5 for 3P since they may not have 4.6 yet
   if (getAPIProvider() !== 'firstParty') {
@@ -222,8 +229,9 @@ export function getDefaultSonnetModel(): ModelName {
 
 // @[MODEL LAUNCH]: Update the default Haiku model (3P providers may lag so keep defaults unchanged).
 export function getDefaultHaikuModel(): ModelName {
-  if (process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL) {
-    return process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL
+  const customHaikuModel = process.env.CLAUDE_CODE_DEFAULT_HAIKU_MODEL || process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL
+  if (customHaikuModel) {
+    return customHaikuModel
   }
 
   // Haiku 4.5 is available on all platforms (first-party, Foundry, Bedrock, Vertex)
@@ -396,8 +404,8 @@ export function getClaudeAiUserDefaultModelDescription(
   fastMode = false,
 ): string {
   // Check for env var overrides first
-  const customOpusModel = process.env.ANTHROPIC_DEFAULT_OPUS_MODEL
-  const customSonnetModel = process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
+  const customOpusModel = process.env.CLAUDE_CODE_DEFAULT_OPUS_MODEL || process.env.ANTHROPIC_DEFAULT_OPUS_MODEL
+  const customSonnetModel = process.env.CLAUDE_CODE_DEFAULT_SONNET_MODEL || process.env.ANTHROPIC_DEFAULT_SONNET_MODEL
 
   if (isMaxSubscriber() || isTeamPremiumSubscriber()) {
     if (customOpusModel) {

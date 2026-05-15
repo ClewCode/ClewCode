@@ -99,7 +99,7 @@ export async function importGithubToken(
   }
 }
 
-async function hasExistingEnvironment(): Promise<boolean> {
+export async function hasExistingEnvironment(): Promise<boolean> {
   try {
     const envs = await fetchEnvironments()
     return envs.length > 0

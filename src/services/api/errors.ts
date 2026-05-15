@@ -1314,7 +1314,7 @@ export function categorizeRetryableAPIError(
 
 export function getErrorMessageIfRefusal(
   stopReason: BetaStopReason | null,
-  model: string,
+  _model: string,
   lastAssistantMessage?: AssistantMessage,
 ): AssistantMessage | undefined {
   if (stopReason !== 'refusal') {
@@ -1341,10 +1341,7 @@ export function getErrorMessageIfRefusal(
     ? ' Try rephrasing the request or attempting a different approach.'
     : ' Please double press esc to edit your last message or start a new session for Claude Code to assist with a different task.'
 
-  const modelSuggestion =
-    model !== 'claude-sonnet-4-20250514'
-      ? ' If you are seeing this refusal repeatedly, try running /model claude-sonnet-4-20250514 to switch models.'
-      : ''
+  const modelSuggestion = ''
 
   return createAssistantAPIErrorMessage({
     content: baseMessage + detailedRefusal + recoveryHint + modelSuggestion,

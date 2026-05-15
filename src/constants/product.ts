@@ -1,9 +1,23 @@
-export const PRODUCT_URL = 'https://claude.com/claude-code'
+/**
+ * Product URL — used in attributions, MCP metadata, and links.
+ * Override via CLAUDE_CODE_PRODUCT_URL env var (useful for forks).
+ */
+export const PRODUCT_URL = process.env.CLAUDE_CODE_PRODUCT_URL || 'https://claude.com/claude-code'
 
-// Claude Code Remote session URLs
-export const CLAUDE_AI_BASE_URL = 'https://claude.ai'
-export const CLAUDE_AI_STAGING_BASE_URL = 'https://claude-ai.staging.ant.dev'
-export const CLAUDE_AI_LOCAL_BASE_URL = 'http://localhost:4000'
+/**
+ * Product name — used in attributions and UI labels.
+ * Override via CLAUDE_CODE_PRODUCT_NAME env var (useful for forks).
+ */
+export const PRODUCT_NAME = process.env.CLAUDE_CODE_PRODUCT_NAME || 'Claude Code'
+
+/**
+ * Claude AI base URLs for remote session routing.
+ * Each can be overridden via its corresponding env var.
+ * @see CLAUDE_AI_BASE_URL, CLAUDE_AI_STAGING_BASE_URL, CLAUDE_AI_LOCAL_BASE_URL
+ */
+export const CLAUDE_AI_BASE_URL = process.env.CLAUDE_AI_BASE_URL || 'https://claude.ai'
+export const CLAUDE_AI_STAGING_BASE_URL = process.env.CLAUDE_AI_STAGING_BASE_URL || 'https://claude-ai.staging.ant.dev'
+export const CLAUDE_AI_LOCAL_BASE_URL = process.env.CLAUDE_AI_LOCAL_BASE_URL || 'http://localhost:4000'
 
 /**
  * Determine if we're in a staging environment for remote sessions.

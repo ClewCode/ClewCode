@@ -144,6 +144,7 @@ import { TASK_CREATE_TOOL_NAME } from '../tools/TaskCreateTool/constants.js'
 import { TASK_OUTPUT_TOOL_NAME } from '../tools/TaskOutputTool/constants.js'
 import { TASK_UPDATE_TOOL_NAME } from '../tools/TaskUpdateTool/constants.js'
 import type { PermissionMode } from '../types/permissions.js'
+import { decodeHtmlEntities } from './htmlEntities.js'
 import { normalizeToolInput, normalizeToolInputForAPI } from './api.js'
 import { getCurrentProjectConfig } from './config.js'
 import { logAntError, logForDebugging } from './debug.js'
@@ -2226,6 +2227,10 @@ export function normalizeMessagesForAPI(
             ...message,
             message: {
               ...message.message,
+              // Preserve raw reasoning_content for providers that require it back (e.g. Xiaomi)
+              ...(typeof reasoningContent === 'string' && reasoningContent.length > 0
+                ? { reasoning_content: reasoningContent }
+                : {}),
               content: content.map(block => {
                 if (block.type === 'tool_use') {
                   const tool = tools.find(t => toolMatchesName(t, block.name))
@@ -2777,7 +2782,8 @@ const STRIPPED_TAGS_RE =
   /<(commit_analysis|context|function_analysis|pr_analysis)>.*?<\/\1>\n?/gs
 
 export function stripPromptXMLTags(content: string): string {
-  return content.replace(STRIPPED_TAGS_RE, '').trim()
+  const stripped = content.replace(STRIPPED_TAGS_RE, '').trim()
+  return decodeHtmlEntities(stripped)
 }
 
 export function getToolUseID(message: NormalizedMessage): string | null {

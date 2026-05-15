@@ -94,7 +94,7 @@
         <div class="code-block">
           <pre><code># Clone the repository
 git clone https://github.com/JonusNattapong/ClaudeCode.git
-cd ClaudeCode
+cd claudecode
 
 # Install dependencies
 bun install
@@ -107,33 +107,37 @@ bun run src/main.tsx session</code></pre>
 
       <h2>Key Capabilities</h2>
       <ul>
-        <li><strong>14 AI Providers</strong> — Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, DeepSeek, xAI, Mistral, Groq, Copilot, and more</li>
+        <li><strong>15 AI Providers</strong> — Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, DeepSeek, xAI, Mistral, Groq, Copilot, KiloCode, OpenCode, OpenCode Go, Cline, ChatGPT Plus</li>
         <li><strong>104 Slash Commands</strong> — File operations, git, search, AI model management, MCP servers, plugins, and diagnostics</li>
-        <li><strong>54 Built-in Tools</strong> — Read, Edit, Write, Glob, Grep, Bash, PowerShell, WebFetch, WebSearch, Agent, Task, MCP, LSP, Git, CodeIndex, and more</li>
-        <li><strong>14 Plugins</strong> — Agent SDK, code review, commit commands, frontend design, feature development, security guidance, and more</li>
+        <li><strong>56 Built-in Tools</strong> — Read, Edit, Write, Glob, Grep, Bash, PowerShell, WebFetch, WebSearch, Agent, Task, MCP, LSP, Git, CodeIndex, and more</li>
+        <li><strong>13 Plugins</strong> — Agent SDK, code review, commit commands, frontend design, feature development, plugin development, and more</li>
         <li><strong>20 Bundled Skills</strong> — Debugging, web search, web scraping, commit, code review, scheduling, keybinding configuration</li>
         <li><strong>Permission System</strong> — Four-tier automation mode: Default approval, YOLO Lite, YOLO ALLOW, and YOLO MAX</li>
-        <li><strong>Subagent Runtime</strong> — Background AI agents for parallel task execution with lease management and workspace isolation</li>
+        <li><strong>Agent View</strong> — Dispatch and manage many sessions from one screen with supervisor daemon, IPC, worktree isolation, and AI row summaries</li>
+        <li><strong>Smart Memory</strong> — Cross-lingual semantic search with embeddings (100+ languages), hybrid recall (local + LLM), auto-memory, and team memory sync</li>
         <li><strong>Bridge Mode</strong> — WebSocket-based remote collaboration with session sharing and team onboarding</li>
       </ul>
 
-      <h2>Recent Updates (v2.1.137)</h2>
+      <h2>Recent Updates (v2.1.140)</h2>
       <ul>
+        <li><strong>Smart Memory with Semantic Search</strong> — Cross-lingual memory recall using IBM Granite 97M multilingual embeddings (100+ languages), hybrid search (local + LLM fallback), embedding cache, and <code>/memory-search</code> command</li>
         <li><strong>Subagent API Headers (G32)</strong> — Subagent API requests now carry <code>x-claude-code-agent-id</code> and <code>x-claude-code-parent-agent-id</code> headers for traceability</li>
         <li><strong>API Key Override Gates (G33)</strong> — OAuth-dependent features are disabled when API key overrides are active, with clear messaging</li>
         <li><strong>Compaction Preserves Instructions (G26)</strong> — Context compaction now preserves sensitive user instructions verbatim</li>
-        <li><strong>Symlinked Settings Hot-Reload (G8)</strong> — Settings watcher resolves realpath, enabling hot-reload for symlinked <code>settings.json</code></li>
+        <li><strong>Fallback Thinking Toggle (E61)</strong> — Added Ctrl+Shift+T as fallback hotkey for toggling thinking mode on macOS</li>
+        <li><strong>Symlinked Settings Hot-Reload (G8)</strong> — Settings file watcher resolves realpath, enabling hot-reload for symlinked <code>settings.json</code></li>
         <li><strong>Sandbox Auto-Allow Fix (G9)</strong> — Shell expansion commands (<code>$VAR</code>, <code>$(cmd)</code>) now respect auto-allow before prompting</li>
         <li><strong>SIGTSTP Handler (E50)</strong> — Ctrl+Z no longer hangs in npx/bun wrapper environments</li>
         <li><strong>Diff Truncation Fix (G41)</strong> — Corrected off-by-one in line count when truncation boundary falls on a newline</li>
+        <li><strong>Regex Metachar Fix (G44)</strong> — Special regex characters in skill argument names are now escaped before substitution</li>
         <li><strong>Keybinding Modifier Fix (G19)</strong> — Cmd/Super/Win keybindings no longer incorrectly flagged as unparseable</li>
       </ul>
       <p>Full changelog available at <a href="https://github.com/JonusNattapong/ClaudeCode/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
 
       <div class="features-grid">
         <div class="feature-card">
-          <h3>14 AI Providers</h3>
-          <p>Switch between Anthropic, OpenAI, Google, OpenRouter, Ollama, DeepSeek, xAI, Mistral, and more — all from one interface.</p>
+          <h3>15 AI Providers</h3>
+          <p>Switch between Anthropic, OpenAI, Google, OpenRouter, Ollama, DeepSeek, xAI, Mistral, Groq, Copilot, KiloCode, OpenCode, OpenCode Go, Cline, and ChatGPT Plus — all from one interface.</p>
           <a href="providers.html" class="feature-link">Browse providers</a>
         </div>
         <div class="feature-card">
@@ -142,8 +146,8 @@ bun run src/main.tsx session</code></pre>
           <a href="commands.html" class="feature-link">View commands</a>
         </div>
         <div class="feature-card">
-          <h3>Plugin System</h3>
-          <p>Extend the CLI with 14 plugins providing commands, agents, skills, hooks, and output styles.</p>
+          <h3>13 Plugins</h3>
+          <p>Extend the CLI with 13 plugins providing commands, agents, skills, hooks, and output styles.</p>
           <a href="plugins.html" class="feature-link">Explore plugins</a>
         </div>
         <div class="feature-card">
@@ -152,14 +156,19 @@ bun run src/main.tsx session</code></pre>
           <a href="permissions.html" class="feature-link">Configure permissions</a>
         </div>
         <div class="feature-card">
-          <h3>54 Built-in Tools</h3>
+          <h3>56 Built-in Tools</h3>
           <p>File ops, shell execution, web search/fetch, MCP, subagents, LSP, notebooks, and structured diffs.</p>
           <a href="tools.html" class="feature-link">View tools</a>
         </div>
         <div class="feature-card">
-          <h3>Subagent System</h3>
-          <p>Background AI agents for parallel task execution with lease management and stale recovery.</p>
+          <h3>Agent View</h3>
+          <p>Dispatch and manage many sessions from one screen. Supervisor daemon hosts background sessions with IPC, worktree isolation, and AI-generated row summaries.</p>
           <a href="agents.html" class="feature-link">Learn more</a>
+        </div>
+        <div class="feature-card">
+          <h3>Smart Memory</h3>
+          <p>Cross-lingual semantic search with embeddings (100+ languages), hybrid recall (local + LLM), and auto-memory with team sync.</p>
+          <a href="memory-system.html" class="feature-link">Learn more</a>
         </div>
       </div>
 

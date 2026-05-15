@@ -205,6 +205,7 @@ function PluginComponentsDisplay({
     skills?: string | string[] | Record<string, unknown> | null;
     hooks?: unknown;
     mcpServers?: unknown;
+    lspServers?: string[] | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -325,12 +326,24 @@ function PluginComponentsDisplay({
           if (pluginEntry.mcpServers) {
             mcpServersList.push(pluginEntry.mcpServers);
           }
+
+          // Collect LSP servers from the plugin manifest
+          const lspServersList: string[] = [];
+          const manifestLspServers = plugin.manifest?.lspServers;
+          if (manifestLspServers) {
+            lspServersList.push(...Object.keys(manifestLspServers));
+          }
+          if (pluginEntry.lspServers) {
+            lspServersList.push(...Object.keys(pluginEntry.lspServers));
+          }
+
           setComponents({
             commands: commandList.length > 0 ? commandList : null,
             agents: agentList.length > 0 ? agentList : null,
             skills: skillList.length > 0 ? skillList : null,
             hooks: hooksList.length > 0 ? hooksList : null,
-            mcpServers: mcpServersList.length > 0 ? mcpServersList : null
+            mcpServers: mcpServersList.length > 0 ? mcpServersList : null,
+            lspServers: lspServersList.length > 0 ? lspServersList : null
           });
         } else {
           setError(`Plugin ${plugin.name} not found in marketplace`);
@@ -355,7 +368,7 @@ function PluginComponentsDisplay({
   if (!components) {
     return null; // No components info available
   }
-  const hasComponents = components.commands || components.agents || components.skills || components.hooks || components.mcpServers;
+  const hasComponents = components.commands || components.agents || components.skills || components.hooks || components.mcpServers || components.lspServers;
   if (!hasComponents) {
     return null; // No components defined
   }
@@ -380,6 +393,9 @@ function PluginComponentsDisplay({
       {components.mcpServers ? <Text dimColor>
           • MCP Servers:{' '}
           {typeof components.mcpServers === 'string' ? components.mcpServers : Array.isArray(components.mcpServers) ? components.mcpServers.map(String).join(', ') : typeof components.mcpServers === 'object' && components.mcpServers !== null ? Object.keys(components.mcpServers).join(', ') : String(components.mcpServers)}
+        </Text> : null}
+      {components.lspServers ? <Text dimColor>
+          • LSP Servers: {components.lspServers.join(', ')}
         </Text> : null}
     </Box>;
 }

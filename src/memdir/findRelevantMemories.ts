@@ -9,6 +9,7 @@ import {
   type MemoryHeader,
   scanMemoryFiles,
 } from './memoryScan.js'
+import { searchMemories as semanticSearch } from './semanticSearch.js'
 
 export type RelevantMemory = {
   path: string
@@ -24,17 +25,12 @@ Return a list of filenames for the memories that will clearly be useful to Claud
 `
 
 /**
- * Find memory files relevant to a query by scanning memory file headers
- * and asking Sonnet to select the most relevant ones.
+ * Find memory files relevant to a query using hybrid approach:
+ * 1. Semantic search (fast, local, cross-lingual)
+ * 2. LLM-based selection (fallback for complex queries)
  *
  * Returns absolute file paths + mtime of the most relevant memories
  * (up to 5). Excludes MEMORY.md (already loaded in system prompt).
- * mtime is threaded through so callers can surface freshness to the
- * main model without a second stat.
- *
- * `alreadySurfaced` filters paths shown in prior turns before the
- * Sonnet call, so the selector spends its 5-slot budget on fresh
- * candidates instead of re-picking files the caller will discard.
  */
 export async function findRelevantMemories(
   query: string,
@@ -50,6 +46,26 @@ export async function findRelevantMemories(
     return []
   }
 
+  // Try semantic search first (fast, local, no API cost)
+  const semanticResults = await trySemanticSearch(query, memories)
+  if (semanticResults.length > 0) {
+    // If semantic search found good results, use them
+    const selected = semanticResults
+      .map(r => memories.find(m => m.filePath === r.filePath))
+      .filter((m): m is MemoryHeader => m !== undefined)
+
+    if (feature('MEMORY_SHAPE_TELEMETRY')) {
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { logMemoryRecallShape } =
+        require('./memoryShapeTelemetry.js') as typeof import('./memoryShapeTelemetry.js')
+      /* eslint-enable @typescript-eslint/no-require-imports */
+      logMemoryRecallShape(memories, selected)
+    }
+
+    return selected.map(m => ({ path: m.filePath, mtimeMs: m.mtimeMs }))
+  }
+
+  // Fall back to LLM-based selection if semantic search found nothing
   const selectedFilenames = await selectRelevantMemories(
     query,
     memories,
@@ -72,6 +88,33 @@ export async function findRelevantMemories(
   }
 
   return selected.map(m => ({ path: m.filePath, mtimeMs: m.mtimeMs }))
+}
+
+/**
+ * Try semantic search as a fast, local alternative of LLM-based selection.
+ * Returns results sorted by relevance score.
+ */
+async function trySemanticSearch(
+  query: string,
+  memories: MemoryHeader[],
+): Promise<MemoryHeader[]> {
+  try {
+    const results = await semanticSearch(query, 5, 0.6)
+    if (results.length === 0) return []
+
+    // Map semantic results back to MemoryHeader objects
+    const byPath = new Map(memories.map(m => [m.filePath, m]))
+    return results
+      .map(r => byPath.get(r.filePath))
+      .filter((m): m is MemoryHeader => m !== undefined)
+  } catch (e) {
+    // Semantic search failed, fall back to LLM
+    logForDebugging(
+      `[memdir] semantic search failed: ${errorMessage(e)}, falling back to LLM`,
+      { level: 'debug' },
+    )
+    return []
+  }
 }
 
 async function selectRelevantMemories(

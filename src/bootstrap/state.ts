@@ -205,6 +205,8 @@ type State = {
   lastEmittedDate: string | null
   // Additional directories from --add-dir flag (for CLAUDE.md loading)
   additionalDirectoriesForClaudeMd: string[]
+  // Raw --mcp-config CLI flag values (JSON strings or file paths)
+  rawMcpConfigArgs: string[]
   // Channel server allowlist from --channels flag (servers whose channel
   // notifications should register this session). Parsed once in main.tsx —
   // the tag decides trust model: 'plugin' → marketplace verification +
@@ -401,6 +403,8 @@ function getInitialState(): State {
     lastEmittedDate: null,
     // Additional directories from --add-dir flag (for CLAUDE.md loading)
     additionalDirectoriesForClaudeMd: [],
+    // Raw --mcp-config CLI flag values
+    rawMcpConfigArgs: [],
     // Channel server allowlist from --channels flag
     allowedChannels: [],
     hasDevChannels: false,
@@ -1671,6 +1675,14 @@ export function setAdditionalDirectoriesForClaudeMd(
   directories: string[],
 ): void {
   STATE.additionalDirectoriesForClaudeMd = directories
+}
+
+export function getRawMcpConfigArgs(): string[] {
+  return STATE.rawMcpConfigArgs
+}
+
+export function setRawMcpConfigArgs(args: string[]): void {
+  STATE.rawMcpConfigArgs = args
 }
 
 export function getAllowedChannels(): ChannelEntry[] {

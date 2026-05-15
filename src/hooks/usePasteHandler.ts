@@ -63,13 +63,20 @@ export function usePasteHandler({
   const checkClipboardForImageImpl = React.useCallback(() => {
     if (!onImagePaste || !isMountedRef.current) return
 
+    // Safety timeout: reset isPasting if clipboard check takes too long
+    const safetyTimeout = setTimeout(() => {
+      if (isMountedRef.current) {
+        setIsPasting(false)
+      }
+    }, 5000) // 5 second safety net
+
     void getImageFromClipboard()
       .then(imageData => {
         if (imageData && isMountedRef.current) {
           onImagePaste(
             imageData.base64,
             imageData.mediaType,
-            undefined, // no filename for clipboard images
+            undefined, // nofilename for clipboard images
             imageData.dimensions,
           )
         }
@@ -80,6 +87,7 @@ export function usePasteHandler({
         }
       })
       .finally(() => {
+        clearTimeout(safetyTimeout)
         if (isMountedRef.current) {
           setIsPasting(false)
         }

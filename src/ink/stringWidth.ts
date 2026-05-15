@@ -245,8 +245,10 @@ function needsJavaScriptWidth(str: string): boolean {
     const cp = char.codePointAt(0)!
     // Bun's native width path can drift from terminal behavior for scripts
     // with marks that attach to neighboring glyphs. Use our tuned fallback for
-    // these ranges so cursor math stays aligned while typing Thai/Lao/Indic.
-    if (cp >= 0x0900 && cp <= 0x0eff) return true
+    // these ranges so cursor math stays aligned while typing Indic scripts.
+    // Thai and Lao (0x0E00-0x0EFF) are removed to let Bun.stringWidth handle them
+    // as it is often more accurate for platform-specific terminal behaviors.
+    if (cp >= 0x0900 && cp <= 0x0dff) return true
   }
   return false
 }

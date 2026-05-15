@@ -107,8 +107,8 @@ function getClipboardCommands() {
     },
     win32: {
       checkImage:
-        'powershell -NoProfile -Command "(Get-Clipboard -Format Image) -ne $null"',
-      saveImage: `powershell -NoProfile -Command "$img = Get-Clipboard -Format Image; if ($img) { $img.Save('${screenshotPath.replace(/\\/g, '\\\\')}', [System.Drawing.Imaging.ImageFormat]::Png) }"`,
+        'powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $f=[System.Windows.Forms.Clipboard]::GetDataObject(); if ($f.GetDataPresent([System.Windows.Forms.DataFormats]::Bitmap) -or $f.GetDataPresent([System.Windows.Forms.DataFormats]::Dib)) { exit 0 } else { exit 1 }"',
+      saveImage: `powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $f=[System.Windows.Forms.Clipboard]::GetDataObject(); if ($f.GetDataPresent([System.Windows.Forms.DataFormats]::Bitmap)) { ($f.GetData([System.Windows.Forms.DataFormats]::Bitmap)).Save('${screenshotPath.replace(/\\/g, '\\\\')}', [System.Drawing.Imaging.ImageFormat]::Png) } elseif ($f.GetDataPresent([System.Windows.Forms.DataFormats]::Dib)) { $bytes=$f.GetData([System.Windows.Forms.DataFormats]::Dib); [System.IO.File]::WriteAllBytes('${screenshotPath.replace(/\\/g, '\\\\')}', $bytes) }"`,
       getPath: 'powershell -NoProfile -Command "Get-Clipboard"',
       deleteFile: `del /f "${screenshotPath}"`,
     },
@@ -222,26 +222,40 @@ export async function getImageFromClipboard(): Promise<ImageWithDimensions | nul
   }
 
   const { commands, screenshotPath } = getClipboardCommands()
+
+  const CLIPBOARD_CHECK_TIMEOUT_MS = 5000
+  const CLIPBOARD_SAVE_TIMEOUT_MS = 8000
+
   try {
-    // Check if clipboard has image
-    const checkResult = await execa(commands.checkImage, {
-      shell: true,
-      reject: false,
-    })
+    // Check if clipboard has image with timeout
+    const checkResult = await Promise.race([
+      execa(commands.checkImage, {
+        shell: true,
+        reject: false,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Clipboard check timed out')), CLIPBOARD_CHECK_TIMEOUT_MS)
+      ),
+    ])
     if (checkResult.exitCode !== 0) {
       return null
     }
 
-    // Save the image
-    const saveResult = await execa(commands.saveImage, {
-      shell: true,
-      reject: false,
-    })
+    // Save the image with timeout
+    const saveResult = await Promise.race([
+      execa(commands.saveImage, {
+        shell: true,
+        reject: false,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Clipboard save timed out')), CLIPBOARD_SAVE_TIMEOUT_MS)
+      ),
+    ])
     if (saveResult.exitCode !== 0) {
       return null
     }
 
-    // Read the image and convert to base64 (E45: wrap with timeout to prevent hanging)
+    // Read the image and convert to base64
     let imageBuffer = await Promise.race([
       getFsImplementation().readFileBytes(screenshotPath),
       new Promise<never>((_, reject) =>

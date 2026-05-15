@@ -622,6 +622,42 @@ async function start(): Promise<void> {
   // Start idle timer
   checkIdleExit()
 
+  // Detect binary upgrades (brew upgrade, etc.). When process.execPath is
+  // replaced, the daemon is running a stale binary — future spawns may use
+  // the new binary (breaking IPC) or the old path may be deleted (ENOENT).
+  // Check inode/mtime every 5 minutes and exit gracefully if changed.
+  const BINARY_CHECK_INTERVAL_MS = 5 * 60 * 1000
+  let binaryUpgradeCheck: ReturnType<typeof setInterval> | undefined
+  try {
+    const initialStat = await stat(process.execPath)
+    binaryUpgradeCheck = setInterval(async () => {
+      try {
+        const currentStat = await stat(process.execPath)
+        const changed =
+          currentStat.ino !== initialStat.ino ||
+          currentStat.mtimeMs !== initialStat.mtimeMs
+        if (changed && !shuttingDown) {
+          log(
+            `Binary at ${process.execPath} has been upgraded (ino/mtime changed). Exiting gracefully.`,
+          )
+          server.close()
+          process.exit(0)
+        }
+      } catch {
+        // ENOENT means the binary was deleted — still treat as upgrade
+        if (!shuttingDown) {
+          log(
+            `Binary at ${process.execPath} no longer exists (upgraded/deleted). Exiting gracefully.`,
+          )
+          server.close()
+          process.exit(0)
+        }
+      }
+    }, BINARY_CHECK_INTERVAL_MS)
+  } catch {
+    log('Could not stat binary path, skipping binary upgrade detection')
+  }
+
   // Periodically retire idle (completed/stopped/failed) sessions that
   // have no running process and have been idle for >5 minutes.
   // Cleans up empty placeholder sessions left over from ← on fresh REPL.

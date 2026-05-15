@@ -675,7 +675,11 @@ export function BrowseMarketplace({
               · MCP Servers:{' '}
               {Array.isArray(selectedPlugin.entry.mcpServers) ? selectedPlugin.entry.mcpServers.join(', ') : typeof selectedPlugin.entry.mcpServers === 'object' ? Object.keys(selectedPlugin.entry.mcpServers).join(', ') : 'configured'}
             </Text>}
-          {!selectedPlugin.entry.commands && !selectedPlugin.entry.agents && !selectedPlugin.entry.hooks && !selectedPlugin.entry.mcpServers && <>
+          {selectedPlugin.entry.lspServers && <Text dimColor>
+              · LSP Servers:{' '}
+              {Array.isArray(selectedPlugin.entry.lspServers) ? selectedPlugin.entry.lspServers.join(', ') : typeof selectedPlugin.entry.lspServers === 'object' ? Object.keys(selectedPlugin.entry.lspServers).join(', ') : 'configured'}
+            </Text>}
+          {!selectedPlugin.entry.commands && !selectedPlugin.entry.agents && !selectedPlugin.entry.hooks && !selectedPlugin.entry.mcpServers && !selectedPlugin.entry.lspServers && <>
                 {typeof selectedPlugin.entry.source === 'object' && 'source' in selectedPlugin.entry.source && (selectedPlugin.entry.source.source === 'github' || selectedPlugin.entry.source.source === 'url' || selectedPlugin.entry.source.source === 'npm' || selectedPlugin.entry.source.source === 'pip') ? <Text dimColor>
                     · Component summary not available for remote plugin
                   </Text> :

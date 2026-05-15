@@ -10,37 +10,37 @@
 
 @layer theme {
   :root {
-    /* Color palette */
-    --primary: #d97706;
-    --primary-light: #f59e0b;
-    --primary-dark: #9a3412;
-    --accent: #fed7aa;
-    
+    /* Color palette — cool cyberpunk blue-purple */
+    --primary: #818cf8;
+    --primary-light: #a5b4fc;
+    --primary-dark: #4f46e5;
+    --accent: #c7d2fe;
+
     /* Background colors */
-    --bg-dark: #0f0d0b;
-    --bg-card: #1b1612;
-    --bg-hover: #2b2119;
-    --bg-overlay: rgba(15, 13, 11, 0.8);
-    
+    --bg-dark: #0a0a12;
+    --bg-card: #12121e;
+    --bg-hover: #1a1a2e;
+    --bg-overlay: rgba(10, 10, 18, 0.8);
+
     /* Text colors */
-    --text: #fff7ed;
-    --text-muted: #d6c7b8;
-    --text-dim: #8f7d6b;
-    
+    --text: #eef2ff;
+    --text-muted: #a5b4d6;
+    --text-dim: #6b7a9e;
+
     /* UI elements */
-    --border: #3a2c20;
-    --code-bg: #100c09;
-    --code-text: #f5e8dc;
-    
+    --border: #1e2440;
+    --code-bg: #0d0d18;
+    --code-text: #dbeafe;
+
     /* Status colors */
-    --success: #22c55e;
-    --warning: #f59e0b;
-    --error: #ef4444;
-    
+    --success: #34d399;
+    --warning: #fbbf24;
+    --error: #f87171;
+
     /* Semantic colors */
-    --orange-soft: color-mix(in srgb, var(--primary-light) 14%, transparent);
-    --orange-glow: color-mix(in srgb, var(--primary) 24%, transparent);
-    
+    --primary-soft: color-mix(in srgb, var(--primary-light) 14%, transparent);
+    --primary-glow: color-mix(in srgb, var(--primary) 24%, transparent);
+
     /* Spacing scale */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
@@ -48,17 +48,17 @@
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
     --spacing-2xl: 3rem;
-    
+
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-base: 200ms ease;
     --transition-slow: 300ms ease;
-    
+
     /* Font sizing */
     --font-base: 1rem;
     --font-sm: 0.875rem;
     --font-lg: 1.25rem;
-    
+
     /* Z-index scale */
     --z-sticky: 100;
     --z-dropdown: 200;
@@ -95,7 +95,7 @@
 
   /* Header */
   .header {
-    background: linear-gradient(180deg, #1f1711 0%, #100d0a 100%);
+    background: linear-gradient(180deg, #12121e 0%, #0a0a12 100%);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
@@ -191,7 +191,7 @@
     top: 73px;
     height: calc(100vh - 73px);
     overflow-y: auto;
-    scrollbar-color: #5a3a22 var(--bg-dark);
+    scrollbar-color: #2e2e5a var(--bg-dark);
     scrollbar-width: thin;
   }
 
@@ -289,14 +289,14 @@
   /* Hero */
   .hero {
     background:
-      radial-gradient(circle at top left, color-mix(in srgb, #fb923c 30%, transparent), transparent 34%),
-      linear-gradient(135deg, #2c160b 0%, #7c2d12 52%, #b45309 100%);
+      radial-gradient(circle at top left, color-mix(in srgb, #818cf8 30%, transparent), transparent 34%),
+      linear-gradient(135deg, #0f0f2e 0%, #312e81 52%, #4f46e5 100%);
     border: 1px solid color-mix(in srgb, var(--primary-light) 36%, transparent);
     color: white;
     padding: var(--spacing-xl);
     border-radius: 16px;
     margin: var(--spacing-xl) 0 var(--spacing-2xl);
-    box-shadow: 0 18px 45px var(--orange-glow);
+    box-shadow: 0 18px 45px var(--primary-glow);
   }
 
   .hero h2 {
@@ -340,7 +340,7 @@
   }
 
   .feature-card {
-    background: linear-gradient(180deg, color-mix(in srgb, #2b2119 90%, transparent), color-mix(in srgb, #1b1612 92%, transparent));
+    background: linear-gradient(180deg, color-mix(in srgb, #1a1a3e 90%, transparent), color-mix(in srgb, #12121e 92%, transparent));
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: var(--spacing-lg);
@@ -350,7 +350,7 @@
   .feature-card:hover {
     transform: translateY(-3px);
     border-color: var(--primary);
-    box-shadow: 0 8px 30px var(--orange-glow);
+    box-shadow: 0 8px 30px var(--primary-glow);
   }
 
   .feature-card:focus-within {
@@ -418,7 +418,7 @@
   }
 
   .page-content code {
-    background: var(--orange-soft);
+    background: var(--primary-soft);
     color: var(--primary-light);
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
@@ -448,7 +448,7 @@
   }
 
   .page-content th {
-    background: #21170f;
+    background: #14142a;
     color: var(--text);
     font-weight: 600;
     font-size: var(--font-sm);
@@ -482,7 +482,7 @@
   }
 
   .callout-tip {
-    background: color-mix(in srgb, #fb923c 10%, transparent);
+    background: color-mix(in srgb, #818cf8 10%, transparent);
     border-color: var(--primary-light);
   }
 
@@ -492,7 +492,7 @@
 
   /* Footer */
   .footer {
-    background: #14100d;
+    background: #0d0d18;
     border-top: 1px solid var(--border);
     padding: var(--spacing-xl);
     text-align: center;
@@ -517,7 +517,7 @@
   }
 
   .plugin-card {
-    background: linear-gradient(180deg, color-mix(in srgb, #2b2119 90%, transparent), color-mix(in srgb, #1b1612 92%, transparent));
+    background: linear-gradient(180deg, color-mix(in srgb, #1a1a3e 90%, transparent), color-mix(in srgb, #12121e 92%, transparent));
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: var(--spacing-lg);
@@ -526,7 +526,7 @@
 
   .plugin-card:hover {
     border-color: var(--primary);
-    box-shadow: 0 8px 30px var(--orange-glow);
+    box-shadow: 0 8px 30px var(--primary-glow);
     transform: translateY(-2px);
   }
 
@@ -561,7 +561,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #5a3a22;
+    background: #2e2e5a;
     border-radius: 4px;
     transition: background var(--transition-base);
   }

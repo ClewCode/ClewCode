@@ -1924,21 +1924,32 @@ export async function getMatchingHooks(
       return false
     })
 
-    // HTTP hooks are not supported for SessionStart/Setup events. In headless
-    // mode the sandbox ask callback deadlocks because the structuredInput
-    // consumer hasn't started yet when these hooks fire.
-    const filteredHooks =
-      hookEvent === 'SessionStart' || hookEvent === 'Setup'
-        ? ifFilteredHooks.filter(h => {
-            if (h.hook.type === 'http') {
-              logForDebugging(
-                `Skipping HTTP hook ${(h.hook as { url: string }).url} — HTTP hooks are not supported for ${hookEvent}`,
-              )
-              return false
-            }
-            return true
-          })
-        : ifFilteredHooks
+    // HTTP, prompt, and agent hooks are not supported for SessionStart/Setup/SubagentStart
+    // events. Prompt and agent hooks inject structured tool output into the conversation
+    // which doesn't exist at session start time - use a command-type hook instead.
+    // HTTP hooks also deadlock because the sandbox ask callback hasn't started yet.
+    const HOOK_EVENTS_REQUIRING_COMMAND_TYPE = new Set([
+      'SessionStart',
+      'Setup',
+      'SubagentStart',
+    ])
+    const filteredHooks = HOOK_EVENTS_REQUIRING_COMMAND_TYPE.has(hookEvent)
+      ? ifFilteredHooks.filter(h => {
+          if (h.hook.type === 'http') {
+            logForDebugging(
+              `Skipping HTTP hook ${(h.hook as { url: string }).url} — HTTP hooks are not supported for ${hookEvent}`,
+            )
+            return false
+          }
+          if (h.hook.type === 'prompt' || h.hook.type === 'agent') {
+            logForDebugging(
+              `Skipping ${h.hook.type} hook for ${hookEvent} — ${hookEvent} events require a command-type hook. Use "type": "command" instead.`,
+            )
+            return false
+          }
+          return true
+        })
+      : ifFilteredHooks
 
     logForDebugging(
       `Matched ${filteredHooks.length} unique hooks for query "${matchQuery || 'no match query'}" (${matchedHooks.length} before deduplication)`,

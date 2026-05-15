@@ -888,6 +888,21 @@ function PromptInput({
     }
   }, [isPasting, addNotification, removeNotification]);
 
+  // Safety: Auto-reset isPasting if it stays true for too long (prevents stuck state)
+  useEffect(() => {
+    if (!isPasting) return
+    const timeout = setTimeout(() => {
+      setIsPasting(false)
+      addNotification({
+        key: 'paste-timeout',
+        text: 'Paste operation timed out. Try again.',
+        priority: 'immediate',
+        timeoutMs: 3000
+      })
+    }, 10000) // 10 second max
+    return () => clearTimeout(timeout)
+  }, [isPasting, addNotification])
+
   // Track input length for stash hint
   const prevInputLengthRef = useRef(input.length);
   const peakInputLengthRef = useRef(input.length);

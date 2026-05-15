@@ -1,4 +1,5 @@
 import { setMainLoopModelOverride } from '../bootstrap/state.js'
+import { ProviderManager } from '../services/ai/ProviderManager.js'
 import {
   clearApiKeyHelperCache,
   clearAwsCredentialsCache,
@@ -109,6 +110,16 @@ export function onChangeAppState({
     // Save to settings
     updateSettingsForSource('userSettings', { model: newState.mainLoopModel })
     setMainLoopModelOverride(newState.mainLoopModel)
+
+    // Also sync to ProviderManager so it persists in provider.json
+    const providerManager = ProviderManager.getInstance()
+    const config = providerManager.getSelectedProviderConfig(true) // force-reload
+    if (config.model !== newState.mainLoopModel) {
+      providerManager.saveSelectedProviderConfig({
+        ...config,
+        model: newState.mainLoopModel,
+      })
+    }
   }
 
   // expandedView → persist as showExpandedTodos + showSpinnerTree for backwards compat

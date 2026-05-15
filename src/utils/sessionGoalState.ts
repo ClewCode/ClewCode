@@ -15,7 +15,31 @@ import { mkdir, readFile, unlink, writeFile } from 'fs/promises'
  * Persistence path: ~/.claude/projects/<slug>/sessions/<sessionId>/goal.json
  */
 
+/** Full goal state persisted to disk */
+export type GoalState = {
+  goal: string
+  /** Parsed condition (without turn/time bound clauses) */
+  condition?: string
+  /** Turn limit if specified (e.g. "or stop after 20 turns") */
+  maxTurns?: number
+  /** Time limit in minutes if specified */
+  maxMinutes?: number
+  /** When the goal was set (timestamp) */
+  setAt?: number
+  /** Turn count since goal was set */
+  turnCount?: number
+  /** Total tokens spent on goal evaluation */
+  evalTokens?: number
+  /** Last evaluator reason */
+  lastReason?: string
+  /** Whether the goal was achieved */
+  achieved?: boolean
+  /** When the goal was achieved or cleared */
+  endedAt?: number
+}
+
 let currentGoal: string | null = null
+let currentGoalState: GoalState | null = null
 let restored = false
 let persistencePath: string | null = null
 
@@ -39,9 +63,17 @@ async function tryRestore(): Promise<void> {
     const exists = await pathExists(filePath)
     if (!exists) return
     const raw = await readFile(filePath, 'utf-8')
-    const parsed = JSON.parse(raw) as { goal?: string }
-    if (parsed.goal) {
+    const parsed = JSON.parse(raw) as GoalState | { goal?: string }
+    // Handle both old format ({ goal: string }) and new format (GoalState)
+    if ('goal' in parsed && parsed.goal) {
       currentGoal = parsed.goal
+      const fullState = 'condition' in parsed ? parsed as GoalState : null
+      currentGoalState = fullState
+      // If goal was already achieved or cleared, don't restore
+      if (fullState && (fullState.achieved || fullState.endedAt)) {
+        currentGoal = null
+        currentGoalState = null
+      }
     }
   } catch {
     // Non-fatal — goal stays null
@@ -50,6 +82,10 @@ async function tryRestore(): Promise<void> {
 
 export function getSessionGoal(): string | null {
   return currentGoal
+}
+
+export function getFullGoalState(): GoalState | null {
+  return currentGoalState
 }
 
 /**
@@ -68,17 +104,35 @@ export function getSessionGoalSync(): string | null {
 export function setSessionGoal(goal: string | null): void {
   currentGoal = goal
   restored = true // don't re-restore after explicit set
-  persistGoal(goal).catch(() => {})
+  if (goal === null) {
+    currentGoalState = null
+  }
+  persistGoal(currentGoalState).catch(() => {})
 }
 
-async function persistGoal(goal: string | null): Promise<void> {
+/** Set the full goal state with all metadata */
+export function setFullGoalState(state: GoalState | null): void {
+  currentGoal = state?.goal ?? null
+  currentGoalState = state
+  restored = true
+  persistGoal(state).catch(() => {})
+}
+
+/** Update specific fields in the goal state */
+export function updateGoalState(updates: Partial<GoalState>): void {
+  if (!currentGoalState) return
+  currentGoalState = { ...currentGoalState, ...updates }
+  persistGoal(currentGoalState).catch(() => {})
+}
+
+async function persistGoal(state: GoalState | null): Promise<void> {
   try {
     const filePath = getGoalFilePath()
-    if (goal === null) {
+    if (state === null) {
       try { await unlink(filePath) } catch { /* ENOENT ok */ }
     } else {
       await mkdir(join(filePath, '..'), { recursive: true })
-      await writeFile(filePath, JSON.stringify({ goal }), 'utf-8')
+      await writeFile(filePath, JSON.stringify(state), 'utf-8')
     }
   } catch {
     // Persistence failures are non-fatal — goal still works in-memory

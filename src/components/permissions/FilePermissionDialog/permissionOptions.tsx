@@ -1,5 +1,6 @@
 import { homedir } from 'os';
 import { basename, join, sep } from 'path';
+import { getClaudeConfigHomeDir } from '../../../utils/envUtils.js';
 import React, { type ReactNode } from 'react';
 import { getOriginalCwd } from '../../../bootstrap/state.js';
 import { Text } from '../../../ink.js';
@@ -33,7 +34,7 @@ export function isInClaudeFolder(filePath: string): boolean {
  */
 export function isInGlobalClaudeFolder(filePath: string): boolean {
   const absolutePath = expandPath(filePath);
-  const globalClaudeFolderPath = join(homedir(), '.claude');
+  const globalClaudeFolderPath = getClaudeConfigHomeDir();
   const normalizedAbsolutePath = normalizeCaseForComparison(absolutePath);
   const normalizedGlobalClaudeFolderPath = normalizeCaseForComparison(globalClaudeFolderPath);
   return normalizedAbsolutePath.startsWith(normalizedGlobalClaudeFolderPath + sep.toLowerCase()) || normalizedAbsolutePath.startsWith(normalizedGlobalClaudeFolderPath + '/');

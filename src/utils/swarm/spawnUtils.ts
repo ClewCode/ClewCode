@@ -3,14 +3,17 @@
  */
 
 import {
+  getAdditionalDirectoriesForClaudeMd,
   getChromeFlagOverride,
   getFlagSettingsPath,
   getInlinePlugins,
   getMainLoopModelOverride,
+  getRawMcpConfigArgs,
   getSessionBypassPermissionsMode,
 } from '../../bootstrap/state.js'
 import { quote } from '../bash/shellQuote.js'
 import { isInBundledMode } from '../bundledMode.js'
+import { getEffortEnvOverride } from '../effort.js'
 import type { PermissionMode } from '../permissions/PermissionMode.js'
 import { getTeammateModeFromSnapshot } from './backends/teammateModeSnapshot.js'
 import { TEAMMATE_COMMAND_ENV_VAR } from './constants.js'
@@ -73,6 +76,24 @@ export function buildInheritedCliFlags(options?: {
     flags.push(`--plugin-dir ${quote([pluginDir])}`)
   }
 
+  // Propagate --add-dir for each additional directory
+  const additionalDirs = getAdditionalDirectoriesForClaudeMd()
+  for (const dir of additionalDirs) {
+    flags.push(`--add-dir ${quote([dir])}`)
+  }
+
+  // Propagate --mcp-config for each raw MCP config arg
+  const mcpConfigArgs = getRawMcpConfigArgs()
+  for (const arg of mcpConfigArgs) {
+    flags.push(`--mcp-config ${quote([arg])}`)
+  }
+
+  // Propagate --effort if explicitly set via env/CLI
+  const effortOverride = getEffortEnvOverride()
+  if (effortOverride !== undefined && effortOverride !== null) {
+    flags.push(`--effort ${effortOverride}`)
+  }
+
   // Propagate --teammate-mode so tmux teammates use the same mode as leader
   const sessionMode = getTeammateModeFromSnapshot()
   flags.push(`--teammate-mode ${sessionMode}`)
@@ -125,6 +146,11 @@ const TEAMMATE_ENV_VARS = [
   'NODE_EXTRA_CA_CERTS',
   'REQUESTS_CA_BUNDLE',
   'CURL_CA_BUNDLE',
+  // Editor selection — the daemon's default editor may differ from the
+  // user's shell $EDITOR/$VISUAL. Forward these so "v to open in editor"
+  // in background sessions respects the user's configured editor.
+  'EDITOR',
+  'VISUAL',
 ] as const
 
 /**

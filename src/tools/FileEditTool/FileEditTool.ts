@@ -94,6 +94,9 @@ export const FileEditTool = buildTool({
   async prompt() {
     return getEditToolDescription()
   },
+  isConcurrencySafe() {
+    return true
+  },
   userFacingName,
   getToolUseSummary,
   getActivityDescription(input) {

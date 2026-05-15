@@ -24,6 +24,7 @@ import {
   getMarketingNameForModel,
 } from '../utils/model/model.js'
 import { getAntModelOverrideConfig } from '../utils/model/antModels.js'
+import { ProviderManager } from '../services/ai/ProviderManager.js'
 import { getSkillToolCommands } from 'src/commands.js'
 import { SKILL_TOOL_NAME } from '../tools/SkillTool/constants.js'
 import { getOutputStyleConfig } from './outputStyles.js'
@@ -446,8 +447,11 @@ export async function getSystemPrompt(
   mcpClients?: MCPServerConnection[],
 ): Promise<string[]> {
   if (isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)) {
+    const isAnthropic = process.env.CLAUDE_CODE_PROVIDER === 'anthropic' || !process.env.CLAUDE_CODE_PROVIDER
     return [
-      `You are Claude Code, Anthropic's official CLI for Claude.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
+      isAnthropic 
+        ? `You are Claude Code, Anthropic's official CLI for Claude.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`
+        : `You are an AI coding assistant.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`
     ]
   }
 
@@ -691,6 +695,7 @@ export async function computeSimpleEnvInfo(
 
   const cwd = getCwd()
   const isWorktree = getCurrentWorktreeSession() !== null
+  const isAnthropic = ProviderManager.getInstance().getActiveProviderName() === 'anthropic'
 
   const envItems = [
     `Primary working directory: ${cwd}`,
@@ -709,13 +714,13 @@ export async function computeSimpleEnvInfo(
     `OS Version: ${unameSR}`,
     modelDescription,
     knowledgeCutoffMessage,
-    process.env.USER_TYPE === 'ant' && isUndercover()
+    !isAnthropic || (process.env.USER_TYPE === 'ant' && isUndercover())
       ? null
       : `The most recent Claude model family is Claude 4.5/4.6. Model IDs — Opus 4.6: '${CLAUDE_4_5_OR_4_6_MODEL_IDS.opus}', Sonnet 4.6: '${CLAUDE_4_5_OR_4_6_MODEL_IDS.sonnet}', Haiku 4.5: '${CLAUDE_4_5_OR_4_6_MODEL_IDS.haiku}'. When building AI applications, default to the latest and most capable Claude models.`,
-    process.env.USER_TYPE === 'ant' && isUndercover()
+    !isAnthropic || (process.env.USER_TYPE === 'ant' && isUndercover())
       ? null
       : `Claude Code is available as a CLI in the terminal, desktop app (Mac/Windows), web app (claude.ai/code), and IDE extensions (VS Code, JetBrains).`,
-    process.env.USER_TYPE === 'ant' && isUndercover()
+    !isAnthropic || (process.env.USER_TYPE === 'ant' && isUndercover())
       ? null
       : `Fast mode for Claude Code uses the same ${FRONTIER_MODEL_NAME} model with faster output. It does NOT switch to a different model. It can be toggled with /fast.`,
   ].filter(item => item !== null)
@@ -773,7 +778,7 @@ export function getUnameSR(): string {
   return `${osType()} ${osRelease()}`
 }
 
-export const DEFAULT_AGENT_PROMPT = `You are an agent for Claude Code, Anthropic's official CLI for Claude. Given the user's message, you should use the tools available to complete the task. Complete the task fully—don't gold-plate, but don't leave it half-done. When you complete the task, respond with a concise report covering what was done and any key findings — the caller will relay this to the user, so it only needs the essentials.`
+export const DEFAULT_AGENT_PROMPT = `You are an agent for an AI coding assistant. Given the user's message, you should use the tools available to complete the task. Complete the task fully—don't gold-plate, but don't leave it half-done. When you complete the task, respond with a concise report covering what was done and any key findings — the caller will relay this to the user, so it only needs the essentials.`
 
 export async function enhanceSystemPromptWithEnvDetails(
   existingSystemPrompt: string[],
@@ -950,5 +955,10 @@ This is your overarching task. Keep working toward it autonomously:
 - Do NOT stop at a natural step boundary — continue until the goal is achieved.
 - If you need clarification, ask — but prefer action over questions.
 - Report progress at the end of each turn.
+
+An evaluator will check after each turn whether the goal condition is met.
+If you receive a message starting with "◎ /goal active", it means the goal
+is not yet met and you should continue working. The message will include
+guidance on what remains to be done.
 </session-goal>`
 }

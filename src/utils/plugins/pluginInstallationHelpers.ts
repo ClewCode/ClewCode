@@ -409,7 +409,7 @@ export async function installResolvedPlugin({
     // previously installed is treated as "already enabled" and its dependency
     // closure is skipped entirely — even if the marketplace entry has new or
     // changed dependencies since the last install.
-    getEnabledPluginIdsForScope(settingSource).filter(id => id !== pluginId),
+    new Set([...getEnabledPluginIdsForScope(settingSource)].filter(id => id !== pluginId)),
     allowedCrossMarketplaces,
   )
   if (!resolution.ok) {

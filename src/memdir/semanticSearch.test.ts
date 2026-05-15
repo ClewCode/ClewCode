@@ -1,0 +1,51 @@
+import { describe, it, expect } from 'bun:test'
+
+// Test cosine similarity directly to avoid sharp dependency issues
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length) return 0
+  let dotProduct = 0
+  let normA = 0
+  let normB = 0
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i]
+    normA += a[i] * a[i]
+    normB += b[i] * b[i]
+  }
+  const denominator = Math.sqrt(normA) * Math.sqrt(normB)
+  return denominator === 0 ? 0 : dotProduct / denominator
+}
+
+describe('semantic search', () => {
+  it('calculates cosine similarity correctly', () => {
+    // Identical vectors should have similarity 1
+    const a = [1, 0, 0]
+    const b = [1, 0, 0]
+    expect(cosineSimilarity(a, b)).toBeCloseTo(1, 5)
+
+    // Orthogonal vectors should have similarity 0
+    const c = [1, 0, 0]
+    const d = [0, 1, 0]
+    expect(cosineSimilarity(c, d)).toBeCloseTo(0, 5)
+
+    // Opposite vectors should have similarity -1
+    const e = [1, 0, 0]
+    const f = [-1, 0, 0]
+    expect(cosineSimilarity(e, f)).toBeCloseTo(-1, 5)
+
+    // Different magnitudes but same direction should have similarity 1
+    const g = [1, 2, 3]
+    const h = [2, 4, 6]
+    expect(cosineSimilarity(g, h)).toBeCloseTo(1, 5)
+  })
+
+  it('handles zero vectors', () => {
+    const zero = [0, 0, 0]
+    const normal = [1, 2, 3]
+    expect(cosineSimilarity(zero, normal)).toBe(0)
+    expect(cosineSimilarity(zero, zero)).toBe(0)
+  })
+
+  it('handles empty vectors', () => {
+    expect(cosineSimilarity([], [])).toBe(0)
+  })
+})

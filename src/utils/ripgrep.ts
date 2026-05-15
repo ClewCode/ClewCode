@@ -252,16 +252,62 @@ async function ripGrepFileCount(
   const { rgPath, rgArgs, argv0 } = ripgrepCommand()
 
   return new Promise<number>((resolve, reject) => {
-    const child = spawn(rgPath, [...rgArgs, ...args, target], {
-      argv0,
-      signal: abortSignal,
-      windowsHide: true,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    })
+    let child: ChildProcess;
+    try {
+      child = spawn(rgPath, [...rgArgs, ...args, target], {
+        argv0,
+        signal: abortSignal,
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      })
+    } catch (error) {
+      // Handle synchronous spawn failures (e.g. ENOENT)
+      if ((error as any).code === 'ENOENT') {
+        const { cmd: systemPath } = findExecutable('rg', [])
+        if (systemPath !== 'rg') {
+          try {
+            child = spawn(systemPath, [...args, target], {
+              signal: abortSignal,
+              windowsHide: true,
+              stdio: ['ignore', 'pipe', 'ignore'],
+            })
+          } catch (retryError) {
+            return reject(retryError)
+          }
+        } else {
+          return reject(error)
+        }
+      } else {
+        return reject(error)
+      }
+    }
 
     let lines = 0
     child.stdout?.on('data', (chunk: Buffer) => {
       lines += countCharInString(chunk, '\n')
+    })
+
+    child.on('error', (error: any) => {
+      if (error.code === 'ENOENT') {
+        const { cmd: systemPath } = findExecutable('rg', [])
+        if (systemPath !== 'rg') {
+          // Fallback to system rg
+          const retryChild = spawn(systemPath, [...args, target], {
+            signal: abortSignal,
+            windowsHide: true,
+            stdio: ['ignore', 'pipe', 'ignore'],
+          })
+          retryChild.stdout?.on('data', (chunk: Buffer) => {
+            lines += countCharInString(chunk, '\n')
+          })
+          retryChild.on('close', code => {
+            resolve(lines)
+          })
+          retryChild.on('error', reject)
+          return
+        }
+      }
+      reject(error)
     })
 
     // On Windows, both 'close' and 'error' can fire for the same process.

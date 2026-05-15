@@ -123,7 +123,7 @@ export function isActiveProviderAnthropic(): boolean {
     const { ProviderManager } = require('../services/ai/ProviderManager.js') as typeof import('../services/ai/ProviderManager.js')
     const config = ProviderManager.getInstance().getSelectedProviderConfig()
     if (!config?.provider) return true // Default: Anthropic
-    const anthropicProviders = ['anthropic', 'bedrock', 'vertex', 'foundry', 'copilot']
+    const anthropicProviders = ['anthropic', 'bedrock', 'vertex', 'foundry']
     return anthropicProviders.includes(config.provider)
   } catch {
     return true // If ProviderManager can't be loaded, assume Anthropic
@@ -135,6 +135,9 @@ export function isActiveProviderAnthropic(): boolean {
 export function isAnthropicAuthEnabled(): boolean {
   // --bare: API-key-only, never OAuth.
   if (isBareMode()) return false
+
+  // If active provider is not Anthropic, disable Anthropic-specific auth
+  if (!isActiveProviderAnthropic()) return false
 
   // `claude ssh` remote: ANTHROPIC_UNIX_SOCKET tunnels API calls through a
   // local auth-injecting proxy. The launcher sets CLAUDE_CODE_OAUTH_TOKEN as a

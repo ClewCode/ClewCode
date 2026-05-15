@@ -12,17 +12,19 @@ import type {
   LocalJSXCommandContext,
   LocalJSXCommandOnDone,
 } from '../../types/command.js'
+import { PROVIDER_CONFIG_PATH, ProviderManager, getEffectiveProviderConfigPath, getProjectProviderConfigPath } from '../../services/ai/ProviderManager.js'
+import { clearProviderModelsCache, fetchProviderModels } from '../../services/ai/providerModels.js'
 import {
   PROVIDER_IDS,
   getProviderRegistryEntry,
   type ProviderRegistryEntry,
 } from '../../services/ai/providerRegistry.js'
-import { clearProviderModelsCache, fetchProviderModels } from '../../services/ai/providerModels.js'
-import { ProviderManager, getProjectProviderConfigPath, getEffectiveProviderConfigPath, PROVIDER_CONFIG_PATH } from '../../services/ai/ProviderManager.js'
+import { getOauthAccountInfo } from '../../utils/auth.js'
 import { OpenAIOAuthFlow } from '../../components/OpenAIOAuthFlow.js'
 import { GitHubCopilotAuthFlow } from '../../components/GitHubCopilotAuthFlow.js'
 import type { OpenAIOAuthTokens } from '../../services/openaiOAuth/index.js'
 import type { GitHubOAuthTokens } from '../../services/oauth/githubOAuth.js'
+import { Login as AnthropicLogin } from '../login/login.js'
 
 type SerializableProviderRegistryEntry = Omit<ProviderRegistryEntry, 'provider'>
 
@@ -142,7 +144,7 @@ function applyProviderSelectionToSession(
   isGlobal = false,
 ): void {
   const providerManager = ProviderManager.getInstance()
-  
+
   if (config.provider) {
     providerManager.setSessionProvider(config.provider as any)
   }
@@ -153,9 +155,13 @@ function applyProviderSelectionToSession(
     providerManager.setSessionApiKeys(config.apiKeys)
   }
 
+  // Always persist the model to settings so it survives across sessions.
+  // Previously only --global saved the model; the interactive picker set
+  // mainLoopModelForSession (session-only), so the model was lost on restart
+  // while the provider config file still pointed at the old selection.
   setAppState(prev => ({
     ...prev,
-    mainLoopModel: isGlobal ? config.model : prev.mainLoopModel,
+    mainLoopModel: config.model || prev.mainLoopModel,
     mainLoopModelForSession: isGlobal ? null : config.model,
     mainLoopProvider: isGlobal ? config.provider : prev.mainLoopProvider,
     mainLoopProviderForSession: isGlobal ? null : config.provider,
@@ -410,6 +416,7 @@ function ProviderPicker({
   const [searchQuery, setSearchQuery] = React.useState('')
   const [searchCursorOffset, setSearchCursorOffset] = React.useState(0)
   const [showOpenAIOAuth, setShowOpenAIOAuth] = React.useState(false)
+  const [showAnthropicOAuth, setShowAnthropicOAuth] = React.useState(false)
   const [showGitHubCopilotAuth, setShowGitHubCopilotAuth] = React.useState(false)
   const setAppState = useSetAppState()
   const currentSessionModel = useAppState(s => (s.mainLoopModelForSession || s.mainLoopModel) as string | null)
@@ -689,7 +696,16 @@ function ProviderPicker({
         visibleOptionCount: 5,
         onChange: value => {
           setAnthropicType(value as any)
-          if (value !== 'direct') {
+          if (value === 'subscriber') {
+            const hasOAuth = Boolean(getOauthAccountInfo()?.emailAddress)
+            if (!hasOAuth) {
+              setShowAnthropicOAuth(true)
+            } else {
+              // They already have OAuth, so we can just set it and prompt to save
+              setShowChangeKey(false)
+            }
+          }
+          if (value !== 'direct' && value !== 'subscriber') {
             // Bedrock/Vertex/Foundry usually don't need a single API key in the same way
             // or they use different env vars.
           }
@@ -783,6 +799,23 @@ function ProviderPicker({
         setSearchQuery('')
         setSearchCursorOffset(0)
       },
+    })
+  }
+
+  // Anthropic OAuth flow for Subscription
+  if (provider === 'anthropic' && showAnthropicOAuth) {
+    return React.createElement(AnthropicLogin, {
+      onDone: (success: boolean, mainLoopModel: string) => {
+        setShowAnthropicOAuth(false)
+        if (success) {
+          void saveProviderSelection()
+        } else {
+          setAnthropicType(null)
+          setProvider(null)
+          setSearchQuery('')
+          setSearchCursorOffset(0)
+        }
+      }
     })
   }
 
@@ -882,7 +915,7 @@ function ProviderPicker({
           : anthropicType && anthropicType !== 'direct' && anthropicType !== 'subscriber'
             ? `API key/Token (Optional) for ${info.label} ${anthropicType} (Press Enter to skip)`
             : anthropicType === 'subscriber'
-              ? `Note: Subscription mode uses OAuth. Please run /login if you haven't already. (Press Enter to continue)`
+              ? `You are logged in via OAuth. Press Enter to use this account.`
               : openaiType === 'subscriber'
                 ? `Enter CHATGPT_SESSION_TOKEN for ChatGPT Plus (Web)`
                 : googleType === 'vertex'

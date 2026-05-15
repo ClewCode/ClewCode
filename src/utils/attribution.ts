@@ -4,6 +4,7 @@ import { getClientType } from '../bootstrap/state.js'
 import {
   getRemoteSessionUrl,
   isRemoteSessionLocal,
+  PRODUCT_NAME,
   PRODUCT_URL,
 } from '../constants/product.js'
 import { TERMINAL_OUTPUT_TAGS } from '../constants/xml.js'
@@ -76,8 +77,9 @@ export function getAttributionTexts(): AttributionTexts {
     isInternalModelRepoCached() || isKnownPublicModel
       ? getPublicModelName(model)
       : 'Claude Opus 4.6'
-  const defaultAttribution = `🤖 Generated with [Claude Code](${PRODUCT_URL})`
-  const defaultCommit = `Co-Authored-By: ${modelName} <noreply@anthropic.com>`
+  const coAuthoredEmail = process.env.CLAUDE_CODE_CO_AUTHOR_EMAIL || 'noreply@anthropic.com'
+  const defaultAttribution = `🤖 Generated with [${PRODUCT_NAME}](${PRODUCT_URL})`
+  const defaultCommit = `Co-Authored-By: ${modelName} <${coAuthoredEmail}>`
 
   const settings = getInitialSettings()
 
@@ -325,7 +327,7 @@ export async function getEnhancedPRAttribution(
     return ''
   }
 
-  const defaultAttribution = `🤖 Generated with [Claude Code](${PRODUCT_URL})`
+  const defaultAttribution = `🤖 Generated with [${PRODUCT_NAME}](${PRODUCT_URL})`
 
   // Get AppState first
   const appState = getAppState()
@@ -371,7 +373,7 @@ export async function getEnhancedPRAttribution(
     memoryAccessCount > 0
       ? `, ${memoryAccessCount} ${memoryAccessCount === 1 ? 'memory' : 'memories'} recalled`
       : ''
-  const summary = `🤖 Generated with [Claude Code](${PRODUCT_URL}) (${claudePercent}% ${promptCount}-shotted by ${shortModelName}${memSuffix})`
+  const summary = `🤖 Generated with [${PRODUCT_NAME}](${PRODUCT_URL}) (${claudePercent}% ${promptCount}-shotted by ${shortModelName}${memSuffix})`
 
   // Append trailer lines for squash-merge survival. Only for allowlisted repos
   // (INTERNAL_MODEL_REPOS) and only in builds with COMMIT_ATTRIBUTION enabled —

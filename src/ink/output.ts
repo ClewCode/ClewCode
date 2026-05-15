@@ -22,6 +22,7 @@ import {
   resetScreen,
   type Screen,
   type StylePool,
+  cellAt,
   setCellAt,
   shiftRows,
 } from './screen.js'

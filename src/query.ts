@@ -1337,6 +1337,46 @@ async function* queryLoop(
         continue
       }
 
+      // Goal continuation: if a goal is active and not yet achieved, inject
+      // a nudge message with the evaluator's reason and continue the loop.
+      // This is checked after stop hooks because the goal evaluator runs there.
+      {
+        const { getFullGoalState } = await import('../utils/sessionGoalState.js')
+        const goalState = getFullGoalState()
+        if (
+          goalState &&
+          goalState.goal &&
+          !goalState.achieved &&
+          goalState.lastReason &&
+          !toolUseContext.agentId &&
+          querySource.startsWith('repl_main_thread')
+        ) {
+          const nudge = createUserMessage({
+            content: `The goal is not yet met. Last evaluation: ${goalState.lastReason}\n\nContinue working toward the goal: "${goalState.condition || goalState.goal}"`,
+            isMeta: true,
+          })
+          const next: State = {
+            messages: [
+              ...messagesForQuery,
+              ...assistantMessages,
+              nudge,
+            ],
+            toolUseContext,
+            autoCompactTracking: tracking,
+            maxOutputTokensRecoveryCount: 0,
+            hasAttemptedReactiveCompact: false,
+            maxOutputTokensOverride: undefined,
+            pendingToolUseSummary: undefined,
+            stopHookActive: true,
+            turnCount,
+            transition: { reason: 'goal_continuation' },
+            briefModeRetryCount: state.briefModeRetryCount,
+          }
+          state = next
+          continue
+        }
+      }
+
       if (feature('TOKEN_BUDGET')) {
         const decision = checkTokenBudget(
           budgetTracker!,

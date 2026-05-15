@@ -545,11 +545,6 @@ function getConnectionTimeoutMs(): number {
 }
 
 /**
- * Default timeout for individual MCP requests (auth, tool calls, etc.)
- */
-const MCP_REQUEST_TIMEOUT_MS = 60000
-
-/**
  * MCP Streamable HTTP spec requires clients to advertise acceptance of both
  * JSON and SSE on every POST. Servers that enforce this strictly reject
  * requests without it (HTTP 406).
@@ -704,12 +699,14 @@ export function wrapFetchWithTimeout(baseFetch: FetchLike): FetchLike {
     // Use setTimeout instead of AbortSignal.timeout() so we can clearTimeout on
     // completion. AbortSignal.timeout's internal timer is only released when the
     // signal is GC'd, which in Bun is lazy — ~2.4KB of native memory per request
-    // lingers for the full 60s even when the request completes in milliseconds.
+    // lingers even when the request completes in milliseconds.
+    // Use getMcpToolTimeoutMs() so MCP_TOOL_TIMEOUT raises the per-request fetch
+    // timeout for remote HTTP and SSE MCP servers (previously hardcoded at 60s).
     const controller = new AbortController()
     const timer = setTimeout(
       c =>
         c.abort(new DOMException('The operation timed out.', 'TimeoutError')),
-      MCP_REQUEST_TIMEOUT_MS,
+      getMcpToolTimeoutMs(),
       controller,
     )
     timer.unref?.()
@@ -1136,7 +1133,7 @@ export const connectToServer = memoize(
             url: serverRef.url,
             headers: headersForLogging,
             hasAuthProvider: !!authProvider,
-            timeoutMs: MCP_REQUEST_TIMEOUT_MS,
+            timeoutMs: getMcpToolTimeoutMs(),
           })}`,
         )
 

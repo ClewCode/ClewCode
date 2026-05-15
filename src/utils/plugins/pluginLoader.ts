@@ -1447,16 +1447,19 @@ export async function createPluginFromPath(
   // Always check for skills/ directory — when plugin.json declares "skills"
   // entries (specific skill files), those should be additive rather than
   // hiding the default skills/ directory.
+  // Also check for root-level SKILL.md (plugin as a single skill).
   const [
     commandsDirExists,
     agentsDirExists,
     skillsDirExists,
+    rootSkillMdExists,
     outputStylesDirExists,
     binDirExists,
   ] = await Promise.all([
     !manifest.commands ? pathExists(join(pluginPath, "commands")) : false,
     !manifest.agents ? pathExists(join(pluginPath, "agents")) : false,
     pathExists(join(pluginPath, "skills")),
+    pathExists(join(pluginPath, "SKILL.md")),
     !manifest.outputStyles
       ? pathExists(join(pluginPath, "output-styles"))
       : false,
@@ -1468,7 +1471,7 @@ export async function createPluginFromPath(
   // Collect warnings for display in /doctor, claude plugin list, and /plugin.
   const suppressedOverrides = (
     await Promise.all(
-      (['commands', 'agents', 'hooks', 'output-styles'] as const).map(async key => {
+      (['commands', 'agents', 'hooks', 'output-styles', 'skills', 'bin'] as const).map(async key => {
         const manifestKey = key === 'output-styles' ? 'outputStyles' : key;
         if (!(manifest as any)[manifestKey]) return null;
         const dirPath = join(pluginPath, key);
@@ -1656,10 +1659,16 @@ export async function createPluginFromPath(
     }
   }
 
-  // Step 4b: Register skills directory if detected
+  // Step 4b: Register skills directory if detected.
+  // If the plugin has a skills/ directory, use that.
+  // Otherwise, if the plugin has a root-level SKILL.md and no skills/
+  // subdirectory, surface the entire plugin as a single skill.
   const skillsPath = join(pluginPath, "skills");
   if (skillsDirExists) {
     plugin.skillsPath = skillsPath;
+  } else if (rootSkillMdExists) {
+    // Root SKILL.md without a skills/ directory — the plugin itself is a skill.
+    plugin.skillsPath = pluginPath;
   }
 
   // Step 4c: Process additional skill paths from manifest

@@ -1,4 +1,5 @@
 import { z } from 'zod/v4'
+import { join } from 'path'
 import { getSessionId, setOriginalCwd } from '../../bootstrap/state.js'
 import { clearSystemPromptSections } from '../../constants/systemPromptSections.js'
 import { logEvent } from '../../services/analytics/index.js'
@@ -14,7 +15,9 @@ import { saveWorktreeState } from '../../utils/sessionStorage.js'
 import {
   createWorktreeForSession,
   getCurrentWorktreeSession,
+  restoreWorktreeSession,
   validateWorktreeSlug,
+  type WorktreeSession,
 } from '../../utils/worktree.js'
 import { ENTER_WORKTREE_TOOL_NAME } from './constants.js'
 import { getEnterWorktreeToolPrompt } from './prompt.js'
@@ -78,6 +81,41 @@ export const EnterWorktreeTool: Tool<InputSchema, Output> = buildTool({
     // Validate not already in a worktree created by this session
     if (getCurrentWorktreeSession()) {
       throw new Error('Already in a worktree session')
+    }
+
+    // Check if CWD is already inside a pre-existing git worktree (e.g. from a
+    // background session that was dispatched into an existing worktree dir).
+    // When the .git at CWD is a gitdir: pointer file (not a directory), we're
+    // already in a worktree — adopt it rather than trying to create a duplicate.
+    const cwd = getCwd()
+    let cwdIsWorktree = false
+    try {
+      const gitPtr = await import('fs/promises').then(fs =>
+        fs.readFile(join(cwd, '.git'), 'utf-8'),
+      )
+      cwdIsWorktree = gitPtr.trim().startsWith('gitdir:')
+    } catch {
+      // ENOENT or not readable — not a git worktree
+    }
+    if (cwdIsWorktree) {
+      const worktreeSession: WorktreeSession = {
+        originalCwd: cwd,
+        worktreePath: cwd,
+        worktreeName: 'existing',
+        sessionId: getSessionId(),
+      }
+      restoreWorktreeSession(worktreeSession)
+      saveWorktreeState(worktreeSession)
+      clearSystemPromptSections()
+      clearMemoryFileCaches()
+      getPlansDirectory.cache.clear?.()
+      logEvent('tengu_worktree_adopted_existing', {})
+      return {
+        data: {
+          worktreePath: cwd,
+          message: `Adopted existing git worktree at ${cwd}.`,
+        },
+      }
     }
 
     // Resolve to main repo root so worktree creation works from within a worktree

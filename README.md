@@ -1,231 +1,266 @@
 # Claude Code
 
-A research fork of Anthropic's Claude Code CLI — a terminal-based AI coding assistant with multi-provider routing, an extensible plugin architecture, and comprehensive tool system.
+A research-oriented fork of Anthropic's [Claude Code](https://claude.ai/code) CLI, featuring **unified multi-provider routing**, **provider-specific adapters**, and an **extensible plugin architecture**.
 
-> This repository is an independent research and development project. It is not affiliated with or endorsed by Anthropic PBC.
+> This repository is an independent research and development project. It is not affiliated with, endorsed by, or sponsored by Anthropic PBC.
 
-## Overview
+## Introduction
 
-Claude Code extends the Claude Code CLI into a multi-provider AI platform. It preserves the original terminal interface and tool execution model while adding support for 14 AI providers, 54 built-in tools, 104 slash commands, 14 plugins, and 20 bundled skills.
+Claude Code extends the original Claude Code terminal interface into a comprehensive multi-provider AI development platform. It maintains full compatibility with the original tool execution model while introducing support for over 15 AI providers, 55 built-in tools, 100+ slash commands, and a modular plugin ecosystem.
 
-The project runs on [Bun](https://bun.sh) 1.3+ and targets Windows, macOS, and Linux (including WSL2).
+The platform is built on [Bun](https://bun.sh) 1.3+ and supports Windows, macOS, and Linux (including WSL2) environments.
 
-### Key Capabilities
+## Core Features
 
-- **Multi-Provider AI** — Unified interface across Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, and more with seamless provider/model switching.
-- **Terminal UI** — React (Ink 6)-based terminal interface with syntax highlighting, scrollback, search, and keyboard navigation.
-- **Tool System** — 54 built-in tools covering file operations, shell execution, web search/fetch, git, MCP, subagents, Jupyter notebooks, LSP, structured diff editing, and more.
-- **Plugin Architecture** — Extensible plugin system supporting hooks, skills, commands, agents, MCP servers, and custom output styles.
-- **Permission Model** — Layered permission system from interactive approval through progressive automation modes (YOLO Lite, YOLO ALLOW, YOLO MAX).
-- **Subagent Runtime** — Background AI agents for parallel task execution with lease management, stale recovery, and workspace isolation.
-- **MCP Integration** — Model Context Protocol support with OAuth/SSE/stdio transports, tool registry, and channel notifications.
-- **Bridge Mode** — WebSocket-based remote collaboration with session sharing and team onboarding.
-- **Skill System** — 20 bundled skills (debug, web search, scrapling, commit, code review, and more) plus project-level custom skills.
+### Multi-Provider Support
 
-## Requirements
+A unified interface for seamless switching between AI providers at runtime via the `/model` command. Supported providers include:
 
-| Dependency | Version |
-|-----------|---------|
-| [Bun](https://bun.sh) | 1.3 or newer |
-| Git | 2.x or newer |
-| OS | Windows, macOS, Linux, or WSL2 |
+| Provider | Environment Variable |
+|----------|---------------------|
+| Anthropic Claude | `ANTHROPIC_API_KEY` |
+| OpenAI GPT | `OPENAI_API_KEY` |
+| Google Gemini | `GOOGLE_API_KEY` |
+| OpenRouter | `OPENROUTER_API_KEY` |
+| DeepSeek | `DEEPSEEK_API_KEY` |
+| Ollama (Local) | `OLLAMA_API_KEY`, `OLLAMA_HOST` |
+| xAI (Grok) | `XAI_API_KEY` |
+| Mistral | `MISTRAL_API_KEY` |
+| Groq | `GROQ_API_KEY` |
+| GitHub Copilot | `COPILOT_GITHUB_TOKEN` |
+| KiloCode | `KILOCODE_API_KEY` |
+| OpenCode | `OPENCODE_API_KEY` |
+| OpenCode Go | `OPENCODE_GO_API_KEY` |
+| Cline | `CLINE_API_KEY` |
+| ChatGPT Plus | `CHATGPT_SUBSCRIPTION_KEY` |
 
-At least one configured AI provider API key is required for AI functionality.
+### Adapter Architecture
 
-## Quick Start
+Non-Anthropic SDK clients are transparently wrapped into a unified streaming interface through dedicated adapters (`AnthropicAdapter`, `GoogleAdapter`). This design allows the core streaming loop to remain provider-agnostic while supporting heterogeneous AI backends.
+
+### Built-in Tools (55+)
+
+| Category | Tools |
+|----------|-------|
+| File Operations | Read, Edit, Write, Glob, Grep, FileEdit, FileRead, FileWrite, NotebookEdit |
+| Shell Execution | Bash, PowerShell, Sleep |
+| Web & Browser | WebFetch, WebSearch, Browser, WebBrowser |
+| Code Intelligence | CodeIndex, LSP, JsonPath |
+| AI & Task Management | Agent, Research, Task (Create/Get/List/Update/Output/Stop) |
+| Planning | EnterPlanMode, ExitPlanMode, VerifyPlanExecution, Workflow |
+| Meta & Configuration | Skill, ToolSearch, Config, TodoWrite, Monitor, RemoteTrigger |
+| Communication | SendMessage, AskUserQuestion |
+| MCP Integration | MCP, McpAuth, ListMcpResource, ReadMcpResource |
+| Utilities | REPL, ScheduleCron, SyntheticOutput, ComputerUse, Brief, MultiSearch, Worktree |
+
+### Slash Commands (100+)
+
+Comprehensive command system for provider selection, session management, diagnostics, utilities, and integrations. Key commands include:
+
+- `/model` — Switch AI provider or model at runtime
+- `/status` — Display internal state, context usage, and provider information
+- `/doctor` — Run diagnostics and automatic remediation
+- `/context` — View context window utilization
+- `/compact` — Compress conversation context
+- `/mcp` — Manage Model Context Protocol servers
+- `/plugin` — Manage plugin lifecycle
+- `/bridge` — Configure remote collaboration mode
+
+### Plugin System
+
+Extensible plugin architecture with lifecycle hooks:
+
+- `PreToolUse` / `PostToolUse` — Intercept tool execution
+- `PreBash` / `PostBash` — Intercept shell commands
+- `PostPrompt` — Intercept prompt submissions
+- `PreAcceptEdit` — Intercept file edits
+
+Plugins are loaded from `~/.claude/plugins/` and bundled plugins reside in `src/plugins/bundled/`.
+
+### Skill System
+
+Modular capability packages with progressive disclosure. Bundled skills include browser automation, commit workflows, debugging, code simplification, remote agent scheduling, and more. Project-level skills are loaded from `.claude/skills/` at startup.
+
+### Additional Capabilities
+
+- **MCP Integration** — Model Context Protocol with OAuth, SSE, and stdio transports
+- **Bridge Mode** — WebSocket-based remote collaboration and session sharing
+- **Vim Mode** — Modal editing with motions, operators, and text objects
+- **Custom Keybindings** — Configurable chord-based keybinding engine
+- **LSP Support** — Language Server Protocol integration for code intelligence
+- **Session Memory** — Persistent session lifecycle and memory management
+- **Settings Sync** — Cross-device configuration synchronization
+
+## Technology Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Bun 1.3+ |
+| Language | TypeScript 5.x ESM (`NodeNext` module resolution) |
+| UI Framework | React 19 + Ink 6 |
+| AI SDK | Vercel AI SDK (`@ai-sdk/*`) + `@anthropic-ai/sdk` |
+| Validation | Zod 3 + Valibot 0.42 |
+| CLI Framework | Commander.js 13 |
+| Search | fuse.js + fzf |
+| Diff | diff |
+| Markdown | marked + highlight.js + turndown |
+| Terminal | chalk + ora + ink-spinner + ink-text-input |
+
+## Installation & Development
+
+### Prerequisites
+
+- [Bun](https://bun.sh) 1.3 or later
+- At least one AI provider API key
+
+### Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/JonusNattapong/ClaudeCode.git
-cd ClaudeCode
+git clone <repository-url>
+cd claudecode
 
 # Install dependencies
 bun install
 
-# Build the project
-bun run build
-
-# Start a session
-bun run src/main.tsx session
+# Set environment variables (example)
+export ANTHROPIC_API_KEY=your-api-key-here
 ```
 
-Development mode with hot reload:
+### Development Commands
 
 ```bash
-bun run dev
+bun run dev            # Start development mode with hot reload
+bun run start          # Run in production mode
+bun run build          # Build production bundle to dist/
+bun test               # Execute all tests
+bun test <path>        # Run specific test file or directory
+bun x tsc --noEmit     # TypeScript type checking only
 ```
 
-Run the test suite:
+### Debug Logging
 
 ```bash
-bun test
+DEBUG=1 bun run src/main.tsx              # Enable full debug logging
+DEBUG=provider:anthropic bun run src/main.tsx  # Per-provider debug logging
 ```
 
-## AI Provider Configuration
+## Architecture
 
-The following providers are implemented in `src/services/ai/providers/`:
-
-| Provider | Environment Variable |
-|----------|---------------------|
-| Anthropic (default) | `ANTHROPIC_API_KEY` |
-| OpenAI | `OPENAI_API_KEY` |
-| Google Gemini | `GOOGLE_GENERATIVE_API_KEY` |
-| OpenRouter | `OPENROUTER_API_KEY` |
-| DeepSeek | `DEEPSEEK_API_KEY` |
-| Ollama | `OLLAMA_HOST` |
-| xAI Grok | `XAI_API_KEY` |
-| Mistral | `MISTRAL_API_KEY` |
-| Groq | `GROQ_API_KEY` |
-| Copilot | GitHub token |
-| KiloCode | `KILOCODE_API_KEY` |
-| OpenCode | `OPENCODE_API_KEY` |
-| Cline API | `CLINE_API_KEY` |
-| ChatGPT Plus | Session token |
-
-Configure one or more providers via environment variables or `.env` file:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-export OPENAI_API_KEY=sk-...
-export GOOGLE_GENERATIVE_API_KEY=...
-```
-
-Within the CLI, switch providers and models interactively using `/provider` and `/model` commands.
-
-Refer to [docs/providers.html](docs/providers.html) for detailed configuration instructions.
-
-## Commands, Tools, and Skills
-
-### Slash Commands (104)
-
-The command system covers file operations, git workflows, AI model management, plugin administration, MCP server management, session control, diagnostics, and more. Common commands include:
+### High-Level Overview
 
 ```
-/help              Command reference
-/model             Select or inspect AI models
-/provider          Switch AI provider
-/config            Edit configuration
-/permissions       Manage permission settings
-/mcp               Manage MCP servers
-/agents            Manage subagents
-/plugins           Manage plugins
-/theme             Change terminal theme
-/doctor            Run system diagnostics
-/compact           Compact conversation context
-/resume            Resume a previous session
-/stats             View token usage statistics
++-------------------------------------------+
+|       Terminal UI (Ink 6 + React 19)      |
+|  App.tsx, Screens, Components, Buddy      |
++-------------------------------------------+
+|         Command Handler Layer             |
+|  100+ Commands, Keybindings, Vim Mode     |
++-------------------------------------------+
+|      AI Provider & Adapter Layer          |
+|  ProviderManager, ProviderRegistry        |
+|  AnthropicAdapter, GoogleAdapter          |
++-------------------------------------------+
+|      Core Query & Streaming Engine        |
+|  main.tsx, QueryEngine, query.ts          |
+|  ToolExecution, Orchestration, Hooks      |
++-------------------------------------------+
+|      Services & Infrastructure            |
+|  MCP, Plugins, LSP, Bridge, Config        |
+|  Coordinator, Supervisor, SettingsSync    |
++-------------------------------------------+
 ```
 
-See [docs/commands.html](docs/commands.html) for the full command reference.
+### Key Components
 
-### Built-in Tools (54)
+| Component | Description |
+|-----------|-------------|
+| `src/main.tsx` | Main entry point, CLI bootstrap, streaming loop (~4900 lines) |
+| `src/query.ts` | Core AI query processing (~1770 lines) |
+| `src/QueryEngine.ts` | Query execution orchestration (~1280 lines) |
+| `src/services/ai/` | Provider management, adapters, registry |
+| `src/commands/` | Slash command implementations |
+| `src/tools/` | Built-in tool implementations |
+| `src/services/tools/` | Tool execution and orchestration |
+| `src/plugins/` | Plugin lifecycle management |
+| `src/bridge/` | WebSocket remote collaboration |
+| `src/state/` | Lightweight reactive store |
 
-Tools are organized by purpose in `src/tools/`:
+### Multi-Provider Request Flow
 
-- **File Operations**: Read, Edit, Write, Glob, Grep, NotebookEdit, FileEditTool
-- **Shell Execution**: BashTool, PowerShell
-- **Version Control**: Git
-- **Web**: WebFetch, WebSearch, ResearchTool
-- **AI & Agents**: Agent, Task, Skill, AskUserQuestion
-- **Protocol Integration**: MCPTool, MCPSearchTool, LSP
-- **Code Intelligence**: CodeIndex
-- **Media**: MediaUnderstanding
-- **Scheduling**: ScheduleCronTool
-- **Monitoring**: Monitor
-- **Persistence**: MemoryTool
+1. User selects provider via `/model` command or configuration file (`~/.claude/provider.json`)
+2. `ProviderManager` resolves the selected provider and retrieves API credentials
+3. `providerRegistry` looks up provider capabilities and model metadata
+4. For non-Anthropic providers, the adapter layer wraps the SDK client into a compatible interface
+5. `contentBlockUtils` normalizes content blocks between provider formats
+6. The main streaming loop processes responses through a uniform pipeline
 
-See [docs/tools.html](docs/tools.html) for detailed tool documentation.
+### Tool Execution Flow
 
-### Bundled Skills (20)
-
-Skills in `src/skills/bundled/` provide specialized capabilities:
-
-`batch`, `claudeApi`, `claudeApiContent`, `claudeInChrome`, `commit`, `debug`, `index`, `keybindings`, `loop`, `loremIpsum`, `remember`, `scheduleRemoteAgents`, `scrapling`, `simplify`, `skillify`, `stuck`, `updateConfig`, `verify`, `verifyContent`, `webSearch`
-
-See [docs/skills.html](docs/skills.html) for skill usage documentation.
-
-## Plugin System
-
-The plugin system supports third-party and bundled extensions with the following capabilities:
-
-- Commands, agents, skills, and hooks
-- MCP server integration
-- Custom output styles
-- Marketplace installation via `clawdhub.com`
-
-### Included Plugins (14)
-
-`agent-sdk-dev`, `claude-opus-4-5-migration`, `code-review`, `commit-commands`, `dek-opus-4-5-migration`, `explanatory-output-style`, `feature-dev`, `frontend-design`, `hookify`, `learning-output-style`, `plugin-dev`, `pr-review-toolkit`, `ralph-wiggum`, `security-guidance`
-
-Plugin examples reside in `plugins/`. See [plugins/README.md](plugins/README.md) and [docs/plugins.html](docs/plugins.html) for development and usage documentation.
-
-## Permissions and Automation
-
-The permission system operates in tiers:
-
-| Mode | Behavior |
-|------|----------|
-| **Default** | Interactive approval for each tool execution |
-| **YOLO Lite** | Read-only operations auto-approved |
-| **YOLO ALLOW** | Most tools auto-approved; dangerous operations prompt |
-| **YOLO MAX** | Fully autonomous execution; bypass all confirmations |
-
-Use automation modes only in trusted repositories or disposable sandboxes. See [docs/permissions.html](docs/permissions.html) for configuration details.
+1. AI model returns `tool_use` content blocks
+2. `toolCallParser` normalizes tool calls across provider formats
+3. `StreamingToolExecutor` executes the requested tool
+4. `toolHooks` apply pre/post execution hooks from active plugins
+5. Results are returned as `tool_result` blocks for the next AI turn
 
 ## Project Structure
 
 ```
 src/
-  commands/          Slash command implementations and UI (104 commands)
-  components/        Terminal UI components (React/Ink)
-  context/           React contexts and shared application state
-  services/          Core services (AI providers, MCP, analytics, search, plugins, voice, VCR)
-  skills/            Skill loading and bundled skill implementations
-  tools/             Built-in tool implementations (54 tools)
-  utils/             Shared utilities (config, permissions, telemetry, shell, plugins, filesystem)
-  native-ts/         TypeScript ports of native/cpp modules (color-diff, file-index, yoga-layout)
-
-docs/                Static HTML documentation site
-plugins/             Bundled and example plugin directories
-examples/            Example settings, hooks, and policy files
-scripts/             Utility and automation scripts
-assets/              Media assets
+├── main.tsx                 Main entry point and streaming loop
+├── query.ts                 Core AI query processing
+├── QueryEngine.ts           Query execution orchestration
+├── commands.ts              Command registry
+├── tools.ts                 Tool registry
+├── commands/                100+ slash command implementations
+├── tools/                   55+ built-in tool implementations
+├── services/
+│   ├── ai/                  ProviderManager, adapters, providers, registry
+│   ├── mcp/                 MCP client and connection management
+│   ├── plugins/             Plugin lifecycle management
+│   ├── tools/               Tool execution and orchestration
+│   ├── lsp/                 Language Server Protocol integration
+│   ├── Supervisor/          Agent supervision and coordination
+│   ├── SessionLifecycle/    Session lifecycle management
+│   ├── SessionMemory/       Session memory management
+│   ├── settingsSync/        Cross-device settings synchronization
+│   └── analytics/           Usage analytics and telemetry
+├── skills/                  Skill loading and bundled skills
+├── cli/                     App.tsx (root component), transports, handlers
+├── components/              React/Ink UI components
+├── context/                 Overlays, modals, notifications
+├── hooks/                   80+ React hooks
+├── keybindings/             Custom keybinding engine
+├── state/                   Reactive store (createStore<T>)
+├── bridge/                  WebSocket remote collaboration
+├── vim/                     Vim modal editing
+├── buddy/                   Companion ("Duck") sprite
+├── coordinator/             Multi-agent coordination
+├── types/                   Type definitions, permissions, messages
+├── entrypoints/             Alternative entry points (CLI, init, MCP)
+└── native-ts/               TypeScript ports of native modules
 ```
 
 ## Documentation
 
-Open [docs/index.html](docs/index.html) in a browser for the full documentation site. Key pages:
+Full documentation is available at [docs/index.html](docs/index.html):
 
-- [Installation](docs/installation.html)
+- [Installation Guide](docs/installation.html)
 - [Quick Start](docs/quick-start.html)
 - [Configuration](docs/configuration.html)
 - [AI Providers](docs/providers.html)
 - [Commands Reference](docs/commands.html)
 - [Tools Reference](docs/tools.html)
-- [Agent System](docs/agents.html)
-- [Plugin Guide](docs/plugins.html)
-- [Architecture](docs/architecture.html)
-- [Troubleshooting](docs/troubleshooting.html)
-- [FAQ](docs/faq.html)
-
-### Architecture Deep Dives
-
-- [Provider Pattern](docs/provider-pattern.html)
-- [Command System](docs/command-system.html)
-- [Tool System](docs/tool-system.html)
+- [Plugin Development](docs/plugins.html)
+- [Architecture Overview](docs/architecture.html)
 - [Permission Model](docs/permission-model.html)
-- [Memory System](docs/memory-system.html)
-- [Session System](docs/session-system.html)
-- [Context Compaction](docs/context-compaction.html)
-- [Plugin System](docs/plugin-system.html)
-- [Skill System](docs/skill-system.html)
-- [MCP Integration](docs/mcp-integration.html)
 - [Bridge Mode](docs/bridge-mode.html)
-- [Agent System](docs/agent-system.html)
 
-## Windows Notes
+## Platform Notes
 
-This project is developed and tested with Bun on Windows. If you encounter module resolution errors after dependency changes:
+### Windows
+
+Tested with Bun on Windows. For module resolution issues:
 
 ```powershell
 Remove-Item -Recurse -Force node_modules
@@ -233,10 +268,18 @@ bun install
 bun run dev
 ```
 
+### Build Notes
+
+The production build externalizes several native and node modules: `electron`, `chromium-bidi`, `@ant/claude-for-chrome-mcp`, Anthropic SDKs (`bedrock`, `vertex`, `foundry`, `mcpb`), `@aws-sdk/*`, `google-auth-library`, `sharp`, `asciichart`, `audio-capture-napi`, `modifiers-napi`, `react-devtools-core`.
+
+### Ripgrep Dependency
+
+`src/utils/vendor/ripgrep/x64-win32/rg.exe` is bundled for Windows. The `Glob` and `Grep` tools require this binary.
+
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for the complete version history. The current release is **v2.1.137**.
+See [CHANGELOG.md](CHANGELOG.md) for the complete version history.
 
 ## License
 
-See [LICENSE.md](LICENSE.md).
+See [LICENSE.md](LICENSE.md) for licensing terms.
