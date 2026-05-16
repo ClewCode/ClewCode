@@ -3,19 +3,11 @@ import { escapeXml, escapeXmlAttr } from './xml.js';
 
 describe('xml utilities', () => {
   test('escapeXml escapes ampersand, less-than, greater-than', () => {
-    expect(escapeXml('&<>")).toBe('&amp;
-    &lt
-    &gt
-    ')
+    expect(escapeXml('&<>')).toBe('&amp;&lt;&gt;');
   });
 
   test('escapeXmlAttr also escapes quotes', () => {
-    expect(escapeXmlAttr('"\'&<>")).toBe('&amp;
-    &lt
-    &gt
-    &quot
-    &apos
-    ')
+    expect(escapeXmlAttr('&<>"\'')).toBe('&amp;&lt;&gt;&quot;&apos;');
   });
 
   test('escapeXml leaves safe text unchanged', () => {

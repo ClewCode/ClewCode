@@ -7,11 +7,11 @@ describe('decodeHtmlEntities', () => {
   });
 
   test('decodes numeric decimal entities', () => {
-    expect(decodeHtmlEntities('&#65; &#66;')).toBe('AB');
+    expect(decodeHtmlEntities('&#65;&#66;')).toBe('AB');
   });
 
   test('decodes numeric hex entities', () => {
-    expect(decodeHtmlEntities('&#x41; &#x42;')).toBe('AB');
+    expect(decodeHtmlEntities('&#x41;&#x42;')).toBe('AB');
   });
 
   test('handles mixed entities', () => {

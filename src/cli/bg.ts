@@ -37,10 +37,10 @@ export async function handleBgFlag(args: string[]): Promise<void> {
   let permissionMode: string | undefined;
   let fallbackModel: string | undefined;
   let allowDangerouslySkipPermissions: string | undefined;
-  let addDir: string[] = [];
+  const addDir: string[] = [];
   let settings: string | undefined;
   let mcpConfig: string | undefined;
-  let pluginDir: string[] = [];
+  const pluginDir: string[] = [];
   let strictMcpConfig: string | undefined;
 
   // Collect args after --bg as the prompt, checking for other flags

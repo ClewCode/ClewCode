@@ -741,7 +741,6 @@ export async function setPluginEnabledOp(
           const entry = mkt.plugins.find(p => p.name === name);
           if (entry) return { dependencies: entry.dependencies };
         } catch {
-          continue;
         }
       }
       return null;
