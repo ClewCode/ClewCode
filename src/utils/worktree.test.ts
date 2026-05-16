@@ -22,7 +22,7 @@ describe('worktree utilities', () => {
 
   test('validateWorktreeSlug rejects invalid slugs', () => {
     expect(() => validateWorktreeSlug('../escape')).toThrow();
-    expect(() => validateWorktreeSlug('...')).toThrow();
+    expect(() => validateWorktreeSlug('!!!')).toThrow();
     expect(() => validateWorktreeSlug('')).toThrow();
   });
 
