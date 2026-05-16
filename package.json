@@ -1,5 +1,5 @@
 {
-  "name": "claude-code",
+  "name": "dekcode",
   "version": "2.1.144",
   "description": "Official Claude Code CLI — AI-powered coding assistant",
   "main": "src/main.tsx",
