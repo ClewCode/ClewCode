@@ -83,6 +83,5 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Check formatting
-        run: bunx prettier --check "src/**/*.{ts,tsx}" --ignore-unknown
-        continue-on-error: true
+      - name: Lint and Format check
+        run: bun run check:ci
