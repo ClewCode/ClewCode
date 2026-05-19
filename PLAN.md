@@ -761,8 +761,8 @@
 | 5: Session & Model | 5 | ✅✅⬜⬜⬜ |
 | 6: Auth & Remote Login | 1 | ⬜ |
 | 7: MCP | 2 | ✅✅ |
-| 8: Infrastructure | 6 | ⬜⬜⬜⬜✅⬜ |
+| 8: Infrastructure | 6 | ⬜⬜✅⬜✅✅ |
 | 9: Windows | 5 | ⬜⬜⬜⬜⬜ |
 | 10: Agent View & BG Sessions | 9 | ⬜⬜⬜⬜⬜⬜⬜⬜⬜ |
 | 11: Improvements & Polish | 12 | ✅⬜⬜✅✅✅✅✅✅⬜⬜✅ |
-| **Total** | **53** | **✅ 21/53** |
+| **Total** | **53** | **✅ 22/53** |
