@@ -30,6 +30,7 @@ import { OFFICIAL_MARKETPLACE_NAME } from '../../utils/plugins/officialMarketpla
 import { installPluginFromMarketplace } from '../../utils/plugins/pluginInstallationHelpers.js';
 import { isPluginBlockedByPolicy } from '../../utils/plugins/pluginPolicy.js';
 import { plural } from '../../utils/stringUtils.js';
+import { formatRelativeTimeAgo } from '../../utils/format.js';
 import { truncateToWidth } from '../../utils/truncate.js';
 import { findPluginOptionsTarget, PluginOptionsFlow } from './PluginOptionsFlow.js';
 import { PluginTrustWarning } from './PluginTrustWarning.js';
@@ -129,12 +130,20 @@ export function DiscoverPlugins({
 
   // Empty state reason
   const [emptyReason, setEmptyReason] = useState<EmptyMarketplaceReason | null>(null);
+  const [marketplaceLastUpdated, setMarketplaceLastUpdated] = useState<Map<string, string>>(new Map());
 
   // Load all plugins from all marketplaces
   useEffect(() => {
     async function loadAllPlugins() {
       try {
         const config = await loadKnownMarketplacesConfig();
+        setMarketplaceLastUpdated(
+          new Map(
+            Object.entries(config)
+              .filter(([, entry]) => entry.lastUpdated)
+              .map(([name, entry]) => [name, entry.lastUpdated!]),
+          ),
+        );
 
         // Load marketplaces with graceful degradation
         const { marketplaces, failures } = await loadMarketplacesWithGracefulDegradation(config);
@@ -698,6 +707,15 @@ export function DiscoverPlugins({
                 {isInstallingThis ? figures.ellipsis : isSelectedForInstall ? figures.radioOn : figures.radioOff}{' '}
                 {plugin.entry.name}
                 <Text dimColor> · {plugin.marketplaceName}</Text>
+                {marketplaceLastUpdated.has(plugin.marketplaceName) && (
+                  <Text dimColor>
+                    {' '}
+                    · Updated{' '}
+                    {formatRelativeTimeAgo(new Date(marketplaceLastUpdated.get(plugin.marketplaceName)!), {
+                      style: 'short',
+                    })}
+                  </Text>
+                )}
                 {plugin.entry.tags?.includes('community-managed') && <Text dimColor> [Community Managed]</Text>}
                 {installCounts &&
                   plugin.marketplaceName === OFFICIAL_MARKETPLACE_NAME &&

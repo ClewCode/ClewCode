@@ -1224,6 +1224,7 @@ export function ManagePlugins({
             if (onManageComplete) {
               await onManageComplete();
             }
+            setViewState('plugin-list');
             setParentViewState({
               type: 'manage-plugins',
             });
@@ -1271,6 +1272,7 @@ export function ManagePlugins({
       if (onManageComplete) {
         await onManageComplete();
       }
+      setViewState('plugin-list');
       setParentViewState({
         type: 'manage-plugins',
       });

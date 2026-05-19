@@ -477,8 +477,13 @@ export function getModelOptions(fastMode = false): ModelOption[] {
     return filterModelOptionsByAllowlist([...options, getOpusPlanOption()]);
   } else if (customModel === 'opus' && getAPIProvider() === 'firstParty') {
     return filterModelOptionsByAllowlist([...options, getMaxOpusOption(fastMode)]);
-  } else if (customModel === 'opus[1m]' && getAPIProvider() === 'firstParty') {
-    return filterModelOptionsByAllowlist([...options, getMergedOpus1MOption(fastMode)]);
+  } else if (customModel === 'opus[1m]') {
+    const opus1mOption =
+      getAPIProvider() === 'firstParty' ? getMergedOpus1MOption(fastMode) : getOpus46_1MOption(fastMode);
+    if (!options.some(opt => opt.value === opus1mOption.value)) {
+      return filterModelOptionsByAllowlist([...options, opus1mOption]);
+    }
+    return filterModelOptionsByAllowlist(options);
   } else {
     // Try to show a human-readable label for known Anthropic models, with an
     // upgrade hint if the alias now resolves to a newer version.

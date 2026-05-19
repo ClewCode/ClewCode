@@ -49,6 +49,8 @@ export type Props = {
   initial: string | null;
   sessionModel?: ModelSetting;
   onSelect: (model: string | null, effort: EffortLevel | undefined) => void;
+  /** Press `d` in the picker to persist the focused model as the default for new sessions. */
+  onSetDefault?: (model: string | null, effort: EffortLevel | undefined) => void;
   onCancel?: () => void;
   isStandaloneCommand?: boolean;
   showFastModeNotice?: boolean;
@@ -69,6 +71,7 @@ export function ModelPicker(t0) {
     initial,
     sessionModel,
     onSelect,
+    onSetDefault,
     onCancel,
     isStandaloneCommand,
     showFastModeNotice,
@@ -335,6 +338,19 @@ export function ModelPicker(t0) {
       ) {
         setIsSearchActive(true);
       }
+
+      if (
+        isStandaloneCommand &&
+        onSetDefault &&
+        (input === 'd' || input === 'D') &&
+        !key.ctrl &&
+        !key.meta
+      ) {
+        const modelValue = resolveOptionModel(effectiveFocusedValue);
+        const selectedEffort =
+          hasToggledEffort && modelValue && modelSupportsEffort(modelValue) ? effort : undefined;
+        onSetDefault(effectiveFocusedValue === NO_PREFERENCE ? null : effectiveFocusedValue, selectedEffort);
+      }
     },
     {
       isActive: true,
@@ -531,6 +547,7 @@ export function ModelPicker(t0) {
           ) : (
             <Byline>
               <KeyboardShortcutHint shortcut="Enter" action="confirm" />
+              {onSetDefault && <KeyboardShortcutHint shortcut="d" action="set default for new sessions" />}
               <ConfigurableShortcutHint action="select:cancel" context="Select" fallback="Esc" description="exit" />
             </Byline>
           )}

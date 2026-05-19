@@ -121,10 +121,12 @@ function buildLogLabel(
     isGroupHeader && forkCount > 0 ? ` (+${forkCount} other ${forkCount === 1 ? 'session' : 'sessions'})` : '';
 
   const sidechainSuffix = log.isSidechain ? ' (sidechain)' : '';
+  const bgSuffix = log.isBackground ? ' [bg]' : '';
 
-  const maxSummaryWidth = maxLabelWidth - prefixWidth - sidechainSuffix.length - sessionCountSuffix.length;
+  const maxSummaryWidth =
+    maxLabelWidth - prefixWidth - sidechainSuffix.length - bgSuffix.length - sessionCountSuffix.length;
   const truncatedSummary = normalizeAndTruncateToWidth(getLogDisplayTitle(log), maxSummaryWidth);
-  return `${truncatedSummary}${sidechainSuffix}${sessionCountSuffix}`;
+  return `${truncatedSummary}${bgSuffix}${sidechainSuffix}${sessionCountSuffix}`;
 }
 
 function buildLogMetadata(log: LogOption, options?: { isChild?: boolean; showProjectPath?: boolean }): string {
@@ -504,7 +506,8 @@ export function LogSelector({
 
     return displayedLogs.map((log, index) => {
       const rawSummary = getLogDisplayTitle(log);
-      const summaryWithSidechain = rawSummary + (log.isSidechain ? ' (sidechain)' : '');
+      const summaryWithSidechain =
+        rawSummary + (log.isBackground ? ' [bg]' : '') + (log.isSidechain ? ' (sidechain)' : '');
       const summary = normalizeAndTruncateToWidth(summaryWithSidechain, maxLabelWidth);
 
       const baseDescription = formatLogMetadata(log);

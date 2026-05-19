@@ -199,10 +199,12 @@ export function formatLogMetadata(log: {
   agentSetting?: string;
   prNumber?: number;
   prRepository?: string;
+  isBackground?: boolean;
 }): string {
   const sizeOrCount = log.fileSize !== undefined ? formatFileSize(log.fileSize) : `${log.messageCount} messages`;
   const parts = [
     formatRelativeTimeAgo(log.modified, { style: 'short' }),
+    ...(log.isBackground ? ['bg'] : []),
     ...(log.gitBranch ? [log.gitBranch] : []),
     sizeOrCount,
   ];

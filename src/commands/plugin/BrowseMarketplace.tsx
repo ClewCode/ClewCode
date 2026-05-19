@@ -25,6 +25,7 @@ import { OFFICIAL_MARKETPLACE_NAME } from '../../utils/plugins/officialMarketpla
 import { installPluginFromMarketplace } from '../../utils/plugins/pluginInstallationHelpers.js';
 import { isPluginBlockedByPolicy } from '../../utils/plugins/pluginPolicy.js';
 import { plural } from '../../utils/stringUtils.js';
+import { formatRelativeTimeAgo } from '../../utils/format.js';
 import { truncateToWidth } from '../../utils/truncate.js';
 import { findPluginOptionsTarget, PluginOptionsFlow } from './PluginOptionsFlow.js';
 import { PluginTrustWarning } from './PluginTrustWarning.js';
@@ -61,6 +62,7 @@ type MarketplaceInfo = {
   totalPlugins: number;
   installedCount: number;
   source?: string;
+  lastUpdated?: string;
 };
 export function BrowseMarketplace({
   error,
@@ -157,6 +159,7 @@ export function BrowseMarketplace({
               totalPlugins: marketplace.plugins.length,
               installedCount: installedFromThisMarketplace,
               source: getMarketplaceSourceDisplay(marketplaceConfig.source),
+              lastUpdated: marketplaceConfig.lastUpdated,
             });
           }
         }
@@ -835,10 +838,16 @@ export function BrowseMarketplace({
 
   // Get visible plugins from pagination
   const visiblePlugins = pagination.getVisibleItems(availablePlugins);
+  const selectedMarketplaceInfo = marketplaces.find(m => m.name === selectedMarketplace);
+  const marketplaceUpdatedLabel =
+    selectedMarketplaceInfo?.lastUpdated != null
+      ? ` · Updated ${formatRelativeTimeAgo(new Date(selectedMarketplaceInfo.lastUpdated), { style: 'short' })}`
+      : '';
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
         <Text bold>Install Plugins</Text>
+        {marketplaceUpdatedLabel && <Text dimColor>{marketplaceUpdatedLabel}</Text>}
       </Box>
 
       {/* Scroll up indicator */}

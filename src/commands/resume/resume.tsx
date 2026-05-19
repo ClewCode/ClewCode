@@ -27,6 +27,7 @@ import {
   loadSameRepoMessageLogs,
   searchSessionsByCustomTitle,
 } from '../../utils/sessionStorage.js';
+import { loadBackgroundSessionsForResume } from '../../utils/backgroundSessionsForResume.js';
 import { validateUuid } from '../../utils/uuid.js';
 
 type ResumeResult =
@@ -88,7 +89,12 @@ function ResumeCommand({
       setLoading(true);
       try {
         const allLogs = allProjects ? await loadAllProjectsMessageLogs() : await loadSameRepoMessageLogs(paths);
-        const resumable = filterResumableSessions(allLogs, getSessionId());
+        const existingIds = new Set(
+          allLogs.map(l => getSessionIdFromLog(l)).filter((id): id is string => Boolean(id)),
+        );
+        const backgroundLogs = allProjects ? [] : await loadBackgroundSessionsForResume(existingIds);
+        const merged = sortResumeLogs([...allLogs, ...backgroundLogs]);
+        const resumable = filterResumableSessions(merged, getSessionId());
         if (resumable.length === 0) {
           onDone('No conversations found to resume');
           return;
@@ -201,6 +207,11 @@ function ResumeCommand({
 
 export function filterResumableSessions(logs: LogOption[], currentSessionId: string): LogOption[] {
   return logs.filter(l => !l.isSidechain && getSessionIdFromLog(l) !== currentSessionId);
+}
+
+/** Merge interactive and background sessions, newest first. */
+function sortResumeLogs(logs: LogOption[]): LogOption[] {
+  return [...logs].sort((a, b) => b.modified.getTime() - a.modified.getTime());
 }
 
 export const call: LocalJSXCommandCall = async (onDone, context, args) => {
