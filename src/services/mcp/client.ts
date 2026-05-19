@@ -2626,9 +2626,16 @@ export async function transformResultContent(
       );
     }
     case 'image': {
+      // Images with unsupported MIME types (e.g. SVG) cannot be processed —
+      // save to disk and reference in the tool result instead.
+      const mimeType = resultContent.mimeType;
+      if (mimeType && !IMAGE_MIME_TYPES.has(mimeType)) {
+        const bytes = Buffer.from(String(resultContent.data), 'base64');
+        return persistBlobToTextBlock(bytes, mimeType, serverName, `[Image from ${serverName}] `);
+      }
       // Resize and compress image data, enforcing API dimension limits
       const imageBuffer = Buffer.from(String(resultContent.data), 'base64');
-      const ext = resultContent.mimeType?.split('/')[1] || 'png';
+      const ext = mimeType?.split('/')[1] || 'png';
       const resized = await maybeResizeAndDownsampleImageBuffer(imageBuffer, imageBuffer.length, ext);
       return [
         {
