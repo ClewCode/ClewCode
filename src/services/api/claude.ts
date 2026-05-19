@@ -1926,6 +1926,7 @@ async function* queryModel(
   let costUSD = 0;
   let stopReason: BetaStopReason | null = null;
   let didFallBackToNonStreaming = false;
+  let streamingRetryAttempted = false;
   let fallbackMessage: AssistantMessage | undefined;
   let maxOutputTokens = 0;
   let responseHeaders: globalThis.Headers | undefined;
@@ -2595,6 +2596,20 @@ async function* queryModel(
             : 'other') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         });
         throw streamingError;
+      }
+
+      // Before falling back to slower non-streaming, retry streaming once.
+      // Pre-response stalls (idle timeout watchdog) are often transient —
+      // a second attempt usually succeeds and avoids the ~2× latency of
+      // non-streaming.
+      if (!streamingRetryAttempted) {
+        streamingRetryAttempted = true;
+        logForDebugging(`Error streaming, retrying once before non-streaming fallback`, { level: 'info' });
+        logEvent('tengu_streaming_retry_before_fallback', {
+          model: options.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+          fallback_cause: (streamIdleAborted ? 'watchdog' : 'other') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+        });
+        throw streamingError; // Let withRetry handle the retry as a new stream
       }
 
       logForDebugging(`Error streaming, falling back to non-streaming mode: ${errorMessage(streamingError)}`, {
