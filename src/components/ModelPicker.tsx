@@ -37,6 +37,7 @@ import {
   parseUserSpecifiedModel,
 } from '../utils/model/model.js';
 import { getModelOptions } from '../utils/model/modelOptions.js';
+import { getRecentModels } from '../utils/model/recentModels.js';
 import { getSettingsForSource, updateSettingsForSource } from '../utils/settings/settings.js';
 import { ConfigurableShortcutHint } from './ConfigurableShortcutHint.js';
 import { Select } from './CustomSelect/index.js';
@@ -610,64 +611,95 @@ function getEffectiveModelOptions(
   descriptionForModel?: string;
 }> {
   const providerInfo = getActiveProviderInfo();
+  let options: Array<{
+    value: ModelSetting;
+    label: string;
+    description: string;
+    descriptionForModel?: string;
+  }>;
+
   if (!providerInfo && !entry) {
-    return getModelOptions(fastMode);
-  }
-  const providerEntry = entry ?? providerInfo?.entry;
-  if (!providerEntry || !providerEntry.models) {
-    return fetchedModels
-      ? fetchedModels.map(fetched => ({
-          value: fetched.id,
-          label: fetched.label,
-          description: fetched.description || fetched.id,
-          descriptionForModel: fetched.id,
-        }))
-      : [];
-  }
+    options = getModelOptions(fastMode);
+  } else {
+    const providerEntry = entry ?? providerInfo?.entry;
+    if (!providerEntry || !providerEntry.models) {
+      options = fetchedModels
+        ? fetchedModels.map(fetched => ({
+            value: fetched.id,
+            label: fetched.label,
+            description: fetched.description || fetched.id,
+            descriptionForModel: fetched.id,
+          }))
+        : [];
+    } else {
+      const implementationType = ProviderManager.getInstance().getImplementationType();
+      const defaultModel = providerInfo?.selectedModel ?? providerEntry.defaultModel ?? 'provider default';
 
-  const implementationType = ProviderManager.getInstance().getImplementationType();
-  const defaultModel = providerInfo?.selectedModel ?? providerEntry.defaultModel ?? 'provider default';
+      // Start with static models from registry, filtered by implementation type
+      const staticModels = providerEntry.models
+        .filter(model => !model.supportedTypes || model.supportedTypes.includes(implementationType))
+        .map(model => toProviderModelOption(model));
 
-  // Start with static models from registry, filtered by implementation type
-  const staticModels = providerEntry.models
-    .filter(model => !model.supportedTypes || model.supportedTypes.includes(implementationType))
-    .map(model => toProviderModelOption(model));
-
-  // Merge with fetched models if available (deduplicate by id)
-  const allModels = [...staticModels];
-  if (fetchedModels && fetchedModels.length > 0) {
-    const existingIds = new Set(staticModels.map(m => m.value));
-    for (const fetched of fetchedModels) {
-      if (!existingIds.has(fetched.id)) {
-        allModels.push({
-          value: fetched.id,
-          label: fetched.label,
-          description: fetched.description || fetched.id,
-          descriptionForModel: fetched.id,
-        });
-        existingIds.add(fetched.id);
+      // Merge with fetched models if available (deduplicate by id)
+      const allModels = [...staticModels];
+      if (fetchedModels && fetchedModels.length > 0) {
+        const existingIds = new Set(staticModels.map(m => m.value));
+        for (const fetched of fetchedModels) {
+          if (!existingIds.has(fetched.id)) {
+            allModels.push({
+              value: fetched.id,
+              label: fetched.label,
+              description: fetched.description || fetched.id,
+              descriptionForModel: fetched.id,
+            });
+            existingIds.add(fetched.id);
+          }
+        }
       }
+
+      options = [
+        {
+          value: null,
+          label: 'Default (recommended)',
+          description: `Use ${providerEntry.label} default (${defaultModel})`,
+        },
+        ...allModels,
+      ];
+
+      // Always add custom input option as the last item
+      options.push({
+        value: '__CUSTOM_INPUT__',
+        label: '✏️  Type custom model ID',
+        description: `Use: /model your-model-id`,
+      });
     }
   }
 
-  // Check if provider supports API model fetching
-  const hasModelsEndpoint = 'modelsUrl' in providerEntry && providerEntry.modelsUrl;
+  // Inject recently used models at the top
+  const recentModels = getRecentModels();
+  if (recentModels.length > 0) {
+    const recentSet = new Set(recentModels);
+    const recentOptions = recentModels.map(id => {
+      const existing = options.find(m => m.value === id);
+      return {
+        value: id,
+        label: existing?.label ?? id,
+        description: 'Recently used',
+        descriptionForModel: existing?.descriptionForModel ?? id,
+      };
+    });
 
-  const options = [
-    {
-      value: null,
-      label: 'Default (recommended)',
-      description: `Use ${providerEntry.label} default (${defaultModel})`,
-    },
-    ...allModels,
-  ];
-
-  // Always add custom input option as the last item
-  options.push({
-    value: '__CUSTOM_INPUT__',
-    label: '✏️  Type custom model ID',
-    description: `Use: /model your-model-id`,
-  });
+    // Rebuild: Default + Recent + remaining (deduped) + Custom Input
+    const defaultOpt = options.find(o => o.value === null);
+    const customOpt = options.find(o => o.value === '__CUSTOM_INPUT__');
+    const rest = options.filter(o => o.value !== null && o.value !== '__CUSTOM_INPUT__' && !recentSet.has(o.value));
+    options = [
+      ...(defaultOpt ? [defaultOpt] : []),
+      ...recentOptions,
+      ...rest,
+      ...(customOpt ? [customOpt] : []),
+    ];
+  }
 
   return options as any;
 }

@@ -1,4 +1,4 @@
-# Claude Code
+# Ceph Code
 
 A research-oriented fork of Anthropic's [Claude Code](https://claude.ai/code) CLI, featuring **unified multi-provider routing**, **provider-specific adapters**, and an **extensible plugin architecture**.
 
@@ -6,7 +6,7 @@ A research-oriented fork of Anthropic's [Claude Code](https://claude.ai/code) CL
 
 ## Introduction
 
-Claude Code extends the original Claude Code terminal interface into a comprehensive multi-provider AI development platform. It maintains full compatibility with the original tool execution model while introducing support for 15 AI providers, 57+ built-in tools, 100+ slash commands, MCP/LSP integrations, a supervisor agent system, and a modular plugin/skill ecosystem.
+Ceph Code extends the original Claude Code terminal interface into a comprehensive multi-provider AI development platform. It maintains full compatibility with the original tool execution model while introducing support for 15 AI providers, 57+ built-in tools, 100+ slash commands, MCP/LSP integrations, a supervisor agent system, and a modular plugin/skill ecosystem.
 
 The platform is built on [Bun](https://bun.sh) 1.3+ and supports Windows, macOS, and Linux (including WSL2) environments.
 
@@ -111,27 +111,27 @@ Modular capability packages with progressive disclosure. Bundled skills include 
 | Terminal       | chalk + ora + ink-spinner + ink-text-input                                |
 
 #### 🌌 Multi-Provider AI Support
-Claude Code now supports 30+ AI providers including Anthropic, OpenAI, Gemini, Together, NVIDIA, and more. 
+Ceph Code now supports 30+ AI providers including Anthropic, OpenAI, Gemini, Together, NVIDIA, and more. 
 Check out our [**AI Providers Guide (PROVIDERS.md)**](./PROVIDERS.md) for full setup instructions and supported models.
 
 ## Installation
 
 #### Option 1: Global Installation (Recommended)
 
-Install Claude Code globally via npm or bun:
+Install Ceph Code globally via npm or bun:
 
 ```bash
 # Via npm
-npm install -g @jonusnattapong/claudecode
+npm install -g cephcode
 
 # Via bun
-bun install -g @jonusnattapong/claudecode
+bun install -g cephcode
 ```
 
-Once installed, you can start Claude Code by running:
+Once installed, you can start Ceph Code by running:
 
 ```bash
-claude
+cephcode
 ```
 
 #### Option 2: Local Development Setup (Manual)

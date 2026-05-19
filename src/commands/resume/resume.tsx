@@ -212,10 +212,78 @@ function sortResumeLogs(logs: LogOption[]): LogOption[] {
   return [...logs].sort((a, b) => b.modified.getTime() - a.modified.getTime());
 }
 
+function ResumeWithLimit({
+  limit,
+  onDone,
+  onResume,
+}: {
+  limit: number;
+  onDone: (result?: string, options?: { display?: CommandResultDisplay }) => void;
+  onResume: (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint, limit?: number) => Promise<void>;
+}): React.ReactNode {
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadAndResume() {
+      try {
+        const worktreePaths = await getWorktreePaths(getOriginalCwd());
+        const logs = await loadSameRepoMessageLogs(worktreePaths);
+        if (cancelled) return;
+        if (logs.length === 0) {
+          setError('No conversations found to resume.');
+          setLoading(false);
+          return;
+        }
+        // Pick the most recent log
+        const sorted = sortResumeLogs(logs);
+        const latest = sorted[0]!;
+        const sessionId = getSessionIdFromLog(latest) as UUID;
+        if (!sessionId) {
+          setError('Failed to read session ID.');
+          setLoading(false);
+          return;
+        }
+        const fullLog = isLiteLog(latest) ? await loadFullLog(latest) : latest;
+        if (cancelled) return;
+        await onResume(sessionId, fullLog, 'slash_command_session_id', limit);
+      } catch (err) {
+        if (!cancelled) {
+          setError(`Failed to resume: ${(err as Error).message}`);
+          setLoading(false);
+        }
+      }
+    }
+    void loadAndResume();
+    return () => { cancelled = true; };
+  }, [limit, onDone, onResume]);
+
+  if (error) {
+    return (
+      <Box flexDirection="column">
+        <Text dimColor>
+          {figures.pointer} /resume {limit}
+        </Text>
+        <MessageResponse>
+          <Text>{error}</Text>
+        </MessageResponse>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <Spinner />
+      <Text> Loading last {limit} message{limit === 1 ? '' : 's'}…</Text>
+    </Box>
+  );
+}
+
 export const call: LocalJSXCommandCall = async (onDone, context, args) => {
-  const onResume = async (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint) => {
+  const onResume = async (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint, limit?: number) => {
     try {
-      await context.resume?.(sessionId, log, entrypoint);
+      await context.resume?.(sessionId, log, entrypoint, limit);
       onDone(undefined, { display: 'skip' });
     } catch (error) {
       logError(error as Error);
@@ -228,6 +296,14 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
   // No argument provided - show picker
   if (!arg) {
     return <ResumeCommand key={Date.now()} onDone={onDone} onResume={onResume} />;
+  }
+
+  // Check if arg is a number — resume last session with message limit
+  const numArg = parseInt(arg, 10);
+  if (!isNaN(numArg) && numArg > 0 && String(numArg) === arg) {
+    return (
+      <ResumeWithLimit limit={numArg} onDone={onDone} onResume={onResume} />
+    );
   }
 
   // Load logs to search (includes same-repo worktrees)

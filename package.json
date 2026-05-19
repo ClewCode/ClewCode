@@ -1,9 +1,12 @@
 {
-  "name": "@jonusnattapong/claudecode",
+  "name": "cephcode",
   "version": "2.1.145",
-  "description": "Official Claude Code CLI — AI-powered coding assistant",
+  "description": "Official Ceph Code CLI — AI-powered coding assistant",
   "main": "src/main.tsx",
   "type": "module",
+  "bin": {
+    "cephcode": "./dist/main.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JonusNattapong/ClaudeCode.git"

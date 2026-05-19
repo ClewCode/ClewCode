@@ -56,7 +56,7 @@ export function CondensedLogo(): ReactNode {
   // Account for Clawd width + gap + safety padding.
   const textWidth = Math.max(columns - LOGO_RESERVED_WIDTH, 20);
 
-  const versionPrefix = 'Claude Code v';
+  const versionPrefix = 'Ceph Code v';
   const truncatedVersion = truncate(version, Math.max(textWidth - versionPrefix.length, 6));
 
   const effortSuffix = getEffortSuffix(model, effortValue);
@@ -87,7 +87,7 @@ export function CondensedLogo(): ReactNode {
 
         <Box flexDirection="column" flexShrink={1}>
           <Text>
-            <Text bold>Claude Code</Text> <Text dimColor>v{truncatedVersion}</Text>
+            <Text bold>Ceph Code</Text> <Text dimColor>v{truncatedVersion}</Text>
           </Text>
 
           {shouldSplit ? (

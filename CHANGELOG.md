@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Ceph Code Rebranding**: Officially rebranded the primary user-facing terminal UI elements, headers, onboarding wizard, static HTML documentation, and README instructions from "Claude Code" to **Ceph Code**.
+- **Unscoped npm Package & Executable**: Published unscoped public npm package `cephcode` and registered the direct global binary executable `"bin": { "cephcode": "./dist/main.js" }` so users can run it using the bare `cephcode` shell command.
+- **KiloCompact local compaction engine**: Implemented a local context window compaction engine with three pillars: deterministic snipping of verbose logs/traces/listings, failed state consolidation, and semantic turn pruning.
+- **Silky Smooth Status Line Spinner**: Added support for an Arc Spinner `['◜', '◠', '◝', '◞', '◡', '◟']` running at a fast 80ms interval.
+- **Stabilized Context Usage Bar**: Prevents the status line progress bar from collapsing to 0% during the thinking phase by freezing it to the last known usage stats.
 - **Background session management**: `claude ps`, `stop`, `attach`, `--bg` now work at runtime (not just build). Added `--name` support for bg sessions.
 - **Resume bg sessions**: `/resume` now shows background sessions marked with `[bg]` badge.
 - **Session model persistence**: Resumed sessions keep the model they were using via `sessionModel` transcript field.
@@ -18,9 +23,13 @@ All notable changes to this project will be documented in this file.
 - **bg gate messages**: `claude agents` / `--bg` rejection now names the specific gate (non-TTY, env var).
 - **Doctor hints**: Shows exec-form example for hooks missing `command` field.
 - **Post-survey**: Follow-up hint appears after every non-dismiss survey response.
+- **`/resume <N>` **: Resume last N message exchanges when a number is passed as argument (e.g. `/resume 10`).
+- **`--resume <N>` **: CLI flag to resume the last session with only the last N message exchanges.
+- **Recent models in model picker**: Recently used models shown at the top of the `/model` picker for quick access, stored in `recentModels` setting (max 5).
 
 ### Fixed
 
+- **Permission mode cycle**: Fixed `bypassPermissions` cycling order so it doesn't immediately follow `auto`.
 - **Startup hang**: Side-channel API calls now timeout after 15s (was up to 75s).
 - **MCP pagination**: `tools/list` now handles paginated responses (nextCursor).
 - **MCP SVG images**: Unsupported MIME types (SVG) saved to disk instead of crashing.

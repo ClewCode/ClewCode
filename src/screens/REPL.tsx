@@ -229,6 +229,8 @@ import {
   createSystemMessage,
   createCommandInputMessage,
   formatCommandInputTags,
+  sliceMessagesByUserLimit,
+  limitMessagesToLastNExchanges,
 } from '../utils/messages.js';
 import { generateSessionTitle } from '../utils/sessionTitle.js';
 import { BASH_INPUT_TAG, COMMAND_MESSAGE_TAG, COMMAND_NAME_TAG, LOCAL_COMMAND_STDOUT_TAG } from '../constants/xml.js';
@@ -2025,12 +2027,17 @@ export function REPL({
   );
 
   const resume = useCallback(
-    async (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint) => {
+    async (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint, limit?: number) => {
       const resumeStart = performance.now();
       try {
         // Deserialize messages to properly clean up the conversation
         // This filters unresolved tool uses and adds a synthetic assistant message if needed
-        const messages = deserializeMessages(log.messages);
+        let messages = deserializeMessages(log.messages);
+
+        // Apply message limit for /resume <N> — keep only the last N user exchanges
+        if (limit && limit > 0) {
+          messages = limitMessagesToLastNExchanges(messages, limit);
+        }
 
         // Match coordinator/normal mode to the resumed session
         if (feature('COORDINATOR_MODE')) {

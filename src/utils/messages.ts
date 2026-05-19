@@ -182,6 +182,24 @@ export function deriveShortMessageId(uuid: string): string {
   return parseInt(hex, 16).toString(36).slice(0, 6);
 }
 
+/**
+ * Walk messages backwards from the end and keep only the last N user-assistant exchanges.
+ * Each exchange = 1 user message + its corresponding assistant response(s).
+ * Used by /resume <N> and --resume <N> to limit context when resuming a session.
+ * Returns a new array (does not mutate the original).
+ */
+export function limitMessagesToLastNExchanges(messages: Message[], limit: number): Message[] {
+  const userCount = messages.filter(m => m.type === 'user').length;
+  if (limit <= 0 || limit >= userCount) return messages;
+
+  let count = 0;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].type === 'user') count++;
+    if (count === limit) return messages.slice(i);
+  }
+  return messages;
+}
+
 export const INTERRUPT_MESSAGE = '[Request interrupted by user]';
 export const INTERRUPT_MESSAGE_FOR_TOOL_USE = '[Request interrupted by user for tool use]';
 export const CANCEL_MESSAGE =
@@ -5020,4 +5038,31 @@ export function wrapCommandText(raw: string, origin: MessageOrigin | undefined):
     default:
       return `The user sent a new message while you were working:\n${raw}\n\nIMPORTANT: After completing your current task, you MUST address the user's message above. Do not ignore it.`;
   }
+}
+
+/**
+ * Slice message history to show only the last N user messages (turns) and all intermediate messages.
+ * If N is larger than the total number of user messages, returns all messages.
+ */
+export function sliceMessagesByUserLimit(messages: Message[], limit: number): Message[] {
+  if (!limit || limit <= 0) return messages;
+
+  const userIndices: number[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    // Count only user messages that are not meta
+    if (msg && msg.type === 'user' && !msg.isMeta) {
+      userIndices.push(i);
+    }
+  }
+
+  if (userIndices.length <= limit) {
+    return messages;
+  }
+
+  // Get index of the target user message
+  const targetUserIdx = userIndices[userIndices.length - limit];
+  if (targetUserIdx === undefined) return messages;
+
+  return messages.slice(targetUserIdx);
 }

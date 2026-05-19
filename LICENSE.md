@@ -6,14 +6,14 @@ The original Claude Code source is proprietary software:
   Copyright (c) Anthropic PBC. All rights reserved.
   Subject to Anthropic's Commercial Terms of Service.
 
-Modifications and additions by dek1milliontoken contributors are offered under
+Modifications and additions by Ceph Code contributors are offered under
 the MIT License where legally permissible:
 
   MIT License
-  Copyright (c) 2026 dek1milliontoken contributors (modifications only)
+  Copyright (c) 2026 Ceph Code contributors (modifications only)
 
   Permission is hereby granted, free of charge, to any person obtaining
-  a copy of the modifications made by dek1milliontoken contributors, to deal
+  a copy of the modifications made by Ceph Code contributors, to deal
   in those modifications without restriction, including without limitation
   the rights to use, copy, modify, merge, publish, distribute, sublicense,
   and/or sell copies, subject to the following conditions:

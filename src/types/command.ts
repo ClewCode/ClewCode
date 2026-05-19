@@ -82,7 +82,7 @@ export type LocalJSXCommandContext = ToolUseContext & {
   onChangeAPIKey: () => void;
   onChangeDynamicMcpConfig?: (config: Record<string, ScopedMcpServerConfig>) => void;
   onInstallIDEExtension?: (ide: IdeType) => void;
-  resume?: (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint) => Promise<void>;
+  resume?: (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint, limit?: number) => Promise<void>;
 };
 
 export type ResumeEntrypoint =

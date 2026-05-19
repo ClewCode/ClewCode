@@ -643,6 +643,11 @@ export const SettingsSchema = lazySchema(() =>
           'Maximum number of concurrent sub-agent workers (default: 5). ' +
             'Limits parallel agent/teammate execution. Higher values may increase memory usage.',
         ),
+      recentModels: z
+        .array(z.string())
+        .max(5)
+        .optional()
+        .describe('Recently used models shown at the top of the /model picker for quick access'),
       companyAnnouncements: z
         .array(z.string())
         .optional()

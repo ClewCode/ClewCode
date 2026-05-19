@@ -1683,6 +1683,23 @@ async function run(): Promise<CommanderCommand> {
         });
       }
 
+      const resumeValue = typeof options.resume === 'string' ? options.resume : undefined;
+      const resumeMessageLimitFromFlag =
+        resumeValue && !validateUuid(resumeValue) ? Number.parseInt(resumeValue, 10) : undefined;
+      const resumeMessageLimit =
+        resumeMessageLimitFromFlag &&
+        resumeMessageLimitFromFlag > 0 &&
+        String(resumeMessageLimitFromFlag) === resumeValue?.trim()
+          ? resumeMessageLimitFromFlag
+          : undefined;
+
+      if (resumeMessageLimit && typeof prompt === 'string' && validateUuid(prompt)) {
+        options.resume = prompt;
+        prompt = undefined;
+      } else if (resumeMessageLimit) {
+        options.resume = undefined;
+      }
+
       // Assistant mode: when .claude/settings.json has assistant: true AND
       // the tengu_kairos GrowthBook gate is on, force brief on. Permission
       // mode is left to the user — settings defaultMode or --permission-mode
@@ -4075,6 +4092,69 @@ async function run(): Promise<CommanderCommand> {
           logError(error);
           process.exit(1);
         }
+      } else if (resumeMessageLimit && !options.resume) {
+        // --resume <N>: Resume last session with only the last N message exchanges
+        let resumeSucceeded = false;
+        try {
+          const resumeStart = performance.now();
+          const { clearSessionCaches } = await import('./commands/clear/caches.js');
+          clearSessionCaches();
+          const result = await loadConversationForResume(undefined /* sessionId */, undefined /* sourceFile */);
+          if (!result) {
+            logEvent('tengu_continue', { success: false });
+            return await exitWithError(root, 'No conversation found to resume');
+          }
+          // Apply message limit before processing
+          const { limitMessagesToLastNExchanges } = await import('./utils/messages.js');
+          result.messages = limitMessagesToLastNExchanges(result.messages, resumeMessageLimit);
+          const loaded = await processResumedConversation(
+            result,
+            {
+              forkSession: !!options.forkSession,
+              includeAttribution: true,
+              transcriptPath: result.fullPath,
+            },
+            resumeContext,
+          );
+          if (loaded.restoredAgentDef) {
+            mainThreadAgentDefinition = loaded.restoredAgentDef;
+          }
+          maybeActivateProactive(options);
+          maybeActivateBrief(options);
+          logEvent('tengu_session_resumed', {
+            entrypoint: 'cli_flag' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+            success: true,
+            resume_duration_ms: Math.round(performance.now() - resumeStart),
+          });
+          resumeSucceeded = true;
+          await launchRepl(
+            root,
+            {
+              getFpsMetrics,
+              stats,
+              initialState: loaded.initialState,
+            },
+            {
+              ...sessionConfig,
+              mainThreadAgentDefinition: loaded.restoredAgentDef ?? mainThreadAgentDefinition,
+              initialMessages: loaded.messages,
+              initialFileHistorySnapshots: loaded.fileHistorySnapshots,
+              initialContentReplacements: loaded.contentReplacements,
+              initialAgentName: loaded.agentName,
+              initialAgentColor: loaded.agentColor,
+            },
+            renderAndRun,
+          );
+        } catch (error) {
+          if (!resumeSucceeded) {
+            logEvent('tengu_session_resumed', {
+              entrypoint: 'cli_flag' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+              success: false,
+            });
+          }
+          logError(error);
+          process.exit(1);
+        }
       } else if (feature('DIRECT_CONNECT') && _pendingConnect?.url) {
         // `claude connect <url>` — full interactive TUI connected to a remote server
         let directConnectConfig;
@@ -4348,8 +4428,8 @@ async function run(): Promise<CommanderCommand> {
           }
         }
 
-        // If resume value is not a UUID, try exact match by custom title first
-        if (options.resume && typeof options.resume === 'string' && !maybeSessionId) {
+        // If resume value is not a UUID or number, try exact match by custom title first
+        if (options.resume && typeof options.resume === 'string' && !maybeSessionId && !resumeMessageLimit) {
           const trimmedValue = options.resume.trim();
           if (trimmedValue) {
             const matches = await searchSessionsByCustomTitle(trimmedValue, {
@@ -4686,6 +4766,10 @@ async function run(): Promise<CommanderCommand> {
                 success: false,
               });
               return await exitWithError(root, `No conversation found with session ID: ${sessionId}`);
+            }
+            if (resumeMessageLimit) {
+              const { limitMessagesToLastNExchanges } = await import('./utils/messages.js');
+              result.messages = limitMessagesToLastNExchanges(result.messages, resumeMessageLimit);
             }
             const fullPath = matchedLog?.fullPath ?? result.fullPath;
             processedResume = await processResumedConversation(

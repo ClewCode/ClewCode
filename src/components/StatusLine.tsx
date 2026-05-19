@@ -726,13 +726,9 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
     if (usedPercentage > 0) {
       lastKnownCtxBarRef.current = { pct: usedPercentage, bar: '' };
     } else if (usedPercentage === 0 && lastKnownCtxBarRef.current) {
-      // Only freeze the bar if we're actively streaming (messages have a
-      // pending assistant message). Otherwise the initial 0% is correct.
-      const lastMsg = messagesRef.current[messagesRef.current.length - 1];
-      const isStreaming = lastMsg && (lastMsg as any).type !== 'user';
-      if (isStreaming) {
-        usedPercentage = lastKnownCtxBarRef.current.pct;
-      }
+      // Freeze the bar to the last known usage so it doesn't collapse
+      // when getCurrentUsage returns null (e.g. during thinking, tool runs, or streaming start).
+      usedPercentage = lastKnownCtxBarRef.current.pct;
     }
     const rawModelName = renderModelName(runtimeModel, mainLoopProviderForSession ?? mainLoopProvider);
     // Strip provider prefix (e.g., "KiloCode: ") when showing in status line,
@@ -742,18 +738,15 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
     // Context bar with cache-read · cache-creation · new-input segments
     // Falls back to estimated input only when getCurrentUsage returns null (streaming start).
     const bar = (() => {
-      // During streaming, freeze bar at last known non-zero percentage.
+      // Freeze the bar to the last known usage so it doesn't collapse
+      // when getCurrentUsage returns null (e.g. during thinking, tool runs, or streaming start).
       if (!currentUsage && lastKnownCtxBarRef.current) {
-        const lastMsg = messagesRef.current[messagesRef.current.length - 1];
-        const isStreaming = lastMsg && (lastMsg as any).type !== 'user';
-        if (isStreaming) {
-          const frac = lastKnownCtxBarRef.current.pct / 100;
-          const fullBlocks = Math.floor(frac * 10);
-          const chars: string[] = [];
-          for (let i = 0; i < fullBlocks; i++) chars.push(chalk.hex(CLAUDE_THEME.muted)('█'));
-          while (chars.length < 10) chars.push(chalk.hex(BAR_FREE_HEX)('░'));
-          return chars.join('');
-        }
+        const frac = lastKnownCtxBarRef.current.pct / 100;
+        const fullBlocks = Math.floor(frac * 10);
+        const chars: string[] = [];
+        for (let i = 0; i < fullBlocks; i++) chars.push(chalk.hex(CLAUDE_THEME.muted)('█'));
+        while (chars.length < 10) chars.push(chalk.hex(BAR_FREE_HEX)('░'));
+        return chars.join('');
       }
       const cacheSegs = buildCacheSegments(usageForContext, contextWindowSize);
       if (cacheSegs.length > 0) {
@@ -843,7 +836,7 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
         key: `agent-running-${a.id}`,
         node: (
           <Box flexDirection="row" key={`agent-running-${a.id}`}>
-            <Spinner color="#D97757" />
+            <Spinner color="#D97757" isStatusLine={true} />
             <Text>
               <Ansi>
                 {chalk.dim(' ') +
@@ -907,7 +900,7 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
                   </Text>
                 ) : (
                   <>
-                    <Spinner color="#D97757" />
+                    <Spinner color="#D97757" isStatusLine={true} />
                     <Text>
                       <Ansi>
                         {claudeSubtle(' ') +

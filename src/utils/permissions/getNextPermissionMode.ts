@@ -36,7 +36,9 @@ export function getNextPermissionMode(
   switch (toolPermissionContext.mode) {
     case 'default':
       if (autoAvailable) return 'auto';
-      if (process.env.USER_TYPE === 'ant') return 'bypassPermissions';
+      return 'bypassPermissions';
+
+    case 'bypassPermissions':
       return 'ask';
 
     case 'ask':
@@ -47,13 +49,10 @@ export function getNextPermissionMode(
 
     case 'plan':
       if (autoAvailable) return 'auto';
-      return 'bypassPermissions';
+      return 'default';
 
     case 'auto':
       return 'bypassPermissions';
-
-    case 'bypassPermissions':
-      return 'default';
 
     case 'dontAsk':
       return 'default';

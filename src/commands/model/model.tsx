@@ -26,6 +26,7 @@ import {
   renderDefaultModelSetting,
 } from '../../utils/model/model.js';
 import { isModelAllowed } from '../../utils/model/modelAllowlist.js';
+import { addRecentModel } from '../../utils/model/recentModels.js';
 import { validateModel } from '../../utils/model/validateModel.js';
 import { setSessionModelForTranscript } from '../../utils/sessionStorage.js';
 
@@ -67,6 +68,7 @@ function ModelPickerWrapper({
         mainLoopModelForSession: null,
       }));
       if (model !== null) {
+        addRecentModel(model);
         try {
           const pm = ProviderManager.getInstance();
           const cfg = pm.getSelectedProviderConfig(true);
@@ -82,6 +84,9 @@ function ModelPickerWrapper({
         ...prev,
         mainLoopModelForSession: model,
       }));
+      if (model !== null) {
+        addRecentModel(model);
+      }
       // Persist the session model choice to transcript for resume restore
       setSessionModelForTranscript(model ?? undefined);
     }
@@ -214,6 +219,10 @@ function SetModelAndClose({
         mainLoopModel: modelValue,
         mainLoopModelForSession: null,
       }));
+
+      if (modelValue !== null) {
+        addRecentModel(modelValue);
+      }
 
       // Directly persist model to provider.json
       if (modelValue !== null) {
