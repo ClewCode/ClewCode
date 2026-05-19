@@ -5890,11 +5890,37 @@ Examples:
         },
       );
   }
-  // Fast-path for --bg/--background: delegate to bg handler before Commander
-  // processes the args (which would reject --bg as an unknown option).
-  if (process.argv.includes('--bg') || process.argv.includes('--background')) {
-    const { handleBgFlag } = await import('./cli/bg.js');
-    await handleBgFlag(process.argv.slice(2));
+  // Fast-path for bg session management commands and --bg/--background.
+  // Must run before Commander processes args (Commander would reject --bg).
+  const bgCmd = process.argv[2];
+  if (
+    bgCmd === 'ps' || bgCmd === 'logs' || bgCmd === 'attach' ||
+    bgCmd === 'kill' || bgCmd === 'respawn' || bgCmd === 'rm' ||
+    bgCmd === 'agents' ||
+    process.argv.includes('--bg') || process.argv.includes('--background')
+  ) {
+    const bg = await import('./cli/bg.js');
+    switch (bgCmd) {
+      case 'ps': await bg.psHandler(process.argv.slice(3)); break;
+      case 'logs': await bg.logsHandler(process.argv[3] || ''); break;
+      case 'attach': await bg.attachHandler(process.argv[3]); break;
+      case 'kill': await bg.killHandler(process.argv[3]); break;
+      case 'respawn': await (bg as any).respawnCommand(
+          process.argv[3] === '--all' ? undefined : process.argv[3],
+          process.argv[3] === '--all' || process.argv.includes('--all'),
+        ); break;
+      case 'rm': await (bg as any).rmCommand(process.argv[3]); break;
+      case 'agents': {
+        const { isAgentViewDisabled } = await import('./commands/agents/index.js');
+        const { getAgentViewDisabledReason } = await import('./commands/agents/index.js');
+        const reason = getAgentViewDisabledReason();
+        if (reason) { console.log(`Agent view is ${reason}.`); process.exit(0); }
+        const { agentsHandler } = await import('./cli/handlers/agents.js');
+        await agentsHandler(); break;
+      }
+      default:
+        await bg.handleBgFlag(process.argv.slice(2));
+    }
     process.exit(0);
   }
 
