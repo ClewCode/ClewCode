@@ -27,6 +27,7 @@ import { getToolSearchOrReadInfo } from '../../utils/collapseReadSearch.js';
 import { enqueuePendingNotification } from '../../utils/messageQueueManager.js';
 import { getAgentTranscriptPath } from '../../utils/sessionStorage.js';
 import { evictTaskOutput, getTaskOutputPath, initTaskOutputAsSymlink } from '../../utils/task/diskOutput.js';
+import { formatDuration } from '../../utils/format.js';
 import { PANEL_GRACE_MS, registerTask, updateTaskState } from '../../utils/task/framework.js';
 import { emitTaskProgress } from '../../utils/task/sdkProgress.js';
 import type { TaskState } from '../types.js';
@@ -274,9 +275,9 @@ export function enqueueAgentNotification({
   abortSpeculation(setAppState);
   const summary =
     status === 'completed'
-      ? `Agent "${description}" completed`
+      ? `Agent "${description}" completed${usage ? ` \u00b7 ${formatDuration(usage.durationMs)}` : ''}`
       : status === 'failed'
-        ? `Agent "${description}" failed: ${error || 'Unknown error'}`
+        ? `Agent "${description}" failed: ${error || 'Unknown error'}${usage ? ` \u00b7 ${formatDuration(usage.durationMs)}` : ''}`
         : `Agent "${description}" was stopped`;
   const outputPath = getTaskOutputPath(taskId);
   const toolUseIdLine = toolUseId ? `\n<${TOOL_USE_ID_TAG}>${toolUseId}</${TOOL_USE_ID_TAG}>` : '';
