@@ -2,9 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.1.144] - 2026-05-16
+## [2.1.145] - 2026-05-19
 
 ### Added
+
+- **Background session management**: `claude ps`, `stop`, `attach`, `--bg` now work at runtime (not just build). Added `--name` support for bg sessions.
+- **Resume bg sessions**: `/resume` now shows background sessions marked with `[bg]` badge.
+- **Session model persistence**: Resumed sessions keep the model they were using via `sessionModel` transcript field.
+- **Elapsed duration**: Background agent completion notifications now show elapsed time (e.g. "Agent completed · 3h 2m 5s").
+- **Model picker**: `/model` changes model for current session only; press `d` for default.
+- **Usage credits**: Renamed from "extra usage" — `/usage-credits` command with `/extra-usage` alias.
+- **Plugin dates**: `/plugin browse` and `discover` show last-updated timestamps.
+- **Stream retry**: Pre-response stream stalls now retry streaming once before falling back to non-streaming.
+- **Spinner fix**: Custom `spinnerVerbs` no longer applied to post-turn duration messages.
+- **bg gate messages**: `claude agents` / `--bg` rejection now names the specific gate (non-TTY, env var).
+- **Doctor hints**: Shows exec-form example for hooks missing `command` field.
+- **Post-survey**: Follow-up hint appears after every non-dismiss survey response.
+
+### Fixed
+
+- **Startup hang**: Side-channel API calls now timeout after 15s (was up to 75s).
+- **MCP pagination**: `tools/list` now handles paginated responses (nextCursor).
+- **MCP SVG images**: Unsupported MIME types (SVG) saved to disk instead of crashing.
+- **MCP config errors**: `claude mcp list` shows configuration parse errors.
+- **grep exit codes**: `egrep`, `fgrep`, `git grep`, `git diff` exit code 1 no longer reported as failure.
+- **head/tail read**: `head`/`tail` file views satisfy read-before-edit check.
+- **Image extension mismatch**: Files with wrong image extension fall back to text.
+- **Skill FD exhaustion**: Non-`.md` files in skill dirs no longer trigger reloads.
+- **Session title**: Task-notification messages excluded from title generation.
+- **Skill headless**: Skills auto-allowed in non-interactive/SDK mode.
+- **Side-query Haiku**: Custom `ANTHROPIC_BASE_URL` falls back to main-loop model.
+- **Plugin cache**: "Not cached" errors show actionable `claude plugin install` hint.
+- **VS Code glitches**: Spinner animation color count reduced to 4 steps.
+- **Windows commands**: `claude ps/stop/attach/--bg` work correctly on Windows.
+- **Branch after worktree**: `/branch` falls back to original CWD transcript path.
+- **IDE model sync**: Model changes via IDE picker apply at runtime via `applySettingsChange`.
+- **Ctrl+C in ! commands**: Interrupt properly kills the running process. 
+- **Scrolling in bg sessions**: PgUp/PgDn working in attached background sessions.
 
 - **NPM Publication**: The package is now publicly available on npm as `@jonusnattapong/claudecode`.
 - **Global Installation**: Supports global installation via `npm install -g @jonusnattapong/claudecode` or `bun install -g @jonusnattapong/claudecode`.
