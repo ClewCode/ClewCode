@@ -53,6 +53,7 @@ desktop.ini
 research-dossiers/
 .provider.json
 .claude-code-provider.json
+.CLAUDE.md
 
 # Testing
 coverage/
@@ -81,3 +82,5 @@ temp/
 
 scratch/
 .plan/
+.docs/
+.ceph/

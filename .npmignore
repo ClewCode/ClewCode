@@ -6,8 +6,7 @@
 coverage/
 .nyc_output
 
-# Docs & meta (keep README + LICENSE)
-docs/
+# Docs & meta (keep README + LICENSE + web docs)
 CHANGELOG.md
 CLAUDE.md
 CODE_OF_CONDUCT.md
