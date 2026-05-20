@@ -3,13 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SearXNG Search — self-hosted web search</title>
-  <link rel="stylesheet" href="../css/style.css">
+  <title>SearXNG Search — Ceph Code</title>
+  <meta name="description" content="Self-hosted privacy-respecting web search via Docker SearXNG.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
-  <article>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="../index.html" class="logo">
+      <span class="logo-mark">~</span>
+      <span>Ceph Code</span>
+    </a>
+    <nav class="header-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#features">Features</a>
+      <a href="../index.html#commands">Commands</a>
+      <a href="searxng-search.html" class="active">Docs</a>
+      <a href="https://github.com/CephCore/cephcode" target="_blank">GitHub</a>
+    </nav>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Getting Started</div>
+      <nav>
+        <a href="../index.html" class="sidebar-link"><span class="link-icon"></span>Overview</a>
+        <a href="../index.html#features" class="sidebar-link"><span class="link-icon"></span>Features</a>
+        <a href="../index.html#providers" class="sidebar-link"><span class="link-icon"></span>Providers</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Features</div>
+      <nav>
+        <a href="searxng-search.html" class="sidebar-link active"><span class="link-icon"></span>SearXNG Search</a>
+        <a href="bridge-mode.html" class="sidebar-link"><span class="link-icon"></span>Bridge Mode</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Internals</div>
+      <nav>
+        <a href="../internals/hidden-features.html" class="sidebar-link"><span class="link-icon"></span>Hidden Features</a>
+        <a href="../internals/growthbook-ab-testing.html" class="sidebar-link"><span class="link-icon"></span>A/B Testing</a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="content">
     <h1>SearXNG Search</h1>
-    <p class="subtitle">Self-hosted, privacy-respecting web search via Docker</p>
+    <p class="section-subtitle">Self-hosted, privacy-respecting web search via Docker</p>
+
+    <div class="callout callout-tip">
+      <strong>TL;DR</strong>
+      Run <code>cd searxng && start.bat</code> to start the search engine,
+      then use <code>/searxng on</code> from the CLI.
+    </div>
 
     <h2>Overview</h2>
     <p>
@@ -20,32 +78,46 @@
     </p>
 
     <h2>Quick Start</h2>
-    <pre><code>cd searxng
-start.bat</code></pre>
+    <pre><code><span style="color:var(--amber-400)">cd</span> searxng
+<span style="color:var(--amber-400)">start.bat</span></code></pre>
     <p>Starts SearXNG on <a href="http://localhost:18889">http://localhost:18889</a>.</p>
 
-    <h3>Other Commands</h3>
-    <pre><code>stop.bat         # Stop the container
-restart.bat      # Restart the container
-logs.bat         # Tail logs</code></pre>
+    <h3>Slash Command</h3>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>/searxng on</code></td><td>Start the Docker container</td></tr>
+        <tr><td><code>/searxng off</code></td><td>Stop the Docker container</td></tr>
+        <tr><td><code>/searxng status</code></td><td>Check if running</td></tr>
+        <tr><td><code>/searxng restart</code></td><td>Restart the container</td></tr>
+      </tbody>
+    </table>
 
-    <p>Or using Docker Compose directly:</p>
-    <pre><code>docker compose -f searxng/docker-compose.yml up -d
-docker compose -f searxng/docker-compose.yml down
-docker compose -f searxng/docker-compose.yml logs -f</code></pre>
+    <h3>Manual Docker Commands</h3>
+    <pre><code><span style="color:var(--amber-400)">docker compose</span> -f searxng/docker-compose.yml up -d
+<span style="color:var(--amber-400)">docker compose</span> -f searxng/docker-compose.yml down
+<span style="color:var(--amber-400)">docker compose</span> -f searxng/docker-compose.yml logs -f</code></pre>
 
     <h2>Files</h2>
+    <div class="scroll-wrap">
     <table>
-      <tr><th>File</th><th>Purpose</th></tr>
-      <tr><td><code>searxng/docker-compose.yml</code></td><td>Container definition, port 18889 → 8080</td></tr>
-      <tr><td><code>searxng/.env</code></td><td>Host, port, and secret key</td></tr>
-      <tr><td><code>searxng/config/settings.yml</code></td><td>SearXNG configuration with JSON API enabled</td></tr>
-      <tr><td><code>searxng/limiter.toml</code></td><td>Rate limiter — relaxed for local network IPs</td></tr>
-      <tr><td><code>searxng/start.bat</code></td><td>Start wrapper</td></tr>
-      <tr><td><code>searxng/stop.bat</code></td><td>Stop wrapper</td></tr>
-      <tr><td><code>searxng/restart.bat</code></td><td>Restart wrapper</td></tr>
-      <tr><td><code>searxng/logs.bat</code></td><td>Log tail wrapper</td></tr>
+      <thead>
+        <tr><th>File</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>searxng/docker-compose.yml</code></td><td>Container definition, port 18889 → 8080</td></tr>
+        <tr><td><code>searxng/.env</code></td><td>Host, port, and secret key</td></tr>
+        <tr><td><code>searxng/config/settings.yml</code></td><td>SearXNG configuration with JSON API enabled</td></tr>
+        <tr><td><code>searxng/limiter.toml</code></td><td>Rate limiter — relaxed for local network IPs</td></tr>
+        <tr><td><code>searxng/start.bat</code></td><td>Start wrapper</td></tr>
+        <tr><td><code>searxng/stop.bat</code></td><td>Stop wrapper</td></tr>
+        <tr><td><code>searxng/restart.bat</code></td><td>Restart wrapper</td></tr>
+        <tr><td><code>searxng/logs.bat</code></td><td>Log tail wrapper</td></tr>
+      </tbody>
     </table>
+    </div>
 
     <h2>How It Works</h2>
     <ol>
@@ -75,11 +147,13 @@ docker compose -f searxng/docker-compose.yml logs -f</code></pre>
       <li><strong>SearXNG</strong> — only if <code>SEARXNG_INSTANCE_URL</code> is explicitly set</li>
       <li><strong>DuckDuckGo</strong> — always available, free, no API key</li>
     </ol>
-    <p>
+
+    <div class="callout callout-info">
+      <strong>Why not auto-select?</strong>
       Public SearXNG instances are intentionally excluded from auto-selection because
       almost all of them are behind Cloudflare or other anti-bot protection. The
       provider is only considered available when a self-hosted URL is configured.
-    </p>
+    </div>
 
     <h2>Troubleshooting</h2>
     <h3>Container won't start</h3>
@@ -93,9 +167,20 @@ docker compose -f searxng/docker-compose.yml logs -f</code></pre>
     <p>Change <code>SEARXNG_PORT</code> in <code>searxng/.env</code> and update <code>SEARXNG_INSTANCE_URL</code> in <code>.env</code> to match.</p>
 
     <h2>Updating</h2>
-    <pre><code>cd searxng
-docker compose pull
-docker compose up -d</code></pre>
-  </article>
+    <pre><code><span style="color:var(--amber-400)">cd</span> searxng
+<span style="color:var(--amber-400)">docker compose</span> pull
+<span style="color:var(--amber-400)">docker compose</span> up -d</code></pre>
+
+    <footer class="footer">
+      <span>Ceph Code v2.1.145</span>
+      <div class="footer-links">
+        <a href="https://github.com/CephCore/cephcode">GitHub</a>
+        <a href="https://github.com/CephCore/cephcode/issues">Issues</a>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<script src="../js/main.js"></script>
 </body>
 </html>

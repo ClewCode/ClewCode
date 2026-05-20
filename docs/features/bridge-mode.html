@@ -1,544 +1,119 @@
 <!DOCTYPE html>
-<html lang="multilingual">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bridge Mode — Remote Control, Remote Collaboration</title>
-<style>
-  :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text-dim: #8b949e;
-    --accent: #d97706;
-    --accent2: #58a6ff;
-    --code-bg: #1c2128;
-    --good: #3fb950;
-    --warn: #d29922;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.7;
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 6rem;
-  }
-  a { color: var(--accent2); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  h1 { font-size: 2.1rem; margin-bottom: 0.25rem; color: #fff; }
-  h2 { font-size: 1.5rem; margin: 2.2rem 0 0.75rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
-  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; color: var(--accent); }
-  h4 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; color: #fff; }
-  p { margin: 0.7rem 0; }
-  strong { color: #fff; }
-  code {
-    background: var(--code-bg);
-    padding: 0.15em 0.4em;
-    border-radius: 3px;
-    font-size: 0.9em;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  }
-  pre {
-    background: var(--code-bg);
-    padding: 1rem 1.2rem;
-    border-radius: 6px;
-    overflow-x: auto;
-    margin: 1rem 0;
-    border: 1px solid var(--border);
-  }
-  pre code { background: none; padding: 0; }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
-  }
-  th, td {
-    text-align: left;
-    padding: 0.5rem 0.8rem;
-    border: 1px solid var(--border);
-  }
-  th { background: var(--surface); font-weight: 600; }
-  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
-  li { margin: 0.3rem 0; }
-  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
-  .subtitle { color: var(--text-dim); font-size: 1rem; margin-bottom: 0.5rem; }
-  .source { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.5rem; }
-  .step-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1rem 1.3rem;
-    margin: 0.8rem 0;
-  }
-  .step-box h4 { margin-top: 0; }
-  .tag {
-    display: inline-block;
-    background: #1a1f2b;
-    border: 1px solid #3a3f4b;
-    padding: 0.1em 0.55em;
-    border-radius: 4px;
-    font-size: 0.85em;
-    color: var(--text-dim);
-  }
-  .good { color: var(--good); }
-  .warn { color: var(--warn); }
-
-  /* Language Switcher */
-  .lang-bar {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-  }
-  .lang-btn {
-    background: var(--surface);
-    color: var(--text-dim);
-    border: 1px solid var(--border);
-    padding: 0.45rem 1.2rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s;
-  }
-  .lang-btn:hover { border-color: var(--accent); color: var(--text); }
-  .lang-btn.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
-  .lang-content { display: none; }
-  .lang-content.active { display: block; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bridge Mode — Remote Control & Collaboration — Ceph Code</title>
+  <meta name="description" content="WebSocket remote control and collaboration for Ceph Code.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    /* Bridge-specific overrides */
+    .bridge-hero { border-left: 3px solid var(--cyan-400); padding-left: var(--space-lg); margin: var(--space-lg) 0; background: color-mix(in srgb, var(--cyan-400) 4%, var(--bg-card)); border-radius: 0 10px 10px 0; padding: var(--space-lg); }
+    .bridge-hero strong { color: var(--cyan-400); }
+  </style>
 </head>
 <body>
 
-<div class="lang-bar">
-  <button class="lang-btn active" onclick="switchLang('en')">English</button>
-  <button class="lang-btn" onclick="switchLang('zh')">中文</button>
-  <button class="lang-btn" onclick="switchLang('th')">ภาษาไทย</button>
+<header class="header">
+  <div class="header-inner">
+    <a href="../index.html" class="logo">
+      <span class="logo-mark">~</span>
+      <span>Ceph Code</span>
+    </a>
+    <nav class="header-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#features">Features</a>
+      <a href="../index.html#commands">Commands</a>
+      <a href="searxng-search.html" class="active">Docs</a>
+      <a href="https://github.com/CephCore/cephcode" target="_blank">GitHub</a>
+    </nav>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Getting Started</div>
+      <nav>
+        <a href="../index.html" class="sidebar-link"><span class="link-icon"></span>Overview</a>
+        <a href="../index.html#features" class="sidebar-link"><span class="link-icon"></span>Features</a>
+        <a href="../index.html#providers" class="sidebar-link"><span class="link-icon"></span>Providers</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Features</div>
+      <nav>
+        <a href="searxng-search.html" class="sidebar-link"><span class="link-icon"></span>SearXNG Search</a>
+        <a href="bridge-mode.html" class="sidebar-link active"><span class="link-icon"></span>Bridge Mode</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Internals</div>
+      <nav>
+        <a href="../internals/hidden-features.html" class="sidebar-link"><span class="link-icon"></span>Hidden Features</a>
+        <a href="../internals/growthbook-ab-testing.html" class="sidebar-link"><span class="link-icon"></span>A/B Testing</a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="content">
+    <h1>Bridge Mode</h1>
+    <p class="section-subtitle">Remote Control &amp; Remote Collaboration</p>
+
+    <div class="bridge-hero">
+      <strong>Bridge Mode</strong> exposes a remote control surface over a WebSocket connection.
+      It is designed to be used by a mobile/web app to send commands and receive
+      information from a running Ceph Code session.
+    </div>
+
+    <h2>Architecture</h2>
+    <p>
+      Bridge mode creates a WebSocket server that runs alongside the main Ceph Code session.
+      Remote clients connect to this server and can send slash commands, receive responses,
+      and interact with the running session. The bridge also supports session sharing for
+      team collaboration.
+    </p>
+
+    <h2>Quick Start</h2>
+    <pre><code><span style="color:var(--text-tertiary)"># Enable bridge mode</span>
+<span style="color:var(--amber-400)">export</span> BRIDGE_MODE=1
+<span style="color:var(--amber-400)">cephcode</span> --bridge
+
+<span style="color:var(--text-tertiary)"># Connect from another terminal</span>
+<span style="color:var(--amber-400)">cephcode</span> --remote ws://localhost:18790</code></pre>
+
+    <h2>Features</h2>
+    <ul>
+      <li><strong>Remote Control</strong> — Send commands from mobile/web/CLI clients</li>
+      <li><strong>Session Sharing</strong> — Share your session with team members</li>
+      <li><strong>Team Onboarding</strong> — Invite teammates to collaborate</li>
+      <li><strong>Secure</strong> — OAuth-based authentication for remote connections</li>
+    </ul>
+
+    <div class="callout callout-warn">
+      <strong>Security Note</strong>
+      Bridge mode is designed for trusted networks. Use appropriate security measures
+      when exposing the WebSocket server to external networks.
+    </div>
+
+    <footer class="footer">
+      <span>Ceph Code v2.1.145</span>
+      <div class="footer-links">
+        <a href="https://github.com/CephCore/cephcode">GitHub</a>
+        <a href="https://github.com/CephCore/cephcode/issues">Issues</a>
+      </div>
+    </footer>
+  </main>
 </div>
 
-<!-- ===================== ENGLISH ===================== -->
-<div id="lang-en" class="lang-content active">
-
-<h1>Bridge Mode — Remote Control &amp; Collaboration</h1>
-<p class="subtitle">Control your Claude Code terminal from anywhere — via web, mobile, or IDE</p>
-<hr>
-
-<h2>What is Bridge Mode?</h2>
-<p>Bridge Mode turns your local Claude Code terminal into a <strong>remotely controllable execution environment</strong>. You can connect to it from a web browser, mobile device, or IDE extension — the AI runs on your machine, but the interface is wherever you are.</p>
-
-<p>Think of it as: <em>"Your terminal is the engine, the web is the steering wheel."</em></p>
-
-<h2>How It Works</h2>
-
-<div class="step-box">
-  <h4>1. Your CLI registers as a "bridge environment"</h4>
-  <p>The local Claude Code registers itself with the remote control server, becoming discoverable as an available execution environment.</p>
-</div>
-
-<div class="step-box">
-  <h4>2. Remote clients connect via session URL</h4>
-  <p>A unique session URL is generated. Open it in any browser, scan the QR code with your phone, or connect via an IDE extension.</p>
-</div>
-
-<div class="step-box">
-  <h4>3. Long-polling for work</h4>
-  <p>Your terminal continuously polls for remote tasks. When a remote client sends a message, the bridge picks it up and executes it locally.</p>
-</div>
-
-<div class="step-box">
-  <h4>4. Bidirectional WebSocket</h4>
-  <p>Once connected, a WebSocket link enables two-way messaging — you see the AI's output on the web, and the web sends your input back to the terminal.</p>
-</div>
-
-<h2>Prerequisites</h2>
-<table>
-  <thead><tr><th>Requirement</th><th>Details</th></tr></thead>
-  <tbody>
-    <tr><td>Build with Bridge Mode</td><td>Must be a build with <code>feature('BRIDGE_MODE')</code> enabled</td></tr>
-    <tr><td>Account</td><td>Requires a claude.ai subscription (OAuth login)</td></tr>
-    <tr><td>GrowthBook gate</td><td><code>tengu_ccr_bridge</code> must be enabled for your account/organization</td></tr>
-    <tr><td>Network</td><td>Outbound HTTPS access to the bridge API server</td></tr>
-  </tbody>
-</table>
-
-<h2>Quick Start</h2>
-
-<h3>Step 1: Authenticate</h3>
-<p>Make sure you're logged in with your claude.ai account:</p>
-<pre><code>claude auth login</code></pre>
-
-<h3>Step 2: Start Bridge / Remote Control</h3>
-<p>Inside an active session, run the command:</p>
-<pre><code>/remote-control</code></pre>
-<p>Or from the command line with a custom name:</p>
-<pre><code>/remote-control my-workspace</code></pre>
-
-<p>If you're using a bridge-enabled build and the GrowthBook gate is active, the bridge will connect and you'll see a session URL.</p>
-
-<h3>Step 3: Connect via Web</h3>
-<p>Once connected, the terminal will show a dialog with:</p>
-<ul>
-  <li>A <strong>session URL</strong> — open it in any browser</li>
-  <li>A <strong>QR code</strong> — scan it with your phone for mobile access</li>
-  <li><strong>Options</strong> to disconnect or continue</li>
-</ul>
-
-<p>Opening the session URL in a browser gives you a web chat interface. The AI still runs on your local machine — you just interact through the browser.</p>
-
-<h3>Step 4: Disconnect</h3>
-<p>Run <code>/remote-control</code> again while connected to see the disconnect dialog, or use:</p>
-<pre><code>/remote-control
-# Then select "Disconnect this session"</code></pre>
-
-<h2>Use Cases</h2>
-
-<div class="step-box">
-  <h4> Remote Coding from Mobile</h4>
-  <p>Start a long-running task on your desktop, then go mobile. Open the session URL on your phone or scan the QR code to monitor progress, ask follow-ups, or give new instructions.</p>
-</div>
-
-<div class="step-box">
-  <h4> Pair Programming / Review</h4>
-  <p>Share the session URL with a colleague. They can see what the AI is doing in real-time and participate in the conversation without needing CLI access.</p>
-</div>
-
-<div class="step-box">
-  <h4> IDE Integration</h4>
-  <p>Use an IDE extension as a remote frontend. The AI runs on your powerful dev machine or server, while you interact through your editor.</p>
-</div>
-
-<div class="step-box">
-  <h4> Headless / Server Mode</h4>
-  <p>Run Claude Code on a remote server or CI environment and control it from your local browser. Useful for reviewing build logs, debugging production issues, or running automated workflows.</p>
-</div>
-
-<h2>Architecture (Simplified)</h2>
-<pre><code>┌──────────────┐       ┌──────────────────┐       ┌──────────────┐
-│  Web Browser  │       │  Bridge API       │       │  Local CLI   │
-│  (claude.ai)  │◄─────►│  (Remote Server)  │◄─────►│  (Executor)  │
-│  Phone/Tablet │       └──────────────────┘       │              │
-│  IDE Ext.     │                                   │  src/bridge/ │
-└──────────────┘                                   └──────────────┘
-
-      │                                                    │
-      │  Session URL                                       │  Poll for work
-      │  WebSocket (bidirectional)                          │  WebSocket
-      │                                                    │
-      ▼                                                    ▼
-  User types / sees output                           AI runs + executes tools
-</code></pre>
-
-<h2>Key Technical Details</h2>
-<ul>
-  <li><strong>Dual implementation</strong>: v1 (env-based, <code>replBridge.ts</code>) and v2 (env-less, <code>remoteBridgeCore.ts</code>) — v2 is the newer, more secure version</li>
-  <li><strong>Long-polling</strong>: Uses HTTP GET with 10s timeout instead of persistent WebSocket for work discovery</li>
-  <li><strong>OAuth refresh</strong>: Built-in <code>withOAuthRetry</code> handles token expiration automatically</li>
-  <li><strong>Security</strong>: Path traversal protection on all bridge IDs, trusted device tokens (v2), BridgeFatalError for non-retryable errors</li>
-  <li><strong>Heartbeat</strong>: Periodic heartbeat extends the work lease so the server knows the session is still active</li>
-  <li><strong>Permissions</strong>: Remote permission requests are sent to the control surface (web) for approval</li>
-</ul>
-
-<h2>Commands Reference</h2>
-<table>
-  <thead><tr><th>Command</th><th>Description</th></tr></thead>
-  <tbody>
-    <tr><td><code>/remote-control</code></td><td>Enable bridge mode and connect to remote control</td></tr>
-    <tr><td><code>/remote-control [name]</code></td><td>Connect with a custom machine/session name</td></tr>
-    <tr><td><code>/rc</code></td><td>Alias for <code>/remote-control</code></td></tr>
-  </tbody>
-</table>
-
-</div>
-
-<!-- ===================== 中文 ===================== -->
-<div id="lang-zh" class="lang-content">
-
-<h1>Bridge Mode — 远程控制与协作</h1>
-<p class="subtitle">从任何地方控制你的 Claude Code 终端 — 网页、手机或 IDE</p>
-<hr>
-
-<h2>什么是 Bridge Mode？</h2>
-<p>Bridge Mode 将你的本地 Claude Code 终端转变为一个<strong>可远程控制的执行环境</strong>。你可以从网页浏览器、移动设备或 IDE 扩展连接它——AI 在你的机器上运行，但界面跟着你走。</p>
-
-<p>可以理解为：<em>"你的终端是引擎，网页是方向盘。"</em></p>
-
-<h2>工作流程</h2>
-
-<div class="step-box">
-  <h4>1. CLI 注册为 "bridge 环境"</h4>
-  <p>本地 Claude Code 向远程控制服务器注册自己，成为可被发现的执行环境。</p>
-</div>
-
-<div class="step-box">
-  <h4>2. 远程客户端通过会话 URL 连接</h4>
-  <p>生成一个唯一的会话 URL。在浏览器中打开它，用手机扫描二维码，或通过 IDE 扩展连接。</p>
-</div>
-
-<div class="step-box">
-  <h4>3. 长轮询等待任务</h4>
-  <p>你的终端持续轮询远程任务。当远程客户端发送消息时，bridge 接收它并在本地执行。</p>
-</div>
-
-<div class="step-box">
-  <h4>4. 双向 WebSocket</h4>
-  <p>连接后，WebSocket 链路实现双向通信——你在网页上看到 AI 的输出，网页将输入发送回终端。</p>
-</div>
-
-<h2>前置条件</h2>
-<table>
-  <thead><tr><th>条件</th><th>说明</th></tr></thead>
-  <tbody>
-    <tr><td>Bridge Mode 构建</td><td>必须使用启用了 <code>feature('BRIDGE_MODE')</code> 的构建版本</td></tr>
-    <tr><td>账户</td><td>需要 claude.ai 订阅（OAuth 登录）</td></tr>
-    <tr><td>GrowthBook 门控</td><td>你的账户/组织必须启用 <code>tengu_ccr_bridge</code> 功能</td></tr>
-    <tr><td>网络</td><td>能访问 bridge API 服务器的出站 HTTPS</td></tr>
-  </tbody>
-</table>
-
-<h2>快速开始</h2>
-
-<h3>第一步：登录认证</h3>
-<p>确保你已用 claude.ai 账户登录：</p>
-<pre><code>claude auth login</code></pre>
-
-<h3>第二步：启动 Bridge</h3>
-<p>在活跃会话中运行命令：</p>
-<pre><code>/remote-control</code></pre>
-<p>或指定自定义名称：</p>
-<pre><code>/remote-control my-workspace</code></pre>
-
-<p>如果使用启用了 bridge 的构建且 GrowthBook 门控已激活，bridge 将连接并显示会话 URL。</p>
-
-<h3>第三步：通过网页连接</h3>
-<p>连接后，终端会显示一个对话框，包含：</p>
-<ul>
-  <li><strong>会话 URL</strong> — 在任何浏览器中打开</li>
-  <li><strong>二维码</strong> — 用手机扫描进行移动访问</li>
-  <li><strong>选项</strong> — 断开连接或继续</li>
-</ul>
-
-<p>在浏览器中打开会话 URL 即可获得网页聊天界面。AI 仍在你的本地机器上运行——你只是通过浏览器与之交互。</p>
-
-<h3>第四步：断开连接</h3>
-<p>在已连接状态下再次运行 <code>/remote-control</code> 即可看到断开连接的对话框：</p>
-<pre><code>/remote-control
-# 选择 "Disconnect this session"</code></pre>
-
-<h2>使用场景</h2>
-
-<div class="step-box">
-  <h4> 移动端远程编程</h4>
-  <p>在桌面端启动一个长期运行的任务，然后出门。在手机上打开会话 URL 或扫描二维码，监控进度、追问问题或发出新指令。</p>
-</div>
-
-<div class="step-box">
-  <h4> 结对编程 / 代码审查</h4>
-  <p>将会话 URL 分享给同事。他们可以实时看到 AI 在做什么，参与对话，无需 CLI 访问权限。</p>
-</div>
-
-<div class="step-box">
-  <h4> IDE 集成</h4>
-  <p>使用 IDE 扩展作为远程前端。AI 在你的强大开发机或服务器上运行，而你通过编辑器进行交互。</p>
-</div>
-
-<div class="step-box">
-  <h4> 无头 / 服务器模式</h4>
-  <p>在远程服务器或 CI 环境上运行 Claude Code，从本地浏览器控制它。适用于查看构建日志、调试生产问题或运行自动化工作流。</p>
-</div>
-
-<h2>架构（简化版）</h2>
-<pre><code>┌──────────────┐       ┌──────────────────┐       ┌──────────────┐
-│  网页浏览器   │       │  Bridge API       │       │  本地 CLI    │
-│  (claude.ai)  │◄─────►│  (远程服务器)     │◄─────►│  (执行者)    │
-│  手机/平板    │       └──────────────────┘       │              │
-│  IDE 扩展     │                                   │  src/bridge/ │
-└──────────────┘                                   └──────────────┘
-
-      │                                                    │
-      │  会话 URL                                          │  轮询任务
-      │  WebSocket (双向)                                   │  WebSocket
-      │                                                    │
-      ▼                                                    ▼
-  用户输入 / 查看输出                                AI 运行 + 执行工具
-</code></pre>
-
-<h2>关键技术细节</h2>
-<ul>
-  <li><strong>双重实现</strong>：v1（基于环境变量，<code>replBridge.ts</code>）和 v2（无需环境变量，<code>remoteBridgeCore.ts</code>）——v2 是更新的更安全版本</li>
-  <li><strong>长轮询</strong>：使用 HTTP GET + 10s 超时，而非持久 WebSocket 进行任务发现</li>
-  <li><strong>OAuth 刷新</strong>：内置 <code>withOAuthRetry</code> 自动处理令牌过期</li>
-  <li><strong>安全性</strong>：所有 bridge ID 的路径穿越防护，可信设备令牌（v2），不可重试错误的 BridgeFatalError</li>
-  <li><strong>心跳</strong>：定期发送心跳延长工作租约，让服务器知道会话仍活跃</li>
-  <li><strong>权限</strong>：远程权限请求发送到控制面（网页）进行审批</li>
-</ul>
-
-<h2>命令参考</h2>
-<table>
-  <thead><tr><th>命令</th><th>说明</th></tr></thead>
-  <tbody>
-    <tr><td><code>/remote-control</code></td><td>启用 bridge 模式并连接远程控制</td></tr>
-    <tr><td><code>/remote-control [name]</code></td><td>使用自定义机器/会话名称连接</td></tr>
-    <tr><td><code>/rc</code></td><td><code>/remote-control</code> 的别名</td></tr>
-  </tbody>
-</table>
-
-</div>
-
-<!-- ===================== ภาษาไทย ===================== -->
-<div id="lang-th" class="lang-content">
-
-<h1>Bridge Mode — ควบคุมและทำงานร่วมกันจากระยะไกล</h1>
-<p class="subtitle">ควบคุม Claude Code terminal ของคุณจากที่ไหนก็ได้ — ผ่านเว็บ มือถือ หรือ IDE</p>
-<hr>
-
-<h2>Bridge Mode คืออะไร?</h2>
-<p>Bridge Mode เปลี่ยน Claude Code terminal ในเครื่องของคุณให้เป็น <strong>สภาพแวดล้อมการทำงานที่ควบคุมจากระยะไกล</strong> คุณสามารถเชื่อมต่อจากเว็บเบราว์เซอร์ อุปกรณ์มือถือ หรือ IDE extension — AI รันบนเครื่องของคุณ แต่อินเทอร์เฟซอยู่ที่คุณ</p>
-
-<p>เข้าใจง่าย ๆ คือ: <em>"terminal ของคุณคือเครื่องยนต์ เว็บคือพวงมาลัย"</em></p>
-
-<h2>ขั้นตอนการทำงาน</h2>
-
-<div class="step-box">
-  <h4>1. CLI ของคุณลงทะเบียนเป็น "bridge environment"</h4>
-  <p>Claude Code ในเครื่องลงทะเบียนตัวเองกับเซิร์ฟเวอร์ remote control กลายเป็นสภาพแวดล้อมการทำงานที่สามารถค้นหาได้</p>
-</div>
-
-<div class="step-box">
-  <h4>2. ไคลเอนต์ระยะไกลเชื่อมต่อผ่าน URL เซสชัน</h4>
-  <p>สร้าง URL เซสชันเฉพาะ เปิดในเบราว์เซอร์ สแกน QR code ด้วยมือถือ หรือเชื่อมต่อผ่าน IDE extension</p>
-</div>
-
-<div class="step-box">
-  <h4>3. Long-polling เพื่อรับงาน</h4>
-  <p>Terminal ของคุณจะคอยสอบถามงานระยะไกลอย่างต่อเนื่อง เมื่อไคลเอนต์ระยะไกลส่งข้อความ bridge รับและดำเนินการในเครื่อง</p>
-</div>
-
-<div class="step-box">
-  <h4>4. WebSocket แบบสองทิศทาง</h4>
-  <p>เมื่อเชื่อมต่อแล้ว ลิงก์ WebSocket ช่วยให้สื่อสารสองทาง — คุณเห็นเอาต์พุตของ AI บนเว็บ และเว็บส่งอินพุตของคุณกลับไปยัง terminal</p>
-</div>
-
-<h2>ข้อกำหนดเบื้องต้น</h2>
-<table>
-  <thead><tr><th>เงื่อนไข</th><th>รายละเอียด</th></tr></thead>
-  <tbody>
-    <tr><td>Build ที่มี Bridge Mode</td><td>ต้องเป็น build ที่เปิด <code>feature('BRIDGE_MODE')</code></td></tr>
-    <tr><td>บัญชี</td><td>ต้องสมัครสมาชิก claude.ai (เข้าใช้ระบบด้วย OAuth)</td></tr>
-    <tr><td>GrowthBook gate</td><td>ต้องเปิด <code>tengu_ccr_bridge</code> สำหรับบัญชี/องค์กรของคุณ</td></tr>
-    <tr><td>เครือข่าย</td><td>เข้าถึง API เซิร์ฟเวอร์ bridge ผ่าน HTTPS ได้</td></tr>
-  </tbody>
-</table>
-
-<h2>เริ่มต้นใช้งาน</h2>
-
-<h3>ขั้นตอนที่ 1: เข้าสู่ระบบ</h3>
-<p>ตรวจสอบว่าคุณได้เข้าสู่ระบบด้วยบัญชี claude.ai แล้ว:</p>
-<pre><code>claude auth login</code></pre>
-
-<h3>ขั้นตอนที่ 2: เริ่ม Bridge</h3>
-<p>ภายในเซสชันที่ใช้งานอยู่ ให้รันคำสั่ง:</p>
-<pre><code>/remote-control</code></pre>
-<p>หรือระบุชื่อที่กำหนดเอง:</p>
-<pre><code>/remote-control my-workspace</code></pre>
-
-<p>ถ้าคุณใช้ build ที่เปิด bridge ไว้และ GrowthBook gate ทำงาน bridge จะเชื่อมต่อและแสดง URL เซสชัน</p>
-
-<h3>ขั้นตอนที่ 3: เชื่อมต่อผ่านเว็บ</h3>
-<p>เมื่อเชื่อมต่อแล้ว terminal จะแสดงไดอะล็อกพร้อม:</p>
-<ul>
-  <li><strong>Session URL</strong> — เปิดในเบราว์เซอร์ใดก็ได้</li>
-  <li><strong>QR code</strong> — สแกนด้วยมือถือเพื่อเข้าถึงจากโทรศัพท์</li>
-  <li><strong>ตัวเลือก</strong> — ตัดการเชื่อมต่อหรือดำเนินต่อ</li>
-</ul>
-
-<p>การเปิด session URL ในเบราว์เซอร์จะแสดงอินเทอร์เฟซแชทบนเว็บ AI ยังคงทำงานบนเครื่องของคุณ — คุณแค่โต้ตอบผ่านเบราว์เซอร์</p>
-
-<h3>ขั้นตอนที่ 4: ตัดการเชื่อมต่อ</h3>
-<p>รัน <code>/remote-control</code> อีกครั้งขณะที่เชื่อมต่ออยู่เพื่อดูไดอะล็อกตัดการเชื่อมต่อ:</p>
-<pre><code>/remote-control
-# จากนั้นเลือก "Disconnect this session"</code></pre>
-
-<h2>กรณีการใช้งาน</h2>
-
-<div class="step-box">
-  <h4> เขียนโปรแกรมระยะไกลจากมือถือ</h4>
-  <p>เริ่มงานที่ใช้เวลานานบนเดสก์ท็อป แล้วออกไปข้างนอก เปิด session URL บนมือถือหรือสแกน QR code เพื่อติดตามความคืบหน้า ถามคำถามเพิ่ม หรือสั่งงานใหม่</p>
-</div>
-
-<div class="step-box">
-  <h4> Pair Programming / รีวิวโค้ด</h4>
-  <p>แชร์ session URL ให้เพื่อนร่วมงาน พวกเขาจะเห็นว่า AI กำลังทำอะไรแบบเรียลไทม์ และมีส่วนร่วมในการสนทนาโดยไม่ต้องเข้าถึง CLI</p>
-</div>
-
-<div class="step-box">
-  <h4> การทำงานกับ IDE</h4>
-  <p>ใช้ IDE extension เป็น frontend ระยะไกล AI รันบนเครื่องพัฒนาที่ทรงพลังของคุณหรือเซิร์ฟเวอร์ ในขณะที่คุณโต้ตอบผ่าน editor</p>
-</div>
-
-<div class="step-box">
-  <h4> โหมด Headless / Server</h4>
-  <p>รัน Claude Code บนเซิร์ฟเวอร์ระยะไกลหรือ CI environment แล้วควบคุมจากเบราว์เซอร์ในเครื่อง เหมาะสำหรับดู build logs, แก้ไขปัญหาการใช้งานจริง, หรือรันเวิร์กโฟลว์อัตโนมัติ</p>
-</div>
-
-<h2>สถาปัตยกรรม (อย่างง่าย)</h2>
-<pre><code>┌──────────────┐       ┌──────────────────┐       ┌──────────────┐
-│  เว็บเบราว์เซอร์│       │  Bridge API       │       │  CLI ในเครื่อง│
-│  (claude.ai)  │◄─────►│  (เซิร์ฟเวอร์)     │◄─────►│  (ผู้ทำงาน)  │
-│  มือถือ/แท็บเล็ต│      └──────────────────┘       │              │
-│  IDE Ext.     │                                   │  src/bridge/ │
-└──────────────┘                                   └──────────────┘
-
-      │                                                    │
-      │  Session URL                                       │  คอยสอบถามงาน
-      │  WebSocket (สองทิศทาง)                              │  WebSocket
-      │                                                    │
-      ▼                                                    ▼
-  ผู้ใช้พิมพ์ / เห็นผลลัพธ์                           AI ทำงาน + รันเครื่องมือ
-</code></pre>
-
-<h2>รายละเอียดทางเทคนิค</h2>
-<ul>
-  <li><strong>สองเวอร์ชัน</strong>: v1 (基于环境变量, <code>replBridge.ts</code>) และ v2 (ไม่ต้องใช้ env, <code>remoteBridgeCore.ts</code>) — v2 เป็นเวอร์ชันใหม่และปลอดภัยกว่า</li>
-  <li><strong>Long-polling</strong>: ใช้ HTTP GET + 10s timeout แทน WebSocket ถาวรสำหรับการค้นพบงาน</li>
-  <li><strong>OAuth refresh</strong>: <code>withOAuthRetry</code> ในตัว จัดการ token หมดอายุอัตโนมัติ</li>
-  <li><strong>ความปลอดภัย</strong>: ป้องกัน path traversal ใน bridge ID ทั้งหมด, trusted device tokens (v2), BridgeFatalError สำหรับข้อผิดพลาดที่ไม่ควรลองใหม่</li>
-  <li><strong>Heartbeat</strong>: ส่งสัญญาณ heartbeat เป็นระยะเพื่อต่ออายุงาน ให้เซิร์ฟเวอร์รู้ว่าเซสชันยังทำงานอยู่</li>
-  <li><strong>สิทธิ์</strong>: คำขอสิทธิ์ระยะไกลถูกส่งไปยัง control surface (เว็บ) เพื่ออนุมัติ</li>
-</ul>
-
-<h2>รายการคำสั่ง</h2>
-<table>
-  <thead><tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr></thead>
-  <tbody>
-    <tr><td><code>/remote-control</code></td><td>เปิดโหมด bridge และเชื่อมต่อ remote control</td></tr>
-    <tr><td><code>/remote-control [name]</code></td><td>เชื่อมต่อด้วยชื่อเครื่อง/เซสชันที่กำหนดเอง</td></tr>
-    <tr><td><code>/rc</code></td><td>ชื่อย่อของ <code>/remote-control</code></td></tr>
-  </tbody>
-</table>
-
-</div>
-
-<script>
-function switchLang(lang) {
-  document.querySelectorAll('.lang-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
-  document.getElementById('lang-' + lang).classList.add('active');
-  document.querySelector('.lang-btn[onclick*="' + lang + '"]').classList.add('active');
-  localStorage.setItem('pref-lang', lang);
-}
-(function() {
-  var saved = localStorage.getItem('pref-lang');
-  if (saved && document.getElementById('lang-' + saved)) {
-    switchLang(saved);
-  }
-})();
-</script>
-
+<script src="../js/main.js"></script>
 </body>
 </html>

@@ -3,233 +3,311 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ceph Code — Documentation</title>
+  <title>Ceph Code — Multi-Provider AI Coding Assistant</title>
+  <meta name="description" content="Terminal-based AI coding assistant with 15+ AI providers, 80+ slash commands, extensible plugin system.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <header class="header">
-    <div class="header-content">
-      <a href="index.html" class="logo">
-        <span class="logo-text">Ceph Code</span>
-      </a>
-    </div>
-  </header>
 
-  <main class="main-content" style="max-width: 1200px; margin: 0 auto; padding: var(--spacing-2xl) var(--spacing-xl);">
-    <h1>Ceph Code</h1>
-    <p class="lead">
-      A terminal-based AI coding assistant with multi-provider routing, extensible plugin architecture, and a comprehensive tool system for professional development workflows.
+<!-- ─── Header ─── -->
+<header class="header">
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-mark">~</span>
+      <span>Ceph Code</span>
+    </a>
+    <nav class="header-nav">
+      <a href="index.html" class="active">Home</a>
+      <a href="#features">Features</a>
+      <a href="#commands">Commands</a>
+      <a href="features/searxng-search.html">Docs</a>
+      <a href="https://github.com/CephCore/cephcode" target="_blank">GitHub</a>
+    </nav>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Getting Started</div>
+      <nav>
+        <a href="index.html" class="sidebar-link active"><span class="link-icon"></span>Overview</a>
+        <a href="#features" class="sidebar-link"><span class="link-icon"></span>Features</a>
+        <a href="#providers" class="sidebar-link"><span class="link-icon"></span>Providers</a>
+        <a href="#plugins" class="sidebar-link"><span class="link-icon"></span>Plugins</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Features</div>
+      <nav>
+        <a href="features/searxng-search.html" class="sidebar-link"><span class="link-icon"></span>SearXNG Search</a>
+        <a href="features/bridge-mode.html" class="sidebar-link"><span class="link-icon"></span>Bridge Mode</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Internals</div>
+      <nav>
+        <a href="internals/hidden-features.html" class="sidebar-link"><span class="link-icon"></span>Hidden Features</a>
+        <a href="internals/growthbook-ab-testing.html" class="sidebar-link"><span class="link-icon"></span>A/B Testing</a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- ─── Main Content ─── -->
+  <main class="content content-wide">
+
+    <!-- ─── Hero ─── -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        v2.1.145 — Multi-Provider AI CLI
+      </div>
+      <h1>
+        Code with<br>
+        <span class="highlight">any model</span>
+      </h1>
+      <p>
+        A terminal-based AI coding assistant with multi-provider routing,
+        extensible plugin architecture, and a comprehensive tool system
+        for professional development workflows.
+      </p>
+      <div class="hero-actions">
+        <a href="https://npmjs.com/package/cephcode" class="btn btn-primary">
+          npm install -g cephcode
+        </a>
+        <a href="https://github.com/CephCore/cephcode" class="btn btn-ghost" target="_blank">
+          GitHub →
+        </a>
+      </div>
+    </section>
+
+    <!-- ─── Terminal Demo ─── -->
+    <div class="terminal-window">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span class="terminal-title">cephcode — ~/project</span>
+      </div>
+      <div class="terminal-body">
+        <span class="line"><span class="prompt">$</span> <span class="cmd">cephcode</span></span>
+        <span class="line"><span class="output">╭──────────────────────────────────────────╮</span></span>
+        <span class="line"><span class="output">│ <span class="highlight-amber">Ceph Code</span> · model: <span class="highlight-cyan">deepseek-v4-flash</span>  │</span></span>
+        <span class="line"><span class="output">│ provider: <span class="highlight-cyan">DeepSeek</span> · context: <span class="highlight-amber">78%</span>  │</span></span>
+        <span class="line"><span class="output">╰──────────────────────────────────────────╯</span></span>
+        <span class="line"><span class="prompt">></span> <span class="cmd">"find all unused exports in src/"</span></span>
+        <span class="line"><span class="output">Searching <span class="highlight-cyan">3 files</span>... Found <span class="highlight-amber">2 unused exports</span>.</span><span class="cursor"></span></span>
+      </div>
+    </div>
+
+    <!-- ─── Stats ─── -->
+    <div class="stats-grid">
+      <div class="stat-card fade-up">
+        <div class="stat-number">15+</div>
+        <div class="stat-label">AI Providers</div>
+      </div>
+      <div class="stat-card fade-up">
+        <div class="stat-number">80+</div>
+        <div class="stat-label">Slash Commands</div>
+      </div>
+      <div class="stat-card fade-up">
+        <div class="stat-number">56+</div>
+        <div class="stat-label">Built-in Tools</div>
+      </div>
+      <div class="stat-card fade-up">
+        <div class="stat-number">100%</div>
+        <div class="stat-label">Open Source</div>
+      </div>
+    </div>
+
+    <!-- ─── Features ─── -->
+    <h2 class="section-title" id="features">Features</h2>
+    <p class="section-subtitle">
+      Everything you need for AI-assisted development — from a single terminal.
     </p>
 
-    <div class="hero">
-      <h2>Getting Started</h2>
-      <ol style="color: rgba(255,255,255,0.85); padding-left: 1.25rem;">
-        <li style="margin: 0.75rem 0;">
-          <strong>Install</strong> —
-          <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">npm install -g cephcode</code>
-        </li>
-        <li style="margin: 0.75rem 0;">
-          <strong>Set API Key</strong> —
-          <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">export ANTHROPIC_API_KEY=sk-ant-...</code>
-        </li>
-        <li style="margin: 0.75rem 0;">
-          <strong>Launch</strong> —
-          Run <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">cephcode</code> in your terminal
-        </li>
-        <li style="margin: 0.75rem 0;">
-          <strong>Try commands</strong> —
-          Type <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">/model list</code>, <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">/status</code>, or <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">/help</code>
-        </li>
-      </ol>
-    </div>
-
-    <h2>Features</h2>
-
-    <div class="features-grid">
+    <div class="feature-grid">
       <div class="feature-card">
-        <h3>15+ AI Providers</h3>
-        <p>Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, DeepSeek, xAI, Mistral, Groq, Copilot, KiloCode, OpenCode, OpenCode Go, Cline, ChatGPT Plus</p>
+        <div class="feature-icon">&#x25C8;</div>
+        <h3>Multi-Provider Routing</h3>
+        <p>Switch between Anthropic, OpenAI, Google Gemini, DeepSeek, OpenRouter, Ollama, xAI, Mistral, Groq, and more at runtime.</p>
+        <span class="feature-tag">/model</span>
+        <span class="feature-tag">/provider</span>
       </div>
       <div class="feature-card">
-        <h3>80+ Slash Commands</h3>
-        <p>File ops, git, search, model management, MCP, plugins, agents, sessions, diagnostics</p>
-      </div>
-      <div class="feature-card">
+        <div class="feature-icon">&#x2B21;</div>
         <h3>56+ Built-in Tools</h3>
-        <p>Read, Edit, Write, Glob, Grep, Bash, Web, MCP, LSP, Agent, Task, Monitor, Research, Workflow</p>
+        <p>Read, Edit, Write, Glob, Grep, Bash, Web Search, Research, MCP, LSP, Agent, Task, Monitor, and Workflow tools.</p>
+        <span class="feature-tag">/tools</span>
       </div>
       <div class="feature-card">
+        <div class="feature-icon">&#x2387;</div>
         <h3>Plugin System</h3>
-        <p>Extend with commands, agents, skills, hooks, and MCP servers from built-in or marketplace plugins</p>
+        <p>Extend with commands, agents, skills, hooks, and MCP servers. Pre/post tool hooks for custom automation.</p>
+        <span class="feature-tag">/plugin</span>
+        <span class="feature-tag">/skill</span>
       </div>
       <div class="feature-card">
+        <div class="feature-icon">&#x25CB;</div>
         <h3>Agent View</h3>
-        <p>Multi-session dashboard with supervisor daemon, background tasks, IPC, worktree isolation</p>
+        <p>Multi-session dashboard with supervisor daemon, background tasks, IPC communication, and worktree isolation.</p>
+        <span class="feature-tag">/agents</span>
       </div>
       <div class="feature-card">
+        <div class="feature-icon">&#x2691;</div>
         <h3>Smart Memory</h3>
-        <p>Cross-lingual semantic search, hybrid recall (local + LLM), auto-memory, team sync</p>
+        <p>Cross-lingual semantic search, hybrid recall (local + LLM), auto-memory capture, and team sync.</p>
+        <span class="feature-tag">/memory</span>
       </div>
       <div class="feature-card">
+        <div class="feature-icon">&#x2194;</div>
         <h3>Bridge Mode</h3>
-        <p>WebSocket remote collaboration with session sharing and team onboarding</p>
+        <p>WebSocket remote collaboration with session sharing, team onboarding, and mobile/web clients.</p>
+        <span class="feature-tag">Bridge</span>
       </div>
       <div class="feature-card">
+        <div class="feature-icon">&#x25C7;</div>
+        <h3>KiloCompact</h3>
+        <p>Local context compaction: log/trace snipping, failed-state consolidation, semantic turn pruning.</p>
+        <span class="feature-tag">/compact</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#x25B3;</div>
         <h3>Permission Modes</h3>
-        <p>Default, Auto, Plan, YOLO Lite, YOLO, YOLO MAX — configure via <code>/permissions</code></p>
+        <p>Default, Auto, Plan, YOLO Lite, YOLO, YOLO MAX — granular control over tool execution safety.</p>
+        <span class="feature-tag">/permissions</span>
       </div>
     </div>
 
-    <h2>Usage</h2>
-    <p>Ceph Code works like a chat in your terminal. Type naturally to ask questions, request code changes, or run commands:
+    <!-- ─── Usage ─── -->
+    <h2 class="section-title" id="usage">Quick Start</h2>
+    <p class="section-subtitle">From zero to coding in under a minute.</p>
 
-    <div class="code-block">
-      <pre><code># Start a session
-cephcode
+    <pre><code><span style="color:var(--amber-400)">$</span> <span style="color:var(--text-primary)">npm install -g cephcode</span>
+<span style="color:var(--amber-400)">$</span> <span style="color:var(--text-primary)">export ANTHROPIC_API_KEY=sk-ant-...</span>
+<span style="color:var(--amber-400)">$</span> <span style="color:var(--text-primary)">cephcode</span>
 
-# Ask a question
-"find all unused exports in src/"
+<span style="color:var(--text-tertiary)"># Ask a question</span>
+<span style="color:var(--amber-400)">></span> <span style="color:var(--text-primary)">"find all unused exports in src/"</span>
 
-# Run a command
-/edit main.ts:42
+<span style="color:var(--text-tertiary)"># Switch model on the fly</span>
+<span style="color:var(--amber-400)">></span> <span style="color:var(--text-primary)">/model deepseek-v4-flash</span>
 
-# Switch model
-/model deepseek-v4-flash
+<span style="color:var(--text-tertiary)"># Context management</span>
+<span style="color:var(--amber-400)">></span> <span style="color:var(--text-primary)">/clear</span>    <span style="color:var(--text-tertiary)"># Fresh start</span>
+<span style="color:var(--amber-400)">></span> <span style="color:var(--text-primary)">/compact</span> <span style="color:var(--text-tertiary)"># Compress context</span>
+<span style="color:var(--amber-400)">></span> <span style="color:var(--text-primary)">/resume</span>  <span style="color:var(--text-tertiary)"># Resume last session</span></code></pre>
 
-# Context management
-/clear    # Fresh start
-/compact  # Compress context
-/resume   # Resume last session</code></pre>
+    <!-- ─── Slash Commands ─── -->
+    <h2 class="section-title" id="commands">Slash Commands</h2>
+    <p class="section-subtitle">80+ commands to control every aspect of your workflow.</p>
+
+    <div class="scroll-wrap">
+    <table>
+      <thead>
+        <tr><th>Category</th><th>Commands</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span style="color:var(--amber-300)">Files</span></td><td><code>/read</code> <code>/edit</code> <code>/write</code> <code>/glob</code> <code>/grep</code></td><td>Read, edit, create, and search files</td></tr>
+        <tr><td><span style="color:var(--amber-300)">Git</span></td><td><code>/diff</code> <code>/commit</code> <code>/branch</code></td><td>Version control operations</td></tr>
+        <tr><td><span style="color:var(--amber-300)">Model</span></td><td><code>/model</code> <code>/provider</code> <code>/cost</code> <code>/usage</code> <code>/stats</code></td><td>Switch models and track usage</td></tr>
+        <tr><td><span style="color:var(--amber-300)">Session</span></td><td><code>/clear</code> <code>/compact</code> <code>/resume</code> <code>/session</code> <code>/rewind</code></td><td>Context and session management</td></tr>
+        <tr><td><span style="color:var(--amber-300)">Config</span></td><td><code>/permissions</code> <code>/plan</code> <code>/config</code> <code>/theme</code></td><td>Settings and preferences</td></tr>
+        <tr><td><span style="color:var(--amber-300)">Extend</span></td><td><code>/plugin</code> <code>/skill</code> <code>/agent</code> <code>/agents</code> <code>/mcp</code></td><td>Plugins, skills, agents, MCP</td></tr>
+        <tr><td><span style="color:var(--amber-300)">System</span></td><td><code>/help</code> <code>/status</code> <code>/doctor</code> <code>/exit</code></td><td>Help, diagnostics, and exit</td></tr>
+      </tbody>
+    </table>
     </div>
 
-    <h2>Slash Commands</h2>
+    <!-- ─── Providers ─── -->
+    <h2 class="section-title" id="providers">AI Providers</h2>
+    <p class="section-subtitle">Bring your own key — use the model that works best for each task.</p>
+
+    <div class="scroll-wrap">
     <table>
       <thead>
-        <tr><th>Command</th><th>Description</th></tr>
+        <tr><th>Provider</th><th>Config</th><th>Models</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>/read</code></td><td>Read file</td></tr>
-        <tr><td><code>/edit</code></td><td>Edit file</td></tr>
-        <tr><td><code>/write</code></td><td>Create file</td></tr>
-        <tr><td><code>/glob</code></td><td>Find files</td></tr>
-        <tr><td><code>/grep</code></td><td>Search content</td></tr>
-        <tr><td><code>/git</code></td><td>Git operations</td></tr>
-        <tr><td><code>/diff</code></td><td>Show changes</td></tr>
-        <tr><td><code>/model</code></td><td>Switch model or list models</td></tr>
-        <tr><td><code>/provider</code></td><td>Switch provider</td></tr>
-        <tr><td><code>/cost</code></td><td>Show API cost</td></tr>
-        <tr><td><code>/usage</code></td><td>Token usage</td></tr>
-        <tr><td><code>/stats</code></td><td>Usage statistics</td></tr>
-        <tr><td><code>/clear</code></td><td>Clear conversation</td></tr>
-        <tr><td><code>/compact</code></td><td>Compress context (KiloCompact)</td></tr>
-        <tr><td><code>/resume</code></td><td>Resume session</td></tr>
-        <tr><td><code>/session</code></td><td>New session</td></tr>
-        <tr><td><code>/rewind</code></td><td>Rewind conversation</td></tr>
-        <tr><td><code>/permissions</code></td><td>Permission settings</td></tr>
-        <tr><td><code>/plan</code></td><td>Plan mode</td></tr>
-        <tr><td><code>/config</code></td><td>Edit settings</td></tr>
-        <tr><td><code>/theme</code></td><td>Change theme</td></tr>
-        <tr><td><code>/plugin</code></td><td>Plugin management</td></tr>
-        <tr><td><code>/skill</code></td><td>Load skill</td></tr>
-        <tr><td><code>/agent</code></td><td>Create subagent</td></tr>
-        <tr><td><code>/agents</code></td><td>Agent dashboard</td></tr>
-        <tr><td><code>/mcp</code></td><td>MCP servers</td></tr>
-        <tr><td><code>/help</code></td><td>Show help</td></tr>
-        <tr><td><code>/status</code></td><td>Show state</td></tr>
-        <tr><td><code>/doctor</code></td><td>Diagnostics</td></tr>
+        <tr><td><span style="color:var(--cyan-400)">Anthropic</span></td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-opus-4, claude-sonnet-4</td></tr>
+        <tr><td><span style="color:var(--cyan-400)">OpenAI</span></td><td><code>OPENAI_API_KEY</code></td><td>gpt-5.5-pro, gpt-5.5</td></tr>
+        <tr><td><span style="color:var(--cyan-400)">Google</span></td><td><code>GOOGLE_API_KEY</code></td><td>gemini-3.1-pro, gemini-3.1-flash</td></tr>
+        <tr><td><span style="color:var(--cyan-400)">DeepSeek</span></td><td><code>DEEPSEEK_API_KEY</code></td><td>deepseek-v4-pro, deepseek-v4-flash</td></tr>
+        <tr><td><span style="color:var(--cyan-400)">OpenRouter</span></td><td><code>OPENROUTER_API_KEY</code></td><td>100+ models</td></tr>
+        <tr><td><span style="color:var(--cyan-400)">Ollama</span></td><td><code>OLLAMA_HOST</code></td><td>Local models</td></tr>
+        <tr><td><span style="color:var(--cyan-400)">xAI</span></td><td><code>XAI_API_KEY</code></td><td>grok-4</td></tr>
+        <tr><td><span style="color:var(--cyan-400)">Mistral</span></td><td><code>MISTRAL_API_KEY</code></td><td>mistral-large-4</td></tr>
+        <tr><td><span style="color:var(--cyan-400)">Groq</span></td><td><code>GROQ_API_KEY</code></td><td>llama-4-70b</td></tr>
       </tbody>
     </table>
+    </div>
 
-    <h2>AI Providers</h2>
-    <table>
-      <thead>
-        <tr><th>Provider</th><th>Environment Variable</th><th>Models</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Anthropic</td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-opus-4-7, claude-sonnet-4-7</td></tr>
-        <tr><td>OpenAI</td><td><code>OPENAI_API_KEY</code></td><td>gpt-5.5-pro, gpt-5.5</td></tr>
-        <tr><td>Google</td><td><code>GOOGLE_API_KEY</code></td><td>gemini-3.1-pro, gemini-3.1-flash</td></tr>
-        <tr><td>DeepSeek</td><td><code>DEEPSEEK_API_KEY</code></td><td>deepseek-v4-pro, deepseek-v4-flash</td></tr>
-        <tr><td>OpenRouter</td><td><code>OPENROUTER_API_KEY</code></td><td>100+ models</td></tr>
-        <tr><td>Ollama</td><td><code>OLLAMA_HOST</code></td><td>Local models</td></tr>
-        <tr><td>xAI</td><td><code>XAI_API_KEY</code></td><td>grok-4</td></tr>
-        <tr><td>Mistral</td><td><code>MISTRAL_API_KEY</code></td><td>mistral-large-4</td></tr>
-        <tr><td>Groq</td><td><code>GROQ_API_KEY</code></td><td>llama-4-70b</td></tr>
-      </tbody>
-    </table>
+    <!-- ─── Plugins ─── -->
+    <h2 class="section-title" id="plugins">Plugins &amp; Skills</h2>
+    <p class="section-subtitle">Extend functionality with built-in and marketplace plugins.</p>
 
-    <h2>Plugins</h2>
+    <div class="scroll-wrap">
     <table>
       <thead>
         <tr><th>Plugin</th><th>Description</th></tr>
       </thead>
       <tbody>
-        <tr><td>commit-commands</td><td>Git workflow (commit, push, PR)</td></tr>
-        <tr><td>code-review</td><td>PR code review</td></tr>
-        <tr><td>feature-dev</td><td>Feature dev with agents</td></tr>
-        <tr><td>frontend-design</td><td>UI/UX skill</td></tr>
-        <tr><td>security-guidance</td><td>Security hooks (disabled by default)</td></tr>
+        <tr><td><code>commit-commands</code></td><td>Git workflow: commit, push, PR creation</td></tr>
+        <tr><td><code>code-review</code></td><td>Automated PR code review</td></tr>
+        <tr><td><code>feature-dev</code></td><td>Guided feature development with agents</td></tr>
+        <tr><td><code>frontend-design</code></td><td>Production-grade UI/UX generation</td></tr>
+        <tr><td><code>verify</code></td><td>Typecheck, lint, build, and test</td></tr>
+        <tr><td><code>debug</code></td><td>Debugging assistance</td></tr>
+        <tr><td><code>commit</code></td><td>Conventional git commits</td></tr>
+        <tr><td><code>simplify</code></td><td>Code quality and reuse review</td></tr>
+        <tr><td><code>web-search</code></td><td>Multi-provider web search</td></tr>
+        <tr><td><code>scrapling</code></td><td>Web scraping with Scrapling</td></tr>
+        <tr><td><code>skillify</code></td><td>Create skills from workflows</td></tr>
+        <tr><td><code>remember</code></td><td>Save user preferences</td></tr>
       </tbody>
     </table>
+    </div>
 
-    <h2>Bundled Skills</h2>
-    <table>
-      <thead>
-        <tr><th>Skill</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>verify</td><td>Typecheck, lint, build, test</td></tr>
-        <tr><td>debug</td><td>Debugging assistance</td></tr>
-        <tr><td>commit</td><td>Conventional git commit</td></tr>
-        <tr><td>simplify</td><td>Code quality review</td></tr>
-        <tr><td>update-config</td><td>Settings configuration</td></tr>
-        <tr><td>remember</td><td>Save preferences</td></tr>
-        <tr><td>web-search</td><td>Web search</td></tr>
-        <tr><td>scrapling</td><td>Web scraping</td></tr>
-        <tr><td>batch</td><td>Batch operations</td></tr>
-        <tr><td>keybindings</td><td>Keybinding reference</td></tr>
-        <tr><td>skillify</td><td>Create skills from workflows</td></tr>
-        <tr><td>stuck</td><td>Help when stuck</td></tr>
-      </tbody>
-    </table>
-
-    <h2>Recent Updates (v2.1.145)</h2>
+    <!-- ─── Changelog ─── -->
+    <h2 class="section-title" id="updates">v2.1.145 Updates</h2>
     <ul>
-      <li><strong>KiloCompact</strong> — Local context compaction: log/trace snipping, failed-state consolidation, semantic turn pruning</li>
+      <li><strong>KiloCompact</strong> — Local context compaction with log/trace snipping and semantic pruning</li>
       <li><strong><code>/resume &lt;N&gt;</code></strong> — Resume last N exchanges with number argument</li>
-      <li><strong><code>--resume &lt;N&gt;</code></strong> — Resume from CLI with last N exchanges</li>
-      <li><strong>Arc Spinner</strong> — Smooth 6-frame status spinner</li>
-      <li><strong>Context Usage Bar Freeze</strong> — No more 0% collapse during streaming</li>
-      <li><strong>Recent Models</strong> — Recently used models shown at top of <code>/model</code> picker</li>
-      <li><strong>Background Sessions</strong> — <code>claude ps</code>, <code>stop</code>, <code>attach</code>, <code>--bg</code> with <code>--name</code> support</li>
-      <li><strong>MCP Pagination</strong> — <code>tools/list</code> handles paginated responses</li>
-      <li><strong>Permission Cycle Fixed</strong> — <code>bypassPermissions</code> no longer cycles incorrectly</li>
-      <li><strong>Windows Support</strong> — Background session commands work on Windows</li>
-      <li><strong>IDE Model Sync</strong> — Model changes apply at runtime</li>
+      <li><strong>Arc Spinner</strong> — Smooth 6-frame status spinner animation</li>
+      <li><strong>Context Usage Bar</strong> — No more 0% collapse during streaming</li>
+      <li><strong>Recent Models</strong> — Recently used models at top of model picker</li>
+      <li><strong>Background Sessions</strong> — <code>claude ps</code>, <code>stop</code>, <code>attach</code>, <code>--bg</code> support</li>
+      <li><strong>MCP Pagination</strong> — Handles paginated <code>tools/list</code> responses</li>
+      <li><strong>Permission Cycle Fix</strong> — <code>bypassPermissions</code> no longer cycles</li>
+      <li><strong>SearXNG Search</strong> — Self-hosted web search via Docker</li>
     </ul>
 
-    <p>Full changelog: <a href="https://github.com/JonusNattapong/ClaudeCode/blob/main/CHANGELOG.md">CHANGELOG.md</a></p>
+    <div style="margin-top:var(--space-lg)">
+      <a href="https://github.com/CephCore/cephcode/blob/main/CHANGELOG.md" class="btn btn-ghost">Full Changelog →</a>
+    </div>
 
-    <h2>Links</h2>
-    <ul>
-      <li><a href="https://github.com/JonusNattapong/ClaudeCode">GitHub Repository</a></li>
-      <li><a href="https://github.com/JonusNattapong/ClaudeCode/issues">Issue Tracker</a></li>
-      <li><a href="https://npmjs.com/package/cephcode">npm Package</a></li>
-    </ul>
+    <!-- ─── Footer ─── -->
+    <footer class="footer">
+      <span>Ceph Code v2.1.145 — Open Source (MIT)</span>
+      <div class="footer-links">
+        <a href="https://github.com/CephCore/cephcode">GitHub</a>
+        <a href="https://github.com/CephCore/cephcode/issues">Issues</a>
+        <a href="https://npmjs.com/package/cephcode">npm</a>
+      </div>
+    </footer>
 
-    <h2>Internal Docs</h2>
-    <ul>
-      <li><a href="features/bridge-mode.html">Bridge Mode — Remote Control &amp; Collaboration</a></li>
-
-      <li><a href="internals/hidden-features.html">揭秘：隐藏功能与内部机制 / Hidden Features &amp; Internals</a></li>
-      <li><a href="internals/growthbook-ab-testing.html">GrowthBook A/B 测试体系 / A/B Testing System</a></li>
-    </ul>
   </main>
+</div>
 
-  <footer class="footer">
-    <p>Ceph Code v2.1.145 — <a href="https://github.com/JonusNattapong/ClaudeCode">GitHub</a></p>
-  </footer>
-
-  <script src="js/main.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>

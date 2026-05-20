@@ -1,489 +1,114 @@
 <!DOCTYPE html>
-<html lang="multilingual">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GrowthBook A/B Testing — Claude Code Architecture</title>
-<style>
-  :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text-dim: #8b949e;
-    --accent: #d97706;
-    --accent2: #58a6ff;
-    --code-bg: #1c2128;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.7;
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 6rem;
-  }
-  a { color: var(--accent2); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  h1 { font-size: 2.1rem; margin-bottom: 0.25rem; color: #fff; }
-  h2 { font-size: 1.5rem; margin: 2.2rem 0 0.75rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
-  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; color: var(--accent); }
-  h4 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; color: #fff; }
-  p { margin: 0.7rem 0; }
-  strong { color: #fff; }
-  blockquote {
-    margin: 1.25rem 0;
-    padding: 0.6rem 1rem;
-    border-left: 3px solid var(--accent);
-    background: var(--surface);
-    border-radius: 0 4px 4px 0;
-    color: var(--text-dim);
-  }
-  code {
-    background: var(--code-bg);
-    padding: 0.15em 0.4em;
-    border-radius: 3px;
-    font-size: 0.9em;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  }
-  pre {
-    background: var(--code-bg);
-    padding: 1rem 1.2rem;
-    border-radius: 6px;
-    overflow-x: auto;
-    margin: 1rem 0;
-    border: 1px solid var(--border);
-  }
-  pre code { background: none; padding: 0; }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
-  }
-  th, td {
-    text-align: left;
-    padding: 0.5rem 0.8rem;
-    border: 1px solid var(--border);
-  }
-  th { background: var(--surface); font-weight: 600; }
-  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
-  li { margin: 0.3rem 0; }
-  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
-  .subtitle { color: var(--text-dim); font-size: 1rem; margin-bottom: 0.5rem; }
-  .source { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.5rem; }
-  .numbered { counter-reset: steps; list-style: none; margin-left: 0; }
-  .numbered li { counter-increment: steps; margin: 0.5rem 0; }
-  .numbered li::before {
-    content: counter(steps) ".";
-    color: var(--accent);
-    font-weight: 700;
-    margin-right: 0.5rem;
-  }
-  .step-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1rem 1.3rem;
-    margin: 0.8rem 0;
-  }
-  .step-box h4 { margin-top: 0; }
-
-  /* Language Switcher */
-  .lang-bar {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-  }
-  .lang-btn {
-    background: var(--surface);
-    color: var(--text-dim);
-    border: 1px solid var(--border);
-    padding: 0.45rem 1.2rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s;
-  }
-  .lang-btn:hover { border-color: var(--accent); color: var(--text); }
-  .lang-btn.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
-  .lang-content { display: none; }
-  .lang-content.active { display: block; }
-  .gate { color: var(--text-dim); font-size: 0.9rem; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GrowthBook A/B Testing — Ceph Code</title>
+  <meta name="description" content="GrowthBook A/B testing system architecture and implementation details.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
 
-<!-- Language Switcher -->
-<div class="lang-bar">
-  <button class="lang-btn active" onclick="switchLang('en')">English</button>
-  <button class="lang-btn" onclick="switchLang('zh')">中文</button>
-  <button class="lang-btn" onclick="switchLang('th')">ภาษาไทย</button>
+<header class="header">
+  <div class="header-inner">
+    <a href="../index.html" class="logo">
+      <span class="logo-mark">~</span>
+      <span>Ceph Code</span>
+    </a>
+    <nav class="header-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#features">Features</a>
+      <a href="../index.html#commands">Commands</a>
+      <a href="../features/searxng-search.html" class="active">Docs</a>
+      <a href="https://github.com/CephCore/cephcode" target="_blank">GitHub</a>
+    </nav>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Getting Started</div>
+      <nav>
+        <a href="../index.html" class="sidebar-link"><span class="link-icon"></span>Overview</a>
+        <a href="../index.html#features" class="sidebar-link"><span class="link-icon"></span>Features</a>
+        <a href="../index.html#providers" class="sidebar-link"><span class="link-icon"></span>Providers</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Features</div>
+      <nav>
+        <a href="../features/searxng-search.html" class="sidebar-link"><span class="link-icon"></span>SearXNG Search</a>
+        <a href="../features/bridge-mode.html" class="sidebar-link"><span class="link-icon"></span>Bridge Mode</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Internals</div>
+      <nav>
+        <a href="hidden-features.html" class="sidebar-link"><span class="link-icon"></span>Hidden Features</a>
+        <a href="growthbook-ab-testing.html" class="sidebar-link active"><span class="link-icon"></span>A/B Testing</a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="content">
+    <h1>GrowthBook A/B Testing</h1>
+    <p class="section-subtitle">A/B testing system architecture and implementation.</p>
+
+    <h2>Overview</h2>
+    <p>
+      GrowthBook is used for feature flagging and A/B testing within Ceph Code.
+      It enables gradual rollouts, experiment tracking, and targeted feature
+      releases based on user segments.
+    </p>
+
+    <h2>Architecture</h2>
+    <p>
+      The GrowthBook SDK is initialized at startup with a set of feature definitions
+      loaded from the GrowthBook server. Feature flags are evaluated locally with
+      caching to minimize latency. The system supports:
+    </p>
+    <ul>
+      <li><strong>Feature Flags</strong> — Boolean, string, number, and JSON flag types</li>
+      <li><strong>Experiments</strong> — Multi-variant A/B tests with statistical tracking</li>
+      <li><strong>Forced Variations</strong> — Override for testing and debugging</li>
+      <li><strong>Sticky Bucketing</strong> — Consistent user experience across sessions</li>
+    </ul>
+
+    <h2>Usage in Code</h2>
+    <pre><code><span style="color:var(--text-tertiary)">// Check if a feature is enabled</span>
+<span style="color:var(--amber-300)">const</span> isEnabled = getFeatureValue_CACHED_MAY_BE_STALE(<span style="color:var(--cyan-400)">'tengu_plum_vx3'</span>, <span style="color:var(--amber-300)">false</span>);
+
+<span style="color:var(--text-tertiary)">// Use the feature value</span>
+<span style="color:var(--amber-300)">if</span> (isEnabled) {
+  <span style="color:var(--text-tertiary)">// New behavior</span>
+}</code></pre>
+
+    <h2>Configuration</h2>
+    <p>
+      GrowthBook is configured via environment variables. The SDK connects to the
+      GrowthBook API at startup to fetch the latest feature definitions, then caches
+      them locally. Feature values can be forced for testing purposes.
+    </p>
+
+    <footer class="footer">
+      <span>Ceph Code v2.1.145</span>
+      <div class="footer-links">
+        <a href="https://github.com/CephCore/cephcode">GitHub</a>
+        <a href="https://github.com/CephCore/cephcode/issues">Issues</a>
+      </div>
+    </footer>
+  </main>
 </div>
 
-<!-- ===================== ENGLISH ===================== -->
-<div id="lang-en" class="lang-content active">
-
-<h1>GrowthBook A/B Testing System</h1>
-<p class="subtitle">Runtime feature flags and progressive rollout</p>
-<p class="source">
-  Source: <a href="https://ccb.agent-aura.top/docs/internals/growthbook-ab-testing" target="_blank" rel="noopener">ccb.agent-aura.top</a>
-</p>
-
-<hr>
-
-<h2>Why Runtime A/B Testing?</h2>
-<p>Build-time <code>feature()</code> is all-or-nothing — either every user has it or nobody does. But product teams need finer control:</p>
-<ul>
-  <li>Roll out a feature to only 5% of users</li>
-  <li>Differentiate experiences by subscription tier (Free / Pro / Team)</li>
-  <li>Silently enable experimental capabilities for specific organizations</li>
-  <li>Remotely disable a broken feature at any time without a release</li>
-</ul>
-<p>That's where <strong>GrowthBook</strong> comes in — a runtime, user-attribute-based feature gating and A/B testing system.</p>
-
-<h2>Integration Architecture</h2>
-<p>Full implementation at <code>src/services/analytics/growthbook.ts</code> (1,258 lines). The workflow:</p>
-
-<div class="step-box">
-  <h4>1. Fetch remote config on startup</h4>
-  <p>When the CLI starts, the GrowthBook SDK fetches current feature config and experiment group assignments from <code>https://api.anthropic.com/</code>. Uses <code>remoteEval: true</code> — group calculation happens server-side, the client only receives results.</p>
-</div>
-
-<div class="step-box">
-  <h4>2. Compute user attributes</h4>
-  <p>The SDK collects current user attributes (device ID, subscription type, organization UUID, etc.) to determine which experiment group the user falls into.</p>
-</div>
-
-<div class="step-box">
-  <h4>3. Cache locally</h4>
-  <p>Results are cached in <code>~/.claude.json</code> under <code>cachedGrowthBookFeatures</code>. Refresh interval: 20 minutes for Anthropic employees, 6 hours for external users.</p>
-</div>
-
-<div class="step-box">
-  <h4>4. Query flags in code</h4>
-  <p>Business code queries feature status using <code>tengu_*</code>-prefixed flag names. GrowthBook SDK returns the current user's group assignment value.</p>
-</div>
-
-<h2>User Targeting Attributes</h2>
-<p>GrowthBook determines experiment groups based on these user attributes:</p>
-<table>
-  <thead><tr><th>Attribute</th><th>Type</th><th>Source</th><th>Purpose</th></tr></thead>
-  <tbody>
-    <tr><td><code>id</code></td><td>string</td><td>Session ID</td><td>Group by session granularity</td></tr>
-    <tr><td><code>deviceID</code></td><td>string</td><td>Persistent device ID</td><td>Cross-session consistency</td></tr>
-    <tr><td><code>sessionId</code></td><td>string</td><td>Current session ID</td><td>Session-level experiments</td></tr>
-    <tr><td><code>platform</code></td><td>enum</td><td><code>process.platform</code></td><td>OS-differentiated rollouts</td></tr>
-    <tr><td><code>organizationUUID</code></td><td>string</td><td>API auth info</td><td>Organization-level rollouts</td></tr>
-    <tr><td><code>accountUUID</code></td><td>string</td><td>API auth info</td><td>Account-level rollouts</td></tr>
-    <tr><td><code>subscriptionType</code></td><td>string</td><td>API auth info</td><td>Free / Pro / Team differentiation</td></tr>
-    <tr><td><code>rateLimitTier</code></td><td>string</td><td>API auth info</td><td>Rate limit tier gating</td></tr>
-    <tr><td><code>email</code></td><td>string</td><td>API auth info</td><td>Precisely target specific users</td></tr>
-    <tr><td><code>appVersion</code></td><td>string</td><td><code>MACRO.VERSION</code></td><td>Version-based rollouts</td></tr>
-    <tr><td><code>github</code></td><td>object</td><td>GitHub Actions metadata</td><td>CI environment handling</td></tr>
-  </tbody>
-</table>
-<p>This targeting system means Anthropic can run very precise experiments — e.g. "enable a new feature for only 10% of Pro subscribers on Mac."</p>
-
-<h2>Naming Culture: The tengu_* World</h2>
-<p>All runtime flags use the <code>tengu_</code> prefix — "Tengu" (a mythical Japanese creature) is the internal codename for Claude Code. Flag names follow an <strong>animal / plant / mineral + adjective</strong> convention, deliberately kept opaque.</p>
-
-<h4>tengu_kairos — Kairos Assistant Mode</h4>
-<p>Runtime toggle for the KAIROS feature. Even if build-time <code>feature('KAIROS')</code> passes, this flag still needs to hit for activation. Dual gating enables phased feature rollout.</p>
-
-<h4>tengu_amber_stoat — Explore Agent A/B Test</h4>
-<p>Controls behavioral variants of the built-in Explore sub-agent. "Amber stoat" is a randomly generated codename, unrelated to the feature's purpose — preventing feature discovery through flag names.</p>
-
-<h4>tengu_auto_background_agents — Background Agent Automation</h4>
-<p>Controls whether certain tasks are automatically dispatched to background agents instead of blocking the user in the foreground.</p>
-
-<h4>tengu_onyx_plover — Auto-Dream Background Memory</h4>
-<p>Controls the "auto-dream" feature — organizing and consolidating agent memory in the background during idle time. Another opaque codename.</p>
-
-<h4>tengu_glacier_2xr — Tool Search Behavior</h4>
-<p>Controls behavioral variants of Tool Search, likely an A/B test for search algorithms or ranking strategies.</p>
-
-<h4>tengu_birch_trellis — Bash Permission Policy</h4>
-<p>Controls the policy variant for BashTool permission decisions — possibly testing more lenient or stricter permission rules.</p>
-
-<h4>tengu_scratch — Scratchpad Feature</h4>
-<p>Controls an experimental "scratchpad" feature, possibly giving the AI a temporary staging area when handling complex tasks.</p>
-
-<h4>tengu_quartz_lantern — Diff Calculation Strategy</h4>
-<p>Controls the diff calculation approach for file writes and edits. Likely A/B testing different diff algorithms for UX impact.</p>
-
-<h2>Ant-Only Override Mechanism</h2>
-<p>Anthropic employees have two ways to bypass GrowthBook's remote evaluation:</p>
-
-<h3>Environment Variable Override</h3>
-<pre><code># Only works in builds where USER_TYPE=ant
-CLAUDE_INTERNAL_FC_OVERRIDES='{"tengu_kairos": true}' claude</code></pre>
-<p>Pass a JSON object via <code>CLAUDE_INTERNAL_FC_OVERRIDES</code> to directly override any flag's value.</p>
-
-<h3>Config UI Override</h3>
-<p>In internal builds, the <code>/config</code> command's Gates tab provides a graphical flag management interface that can toggle any GrowthBook flag in real-time.</p>
-
-<h2>Experiment Tracking</h2>
-<p>GrowthBook integrates full experiment exposure tracking:</p>
-<ul>
-  <li>Each flag query logs an experiment exposure event</li>
-  <li>Reported via protobuf-format <code>GrowthbookExperimentEvent</code></li>
-  <li>Includes <code>variation_id</code> (0 = control, 1+ = treatment) and <code>in_experiment</code> flag</li>
-  <li>Data is used to analyze causal impact of features on user behavior</li>
-</ul>
-<p>GrowthBook is currently <strong>migrating from Statsig</strong> — the codebase still retains compatibility layers like <code>checkStatsigFeatureGate_CACHED_MAY_BE_STALE()</code>.</p>
-
-</div>
-
-<!-- ===================== 中文 ===================== -->
-<div id="lang-zh" class="lang-content">
-
-<h1>GrowthBook A/B 测试体系</h1>
-<p class="subtitle">运行时功能发布与渐进式发布</p>
-<p class="source">
-  来源: <a href="https://ccb.agent-aura.top/docs/internals/growthbook-ab-testing" target="_blank" rel="noopener">ccb.agent-aura.top</a>
-</p>
-
-<hr>
-
-<h2>为什么需要运行时 A/B 测试</h2>
-<p>构建时 <code>feature()</code> 是"全有或全无"的——要么所有用户都有，要么所有用户都没有。但产品团队需要更精细的控制：</p>
-<ul>
-  <li>只对 5% 的用户灰度发布新功能</li>
-  <li>按订阅类型（Free / Pro / Team）差异化体验</li>
-  <li>对特定组织静默开启实验性能力</li>
-  <li>随时远程关闭出问题的功能，无需发版</li>
-</ul>
-<p>这就是 <strong>GrowthBook</strong> 的用武之地——一个运行时的、基于用户属性的功能门控和 A/B 测试系统。</p>
-
-<h2>集成架构</h2>
-<p>完整实现位于 <code>src/services/analytics/growthbook.ts</code>（1258 行）。工作流程如下：</p>
-
-<div class="step-box">
-  <h4>1. 启动时获取远程配置</h4>
-  <p>CLI 启动时，GrowthBook SDK 通过 <code>https://api.anthropic.com/</code> 的 API 端点获取当前的功能配置和实验分组规则。使用 <code>remoteEval: true</code> 模式——在服务端计算分组，客户端只拿结果。</p>
-</div>
-
-<div class="step-box">
-  <h4>2. 计算用户属性</h4>
-  <p>SDK 收集当前用户的属性（设备 ID、订阅类型、组织 UUID 等），用于决定该用户属于哪些实验的哪个分组。</p>
-</div>
-
-<div class="step-box">
-  <h4>3. 缓存到本地</h4>
-  <p>计算结果缓存到 <code>~/.claude.json</code> 的 <code>cachedGrowthBookFeatures</code> 字段。刷新间隔：Anthropic 员工 20 分钟，外部用户 6 小时。</p>
-</div>
-
-<div class="step-box">
-  <h4>4. 代码中查询 flag</h4>
-  <p>业务代码通过 <code>tengu_*</code> 前缀的 flag 名查询功能状态，GrowthBook SDK 返回当前用户的分组值。</p>
-</div>
-
-<h2>用户定向属性</h2>
-<p>GrowthBook 根据以下用户属性决定实验分组：</p>
-<table>
-  <thead><tr><th>属性</th><th>类型</th><th>来源</th><th>用途</th></tr></thead>
-  <tbody>
-    <tr><td><code>id</code></td><td>string</td><td>会话 ID</td><td>按会话粒度分组</td></tr>
-    <tr><td><code>deviceID</code></td><td>string</td><td>持久化设备标识</td><td>跨会话一致性</td></tr>
-    <tr><td><code>sessionId</code></td><td>string</td><td>当前会话 ID</td><td>会话级实验</td></tr>
-    <tr><td><code>platform</code></td><td>enum</td><td><code>process.platform</code></td><td>按操作系统差异化</td></tr>
-    <tr><td><code>organizationUUID</code></td><td>string</td><td>API 认证信息</td><td>按组织灰度</td></tr>
-    <tr><td><code>accountUUID</code></td><td>string</td><td>API 认证信息</td><td>按个人账户灰度</td></tr>
-    <tr><td><code>subscriptionType</code></td><td>string</td><td>API 认证信息</td><td>Free / Pro / Team 差异化</td></tr>
-    <tr><td><code>rateLimitTier</code></td><td>string</td><td>API 认证信息</td><td>按速率限制层级</td></tr>
-    <tr><td><code>email</code></td><td>string</td><td>API 认证信息</td><td>精确定向特定用户</td></tr>
-    <tr><td><code>appVersion</code></td><td>string</td><td><code>MACRO.VERSION</code></td><td>按版本号灰度</td></tr>
-    <tr><td><code>github</code></td><td>object</td><td>GitHub Actions 元数据</td><td>CI 环境特殊处理</td></tr>
-  </tbody>
-</table>
-<p>这套定向系统意味着 Anthropic 可以做非常精细的实验——比如"只对 Mac 上的 Pro 订阅用户的 10% 开启新功能"。</p>
-
-<h2>代号文化：tengu_* 的世界</h2>
-<p>所有运行时 flag 都以 <code>tengu_</code> 为前缀——"Tengu"（天狗）是 Claude Code 的内部项目代号。flag 名采用 <strong>动物/植物/矿物 + 形容词</strong> 的命名约定，刻意保持不透明。</p>
-
-<h4>tengu_kairos — Kairos 助手模式</h4>
-<p>控制 KAIROS 功能的运行时开关。即使构建时 <code>feature('KAIROS')</code> 通过，仍需此 flag 命中才能激活。双重门控确保新功能可以分阶段发布。</p>
-
-<h4>tengu_amber_stoat — Explore Agent A/B 测试</h4>
-<p>控制内置的 Explore 子 Agent 的行为变体。"amber stoat"（琥珀色白鼬）是随机生成的代号，与功能内容无关——这是为了防止通过 flag 名猜测功能。</p>
-
-<h4>tengu_auto_background_agents — 后台 Agent 自动化</h4>
-<p>控制是否自动将某些任务分派给后台 Agent 执行，而不是在前台阻塞用户。</p>
-
-<h4>tengu_onyx_plover — Auto-Dream 后台记忆</h4>
-<p>控制"自动做梦"功能——在空闲时后台整理和巩固 Agent 的记忆。又是一个不透明代号。</p>
-
-<h4>tengu_glacier_2xr — 工具搜索行为</h4>
-<p>控制 Tool Search 的行为变体，可能是搜索算法或排序策略的 A/B 测试。</p>
-
-<h4>tengu_birch_trellis — Bash 权限策略</h4>
-<p>控制 BashTool 权限判断的策略变体——可能在测试更宽松或更严格的权限规则。</p>
-
-<h4>tengu_scratch — 草稿本功能</h4>
-<p>控制一个实验性的"草稿本"功能，可能是让 AI 在处理复杂任务时使用中间暂存区。</p>
-
-<h4>tengu_quartz_lantern — Diff 计算策略</h4>
-<p>控制文件写入和编辑时的 diff 计算方式。可能在 A/B 测试不同的 diff 算法对用户体验的影响。</p>
-
-<h2>Ant-Only 覆盖机制</h2>
-<p>Anthropic 员工拥有两种方式绕过 GrowthBook 的远程求值：</p>
-
-<h3>环境变量覆盖</h3>
-<pre><code># 仅在 USER_TYPE=ant 的构建中生效
-CLAUDE_INTERNAL_FC_OVERRIDES='{"tengu_kairos": true}' claude</code></pre>
-<p>通过 <code>CLAUDE_INTERNAL_FC_OVERRIDES</code> 环境变量传入 JSON 对象，直接覆盖任意 flag 的值。</p>
-
-<h3>Config 界面覆盖</h3>
-<p>在内部构建中，<code>/config</code> 命令的 Gates 标签页提供了图形化的 flag 管理界面，可以实时切换任意 GrowthBook flag。</p>
-
-<h2>实验追踪</h2>
-<p>GrowthBook 集成了完整的实验曝光追踪：</p>
-<ul>
-  <li>每次查询 flag 时记录实验曝光事件</li>
-  <li>通过 protobuf 格式的 <code>GrowthbookExperimentEvent</code> 上报</li>
-  <li>包含 <code>variation_id</code>（0=对照组，1+=实验组）和 <code>in_experiment</code> 标记</li>
-  <li>数据用于分析功能对用户行为的因果影响</li>
-</ul>
-<p>GrowthBook 正在从 <strong>Statsig 迁移而来</strong>——代码中仍保留着 <code>checkStatsigFeatureGate_CACHED_MAY_BE_STALE()</code> 这样的迁移兼容层。</p>
-
-</div>
-
-<!-- ===================== ภาษาไทย ===================== -->
-<div id="lang-th" class="lang-content">
-
-<h1>ระบบ A/B Testing ด้วย GrowthBook</h1>
-<p class="subtitle">การเปิดตัวฟีเจอร์แบบไดนามิกระดับ Runtime</p>
-<p class="source">
-  ที่มา: <a href="https://ccb.agent-aura.top/docs/internals/growthbook-ab-testing" target="_blank" rel="noopener">ccb.agent-aura.top</a>
-</p>
-
-<hr>
-
-<h2>ทำไมต้อง Runtime A/B Testing?</h2>
-<p><code>feature()</code> แบบ build-time เป็นแบบ"ทั้งหมดหรือไม่มีเลย" — ผู้ใช้ทุกคนได้ฟีเจอร์หรือไม่มีใครได้เลย แต่ทีมผลิตภัณฑ์ต้องการการควบคุมที่ละเอียดกว่านั้น:</p>
-<ul>
-  <li>เปิดตัวฟีเจอร์ให้ผู้ใช้เพียง 5%</li>
-  <li>แยกประสบการณ์ตามระดับสมาชิก (Free / Pro / Team)</li>
-  <li>เปิดความสามารถทดลองให้เฉพาะบางองค์กรอย่างเงียบ ๆ</li>
-  <li>ปิดฟีเจอร์ที่มีปัญหาได้จากระยะไกลโดยไม่ต้องออกรีลีสใหม่</li>
-</ul>
-<p>นี่คือจุดที่ <strong>GrowthBook</strong> เข้ามา — ระบบ gate และ A/B testing ที่ทำงานระดับ runtime โดยพิจารณาจากคุณสมบัติผู้ใช้</p>
-
-<h2>สถาปัตยกรรม Integration</h2>
-<p>การติดตั้งเต็มรูปแบบอยู่ที่ <code>src/services/analytics/growthbook.ts</code> (1,258 บรรทัด) ขั้นตอนการทำงาน:</p>
-
-<div class="step-box">
-  <h4>1. ดึงการกำหนดค่าระยะไกลเมื่อเริ่มต้น</h4>
-  <p>เมื่อ CLI เริ่มทำงาน GrowthBook SDK จะดึงการกำหนดค่าฟีเจอร์และกฎการจัดกลุ่มการทดลองปัจจุบันจาก API ที่ <code>https://api.anthropic.com/</code> ใช้โหมด <code>remoteEval: true</code> — คำนวณกลุ่มที่ฝั่งเซิร์ฟเวอร์ ไคลเอนต์รับเฉพาะผลลัพธ์</p>
-</div>
-
-<div class="step-box">
-  <h4>2. คำนวณคุณสมบัติผู้ใช้</h4>
-  <p>SDK รวบรวมคุณสมบัติผู้ใช้ปัจจุบัน (device ID, ชนิดสมาชิก, organization UUID ฯลฯ) เพื่อกำหนดว่าผู้ใช้คนนั้นอยู่ในกลุ่มใดของการทดลองใด</p>
-</div>
-
-<div class="step-box">
-  <h4>3. แคชในเครื่อง</h4>
-  <p>ผลลัพธ์ถูกแคชใน <code>~/.claude.json</code> ภายใต้ฟิลด์ <code>cachedGrowthBookFeatures</code> อัตราการรีเฟรช: 20 นาทีสำหรับพนักงาน Anthropic, 6 ชั่วโมงสำหรับผู้ใช้ภายนอก</p>
-</div>
-
-<div class="step-box">
-  <h4>4. ค้นหา flag ในโค้ด</h4>
-  <p>โค้ดธุรกิจสอบถามสถานะฟีเจอร์โดยใช้ชื่อ flag ที่มีคำนำหน้า <code>tengu_*</code> GrowthBook SDK ส่งคืนค่ากลุ่มของผู้ใช้ปัจจุบัน</p>
-</div>
-
-<h2>คุณสมบัติสำหรับกำหนดเป้าหมายผู้ใช้</h2>
-<p>GrowthBook กำหนดกลุ่มทดลองตามคุณสมบัติผู้ใช้เหล่านี้:</p>
-<table>
-  <thead><tr><th>คุณสมบัติ</th><th>ประเภท</th><th>แหล่งที่มา</th><th>วัตถุประสงค์</th></tr></thead>
-  <tbody>
-    <tr><td><code>id</code></td><td>string</td><td>Session ID</td><td>จัดกลุ่มตามเซสชัน</td></tr>
-    <tr><td><code>deviceID</code></td><td>string</td><td>อุปกรณ์ประจำตัวถาวร</td><td>ความสอดคล้องข้ามเซสชัน</td></tr>
-    <tr><td><code>sessionId</code></td><td>string</td><td>Session ID ปัจจุบัน</td><td>การทดลองระดับเซสชัน</td></tr>
-    <tr><td><code>platform</code></td><td>enum</td><td><code>process.platform</code></td><td>แยกตามระบบปฏิบัติการ</td></tr>
-    <tr><td><code>organizationUUID</code></td><td>string</td><td>ข้อมูลรับรอง API</td><td>เปิดตัวตามองค์กร</td></tr>
-    <tr><td><code>accountUUID</code></td><td>string</td><td>ข้อมูลรับรอง API</td><td>เปิดตัวตามบัญชี</td></tr>
-    <tr><td><code>subscriptionType</code></td><td>string</td><td>ข้อมูลรับรอง API</td><td>แยกตาม Free / Pro / Team</td></tr>
-    <tr><td><code>rateLimitTier</code></td><td>string</td><td>ข้อมูลรับรอง API</td><td>ตามระดับ rate limit</td></tr>
-    <tr><td><code>email</code></td><td>string</td><td>ข้อมูลรับรอง API</td><td>กำหนดเป้าหมายผู้ใช้เฉพาะ</td></tr>
-    <tr><td><code>appVersion</code></td><td>string</td><td><code>MACRO.VERSION</code></td><td>เปิดตัวตามเวอร์ชัน</td></tr>
-    <tr><td><code>github</code></td><td>object</td><td>GitHub Actions metadata</td><td>จัดการสภาพแวดล้อม CI</td></tr>
-  </tbody>
-</table>
-<p>ระบบกำหนดเป้าหมายนี้ทำให้ Anthropic สามารถทำการทดลองที่แม่นยำมาก — เช่น "เปิดฟีเจอร์ใหม่ให้ผู้ใช้ Pro บน Mac เพียง 10%"</p>
-
-<h2>วัฒนธรรมการตั้งชื่อ: โลกของ tengu_*</h2>
-<p>flag ระดับ runtime ทั้งหมดใช้คำนำหน้า <code>tengu_</code> — "Tengu" (เท็งงุ) เป็นชื่อรหัสภายในของ Claude Code ชื่อ flag ใช้หลักการ <strong>สัตว์ / พืช / แร่ธาตุ + คุณศัพท์</strong> ซึ่งตั้งใจให้ไม่โปร่งใส</p>
-
-<h4>tengu_kairos — โหมดผู้ช่วย Kairos</h4>
-<p>สวิตช์ระดับ runtime สำหรับฟีเจอร์ KAIROS ถึงแม้ <code>feature('KAIROS')</code> ระดับ build-time จะผ่าน ก็ยังต้องให้ flag นี้ตรงด้วยถึงจะเปิดใช้งาน การเกตสองชั้นช่วยให้เปิดตัวฟีเจอร์เป็นระยะได้</p>
-
-<h4>tengu_amber_stoat — A/B Testing Explore Agent</h4>
-<p>ควบคุมพฤติกรรมของ Explore sub-agent ในตัว "Amber stoat" (แมวน้ำอมเบอร์) เป็นชื่อรหัสที่สุ่มขึ้นมา ไม่เกี่ยวข้องกับวัตถุประสงค์ของฟีเจอร์ — ป้องกันการเดาฟีเจอร์จากชื่อ flag</p>
-
-<h4>tengu_auto_background_agents — ระบบอัตโนมัติ Agent พื้นหลัง</h4>
-<p>ควบคุมว่างานบางประเภทจะถูกส่งไปยัง background agent โดยอัตโนมัติหรือไม่ แทนที่จะบล็อกผู้ใช้ในเบื้องหน้า</p>
-
-<h4>tengu_onyx_plover — Auto-Dream ความจำพื้นหลัง</h4>
-<p>ควบคุมฟีเจอร์ "ฝันอัตโนมัติ" — จัดระเบียบและรวมความจำของ Agent ในพื้นหลังเมื่อไม่มีการใช้งาน อีกหนึ่งชื่อรหัสที่ไม่โปร่งใส</p>
-
-<h4>tengu_glacier_2xr — พฤติกรรมค้นหาเครื่องมือ</h4>
-<p>ควบคุมพฤติกรรมของ Tool Search น่าจะเป็นการทดสอบ A/B สำหรับอัลกอริทึมค้นหาหรือกลยุทธ์การจัดอันดับ</p>
-
-<h4>tengu_birch_trellis — นโยบายสิทธิ์ Bash</h4>
-<p>ควบคุมนโยบายการตัดสินสิทธิ์ของ BashTool — อาจกำลังทดสอบกฎสิทธิ์ที่เข้มงวดขึ้นหรือผ่อนคลายลง</p>
-
-<h4>tengu_scratch — ฟีเจอร์ Scratchpad</h4>
-<p>ควบคุมฟีเจอร์ "สมุดร่าง" ทดลอง — อาจให้ AI ใช้พื้นที่ชั่วคราวเมื่อจัดการงานที่ซับซ้อน</p>
-
-<h4>tengu_quartz_lantern — กลยุทธ์การคำนวณ Diff</h4>
-<p>ควบคุมวิธีการคำนวณ diff สำหรับการเขียนและแก้ไขไฟล์ น่าจะกำลังทดสอบ A/B อัลกอริทึม diff ต่าง ๆ ว่าส่งผลต่อประสบการณ์ผู้ใช้อย่างไร</p>
-
-<h2>กลไก Override สำหรับ Ant-Only</h2>
-<p>พนักงาน Anthropic มีสองวิธีในการบายพาสการประเมินระยะไกลของ GrowthBook:</p>
-
-<h3>Override ด้วย Environment Variable</h3>
-<pre><code># ใช้ได้เฉพาะใน builds ที่ USER_TYPE=ant
-CLAUDE_INTERNAL_FC_OVERRIDES='{"tengu_kairos": true}' claude</code></pre>
-<p>ส่ง JSON object ผ่าน environment variable <code>CLAUDE_INTERNAL_FC_OVERRIDES</code> เพื่อแทนค่า flag ใด ๆ โดยตรง</p>
-
-<h3>Override ด้วย Config UI</h3>
-<p>ใน internal builds แท็บ Gates ของคำสั่ง <code>/config</code> มีอินเทอร์เฟซจัดการ flag แบบกราฟิก ที่สามารถสลับ GrowthBook flag ใด ๆ ได้แบบเรียลไทม์</p>
-
-<h2>การติดตามการทดลอง</h2>
-<p>GrowthBook มีระบบติดตามการเปิดเผยการทดลองแบบครบวงจร:</p>
-<ul>
-  <li>ทุกครั้งที่ค้นหา flag จะบันทึกเหตุการณ์ exposure</li>
-  <li>รายงานผ่าน <code>GrowthbookExperimentEvent</code> ในรูปแบบ protobuf</li>
-  <li>ประกอบด้วย <code>variation_id</code> (0 = กลุ่มควบคุม, 1+ = กลุ่มทดลอง) และค่า <code>in_experiment</code></li>
-  <li>ข้อมูลใช้วิเคราะห์ผลกระทบเชิงสาเหตุของฟีเจอร์ต่อพฤติกรรมผู้ใช้</li>
-</ul>
-<p>GrowthBook กำลัง <strong>ย้ายจาก Statsig</strong> — โค้ดเบสยังคงมีเลเยอร์ความเข้ากันได้เช่น <code>checkStatsigFeatureGate_CACHED_MAY_BE_STALE()</code></p>
-
-</div>
-
-<script>
-function switchLang(lang) {
-  document.querySelectorAll('.lang-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
-  document.getElementById('lang-' + lang).classList.add('active');
-  document.querySelector('.lang-btn[onclick*="' + lang + '"]').classList.add('active');
-  localStorage.setItem('pref-lang', lang);
-}
-(function() {
-  var saved = localStorage.getItem('pref-lang');
-  if (saved && document.getElementById('lang-' + saved)) {
-    switchLang(saved);
-  }
-})();
-</script>
-
+<script src="../js/main.js"></script>
 </body>
 </html>

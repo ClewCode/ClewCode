@@ -1,495 +1,115 @@
 <!DOCTYPE html>
-<html lang="multilingual">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hidden Features & Internals — Claude Code Architecture</title>
-<style>
-  :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text-dim: #8b949e;
-    --accent: #d97706;
-    --accent2: #58a6ff;
-    --code-bg: #1c2128;
-    --tag-bg: #1a1f2b;
-    --tag-border: #3a3f4b;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.7;
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 6rem;
-  }
-  a { color: var(--accent2); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  h1 { font-size: 2.1rem; margin-bottom: 0.25rem; color: #fff; }
-  h2 { font-size: 1.5rem; margin: 2.2rem 0 0.75rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border); }
-  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; color: var(--accent); }
-  p { margin: 0.7rem 0; }
-  strong { color: #fff; }
-  blockquote {
-    margin: 1.25rem 0;
-    padding: 0.6rem 1rem;
-    border-left: 3px solid var(--accent);
-    background: var(--surface);
-    border-radius: 0 4px 4px 0;
-    color: var(--text-dim);
-  }
-  code {
-    background: var(--code-bg);
-    padding: 0.15em 0.4em;
-    border-radius: 3px;
-    font-size: 0.9em;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
-  }
-  th, td {
-    text-align: left;
-    padding: 0.5rem 0.8rem;
-    border: 1px solid var(--border);
-  }
-  th { background: var(--surface); font-weight: 600; }
-  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
-  li { margin: 0.3rem 0; }
-  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
-  .subtitle { color: var(--text-dim); font-size: 1rem; margin-bottom: 0.5rem; }
-  .source { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.5rem; }
-  .numbered { counter-reset: steps; list-style: none; margin-left: 0; }
-  .numbered li { counter-increment: steps; margin: 0.5rem 0; }
-  .numbered li::before {
-    content: counter(steps) ".";
-    color: var(--accent);
-    font-weight: 700;
-    margin-right: 0.5rem;
-  }
-
-  /* Language Switcher */
-  .lang-bar {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-  }
-  .lang-btn {
-    background: var(--surface);
-    color: var(--text-dim);
-    border: 1px solid var(--border);
-    padding: 0.45rem 1.2rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s;
-  }
-  .lang-btn:hover {
-    border-color: var(--accent);
-    color: var(--text);
-  }
-  .lang-btn.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-  }
-  .lang-content { display: none; }
-  .lang-content.active { display: block; }
-  .lang-label { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.25rem; }
-  .gate { color: var(--text-dim); font-size: 0.9rem; }
-  .spec { color: var(--accent); }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hidden Features & Internals — Ceph Code</title>
+  <meta name="description" content="Hidden features, undocumented internals, and architecture details.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
 
-<!-- Language Switcher -->
-<div class="lang-bar">
-  <button class="lang-btn active" onclick="switchLang('en')">English</button>
-  <button class="lang-btn" onclick="switchLang('zh')">中文</button>
-  <button class="lang-btn" onclick="switchLang('th')">ภาษาไทย</button>
+<header class="header">
+  <div class="header-inner">
+    <a href="../index.html" class="logo">
+      <span class="logo-mark">~</span>
+      <span>Ceph Code</span>
+    </a>
+    <nav class="header-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#features">Features</a>
+      <a href="../index.html#commands">Commands</a>
+      <a href="../features/searxng-search.html" class="active">Docs</a>
+      <a href="https://github.com/CephCore/cephcode" target="_blank">GitHub</a>
+    </nav>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Getting Started</div>
+      <nav>
+        <a href="../index.html" class="sidebar-link"><span class="link-icon"></span>Overview</a>
+        <a href="../index.html#features" class="sidebar-link"><span class="link-icon"></span>Features</a>
+        <a href="../index.html#providers" class="sidebar-link"><span class="link-icon"></span>Providers</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Features</div>
+      <nav>
+        <a href="../features/searxng-search.html" class="sidebar-link"><span class="link-icon"></span>SearXNG Search</a>
+        <a href="../features/bridge-mode.html" class="sidebar-link"><span class="link-icon"></span>Bridge Mode</a>
+      </nav>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Internals</div>
+      <nav>
+        <a href="hidden-features.html" class="sidebar-link active"><span class="link-icon"></span>Hidden Features</a>
+        <a href="growthbook-ab-testing.html" class="sidebar-link"><span class="link-icon"></span>A/B Testing</a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="content">
+    <h1>Hidden Features &amp; Internals</h1>
+    <p class="section-subtitle">Undocumented internals, Easter eggs, and architecture details.</p>
+
+    <div class="callout callout-warn">
+      <strong>Internal documentation</strong>
+      These features may change without notice. Not intended for public use.
+    </div>
+
+    <h2>Architecture Overview</h2>
+    <p>
+      Ceph Code is structured as a layered system with a terminal UI (React/Ink),
+      a command/query processing layer, and a multi-provider AI execution engine.
+      The architecture supports hot-swappable providers, plugin hooks at every
+      stage of execution, and sandboxed tool execution.
+    </p>
+
+    <h2>Key Internals</h2>
+    <ul>
+      <li><strong>Provider Manager</strong> — Dynamic provider selection and API key resolution</li>
+      <li><strong>Adapter Layer</strong> — Normalizes non-Anthropic providers to a common interface</li>
+      <li><strong>Tool Executor</strong> — Streaming tool execution with pre/post hooks</li>
+      <li><strong>Session Bridge</strong> — Cross-session context persistence and recall</li>
+      <li><strong>Code Index</strong> — Fuzzy code search across the entire codebase</li>
+    </ul>
+
+    <h2>Undocumented Slash Commands</h2>
+    <p>These commands exist in the codebase but are not advertised in the help menu:</p>
+    <ul>
+      <li><code>/ultraplan</code> — Extended plan mode with deeper analysis</li>
+      <li><code>/bughunter</code> — Automated bug hunting workflow</li>
+      <li><code>/heapdump</code> — Capture Node.js heap snapshot</li>
+      <li><code>/perf-issue</code> — Performance issue reporting</li>
+    </ul>
+
+    <div class="callout callout-info">
+      <strong>Note</strong>
+      Hidden commands may require specific environment variables or feature flags.
+      Check the source code for exact enablement conditions.
+    </div>
+
+    <footer class="footer">
+      <span>Ceph Code v2.1.145</span>
+      <div class="footer-links">
+        <a href="https://github.com/CephCore/cephcode">GitHub</a>
+        <a href="https://github.com/CephCore/cephcode/issues">Issues</a>
+      </div>
+    </footer>
+  </main>
 </div>
 
-<!-- ===================== ENGLISH ===================== -->
-<div id="lang-en" class="lang-content active">
-
-<h1>Hidden Features &amp; Internals</h1>
-<p class="subtitle">A tour of 8 unreleased features hiding in plain sight</p>
-<p class="source">
-  Source: <a href="https://ccb.agent-aura.top/docs/internals/hidden-features" target="_blank" rel="noopener">ccb.agent-aura.top</a>
-</p>
-
-<hr>
-
-<h2>Overview</h2>
-<p>Among 88+ build-time flags and 500+ runtime flags, we picked 8 of the most revealing hidden features. They showcase not only the current technical depth of Claude Code, but also Anthropic's vision for the future of AI coding assistants.</p>
-
-<h3>1. KAIROS — Always-On AI</h3>
-<p class="gate">Gate: <code>feature('KAIROS')</code> + <code>tengu_kairos</code></p>
-<p>KAIROS is the largest hidden feature cluster — 6 independent flags controlling a complete persistent AI assistant system:</p>
-<table>
-  <thead><tr><th>Flag</th><th>Capability</th></tr></thead>
-  <tbody>
-    <tr><td><code>KAIROS</code></td><td>Core assistant mode — AI persists beyond conversation end</td></tr>
-    <tr><td><code>KAIROS_BRIEF</code></td><td>Concise output mode</td></tr>
-    <tr><td><code>KAIROS_CHANNELS</code></td><td>Channel-based messaging system</td></tr>
-    <tr><td><code>KAIROS_DREAM</code></td><td>Background "dreaming" — autonomous memory organization</td></tr>
-    <tr><td><code>KAIROS_GITHUB_WEBHOOKS</code></td><td>Subscribe to GitHub PR events, auto-respond</td></tr>
-    <tr><td><code>KAIROS_PUSH_NOTIFICATION</code></td><td>Push notifications to mobile devices</td></tr>
-  </tbody>
-</table>
-<p>Its toolset includes <code>SleepTool</code> (AI-initiated sleep), <code>SendUserFileTool</code>, <code>PushNotificationTool</code>, and <code>SubscribePRTool</code>.</p>
-<p><strong>Direction:</strong> A 24/7 AI team member — autonomously monitoring repos, responding to events, managing tasks.</p>
-
-<h3>2. PROACTIVE — Autonomous Mode</h3>
-<p class="gate">Gate: <code>feature('PROACTIVE')</code></p>
-<p>In standard mode, Claude Code is passive — it waits for your input. PROACTIVE mode flips this paradigm:</p>
-<ul>
-  <li>The AI has <code>SleepTool</code> to actively "nap" for a period</li>
-  <li>The system periodically sends <code>&lt;tick&gt;</code> prompts, triggering the AI to check if anything needs doing</li>
-  <li>The AI can make decisions and execute without user input</li>
-</ul>
-<p><strong>Direction:</strong> From "Q&amp;A assistant" to "autonomous colleague" — the AI works in the background, occasionally asking for direction.</p>
-
-<h3>3. COORDINATOR_MODE — Multi-Agent Commander</h3>
-<p class="gate">Gate: <code>feature('COORDINATOR_MODE')</code></p>
-<p>Claude Code already supports sub-agents via <code>AgentTool</code>, but Coordinator Mode takes it further:</p>
-<ul>
-  <li>A "commander" Agent analyzes tasks and breaks them into subtasks</li>
-  <li>Multiple "worker" Agents execute subtasks in parallel</li>
-  <li>The commander reconciles results, handles conflicts, merges outputs</li>
-</ul>
-<p>Full implementation at <code>src/coordinator/coordinatorMode.ts</code>.</p>
-<p><strong>Direction:</strong> Fully automated parallel processing of large programming tasks.</p>
-
-<h3>4. BRIDGE_MODE — Remote Control</h3>
-<p class="gate">Gate: <code>feature('BRIDGE_MODE')</code></p>
-<p>Bridge Mode enables remote control of Claude Code via WebSocket:</p>
-<ul>
-  <li>Complete WebSocket bridge implementation in <code>src/bridge/</code></li>
-  <li>IDE extensions can act as remote frontends</li>
-  <li>Includes ant-only fault injection tests (<code>bridgeDebug.ts</code>)</li>
-  <li>Combined with <code>DIRECT_CONNECT</code> flag for <code>cc://</code> URL direct connections</li>
-</ul>
-<p><strong>Direction:</strong> Decoupling the UI frontend from the AI execution backend — operate from VS Code while the AI runs on a remote server.</p>
-
-<h3>5. WEB_BROWSER_TOOL — Built-in Browser</h3>
-<p class="gate">Gate: <code>feature('WEB_BROWSER_TOOL')</code></p>
-<p>Claude Code currently has a simplified <code>WebFetchTool</code>, but a more powerful browser tool exists in the codebase:</p>
-<ul>
-  <li>Bun-based WebView implementation</li>
-  <li>Can render and interact with web pages, not just fetch text</li>
-  <li>Works with Computer Use's <code>@ant/</code> packages</li>
-</ul>
-<p><strong>Direction:</strong> AI that browses like a human — clicking, filling forms, taking screenshots, testing web apps.</p>
-
-<h3>6. VOICE_MODE — Voice Interaction</h3>
-<p class="gate">Gate: <code>feature('VOICE_MODE')</code></p>
-<p>Voice input mode is registered in the codebase, backed by the <code>audio-capture-napi</code> package:</p>
-<ul>
-  <li>Activated via the <code>/voice</code> command</li>
-  <li>Hold-to-talk interaction pattern</li>
-  <li>Requires system-level audio API support</li>
-</ul>
-<p><strong>Direction:</strong> Programming by voice — no typing needed.</p>
-
-<h3>7. BUDDY — AI Mascot</h3>
-<p class="gate">Gate: <code>feature('BUDDY')</code></p>
-<p>The <code>src/buddy/</code> directory contains a complete companion character system:</p>
-<ul>
-  <li>Small animated character in the terminal</li>
-  <li>Different animations based on AI state (thinking, executing, done)</li>
-  <li>Purely cosmetic /趣味性 feature</li>
-</ul>
-<p><strong>Direction:</strong> Adding warmth to the cold terminal — making wait times less boring.</p>
-
-<h3>8. Undercover Mode — Stealth Contributions</h3>
-<p class="gate">Gate: <code>USER_TYPE === 'ant'</code> (auto-activated)</p>
-<p>Not a feature but a <strong>security mechanism</strong> — automatically activates when Anthropic employees contribute to public repos:</p>
-<ul>
-  <li>Strips all AI attribution marks (<code>Co-Authored-By</code> lines)</li>
-  <li>Bans model codenames (Capybara, Tengu, etc.) in commit messages</li>
-  <li>Prevents leaking internal repo names, Slack channels, shortlinks</li>
-  <li>Forced on via <code>CLAUDE_CODE_UNDERCOVER=1</code> — cannot be disabled</li>
-  <li>Only auto-disabled when the repo matches an internal allowlist (~25 private repos)</li>
-</ul>
-<p><strong>Significance:</strong> Confirms Anthropic employees use Claude Code for daily development and contribute to open-source projects with it.</p>
-
-<hr>
-
-<h2>What This Tells Us</h2>
-<p>Looking at these 8 hidden features, a clear product vision emerges:</p>
-<ol class="numbered">
-  <li><strong>Passive → Proactive</strong> — PROACTIVE, KAIROS let the AI act without waiting for instructions</li>
-  <li><strong>Ephemeral → Persistent</strong> — KAIROS turns the AI into a permanent team member</li>
-  <li><strong>Single-sense → Multi-modal</strong> — VOICE_MODE, WEB_BROWSER_TOOL expand interaction dimensions</li>
-  <li><strong>Solo → Collaborative</strong> — COORDINATOR_MODE enables parallel AI collaboration</li>
-  <li><strong>Local → Distributed</strong> — BRIDGE_MODE decouples frontend from backend</li>
-</ol>
-<p>Claude Code is evolving from a "chatbot in the terminal" into an <strong>autonomous, persistent, multi-modal AI programming colleague</strong>.</p>
-
-</div>
-
-<!-- ===================== 中文 ===================== -->
-<div id="lang-zh" class="lang-content">
-
-<h1>揭秘：隐藏功能与内部机制</h1>
-<p class="subtitle">未公开功能巡礼 — 8 个隐藏功能深度解析</p>
-<p class="source">
-  来源: <a href="https://ccb.agent-aura.top/docs/internals/hidden-features" target="_blank" rel="noopener">ccb.agent-aura.top</a>
-</p>
-
-<hr>
-
-<h2>全景</h2>
-<p>从 88+ 个构建时 flags 和 500+ 个运行时 flags 中，我们挑选了 8 个最具代表性的未公开功能。它们不仅展示了 Claude Code 当前的技术深度，更勾勒出 Anthropic 对"AI 编程助手"的未来愿景。</p>
-
-<h3>1. KAIROS：永不下线的 AI 助手</h3>
-<p class="gate">门控: <code>feature('KAIROS')</code> + <code>tengu_kairos</code></p>
-<p>KAIROS 是 Claude Code 最庞大的隐藏功能群——6 个独立 flag 控制着一个完整的"持久化 AI 助手"系统：</p>
-<table>
-  <thead><tr><th>Flag</th><th>能力</th></tr></thead>
-  <tbody>
-    <tr><td><code>KAIROS</code></td><td>核心助手模式——AI 不再随对话结束而"消失"</td></tr>
-    <tr><td><code>KAIROS_BRIEF</code></td><td>精简输出模式</td></tr>
-    <tr><td><code>KAIROS_CHANNELS</code></td><td>基于频道的消息系统</td></tr>
-    <tr><td><code>KAIROS_DREAM</code></td><td>后台"做梦"——自主整理记忆</td></tr>
-    <tr><td><code>KAIROS_GITHUB_WEBHOOKS</code></td><td>订阅 GitHub PR 事件，自动响应</td></tr>
-    <tr><td><code>KAIROS_PUSH_NOTIFICATION</code></td><td>向移动端推送通知</td></tr>
-  </tbody>
-</table>
-<p>KAIROS 的工具集包括 <code>SleepTool</code>（让 AI 主动"休眠"等待事件）、<code>SendUserFileTool</code>（向用户发送文件）、<code>PushNotificationTool</code>（推送通知）和 <code>SubscribePRTool</code>（监听 PR）。</p>
-<p><strong>推测方向:</strong> 一个 7×24 在线的 AI 团队成员，能自主监控代码库、响应事件、管理任务。</p>
-
-<h3>2. PROACTIVE：自主行动模式</h3>
-<p class="gate">门控: <code>feature('PROACTIVE')</code></p>
-<p>在标准模式中，Claude Code 是被动的——等待你输入，然后响应。PROACTIVE 模式颠覆了这一范式：</p>
-<ul>
-  <li>AI 拥有 <code>SleepTool</code>，可以主动"打盹"一段时间</li>
-  <li>系统定期发送 <code>&lt;tick&gt;</code> 提示，触发 AI 检查是否有需要主动做的事</li>
-  <li>AI 可以在没有用户输入的情况下自行决策和执行</li>
-</ul>
-<p><strong>推测方向:</strong> 从"问答式助手"进化为"自主式同事"——AI 在后台持续工作，偶尔需要你确认方向。</p>
-
-<h3>3. COORDINATOR_MODE：多 Agent 指挥官</h3>
-<p class="gate">门控: <code>feature('COORDINATOR_MODE')</code></p>
-<p>当前的 Claude Code 已经支持子 Agent（<code>AgentTool</code>），但 Coordinator Mode 将其提升到新的层次：</p>
-<ul>
-  <li>一个"指挥官" Agent 分析任务并分解为子任务</li>
-  <li>多个"工人" Agent 并行执行子任务</li>
-  <li>指挥官协调结果、处理冲突、合并输出</li>
-</ul>
-<p>完整实现位于 <code>src/coordinator/coordinatorMode.ts</code>。</p>
-<p><strong>推测方向:</strong> 大型编程任务的全自动并行处理。</p>
-
-<h3>4. BRIDGE_MODE：远程遥控</h3>
-<p class="gate">门控: <code>feature('BRIDGE_MODE')</code></p>
-<p>Bridge Mode 让 Claude Code 可以通过 WebSocket 被远程控制：</p>
-<ul>
-  <li><code>src/bridge/</code> 目录包含完整的 WebSocket 桥接实现</li>
-  <li>支持 IDE 扩展作为远程前端</li>
-  <li>包含 ant-only 的故障注入测试（<code>bridgeDebug.ts</code>）</li>
-  <li>配合 <code>DIRECT_CONNECT</code> flag 可通过 <code>cc://</code> URL 直连</li>
-</ul>
-<p><strong>推测方向:</strong> Claude Code 的 UI 前端与后端执行分离。</p>
-
-<h3>5. WEB_BROWSER_TOOL：内置浏览器</h3>
-<p class="gate">门控: <code>feature('WEB_BROWSER_TOOL')</code></p>
-<p>当前的 Claude Code 只有简化的 <code>WebFetchTool</code>，但代码中存在更强大的浏览器工具：</p>
-<ul>
-  <li>基于 Bun 的 WebView 实现</li>
-  <li>可以渲染和交互网页，而不仅仅是抓取文本</li>
-  <li>与 Computer Use 的 <code>@ant/</code> 包配合使用</li>
-</ul>
-<p><strong>推测方向:</strong> AI 能像人一样浏览网页——点击、填表、截图。</p>
-
-<h3>6. VOICE_MODE：语音交互</h3>
-<p class="gate">门控: <code>feature('VOICE_MODE')</code></p>
-<p>核心实现依赖 <code>audio-capture-napi</code> 包：</p>
-<ul>
-  <li>通过 <code>/voice</code> 命令激活</li>
-  <li>"按住说话"（hold-to-talk）交互模式</li>
-  <li>需要系统级音频 API 支持</li>
-</ul>
-<p><strong>推测方向:</strong> 不用打字，直接和 AI 对话编程。</p>
-
-<h3>7. BUDDY：AI 吉祥物</h3>
-<p class="gate">门控: <code>feature('BUDDY')</code></p>
-<p><code>src/buddy/</code> 目录包含一个完整的"伙伴精灵"系统：</p>
-<ul>
-  <li>终端中的小型动画角色</li>
-  <li>根据 AI 状态展示不同动画</li>
-  <li>纯 UI / 趣味性功能</li>
-</ul>
-<p><strong>推测方向:</strong> 给终端增加一点温度。</p>
-
-<h3>8. Undercover Mode：隐身贡献</h3>
-<p class="gate">门控: <code>USER_TYPE === 'ant'</code>（自动激活）</p>
-<p>当 Anthropic 员工向公开仓库贡献代码时自动激活的安全机制：</p>
-<ul>
-  <li>剥除所有 AI 归属标记（<code>Co-Authored-By</code> 行）</li>
-  <li>禁止在 commit 消息中提及模型代号</li>
-  <li>禁止暴露内部仓库名、Slack 频道、短链接</li>
-  <li>通过 <code>CLAUDE_CODE_UNDERCOVER=1</code> 强制开启</li>
-</ul>
-<p><strong>意义:</strong> 证实 Anthropic 员工使用 Claude Code 进行日常开发并向公开项目贡献代码。</p>
-
-<hr>
-
-<h2>这些功能告诉我们什么</h2>
-<p>纵观这 8 个隐藏功能，一个清晰的产品愿景浮现：</p>
-<ol class="numbered">
-  <li><strong>从被动到主动</strong> — PROACTIVE、KAIROS 让 AI 不再只是等待指令</li>
-  <li><strong>从短暂到持久</strong> — KAIROS 的持久化模式让 AI 成为"常驻团队成员"</li>
-  <li><strong>从单一到多感官</strong> — VOICE_MODE、WEB_BROWSER_TOOL 拓展交互维度</li>
-  <li><strong>从单兵到协同</strong> — COORDINATOR_MODE 让多个 AI 并行协作</li>
-  <li><strong>从本地到分布式</strong> — BRIDGE_MODE 解耦前后端</li>
-</ol>
-<p>Claude Code 正在从一个"终端里的聊天机器人"进化为一个 <strong>自主、持久、多模态的 AI 编程同事</strong>。</p>
-
-</div>
-
-<!-- ===================== ภาษาไทย ===================== -->
-<div id="lang-th" class="lang-content">
-
-<h1>ฟีเจอร์ซ่อนเร้น &amp; เบื้องหลัง</h1>
-<p class="subtitle">ทัวร์ 8 ฟีเจอร์ลับที่ซ่อนอยู่ใน Claude Code</p>
-<p class="source">
-  ที่มา: <a href="https://ccb.agent-aura.top/docs/internals/hidden-features" target="_blank" rel="noopener">ccb.agent-aura.top</a>
-</p>
-
-<hr>
-
-<h2>ภาพรวม</h2>
-<p>จาก build-time flags กว่า 88+ ตัวและ runtime flags กว่า 500+ ตัว เราได้คัดเลือก 8 ฟีเจอร์ที่เปิดเผยอะไรได้มากที่สุด พวกมันไม่เพียงแสดงให้เห็นความลึกทางเทคนิคของ Claude Code ในปัจจุบัน แต่ยังชี้ให้เห็นวิสัยทัศน์ของ Anthropic ต่ออนาคตของ AI ผู้ช่วยเขียนโค้ด</p>
-
-<h3>1. KAIROS — ผู้ช่วย AI ที่ไม่เคยออฟไลน์</h3>
-<p class="gate">เกต: <code>feature('KAIROS')</code> + <code>tengu_kairos</code></p>
-<p>KAIROS คือคลัสเตอร์ฟีเจอร์ซ่อนเร้นที่ใหญ่ที่สุด — 6 แฟล็กอิสระที่ควบคุมระบบผู้ช่วย AI แบบถาวร:</p>
-<table>
-  <thead><tr><th>Flag</th><th>ความสามารถ</th></tr></thead>
-  <tbody>
-    <tr><td><code>KAIROS</code></td><td>โหมดผู้ช่วยหลัก — AI ยังคงอยู่แม้การสนทนาจะจบลง</td></tr>
-    <tr><td><code>KAIROS_BRIEF</code></td><td>โหมดเอาต์พุตกระชับ</td></tr>
-    <tr><td><code>KAIROS_CHANNELS</code></td><td>ระบบข้อความแบบแชนแนล</td></tr>
-    <tr><td><code>KAIROS_DREAM</code></td><td>"ฝัน" เบื้องหลัง — จัดระเบียบความจำอัตโนมัติ</td></tr>
-    <tr><td><code>KAIROS_GITHUB_WEBHOOKS</code></td><td>สมัครรับอีเวนต์ GitHub PR แล้วตอบกลับอัตโนมัติ</td></tr>
-    <tr><td><code>KAIROS_PUSH_NOTIFICATION</code></td><td>ส่ง Push Notification ไปยังอุปกรณ์มือถือ</td></tr>
-  </tbody>
-</table>
-<p>ชุดเครื่องมือประกอบด้วย <code>SleepTool</code> (ให้ AI "หลับ" รออีเวนต์), <code>SendUserFileTool</code>, <code>PushNotificationTool</code> และ <code>SubscribePRTool</code></p>
-<p><strong>ทิศทาง:</strong> สมาชิกทีม AI ที่ทำงาน 24/7 — ตรวจสอบ repo, ตอบสนองต่ออีเวนต์, จัดการงานได้เอง</p>
-
-<h3>2. PROACTIVE — โหมดปฏิบัติการอัตโนมัติ</h3>
-<p class="gate">เกต: <code>feature('PROACTIVE')</code></p>
-<p>ในโหมดปกติ Claude Code เป็นฝ่ายตั้งรับ — รอให้คุณป้อนคำสั่งแล้วค่อยตอบสนอง PROACTIVE กลับหัวแนวคิดนี้:</p>
-<ul>
-  <li>AI มี <code>SleepTool</code> เพื่อ "งีบ" รออย่างตั้งใจ</li>
-  <li>ระบบส่งสัญญาณ <code>&lt;tick&gt;</code> เป็นระยะเพื่อให้ AI ตรวจสอบว่ามีอะไรต้องทำหรือไม่</li>
-  <li>AI สามารถตัดสินใจและลงมือทำได้โดยไม่ต้องรออินพุตจากผู้ใช้</li>
-</ul>
-<p><strong>ทิศทาง:</strong> จาก "ผู้ช่วยตอบคำถาม" สู่ "เพื่อนร่วมงานอัตโนมัติ" — AI ทำงานเบื้องหลัง แล้วถามทิศทางจากคุณเป็นครั้งคราว</p>
-
-<h3>3. COORDINATOR_MODE — ผู้บัญชาการมัลติเอเจนต์</h3>
-<p class="gate">เกต: <code>feature('COORDINATOR_MODE')</code></p>
-<p>Claude Code รองรับ sub-agent ผ่าน <code>AgentTool</code> อยู่แล้ว แต่ Coordinator Mode ยกระดับขึ้นไปอีก:</p>
-<ul>
-  <li>เอเจนต์ "ผู้บัญชาการ" วิเคราะห์งานและแบ่งเป็นงานย่อย</li>
-  <li>เอเจนต์ "คนงาน" หลายตัวทำงานย่อยพร้อมกัน</li>
-  <li>ผู้บัญชาการประสานผลลัพธ์ จัดการความขัดแย้ง รวมเอาต์พุต</li>
-</ul>
-<p>การติดตั้งเต็มรูปแบบที่ <code>src/coordinator/coordinatorMode.ts</code></p>
-<p><strong>ทิศทาง:</strong> การประมวลผลแบบขนานอัตโนมัติสำหรับงานเขียนโปรแกรมขนาดใหญ่</p>
-
-<h3>4. BRIDGE_MODE — ควบคุมระยะไกล</h3>
-<p class="gate">เกต: <code>feature('BRIDGE_MODE')</code></p>
-<p>Bridge Mode ช่วยให้ควบคุม Claude Code จากระยะไกลผ่าน WebSocket:</p>
-<ul>
-  <li>WebSocket bridge เต็มรูปแบบใน <code>src/bridge/</code></li>
-  <li>IDE extension สามารถทำหน้าที่เป็น frontend ระยะไกล</li>
-  <li>มี ant-only fault injection tests (<code>bridgeDebug.ts</code>)</li>
-  <li>ใช้คู่กับ <code>DIRECT_CONNECT</code> flag เพื่อเชื่อมต่อผ่าน <code>cc://</code> URL</li>
-</ul>
-<p><strong>ทิศทาง:</strong> แยก UI frontend ออกจาก backend การทำงานของ AI — ทำงานจาก VS Code แต่ AI รันบนเซิร์ฟเวอร์ระยะไกล</p>
-
-<h3>5. WEB_BROWSER_TOOL — เบราว์เซอร์ในตัว</h3>
-<p class="gate">เกต: <code>feature('WEB_BROWSER_TOOL')</code></p>
-<p>Claude Code มี <code>WebFetchTool</code> แบบง่าย แต่มันมีเครื่องมือเบราว์เซอร์ที่ทรงพลังกว่านอนอยู่ในโค้ดเบส:</p>
-<ul>
-  <li>WebView ที่ใช้ Bun</li>
-  <li>สามารถเรนเดอร์และโต้ตอบกับหน้าเว็บ ไม่ใช่แค่ดึงข้อความ</li>
-  <li>ทำงานร่วมกับแพ็กเกจ <code>@ant/</code> ของ Computer Use</li>
-</ul>
-<p><strong>ทิศทาง:</strong> AI ที่ท่องเว็บได้เหมือนมนุษย์ — คลิก กรอกฟอร์ม ถ่ายภาพหน้าจอ ทดสอบเว็บแอป</p>
-
-<h3>6. VOICE_MODE — สั่งงานด้วยเสียง</h3>
-<p class="gate">เกต: <code>feature('VOICE_MODE')</code></p>
-<p>โหมดอินพุตด้วยเสียงถูกลงทะเบียนในโค้ดเบส ใช้แพ็กเกจ <code>audio-capture-napi</code>:</p>
-<ul>
-  <li>เปิดใช้งานผ่านคำสั่ง <code>/voice</code></li>
-  <li>รูปแบบการโต้ตอบแบบกดแล้วพูด (hold-to-talk)</li>
-  <li>ต้องรองรับ audio API ระดับระบบ</li>
-</ul>
-<p><strong>ทิศทาง:</strong> เขียนโปรแกรมด้วยเสียง — ไม่ต้องพิมพ์</p>
-
-<h3>7. BUDDY — มาสคอต AI</h3>
-<p class="gate">เกต: <code>feature('BUDDY')</code></p>
-<p>ไดเรกทอรี <code>src/buddy/</code> มีระบบคู่หูตัวการ์ตูนเต็มรูปแบบ:</p>
-<ul>
-  <li>ตัวละครเคลื่อนไหวขนาดเล็กในเทอร์มินัล</li>
-  <li>แอนิเมชันต่างกันไปตามสถานะของ AI (กำลังคิด, กำลังทำงาน, เสร็จ)</li>
-  <li>ฟีเจอร์เพื่อความสนุก / ความสวยงามล้วน ๆ</li>
-</ul>
-<p><strong>ทิศทาง:</strong> เพิ่มความอบอุ่นให้เทอร์มินัลเย็นชา — ทำให้เวลารอไม่น่าเบื่อ</p>
-
-<h3>8. Undercover Mode — การมีส่วนร่วมแบบลับ ๆ</h3>
-<p class="gate">เกต: <code>USER_TYPE === 'ant'</code> (เปิดใช้งานอัตโนมัติ)</p>
-<p>ไม่ใช่ฟีเจอร์ แต่เป็น <strong>กลไกความปลอดภัย</strong> — เปิดใช้งานอัตโนมัติเมื่อพนักงาน Anthropic มีส่วนร่วมกับ repo สาธารณะ:</p>
-<ul>
-  <li>ลบเครื่องหมายแสดงที่มาของ AI ทั้งหมด (บรรทัด <code>Co-Authored-By</code>)</li>
-  <li>ห้ามกล่าวถึงชื่อรุ่นโมเดล (Capybara, Tengu ฯลฯ) ใน commit message</li>
-  <li>ป้องกันการรั่วไหลของชื่อ repo ภายใน, Slack channel, shortlink</li>
-  <li>บังคับเปิดผ่าน <code>CLAUDE_CODE_UNDERCOVER=1</code> — ปิดไม่ได้</li>
-  <li>ปิดอัตโนมัติเฉพาะเมื่อ repo ตรงกับรายการอนุญาตภายใน (~25 private repos)</li>
-</ul>
-<p><strong>ความสำคัญ:</strong> ยืนยันว่าพนักงาน Anthropic ใช้ Claude Code ในการพัฒนาประจำวัน และมีส่วนร่วมกับโปรเจกต์โอเพนซอร์ส</p>
-
-<hr>
-
-<h2>สิ่งนี้บอกอะไรเรา</h2>
-<p>เมื่อมองดู 8 ฟีเจอร์ซ่อนเร้นนี้ วิสัยทัศน์ผลิตภัณฑ์ที่ชัดเจนก็ปรากฏขึ้น:</p>
-<ol class="numbered">
-  <li><strong>ตั้งรับ → เชิงรุก</strong> — PROACTIVE, KAIROS ให้ AI ลงมือทำโดยไม่ต้องรอคำสั่ง</li>
-  <li><strong>ชั่วคราว → ถาวร</strong> — KAIROS เปลี่ยน AI ให้เป็นสมาชิกทีมประจำ</li>
-  <li><strong>ประสาทสัมผัสเดียว → หลายรูปแบบ</strong> — VOICE_MODE, WEB_BROWSER_TOOL ขยายมิติการโต้ตอบ</li>
-  <li><strong>เดี่ยว → ร่วมมือ</strong> — COORDINATOR_MODE ทำให้ AI หลายตัวทำงานร่วมกันแบบขนาน</li>
-  <li><strong>ภายในเครื่อง → กระจาย</strong> — BRIDGE_MODE แยก frontend ออกจาก backend</li>
-</ol>
-<p>Claude Code กำลังพัฒนาจาก "chatbot ในเทอร์มินัล" สู่ <strong>เพื่อนร่วมงานเขียนโปรแกรม AI ที่อัตโนมัติ ถาวร และหลายรูปแบบ</strong></p>
-
-</div>
-
-<script>
-function switchLang(lang) {
-  document.querySelectorAll('.lang-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
-  document.getElementById('lang-' + lang).classList.add('active');
-  document.querySelector('.lang-btn[onclick*="' + lang + '"]').classList.add('active');
-  localStorage.setItem('pref-lang', lang);
-}
-(function() {
-  var saved = localStorage.getItem('pref-lang');
-  if (saved && document.getElementById('lang-' + saved)) {
-    switchLang(saved);
-  }
-})();
-</script>
-
+<script src="../js/main.js"></script>
 </body>
 </html>
