@@ -31,6 +31,7 @@ import { runCleanupFunctions } from './cleanupRegistry.js';
 import { logForDebugging } from './debug.js';
 import { logForDiagnosticsNoPII } from './diagLogs.js';
 import { isEnvTruthy } from './envUtils.js';
+import { closeSentry } from './sentry.js';
 import { getCurrentSessionTitle, sessionIdExists } from './sessionStorage.js';
 import { sleep } from './sleep.js';
 import { profileReport } from './startupProfiler.js';
@@ -488,6 +489,16 @@ export async function gracefulShutdown(
     } catch {
       // stderr may be closed (e.g., SSH disconnect). Ignore write errors.
     }
+  }
+
+  // Flush Sentry crash telemetry — capped at 2 s so a slow network
+  // (or a disabled Sentry) never eats into the failsafe budget.
+  // This must run AFTER analytics (so the event ordering is preserved)
+  // but BEFORE forceExit so the payload makes it out.
+  try {
+    await closeSentry(2000);
+  } catch {
+    // Ignore Sentry shutdown errors
   }
 
   forceExit(exitCode);

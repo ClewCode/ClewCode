@@ -26,6 +26,7 @@ import { isEnvTruthy } from '../utils/envUtils.js';
 import { ConfigParseError, errorMessage } from '../utils/errors.js';
 // showInvalidConfigDialog is dynamically imported in the error path to avoid loading React at init
 import { gracefulShutdownSync, setupGracefulShutdown } from '../utils/gracefulShutdown.js';
+import { initSentry } from '../utils/sentry.js';
 import { applyConfigEnvironmentVariables, applySafeConfigEnvironmentVariables } from '../utils/managedEnv.js';
 import { configureGlobalMTLS } from '../utils/mtls.js';
 import { ensureScratchpadDir, isScratchpadEnabled } from '../utils/permissions/filesystem.js';
@@ -74,6 +75,14 @@ export const init = memoize(async (): Promise<void> => {
     // Make sure things get flushed on exit
     setupGracefulShutdown();
     profileCheckpoint('init_after_graceful_shutdown');
+
+    // Initialize Sentry crash telemetry — no-op unless SENTRY_DSN is set.
+    // Lazy via Promise (never blocks startup), fail-open on any error.
+    void initSentry().catch(err =>
+      logForDebugging(`[Sentry] init failed: ${err instanceof Error ? err.message : String(err)}`, {
+        level: 'warn',
+      }),
+    );
 
     // Initialize 1P event logging (no security concerns, but deferred to avoid
     // loading OpenTelemetry sdk-logs at startup). growthbook.js is already in

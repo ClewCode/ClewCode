@@ -33,6 +33,7 @@ import { SandboxManager } from './sandbox/sandbox-adapter.js';
 import { getManagedFilePath } from './settings/managedPath.js';
 import { CUSTOMIZATION_SURFACES } from './settings/types.js';
 import { findClaudeAlias, findValidClaudeAlias, getShellConfigPaths } from './shellConfig.js';
+import { isSentryEnabled, getMaskedSentryDsn } from './sentry.js';
 import { jsonParse } from './slowOperations.js';
 import { which } from './which.js';
 
@@ -56,6 +57,9 @@ export type DiagnosticInfo = {
     systemPath: string | null;
   };
   connectivity?: ConnectivityResult[];
+  /** Sentry telemetry status */
+  sentryEnabled: boolean;
+  sentryDsnMasked: string;
 };
 
 function getNormalizedPaths(): [invokedPath: string, execPath: string] {
@@ -568,6 +572,8 @@ export async function getDoctorDiagnostic(): Promise<DiagnosticInfo> {
     packageManager,
     ripgrepStatus,
     connectivity: await checkProviderConnectivity().catch(() => []),
+    sentryEnabled: isSentryEnabled(),
+    sentryDsnMasked: getMaskedSentryDsn(),
   };
 
   return diagnostic;

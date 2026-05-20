@@ -12,6 +12,7 @@ import type { CommandResultDisplay } from '../commands.js';
 import { Pane } from '../components/design-system/Pane.js';
 import { PressEnterToContinue } from '../components/PressEnterToContinue.js';
 import { SandboxDoctorSection } from '../components/sandbox/SandboxDoctorSection.js';
+import { ComputerUseDoctorSection } from '../components/computerUse/ComputerUseDoctorSection.js';
 import { ValidationErrorsList } from '../components/ValidationErrorsList.js';
 import { useSettingsErrors } from '../hooks/notifs/useSettingsErrors.js';
 import { useExitOnCtrlCDWithKeybindings } from '../hooks/useExitOnCtrlCDWithKeybindings.js';
@@ -233,6 +234,14 @@ export function Doctor({ onDone }: Props): React.ReactNode {
               : diagnostic.ripgrepStatus.systemPath || 'system'}
           )
         </Text>
+        <Text>
+          └ Sentry Telemetry:{' '}
+          {diagnostic.sentryEnabled ? (
+            <Text color="green">Enabled {diagnostic.sentryDsnMasked ? `(${diagnostic.sentryDsnMasked})` : ''}</Text>
+          ) : (
+            <Text dimColor>Disabled (set SENTRY_DSN to enable)</Text>
+          )}
+        </Text>
 
         {/* Show recommendation if auto-updates are disabled */}
         {diagnostic.recommendation && (
@@ -301,6 +310,8 @@ export function Doctor({ onDone }: Props): React.ReactNode {
       </Box>
 
       <SandboxDoctorSection />
+
+      <ComputerUseDoctorSection />
 
       <McpParsingWarnings />
 
