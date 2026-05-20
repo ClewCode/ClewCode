@@ -5,8 +5,8 @@
 <p align="center">
   <strong>Languages:</strong>
   <a href="README.md"><strong>English</strong></a> ·
-  <a href="README_ZH.md">中文 (简体)</a> ·
-  <a href="README_TH.md">ไทย</a>
+  <a href="readme/README_ZH.md">中文 (简体)</a> ·
+  <a href="readme/README_TH.md">ไทย</a>
 </p>
 
 # Ceph Code
@@ -28,27 +28,27 @@ Ceph Code is an independent, research-oriented **reverse-engineered rebuild** of
 
 ## Ceph Code vs Claude Code
 
-An honest comparison from a user's perspective. Ceph Code is a **research-oriented fork** — it trades some polish for provider freedom.
+A factual comparison based on Anthropic's public Claude Code documentation and this repository's source tree. Claude Code is the official supported product. Ceph Code is an independent rebuild/fork for local modification, provider experiments, and source-level debugging.
 
-| Capability | Claude Code (Anthropic) | Ceph Code |
-|---|---|---|
-| **AI Providers** | Anthropic Claude only | **15+** — Anthropic, OpenAI, Google, DeepSeek, OpenRouter, Ollama, xAI, Mistral, Groq, Copilot, KiloCode, OpenCode |
-| **Runtime model switch** | ❌ Fixed to Claude | ✅ `/model`, `/provider` — switch mid-session |
-| **Plugin system** | MCP + skills | **Full system** — pre/post hooks, agents, skills, MCP, LSP |
-| **Agent system** | Subagents + Agent SDK | Agents view + coordinator + workerAgent + supervisor |
-| **Computer Use** | ✅ macOS only | ✅ **macOS + Windows + Linux** adapters ready |
-| **Chrome control** | Claude in Chrome | Multi-browser: Chrome, Brave, Edge, Opera, Vivaldi |
-| **Self-hosted search** | ❌ No | ✅ SearXNG via Docker + `/searxng` command |
-| **Remote bridge** | ❌ No | ✅ WebSocket remote control + session sharing |
-| **Permission modes** | Default / Plan / YOLO | **6 modes** — plus Auto, YOLO Lite, YOLO MAX |
-| **Context compaction** | API-based | **KiloCompact** — local, no API call needed |
-| **Cross-provider structured output** | ❌ No | ✅ Adapter maps JSON schema → each provider format |
-| **Open source** | Source-available | **Full open source** |
-| **Ecosystem** | Large, official Anthropic | Smaller — community-driven |
-| **Stability** | High — team + CI | Medium — solo dev, active development |
-| **Offline/air-gapped** | ❌ Requires claude.ai | ✅ Works with Ollama + SearXNG + local models |
+| Area | Claude Code (Anthropic) | Ceph Code |
+| --- | --- | --- |
+| **Status** | Official Anthropic CLI product with official docs, releases, GitHub Action, SDK, and enterprise deployment paths. | Community-maintained rebuild/fork. Behavior can diverge from upstream and should be validated before production use. |
+| **Install/runtime requirements** | Official docs list Node.js 18+, supported OSes, internet access for auth/AI processing, and `npm install -g @anthropic-ai/claude-code`. | This repo uses Bun/TypeScript for local development and publishes the `cephcode` package path described in this README. |
+| **Model/provider scope** | Built for Claude. Official deployment paths include Anthropic API plus enterprise hosting through AWS Bedrock or Google Vertex AI. | Provider registry currently includes 27 provider IDs in `src/services/ai/providers.json`, including Anthropic, OpenAI, Google, OpenRouter, Ollama, Groq, xAI, Mistral, Copilot, and others. Compatibility varies by provider. |
+| **Terminal workflow** | Official agentic coding tool that can edit files, run commands, answer codebase questions, use web/MCP context, and act as a Unix-style CLI utility. | Reconstructed terminal workflow with local patches, provider adapters, extra commands, and experimental runtime changes. |
+| **Permissions** | Official IAM docs list `default`, `acceptEdits`, `plan`, and `bypassPermissions`, plus allow/ask/deny permission rules in settings. | Source-defined runtime modes are `default`, `ask`, `plan`, `acceptEdits`, `bypassPermissions`, `dontAsk`; `auto` is included only when the transcript-classifier build gate is enabled. |
+| **Subagents / agents** | Official custom subagents have separate context windows, configurable prompts, and tool access; Claude Code SDK supports building custom agents. | Includes local agent tooling, background/supervisor sessions, team/worker code paths, and an experimental durable `agentRuntime/`. |
+| **MCP** | Official docs describe MCP servers for custom tools/capabilities in Claude Code and the SDK. | MCP support exists, with additional plugin-sourced MCP server loading and local integration code. |
+| **Hooks** | Official hooks include `PreToolUse`, `PostToolUse`, `Notification`, `UserPromptSubmit`, `Stop`, `SubagentStop`, `PreCompact`, `SessionStart`, and `SessionEnd`. | Hook system exists and is modified in this fork; behavior may differ from upstream and should be tested against this repo. |
+| **IDE integration** | Official docs list VS Code-family and JetBrains-family integrations, including diff viewing, selection context, file references, and diagnostics sharing. | Contains IDE/LSP-related code and plugin LSP support, but it is not the official Anthropic IDE integration. |
+| **GitHub / CI automation** | Official Claude Code GitHub Actions supports `@claude` workflows and custom automation through the Claude Code SDK. | Repo has GitHub/PR-related commands and automation experiments, but not the official Anthropic GitHub Action product. |
+| **Search / browser / computer use** | Official feature set is whatever Anthropic ships and documents for Claude Code. | Adds optional local/self-hosted pieces such as SearXNG integration and browser/computer-use adapter code. |
+| **Source and support** | Official implementation and support are controlled by Anthropic. | Source is available in this repository for inspection and modification; support is community/project-maintainer based. |
+| **Best fit** | Teams/users who want the official supported Claude Code experience and Anthropic's documented behavior. | Engineers who want to inspect internals, modify behavior, test providers, or run research/self-hosted workflows. |
 
-**Bottom line:** Use Claude Code if you need enterprise support and a single, well-tested provider. Use Ceph Code if you value provider freedom, self-hosting, and the ability to customize every layer.
+Sources used for the Claude Code column: [overview](https://docs.anthropic.com/en/docs/claude-code/overview), [getting started](https://docs.anthropic.com/en/docs/claude-code/getting-started), [IAM and permission modes](https://docs.anthropic.com/en/docs/claude-code/iam), [settings](https://docs.anthropic.com/en/docs/claude-code/settings), [subagents](https://docs.anthropic.com/en/docs/claude-code/sub-agents), [SDK](https://docs.anthropic.com/en/docs/claude-code/sdk), [MCP in SDK](https://docs.anthropic.com/en/docs/claude-code/sdk/sdk-mcp), [hooks](https://docs.anthropic.com/en/docs/claude-code/hooks), [IDE integrations](https://docs.anthropic.com/en/docs/claude-code/ide-integrations), and [GitHub Actions](https://docs.anthropic.com/en/docs/claude-code/github-actions). Ceph Code facts are based on this repository's source, especially `src/services/ai/providers.json`, `src/types/permissions.ts`, `src/services/ai/providerRegistry.ts`, `src/agentRuntime/`, `src/services/mcp/`, and `src/utils/plugins/`.
+
+**Bottom line:** use Claude Code when you need the official supported product. Use Ceph Code when you specifically want a hackable research fork and are comfortable validating behavior yourself.
 
 ## What It Does
 
@@ -62,6 +62,7 @@ Highlights:
 - **Plugin hooks** for intercepting prompts, shell commands, tool usage, and file edits.
 - **Skill loading** from bundled skills and project-level `.claude/skills/` directories.
 - **Agent and supervisor workflows** for delegating research, coding, and coordination tasks.
+- **Durable Agent Runtime & Orchestrator (PLAN I)** with offline-first execution, checkpoints, and interactive approvals.
 - **Session and bridge features** for saving context, restoring work, and supporting remote collaboration.
 
 ## Quick Start
@@ -121,7 +122,7 @@ Inside Ceph Code, switch models or providers with:
 /model google/gemini-2.5-pro
 ```
 
-See [docs/providers.html](docs/providers.html) for the full provider list, model notes, and capability differences.
+See [docs/providers.html](docs/providers.html) for the provider overview.
 
 ## Common Commands
 
@@ -134,6 +135,7 @@ See [docs/providers.html](docs/providers.html) for the full provider list, model
 /mcp        Manage MCP servers
 /plugin     Manage plugins
 /bridge     Configure bridge mode
+/agent      Manage local agent workflows (run, status, trace, approvals, report)
 ```
 
 Type `/` inside the CLI to discover available commands.
@@ -168,6 +170,7 @@ src/
 ├── main.tsx              CLI bootstrap and main runtime
 ├── query.ts              Core query processing
 ├── QueryEngine.ts        Query orchestration
+├── agentRuntime/         Agent orchestration, run store, and tool gateway
 ├── commands/             Slash command implementations
 ├── tools/                Built-in tool implementations
 ├── services/
@@ -216,8 +219,10 @@ Provider-specific SDKs are wrapped behind adapters so the rest of the runtime ca
 - [Skills](docs/skills.html)
 - [Architecture](docs/architecture.html)
 - [Permission Model](docs/permission-model.html)
-- [Bridge Mode](docs/bridge-mode.html)
+- [Bridge Mode](docs/features/bridge-mode.html)
+- [SearXNG Search](docs/features/searxng-search.html)
 - [Troubleshooting](docs/troubleshooting.html)
+- [Evals](docs/features/evals.html)
 
 ## Debugging
 

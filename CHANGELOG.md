@@ -8,6 +8,39 @@ This project follows a practical changelog format based on:
 - `Fixed` for bug fixes
 - `Security` for permission, sandbox, auth, and trust-related hardening
 - `Internal` for tests, types, refactors, and developer-facing implementation work
+## [2.1.149] - 2026-05-21
+
+### Added
+
+- **Agent Runtime & Orchestration Engine (PLAN I)** — Local-first, durable orchestration engine for spawning, checkpointing, and executing complex multi-agent workflows.
+  - **`src/agentRuntime/` Core Engine** — Includes `orchestrator.ts` driving agents through step-by-step state graph transitions, checkpointing state to disk, handling manual or automatic pause/resume, and routing handoffs between agent profiles.
+  - **`runStore.ts` with Secret Scrubbing** — Saves and loads execution runs locally (`.ceph/runs/`) with robust token and key scrubbing rules, ensuring zero leakage of API keys (e.g., Google, Anthropic, custom keys) into diagnostic history logs.
+  - **`toolGateway.ts` Security Layer** — Multi-permission agent capability gateway validating sandbox access and halting on guarded shell commands (e.g., destructive operations like `rm`, `push`) to request explicit human approval.
+  - **`agentRegistry.ts` & `workflowRegistry.ts`** — Markdown frontmatter parser for `.ceph/agents/` configurations and YAML validator for `.ceph/workflows/` DAG pipelines.
+  - **`reportBuilder.ts` Summarizer** — Generates standardized markdown outcomes summarizing agent steps, file changes, and test validations.
+- **`/agent` CLI command suite** — Built-in slash command for comprehensive local agent management:
+  - `/agent run "<prompt>"` starts a designated workspace agent workflow.
+  - `/agent status` displays current background execution state and stats.
+  - `/agent trace` shows color-coded step-by-step task logs.
+  - `/agent pause` and `/agent resume` controls execution loops.
+  - `/agent approvals` / `approve` / `deny` gates guarded shell commands and checkpoints interactively.
+  - `/agent report` prints markdown diagnostic summaries.
+  - `/agent doctor` tests configurations and workspaces health.
+
+### Internal
+
+- Registered `/agent` and `agentCmd` in `src/commands/agent/` and `src/commands.ts`.
+- Added extensive agent execution tests in `tests/agentRuntime/agentRuntime.test.ts`.
+
+## [2.1.148] - 2026-05-21
+
+
+### Added
+
+- **`/tools` slash command** — view real-time tool usage stats (call count, estimated token cost, last used time).
+  - `/tools reset` clears the stats.
+  - Usage tracking hooks into tool execution pipeline automatically.
+- **`src/utils/toolUsageTracker.ts`** — module-level singleton tracking tool name, call count, input/output tokens, and timestamp.
 
 ## [2.1.147] - 2026-05-20
 
