@@ -183,21 +183,30 @@ export function deriveShortMessageId(uuid: string): string {
 }
 
 /**
- * Walk messages backwards from the end and keep only the last N user-assistant exchanges.
- * Each exchange = 1 user message + its corresponding assistant response(s).
+ * Walk messages backwards from the end and keep only the last N human user turns
+ * plus their corresponding assistant/tool responses.
  * Used by /resume <N> and --resume <N> to limit context when resuming a session.
  * Returns a new array (does not mutate the original).
  */
 export function limitMessagesToLastNExchanges(messages: Message[], limit: number): Message[] {
-  const userCount = messages.filter(m => m.type === 'user').length;
+  const userCount = messages.filter(isResumeUserTurn).length;
   if (limit <= 0 || limit >= userCount) return messages;
 
   let count = 0;
   for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].type === 'user') count++;
+    if (isResumeUserTurn(messages[i])) count++;
     if (count === limit) return messages.slice(i);
   }
   return messages;
+}
+
+function isResumeUserTurn(message: Message | undefined): boolean {
+  if (!message || message.type !== 'user') return false;
+  if (message.isMeta || message.toolUseResult || message.isCompactSummary) return false;
+  const content = (message as { message?: { content?: unknown } }).message?.content;
+  return (
+    !Array.isArray(content) || !content.some(block => (block as { type?: unknown } | undefined)?.type === 'tool_result')
+  );
 }
 
 export const INTERRUPT_MESSAGE = '[Request interrupted by user]';

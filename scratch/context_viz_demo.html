@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code - Context Visualization</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #080710;
+      --bg-secondary: #0f0d1e;
+      --bg-card: rgba(255, 255, 255, 0.03);
+      --border-card: rgba(255, 255, 255, 0.06);
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent: #5769f7;
+      --accent-glow: rgba(87, 105, 247, 0.35);
+      
+      --color-prompt: #999999;
+      --color-tools: #9333ea;
+      --color-rules: #10b981;
+      --color-skills: #f59e0b;
+      --color-mcp: #ec4899;
+      --color-subagents: #3b82f6;
+      --color-conversation: #f97316;
+      --color-free: #1f2937;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 2.5rem 1.5rem;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(87, 105, 247, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(147, 51, 234, 0.08) 0%, transparent 45%);
+    }
+
+    header {
+      max-width: 1200px;
+      margin: 0 auto 2.5rem auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 2.2rem;
+      height: 2.2rem;
+      background: linear-gradient(135deg, var(--accent), #9333ea);
+      border-radius: 0.5rem;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .brand-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      background: linear-gradient(to right, #f3f4f6, #9ca3af);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .model-badge {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      padding: 0.4rem 1rem;
+      border-radius: 9999px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      backdrop-filter: blur(10px);
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 1.25rem;
+      padding: 2rem;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .chart-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .donut-chart {
+      width: 260px;
+      height: 260px;
+      transform: rotate(-90deg);
+    }
+
+    .donut-segment {
+      fill: none;
+      stroke-width: 18;
+      transition: stroke-width 0.3s ease, filter 0.3s ease;
+      cursor: pointer;
+    }
+
+    .donut-segment:hover {
+      stroke-width: 24;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
+    }
+
+    .chart-center-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .pct-val {
+      font-size: 2.75rem;
+      font-weight: 800;
+      line-height: 1;
+      background: linear-gradient(135deg, #ffffff, var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .pct-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .legend {
+      width: 100%;
+      margin-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.8rem;
+      border-radius: 0.75rem;
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .legend-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: var(--border-card);
+      transform: translateX(4px);
+    }
+
+    .legend-item.active {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .legend-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+    }
+
+    .legend-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .legend-right {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+    }
+
+    .legend-tokens {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .legend-percent {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Tabs & Details */
+    .details-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-card);
+      padding-bottom: 0.5rem;
+      overflow-x: auto;
+    }
+
+    .tab {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.6rem 1.2rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .tab.active {
+      color: #ffffff;
+      background: rgba(87, 105, 247, 0.15);
+      box-shadow: inset 0 0 10px rgba(87, 105, 247, 0.1);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Progress bar */
+    .progress-bar-wrapper {
+      margin-bottom: 2rem;
+    }
+
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-bar-container {
+      height: 12px;
+      background: var(--color-free);
+      border-radius: 9999px;
+      display: flex;
+      overflow: hidden;
+      border: 1px solid var(--border-card);
+    }
+
+    .progress-segment {
+      height: 100%;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Table & List styling */
+    .search-box {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-card);
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .search-box:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(87, 105, 247, 0.1);
+    }
+
+    .list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 480px;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+    }
+
+    .list-container::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .list-container::-webkit-scrollbar-thumb {
+      background: var(--border-card);
+      border-radius: 9999px;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1.25rem;
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid var(--border-card);
+      border-radius: 0.75rem;
+      transition: all 0.2s ease;
+    }
+
+    .list-item:hover {
+      background: rgba(255, 255, 255, 0.02);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .item-name {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .item-token {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.25rem 0.6rem;
+      border-radius: 0.35rem;
+      border: 1px solid var(--border-card);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Simulator Panel */
+    .simulator-box {
+      margin-top: 1.5rem;
+      border: 1px solid rgba(87, 105, 247, 0.2);
+      background: rgba(87, 105, 247, 0.02);
+      border-radius: 1rem;
+      padding: 1.5rem;
+    }
+
+    .sim-header {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: #ffffff;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sim-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.25rem;
+      line-height: 1.4;
+    }
+
+    .sim-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+    }
+
+    .sim-toggle {
+      width: 40px;
+      height: 20px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .sim-toggle.active {
+      background-color: var(--accent);
+    }
+
+    .sim-toggle::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: white;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s ease;
+    }
+
+    .sim-toggle.active::after {
+      transform: translateX(20px);
+    }
+
+    .sim-result {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px dashed var(--border-card);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo"></div>
+      <h1 class="brand-title">Claude Code Context</h1>
+    </div>
+    <div class="model-badge" id="model-name">...</div>
+  </header>
+
+  <main>
+    <!-- Left Panel: Chart & Legend -->
+    <div class="card" style="display: flex; flex-direction: column;">
+      <div class="chart-container">
+        <svg class="donut-chart" viewBox="0 0 100 100" id="donut-svg">
+          <!-- Dynamic segments will be inserted here -->
+        </svg>
+        <div class="chart-center-text">
+          <div class="pct-val" id="center-percent">0%</div>
+          <div class="pct-label">Full</div>
+        </div>
+      </div>
+
+      <div class="legend" id="legend-list">
+        <!-- Legend items dynamically inserted -->
+      </div>
+    </div>
+
+    <!-- Right Panel: Tabs, Details, Progress Bar -->
+    <div class="card details-panel">
+      <div class="progress-bar-wrapper">
+        <div class="progress-labels">
+          <span style="font-weight: 600;" id="total-used-tokens">0 / 0 Tokens</span>
+          <span id="max-tokens-label">Max Capacity: 0</span>
+        </div>
+        <div class="progress-bar-container" id="stacked-progress">
+          <!-- Progress segments dynamically inserted -->
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('files')">Memory Files</button>
+        <button class="tab" onclick="switchTab('tools')">MCP & System Tools</button>
+        <button class="tab" onclick="switchTab('agents')">Custom Agents</button>
+        <button class="tab" onclick="switchTab('skills')">Skills</button>
+        <button class="tab" onclick="switchTab('simulator')">Context Optimizer</button>
+      </div>
+
+      <!-- Tab Contents -->
+      <div id="tab-files" class="tab-content active">
+        <input type="text" class="search-box" placeholder="Search memory files..." oninput="filterItems('files', this.value)">
+        <div class="list-container" id="files-list"></div>
+      </div>
+
+      <div id="tab-tools" class="tab-content">
+        <input type="text" class="search-box" placeholder="Search tools..." oninput="filterItems('tools', this.value)">
+        <div class="list-container" id="tools-list"></div>
+      </div>
+
+      <div id="tab-agents" class="tab-content">
+        <div class="list-container" id="agents-list"></div>
+      </div>
+
+      <div id="tab-skills" class="tab-content">
+        <div class="list-container" id="skills-list"></div>
+      </div>
+
+      <div id="tab-simulator" class="tab-content">
+        <div class="sim-header">
+          <span>🛠️ Context Optimizer Simulator</span>
+        </div>
+        <p class="sim-desc">
+          Claude Code dynamically compresses the context window. Simulate how much space you would save by disabling features or compacting/clearing files.
+        </p>
+        <div id="sim-options">
+          <!-- Simulator options populated here -->
+        </div>
+        <div class="sim-result">
+          <span>Simulated Context Usage:</span>
+          <span id="sim-final-tokens" style="color: var(--accent);">0%</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const data = {"model":"claude-3-5-sonnet-20241022","totalTokens":145000,"rawMaxTokens":200000,"percentage":72.5,"categories":[{"name":"System prompt","tokens":12000},{"name":"Tools","tokens":35000},{"name":"Rules","tokens":8000},{"name":"Skills","tokens":15000},{"name":"MCP","tokens":25000},{"name":"Subagents","tokens":0},{"name":"Conversation","tokens":50000},{"name":"Free space","tokens":55000}],"memoryFiles":[{"path":"src/components/ModelPicker.tsx","tokens":12400},{"path":"src/commands/context/context.tsx","tokens":4200},{"path":"package.json","tokens":1200}],"mcpTools":[{"name":"webSearch","tokens":1200},{"name":"readBrowser","tokens":1800}],"deferredBuiltinTools":[],"systemTools":[{"name":"fileEdit","tokens":2400},{"name":"fileRead","tokens":1500}],"systemPromptSections":[],"agents":[{"agentType":"Browser Subagent","tokens":8500}],"skills":{"skillFrontmatter":[{"name":"gitCommit","tokens":3200},{"name":"runTests","tokens":4100}]},"messageBreakdown":null};
+
+    // Curated matching colors
+    const categoryColors = {
+      'System prompt': 'var(--color-prompt)',
+      'Tools': 'var(--color-tools)',
+      'Rules': 'var(--color-rules)',
+      'Skills': 'var(--color-skills)',
+      'MCP': 'var(--color-mcp)',
+      'Subagents': 'var(--color-subagents)',
+      'Conversation': 'var(--color-conversation)',
+      'Free space': 'var(--color-free)'
+    };
+
+    // Format utility
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+      return num.toString();
+    }
+
+    // Initialize UI
+    document.getElementById('model-name').textContent = data.model;
+    document.getElementById('center-percent').textContent = Math.round(data.percentage) + '%';
+    document.getElementById('total-used-tokens').textContent = formatNumber(data.totalTokens) + ' / ' + formatNumber(data.rawMaxTokens) + ' Tokens';
+    document.getElementById('max-tokens-label').textContent = 'Max: ' + formatNumber(data.rawMaxTokens);
+
+    // Build Donut & Progress Charts
+    function renderCharts() {
+      const svg = document.getElementById('donut-svg');
+      const progressContainer = document.getElementById('stacked-progress');
+      const legend = document.getElementById('legend-list');
+
+      svg.innerHTML = '';
+      progressContainer.innerHTML = '';
+      legend.innerHTML = '';
+
+      let accumulatedPercent = 0;
+      let totalVisibleTokens = data.categories.reduce((acc, cat) => acc + (cat.tokens > 0 ? cat.tokens : 0), 0);
+
+      // SVG circle details
+      const radius = 38;
+      const circumference = 2 * Math.PI * radius;
+
+      data.categories.forEach((cat) => {
+        if (cat.tokens <= 0 || cat.name === 'Autocompact buffer') return;
+
+        const slicePct = (cat.tokens / data.rawMaxTokens) * 100;
+        const color = categoryColors[cat.name] || 'var(--text-muted)';
+
+        // Progress bar segment
+        const pSeg = document.createElement('div');
+        pSeg.className = 'progress-segment';
+        pSeg.style.width = slicePct + '%';
+        pSeg.style.backgroundColor = color;
+        progressContainer.appendChild(pSeg);
+
+        // Donut slice
+        if (cat.name !== 'Free space') {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('class', 'donut-segment');
+          circle.setAttribute('cx', '50');
+          circle.setAttribute('cy', '50');
+          circle.setAttribute('r', radius.toString());
+          circle.setAttribute('stroke', color);
+          
+          const strokeLength = (cat.tokens / data.rawMaxTokens) * circumference;
+          const strokeOffset = circumference - (accumulatedPercent / 100) * circumference;
+          
+          circle.setAttribute('stroke-dasharray', strokeLength + ' ' + (circumference - strokeLength));
+          circle.setAttribute('stroke-dashoffset', strokeOffset.toString());
+          
+          circle.addEventListener('mouseenter', () => {
+            document.getElementById('center-percent').textContent = Math.round(slicePct) + '%';
+            document.getElementById('center-percent').style.background = 'linear-gradient(135deg, #ffffff, ' + color + ')';
+            document.getElementById('center-percent').style.webkitBackgroundClip = 'text';
+          });
+          circle.addEventListener('mouseleave', () => {
+            document.getElementById('center-percent').textContent = Math.round(data.percentage) + '%';
+            document.getElementById('center-percent').style.background = '';
+            document.getElementById('center-percent').style.webkitBackgroundClip = '';
+          });
+
+          svg.appendChild(circle);
+          accumulatedPercent += slicePct;
+
+          // Legend item
+          const lItem = document.createElement('div');
+          lItem.className = 'legend-item';
+          
+          // Using safe string concatenation to avoid typescript/biome template nesting errors
+          var itemHtml = '';
+          itemHtml += '<div class="legend-left">';
+          itemHtml += '  <div class="color-dot" style="background-color: ' + color + '"></div>';
+          itemHtml += '  <span class="legend-name">' + cat.name + '</span>';
+          itemHtml += '</div>';
+          itemHtml += '<div class="legend-right">';
+          itemHtml += '  <span class="legend-tokens">' + formatNumber(cat.tokens) + '</span>';
+          itemHtml += '  <span class="legend-percent">' + slicePct.toFixed(1) + '%</span>';
+          itemHtml += '</div>';
+          
+          lItem.innerHTML = itemHtml;
+          legend.appendChild(lItem);
+        }
+      });
+    }
+
+    // Tab switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      const clickedTab = Array.from(document.querySelectorAll('.tab')).find(t => t.textContent.toLowerCase().includes(tabId));
+      if (clickedTab) clickedTab.classList.add('active');
+      
+      const content = document.getElementById('tab-' + tabId);
+      if (content) content.classList.add('active');
+    }
+
+    // Item Populate
+    function populateLists() {
+      // Memory files list
+      const filesList = document.getElementById('files-list');
+      if (data.memoryFiles.length > 0) {
+        var filesHtml = '';
+        data.memoryFiles.forEach(file => {
+          var fileName = file.path.split(/[\\/]/).pop();
+          filesHtml += '<div class="list-item" data-name="' + file.path.toLowerCase() + '">';
+          filesHtml += '  <div class="item-name">📝 ' + fileName + ' <span style="font-size: 0.75rem; color: var(--text-muted);">' + file.path + '</span></div>';
+          filesHtml += '  <div class="item-token">' + formatNumber(file.tokens) + '</div>';
+          filesHtml += '</div>';
+        });
+        filesList.innerHTML = filesHtml;
+      } else {
+        filesList.innerHTML = '<div class="empty-state">No memory files active.</div>';
+      }
+
+      // Tools list (Active + Deferred)
+      const toolsList = document.getElementById('tools-list');
+      const allTools = [];
+      data.systemTools.forEach(t => allTools.push({ ...t, type: 'System' }));
+      data.mcpTools.forEach(t => allTools.push({ ...t, type: 'MCP' }));
+      data.deferredBuiltinTools.forEach(t => allTools.push({ ...t, type: 'Deferred Built-in' }));
+
+      if (allTools.length > 0) {
+        var toolsHtml = '';
+        allTools.forEach(tool => {
+          var tokenDisp = tool.tokens ? formatNumber(tool.tokens) : 'On demand';
+          toolsHtml += '<div class="list-item" data-name="' + tool.name.toLowerCase() + '">';
+          toolsHtml += '  <div class="item-name">';
+          toolsHtml += '    ⚡ ' + tool.name + ' ';
+          toolsHtml += '    <span class="model-badge" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">' + tool.type + '</span>';
+          toolsHtml += '  </div>';
+          toolsHtml += '  <div class="item-token">' + tokenDisp + '</div>';
+          toolsHtml += '</div>';
+        });
+        toolsList.innerHTML = toolsHtml;
+      } else {
+        toolsList.innerHTML = '<div class="empty-state">No active tools.</div>';
+      }
+
+      // Custom agents
+      const agentsList = document.getElementById('agents-list');
+      if (data.agents.length > 0) {
+        var agentsHtml = '';
+        data.agents.forEach(agent => {
+          agentsHtml += '<div class="list-item">';
+          agentsHtml += '  <div class="item-name">🤖 ' + agent.agentType + '</div>';
+          agentsHtml += '  <div class="item-token">' + formatNumber(agent.tokens) + '</div>';
+          agentsHtml += '</div>';
+        });
+        agentsList.innerHTML = agentsHtml;
+      } else {
+        agentsList.innerHTML = '<div class="empty-state">No custom agents active.</div>';
+      }
+
+      // Skills
+      const skillsList = document.getElementById('skills-list');
+      if (data.skills && data.skills.skillFrontmatter && data.skills.skillFrontmatter.length > 0) {
+        var skillsHtml = '';
+        data.skills.skillFrontmatter.forEach(skill => {
+          skillsHtml += '<div class="list-item">';
+          skillsHtml += '  <div class="item-name">💡 ' + skill.name + '</div>';
+          skillsHtml += '  <div class="item-token">' + formatNumber(skill.tokens) + '</div>';
+          skillsHtml += '</div>';
+        });
+        skillsList.innerHTML = skillsHtml;
+      } else {
+        skillsList.innerHTML = '<div class="empty-state">No skills loaded.</div>';
+      }
+    }
+
+    // Filter Items
+    function filterItems(tabId, query) {
+      const container = document.getElementById(tabId + '-list');
+      const items = container.querySelectorAll('.list-item');
+      const lowerQuery = query.toLowerCase();
+
+      items.forEach(item => {
+        const name = item.getAttribute('data-name');
+        if (name && name.includes(lowerQuery)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
+    // Context Simulator setup
+    const simState = {
+      compactFiles: false,
+      unloadTools: false,
+      clearConversation: false
+    };
+
+    function renderSimulator() {
+      const simContainer = document.getElementById('sim-options');
+      
+      var simHtml = '';
+      simHtml += '<div class="sim-item">';
+      simHtml += '  <span>Compress Memory Files (Reduce by 50%)</span>';
+      simHtml += '  <div class="sim-toggle ' + (simState.compactFiles ? 'active' : '') + '" onclick="toggleSim('compactFiles')"></div>';
+      simHtml += '</div>';
+      simHtml += '<div class="sim-item">';
+      simHtml += '  <span>Unload Non-essential Tools (Reduce by 30%)</span>';
+      simHtml += '  <div class="sim-toggle ' + (simState.unloadTools ? 'active' : '') + '" onclick="toggleSim('unloadTools')"></div>';
+      simHtml += '</div>';
+      simHtml += '<div class="sim-item">';
+      simHtml += '  <span>Clear Conversation History (Free conversation tokens)</span>';
+      simHtml += '  <div class="sim-toggle ' + (simState.clearConversation ? 'active' : '') + '" onclick="toggleSim('clearConversation')"></div>';
+      simHtml += '</div>';
+
+      simContainer.innerHTML = simHtml;
+      calculateSimulatedUsage();
+    }
+
+    function toggleSim(key) {
+      simState[key] = !simState[key];
+      renderSimulator();
+    }
+
+    function calculateSimulatedUsage() {
+      let simulatedUsed = data.totalTokens;
+
+      if (simState.compactFiles) {
+        const filesCategory = data.categories.find(c => c.name === 'Memory files');
+        if (filesCategory) simulatedUsed -= (filesCategory.tokens / 2);
+      }
+
+      if (simState.unloadTools) {
+        const toolsCategory = data.categories.find(c => c.name === 'Tools');
+        const mcpCategory = data.categories.find(c => c.name === 'MCP');
+        if (toolsCategory) simulatedUsed -= (toolsCategory.tokens * 0.3);
+        if (mcpCategory) simulatedUsed -= (mcpCategory.tokens * 0.3);
+      }
+
+      if (simState.clearConversation) {
+        const convCategory = data.categories.find(c => c.name === 'Conversation');
+        if (convCategory) simulatedUsed -= convCategory.tokens;
+      }
+
+      // Bound to 0
+      simulatedUsed = Math.max(0, simulatedUsed);
+      const simulatedPct = (simulatedUsed / data.rawMaxTokens) * 100;
+      
+      document.getElementById('sim-final-tokens').innerHTML = 
+        formatNumber(Math.round(simulatedUsed)) + ' Tokens (' + simulatedPct.toFixed(1) + '% Full)';
+    }
+
+    // Boot
+    renderCharts();
+    populateLists();
+    renderSimulator();
+  </script>
+</body>
+</html>

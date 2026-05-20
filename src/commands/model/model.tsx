@@ -86,6 +86,15 @@ function ModelPickerWrapper({
       }));
       if (model !== null) {
         addRecentModel(model);
+        try {
+          const pm = ProviderManager.getInstance();
+          const cfg = pm.getSelectedProviderConfig(true);
+          if (cfg.model !== model) {
+            pm.saveSelectedProviderConfig({ ...cfg, model });
+          }
+        } catch {
+          // Non-critical: provider.json write is best-effort here.
+        }
       }
       // Persist the session model choice to transcript for resume restore
       setSessionModelForTranscript(model ?? undefined);

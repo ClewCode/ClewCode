@@ -256,7 +256,9 @@ function ResumeWithLimit({
       }
     }
     void loadAndResume();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [limit, onDone, onResume]);
 
   if (error) {
@@ -275,7 +277,10 @@ function ResumeWithLimit({
   return (
     <Box>
       <Spinner />
-      <Text> Loading last {limit} message{limit === 1 ? '' : 's'}…</Text>
+      <Text>
+        {' '}
+        Loading last {limit} message{limit === 1 ? '' : 's'}…
+      </Text>
     </Box>
   );
 }
@@ -301,9 +306,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
   // Check if arg is a number — resume last session with message limit
   const numArg = parseInt(arg, 10);
   if (!isNaN(numArg) && numArg > 0 && String(numArg) === arg) {
-    return (
-      <ResumeWithLimit limit={numArg} onDone={onDone} onResume={onResume} />
-    );
+    return <ResumeWithLimit limit={numArg} onDone={onDone} onResume={onResume} />;
   }
 
   // Load logs to search (includes same-repo worktrees)

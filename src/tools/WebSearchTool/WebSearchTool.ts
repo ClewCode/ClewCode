@@ -68,12 +68,13 @@ import type { WebSearchProgress } from '../../types/tools.js';
 
 /**
  * Select the best available direct search provider.
- * Priority: tavily > brave > serper > duckduckgo (always available, free)
+ * Priority: tavily > brave > serper > searxng > duckduckgo (always available, free)
  */
 function selectBestDirectProvider(): string {
   if (isProviderConfigured('tavily')) return 'tavily';
   if (isProviderConfigured('brave')) return 'brave';
   if (isProviderConfigured('serper')) return 'serper';
+  if (isProviderConfigured('searxng')) return 'searxng';
   return 'duckduckgo';
 }
 

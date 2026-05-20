@@ -1,0 +1,52 @@
+# Tests
+*.test.ts
+*.test.tsx
+*.e2e.test.ts
+*.live.test.ts
+coverage/
+.nyc_output
+
+# Docs & meta (keep README + LICENSE)
+docs/
+CHANGELOG.md
+CLAUDE.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
+index.json
+
+# Config & tooling
+tsconfig.json
+biome.json
+.gitattributes
+.gitignore
+.claudeignore
+.claude/
+.claude-plugin/
+
+# CI/CD
+.github/
+
+# Vendored binaries (downloaded locally)
+src/utils/vendor/
+
+# Dev / scratch
+scratch/
+research-dossiers/
+.searxng/
+.buddy/
+.npmrc
+
+# Cache
+.cache/
+.eslintcache
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp
+tmp/
+temp/
+.docs/

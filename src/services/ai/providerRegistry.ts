@@ -12,6 +12,7 @@ export type { ProviderId, ProviderInterface };
 
 export type ToolCallingSupport = 'native' | 'json-text' | 'none';
 export type ProviderStreamingSupport = 'full' | 'partial' | 'none';
+export type PromptCachingSupport = 'explicit' | 'automatic' | 'none';
 
 export interface ModelCapabilities {
   toolCalling: ToolCallingSupport;
@@ -33,6 +34,7 @@ export interface ProviderCapabilities {
   jsonSchema: boolean;
   reasoningEffort: boolean;
   contextLength: string;
+  promptCaching?: PromptCachingSupport;
 }
 
 export interface ProviderModelInfo {
@@ -116,4 +118,52 @@ export function getProviderOptions(provider: ProviderId) {
 
 export function createProviderInstance(provider: ProviderId): ProviderInterface {
   return getProviderRegistryEntry(provider).provider;
+}
+
+/**
+ * Map provider ID to its prompt caching support level.
+ *
+ * - `"explicit"`: Provider supports `cache_control` markers (Anthropic/Bedrock/Vertex).
+ * - `"automatic"`: Provider auto-caches long prompts without markers (OpenAI-compatible).
+ * - `"none"`: No prompt caching support.
+ */
+const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
+  anthropic: 'explicit',
+  openai: 'automatic',
+  openrouter: 'automatic',
+  deepseek: 'automatic',
+  groq: 'automatic',
+  xai: 'automatic',
+  mistral: 'automatic',
+  together: 'automatic',
+  fireworks: 'automatic',
+  deepinfra: 'automatic',
+  perplexity: 'automatic',
+  cerebras: 'automatic',
+  copilot: 'automatic',
+  opencode: 'automatic',
+  'opencode-go': 'automatic',
+  cline: 'automatic',
+  siliconflow: 'automatic',
+  moonshot: 'automatic',
+  zhipu: 'automatic',
+  huggingface: 'automatic',
+  poe: 'automatic',
+  digitalocean: 'automatic',
+  nvidia: 'automatic',
+  cohere: 'automatic',
+  google: 'none',
+  kilocode: 'none',
+  ollama: 'none',
+};
+
+export function getPromptCachingSupport(providerId: ProviderId): PromptCachingSupport {
+  return PROMPT_CACHING_MAP[providerId] ?? 'none';
+}
+
+/**
+ * Convenience check: should we send `cache_control` markers in API requests?
+ */
+export function shouldUseExplicitPromptCaching(providerId: ProviderId): boolean {
+  return getPromptCachingSupport(providerId) === 'explicit';
 }

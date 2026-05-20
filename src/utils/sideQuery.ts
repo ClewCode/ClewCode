@@ -145,24 +145,89 @@ export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
           content: typeof m.content === 'string' ? m.content : m.content.map((c: any) => c.text || '').join(''),
         })),
       ];
+      // Convert Anthropic tool format to OpenAI format
+      const openaiTools =
+        tools && tools.length > 0
+          ? tools.map(t => {
+              const tool = t as any;
+              return {
+                type: 'function' as const,
+                function: {
+                  name: tool.name,
+                  description: tool.description ?? '',
+                  parameters: tool.input_schema ?? tool.inputSchema ?? {},
+                },
+              };
+            })
+          : undefined;
+
+      // Convert Anthropic tool_choice to OpenAI format
+      let openaiToolChoice: any;
+      if (tool_choice && openaiTools) {
+        if (tool_choice.type === 'tool' && 'name' in tool_choice) {
+          openaiToolChoice = { type: 'function', function: { name: tool_choice.name } };
+        } else if (tool_choice.type === 'auto') {
+          openaiToolChoice = 'auto';
+        } else if (tool_choice.type === 'any') {
+          openaiToolChoice = 'required';
+        } else if (tool_choice.type === 'none') {
+          openaiToolChoice = 'none';
+        }
+      }
+
       const result = await (providerClient.chat?.completions?.create ?? providerClient.beta?.messages?.create)({
         model: normalizedModel,
         max_tokens: max_tokens,
         messages: messagesForProvider,
         ...(temperature !== undefined && { temperature }),
         ...(stop_sequences && { stop: stop_sequences }),
+        ...(openaiTools && { tools: openaiTools }),
+        ...(openaiToolChoice !== undefined && { tool_choice: openaiToolChoice }),
       });
 
-      const choice = result.choices?.[0] ?? result.content?.[0] ?? { text: '' };
+      const choice = result.choices?.[0] ?? result.content?.[0] ?? {};
+      const msg = choice.message ?? choice;
+
+      // Build content blocks: tool_calls from OpenAI → tool_use blocks
+      const contentBlocks: any[] = [];
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        for (const tc of msg.tool_calls) {
+          let parsedInput: any;
+          try {
+            parsedInput = JSON.parse(tc.function?.arguments ?? '{}');
+          } catch {
+            parsedInput = {};
+          }
+          contentBlocks.push({
+            type: 'tool_use',
+            id: tc.id ?? `toolu_${Date.now()}`,
+            name: tc.function?.name ?? 'unknown',
+            input: parsedInput,
+          });
+        }
+      }
+      if (msg.content) {
+        contentBlocks.push({ type: 'text', text: msg.content });
+      }
+      // Fallback: if no tool_calls and no content, wrap the whole choice
+      if (contentBlocks.length === 0) {
+        contentBlocks.push({ type: 'text', text: JSON.stringify(choice) });
+      }
+
       const response: BetaMessage = {
         id: result.id ?? 'side-query',
         type: 'message' as any,
         model: normalizedModel,
-        content: [{ type: 'text', text: choice.text ?? choice.message?.content ?? JSON.stringify(choice) }],
+        content: contentBlocks,
         usage: {
           input_tokens: result.usage?.prompt_tokens ?? result.usage?.input_tokens ?? 0,
           output_tokens: result.usage?.completion_tokens ?? result.usage?.output_tokens ?? 0,
         },
+        stop_reason: msg.tool_calls?.length
+          ? ('tool_use' as any)
+          : msg.finish_reason === 'stop'
+            ? ('end_turn' as any)
+            : (msg.finish_reason as any),
       } as unknown as BetaMessage;
 
       // J2: Track side query costs for non-Anthropic providers

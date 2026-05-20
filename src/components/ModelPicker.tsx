@@ -37,7 +37,7 @@ import {
   parseUserSpecifiedModel,
 } from '../utils/model/model.js';
 import { getModelOptions } from '../utils/model/modelOptions.js';
-import { getRecentModels } from '../utils/model/recentModels.js';
+import { mergeRecentModels } from '../utils/model/recentModels.js';
 import { getSettingsForSource, updateSettingsForSource } from '../utils/settings/settings.js';
 import { ConfigurableShortcutHint } from './ConfigurableShortcutHint.js';
 import { Select } from './CustomSelect/index.js';
@@ -159,8 +159,8 @@ export function ModelPicker(t0) {
 
   // Compute model options with fetched models
   const modelOptions = useMemo(() => {
-    return getEffectiveModelOptions(t2, currentFetchedModels, providerInfo?.entry);
-  }, [t2, currentFetchedModels, providerInfo?.entry]);
+    return getEffectiveModelOptions(t2, currentFetchedModels, providerInfo?.entry, initial);
+  }, [t2, currentFetchedModels, providerInfo?.entry, initial]);
   let t4;
   bb0: {
     if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {
@@ -604,19 +604,10 @@ function getEffectiveModelOptions(
   fastMode: boolean,
   fetchedModels?: FetchedModel[] | null,
   entry?: ReturnType<typeof getProviderRegistryEntry>,
-): Array<{
-  value: ModelSetting;
-  label: string;
-  description: string;
-  descriptionForModel?: string;
-}> {
+  initial?: string | null,
+): ModelOption[] {
   const providerInfo = getActiveProviderInfo();
-  let options: Array<{
-    value: ModelSetting;
-    label: string;
-    description: string;
-    descriptionForModel?: string;
-  }>;
+  let options: ModelOption[];
 
   if (!providerInfo && !entry) {
     options = getModelOptions(fastMode);
@@ -676,7 +667,7 @@ function getEffectiveModelOptions(
   }
 
   // Inject recently used models at the top
-  const recentModels = getRecentModels();
+  const recentModels = mergeRecentModels([initial, providerInfo?.selectedModel]);
   if (recentModels.length > 0) {
     const recentSet = new Set(recentModels);
     const recentOptions = recentModels.map(id => {
@@ -694,8 +685,22 @@ function getEffectiveModelOptions(
     const customOpt = options.find(o => o.value === '__CUSTOM_INPUT__');
     const rest = options.filter(o => o.value !== null && o.value !== '__CUSTOM_INPUT__' && !recentSet.has(o.value));
     options = [
-      ...(defaultOpt ? [defaultOpt] : []),
+      {
+        value: '__SECTION_RECENT__',
+        label: 'Recent',
+        description: '',
+        type: 'section',
+        disabled: true,
+      },
       ...recentOptions,
+      {
+        value: '__SECTION_PROVIDER__',
+        label: providerInfo?.entry.label ?? 'Provider models',
+        description: '',
+        type: 'section',
+        disabled: true,
+      },
+      ...(defaultOpt ? [defaultOpt] : []),
       ...rest,
       ...(customOpt ? [customOpt] : []),
     ];
@@ -719,6 +724,17 @@ type ModelSelectOption = {
   label: React.ReactNode;
   description?: string;
   descriptionForModel?: string;
+  type?: 'text' | 'section';
+  disabled?: boolean;
+};
+
+type ModelOption = {
+  value: ModelSetting;
+  label: string;
+  description: string;
+  descriptionForModel?: string;
+  type?: 'text' | 'section';
+  disabled?: boolean;
 };
 
 function filterModelOptions(options: ModelSelectOption[], query: string): ModelSelectOption[] {
@@ -726,7 +742,7 @@ function filterModelOptions(options: ModelSelectOption[], query: string): ModelS
   if (!trimmedQuery) {
     return options;
   }
-  return options.filter(option => getModelOptionSearchText(option).includes(trimmedQuery));
+  return options.filter(option => option.type !== 'section' && getModelOptionSearchText(option).includes(trimmedQuery));
 }
 
 function getModelOptionSearchText(option: ModelSelectOption): string {

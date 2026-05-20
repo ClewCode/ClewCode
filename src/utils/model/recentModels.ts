@@ -15,3 +15,18 @@ export function addRecentModel(model: string): void {
   const updated = [model, ...filtered].slice(0, MAX_RECENT_MODELS);
   updateSettingsForSource('userSettings', { recentModels: updated });
 }
+
+export function mergeRecentModels(models: Array<string | null | undefined>): string[] {
+  const merged: string[] = [];
+  for (const model of models) {
+    if (model && !merged.includes(model)) {
+      merged.push(model);
+    }
+  }
+  for (const model of getRecentModels()) {
+    if (!merged.includes(model)) {
+      merged.push(model);
+    }
+  }
+  return merged.slice(0, MAX_RECENT_MODELS);
+}

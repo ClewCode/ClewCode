@@ -5,6 +5,7 @@ type OptionMapItem<T> = {
   label: ReactNode;
   value: T;
   description?: string;
+  disabled?: boolean;
   previous: OptionMapItem<T> | undefined;
   next: OptionMapItem<T> | undefined;
   index: number;
@@ -26,6 +27,7 @@ export default class OptionMap<T> extends Map<T, OptionMapItem<T>> {
         label: option.label,
         value: option.value,
         description: option.description,
+        disabled: option.disabled,
         previous,
         next: undefined,
         index,

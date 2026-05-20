@@ -10,6 +10,9 @@ build/
 out/
 bin/
 
+# CodeIndex cache
+index.json
+
 # Logs
 *.log
 logs/
@@ -76,4 +79,4 @@ tmp/
 temp/
 .docs/
 
-scratch/
+scratch/index.json

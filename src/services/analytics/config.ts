@@ -41,5 +41,11 @@ export function isAnalyticsDisabled(): boolean {
  * transcript data — enterprise customers capture responses via OTEL.
  */
 export function isFeedbackSurveyDisabled(): boolean {
+  try {
+    const config = getGlobalConfig();
+    if (config.telemetryDisabled) {
+      return true;
+    }
+  } catch {}
   return process.env.NODE_ENV === 'test' || isTelemetryDisabled();
 }

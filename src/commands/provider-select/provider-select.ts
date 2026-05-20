@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import * as React from 'react';
-import { Select } from '../../components/CustomSelect/select.js';
+import { type OptionWithDescription, Select } from '../../components/CustomSelect/select.js';
 import { GitHubCopilotAuthFlow } from '../../components/GitHubCopilotAuthFlow.js';
 import { OpenAIOAuthFlow } from '../../components/OpenAIOAuthFlow.js';
 import TextInput from '../../components/TextInput.js';
@@ -47,6 +47,7 @@ type ProviderConfig = {
 const PROVIDER_KEYS = PROVIDER_IDS;
 
 type ProviderKey = (typeof PROVIDER_KEYS)[number];
+type ProviderSelectValue = ProviderKey | '__SECTION_RECENT__' | '__SECTION_PROVIDERS__';
 
 function isProviderKey(provider: string): provider is ProviderKey {
   return PROVIDER_KEYS.includes(provider as ProviderKey);
@@ -597,19 +598,60 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   }
 
   if (!provider) {
-    const options = filteredOptions.map(key => {
+    const activeProvider = ProviderManager.getInstance().getActiveProviderName();
+    const recentProviders = [activeProvider, config?.provider].filter(
+      (key, index, keys): key is ProviderKey =>
+        typeof key === 'string' && isProviderKey(key) && keys.indexOf(key) === index,
+    );
+
+    const createProviderOption = (key: ProviderKey): OptionWithDescription<ProviderSelectValue> => {
       const info = getProviderInfo(key);
+      const status =
+        config?.apiKeys?.[key] || process.env[info.envKey]
+          ? chalk.green(`${info.envKey} - ACTIVE ✔`)
+          : info.isLocal
+            ? 'local provider'
+            : `${info.envKey} - MISSING  𐄂`;
+      const markers = [
+        key === activeProvider ? chalk.green('current') : null,
+        key === config?.provider && key !== activeProvider ? chalk.dim('saved') : null,
+      ].filter(Boolean);
+
       return {
         label: `${info.label} (${key})`,
         value: key,
-        description:
-          config?.apiKeys?.[key] || process.env[info.envKey]
-            ? chalk.green(`${info.envKey} - ACTIVE ✔`)
-            : info.isLocal
-              ? 'local provider'
-              : `${info.envKey} - MISSING  𐄂`,
+        description: markers.length > 0 ? `${status} - ${markers.join(', ')}` : status,
       };
-    });
+    };
+
+    const query = searchQuery.trim();
+    const filteredSet = new Set(filteredOptions);
+    const visibleRecentProviders = recentProviders.filter(key => filteredSet.has(key));
+    const providerOptions = filteredOptions.filter(key => !visibleRecentProviders.includes(key));
+    const options: Array<OptionWithDescription<ProviderSelectValue>> = query
+      ? filteredOptions.map(createProviderOption)
+      : [
+          ...(visibleRecentProviders.length > 0
+            ? [
+                {
+                  label: 'Recent',
+                  value: '__SECTION_RECENT__' as const,
+                  description: '',
+                  type: 'section' as const,
+                  disabled: true as const,
+                },
+                ...visibleRecentProviders.map(createProviderOption),
+              ]
+            : []),
+          {
+            label: 'Providers',
+            value: '__SECTION_PROVIDERS__',
+            description: '',
+            type: 'section',
+            disabled: true,
+          },
+          ...providerOptions.map(createProviderOption),
+        ];
 
     return React.createElement(
       Box,
@@ -639,9 +681,12 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
       React.createElement(Box, { marginTop: 1 }),
       React.createElement(Select, {
         options,
-        visibleOptionCount: 10,
+        visibleOptionCount: query ? 10 : 12,
         highlightText: searchQuery,
         onChange: value => {
+          if (value === '__SECTION_RECENT__' || value === '__SECTION_PROVIDERS__') {
+            return;
+          }
           setProvider(value as ProviderKey);
           setApiKeyInput('');
           setApiKeyCursorOffset(0);

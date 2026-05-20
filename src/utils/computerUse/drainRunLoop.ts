@@ -1,30 +1,23 @@
 import { logForDebugging } from '../debug.js';
 import { withResolvers } from '../withResolvers.js';
-import { requireComputerUseSwift } from './swiftLoader.js';
 
 /**
- * Shared CFRunLoop pump. Swift's four `@MainActor` async methods
- * (captureExcluding, captureRegion, apps.listInstalled, resolvePrepareCapture)
- * and `@ant/computer-use-input`'s key()/keys() all dispatch to
- * DispatchQueue.main. Under libuv (Node/bun) that queue never drains — the
- * promises hang. Electron drains it via CFRunLoop so Cowork doesn't need this.
- *
- * One refcounted setInterval calls `_drainMainRunLoop` (RunLoop.main.run)
- * every 1ms while any main-queue-dependent call is pending. Multiple
- * concurrent drainRunLoop() calls share the single pump via retain/release.
+ * Drain run loop — no-op on cross-platform implementation.
+ * The original macOS implementation used CFRunLoop pumping for @MainActor
+ * Swift methods. Our PlatformAdapter uses CLI tools which don't need pumping.
  */
 
 let pump: ReturnType<typeof setInterval> | undefined;
 let pending = 0;
 
-function drainTick(cu: ReturnType<typeof requireComputerUseSwift>): void {
-  cu._drainMainRunLoop();
+function drainTick(): void {
+  // No-op: CLI tools don't need CFRunLoop pumping
 }
 
 function retain(): void {
   pending++;
   if (pump === undefined) {
-    pump = setInterval(drainTick, 1, requireComputerUseSwift());
+    pump = setInterval(drainTick, 1);
     logForDebugging('[drainRunLoop] pump started', { level: 'verbose' });
   }
 }

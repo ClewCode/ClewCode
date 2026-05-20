@@ -12,191 +12,216 @@
       <a href="index.html" class="logo">
         <span class="logo-text">Ceph Code</span>
       </a>
-      <nav class="nav">
-        <a href="index.html" class="nav-link active">Docs</a>
-        <a href="installation.html" class="nav-link">Install</a>
-        <a href="commands.html" class="nav-link">Commands</a>
-        <a href="providers.html" class="nav-link">Providers</a>
-        <a href="plugins.html" class="nav-link">Plugins</a>
-      </nav>
-        <button class="menu-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
     </div>
   </header>
 
-  <div class="container">
-    <aside class="sidebar">
-      <div class="sidebar-section">
-        <h3 class="sidebar-title">Getting Started</h3>
-        <ul class="sidebar-nav">
-          <li><a href="index.html" class="sidebar-link active">Introduction</a></li>
-          <li><a href="installation.html" class="sidebar-link">Installation</a></li>
-          <li><a href="quick-start.html" class="sidebar-link">Quick Start</a></li>
-        </ul>
+  <main class="main-content" style="max-width: 1200px; margin: 0 auto; padding: var(--spacing-2xl) var(--spacing-xl);">
+    <h1>Ceph Code</h1>
+    <p class="lead">
+      A terminal-based AI coding assistant with multi-provider routing, extensible plugin architecture, and a comprehensive tool system for professional development workflows.
+    </p>
+
+    <div class="hero">
+      <h2>Getting Started</h2>
+      <ol style="color: rgba(255,255,255,0.85); padding-left: 1.25rem;">
+        <li style="margin: 0.75rem 0;">
+          <strong>Install</strong> —
+          <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">npm install -g cephcode</code>
+        </li>
+        <li style="margin: 0.75rem 0;">
+          <strong>Set API Key</strong> —
+          <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">export ANTHROPIC_API_KEY=sk-ant-...</code>
+        </li>
+        <li style="margin: 0.75rem 0;">
+          <strong>Launch</strong> —
+          Run <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">cephcode</code> in your terminal
+        </li>
+        <li style="margin: 0.75rem 0;">
+          <strong>Try commands</strong> —
+          Type <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">/model list</code>, <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">/status</code>, or <code style="background:rgba(255,255,255,0.12);color:#fff;padding:0.2rem 0.5rem;border-radius:4px;">/help</code>
+        </li>
+      </ol>
+    </div>
+
+    <h2>Features</h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <h3>15+ AI Providers</h3>
+        <p>Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, DeepSeek, xAI, Mistral, Groq, Copilot, KiloCode, OpenCode, OpenCode Go, Cline, ChatGPT Plus</p>
       </div>
-      <div class="sidebar-section">
-        <h3 class="sidebar-title">Configuration</h3>
-        <ul class="sidebar-nav">
-          <li><a href="configuration.html" class="sidebar-link">Settings</a></li>
-          <li><a href="providers.html" class="sidebar-link">AI Providers</a></li>
-          <li><a href="models.html" class="sidebar-link">Model Management</a></li>
-          <li><a href="permissions.html" class="sidebar-link">Permissions</a></li>
-          <li><a href="automation.html" class="sidebar-link">Automation Modes</a></li>
-        </ul>
+      <div class="feature-card">
+        <h3>80+ Slash Commands</h3>
+        <p>File ops, git, search, model management, MCP, plugins, agents, sessions, diagnostics</p>
       </div>
-      <div class="sidebar-section">
-        <h3 class="sidebar-title">Features</h3>
-        <ul class="sidebar-nav">
-          <li><a href="commands.html" class="sidebar-link">Commands</a></li>
-          <li><a href="tools.html" class="sidebar-link">Tools</a></li>
-          <li><a href="agents.html" class="sidebar-link">Agents</a></li>
-          <li><a href="plugins.html" class="sidebar-link">Plugins</a></li>
-          <li><a href="skills.html" class="sidebar-link">Skills</a></li>
-        </ul>
+      <div class="feature-card">
+        <h3>56+ Built-in Tools</h3>
+        <p>Read, Edit, Write, Glob, Grep, Bash, Web, MCP, LSP, Agent, Task, Monitor, Research, Workflow</p>
       </div>
-      <div class="sidebar-section">
-        <h3 class="sidebar-title">Architecture</h3>
-        <ul class="sidebar-nav">
-          <li><a href="architecture.html" class="sidebar-link">Architecture</a></li>
-          <li><a href="provider-pattern.html" class="sidebar-link">Provider Pattern</a></li>
-          <li><a href="command-system.html" class="sidebar-link">Command System</a></li>
-          <li><a href="tool-system.html" class="sidebar-link">Tool System</a></li>
-          <li><a href="permission-model.html" class="sidebar-link">Permission Model</a></li>
-          <li><a href="memory-system.html" class="sidebar-link">Memory System</a></li>
-          <li><a href="session-system.html" class="sidebar-link">Session System</a></li>
-          <li><a href="context-compaction.html" class="sidebar-link">Context Compaction</a></li>
-          <li><a href="plugin-system.html" class="sidebar-link">Plugin System</a></li>
-          <li><a href="skill-system.html" class="sidebar-link">Skill System</a></li>
-          <li><a href="mcp-integration.html" class="sidebar-link">MCP Integration</a></li>
-          <li><a href="bridge-mode.html" class="sidebar-link">Bridge Mode</a></li>
-          <li><a href="agent-system.html" class="sidebar-link">Agent System</a></li>
-        </ul>
+      <div class="feature-card">
+        <h3>Plugin System</h3>
+        <p>Extend with commands, agents, skills, hooks, and MCP servers from built-in or marketplace plugins</p>
       </div>
-      <div class="sidebar-section">
-        <h3 class="sidebar-title">Reference</h3>
-        <ul class="sidebar-nav">
-          <li><a href="keybindings.html" class="sidebar-link">Keyboard Shortcuts</a></li>
-          <li><a href="faq.html" class="sidebar-link">FAQ</a></li>
-          <li><a href="troubleshooting.html" class="sidebar-link">Troubleshooting</a></li>
-        </ul>
+      <div class="feature-card">
+        <h3>Agent View</h3>
+        <p>Multi-session dashboard with supervisor daemon, background tasks, IPC, worktree isolation</p>
       </div>
-    </aside>
-
-    <main class="main-content">
-      <h1>Ceph Code</h1>
-      <p class="lead">
-        A research fork of Anthropic's Claude Code CLI (rebranded as Ceph Code) — a terminal-based AI coding assistant
-        with multi-provider routing, extensible plugin architecture, and a comprehensive
-        tool system for professional development workflows.
-      </p>
-
-      <div class="hero">
-        <h2>Get Started</h2>
-        <p>Install Ceph Code globally via npm or bun:</p>
-        <div class="code-block">
-          <pre><code># Via npm
-npm install -g cephcode
-
-# Via bun
-bun install -g cephcode
-
-# Start Ceph Code
-cephcode</code></pre>
-        </div>
-        <p>Or clone for local development:</p>
-        <div class="code-block">
-          <pre><code># Clone and setup
-git clone https://github.com/JonusNattapong/ClaudeCode.git
-cd claudecode
-bun install
-bun run build
-bun run start</code></pre>
-        </div>
+      <div class="feature-card">
+        <h3>Smart Memory</h3>
+        <p>Cross-lingual semantic search, hybrid recall (local + LLM), auto-memory, team sync</p>
       </div>
-
-      <h2>Key Capabilities</h2>
-      <ul>
-        <li><strong>15 AI Providers</strong> — Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, DeepSeek, xAI, Mistral, Groq, Copilot, KiloCode, OpenCode, OpenCode Go, Cline, ChatGPT Plus</li>
-        <li><strong>104 Slash Commands</strong> — File operations, git, search, AI model management, MCP servers, plugins, and diagnostics</li>
-        <li><strong>56 Built-in Tools</strong> — Read, Edit, Write, Glob, Grep, Bash, PowerShell, WebFetch, WebSearch, Agent, Task, MCP, LSP, Git, CodeIndex, and more</li>
-        <li><strong>13 Plugins</strong> — Agent SDK, code review, commit commands, frontend design, feature development, plugin development, and more</li>
-        <li><strong>20 Bundled Skills</strong> — Debugging, web search, web scraping, commit, code review, scheduling, keybinding configuration</li>
-        <li><strong>Permission System</strong> — Four-tier automation mode: Default approval, YOLO Lite, YOLO ALLOW, and YOLO MAX</li>
-        <li><strong>Agent View</strong> — Dispatch and manage many sessions from one screen with supervisor daemon, IPC, worktree isolation, and AI row summaries</li>
-        <li><strong>Smart Memory</strong> — Cross-lingual semantic search with embeddings (100+ languages), hybrid recall (local + LLM), auto-memory, and team memory sync</li>
-        <li><strong>Bridge Mode</strong> — WebSocket-based remote collaboration with session sharing and team onboarding</li>
-      </ul>
-
-      <h2>Recent Updates (v2.1.140)</h2>
-      <ul>
-        <li><strong>Smart Memory with Semantic Search</strong> — Cross-lingual memory recall using IBM Granite 97M multilingual embeddings (100+ languages), hybrid search (local + LLM fallback), embedding cache, and <code>/memory-search</code> command</li>
-        <li><strong>Subagent API Headers (G32)</strong> — Subagent API requests now carry <code>x-claude-code-agent-id</code> and <code>x-claude-code-parent-agent-id</code> headers for traceability</li>
-        <li><strong>API Key Override Gates (G33)</strong> — OAuth-dependent features are disabled when API key overrides are active, with clear messaging</li>
-        <li><strong>Compaction Preserves Instructions (G26)</strong> — Context compaction now preserves sensitive user instructions verbatim</li>
-        <li><strong>Fallback Thinking Toggle (E61)</strong> — Added Ctrl+Shift+T as fallback hotkey for toggling thinking mode on macOS</li>
-        <li><strong>Symlinked Settings Hot-Reload (G8)</strong> — Settings file watcher resolves realpath, enabling hot-reload for symlinked <code>settings.json</code></li>
-        <li><strong>Sandbox Auto-Allow Fix (G9)</strong> — Shell expansion commands (<code>$VAR</code>, <code>$(cmd)</code>) now respect auto-allow before prompting</li>
-        <li><strong>SIGTSTP Handler (E50)</strong> — Ctrl+Z no longer hangs in npx/bun wrapper environments</li>
-        <li><strong>Diff Truncation Fix (G41)</strong> — Corrected off-by-one in line count when truncation boundary falls on a newline</li>
-        <li><strong>Regex Metachar Fix (G44)</strong> — Special regex characters in skill argument names are now escaped before substitution</li>
-        <li><strong>Keybinding Modifier Fix (G19)</strong> — Cmd/Super/Win keybindings no longer incorrectly flagged as unparseable</li>
-      </ul>
-      <p>Full changelog available at <a href="https://github.com/JonusNattapong/ClaudeCode/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
-
-      <div class="features-grid">
-        <div class="feature-card">
-          <h3>15 AI Providers</h3>
-          <p>Switch between Anthropic, OpenAI, Google, OpenRouter, Ollama, DeepSeek, xAI, Mistral, Groq, Copilot, KiloCode, OpenCode, OpenCode Go, Cline, and ChatGPT Plus — all from one interface.</p>
-          <a href="providers.html" class="feature-link">Browse providers</a>
-        </div>
-        <div class="feature-card">
-          <h3>104 Commands</h3>
-          <p>File operations, git, search, npm, agents, MCP, and more — all accessible via slash commands.</p>
-          <a href="commands.html" class="feature-link">View commands</a>
-        </div>
-        <div class="feature-card">
-          <h3>13 Plugins</h3>
-          <p>Extend the CLI with 13 plugins providing commands, agents, skills, hooks, and output styles.</p>
-          <a href="plugins.html" class="feature-link">Explore plugins</a>
-        </div>
-        <div class="feature-card">
-          <h3>Permission Tiers</h3>
-          <p>Progressive automation modes from approval-based to full autonomy via YOLO Lite, ALLOW, and MAX.</p>
-          <a href="permissions.html" class="feature-link">Configure permissions</a>
-        </div>
-        <div class="feature-card">
-          <h3>56 Built-in Tools</h3>
-          <p>File ops, shell execution, web search/fetch, MCP, subagents, LSP, notebooks, and structured diffs.</p>
-          <a href="tools.html" class="feature-link">View tools</a>
-        </div>
-        <div class="feature-card">
-          <h3>Agent View</h3>
-          <p>Dispatch and manage many sessions from one screen. Supervisor daemon hosts background sessions with IPC, worktree isolation, and AI-generated row summaries.</p>
-          <a href="agents.html" class="feature-link">Learn more</a>
-        </div>
-        <div class="feature-card">
-          <h3>Smart Memory</h3>
-          <p>Cross-lingual semantic search with embeddings (100+ languages), hybrid recall (local + LLM), and auto-memory with team sync.</p>
-          <a href="memory-system.html" class="feature-link">Learn more</a>
-        </div>
+      <div class="feature-card">
+        <h3>Bridge Mode</h3>
+        <p>WebSocket remote collaboration with session sharing and team onboarding</p>
       </div>
+      <div class="feature-card">
+        <h3>Permission Modes</h3>
+        <p>Default, Auto, Plan, YOLO Lite, YOLO, YOLO MAX — configure via <code>/permissions</code></p>
+      </div>
+    </div>
 
-      <h2>Quick Links</h2>
-      <ul class="quick-links">
-        <li><a href="installation.html">Installation Guide</a></li>
-        <li><a href="quick-start.html">Quick Start</a></li>
-        <li><a href="configuration.html">Configuration Options</a></li>
-        <li><a href="providers.html#api-keys">API Key Setup</a></li>
-        <li><a href="commands.html">Complete Command Reference</a></li>
-        <li><a href="plugins.html">Plugin Catalog</a></li>
-        <li><a href="faq.html">Frequently Asked Questions</a></li>
-      </ul>
-    </main>
-  </div>
+    <h2>Usage</h2>
+    <p>Ceph Code works like a chat in your terminal. Type naturally to ask questions, request code changes, or run commands:
+
+    <div class="code-block">
+      <pre><code># Start a session
+cephcode
+
+# Ask a question
+"find all unused exports in src/"
+
+# Run a command
+/edit main.ts:42
+
+# Switch model
+/model deepseek-v4-flash
+
+# Context management
+/clear    # Fresh start
+/compact  # Compress context
+/resume   # Resume last session</code></pre>
+    </div>
+
+    <h2>Slash Commands</h2>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>/read</code></td><td>Read file</td></tr>
+        <tr><td><code>/edit</code></td><td>Edit file</td></tr>
+        <tr><td><code>/write</code></td><td>Create file</td></tr>
+        <tr><td><code>/glob</code></td><td>Find files</td></tr>
+        <tr><td><code>/grep</code></td><td>Search content</td></tr>
+        <tr><td><code>/git</code></td><td>Git operations</td></tr>
+        <tr><td><code>/diff</code></td><td>Show changes</td></tr>
+        <tr><td><code>/model</code></td><td>Switch model or list models</td></tr>
+        <tr><td><code>/provider</code></td><td>Switch provider</td></tr>
+        <tr><td><code>/cost</code></td><td>Show API cost</td></tr>
+        <tr><td><code>/usage</code></td><td>Token usage</td></tr>
+        <tr><td><code>/stats</code></td><td>Usage statistics</td></tr>
+        <tr><td><code>/clear</code></td><td>Clear conversation</td></tr>
+        <tr><td><code>/compact</code></td><td>Compress context (KiloCompact)</td></tr>
+        <tr><td><code>/resume</code></td><td>Resume session</td></tr>
+        <tr><td><code>/session</code></td><td>New session</td></tr>
+        <tr><td><code>/rewind</code></td><td>Rewind conversation</td></tr>
+        <tr><td><code>/permissions</code></td><td>Permission settings</td></tr>
+        <tr><td><code>/plan</code></td><td>Plan mode</td></tr>
+        <tr><td><code>/config</code></td><td>Edit settings</td></tr>
+        <tr><td><code>/theme</code></td><td>Change theme</td></tr>
+        <tr><td><code>/plugin</code></td><td>Plugin management</td></tr>
+        <tr><td><code>/skill</code></td><td>Load skill</td></tr>
+        <tr><td><code>/agent</code></td><td>Create subagent</td></tr>
+        <tr><td><code>/agents</code></td><td>Agent dashboard</td></tr>
+        <tr><td><code>/mcp</code></td><td>MCP servers</td></tr>
+        <tr><td><code>/help</code></td><td>Show help</td></tr>
+        <tr><td><code>/status</code></td><td>Show state</td></tr>
+        <tr><td><code>/doctor</code></td><td>Diagnostics</td></tr>
+      </tbody>
+    </table>
+
+    <h2>AI Providers</h2>
+    <table>
+      <thead>
+        <tr><th>Provider</th><th>Environment Variable</th><th>Models</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Anthropic</td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-opus-4-7, claude-sonnet-4-7</td></tr>
+        <tr><td>OpenAI</td><td><code>OPENAI_API_KEY</code></td><td>gpt-5.5-pro, gpt-5.5</td></tr>
+        <tr><td>Google</td><td><code>GOOGLE_API_KEY</code></td><td>gemini-3.1-pro, gemini-3.1-flash</td></tr>
+        <tr><td>DeepSeek</td><td><code>DEEPSEEK_API_KEY</code></td><td>deepseek-v4-pro, deepseek-v4-flash</td></tr>
+        <tr><td>OpenRouter</td><td><code>OPENROUTER_API_KEY</code></td><td>100+ models</td></tr>
+        <tr><td>Ollama</td><td><code>OLLAMA_HOST</code></td><td>Local models</td></tr>
+        <tr><td>xAI</td><td><code>XAI_API_KEY</code></td><td>grok-4</td></tr>
+        <tr><td>Mistral</td><td><code>MISTRAL_API_KEY</code></td><td>mistral-large-4</td></tr>
+        <tr><td>Groq</td><td><code>GROQ_API_KEY</code></td><td>llama-4-70b</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Plugins</h2>
+    <table>
+      <thead>
+        <tr><th>Plugin</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>commit-commands</td><td>Git workflow (commit, push, PR)</td></tr>
+        <tr><td>code-review</td><td>PR code review</td></tr>
+        <tr><td>feature-dev</td><td>Feature dev with agents</td></tr>
+        <tr><td>frontend-design</td><td>UI/UX skill</td></tr>
+        <tr><td>security-guidance</td><td>Security hooks (disabled by default)</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Bundled Skills</h2>
+    <table>
+      <thead>
+        <tr><th>Skill</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>verify</td><td>Typecheck, lint, build, test</td></tr>
+        <tr><td>debug</td><td>Debugging assistance</td></tr>
+        <tr><td>commit</td><td>Conventional git commit</td></tr>
+        <tr><td>simplify</td><td>Code quality review</td></tr>
+        <tr><td>update-config</td><td>Settings configuration</td></tr>
+        <tr><td>remember</td><td>Save preferences</td></tr>
+        <tr><td>web-search</td><td>Web search</td></tr>
+        <tr><td>scrapling</td><td>Web scraping</td></tr>
+        <tr><td>batch</td><td>Batch operations</td></tr>
+        <tr><td>keybindings</td><td>Keybinding reference</td></tr>
+        <tr><td>skillify</td><td>Create skills from workflows</td></tr>
+        <tr><td>stuck</td><td>Help when stuck</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Recent Updates (v2.1.145)</h2>
+    <ul>
+      <li><strong>KiloCompact</strong> — Local context compaction: log/trace snipping, failed-state consolidation, semantic turn pruning</li>
+      <li><strong><code>/resume &lt;N&gt;</code></strong> — Resume last N exchanges with number argument</li>
+      <li><strong><code>--resume &lt;N&gt;</code></strong> — Resume from CLI with last N exchanges</li>
+      <li><strong>Arc Spinner</strong> — Smooth 6-frame status spinner</li>
+      <li><strong>Context Usage Bar Freeze</strong> — No more 0% collapse during streaming</li>
+      <li><strong>Recent Models</strong> — Recently used models shown at top of <code>/model</code> picker</li>
+      <li><strong>Background Sessions</strong> — <code>claude ps</code>, <code>stop</code>, <code>attach</code>, <code>--bg</code> with <code>--name</code> support</li>
+      <li><strong>MCP Pagination</strong> — <code>tools/list</code> handles paginated responses</li>
+      <li><strong>Permission Cycle Fixed</strong> — <code>bypassPermissions</code> no longer cycles incorrectly</li>
+      <li><strong>Windows Support</strong> — Background session commands work on Windows</li>
+      <li><strong>IDE Model Sync</strong> — Model changes apply at runtime</li>
+    </ul>
+
+    <p>Full changelog: <a href="https://github.com/JonusNattapong/ClaudeCode/blob/main/CHANGELOG.md">CHANGELOG.md</a></p>
+
+    <h2>Links</h2>
+    <ul>
+      <li><a href="https://github.com/JonusNattapong/ClaudeCode">GitHub Repository</a></li>
+      <li><a href="https://github.com/JonusNattapong/ClaudeCode/issues">Issue Tracker</a></li>
+      <li><a href="https://npmjs.com/package/cephcode">npm Package</a></li>
+    </ul>
+  </main>
 
   <footer class="footer">
-    <p>Ceph Code Documentation — <a href="https://github.com/JonusNattapong/ClaudeCode">GitHub Repository</a></p>
+    <p>Ceph Code v2.1.145 — <a href="https://github.com/JonusNattapong/ClaudeCode">GitHub</a></p>
   </footer>
-  <div class="sidebar-overlay"></div>
+
   <script src="js/main.js"></script>
 </body>
 </html>

@@ -1,6 +1,9 @@
-import { getSentinelCategory } from '@ant/computer-use-mcp/sentinelApps';
-import type { CuPermissionRequest, CuPermissionResponse } from '@ant/computer-use-mcp/types';
-import { DEFAULT_GRANT_FLAGS } from '@ant/computer-use-mcp/types';
+// Sentinel apps categorization — stubbed for cross-platform support
+function getSentinelCategory(_bundleId: string): 'system' | 'browser' | 'settings' | 'appStore' | 'other' | undefined {
+  return undefined;
+}
+import type { CuPermissionRequest, CuPermissionResponse } from '../../../utils/computerUse/hostAdapter.js';
+import { DEFAULT_GRANT_FLAGS } from '../../../utils/computerUse/hostAdapter.js';
 import figures from 'figures';
 import type * as React from 'react';
 import { useMemo, useState } from 'react';

@@ -31,6 +31,7 @@ type Props = {
 type OAuthStatus =
   | { state: 'idle' } // Initial state, waiting to select login method
   | { state: 'platform_setup' } // Show platform setup info (Bedrock/Vertex/Foundry)
+  | { state: 'local_profile' } // Ceph Code local profile — skip OAuth, use config
   | { state: 'ready_to_start' } // Flow started, waiting for browser to open
   | { state: 'waiting_for_login'; url: string } // Browser opened, waiting for user to login
   | { state: 'creating_api_key' } // Got access token, creating API key
@@ -126,6 +127,18 @@ export function ConsoleOAuthFlow({
     {
       context: 'Confirmation',
       isActive: oauthStatus.state === 'platform_setup',
+    },
+  );
+
+  // Handle Enter to continue with local profile (skip OAuth)
+  useKeybinding(
+    'confirm:yes',
+    () => {
+      onDone();
+    },
+    {
+      context: 'Confirmation',
+      isActive: oauthStatus.state === 'local_profile',
     },
   );
 
@@ -440,11 +453,23 @@ function OAuthStatusMessage({
                   ),
                   value: 'platform',
                 },
+                {
+                  label: (
+                    <Text>
+                      Ceph Code local profile · <Text dimColor>OpenAI, DeepSeek, OpenRouter, or other providers</Text>
+                      {'\n'}
+                    </Text>
+                  ),
+                  value: 'local',
+                },
               ]}
               onChange={value => {
                 if (value === 'platform') {
                   logEvent('tengu_oauth_platform_selected', {});
                   setOAuthStatus({ state: 'platform_setup' });
+                } else if (value === 'local') {
+                  logEvent('tengu_oauth_local_selected', {});
+                  setOAuthStatus({ state: 'local_profile' });
                 } else {
                   setOAuthStatus({ state: 'ready_to_start' });
                   if (value === 'claudeai') {
@@ -503,6 +528,39 @@ function OAuthStatusMessage({
                 Press <Text bold>Enter</Text> to go back to login options.
               </Text>
             </Box>
+          </Box>
+        </Box>
+      );
+
+    case 'local_profile':
+      return (
+        <Box flexDirection="column" gap={1} marginTop={1}>
+          <Text bold>Ceph Code — Local Profile</Text>
+          <Text>
+            Using your configured provider profile. No Anthropic authentication required.
+          </Text>
+          <Box flexDirection="column" gap={1} marginTop={1}>
+            <Text>
+              Set your provider via environment variables or the onboarding wizard:
+            </Text>
+            <Text>
+              · <Text bold>DEEPSEEK_API_KEY</Text> for DeepSeek
+            </Text>
+            <Text>
+              · <Text bold>OPENAI_API_KEY</Text> for OpenAI
+            </Text>
+            <Text>
+              · <Text bold>OPENROUTER_API_KEY</Text> for OpenRouter
+            </Text>
+            <Text>
+              · <Text bold>GOOGLE_API_KEY</Text> for Google/Gemini
+            </Text>
+          </Box>
+          <Box marginTop={1}>
+            <Text>
+              Run <Text bold>/onboarding</Text> to configure, or press{' '}
+              <Text bold>Enter</Text> to continue with current config.
+            </Text>
           </Box>
         </Box>
       );

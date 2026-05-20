@@ -43,7 +43,7 @@ export function IdeOnboardingDialog({ onDone, installationStatus }: Props): Reac
         title={
           <>
             <Text color="claude">✻ </Text>
-            <Text>Welcome to Claude Code for {ideName}</Text>
+            <Text>Welcome to Ceph Code for {ideName}</Text>
           </>
         }
         subtitle={installedVersion ? `installed ${pluginOrExtension} v${installedVersion}` : undefined}

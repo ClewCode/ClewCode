@@ -33,6 +33,10 @@ type BaseOption<T> = {
 
 export type OptionWithDescription<T = string> =
   | (BaseOption<T> & {
+      type: 'section';
+      disabled: true;
+    })
+  | (BaseOption<T> & {
       type?: 'text';
     })
   | (BaseOption<T> & {
@@ -316,6 +320,16 @@ export function Select<T>({
           const isFocused = !isDisabled && state.focusedValue === option.value;
           const isSelected = state.value === option.value;
 
+          if (option.type === 'section') {
+            return (
+              <Box key={String(option.value)} paddingLeft={1} marginTop={option.index === 0 ? 0 : 1}>
+                <Text color="remember" bold>
+                  {option.label}
+                </Text>
+              </Box>
+            );
+          }
+
           // Handle input type options
           if (option.type === 'input') {
             const inputValue = inputValues.has(option.value)
@@ -433,6 +447,16 @@ export function Select<T>({
 
           const isFocused = !isDisabled && state.focusedValue === option.value;
           const isSelected = state.value === option.value;
+
+          if (option.type === 'section') {
+            return (
+              <Box key={String(option.value)} paddingLeft={1} marginTop={option.index === 0 ? 0 : 1}>
+                <Text color="remember" bold>
+                  {option.label}
+                </Text>
+              </Box>
+            );
+          }
 
           // Handle input type options
           if (option.type === 'input') {
@@ -668,6 +692,16 @@ export function Select<T>({
   return (
     <Box {...styles.container()}>
       {state.visibleOptions.map((option, index) => {
+        if (option.type === 'section') {
+          return (
+            <Box key={String(option.value)} paddingLeft={1} marginTop={option.index === 0 ? 0 : 1}>
+              <Text color="remember" bold>
+                {option.label}
+              </Text>
+            </Box>
+          );
+        }
+
         // Handle input type options
         if (option.type === 'input') {
           const inputValue = inputValues.has(option.value) ? inputValues.get(option.value)! : option.initialValue || '';

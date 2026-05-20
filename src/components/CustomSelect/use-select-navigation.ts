@@ -64,6 +64,31 @@ type ResetAction<T> = {
   state: State<T>;
 };
 
+type NavigableOption<T> = {
+  value: T;
+  disabled?: boolean;
+  previous?: NavigableOption<T>;
+  next?: NavigableOption<T>;
+};
+
+function nextEnabledOption<T>(item: NavigableOption<T> | undefined, fallback: NavigableOption<T> | undefined) {
+  let next = item?.next ?? fallback;
+  const start = next;
+  while (next?.disabled && next.next && next.next !== start) {
+    next = next.next;
+  }
+  return next?.disabled ? undefined : next;
+}
+
+function previousEnabledOption<T>(item: NavigableOption<T> | undefined, fallback: NavigableOption<T> | undefined) {
+  let previous = item?.previous ?? fallback;
+  const start = previous;
+  while (previous?.disabled && previous.previous && previous.previous !== start) {
+    previous = previous.previous;
+  }
+  return previous?.disabled ? undefined : previous;
+}
+
 const reducer = <T>(state: State<T>, action: Action<T>): State<T> => {
   switch (action.type) {
     case 'focus-next-option': {
@@ -77,8 +102,8 @@ const reducer = <T>(state: State<T>, action: Action<T>): State<T> => {
         return state;
       }
 
-      // Wrap to first item if at the end
-      const next = item.next || state.optionMap.first;
+      // Wrap to first selectable item if at the end
+      const next = nextEnabledOption(item, state.optionMap.first);
 
       if (!next) {
         return state;
@@ -126,8 +151,8 @@ const reducer = <T>(state: State<T>, action: Action<T>): State<T> => {
         return state;
       }
 
-      // Wrap to last item if at the beginning
-      const previous = item.previous || state.optionMap.last;
+      // Wrap to last selectable item if at the beginning
+      const previous = previousEnabledOption(item, state.optionMap.last);
 
       if (!previous) {
         return state;
@@ -401,7 +426,8 @@ const createDefaultState = <T>({
 
   const optionMap = new OptionMap<T>(options);
   const focusedItem = initialFocusValue !== undefined && optionMap.get(initialFocusValue);
-  const focusedValue = focusedItem ? initialFocusValue : optionMap.first?.value;
+  const firstEnabledItem = nextEnabledOption(undefined, optionMap.first);
+  const focusedValue = focusedItem && !focusedItem.disabled ? initialFocusValue : firstEnabledItem?.value;
 
   let visibleFromIndex = 0;
   let visibleToIndex = visibleOptionCount;
@@ -544,8 +570,8 @@ export function useSelectNavigation<T>({
     if (exists) {
       return state.focusedValue;
     }
-    // Fall back to first option if focused value doesn't exist
-    return options[0]?.value;
+    // Fall back to first selectable option if focused value doesn't exist
+    return nextEnabledOption(undefined, state.optionMap.first)?.value;
   }, [state.focusedValue, options]);
 
   const isInInput = useMemo(() => {

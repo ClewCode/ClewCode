@@ -616,6 +616,27 @@ export const SettingsSchema = lazySchema(() =>
         .boolean()
         .optional()
         .describe('When true, fast mode does not persist across sessions. Each session starts with fast mode off.'),
+      antBetas: z
+        .object({
+          cliInternal: z
+            .boolean()
+            .optional()
+            .describe('Enable cli-internal-2026-02-09 beta (ant internal features)'),
+          connectorText: z
+            .boolean()
+            .optional()
+            .describe('Enable summarize-connector-text-2026-03-13 beta (anti-distillation)'),
+          tokenEfficientTools: z
+            .boolean()
+            .optional()
+            .describe('Enable token-efficient-tools-2026-03-28 beta (~4.5% output token reduction)'),
+          numericEffort: z
+            .boolean()
+            .optional()
+            .describe('Enable numeric effort override in thinking config'),
+        })
+        .optional()
+        .describe('Enable ant-only beta features. Requires backend support from Anthropic API.'),
       promptSuggestionEnabled: z
         .boolean()
         .optional()

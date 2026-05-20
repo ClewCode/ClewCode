@@ -158,6 +158,7 @@ import {
 } from 'src/utils/fastMode.js';
 import { returnValue } from 'src/utils/generators.js';
 import { headlessProfilerCheckpoint } from 'src/utils/headlessProfiler.js';
+import { getAntBetaSettings } from 'src/utils/antBetas.js';
 import { isMcpInstructionsDeltaEnabled } from 'src/utils/mcpInstructionsDelta.js';
 import { calculateUSDCost, calculateUSDCostFromProviderUsage } from 'src/utils/modelCost.js';
 import { endQueryProfile, queryCheckpoint } from 'src/utils/queryProfiler.js';
@@ -185,6 +186,7 @@ import {
   getProviderRegistryEntry,
   PROVIDER_REGISTRY,
   type ProviderId,
+  shouldUseExplicitPromptCaching,
 } from '../ai/providerRegistry.js';
 import { parseToolCalls } from '../ai/toolCallParser.js';
 /* eslint-enable @typescript-eslint/no-require-imports */
@@ -328,6 +330,15 @@ export function getExtraBodyParams(betaHeaders?: string[]): JsonObject {
 }
 
 export function getPromptCachingEnabled(model: string): boolean {
+  // Check if the current provider supports explicit cache_control markers
+  try {
+    const activeProvider = ProviderManager.getInstance().getActiveProviderName();
+    if (!shouldUseExplicitPromptCaching(activeProvider)) return false;
+  } catch {
+    // If we can't determine the provider, assume no caching
+    return false;
+  }
+
   // Global disable takes precedence
   if (isEnvTruthy(process.env.DISABLE_PROMPT_CACHING)) return false;
 
@@ -438,7 +449,7 @@ function configureEffortParams(
     // Send string effort level as is
     outputConfig.effort = effortValue as any;
     betas.push(EFFORT_BETA_HEADER);
-  } else if (process.env.USER_TYPE === 'ant') {
+  } else if (getAntBetaSettings().numericEffort) {
     // Numeric effort override - ant-only (uses anthropic_internal)
     const existingInternal = (extraBodyParams.anthropic_internal as Record<string, unknown>) || {};
     extraBodyParams.anthropic_internal = {
