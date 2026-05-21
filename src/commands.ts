@@ -121,6 +121,8 @@ import chrome from './commands/chrome/index.js';
 import ant from './commands/ant/index.js';
 import stickers from './commands/stickers/index.js';
 import goal from './commands/goal/index.js';
+import daemonCmd from './commands/daemon/index.js';
+import taskCmd from './commands/task/index.js';
 import scrollSpeed from './commands/scroll-speed/index.js';
 import searxng from './commands/searxng/index.js';
 import pluginDetails from './commands/plugin-details/index.js';
@@ -244,6 +246,7 @@ const COMMANDS = memoize((): Command[] => [
   context,
   contextNonInteractive,
   cost,
+  daemonCmd,
   diff,
   doctor,
   effort,
@@ -283,6 +286,7 @@ const COMMANDS = memoize((): Command[] => [
   skills,
   stats,
   status,
+  taskCmd,
   stickers,
   theme,
   feedback,
