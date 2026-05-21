@@ -8,6 +8,55 @@ This project follows a practical changelog format based on:
 - `Fixed` for bug fixes
 - `Security` for permission, sandbox, auth, and trust-related hardening
 - `Internal` for tests, types, refactors, and developer-facing implementation work
+## [2.1.153] - 2026-05-21
+
+### Security
+
+- **Prompt injection boundary** — Worker task prompts now wrap user-controlled descriptions in `<policy>` + `<task_data>` XML tags with explicit system override instructions. `sanitizeForXml()` strips control characters and CDATA closure injection.
+
+### Added
+
+- **Task lease/lock system** — `leaseTask()` / `releaseLease()` / `expireLeases()` prevents duplicate task execution when multiple daemon processes or crash-restart cycles occur. Expired leases auto-recover tasks to pending state.
+- **Retry dead-letter & backoff** — New `dead_letter` status. Exponential backoff (base×2^count, capped 1h). Tasks auto-move to dead-letter after `maxRetries`. `/task requeue` re-queues manually.
+- **Project namespace** — `projectRoot` field on tasks ensures workers spawn in the correct project directory.
+- **File watcher debounce** — 300ms debounce with self-write suppression prevents file-change-trigger loops.
+- **Graceful shutdown** — SIGTERM stops accepting tasks → releases leases → kills workers → closes watcher → flushes queue → exits. Force kill after 5s timeout.
+
+### Changed
+
+- **Auto-start opt-in** — `autoStart` defaults `false`. Supervisor logs on boot: "autonomous agent auto-start disabled". Only explicit `/daemon start` enables it.
+- **`/daemon status`** — Now shows `autoStart`, `dead-lettered`, and `last error` fields.
+- **`/task show`** — Shows `projectRoot`, `lastError`, `deadLetterReason`, `leaseOwner`, `retryAfter`.
+- **`/task retry`** — Returns `dead_letter` status when max retries exceeded, with instruction to use `/task requeue`.
+
+### Internal
+
+- `taskQueue.ts` — Queue file version bumped to 2 with migration path from v1.
+- `agentLoop.ts` — Uses lease system for all task claims, dead-letter aware retry loop.
+- `supervisorIntegration.ts` — Auto-start gated behind `autoStart` config, default `false`.
+- `daemonMode.ts` — Proper signal handling with SIGTERM graceful shutdown and SIGQUIT force exit.
+- Added 13 new tests covering lease/lock, dead-letter, backoff, project namespace, injection boundary, dependency chains, and scheduling.
+
+## [2.1.152] - 2026-05-21
+
+### Added
+
+- **24/7 Autonomous Mode** — Background daemon runs continuously, picks tasks from queue, spawns worker sessions, monitors execution, and retries on failure.
+  - **Persistent task queue** (`src/services/autonomous/taskQueue.ts`) — File-backed queue at `~/.claude/daemon/tasks.json` with priorities, scheduling, dependency chains, tags, and retry counters.
+  - **Autonomous agent loop** (`src/services/autonomous/agentLoop.ts`) — Core loop with configurable concurrency (default 3 workers), 30-min task timeout, heartbeat monitoring, and error recovery.
+  - **Daemon mode** (`src/services/autonomous/daemonMode.ts`) — Entry point for supervisor-spawned background process.
+  - **Supervisor integration** (`src/services/autonomous/supervisorIntegration.ts`) — Auto-start, 30s health checks, auto-respawn on crash.
+- **`/daemon` command** — `start`, `stop`, `status`, `restart` subcommands for managing the autonomous agent.
+- **`/task` command** — `add`, `list`, `show`, `done`, `cancel`, `fail`, `retry`, `remove` subcommands for queue management.
+- **Supervisor IPC** — Added `autonomous_start`, `autonomous_stop`, `autonomous_status` commands to daemon protocol.
+
+### Internal
+
+- Created `src/services/autonomous/` with 4 modules (taskQueue, agentLoop, daemonMode, supervisorIntegration).
+- Registered `/daemon` and `/task` in `src/commands.ts`.
+- Supervisor auto-starts autonomous agent on boot (when enabled).
+- Added 12 tests for task queue CRUD, priority ordering, status filtering, and stats.
+
 ## [2.1.151] - 2026-05-21
 
 ### Fixed
@@ -26,7 +75,7 @@ This project follows a practical changelog format based on:
 
 ### Added
 
-- **Agent Runtime & Orchestration Engine (PLAN I)** — Local-first, durable orchestration engine for spawning, checkpointing, and executing complex multi-agent workflows.
+- **Agent Runtime & Orchestration Engine** — Local-first, durable orchestration engine for spawning, checkpointing, and executing complex multi-agent workflows.
   - **`src/agentRuntime/` Core Engine** — Includes `orchestrator.ts` driving agents through step-by-step state graph transitions, checkpointing state to disk, handling manual or automatic pause/resume, and routing handoffs between agent profiles.
   - **`runStore.ts` with Secret Scrubbing** — Saves and loads execution runs locally (`.ceph/runs/`) with robust token and key scrubbing rules, ensuring zero leakage of API keys (e.g., Google, Anthropic, custom keys) into diagnostic history logs.
   - **`toolGateway.ts` Security Layer** — Multi-permission agent capability gateway validating sandbox access and halting on guarded shell commands (e.g., destructive operations like `rm`, `push`) to request explicit human approval.

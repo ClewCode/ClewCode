@@ -45,7 +45,7 @@
     <section class="hero">
       <div class="hero-badge">
         <span class="dot"></span>
-        v2.1.145 — Multi-Provider AI CLI
+        v2.1.152 — Multi-Provider AI CLI
       </div>
       <h1>
         Code with<br>
@@ -139,6 +139,13 @@
         <span class="feature-tag">/agents</span>
       </div>
       <div class="feature-card">
+        <div class="feature-icon">&#x25C6;</div>
+        <h3>24/7 Autonomous Mode</h3>
+        <p>Persistent daemon with task queue, auto-scheduling, health checks, auto-respawn, and worker session orchestration.</p>
+        <span class="feature-tag">/daemon</span>
+        <span class="feature-tag">/task</span>
+      </div>
+      <div class="feature-card">
         <div class="feature-icon">&#x2691;</div>
         <h3>Smart Memory</h3>
         <p>Cross-lingual semantic search, hybrid recall (local + LLM), auto-memory capture, and team sync.</p>
@@ -199,6 +206,7 @@
         <tr><td><span style="color:var(--orange-400)">Session</span></td><td><code>/clear</code> <code>/compact</code> <code>/resume</code> <code>/session</code> <code>/rewind</code></td><td>Context and session management</td></tr>
         <tr><td><span style="color:var(--orange-400)">Config</span></td><td><code>/permissions</code> <code>/plan</code> <code>/config</code> <code>/theme</code></td><td>Settings and preferences</td></tr>
         <tr><td><span style="color:var(--orange-400)">Extend</span></td><td><code>/plugin</code> <code>/skill</code> <code>/agent</code> <code>/agents</code> <code>/mcp</code></td><td>Plugins, skills, agents, MCP</td></tr>
+        <tr><td><span style="color:var(--orange-400)">Daemon</span></td><td><code>/daemon</code> <code>/task</code></td><td>24/7 autonomous agent and task queue</td></tr>
         <tr><td><span style="color:var(--orange-400)">System</span></td><td><code>/help</code> <code>/status</code> <code>/doctor</code> <code>/exit</code></td><td>Help, diagnostics, and exit</td></tr>
       </tbody>
     </table>
@@ -254,17 +262,15 @@
     </div>
 
     <!-- ─── Changelog ─── -->
-    <h2 class="section-title" id="updates">v2.1.145 Updates</h2>
+    <h2 class="section-title" id="updates">v2.1.152 Updates</h2>
     <ul>
-      <li><strong>KiloCompact</strong> — Local context compaction with log/trace snipping and semantic pruning</li>
-      <li><strong><code>/resume &lt;N&gt;</code></strong> — Resume last N exchanges with number argument</li>
-      <li><strong>Arc Spinner</strong> — Smooth 6-frame status spinner animation</li>
-      <li><strong>Context Usage Bar</strong> — No more 0% collapse during streaming</li>
-      <li><strong>Recent Models</strong> — Recently used models at top of model picker</li>
-      <li><strong>Background Sessions</strong> — <code>ceph ps</code>, <code>stop</code>, <code>attach</code>, <code>--bg</code> support</li>
-      <li><strong>MCP Pagination</strong> — Handles paginated <code>tools/list</code> responses</li>
-      <li><strong>Permission Cycle Fix</strong> — <code>bypassPermissions</code> no longer cycles</li>
-      <li><strong>SearXNG Search</strong> — Self-hosted web search via Docker</li>
+      <li><strong>24/7 Autonomous Mode</strong> — Persistent daemon runs continuously, picks tasks from queue, spawns workers, auto-retries on failure</li>
+      <li><strong><code>/daemon</code> &amp; <code>/task</code></strong> — New slash commands to manage autonomous agent and task queue</li>
+      <li><strong>Persistent Task Queue</strong> — File-backed queue at <code>~/.claude/daemon/tasks.json</code> with priorities, scheduling, and dependency chains</li>
+      <li><strong>Auto-Start &amp; Health Checks</strong> — Supervisor auto-launches autonomous agent on boot, monitors heartbeat, respawns on crash</li>
+      <li><strong>Worker Session Orchestration</strong> — Brain agent spawns isolated worker sessions for each task via supervisor IPC</li>
+      <li><strong>Auto-Retry</strong> — Failed tasks automatically retry (configurable max attempts) before marking as failed</li>
+      <li><strong>Concurrent Worker Limit</strong> — Configurable max parallel workers (default 3) for resource management</li>
     </ul>
 
     <div style="margin-top:var(--space-lg)">
@@ -273,7 +279,7 @@
 
     <!-- ─── Footer ─── -->
     <footer class="footer">
-      <span>Ceph Code v2.1.145 — Open Source (MIT)</span>
+      <span>Ceph Code v2.1.152 — Open Source (MIT)</span>
       <div class="footer-links">
         <a href="https://github.com/CephCore/cephcode">GitHub</a>
         <a href="https://github.com/CephCore/cephcode/issues">Issues</a>

@@ -5,8 +5,8 @@
 <p align="center">
   <strong>Languages:</strong>
   <a href="README.md"><strong>English</strong></a> ·
-  <a href="readme/README_ZH.md">中文 (简体)</a> ·
-  <a href="readme/README_TH.md">ไทย</a>
+  <a href="readme/README.zh.md">中文 (简体)</a> ·
+  <a href="readme/README.th.md">ไทย</a>
 </p>
 
 # Ceph Code
@@ -62,7 +62,8 @@ Highlights:
 - **Plugin hooks** for intercepting prompts, shell commands, tool usage, and file edits.
 - **Skill loading** from bundled skills and project-level `.claude/skills/` directories.
 - **Agent and supervisor workflows** for delegating research, coding, and coordination tasks.
-- **Durable Agent Runtime & Orchestrator (PLAN I)** with offline-first execution, checkpoints, and interactive approvals.
+- **Durable Agent Runtime & Orchestrator** with offline-first execution, checkpoints, and interactive approvals.
+- **24/7 Autonomous Mode** with persistent task queue, daemon process, health checks, auto-retry, dead-letter handling, and lease-based concurrency control.
 - **Session and bridge features** for saving context, restoring work, and supporting remote collaboration.
 
 ### Compatibility Namespace
@@ -140,6 +141,8 @@ See [docs/providers.html](docs/providers.html) for the provider overview.
 /plugin     Manage plugins
 /bridge     Configure bridge mode
 /agent      Manage local agent workflows (run, status, trace, approvals, report)
+/daemon     Manage 24/7 autonomous agent daemon (start/stop/status)
+/task       Manage autonomous task queue (add/list/done/retry)
 ```
 
 Type `/` inside the CLI to discover available commands.
@@ -179,6 +182,7 @@ src/
 ├── tools/                Built-in tool implementations
 ├── services/
 │   ├── ai/               Provider manager, adapters, model registry
+│   ├── autonomous/       24/7 autonomous agent daemon & task queue
 │   ├── mcp/              MCP client and transport support
 │   ├── plugins/          Plugin lifecycle and hooks
 │   ├── tools/            Tool execution services
