@@ -1,8 +1,8 @@
 import { exec } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { AgentDefinition, AgentAction, ApprovalRequest } from './types.js';
-import { RunStore } from './runStore.js';
+import type { RunStore } from './runStore.js';
+import type { AgentAction, AgentDefinition, ApprovalRequest } from './types.js';
 
 const SENSITIVE_COMMAND_SUBSTRINGS = [
   'rm ',
@@ -33,12 +33,7 @@ export class ToolGateway {
     this.workspaceRoot = workspaceRoot;
   }
 
-  async authorize(
-    runId: string,
-    agent: AgentDefinition,
-    toolName: string,
-    input: unknown,
-  ): Promise<ToolDecision> {
+  async authorize(runId: string, agent: AgentDefinition, toolName: string, input: unknown): Promise<ToolDecision> {
     // 1. Verify agent is allowed to use this tool
     if (!agent.tools.includes(toolName)) {
       return {
@@ -120,12 +115,7 @@ export class ToolGateway {
     };
   }
 
-  async execute(
-    runId: string,
-    agentName: string,
-    toolName: string,
-    input: unknown,
-  ): Promise<Record<string, unknown>> {
+  async execute(runId: string, agentName: string, toolName: string, input: unknown): Promise<Record<string, unknown>> {
     await this.runStore.appendEvent(runId, 'tool.requested', { input }, agentName, toolName);
 
     try {
@@ -138,7 +128,12 @@ export class ToolGateway {
         const { path: filePath, startLine, endLine } = input as { path: string; startLine?: number; endLine?: number };
         output = await this.executeRepoOpen(filePath, startLine, endLine);
       } else if (toolName === 'repo.patch') {
-        const { path: filePath, patch, replacement, target } = input as { path: string; patch?: string; replacement?: string; target?: string };
+        const {
+          path: filePath,
+          patch,
+          replacement,
+          target,
+        } = input as { path: string; patch?: string; replacement?: string; target?: string };
         output = await this.executeRepoPatch(filePath, patch || replacement || '', target);
       } else if (toolName === 'shell.run') {
         const { command, timeout } = input as { command: string; timeout?: number };
@@ -208,7 +203,11 @@ export class ToolGateway {
     return results;
   }
 
-  private async executeRepoOpen(filePath: string, startLine?: number, endLine?: number): Promise<Record<string, unknown>> {
+  private async executeRepoOpen(
+    filePath: string,
+    startLine?: number,
+    endLine?: number,
+  ): Promise<Record<string, unknown>> {
     const fullPath = path.resolve(this.workspaceRoot, filePath);
     // Boundary check
     if (!fullPath.startsWith(path.resolve(this.workspaceRoot))) {

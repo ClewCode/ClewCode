@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { AgentRun, AgentState, RuntimeEvent, ApprovalRequest } from './types.js';
 import { resolveRuntimePath } from './config.js';
+import type { AgentRun, AgentState, ApprovalRequest, RuntimeEvent } from './types.js';
 
 export function scrubSecrets(input: string): string {
   if (!input) return input;
@@ -11,8 +11,8 @@ export function scrubSecrets(input: string): string {
     /(sk-[a-zA-Z0-9]{48})/g, // OpenAI API Keys
     /(key-[a-zA-Z0-9]{32})/g,
     /(ghp_[a-zA-Z0-9]{36})/g, // GitHub personal access token
-    /(bearer\s+[a-zA-Z0-9\-_\.\~+/]+=*)/gi, // Bearer Token
-    /(basic\s+[a-zA-Z0-9\-_\.\~+/]+=*)/gi, // Basic Auth
+    /(bearer\s+[a-zA-Z0-9\-_.~+/]+=*)/gi, // Bearer Token
+    /(basic\s+[a-zA-Z0-9\-_.~+/]+=*)/gi, // Basic Auth
     /("api_?key"\s*:\s*")[^"]+(")/gi, // JSON API key value
     /("token"\s*:\s*")[^"]+(")/gi, // JSON token value
     /("password"\s*:\s*")[^"]+(")/gi, // JSON password value
@@ -136,7 +136,13 @@ export class RunStore {
     }
   }
 
-  async appendEvent(runId: string, eventType: RuntimeEvent['type'], data?: Record<string, unknown>, agent?: string, tool?: string): Promise<RuntimeEvent> {
+  async appendEvent(
+    runId: string,
+    eventType: RuntimeEvent['type'],
+    data?: Record<string, unknown>,
+    agent?: string,
+    tool?: string,
+  ): Promise<RuntimeEvent> {
     const eventDir = this.getRunDir(runId);
     const eventsPath = path.join(eventDir, 'events.jsonl');
     const event: RuntimeEvent = {

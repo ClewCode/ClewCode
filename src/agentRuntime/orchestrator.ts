@@ -1,26 +1,22 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { AgentRegistry } from './agentRegistry.js';
+import { ReportBuilder } from './reportBuilder.js';
+import { RunStore } from './runStore.js';
+import { ToolGateway } from './toolGateway.js';
 import type {
+  AgentAction,
+  AgentDefinition,
   AgentRun,
   AgentState,
-  AgentAction,
-  RuntimeEvent,
   ApprovalRequest,
+  RuntimeEvent,
   WorkflowDefinition,
-  AgentDefinition,
 } from './types.js';
-import { RunStore } from './runStore.js';
-import { AgentRegistry } from './agentRegistry.js';
 import { WorkflowRegistry } from './workflowRegistry.js';
-import { ToolGateway } from './toolGateway.js';
-import { ReportBuilder } from './reportBuilder.js';
 
 export interface LLMAdapter {
-  nextAction(
-    agent: AgentDefinition,
-    contextText: string,
-    history: RuntimeEvent[],
-  ): Promise<AgentAction>;
+  nextAction(agent: AgentDefinition, contextText: string, history: RuntimeEvent[]): Promise<AgentAction>;
 }
 
 // Highly robust Mock LLM Adapter for deterministic offline tests and fallback
@@ -33,11 +29,7 @@ export class MockLLMAdapter implements LLMAdapter {
     this.actionIndex[agentName] = 0;
   }
 
-  async nextAction(
-    agent: AgentDefinition,
-    contextText: string,
-    history: RuntimeEvent[],
-  ): Promise<AgentAction> {
+  async nextAction(agent: AgentDefinition, contextText: string, history: RuntimeEvent[]): Promise<AgentAction> {
     const name = agent.name;
     const actions = this.presetActions[name] || [];
     const index = this.actionIndex[name] || 0;
@@ -82,10 +74,7 @@ export class Orchestrator {
   private llmAdapter: LLMAdapter;
   private workspaceRoot: string;
 
-  constructor(
-    workspaceRoot: string,
-    llmAdapter?: LLMAdapter,
-  ) {
+  constructor(workspaceRoot: string, llmAdapter?: LLMAdapter) {
     this.workspaceRoot = workspaceRoot;
     this.runStore = new RunStore(workspaceRoot);
     this.agentRegistry = new AgentRegistry(workspaceRoot);
@@ -149,7 +138,7 @@ export class Orchestrator {
     await this.runStore.saveState(runId, state);
 
     await this.runStore.appendEvent(runId, 'run.started', { resumed: true });
-    
+
     // Resume core loop in background/async trigger
     this.runLoop(runId).catch(console.error);
   }
@@ -224,10 +213,7 @@ export class Orchestrator {
     }
   }
 
-  async runLoop(
-    runId: string,
-    options?: { resumeFromToolCall?: string; toolInput?: unknown },
-  ): Promise<void> {
+  async runLoop(runId: string, options?: { resumeFromToolCall?: string; toolInput?: unknown }): Promise<void> {
     let run = await this.runStore.loadRun(runId);
     let state = await this.runStore.loadState(runId);
     const workflow = await this.workflowRegistry.loadWorkflow(run.workflow);
@@ -276,7 +262,13 @@ export class Orchestrator {
         const decision = await this.toolGateway.authorize(runId, agent, action.tool, action.input);
 
         if (decision.action === 'deny') {
-          await this.runStore.appendEvent(runId, 'tool.denied', { reason: decision.reason }, state.activeAgent, action.tool);
+          await this.runStore.appendEvent(
+            runId,
+            'tool.denied',
+            { reason: decision.reason },
+            state.activeAgent,
+            action.tool,
+          );
           // Pass error block back to agent
           state.step++;
           await this.runStore.saveState(runId, state);
@@ -390,11 +382,7 @@ export class Orchestrator {
     state.taskSummary = summary;
     await this.runStore.saveState(runId, state);
 
-    await this.runStore.appendEvent(
-      runId,
-      status === 'completed' ? 'run.completed' : 'run.failed',
-      { summary },
-    );
+    await this.runStore.appendEvent(runId, status === 'completed' ? 'run.completed' : 'run.failed', { summary });
 
     // Save final checkpoint
     const stepPad = String(state.step).padStart(4, '0');

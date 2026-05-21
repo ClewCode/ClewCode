@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { AgentDefinition, AgentPermissions } from './types.js';
-import { resolveRuntimePath, BUILTIN_AGENTS } from './config.js';
 import { parseFrontmatter } from '../utils/frontmatterParser.js';
+import { BUILTIN_AGENTS, resolveRuntimePath } from './config.js';
+import type { AgentDefinition, AgentPermissions } from './types.js';
 
 export class AgentRegistry {
   private workspaceRoot: string;
@@ -74,14 +74,14 @@ export class AgentRegistry {
       const tools = Array.isArray(frontmatter.tools)
         ? frontmatter.tools.map(String)
         : typeof frontmatter.tools === 'string'
-        ? (frontmatter.tools as string).split(',').map(s => s.trim())
-        : [];
+          ? (frontmatter.tools as string).split(',').map(s => s.trim())
+          : [];
 
       const handoff_to = Array.isArray(frontmatter.handoff_to)
         ? frontmatter.handoff_to.map(String)
         : typeof frontmatter.handoff_to === 'string'
-        ? (frontmatter.handoff_to as string).split(',').map(s => s.trim())
-        : [];
+          ? (frontmatter.handoff_to as string).split(',').map(s => s.trim())
+          : [];
 
       const fp = (frontmatter.permissions || {}) as Record<string, unknown>;
 

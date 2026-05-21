@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { AgentDefinition, WorkflowDefinition, RuntimeBudget } from './types.js';
+import type { AgentDefinition, RuntimeBudget, WorkflowDefinition } from './types.js';
 
 export const RUNTIME_DIRS = {
   runs: '.ceph/runs',
@@ -118,18 +118,10 @@ export const BUILTIN_WORKFLOWS: Record<string, WorkflowDefinition> = {
       maxToolCalls: 160,
     },
     approval: {
-      required_for: [
-        'shell.network',
-        'shell.destructive',
-        'git.commit',
-        'git.push',
-      ],
+      required_for: ['shell.network', 'shell.destructive', 'git.commit', 'git.push'],
     },
     verification: {
-      required: [
-        'typecheck_or_explain',
-        'relevant_tests_or_explain',
-      ],
+      required: ['typecheck_or_explain', 'relevant_tests_or_explain'],
     },
   },
 };

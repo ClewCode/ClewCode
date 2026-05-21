@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { WorkflowDefinition } from './types.js';
-import { resolveRuntimePath, BUILTIN_WORKFLOWS } from './config.js';
 import { parseYaml } from '../utils/yaml.js';
+import { BUILTIN_WORKFLOWS, resolveRuntimePath } from './config.js';
+import type { WorkflowDefinition } from './types.js';
 
 export class WorkflowRegistry {
   private workspaceRoot: string;
