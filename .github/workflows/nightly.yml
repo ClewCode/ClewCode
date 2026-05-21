@@ -1,0 +1,79 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # every day at midnight UTC
+  workflow_dispatch:       # allow manual trigger
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: latest
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - run: bun test --bail
+        timeout-minutes: 10
+
+  coverage:
+    name: Coverage
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ubuntu-latest-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ubuntu-latest-bun-
+      - run: bun install --frozen-lockfile
+      - run: bun test --coverage --bail
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+  audit:
+    name: Dependency Audit
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ubuntu-latest-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ubuntu-latest-bun-
+      - run: bun install --frozen-lockfile
+      - run: bun audit

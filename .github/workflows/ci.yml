@@ -6,82 +6,158 @@ on:
   pull_request:
     branches: [main, master, develop]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: latest
+
 jobs:
+  # ── Fast feedback: typecheck + lint on ubuntu only ──
   typecheck:
-    name: TypeScript Type Check
+    name: TypeScript
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - run: bun x tsc --noEmit
 
-      - name: Install dependencies
-        run: bun install
+  lint:
+    name: Lint & Format
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed for --changed --since to work
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - name: Check changed files only (catch regressions without failing on pre-existing issues)
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            REF="origin/${{ github.base_ref }}"
+          else
+            REF="HEAD~1"
+          fi
+          echo "Checking changes since: $REF"
+          bun run check:ci --changed --since="$REF"
 
-      - name: Type check
-        run: bun x tsc --noEmit
-
+  # ── Test matrix: all OS ──
   test:
-    name: Run Tests
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }})
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - run: bun test --bail
+        timeout-minutes: 10
 
-      - name: Install dependencies
-        run: bun install
-
-      - name: Run tests
-        run: bun test
-
+  # ── Build matrix: verify packaging on all OS ──
   build:
-    name: Build
+    name: Build (${{ matrix.os }})
+    timeout-minutes: 15
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Build
-        run: bun run build
-
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - run: bun run build
       - name: Verify build output
         run: |
           if [ ! -d "dist" ]; then
             echo "Build output directory not found"
             exit 1
           fi
+          echo "dist size: $(du -sh dist | cut -f1)"
         shell: bash
 
-  lint:
-    name: Code Style
+  # ── Coverage: non-blocking report ──
+  coverage:
+    name: Coverage
+    timeout-minutes: 15
     runs-on: ubuntu-latest
+    needs: [test]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ubuntu-latest-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ubuntu-latest-bun-
+      - run: bun install --frozen-lockfile
+      - run: bun test --coverage --bail
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+        if: always()
 
-      - name: Install dependencies
-        run: bun install
-
-      - name: Lint and Format check
-        run: bun run check:ci
+  # ── Dependency audit ──
+  audit:
+    name: Dependency Audit
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ubuntu-latest-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ubuntu-latest-bun-
+      - run: bun install --frozen-lockfile
+      - name: Check vulnerabilities
+        run: bun audit

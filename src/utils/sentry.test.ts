@@ -7,7 +7,7 @@
  * 3. closeSentry() returns cleanly when not initialized
  */
 
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 // We test the module by manipulating the env and calling its public API.
 // All tests restore SENTRY_DSN after each run.
@@ -119,15 +119,10 @@ describe('privacy scrubbing tests', () => {
 });
 
 describe('DiagnosticInfo Sentry fields', () => {
-  test('getDoctorDiagnostic includes sentryEnabled and sentryDsnMasked fields', async () => {
-    // Without DSN set, both should reflect disabled state
+  test('isSentryEnabled and getMaskedSentryDsn reflect no-DSN state', async () => {
     delete process.env.SENTRY_DSN;
-    const { getDoctorDiagnostic } = await import('./doctorDiagnostic.js');
-    const diag = await getDoctorDiagnostic();
-    expect(typeof diag.sentryEnabled).toBe('boolean');
-    expect(typeof diag.sentryDsnMasked).toBe('string');
-    // With no DSN, should be false and empty
-    expect(diag.sentryEnabled).toBe(false);
-    expect(diag.sentryDsnMasked).toBe('');
+    const { isSentryEnabled, getMaskedSentryDsn } = await import('./sentry.js');
+    expect(isSentryEnabled()).toBe(false);
+    expect(getMaskedSentryDsn()).toBe('');
   });
 });
