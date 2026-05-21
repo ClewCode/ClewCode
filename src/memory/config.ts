@@ -48,7 +48,7 @@ export function getDefaultConfig(rootDir: string): CephMemoryConfig {
       '**/id_rsa',
       '**/id_ed25519',
       '**/.env',
-      '**/.env.*'
+      '**/.env.*',
     ],
   };
 }

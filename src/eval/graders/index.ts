@@ -1,8 +1,8 @@
-import type { GraderConfig, EvalTask, GraderResult } from '../types.js';
-import { runCommandGrader } from './command.js';
-import { runTraceGrader } from './trace.js';
+import type { EvalTask, GraderConfig, GraderResult } from '../types.js';
 import { runArtifactGrader } from './artifact.js';
+import { runCommandGrader } from './command.js';
 import { runRuleGrader } from './rule.js';
+import { runTraceGrader } from './trace.js';
 
 export interface GraderContext {
   workspaceDir: string;
@@ -14,7 +14,7 @@ export interface GraderContext {
 export async function gradeWithGrader(
   grader: GraderConfig,
   task: EvalTask,
-  context: GraderContext
+  context: GraderContext,
 ): Promise<GraderResult> {
   try {
     switch (grader.type) {

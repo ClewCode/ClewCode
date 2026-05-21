@@ -1,9 +1,9 @@
-import { readFile, writeFile, unlink } from 'fs/promises';
-import { join, basename } from 'path';
+import { readFile, unlink, writeFile } from 'fs/promises';
+import { basename, join } from 'path';
 import { getFsImplementation } from '../utils/fsOperations.js';
+import { getMemoryDb } from './db.js';
 import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.js';
 import { deleteSource, getAllSources } from './store.js';
-import { getMemoryDb } from './db.js';
 import type { MemoryMetadata, MemoryType } from './types.js';
 
 export interface PendingSuggestion {
@@ -18,7 +18,7 @@ export interface PendingSuggestion {
 export async function proposeMemory(
   cwd: string,
   observation: string,
-  target: 'user' | 'project' | 'feedback' | 'agent' = 'project'
+  target: 'user' | 'project' | 'feedback' | 'agent' = 'project',
 ): Promise<string> {
   const fsImpl = getFsImplementation();
   const pendingDir = join(cwd, '.ceph', 'memory', 'pending');

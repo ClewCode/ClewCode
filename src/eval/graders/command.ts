@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import type { GraderConfig, EvalTask, GraderResult } from '../types.js';
+import type { EvalTask, GraderConfig, GraderResult } from '../types.js';
 import type { GraderContext } from './index.js';
 
 const execPromise = promisify(exec);
@@ -8,7 +8,7 @@ const execPromise = promisify(exec);
 export async function runCommandGrader(
   grader: GraderConfig,
   task: EvalTask,
-  context: GraderContext
+  context: GraderContext,
 ): Promise<GraderResult> {
   const commands = grader.commands || [];
   const expectedExitCode = grader.passWhen?.exitCode ?? 0;
@@ -29,7 +29,9 @@ export async function runCommandGrader(
     } catch (err: any) {
       const exitCode = err.code ?? 1;
       if (exitCode !== expectedExitCode) {
-        failureReasons.push(`Command "${cmd}" exited with code ${exitCode} (expected ${expectedExitCode}). Output: ${err.stdout || ''} ${err.stderr || ''}`);
+        failureReasons.push(
+          `Command "${cmd}" exited with code ${exitCode} (expected ${expectedExitCode}). Output: ${err.stdout || ''} ${err.stderr || ''}`,
+        );
       }
     }
   }

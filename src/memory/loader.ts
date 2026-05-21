@@ -1,7 +1,7 @@
-import { readFile, readdir, stat } from 'fs/promises';
-import { join, relative, basename } from 'path';
+import { readdir, readFile, stat } from 'fs/promises';
+import { basename, join, relative } from 'path';
 import { getFsImplementation } from '../utils/fsOperations.js';
-import { parseFrontmatter, type ParsedMemory } from './frontmatter.js';
+import { type ParsedMemory, parseFrontmatter } from './frontmatter.js';
 import type { MemoryType } from './types.js';
 
 export interface ScannedMemoryDocument extends ParsedMemory {
@@ -15,7 +15,7 @@ export async function scanDirectory(
   dirPath: string,
   baseDir: string,
   defaultType: MemoryType,
-  excludeGlobs: string[] = []
+  excludeGlobs: string[] = [],
 ): Promise<ScannedMemoryDocument[]> {
   const fsImpl = getFsImplementation();
   if (!fsImpl.existsSync(dirPath)) return [];

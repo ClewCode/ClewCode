@@ -1,27 +1,19 @@
-import { describe, expect, test, beforeAll, afterAll } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { rm, mkdir, writeFile } from 'fs/promises';
 import { getFsImplementation } from '../utils/fsOperations.js';
-
-import { initMemoryWorkspace, getMemoryWorkspaceStatus } from './workspace.js';
-import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.js';
-import { redactSecrets } from './redact.js';
-import { chunkMarkdown, estimateTokenCount } from './chunker.js';
-import { getMemoryDb, closeMemoryDb } from './db.js';
-import {
-  getSource,
-  upsertSource,
-  deleteSource,
-  insertChunks,
-  getAllSources,
-  searchChunksFTS
-} from './store.js';
-import { ingestMemoryWorkspace } from './ingest.js';
-import { proposeMemory, listPending, approveMemory, rejectMemory, forgetMemory } from './pending.js';
-import { searchMemories } from './search.js';
-import { writeRunSummary } from './runs/runWriter.js';
 import { injectMemoryIntoPrompt } from '../utils/injectMemoryIntoPrompt.js';
-import type { MemoryMetadata, SourceDocument, MemoryChunk } from './types.js';
+import { chunkMarkdown, estimateTokenCount } from './chunker.js';
+import { closeMemoryDb, getMemoryDb } from './db.js';
+import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.js';
+import { ingestMemoryWorkspace } from './ingest.js';
+import { approveMemory, forgetMemory, listPending, proposeMemory, rejectMemory } from './pending.js';
+import { redactSecrets } from './redact.js';
+import { writeRunSummary } from './runs/runWriter.js';
+import { searchMemories } from './search.js';
+import { deleteSource, getAllSources, getSource, insertChunks, searchChunksFTS, upsertSource } from './store.js';
+import type { MemoryChunk, MemoryMetadata, SourceDocument } from './types.js';
+import { getMemoryWorkspaceStatus, initMemoryWorkspace } from './workspace.js';
 
 const tempCwd = join(process.cwd(), 'temp-test-memory-workspace');
 
@@ -74,7 +66,7 @@ describe('Ceph Memory System (PLAN E)', () => {
       'tags: [conventions, test]',
       '---',
       '# Coding Conventions',
-      'Use spaces not tabs.'
+      'Use spaces not tabs.',
     ].join('\n');
 
     const parsed = parseFrontmatter(sampleText, 'default-id', 'project');
@@ -97,7 +89,7 @@ describe('Ceph Memory System (PLAN E)', () => {
       'anthropic_key = "sk-ant-w4289y289fh289gh9283gh928h928h9"',
       'openai_key = sk-3298h49823hf9832hf9832hf9832hf98',
       'github_pat_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmn',
-      'DATABASE_URL = postgres://user:secretpassword123@localhost:5432/mydb'
+      'DATABASE_URL = postgres://user:secretpassword123@localhost:5432/mydb',
     ].join('\n');
 
     const redacted = redactSecrets(textWithSecrets);
@@ -112,7 +104,7 @@ describe('Ceph Memory System (PLAN E)', () => {
       '# Section 1',
       'This is a line of text.',
       '## Section 2',
-      'Some more text goes here to fill the tokens.'
+      'Some more text goes here to fill the tokens.',
     ].join('\n');
 
     const tokens = estimateTokenCount(text);
@@ -160,7 +152,7 @@ describe('Ceph Memory System (PLAN E)', () => {
         truthPriority: 60,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      }
+      },
     ];
 
     insertChunks(db, chunks, 'Coding Conventions');
@@ -244,9 +236,9 @@ describe('Ceph Memory System (PLAN E)', () => {
         {
           timestamp: new Date().toISOString(),
           type: 'info',
-          message: 'Running suite tests'
-        }
-      ]
+          message: 'Running suite tests',
+        },
+      ],
     );
 
     const fsImpl = getFsImplementation();
@@ -269,8 +261,8 @@ describe('Ceph Memory System (PLAN E)', () => {
         score: 0.95,
         contentHash: 'hash-1',
         lastSeenAt: new Date().toISOString(),
-        stale: false
-      }
+        stale: false,
+      },
     ];
 
     const injected = injectMemoryIntoPrompt(userPrompt, matches);

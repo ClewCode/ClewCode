@@ -60,7 +60,10 @@ export function parseFrontmatter(text: string, defaultId: string, defaultType: M
     } else if (key === 'tags') {
       // Tags might be YAML array or comma-separated list
       if (val.startsWith('[') && val.endsWith(']')) {
-        metadata.tags = val.slice(1, -1).split(',').map(t => t.trim().replace(/['"]/g, ''));
+        metadata.tags = val
+          .slice(1, -1)
+          .split(',')
+          .map(t => t.trim().replace(/['"]/g, ''));
       } else {
         metadata.tags = val.split(',').map(t => t.trim());
       }

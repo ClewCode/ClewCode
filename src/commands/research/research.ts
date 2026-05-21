@@ -1,16 +1,11 @@
 import { join } from 'path';
-import type { LocalCommandCall } from '../../types/command.js';
+import { buildCitations, formatBibliography } from '../../research/citations.js';
+import { extractClaimsFromText } from '../../research/claims.js';
 import { collectLocalMemory } from '../../research/collectors/localMemory.js';
 import { collectLocalRepo } from '../../research/collectors/localRepo.js';
 import { collectLocalWiki } from '../../research/collectors/localWiki.js';
-import { readSourceDocument } from '../../research/sourceReader.js';
 import { createResearchPlan } from '../../research/planner.js';
-import { extractClaimsFromText } from '../../research/claims.js';
-import { buildCitations, formatBibliography } from '../../research/citations.js';
 import { buildResearchReport } from '../../research/reportBuilder.js';
-import { saveReportToWiki } from '../../research/saveToWiki.js';
-import { savePendingMemory } from '../../research/savePendingMemory.js';
-import { getFsImplementation } from '../../utils/fsOperations.js';
 import {
   appendClaimToRun,
   appendSourceToRun,
@@ -23,8 +18,13 @@ import {
   writePlanToRun,
   writeReportToRun,
 } from '../../research/runStore.js';
-import { getResearchWorkspaceStatus, initWorkspace } from '../../research/workspace.js';
+import { savePendingMemory } from '../../research/savePendingMemory.js';
+import { saveReportToWiki } from '../../research/saveToWiki.js';
+import { readSourceDocument } from '../../research/sourceReader.js';
 import type { ResearchMode } from '../../research/types.js';
+import { getResearchWorkspaceStatus, initWorkspace } from '../../research/workspace.js';
+import type { LocalCommandCall } from '../../types/command.js';
+import { getFsImplementation } from '../../utils/fsOperations.js';
 
 export const call: LocalCommandCall = async (args, context) => {
   const cwd = process.cwd();
@@ -59,7 +59,10 @@ export const call: LocalCommandCall = async (args, context) => {
 
   if (queryAndFlags.includes('--mode')) {
     const modeIdx = queryAndFlags.indexOf('--mode');
-    const modePart = queryAndFlags.slice(modeIdx + 6).trim().split(/\s+/)[0];
+    const modePart = queryAndFlags
+      .slice(modeIdx + 6)
+      .trim()
+      .split(/\s+/)[0];
     if (modePart) {
       mode = modePart as ResearchMode;
     }
@@ -181,7 +184,10 @@ export const call: LocalCommandCall = async (args, context) => {
     case 'open': {
       const sourceId = query; // argv[1]
       if (!sourceId) {
-        return { type: 'text', value: 'Error: Please specify a source-id. Example: `/research open source:wiki:Research`.' };
+        return {
+          type: 'text',
+          value: 'Error: Please specify a source-id. Example: `/research open source:wiki:Research`.',
+        };
       }
 
       const latest = await getLatestRun(cwd);
@@ -217,7 +223,7 @@ export const call: LocalCommandCall = async (args, context) => {
           `Extracted Claims for Latest Run (${latest.run.id}):`,
           ...claims.map(
             (c, i) =>
-              `${i + 1}. **[${c.id}]** ${c.claim} (Type: ${c.type}, Confidence: ${c.confidence}, Status: ${c.status})`
+              `${i + 1}. **[${c.id}]** ${c.claim} (Type: ${c.type}, Confidence: ${c.confidence}, Status: ${c.status})`,
           ),
         ].join('\n'),
       };

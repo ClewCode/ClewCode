@@ -1,10 +1,10 @@
-import type { GraderConfig, EvalTask, GraderResult } from '../types.js';
+import type { EvalTask, GraderConfig, GraderResult } from '../types.js';
 import type { GraderContext } from './index.js';
 
 export async function runRuleGrader(
   grader: GraderConfig,
   task: EvalTask,
-  context: GraderContext
+  context: GraderContext,
 ): Promise<GraderResult> {
   const failureReasons: string[] = [];
   const output = context.agentOutput || '';

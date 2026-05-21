@@ -1,12 +1,4 @@
-export type ResearchMode =
-  | 'quick'
-  | 'deep'
-  | 'compare'
-  | 'paper'
-  | 'codebase'
-  | 'trend'
-  | 'decision'
-  | 'security';
+export type ResearchMode = 'quick' | 'deep' | 'compare' | 'paper' | 'codebase' | 'trend' | 'decision' | 'security';
 
 export type ResearchSourceType =
   | 'web'

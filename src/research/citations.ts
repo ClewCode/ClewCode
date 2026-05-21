@@ -6,9 +6,7 @@ export function buildCitations(sources: ResearchSource[], claims: ResearchClaim[
 
   for (const source of sources) {
     // Find all claims that use this source
-    const usedClaims = claims
-      .filter(claim => claim.sourceIds.includes(source.id))
-      .map(claim => claim.id);
+    const usedClaims = claims.filter(claim => claim.sourceIds.includes(source.id)).map(claim => claim.id);
 
     if (usedClaims.length > 0) {
       citations.push({

@@ -5,7 +5,7 @@ export function buildResearchReport(
   query: string,
   plan: ResearchPlan,
   claims: ResearchClaim[],
-  citations: Citation[]
+  citations: Citation[],
 ): string {
   const date = new Date().toLocaleDateString('en-US', {
     year: 'numeric',

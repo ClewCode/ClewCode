@@ -1,13 +1,9 @@
 import type { Database } from 'bun:sqlite';
 import { getMemoryDb } from './db.js';
-import { searchChunksFTS, getSource } from './store.js';
+import { getSource, searchChunksFTS } from './store.js';
 import type { MemorySearchResult } from './types.js';
 
-export async function searchMemories(
-  cwd: string,
-  query: string,
-  limit: number = 10
-): Promise<MemorySearchResult[]> {
+export async function searchMemories(cwd: string, query: string, limit: number = 10): Promise<MemorySearchResult[]> {
   const db = getMemoryDb(cwd);
   const ftsMatches = searchChunksFTS(db, query, limit * 2);
 
@@ -18,7 +14,9 @@ export async function searchMemories(
     const chunkRow = db.query('SELECT * FROM chunks WHERE id = ?').get(match.id) as Record<string, any> | undefined;
     if (!chunkRow) continue;
 
-    const sourceRow = db.query('SELECT * FROM sources WHERE id = ?').get(match.sourceId) as Record<string, any> | undefined;
+    const sourceRow = db.query('SELECT * FROM sources WHERE id = ?').get(match.sourceId) as
+      | Record<string, any>
+      | undefined;
     if (!sourceRow) continue;
 
     // 2. Score match based on priority and recency
@@ -38,9 +36,9 @@ export async function searchMemories(
     }
 
     // Lexical factor: top FTS matches score higher
-    const lexicalFactor = 0.40;
+    const lexicalFactor = 0.4;
 
-    const score = Math.min(0.40 + priorityFactor * 0.45 + recencyFactor, 1.0);
+    const score = Math.min(0.4 + priorityFactor * 0.45 + recencyFactor, 1.0);
 
     results.push({
       id: match.id,

@@ -1,7 +1,7 @@
 import { readdir } from 'fs/promises';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import { getEvalConfig } from './config.js';
-import { loadTasks, loadGraders } from './taskLoader.js';
+import { loadGraders, loadTasks } from './taskLoader.js';
 
 export interface DoctorResult {
   initialized: boolean;

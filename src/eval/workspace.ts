@@ -62,7 +62,7 @@ commands:
 pass_when:
   exit_code: 0
 `,
-      'utf-8'
+      'utf-8',
     );
   }
 
@@ -75,7 +75,7 @@ type: artifact
 checks:
   max_changed_files: 5
 `,
-      'utf-8'
+      'utf-8',
     );
   }
 
@@ -92,7 +92,7 @@ rules:
       - repo.open
 fail_message: Agent patched files before reading evidence.
 `,
-      'utf-8'
+      'utf-8',
     );
   }
 
@@ -106,7 +106,7 @@ must_include:
   - "## Summary"
   - "## Decisions"
 `,
-      'utf-8'
+      'utf-8',
     );
   }
 }
@@ -139,7 +139,7 @@ budgets:
   max_steps: 10
   max_tool_calls: 5
 `,
-      'utf-8'
+      'utf-8',
     );
   }
 }

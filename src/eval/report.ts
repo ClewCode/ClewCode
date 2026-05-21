@@ -1,14 +1,14 @@
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { redactSecrets } from '../memory/redact.js';
-import type { EvalConfig, EvalResult, EvalReport, EvalTask } from './types.js';
+import type { EvalConfig, EvalReport, EvalResult, EvalTask } from './types.js';
 
 export function generateEvalReport(
   runId: string,
   results: EvalResult[],
   tasks: EvalTask[],
   baselineId?: string,
-  baselineScore?: number
+  baselineScore?: number,
 ): EvalReport {
   let totalScore = 0;
   const categoryScores: Record<string, { sum: number; count: number }> = {};
@@ -58,7 +58,7 @@ export function generateEvalReport(
     finalCategoryScores[cat] = categoryScores[cat].sum / categoryScores[cat].count;
   }
 
-  let regression: EvalReport['regression'] = undefined;
+  let regression: EvalReport['regression'];
   if (baselineId !== undefined && baselineScore !== undefined) {
     const delta = overallScore - baselineScore;
     // Degraded if overall score drops by more than 5%
@@ -106,7 +106,8 @@ export function formatReportToMarkdown(report: EvalReport): string {
   lines.push('');
 
   if (report.regression) {
-    const deltaStr = report.regression.delta >= 0 ? `+${report.regression.delta.toFixed(2)}` : report.regression.delta.toFixed(2);
+    const deltaStr =
+      report.regression.delta >= 0 ? `+${report.regression.delta.toFixed(2)}` : report.regression.delta.toFixed(2);
     lines.push('## Regression Comparison', '');
     lines.push(`- **Baseline:** ${report.regression.baselineId}`);
     lines.push(`- **Delta:** ${deltaStr}`);
@@ -142,11 +143,7 @@ export function formatReportToMarkdown(report: EvalReport): string {
   return lines.join('\n');
 }
 
-export async function writeReportFiles(
-  config: EvalConfig,
-  report: EvalReport,
-  runDir: string
-): Promise<void> {
+export async function writeReportFiles(config: EvalConfig, report: EvalReport, runDir: string): Promise<void> {
   const mdContent = formatReportToMarkdown(report);
   const jsonContent = JSON.stringify(report, null, 2);
 

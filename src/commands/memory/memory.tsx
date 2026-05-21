@@ -5,22 +5,22 @@ import { Dialog } from '../../components/design-system/Dialog.js';
 import { MemoryFileSelector } from '../../components/memory/MemoryFileSelector.js';
 import { getRelativeMemoryPath } from '../../components/memory/MemoryUpdateNotification.js';
 import { Box, Link, Text } from '../../ink.js';
+import { getDefaultConfig } from '../../memory/config.js';
+import { getMemoryDb } from '../../memory/db.js';
+import { ingestMemoryWorkspace } from '../../memory/ingest.js';
+import { approveMemory, forgetMemory, listPending, rejectMemory } from '../../memory/pending.js';
+import { searchMemories } from '../../memory/search.js';
+import { getAllSources } from '../../memory/store.js';
+
+// Plan E imports
+import { getMemoryWorkspaceStatus, initMemoryWorkspace } from '../../memory/workspace.js';
 import type { LocalJSXCommandCall } from '../../types/command.js';
 import { clearMemoryFileCaches, getMemoryFiles } from '../../utils/claudemd.js';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { getErrnoCode } from '../../utils/errors.js';
+import { getFsImplementation } from '../../utils/fsOperations.js';
 import { logError } from '../../utils/log.js';
 import { editFileInEditor } from '../../utils/promptEditor.js';
-
-// Plan E imports
-import { initMemoryWorkspace, getMemoryWorkspaceStatus } from '../../memory/workspace.js';
-import { ingestMemoryWorkspace } from '../../memory/ingest.js';
-import { searchMemories } from '../../memory/search.js';
-import { listPending, approveMemory, rejectMemory, forgetMemory } from '../../memory/pending.js';
-import { getDefaultConfig } from '../../memory/config.js';
-import { getMemoryDb } from '../../memory/db.js';
-import { getAllSources } from '../../memory/store.js';
-import { getFsImplementation } from '../../utils/fsOperations.js';
 
 function MemoryCommand({
   onDone,
@@ -122,7 +122,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             `  Deleted: ${result.deletedCount} removed files`,
             `  Indexed Chunks: ${result.totalChunks} chunks in SQLite FTS5`,
           ].join('\n'),
-          { display: 'system' }
+          { display: 'system' },
         );
         return null;
       }
@@ -133,7 +133,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
         db.run('DELETE FROM chunks');
         db.run('DELETE FROM chunks_fts');
         db.run('DELETE FROM sources');
-        
+
         const result = await ingestMemoryWorkspace(cwd, config);
         onDone(
           [
@@ -141,7 +141,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             `  Scanned: ${result.scannedCount} files`,
             `  Total Chunks: ${result.totalChunks} chunks`,
           ].join('\n'),
-          { display: 'system' }
+          { display: 'system' },
         );
         return null;
       }
@@ -149,7 +149,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
       case 'search': {
         const query = argv.slice(1).join(' ');
         if (!query) {
-          onDone('Error: Please provide a search query. Example: `/memory search "coding guidelines"`', { display: 'system' });
+          onDone('Error: Please provide a search query. Example: `/memory search "coding guidelines"`', {
+            display: 'system',
+          });
           return null;
         }
 
@@ -166,7 +168,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             `   Excerpt:\n` +
             `   """\n` +
             `   ${m.excerpt.slice(0, 300)}${m.excerpt.length > 300 ? '...' : ''}\n` +
-            `   """`
+            `   """`,
         );
 
         onDone([`Search results for "${query}":`, '', ...matchLines].join('\n'), { display: 'system' });
@@ -184,7 +186,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           p =>
             `- **ID:** \`${p.id}\` (Target: \`${p.suggestedTarget}\`)\n` +
             `  Proposed Facts:\n` +
-            p.proposedFacts.map(f => `    * ${f}`).join('\n')
+            p.proposedFacts.map(f => `    * ${f}`).join('\n'),
         );
 
         onDone(['Pending Memory Suggestions:', '', ...listLines].join('\n'), { display: 'system' });
@@ -194,7 +196,10 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
       case 'approve': {
         const pendingId = argv[1];
         if (!pendingId) {
-          onDone('Error: Please specify the pending-id to approve. Example: `/memory approve ceph:pending:2026-05-20:abcde`', { display: 'system' });
+          onDone(
+            'Error: Please specify the pending-id to approve. Example: `/memory approve ceph:pending:2026-05-20:abcde`',
+            { display: 'system' },
+          );
           return null;
         }
 
@@ -202,7 +207,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           const targetPath = await approveMemory(cwd, pendingId);
           // Ingest target path changes
           await ingestMemoryWorkspace(cwd, config);
-          onDone(`🟢 Approved pending memory suggestion! Facts successfully merged into: \`${targetPath}\``, { display: 'system' });
+          onDone(`🟢 Approved pending memory suggestion! Facts successfully merged into: \`${targetPath}\``, {
+            display: 'system',
+          });
         } catch (err: any) {
           onDone(`Error approving suggestion: ${err.message}`, { display: 'system' });
         }
@@ -218,7 +225,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
 
         try {
           await rejectMemory(cwd, pendingId);
-          onDone(`🟢 Rejected pending memory suggestion \`${pendingId}\`. Suggestion file deleted.`, { display: 'system' });
+          onDone(`🟢 Rejected pending memory suggestion \`${pendingId}\`. Suggestion file deleted.`, {
+            display: 'system',
+          });
         } catch (err: any) {
           onDone(`Error rejecting suggestion: ${err.message}`, { display: 'system' });
         }
@@ -234,7 +243,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
 
         try {
           await forgetMemory(cwd, memoryId);
-          onDone(`🟢 Successfully forgot memory \`${memoryId}\`. Associated file and FTS index removed.`, { display: 'system' });
+          onDone(`🟢 Successfully forgot memory \`${memoryId}\`. Associated file and FTS index removed.`, {
+            display: 'system',
+          });
         } catch (err: any) {
           onDone(`Error forgetting memory: ${err.message}`, { display: 'system' });
         }
@@ -262,7 +273,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             `  Pending Suggestions: ${pendingList.length}`,
             `  Secret Redaction: Enabled`,
           ].join('\n'),
-          { display: 'system' }
+          { display: 'system' },
         );
         return null;
       }
@@ -283,7 +294,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             '  forget <id>          Permanently delete a memory record from disk and index',
             '  doctor               Display Ceph Memory status, metrics, and health diagnostics',
           ].join('\n'),
-          { display: 'system' }
+          { display: 'system' },
         );
         return null;
       }

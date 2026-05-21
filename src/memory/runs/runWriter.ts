@@ -16,7 +16,7 @@ export async function writeRunSummary(
   task: string,
   filesTouched: string[],
   decisions: string[],
-  events: RunEvent[]
+  events: RunEvent[],
 ): Promise<string> {
   const fsImpl = getFsImplementation();
   const dateStr = new Date().toISOString().slice(0, 10);

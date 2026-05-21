@@ -1,17 +1,11 @@
 import type { Database } from 'bun:sqlite';
+import { getFsImplementation } from '../utils/fsOperations.js';
+import { chunkMarkdown } from './chunker.js';
+import { type CephMemoryConfig, getDefaultConfig } from './config.js';
 import { getMemoryDb } from './db.js';
 import { scanDirectory } from './loader.js';
 import { redactSecrets } from './redact.js';
-import { chunkMarkdown } from './chunker.js';
-import {
-  getSource,
-  upsertSource,
-  deleteSource,
-  insertChunks,
-  getAllSources,
-} from './store.js';
-import { getFsImplementation } from '../utils/fsOperations.js';
-import { getDefaultConfig, type CephMemoryConfig } from './config.js';
+import { deleteSource, getAllSources, getSource, insertChunks, upsertSource } from './store.js';
 import type { SourceDocument } from './types.js';
 
 export interface IngestResult {
@@ -22,19 +16,11 @@ export interface IngestResult {
   totalChunks: number;
 }
 
-export async function ingestMemoryWorkspace(
-  cwd: string,
-  config: CephMemoryConfig
-): Promise<IngestResult> {
+export async function ingestMemoryWorkspace(cwd: string, config: CephMemoryConfig): Promise<IngestResult> {
   const db = getMemoryDb(cwd);
   const fsImpl = getFsImplementation();
 
-  const scannedDocs = await scanDirectory(
-    config.memoryDir,
-    config.rootDir,
-    'project',
-    config.excludeGlobs
-  );
+  const scannedDocs = await scanDirectory(config.memoryDir, config.rootDir, 'project', config.excludeGlobs);
 
   const activeDocIds = new Set<string>();
   let addedCount = 0;

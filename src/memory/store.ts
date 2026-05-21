@@ -1,5 +1,5 @@
 import type { Database } from 'bun:sqlite';
-import type { SourceDocument, MemoryChunk } from './types.js';
+import type { MemoryChunk, SourceDocument } from './types.js';
 
 export function getSource(db: Database, id: string): SourceDocument | null {
   const row = db.query('SELECT * FROM sources WHERE id = ?').get(id) as Record<string, any> | undefined;
@@ -37,7 +37,7 @@ export function upsertSource(db: Database, source: SourceDocument): void {
     source.editable,
     source.createdAt,
     source.updatedAt,
-    source.lastSeenAt ?? null
+    source.lastSeenAt ?? null,
   );
 }
 
@@ -77,7 +77,7 @@ export function insertChunks(db: Database, chunks: MemoryChunk[], title: string 
         chunk.truthPriority,
         chunk.createdAt,
         chunk.updatedAt,
-        chunk.lastSeenAt ?? null
+        chunk.lastSeenAt ?? null,
       );
 
       insertFtsStmt.run(
@@ -85,7 +85,7 @@ export function insertChunks(db: Database, chunks: MemoryChunk[], title: string 
         chunk.sourceId,
         title,
         chunk.markdown,
-        '' // optional entities extraction for later
+        '', // optional entities extraction for later
       );
     }
   });
@@ -136,7 +136,7 @@ export function searchChunksFTS(db: Database, queryStr: string, limit: number = 
         `SELECT id, source_id, title, markdown
          FROM chunks_fts
          WHERE chunks_fts MATCH ?
-         LIMIT ?`
+         LIMIT ?`,
       )
       .all(sanitized, limit) as Record<string, any>[];
 

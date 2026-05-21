@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { getFsImplementation } from '../utils/fsOperations.js';
-import type { EvalConfig, EvalResult, EvalComparison, EvalReport } from './types.js';
+import type { EvalComparison, EvalConfig, EvalReport, EvalResult } from './types.js';
 
 export interface BaselineData {
   id: string;
@@ -11,10 +11,7 @@ export interface BaselineData {
   taskStatuses: Record<string, string>;
 }
 
-export async function loadBaseline(
-  config: EvalConfig,
-  baselineId: string
-): Promise<BaselineData | null> {
+export async function loadBaseline(config: EvalConfig, baselineId: string): Promise<BaselineData | null> {
   const fsImpl = getFsImplementation();
   const filePath = join(config.baselinesDir, `${baselineId}.json`);
 
@@ -31,19 +28,12 @@ export async function loadBaseline(
   }
 }
 
-export async function saveBaseline(
-  config: EvalConfig,
-  baselineId: string,
-  data: BaselineData
-): Promise<void> {
+export async function saveBaseline(config: EvalConfig, baselineId: string, data: BaselineData): Promise<void> {
   const filePath = join(config.baselinesDir, `${baselineId}.json`);
   await writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-export function compareRunToBaseline(
-  results: EvalResult[],
-  baseline: BaselineData
-): EvalComparison {
+export function compareRunToBaseline(results: EvalResult[], baseline: BaselineData): EvalComparison {
   let totalScore = 0;
   const categoryScores: Record<string, { sum: number; count: number }> = {};
   const taskComparisons: EvalComparison['taskComparisons'] = [];

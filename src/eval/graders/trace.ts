@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 import { getFsImplementation } from '../../utils/fsOperations.js';
-import type { GraderConfig, EvalTask, GraderResult } from '../types.js';
+import type { EvalTask, GraderConfig, GraderResult } from '../types.js';
 import type { GraderContext } from './index.js';
 
 interface RunEvent {
@@ -13,7 +13,7 @@ interface RunEvent {
 export async function runTraceGrader(
   grader: GraderConfig,
   task: EvalTask,
-  context: GraderContext
+  context: GraderContext,
 ): Promise<GraderResult> {
   const fsImpl = getFsImplementation();
   const failureReasons: string[] = [];
@@ -80,8 +80,8 @@ export async function runTraceGrader(
         failureReasons.push(
           grader.failMessage ||
             `Trace Rule Violation: Action "${beforeAction}" was called, but none of the required preliminary steps (${requireAny.join(
-              ', '
-            )}) occurred before it.`
+              ', ',
+            )}) occurred before it.`,
         );
       }
     }

@@ -1,23 +1,22 @@
-import * as React from 'react';
-import { Box, Text } from '../../ink.js';
-import type { LocalJSXCommandCall } from '../../types/command.js';
-import { getFsImplementation } from '../../utils/fsOperations.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
-import { logError } from '../../utils/log.js';
-
+import { mkdir, readFile } from 'fs/promises';
+import { join } from 'path';
+import type * as React from 'react';
+import { runTaskWithAgent } from '../../eval/agentRunner.js';
 // Plan G imports
 import { getEvalConfig } from '../../eval/config.js';
-import { initializeEvalWorkspace } from '../../eval/workspace.js';
-import { loadTasks, loadGraders } from '../../eval/taskLoader.js';
-import { runTaskWithAgent } from '../../eval/agentRunner.js';
-import { gradeWithGrader } from '../../eval/graders/index.js';
-import { computeTaskScore } from '../../eval/scoring.js';
-import { generateEvalReport, writeReportFiles, formatReportToMarkdown } from '../../eval/report.js';
-import { loadBaseline, compareRunToBaseline } from '../../eval/regression.js';
 import { runDiagnostics } from '../../eval/doctor.js';
+import { gradeWithGrader } from '../../eval/graders/index.js';
+import { compareRunToBaseline, loadBaseline } from '../../eval/regression.js';
+import { formatReportToMarkdown, generateEvalReport, writeReportFiles } from '../../eval/report.js';
+import { computeTaskScore } from '../../eval/scoring.js';
+import { loadGraders, loadTasks } from '../../eval/taskLoader.js';
 import type { EvalResult } from '../../eval/types.js';
-import { join } from 'path';
-import { mkdir, readFile } from 'fs/promises';
+import { initializeEvalWorkspace } from '../../eval/workspace.js';
+import { Box, Text } from '../../ink.js';
+import type { LocalJSXCommandCall } from '../../types/command.js';
+import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getFsImplementation } from '../../utils/fsOperations.js';
+import { logError } from '../../utils/log.js';
 
 function parseArgs(argsStr: string): Record<string, string | boolean> {
   const options: Record<string, string | boolean> = {};
@@ -63,7 +62,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
         '  eval trace <task>   - Display steps of the latest run of a task',
         '  eval doctor         - Diagnose task/grader schema and paths health',
       ].join('\n'),
-      { display: 'system' }
+      { display: 'system' },
     );
     return null;
   }
@@ -110,9 +109,12 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
         }
 
         if (filteredTasks.length === 0) {
-          onDone(`🔴 No tasks matched the filter (Task: ${taskIdFilter || 'N/A'}, Category: ${categoryFilter || 'N/A'})`, {
-            display: 'system',
-          });
+          onDone(
+            `🔴 No tasks matched the filter (Task: ${taskIdFilter || 'N/A'}, Category: ${categoryFilter || 'N/A'})`,
+            {
+              display: 'system',
+            },
+          );
           return null;
         }
 
@@ -149,7 +151,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             join(runDir, `workspace_${task.id}`),
             runResult.changedFiles,
             runResult.agentOutput,
-            runResult.executedCommands
+            runResult.executedCommands,
           );
           evalRes.runId = runId;
           evalRes.tracePath = runResult.tracePath;
@@ -287,7 +289,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             (e: any) =>
               `- [${new Date(e.timestamp).toLocaleTimeString()}] **${e.type}**: ${e.message} ${
                 e.metadata ? `(metadata: ${JSON.stringify(e.metadata)})` : ''
-              }`
+              }`,
           ),
         ];
 
@@ -342,7 +344,7 @@ export default function EvalCommand({
     result?: string,
     options?: {
       display?: CommandResultDisplay;
-    }
+    },
   ) => void;
 }): React.ReactNode {
   // Return default placeholder

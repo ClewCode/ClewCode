@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { getFsImplementation } from '../utils/fsOperations.js';
-import { getDefaultConfig, type CephMemoryConfig } from './config.js';
+import { type CephMemoryConfig, getDefaultConfig } from './config.js';
 
 export async function initMemoryWorkspace(cwd: string): Promise<CephMemoryConfig> {
   const fsImpl = getFsImplementation();
@@ -61,35 +61,35 @@ export async function initMemoryWorkspace(cwd: string): Promise<CephMemoryConfig
     join(config.memoryDir, 'MEMORY.md'),
     'Project Memory',
     'project',
-    'Welcome to your Markdown-first Project Memory. Edit this file to add general repository facts.'
+    'Welcome to your Markdown-first Project Memory. Edit this file to add general repository facts.',
   );
 
   await createInitialFile(
     join(config.memoryDir, 'user', 'preferences.md'),
     'User Preferences',
     'user',
-    '- **Preferred Language:** TypeScript/JavaScript\n- **Styling Preference:** Vanilla CSS for premium look and feel.'
+    '- **Preferred Language:** TypeScript/JavaScript\n- **Styling Preference:** Vanilla CSS for premium look and feel.',
   );
 
   await createInitialFile(
     join(config.memoryDir, 'project', 'overview.md'),
     'Project Overview',
     'project',
-    '- **Framework:** Bun/TypeScript/React\n- **System Architecture:** Offline-first coding assistant tools.'
+    '- **Framework:** Bun/TypeScript/React\n- **System Architecture:** Offline-first coding assistant tools.',
   );
 
   await createInitialFile(
     join(config.memoryDir, 'feedback', 'corrections.md'),
     'User Feedback & Corrections',
     'feedback',
-    'Record persistent corrections here to prevent AI agents from making the same mistake.'
+    'Record persistent corrections here to prevent AI agents from making the same mistake.',
   );
 
   await createInitialFile(
     join(config.memoryDir, 'agent', 'planner.md'),
     'Planner Agent Memory',
     'agent',
-    'Agent specific instructions and context guidelines go here.'
+    'Agent specific instructions and context guidelines go here.',
   );
 
   return config;

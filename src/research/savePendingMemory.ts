@@ -7,7 +7,7 @@ export async function savePendingMemory(
   cwd: string,
   topic: string,
   runId: string,
-  claims: ResearchClaim[]
+  claims: ResearchClaim[],
 ): Promise<string> {
   const fsImpl = getFsImplementation();
   const pendingDir = join(cwd, '.ceph', 'memory', 'pending');
@@ -17,7 +17,10 @@ export async function savePendingMemory(
   }
 
   const date = new Date().toISOString().slice(0, 10);
-  const sanitizedTopic = topic.replace(/[\\\/:\*\?"<>\|]/g, '_').toLowerCase().slice(0, 50);
+  const sanitizedTopic = topic
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .toLowerCase()
+    .slice(0, 50);
   const pendingFilePath = join(pendingDir, `research-${sanitizedTopic}-${date}.md`);
 
   const frontmatter = [

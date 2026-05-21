@@ -14,7 +14,7 @@ export function chunkMarkdown(
   sourceId: string,
   markdown: string,
   maxChunkTokens: number = 3000,
-  priority: number = 50
+  priority: number = 50,
 ): MemoryChunk[] {
   const chunks: MemoryChunk[] = [];
   const lines = markdown.split('\n');
@@ -55,7 +55,10 @@ export function chunkMarkdown(
     // If it's a new main header and we already have content, split there for cleaner boundaries
     const isNewHeader = line.startsWith('# ') || line.startsWith('## ') || line.startsWith('### ');
 
-    if ((currentTokens + lineTokens > maxChunkTokens || (isNewHeader && currentTokens > 300)) && currentChunkLines.length > 0) {
+    if (
+      (currentTokens + lineTokens > maxChunkTokens || (isNewHeader && currentTokens > 300)) &&
+      currentChunkLines.length > 0
+    ) {
       saveCurrentChunk();
     }
 

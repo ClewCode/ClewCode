@@ -9,8 +9,8 @@ export function slugify(text: string): string {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-    .replace(/\-\-+/g, '-') // Replace multiple - with single -
+    .replace(/[^\w-]+/g, '') // Remove all non-word chars
+    .replace(/--+/g, '-') // Replace multiple - with single -
     .replace(/^-+/, '') // Trim - from start of text
     .replace(/-+$/, ''); // Trim - from end of text
 }
@@ -145,7 +145,11 @@ export async function writeReportToRun(runDir: string, reportMarkdown: string): 
   await writeFile(join(runDir, 'report.md'), reportMarkdown, 'utf-8');
 }
 
-export async function completeRunStore(runDir: string, savedToWiki = false, savedToMemoryPending = false): Promise<void> {
+export async function completeRunStore(
+  runDir: string,
+  savedToWiki = false,
+  savedToMemoryPending = false,
+): Promise<void> {
   const runJsonPath = join(runDir, 'run.json');
   try {
     const content = await readFile(runJsonPath, 'utf-8');

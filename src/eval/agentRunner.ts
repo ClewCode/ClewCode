@@ -1,9 +1,9 @@
-import { mkdir, writeFile, readdir, stat } from 'fs/promises';
-import { join } from 'path';
-import { getFsImplementation } from '../utils/fsOperations.js';
 import { exec } from 'child_process';
+import { mkdir, readdir, stat, writeFile } from 'fs/promises';
+import { join } from 'path';
 import { promisify } from 'util';
-import type { EvalTask, EvalResult, EvalMetrics } from './types.js';
+import { getFsImplementation } from '../utils/fsOperations.js';
+import type { EvalMetrics, EvalResult, EvalTask } from './types.js';
 
 const execPromise = promisify(exec);
 
@@ -19,7 +19,7 @@ export async function runTaskWithAgent(
   task: EvalTask,
   runId: string,
   runDir: string,
-  workspaceCwd: string
+  workspaceCwd: string,
 ): Promise<AgentRunResult> {
   const fsImpl = getFsImplementation();
   const startTime = Date.now();
@@ -48,7 +48,7 @@ export async function runTaskWithAgent(
   let shellCommandsCount = 0;
   let testsPassed = 0;
   let testsFailed = 0;
-  let approvalsRequested = 0;
+  const approvalsRequested = 0;
 
   // Let's write default simulated events
   const events = [
@@ -112,7 +112,11 @@ export async function runTaskWithAgent(
     });
 
     // Write mock content
-    await writeFile(filePath, `// Simulated solution for ${task.title}\nexport function add(a: number, b: number) { return a + b; }\n`, 'utf-8');
+    await writeFile(
+      filePath,
+      `// Simulated solution for ${task.title}\nexport function add(a: number, b: number) { return a + b; }\n`,
+      'utf-8',
+    );
     changedFiles.push(file);
 
     events.push({

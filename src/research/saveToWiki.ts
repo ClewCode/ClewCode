@@ -2,7 +2,12 @@ import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { getFsImplementation } from '../utils/fsOperations.js';
 
-export async function saveReportToWiki(cwd: string, topic: string, reportMarkdown: string, runId: string): Promise<string> {
+export async function saveReportToWiki(
+  cwd: string,
+  topic: string,
+  reportMarkdown: string,
+  runId: string,
+): Promise<string> {
   const fsImpl = getFsImplementation();
   const wikiDir = join(cwd, '.ceph', 'wiki', 'Research');
 
@@ -10,7 +15,7 @@ export async function saveReportToWiki(cwd: string, topic: string, reportMarkdow
     await mkdir(wikiDir, { recursive: true });
   }
 
-  const sanitizedTopic = topic.replace(/[\\\/:\*\?"<>\|]/g, '_');
+  const sanitizedTopic = topic.replace(/[\\/:*?"<>|]/g, '_');
   const wikiFilePath = join(wikiDir, `${sanitizedTopic}.md`);
 
   const autoBlockStart = '<!-- ceph:auto:start -->';
@@ -18,7 +23,8 @@ export async function saveReportToWiki(cwd: string, topic: string, reportMarkdow
   const userBlockStart = '<!-- ceph:user:start -->';
   const userBlockEnd = '<!-- ceph:user:end -->';
 
-  let userNotes = '## User Notes\n\n*(Add your custom notes here. This block is preserved during future research updates.)*';
+  let userNotes =
+    '## User Notes\n\n*(Add your custom notes here. This block is preserved during future research updates.)*';
 
   // Read existing file if it exists to extract the user block
   if (fsImpl.existsSync(wikiFilePath)) {

@@ -7,7 +7,7 @@ export function createClaim(
   status: ClaimStatus,
   confidence: 'high' | 'medium' | 'low',
   sourceIds: string[],
-  notes?: string
+  notes?: string,
 ): ResearchClaim {
   return {
     id,
@@ -29,7 +29,7 @@ export function extractClaimsFromText(text: string, sourceId: string): ResearchC
     const trimmed = line.trim();
     // Look for bullet points with solid claims
     if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
-      const claimText = trimmed.replace(/^[\-\*\s]+/, '');
+      const claimText = trimmed.replace(/^[-*\s]+/, '');
       if (claimText.length > 20 && !claimText.startsWith('http')) {
         claims.push(
           createClaim(
@@ -39,8 +39,8 @@ export function extractClaimsFromText(text: string, sourceId: string): ResearchC
             'supported',
             'high',
             [sourceId],
-            'Extracted from document bullet points'
-          )
+            'Extracted from document bullet points',
+          ),
         );
         claimCounter++;
       }

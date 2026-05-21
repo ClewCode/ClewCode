@@ -1,28 +1,27 @@
-import { describe, expect, test, beforeAll, afterAll } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { rm, mkdir, writeFile } from 'fs/promises';
 import { getFsImplementation } from '../utils/fsOperations.js';
-
-import { initWorkspace, getResearchWorkspaceStatus } from './workspace.js';
+import { buildCitations, formatBibliography } from './citations.js';
+import { createClaim, extractClaimsFromText } from './claims.js';
 import { createResearchPlan } from './planner.js';
+import { buildResearchReport } from './reportBuilder.js';
 import {
-  createRunStore,
-  appendSourceToRun,
   appendClaimToRun,
+  appendSourceToRun,
+  completeRunStore,
+  createRunStore,
+  getLatestRun,
+  readClaimsFromRun,
+  readSourcesFromRun,
   writePlanToRun,
   writeReportToRun,
-  completeRunStore,
-  getLatestRun,
-  readSourcesFromRun,
-  readClaimsFromRun,
 } from './runStore.js';
-import { readSourceDocument } from './sourceReader.js';
-import { createClaim, extractClaimsFromText } from './claims.js';
-import { buildCitations, formatBibliography } from './citations.js';
-import { buildResearchReport } from './reportBuilder.js';
-import { saveReportToWiki } from './saveToWiki.js';
 import { savePendingMemory } from './savePendingMemory.js';
+import { saveReportToWiki } from './saveToWiki.js';
+import { readSourceDocument } from './sourceReader.js';
 import type { ResearchClaim, ResearchSource } from './types.js';
+import { getResearchWorkspaceStatus, initWorkspace } from './workspace.js';
 
 const tempCwd = join(process.cwd(), 'temp-test-research-workspace');
 
@@ -190,7 +189,7 @@ describe('Research Agent Pipeline', () => {
           trust: 'high',
         },
       ],
-      claims
+      claims,
     );
 
     const report = buildResearchReport(query, plan, claims, citations);
@@ -214,12 +213,14 @@ describe('Research Agent Pipeline', () => {
     expect(firstContent).toContain('<!-- ceph:auto:start -->');
     expect(firstContent).toContain('Some important facts');
     expect(firstContent).toContain('<!-- ceph:user:start -->');
-    expect(firstContent).toContain('*(Add your custom notes here. This block is preserved during future research updates.)*');
+    expect(firstContent).toContain(
+      '*(Add your custom notes here. This block is preserved during future research updates.)*',
+    );
 
     // Simulate User editing User Notes block
     const userModifiedContent = firstContent.replace(
       '*(Add your custom notes here. This block is preserved during future research updates.)*',
-      'Custom user edited notes here!'
+      'Custom user edited notes here!',
     );
     await writeFile(wikiPath, userModifiedContent, 'utf-8');
 

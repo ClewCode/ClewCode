@@ -1,12 +1,12 @@
-import type { GraderConfig, EvalTask, GraderResult } from '../types.js';
+import type { EvalTask, GraderConfig, GraderResult } from '../types.js';
 import type { GraderContext } from './index.js';
 
 function matchPattern(path: string, pattern: string): boolean {
   // Convert simple glob pattern to RegExp
   const regexString = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape regex chars
-    .replace(/\*\*/g, '.*')               // Match any nested paths
-    .replace(/\*/g, '[^/]*');             // Match single level
+    .replace(/\*\*/g, '.*') // Match any nested paths
+    .replace(/\*/g, '[^/]*'); // Match single level
   const regex = new RegExp(`^${regexString}$`);
   return regex.test(path);
 }
@@ -14,7 +14,7 @@ function matchPattern(path: string, pattern: string): boolean {
 export async function runArtifactGrader(
   grader: GraderConfig,
   task: EvalTask,
-  context: GraderContext
+  context: GraderContext,
 ): Promise<GraderResult> {
   const failureReasons: string[] = [];
   const changedFiles = context.changedFiles || [];
@@ -32,7 +32,7 @@ export async function runArtifactGrader(
   // Check max changed files
   if (checks.maxChangedFiles !== undefined && changedFiles.length > checks.maxChangedFiles) {
     failureReasons.push(
-      `Artifact Scope Creep: Changed ${changedFiles.length} files, which exceeds the maximum limit of ${checks.maxChangedFiles} files.`
+      `Artifact Scope Creep: Changed ${changedFiles.length} files, which exceeds the maximum limit of ${checks.maxChangedFiles} files.`,
     );
   }
 
