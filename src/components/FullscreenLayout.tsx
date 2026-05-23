@@ -427,7 +427,16 @@ export function FullscreenLayout({
               {overlay}
             </ScrollBox>
             {!hidePill && pillVisible && overlay == null && (
-              <NewMessagesPill count={newMessageCount} onClick={onPillClick} />
+              <NewMessagesPill
+                count={newMessageCount}
+                onClick={() => {
+                  // Clear dividerYRef synchronously so the pill disappears
+                  // immediately on click instead of waiting for the next
+                  // scroll subscription tick.
+                  if (dividerYRef) dividerYRef.current = null;
+                  onPillClick?.();
+                }}
+              />
             )}
             {bottomFloat != null && (
               <Box position="absolute" bottom={0} right={0} opaque>

@@ -1,6 +1,6 @@
 import { feature } from 'bun:bundle';
 import type * as React from 'react';
-import { memo, type ReactNode, useMemo, useRef } from 'react';
+import { memo, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { isBridgeEnabled } from '../../bridge/bridgeEnabled.js';
 import { getBridgeStatus } from '../../bridge/bridgeStatusUtil.js';
 import { useSetPromptOverlay } from '../../context/promptOverlayContext.js';
@@ -15,6 +15,7 @@ import type { ToolPermissionContext } from '../../Tool.js';
 import type { Message } from '../../types/message.js';
 import type { PromptInputMode, VimMode } from '../../types/textInputTypes.js';
 import type { AutoUpdaterResult } from '../../utils/autoUpdater.js';
+import { formatDuration } from '../../utils/format.js';
 import { isFullscreenEnvEnabled } from '../../utils/fullscreen.js';
 import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
@@ -110,10 +111,48 @@ function PromptInputFooter({
   // exist, pill is the only selectable item).
   const coordinatorTaskCount = useCoordinatorTaskCount();
   const coordinatorTaskIndex = useAppState(s => s.coordinatorTaskIndex);
+  const sessionGoal = useAppState(s => s.sessionGoal);
+  const sessionGoalStartTime = useAppState(s => s.sessionGoalStartTime);
+  const [goalNow, setGoalNow] = useState(Date.now());
   const pillSelected = tasksSelected && (coordinatorTaskCount === 0 || coordinatorTaskIndex < 0);
+
+  useEffect(() => {
+    if (!sessionGoal) return;
+    const timer = setInterval(() => setGoalNow(Date.now()), 1000);
+    timer.unref();
+    return () => clearInterval(timer);
+  }, [sessionGoal]);
 
   // Hide `? for shortcuts` if the user has a custom status line, or during ctrl-r
   const suppressHint = suppressHintFromProps || statusLineShouldDisplay(settings) || isSearching;
+  const showStatusLine = mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings);
+  const goalActiveText = sessionGoal
+    ? `◎ /goal active (${formatDuration(goalNow - (sessionGoalStartTime ?? goalNow), {
+        hideTrailingZeros: true,
+        mostSignificantOnly: true,
+      })})`
+    : undefined;
+  const footerLeftSide = (
+    <PromptInputFooterLeftSide
+      exitMessage={exitMessage}
+      vimMode={vimMode}
+      mode={mode}
+      toolPermissionContext={toolPermissionContext}
+      suppressHint={suppressHint}
+      isLoading={isLoading}
+      tasksSelected={pillSelected}
+      teamsSelected={teamsSelected}
+      teammateFooterIndex={teammateFooterIndex}
+      tmuxSelected={tmuxSelected}
+      isPasting={isPasting}
+      isSearching={isSearching}
+      historyQuery={historyQuery}
+      setHistoryQuery={setHistoryQuery}
+      historyFailedMatch={historyFailedMatch}
+      onOpenTasksDialog={onOpenTasksDialog}
+    />
+  );
+  const statusLineRightText = debug ? 'Debug mode' : undefined;
   // Fullscreen: portal data to FullscreenLayout — see promptOverlayContext.tsx
   const overlayData = useMemo(
     () =>
@@ -151,14 +190,32 @@ function PromptInputFooter({
         gap={isNarrow ? 0 : 1}
       >
         <Box flexDirection="column" flexGrow={isNarrow ? 0 : 1} flexShrink={isNarrow ? 0 : 1}>
-          {mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings) && (
-            <StatusLine messagesRef={messagesRef} lastAssistantMessageId={lastAssistantMessageId} vimMode={vimMode} />
+          {showStatusLine && (
+            <Box flexDirection="row" justifyContent="space-between" width="100%">
+              <Box overflowX="hidden" flexShrink={1}>
+                {footerLeftSide}
+              </Box>
+              <Box flexDirection="row" flexShrink={0} gap={1}>
+                {goalActiveText ? (
+                  <Text color="ide" wrap="truncate">
+                    {goalActiveText}
+                  </Text>
+                ) : null}
+                <StatusLine
+                  key={columns}
+                  messagesRef={messagesRef}
+                  lastAssistantMessageId={lastAssistantMessageId}
+                  vimMode={vimMode}
+                  rightOnly
+                  rightText={statusLineRightText}
+                />
+              </Box>
+            </Box>
           )}
           {!isFullscreen && (
             <Notifications
               apiKeyStatus={apiKeyStatus}
               autoUpdaterResult={autoUpdaterResult}
-              debug={debug}
               isAutoUpdating={isAutoUpdating}
               verbose={verbose}
               messages={messages}
@@ -170,24 +227,18 @@ function PromptInputFooter({
               isNarrow={isNarrow}
             />
           )}
-          <PromptInputFooterLeftSide
-            exitMessage={exitMessage}
-            vimMode={vimMode}
-            mode={mode}
-            toolPermissionContext={toolPermissionContext}
-            suppressHint={suppressHint}
-            isLoading={isLoading}
-            tasksSelected={pillSelected}
-            teamsSelected={teamsSelected}
-            teammateFooterIndex={teammateFooterIndex}
-            tmuxSelected={tmuxSelected}
-            isPasting={isPasting}
-            isSearching={isSearching}
-            historyQuery={historyQuery}
-            setHistoryQuery={setHistoryQuery}
-            historyFailedMatch={historyFailedMatch}
-            onOpenTasksDialog={onOpenTasksDialog}
-          />
+          {!showStatusLine && (
+            <Box flexDirection="row" justifyContent="space-between" width="100%">
+              <Box overflowX="hidden" flexShrink={1}>
+                {footerLeftSide}
+              </Box>
+              {goalActiveText ? (
+                <Text color="ide" wrap="truncate">
+                  {goalActiveText}
+                </Text>
+              ) : null}
+            </Box>
+          )}
         </Box>
         <Box flexShrink={1} gap={1} justifyContent="flex-end">
           {'external' === 'ant' && isUndercover() && <Text dimColor>undercover</Text>}

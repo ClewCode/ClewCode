@@ -2878,7 +2878,6 @@ function PromptInput({
           <Notifications
             apiKeyStatus={apiKeyStatus}
             autoUpdaterResult={autoUpdaterResult}
-            debug={debug}
             isAutoUpdating={isAutoUpdating}
             verbose={verbose}
             messages={messages}

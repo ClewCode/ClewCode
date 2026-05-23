@@ -180,26 +180,20 @@ export function AutonomousExecutionAccordion({ goal, goalStartedAt, goalTurns, i
 
   return (
     <OffscreenFreeze>
-      <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="subtle" paddingX={1}>
-        <Text>
-          <Text color="suggestion">Autonomous Agent</Text>
-          {goal ? <Text dimColor> · goal running</Text> : null}
-          {daemon?.running ? (
-            <Text dimColor> · daemon online</Text>
-          ) : daemon?.enabled ? (
-            <Text dimColor> · daemon enabled</Text>
-          ) : null}
-        </Text>
+      <Box flexDirection="column" marginTop={1}>
         {goal ? (
-          <Text dimColor>
-            Goal: {truncateToWidth(goal, 96)}
-            {elapsed ? ` · ${elapsed}` : ''}
-            {goalTurns !== undefined ? ` · ${goalTurns} turns` : ''}
+          <Text>
+            <Text color="suggestion">◎</Text>
+            <Text> Goal set: </Text>
+            <Text bold>{truncateToWidth(goal, 96)}</Text>
           </Text>
         ) : null}
-        <Text dimColor>
-          {tasks.length} tasks ({completedCount} done, {openCount} open)
-        </Text>
+        {daemon?.running || daemon?.enabled || visibleTasks.length > 0 ? (
+          <Text dimColor>
+            {tasks.length} tasks ({completedCount} done, {openCount} open)
+            {daemon?.running ? ' · daemon online' : daemon?.enabled ? ' · daemon enabled' : ''}
+          </Text>
+        ) : null}
         {daemon?.currentTaskTitle && !visibleTasks.some(t => t.title === daemon.currentTaskTitle) ? (
           <Text color="suggestion">▾ {truncateToWidth(daemon.currentTaskTitle, 90)}</Text>
         ) : null}
@@ -210,9 +204,18 @@ export function AutonomousExecutionAccordion({ goal, goalStartedAt, goalTurns, i
             ))}
             {hiddenCompletedCount > 0 ? <Text dimColor>... +{hiddenCompletedCount} completed</Text> : null}
           </Box>
-        ) : (
-          <Text dimColor>{isLoading ? '▾ Working through the current turn...' : '✓ No queued daemon tasks'}</Text>
-        )}
+        ) : null}
+        {goal ? (
+          <Text dimColor>
+            {isLoading ? <Text color="warning">✣</Text> : <Text>○</Text>}{' '}
+            {isLoading ? 'Claude is working toward the goal...' : 'Goal not yet met... continuing'}
+            {elapsed ? ` (${elapsed}` : ''}
+            {goalTurns !== undefined ? ` · ${goalTurns} turns` : ''}
+            {elapsed ? ' · esc to interrupt)' : ''}
+          </Text>
+        ) : visibleTasks.length === 0 ? (
+          <Text dimColor>✓ No queued daemon tasks</Text>
+        ) : null}
       </Box>
     </OffscreenFreeze>
   );

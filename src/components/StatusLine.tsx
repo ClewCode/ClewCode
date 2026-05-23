@@ -2,7 +2,7 @@ import { feature } from 'bun:bundle';
 import chalk from 'chalk';
 import { existsSync } from 'fs';
 import { dirname, join } from 'path';
-import * as React from 'react';
+import type * as React from 'react';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
 import { useAppState, useSetAppState } from 'src/state/AppState.js';
@@ -28,13 +28,12 @@ import {
 import { useMainLoopModel } from '../hooks/useMainLoopModel.js';
 import { type ReadonlySettings, useSettings } from '../hooks/useSettings.js';
 import { Ansi, Box, Text } from '../ink.js';
-import { ProviderManager } from '../services/ai/ProviderManager.js';
 import { getRawUtilization } from '../services/claudeAiLimits.js';
 import { roughTokenCountEstimationForMessages } from '../services/tokenEstimation.js';
 import type { Message } from '../types/message.js';
 import type { StatusLineCommandInput } from '../types/statusLine.js';
 import type { VimMode } from '../types/textInputTypes.js';
-import { checkHasTrustDialogAccepted } from '../utils/config.js';
+import { checkHasTrustDialogAccepted, getGlobalConfig } from '../utils/config.js';
 import { calculateContextPercentages, getContextWindowForModel } from '../utils/context.js';
 import { getCwd } from '../utils/cwd.js';
 import { logForDebugging } from '../utils/debug.js';
@@ -52,6 +51,7 @@ import { Spinner } from './Spinner.js';
 
 export function statusLineShouldDisplay(settings: ReadonlySettings): boolean {
   if (feature('KAIROS') && getKairosActive()) return false;
+  if (getGlobalConfig().statusLineEnabled === false) return false;
   if (settings.statusLine?.enabled === false) return false;
   return true;
 }
@@ -158,6 +158,8 @@ type Props = {
   messagesRef: React.RefObject<Message[]>;
   lastAssistantMessageId: string | null;
   vimMode?: VimMode;
+  rightOnly?: boolean;
+  rightText?: string;
 };
 
 export function getLastAssistantMessageId(messages: Message[]): string | null {
@@ -204,42 +206,14 @@ function claudePill(text: string): string {
   );
 }
 
-/**
- * Build a cache-segmented context bar from `getCurrentUsage` data.
- *
- * Segments: cache_read (teal) · cache_creation (blue) · new_input (orange) · free (dim)
- * Using the same tokens from `currentUsage` that status line already has.
- */
-function buildCacheSegments(
-  u: NonNullable<ReturnType<typeof getCurrentUsage>>,
-  contextWindow: number,
-): { tokens: number; hex: string }[] {
-  const segs: { tokens: number; hex: string }[] = [];
-  if (u.cache_read_input_tokens > 0) {
-    segs.push({ tokens: Math.min(u.cache_read_input_tokens, contextWindow), hex: CLAUDE_THEME.success });
-  }
-  if (u.cache_creation_input_tokens > 0) {
-    segs.push({ tokens: Math.min(u.cache_creation_input_tokens, contextWindow), hex: CLAUDE_THEME.accentSoft });
-  }
-  const newInput = Math.max(0, u.input_tokens - u.cache_read_input_tokens - u.cache_creation_input_tokens);
-  if (newInput > 0) {
-    segs.push({ tokens: Math.min(newInput, contextWindow), hex: CLAUDE_THEME.accent });
-  }
-  return segs;
-}
-
 /** Render remaining context as six hearts. */
-function renderContextHearts(segs: { tokens: number; hex: string }[], total: number): string {
-  if (total <= 0 || segs.length === 0) {
+function renderContextHearts(usedPercentage: number | null | undefined): string {
+  if (usedPercentage === null || usedPercentage === undefined) {
     return chalk.hex(CLAUDE_THEME.success)('♥'.repeat(CONTEXT_HEART_COUNT));
   }
 
-  const usedTokens = Math.min(
-    total,
-    segs.reduce((sum, s) => sum + s.tokens, 0),
-  );
-  const remainingFraction = Math.max(0, 1 - usedTokens / total);
-  const filledHearts = Math.ceil(remainingFraction * CONTEXT_HEART_COUNT);
+  const remainingFraction = Math.max(0, 1 - Math.min(100, Math.max(0, usedPercentage)) / 100);
+  const filledHearts = Math.round(remainingFraction * CONTEXT_HEART_COUNT);
   const heartColor =
     filledHearts <= 1 ? CLAUDE_THEME.danger : filledHearts <= 2 ? CLAUDE_THEME.warning : CLAUDE_THEME.success;
   return (
@@ -520,13 +494,18 @@ function truncate(str: string, maxLen: number = 40): string {
 
 // ─── StatusLine component ──────────────────────────────────────────────────
 
-function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props): React.ReactNode {
+function StatusLineInner({
+  messagesRef,
+  lastAssistantMessageId,
+  vimMode,
+  rightOnly = false,
+  rightText,
+}: Props): React.ReactNode {
   const abortControllerRef = useRef<AbortController | undefined>(undefined);
   const permissionMode = useAppState(s => s.toolPermissionContext.mode);
   const additionalWorkingDirectories = useAppState(s => s.toolPermissionContext.additionalWorkingDirectories);
   const sessionGoal = useAppState(s => s.sessionGoal);
   const sessionGoalStartTime = useAppState(s => s.sessionGoalStartTime);
-  const sessionGoalTurnCount = useAppState(s => s.sessionGoalTurnCount);
   const statusLineText = useAppState(s => s.statusLineText);
   const setAppState = useSetAppState();
   const settings = useSettings();
@@ -535,18 +514,7 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
   const mcpCount = useAppState(s => s.mcp.clients.length) as number;
   const mainLoopProvider = useAppState(s => s.mainLoopProvider);
   const mainLoopProviderForSession = useAppState(s => s.mainLoopProviderForSession);
-  const [currentCwd, setCurrentCwd] = React.useState(getCwd());
   const fullscreenEnabled = isFullscreenEnvEnabled();
-
-  // Poll for CWD changes to update status line when /setpath is used
-  React.useEffect(() => {
-    const checkCwd = () => {
-      const newCwd = getCwd();
-      setCurrentCwd(prev => (prev !== newCwd ? newCwd : prev));
-    };
-    const timer = setInterval(checkCwd, 500);
-    return () => clearInterval(timer);
-  }, []);
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -709,7 +677,6 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
 
     const contextWindowSize = getContextWindowForModel(runtimeModel, getSdkBetas());
     const contextPercentages = calculateContextPercentages(usageForContext, contextWindowSize);
-    const cwd = currentCwd;
     const duration = getTotalDuration();
     let usedPercentage = contextPercentages.used ?? 0;
 
@@ -724,29 +691,15 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
       // when getCurrentUsage returns null (e.g. during thinking, tool runs, or streaming start).
       usedPercentage = lastKnownCtxBarRef.current.pct;
     }
-    const rawModelName = renderModelName(runtimeModel, mainLoopProviderForSession ?? mainLoopProvider);
-    // Strip provider prefix (e.g., "KiloCode: ") when showing in status line,
-    // since the provider is already displayed separately in brackets below
-    const modelName = rawModelName.replace(/^[^:]+:\s*/, '');
-
     // Context bar with cache-read · cache-creation · new-input segments
     // Falls back to estimated input only when getCurrentUsage returns null (streaming start).
     const bar = (() => {
       // Freeze the bar to the last known usage so it doesn't collapse
       // when getCurrentUsage returns null (e.g. during thinking, tool runs, or streaming start).
       if (!currentUsage && lastKnownCtxBarRef.current) {
-        const frac = lastKnownCtxBarRef.current.pct / 100;
-        const filledHearts = Math.ceil(Math.max(0, 1 - frac) * CONTEXT_HEART_COUNT);
-        return (
-          chalk.hex(CLAUDE_THEME.muted)('♥'.repeat(filledHearts)) +
-          chalk.hex(BAR_FREE_HEX)('♡'.repeat(CONTEXT_HEART_COUNT - filledHearts))
-        );
+        return renderContextHearts(lastKnownCtxBarRef.current.pct);
       }
-      const cacheSegs = buildCacheSegments(usageForContext, contextWindowSize);
-      if (cacheSegs.length > 0) {
-        return renderContextHearts(cacheSegs, contextWindowSize);
-      }
-      return chalk.hex(CLAUDE_THEME.success)('♥'.repeat(CONTEXT_HEART_COUNT));
+      return renderContextHearts(usedPercentage);
     })();
 
     // Extract agent activity
@@ -763,25 +716,18 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
           ? chalk.hex(CLAUDE_THEME.warning)(`${usedPercentage.toFixed(0)}%`)
           : claudeMuted(`${usedPercentage.toFixed(0)}%`);
 
-    const activeProvider =
-      mainLoopProviderForSession ?? mainLoopProvider ?? ProviderManager.getInstance().getActiveProviderName();
-    const activeProviderDisplay = activeProvider ? claudeSubtle(` ${activeProvider}`) : '';
-    const cwdShort = cwd.length > 44 ? '…' + cwd.slice(-43) : cwd;
-    const cwdDisplay = claudeMuted(cwdShort.replace(/\\/g, '/'));
     let sessionGoalDisplay = '';
     if (sessionGoal) {
-      const elapsed = sessionGoalStartTime ? Math.floor((Date.now() - sessionGoalStartTime) / 1000) : 0;
-      const elapsedStr = elapsed > 0 ? `${Math.floor(elapsed / 60)}m${elapsed % 60}s` : '0s';
-      const turns = sessionGoalTurnCount ?? 0;
+      const elapsedMs = sessionGoalStartTime ? Date.now() - sessionGoalStartTime : 0;
+      const elapsedStr = formatCompactDuration(elapsedMs);
       if (permissionMode === 'bypassPermissions') {
-        const text = `● Autonomous Goal: ${sessionGoal} · ${elapsedStr} · turns: ${turns}`;
+        const text = `◎ /goal active (${elapsedStr})`;
         sessionGoalDisplay =
-          ' ' +
           chalk.hex(CLAUDE_THEME.subtle)('[') +
           chalk.hex(CLAUDE_THEME.accent)(text) +
           chalk.hex(CLAUDE_THEME.subtle)(']');
       } else {
-        sessionGoalDisplay = ' ' + claudePill(`${sessionGoal} ${elapsedStr} t${turns}`);
+        sessionGoalDisplay = claudePill(`◎ /goal active (${elapsedStr})`);
       }
     }
     // Build stats parts (only show non-zero)
@@ -791,13 +737,9 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
     if (mcpCount > 0) statsParts.push(`${mcpCount} MCPs`);
     const statsStr = statsParts.length > 0 ? CLAUDE_DOT + statsParts.map(claudeMuted).join(CLAUDE_DOT) : '';
 
-    const leftLine =
-      claudeAccent('▌ ') +
-      cwdDisplay +
-      CLAUDE_DOT +
-      chalk.hex(CLAUDE_THEME.text)(modelName) +
-      activeProviderDisplay +
-      sessionGoalDisplay;
+    const leftLine = [sessionGoalDisplay, filteredStatusLineText ? claudeSubtle(filteredStatusLineText) : '']
+      .filter(Boolean)
+      .join(CLAUDE_DOT);
 
     const rightLine =
       bar +
@@ -807,7 +749,8 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
       claudeMuted(formatContextSize(contextWindowSize)) +
       CLAUDE_DOT +
       claudeMuted(`◷ ${formatCompactDuration(duration)}`) +
-      statsStr;
+      statsStr +
+      (rightText ? CLAUDE_DOT + chalk.hex(CLAUDE_THEME.warning)(rightText) : '');
 
     const agentLines: Array<{ key: string; node: React.ReactNode }> = [
       ...runningAgents.slice(-1).map(a => ({
@@ -843,16 +786,34 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
       })),
     ];
 
+    if (rightOnly) {
+      return (
+        <Box flexDirection="column" gap={0} marginTop={0}>
+          <Box flexShrink={1} paddingLeft={1} overflowX="hidden">
+            <Text wrap="truncate">
+              <Ansi>{rightLine}</Ansi>
+            </Text>
+          </Box>
+
+          {agentLines.map(({ key, node }) => (
+            <Box key={key} overflowX="hidden">
+              {node}
+            </Box>
+          ))}
+        </Box>
+      );
+    }
+
     return (
       <Box flexDirection="column" gap={0} marginTop={0}>
         <Box flexDirection="row" justifyContent="space-between" width="100%">
-          <Box overflowX="hidden">
+          <Box overflowX="hidden" flexShrink={1}>
             <Text>
               <Ansi>{leftLine}</Ansi>
             </Text>
           </Box>
-          <Box flexShrink={0} paddingLeft={1}>
-            <Text>
+          <Box flexShrink={1} paddingLeft={1} overflowX="hidden">
+            <Text wrap="truncate">
               <Ansi>{rightLine}</Ansi>
             </Text>
           </Box>
@@ -869,11 +830,6 @@ function StatusLineInner({ messagesRef, lastAssistantMessageId, vimMode }: Props
 
   return (
     <Box paddingX={paddingX} flexDirection="column" gap={0} marginTop={0}>
-      {filteredStatusLineText && (
-        <Box paddingLeft={1} marginBottom={0} justifyContent="flex-start">
-          <Ansi>{claudeSubtle(filteredStatusLineText)}</Ansi>
-        </Box>
-      )}
       {defaultStatusLine || (fullscreenEnabled ? <Text> </Text> : null)}
     </Box>
   );

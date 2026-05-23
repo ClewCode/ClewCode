@@ -6,7 +6,13 @@ import { getSubscriptionType } from 'src/utils/auth.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { Box, Text } from '../../ink.js';
 import { useKeybinding } from '../../keybindings/useKeybinding.js';
-import { type ExtraUsage, fetchUtilization, type RateLimit, type Utilization } from '../../services/api/usage.js';
+import {
+  type ContributingFactor,
+  type ExtraUsage,
+  fetchUtilization,
+  type RateLimit,
+  type Utilization,
+} from '../../services/api/usage.js';
 import { formatResetText } from '../../utils/format.js';
 import { logError } from '../../utils/log.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
@@ -185,6 +191,10 @@ export function Usage(): React.ReactNode {
 
       {utilization.extra_usage && <ExtraUsageSection extraUsage={utilization.extra_usage} maxWidth={maxWidth} />}
 
+      {utilization.contributing_factors && utilization.contributing_factors.length > 0 && (
+        <ContributingFactorsSection factors={utilization.contributing_factors} maxWidth={maxWidth} />
+      )}
+
       {isEligibleForOverageCreditGrant() && <OverageCreditUpsell maxWidth={maxWidth} />}
 
       <Text dimColor>
@@ -252,5 +262,32 @@ function ExtraUsageSection({ extraUsage, maxWidth }: ExtraUsageSectionProps): Re
       extraSubtext={`${formattedUsedCredits} / ${formattedMonthlyLimit} spent`}
       maxWidth={maxWidth}
     />
+  );
+}
+
+type ContributingFactorsSectionProps = {
+  factors: ContributingFactor[];
+  maxWidth: number;
+};
+
+function ContributingFactorsSection({ factors }: ContributingFactorsSectionProps): React.ReactNode {
+  if (factors.length === 0) return null;
+
+  return (
+    <Box flexDirection="column">
+      <Text bold>What's contributing to your limits usage</Text>
+      <Box flexDirection="column" paddingLeft={2}>
+        {factors.map((factor, index) => (
+          <Box key={index} flexDirection="row" gap={1}>
+            {factor.percentage != null && (
+              <Text dimColor width={5}>
+                {Math.round(factor.percentage)}%
+              </Text>
+            )}
+            <Text wrap="wrap">{factor.reason}</Text>
+          </Box>
+        ))}
+      </Box>
+    </Box>
   );
 }

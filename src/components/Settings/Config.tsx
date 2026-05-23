@@ -492,6 +492,22 @@ export function Config({
         });
       },
     },
+    {
+      id: 'statusLineEnabled',
+      label: 'Status line',
+      value: globalConfig.statusLineEnabled ?? true,
+      type: 'boolean' as const,
+      onChange(statusLineEnabled: boolean) {
+        saveGlobalConfig(current => ({
+          ...current,
+          statusLineEnabled,
+        }));
+        setGlobalConfig({ ...getGlobalConfig(), statusLineEnabled });
+        logEvent('tengu_status_line_setting_changed', {
+          enabled: statusLineEnabled,
+        });
+      },
+    },
     ...(getFeatureValue_CACHED_MAY_BE_STALE('tengu_terminal_sidebar', false)
       ? [
           {
@@ -1231,6 +1247,9 @@ export function Config({
       formattedChanges.push(
         `${globalConfig.terminalProgressBarEnabled ? 'Enabled' : 'Disabled'} terminal progress bar`,
       );
+    }
+    if ((globalConfig.statusLineEnabled ?? true) !== (initialConfig.current.statusLineEnabled ?? true)) {
+      formattedChanges.push(`${(globalConfig.statusLineEnabled ?? true) ? 'Enabled' : 'Disabled'} status line`);
     }
     if (globalConfig.showStatusInTerminalTab !== initialConfig.current.showStatusInTerminalTab) {
       formattedChanges.push(`${globalConfig.showStatusInTerminalTab ? 'Enabled' : 'Disabled'} terminal tab status`);

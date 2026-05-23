@@ -1,5 +1,6 @@
 import { feature } from 'bun:bundle';
 import type * as React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSettings } from '../../hooks/useSettings.js';
 import { Box, Text, useAnimationFrame } from '../../ink.js';
 import { interpolateColor, toRGBColor } from '../Spinner/utils.js';
@@ -20,9 +21,28 @@ export function VoiceIndicator(props: Props): React.ReactNode {
 }
 
 function VoiceIndicatorImpl({ voiceState }: Props): React.ReactNode {
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (voiceState !== 'recording') {
+      setElapsed(0);
+      return;
+    }
+    startRef.current = Date.now();
+    const timer = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
+    }, 200);
+    return () => clearInterval(timer);
+  }, [voiceState]);
+
   switch (voiceState) {
-    case 'recording':
-      return <Text dimColor>listening…</Text>;
+    case 'recording': {
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : `${secs}s`;
+      return <Text dimColor>recording {timeStr}</Text>;
+    }
     case 'processing':
       return <ProcessingShimmer />;
     case 'idle':
