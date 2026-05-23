@@ -1,6 +1,6 @@
 {
   "name": "claudecode",
-  "version": "2.1.156",
+  "version": "2.1.158",
   "description": "Official Claude Code CLI — AI-powered coding assistant",
   "main": "./dist/main.js",
   "type": "module",
