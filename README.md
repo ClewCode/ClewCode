@@ -3,305 +3,248 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/ClaudeCore/claudecode/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-purple.svg" alt="License" /></a>
+  <a href="https://bun.sh"><img src="https://img.shields.io/badge/runtime-Bun-blue?logo=bun&logoColor=white" alt="Bun Runtime" /></a>
+  <a href="https://typescriptlang.org"><img src="https://img.shields.io/badge/language-TypeScript-blue?logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://react.dev"><img src="https://img.shields.io/badge/ui-Ink%20React-ff69b4?logo=react&logoColor=white" alt="Ink React" /></a>
+</p>
+
+<p align="center">
   <strong>Languages:</strong>
   <a href="README.md"><strong>English</strong></a> ·
   <a href="readme/README.zh.md">中文 (简体)</a> ·
   <a href="readme/README.th.md">ไทย</a>
 </p>
 
-# Claude Code
+---
 
-Claude Code is an independent, research-oriented **reverse-engineered rebuild** of Anthropic's [Claude Code](https://claude.ai/code) CLI. The goal is a **runnable, buildable, and debuggable** terminal workflow from source—not a black-box binary—while extending the runtime with multi-provider routing, adapters, and engineering tooling.
+# 🔮 Claude Code
 
-> **Disclaimer:** This repository is not affiliated with, endorsed by, or sponsored by Anthropic PBC. The upstream Claude Code product is proprietary; this project reconstructs and extends behavior for research and self-hosted use. Review [LICENSE.md](LICENSE.md) before redistributing or deploying.
+Claude Code is an independent, research-oriented **reverse-engineered rebuild and extension** of Anthropic's [Claude Code](https://claude.ai/code) CLI. It provides a fully **runnable, buildable, and debuggable** terminal workflow compiled directly from source—liberating your terminal from closed binaries and locked proprietary environments.
 
-## Positioning
+We supercharge the terminal experience by combining the elegant developer UX of the upstream model with multi-provider routing, dynamic theme controls, advanced permission structures, and custom developer tools.
 
-| Aspect | What Claude Code provides |
-| --- | --- |
-| **Source fidelity** | Reconstructed CLI aligned with Claude Code's terminal UX, tools, and extension points |
-| **Build & debug** | Bun/TypeScript tree you can `bun run dev`, type-check, test, and patch locally |
-| **Enterprise-style surface** | Bridge/remote sessions, MCP, plugins, skills, agents/supervisor, voice, session memory, LSP—without requiring Anthropic's hosted-only gates for every workflow |
-| **Our differentiation** | Declarative **multi-provider** routing (`providers.json`, `/model`), provider adapters, and dev utilities (`preload`, `codeindex`, `session`) |
+> [!IMPORTANT]
+> **Disclaimer:** This repository is not affiliated with, endorsed by, or sponsored by Anthropic PBC. The upstream Claude Code product is proprietary; this project reconstructs, refactors, and extends behavior for research, educational, and self-hosted use. Please review [LICENSE.md](LICENSE.md) before redistributing or deploying.
 
-> This is a community rebuild for engineers who need transparency and provider choice—not an official Anthropic distribution.
+---
 
-## What It Does
+## 🎨 What Makes Us Different: Exclusive Features
 
-Claude Code gives you an AI coding assistant that runs in your terminal, can inspect and edit a local codebase, execute tools, switch between model providers, and coordinate longer workflows through commands, agents, plugins, and project skills.
+This rebuild is packed with powerful features you won't find in the upstream proprietary client:
 
-Highlights:
+### 1. 🌈 Dynamic Theme Customization & Purple Aesthetic
+Say goodbye to static, hardcoded color schemes. We have redesigned the terminal experience:
+* **Electric Purple Theme:** Upgraded from the static peach/orange theme to a breathtaking, premium modern purple (`autoAccept` HSL color space) by default.
+* **マスッコト & UI Integration:** Custom colors apply dynamically across the entire CLI—including the **Clawd mascot**, welcome banner, dividers, and status indicators.
+* **Dynamic `/color` Control:** Use the `/color <color>` command to change terminal highlights instantly. Change your border color, status logs, and prompt box to match your exact mood or terminal setup on the fly!
 
-- **Multi-provider AI routing** through Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, GitHub Copilot, and other OpenAI-compatible providers.
-- **Runtime model switching** with `/model` and provider configuration.
-- **Tool-based coding workflow** for reading, editing, writing, searching, running shell commands, using LSP features, browsing, and working with MCP servers.
-- **Plugin hooks** for intercepting prompts, shell commands, tool usage, and file edits.
-- **Skill loading** from bundled skills and project-level `.claude/skills/` directories.
-- **Agent and supervisor workflows** for delegating research, coding, and coordination tasks.
-- **Durable Agent Runtime & Orchestrator** with offline-first execution, checkpoints, and interactive approvals.
-- **24/7 Autonomous Mode** with persistent task queue, daemon process, health checks, auto-retry, dead-letter handling, and lease-based concurrency control.
-- **Scheduled Tasks** from the interactive `/task` form for one-shot reminders and recurring checks, with optional durable storage in `.claude/scheduled_tasks.json`.
-- **Session and bridge features** for saving context, restoring work, and supporting remote collaboration.
+### 2. ⚡ Universal `Shift+Tab` Auto-Permission Cycle
+Tired of answering prompt confirmation dialogues? 
+* We have **completely unlocked and democratized Auto Mode**!
+* By removing restrictive upstream feature gates (`TRANSCRIPT_CLASSIFIER`) and persistent caching barriers, `auto` mode is now universally available for all builds.
+* Cycle seamlessly through permissions (`normal` ➡️ `notify` ➡️ `auto`) at any point using the standard `Shift+Tab` interactive carousel.
 
-### Compatibility Namespace
+### 3. 🔍 Polished Multi-Provider Model Names
+* Enjoy pristine terminal headers. We fixed the double provider prefix bug (e.g. rendering "DeepSeek: deepseek-v4-flash" with redundant provider names).
+* Your active model is displayed cleanly, elegantly, and correctly, whether you are querying Claude, DeepSeek, Gemini, or custom local setups.
 
-Claude Code's command is `claude`, but parts of the runtime intentionally still read Claude-compatible project and user paths such as `.claude/settings.json`, `.claude/skills/`, and selected `CLAUDE_CODE_*` environment variables. This keeps existing Claude Code-style projects, plugins, skills, hooks, and settings reusable while the public CLI and docs use the Claude Code name.
+---
 
-## Quick Start
+## 🚀 Key Capabilities
 
-### Install Globally
+* **Multi-Provider AI Routing:** Run on Anthropic, OpenAI, Google Gemini, DeepSeek, OpenRouter, Ollama, GitHub Copilot, and any OpenAI-compatible custom endpoints.
+* **Runtime Switching:** Swap models instantly with `/model <provider>/<model-name>`.
+* **Deep Codebase Tools:** Full tool suite for reading, writing, regex searching, multi-file editing, shell execution, LSP analysis, web browsing, and MCP server connectivity.
+* **24/7 Autonomous Daemon:** Persistent background agent queues, auto-heals, locks, lease checks, and retry mechanics to run tasks safely overnight.
+* **Scheduled Tasks (`/task`):** Elegant interactive task creators. Setup cron jobs, delayed one-shots, and persistent routines saved cleanly to `.claude/scheduled_tasks.json`.
+* **Bridge & Session Memory:** Seamless remote collaboration bridges and durable agent memory sessions to preserve context across invocations.
 
+---
+
+## 📦 Quick Start
+
+### Global Installation
+
+Using **npm**:
 ```bash
 npm install -g claudecode
 ```
 
-or:
-
+Using **Bun** (Recommended):
 ```bash
 bun install -g claudecode
 ```
 
-Run it from any project directory:
-
+Once installed, boot the agent inside any project directory:
 ```bash
 claude
 ```
 
-### Run From Source
+---
+
+### Run and Develop from Source
+
+For developers who want to patch, inspect, or customize the runtime locally:
+
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/ClaudeCore/claudecode.git
+   cd claudecode
+   ```
+
+2. **Install Dependencies:**
+   ```bash
+   bun install
+   ```
+
+3. **Run in Watch / Dev Mode:**
+   ```bash
+   bun run dev
+   ```
+
+4. **Build the Production Bundle:**
+   ```bash
+   bun run build
+   bun run start
+   ```
+
+---
+
+## 🔑 AI Provider Configuration
+
+Set one or more provider keys in your environment (or inside a local `.env` file):
 
 ```bash
-git clone https://github.com/ClaudeCore/claudecode.git
-cd claudecode
-bun install
-bun run build
-bun run start
+# Set your chosen API keys
+export ANTHROPIC_API_KEY="sk-ant-..."
+export OPENAI_API_KEY="sk-proj-..."
+export GOOGLE_API_KEY="AIzaSy..."
+export DEEPSEEK_API_KEY="sk-..."
+export OPENROUTER_API_KEY="sk-or-..."
+
+# For local models
+export OLLAMA_HOST="http://localhost:11434"
 ```
 
-## Requirements
-
-- [Bun](https://bun.sh) 1.3 or later for local development.
-- At least one provider credential, such as `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, or another supported provider key.
-- Windows, macOS, Linux, or WSL2.
-
-## Provider Setup
-
-Set one or more provider keys in your shell or `.env` file:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-export OPENAI_API_KEY=sk-...
-export GOOGLE_API_KEY=...
-export OPENROUTER_API_KEY=sk-or-...
-export OLLAMA_HOST=http://localhost:11434
-```
-
-Inside Claude Code, switch models or providers with:
-
+Inside the active terminal session, switch providers dynamically:
 ```text
-/model
-/model list
-/model openai/gpt-4o
-/model google/gemini-2.5-pro
+/model list                     # View all active and available models
+/model deepseek/deepseek-chat   # Switch to DeepSeek
+/model google/gemini-2.5-pro    # Switch to Google Gemini
+/model openai/gpt-4o            # Switch to OpenAI GPT-4o
 ```
 
-See [docs/providers.html](docs/providers.html) for the provider overview.
+---
 
-## Common Commands
+## 🛠️ CLI Interactive Slash Commands
 
-```text
-/model          Switch model or provider
-/status         Show session, provider, and context status
-/doctor         Run diagnostics
-/context        Inspect context usage
-/compact        Compress conversation context
-/mcp            Manage MCP servers
-/plugin         Manage plugins
-/plugin-details Show plugin component inventory, hooks, MCP servers, and token cost
-/loop           Run a prompt on a recurring interval (e.g. /loop 5m /check-deploy)
-/autofix-pr     Fix CI errors and review comments on a PR via Claude Code on the web
-/bridge         Configure bridge mode
-/agent      Manage local agent workflows (run, status, trace, approvals, report)
-/daemon     Open the interactive 24/7 autonomous daemon control panel
-/task       Create scheduled tasks or manage the autonomous task queue
-```
+Type `/` within the terminal shell to access the suite of built-in diagnostics and features:
 
-Type `/` inside the CLI to discover available commands.
-
-## Scheduled Tasks
-
-Scheduled tasks can be created from an interactive `/task` form, so you do not need to remember cron syntax. Run `/task` with no arguments, fill in the name, schedule, prompt, and storage mode, then confirm.
-
-| You do | Claude Code does |
+| Command | Action |
 | --- | --- |
-| `/task` | Opens the interactive scheduled task form |
-| Select `Daily` around `09:00` | Creates a recurring daily task |
-| Select `Weekdays` around `09:00` | Creates a weekday cron such as `0 9 * * 1-5` |
-| Select `In N minutes` with `10` | Creates a one-shot reminder for the next matching local time |
-| Select `Custom cron` | Accepts a standard 5-field cron expression |
-| `/task scheduled` | Opens the same form explicitly |
-| `/task list` | Lists autonomous queue tasks |
+| `/model` | Configure, switch, or inspect available LLM models & providers |
+| `/color` | Customize UI colors dynamically (e.g. `/color purple`, `/color green`) |
+| `/status` | Check model provider, session health, tokens, and active workspace metrics |
+| `/context` | Deep-dive into active context window token utilization |
+| `/compact` | Perform a smart compaction of the conversation memory |
+| `/mcp` | List, link, configure, and inspect connected Model Context Protocol servers |
+| `/plugin` | Toggle, configure, and load terminal lifecycle plugin hooks |
+| `/daemon` | Launch the 24/7 Autonomous Agent task-queue control panel dashboard |
+| `/task` | Open the interactive cron-like scheduled tasks wizard |
+| `/doctor` | Run diagnostic suite on CLI dependencies, environments, and network nodes |
+| `/bridge` | Enable bridge mode to pair-program remotely or connect IDE interfaces |
 
-Details:
+---
 
-- Uses standard 5-field cron in the machine's local timezone: `minute hour day-of-month month day-of-week`.
-- `Durable` storage persists scheduled tasks to `.claude/scheduled_tasks.json` across sessions.
-- `Session-only` storage keeps tasks in memory for the current session only.
-- Recurring tasks auto-expire after 30 days unless they are system-created permanent tasks.
-- One-shot tasks auto-delete after they fire.
-- Natural language scheduling still works through the underlying `CronCreate`, `CronList`, and `CronDelete` tools when the model chooses to use them.
+## 🗓️ Scheduled & Cron Tasks
 
-Examples:
+Launch the interactive scheduler wizard by typing `/task` to create jobs without writing complex cron patterns:
 
-```text
-/task
-Name: Server status
-Schedule: Daily
-Time: 20:00
-Prompt: Check the server status
-Storage: Durable
+> [!TIP]
+> The scheduler automatically handles cron math behind the scenes!
 
-/task
-Name: Commit reminder
-Schedule: In N minutes
-Delay: 10
-Prompt: Don't forget to commit the code
-Storage: Session-only
-```
+* **Daily:** Schedule a prompt to run every day at a specific time (e.g. `Daily at 09:00` generates `0 9 * * *`).
+* **Weekdays:** Keep tasks aligned with your work week (e.g. Weekdays at 17:00 generates `0 17 * * 1-5`).
+* **Delay / One-Shot:** Run a single-shot reminder after a custom delay (e.g., `In 10 minutes` to commit current progress).
+* **Durable vs. Session Storage:** Decide whether a task should persist to disk (`.claude/scheduled_tasks.json`) or remain active only for the current shell runtime.
 
-## Development
+---
 
-```bash
-bun run dev              # Start development mode with watch
-bun run start            # Run the CLI from source
-bun run build            # Build to dist/
-bun test                 # Run tests
-bun x tsc --noEmit       # Type-check only
-bun run lint:check       # Check lint rules
-bun run format:check     # Check formatting
-bun run check:ci         # Run Biome CI checks
-```
+## 🏗️ Project Architecture & Layout
 
-Useful project utilities:
-
-```bash
-bun run preload <module>     # Preload module context before editing
-bun run session <command>    # Save, list, or restore session context
-bun run codeindex <command>  # Index and search the codebase
-bun run codegraph            # Generate a module dependency graph
-bun run ast-grep -- <args>   # Run AST-based search or rewrite
-```
-
-## Project Layout
+Our modular architecture isolates the user interface from core AI adapters and orchestration services:
 
 ```text
 src/
-├── main.tsx              CLI bootstrap and main runtime
-├── query.ts              Core query processing
-├── QueryEngine.ts        Query orchestration
-├── agentRuntime/         Agent orchestration, run store, and tool gateway
-├── commands/             Slash command implementations
-├── tools/                Built-in tool implementations
+├── main.tsx              # CLI bootstrapper & global React Ink runtime loop
+├── QueryEngine.ts        # Orchestration layer for token streaming and reasoning loops
+├── agentRuntime/         # Agent orchestration, persistent run store, and tools gateway
+├── commands/             # Slash command implementations (e.g., /model, /color, /daemon)
+├── components/           # Terminal UI visual elements (Welcome banners, inputs, status logs)
+├── cli/                  # CLI input handlers and shell controllers
 ├── services/
-│   ├── ai/               Provider manager, adapters, model registry
-│   ├── autonomous/       24/7 autonomous agent daemon & task queue
-│   ├── mcp/              MCP client and transport support
-│   ├── plugins/          Plugin lifecycle and hooks
-│   ├── tools/            Tool execution services
-│   ├── lsp/              Language Server Protocol integration
-│   ├── Supervisor/       Agent supervision
-│   └── SessionMemory/    Persistent session memory
-├── skills/               Skill loading and bundled skills
-├── cli/                  Ink/React CLI UI
-├── components/           Terminal UI components
-├── bridge/               Remote collaboration bridge
-├── coordinator/          Multi-agent coordination
-├── keybindings/          Custom keybinding engine
-├── state/                Lightweight reactive stores
-└── vim/                  Vim-style editing mode
+│   ├── ai/               # Provider manager, unified adapters, and model registry
+│   ├── autonomous/       # Background daemon task runner & persistent queue manager
+│   ├── mcp/              # Model Context Protocol integration and JSON-RPC transport
+│   ├── plugins/          # Extension points, prompt filters, and system hook lifecycle
+│   ├── tools/            # Unified code manipulation and terminal execution engine
+│   └── SessionMemory/    # Long-term session storage and vector-like conversation recall
+└── skills/               # Dynamic declarative capability loader (.claude/skills/*)
 ```
 
-## Architecture
+---
 
-Claude Code is built around a provider-agnostic tool execution loop:
+## 💻 Developer Command Suite
 
-```text
-Terminal UI
-  -> Command and keybinding layer
-  -> Provider manager and adapters
-  -> Query engine and streaming loop
-  -> Tool executor
-  -> Plugin hooks, MCP, LSP, agents, memory, and bridge services
-```
-
-Provider-specific SDKs are wrapped behind adapters so the rest of the runtime can process streaming responses, tool calls, usage metadata, and content blocks through a common interface.
-
-## Documentation
-
-- [Installation](docs/installation.html)
-- [Quick Start](docs/quick-start.html)
-- [Configuration](docs/configuration.html)
-- [AI Providers](docs/providers.html)
-- [Models](docs/models.html)
-- [Commands](docs/commands.html)
-- [Tools](docs/tools.html)
-- [Plugins](docs/plugins.html)
-- [Skills](docs/skills.html)
-- [Architecture](docs/architecture.html)
-- [Permission Model](docs/permission-model.html)
-- [Bridge Mode](docs/features/bridge-mode.html)
-- [SearXNG Search](docs/features/searxng-search.html)
-- [Troubleshooting](docs/troubleshooting.html)
-- [Evals](docs/features/evals.html)
-
-## Debugging
-
-Enable general debug output:
+We provide native engineering utilities for rapid debugging, profiling, and testing:
 
 ```bash
-DEBUG=1 bun run src/main.tsx
+bun run dev              # Build and run with hot-reload file watching
+bun run start            # Execute the compiled CLI binary
+bun run build            # Compile production-ready build to dist/
+bun test                 # Run the test suites
+bun x tsc --noEmit       # Execute typescript check
+bun run lint:check       # Run Biome/Linter checkers
+bun run format:check     # Check code formatting consistency
 ```
 
-Enable scoped provider logging:
+### Advanced Codebase Utilities:
+* **Preloader (`bun run preload <module>`)**: Preload specific module contexts to prime the LLM context.
+* **Session Manager (`bun run session <cmd>`)**: Snapshot, inspect, or restore terminal sessions.
+* **AST Search (`bun run ast-grep`)**: Query and rewrite files utilizing concrete syntax trees.
+* **Dependency Visualizer (`bun run codegraph`)**: Map out module dependencies and visualize relationships.
 
-```bash
-DEBUG=provider:anthropic bun run src/main.tsx
-```
+---
 
-## Platform Notes
+## 🖥️ Platform Notes
 
-### Windows
-
-If dependencies or native modules get into a bad state:
-
+### Windows Development
+For smooth Windows installations, ensure a native terminal environment is configured:
 ```powershell
+# Reset node modules if dependencies conflict
 Remove-Item -Recurse -Force node_modules
 bun install
 bun run dev
 ```
+*Note: A custom Windows-optimized `ripgrep` binary is precompiled and vendor-embedded at `src/utils/vendor/ripgrep/x64-win32/rg.exe` for lightning-fast search performance.*
 
-Claude Code includes a bundled Windows `ripgrep` binary at `src/utils/vendor/ripgrep/x64-win32/rg.exe` for file search tools.
+---
 
-### Production Build
+## 🤝 Contributing
 
-The production build externalizes several native and optional modules, including Electron, Chromium BiDi, Anthropic platform SDK variants, AWS SDK packages, Google auth libraries, Sharp, audio capture packages, and React DevTools.
+We welcome contributions, bug reports, and design feedback! Please review our [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) files before submitting pull requests.
 
-## Contributing
-
-Issues and pull requests are welcome. Before opening a PR, run the relevant checks:
-
+To ensure your code meets standard styling and types:
 ```bash
 bun test
 bun run lint:check
-bun run format:check
 bun x tsc --noEmit
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md) for project guidelines.
+---
 
-## Changelog
+## 📜 License & Release Notes
 
-See [CHANGELOG.md](CHANGELOG.md) for release history.
-
-## License
-
-See [LICENSE.md](LICENSE.md).
+* **License:** Refer to [LICENSE.md](LICENSE.md) for details.
+* **Changelog:** Refer to [CHANGELOG.md](CHANGELOG.md) to explore recent feature updates and patch details.

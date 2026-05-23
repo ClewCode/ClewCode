@@ -9,6 +9,25 @@ This project follows a practical changelog format based on:
 - `Security` for permission, sandbox, auth, and trust-related hardening
 - `Internal` for tests, types, refactors, and developer-facing implementation work
 
+## [2.1.158] - 2026-05-23
+
+### Added
+
+- **GFM Task List Checkboxes** — Markdown output now renders `- [ ] todo` / `- [x] done` as `☐` / `☑` checkboxes instead of plain bullets. Checked items use green; unchecked use dim.
+- **Diff keyboard scrolling** — `/diff detail` view now supports PgUp/PgDn (page through files), Home/End (jump to first/last file), and vim-style j/k navigation in addition to arrow keys. Space also pages down.
+- **`/usage` contributing factors** — Added "What's contributing to your limits usage?" breakdown section that renders when the API provides `contributing_factors` data.
+
+### Fixed
+
+- **PowerShell cd built-in permission bypass** — `cd..`, `cd\`, `cd~`, and bare drive letters (`D:`, `C:`) now correctly detected as cwd-changing operations by `isCwdChangingCmdlet`. Previously these parser-level shortcuts bypassed the cd+compound guard in permission checks.
+- **Bash PWD/DIRSTACK stale variable tracking** — After `cd`/`pushd`/`popd`, `PWD`, `OLDPWD`, and `DIRSTACK` are invalidated from the variable tracking scope to prevent stale values from being trusted across a cwd change.
+- **Jump-to-bottom pill dismissal** — Tapping the "Jump to bottom" pill now dismisses it immediately instead of waiting for the next scroll subscription tick.
+- **`/voice` native module crash on Windows** — `audio-capture-napi` caused Bun segfault. Wrapped in try/catch with Windows SoX fallback. Also removed GrowthBook feature gate so `/voice` is always visible.
+
+### Removed
+
+- **`/eval` command** — Removed the verification harness (`/eval init/run/compare/report/trace/doctor`) and its entire `src/eval/` framework. Not needed in this fork.
+
 ## [2.1.157] - 2026-05-22
 
 ### Changed
