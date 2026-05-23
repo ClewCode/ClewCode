@@ -69,17 +69,13 @@ const PERMISSION_MODE_CONFIG: Partial<Record<PermissionMode, PermissionModeConfi
     color: 'error',
     external: 'dontAsk',
   },
-  ...(feature('TRANSCRIPT_CLASSIFIER')
-    ? {
-        auto: {
-          title: 'Auto mode',
-          shortTitle: 'Auto',
-          symbol: '⏵⏵',
-          color: 'warning' as ModeColorKey,
-          external: 'default' as ExternalPermissionMode,
-        },
-      }
-    : {}),
+  auto: {
+    title: 'Auto mode',
+    shortTitle: 'Auto',
+    symbol: '⏵⏵',
+    color: 'warning' as ModeColorKey,
+    external: 'default' as ExternalPermissionMode,
+  },
 };
 
 /**

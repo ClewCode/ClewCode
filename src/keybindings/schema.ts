@@ -147,6 +147,10 @@ export const KEYBINDING_ACTIONS = [
   'diff:viewDetails',
   'diff:previousFile',
   'diff:nextFile',
+  'diff:firstFile',
+  'diff:lastFile',
+  'diff:pageUp',
+  'diff:pageDown',
   // Model picker actions (ant-only)
   'modelPicker:decreaseEffort',
   'modelPicker:increaseEffort',

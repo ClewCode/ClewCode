@@ -94,7 +94,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       // add a voice:pushToTalk entry (last wins); to disable, use /voice
       // — null-unbinding space hits a pre-existing useKeybinding.ts trap
       // where 'unbound' swallows the event (space dead for typing).
-      ...(feature('VOICE_MODE') ? { space: 'voice:pushToTalk' } : {}),
+      'alt+space': 'voice:pushToTalk',
     },
   },
   {
@@ -311,7 +311,14 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       right: 'diff:nextSource',
       up: 'diff:previousFile',
       down: 'diff:nextFile',
+      k: 'diff:previousFile',
+      j: 'diff:nextFile',
       enter: 'diff:viewDetails',
+      pageup: 'diff:pageUp',
+      pagedown: 'diff:pageDown',
+      space: 'diff:pageDown',
+      home: 'diff:firstFile',
+      end: 'diff:lastFile',
       // Note: diff:back is handled by left arrow in detail mode
     },
   },

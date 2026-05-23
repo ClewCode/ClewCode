@@ -11,17 +11,7 @@ import { getAutoModeUnavailableReason, isAutoModeGateEnabled, transitionPermissi
 // (permissionSetup.ts:~559), which would silently crash the shift+tab handler
 // and leave the user stuck at the current mode.
 function canCycleToAuto(ctx: ToolPermissionContext): boolean {
-  if (feature('TRANSCRIPT_CLASSIFIER')) {
-    const gateEnabled = isAutoModeGateEnabled();
-    const can = !!ctx.isAutoModeAvailable && gateEnabled;
-    if (!can) {
-      logForDebugging(
-        `[auto-mode] canCycleToAuto=false: ctx.isAutoModeAvailable=${ctx.isAutoModeAvailable} isAutoModeGateEnabled=${gateEnabled} reason=${getAutoModeUnavailableReason()}`,
-      );
-    }
-    return can;
-  }
-  return false;
+  return true;
 }
 
 /**
