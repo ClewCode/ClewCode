@@ -20,9 +20,9 @@
     "url": "git+https://github.com/JonusNattapong/claudecode.git"
   },
   "bugs": {
-    "url": "https://github.com/ClaudeCore/claudecode/issues"
+    "url": "https://github.com/JonusNattapong/claudecode/issues"
   },
-  "homepage": "https://github.com/ClaudeCore/claudecode#readme",
+  "homepage": "https://github.com/JonusNattapong/claudecode#readme",
   "scripts": {
     "dev": "bun --watch run --define.TRANSCRIPT_CLASSIFIER=true --define.CHICAGO_MCP=true --define.VOICE_MODE=true src/main.tsx",
     "start": "bun run --define.VOICE_MODE=true src/main.tsx",

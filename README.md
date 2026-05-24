@@ -67,7 +67,7 @@ claude
 ### Running From Source
 
 ```bash
-git clone https://github.com/ClaudeCore/claudecode.git
+git clone https://github.com/JonusNattapong/claudecode.git
 cd claudecode
 bun install
 bun run build
