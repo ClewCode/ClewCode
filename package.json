@@ -5,8 +5,8 @@
   "main": "./dist/main.js",
   "type": "module",
   "bin": {
-    "claude": "bin/claude.cjs",
-    "claudecode": "bin/claude.cjs"
+    "claudevil": "bin/claudevil.cjs",
+    "claudecode": "bin/claudevil.cjs"
   },
   "files": [
     "bin/",
