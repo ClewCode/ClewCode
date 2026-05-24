@@ -130,7 +130,7 @@ export function generateHeatmap(dailyActivity: DailyActivity[], options: Heatmap
   // Legend
   lines.push('');
   lines.push(
-    '    Less ' + [claudeOrange('░'), claudeOrange('▒'), claudeOrange('▓'), claudeOrange('█')].join(' ') + ' More',
+    '    Less ' + [claudePurple('░'), claudePurple('▒'), claudePurple('▓'), claudePurple('█')].join(' ') + ' More',
   );
 
   return lines.join('\n');
@@ -145,21 +145,21 @@ function getIntensity(messageCount: number, percentiles: Percentiles | null): nu
   return 1;
 }
 
-// Claude orange color (hex #da7756)
-const claudeOrange = chalk.hex('#da7756');
+// Claude purple color (hex #af87ff)
+const claudePurple = chalk.hex('#af87ff');
 
 function getHeatmapChar(intensity: number): string {
   switch (intensity) {
     case 0:
       return chalk.gray('·');
     case 1:
-      return claudeOrange('░');
+      return claudePurple('░');
     case 2:
-      return claudeOrange('▒');
+      return claudePurple('▒');
     case 3:
-      return claudeOrange('▓');
+      return claudePurple('▓');
     case 4:
-      return claudeOrange('█');
+      return claudePurple('█');
     default:
       return chalk.gray('·');
   }
