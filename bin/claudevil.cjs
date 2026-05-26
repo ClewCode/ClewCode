@@ -2,10 +2,32 @@
 const { spawnSync } = require('child_process');
 const path = require('path');
 
-function hasBun() {
+function resolveBunCommand() {
   const whichCommand = process.platform === 'win32' ? 'where' : 'which';
-  const result = spawnSync(whichCommand, ['bun'], { stdio: 'ignore', shell: false });
-  return result.status === 0;
+  const result = spawnSync(whichCommand, ['bun'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+    shell: false,
+  });
+
+  if (result.status !== 0 || !result.stdout) {
+    return null;
+  }
+
+  const candidates = result.stdout
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  if (process.platform === 'win32') {
+    return (
+      candidates.find(candidate => candidate.toLowerCase().endsWith('.exe')) ||
+      candidates.find(candidate => candidate.toLowerCase().endsWith('.cmd')) ||
+      candidates[0]
+    );
+  }
+
+  return candidates[0];
 }
 
 function printBunInstallHelp() {
@@ -22,9 +44,9 @@ function printBunInstallHelp() {
 }
 
 const mainJs = path.join(__dirname, '..', 'dist', 'main.js');
-const bunCommand = process.platform === 'win32' ? 'bun.cmd' : 'bun';
+const bunCommand = resolveBunCommand();
 
-if (!hasBun()) {
+if (!bunCommand) {
   printBunInstallHelp();
   process.exit(1);
 }
