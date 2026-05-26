@@ -1,6 +1,6 @@
 {
   "name": "@jonusnattapong/claudecode",
-  "version": "2.1.172",
+  "version": "2.1.173",
   "description": "Official Claude Code CLI — AI-powered coding assistant",
   "main": "./dist/main.js",
   "type": "module",

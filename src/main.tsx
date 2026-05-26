@@ -1,13 +1,32 @@
 // Force TTY before anything else
 Object.defineProperty(process.stdout, 'isTTY', { value: true, writable: true, configurable: true });
 Object.defineProperty(process.stderr, 'isTTY', { value: true, writable: true, configurable: true });
+const startupArgs = process.argv.slice(2);
+let windowsInteractiveKeepAlive: ReturnType<typeof setInterval> | undefined;
+if (process.platform === 'win32' && startupArgs.length === 0) {
+  windowsInteractiveKeepAlive = setInterval(() => {}, 60_000);
+}
 // Force stdin to be TTY for Ink raw mode (workaround for PowerShell)
 try {
   Object.defineProperty(process.stdin, 'isTTY', { value: true, writable: true, configurable: true });
   // Add missing methods for Ink compatibility
   if (typeof process.stdin.ref !== 'function') {
-    process.stdin.ref = () => {};
-    process.stdin.unref = () => {};
+    let stdinKeepAlive: ReturnType<typeof setInterval> | undefined;
+    process.stdin.ref = () => {
+      stdinKeepAlive ??= setInterval(() => {}, 60_000);
+      return process.stdin;
+    };
+    process.stdin.unref = () => {
+      if (stdinKeepAlive) {
+        clearInterval(stdinKeepAlive);
+        stdinKeepAlive = undefined;
+      }
+      if (windowsInteractiveKeepAlive) {
+        clearInterval(windowsInteractiveKeepAlive);
+        windowsInteractiveKeepAlive = undefined;
+      }
+      return process.stdin;
+    };
   }
   if (typeof process.stdin.setRawMode !== 'function') {
     process.stdin.setRawMode = (mode: boolean) => {};
@@ -25,7 +44,6 @@ globalThis.MACRO = MACRO;
 
 export { MACRO };
 
-const startupArgs = process.argv.slice(2);
 if (startupArgs.length === 1 && ['--version', '-v', '-V'].includes(startupArgs[0] ?? '')) {
   console.log(`${globalThis.MACRO.VERSION} (Claude Code)`);
   process.exit(0);

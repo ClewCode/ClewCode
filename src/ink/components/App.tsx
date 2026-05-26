@@ -229,6 +229,7 @@ export default class App extends PureComponent<Props, State> {
     }
   }
   override componentDidCatch(error: Error) {
+    process.stderr.write(`${error.stack ?? error.message}\n`);
     this.handleExit(error);
   }
   handleSetRawMode = (isEnabled: boolean): void => {

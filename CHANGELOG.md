@@ -9,11 +9,11 @@ This project follows a practical changelog format based on:
 - `Security` for permission, sandbox, auth, and trust-related hardening
 - `Internal` for tests, types, refactors, and developer-facing implementation work
 
-## [2.1.172] - 2026-05-26
+## [2.1.173] - 2026-05-26
 
 ### Fixed
 
-- **Windows npm launcher interactive startup** — Point npm bin shims directly at a Bun shebang entrypoint instead of spawning Bun from a Node wrapper, fixing global installs that returned to PowerShell immediately.
+- **Windows interactive startup keepalive** — Replace the Bun/Windows stdin `ref()` no-op shim with a real keepalive handle so the interactive TUI does not return to PowerShell immediately.
 
 ## [2.1.158] - 2026-05-23
 
