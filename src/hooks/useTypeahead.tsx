@@ -472,7 +472,9 @@ export function useTypeahead({
     const spaceIndex = input.indexOf(' ');
     if (spaceIndex === -1) return undefined;
     const commandName = input.slice(1, spaceIndex);
-    const exactMatch = commands.find(cmd => getCommandName(cmd) === commandName);
+    const exactMatch = commands.find(
+      cmd => getCommandName(cmd) === commandName || cmd.name === commandName,
+    );
     if (!exactMatch) return undefined;
 
     let hint: string | undefined;
@@ -863,7 +865,7 @@ export function useTypeahead({
           // If input has a space after the command, don't show suggestions
           // This prevents Enter from selecting a different command after Tab completion
           if (spaceIndex !== -1) {
-            const exactMatch = commands.find(cmd => getCommandName(cmd) === commandName);
+            const exactMatch = commands.find(cmd => getCommandName(cmd) === commandName || cmd.name === commandName);
             if (exactMatch || hasRealArguments) {
               // Priority 1: Static argumentHint (only on first trailing space for backwards compat)
               if (exactMatch?.argumentHint && hasExactlyOneTrailingSpace) {
