@@ -218,7 +218,11 @@ export function MarkdownTable({ token, highlight, forceWidth }: Props): React.Re
         const width_0 = columnWidths[colIndex_2]!;
         // Headers always centered; data uses table alignment
         const align = isHeader ? 'center' : (token.align?.[colIndex_2] ?? 'left');
-        line += ' ' + padAligned(lineText, stringWidth(lineText), width_0, align) + ' │';
+        const cellContent = padAligned(lineText, stringWidth(lineText), width_0, align);
+        // Reset ANSI colors before the border to prevent inline code styling
+        // (e.g. permission/highlight colors) from bleeding into the │ separator.
+        const needsReset = cellContent.includes('\x1b');
+        line += ' ' + cellContent + (needsReset ? '\x1b[0m' : '') + ' │';
       }
       result.push(line);
     }
@@ -253,7 +257,7 @@ export function MarkdownTable({ token, highlight, forceWidth }: Props): React.Re
         lines_2.push(separator);
       }
       row_2.forEach((cell_0, colIndex_4) => {
-        const label = headers[colIndex_4] || `Column ${colIndex_4 + 1}`;
+        const label = headers[colIndex_4] || '';
         // Clean value: trim, remove extra internal whitespace/newlines
         const rawValue = formatCell(cell_0.tokens).trimEnd();
         const value = rawValue.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
