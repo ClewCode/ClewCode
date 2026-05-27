@@ -144,24 +144,29 @@ function SpinnerWithVerbInner({
         setThinkingStatus('thinking');
       }
     } else if (thinkingStartRef.current !== null) {
-      // Stopped thinking - calculate duration and ensure 2s minimum display
+      // Stopped thinking
       const duration = Date.now() - thinkingStartRef.current;
       const elapsed = Date.now() - thinkingStartRef.current;
-      const remainingThinkingTime = Math.max(0, 2000 - elapsed);
-
       thinkingStartRef.current = null;
 
-      // Show "thinking..." for remaining time if < 2s elapsed, then show duration
-      const showDuration = (): void => {
-        setThinkingStatus(duration);
-        // Clear after 2s
-        clearStatusTimer = setTimeout(setThinkingStatus, 2000, null);
-      };
-
-      if (remainingThinkingTime > 0) {
-        showDurationTimer = setTimeout(showDuration, remainingThinkingTime);
+      // If the new mode is an active tool (not idle), skip the thinking
+      // duration display — showing "still thinking" or "almost done thinking"
+      // while a tool runs is misleading. The spinner should reflect the
+      // current activity, not linger on the finished thought.
+      if (mode !== 'idle') {
+        setThinkingStatus(null);
       } else {
-        showDuration();
+        // Show "thinking..." for remaining time if < 2s elapsed, then show duration
+        const remainingThinkingTime = Math.max(0, 2000 - elapsed);
+        const showDuration = (): void => {
+          setThinkingStatus(duration);
+          clearStatusTimer = setTimeout(setThinkingStatus, 2000, null);
+        };
+        if (remainingThinkingTime > 0) {
+          showDurationTimer = setTimeout(showDuration, remainingThinkingTime);
+        } else {
+          showDuration();
+        }
       }
     }
 
