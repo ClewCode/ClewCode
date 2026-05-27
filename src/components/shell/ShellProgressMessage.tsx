@@ -28,14 +28,17 @@ export function ShellProgressMessage({
 }: Props): React.ReactNode {
   const strippedFullOutput = stripAnsi(fullOutput.trim());
   const strippedOutput = stripAnsi(output.trim());
-  const lines = strippedOutput.split('\n').filter(line => line);
-  const displayLines = verbose ? strippedFullOutput : lines.slice(-5).join('\n');
+  // Count all lines (including empty/short) for accurate hidden count
+  const totalRawLines = strippedFullOutput.split('\n').length;
+  const displayRawLines = strippedOutput.split('\n');
+  const displayLineCount = displayRawLines.length;
+  const displayLines = verbose ? strippedFullOutput : displayRawLines.slice(-5).join('\n');
 
   // OffscreenFreeze: BashTool yields progress (elapsedTimeSeconds) every second.
   // If this line scrolls into scrollback, each tick forces a full terminal reset.
   // A foreground `sleep 600` on a 29-row terminal with 4000 rows of history
   // produced 507 resets over 10 minutes (go/ccshare/maxk-20260226-190348).
-  if (!lines.length) {
+  if (!totalRawLines) {
     return (
       <MessageResponse>
         <OffscreenFreeze>
@@ -46,21 +49,24 @@ export function ShellProgressMessage({
     );
   }
 
-  // Not truncated: "+2 lines" (total exceeds displayed 5)
-  // Truncated:     "~2000 lines" (extrapolated estimate from tail sample)
-  const extraLines = totalLines ? Math.max(0, totalLines - 5) : 0;
+  const MAX_DISPLAY_LINES = 5;
+  // Use actual (unfiltered) line counts so the hidden count matches.
+  // totalLines comes from the caller and may be stale; totalRawLines is the
+  // ground-truth count from the full output string.
+  const effectiveTotalLines = totalLines ?? totalRawLines;
+  const hiddenCount = Math.max(0, effectiveTotalLines - Math.min(displayLineCount, MAX_DISPLAY_LINES));
   let lineStatus = '';
   if (!verbose && totalBytes && totalLines) {
     lineStatus = `~${totalLines} lines`;
-  } else if (!verbose && extraLines > 0) {
-    lineStatus = `+${extraLines} lines`;
+  } else if (!verbose && hiddenCount > 0) {
+    lineStatus = `+${hiddenCount} lines`;
   }
 
   return (
     <MessageResponse>
       <OffscreenFreeze>
         <Box flexDirection="column">
-          <Box height={verbose ? undefined : Math.min(5, lines.length)} flexDirection="column" overflow="hidden">
+          <Box height={verbose ? undefined : Math.min(MAX_DISPLAY_LINES, displayLineCount)} flexDirection="column" overflow="hidden">
             <Text dimColor>{displayLines}</Text>
           </Box>
           <Box flexDirection="row" gap={1}>
