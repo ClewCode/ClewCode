@@ -300,6 +300,13 @@ type Props = {
    *  (start === 0); later chunks are mid-stream continuations.
    *  Measured Mar 2026: 538-msg session, 20 slices → −55% plateau RSS. */
   renderRange?: readonly [start: number, end: number];
+  /** MessageDisplay hook: called when new assistant messages arrive.
+   *  The hook can transform or hide messages before display.
+   *  Set `messageTransform` on the result to replace text or hide. */
+  onMessageDisplay?: (message: import('../types/message.js').Message) => Promise<{
+    hide?: boolean;
+    text?: string;
+  } | null>;
 };
 
 const MAX_MESSAGES_TO_SHOW_IN_TRANSCRIPT_MODE = 30;
@@ -403,6 +410,21 @@ const MessagesImpl = ({
   const toggleShowAllShortcut = useShortcutDisplay('transcript:toggleShowAll', 'Transcript', 'Ctrl+E');
 
   const normalizedMessages = useMemo(() => normalizeMessages(messages).filter(isNotEmptyMessage), [messages]);
+
+  // MessageDisplay hook: fire onMessageDisplay for new assistant messages.
+  // The hook returns transform instructions (hide or replace text) that the
+  // REPL or parent component can apply before the message is rendered.
+  const messageDisplayFiredRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!onMessageDisplay) return;
+    const fired = messageDisplayFiredRef.current;
+    for (const msg of normalizedMessages) {
+      if (msg.type !== 'assistant') continue;
+      if (fired.has(msg.uuid)) continue;
+      fired.add(msg.uuid);
+      void onMessageDisplay(msg);
+    }
+  }, [normalizedMessages, onMessageDisplay]);
 
   // Check if streaming thinking should be visible (streaming or within 30s timeout)
   const isStreamingThinkingVisible = useMemo(() => {
