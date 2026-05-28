@@ -1,6 +1,7 @@
 ---
-allowed-tools: Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*), Bash(gh pr comment:*), Bash(gh pr diff:*), Bash(gh pr view:*), Bash(gh pr list:*), mcp__github_inline_comment__create_inline_comment
-description: Code review a pull request
+allowed-tools: Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*), Bash(gh pr comment:*), Bash(gh pr diff:*), Bash(gh pr view:*), Bash(gh pr list:*), mcp__github_inline_comment__create_inline_comment, Read, Edit, Write
+description: Code review a pull request or uncommitted changes
+arguments: [--comment, --fix]
 ---
 
 Provide a code review for the given pull request.
@@ -60,7 +61,14 @@ Note: Still review Claude generated PR's.
    - If issues were found, list each issue with a brief description.
    - If no issues were found, state: "No issues found. Checked for bugs and CLAUDE.md compliance."
 
-   If `--comment` argument was NOT provided, stop here. Do not post any GitHub comments.
+   - If `--comment` argument is NOT provided, stop here. Do not post any GitHub comments.
+
+   If `--fix` argument IS provided AND there are uncommitted changes in the working tree:
+   - Skip PR-related steps entirely
+   - Review the current `git diff` (or `git diff HEAD`) for issues
+   - Apply fixes directly to the working tree using Edit/Write tools
+   - Output a summary of what was fixed
+   - If `/simplify` invoked this, just fix issues found — no summary needed beyond what's normally shown
 
    If `--comment` argument IS provided and NO issues were found, post a summary comment using `gh pr comment` and stop.
 

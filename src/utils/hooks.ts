@@ -343,6 +343,10 @@ export type AggregatedHookResult = {
   elicitationResponse?: ElicitationResponse;
   elicitationResultResponse?: ElicitationResponse;
   retry?: boolean;
+  reloadSkills?: boolean;
+  sessionTitle?: string;
+  /** MessageDisplay hook: when set, replaces or hides the assistant message */
+  messageTransform?: { hide?: boolean; text?: string };
 };
 
 /**
@@ -695,6 +699,13 @@ function processHookJSONOutput({
               command,
             };
           }
+        }
+        break;
+      case 'MessageDisplay':
+        if ('hide' in json.hookSpecificOutput && json.hookSpecificOutput.hide === true) {
+          result.messageTransform = { hide: true };
+        } else if (typeof json.hookSpecificOutput.text === 'string') {
+          result.messageTransform = { text: json.hookSpecificOutput.text };
         }
         break;
     }

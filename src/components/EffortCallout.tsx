@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Box, Text } from '../ink.js';
 import { isMaxSubscriber, isProSubscriber, isTeamSubscriber } from '../utils/auth.js';
 import { getGlobalConfig, saveGlobalConfig } from '../utils/config.js';
-import type { EffortLevel } from '../utils/effort.js';
+import type { EffortLevel, EffortValue } from '../utils/effort.js';
 import {
   convertEffortValueToLevel,
   getDefaultEffortForModel,
@@ -109,8 +109,19 @@ function EffortOptionLabel({ level, text }: { level: EffortLevel; text: string }
  * - Pro: already had medium default; show unless they saw v1 (effortCalloutDismissed)
  * - Max/Team: getting medium via tengu_grey_step2 config; show when enabled
  * - Everyone else: mark as dismissed so it never shows
+ *
+ * @param model The current model name
+ * @param currentEffort Optional current effort value — when set, the callout
+ *   is skipped because the user already has an explicit effort level.
+ * @param hasMessages Optional flag — when false, no conversation exists yet
+ *   so the effort callout is premature.
  */
-export function shouldShowEffortCallout(model: string): boolean {
+export function shouldShowEffortCallout(model: string, currentEffort?: EffortValue, hasMessages?: boolean): boolean {
+  // Skip if user already has an explicit effort level set
+  if (currentEffort !== undefined) return false;
+
+  // Skip if no conversation exists yet — the callout is premature
+  if (hasMessages === false) return false;
   // Only show for Opus 4.6 for now
   const parsed = parseUserSpecifiedModel(model);
   if (!parsed.toLowerCase().includes('opus-4-6')) {

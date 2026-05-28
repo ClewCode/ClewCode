@@ -3029,7 +3029,10 @@ export function updateUsage(
     cache_creation_input_tokens:
       partUsage.cache_creation_input_tokens !== null && partUsage.cache_creation_input_tokens > 0
         ? partUsage.cache_creation_input_tokens
-        : usage.cache_creation_input_tokens,
+        : (partUsage as BetaUsage).cache_creation?.ephemeral_1h_input_tokens != null &&
+            (partUsage as BetaUsage).cache_creation!.ephemeral_1h_input_tokens > 0
+          ? (partUsage as BetaUsage).cache_creation!.ephemeral_1h_input_tokens
+          : usage.cache_creation_input_tokens,
     cache_read_input_tokens:
       partUsage.cache_read_input_tokens !== null && partUsage.cache_read_input_tokens > 0
         ? partUsage.cache_read_input_tokens

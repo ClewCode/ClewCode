@@ -261,8 +261,8 @@ export function useVimInput(props: UseVimInputProps): VimInputState {
       }
     }
 
-    if (input === '?' && state.mode === 'NORMAL' && state.command.type === 'idle') {
-      props.onChange('?');
+    if (state.mode === 'NORMAL' && state.command.type === 'idle' && (input === '?' || input === '/')) {
+      props.onChange(input);
     }
   }
 

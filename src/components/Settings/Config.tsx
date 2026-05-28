@@ -193,6 +193,12 @@ export function Config({
   const [initialLocalSettings] = useState(() => getSettingsForSource('localSettings'));
   const [initialUserSettings] = useState(() => getSettingsForSource('userSettings'));
   const initialThemeSetting = React.useRef(themeSetting);
+  // Track whether theme/autoCompact were explicitly changed by user action.
+  // Prevents phantom "Set theme to ..." / "Enabled auto-compact" reports when
+  // the globalConfig cache delivers a different default representation than the
+  // mount-time snapshot after an unrelated saveGlobalConfig write.
+  const themeChangedRef = React.useRef(false);
+  const autoCompactChangedRef = React.useRef(false);
   // AppState fields Config may modify — snapshot once at mount.
   const store = useAppStateStore();
   const [initialAppState] = useState(() => {
@@ -302,6 +308,7 @@ export function Config({
       value: globalConfig.autoCompactEnabled,
       type: 'boolean' as const,
       onChange(autoCompactEnabled: boolean) {
+        autoCompactChangedRef.current = true;
         saveGlobalConfig(current => ({ ...current, autoCompactEnabled }));
         setGlobalConfig({ ...getGlobalConfig(), autoCompactEnabled });
         logEvent('tengu_auto_compact_setting_changed', {
@@ -1203,7 +1210,7 @@ export function Config({
         value: currentUsingCustomKey as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       });
     }
-    if (globalConfig.theme !== initialConfig.current.theme) {
+    if (themeChangedRef.current && globalConfig.theme !== initialConfig.current.theme) {
       formattedChanges.push(`Set theme to ${chalk.bold(globalConfig.theme)}`);
     }
     if (globalConfig.preferredNotifChannel !== initialConfig.current.preferredNotifChannel) {
@@ -1229,7 +1236,7 @@ export function Config({
         `${globalConfig.autoInstallIdeExtension ? 'Enabled' : 'Disabled'} auto-install IDE extension`,
       );
     }
-    if (globalConfig.autoCompactEnabled !== initialConfig.current.autoCompactEnabled) {
+    if (autoCompactChangedRef.current && globalConfig.autoCompactEnabled !== initialConfig.current.autoCompactEnabled) {
       formattedChanges.push(`${globalConfig.autoCompactEnabled ? 'Enabled' : 'Disabled'} auto-compact`);
     }
     if (globalConfig.respectGitignore !== initialConfig.current.respectGitignore) {
@@ -1593,6 +1600,7 @@ export function Config({
         <>
           <ThemePicker
             onThemeSelect={setting => {
+              themeChangedRef.current = true;
               isDirty.current = true;
               setTheme(setting);
               setShowSubmenu(null);

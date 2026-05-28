@@ -1,6 +1,19 @@
 import type * as React from 'react';
 import type { RefObject } from 'react';
 import { useCallback, useContext, useEffect, useImperativeHandle, useRef, useState, useSyncExternalStore } from 'react';
+
+// Module-level flag: set by FullscreenLayout's ink.onHyperlinkClick before
+// the React click event propagates. Checked in onClickK to prevent collapsing
+// a tool result when the user clicked a hyperlink inside it.
+let recentHyperlinkClick = false;
+export function markHyperlinkClicked(): void {
+  recentHyperlinkClick = true;
+}
+export function wasHyperlinkClicked(): boolean {
+  const v = recentHyperlinkClick;
+  recentHyperlinkClick = false;
+  return v;
+}
 import { useVirtualScroll } from '../hooks/useVirtualScroll.js';
 import type { ScrollBoxHandle } from '../ink/components/ScrollBox.js';
 import type { DOMElement } from '../ink/dom.js';
@@ -768,7 +781,11 @@ export function VirtualMessageList({
   handlersRef.current = { onItemClick, setHoveredKey };
   const onClickK = useCallback((msg: RenderableMessage, cellIsBlank: boolean) => {
     const h = handlersRef.current;
-    if (!cellIsBlank && h.onItemClick) h.onItemClick(msg);
+    // If a hyperlink was just clicked (OSC 8), don't toggle the item's
+    // expanded state — the user intended to open the link, not collapse
+    // the tool result. markHyperlinkClicked() is called by the Ink
+    // instance's onHyperlinkClick handler in FullscreenLayout.
+    if (!cellIsBlank && h.onItemClick && !wasHyperlinkClicked()) h.onItemClick(msg);
   }, []);
   const onEnterK = useCallback((k: string) => {
     handlersRef.current.setHoveredKey(k);

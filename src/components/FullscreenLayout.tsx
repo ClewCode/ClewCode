@@ -350,6 +350,9 @@ export function FullscreenLayout({
   // those is fine; re-rendering the 6966-line REPL + its 22+ useAppState
   // selectors per-scroll-frame was not.
   const [stickyPrompt, setStickyPrompt] = useState<StickyPrompt | null>(null);
+  // Force-hide the pill immediately on click, before the scroll subscription
+  // tick. Prevents a 1-frame flash where the pill remains visible after tapping.
+  const [pillDismissed, setPillDismissed] = useState(false);
   const chromeCtx = useMemo(() => ({ setStickyPrompt }), []);
   // Boolean-quantized scroll subscription. Snapshot is "is viewport bottom
   // above the divider y?" — Object.is on a boolean → FullscreenLayout only
@@ -359,6 +362,14 @@ export function FullscreenLayout({
     [scrollRef],
   );
   const pillVisible = useSyncExternalStore(subscribe, () => {
+    if (pillDismissed) {
+      // Reset pillDismissed when dividerY goes away (scroll-to-bottom/re-pin)
+      // so the pill can show again on the next scroll-away.
+      const s = scrollRef?.current;
+      const dividerY = dividerYRef?.current;
+      if (!s || dividerY == null) setPillDismissed(false);
+      return false;
+    }
     const s = scrollRef?.current;
     const dividerY = dividerYRef?.current;
     if (!s || dividerY == null) return false;
@@ -371,6 +382,11 @@ export function FullscreenLayout({
     const ink = instances.get(process.stdout);
     if (!ink) return;
     ink.onHyperlinkClick = url => {
+      // Mark hyperlink click so VirtualMessageList's onClickK suppresses
+      // item-toggle — clicking a link inside a tool result should open the
+      // link, not collapse the section.
+      const { markHyperlinkClicked } = require('./VirtualMessageList.js');
+      markHyperlinkClicked();
       // Most OSC 8 links emitted by Claude Code are file:// URLs from
       // FilePathLink (FileEdit/FileWrite/FileRead tool output). openBrowser
       // rejects non-http(s) protocols — route file: to openPath instead.
@@ -430,9 +446,7 @@ export function FullscreenLayout({
               <NewMessagesPill
                 count={newMessageCount}
                 onClick={() => {
-                  // Clear dividerYRef synchronously so the pill disappears
-                  // immediately on click instead of waiting for the next
-                  // scroll subscription tick.
+                  setPillDismissed(true);
                   if (dividerYRef) dividerYRef.current = null;
                   onPillClick?.();
                 }}

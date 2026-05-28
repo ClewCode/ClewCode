@@ -325,7 +325,7 @@ export function getPluginErrorMessage(error: PluginError): string {
     case 'plugin-not-found':
       return `Plugin ${error.pluginId} not found in marketplace ${error.marketplace}`;
     case 'marketplace-not-found':
-      return `Marketplace ${error.marketplace} not found`;
+      return `Marketplace "${error.marketplace}" not found${error.availableMarketplaces.length > 0 ? `. Available: ${error.availableMarketplaces.join(', ')}` : ''} — remove stale entry from enabledPlugins`;
     case 'marketplace-load-failed':
       return `Marketplace ${error.marketplace} failed to load: ${error.reason}`;
     case 'mcp-config-invalid':

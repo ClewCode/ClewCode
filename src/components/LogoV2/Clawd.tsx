@@ -1,6 +1,5 @@
 import type * as React from 'react';
 import { Box, Text } from '../../ink.js';
-import { env } from '../../utils/env.js';
 import { getGlobalConfig } from '../../utils/config.js';
 
 export type ClawdPose =

@@ -1827,6 +1827,19 @@ async function loadPluginsFromMarketplaces({ cacheOnly }: { cacheOnly: boolean }
         return null;
       }
 
+      // Stale enabledPlugins entry: marketplace no longer exists and no
+      // enterprise policy is active. Emit a clear marketplace-not-found
+      // error rather than a misleading policy or plugin-not-found error.
+      if (!marketplaceConfig && !hasEnterprisePolicy) {
+        errors.push({
+          type: 'marketplace-not-found',
+          source: pluginId,
+          marketplace: marketplaceName!,
+          availableMarketplaces: Object.keys(knownMarketplaces),
+        });
+        return null;
+      }
+
       // Look up plugin entry from pre-loaded marketplace catalog (no per-plugin I/O).
       // Fall back to getPluginByIdCacheOnly if the catalog couldn't be pre-loaded.
       let result: Awaited<ReturnType<typeof getPluginByIdCacheOnly>> = null;

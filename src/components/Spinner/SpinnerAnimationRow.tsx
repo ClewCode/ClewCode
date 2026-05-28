@@ -182,7 +182,7 @@ export function SpinnerAnimationRow({
   // === Thinking text (may shrink to fit) ===
   let thinkingText =
     thinkingStatus === 'thinking'
-      ? `thinking${effortSuffix}`
+      ? `thinking for ${Math.max(1, Math.round(elapsedTimeMs / 1000))}s${effortSuffix}`
       : typeof thinkingStatus === 'number'
         ? `thought for ${Math.max(1, Math.round(thinkingStatus / 1000))}s`
         : null;
@@ -198,8 +198,16 @@ export function SpinnerAnimationRow({
   const availableSpace = columns - messageWidth - 5;
 
   let showThinking = wantsThinking && availableSpace > thinkingWidthValue;
-  if (!showThinking && wantsThinking && thinkingStatus === 'thinking' && effortSuffix) {
-    if (availableSpace > THINKING_BARE_WIDTH) {
+  // Fallback chain for narrow terminals: shrink thinking text step by step
+  if (!showThinking && wantsThinking && thinkingStatus === 'thinking') {
+    // Tier 1: drop effort suffix if present
+    if (effortSuffix && availableSpace > stringWidth(`thinking for ${Math.max(1, Math.round(elapsedTimeMs / 1000))}s`)) {
+      thinkingText = `thinking for ${Math.max(1, Math.round(elapsedTimeMs / 1000))}s`;
+      thinkingWidthValue = stringWidth(thinkingText);
+      showThinking = true;
+    }
+    // Tier 2: drop timer too, just show "thinking"
+    if (!showThinking && availableSpace > THINKING_BARE_WIDTH) {
       thinkingText = 'thinking';
       thinkingWidthValue = THINKING_BARE_WIDTH;
       showThinking = true;

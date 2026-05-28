@@ -15,7 +15,7 @@ export const EFFORT_XHIGH = '◈'; // \u25c8 - effort level: xhigh (Opus 4.7+)
 
 // Media/trigger status indicators
 export const PLAY_ICON = '\u25b6'; // ▶
-export const PAUSE_ICON = '\u23f8'; // ⏸
+export const PAUSE_ICON = '||'; // ASCII pause symbol
 
 // MCP subscription indicators
 export const REFRESH_ARROW = '\u21bb'; // ↻ - used for resource update indicator

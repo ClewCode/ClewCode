@@ -1729,7 +1729,14 @@ export function getOtelHeadersFromHelper(): Record<string, string> {
   }
 
   try {
-    const result = execSyncWithDefaults_DEPRECATED(otelHeadersHelper, {
+    // Quote the command path if it contains spaces to prevent shell parsing issues
+    // execSyncWithDefaults_DEPRECATED uses shell: true, which relies on the shell
+    // to parse the command string. Unquoted paths with spaces would be split into
+    // multiple arguments, causing the script to fail silently.
+    const quotedHelper = otelHeadersHelper.includes(' ') && !otelHeadersHelper.startsWith('"') && !otelHeadersHelper.startsWith("'")
+      ? (process.platform === 'win32' ? `"${otelHeadersHelper}"` : `'${otelHeadersHelper}'`)
+      : otelHeadersHelper;
+    const result = execSyncWithDefaults_DEPRECATED(quotedHelper, {
       timeout: 30000, // 30 seconds - allows for auth service latency
     })
       ?.toString()

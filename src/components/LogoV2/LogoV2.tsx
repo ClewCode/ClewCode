@@ -237,12 +237,13 @@ export function LogoV2() {
       t22 = $[28];
     }
     let t23;
-    if ($[29] !== t18) {
-      t23 = <>{t11}{t12}{t13}{t14}{t15}{t16}{t17}{t18}{t19}{t20}{t21}{t22}</>;
+    if ($[29] !== t18 || $[30] !== showSandboxStatus) {
+      t23 = <>{t11}{t12}{t13}{t14}{t15}{t16}{t17}{t18}{t19}{t20}{t21}{t22}{showSandboxStatus && <Box paddingLeft={2} flexDirection="column"><Text color="warning">Your bash commands will be sandboxed. Disable with /sandbox.</Text></Box>}</>;
       $[29] = t18;
-      $[30] = t23;
+      $[30] = showSandboxStatus;
+      $[31] = t23;
     } else {
-      t23 = $[30];
+      t23 = $[31];
     }
     return t23;
   }

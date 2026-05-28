@@ -940,7 +940,38 @@ async function loadCachedSessionMeta(sessionId: string): Promise<SessionMeta | n
   const metaPath = join(getSessionMetaDir(), `${sessionId}.json`);
   try {
     const content = await readFile(metaPath, { encoding: 'utf-8' });
-    return jsonParse(content);
+    const parsed = jsonParse(content) as Partial<SessionMeta>;
+    // Fill missing optional fields with defaults to handle schema evolution
+    // (cached files written by older versions may be missing newer fields)
+    return {
+      session_id: parsed.session_id ?? sessionId,
+      project_path: parsed.project_path ?? '',
+      start_time: parsed.start_time ?? new Date().toISOString(),
+      duration_minutes: parsed.duration_minutes ?? 0,
+      user_message_count: parsed.user_message_count ?? 0,
+      assistant_message_count: parsed.assistant_message_count ?? 0,
+      tool_counts: parsed.tool_counts ?? {},
+      languages: parsed.languages ?? {},
+      git_commits: parsed.git_commits ?? 0,
+      git_pushes: parsed.git_pushes ?? 0,
+      input_tokens: parsed.input_tokens ?? 0,
+      output_tokens: parsed.output_tokens ?? 0,
+      first_prompt: parsed.first_prompt ?? '',
+      summary: parsed.summary,
+      user_interruptions: parsed.user_interruptions ?? 0,
+      user_response_times: parsed.user_response_times ?? [],
+      tool_errors: parsed.tool_errors ?? 0,
+      tool_error_categories: parsed.tool_error_categories ?? {},
+      uses_task_agent: parsed.uses_task_agent ?? false,
+      uses_mcp: parsed.uses_mcp ?? false,
+      uses_web_search: parsed.uses_web_search ?? false,
+      uses_web_fetch: parsed.uses_web_fetch ?? false,
+      lines_added: parsed.lines_added ?? 0,
+      lines_removed: parsed.lines_removed ?? 0,
+      files_modified: parsed.files_modified ?? 0,
+      message_hours: parsed.message_hours ?? [],
+      user_message_timestamps: parsed.user_message_timestamps ?? [],
+    };
   } catch {
     return null;
   }

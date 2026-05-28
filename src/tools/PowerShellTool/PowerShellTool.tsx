@@ -385,7 +385,9 @@ export const PowerShellTool = buildTool({
     isSearch: boolean;
     isRead: boolean;
   } {
-    if (!input.command) {
+    // Malformed tool calls with undefined/null input or missing command
+    // must not be misclassified as search/read operations.
+    if (!input || !input.command) {
       return {
         isSearch: false,
         isRead: false,
@@ -394,6 +396,11 @@ export const PowerShellTool = buildTool({
     return isSearchOrReadPowerShellCommand(input.command);
   },
   isReadOnly(input: PowerShellToolInput): boolean {
+    // Malformed tool calls with undefined/null input or missing command
+    // are never read-only (should be treated as unknown/dangerous).
+    if (!input || !input.command) {
+      return false;
+    }
     // Check sync security heuristics before declaring read-only.
     // The full AST parse is async and unavailable here, so we use
     // regex-based detection of subexpressions, splatting, member

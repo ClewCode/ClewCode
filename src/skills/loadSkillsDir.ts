@@ -156,6 +156,7 @@ export function parseSkillFrontmatterFields(
   description: string;
   hasUserSpecifiedDescription: boolean;
   allowedTools: string[];
+  disallowedTools: string[];
   argumentHint: string | undefined;
   argumentNames: string[];
   whenToUse: string | undefined;
@@ -195,6 +196,7 @@ export function parseSkillFrontmatterFields(
     description,
     hasUserSpecifiedDescription: validatedDescription !== null,
     allowedTools: parseSlashCommandToolsFromFrontmatter(frontmatter['allowed-tools']),
+    disallowedTools: parseSlashCommandToolsFromFrontmatter(frontmatter['disallowed-tools']),
     argumentHint: frontmatter['argument-hint'] != null ? String(frontmatter['argument-hint']) : undefined,
     argumentNames: parseArgumentNames(frontmatter.arguments as string | string[] | undefined),
     whenToUse: frontmatter.when_to_use as string | undefined,
@@ -220,6 +222,7 @@ export function createSkillCommand({
   hasUserSpecifiedDescription,
   markdownContent,
   allowedTools,
+  disallowedTools,
   argumentHint,
   argumentNames,
   whenToUse,

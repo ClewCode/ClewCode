@@ -5,7 +5,6 @@ import { getSessionId } from '../../bootstrap/state.js';
 import { Select } from '../../components/CustomSelect/index.js';
 import { Dialog } from '../../components/design-system/Dialog.js';
 import { Divider } from '../../components/design-system/Divider.js';
-import { Tab, Tabs } from '../../components/design-system/Tabs.js';
 import { Clawd } from '../../components/LogoV2/Clawd.js';
 import { Box, Text, useInput } from '../../ink.js';
 import { useSetAppState } from '../../state/AppState.js';
@@ -19,28 +18,28 @@ import { isTeammate } from '../../utils/teammate.js';
 const RESET_ALIASES = ['default', 'reset', 'none', 'gray', 'grey'] as const;
 
 const CLAWD_BODY_COLORS = [
-  { label: 'Purple', value: 'clawd_body' },
-  { label: 'Magenta', value: 'ansi:magenta' },
-  { label: 'Cyan', value: 'ansi:cyan' },
-  { label: 'Gold', value: 'ansi:yellow' },
-  { label: 'Red', value: 'ansi:red' },
-  { label: 'Green', value: 'ansi:green' },
-  { label: 'Blue', value: 'ansi:blue' },
-  { label: 'Orange', value: 'ansi:yellowBright' },
-  { label: 'Pink', value: 'ansi:magentaBright' },
-  { label: 'White', value: 'ansi:white' },
-  { label: 'Gray', value: 'ansi:blackBright' },
+  { label: 'Purple', value: 'clawd_body' as const, dotColor: 'magentaBright' as const },
+  { label: 'Magenta', value: 'ansi:magenta' as const, dotColor: 'magentaBright' as const },
+  { label: 'Cyan', value: 'ansi:cyan' as const, dotColor: 'cyan' as const },
+  { label: 'Gold', value: 'ansi:yellow' as const, dotColor: 'yellow' as const },
+  { label: 'Red', value: 'ansi:red' as const, dotColor: 'red' as const },
+  { label: 'Green', value: 'ansi:green' as const, dotColor: 'green' as const },
+  { label: 'Blue', value: 'ansi:blue' as const, dotColor: 'blue' as const },
+  { label: 'Orange', value: 'ansi:yellowBright' as const, dotColor: 'yellowBright' as const },
+  { label: 'Pink', value: 'ansi:magentaBright' as const, dotColor: 'magentaBright' as const },
+  { label: 'White', value: 'ansi:white' as const, dotColor: 'white' as const },
+  { label: 'Gray', value: 'ansi:blackBright' as const, dotColor: 'blackBright' as const },
 ] as const;
 
 const CLAWD_EYE_COLORS = [
-  { label: 'Red', value: 'clawd_eye' },
-  { label: 'Yellow', value: 'ansi:yellow' },
-  { label: 'Green', value: 'ansi:green' },
-  { label: 'Blue', value: 'ansi:blue' },
-  { label: 'Cyan', value: 'ansi:cyan' },
-  { label: 'White', value: 'ansi:white' },
-  { label: 'Orange', value: 'ansi:yellowBright' },
-  { label: 'Pink', value: 'ansi:magentaBright' },
+  { label: 'Red', value: 'clawd_eye' as const, dotColor: 'red' as const },
+  { label: 'Yellow', value: 'ansi:yellow' as const, dotColor: 'yellow' as const },
+  { label: 'Green', value: 'ansi:green' as const, dotColor: 'green' as const },
+  { label: 'Blue', value: 'ansi:blue' as const, dotColor: 'blue' as const },
+  { label: 'Cyan', value: 'ansi:cyan' as const, dotColor: 'cyan' as const },
+  { label: 'White', value: 'ansi:white' as const, dotColor: 'white' as const },
+  { label: 'Orange', value: 'ansi:yellowBright' as const, dotColor: 'yellowBright' as const },
+  { label: 'Pink', value: 'ansi:magentaBright' as const, dotColor: 'magentaBright' as const },
 ] as const;
 
 const SESSION_COLORS = [
@@ -94,7 +93,11 @@ function ColorPanel({
 }) {
   const setAppState = useSetAppState();
   const config = getGlobalConfig();
-  const [selectedTab, setSelectedTab] = useState('prompt');
+  const [selectedTab, setSelectedTab] = useState<TabId>('Prompt Bar');
+  const isMascotTab = selectedTab === 'Mascot';
+
+  // Spinner color
+  const [spinnerColor, setSpinnerColor] = useState<string>((config as any).spinnerColor ?? 'default');
 
   const [bodyColor, setBodyColor] = useState<string>((config as any).clawdBodyColor ?? 'clawd_body');
   const [eyeColor, setEyeColor] = useState<string>((config as any).clawdEyeColor ?? 'clawd_eye');
@@ -141,6 +144,12 @@ function ColorPanel({
       }
     }
   });
+
+  const bodyActive = isMascotTab && focusedSection === 'body';
+  const eyesActive = isMascotTab && focusedSection === 'eyes';
+  const hornsActive = isMascotTab && focusedSection === 'horns';
+  const bodyCur = CLAWD_BODY_COLORS[focusedBodyIdx]!;
+  const eyeCur = CLAWD_EYE_COLORS[focusedEyeIdx]!;
 
   const handleCancel = () => {
     setAppState(prev => ({
@@ -259,8 +268,8 @@ function ColorPanel({
               </Text>
             </Box>
           </Box>
-        </Tab>
-      </Tabs>
+        </Box>
+      )}
 
       {/* Footer */}
       <Box marginTop={1} justifyContent="center">

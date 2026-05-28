@@ -114,6 +114,7 @@ type Props = {
   commands: Command[];
   mode: string;
   agents: AgentDefinition[];
+  columns: number;
   setSuggestionsState: (
     f: (previousSuggestionsState: {
       suggestions: SuggestionItem[];
@@ -408,6 +409,7 @@ export function useTypeahead({
   suppressSuggestions = false,
   markAccepted,
   onModeChange,
+  columns = 80,
 }: Props): UseTypeaheadResult {
   const { addNotification } = useNotifications();
   const thinkingToggleShortcut = useShortcutDisplay('chat:thinkingToggle', 'Chat', 'alt+t');
@@ -470,7 +472,9 @@ export function useTypeahead({
     const spaceIndex = input.indexOf(' ');
     if (spaceIndex === -1) return undefined;
     const commandName = input.slice(1, spaceIndex);
-    const exactMatch = commands.find(cmd => getCommandName(cmd) === commandName);
+    const exactMatch = commands.find(
+      cmd => getCommandName(cmd) === commandName || cmd.name === commandName,
+    );
     if (!exactMatch) return undefined;
 
     let hint: string | undefined;
@@ -490,12 +494,18 @@ export function useTypeahead({
     }
 
     if (!hint) return undefined;
+    // Truncate ghost text to prevent it from overflowing the terminal width.
+    // The hint starts at cursorOffset (end of input), so available chars =
+    // columns - visible_input_length. Without this, long hints clip the
+    // trailing typed characters off-screen.
+    const availableWidth = Math.max(0, columns - input.length);
+    const truncatedHint = hint.length > availableWidth ? hint.slice(0, Math.max(availableWidth - 3, 0)) + '…' : hint;
     return {
-      text: hint,
+      text: truncatedHint,
       fullCommand: commandName,
       insertPosition: cursorOffset,
     };
-  }, [input, cursorOffset, mode, commands, suppressSuggestions]);
+  }, [input, cursorOffset, columns, mode, commands, suppressSuggestions]);
 
   // Merged ghost text: prompt mode uses synchronous useMemo, bash mode uses async useState
   const effectiveGhostText = suppressSuggestions
@@ -855,7 +865,7 @@ export function useTypeahead({
           // If input has a space after the command, don't show suggestions
           // This prevents Enter from selecting a different command after Tab completion
           if (spaceIndex !== -1) {
-            const exactMatch = commands.find(cmd => getCommandName(cmd) === commandName);
+            const exactMatch = commands.find(cmd => getCommandName(cmd) === commandName || cmd.name === commandName);
             if (exactMatch || hasRealArguments) {
               // Priority 1: Static argumentHint (only on first trailing space for backwards compat)
               if (exactMatch?.argumentHint && hasExactlyOneTrailingSpace) {

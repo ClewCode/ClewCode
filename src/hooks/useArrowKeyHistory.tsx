@@ -149,20 +149,21 @@ export function useArrowKeyHistory(
     const modeAtPress = currentModeRef.current;
     if (targetIndex === 0) {
       initialModeFilterRef.current = modeAtPress === 'bash' ? modeAtPress : undefined;
-
-      // Save draft synchronously using refs for the latest values
-      // This ensures we capture the draft before any async operations or re-renders
-      const hasInput = inputAtPress.trim() !== '';
-      setLastShownHistoryEntry(
-        hasInput
-          ? {
-              display: inputAtPress,
-              pastedContents: pastedContentsAtPress,
-              mode: modeAtPress,
-            }
-          : undefined,
-      );
     }
+
+    // Save draft synchronously on EVERY up navigation so edits to a recalled
+    // history entry are preserved when navigating further (not just at index 0).
+    // Without this, editing a recalled entry then pressing up again loses the edit.
+    const hasInput = inputAtPress.trim() !== '';
+    setLastShownHistoryEntry(
+      hasInput
+        ? {
+            display: inputAtPress,
+            pastedContents: pastedContentsAtPress,
+            mode: modeAtPress,
+          }
+        : undefined,
+    );
     const modeFilter = initialModeFilterRef.current;
     void (async () => {
       const neededCount = targetIndex + 1; // How many entries we need

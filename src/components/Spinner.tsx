@@ -144,11 +144,9 @@ function SpinnerWithVerbInner({
         setThinkingStatus('thinking');
       }
     } else if (thinkingStartRef.current !== null) {
-      // Stopped thinking - calculate duration and ensure 2s minimum display
+      // Stopped thinking
       const duration = Date.now() - thinkingStartRef.current;
       const elapsed = Date.now() - thinkingStartRef.current;
-      const remainingThinkingTime = Math.max(0, 2000 - elapsed);
-
       thinkingStartRef.current = null;
 
       if (mode === 'tool-use') {
@@ -213,6 +211,9 @@ function SpinnerWithVerbInner({
   const runningTeammates = getAllInProcessTeammateTasks(tasks).filter(t => t.status === 'running');
   const hasRunningTeammates = runningTeammates.length > 0;
   const allIdle = hasRunningTeammates && runningTeammates.every(t => t.isIdle);
+  // Count background agents and workflows for post-response display
+  const backgroundTaskCount = Object.values(tasks).filter(t => isBackgroundTask(t) && !isInProcessTeammateTask(t)).length;
+  const totalBackgroundCount = backgroundTaskCount + runningTeammates.length;
 
   // Gather aggregate token stats from all running swarm teammates
   // In spinner-tree mode, skip aggregation (teammates have their own lines in the tree)

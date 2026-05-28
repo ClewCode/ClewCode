@@ -1416,6 +1416,7 @@ function PromptInput({
     suppressSuggestions: isSearchingHistory || historyIndex > 0,
     markAccepted,
     onModeChange,
+    columns,
   });
 
   // Track if prompt suggestion should be shown (computed later with terminal width).

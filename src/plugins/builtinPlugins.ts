@@ -137,6 +137,7 @@ function skillDefinitionToCommand(definition: BundledSkillDefinition): Command {
     description: definition.description,
     hasUserSpecifiedDescription: true,
     allowedTools: definition.allowedTools ?? [],
+    disallowedTools: definition.disallowedTools ?? [],
     argumentHint: definition.argumentHint,
     whenToUse: definition.whenToUse,
     model: definition.model,
