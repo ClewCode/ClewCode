@@ -208,18 +208,7 @@ function claudePill(text: string): string {
 
 /** Render remaining context as six hearts. */
 function renderContextHearts(usedPercentage: number | null | undefined): string {
-  if (usedPercentage === null || usedPercentage === undefined) {
-    return chalk.hex(CLAUDE_THEME.success)('◈'.repeat(CONTEXT_HEART_COUNT));
-  }
-
-  const remainingFraction = Math.max(0, 1 - Math.min(100, Math.max(0, usedPercentage)) / 100);
-  const filledHearts = Math.round(remainingFraction * CONTEXT_HEART_COUNT);
-  const heartColor =
-    filledHearts <= 1 ? CLAUDE_THEME.danger : filledHearts <= 2 ? CLAUDE_THEME.warning : CLAUDE_THEME.success;
-  return (
-    chalk.hex(heartColor)('◈'.repeat(filledHearts)) +
-    chalk.hex(BAR_FREE_HEX)('◇'.repeat(CONTEXT_HEART_COUNT - filledHearts))
-  );
+  return '';
 }
 
 interface ToolActivity {
