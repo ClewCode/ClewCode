@@ -172,7 +172,7 @@ function hslToHex(h: number, s: number, l: number): string {
 // Smooth easing for the ultracode reveal.
 function easeOutCubic(t: number): number {
   const clamped = Math.max(0, Math.min(1, t));
-  return 1 - Math.pow(1 - clamped, 3);
+  return 1 - (1 - clamped) ** 3;
 }
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -228,20 +228,21 @@ function computeExpandingPanelColors(
     const inside = clampNumber((radius + feather - dist) / feather, 0, 1);
     const core = clampNumber((radius - dist) / Math.max(radius, 1), 0, 1);
 
-    // Moving vertical bands match the reference purple panel once the ripple
-    // grows. Ring boost makes the expanding wave visible around ultracode.
-    // Use broad bands. One-cell noise looks broken in Ink because each cell
-    // becomes a separate background segment, especially on Windows terminals.
-    const bandX = Math.floor(x / 6) * 6;
-    const broadBand = Math.sin((bandX + row * 9) / 18 - frame * 0.08);
-    const slowBand = Math.cos((bandX - row * 7) / 33 + frame * 0.04);
-    const band = broadBand * 0.65 + slowBand * 0.35;
-    const ring = Math.exp(-Math.pow(dist - radius * 0.72, 2) / 52);
+    // Beautiful concentric circular waves radiating from the center!
+    // Using dist directly makes the waves perfectly circular/elliptical.
+    const wave1 = Math.sin(dist / 4.0 - frame * 0.10);
+    const wave2 = Math.cos(dist / 8.5 - frame * 0.05);
+    // Combine two waves with different frequencies for a rich organic ripple effect
+    const circularWave = wave1 * 0.65 + wave2 * 0.35;
 
+    // Expanding ripple ring boost
+    const ring = Math.exp(-((dist - radius * 0.72) ** 2) / 48);
+
+    // Lightness should be dynamic and smooth
     const lightness = clampNumber(
-      15 + inside * 7 + core * 16 + band * 7 + ring * (5 + (1 - eased) * 6),
+      16 + inside * 6 + core * 14 + circularWave * 8 + ring * (6 + (1 - eased) * 6),
       12,
-      44,
+      45,
     );
 
     colors.push(hslToHex(baseHue, baseSat, lightness));
@@ -378,6 +379,7 @@ function renderLineWithPanel(
   return (
     <Box flexDirection="row" width={totalWidth} height={1}>
       {segments.map((segment, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: stable index is safe for rendering text columns
         <Box key={i} width={segment.text.length} height={1} backgroundColor={segment.bgColor as any}>
           <Text color={segment.color as any} bold={segment.bold} dimColor={segment.dim}>
             {segment.text}
@@ -409,6 +411,7 @@ function EffortSlider({
     isUltra ? animTime : null,
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: animTime is intentionally omitted to avoid resetting the entrance animation
   React.useEffect(() => {
     setUltraEnterAnimTime(isUltra ? animTime : null);
     // Only reset when entering/leaving ultracode. Including animTime would restart
@@ -419,7 +422,9 @@ function EffortSlider({
   const clock = React.useContext(ClockContext);
   React.useEffect(() => {
     if (!clock || !isUltra) return;
-    const unsubscribe = clock.subscribe(() => { }, true);
+    const unsubscribe = clock.subscribe(() => {
+      // Intentionally empty: keeping clock active during ultracode mode
+    }, true);
     return unsubscribe;
   }, [clock, isUltra]);
 
@@ -509,7 +514,7 @@ function EffortSlider({
     const col = labelCols[li]!;
     const isSel = li === selectedIndex;
 
-    let fgColor: string | undefined = undefined;
+    let fgColor: string | undefined ;
     let isBold = isSel;
     let isDim = !isSel;
 
@@ -571,7 +576,7 @@ function EffortSlider({
   // The first frames are a small oval around ultracode; the oval then expands until
   // it fills the slider panel.
   const totalRows = 8;
-  const revealMs = 1600;
+  const revealMs = 3000;
   const elapsedMs = ultraEnterAnimTime === null ? 0 : Math.max(0, animTime - ultraEnterAnimTime);
   const revealProgress = isUltra ? Math.min(1, elapsedMs / revealMs) : 0;
   // Once the reveal has filled the panel, freeze the wave. Otherwise the

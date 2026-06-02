@@ -134,7 +134,7 @@ function SpinnerWithVerbInner({
   const thinkingStartRef = useRef<number | null>(null);
 
   useEffect(() => {
-    let showDurationTimer: ReturnType<typeof setTimeout> | null = null;
+    const showDurationTimer: ReturnType<typeof setTimeout> | null = null;
     let clearStatusTimer: ReturnType<typeof setTimeout> | null = null;
 
     if (mode === 'thinking') {
