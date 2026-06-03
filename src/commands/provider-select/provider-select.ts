@@ -600,10 +600,15 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     };
 
     const info = getProviderInfo(provider);
+    // Preserve existing provider/model in the config file so other
+    // sessions keep using their own selection. Only the API key is
+    // persisted; the new provider+model are applied to this session
+    // via applyProviderSelectionToSession further down.
+    const existingConfig = await loadConfig();
     const nextConfig: ProviderConfig = {
-      provider,
-      model: (currentSessionModel as string) || config?.model || info.defaultModel || '', // Keep session model or fall back
-      providerConfig: {
+      provider: existingConfig?.provider || provider,
+      model: existingConfig?.model || (currentSessionModel as string) || info.defaultModel || '',
+      providerConfig: existingConfig?.providerConfig ?? {
         ...getSerializableProviderInfo(provider),
         ...(provider === 'anthropic' && anthropicType ? { anthropicType } : {}),
         ...(provider === 'google' && googleType ? { googleType } : {}),

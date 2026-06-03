@@ -88,15 +88,6 @@ function ModelPickerWrapper({
       }));
       if (model !== null) {
         addRecentModel(model);
-        try {
-          const pm = ProviderManager.getInstance();
-          const cfg = pm.getSelectedProviderConfig(true);
-          if (cfg.model !== model) {
-            pm.saveSelectedProviderConfig({ ...cfg, model });
-          }
-        } catch {
-          // Non-critical: provider.json write is best-effort here.
-        }
       }
       // Persist the session model choice to transcript for resume restore
       setSessionModelForTranscript(model ?? undefined);
@@ -227,28 +218,17 @@ function SetModelAndClose({
     function setModel(modelValue: string | null): void {
       setAppState(prev => ({
         ...prev,
-        mainLoopModel: modelValue,
-        mainLoopModelForSession: null,
+        mainLoopModelForSession: modelValue,
       }));
 
       if (modelValue !== null) {
         addRecentModel(modelValue);
       }
 
-      // Directly persist model to provider.json
-      if (modelValue !== null) {
-        try {
-          const pm = ProviderManager.getInstance();
-          const cfg = pm.getSelectedProviderConfig(true);
-          if (cfg.model !== modelValue) {
-            pm.saveSelectedProviderConfig({ ...cfg, model: modelValue });
-          }
-        } catch {
-          // Non-critical
-        }
-      }
+      // Persist the session model choice to transcript for resume restore
+      setSessionModelForTranscript(modelValue ?? undefined);
 
-      let message = `Set model to ${chalk.bold(renderModelLabel(modelValue))}`;
+      let message = `Set model to ${chalk.bold(renderModelLabel(modelValue))} for this session`;
 
       let wasFastModeToggledOn;
       if (isFastModeEnabled()) {
