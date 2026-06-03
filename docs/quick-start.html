@@ -23,18 +23,20 @@
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
-  <main class="content">
-    <h1>Quick Start</h1>
-    <p class="section-subtitle">From zero to AI-assisted coding in under a minute.</p>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Quick Start</span></div>
+      <h1>Quick Start</h1>
+      <p class="section-subtitle">From zero to AI-assisted coding in under a minute.</p>
 
-    <h2>1. Install</h2>
-    <pre><code>npm install -g @jonusnattapong/claudecode
+      <h2>1. Install</h2>
+      <pre><code>npm install -g @jonusnattapong/claudecode
 clew --version</code></pre>
-    <p>Make sure <a href="installation.html">Bun 1.3+</a> is installed first. The npm package does not bundle Bun.</p>
+      <p>Make sure <a href="installation.html">Bun 1.3+</a> is installed first. The npm package does not bundle Bun.</p>
 
-    <h2>2. Set a Provider Key</h2>
-    <p>Set at least one API key as an environment variable. See <a href="providers.html">Providers</a> for all 27 options.</p>
-    <pre><code># Anthropic (recommended for best tool calling)
+      <h2>2. Set a Provider Key</h2>
+      <p>Set at least one API key as an environment variable. See <a href="providers.html">Providers</a> for all 27 options.</p>
+      <pre><code># Anthropic (recommended for best tool calling)
 export ANTHROPIC_API_KEY=sk-ant-...
 
 # Or DeepSeek
@@ -43,13 +45,13 @@ export DEEPSEEK_API_KEY=sk-...
 # Or Google Gemini
 export GOOGLE_API_KEY=...</code></pre>
 
-    <h2>3. Launch</h2>
-    <pre><code>cd /path/to/your/project
+      <h2>3. Launch</h2>
+      <pre><code>cd /path/to/your/project
 clew</code></pre>
-    <p>The terminal UI starts with model name, provider, and context usage in the status bar.</p>
+      <p>The terminal UI starts with model name, provider, and context usage in the status bar.</p>
 
-    <h2>4. First Commands</h2>
-    <pre><code>> "explain this project's structure"
+      <h2>4. First Commands</h2>
+      <pre><code>> "explain this project's structure"
 
 > "find all the test files"
 
@@ -59,20 +61,20 @@ clew</code></pre>
 
 > /doctor          # Run environment diagnostics</code></pre>
 
-    <h2>5. Key Commands to Know</h2>
-    <table>
-      <tr><th>Command</th><th>Use</th></tr>
-      <tr><td><code>/clear</code></td><td>Clear conversation and free context</td></tr>
-      <tr><td><code>/compact</code></td><td>Compress context to save tokens</td></tr>
-      <tr><td><code>/model &lt;name&gt;</code></td><td>Switch model or provider</td></tr>
-      <tr><td><code>/permissions</code></td><td>Manage tool permission rules</td></tr>
-      <tr><td><code>/plan</code></td><td>Toggle plan mode</td></tr>
-      <tr><td><code>/config</code></td><td>Open config panel</td></tr>
-      <tr><td><code>/help</code></td><td>Show all available commands</td></tr>
-    </table>
+      <h2>5. Key Commands to Know</h2>
+      <table>
+        <tr><th>Command</th><th>Use</th></tr>
+        <tr><td><code>/clear</code></td><td>Clear conversation and free context</td></tr>
+        <tr><td><code>/compact</code></td><td>Compress context to save tokens</td></tr>
+        <tr><td><code>/model &lt;name&gt;</code></td><td>Switch model or provider</td></tr>
+        <tr><td><code>/permissions</code></td><td>Manage tool permission rules</td></tr>
+        <tr><td><code>/plan</code></td><td>Toggle plan mode</td></tr>
+        <tr><td><code>/config</code></td><td>Open config panel</td></tr>
+        <tr><td><code>/help</code></td><td>Show all available commands</td></tr>
+      </table>
 
-    <h2>6. Sessions</h2>
-    <pre><code># Continue last conversation
+      <h2>6. Sessions</h2>
+      <pre><code># Continue last conversation
 clew -c
 
 # Resume a specific session
@@ -84,11 +86,13 @@ clew -p "find all unused exports"
 # With structured output
 clew -p --output-format json "list all dependencies"</code></pre>
 
-    <div class="callout callout-info">
-      <strong>Tips</strong>
-      Type <code>/</code> to discover all commands. Use <code>/powerup</code> for interactive lessons. Set <code>--model sonnet</code> at startup to skip the default model.
-    </div>
-  </main>
+      <div class="callout callout-info">
+        <strong>Tips</strong>
+        Type <code>/</code> to discover all commands. Use <code>/powerup</code> for interactive lessons. Set <code>--model sonnet</code> at startup to skip the default model.
+      </div>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
 </div>
 <script src="js/main.js"></script>
 </body>

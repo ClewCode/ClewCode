@@ -12,82 +12,79 @@
 </head>
 <body>
 <header class="header"><div class="header-inner"><a href="index.html" class="logo"><span>Clew</span></a><nav class="header-nav"><a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#commands">Commands</a><a href="quick-start.html" class="active">Docs</a><a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a></nav><button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button></div></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div><main class="content">
+<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="content-wrap"><main class="content">
+  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Troubleshooting</span></div>
   <h1>Troubleshooting</h1>
   <p class="section-subtitle">Start with <code>/doctor</code> — it checks runtime version, provider credentials, config integrity, plugin/MCP status, and Sentry telemetry.</p>
 
   <h2>Startup Issues</h2>
+  <h3>"command not found: clew"</h3>
+  <p>npm global install path may not be in <code>PATH</code>. Use <code>npx @jonusnattapong/claudecode</code> or <code>bun x @jonusnattapong/claudecode</code> as alternatives.</p>
 
-  <h3>"No provider configured" or model doesn't respond</h3>
-  <p><strong>Check:</strong> Provider API key and model selection.</p>
-  <pre><code>/status                          # Shows active provider and model
-echo $ANTHROPIC_API_KEY          # Verify key is set
-clew --model sonnet          # Specify model at startup</code></pre>
+  <h3>"Bun not found"</h3>
+  <p>Clew requires <a href="https://bun.sh">Bun 1.3+</a> as the runtime for the npm package.</p>
 
-  <h3>Build fails</h3>
-  <pre><code>node --version                   # Must be 22.12.0+
-bun --version                    # Must be 1.3+
-bun x tsc --noEmit               # Type check
-bun run build                    # Full build</code></pre>
-  <p>Check for strict TypeScript violations. Some native modules are externalized (<code>--external</code> flags in build script).</p>
+  <h2>Provider Issues</h2>
 
-  <h3>Windows: "Not a TTY" errors</h3>
-  <p>The application polyfills TTY for Ink compatibility in <code>src/main.tsx</code>. If you see TTY-related issues:</p>
+  <h3>"No API key configured"</h3>
+  <p>Set at least one provider API key as an environment variable. See <a href="providers.html">Providers</a> for the full list.</p>
+  <pre><code>export ANTHROPIC_API_KEY=sk-ant-...
+export DEEPSEEK_API_KEY=sk-...</code></pre>
+  <p>Run <code>/doctor</code> to verify configured providers.</p>
+
+  <h3>"Rate limited" or "Quota exceeded"</h3>
+  <p>Set a fallback model via CLI: <code>--fallback-model &lt;model&gt;</code>. Or use <code>/model</code> to switch to a different provider. For rate limit options during a session, use <code>/rate-limit-options</code>.</p>
+
+  <h2>Build Issues</h2>
+
+  <h3>TypeScript errors during build</h3>
+  <pre><code>bun run build
+# TypeScript errors may exist in uncommitted code or external modules.
+# Run targeted checks:
+bun x tsc --noEmit
+bun test <targeted-path></code></pre>
+
+  <h3>Windows-specific issues</h3>
   <ul>
-    <li>Use Windows Terminal or WSL2</li>
-    <li>Ensure <code>process.stdout.isTTY</code> is correctly detected</li>
-    <li>WSL2 strongly recommended for the best experience</li>
+    <li>ripgrep is bundled at <code>src/utils/vendor/ripgrep/x64-win32/rg.exe</code></li>
+    <li>TTY polyfill may be needed for Ink compatibility</li>
+    <li>PowerShell and Bash may behave differently for tool execution</li>
+    <li>Windows argv normalization in <code>src/entry.ts</code></li>
   </ul>
 
-  <h2>Runtime Issues</h2>
+  <h2>MCP Issues</h2>
 
-  <h3>Tool prompts appearing too often</h3>
-  <pre><code>/permissions                     # View current mode and rules
-/permissions set auto            # Auto-approve low-risk actions
-# Or use CLI flags:
-clew --allowedTools "Bash(git *) Edit Read"</code></pre>
+  <h3>"MCP server connection failed"</h3>
+  <p>Verify the server command exists and paths are correct. Check JSON config syntax with <code>/mcp</code> command.</p>
 
-  <h3>MCP tools not showing or server won't start</h3>
-  <pre><code>/mcp                             # List configured MCP servers
-clew --mcp-config ./mcp-config.json  # Load from file</code></pre>
-  <p>Verify the server's configuration JSON. Check <code>src/services/mcp/client.ts</code> for protocol version requirements.</p>
+  <h3>MCP tools not appearing</h3>
+  <p>Use <code>/mcp</code> to check server status. Tools are loaded at startup via <code>--mcp-config</code> or through <code>assembleToolPool()</code> during server connection. Verify the server implements <code>tools/list</code> correctly.</p>
 
-  <h3>Plugins not appearing after install</h3>
-  <pre><code>/plugin                          # List installed plugins
-/reload-plugins                  # Refresh without restart
-clew --plugin-dir /path/to/plugins  # Load from custom dir</code></pre>
+  <h2>Plugin Issues</h2>
 
-  <h3>Context window full</h3>
-  <pre><code>/context                         # Show usage
-/compact                         # Compress (log snipping, consolidation)
-/clear                           # Start fresh</code></pre>
+  <h3>Plugin not loading</h3>
+  <p>Check plugin manifest format and location. Use <code>/plugin</code> and <code>/reload-plugins</code> to refresh. For directory-based plugins, use <code>--plugin-dir &lt;path&gt;</code>.</p>
 
-  <h3>Dependency issues</h3>
-  <pre><code>rm -rf node_modules bun.lock
-bun install
-
-# Windows PowerShell
-Remove-Item -Recurse -Force node_modules
-Remove-Item bun.lock
-bun install</code></pre>
-
-  <h2>Debug Mode</h2>
-  <pre><code>clew --debug                          # General debug
-clew --debug api,hooks                # Category-filtered
-clew --debug-file /tmp/debug.log      # Log to file
-DEBUG=provider:anthropic clew         # Provider-specific</code></pre>
-
-  <h2>Print Mode (Non-Interactive)</h2>
-  <p>If the TUI doesn't work in your environment, use <code>--print</code> for pipe-friendly output:</p>
-  <pre><code>clew -p "explain this file" > output.txt
-clew -p --output-format json "list dependencies" | jq
-echo "refactor this" | clewvil -p</code></pre>
+  <h2>Feature Flags</h2>
+  <p>Some features require compile-time or runtime flags:</p>
+  <table>
+    <tr><th>Feature</th><th>Required Flag</th></tr>
+    <tr><td>Bridge mode</td><td><code>BRIDGE_MODE=1</code></td></tr>
+    <tr><td>Voice mode</td><td><code>VOICE_MODE=1</code></td></tr>
+    <tr><td>LSP tool</td><td><code>ENABLE_LSP_TOOL=1</code></td></tr>
+    <tr><td>Computer Use</td><td><code>ENABLE_COMPUTER_USE=1</code> (Windows)</td></tr>
+    <tr><td>Proactive features</td><td><code>KAIROS=1</code></td></tr>
+    <tr><td>Agent triggers</td><td><code>AGENT_TRIGGERS=1</code></td></tr>
+    <tr><td>Code index</td><td><code>CODE_INDEX=1</code></td></tr>
+  </table>
 
   <h2>Getting Help</h2>
   <ul>
-    <li><strong>GitHub Issues</strong> — <a href="https://github.com/JonusNattapong/claudecode/issues">https://github.com/JonusNattapong/claudecode/issues</a></li>
-    <li><strong>Release Notes</strong> — <code>/release-notes</code> or GitHub releases</li>
-    <li><strong>In-session</strong> — <code>/help</code> for command reference, <code>/doctor</code> for diagnostics</li>
+    <li><strong>In-app diagnostics:</strong> <code>/doctor</code> — comprehensive environment check</li>
+    <li><strong>Status overview:</strong> <code>/status</code> — version, model, API connectivity, tool statuses</li>
+    <li><strong>GitHub Issues:</strong> Report bugs and feature requests</li>
+    <li><strong>Debug mode:</strong> Run with <code>DEBUG=1</code> or <code>DEBUG=provider:anthropic</code> for detailed logging</li>
   </ul>
 
   <footer class="footer">
@@ -95,6 +92,13 @@ echo "refactor this" | clewvil -p</code></pre>
     <div class="footer-links">
       <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
       <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
+      <a href="https://npmjs.com/package/@jonusnattapong/claudecode">npm</a>
     </div>
   </footer>
-</main></div><script src="js/main.js"></script></body></html>
+</main>
+<nav class="toc-sidebar"></nav>
+</div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

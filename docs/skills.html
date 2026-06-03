@@ -12,7 +12,9 @@
 </head>
 <body>
 <header class="header"><div class="header-inner"><a href="index.html" class="logo"><span>Clew</span></a><nav class="header-nav"><a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#commands">Commands</a><a href="quick-start.html" class="active">Docs</a><a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a></nav><button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button></div></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div><main class="content">
+<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="content-wrap"><main class="content">
+  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Skills</span></div>
   <h1>Skills</h1>
   <p class="section-subtitle">Skills are reusable prompt-type commands — markdown files that provide structured instructions to the AI model. They are loaded from bundled, user, project, and plugin directories.</p>
 
@@ -20,7 +22,7 @@
   <p>Skills are commands of type <code>prompt</code> — they expand to text that is sent to the model. Unlike plugins (which provide JavaScript code), skills are purely instructional. They bridge the gap between ad-hoc prompts and full plugin development.</p>
 
   <h2>Skill Locations</h2>
-  <p>Skills are loaded from four sources (order: bundled → user → project → plugin):</p>
+  <p>Skills are loaded from four sources (order: bundled user project plugin):</p>
   <table>
     <tr><th>Source</th><th>Path</th><th>Scope</th></tr>
     <tr><td>Bundled</td><td>Ships with Clew</td><td>All users</td></tr>
@@ -104,4 +106,10 @@ touch ~/.claude/skills/my-skill/SKILL.md
       <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
     </div>
   </footer>
-</main></div><script src="js/main.js"></script></body></html>
+</main>
+<nav class="toc-sidebar"></nav>
+</div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

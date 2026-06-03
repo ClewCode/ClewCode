@@ -13,10 +13,7 @@
 <body>
 <header class="header">
   <div class="header-inner">
-    <a href="index.html" class="logo">
-      
-      <span>Clew</span>
-    </a>
+    <a href="index.html" class="logo"><span>Clew</span></a>
     <nav class="header-nav">
       <a href="index.html">Home</a>
       <a href="index.html#features">Features</a>
@@ -24,94 +21,69 @@
       <a href="quick-start.html" class="active">Docs</a>
       <a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a>
     </nav>
-    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
-      <span></span><span></span><span></span>
-    </button>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
   </div>
 </header>
-
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
-
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Research &amp; Memory</span></div>
+      <h1>Research &amp; Memory</h1>
+      <p class="section-subtitle">Clew provides a built-in deep research system and cross-session semantic memory — both designed to work with local files, web sources, and a persistent knowledge store.</p>
 
-  <main class="content">
-  <h1>Research &amp; Memory</h1>
-  <p class="section-subtitle">Clew includes a built-in deep research system for source-grounded investigations and a semantic memory layer for cross-session knowledge retention.</p>
+      <h2>Research System</h2>
+      <p>The research system lives in <code>src/research/</code> and supports deep, source-grounded research across local files, wiki content, and memory:</p>
+      <ul>
+        <li><strong>Citation extraction</strong> — Automatic extraction of citations from research sources</li>
+        <li><strong>Claim verification</strong> — Fact-check claims against multiple sources</li>
+        <li><strong>Dossier generation</strong> — Structured reports with source attribution</li>
+        <li><strong>Truth checking</strong> — Cross-reference claims for accuracy</li>
+        <li><strong>Source ranking</strong> — Prioritize authoritative sources</li>
+      </ul>
 
-  <h2>Deep Research</h2>
-  <p>The research system (<code>src/research/</code>) enables thorough, source-grounded investigations across local files, wiki content, and memory.</p>
+      <h3>Research Commands</h3>
+      <table>
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td><code>/research</code></td><td>Deep source-grounded research across local files, wiki, and memory</td></tr>
+      </table>
 
-  <h3>Capabilities</h3>
-  <table>
-    <tr><th>Feature</th><th>Description</th></tr>
-    <tr><td>Citation Extraction</td><td>Automatically extracts and attributes sources from research results</td></tr>
-    <tr><td>Claim Verification</td><td>Cross-references claims across sources with confidence scoring</td></tr>
-    <tr><td>Dossier Generation</td><td>Produces structured research dossiers with summaries, evidence, and references</td></tr>
-    <tr><td>Truth Checking</td><td>Validates factual claims against source material</td></tr>
-    <tr><td>Source Ranking</td><td>Ranks sources by relevance, authority, and recency</td></tr>
-    <tr><td>Web Discovery</td><td>API-keyless high-speed DuckDuckGo search queries for real-time web context</td></tr>
-    <tr><td>Stealth Scraping</td><td>Concurrently scrapes web page HTML and parses it to clean Markdown using Python Scrapling & Trafilatura stealth fetchers, bypassing Cloudflare & Turnstile</td></tr>
-  </table>
+      <h2>Memory System</h2>
+      <p>The memory system lives in <code>src/memdir/</code> and provides cross-session persistent knowledge storage with semantic search:</p>
+      <ul>
+        <li><strong>Semantic search</strong> — Find relevant memories using text embedding similarity</li>
+        <li><strong>Cross-lingual</strong> — Search across languages using semantic embeddings</li>
+        <li><strong>Memory age tracking</strong> — Automatically age and prune old memories</li>
+        <li><strong>Auto-memory capture</strong> — Automatically save important information</li>
+        <li><strong>Hybrid recall</strong> — Combines local embedding search with LLM-based retrieval</li>
+        <li><strong>Team sync</strong> — Share memory across team members</li>
+      </ul>
 
-  <h3>Research Workflow</h3>
-  <ol>
-    <li><strong>Query Trigger</strong> — Triggered using <code>/research &lt;query&gt;</code> directly bypassing subcommand requirements (e.g. <code>/research React 19 release notes</code>)</li>
-    <li><strong>Gather</strong> — Collects information from local files, wiki, memory, and crawls/scrapes real-time web pages concurrently</li>
-    <li><strong>Analyze</strong> — Cross-references, verifies claims, extracts citations</li>
-    <li><strong>Synthesize</strong> — Produces a structured report with evidence and sources</li>
-  </ol>
+      <h3>Memory Commands</h3>
+      <table>
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td><code>/memory</code></td><td>Edit Claude memory files</td></tr>
+        <tr><td><code>/memory-search</code></td><td>Search memories using semantic search (cross-lingual)</td></tr>
+      </table>
 
-  <pre><code>/research "React 19 release notes"
+      <h2>Architecture Files</h2>
+      <table>
+        <tr><th>Path</th><th>Role</th></tr>
+        <tr><td><code>src/research/</code></td><td>Deep research, dossier generation, truth checking, source ranking</td></tr>
+        <tr><td><code>src/memdir/</code></td><td>Semantic memory search and storage</td></tr>
+      </table>
 
-  # Result: structured dossier with citations, evidence, and ranked sources</code></pre>
-
-  <h2>Semantic Memory</h2>
-  <p>The memory system (<code>src/memdir/</code>) provides persistent, cross-session knowledge retention using text embedding search.</p>
-
-  <h3>Features</h3>
-  <table>
-    <tr><th>Feature</th><th>Description</th></tr>
-    <tr><td>Semantic Search</td><td>Find memories by meaning, not just keywords — cross-lingual support</td></tr>
-    <tr><td>Auto-Memory Capture</td><td>Important context is automatically saved during conversation</td></tr>
-    <tr><td>Memory Age Tracking</td><td>Older memories decay in relevance; fresh memories are prioritized</td></tr>
-    <tr><td>Hybrid Recall</td><td>Combines local embedding search with LLM-assisted retrieval</td></tr>
-    <tr><td>Team Sync</td><td>Share memories across sessions and team members</td></tr>
-  </table>
-
-  <h3>Memory Commands</h3>
-  <pre><code>/memory                          # Edit Claude memory files
-  /memory-search "deployment config"  # Semantic search across memories
-  /research "auth patterns"           # Research across files + wiki + memory</code></pre>
-
-  <h3>How Memory Works</h3>
-  <p>Memories are stored as markdown files in the user's Claude memory directory. When a query is made:</p>
-  <ol>
-    <li>Text embeddings are computed for the query</li>
-    <li>Embeddings are compared against stored memory vectors</li>
-    <li>Top matches are ranked by similarity and recency</li>
-    <li>Matched memories are injected as context for the LLM</li>
-  </ol>
-
-  <blockquote>
-    <p><strong>Note:</strong> Memory is distinct from session history. Session history records raw conversation turns; memory captures curated facts, preferences, and project context for long-term retention.</p>
-  </blockquote>
-
-  <h2>Architecture Files</h2>
-  <table>
-    <tr><th>Path</th><th>Role</th></tr>
-    <tr><td><code>src/research/</code></td><td>Deep research: citation extraction, dossier generation, truth checking, source ranking</td></tr>
-    <tr><td><code>src/memdir/</code></td><td>Semantic memory: text embedding search, memory age tracking, cross-session recall</td></tr>
-  </table>
-
-  <footer class="footer">
-    <span>Clew v2.1.180 — Open Source (MIT)</span>
-    <div class="footer-links">
-      <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
-      <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
+      <footer class="footer">
+        <span>Clew v2.1.180 — Open Source (MIT)</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
 </div>
 <script src="js/main.js"></script>
 </body>

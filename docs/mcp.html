@@ -13,10 +13,7 @@
 <body>
 <header class="header">
   <div class="header-inner">
-    <a href="index.html" class="logo">
-      
-      <span>Clew</span>
-    </a>
+    <a href="index.html" class="logo"><span>Clew</span></a>
     <nav class="header-nav">
       <a href="index.html">Home</a>
       <a href="index.html#features">Features</a>
@@ -24,64 +21,61 @@
       <a href="quick-start.html" class="active">Docs</a>
       <a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a>
     </nav>
-    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
-      <span></span><span></span><span></span>
-    </button>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
   </div>
 </header>
-
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
-
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>MCP</span></div>
+      <h1>Model Context Protocol (MCP)</h1>
+      <p class="section-subtitle">Connect Clew to external tools, data sources, and services via the Model Context Protocol — an open standard for AI-application integration.</p>
 
-  <main class="content">
-  <h1>Model Context Protocol (MCP)</h1>
-  <p class="section-subtitle">Connect Clew to external tools, data sources, and services via the Model Context Protocol — an open standard for AI-application integration.</p>
+      <p>MCP support is implemented in <code>src/services/mcp/</code>. Servers are discovered at startup and their tools, resources, and prompts are merged into Clew's runtime.</p>
 
-  <p>MCP support is implemented in <code>src/services/mcp/</code>. Servers are discovered at startup and their tools, resources, and prompts are merged into Clew's runtime.</p>
+      <h2>How It Works</h2>
+      <pre><code>  MCP Server Config (JSON or inline)
+       |
+       v
+  + MCP Manager (src/services/mcp/)
+  |    Server connection lifecycle
+  |    Tool discovery via tools/list
+  |    Resource access via resources/read
+  |    Paginated responses
+  |
+  + Tool Pool (assembleToolPool)
+  |    MCP tools merged with built-in tools
+  |    Availability toggled by permission rules
+  |
+  + Query Loop
+       Model sees MCP tools alongside built-ins
+       Tool calls routed to the appropriate MCP server</code></pre>
 
-  <h2>How It Works</h2>
-  <pre><code>  MCP Server Config (JSON or inline)
-       │
-       ▼
-  ┌─ MCP Manager (src/services/mcp/)
-  │    • Server connection lifecycle
-  │    • Tool discovery via tools/list
-  │    • Resource access via resources/read
-  │    • Paginated responses
-  │
-  ├─ Tool Pool (assembleToolPool)
-  │    • MCP tools merged with built-in tools
-  │    • Availability toggled by permission rules
-  │
-  └─ Query Loop
-       • Model sees MCP tools alongside built-ins
-       • Tool calls routed to the appropriate MCP server</code></pre>
+      <h2>MCP Commands</h2>
+      <table>
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td><code>/mcp</code></td><td>Manage MCP servers — list, add, remove, view status</td></tr>
+      </table>
 
-  <h2>MCP Commands</h2>
-  <table>
-    <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/mcp</code></td><td>Manage MCP servers — list, add, remove, view status</td></tr>
-  </table>
+      <h2>CLI Configuration</h2>
+      <p>MCP servers are configured at startup via CLI flags:</p>
+      <pre><code># Load servers from a JSON config file
+clew --mcp-config ./mcp-servers.json
 
-  <h2>CLI Configuration</h2>
-  <p>MCP servers are configured at startup via CLI flags:</p>
-  <pre><code># Load servers from a JSON config file
-  clew --mcp-config ./mcp-servers.json
+# Load multiple configs
+clew --mcp-config ./servers.json ./extra.json
 
-  # Load multiple configs
-  clew --mcp-config ./servers.json ./extra.json
+# Pass inline JSON
+clew --mcp-config '{"servers":{...}}'
 
-  # Pass inline JSON
-  clew --mcp-config '{"servers":{...}}'
+# Strict mode (only use MCP servers, no built-ins)
+clew --strict-mcp-config</code></pre>
 
-  # Strict mode (only use MCP servers, no built-ins)
-  clew --strict-mcp-config</code></pre>
-
-  <h2>MCP Server Config Format</h2>
-  <p>Each MCP server is defined with a command, arguments, and environment variables:</p>
-  <pre><code>{
+      <h2>MCP Server Config Format</h2>
+      <p>Each MCP server is defined with a command, arguments, and environment variables:</p>
+      <pre><code>{
     "servers": {
       "filesystem": {
         "command": "npx",
@@ -96,44 +90,46 @@
     }
   }</code></pre>
 
-  <h2>Tool Discovery</h2>
-  <p>When an MCP server connects, Clew:</p>
-  <ol>
-    <li>Sends <code>tools/list</code> to discover available tools</li>
-    <li>Merges discovered tools into the global tool pool via <code>assembleToolPool()</code></li>
-    <li>Handles paginated responses for servers with many tools</li>
-    <li>Makes tools available to the model alongside built-in tools</li>
-  </ol>
+      <h2>Tool Discovery</h2>
+      <p>When an MCP server connects, Clew:</p>
+      <ol>
+        <li>Sends <code>tools/list</code> to discover available tools</li>
+        <li>Merges discovered tools into the global tool pool via <code>assembleToolPool()</code></li>
+        <li>Handles paginated responses for servers with many tools</li>
+        <li>Makes tools available to the model alongside built-in tools</li>
+      </ol>
 
-  <p>MCP-provided tools inherit their schemas from the server and go through the same permission gating and hook system as built-in tools.</p>
+      <p>MCP-provided tools inherit their schemas from the server and go through the same permission gating and hook system as built-in tools.</p>
 
-  <h2>Resources</h2>
-  <p>MCP servers can also expose resources — structured data that Clew can read:</p>
-  <ul>
-    <li><strong>ListMcpResources</strong> — List available resources from all connected servers</li>
-    <li><strong>ReadMcpResource</strong> — Read a specific resource by URI</li>
-  </ul>
+      <h2>Resources</h2>
+      <p>MCP servers can also expose resources — structured data that Clew can read:</p>
+      <ul>
+        <li><strong>ListMcpResources</strong> — List available resources from all connected servers</li>
+        <li><strong>ReadMcpResource</strong> — Read a specific resource by URI</li>
+      </ul>
 
-  <p>Resources are useful for accessing database schemas, API documentation, configuration files, and other structured data through MCP servers.</p>
+      <p>Resources are useful for accessing database schemas, API documentation, configuration files, and other structured data through MCP servers.</p>
 
-  <h2>Plugin-Bundled MCP Servers</h2>
-  <p>Plugins can declare MCP servers in their manifest. These are automatically started when the plugin is loaded and stopped when the plugin is unloaded. See <a href="plugins.html">Plugins</a> for details.</p>
+      <h2>Plugin-Bundled MCP Servers</h2>
+      <p>Plugins can declare MCP servers in their manifest. These are automatically started when the plugin is loaded and stopped when the plugin is unloaded. See <a href="plugins.html">Plugins</a> for details.</p>
 
-  <h2>Architecture Files</h2>
-  <table>
-    <tr><th>Path</th><th>Role</th></tr>
-    <tr><td><code>src/services/mcp/</code></td><td>MCP server connection management, tool discovery, resource access</td></tr>
-    <tr><td><code>src/tools.ts</code></td><td>Tool registry — MCP tools merged via assembleToolPool()</td></tr>
-  </table>
+      <h2>Architecture Files</h2>
+      <table>
+        <tr><th>Path</th><th>Role</th></tr>
+        <tr><td><code>src/services/mcp/</code></td><td>MCP server connection management, tool discovery, resource access</td></tr>
+        <tr><td><code>src/tools.ts</code></td><td>Tool registry — MCP tools merged via assembleToolPool()</td></tr>
+      </table>
 
-  <footer class="footer">
-    <span>Clew v2.1.180 — Open Source (MIT)</span>
-    <div class="footer-links">
-      <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
-      <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
+      <footer class="footer">
+        <span>Clew v2.1.180 — Open Source (MIT)</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
 </div>
 <script src="js/main.js"></script>
 </body>

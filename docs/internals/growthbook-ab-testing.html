@@ -12,7 +12,9 @@
 </head>
 <body>
 <header class="header"><div class="header-inner"><a href="../index.html" class="logo"><span>Clew</span></a><nav class="header-nav"><a href="../index.html">Home</a><a href="../index.html#features">Features</a><a href="../index.html#commands">Commands</a><a href="../quick-start.html" class="active">Docs</a><a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a></nav><button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button></div></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div><main class="content">
+<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="content-wrap"><main class="content">
+  <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><a href="../index.html#features">Internals</a><span class="sep">/</span><span>A/B Testing</span></div>
   <h1>GrowthBook A/B Testing</h1>
   <p class="section-subtitle">Feature flagging and experiment management using GrowthBook for gradual rollouts, A/B tests, and targeted feature releases.</p>
 
@@ -34,22 +36,19 @@
   </ul>
 
   <h2>Usage in Code</h2>
-  <p>Feature flags are accessed through a cached evaluation function. The cache may return slightly stale values within a session, which is acceptable for product experimentation:</p>
-  <pre><code><span style="color:var(--text-tertiary)">// Check if a feature is enabled (cached evaluation)</span>
-<span style="color:var(--orange-400)">const</span> isEnabled = getFeatureValue_CACHED_MAY_BE_STALE(
-  <span style="color:var(--teal-400)">'tengu_plum_vx3'</span>,  <span style="color:var(--text-tertiary)">// Feature key</span>
-  <span style="color:var(--orange-400)">false</span>                  <span style="color:var(--text-tertiary)">// Default value</span>
+  <pre><code>// Check if a feature is enabled (cached evaluation)
+const isEnabled = getFeatureValue_CACHED_MAY_BE_STALE(
+  'tengu_plum_vx3',  // Feature key
+  false              // Default value
 );
-
-<span style="color:var(--text-tertiary)">// Use the feature value</span>
-<span style="color:var(--orange-400)">if</span> (isEnabled) {
-  <span style="color:var(--text-tertiary)">// New behavior path</span>
-} <span style="color:var(--orange-400)">else</span> {
-  <span style="color:var(--text-tertiary)">// Control behavior path</span>
+// Use the feature value
+if (isEnabled) {
+  // New behavior path
+} else {
+  // Control behavior path
 }</code></pre>
 
   <h2>Configuration</h2>
-  <p>GrowthBook is configured via environment variables. The SDK connects to the GrowthBook API at startup to fetch the latest feature definitions, then caches them locally for offline operation:</p>
   <table>
     <tr><th>Variable</th><th>Purpose</th></tr>
     <tr><td><code>GROWTHBOOK_API_HOST</code></td><td>GrowthBook API endpoint (self-hosted or cloud)</td></tr>
@@ -70,7 +69,7 @@
   <h2>Best Practices</h2>
   <ul>
     <li>Always provide a sensible default value (usually <code>false</code> for features not yet released)</li>
-    <li>Use descriptive, unique feature keys (e.g., <code>tengu_plum_vx3</code> follows the internal naming convention)</li>
+    <li>Use descriptive, unique feature keys</li>
     <li>Cache-aware design: do not rely on flag values being real-time; they are evaluated at session start</li>
     <li>Clean up stale flags after experiments conclude</li>
   </ul>
@@ -82,7 +81,10 @@
       <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
     </div>
   </footer>
-</main></div>
+</main>
+<nav class="toc-sidebar"></nav>
+</div>
+</div>
 <script src="../js/main.js"></script>
 </body>
 </html>
