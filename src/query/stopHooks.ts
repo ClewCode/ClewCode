@@ -472,6 +472,7 @@ export async function* handleStopHooks(
               sessionGoalStartTime: undefined,
               sessionGoalTurnCount: undefined,
               sessionGoalPaused: undefined,
+              sessionGoalTotalPausedMs: undefined,
               toolPermissionContext: restoredMode
                 ? {
                     ...prev.toolPermissionContext,

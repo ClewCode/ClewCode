@@ -113,6 +113,8 @@ function PromptInputFooter({
   const coordinatorTaskIndex = useAppState(s => s.coordinatorTaskIndex);
   const sessionGoal = useAppState(s => s.sessionGoal);
   const sessionGoalStartTime = useAppState(s => s.sessionGoalStartTime);
+  const sessionGoalPaused = useAppState(s => s.sessionGoalPaused);
+  const sessionGoalTotalPausedMs = useAppState(s => s.sessionGoalTotalPausedMs);
   const [goalNow, setGoalNow] = useState(Date.now());
   const pillSelected = tasksSelected && (coordinatorTaskCount === 0 || coordinatorTaskIndex < 0);
 
@@ -127,7 +129,7 @@ function PromptInputFooter({
   const suppressHint = suppressHintFromProps || statusLineShouldDisplay(settings) || isSearching;
   const showStatusLine = mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings);
   const goalActiveText = sessionGoal
-    ? `◎ /goal active (${formatDuration(goalNow - (sessionGoalStartTime ?? goalNow), {
+    ? `${sessionGoalPaused ? '⏸' : '◎'} /goal ${sessionGoalPaused ? 'paused' : 'active'} (${formatDuration(goalNow - (sessionGoalStartTime ?? goalNow) - (sessionGoalTotalPausedMs ?? 0), {
         hideTrailingZeros: true,
         mostSignificantOnly: true,
       })})`

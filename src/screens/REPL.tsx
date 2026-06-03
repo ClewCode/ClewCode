@@ -2203,6 +2203,7 @@ export function REPL({
             sessionGoalStartTime: hasActiveGoal ? (goalState.setAt ?? Date.now()) : undefined,
             sessionGoalTurnCount: hasActiveGoal ? (goalState.turnCount ?? 0) : undefined,
             sessionGoalPaused: hasActiveGoal ? (goalState.paused ?? false) : undefined,
+            sessionGoalTotalPausedMs: hasActiveGoal ? (goalState.totalPausedMs ?? 0) : undefined,
             toolPermissionContext: {
               ...transitionedContext,
               mode: nextPermissionMode,

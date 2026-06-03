@@ -48,8 +48,6 @@ import { getCurrentSessionTitle } from '../utils/sessionStorage.js';
 import { doesMostRecentAssistantMessageExceed200k, getCurrentUsage } from '../utils/tokens.js';
 import { getCurrentWorktreeSession } from '../utils/worktree.js';
 import { isVimModeEnabled } from './PromptInput/utils.js';
-import { Spinner } from './Spinner.js';
-
 export function statusLineShouldDisplay(settings: ReadonlySettings): boolean {
   if (feature('KAIROS') && getKairosActive()) return false;
   if (getGlobalConfig().statusLineEnabled === false) return false;
@@ -673,11 +671,6 @@ function StatusLineInner({
       return renderContextHearts(usedPercentage);
     })();
 
-    // Extract agent activity
-    const { agents } = extractActivity(messagesRef.current);
-    const runningAgents = agents.filter(a => a.status === 'running');
-    const completedAgents = agents.filter(a => a.status === 'completed');
-
     const percentText =
       usedPercentage > 85
         ? chalk.hex(CLAUDE_THEME.danger)(`${usedPercentage.toFixed(0)}%`)
@@ -687,7 +680,8 @@ function StatusLineInner({
 
     let sessionGoalDisplay = '';
     if (sessionGoal) {
-      const elapsedMs = sessionGoalStartTime ? Date.now() - sessionGoalStartTime : 0;
+      const totalPausedMs = getFullGoalState()?.totalPausedMs ?? 0;
+      const elapsedMs = sessionGoalStartTime ? Date.now() - sessionGoalStartTime - totalPausedMs : 0;
       const elapsedStr = formatCompactDuration(elapsedMs);
       const turns = sessionGoalTurnCount ?? 0;
       const isPaused = sessionGoalPaused ?? false;
@@ -742,39 +736,7 @@ function StatusLineInner({
       mcpStats +
       (rightText ? CLAUDE_DOT + chalk.hex('#FFD700')(rightText) : '');
 
-    const agentLines: Array<{ key: string; node: React.ReactNode }> = [
-      ...runningAgents.slice(-1).map(a => ({
-        key: `agent-running-${a.id}`,
-        node: (
-          <Box flexDirection="row" key={`agent-running-${a.id}`}>
-            <Spinner color="#D97757" isStatusLine={true} />
-            <Text>
-              <Ansi>
-                {chalk.dim(' ') +
-                  claudeAccent(a.type) +
-                  (a.description ? claudeSubtle(` ${truncate(a.description, 40)}`) : '')}
-              </Ansi>
-            </Text>
-          </Box>
-        ),
-      })),
-      ...completedAgents.slice(-2).map(a => ({
-        key: `agent-done-${a.id}`,
-        node: (
-          <Box flexDirection="row" key={`agent-done-${a.id}`}>
-            <Text>
-              <Ansi>
-                {claudeSuccess('✓') +
-                  claudeSubtle(' ') +
-                  claudeAccent(a.type) +
-                  (a.description ? claudeSubtle(` ${truncate(a.description, 40)}`) : '') +
-                  formatActivityDuration(a)}
-              </Ansi>
-            </Text>
-          </Box>
-        ),
-      })),
-    ];
+    const agentLines: Array<{ key: string; node: React.ReactNode }> = [];
 
     if (rightOnly) {
       return (
