@@ -504,18 +504,14 @@ export function BriefIdleStatus(): React.ReactNode {
   );
 }
 
-const STATUSLINE_SPINNER_FRAMES = ['◜', '◠', '◝', '◞', '◡', '◟'];
-
 export function Spinner({
   color = 'text',
-  isStatusLine = false,
 }: {
   color?: string;
-  isStatusLine?: boolean;
 }): React.ReactNode {
   const settings = useSettings();
   const reducedMotion = settings.prefersReducedMotion ?? false;
-  const interval = isStatusLine ? 80 : 120;
+  const interval = 120;
   const [ref, time] = useAnimationFrame(reducedMotion ? null : interval);
 
   // Reduced motion: static dot instead of animated spinner
@@ -527,7 +523,7 @@ export function Spinner({
     );
   }
 
-  const frames = isStatusLine ? STATUSLINE_SPINNER_FRAMES : SPINNER_FRAMES;
+  const frames = SPINNER_FRAMES;
   // Derive frame from synced time - all spinners animate together
   const frame = Math.floor(time / interval) % frames.length;
 
