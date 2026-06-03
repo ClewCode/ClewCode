@@ -37,7 +37,7 @@ import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
  */
 
 const VERB_SET = new Set(['', 'status', 'show']);
-const VERB_EDIT = new Set(['edit', 'update', 'set', 'change']);
+const VERB_EDIT = new Set(['edit', 'set', 'change']);
 const VERB_CLEAR = new Set(['clear', 'stop', 'off', 'reset', 'none', 'cancel']);
 const VERB_PAUSE = new Set(['pause']);
 const VERB_RESUME = new Set(['resume']);
