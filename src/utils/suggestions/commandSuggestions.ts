@@ -256,10 +256,18 @@ function createCommandSuggestionItem(cmd: Command, matchedAlias?: string): Sugge
     (isWorkflow ? cmd.description : formatDescriptionWithSource(cmd)) +
     (cmd.type === 'prompt' && cmd.argNames?.length ? ` (arguments: ${cmd.argNames.join(', ')})` : '');
 
+  // Commands loaded from skills dirs, legacy commands dirs, bundled, plugins,
+  // or MCP servers are skills (not built-in commands).
+  const isSkill =
+    cmd.type === 'prompt' &&
+    !isWorkflow &&
+    cmd.loadedFrom !== undefined &&
+    cmd.loadedFrom !== 'managed';
+
   return {
     id: getCommandId(cmd),
     displayText: `/${commandName}${aliasText}`,
-    tag: isWorkflow ? 'workflow' : undefined,
+    tag: isWorkflow ? 'workflow' : isSkill ? 'Skill' : undefined,
     description: fullDescription,
     metadata: cmd,
   };
