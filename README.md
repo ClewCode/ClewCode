@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/claude-logo-long.png" alt="Clew" width="480" />
+  <img src="https://github.com/user-attachments/assets/49626916-27ff-4963-87db-da88d46c3748" alt="Clew" width="480" />
 </p>
 
 <p align="center">
