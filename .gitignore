@@ -88,6 +88,10 @@ scratch/
 .plan/
 .ceph/
 
+# Crawl data / tool config
+.commandcode/
+.firecrawl/
+
 # Custom ignored files & test workspaces
 *.tgz
 temp-test-memory-workspace/
