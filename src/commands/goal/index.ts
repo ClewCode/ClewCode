@@ -8,9 +8,9 @@ const goal = {
   type: 'local-jsx',
   name: 'goal',
   description:
-    'Set a session goal with autonomous execution. /goal to view, /goal <text> to set, /goal clear to remove, /goal pause/resume to pause/resume',
+    'Set a session goal with autonomous execution. /goal to view, /goal <text|edit|status|clear|pause|resume> to manage',
   immediate: true,
-  argumentHint: '[text|clear|pause|resume]',
+  argumentHint: '[text|edit <new>|status|clear|pause|resume]',
   load: () => import('./goal.js'),
 } satisfies Command;
 
