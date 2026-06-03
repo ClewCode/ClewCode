@@ -73,6 +73,16 @@ const snipModule = feature('HISTORY_SNIP')
 const snipProjection = feature('HISTORY_SNIP')
   ? (require('./services/compact/snipProjection.js') as typeof import('./services/compact/snipProjection.js'))
   : null;
+// Ultracode bridge: opt-in via `globalThis.__ultracodePlannerLlm` and
+// `__ultracodeAgentRunner`. When neither is set the helper returns
+// `not-triggered` immediately, so the static require is safe to keep
+// unconditional. The require pattern matches the snip import above so
+// the import can be tree-shaken when nothing in the host wires it up.
+const { tryAutoRunDynamicWorkflow } = require('./agentRuntime/ultracodeBridge.js') as typeof import('./agentRuntime/ultracodeBridge.js');
+// Goal state lookup for the ultracode classifier — same opt-in pattern.
+// The helper is a no-op when no goal is active, so the require is
+// safe to keep unconditional.
+const { getFullGoalState } = require('./utils/sessionGoalState.js') as typeof import('./utils/sessionGoalState.js');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 export type QueryEngineConfig = {
@@ -580,6 +590,64 @@ export class QueryEngine {
     const initialStructuredOutputCalls = jsonSchema
       ? countToolCalls(this.mutableMessages, SYNTHETIC_OUTPUT_TOOL_NAME)
       : 0;
+
+    // Ultracode bridge: when the ultracode setting is on and the prompt
+    // trips the dynamic-workflow heuristic, plan + run a parallel
+    // workflow via the coordinator and inject the synthetic summary
+    // into `messages` as a meta assistant turn. The bridge is a no-op
+    // when ultracode is off, no host hooks are wired up, or the
+    // heuristic doesn't fire, so existing sessions are unaffected.
+    // Failures are caught and logged so the main loop never aborts.
+    const autoWorkflowOutcome = await tryAutoRunDynamicWorkflow({
+      prompt: typeof prompt === 'string' ? prompt : '',
+      workspaceRoot: this.config.cwd,
+      sessionId: getSessionId(),
+      explicitlyRequested: false,
+      transcriptContext: {
+        priorTurns: messages.filter(m => m.type === 'user' || m.type === 'assistant').length,
+        toolCallCount: countToolCalls(messages),
+        // The last message is the most recent turn's outcome. If the
+        // model just produced a tool result with an error or a text
+        // block that's not a successful completion, surface that to
+        // the classifier so stuck-retry patterns get a context boost.
+        lastTurnErrored: !isResultSuccessful(last(messages)),
+        // Goal-aware signals: when a /goal is active the classifier
+        // boosts complexity past 0.7 of its budget, signalling that
+        // the user is wrestling with the codebase and a parallel
+        // workflow might break the loop. Falls through to the
+        // default zeros when no goal is set.
+        ...((): { goalProgress?: number; goalPaused?: boolean } => {
+          const goal = getFullGoalState();
+          if (!goal) return {};
+          const turnRatio = goal.maxTurns && goal.turnCount !== undefined ? goal.turnCount / goal.maxTurns : 0;
+          const minutesElapsed = goal.setAt ? (Date.now() - goal.setAt - (goal.totalPausedMs ?? 0)) / 60_000 : 0;
+          const timeRatio = goal.maxMinutes ? minutesElapsed / goal.maxMinutes : 0;
+          const progress = Math.max(turnRatio, timeRatio);
+          return { goalProgress: progress, goalPaused: goal.paused ?? false };
+        })(),
+      },
+    });
+    if (autoWorkflowOutcome.kind === 'ran') {
+      // Prepend so the model treats it as a prior turn. The
+      // runDynamicWorkflowAsCoordinator has already persisted the
+      // plan + results to .claude/runs/<id>/, so /workflow can list
+      // or cancel it independently.
+      messages.unshift(autoWorkflowOutcome.message);
+    } else if (autoWorkflowOutcome.kind === 'suggested') {
+      // The classifier says the task is complex and ultracode is
+      // off. Surface a one-line hint as a synthetic system message
+      // so the user sees it before the main loop takes over. The
+      // message is not added to `messages` (it's not model input),
+      // it's just rendered to the UI.
+      yield {
+        type: 'system',
+        subtype: 'local_command',
+        content: `<local-command-stdout>${autoWorkflowOutcome.message}</local-command-stdout>`,
+        uuid: crypto.randomUUID(),
+        session_id: getSessionId(),
+        isMeta: true,
+      } as unknown as SDKMessage;
+    }
 
     for await (const message of query({
       messages,
