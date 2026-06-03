@@ -192,9 +192,8 @@ export async function resetTaskList(taskListId: string): Promise<void> {
  * Priority:
  * 1. CLAUDE_CODE_TASK_LIST_ID - explicit task list ID
  * 2. In-process teammate: leader's team name (so teammates share the leader's task list)
- * 3. CLAUDE_CODE_TEAM_NAME - set when running as a process-based teammate
- * 4. Leader team name - set when the leader creates a team via TeamCreate
- * 5. Session ID - fallback for standalone sessions
+ * 3. Leader team name - set when the leader creates a team via TeamCreate
+ * 4. Session ID - fallback for standalone sessions
  */
 export function getTaskListId(): string {
   if (process.env.CLAUDE_CODE_TASK_LIST_ID) {
