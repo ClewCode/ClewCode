@@ -45,11 +45,22 @@ export type GoalState = {
   pausedAt?: number;
   /** Total accumulated pause time in ms */
   totalPausedMs?: number;
+  /** Workflow run ids that were started in service of this goal. */
+  linkedWorkflowRunIds?: string[];
 };
 
 let currentGoal: string | null = null;
 let currentGoalState: GoalState | null = null;
 let restoredSessionId: string | null = null;
+/**
+ * Snapshot of the most recent goal that was either achieved or cleared
+ * in this session. Kept separate from `currentGoalState` so that
+ * `/goal` (with no args) can show the just-finished goal's stats after
+ * a `/goal clear` wipes the active state. Lives in-memory only — the
+ * fresh start of a new session intentionally forgets the last session's
+ * result, matching the official CLI behaviour.
+ */
+let lastAchieved: GoalState | null = null;
 
 function getGoalFilePath(): string {
   const sessionId = getSessionId();
@@ -141,6 +152,13 @@ export function setSessionGoal(goal: string | null): void {
 /** Set the full goal state with all metadata */
 export function setFullGoalState(state: GoalState | null): void {
   const sessionId = getSessionId();
+  // Snapshot any goal that's leaving the active slot, so `/goal` with
+  // no args can show its final stats after clear. Only remember goals
+  // that actually got somewhere (achieved or actively used), not
+  // bare null initializations.
+  if (currentGoalState && currentGoalState.goal && state === null) {
+    lastAchieved = { ...currentGoalState, endedAt: currentGoalState.endedAt ?? Date.now() };
+  }
   currentGoal = state?.goal ?? null;
   currentGoalState = state;
   restoredSessionId = sessionId;
@@ -151,6 +169,23 @@ export function setFullGoalState(state: GoalState | null): void {
 export function updateGoalState(updates: Partial<GoalState>): void {
   if (!currentGoalState) return;
   currentGoalState = { ...currentGoalState, ...updates };
+  persistGoal(currentGoalState).catch(() => {});
+}
+
+/** Most recent goal that finished in this session (achieved or cleared). */
+export function getLastAchieved(): GoalState | null {
+  return lastAchieved;
+}
+
+/** Add a workflow run id to the active goal's linkage list. */
+export function linkWorkflowToActiveGoal(runId: string): void {
+  if (!currentGoalState) return;
+  const linked = currentGoalState.linkedWorkflowRunIds ?? [];
+  if (linked.includes(runId)) return;
+  currentGoalState = {
+    ...currentGoalState,
+    linkedWorkflowRunIds: [...linked, runId],
+  };
   persistGoal(currentGoalState).catch(() => {});
 }
 

@@ -84,6 +84,8 @@ const webCmd = null;
 const clearSkillIndexCache = null;
 const subscribePr = null;
 const ultraplan = (require('./commands/ultraplan.tsx') as typeof import('./commands/ultraplan.tsx')).default;
+const ultracode = (require('./commands/ultracode/index.ts') as typeof import('./commands/ultracode/index.ts')).default;
+const workflow = (require('./commands/workflow/index.ts') as typeof import('./commands/workflow/index.ts')).default;
 const torch = null;
 const workflowsCmd = null;
 const peersCmd = null;
@@ -206,6 +208,7 @@ export const INTERNAL_ONLY_COMMANDS = [
   bridgeKick,
   version,
   ultraplan,
+  ultracode,
   ...(subscribePr ? [subscribePr] : []),
   resetLimits,
   resetLimitsNonInteractive,
@@ -303,6 +306,7 @@ const COMMANDS = memoize((): Command[] => [
   usage,
   usageReport,
   teamOnboarding,
+  workflow,
   ...(webCmd ? [webCmd] : []),
   ...(forkCmd ? [forkCmd] : []),
   buddy,
