@@ -300,7 +300,7 @@ Use the private reporting process described in [SECURITY.md](SECURITY.md).
 
 ## Changelog
 
-### 0.0.1 (2026-05-30)
+### 0.1.2 (2026-06-03)
 
 - Initial Clew public release with `clew` and `clewcode` CLI commands.
 - Multi-provider routing, tools, plugins, skills, MCP, LSP, agents, daemon mode, scheduled tasks, bridge, research, and memory systems.

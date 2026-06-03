@@ -16,7 +16,7 @@
 <div class="content-wrap"><main class="content">
   <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Tools</span></div>
   <h1>Tools</h1>
-  <p class="section-subtitle">Clew provides 40+ built-in tools plus dynamically loaded MCP tools. Tools are invoked by the AI model via <code>tool_use</code> blocks and executed through the <strong>StreamingToolExecutor</strong> with permission gating.</p>
+  <p class="section-subtitle">Clew provides 50+ built-in tools plus dynamically loaded MCP tools. Tools are invoked by the AI model via <code>tool_use</code> blocks and executed through the <strong>StreamingToolExecutor</strong> with permission gating.</p>
 
   <h2>How Tools Work</h2>
   <p>Tools are defined with Zod schemas in <code>src/Tool.ts</code> via the <code>buildTool()</code> helper and registered in <code>src/tools.ts</code>. Each tool declares its input schema, output schema, concurrency safety, read-only status, and permission requirements.</p>
@@ -153,7 +153,7 @@ Storage: Durable</code></pre>
   </div>
 
   <footer class="footer">
-    <span>Clew v2.1.180 — Open Source (MIT)</span>
+    <span>Clew v0.1.2 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
       <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
