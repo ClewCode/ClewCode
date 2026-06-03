@@ -1,7 +1,7 @@
 {
-  "name": "@jonusnattapong/claudecode",
-  "version": "0.0.1",
-  "description": "Unofficial Claude Code-compatible CLI rebuild for research, local development, and self-hosted use",
+  "name": "@jonusnattapong/clewcode",
+  "version": "0.1.0",
+  "description": "ClewCode — multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
   "type": "module",
   "bin": {
@@ -151,7 +151,6 @@
     "@biomejs/biome": "^2.4.15",
     "@types/bun": "latest",
     "@types/lodash-es": "^4.17.12",
-    "@types/semver": "^7.7.1",
-    "react-devtools-core": "^7.0.1"
+    "@types/semver": "^7.7.1"
   }
 }

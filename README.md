@@ -54,13 +54,13 @@ Key features:
 ### Install Globally
 
 ```bash
-npm install -g @jonusnattapong/claudecode
+npm install -g @jonusnattapong/clewcode
 ```
 
 Or:
 
 ```bash
-bun install -g @jonusnattapong/claudecode
+bun install -g @jonusnattapong/clewcode
 ```
 
 Run the CLI inside a project directory:
