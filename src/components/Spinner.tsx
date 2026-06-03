@@ -504,11 +504,7 @@ export function BriefIdleStatus(): React.ReactNode {
   );
 }
 
-export function Spinner({
-  color = 'text',
-}: {
-  color?: string;
-}): React.ReactNode {
+export function Spinner({ color = 'text' }: { color?: string }): React.ReactNode {
   const settings = useSettings();
   const reducedMotion = settings.prefersReducedMotion ?? false;
   const interval = 120;
