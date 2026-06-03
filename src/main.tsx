@@ -3927,6 +3927,7 @@ async function run(): Promise<CommanderCommand> {
         sessionGoalStartTime: hasActiveGoal ? (goalState.setAt ?? Date.now()) : undefined,
         sessionGoalTurnCount: hasActiveGoal ? (goalState.turnCount ?? 0) : undefined,
         sessionGoalPaused: hasActiveGoal ? (goalState.paused ?? false) : undefined,
+        sessionGoalTotalPausedMs: hasActiveGoal ? (goalState.totalPausedMs ?? 0) : undefined,
         agent: mainThreadAgentDefinition?.agentType,
         agentDefinitions,
         mcp: {

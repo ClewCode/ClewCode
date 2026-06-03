@@ -149,6 +149,11 @@ export type AppState = DeepImmutable<{
   sessionGoalTurnCount?: number;
   // Whether the session goal is currently paused
   sessionGoalPaused?: boolean;
+  // Total milliseconds spent paused (so the footer/StatusLine can
+  // subtract paused time from elapsed display). Kept in AppState
+  // because the footer is a presentational component and shouldn't
+  // reach back into the goal singleton on every render.
+  sessionGoalTotalPausedMs?: number;
   // Transcript shortcuts panel visibility (toggled by ? or v)
   showTranscriptShortcuts?: boolean;
 }> & {

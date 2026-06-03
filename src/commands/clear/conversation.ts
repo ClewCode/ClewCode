@@ -170,6 +170,7 @@ export async function clearConversation({
         sessionGoalStartTime: undefined,
         sessionGoalTurnCount: undefined,
         sessionGoalPaused: undefined,
+        sessionGoalTotalPausedMs: undefined,
         // Preserve standalone agent context (name/color set by /rename, /color)
         // if it exists, so the new session inherits the custom identity.
         // E63: Preserve custom session name from /rename across /clear.
