@@ -12,7 +12,9 @@
 </head>
 <body>
 <header class="header"><div class="header-inner"><a href="index.html" class="logo"><span>Clew</span></a><nav class="header-nav"><a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#commands">Commands</a><a href="quick-start.html" class="active">Docs</a><a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a></nav><button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button></div></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div><main class="content">
+<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="content-wrap"><main class="content">
+  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Configuration</span></div>
   <h1>Configuration</h1>
   <p class="section-subtitle">Clew is configured through CLI flags (Commander.js), environment variables, a JSON settings file (<code>~/.clawdbot/moltbot.json</code> validated with TypeBox), and in-session slash commands.</p>
 
@@ -81,7 +83,6 @@
     <tr><td><code>ENABLE_LSP_TOOL=1</code></td><td>Enable LSP tool integration</td></tr>
     <tr><td><code>ENABLE_COMPUTER_USE=1</code></td><td>Enable Computer Use tool (Windows)</td></tr>
     <tr><td><code>CLAUDECODE_NO_RESPAWN</code></td><td>Disable process respawn</td></tr>
-    <tr><td><code>VOICE_MODE=1</code></td><td>Enable voice input support</td></tr>
     <tr><td><code>CODE_INDEX=1</code></td><td>Enable fuzzy code search tool</td></tr>
     <tr><td><code>AGENT_TRIGGERS=1</code></td><td>Enable autonomous scheduled task triggers</td></tr>
     <tr><td><code>SENTRY_DSN</code></td><td>Enable Sentry error reporting (opt-in)</td></tr>
@@ -134,4 +135,10 @@
       <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
     </div>
   </footer>
-</main></div><script src="js/main.js"></script></body></html>
+</main>
+<nav class="toc-sidebar"></nav>
+</div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

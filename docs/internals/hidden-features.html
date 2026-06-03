@@ -13,10 +13,7 @@
 <body>
 <header class="header">
   <div class="header-inner">
-    <a href="../index.html" class="logo">
-      
-      <span>Clew</span>
-    </a>
+    <a href="../index.html" class="logo"><span>Clew</span></a>
     <nav class="header-nav">
       <a href="../index.html">Home</a>
       <a href="../index.html#features">Features</a>
@@ -24,116 +21,106 @@
       <a href="../quick-start.html" class="active">Docs</a>
       <a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a>
     </nav>
-    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
-      <span></span><span></span><span></span>
-    </button>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
   </div>
 </header>
-
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
-
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><a href="../index.html#features">Internals</a><span class="sep">/</span><span>Hidden Features</span></div>
+      <h1>Hidden Features &amp; Internals</h1>
+      <p class="section-subtitle">Feature-gated commands, internal-only tools, and beta flags — not visible in the standard help menu.</p>
 
-  <main class="content">
-  <h1>Hidden Features &amp; Internals</h1>
-  <p class="section-subtitle">Feature-gated commands, internal-only tools, and beta flags — not visible in the standard help menu.</p>
+      <div class="callout callout-warn">
+        <strong>Internal / Beta</strong>
+        These features may change without notice. Most require specific environment variables or build-time feature flags.
+      </div>
 
-  <div class="callout callout-warn">
-    <strong>Internal / Beta</strong>
-    These features may change without notice. Most require specific environment variables or build-time feature flags.
+      <h2>Feature-Gated Commands</h2>
+      <p>From <code>src/commands.ts</code> — enabled via environment variables:</p>
+      <table>
+        <tr><th>Command</th><th>Env Variable</th><th>Description</th></tr>
+        <tr><td><code>/bridge</code></td><td><code>BRIDGE_MODE=1</code></td><td>WebSocket remote control and collaboration</td></tr>
+        <tr><td><code>/voice</code></td><td><code>VOICE_MODE=1</code></td><td>Toggle voice mode</td></tr>
+        <tr><td><code>/brief</code></td><td><code>KAIROS=1</code></td><td>Brief command for quick context</td></tr>
+        <tr><td><code>/assistant</code></td><td><code>KAIROS=1</code></td><td>Assistant mode with proactive behavior</td></tr>
+      </table>
+
+      <h2>Internal-Only Commands</h2>
+      <p>Defined in <code>INTERNAL_ONLY_COMMANDS</code> in <code>src/commands.ts</code>:</p>
+      <table>
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td><code>/backfill-sessions</code></td><td>Backfill session data</td></tr>
+        <tr><td><code>/break-cache</code></td><td>Break internal caches</td></tr>
+        <tr><td><code>/bughunter</code></td><td>Automated bug hunting workflow</td></tr>
+        <tr><td><code>/commit-push-pr</code></td><td>Commit, push, and PR creation</td></tr>
+        <tr><td><code>/ctx-viz</code></td><td>Context visualization</td></tr>
+        <tr><td><code>/init-verifiers</code></td><td>Initialize verifiers</td></tr>
+        <tr><td><code>/issue</code></td><td>Issue management</td></tr>
+        <tr><td><code>/mock-limits</code></td><td>Mock usage limits for testing</td></tr>
+        <tr><td><code>/reset-limits</code></td><td>Reset usage limits</td></tr>
+        <tr><td><code>/ultraplan</code></td><td>Extended plan mode</td></tr>
+        <tr><td><code>/version</code></td><td>Show version</td></tr>
+        <tr><td><code>/bridge-kick</code></td><td>Bridge session management</td></tr>
+        <tr><td><code>/onboarding</code></td><td>Interactive onboarding wizard</td></tr>
+        <tr><td><code>/team-onboarding</code></td><td>Generate teammate ramp-up guide</td></tr>
+        <tr><td><code>/share</code></td><td>Share session</td></tr>
+        <tr><td><code>/summary</code></td><td>Summarize conversation</td></tr>
+        <tr><td><code>/teleport</code></td><td>Teleport session</td></tr>
+        <tr><td><code>/ant-trace</code></td><td>Anthropic-internal tracing</td></tr>
+        <tr><td><code>/perf-issue</code></td><td>Performance issue reporting</td></tr>
+        <tr><td><code>/env</code></td><td>Environment inspection</td></tr>
+        <tr><td><code>/oauth-refresh</code></td><td>OAuth token refresh</td></tr>
+        <tr><td><code>/debug-tool-call</code></td><td>Tool call debugging</td></tr>
+        <tr><td><code>/autofix-pr</code></td><td>Autofix PR workflow</td></tr>
+      </table>
+
+      <h2>Feature-Gated Tools</h2>
+      <table>
+        <tr><th>Tool</th><th>Flag / Feature</th></tr>
+        <tr><td><code>LSPTool</code></td><td><code>ENABLE_LSP_TOOL=1</code></td></tr>
+        <tr><td><code>ComputerUseTool</code></td><td><code>ENABLE_COMPUTER_USE=1</code> (Windows)</td></tr>
+        <tr><td><code>CodeIndexTool</code></td><td><code>CODE_INDEX</code> feature flag</td></tr>
+        <tr><td><code>EnterWorktreeTool / ExitWorktreeTool</code></td><td>Worktree mode enabled</td></tr>
+        <tr><td><code>PowerShellTool</code></td><td>PowerShell tool enabled in settings</td></tr>
+        <tr><td><code>CronCreateTool / CronDeleteTool / CronListTool</code></td><td><code>AGENT_TRIGGERS</code> feature</td></tr>
+        <tr><td><code>PushNotificationTool</code></td><td><code>KAIROS</code> feature</td></tr>
+        <tr><td><code>REPLTool</code></td><td><code>USER_TYPE=ant</code></td></tr>
+        <tr><td><code>ConfigTool / TungstenTool</code></td><td><code>USER_TYPE=ant</code></td></tr>
+      </table>
+
+      <h2>Build-Time Feature Flags</h2>
+      <ul>
+        <li><code>TRANSCRIPT_CLASSIFIER</code> — Enables auto permission mode with transcript-based classification</li>
+        <li><code>CHICAGO_MCP</code> — Enables Chicago MCP protocol features</li>
+      </ul>
+
+      <h2>Runtime Feature Detection</h2>
+      <p>Features are checked via <code>feature('FEATURE_NAME')</code> (compile-time) and <code>isEnvTruthy()</code> (runtime):</p>
+      <ul>
+        <li><code>PROACTIVE</code> / <code>KAIROS</code> — Proactive agent behavior</li>
+        <li><code>AGENT_TRIGGERS</code> — Scheduled and remote agent triggers</li>
+        <li><code>KAIROS_GITHUB_WEBHOOKS</code> — GitHub webhook subscriptions</li>
+        <li><code>KAIROS_PUSH_NOTIFICATION</code> — Push notification support</li>
+        <li><code>CONTEXT_COLLAPSE</code> — Context collapse inspection</li>
+        <li><code>MCP_SKILLS</code> — MCP-provided skills</li>
+        <li><code>CODE_INDEX</code> — Code indexing and search</li>
+        <li><code>COORDINATOR_MODE</code> — Multi-agent coordinator mode</li>
+      </ul>
+
+      <footer class="footer">
+        <span>Clew v2.1.180 — Open Source (MIT)</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
   </div>
-
-  <h2>Feature-Gated Commands</h2>
-  <p>From <code>src/commands.ts</code> — enabled via environment variables:</p>
-  <table>
-    <tr><th>Command</th><th>Env Variable</th><th>Description</th></tr>
-    <tr><td><code>/bridge</code></td><td><code>BRIDGE_MODE=1</code></td><td>WebSocket remote control and collaboration via <code>src/bridge/bridgeMain.ts</code></td></tr>
-    <tr><td><code>/voice</code></td><td><code>VOICE_MODE=1</code></td><td>Toggle voice mode</td></tr>
-    <tr><td><code>/brief</code></td><td><code>KAIROS=1</code></td><td>Brief command for quick context</td></tr>
-    <tr><td><code>/assistant</code></td><td><code>KAIROS=1</code></td><td>Assistant mode with proactive behavior</td></tr>
-  </table>
-
-  <h2>Internal-Only Commands</h2>
-  <p>Defined in <code>INTERNAL_ONLY_COMMANDS</code> in <code>src/commands.ts</code>. Only visible when <code>USER_TYPE=ant</code>:</p>
-  <table>
-    <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/backfill-sessions</code></td><td>Backfill session data</td></tr>
-    <tr><td><code>/break-cache</code></td><td>Break internal caches</td></tr>
-    <tr><td><code>/bughunter</code></td><td>Automated bug hunting workflow</td></tr>
-    <tr><td><code>/commit</code></td><td>Git commit command</td></tr>
-    <tr><td><code>/commit-push-pr</code></td><td>Commit, push, and PR creation</td></tr>
-    <tr><td><code>/ctx-viz</code></td><td>Context visualization</td></tr>
-    <tr><td><code>/good-claude</code></td><td>Good Claude feedback</td></tr>
-    <tr><td><code>/init-verifiers</code></td><td>Initialize verifiers</td></tr>
-    <tr><td><code>/issue</code></td><td>Issue management</td></tr>
-    <tr><td><code>/mock-limits</code></td><td>Mock usage limits for testing</td></tr>
-    <tr><td><code>/reset-limits</code></td><td>Reset usage limits</td></tr>
-    <tr><td><code>/ultraplan</code></td><td>Extended plan mode</td></tr>
-    <tr><td><code>/version</code></td><td>Show version</td></tr>
-    <tr><td><code>/bridge-kick</code></td><td>Bridge session management</td></tr>
-    <tr><td><code>/onboarding</code></td><td>Interactive onboarding wizard</td></tr>
-    <tr><td><code>/team-onboarding</code></td><td>Generate teammate ramp-up guide</td></tr>
-    <tr><td><code>/share</code></td><td>Share session</td></tr>
-    <tr><td><code>/summary</code></td><td>Summarize conversation</td></tr>
-    <tr><td><code>/teleport</code></td><td>Teleport session</td></tr>
-    <tr><td><code>/ant-trace</code></td><td>Anthropic-internal tracing</td></tr>
-    <tr><td><code>/perf-issue</code></td><td>Performance issue reporting</td></tr>
-    <tr><td><code>/env</code></td><td>Environment inspection</td></tr>
-    <tr><td><code>/oauth-refresh</code></td><td>OAuth token refresh</td></tr>
-    <tr><td><code>/debug-tool-call</code></td><td>Tool call debugging</td></tr>
-    <tr><td><code>/autofix-pr</code></td><td>Autofix PR workflow</td></tr>
-  </table>
-
-  <h2>Feature-Gated Tools</h2>
-  <p>From <code>src/tools.ts</code>, these tools require specific flags:</p>
-  <table>
-    <tr><th>Tool</th><th>Flag / Feature</th></tr>
-    <tr><td><code>LSPTool</code></td><td><code>ENABLE_LSP_TOOL=1</code></td></tr>
-    <tr><td><code>ComputerUseTool</code></td><td><code>ENABLE_COMPUTER_USE=1</code> (Windows)</td></tr>
-    <tr><td><code>CodeIndexTool</code></td><td><code>CODE_INDEX</code> feature flag</td></tr>
-    <tr><td><code>EnterWorktreeTool / ExitWorktreeTool</code></td><td>Worktree mode enabled</td></tr>
-    <tr><td><code>TeamCreateTool / TeamDeleteTool / RequestShutdownTool / SubscribePrActivityTool / UnsubscribePrActivityTool</code></td><td>Agent swarms enabled</td></tr>
-    <tr><td><code>PowerShellTool</code></td><td>PowerShell tool enabled in settings</td></tr>
-    <tr><td><code>CronCreateTool / CronDeleteTool / CronListTool</code></td><td><code>AGENT_TRIGGERS</code> feature</td></tr>
-    <tr><td><code>PushNotificationTool</code></td><td><code>KAIROS</code> feature</td></tr>
-    <tr><td><code>REPLTool</code></td><td><code>USER_TYPE=ant</code></td></tr>
-    <tr><td><code>ConfigTool / TungstenTool</code></td><td><code>USER_TYPE=ant</code></td></tr>
-    <tr><td><code>TaskCreateTool / TaskGetTool / TaskUpdateTool / TaskListTool</code></td><td>V2 todo system enabled</td></tr>
-  </table>
-
-  <h2>Build-Time Feature Flags</h2>
-  <p>Defined during build with <code>--define</code>:</p>
-  <ul>
-    <li><code>TRANSCRIPT_CLASSIFIER</code> — Enables auto permission mode with transcript-based classification</li>
-    <li><code>CHICAGO_MCP</code> — Enables Chicago MCP protocol features</li>
-  </ul>
-
-  <h2>Runtime Feature Detection</h2>
-  <p>Features are checked via <code>feature('FEATURE_NAME')</code> (compile-time) and <code>isEnvTruthy()</code> (runtime) throughout the codebase. Key feature flags include:</p>
-  <ul>
-    <li><code>PROACTIVE</code> / <code>KAIROS</code> — Proactive agent behavior</li>
-    <li><code>AGENT_TRIGGERS</code> / <code>AGENT_TRIGGERS_REMOTE</code> — Scheduled and remote agent triggers</li>
-    <li><code>KAIROS_GITHUB_WEBHOOKS</code> — GitHub webhook subscriptions</li>
-    <li><code>KAIROS_PUSH_NOTIFICATION</code> — Push notification support</li>
-    <li><code>CONTEXT_COLLAPSE</code> — Context collapse inspection</li>
-    <li><code>TERMINAL_PANEL</code> — Terminal panel capture</li>
-    <li><code>HISTORY_SNIP</code> — History snipping tool</li>
-    <li><code>UDS_INBOX</code> — Unix domain socket peer listing</li>
-    <li><code>WORKFLOW_SCRIPTS</code> — Workflow script execution</li>
-    <li><code>MCP_SKILLS</code> — MCP-provided skills</li>
-    <li><code>CODE_INDEX</code> — Code indexing and search</li>
-    <li><code>COORDINATOR_MODE</code> — Multi-agent coordinator mode</li>
-  </ul>
-
-  <footer class="footer">
-    <span>Clew v2.1.180 — Open Source (MIT)</span>
-    <div class="footer-links">
-      <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
-      <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
-    </div>
-  </footer>
-</main></div>
+</div>
 <script src="../js/main.js"></script>
 </body>
 </html>

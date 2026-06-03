@@ -11,13 +11,9 @@
   <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
-
 <header class="header">
   <div class="header-inner">
-    <a href="../index.html" class="logo">
-      
-      <span>Clew</span>
-    </a>
+    <a href="../index.html" class="logo"><span>Clew</span></a>
     <nav class="header-nav">
       <a href="../index.html">Home</a>
       <a href="../index.html#features">Features</a>
@@ -25,73 +21,55 @@
       <a href="../quick-start.html" class="active">Docs</a>
       <a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a>
     </nav>
-    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
-      <span></span><span></span><span></span>
-    </button>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
   </div>
 </header>
-
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
-
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><a href="../index.html#features">Features</a><span class="sep">/</span><span>Sentry Setup</span></div>
+      <h1>Sentry Error Reporting</h1>
+      <p class="section-subtitle">Optional, opt-in crash and error telemetry — <strong>completely disabled by default</strong>. No data leaves your machine unless you explicitly set <code>SENTRY_DSN</code>.</p>
 
-  <main class="content">
-    <h1>Sentry Error Reporting</h1>
-    <p class="section-subtitle">
-      Optional, opt-in crash and error telemetry — <strong>completely disabled by default</strong>.
-      No data leaves your machine unless you explicitly set <code>SENTRY_DSN</code>.
-    </p>
+      <div class="callout callout-tip">
+        <strong>TL;DR</strong>
+        <code>SENTRY_DSN=https://key@sentry.io/123 claude</code> — that's it. Without it, zero network requests, zero telemetry.
+      </div>
 
-    <div class="callout callout-tip">
-      <strong>TL;DR</strong>
-      <code>SENTRY_DSN=https://key@sentry.io/123 claude</code> — that's it.
-      Without it, zero network requests, zero telemetry.
-    </div>
+      <h2>Quick Start</h2>
+      <h3>Self-hosted Sentry</h3>
+      <pre><code>SENTRY_DSN=https://public_key@your-sentry.example.com/123 claude</code></pre>
 
-    <h2>Quick Start</h2>
+      <h3>Sentry Cloud</h3>
+      <pre><code>SENTRY_DSN=https://public_key@o123456.ingest.sentry.io/789 claude</code></pre>
 
-    <h3>Self-hosted Sentry</h3>
-    <pre><code><span style="color:var(--orange-500)">SENTRY_DSN</span>=https://public_key@your-sentry.example.com/123 claude</code></pre>
+      <h3>Disable (default)</h3>
+      <pre><code>clew</code></pre>
 
-    <h3>Sentry Cloud</h3>
-    <pre><code><span style="color:var(--orange-500)">SENTRY_DSN</span>=https://public_key@o123456.ingest.sentry.io/789 claude</code></pre>
-
-    <h3>Disable (default)</h3>
-    <pre><code>clew</code></pre>
-
-    <h2>Environment Variables</h2>
-    <div class="scroll-wrap">
-    <table>
-      <thead>
+      <h2>Environment Variables</h2>
+      <table>
         <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
-      </thead>
-      <tbody>
         <tr><td><code>SENTRY_DSN</code></td><td><strong>yes</strong></td><td>—</td><td>Sentry DSN to enable. Without this, everything is no-op.</td></tr>
         <tr><td><code>SENTRY_ENVIRONMENT</code></td><td>no</td><td><code>NODE_ENV</code> or <code>production</code></td><td>Environment tag in Sentry dashboard</td></tr>
         <tr><td><code>SENTRY_RELEASE</code></td><td>no</td><td>auto from package.json</td><td>Release version tag</td></tr>
         <tr><td><code>SENTRY_SAMPLE_RATE</code></td><td>no</td><td><code>1.0</code></td><td>Error sample rate (0.0–1.0)</td></tr>
-      </tbody>
-    </table>
-    </div>
+      </table>
 
-    <h2>What Gets Sent</h2>
-    <p>Only error metadata — <strong>never prompts, responses, file contents, or command output</strong>:</p>
-    <ul>
-      <li>Error name, message, and stack trace (without local variable values)</li>
-      <li>Runtime info: OS platform, Node/Bun version</li>
-      <li>Mode: REPL, non-interactive, MCP server</li>
-      <li>Provider and model name (when applicable)</li>
-      <li>Version and release tag</li>
-    </ul>
+      <h2>What Gets Sent</h2>
+      <p>Only error metadata — <strong>never prompts, responses, file contents, or command output</strong>:</p>
+      <ul>
+        <li>Error name, message, and stack trace (without local variable values)</li>
+        <li>Runtime info: OS platform, Node/Bun version</li>
+        <li>Mode: REPL, non-interactive, MCP server</li>
+        <li>Provider and model name (when applicable)</li>
+        <li>Version and release tag</li>
+      </ul>
 
-    <h2>What Does NOT Get Sent</h2>
-    <div class="scroll-wrap">
-    <table>
-      <thead>
+      <h2>What Does NOT Get Sent</h2>
+      <table>
         <tr><th>Category</th><th>Examples</th></tr>
-      </thead>
-      <tbody>
         <tr><td><strong>Prompts</strong></td><td>user input, AI system prompts</td></tr>
         <tr><td><strong>Responses</strong></td><td>model output, streaming chunks</td></tr>
         <tr><td><strong>File content</strong></td><td>Read/Edit/Write payload, command stdout/stderr</td></tr>
@@ -102,53 +80,35 @@
         <tr><td><strong>Local paths</strong></td><td>home directory anonymized to <code>[HOME]</code></td></tr>
         <tr><td><strong>Breadcrumbs</strong></td><td>user actions are not tracked</td></tr>
         <tr><td><strong>User identity</strong></td><td>user field stripped from all events</td></tr>
-      </tbody>
-    </table>
-    </div>
+      </table>
 
-    <h2>Privacy Scrubber</h2>
-    <p>Every event passes through a <code>beforeSend</code> hook that:</p>
-    <ol>
-      <li><strong>Scrubs strings</strong> — removes API key patterns (<code>sk-*</code>, <code>Bearer</code> tokens), auth headers, cookie values</li>
-      <li><strong>Strips stack frame variables</strong> — removes <code>vars</code>, <code>pre_context</code>, <code>context_line</code>, <code>post_context</code></li>
-      <li><strong>Removes breadcrumbs</strong> — user actions are never tracked</li>
-      <li><strong>Cleans request data</strong> — removes headers, cookies, query strings</li>
-      <li><strong>Anonymizes home directory</strong> — replaces paths with <code>[HOME]</code></li>
-      <li><strong>Drops oversized strings</strong> — over 2000 chars truncated</li>
-      <li><strong>Recursively scrubs nested objects</strong> — drops keys named prompt, response, content, message, input, output, text, body, data, payload, token, key, secret, password, auth, cookie</li>
-    </ol>
+      <h2>Privacy Scrubber</h2>
+      <p>Every event passes through a <code>beforeSend</code> hook that:</p>
+      <ol>
+        <li><strong>Scrubs strings</strong> — removes API key patterns (<code>sk-*</code>, <code>Bearer</code> tokens), auth headers, cookie values</li>
+        <li><strong>Strips stack frame variables</strong> — removes <code>vars</code>, <code>pre_context</code>, <code>context_line</code>, <code>post_context</code></li>
+        <li><strong>Removes breadcrumbs</strong> — user actions are never tracked</li>
+        <li><strong>Cleans request data</strong> — removes headers, cookies, query strings</li>
+        <li><strong>Anonymizes home directory</strong> — replaces paths with <code>[HOME]</code></li>
+        <li><strong>Drops oversized strings</strong> — over 2000 chars truncated</li>
+        <li><strong>Recursively scrubs nested objects</strong> — drops keys named prompt, response, content, message, input, output, text, body, data, payload, token, key, secret, password, auth, cookie</li>
+      </ol>
 
-    <h2>Checking Status</h2>
-    <p>Use <code>/doctor</code> to check Sentry status:</p>
-    <pre><code><span style="color:var(--text-tertiary)"># When disabled</span>
-└ Sentry Telemetry: Disabled (set SENTRY_DSN to enable)
+      <h2>Checking Status</h2>
+      <pre><code># When disabled
+Sentry Telemetry: Disabled (set SENTRY_DSN to enable)
 
-<span style="color:var(--text-tertiary)"># When enabled</span>
-└ Sentry Telemetry: Enabled (https://abcd...xyz@o123.ingest.sentry.io/456)</code></pre>
+# When enabled
+Sentry Telemetry: Enabled</code></pre>
 
-    <div class="callout callout-info">
-      <strong>DSN Masking</strong>
-      The DSN is masked in the UI — only the first 8 and last 4 characters of the key are shown.
-      The full DSN is never displayed in any output.
-    </div>
+      <div class="callout callout-info">
+        <strong>DSN Masking</strong>
+        The DSN is masked in the UI — only the first 8 and last 4 characters of the key are shown. The full DSN is never displayed in any output.
+      </div>
 
-    <h2>Architecture</h2>
-    <pre><code><span style="color:var(--orange-500)">SENTRY_DSN</span> set?
-  → <span style="color:var(--teal-400)">init.ts</span>: initSentry()
-     → @sentry/node (lazy import)
-        → beforeSend scrubber
-           → Sentry server
-  → <span style="color:var(--teal-400)">logError()</span> → captureException() (when enabled)
-  → <span style="color:var(--teal-400)">SentryErrorBoundary</span> → captureException() (render crash)
-  → <span style="color:var(--teal-400)">gracefulShutdown</span> → closeSentry(2000) (flush on exit)</code></pre>
-
-    <h2>Files</h2>
-    <div class="scroll-wrap">
-    <table>
-      <thead>
+      <h2>Files</h2>
+      <table>
         <tr><th>File</th><th>Purpose</th></tr>
-      </thead>
-      <tbody>
         <tr><td><code>src/utils/sentry.ts</code></td><td>Core wrapper — init, capture, close, scrubber</td></tr>
         <tr><td><code>src/utils/sentry.test.ts</code></td><td>Unit tests (11 tests)</td></tr>
         <tr><td><code>src/entrypoints/init.ts</code></td><td>Calls <code>initSentry()</code> at startup</td></tr>
@@ -157,20 +117,19 @@
         <tr><td><code>src/components/SentryErrorBoundary.tsx</code></td><td>React error boundary for render crashes</td></tr>
         <tr><td><code>src/components/App.tsx</code></td><td>Wraps app tree in <code>SentryErrorBoundary</code></td></tr>
         <tr><td><code>src/utils/doctorDiagnostic.ts</code></td><td><code>/doctor</code> Sentry status display</td></tr>
-      </tbody>
-    </table>
-    </div>
+      </table>
 
-    <footer class="footer">
-      <span>Clew v2.1.180</span>
-      <div class="footer-links">
-        <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
-        <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
-      </div>
-    </footer>
-  </main>
+      <footer class="footer">
+        <span>Clew v2.1.180</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
 </div>
-
 <script src="../js/main.js"></script>
 </body>
 </html>

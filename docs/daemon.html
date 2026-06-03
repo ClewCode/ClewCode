@@ -13,10 +13,7 @@
 <body>
 <header class="header">
   <div class="header-inner">
-    <a href="index.html" class="logo">
-      
-      <span>Clew</span>
-    </a>
+    <a href="index.html" class="logo"><span>Clew</span></a>
     <nav class="header-nav">
       <a href="index.html">Home</a>
       <a href="index.html#features">Features</a>
@@ -24,119 +21,118 @@
       <a href="quick-start.html" class="active">Docs</a>
       <a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a>
     </nav>
-    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
-      <span></span><span></span><span></span>
-    </button>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
   </div>
 </header>
-
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
-
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Daemon Mode</span></div>
+      <h1>Autonomous Daemon Mode</h1>
+      <p class="section-subtitle">Run Clew as a 24/7 background daemon — task queue, agent loop, health checks, and supervisor auto-respawn for unattended autonomous operation.</p>
 
-  <main class="content">
-  <h1>Autonomous Daemon Mode</h1>
-  <p class="section-subtitle">Run Clew as a 24/7 background daemon — task queue, agent loop, health checks, and supervisor auto-respawn for unattended autonomous operation.</p>
+      <p>The autonomous system lives in <code>src/services/autonomous/</code> and consists of four main components: the <strong>task queue</strong>, <strong>agent loop</strong>, <strong>daemon entry point</strong>, and <strong>supervisor integration</strong>.</p>
 
-  <p>The autonomous system lives in <code>src/services/autonomous/</code> and consists of four main components: the <strong>task queue</strong>, <strong>agent loop</strong>, <strong>daemon entry point</strong>, and <strong>supervisor integration</strong>.</p>
+      <h2>Architecture</h2>
+      <pre><code>  + Task Queue (taskQueue.ts)
+  |    File-backed persistent queue
+  |    Priorities Leases Dead-letter
+  |
+  + Agent Loop (agentLoop.ts)
+  |    Dequeue Spawn worker Monitor Retry
+  |
+  + Daemon Mode (daemonMode.ts)
+  |    Background process entry point
+  |
+  + Supervisor (supervisorIntegration.ts)
+       Health checks Auto-respawn State tracking</code></pre>
 
-  <h2>Architecture</h2>
-  <pre><code>  ┌─ Task Queue (taskQueue.ts)
-  │    File-backed persistent queue
-  │    Priorities · Leases · Dead-letter
-  │
-  ├─ Agent Loop (agentLoop.ts)
-  │    Dequeue → Spawn worker → Monitor → Retry
-  │
-  ├─ Daemon Mode (daemonMode.ts)
-  │    Background process entry point
-  │
-  └─ Supervisor (supervisorIntegration.ts)
-       Health checks · Auto-respawn · State tracking</code></pre>
+      <h2>Task Queue</h2>
+      <p>The file-backed persistent queue (<code>src/services/autonomous/taskQueue.ts</code>) is the foundation of the autonomous system:</p>
+      <ul>
+        <li><strong>Persistence</strong> — Tasks survive process restarts via on-disk storage</li>
+        <li><strong>Priorities</strong> — Urgent tasks skip ahead in the queue</li>
+        <li><strong>Leases</strong> — Tasks are leased to workers with TTL; expired leases are retried</li>
+        <li><strong>Dead-letter</strong> — Tasks that exhaust retries are moved to dead-letter for inspection</li>
+        <li><strong>Scheduling</strong> — One-shot and recurring (cron) tasks supported</li>
+      </ul>
 
-  <h2>Task Queue</h2>
-  <p>The file-backed persistent queue (<code>src/services/autonomous/taskQueue.ts</code>) is the foundation of the autonomous system:</p>
-  <ul>
-    <li><strong>Persistence</strong> — Tasks survive process restarts via on-disk storage</li>
-    <li><strong>Priorities</strong> — Urgent tasks skip ahead in the queue</li>
-    <li><strong>Leases</strong> — Tasks are leased to workers with TTL; expired leases are retried</li>
-    <li><strong>Dead-letter</strong> — Tasks that exhaust retries are moved to dead-letter for inspection</li>
-    <li><strong>Scheduling</strong> — One-shot and recurring (cron) tasks supported</li>
-  </ul>
+      <h2>Agent Loop</h2>
+      <p>The continuous agent loop (<code>src/services/autonomous/agentLoop.ts</code>) runs in the background:</p>
+      <ol>
+        <li><strong>Dequeue</strong> — Pull the highest-priority ready task</li>
+        <li><strong>Spawn worker</strong> — Launch a worker session for the task</li>
+        <li><strong>Monitor</strong> — Track progress, streaming output, and resource usage</li>
+        <li><strong>Retry or complete</strong> — On failure, retry with backoff; on success, record result</li>
+        <li><strong>Repeat</strong> — Check for new tasks and repeat the cycle</li>
+      </ol>
 
-  <h2>Agent Loop</h2>
-  <p>The continuous agent loop (<code>src/services/autonomous/agentLoop.ts</code>) runs in the background:</p>
-  <ol>
-    <li><strong>Dequeue</strong> — Pull the highest-priority ready task</li>
-    <li><strong>Spawn worker</strong> — Launch a worker session for the task</li>
-    <li><strong>Monitor</strong> — Track progress, streaming output, and resource usage</li>
-    <li><strong>Retry or complete</strong> — On failure, retry with backoff; on success, record result</li>
-    <li><strong>Repeat</strong> — Check for new tasks and repeat the cycle</li>
-  </ol>
+      <h2>Daemon Entry Point</h2>
+      <p><code>src/services/autonomous/daemonMode.ts</code> provides the background process entry point. When started in daemon mode, Clew:</p>
+      <ul>
+        <li>Detaches from the terminal and runs as a background process</li>
+        <li>Logs output to a configurable log file</li>
+        <li>Responds to signals for graceful shutdown</li>
+        <li>Reports status to the supervisor for health tracking</li>
+      </ul>
 
-  <h2>Daemon Entry Point</h2>
-  <p><code>src/services/autonomous/daemonMode.ts</code> provides the background process entry point. When started in daemon mode, Clew:</p>
-  <ul>
-    <li>Detaches from the terminal and runs as a background process</li>
-    <li>Logs output to a configurable log file</li>
-    <li>Responds to signals for graceful shutdown</li>
-    <li>Reports status to the supervisor for health tracking</li>
-  </ul>
+      <h2>Supervisor Integration</h2>
+      <p><code>src/services/autonomous/supervisorIntegration.ts</code> ensures the daemon stays running:</p>
+      <ul>
+        <li><strong>Health checks</strong> — Periodic heartbeat and resource checks</li>
+        <li><strong>Auto-respawn</strong> — Automatic restart on unexpected exit</li>
+        <li><strong>State tracking</strong> — Current status, running tasks, error counts</li>
+        <li><strong>Graceful degradation</strong> — Reduces polling frequency on repeated failures</li>
+      </ul>
 
-  <h2>Supervisor Integration</h2>
-  <p><code>src/services/autonomous/supervisorIntegration.ts</code> ensures the daemon stays running:</p>
-  <ul>
-    <li><strong>Health checks</strong> — Periodic heartbeat and resource checks</li>
-    <li><strong>Auto-respawn</strong> — Automatic restart on unexpected exit</li>
-    <li><strong>State tracking</strong> — Current status, running tasks, error counts</li>
-    <li><strong>Graceful degradation</strong> — Reduces polling frequency on repeated failures</li>
-  </ul>
+      <h2>Commands</h2>
+      <table>
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td><code>/daemon</code></td><td>Open interactive control panel; subcommands: start, stop, status, restart</td></tr>
+        <tr><td><code>/task</code></td><td>Create scheduled or recurring tasks via interactive form</td></tr>
+        <tr><td><code>/task list</code></td><td>List queued, running, and completed tasks</td></tr>
+        <tr><td><code>/loop</code></td><td>Run a prompt or command on a recurring interval (<code>/loop 5m /check-deploy</code>)</td></tr>
+        <tr><td><code>/agents</code></td><td>Manage agent configurations and daemon worker pools</td></tr>
+        <tr><td><code>/tasks</code></td><td>List and manage background agent tasks</td></tr>
+      </table>
 
-  <h2>Commands</h2>
-  <table>
-    <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/daemon</code></td><td>Open interactive control panel; subcommands: start, stop, status, restart</td></tr>
-    <tr><td><code>/task</code></td><td>Create scheduled or recurring tasks via interactive form</td></tr>
-    <tr><td><code>/task list</code></td><td>List queued, running, and completed tasks</td></tr>
-    <tr><td><code>/loop</code></td><td>Run a prompt or command on a recurring interval (<code>/loop 5m /check-deploy</code>)</td></tr>
-    <tr><td><code>/agents</code></td><td>Manage agent configurations and daemon worker pools</td></tr>
-    <tr><td><code>/tasks</code></td><td>List and manage background agent tasks</td></tr>
-  </table>
+      <h2>Task Scheduling</h2>
+      <p>Scheduled tasks can be created through the interactive <code>/task</code> form or programmatically. Storage modes:</p>
+      <ul>
+        <li><strong>Durable</strong> — Persists to <code>.claude/scheduled_tasks.json</code>, survives restarts</li>
+        <li><strong>Session-only</strong> — Kept in memory for the current session only</li>
+      </ul>
 
-  <h2>Task Scheduling</h2>
-  <p>Scheduled tasks can be created through the interactive <code>/task</code> form or programmatically. Storage modes:</p>
-  <ul>
-    <li><strong>Durable</strong> — Persists to <code>.claude/scheduled_tasks.json</code>, survives restarts</li>
-    <li><strong>Session-only</strong> — Kept in memory for the current session only</li>
-  </ul>
+      <p>Recurring tasks auto-expire after 30 days. One-shot tasks auto-delete after firing. Custom cron expressions are supported (standard 5-field format).</p>
 
-  <p>Recurring tasks auto-expire after 30 days. One-shot tasks auto-delete after firing. Custom cron expressions are supported (standard 5-field format).</p>
+      <pre><code>/task
+Name: Deploy health check
+Schedule: Daily
+Time: 09:00
+Prompt: Check deployment status and report
+Storage: Durable</code></pre>
 
-  <pre><code>/task
-  Name: Deploy health check
-  Schedule: Daily
-  Time: 09:00
-  Prompt: Check deployment status and report
-  Storage: Durable</code></pre>
+      <h2>Architecture Files</h2>
+      <table>
+        <tr><th>File</th><th>Role</th></tr>
+        <tr><td><code>src/services/autonomous/taskQueue.ts</code></td><td>Persistent task queue with priorities, leases, dead-letter</td></tr>
+        <tr><td><code>src/services/autonomous/agentLoop.ts</code></td><td>Continuous 24/7 agent loop</td></tr>
+        <tr><td><code>src/services/autonomous/daemonMode.ts</code></td><td>Background daemon entry point</td></tr>
+        <tr><td><code>src/services/autonomous/supervisorIntegration.ts</code></td><td>Health checks, auto-respawn, state tracking</td></tr>
+      </table>
 
-  <h2>Architecture Files</h2>
-  <table>
-    <tr><th>File</th><th>Role</th></tr>
-    <tr><td><code>src/services/autonomous/taskQueue.ts</code></td><td>Persistent task queue with priorities, leases, dead-letter</td></tr>
-    <tr><td><code>src/services/autonomous/agentLoop.ts</code></td><td>Continuous 24/7 agent loop</td></tr>
-    <tr><td><code>src/services/autonomous/daemonMode.ts</code></td><td>Background daemon entry point</td></tr>
-    <tr><td><code>src/services/autonomous/supervisorIntegration.ts</code></td><td>Health checks, auto-respawn, state tracking</td></tr>
-  </table>
-
-  <footer class="footer">
-    <span>Clew v2.1.180 — Open Source (MIT)</span>
-    <div class="footer-links">
-      <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
-      <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
+      <footer class="footer">
+        <span>Clew v2.1.180 — Open Source (MIT)</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
 </div>
 <script src="js/main.js"></script>
 </body>

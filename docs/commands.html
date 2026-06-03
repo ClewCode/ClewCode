@@ -12,7 +12,9 @@
 </head>
 <body>
 <header class="header"><div class="header-inner"><a href="index.html" class="logo"><span>Clew</span></a><nav class="header-nav"><a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#commands">Commands</a><a href="quick-start.html" class="active">Docs</a><a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a></nav><button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button></div></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div><main class="content">
+<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="content-wrap"><main class="content">
+  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Commands</span></div>
   <h1>Commands</h1>
   <p class="section-subtitle">Clew ships with 80+ built-in slash commands plus dynamically loaded skills and plugin commands. Commands can be <strong>local</strong> (terminal execution), <strong>prompt</strong> (text expanded to the model), or <strong>local-jsx</strong> (Ink UI panels).</p>
 
@@ -178,14 +180,14 @@
   <h2>Interactive Autocomplete</h2>
   <p>Clew features an inline ghost text system that predicts the next argument as you type commands:</p>
   <ul>
-    <li>Type <code>/goal</code> followed by a space → inline ghost text shows <code>[condition]</code> in dim text after the cursor</li>
+    <li>Type <code>/goal</code> followed by a space inline ghost text shows <code>[condition]</code> in dim text after the cursor</li>
     <li>Press <kbd>Tab</kbd> or <kbd>→</kbd> (Right Arrow) to accept the ghost text and fill the placeholder</li>
     <li>Supports progressive hints: <code>/goal fix [name] [priority]</code> reveals remaining args as you fill each one</li>
     <li>Commands with <code>argumentHint</code> (e.g. <code>/plugin-details &lt;plugin-name&gt;</code>) show static placeholder hints</li>
   </ul>
   <p>For mid-input command completion, the same ghost text engine fills in partial command names:</p>
   <ul>
-    <li>Type <code>/com</code> → ghost text shows <code>mit</code> for <code>/commit</code></li>
+    <li>Type <code>/com</code> ghost text shows <code>mit</code> for <code>/commit</code></li>
     <li>Press <kbd>Tab</kbd> or <kbd>→</kbd> to complete the command name</li>
   </ul>
 
@@ -210,4 +212,10 @@
       <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
     </div>
   </footer>
-</main></div><script src="js/main.js"></script></body></html>
+</main>
+<nav class="toc-sidebar"></nav>
+</div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

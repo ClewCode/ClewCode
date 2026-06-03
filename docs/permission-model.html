@@ -12,7 +12,9 @@
 </head>
 <body>
 <header class="header"><div class="header-inner"><a href="index.html" class="logo"><span>Clew</span></a><nav class="header-nav"><a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#commands">Commands</a><a href="quick-start.html" class="active">Docs</a><a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a></nav><button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button></div></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div><main class="content">
+<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="content-wrap"><main class="content">
+  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Permission Model</span></div>
   <h1>Permission Model</h1>
   <p class="section-subtitle">Clew gates tool execution through a tiered permission system with multiple modes, allow/deny rules, and tool-specific checks.</p>
 
@@ -52,9 +54,9 @@
   <h2>Tool Permission Flow</h2>
   <pre><code>1. Tool input validation (validateInput)
 2. Tool-specific checkPermissions()
-3. Deny rule check (permissions.ts → getDenyRuleForTool)
+3. Deny rule check (permissions.ts getDenyRuleForTool)
 4. Permission mode evaluation (mode-based auto decision)
-5. Plugin hooks (PreToolUse → PostToolUse)
+5. Plugin hooks (PreToolUse PostToolUse)
 6. Classifier-based auto-approval (auto mode)
 7. User permission dialog (if needed)</code></pre>
 
@@ -65,7 +67,7 @@
     <tr><td><code>--dangerously-skip-permissions</code></td><td>Bypass all checks (sandbox only)</td></tr>
     <tr><td><code>--allow-dangerously-skip-permissions</code></td><td>Enable bypass as optional mode</td></tr>
     <tr><td><code>--allowedTools, --allowed-tools &lt;tools...&gt;</code></td><td>Allowlist specific tools with patterns</td></tr>
-    <tr><td><code>--disallowedTools, --disallowed-tools &lt;tools...&gt;</code></td><td>Denylist specific tools with patterns</td></tr>
+    <tr><td><code>--disallowedTools, --disallowed-tools &lt;tools...&gt;</td><td>Denylist specific tools with patterns</td></tr>
   </table>
 
   <h2>Security Best Practices</h2>
@@ -89,4 +91,10 @@
       <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
     </div>
   </footer>
-</main></div><script src="js/main.js"></script></body></html>
+</main>
+<nav class="toc-sidebar"></nav>
+</div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

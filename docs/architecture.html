@@ -12,7 +12,9 @@
 </head>
 <body>
 <header class="header"><div class="header-inner"><a href="index.html" class="logo"><span>Clew</span></a><nav class="header-nav"><a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#commands">Commands</a><a href="quick-start.html" class="active">Docs</a><a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a></nav><button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button></div></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div><main class="content">
+<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="content-wrap"><main class="content">
+  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Architecture</span></div>
   <h1>Architecture</h1>
   <p class="section-subtitle">Clew is a terminal-based AI coding assistant — a React/Ink TUI, Commander.js CLI, multi-provider AI engine, and extensible tool/plugin runtime all in one process.</p>
 
@@ -33,26 +35,26 @@
 
   <h2>Data Flow</h2>
   <pre><code>  Terminal input
-       │
-       ▼
-  ┌─ Query Engine (query.ts + QueryEngine.ts)
-  │    • Message building &amp; context assembly
-  │    • Tool call loop (model ↔ tool results)
-  │    • Streaming response handling
-  │
-  ├─ Provider Manager → Adapter → AI Model API
-  │    • 27 providers via providers.json
-  │    • AnthropicAdapter / GoogleAdapter normalization
-  │
-  ├─ Tool Executor (StreamingToolExecutor)
-  │    • Permission check (permissions.ts)
-  │    • Pre/Post tool hooks (plugins)
-  │    • Tool execution → result
-  │
-  └─ Terminal UI (React/Ink)
-       • Streaming text &amp; tool renders
-       • Status bar, spinner, context meter
-       • Permission dialogs</code></pre>
+       |
+       v
+  + Query Engine (query.ts + QueryEngine.ts)
+  |    Message building and context assembly
+  |    Tool call loop (model tool results)
+  |    Streaming response handling
+  |
+  + Provider Manager Adapter AI Model API
+  |    27 providers via providers.json
+  |    AnthropicAdapter / GoogleAdapter normalization
+  |
+  + Tool Executor (StreamingToolExecutor)
+  |    Permission check (permissions.ts)
+  |    Pre/Post tool hooks (plugins)
+  |    Tool execution result
+  |
+  + Terminal UI (React/Ink)
+       Streaming text and tool renders
+       Status bar, spinner, context meter
+       Permission dialogs</code></pre>
 
   <h2>Key Subsystems</h2>
 
@@ -78,7 +80,7 @@
   <p><code>src/agentRuntime/</code> — manages multi-agent orchestration. The <strong>orchestrator</strong> coordinates agent sessions, <strong>runStore</strong> persists agent run data, <strong>toolGateway</strong> routes tools between agents, and <strong>workflowRegistry</strong> / <strong>agentRegistry</strong> declare named workflows and agent configurations.</p>
 
   <h3>Autonomous / Daemon</h3>
-  <p><code>src/services/autonomous/</code> — enables 24/7 background execution. The <strong>taskQueue</strong> is a file-backed queue with priorities, leases, and dead-letter handling. <strong>agentLoop</strong> runs the continuous dequeue → spawn worker → monitor → retry cycle. <strong>daemonMode</strong> provides the supervisor-managed background process entry point, and <strong>supervisorIntegration</strong> handles health checks and auto-respawn. See <a href="daemon.html">Daemon Mode</a> for detailed configuration and usage.</p>
+  <p><code>src/services/autonomous/</code> — enables 24/7 background execution. The <strong>taskQueue</strong> is a file-backed queue with priorities, leases, and dead-letter handling. <strong>agentLoop</strong> runs the continuous dequeue spawn worker monitor retry cycle. <strong>daemonMode</strong> provides the supervisor-managed background process entry point, and <strong>supervisorIntegration</strong> handles health checks and auto-respawn. See <a href="daemon.html">Daemon Mode</a> for detailed configuration and usage.</p>
 
   <h3>Coordinator (Multi-Agent)</h3>
   <p><code>src/coordinator/</code> — supports multi-agent collaboration. <strong>coordinatorMode</strong> delegates tasks to sub-agents, and <strong>workerAgent</strong> provides standalone workers for delegated subtasks.</p>
@@ -133,4 +135,10 @@
       <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
     </div>
   </footer>
-</main></div><script src="js/main.js"></script></body></html>
+</main>
+<nav class="toc-sidebar"></nav>
+</div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

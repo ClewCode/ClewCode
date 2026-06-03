@@ -9,20 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
-  <style>
-    /* Bridge-specific overrides */
-    .bridge-hero { border-left: 3px solid var(--teal-400); padding-left: var(--space-lg); margin: var(--space-lg) 0; background: color-mix(in srgb, var(--teal-400) 4%, var(--bg-card)); border-radius: 0 10px 10px 0; padding: var(--space-lg); }
-    .bridge-hero strong { color: var(--teal-400); }
-  </style>
 </head>
 <body>
-
 <header class="header">
   <div class="header-inner">
-    <a href="../index.html" class="logo">
-      
-      <span>Clew</span>
-    </a>
+    <a href="../index.html" class="logo"><span>Clew</span></a>
     <nav class="header-nav">
       <a href="../index.html">Home</a>
       <a href="../index.html#features">Features</a>
@@ -30,67 +21,57 @@
       <a href="../quick-start.html" class="active">Docs</a>
       <a href="https://github.com/JonusNattapong/claudecode" target="_blank">GitHub</a>
     </nav>
-    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
-      <span></span><span></span><span></span>
-    </button>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
   </div>
 </header>
-
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
-
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><a href="../index.html#features">Features</a><span class="sep">/</span><span>Bridge Mode</span></div>
+      <h1>Bridge Mode</h1>
+      <p class="section-subtitle">Remote Control &amp; Remote Collaboration</p>
 
-  <main class="content">
-    <h1>Bridge Mode</h1>
-    <p class="section-subtitle">Remote Control &amp; Remote Collaboration</p>
-
-    <div class="bridge-hero">
-      <strong>Bridge Mode</strong> exposes a remote control surface over a WebSocket connection.
-      It is designed to be used by a mobile/web app to send commands and receive
-      information from a running Clew session.
-    </div>
-
-    <h2>Architecture</h2>
-    <p>
-      Bridge mode creates a WebSocket server that runs alongside the main Clew session.
-      Remote clients connect to this server and can send slash commands, receive responses,
-      and interact with the running session. The bridge also supports session sharing for
-      team collaboration.
-    </p>
-
-    <h2>Quick Start</h2>
-    <pre><code><span style="color:var(--text-tertiary)"># Enable bridge mode</span>
-<span style="color:var(--orange-500)">export</span> BRIDGE_MODE=1
-<span style="color:var(--orange-500)">claude</span> --bridge
-
-<span style="color:var(--text-tertiary)"># Connect from another terminal</span>
-<span style="color:var(--orange-500)">claude</span> --remote ws://localhost:18790</code></pre>
-
-    <h2>Features</h2>
-    <ul>
-      <li><strong>Remote Control</strong> — Send commands from mobile/web/CLI clients</li>
-      <li><strong>Session Sharing</strong> — Share your session with team members</li>
-      <li><strong>Team Onboarding</strong> — Invite teammates to collaborate</li>
-      <li><strong>Secure</strong> — OAuth-based authentication for remote connections</li>
-    </ul>
-
-    <div class="callout callout-warn">
-      <strong>Security Note</strong>
-      Bridge mode is designed for trusted networks. Use appropriate security measures
-      when exposing the WebSocket server to external networks.
-    </div>
-
-    <footer class="footer">
-      <span>Clew v2.1.180</span>
-      <div class="footer-links">
-        <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
-        <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
+      <div class="callout callout-info">
+        <strong>Bridge Mode</strong> exposes a remote control surface over a WebSocket connection. It is designed to be used by a mobile/web app to send commands and receive information from a running Clew session.
       </div>
-    </footer>
-  </main>
-</div>
 
+      <h2>Architecture</h2>
+      <p>Bridge mode creates a WebSocket server that runs alongside the main Clew session. Remote clients connect to this server and can send slash commands, receive responses, and interact with the running session. The bridge also supports session sharing for team collaboration.</p>
+
+      <h2>Quick Start</h2>
+      <pre><code># Enable bridge mode
+export BRIDGE_MODE=1
+claude --bridge
+
+# Connect from another terminal
+claude --remote ws://localhost:18790</code></pre>
+
+      <h2>Features</h2>
+      <ul>
+        <li><strong>Remote Control</strong> — Send commands from mobile/web/CLI clients</li>
+        <li><strong>Session Sharing</strong> — Share your session with team members</li>
+        <li><strong>Team Onboarding</strong> — Invite teammates to collaborate</li>
+        <li><strong>Secure</strong> — OAuth-based authentication for remote connections</li>
+      </ul>
+
+      <div class="callout callout-warn">
+        <strong>Security Note</strong>
+        Bridge mode is designed for trusted networks. Use appropriate security measures when exposing the WebSocket server to external networks.
+      </div>
+
+      <footer class="footer">
+        <span>Clew v2.1.180</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
+</div>
 <script src="../js/main.js"></script>
 </body>
 </html>

@@ -16,7 +16,7 @@
 <header class="header">
   <div class="header-inner">
     <a href="index.html" class="logo">
-      
+      <span class="logo-mark">C</span>
       <span>Clew</span>
     </a>
     <nav class="header-nav">
@@ -35,263 +35,261 @@
 <div class="app">
   <!-- ─── Sidebar ─── -->
   <aside class="sidebar" id="sidebar"></aside>
-
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-  <!-- ─── Main Content ─── -->
-  <main class="content content-wide">
+  <!-- ─── Content Wrap ─── -->
+  <div class="content-wrap">
+    <main class="content">
 
-    <!-- ─── Hero ─── -->
-    <section class="hero">
-      <div class="hero-badge">
-        <span class="dot"></span>
-        v2.1.180 — Multi-Provider AI CLI
+      <!-- ─── Breadcrumbs ─── -->
+      <div class="breadcrumbs">
+        <a href="index.html">Home</a>
       </div>
-      <h1>
-        Code with<br>
-        <span class="highlight">any model</span>
-      </h1>
-      <p>
-        A terminal-based AI coding assistant with multi-provider routing,
-        extensible plugin architecture, and a comprehensive tool system
-        for professional development workflows.
+
+      <!-- ─── Hero ─── -->
+      <section class="hero">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          v2.1.180 — Multi-Provider AI CLI
+        </div>
+        <h1>
+          Code with<br>
+          <span class="highlight">any model</span>
+        </h1>
+        <p>
+          A terminal-based AI coding assistant with multi-provider routing,
+          extensible plugin architecture, and a comprehensive tool system
+          for professional development workflows.
+        </p>
+        <div class="hero-actions">
+          <a href="https://npmjs.com/package/@jonusnattapong/claudecode" class="btn btn-primary">
+            npm install -g @jonusnattapong/claudecode
+          </a>
+          <a href="https://github.com/JonusNattapong/claudecode" class="btn btn-ghost" target="_blank">
+            GitHub →
+          </a>
+        </div>
+      </section>
+
+      <!-- ─── Terminal Demo ─── -->
+      <div class="terminal-window">
+        <div class="terminal-bar">
+          <span class="terminal-dot"></span>
+          <span class="terminal-dot"></span>
+          <span class="terminal-dot"></span>
+          <span class="terminal-title">clew — ~/project</span>
+        </div>
+        <div class="terminal-body">
+          <span class="line"><span class="prompt">$</span> <span class="cmd">clew</span></span>
+          <span class="line"><span class="output">╭──────────────────────────────────────────╮</span></span>
+          <span class="line"><span class="output">│ <span class="highlight-amber">Clew</span> · model: <span class="highlight-cyan">deepseek-v4-flash</span>  │</span></span>
+          <span class="line"><span class="output">│ provider: <span class="highlight-cyan">DeepSeek</span> · context: <span class="highlight-amber">78%</span>  │</span></span>
+          <span class="line"><span class="output">╰──────────────────────────────────────────╯</span></span>
+          <span class="line"><span class="prompt">></span> <span class="cmd">"find all unused exports in src/"</span></span>
+          <span class="line"><span class="output">Searching <span class="highlight-cyan">3 files</span>... Found <span class="highlight-amber">2 unused exports</span>.</span></span>
+        </div>
+      </div>
+
+      <!-- ─── Stats ─── -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number">27</div>
+          <div class="stat-label">AI Providers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">80+</div>
+          <div class="stat-label">Slash Commands</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">65+</div>
+          <div class="stat-label">Built-in Tools</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Open Source</div>
+        </div>
+      </div>
+
+      <!-- ─── Features ─── -->
+      <h2 class="section-title" id="features">Features</h2>
+      <p class="section-subtitle">
+        Everything you need for AI-assisted development — from a single terminal.
       </p>
-      <div class="hero-actions">
-        <a href="https://npmjs.com/package/@jonusnattapong/claudecode" class="btn btn-primary">
-          npm install -g @jonusnattapong/claudecode
-        </a>
-        <a href="https://github.com/JonusNattapong/claudecode" class="btn btn-ghost" target="_blank">
-          GitHub →
-        </a>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>Multi-Provider Routing</h3>
+          <p>Switch between Anthropic, OpenAI, Google Gemini, DeepSeek, OpenRouter, Ollama, xAI, Mistral, Groq, and more at runtime.</p>
+          <span class="feature-tag">/model</span>
+          <span class="feature-tag">/provider</span>
+        </div>
+        <div class="feature-card">
+          <h3>65+ Built-in Tools</h3>
+          <p>Read, Edit, Write, Glob, Grep, Bash, Web Search, Research, MCP, LSP, Agent, Task, Monitor, and Workflow tools.</p>
+          <span class="feature-tag">/tools</span>
+        </div>
+        <div class="feature-card">
+          <h3>Plugin System</h3>
+          <p>Extend with commands, agents, skills, hooks, and <a href="mcp.html">MCP servers</a>. Pre/post tool hooks for custom automation.</p>
+          <span class="feature-tag">/plugin</span>
+          <span class="feature-tag">/skill</span>
+        </div>
+        <div class="feature-card">
+          <h3>Agent View</h3>
+          <p>Multi-session dashboard with supervisor daemon, background tasks, IPC communication, worktree isolation, PR column display, dispatch autocomplete, and keyboard shortcuts.</p>
+          <span class="feature-tag">/agents</span>
+        </div>
+        <div class="feature-card">
+          <h3>Background Shell</h3>
+          <p>Run long-lived commands as persistent background agent tasks with <code>!bg &lt;command&gt;</code>. Live status, exit codes, stderr capture, and full dashboard integration.</p>
+          <span class="feature-tag">!bg</span>
+        </div>
+        <div class="feature-card">
+          <a href="daemon.html" style="color:inherit;text-decoration:none"><h3>24/7 Autonomous Mode</h3>
+          <p>Persistent daemon with task queue, auto-scheduling, health checks, auto-respawn, and worker session orchestration.</p></a>
+          <span class="feature-tag">/daemon</span>
+          <span class="feature-tag">/task</span>
+        </div>
+        <div class="feature-card">
+          <a href="research-memory.html" style="color:inherit;text-decoration:none"><h3>Smart Memory</h3>
+          <p>Cross-lingual semantic search, hybrid recall (local + LLM), auto-memory capture, and team sync.</p></a>
+          <span class="feature-tag">/memory</span>
+        </div>
+        <div class="feature-card">
+          <h3>Bridge Mode</h3>
+          <p>WebSocket remote collaboration with session sharing, team onboarding, and mobile/web clients.</p>
+          <span class="feature-tag">Bridge</span>
+        </div>
+        <div class="feature-card">
+          <h3>KiloCompact</h3>
+          <p>Local context compaction: log/trace snipping, failed-state consolidation, semantic turn pruning.</p>
+          <span class="feature-tag">/compact</span>
+        </div>
+        <div class="feature-card">
+          <h3>Permission Modes</h3>
+          <p>Default, Auto, Plan, YOLO Lite, YOLO, YOLO MAX — granular control over tool execution safety.</p>
+          <span class="feature-tag">/permissions</span>
+        </div>
       </div>
-    </section>
 
-    <!-- ─── Terminal Demo ─── -->
-    <div class="terminal-window">
-      <div class="terminal-bar">
-        <span class="terminal-dot"></span>
-        <span class="terminal-dot"></span>
-        <span class="terminal-dot"></span>
-        <span class="terminal-title">clew — ~/project</span>
+      <!-- ─── Usage ─── -->
+      <h2 class="section-title" id="usage">Quick Start</h2>
+      <p class="section-subtitle">From zero to coding in under a minute.</p>
+
+      <div class="code-block-wrap">
+        <div class="code-block-header">
+          <span>bash</span>
+        </div>
+        <pre><code><span class="cmd-muted">$</span> <span class="cmd-primary">npm install -g @jonusnattapong/claudecode</span>
+<span class="cmd-muted">$</span> <span class="cmd-primary">export ANTHROPIC_API_KEY=sk-ant-...</span>
+<span class="cmd-muted">$</span> <span class="cmd-primary">claude</span>
+
+<span class="cmd-muted"># Ask a question</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">"find all unused exports in src/"</span>
+
+<span class="cmd-muted"># Switch model on the fly</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">/model deepseek-v4-flash</span>
+
+<span class="cmd-muted"># Context management</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">/clear</span>    <span class="cmd-muted"># Fresh start</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">/compact</span> <span class="cmd-muted"># Compress context</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">/resume</span>  <span class="cmd-muted"># Resume last session</span></code></pre>
       </div>
-      <div class="terminal-body">
-        <span class="line"><span class="prompt">$</span> <span class="cmd">clew</span></span>
-        <span class="line"><span class="output">╭──────────────────────────────────────────╮</span></span>
-        <span class="line"><span class="output">│ <span class="highlight-amber">Clew</span> · model: <span class="highlight-cyan">deepseek-v4-flash</span>  │</span></span>
-        <span class="line"><span class="output">│ provider: <span class="highlight-cyan">DeepSeek</span> · context: <span class="highlight-amber">78%</span>  │</span></span>
-        <span class="line"><span class="output">╰──────────────────────────────────────────╯</span></span>
-        <span class="line"><span class="prompt">></span> <span class="cmd">"find all unused exports in src/"</span></span>
-        <span class="line"><span class="output">Searching <span class="highlight-cyan">3 files</span>... Found <span class="highlight-amber">2 unused exports</span>.</span><span class="cursor"></span></span>
+
+      <!-- ─── Slash Commands ─── -->
+      <h2 class="section-title" id="commands">Slash Commands</h2>
+      <p class="section-subtitle">80+ commands to control every aspect of your workflow.</p>
+
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Commands</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="cmd-accent">Files</span></td><td><code>/read</code> <code>/edit</code> <code>/write</code> <code>/glob</code> <code>/grep</code></td><td>Read, edit, create, and search files</td></tr>
+          <tr><td><span class="cmd-accent">Git</span></td><td><code>/diff</code> <code>/commit</code> <code>/branch</code></td><td>Version control operations</td></tr>
+          <tr><td><span class="cmd-accent">Model</span></td><td><code>/model</code> <code>/provider</code> <code>/cost</code> <code>/usage</code> <code>/stats</code></td><td>Switch models and track usage</td></tr>
+          <tr><td><span class="cmd-accent">Session</span></td><td><code>/clear</code> <code>/compact</code> <code>/resume</code> <code>/session</code> <code>/rewind</code></td><td>Context and session management</td></tr>
+          <tr><td><span class="cmd-accent">Config</span></td><td><code>/permissions</code> <code>/plan</code> <code>/config</code> <code>/theme</code></td><td>Settings and preferences</td></tr>
+          <tr><td><span class="cmd-accent">Extend</span></td><td><code>/plugin</code> <code>/skill</code> <code>/agent</code> <code>/agents</code> <code>/mcp</code></td><td>Plugins, skills, agents, MCP</td></tr>
+          <tr><td><span class="cmd-accent">Daemon</span></td><td><code>/daemon</code> <code>/task</code> <code>/loop</code></td><td>24/7 autonomous agent, task queue, and recurring tasks</td></tr>
+          <tr><td><span class="cmd-accent">Automation</span></td><td><code>/autofix-pr</code></td><td>Fix CI errors and review comments on a PR via Clew on the web</td></tr>
+          <tr><td><span class="cmd-accent">System</span></td><td><code>/help</code> <code>/status</code> <code>/doctor</code> <code>/exit</code></td><td>Help, diagnostics, and exit</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Providers ─── -->
+      <h2 class="section-title" id="providers">AI Providers</h2>
+      <p class="section-subtitle">Bring your own key — use the model that works best for each task.</p>
+
+      <table>
+        <thead>
+          <tr><th>Provider</th><th>Config</th><th>Models</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="cmd-info">Anthropic</span></td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-opus-4, claude-sonnet-4</td></tr>
+          <tr><td><span class="cmd-info">OpenAI</span></td><td><code>OPENAI_API_KEY</code></td><td>gpt-5.5-pro, gpt-5.5</td></tr>
+          <tr><td><span class="cmd-info">Google</span></td><td><code>GOOGLE_API_KEY</code></td><td>gemini-3.1-pro, gemini-3.1-flash</td></tr>
+          <tr><td><span class="cmd-info">DeepSeek</span></td><td><code>DEEPSEEK_API_KEY</code></td><td>deepseek-v4-pro, deepseek-v4-flash</td></tr>
+          <tr><td><span class="cmd-info">OpenRouter</span></td><td><code>OPENROUTER_API_KEY</code></td><td>100+ models</td></tr>
+          <tr><td><span class="cmd-info">Ollama</span></td><td><code>OLLAMA_HOST</code></td><td>Local models</td></tr>
+          <tr><td><span class="cmd-info">xAI</span></td><td><code>XAI_API_KEY</code></td><td>grok-4</td></tr>
+          <tr><td><span class="cmd-info">Mistral</span></td><td><code>MISTRAL_API_KEY</code></td><td>mistral-large-4</td></tr>
+          <tr><td><span class="cmd-info">Groq</span></td><td><code>GROQ_API_KEY</code></td><td>llama-4-70b</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Plugins ─── -->
+      <h2 class="section-title" id="plugins">Plugins &amp; Skills</h2>
+      <p class="section-subtitle">Extend functionality with built-in and marketplace plugins.</p>
+
+      <table>
+        <thead>
+          <tr><th>Plugin</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>commit-commands</code></td><td>Git workflow: commit, push, PR creation</td></tr>
+          <tr><td><code>code-review</code></td><td>Automated PR code review</td></tr>
+          <tr><td><code>feature-dev</code></td><td>Guided feature development with agents</td></tr>
+          <tr><td><code>frontend-design</code></td><td>Production-grade UI/UX generation</td></tr>
+          <tr><td><code>verify</code></td><td>Typecheck, lint, build, and test</td></tr>
+          <tr><td><code>debug</code></td><td>Debugging assistance</td></tr>
+          <tr><td><code>commit</code></td><td>Conventional git commits</td></tr>
+          <tr><td><code>simplify</code></td><td>Code quality and reuse review</td></tr>
+          <tr><td><code>web-search</code></td><td>Multi-provider web search</td></tr>
+          <tr><td><code>scrapling</code></td><td>Web scraping with Scrapling</td></tr>
+          <tr><td><code>skillify</code></td><td>Create skills from workflows</td></tr>
+          <tr><td><code>remember</code></td><td>Save user preferences</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Changelog ─── -->
+      <h2 class="section-title" id="updates">v2.1.180 Updates</h2>
+      <ul>
+        <li><strong><code>!bg &lt;command&gt;</code> — Background shell tasks</strong> — Shell commands run as persistent background agent sessions visible in <code>claude agents</code>. Live status, exit codes, and stderr capture.</li>
+        <li><strong>Dispatch input autocomplete</strong> — Agent view now suggests agents (<code>@name</code>), skills (<code>/skill</code>), PR numbers (<code>#123</code>), and filter syntax (<code>a:agent</code>, <code>s:state</code>) with Tab/arrow navigation.</li>
+        <li><strong>PR column display</strong> — Agent rows show PR info scaled to terminal width: status dot, number, title, and status label. Peek panel shows PR details inline.</li>
+        <li><strong>Agent logout hotkey</strong> — Press <kbd>l</kbd> to stop/delete the selected agent session with double-press confirmation.</li>
+      </ul>
+
+      <div style="margin-top:var(--space-lg)">
+        <a href="https://github.com/JonusNattapong/claudecode/blob/main/CHANGELOG.md" class="btn btn-ghost">Full Changelog →</a>
       </div>
-    </div>
 
-    <!-- ─── Stats ─── -->
-    <div class="stats-grid">
-      <div class="stat-card fade-up">
-        <div class="stat-number">27</div>
-        <div class="stat-label">AI Providers</div>
-      </div>
-      <div class="stat-card fade-up">
-        <div class="stat-number">80+</div>
-        <div class="stat-label">Slash Commands</div>
-      </div>
-      <div class="stat-card fade-up">
-        <div class="stat-number">65+</div>
-        <div class="stat-label">Built-in Tools</div>
-      </div>
-      <div class="stat-card fade-up">
-        <div class="stat-number">100%</div>
-        <div class="stat-label">Open Source</div>
-      </div>
-    </div>
+      <!-- ─── Footer ─── -->
+      <footer class="footer">
+        <span>Clew v2.1.180 — Open Source (MIT)</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
+          <a href="https://npmjs.com/package/@jonusnattapong/claudecode">npm</a>
+        </div>
+      </footer>
 
-    <!-- ─── Features ─── -->
-    <h2 class="section-title" id="features">Features</h2>
-    <p class="section-subtitle">
-      Everything you need for AI-assisted development — from a single terminal.
-    </p>
+    </main>
 
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="feature-icon">&#x25C8;</div>
-        <h3>Multi-Provider Routing</h3>
-        <p>Switch between Anthropic, OpenAI, Google Gemini, DeepSeek, OpenRouter, Ollama, xAI, Mistral, Groq, and more at runtime.</p>
-        <span class="feature-tag">/model</span>
-        <span class="feature-tag">/provider</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">&#x2B21;</div>
-        <h3>65+ Built-in Tools</h3>
-        <p>Read, Edit, Write, Glob, Grep, Bash, Web Search, Research, MCP, LSP, Agent, Task, Monitor, and Workflow tools.</p>
-        <span class="feature-tag">/tools</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">&#x2387;</div>
-        <h3>Plugin System</h3>
-        <p>Extend with commands, agents, skills, hooks, and <a href="mcp.html">MCP servers</a>. Pre/post tool hooks for custom automation.</p>
-        <span class="feature-tag">/plugin</span>
-        <span class="feature-tag">/skill</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">&#x25CB;</div>
-        <h3>Agent View</h3>
-        <p>Multi-session dashboard with supervisor daemon, background tasks, IPC communication, worktree isolation, PR column display, dispatch autocomplete, and keyboard shortcuts.</p>
-        <span class="feature-tag">/agents</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">&#x2699;</div>
-        <h3>Background Shell</h3>
-        <p>Run long-lived commands as persistent background agent tasks with <code>!bg &lt;command&gt;</code>. Live status, exit codes, stderr capture, and full dashboard integration.</p>
-        <span class="feature-tag">!bg</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">&#x25C6;</div>
-        <a href="daemon.html" style="color:inherit;text-decoration:none"><h3>24/7 Autonomous Mode</h3>
-        <p>Persistent daemon with task queue, auto-scheduling, health checks, auto-respawn, and worker session orchestration.</p></a>
-        <span class="feature-tag">/daemon</span>
-        <span class="feature-tag">/task</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">&#x2691;</div>
-        <a href="research-memory.html" style="color:inherit;text-decoration:none"><h3>Smart Memory</h3>
-        <p>Cross-lingual semantic search, hybrid recall (local + LLM), auto-memory capture, and team sync.</p></a>
-        <span class="feature-tag">/memory</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">&#x2194;</div>
-        <h3>Bridge Mode</h3>
-        <p>WebSocket remote collaboration with session sharing, team onboarding, and mobile/web clients.</p>
-        <span class="feature-tag">Bridge</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">&#x25C7;</div>
-        <h3>KiloCompact</h3>
-        <p>Local context compaction: log/trace snipping, failed-state consolidation, semantic turn pruning.</p>
-        <span class="feature-tag">/compact</span>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">&#x25B3;</div>
-        <h3>Permission Modes</h3>
-        <p>Default, Auto, Plan, YOLO Lite, YOLO, YOLO MAX — granular control over tool execution safety.</p>
-        <span class="feature-tag">/permissions</span>
-      </div>
-    </div>
-
-    <!-- ─── Usage ─── -->
-    <h2 class="section-title" id="usage">Quick Start</h2>
-    <p class="section-subtitle">From zero to coding in under a minute.</p>
-
-    <pre><code><span style="color:var(--orange-500)">$</span> <span style="color:var(--text-primary)">npm install -g @jonusnattapong/claudecode</span>
-<span style="color:var(--orange-500)">$</span> <span style="color:var(--text-primary)">export ANTHROPIC_API_KEY=sk-ant-...</span>
-<span style="color:var(--orange-500)">$</span> <span style="color:var(--text-primary)">claude</span>
-
-<span style="color:var(--text-tertiary)"># Ask a question</span>
-<span style="color:var(--orange-500)">></span> <span style="color:var(--text-primary)">"find all unused exports in src/"</span>
-
-<span style="color:var(--text-tertiary)"># Switch model on the fly</span>
-<span style="color:var(--orange-500)">></span> <span style="color:var(--text-primary)">/model deepseek-v4-flash</span>
-
-<span style="color:var(--text-tertiary)"># Context management</span>
-<span style="color:var(--orange-500)">></span> <span style="color:var(--text-primary)">/clear</span>    <span style="color:var(--text-tertiary)"># Fresh start</span>
-<span style="color:var(--orange-500)">></span> <span style="color:var(--text-primary)">/compact</span> <span style="color:var(--text-tertiary)"># Compress context</span>
-<span style="color:var(--orange-500)">></span> <span style="color:var(--text-primary)">/resume</span>  <span style="color:var(--text-tertiary)"># Resume last session</span></code></pre>
-
-    <!-- ─── Slash Commands ─── -->
-    <h2 class="section-title" id="commands">Slash Commands</h2>
-    <p class="section-subtitle">80+ commands to control every aspect of your workflow.</p>
-
-    <div class="scroll-wrap">
-    <table>
-      <thead>
-        <tr><th>Category</th><th>Commands</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><span style="color:var(--orange-400)">Files</span></td><td><code>/read</code> <code>/edit</code> <code>/write</code> <code>/glob</code> <code>/grep</code></td><td>Read, edit, create, and search files</td></tr>
-        <tr><td><span style="color:var(--orange-400)">Git</span></td><td><code>/diff</code> <code>/commit</code> <code>/branch</code></td><td>Version control operations</td></tr>
-        <tr><td><span style="color:var(--orange-400)">Model</span></td><td><code>/model</code> <code>/provider</code> <code>/cost</code> <code>/usage</code> <code>/stats</code></td><td>Switch models and track usage</td></tr>
-        <tr><td><span style="color:var(--orange-400)">Session</span></td><td><code>/clear</code> <code>/compact</code> <code>/resume</code> <code>/session</code> <code>/rewind</code></td><td>Context and session management</td></tr>
-        <tr><td><span style="color:var(--orange-400)">Config</span></td><td><code>/permissions</code> <code>/plan</code> <code>/config</code> <code>/theme</code></td><td>Settings and preferences</td></tr>
-        <tr><td><span style="color:var(--orange-400)">Extend</span></td><td><code>/plugin</code> <code>/skill</code> <code>/agent</code> <code>/agents</code> <code>/mcp</code></td><td>Plugins, skills, agents, MCP</td></tr>
-        <tr><td><span style="color:var(--orange-400)">Daemon</span></td><td><code>/daemon</code> <code>/task</code> <code>/loop</code></td><td>24/7 autonomous agent, task queue, and recurring tasks</td></tr>
-        <tr><td><span style="color:var(--orange-400)">Automation</span></td><td><code>/autofix-pr</code></td><td>Fix CI errors and review comments on a PR via Clew on the web</td></tr>
-        <tr><td><span style="color:var(--orange-400)">System</span></td><td><code>/help</code> <code>/status</code> <code>/doctor</code> <code>/exit</code></td><td>Help, diagnostics, and exit</td></tr>
-      </tbody>
-    </table>
-    </div>
-
-    <!-- ─── Providers ─── -->
-    <h2 class="section-title" id="providers">AI Providers</h2>
-    <p class="section-subtitle">Bring your own key — use the model that works best for each task.</p>
-
-    <div class="scroll-wrap">
-    <table>
-      <thead>
-        <tr><th>Provider</th><th>Config</th><th>Models</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><span style="color:var(--teal-400)">Anthropic</span></td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-opus-4, claude-sonnet-4</td></tr>
-        <tr><td><span style="color:var(--teal-400)">OpenAI</span></td><td><code>OPENAI_API_KEY</code></td><td>gpt-5.5-pro, gpt-5.5</td></tr>
-        <tr><td><span style="color:var(--teal-400)">Google</span></td><td><code>GOOGLE_API_KEY</code></td><td>gemini-3.1-pro, gemini-3.1-flash</td></tr>
-        <tr><td><span style="color:var(--teal-400)">DeepSeek</span></td><td><code>DEEPSEEK_API_KEY</code></td><td>deepseek-v4-pro, deepseek-v4-flash</td></tr>
-        <tr><td><span style="color:var(--teal-400)">OpenRouter</span></td><td><code>OPENROUTER_API_KEY</code></td><td>100+ models</td></tr>
-        <tr><td><span style="color:var(--teal-400)">Ollama</span></td><td><code>OLLAMA_HOST</code></td><td>Local models</td></tr>
-        <tr><td><span style="color:var(--teal-400)">xAI</span></td><td><code>XAI_API_KEY</code></td><td>grok-4</td></tr>
-        <tr><td><span style="color:var(--teal-400)">Mistral</span></td><td><code>MISTRAL_API_KEY</code></td><td>mistral-large-4</td></tr>
-        <tr><td><span style="color:var(--teal-400)">Groq</span></td><td><code>GROQ_API_KEY</code></td><td>llama-4-70b</td></tr>
-      </tbody>
-    </table>
-    </div>
-
-    <!-- ─── Plugins ─── -->
-    <h2 class="section-title" id="plugins">Plugins &amp; Skills</h2>
-    <p class="section-subtitle">Extend functionality with built-in and marketplace plugins.</p>
-
-    <div class="scroll-wrap">
-    <table>
-      <thead>
-        <tr><th>Plugin</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><code>commit-commands</code></td><td>Git workflow: commit, push, PR creation</td></tr>
-        <tr><td><code>code-review</code></td><td>Automated PR code review</td></tr>
-        <tr><td><code>feature-dev</code></td><td>Guided feature development with agents</td></tr>
-        <tr><td><code>frontend-design</code></td><td>Production-grade UI/UX generation</td></tr>
-        <tr><td><code>verify</code></td><td>Typecheck, lint, build, and test</td></tr>
-        <tr><td><code>debug</code></td><td>Debugging assistance</td></tr>
-        <tr><td><code>commit</code></td><td>Conventional git commits</td></tr>
-        <tr><td><code>simplify</code></td><td>Code quality and reuse review</td></tr>
-        <tr><td><code>web-search</code></td><td>Multi-provider web search</td></tr>
-        <tr><td><code>scrapling</code></td><td>Web scraping with Scrapling</td></tr>
-        <tr><td><code>skillify</code></td><td>Create skills from workflows</td></tr>
-        <tr><td><code>remember</code></td><td>Save user preferences</td></tr>
-      </tbody>
-    </table>
-    </div>
-
-    <!-- ─── Changelog ─── -->
-    <h2 class="section-title" id="updates">v2.1.180 Updates</h2>
-    <ul>
-      <li><strong><code>!bg &lt;command&gt;</code> — Background shell tasks</strong> — Shell commands run as persistent background agent sessions visible in <code>claude agents</code>. Live status, exit codes, and stderr capture.</li>
-      <li><strong>Dispatch input autocomplete</strong> — Agent view now suggests agents (<code>@name</code>), skills (<code>/skill</code>), PR numbers (<code>#123</code>), and filter syntax (<code>a:agent</code>, <code>s:state</code>) with Tab/arrow navigation.</li>
-      <li><strong>PR column display</strong> — Agent rows show PR info scaled to terminal width: status dot, number, title, and status label. Peek panel shows PR details inline.</li>
-      <li><strong>Agent logout hotkey</strong> — Press <kbd>l</kbd> to stop/delete the selected agent session with double-press confirmation.</li>
-    </ul>
-
-    <div style="margin-top:var(--space-lg)">
-      <a href="https://github.com/JonusNattapong/claudecode/blob/main/CHANGELOG.md" class="btn btn-ghost">Full Changelog →</a>
-    </div>
-
-    <!-- ─── Footer ─── -->
-    <footer class="footer">
-      <span>Clew v2.1.180 — Open Source (MIT)</span>
-      <div class="footer-links">
-        <a href="https://github.com/JonusNattapong/claudecode">GitHub</a>
-        <a href="https://github.com/JonusNattapong/claudecode/issues">Issues</a>
-        <a href="https://npmjs.com/package/@jonusnattapong/claudecode">npm</a>
-      </div>
-    </footer>
-
-  </main>
+    <!-- ─── Right TOC ─── -->
+    <nav class="toc-sidebar"></nav>
+  </div>
 </div>
 
 <script src="js/main.js"></script>
