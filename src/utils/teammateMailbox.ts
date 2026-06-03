@@ -77,7 +77,7 @@ async function ensureInboxDir(teamName?: string): Promise<void> {
 /**
  * Read all messages from a teammate's inbox
  * @param agentName - The agent name (not UUID) to read inbox for
- * @param teamName - Optional team name (defaults to CLAUDE_CODE_TEAM_NAME env var or 'default')
+ * @param teamName - Optional team name (defaults to env var or 'default')
  */
 export async function readMailbox(agentName: string, teamName?: string): Promise<TeammateMessage[]> {
   const inboxPath = getInboxPath(agentName, teamName);
@@ -756,7 +756,7 @@ export function createShutdownRejectedMessage(params: {
  * This is the core logic extracted for reuse by both the tool and UI components.
  *
  * @param targetName - Name of the teammate to send shutdown request to
- * @param teamName - Optional team name (defaults to CLAUDE_CODE_TEAM_NAME env var)
+ * @param teamName - Optional team name (defaults to env var)
  * @param reason - Optional reason for the shutdown request
  * @returns The request ID and target name
  */
