@@ -36,11 +36,7 @@ import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
  * `bypassPermissions` so the agent can run unattended).
  */
 
-const VERB_SET = new Set(['', 'status', 'show']);
-const VERB_EDIT = new Set(['edit', 'set', 'change']);
-const VERB_CLEAR = new Set(['clear', 'stop', 'off', 'reset', 'none', 'cancel']);
-const VERB_PAUSE = new Set(['pause']);
-const VERB_RESUME = new Set(['resume']);
+const CLEAR_VERBS = new Set(['clear', 'stop', 'off', 'reset', 'none', 'cancel']);
 
 const WARN_THRESHOLD = 0.8;
 
@@ -174,21 +170,14 @@ export async function call(
 ): Promise<null> {
   const trimmed = args?.trim() ?? '';
   const tokens = trimmed ? trimmed.split(/\s+/) : [];
-  const verbRaw = (tokens[0] || '').toLowerCase();
+  const first = (tokens[0] || '').toLowerCase();
   const rest = tokens.slice(1).join(' ').trim();
   const appState = context.getAppState();
 
   // ── Hooks disabled gate ──────────────────────────────────────────────────
   // Goal turn tracking depends on hooks. Show a clear message rather
-  // than silently stalling. The check is skipped for the read-only
-  // status / clear verbs since those don't need turn tracking.
-  if (
-    rest &&
-    !VERB_CLEAR.has(verbRaw) &&
-    !VERB_PAUSE.has(verbRaw) &&
-    !VERB_RESUME.has(verbRaw) &&
-    !VERB_SET.has(verbRaw)
-  ) {
+  // than silently stalling.
+  if (trimmed && first !== 'status' && first !== 'show' && first !== 'pause' && first !== 'resume' && !CLEAR_VERBS.has(first)) {
     const settings = getSettings_DEPRECATED();
     if (settings.disableAllHooks || settings.allowManagedHooksOnly) {
       const reason = settings.disableAllHooks ? 'disableAllHooks' : 'allowManagedHooksOnly';
@@ -200,8 +189,29 @@ export async function call(
     }
   }
 
+  // ── Status: /goal, /goal status, /goal show ─────────────────────────────
+  if (!trimmed || first === 'status' || first === 'show') {
+    const currentGoal = appState.sessionGoal;
+    if (currentGoal) {
+      const goalState = getFullGoalState();
+      if (goalState) {
+        onDone(renderActiveStatus(appState as AppStateSnapshot, goalState), { display: 'system' });
+      } else {
+        onDone(`◎ Goal [ACTIVE]  ${currentGoal}\n  (state file missing — using fallback)`, { display: 'system' });
+      }
+    } else {
+      const last = getLastAchieved();
+      if (last) {
+        onDone(renderAchievedStatus(last), { display: 'system' });
+      } else {
+        onDone(renderNoGoalHelp(), { display: 'system' });
+      }
+    }
+    return null;
+  }
+
   // ── Pause ────────────────────────────────────────────────────────────────
-  if (VERB_PAUSE.has(verbRaw)) {
+  if (first === 'pause') {
     const goalState = getFullGoalState();
     if (!goalState?.goal) {
       onDone('◎ No active goal to pause.', { display: 'system' });
@@ -232,7 +242,7 @@ export async function call(
   }
 
   // ── Resume ───────────────────────────────────────────────────────────────
-  if (VERB_RESUME.has(verbRaw)) {
+  if (first === 'resume') {
     const goalState = getFullGoalState();
     if (!goalState?.goal) {
       onDone('◎ No goal to resume. Set one with /goal <text>.', { display: 'system' });
@@ -247,9 +257,6 @@ export async function call(
     goalState.totalPausedMs = (goalState.totalPausedMs ?? 0) + pausedMs;
     goalState.paused = false;
     goalState.pausedAt = undefined;
-    // Clear the paused reason so the status view goes back to
-    // "evaluator feedback" rather than "paused by user" — the
-    // evaluator will overwrite lastReason on its next pass anyway.
     goalState.lastReason = undefined;
     setFullGoalState(goalState);
 
@@ -278,75 +285,44 @@ export async function call(
     return null;
   }
 
-  // ── Edit (replace condition, keep lifecycle) ─────────────────────────────
-  if (VERB_EDIT.has(verbRaw) && rest) {
+  // ── Edit: /goal edit <text> (explicit keyword only) ──────────────────────
+  // Falls through to set-goal if no active goal or no rest text.
+  if (first === 'edit' && rest) {
     const goalState = getFullGoalState();
-    if (!goalState?.goal) {
-      onDone('◎ No active goal to edit. Use /goal <text> to set one first.', { display: 'system' });
+    if (goalState?.goal) {
+      const { condition, maxTurns, maxMinutes } = parseGoalBounds(rest);
+      const updated: GoalState = {
+        ...goalState,
+        goal: rest,
+        condition,
+        maxTurns,
+        maxMinutes,
+      };
+      setFullGoalState(updated);
+      context.setAppState(prev => ({ ...prev, sessionGoal: rest }));
+      const bounds: string[] = [];
+      if (maxTurns) bounds.push(`max ${maxTurns} turns`);
+      if (maxMinutes) bounds.push(`max ${maxMinutes} min`);
+      const boundsMsg = bounds.length > 0 ? ` (${bounds.join(', ')})` : '';
+      onDone(`◎ Goal updated.${boundsMsg}\n  "${rest}"`, {
+        display: 'system',
+        shouldQuery: true,
+        metaMessages: [`Your active goal condition has been updated to: "${rest}".`],
+      });
       return null;
     }
-    const settings = getSettings_DEPRECATED();
-    if (settings.disableAllHooks || settings.allowManagedHooksOnly) {
-      const reason = settings.disableAllHooks ? 'disableAllHooks' : 'allowManagedHooksOnly';
-      onDone(`◎ Goal cannot be edited: hooks are disabled (${reason}).`, { display: 'system' });
-      return null;
-    }
-    const { condition, maxTurns, maxMinutes } = parseGoalBounds(rest);
-    const updated: GoalState = {
-      ...goalState,
-      goal: rest,
-      condition,
-      maxTurns,
-      maxMinutes,
-    };
-    setFullGoalState(updated);
-    context.setAppState(prev => ({ ...prev, sessionGoal: rest }));
-    const bounds: string[] = [];
-    if (maxTurns) bounds.push(`max ${maxTurns} turns`);
-    if (maxMinutes) bounds.push(`max ${maxMinutes} min`);
-    const boundsMsg = bounds.length > 0 ? ` (${bounds.join(', ')})` : '';
-    onDone(`◎ Goal updated.${boundsMsg}\n  "${rest}"`, {
-      display: 'system',
-      shouldQuery: true,
-      metaMessages: [`Your active goal condition has been updated to: "${rest}".`],
-    });
-    return null;
+    // No active goal — fall through to set
   }
 
-  // ── Status (no args or `status`/`show`) ──────────────────────────────────
-  if (VERB_SET.has(verbRaw) && !rest) {
-    const currentGoal = appState.sessionGoal;
-    if (currentGoal) {
-      const goalState = getFullGoalState();
-      if (goalState) {
-        onDone(renderActiveStatus(appState as AppStateSnapshot, goalState), { display: 'system' });
-      } else {
-        onDone(`◎ Goal [ACTIVE]  ${currentGoal}\n  (state file missing — using fallback)`, { display: 'system' });
-      }
-    } else {
-      const last = getLastAchieved();
-      if (last) {
-        onDone(renderAchievedStatus(last), { display: 'system' });
-      } else {
-        onDone(renderNoGoalHelp(), { display: 'system' });
-      }
-    }
-    return null;
-  }
-
-  // ── Clear ────────────────────────────────────────────────────────────────
-  if (VERB_CLEAR.has(verbRaw) && !rest) {
+  // ── Clear: /goal clear (no extra text) ───────────────────────────────────
+  if (CLEAR_VERBS.has(first) && !rest) {
     const goalState = getFullGoalState();
     const restoredMode = goalState?.preGoalMode;
     const turns = goalState?.turnCount ?? appState.sessionGoalTurnCount ?? 0;
     const pausedMs = goalState?.totalPausedMs ?? 0;
     const elapsed = goalState?.setAt ? formatElapsed(Date.now() - goalState.setAt - pausedMs) : '0s';
-    const tokens = goalState?.evalTokens ?? 0;
+    const tokens_ = goalState?.evalTokens ?? 0;
 
-    // Record a manual-clear reason so the post-clear status view
-    // (renderAchievedStatus) can distinguish "user gave up" from
-    // "evaluator said achieved". Use a non-`undefined` value so the
-    // lastReason branch renders in the cleared view.
     if (goalState) {
       setFullGoalState({ ...goalState, lastReason: 'manually cleared', endedAt: Date.now() });
     }
@@ -364,7 +340,7 @@ export async function call(
     }));
     setFullGoalState(null);
 
-    const statsLine = `${elapsed} · ${turns} turns${tokens > 0 ? ` · ${tokens.toLocaleString()} eval tokens` : ''}`;
+    const statsLine = `${elapsed} · ${turns} turns${tokens_ > 0 ? ` · ${tokens_.toLocaleString()} eval tokens` : ''}`;
     const restoreMsg = restoredMode ? `\n  permissions restored to '${restoredMode}'` : '';
     onDone(
       `◎ Goal cleared.\n  ${statsLine}${restoreMsg}\n  (run /goal again to see the finished stats next time)`,
