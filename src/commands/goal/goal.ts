@@ -1,29 +1,55 @@
 import { parseGoalBounds } from '../../services/goal/goalEvaluator.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
-import { type GoalState, getFullGoalState, setFullGoalState } from '../../utils/sessionGoalState.js';
+import {
+  type GoalState,
+  getFullGoalState,
+  getLastAchieved,
+  linkWorkflowToActiveGoal,
+  setFullGoalState,
+} from '../../utils/sessionGoalState.js';
 import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
 
 /**
- * /goal command — sets a session goal that is shown in the footer status line.
+ * `/goal` command — sets a session goal that is shown in the footer status line.
  *
  * Usage:
- *   /goal              — show current goal with progress
- *   /goal <text>       — set goal
- *   /goal clear        — remove goal
- *   /goal ""           — remove goal
+ *   /goal              — show current goal (or most recently finished one)
+ *   /goal status       — same as `/goal` with no args
+ *   /goal <text>       — set goal (replaces an active one)
+ *   /goal edit <text>  — update the condition while keeping turn count + timer
+ *   /goal clear        — remove goal (aliases: stop, off, reset, none, cancel)
  *   /goal pause        — pause goal (restore permissions, keep state)
  *   /goal resume       — resume a paused goal
+ *
+ * Budget syntax (parsed from the condition text):
+ *   "or stop after 20 turns"     → maxTurns: 20
+ *   "or stop after 30 min"       → maxMinutes: 30
+ *
+ * Status indicators:
+ *   ◎ active   ⏸ paused   ✓ achieved recently
+ *
+ * Implementation note: the command is a thin wrapper. All state
+ * mutation lives in `sessionGoalState.ts`; this file is responsible
+ * only for argument parsing, human-readable formatting, and side
+ * effects on `toolPermissionContext` (goal mode forces
+ * `bypassPermissions` so the agent can run unattended).
  */
 
-/** Build a text-based mini progress bar for terminal display */
-function renderTextProgressBar(ratio: number, width: number = 16): string {
+const VERB_SET = new Set(['', 'status', 'show']);
+const VERB_EDIT = new Set(['edit', 'update', 'set', 'change']);
+const VERB_CLEAR = new Set(['clear', 'stop', 'off', 'reset', 'none', 'cancel']);
+const VERB_PAUSE = new Set(['pause']);
+const VERB_RESUME = new Set(['resume']);
+
+const WARN_THRESHOLD = 0.8;
+
+/** Build a text-based mini progress bar that renders on any terminal. */
+function renderTextProgressBar(ratio: number, width: number = 20): string {
   const clamped = Math.min(1, Math.max(0, ratio));
   const filled = Math.round(clamped * width);
   const empty = width - filled;
-  const bar = '█'.repeat(filled) + '░'.repeat(empty);
-  const pct = Math.round(clamped * 100);
-  return `${bar} ${pct}%`;
+  return `[${'#'.repeat(filled)}${'-'.repeat(empty)}] ${Math.round(clamped * 100)}%`;
 }
 
 /** Format elapsed time in a human readable way */
@@ -36,50 +62,160 @@ function formatElapsed(ms: number): string {
   return `${seconds}s`;
 }
 
+/** Compose a human-readable status block for an active or paused goal. */
+function renderActiveStatus(state: AppStateSnapshot, goal: GoalState): string {
+  const now = Date.now();
+  const totalPausedMs = goal.totalPausedMs ?? 0;
+  const rawElapsed = state.sessionGoalStartTime ? now - state.sessionGoalStartTime : 0;
+  const activeElapsed = Math.max(0, rawElapsed - totalPausedMs);
+  const turns = state.sessionGoalTurnCount ?? 0;
+  const elapsedStr = formatElapsed(activeElapsed);
+  const tokens = goal.evalTokens ?? 0;
+  const isPaused = goal.paused ?? false;
+
+  const lines: string[] = [];
+  const statusIcon = isPaused ? '⏸' : '◎';
+  const statusLabel = isPaused ? 'PAUSED' : 'ACTIVE';
+  lines.push(`${statusIcon} Goal [${statusLabel}]  ${goal.goal}`);
+  lines.push('');
+
+  // Time + turns
+  const parts: string[] = [`elapsed ${elapsedStr}`, `turns ${turns}`];
+  if (tokens > 0) parts.push(`eval tokens ${tokens.toLocaleString()}`);
+  lines.push(`  ${parts.join('  ·  ')}`);
+
+  // Bounds + budget warnings
+  const warnings: string[] = [];
+  if (goal.maxTurns) {
+    const ratio = turns / goal.maxTurns;
+    lines.push(`  turns:  ${renderTextProgressBar(ratio)}  (${turns}/${goal.maxTurns})`);
+    if (ratio >= WARN_THRESHOLD) warnings.push(`${Math.round(ratio * 100)}% of turn budget used`);
+  }
+  if (goal.maxMinutes) {
+    const elapsedMinutes = activeElapsed / 60_000;
+    const ratio = elapsedMinutes / goal.maxMinutes;
+    lines.push(`  time:   ${renderTextProgressBar(ratio)}  (${Math.round(elapsedMinutes)}/${goal.maxMinutes} min)`);
+    if (ratio >= WARN_THRESHOLD) warnings.push(`${Math.round(ratio * 100)}% of time budget used`);
+  }
+  if (goal.maxTurns && turns >= goal.maxTurns) warnings.push('turn budget exhausted — goal will be cleared on next clear or session end');
+  if (goal.maxMinutes && activeElapsed / 60_000 >= goal.maxMinutes) warnings.push('time budget exhausted');
+
+  // Evaluator feedback
+  if (goal.lastReason) {
+    lines.push('');
+    lines.push(`  evaluator: ${goal.lastReason}`);
+  }
+
+  // Linked workflows
+  if (goal.linkedWorkflowRunIds && goal.linkedWorkflowRunIds.length > 0) {
+    lines.push('');
+    lines.push(`  workflows: ${goal.linkedWorkflowRunIds.length} linked run${goal.linkedWorkflowRunIds.length === 1 ? '' : 's'} (see /workflow)`);
+  }
+
+  // Permission mode
+  lines.push('');
+  lines.push(`  permissions: ${state.toolPermissionContext?.mode ?? 'unknown'}`);
+
+  if (warnings.length > 0) {
+    lines.push('');
+    for (const w of warnings) lines.push(`  ⚠ ${w}`);
+  }
+
+  return lines.join('\n');
+}
+
+/** Compose a status block for a recently finished goal. */
+function renderAchievedStatus(goal: GoalState): string {
+  const elapsed = goal.endedAt && goal.setAt ? formatElapsed(goal.endedAt - goal.setAt - (goal.totalPausedMs ?? 0)) : '0s';
+  const turns = goal.turnCount ?? 0;
+  const tokens = goal.evalTokens ?? 0;
+  const lines: string[] = [];
+  const statusIcon = goal.achieved ? '✓' : '◎';
+  const statusLabel = goal.achieved ? 'ACHIEVED' : 'CLEARED';
+  lines.push(`${statusIcon} Last goal [${statusLabel}]  ${goal.goal}`);
+  lines.push('');
+  const parts: string[] = [`elapsed ${elapsed}`, `turns ${turns}`];
+  if (tokens > 0) parts.push(`eval tokens ${tokens.toLocaleString()}`);
+  if (goal.endedAt) parts.push(`ended ${new Date(goal.endedAt).toLocaleString()}`);
+  lines.push(`  ${parts.join('  ·  ')}`);
+  if (goal.lastReason) {
+    lines.push('');
+    lines.push(`  last evaluator: ${goal.lastReason}`);
+  }
+  return lines.join('\n');
+}
+
+function renderNoGoalHelp(): string {
+  return [
+    '◎ No goal set.',
+    '',
+    '  /goal <text>              set a goal (claude works until the condition holds)',
+    '  /goal edit <text>         update the condition (keeps turn count + timer)',
+    '  /goal status              show current or last-finished goal',
+    '  /goal pause | resume      pause / resume autonomous execution',
+    '  /goal clear               remove the active goal',
+    '',
+    '  Bound a run with:  /goal "all tests pass or stop after 20 turns"',
+    '  Run unattended:    /goal "build is green"  +  --permission-mode auto',
+  ].join('\n');
+}
+
+type AppStateSnapshot = {
+  sessionGoal?: string;
+  sessionGoalStartTime?: number;
+  sessionGoalTurnCount?: number;
+  toolPermissionContext?: { mode?: string };
+};
+
 export async function call(
   onDone: LocalJSXCommandOnDone,
   context: ToolUseContext & LocalJSXCommandContext,
   args: string,
 ): Promise<null> {
   const trimmed = args?.trim() ?? '';
-  const clearAliases = ['clear', 'stop', 'off', 'reset', 'none', 'cancel'];
+  const tokens = trimmed ? trimmed.split(/\s+/) : [];
+  const verbRaw = (tokens[0] || '').toLowerCase();
+  const rest = tokens.slice(1).join(' ').trim();
+  const appState = context.getAppState();
 
-  // Check if hooks are disabled — goal turn tracking depends on hooks for
-  // counting, and a missing hook can cause the indicator to hang instead of
-  // resolving. Show a clear message rather than silently stalling.
+  // ── Hooks disabled gate ──────────────────────────────────────────────────
+  // Goal turn tracking depends on hooks. Show a clear message rather
+  // than silently stalling. The check is skipped for the read-only
+  // status / clear verbs since those don't need turn tracking.
   if (
-    trimmed &&
-    !clearAliases.includes(trimmed.toLowerCase()) &&
-    trimmed.toLowerCase() !== 'pause' &&
-    trimmed.toLowerCase() !== 'resume'
+    rest &&
+    !VERB_CLEAR.has(verbRaw) &&
+    !VERB_PAUSE.has(verbRaw) &&
+    !VERB_RESUME.has(verbRaw) &&
+    !VERB_SET.has(verbRaw)
   ) {
     const settings = getSettings_DEPRECATED();
     if (settings.disableAllHooks || settings.allowManagedHooksOnly) {
+      const reason = settings.disableAllHooks ? 'disableAllHooks' : 'allowManagedHooksOnly';
       onDone(
-        `Goal '${trimmed}' cannot be tracked: hooks are disabled (${settings.disableAllHooks ? 'disableAllHooks' : 'allowManagedHooksOnly'}). Goal-based turn tracking requires hooks to be enabled.`,
+        `◎ Goal cannot be tracked: hooks are disabled (${reason}). Goal-based turn tracking requires hooks to be enabled.`,
         { display: 'system' },
       );
       return null;
     }
   }
 
-  const state = context.getAppState();
-
-  // ── Pause goal ──────────────────────────────────────────────────────────
-  if (trimmed.toLowerCase() === 'pause') {
+  // ── Pause ────────────────────────────────────────────────────────────────
+  if (VERB_PAUSE.has(verbRaw)) {
     const goalState = getFullGoalState();
     if (!goalState?.goal) {
-      onDone('No active goal to pause.', { display: 'system' });
+      onDone('◎ No active goal to pause.', { display: 'system' });
       return null;
     }
     if (goalState.paused) {
-      onDone('Goal is already paused. Use /goal resume to continue.', { display: 'system' });
+      onDone('◎ Goal is already paused. Use /goal resume to continue.', { display: 'system' });
       return null;
     }
 
     const restoredMode = goalState.preGoalMode;
     goalState.paused = true;
     goalState.pausedAt = Date.now();
+    goalState.lastReason = 'paused by user';
     setFullGoalState(goalState);
 
     context.setAppState(prev => ({
@@ -90,33 +226,37 @@ export async function call(
         : prev.toolPermissionContext,
     }));
 
-    const restoreMsg = restoredMode ? ` Permission mode restored to '${restoredMode}'.` : '';
-    onDone(`⏸ Goal paused: "${goalState.goal}"${restoreMsg}\nUse /goal resume to continue.`, { display: 'system' });
+    const restoreMsg = restoredMode ? `  permissions restored to '${restoredMode}'.` : '';
+    onDone(`⏸ Goal paused: "${goalState.goal}"\n  ${formatElapsed(Date.now() - (goalState.setAt ?? Date.now()))} elapsed · ${goalState.turnCount ?? 0} turns.${restoreMsg}\n  Use /goal resume to continue.`, { display: 'system' });
     return null;
   }
 
-  // ── Resume goal ─────────────────────────────────────────────────────────
-  if (trimmed.toLowerCase() === 'resume') {
+  // ── Resume ───────────────────────────────────────────────────────────────
+  if (VERB_RESUME.has(verbRaw)) {
     const goalState = getFullGoalState();
     if (!goalState?.goal) {
-      onDone('No goal to resume. Set one with /goal <text>.', { display: 'system' });
+      onDone('◎ No goal to resume. Set one with /goal <text>.', { display: 'system' });
       return null;
     }
     if (!goalState.paused) {
-      onDone('Goal is not paused — it is already active.', { display: 'system' });
+      onDone('◎ Goal is not paused — it is already active.', { display: 'system' });
       return null;
     }
 
-    // Accumulate paused time
     const pausedMs = goalState.pausedAt ? Date.now() - goalState.pausedAt : 0;
     goalState.totalPausedMs = (goalState.totalPausedMs ?? 0) + pausedMs;
     goalState.paused = false;
     goalState.pausedAt = undefined;
+    // Clear the paused reason so the status view goes back to
+    // "evaluator feedback" rather than "paused by user" — the
+    // evaluator will overwrite lastReason on its next pass anyway.
+    goalState.lastReason = undefined;
     setFullGoalState(goalState);
 
     context.setAppState(prev => ({
       ...prev,
       sessionGoalPaused: false,
+      sessionGoalTotalPausedMs: goalState.totalPausedMs,
       toolPermissionContext: {
         ...prev.toolPermissionContext,
         mode: 'bypassPermissions',
@@ -126,7 +266,7 @@ export async function call(
     const elapsed = goalState.setAt ? formatElapsed(Date.now() - goalState.setAt - (goalState.totalPausedMs ?? 0)) : '';
     const turns = goalState.turnCount ?? 0;
     onDone(
-      `▶ Goal resumed: "${goalState.goal}"\nElapsed: ${elapsed} · ${turns} turns · Permissions: bypassPermissions`,
+      `▶ Goal resumed: "${goalState.goal}"\n  ${elapsed} elapsed · ${turns} turns · permissions: bypassPermissions`,
       {
         display: 'system',
         shouldQuery: true,
@@ -138,88 +278,78 @@ export async function call(
     return null;
   }
 
-  // ── Show current goal with enhanced stats ───────────────────────────────
-  if (!trimmed) {
-    const currentGoal = state.sessionGoal;
+  // ── Edit (replace condition, keep lifecycle) ─────────────────────────────
+  if (VERB_EDIT.has(verbRaw) && rest) {
+    const goalState = getFullGoalState();
+    if (!goalState?.goal) {
+      onDone('◎ No active goal to edit. Use /goal <text> to set one first.', { display: 'system' });
+      return null;
+    }
+    const settings = getSettings_DEPRECATED();
+    if (settings.disableAllHooks || settings.allowManagedHooksOnly) {
+      const reason = settings.disableAllHooks ? 'disableAllHooks' : 'allowManagedHooksOnly';
+      onDone(`◎ Goal cannot be edited: hooks are disabled (${reason}).`, { display: 'system' });
+      return null;
+    }
+    const { condition, maxTurns, maxMinutes } = parseGoalBounds(rest);
+    const updated: GoalState = {
+      ...goalState,
+      goal: rest,
+      condition,
+      maxTurns,
+      maxMinutes,
+    };
+    setFullGoalState(updated);
+    context.setAppState(prev => ({ ...prev, sessionGoal: rest }));
+    const bounds: string[] = [];
+    if (maxTurns) bounds.push(`max ${maxTurns} turns`);
+    if (maxMinutes) bounds.push(`max ${maxMinutes} min`);
+    const boundsMsg = bounds.length > 0 ? ` (${bounds.join(', ')})` : '';
+    onDone(`◎ Goal updated.${boundsMsg}\n  "${rest}"`, {
+      display: 'system',
+      shouldQuery: true,
+      metaMessages: [`Your active goal condition has been updated to: "${rest}".`],
+    });
+    return null;
+  }
+
+  // ── Status (no args or `status`/`show`) ──────────────────────────────────
+  if (VERB_SET.has(verbRaw) && !rest) {
+    const currentGoal = appState.sessionGoal;
     if (currentGoal) {
       const goalState = getFullGoalState();
-      const now = Date.now();
-      const totalPausedMs = goalState?.totalPausedMs ?? 0;
-      const rawElapsed = state.sessionGoalStartTime ? now - state.sessionGoalStartTime : 0;
-      const activeElapsed = rawElapsed - totalPausedMs;
-      const turns = state.sessionGoalTurnCount ?? 0;
-      const elapsedStr = formatElapsed(activeElapsed);
-      const tokens = goalState?.evalTokens ?? 0;
-      const isPaused = goalState?.paused ?? false;
-
-      // Build output lines
-      const lines: string[] = [];
-
-      // Header
-      const statusIcon = isPaused ? '⏸' : '◎';
-      const statusLabel = isPaused ? 'PAUSED' : 'ACTIVE';
-      lines.push(`${statusIcon} Goal [${statusLabel}]`);
-      lines.push(`  "${currentGoal}"`);
-      lines.push('');
-
-      // Progress section
-      lines.push(`  ⏱ Elapsed: ${elapsedStr}  ·  🔄 Turns: ${turns}`);
-
-      // Turn progress bar
-      if (goalState?.maxTurns) {
-        const ratio = turns / goalState.maxTurns;
-        lines.push(`  Turns:   ${renderTextProgressBar(ratio)}  (${turns}/${goalState.maxTurns})`);
+      if (goalState) {
+        onDone(renderActiveStatus(appState as AppStateSnapshot, goalState), { display: 'system' });
+      } else {
+        onDone(`◎ Goal [ACTIVE]  ${currentGoal}\n  (state file missing — using fallback)`, { display: 'system' });
       }
-
-      // Time progress bar
-      if (goalState?.maxMinutes) {
-        const elapsedMinutes = activeElapsed / 60_000;
-        const ratio = elapsedMinutes / goalState.maxMinutes;
-        lines.push(
-          `  Time:    ${renderTextProgressBar(ratio)}  (${Math.round(elapsedMinutes)}/${goalState.maxMinutes} min)`,
-        );
-      }
-
-      // Eval stats
-      if (tokens > 0) {
-        lines.push(`  📊 Eval tokens: ${tokens.toLocaleString()}`);
-      }
-
-      // Last evaluator feedback
-      if (goalState?.lastReason) {
-        lines.push('');
-        lines.push(`  💬 Last check: ${goalState.lastReason}`);
-      }
-
-      // Bounds summary
-      const bounds: string[] = [];
-      if (goalState?.maxTurns) bounds.push(`${goalState.maxTurns} turns`);
-      if (goalState?.maxMinutes) bounds.push(`${goalState.maxMinutes} min`);
-      if (bounds.length > 0) {
-        lines.push(`  ⛔ Limits: ${bounds.join(', ')}`);
-      }
-
-      // Permission mode
-      lines.push('');
-      lines.push(`  🔓 Permission mode: ${state.toolPermissionContext?.mode ?? 'unknown'}`);
-
-      onDone(lines.join('\n'), { display: 'system' });
     } else {
-      onDone(
-        'No goal set.\n\nUsage:\n  /goal <text>              Set a goal\n  /goal <text> or stop after 20 turns   Set with turn limit\n  /goal clear               Remove goal\n  /goal pause               Pause goal\n  /goal resume              Resume paused goal',
-        { display: 'system' },
-      );
+      const last = getLastAchieved();
+      if (last) {
+        onDone(renderAchievedStatus(last), { display: 'system' });
+      } else {
+        onDone(renderNoGoalHelp(), { display: 'system' });
+      }
     }
     return null;
   }
 
-  // ── Clear goal ──────────────────────────────────────────────────────────
-  if (clearAliases.includes(trimmed.toLowerCase())) {
+  // ── Clear ────────────────────────────────────────────────────────────────
+  if (VERB_CLEAR.has(verbRaw) && !rest) {
     const goalState = getFullGoalState();
     const restoredMode = goalState?.preGoalMode;
-    const turns = goalState?.turnCount ?? state.sessionGoalTurnCount ?? 0;
-    const elapsed = goalState?.setAt ? formatElapsed(Date.now() - goalState.setAt) : '0s';
+    const turns = goalState?.turnCount ?? appState.sessionGoalTurnCount ?? 0;
+    const pausedMs = goalState?.totalPausedMs ?? 0;
+    const elapsed = goalState?.setAt ? formatElapsed(Date.now() - goalState.setAt - pausedMs) : '0s';
     const tokens = goalState?.evalTokens ?? 0;
+
+    // Record a manual-clear reason so the post-clear status view
+    // (renderAchievedStatus) can distinguish "user gave up" from
+    // "evaluator said achieved". Use a non-`undefined` value so the
+    // lastReason branch renders in the cleared view.
+    if (goalState) {
+      setFullGoalState({ ...goalState, lastReason: 'manually cleared', endedAt: Date.now() });
+    }
 
     context.setAppState(prev => ({
       ...prev,
@@ -227,6 +357,7 @@ export async function call(
       sessionGoalStartTime: undefined,
       sessionGoalTurnCount: undefined,
       sessionGoalPaused: undefined,
+      sessionGoalTotalPausedMs: undefined,
       toolPermissionContext: restoredMode
         ? { ...prev.toolPermissionContext, mode: restoredMode }
         : prev.toolPermissionContext,
@@ -234,15 +365,17 @@ export async function call(
     setFullGoalState(null);
 
     const statsLine = `${elapsed} · ${turns} turns${tokens > 0 ? ` · ${tokens.toLocaleString()} eval tokens` : ''}`;
-    const restoreMsg = restoredMode ? `\n  🔒 Permission mode restored to '${restoredMode}'` : '';
-    onDone(`◎ Goal cleared.\n  📊 Stats: ${statsLine}${restoreMsg}`, { display: 'system' });
+    const restoreMsg = restoredMode ? `\n  permissions restored to '${restoredMode}'` : '';
+    onDone(
+      `◎ Goal cleared.\n  ${statsLine}${restoreMsg}\n  (run /goal again to see the finished stats next time)`,
+      { display: 'system' },
+    );
     return null;
   }
 
-  // ── Parse goal condition and bounds ─────────────────────────────────────
+  // ── Set (set or replace) ─────────────────────────────────────────────────
   const { condition, maxTurns, maxMinutes } = parseGoalBounds(trimmed);
 
-  // ── Set goal ────────────────────────────────────────────────────────────
   const goalState: GoalState = {
     goal: trimmed,
     condition,
@@ -253,7 +386,7 @@ export async function call(
     evalTokens: 0,
     lastReason: undefined,
     achieved: false,
-    preGoalMode: state.toolPermissionContext?.mode,
+    preGoalMode: appState.toolPermissionContext?.mode,
     paused: false,
     totalPausedMs: 0,
   };
@@ -264,6 +397,7 @@ export async function call(
     sessionGoalStartTime: Date.now(),
     sessionGoalTurnCount: 0,
     sessionGoalPaused: false,
+    sessionGoalTotalPausedMs: 0,
     standaloneAgentContext: prev.standaloneAgentContext ? { ...prev.standaloneAgentContext } : undefined,
     toolPermissionContext: {
       ...prev.toolPermissionContext,
@@ -272,31 +406,26 @@ export async function call(
   }));
   setFullGoalState(goalState);
 
-  // Build structured confirmation
   const lines: string[] = [];
   lines.push('◎ Goal activated');
   lines.push(`  "${trimmed}"`);
   lines.push('');
 
-  // Show parsed condition if different from raw input
   if (condition !== trimmed) {
-    lines.push(`  📋 Condition: "${condition}"`);
+    lines.push(`  condition: "${condition}"`);
   }
 
-  // Show bounds
   const bounds: string[] = [];
-  if (maxTurns) bounds.push(`⏱ Stop after ${maxTurns} turns`);
-  if (maxMinutes) bounds.push(`⏱ Stop after ${maxMinutes} min`);
+  if (maxTurns) bounds.push(`stop after ${maxTurns} turns`);
+  if (maxMinutes) bounds.push(`stop after ${maxMinutes} min`);
   if (bounds.length > 0) {
-    lines.push(`  ${bounds.join('  ·  ')}`);
+    lines.push(`  bounds: ${bounds.join('  ·  ')}`);
   }
 
-  // Show permission change
-  const prevMode = state.toolPermissionContext?.mode ?? 'default';
-  lines.push(`  🔓 Permissions: ${prevMode} → bypassPermissions`);
+  const prevMode = appState.toolPermissionContext?.mode ?? 'default';
+  lines.push(`  permissions: ${prevMode} → bypassPermissions`);
   lines.push('');
-  lines.push('  Claude will work autonomously toward this goal.');
-  lines.push('  Use /goal to check progress, /goal pause to pause, /goal clear to stop.');
+  lines.push('  claude works autonomously. /goal to check, /goal pause to pause, /goal clear to stop.');
 
   onDone(lines.join('\n'), {
     display: 'system',
@@ -307,3 +436,5 @@ export async function call(
   });
   return null;
 }
+
+export { linkWorkflowToActiveGoal };
