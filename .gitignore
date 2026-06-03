@@ -8,9 +8,8 @@ dist/
 .next/
 build/
 out/
-bin/
-!bin/
 bin/*
+!bin/clew.cjs
 !bin/ceph
 
 # CodeIndex cache
@@ -75,6 +74,7 @@ bun-linux-x64/
 # Cache
 .cache/
 .eslintcache
+*.embedding.json
 
 # Vendored binaries (downloaded locally, not committed)
 src/utils/vendor/ripgrep/
