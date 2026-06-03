@@ -300,7 +300,18 @@ Use the private reporting process described in [SECURITY.md](SECURITY.md).
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md).
+### 0.0.1 (2026-05-30)
+
+- Initial Clew public release with `clew` and `clewcode` CLI commands.
+- Multi-provider routing, tools, plugins, skills, MCP, LSP, agents, daemon mode, scheduled tasks, bridge, research, and memory systems.
+- **Goal command overhaul** — simplified `/goal` parsing with pause state, edit, status, and last-achieved recall.
+- **Ultracode** — auto-classifier, dynamic workflow coordinator, and `workflow`/`ultracode` commands.
+- **Spinner component** with ignore directory configuration for crawl data.
+- **Background Agents** — `!bg` shell tasks, dispatch autocomplete, PR columns, agent logout.
+- **HTML docs** redesigned with clean Anthropic-style theme.
+- Fixed `/model` and `/providers` picker persistence bug; removed stale `CLAUDE_CODE_TEAM_NAME` references.
+
+See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ## License
 

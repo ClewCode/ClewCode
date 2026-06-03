@@ -222,6 +222,7 @@ export function createSkillCommand({
   hasUserSpecifiedDescription,
   markdownContent,
   allowedTools,
+  disallowedTools,
   argumentHint,
   argumentNames,
   whenToUse,

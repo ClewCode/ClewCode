@@ -20,7 +20,8 @@ import type { Task } from '../utils/tasks.js';
 import { useAppState } from '../state/AppState.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { stringWidth } from '../ink/stringWidth.js';
-import { getDefaultCharacters, type SpinnerMode } from './Spinner/index.js';
+import { getDefaultCharacters } from './Spinner/index.js';
+import type { SpinnerMode } from './Spinner/index.js';
 import { SpinnerAnimationRow } from './Spinner/SpinnerAnimationRow.js';
 import { useSettings } from '../hooks/useSettings.js';
 import { isInProcessTeammateTask } from '../tasks/InProcessTeammateTask/types.js';
@@ -38,9 +39,7 @@ import { useAnimationFrame } from '../ink.js';
 import { getGlobalConfig } from '../utils/config.js';
 export type { SpinnerMode } from './Spinner/index.js';
 
-const DEFAULT_CHARACTERS = getDefaultCharacters();
-
-const SPINNER_FRAMES = [...DEFAULT_CHARACTERS, ...[...DEFAULT_CHARACTERS].reverse()];
+const SPINNER_FRAMES = getDefaultCharacters();
 
 type Props = {
   mode: SpinnerMode;
