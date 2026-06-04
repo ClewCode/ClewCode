@@ -80,7 +80,7 @@ clewcode
 ### 从源码运行
 
 ```bash id="1hwbnw"
-git clone https://github.com/JonusNattapong/claudecode.git
+git clone https://github.com/JonusNattapong/ClewCode.git
 cd claudecode
 
 bun install

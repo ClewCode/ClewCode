@@ -80,7 +80,7 @@ clewcode
 ### รันจากซอร์ส
 
 ```bash
-git clone https://github.com/JonusNattapong/claudecode.git
+git clone https://github.com/JonusNattapong/ClewCode.git
 cd claudecode
 
 bun install
