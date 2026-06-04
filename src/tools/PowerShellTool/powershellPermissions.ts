@@ -1336,7 +1336,7 @@ export async function powershellToolHasPermission(
     // the RAW name pre-strip — `scripts\Get-Content` → 'application' (has `\`).
     // Module-qualified cmdlets also classify 'application' — fail-safe over-fire.
     // An application should NEVER be auto-allowed by a cmdlet allow rule.
-    if (subResult.behavior === 'allow' && element.nameType !== 'application' && !hasSymlinkCreate) {
+    if (subResult.behavior === 'allow' && (element.nameType !== 'application' || ruleContentNamesElement(subResult, element)) && !hasSymlinkCreate) {
       // SECURITY: User allow rule asserts the cmdlet is safe, NOT that
       // arbitrary variable expansion through it is safe. A user who allows
       // PowerShell(Write-Output:*) did not intend to auto-allow
@@ -1360,8 +1360,9 @@ export async function powershellToolHasPermission(
       continue;
     }
     if (subResult.behavior === 'allow') {
-      // nameType === 'application' with a matching allow rule: the rule was
-      // written for a cmdlet, but this is a script/executable masquerading.
+      // nameType === 'application' and rule did NOT explicitly name the app
+      // (ruleContentNamesElement returned false above). The rule was written
+      // for a cmdlet, but this is a different script/executable masquerading.
       // Don't continue; fall through to approval (NOT deny — the user may
       // actually want to run `scripts\Get-Content` and will see a prompt).
       if (statement !== null) {
@@ -1511,4 +1512,23 @@ export async function powershellToolHasPermission(
     decisionReason,
     suggestions: pendingSuggestions,
   };
+}
+
+/**
+ * Check if the matching allow rule's content explicitly names the same application
+ * as the parsed element. This allows rules like `PowerShell(dotnet.exe build:*)`
+ * to pre-approve `dotnet.exe build src/proj` even though nameType === 'application'.
+ *
+ * Without this check, a user who explicitly writes a rule for a native executable
+ * would still get prompted for every invocation because the nameType gate at step 5
+ * blocks all application-typed elements from rule-based auto-allow.
+ *
+ * Security: this ONLY matches when the rule content starts with the element name.
+ * A rule written for a cmdlet (e.g., `Get-Content:*`) will NOT match a script path
+ * (`scripts\Get-Content /etc/shadow`) because `scripts\Get-Content` !== `Get-Content`.
+ */
+function ruleContentNamesElement(result: PermissionResult, element: ParsedCommandElement): boolean {
+  const ruleContent = result.decisionReason?.type === 'rule' ? result.decisionReason.rule?.ruleValue?.ruleContent : undefined;
+  if (!ruleContent || !element.name) return false;
+  return ruleContent.startsWith(element.name);
 }

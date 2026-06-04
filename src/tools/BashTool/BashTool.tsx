@@ -1062,6 +1062,7 @@ async function* runShellCommand({
   // Only enable for commands that are allowed to be auto-backgrounded
   // and when background tasks are not disabled
   const shouldAutoBackground = !isBackgroundTasksDisabled && isAutobackgroundingAllowed(command);
+  const MAX_OUTPUT_BYTES = 100 * 1024 * 1024; // 100MB — kill runaway output early
   const shellCommand = await exec(command, abortController.signal, 'bash', {
     timeout: timeoutMs,
     onProgress(lastLines, allLines, totalLines, totalBytes, isIncomplete) {
@@ -1069,6 +1070,12 @@ async function* runShellCommand({
       fullOutput = allLines;
       lastTotalLines = totalLines;
       lastTotalBytes = isIncomplete ? totalBytes : 0;
+      // Kill processes spewing unbounded output (e.g. find / -name "*.txt")
+      // before they exhaust system resources (macOS vnode table, disk, memory).
+      if (lastTotalBytes > MAX_OUTPUT_BYTES) {
+        abortController.abort(new Error(`Output exceeded ${(MAX_OUTPUT_BYTES / 1024 / 1024).toFixed(0)}MB limit`));
+        return;
+      }
       // Wake the generator so it yields the new progress data
       const resolve = resolveProgress;
       if (resolve) {

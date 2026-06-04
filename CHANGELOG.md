@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] — 2026-06-05
+
+### Added
+
+- **MessageDisplay hook infrastructure**: Added `onMessageDisplay` prop to Messages component with transform tracking ref and useEffect. Wired in REPL.tsx via `executeMessageDisplayHooks` with `ToolUseContext`. Enables future session hooks to hide or modify displayed messages.
+
+### Fixed
+
+- **PowerShell prefix/wildcard rules for native executables (Security 2.2)**: Rules like `PowerShell(dotnet.exe build:*)` now correctly pre-approve native executables. Added `ruleContentNamesElement()` check at the `nameType` gate in `powershellPermissions.ts:1339` — when the allow rule explicitly names the same application, the gate allows it through instead of falling through to the approval prompt.
+- **Malformed PowerShell tool calls misclassification (Security 2.4)**: Added `!input?.command` guard in `PowerShellTool.isReadOnly()` — empty/malformed input now defaults to non-read (requires approval) instead of potentially bypassing the permission prompt.
+- **Bash runtime output byte limit (Security 2.5)**: Added 100MB max output threshold in `BashTool.tsx exec()` — kills processes spewing unbounded output (e.g., `find / -name "*.txt"`) before they exhaust system resources (macOS vnode table, disk, memory).
+
+### Changed
+
+- **Commander program name**: `.name('claude')` → `.name('clew')` in `src/main.tsx:1394`.
+- Bumped version to 0.2.1.
+
 ## [0.2.0] — 2026-06-04
 
 ### Added
