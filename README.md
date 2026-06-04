@@ -54,13 +54,13 @@ Key features:
 ### Install Globally
 
 ```bash
-npm install -g @jonusnattapong/clewcode
+npm install -g clew-code
 ```
 
 Or:
 
 ```bash
-bun install -g @jonusnattapong/clewcode
+bun install -g clew-code
 ```
 
 Run the CLI inside a project directory:
@@ -74,7 +74,7 @@ clew
 ### Run From Source
 
 ```bash
-git clone https://github.com/JonusNattapong/claudecode.git
+git clone https://github.com/JonusNattapong/ClewCode.git
 cd claudecode
 
 bun install

@@ -1,5 +1,5 @@
 {
-  "name": "@jonusnattapong/clewcode",
+  "name": "clew-code",
   "version": "0.1.3",
   "description": "ClewCode — multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
@@ -17,12 +17,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JonusNattapong/claudecode.git"
+    "url": "git+https://github.com/JonusNattapong/ClewCode.git"
   },
   "bugs": {
-    "url": "https://github.com/JonusNattapong/claudecode/issues"
+    "url": "https://github.com/JonusNattapong/ClewCode/issues"
   },
-  "homepage": "https://github.com/JonusNattapong/claudecode#readme",
+  "homepage": "https://github.com/JonusNattapong/ClewCode#readme",
   "scripts": {
     "dev": "bun --watch run --define.TRANSCRIPT_CLASSIFIER=true --define.CHICAGO_MCP=true --define.VOICE_MODE=true src/main.tsx",
     "start": "bun run --define.VOICE_MODE=true src/main.tsx",
