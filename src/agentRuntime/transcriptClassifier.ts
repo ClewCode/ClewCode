@@ -229,8 +229,11 @@ export function classifyTranscript(params: {
  */
 export function buildUltracodeSuggestion(result: ClassifierResult): string | null {
   if (!result.shouldSuggestUltracode) return null;
+  const cmd = result.recommendation === 'complex'
+    ? `/effort ultracode`
+    : `/ultracode on`;
   return `◈ ultracode · this task looks ${result.recommendation} (score ${result.score}). ` +
-    `Run \`/ultracode on\` to let Claude auto-decompose it into a parallel dynamic workflow. ` +
+    `Run \`${cmd}\` to let Claude auto-decompose it into a parallel dynamic workflow. ` +
     `${result.reasoning}`;
 }
 
