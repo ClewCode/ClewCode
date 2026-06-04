@@ -70,7 +70,7 @@ function withoutCcdSpawnEnvKeys(env: Record<string, string> | undefined): Record
 /**
  * Compose the strip filters applied to every settings-sourced env object.
  * Also strips NO_COLOR/FORCE_COLOR so settings.json env doesn't affect
- * Claude Code's own UI colors. These are re-added in subprocessEnv() so
+ * Clew Code's own UI colors. These are re-added in subprocessEnv() so
  * subprocesses (Bash tool, MCP, LSP) still see them.
  */
 function filterSettingsEnv(env: Record<string, string> | undefined): Record<string, string> {

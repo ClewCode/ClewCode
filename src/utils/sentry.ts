@@ -2,7 +2,7 @@ import { homedir } from 'os';
 import { logForDebugging } from './debug.js';
 
 /**
- * Sentry Error Reporting utility for Claude Code.
+ * Sentry Error Reporting utility for Clew Code.
  *
  * This module is strictly NO-OP by default. Sentry will only activate when the
  * `SENTRY_DSN` environment variable is set. This means zero external network calls,

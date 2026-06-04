@@ -47,7 +47,7 @@ export function useDiffInIDE({ onChange, toolUseContext, filePath, edits, editMo
   const [hasError, setHasError] = useState(false);
 
   const sha = useMemo(() => randomUUID().slice(0, 6), []);
-  const tabName = useMemo(() => `✻ [Claude Code] ${basename(filePath)} (${sha}) ⧉`, [filePath, sha]);
+  const tabName = useMemo(() => `✻ [Clew Code] ${basename(filePath)} (${sha}) ⧉`, [filePath, sha]);
 
   const shouldShowDiffInIDE =
     hasAccessToIDEExtensionDiffFeature(toolUseContext.options.mcpClients) &&

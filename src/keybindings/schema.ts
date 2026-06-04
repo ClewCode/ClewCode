@@ -213,7 +213,7 @@ export const KeybindingsSchema = lazySchema(() =>
       $docs: z.string().optional().describe('Documentation URL'),
       bindings: z.array(KeybindingBlockSchema()).describe('Array of keybinding blocks by context'),
     })
-    .describe('Claude Code keybindings configuration. Customize keyboard shortcuts by context.'),
+    .describe('Clew Code keybindings configuration. Customize keyboard shortcuts by context.'),
 );
 
 /**

@@ -316,7 +316,7 @@ export class TaskOutput {
       // (and us, via the transcript) what actually happened.
       const code = err instanceof Error && 'code' in err ? String(err.code) : 'unknown';
       logForDebugging(`TaskOutput.#readStdoutFromFile: failed to read ${this.path} (${code}): ${err}`);
-      return `<bash output unavailable: output file ${this.path} could not be read (${code}). This usually means another Claude Code process in the same project deleted it during startup cleanup.>`;
+      return `<bash output unavailable: output file ${this.path} could not be read (${code}). This usually means another Clew Code process in the same project deleted it during startup cleanup.>`;
     }
   }
 

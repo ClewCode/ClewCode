@@ -944,7 +944,7 @@ export function setMeter(
     description: 'Number of git commits created',
   });
   STATE.costCounter = createCounter('claude_code.cost.usage', {
-    description: 'Cost of the Claude Code session',
+    description: 'Cost of the Clew Code session',
     unit: 'USD',
   });
   STATE.tokenCounter = createCounter('claude_code.token.usage', {

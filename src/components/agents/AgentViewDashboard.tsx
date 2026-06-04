@@ -1,5 +1,5 @@
 /**
- * AgentViewDashboard — Full-featured agent view TUI matching official Claude Code spec.
+ * AgentViewDashboard — Full-featured agent view TUI matching official Clew Code spec.
  *
  * Features:
  * - State icons with shape indicators (✻/✽/∙/✢)

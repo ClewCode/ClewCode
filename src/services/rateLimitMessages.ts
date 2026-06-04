@@ -247,7 +247,7 @@ function getWarningUpsellText(rateLimitType: ClaudeAILimits['rateLimitType']): s
 
     // Pro/Max users: prompt to upgrade
     if (subscriptionType === 'pro' || subscriptionType === 'max') {
-      return '/upgrade to keep using Claude Code';
+      return '/upgrade to keep using Clew Code';
     }
   }
 

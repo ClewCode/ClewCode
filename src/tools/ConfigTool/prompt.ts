@@ -3,7 +3,7 @@ import { getModelOptions } from '../../utils/model/modelOptions.js';
 import { isVoiceGrowthBookEnabled } from '../../voice/voiceModeEnabled.js';
 import { getOptionsForSetting, SUPPORTED_SETTINGS } from './supportedSettings.js';
 
-export const DESCRIPTION = 'Get or set Claude Code configuration settings.';
+export const DESCRIPTION = 'Get or set Clew Code configuration settings.';
 
 /**
  * Generate the prompt documentation from the registry
@@ -39,9 +39,9 @@ export function generatePrompt(): string {
 
   const modelSection = generateModelSection();
 
-  return `Get or set Claude Code configuration settings.
+  return `Get or set Clew Code configuration settings.
 
-  View or change Claude Code settings. Use when the user requests configuration changes, asks about current settings, or when adjusting a setting would benefit them.
+  View or change Clew Code settings. Use when the user requests configuration changes, asks about current settings, or when adjusting a setting would benefit them.
 
 
 ## Usage

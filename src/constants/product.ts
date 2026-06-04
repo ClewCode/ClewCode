@@ -2,13 +2,13 @@
  * Product URL — used in attributions, MCP metadata, and links.
  * Override via CLAUDE_CODE_PRODUCT_URL env var (useful for forks).
  */
-export const PRODUCT_URL = process.env.CLAUDE_CODE_PRODUCT_URL || 'https://claude.com/claude-code';
+export const PRODUCT_URL = process.env.CLAUDE_CODE_PRODUCT_URL || 'https://claude.com/clew-code';
 
 /**
  * Product name — used in attributions and UI labels.
  * Override via CLAUDE_CODE_PRODUCT_NAME env var (useful for forks).
  */
-export const PRODUCT_NAME = process.env.CLAUDE_CODE_PRODUCT_NAME || 'Claude Code';
+export const PRODUCT_NAME = process.env.CLAUDE_CODE_PRODUCT_NAME || 'Clew Code';
 
 /**
  * Claude AI base URLs for remote session routing.

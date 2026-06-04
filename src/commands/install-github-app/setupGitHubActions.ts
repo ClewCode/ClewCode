@@ -205,9 +205,9 @@ export async function setupGitHubActions(
 
       if (selectedWorkflows.includes('claude-review')) {
         workflows.push({
-          path: '.github/workflows/claude-code-review.yml',
+          path: '.github/workflows/clew-code-review.yml',
           content: CODE_REVIEW_PLUGIN_WORKFLOW_CONTENT,
-          message: 'Claude Code Review workflow',
+          message: 'Clew Code Review workflow',
         });
       }
 

@@ -11,7 +11,7 @@ export function createResearchPlan(query: string, mode: ResearchMode): ResearchP
     case 'compare':
       subQuestions.push(
         `What are the core components and features of the options in: "${query}"?`,
-        `What are the strengths and weaknesses of each option relative to Claude Code?`,
+        `What are the strengths and weaknesses of each option relative to Clew Code?`,
         `Which option has the best integration path and lowest risk?`,
       );
       doneCriteria.push(
@@ -30,7 +30,7 @@ export function createResearchPlan(query: string, mode: ResearchMode): ResearchP
         `What is the underlying mechanism or spec for: "${query}"?`,
         `What are the best practices and design patterns recommended for this?`,
         `Are there any known bugs, pitfalls, or edge cases in our codebase?`,
-        `How should we design the implementation for Claude Code?`,
+        `How should we design the implementation for Clew Code?`,
       );
       doneCriteria.push(
         'Deep-dive analysis of official docs and repo context completed',

@@ -98,7 +98,7 @@ export function shouldAutoTriggerWorkflow(params: {
  * Whether a confirmation should be shown before kicking off the workflow.
  * We confirm the first workflow in a session, then trust subsequent ones
  * (the announcement's behavior: "the first time a workflow triggers,
- * Claude Code shows what's about to run and asks you to confirm").
+ * Clew Code shows what's about to run and asks you to confirm").
  */
 export function shouldRequestConfirmation(state: UltracodeState): boolean {
   return state.workflowsStarted === 0 && !state.confirmedOnce;

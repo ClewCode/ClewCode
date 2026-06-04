@@ -333,7 +333,7 @@ export async function* runToolUse(
         content: [
           {
             type: 'tool_result',
-            content: `<tool_use_error>Error: Tool "${toolName}" is not available in the current context. This tool exists in Claude Code but is not available in your current session or environment. Please consult the list of available tools provided in the system prompt to see what tools you can use.</tool_use_error>`,
+            content: `<tool_use_error>Error: Tool "${toolName}" is not available in the current context. This tool exists in Clew Code but is not available in your current session or environment. Please consult the list of available tools provided in the system prompt to see what tools you can use.</tool_use_error>`,
             is_error: true,
             tool_use_id: toolUse.id,
           },

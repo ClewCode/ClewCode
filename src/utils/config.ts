@@ -364,7 +364,7 @@ export type GlobalConfig = {
   spinnerColor?: string; // Spinner color set via /color command
 
   // First start time tracking
-  firstStartTime?: string; // ISO timestamp when Claude Code was first started on this machine
+  firstStartTime?: string; // ISO timestamp when Clew Code was first started on this machine
 
   messageIdleNotifThresholdMs: number; // How long the user has to have been idle to get a notification that Claude is done generating
 
@@ -387,8 +387,8 @@ export type GlobalConfig = {
   inputNeededNotifEnabled?: boolean;
   agentPushNotifEnabled?: boolean;
 
-  // Claude Code usage tracking
-  claudeCodeFirstTokenDate?: string; // ISO timestamp of the user's first Claude Code OAuth token
+  // Clew Code usage tracking
+  claudeCodeFirstTokenDate?: string; // ISO timestamp of the user's first Clew Code OAuth token
 
   // Model switch callout tracking (ant-only)
   modelSwitchCalloutDismissed?: boolean; // Whether user chose "Don't show again"
@@ -497,7 +497,7 @@ export type GlobalConfig = {
   lspRecommendationNeverPlugins?: string[]; // Plugin IDs to never suggest
   lspRecommendationIgnoredCount?: number; // Track ignored recommendations (stops after 5)
 
-  // Claude Code hint protocol state (<claude-code-hint /> tags from CLIs/SDKs).
+  // Clew Code hint protocol state (<claude-code-hint /> tags from CLIs/SDKs).
   // Nested by hint type so future types (docs, mcp, ...) slot in without new
   // top-level keys.
   claudeCodeHints?: {

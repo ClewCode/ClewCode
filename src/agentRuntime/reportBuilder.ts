@@ -22,7 +22,7 @@ export class ReportBuilder {
 
     // Format Markdown Report
     const lines: string[] = [];
-    lines.push(`# Claude Code Agent Run Report: ${runId}`);
+    lines.push(`# Clew Code Agent Run Report: ${runId}`);
     lines.push(``);
     lines.push(`## Run Metadata`);
     lines.push(`- **Task:** ${run.task}`);

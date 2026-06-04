@@ -31,9 +31,9 @@ import { getUserBinDir, getXDGDataHome } from '../xdg.js';
 import { DEEP_LINK_PROTOCOL } from './parseDeepLink.js';
 
 export const MACOS_BUNDLE_ID = 'com.anthropic.claude-code-url-handler';
-const APP_NAME = 'Claude Code URL Handler';
+const APP_NAME = 'Clew Code URL Handler';
 const DESKTOP_FILE_NAME = 'claude-code-url-handler.desktop';
-const MACOS_APP_NAME = 'Claude Code URL Handler.app';
+const MACOS_APP_NAME = 'Clew Code URL Handler.app';
 
 // Shared between register* (writes these paths/values) and
 // isProtocolHandlerCurrent (reads them back). Keep the writer and reader
@@ -103,7 +103,7 @@ async function registerMacos(claudePath: string): Promise<void> {
   <array>
     <dict>
       <key>CFBundleURLName</key>
-      <string>Claude Code Deep Link</string>
+      <string>Clew Code Deep Link</string>
       <key>CFBundleURLSchemes</key>
       <array>
         <string>${DEEP_LINK_PROTOCOL}</string>
@@ -139,7 +139,7 @@ async function registerLinux(claudePath: string): Promise<void> {
 
   const desktopEntry = `[Desktop Entry]
 Name=${APP_NAME}
-Comment=Handle ${DEEP_LINK_PROTOCOL}:// deep links for Claude Code
+Comment=Handle ${DEEP_LINK_PROTOCOL}:// deep links for Clew Code
 ${linuxExecLine(claudePath)}
 Type=Application
 NoDisplay=true

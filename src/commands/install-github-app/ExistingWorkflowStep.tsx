@@ -40,7 +40,7 @@ export function ExistingWorkflowStep({ repoName, onSelectAction }: ExistingWorkf
 
       <Box flexDirection="column" marginBottom={1}>
         <Text>
-          A Claude workflow file already exists at <Text color="claude">.github/workflows/claude.yml</Text>
+          A Clew Code workflow file already exists at <Text color="claude">.github/workflows/claude.yml</Text>
         </Text>
         <Text dimColor>What would you like to do?</Text>
       </Box>
