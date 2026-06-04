@@ -3616,6 +3616,15 @@ async function run(): Promise<CommanderCommand> {
         // Init app state
         const headlessStore = createStore(headlessInitialState, onChangeAppState);
 
+        // Bootstrap dynamic-workflow globals for the headless/SDK path
+        // (the interactive path does this in AppStateProvider's mount effect).
+        try {
+          const { bootstrapUltracodeGlobals } = require('./agentRuntime/ultracodeBootstrap.js') as typeof import('./agentRuntime/ultracodeBootstrap.js');
+          bootstrapUltracodeGlobals(headlessStore as any);
+        } catch {
+          // bootstrap is best-effort; the app must work without it.
+        }
+
         // Check if bypassPermissions should be disabled based on Statsig gate
         // This runs in parallel to the code below, to avoid blocking the main loop.
         if (toolPermissionContext.mode === 'bypassPermissions' || allowDangerouslySkipPermissions) {

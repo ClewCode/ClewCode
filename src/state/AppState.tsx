@@ -72,6 +72,21 @@ export function AppStateProvider({ children, initialState, onChangeAppState }: P
     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
   }, []);
 
+  // Bootstrap dynamic-workflow (ultracode) globals on mount.
+  // This wires __appState, __ultracodePlannerLlm, etc. into globalThis
+  // so the QueryEngine's tryAutoRunDynamicWorkflow() can use them.
+  // Safe to call once; re-calling replaces without cleanup.
+  useEffect(() => {
+    try {
+      // Dynamic import to avoid circular dependency at module level.
+      const { bootstrapUltracodeGlobals } = require('../agentRuntime/ultracodeBootstrap.js') as typeof import('../agentRuntime/ultracodeBootstrap.js');
+      bootstrapUltracodeGlobals(store as any);
+    } catch {
+      // bootstrap is best-effort; the app must work without it.
+    }
+    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
+  }, []);
+
   // Listen for external settings changes and sync to AppState.
   // This ensures file watcher changes propagate through the app --
   // shared with the headless/SDK path via applySettingsChange.
