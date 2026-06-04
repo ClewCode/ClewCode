@@ -1,6 +1,6 @@
 # Ralph Wiggum Plugin
 
-Implementation of the Ralph Wiggum technique for iterative, self-referential AI development loops in Claude Code.
+Implementation of the Ralph Wiggum technique for iterative, self-referential AI development loops in Clew Code.
 
 ## What is Ralph?
 
@@ -16,7 +16,7 @@ This plugin implements Ralph using a **Stop hook** that intercepts Claude's exit
 # You run ONCE:
 /ralph-loop "Your task description" --completion-promise "DONE"
 
-# Then Claude Code automatically:
+# Then Clew Code automatically:
 # 1. Works on the task
 # 2. Tries to exit
 # 3. Stop hook blocks exit
@@ -176,4 +176,4 @@ Keep trying until success. The loop handles retry logic automatically.
 
 ## For Help
 
-Run `/help` in Claude Code for detailed command reference and examples.
+Run `/help` in Clew Code for detailed command reference and examples.

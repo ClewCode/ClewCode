@@ -300,15 +300,15 @@ async function atomicMoveToInstallPath(stagedBinaryPath: string, installPath: st
 async function installVersionFromPackage(stagingPath: string, installPath: string) {
   try {
     // Extract binary from npm package structure in staging.
-    // Prefer the exact platform match (e.g. claude-cli-native-linux-x64-musl)
+    // Prefer the exact platform match (e.g. clew-code-native-linux-x64-musl)
     // over a partial match, so that when both glibc and musl platform
     // packages are installed, the one matching the current runtime wins.
-    const nodeModulesDir = join(stagingPath, 'node_modules', '@anthropic-ai');
+    const nodeModulesDir = join(stagingPath, 'node_modules');
     const entries = await readdir(nodeModulesDir);
     const platform = getPlatform();
     const nativePackage =
-      entries.find((entry: string) => entry === `claude-cli-native-${platform}`) ??
-      entries.find((entry: string) => entry.startsWith('claude-cli-native-'));
+      entries.find((entry: string) => entry === `clew-code-native-${platform}`) ??
+      entries.find((entry: string) => entry.startsWith('clew-code-native-'));
 
     if (!nativePackage) {
       logEvent('tengu_native_install_package_failure', {
@@ -1533,8 +1533,8 @@ export async function cleanupNpmInstallations(): Promise<{
   const warnings: string[] = [];
   let removed = 0;
 
-  // Always attempt to remove @anthropic-ai/claude-code
-  const codePackageResult = await attemptNpmUninstall('@anthropic-ai/claude-code');
+  // Always attempt to remove clew-code
+  const codePackageResult = await attemptNpmUninstall('clew-code');
   if (codePackageResult.success) {
     removed++;
     if (codePackageResult.warning) {
@@ -1545,7 +1545,7 @@ export async function cleanupNpmInstallations(): Promise<{
   }
 
   // Also attempt to remove MACRO.PACKAGE_URL if it's defined and different
-  if (MACRO.PACKAGE_URL && MACRO.PACKAGE_URL !== '@anthropic-ai/claude-code') {
+  if (MACRO.PACKAGE_URL && MACRO.PACKAGE_URL !== 'clew-code') {
     const macroPackageResult = await attemptNpmUninstall(MACRO.PACKAGE_URL);
     if (macroPackageResult.success) {
       removed++;

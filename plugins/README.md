@@ -1,10 +1,10 @@
-# Claude Code Plugins
+# Clew Code Plugins
 
-This directory contains some official Claude Code plugins that extend functionality through custom commands, agents, and workflows. These are examples of what's possible with the Claude Code plugin system—many more plugins are available through community marketplaces.
+This directory contains some official Clew Code plugins that extend functionality through custom commands, agents, and workflows. These are examples of what's possible with the Clew Code plugin system—many more plugins are available through community marketplaces.
 
-## What are Claude Code Plugins?
+## What are Clew Code Plugins?
 
-Claude Code plugins are extensions that enhance Claude Code with custom slash commands, specialized agents, hooks, and MCP servers. Plugins can be shared across projects and teams, providing consistent tooling and workflows.
+Clew Code plugins are extensions that enhance Clew Code with custom slash commands, specialized agents, hooks, and MCP servers. Plugins can be shared across projects and teams, providing consistent tooling and workflows.
 
 Learn more in the [official plugins documentation](https://docs.claude.com/en/docs/claude-code/plugins).
 
@@ -28,25 +28,25 @@ Learn more in the [official plugins documentation](https://docs.claude.com/en/do
 
 ## Installation
 
-These plugins are included in the Claude Code repository. To use them in your own projects:
+These plugins are included in the Clew Code repository. To use them in your own projects:
 
-1. Install Claude Code globally:
+1. Install Clew Code globally:
 ```bash
-npm install -g @anthropic-ai/claude-code
+npm install -g clew-code
 ```
 
-2. Navigate to your project and run Claude Code:
+2. Navigate to your project and run Clew Code:
 ```bash
-claude
+clew
 ```
 
-3. Use the `/plugin` command to install plugins from marketplaces, or configure them in your project's `.claude/settings.json`.
+3. Use the `/plugin` command to install plugins from marketplaces, or configure them in your project's `.clew/settings.json`.
 
 For detailed plugin installation and configuration, see the [official documentation](https://docs.claude.com/en/docs/claude-code/plugins).
 
 ## Plugin Structure
 
-Each plugin follows the standard Claude Code plugin structure:
+Each plugin follows the standard Clew Code plugin structure:
 
 ```
 plugin-name/
@@ -72,6 +72,6 @@ When adding new plugins to this directory:
 
 ## Learn More
 
-- [Claude Code Documentation](https://docs.claude.com/en/docs/claude-code/overview)
+- [Clew Code Documentation](https://code.claude.com/docs/en/overview)
 - [Plugin System Documentation](https://docs.claude.com/en/docs/claude-code/plugins)
 - [Agent SDK Documentation](https://docs.claude.com/en/api/agent-sdk/overview)

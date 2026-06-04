@@ -21,7 +21,7 @@ The hookify plugin makes it simple to create hooks without editing complex `hook
 /hookify Warn me when I use rm -rf commands
 ```
 
-This analyzes your request and creates `.claude/hookify.warn-rm.local.md`.
+This analyzes your request and creates `.clew/hookify.warn-rm.local.md`.
 
 ### 2. Test It Immediately
 
@@ -72,7 +72,7 @@ Enable/disable existing rules through an interactive interface.
 
 ### Simple Rule (Single Pattern)
 
-`.claude/hookify.dangerous-rm.local.md`:
+`.clew/hookify.dangerous-rm.local.md`:
 ```markdown
 ---
 name: block-dangerous-rm
@@ -96,7 +96,7 @@ This command could delete important files. Please:
 
 ### Advanced Rule (Multiple Conditions)
 
-`.claude/hookify.sensitive-files.local.md`:
+`.clew/hookify.sensitive-files.local.md`:
 ```markdown
 ---
 name: warn-sensitive-files
@@ -277,7 +277,7 @@ Set `enabled: true`
 
 Simply delete the `.local.md` file:
 ```bash
-rm .claude/hookify.my-rule.local.md
+rm .clew/hookify.my-rule.local.md
 ```
 
 ### View All Rules
@@ -303,7 +303,7 @@ cc --plugin-dir /path/to/hookify
 ## Troubleshooting
 
 **Rule not triggering:**
-1. Check rule file exists in `.claude/` directory (in project root, not plugin directory)
+1. Check rule file exists in `.clew/` directory (in project root, not plugin directory)
 2. Verify `enabled: true` in frontmatter
 3. Test regex pattern separately
 4. Rules should work immediately - no restart needed

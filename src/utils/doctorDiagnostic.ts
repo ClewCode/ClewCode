@@ -226,8 +226,8 @@ async function detectMultipleInstallations(): Promise<Array<{ type: string; path
   }
 
   // Check for global npm installation
-  const packagesToCheck = ['@anthropic-ai/claude-code'];
-  if (MACRO.PACKAGE_URL && MACRO.PACKAGE_URL !== '@anthropic-ai/claude-code') {
+  const packagesToCheck = ['clew-code'];
+  if (MACRO.PACKAGE_URL && MACRO.PACKAGE_URL !== 'clew-code') {
     packagesToCheck.push(MACRO.PACKAGE_URL);
   }
   const npmResult = await execFileNoThrow('npm', ['-g', 'config', 'get', 'prefix']);
@@ -427,14 +427,14 @@ async function detectConfigurationIssues(type: InstallationType): Promise<Array<
     if (type === 'npm-local' && config.installMethod !== 'local') {
       warnings.push({
         issue: `Running from local installation but config install method is '${config.installMethod}'`,
-        fix: 'Consider using native installation: claude install',
+        fix: 'Consider using native installation: clew install',
       });
     }
 
     if (type === 'native' && config.installMethod !== 'native') {
       warnings.push({
         issue: `Running native installation but config install method is '${config.installMethod}'`,
-        fix: 'Run claude install to update configuration',
+        fix: 'Run clew install to update configuration',
       });
     }
   }
@@ -442,7 +442,7 @@ async function detectConfigurationIssues(type: InstallationType): Promise<Array<
   if (type === 'npm-global' && (await localInstallationExists())) {
     warnings.push({
       issue: 'Local installation exists but not being used',
-      fix: 'Consider using native installation: claude install',
+      fix: 'Consider using native installation: clew install',
     });
   }
 
@@ -523,8 +523,8 @@ export async function getDoctorDiagnostic(): Promise<DiagnosticInfo> {
 
     for (const install of npmInstalls) {
       if (install.type === 'npm-global') {
-        let uninstallCmd = 'npm -g uninstall @anthropic-ai/claude-code';
-        if (MACRO.PACKAGE_URL && MACRO.PACKAGE_URL !== '@anthropic-ai/claude-code') {
+        let uninstallCmd = 'npm -g uninstall clew-code';
+        if (MACRO.PACKAGE_URL && MACRO.PACKAGE_URL !== 'clew-code') {
           uninstallCmd += ` && npm -g uninstall ${MACRO.PACKAGE_URL}`;
         }
         warnings.push({
@@ -560,7 +560,7 @@ export async function getDoctorDiagnostic(): Promise<DiagnosticInfo> {
     if (!hasUpdatePermissions && !getAutoUpdaterDisabledReason()) {
       warnings.push({
         issue: 'Insufficient permissions for auto-updates',
-        fix: 'Do one of: (1) Re-install node without sudo, or (2) Use `claude install` for native installation',
+        fix: 'Do one of: (1) Re-install node without sudo, or (2) Use `clew install` for native installation',
       });
     }
   }

@@ -1,15 +1,15 @@
 # Plugin Development Toolkit
 
-A comprehensive toolkit for developing Claude Code plugins with expert guidance on hooks, MCP integration, plugin structure, and marketplace publishing.
+A comprehensive toolkit for developing Clew Code plugins with expert guidance on hooks, MCP integration, plugin structure, and marketplace publishing.
 
 ## Overview
 
-The plugin-dev toolkit provides seven specialized skills to help you build high-quality Claude Code plugins:
+The plugin-dev toolkit provides seven specialized skills to help you build high-quality Clew Code plugins:
 
 1. **Hook Development** - Advanced hooks API and event-driven automation
 2. **MCP Integration** - Model Context Protocol server integration
 3. **Plugin Structure** - Plugin organization and manifest configuration
-4. **Plugin Settings** - Configuration patterns using .claude/plugin-name.local.md files
+4. **Plugin Settings** - Configuration patterns using .clew/plugin-name.local.md files
 5. **Command Development** - Creating slash commands with frontmatter and arguments
 6. **Agent Development** - Creating autonomous agents with AI-assisted generation
 7. **Skill Development** - Creating skills with progressive disclosure and strong triggers
@@ -29,7 +29,7 @@ A comprehensive, end-to-end workflow command for creating plugins from scratch, 
 4. **Structure Creation** - Set up directories and manifest
 5. **Component Implementation** - Create each component using AI-assisted agents
 6. **Validation** - Run plugin-validator and component-specific checks
-7. **Testing** - Verify plugin works in Claude Code
+7. **Testing** - Verify plugin works in Clew Code
 8. **Documentation** - Finalize README and prepare for distribution
 
 **Features:**
@@ -116,7 +116,7 @@ Use this workflow for structured, high-quality plugin development from concept t
 **Trigger phrases:** "plugin settings", "store plugin configuration", ".local.md files", "plugin state files", "read YAML frontmatter", "per-project plugin settings"
 
 **What it covers:**
-- .claude/plugin-name.local.md pattern for configuration
+- .clew/plugin-name.local.md pattern for configuration
 - YAML frontmatter + markdown body structure
 - Parsing techniques for bash scripts (sed, awk, grep patterns)
 - Temporarily active hooks (flag files and quick-exit)
@@ -160,14 +160,14 @@ Use this workflow for structured, high-quality plugin development from concept t
 - All frontmatter fields (name, description, model, color, tools)
 - Description format with <example> blocks for reliable triggering
 - System prompt design patterns (analysis, generation, validation, orchestration)
-- AI-assisted agent generation using Claude Code's proven prompt
+- AI-assisted agent generation using Clew Code's proven prompt
 - Validation rules and best practices
 - Complete production-ready agent examples
 
 **Resources:**
 - Core SKILL.md (1,438 words)
 - 2 examples: agent-creation-prompt (AI-assisted workflow), complete-agent-examples (4 full agents)
-- 3 reference docs: agent-creation-system-prompt (from Claude Code), system-prompt-design (~4,000w), triggering-examples (~2,500w)
+- 3 reference docs: agent-creation-system-prompt (from Clew Code), system-prompt-design (~4,000w), triggering-examples (~2,500w)
 - 1 utility script: validate-agent.sh
 
 **Use when:** Creating autonomous agents, defining agent behavior, or implementing AI-assisted agent generation.
@@ -183,7 +183,7 @@ Use this workflow for structured, high-quality plugin development from concept t
 - Writing style (imperative/infinitive form, third person)
 - Bundled resources organization (references/, examples/, scripts/)
 - Skill creation workflow
-- Based on skill-creator methodology adapted for Claude Code plugins
+- Based on skill-creator methodology adapted for Clew Code plugins
 
 **Resources:**
 - Core SKILL.md (1,232 words)
@@ -195,10 +195,10 @@ Use this workflow for structured, high-quality plugin development from concept t
 
 ## Installation
 
-Install from claude-code-marketplace:
+Install from clew-code-marketplace:
 
 ```bash
-/plugin install plugin-dev@claude-code-marketplace
+/plugin install plugin-dev@clew-code-marketplace
 ```
 
 Or for development, use directly:
@@ -266,7 +266,7 @@ Each skill uses a three-level disclosure system:
 2. **Core SKILL.md** (when triggered): Essential API reference (~1,500-2,000 words)
 3. **References/Examples** (as needed): Detailed guides, patterns, and working code
 
-This keeps Claude Code's context focused while providing deep knowledge when needed.
+This keeps Clew Code's context focused while providing deep knowledge when needed.
 
 ### Utility Scripts
 
@@ -298,7 +298,7 @@ All skills follow consistent standards:
 - Third-person descriptions ("This skill should be used when...")
 - Strong trigger phrases for reliable loading
 - Imperative/infinitive form throughout
-- Based on official Claude Code documentation
+- Based on official Clew Code documentation
 - Security-first approach with best practices
 
 ## Total Content
@@ -369,7 +369,7 @@ All skills emphasize:
 ✅ **Testing**
 - Validate configurations before deployment
 - Test hooks with sample inputs
-- Use debug mode (`claude --debug`)
+- Use debug mode (`clew --debug`)
 
 ✅ **Documentation**
 - Clear README files
@@ -378,7 +378,7 @@ All skills emphasize:
 
 ## Contributing
 
-This plugin is part of the claude-code-marketplace. To contribute improvements:
+This plugin is part of the clew-code-marketplace. To contribute improvements:
 
 1. Fork the marketplace repository
 2. Make changes to plugin-dev/

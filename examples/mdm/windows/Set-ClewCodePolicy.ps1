@@ -1,18 +1,18 @@
 <#
-Deploys Claude Code managed settings as a JSON file.
+Deploys Clew managed settings as a JSON file.
 
 Intune: Devices > Scripts and remediations > Platform scripts > Add (Windows 10 and later).
   Run this script using the logged on credentials: No
   Run script in 64 bit PowerShell Host: Yes
 
-Claude Code reads C:\Program Files\ClaudeCode\managed-settings.json at startup
+Clew reads C:\Program Files\ClewCode\managed-settings.json at startup
 and treats it as a managed policy source. Edit the JSON below to change the
 deployed settings; see https://code.claude.com/docs/en/settings for available keys.
 #>
 
 $ErrorActionPreference = 'Stop'
 
-$dir = Join-Path $env:ProgramFiles 'ClaudeCode'
+$dir = Join-Path $env:ProgramFiles 'ClewCode'
 New-Item -ItemType Directory -Path $dir -Force | Out-Null
 
 $json = @'

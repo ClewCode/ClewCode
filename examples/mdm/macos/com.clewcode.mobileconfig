@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>PayloadDisplayName</key>
-	<string>Claude Code Managed Settings</string>
+	<string>Clew Managed Settings</string>
 	<key>PayloadDescription</key>
-	<string>Configures managed settings for Claude Code.</string>
+	<string>Configures managed settings for Clew.</string>
 	<key>PayloadIdentifier</key>
-	<string>com.anthropic.claudecode.profile</string>
+	<string>com.clewcode.profile</string>
 	<key>PayloadOrganization</key>
 	<string>Example Organization</string>
 	<key>PayloadScope</key>
@@ -22,9 +22,9 @@
 	<array>
 		<dict>
 			<key>PayloadDisplayName</key>
-			<string>Claude Code</string>
+			<string>Clew</string>
 			<key>PayloadIdentifier</key>
-			<string>com.anthropic.claudecode.profile.BEFD5F54-71FC-4012-82B2-94399A1E220B</string>
+			<string>com.clewcode.profile.BEFD5F54-71FC-4012-82B2-94399A1E220B</string>
 			<key>PayloadType</key>
 			<string>com.apple.ManagedClient.preferences</string>
 			<key>PayloadUUID</key>
@@ -33,7 +33,7 @@
 			<integer>1</integer>
 			<key>PayloadContent</key>
 			<dict>
-				<key>com.anthropic.claudecode</key>
+				<key>com.clewcode</key>
 				<dict>
 					<key>Forced</key>
 					<array>
