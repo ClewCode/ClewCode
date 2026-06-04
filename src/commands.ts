@@ -110,6 +110,9 @@ import rewind from './commands/rewind/index.js';
 import recap from './commands/recap/index.js';
 import heapDump from './commands/heapdump/index.js';
 import remoteCmd from './commands/remote/index.js';
+import guardianCmd from './commands/guardian/index.js';
+import approveCmd from './commands/approve/index.js';
+import prCmd from './commands/pr/index.js';
 import mockLimits from './commands/mock-limits/index.js';
 import bridgeKick from './commands/bridge-kick.js';
 import version from './commands/version.js';
@@ -324,6 +327,9 @@ const COMMANDS = memoize((): Command[] => [
   plan,
   research,
   remoteCmd,
+  guardianCmd,
+  approveCmd,
+  prCmd,
   privacySettings,
   hooks,
   exportCommand,
