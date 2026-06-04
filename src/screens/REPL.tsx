@@ -102,6 +102,7 @@ import {
 import { endInteractionSpan } from '../utils/telemetry/sessionTracing.js';
 import { useLogMessages } from '../hooks/useLogMessages.js';
 import { useReplBridge } from '../hooks/useReplBridge.js';
+import { useRemoteBridge } from '../hooks/useRemoteBridge.js';
 import {
   type Command,
   type CommandResultDisplay,
@@ -4604,6 +4605,10 @@ export function REPL({
   // for remote access via claude.ai. No-op in external builds or when not enabled.
   const { sendBridgeResult } = useReplBridge(messages, setMessages, abortControllerRef, commands, mainLoopModel);
   sendBridgeResultRef.current = sendBridgeResult;
+
+  // Remote Bridge v2: provider-agnostic Remote Control via WebSocket.
+  // Bridges messages when a RemoteServer is active (/remote listen).
+  useRemoteBridge(messages, setMessages);
 
   useAfterFirstRender();
 

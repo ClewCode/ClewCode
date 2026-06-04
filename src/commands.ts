@@ -109,6 +109,7 @@ import reloadPlugins from './commands/reload-plugins/index.js';
 import rewind from './commands/rewind/index.js';
 import recap from './commands/recap/index.js';
 import heapDump from './commands/heapdump/index.js';
+import remoteCmd from './commands/remote/index.js';
 import mockLimits from './commands/mock-limits/index.js';
 import bridgeKick from './commands/bridge-kick.js';
 import version from './commands/version.js';
@@ -322,6 +323,7 @@ const COMMANDS = memoize((): Command[] => [
   permissions,
   plan,
   research,
+  remoteCmd,
   privacySettings,
   hooks,
   exportCommand,
