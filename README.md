@@ -41,6 +41,9 @@ Key features:
 * **Plugin hooks** — Hook into prompts, shell execution, tool calls, message display, session start, and file editing actions.
 * **Dynamic skills** — Load bundled and project-level skills from `.claude/skills/`.
 * **Code review tools** — Use `/code-review --fix` to review changed code and apply fixes. Use `/simplify` for cleanup-focused review.
+* **Guardian auto-review** — `/guardian` routes permission requests to an LLM reviewer with circuit breaker.
+* **PR management** — `/pr create`, `list`, `view`, `review`, `merge`, `status`.
+* **Provider-agnostic Remote Control** — `/remote` for WebSocket-based CLI sharing without claude.ai.
 * **Model picker** — Choose global or session-only model defaults.
 * **Plugin marketplace support** — Includes support for `skipLfs` when downloading plugin sources.
 * **Local research workflow** — Use `/research <query>` for local-first web research and scraping workflows where configured.

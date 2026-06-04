@@ -2,44 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.0.1] — 2026-05-30
+## [0.2.0] — 2026-06-04
 
 ### Added
 
-- First public Clew package release.
-- Added `clew` as the primary CLI command.
-- Added `clewcode` as a secondary alias.
-- Bundled the current reconstructed CLI codebase with multi-provider routing, tools, plugins, skills, MCP, LSP, agents, daemon mode, scheduled tasks, bridge, research, and memory systems.
-- Background Agents batch: `!bg` shell tasks, dispatch autocomplete, PR columns, and agent logout.
-- **Goal command overhaul**: `/goal` parsing simplified to use explicit keywords; removed verb sets.
-- **Goal pause state**: Paused indicator in footer with `totalPausedMs` tracked across state.
-- **Goal enhancements**: Edit, status, last-achieved recall, and richer status display.
-- **Ultracode**: Auto-classifier, dynamic workflow coordinator, and `workflow`/`ultracode` commands.
-- **Spinner component**: New Spinner component with ignore directory configuration for crawl data.
+- **Guardian auto-review mode** (`/guardian`): LLM-based permission request reviewer using Haiku-class model. Routes boundary-crossing actions to a separate reviewer agent instead of pausing for user. Includes circuit breaker (3 consecutive denials → interrupt turn), rolling-window tracking (10/50), and custom policy support.
+- **`/approve` command**: Override Guardian denials for one-time retry. Lists recent denials (up to 10) and allows selective override by ID.
+- **`/pr` command**: Full GitHub PR lifecycle — create, list, view, review (AI diff analysis), merge, and CI status check.
+- **Bridge v2 — Provider-agnostic Remote Control** (`/remote`): Direct WebSocket-based remote control without claude.ai OAuth. Includes RemoteServer (HTTP API + WebSocket), SHA-256 hashed one-time token store, RelayClient for NAT traversal, and REPL session bridging via `useRemoteBridge` hook.
+- **Dynamic Workflow Bootstrap**: Wired ultracode globals into AppStateProvider and entrypoints. Interactive Y/n confirm hook for first-run cost warning.
+- **Dynamic Workflow Progress UI**: Live progress component in PromptInputFooter showing subtask completion and verification status. Polls `.claude/runs/` every 3s.
+- **Transcript classifier suggestion**: Context-aware suggestion — `/effort ultracode` for complex tasks, `/ultracode on` for moderate ones.
 
 ### Changed
 
-- Reframed the project as Clew, an unofficial independent rebuild and extension project.
-- Updated package metadata, README, license notice, security policy, contributor docs, issue templates, and GitHub workflows for the Clew release line.
-- Reset version to `0.0.1` for the Clew line.
-- Removed Code Index; fixed `/context` to use real context data.
-- Replaced old logo with new long-format branding image.
-- Removed context hearts (diamonds) from the status line.
-- **HTML docs**: Redesigned documentation with clean Anthropic-style theme.
-- **Ultracode animation**: Refined concentric circular ripple animation speed.
-
-### Fixed
-
-- `/goal` parsing: removed `update` from edit verbs to prevent false matches.
-- `/model` and `/providers` interactive pickers no longer persist selections to `provider.json`.
-- Removed stale `CLAUDE_CODE_TEAM_NAME` references; fixed `settings/types.ts` encoding.
-
-### Notes
-
-- This is the first Clew release.
-- Earlier `2.1.x` entries below are preserved as pre-Clew reconstruction history.
-- The `2.1.x` numbers do not represent Clew package releases.
+- Bumped version to 0.2.0.
+- AgentRunner uses role-specific system prompts (researcher cites files, verifier adversarial).
+- Confirm hook now properly prompts user (Y/n) with 30s timeout.
 
 ---
 
-# Pre-Clew Reconstruction History
+## [0.1.3] — 2026-06-03
