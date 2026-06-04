@@ -137,7 +137,7 @@ export async function launchAutofixPr(args: string, context: ToolUseContext): Pr
       type: 'text',
       text:
         `Autofix-PR launched for ${repo.owner}/${repo.name}#${prNumber} ` +
-        `(~10–20 min, runs in Claude Code on the web). ` +
+        `(~10–20 min, runs in Clew Code on the web). ` +
         `Track: ${sessionUrl}\n` +
         `Results arrive via task-notification.`,
     },

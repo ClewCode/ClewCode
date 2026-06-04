@@ -42,7 +42,7 @@ export function createWhatsNewFeed(releaseNotes: string[]): FeedConfig {
   const emptyMessage =
     'external' === 'ant'
       ? 'Unable to fetch latest claude-cli-internal commits'
-      : 'Check the Claude Code changelog for updates';
+      : 'Check the Clew Code changelog for updates';
   return {
     title: 'external' === 'ant' ? "What's new [ANT-ONLY: Latest CC commits]" : "What's new",
     lines,
@@ -77,8 +77,8 @@ export function createProjectOnboardingFeed(steps: Step[]): FeedConfig {
 export function createGuestPassesFeed(): FeedConfig {
   const reward = getCachedReferrerReward();
   const subtitle = reward
-    ? `Share Claude Code and earn ${formatCreditAmount(reward)} of extra usage`
-    : 'Share Claude Code with friends';
+    ? `Share Clew Code and earn ${formatCreditAmount(reward)} of extra usage`
+    : 'Share Clew Code with friends';
   return {
     title: '3 guest passes',
     lines: [],

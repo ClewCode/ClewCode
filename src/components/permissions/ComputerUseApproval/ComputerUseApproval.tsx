@@ -106,7 +106,7 @@ function ComputerUseTccPanel({
         </Box>
         <Text dimColor>
           Grant the missing permissions in System Settings, then select &quot;Try again&quot;. macOS may require you to
-          restart Claude Code after granting Screen Recording.
+          restart Clew Code after granting Screen Recording.
         </Text>
         <Select options={options} onChange={onChange} onCancel={onDone} />
       </Box>

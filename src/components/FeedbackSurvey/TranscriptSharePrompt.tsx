@@ -35,7 +35,7 @@ export function TranscriptSharePrompt({ onSelect, inputValue, setInputValue }: P
     <Box flexDirection="column" marginTop={1}>
       <Box>
         <Text color="ansi:cyan">{BLACK_CIRCLE} </Text>
-        <Text bold>Can Anthropic look at your session transcript to help us improve Claude Code?</Text>
+        <Text bold>Can Anthropic look at your session transcript to help us improve Clew Code?</Text>
       </Box>
 
       <Box marginLeft={2}>

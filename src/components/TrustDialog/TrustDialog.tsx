@@ -177,7 +177,7 @@ export function TrustDialog({ onDone, commands }: Props): React.ReactNode {
           Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open
           source project, or work from your team). If not, take a moment to review what{"'"}s in this folder first.
         </Text>
-        <Text>Claude Code{"'"}ll be able to read, edit, and execute files here.</Text>
+        <Text>Clew Code{"'"}ll be able to read, edit, and execute files here.</Text>
 
         <Text dimColor>
           <Link url="https://code.claude.com/docs/en/security">Security guide</Link>

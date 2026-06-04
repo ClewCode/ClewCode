@@ -67,7 +67,7 @@ export function GuestPassesUpsell() {
       <Text dimColor={true}>
         <Text color="claude">[✻]</Text> <Text color="claude">[✻]</Text> <Text color="claude">[✻]</Text> ·{' '}
         {reward
-          ? `Share Claude Code and earn ${formatCreditAmount(reward)} of extra usage · /passes`
+          ? `Share Clew Code and earn ${formatCreditAmount(reward)} of extra usage · /passes`
           : '3 guest passes at /passes'}
       </Text>
     );

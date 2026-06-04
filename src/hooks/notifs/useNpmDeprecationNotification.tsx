@@ -4,7 +4,7 @@ import { isEnvTruthy } from 'src/utils/envUtils.js';
 import { useStartupNotification } from './useStartupNotification.js';
 
 const NPM_DEPRECATION_MESSAGE =
-  'Claude Code has switched from npm to native installer. Run `claude install` or see https://docs.anthropic.com/en/docs/claude-code/getting-started for more options.';
+  'Clew Code has switched from npm to native installer. Run `clew install` or see https://docs.anthropic.com/en/docs/claude-code/getting-started for more options.';
 export function useNpmDeprecationNotification() {
   useStartupNotification(_temp);
 }

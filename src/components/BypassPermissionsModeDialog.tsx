@@ -38,10 +38,10 @@ export function BypassPermissionsModeDialog({ onAccept }: Props): React.ReactNod
   }, []);
 
   return (
-    <Dialog title="WARNING: Claude Code running in Bypass Permissions mode" color="error" onCancel={handleEscape}>
+    <Dialog title="WARNING: Clew Code running in Bypass Permissions mode" color="error" onCancel={handleEscape}>
       <Box flexDirection="column" gap={1}>
         <Text>
-          In Bypass Permissions mode, Claude Code will not ask for your approval before running potentially dangerous
+          In Bypass Permissions mode, Clew Code will not ask for your approval before running potentially dangerous
           commands.
           <Newline />
           This mode should only be used in a sandboxed container/VM that has restricted internet access and can easily

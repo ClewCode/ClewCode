@@ -737,7 +737,7 @@ function IdeSessionSidebar({
       <Box marginTop={1} flexDirection="column">
         <Text color="secondaryText">CURRENT SESSION</Text>
         <Box marginTop={1} paddingX={1} flexDirection="column" backgroundColor="messageActionsBackground">
-          <Text>{truncateToWidth('Claude Code IDE', rowWidth - 2)}</Text>
+          <Text>{truncateToWidth('Clew Code IDE', rowWidth - 2)}</Text>
           <Text color="secondaryText">{truncateToWidth(`session ${shortSession}`, rowWidth - 2)}</Text>
         </Box>
       </Box>

@@ -292,7 +292,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
 
   return (
     <WizardProvider
-      title="Claude Code Setup Wizard"
+      title="Clew Code Setup Wizard"
       steps={steps}
       onComplete={handleComplete}
       onCancel={() => onDone('Setup wizard exited', { display: 'system' })}

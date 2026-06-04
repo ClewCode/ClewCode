@@ -716,7 +716,7 @@ export function ManageMarketplaces({
         {!isUpdating && !shouldSkipPluginAutoupdate() && selectedMarketplace.autoUpdate && (
           <Box marginTop={1}>
             <Text dimColor>
-              Auto-update enabled. Claude Code will automatically update this marketplace and its installed plugins.
+              Auto-update enabled. Clew Code will automatically update this marketplace and its installed plugins.
             </Text>
           </Box>
         )}

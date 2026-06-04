@@ -121,7 +121,7 @@ const lessons: Lesson[] = [
           <Text>• Connect databases, APIs, and custom tools</Text>
         </Box>
         <Box marginTop={1}>
-          <Text>• Tools appear automatically in Claude Code</Text>
+          <Text>• Tools appear automatically in Clew Code</Text>
         </Box>
       </Box>
     ),
@@ -217,7 +217,7 @@ function PowerupDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) {
 
   return (
     <WizardProvider
-      title="Claude Code Power Up"
+      title="Clew Code Power Up"
       steps={steps}
       onComplete={() => onDone(undefined, { display: 'skip' })}
       onCancel={() => onDone(undefined, { display: 'skip' })}

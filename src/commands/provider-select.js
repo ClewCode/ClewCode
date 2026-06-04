@@ -265,7 +265,7 @@ function selectFromList(items, display) {
 }
 
 async function selectProvider() {
-  console.log('\n🚀 Claude Code - Provider & Model Selector\n');
+  console.log('\n🚀 Clew Code - Provider & Model Selector\n');
 
   console.log('🌐 Available providers:');
   PROVIDER_KEYS.forEach((p, i) => {
@@ -328,7 +328,7 @@ const program = new Command();
 
 program
   .name('provider-select')
-  .description('Select AI provider and model for Claude Code')
+  .description('Select AI provider and model for Clew Code')
   .option('-l, --list', 'List available providers and models')
   .option('-s, --set', 'Set provider and model interactively')
   .option('-g, --get', 'Show current configuration')

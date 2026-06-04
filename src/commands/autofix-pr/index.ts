@@ -4,7 +4,7 @@ const autofixPr: Command = {
   type: 'local-jsx',
   name: 'autofix-pr',
   aliases: [],
-  description: 'Fix CI errors and address review comments on a PR using Claude Code on the web',
+  description: 'Fix CI errors and address review comments on a PR using Clew Code on the web',
   argumentHint: '[pr-number] <prompt>',
   isHidden: false,
   load: () => import('./autofixPr.js'),

@@ -3,7 +3,7 @@ import type { Command } from '../../commands.js';
 const powerup = {
   type: 'local-jsx',
   name: 'powerup',
-  description: 'Interactive lessons teaching Claude Code features with animated demos',
+  description: 'Interactive lessons teaching Clew Code features with animated demos',
   load: () => import('./powerup.js'),
 } satisfies Command;
 
