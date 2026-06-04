@@ -14,9 +14,9 @@ export const call: LocalCommandCall = async () => {
 
     if (currentLimits.isUsingOverage) {
       value =
-        'You are currently using your overages to power your Claude Code usage. We will automatically switch you back to your subscription rate limits when they reset';
+        'You are currently using your overages to power your Clew Code usage. We will automatically switch you back to your subscription rate limits when they reset';
     } else {
-      value = 'You are currently using your subscription to power your Claude Code usage';
+      value = 'You are currently using your subscription to power your Clew Code usage';
     }
 
     if (process.env.USER_TYPE === 'ant') {

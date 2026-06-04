@@ -844,7 +844,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
   return (
     <Box flexDirection="column" width={contentWidth} paddingX={1}>
       <Box flexDirection="column" marginBottom={2}>
-        <Text bold>Claude Code</Text>
+        <Text bold>Clew Code</Text>
         <Text dimColor>Opus (1M context) · ~/{cwdLabel ?? 'workspace'}</Text>
         <Text dimColor>
           {counts.awaiting} awaiting input · {counts.working} working · {counts.completed} completed

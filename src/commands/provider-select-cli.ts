@@ -277,7 +277,7 @@ function selectFromList<T>(items: T[], display: (item: T) => string): Promise<T>
 }
 
 async function selectProvider() {
-  console.log('\n🚀 Claude Code - Provider & Model Selector\n');
+  console.log('\n🚀 Clew Code - Provider & Model Selector\n');
 
   console.log('🌐 Available providers:');
   PROVIDER_KEYS.forEach((p, i) => {

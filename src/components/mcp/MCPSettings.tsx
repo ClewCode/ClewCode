@@ -148,7 +148,7 @@ export function MCPSettings({ onComplete }: Props): React.ReactNode {
     case 'server-menu': {
       const serverTools = filterToolsByServer(mcp.tools, viewState.server.name);
 
-      const defaultTab = viewState.server.transport === 'claudeai-proxy' ? 'claude.ai' : 'Claude Code';
+      const defaultTab = viewState.server.transport === 'claudeai-proxy' ? 'claude.ai' : 'Clew Code';
 
       if (viewState.server.transport === 'stdio') {
         return (

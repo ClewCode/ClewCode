@@ -109,7 +109,7 @@ function IDEScreen({
             {isSupportedJetBrainsTerminal()
               ? 'No available IDEs detected. Please install the plugin and restart your IDE:\n' +
                 'https://docs.claude.com/s/claude-code-jetbrains'
-              : 'No available IDEs detected. Make sure your IDE has the Claude Code extension or plugin installed and is running.'}
+              : 'No available IDEs detected. Make sure your IDE has the Clew Code extension or plugin installed and is running.'}
           </Text>
         )}
 
@@ -127,7 +127,7 @@ function IDEScreen({
         {availableIDEs.length !== 0 &&
           availableIDEs.some(ide => ide.name === 'VS Code' || ide.name === 'Visual Studio Code') && (
             <Box marginTop={1}>
-              <Text color="warning">Note: Only one Claude Code instance can be connected to VS Code at a time.</Text>
+              <Text color="warning">Note: Only one Clew Code instance can be connected to VS Code at a time.</Text>
             </Box>
           )}
         {availableIDEs.length !== 0 && !isSupportedTerminal() && (
@@ -284,7 +284,7 @@ export async function call(
     const availableIDEs = detectedIDEs.filter(ide => ide.isValid);
 
     if (availableIDEs.length === 0) {
-      onDone('No IDEs with Claude Code extension detected.');
+      onDone('No IDEs with Clew Code extension detected.');
       return null;
     }
 

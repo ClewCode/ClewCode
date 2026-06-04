@@ -10,9 +10,9 @@ function getProviderLabel(): string {
       require('../../services/ai/providerRegistry.js') as typeof import('../../services/ai/providerRegistry.js');
     const providerId = ProviderManager.getInstance().getActiveProviderName();
     const entry = getProviderRegistryEntry(providerId);
-    return entry?.label ?? 'Claude Code';
+    return entry?.label ?? 'Clew Code';
   } catch {
-    return 'Claude Code';
+    return 'Clew Code';
   }
 }
 

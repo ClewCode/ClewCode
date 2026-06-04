@@ -65,7 +65,7 @@ export function DatadogSettings({ onDone }: { onDone: LocalJSXCommandOnDone }) {
       onCancel={() => onDone('Dialog cancelled', { display: 'system' })}
     >
       <Box flexDirection="column" gap={1}>
-        <Text>Manage how Claude Code sends logs and analytical data back over the net.</Text>
+        <Text>Manage how Clew Code sends logs and analytical data back over the net.</Text>
         {isGlobalDisabled && (
           <Text color="warning" italic>
             ⚠️ Note: All telemetry out-traffic is currently blocked because Global Telemetry is disabled.

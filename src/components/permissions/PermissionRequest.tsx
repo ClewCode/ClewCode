@@ -165,11 +165,11 @@ function getNotificationMessage(toolUseConfirm: ToolUseConfirm): string {
   const toolName = toolUseConfirm.tool.userFacingName(toolUseConfirm.input as never);
 
   if (toolUseConfirm.tool === ExitPlanModeV2Tool) {
-    return 'Claude Code needs your approval for the plan';
+    return 'Clew Code needs your approval for the plan';
   }
 
   if (toolUseConfirm.tool === EnterPlanModeTool) {
-    return 'Claude Code wants to enter plan mode';
+    return 'Clew Code wants to enter plan mode';
   }
 
   if (feature('REVIEW_ARTIFACT') && toolUseConfirm.tool === ReviewArtifactTool) {
@@ -177,7 +177,7 @@ function getNotificationMessage(toolUseConfirm: ToolUseConfirm): string {
   }
 
   if (!toolName || toolName.trim() === '') {
-    return 'Claude Code needs your attention';
+    return 'Clew Code needs your attention';
   }
 
   return `Claude needs your permission to use ${toolName}`;

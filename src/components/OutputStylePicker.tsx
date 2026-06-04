@@ -68,7 +68,7 @@ export function OutputStylePicker({
     >
       <Box flexDirection="column" gap={1}>
         <Box marginTop={1}>
-          <Text dimColor>This changes how Claude Code communicates with you</Text>
+          <Text dimColor>This changes how Clew Code communicates with you</Text>
         </Box>
         {isLoading ? (
           <Text dimColor>Loading output styles…</Text>

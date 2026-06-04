@@ -42,7 +42,7 @@ type Props = {
 export function formatToolUseSummary(name: string, input: unknown): string {
   // plan_ready phase is only reached via ExitPlanMode tool
   if (name === EXIT_PLAN_MODE_V2_TOOL_NAME) {
-    return 'Review the plan in Claude Code on the web';
+    return 'Review the plan in Clew Code on the web';
   }
   if (!input || typeof input !== 'object') return name;
   // AskUserQuestion: show the question text as a CTA, not the tool name.
@@ -123,7 +123,7 @@ function UltraplanSessionDetail({ session, onDone, onBack, onKill }: Omit<Props,
     return (
       <Dialog title="Stop ultraplan?" onCancel={() => setConfirmingStop(false)} color="background">
         <Box flexDirection="column" gap={1}>
-          <Text dimColor>This will terminate the Claude Code on the web session.</Text>
+          <Text dimColor>This will terminate the Clew Code on the web session.</Text>
           <Select
             options={[
               { label: 'Terminate session', value: 'stop' as const },
@@ -173,7 +173,7 @@ function UltraplanSessionDetail({ session, onDone, onBack, onKill }: Omit<Props,
         <Select
           options={[
             {
-              label: 'Review in Claude Code on the web',
+              label: 'Review in Clew Code on the web',
               value: 'open' as const,
             },
             ...(onKill && running ? [{ label: 'Stop ultraplan', value: 'stop' as const }] : []),
@@ -309,11 +309,11 @@ function ReviewSessionDetail({ session, onDone, onBack, onKill }: Omit<Props, 't
 
   const options: { label: string; value: MenuAction }[] = completed
     ? [
-        { label: 'Open in Claude Code on the web', value: 'open' },
+        { label: 'Open in Clew Code on the web', value: 'open' },
         { label: 'Dismiss', value: 'dismiss' },
       ]
     : [
-        { label: 'Open in Claude Code on the web', value: 'open' },
+        { label: 'Open in Clew Code on the web', value: 'open' },
         ...(onKill && running ? [{ label: 'Stop ultrareview', value: 'stop' as const }] : []),
         { label: 'Back', value: 'back' },
       ];

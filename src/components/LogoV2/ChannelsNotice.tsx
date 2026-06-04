@@ -165,7 +165,7 @@ export function ChannelsNotice() {
     t2 = (
       <Text dimColor={true}>
         Experimental · inbound messages will be pushed into this session, this carries prompt injection risks. Restart
-        Claude Code without {flag} to disable.
+        Clew Code without {flag} to disable.
       </Text>
     );
     $[24] = flag;

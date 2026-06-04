@@ -48,7 +48,7 @@ export function RemoveWorkspaceDirectory({
       <Box marginX={2} flexDirection="column">
         <Text bold>{directoryPath}</Text>
       </Box>
-      <Text>Claude Code will no longer have access to files in this directory.</Text>
+      <Text>Clew Code will no longer have access to files in this directory.</Text>
       <Select
         onChange={handleSelect}
         onCancel={onCancel}

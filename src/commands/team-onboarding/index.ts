@@ -38,7 +38,7 @@ async function generateTeamOnboardingGuide(signal: AbortSignal): Promise<string>
     }
   }
 
-  const userPrompt = `Analyze these recent Claude Code sessions and generate a "Teammate Ramp-up Guide".
+  const userPrompt = `Analyze these recent Clew Code sessions and generate a "Teammate Ramp-up Guide".
 This guide should help a new developer understand how Claude is being used in this project, common tasks performed, technical decisions made, and preferred tools/patterns.
 
 SESSIONS:
@@ -71,7 +71,7 @@ Output the guide in Markdown format.`;
 const teamOnboarding: Command = {
   type: 'prompt',
   name: 'team-onboarding',
-  description: 'Generate a teammate ramp-up guide from your local Claude Code usage',
+  description: 'Generate a teammate ramp-up guide from your local Clew Code usage',
   contentLength: 0,
   progressMessage: 'analyzing usage and generating guide',
   source: 'builtin',

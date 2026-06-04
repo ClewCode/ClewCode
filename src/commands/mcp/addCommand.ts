@@ -28,7 +28,7 @@ export function registerMcpAddCommand(mcp: Command): void {
   mcp
     .command('add <name> <commandOrUrl> [args...]')
     .description(
-      'Add an MCP server to Claude Code.\n\n' +
+      'Add an MCP server to Clew Code.\n\n' +
         'Examples:\n' +
         '  # Add HTTP server:\n' +
         '  claude mcp add --transport http sentry https://mcp.sentry.dev/mcp\n\n' +
