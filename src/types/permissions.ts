@@ -26,7 +26,7 @@ export type ExternalPermissionMode = (typeof EXTERNAL_PERMISSION_MODES)[number];
 
 // Exhaustive mode union for typechecking. The user-addressable runtime set
 // is INTERNAL_PERMISSION_MODES below.
-export type InternalPermissionMode = ExternalPermissionMode | 'auto' | 'bubble';
+export type InternalPermissionMode = ExternalPermissionMode | 'auto' | 'bubble' | 'guardian';
 export type PermissionMode = InternalPermissionMode;
 
 // Runtime validation set: modes that are user-addressable (settings.json
@@ -34,6 +34,7 @@ export type PermissionMode = InternalPermissionMode;
 export const INTERNAL_PERMISSION_MODES = [
   ...EXTERNAL_PERMISSION_MODES,
   'auto',
+  'guardian',
 ] as const satisfies readonly PermissionMode[];
 
 export const PERMISSION_MODES = INTERNAL_PERMISSION_MODES;
