@@ -394,6 +394,10 @@ export const PowerShellTool = buildTool({
     return isSearchOrReadPowerShellCommand(input.command);
   },
   isReadOnly(input: PowerShellToolInput): boolean {
+    // Malformed/missing input: not read-only (require approval)
+    if (!input?.command) {
+      return false;
+    }
     // Check sync security heuristics before declaring read-only.
     // The full AST parse is async and unavailable here, so we use
     // regex-based detection of subexpressions, splatting, member

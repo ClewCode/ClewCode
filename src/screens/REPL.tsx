@@ -195,7 +195,7 @@ const getCoordinatorUserContext: (
   : () => ({});
 /* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 import useCanUseTool from '../hooks/useCanUseTool.js';
-import type { ToolPermissionContext, Tool } from '../Tool.js';
+import type { ToolPermissionContext, Tool, ToolUseContext } from '../Tool.js';
 import {
   applyPermissionUpdate,
   applyPermissionUpdates,
@@ -267,7 +267,7 @@ import type { MCPServerConnection } from '../services/mcp/types.js';
 import type { ScopedMcpServerConfig } from '../services/mcp/types.js';
 import { randomUUID, type UUID } from 'crypto';
 import { processSessionStartHooks } from '../utils/sessionStart.js';
-import { executeSessionEndHooks, getSessionEndHookTimeoutMs } from '../utils/hooks.js';
+import { executeMessageDisplayHooks, executeSessionEndHooks, getSessionEndHookTimeoutMs } from '../utils/hooks.js';
 import { type IDESelection, useIdeSelection } from '../hooks/useIdeSelection.js';
 import { getTools, assembleToolPool } from '../tools.js';
 import type { AgentDefinition } from '../tools/AgentTool/loadAgentsDir.js';
@@ -2848,6 +2848,37 @@ export function REPL({
     [],
   );
 
+  // onMessageDisplay: called by Messages for each new rendered message.
+  // Delegates to executeMessageDisplayHooks which checks if any hook is configured.
+  const onMessageDisplay = useCallback(
+    async (msg: MessageType): Promise<{ hide?: boolean; text?: string } | null> => {
+      const abortController = new AbortController();
+      const context = getToolUseContext(messagesRef.current, [], abortController, mainLoopModel);
+      const msgText = msg.message.content
+        .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+        .map(b => b.text)
+        .join('\n');
+      if (!msgText) return null;
+
+      try {
+        for await (const result of executeMessageDisplayHooks(
+          msg.uuid,
+          msg.uuid,
+          0,
+          msgText,
+          true,
+          context as unknown as ToolUseContext,
+        )) {
+          if (result.message) return { hide: true };
+        }
+      } catch {
+        // Hooks must not break message display
+      }
+      return null;
+    },
+    [getToolUseContext, mainLoopModel],
+  );
+
   const getToolUseContext = useCallback(
     (
       messages: MessageType[],
@@ -5266,6 +5297,7 @@ export function REPL({
         scanElement={scanElement}
         setPositions={setPositions}
         disableRenderCap={dumpMode}
+        onMessageDisplay={onMessageDisplay}
       />
     );
     const transcriptToolJSX = toolJSX && (
@@ -5572,6 +5604,7 @@ export function REPL({
                 cursor={cursor}
                 setCursor={setCursor}
                 cursorNavRef={cursorNavRef}
+                onMessageDisplay={onMessageDisplay}
               />
               <AwsAuthStatusBox />
               {/* Hide the processing placeholder while a modal is showing —

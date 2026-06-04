@@ -300,6 +300,9 @@ type Props = {
    *  (start === 0); later chunks are mid-stream continuations.
    *  Measured Mar 2026: 538-msg session, 20 slices → −55% plateau RSS. */
   renderRange?: readonly [start: number, end: number];
+  /** Optional callback fired when a message is displayed. Hooks can request
+   *  hiding or text replacement of displayed messages. */
+  onMessageDisplay?: (msg: MessageType) => Promise<{ hide?: boolean; text?: string } | null>;
 };
 
 const MAX_MESSAGES_TO_SHOW_IN_TRANSCRIPT_MODE = 30;
@@ -398,9 +401,13 @@ const MessagesImpl = ({
   setCursor,
   cursorNavRef,
   renderRange,
+  onMessageDisplay,
 }: Props): React.ReactNode => {
   const { columns } = useTerminalSize();
   const toggleShowAllShortcut = useShortcutDisplay('transcript:toggleShowAll', 'Transcript', 'Ctrl+E');
+
+  // MessageDisplay hook — track per-message transforms from hook callbacks
+  const messageDisplayTransformsRef = useRef<Map<string, { hide?: boolean; text?: string }>>(new Map());
 
   const normalizedMessages = useMemo(() => normalizeMessages(messages).filter(isNotEmptyMessage), [messages]);
 
@@ -595,6 +602,22 @@ const MessagesImpl = ({
     tools,
     isBriefOnly,
   ]);
+  // Fire onMessageDisplay for each new collapsed message (runs once per message)
+  useEffect(() => {
+    if (!onMessageDisplay) return;
+    const transforms = messageDisplayTransformsRef.current;
+    for (const msg of collapsed) {
+      if (transforms.has(msg.uuid)) continue;
+      transforms.set(msg.uuid, {});
+      onMessageDisplay(msg as unknown as MessageType)
+        .then(result => {
+          if (result) transforms.set(msg.uuid, result);
+        })
+        .catch(() => {
+          transforms.delete(msg.uuid);
+        });
+    }
+  }, [collapsed, onMessageDisplay]);
 
   // Cheap slice — only runs when scroll range or slice config changes.
   const renderableMessages = useMemo(() => {
@@ -638,6 +661,8 @@ const MessagesImpl = ({
     () => new Set(streamingToolUses.map(_ => _.contentBlock.id)),
     [streamingToolUses],
   );
+
+  // Process onMessageDisplay for new messages (transforms stored in ref for future rendering integration)
 
   // Divider insertion point: first renderableMessage whose uuid shares the
   // 24-char prefix with firstUnseenUuid (deriveUUID keeps the first 24

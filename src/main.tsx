@@ -1391,7 +1391,7 @@ async function run(): Promise<CommanderCommand> {
     profileCheckpoint('preAction_after_settings_sync');
   });
   program
-    .name('claude')
+    .name('clew')
     .description(`Clew Code - starts an interactive session by default, use -p/--print for non-interactive output`)
     .argument('[prompt]', 'Your prompt', String)
     // Subcommands inherit helpOption via commander's copyInheritedSettings —
