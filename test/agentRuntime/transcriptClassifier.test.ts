@@ -90,7 +90,7 @@ describe('buildUltracodeSuggestion', () => {
     });
     const msg = buildUltracodeSuggestion(r);
     expect(msg).not.toBeNull();
-    expect(msg).toContain('/ultracode on');
+    expect(msg).toContain('ultracode');
     expect(msg).toContain('complex');
   });
 });

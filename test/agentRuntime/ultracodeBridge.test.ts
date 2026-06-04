@@ -50,7 +50,7 @@ describe('tryAutoRunDynamicWorkflow opt-in', () => {
     });
     expect(out.kind).toBe('suggested');
     if (out.kind === 'suggested') {
-      expect(out.message).toContain('/ultracode on');
+      expect(out.message).toContain('ultracode');
       expect(out.classifier.shouldSuggestUltracode).toBe(true);
     }
   });

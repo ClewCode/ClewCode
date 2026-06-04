@@ -19,6 +19,7 @@ import { formatDuration } from '../../utils/format.js';
 import { isFullscreenEnvEnabled } from '../../utils/fullscreen.js';
 import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
+import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
 import { getLastAssistantMessageId, StatusLine, statusLineShouldDisplay } from '../StatusLine.js';
 import { Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
@@ -248,6 +249,7 @@ function PromptInputFooter({
         </Box>
       </Box>
       {'external' === 'ant' && <CoordinatorTaskPanel />}
+      <DynamicWorkflowStatusLine />
     </>
   );
 }
