@@ -222,7 +222,7 @@ export function getParentCacheSuppressReason(
   return inputTokens + cacheWriteTokens + outputTokens > MAX_PARENT_UNCACHED_TOKENS ? 'cache_cold' : null;
 }
 
-const SUGGESTION_PROMPT = `[SUGGESTION MODE: Suggest what the user might naturally type next into Claude Code.]
+const SUGGESTION_PROMPT = `[SUGGESTION MODE: Suggest what the user might naturally type next into Clew Code.]
 
 FIRST: Look at the user's recent messages and original request.
 

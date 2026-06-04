@@ -185,7 +185,7 @@ export function useUnseenDivider(messageCount: number): {
     // • click-to-select at bottom: useDragToScroll.check() calls
     //   scrollTo(current) to break sticky so streaming content doesn't shift
     //   under the selection, then onScroll(false, …) — but scrollTop is still
-    //   at max (Sarah Deaton, #claude-code-feedback 2026-03-15)
+    //   at max (Sarah Deaton, #clew-code-feedback 2026-03-15)
     // pendingDelta: scrollBy accumulates without updating scrollTop. Without
     // it, wheeling up from max would see scrollTop==max and suppress the pill.
     const max = Math.max(0, handle.getScrollHeight() - handle.getViewportHeight());
@@ -371,7 +371,7 @@ export function FullscreenLayout({
     const ink = instances.get(process.stdout);
     if (!ink) return;
     ink.onHyperlinkClick = url => {
-      // Most OSC 8 links emitted by Claude Code are file:// URLs from
+      // Most OSC 8 links emitted by Clew Code are file:// URLs from
       // FilePathLink (FileEdit/FileWrite/FileRead tool output). openBrowser
       // rejects non-http(s) protocols — route file: to openPath instead.
       if (url.startsWith('file:')) {

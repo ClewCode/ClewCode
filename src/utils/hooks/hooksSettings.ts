@@ -167,7 +167,7 @@ export function hookSourceDescriptionDisplayString(source: HookSource): string {
     case 'sessionHook':
       return 'Session hooks (in-memory, temporary)';
     case 'builtinHook':
-      return 'Built-in hooks (registered internally by Claude Code)';
+      return 'Built-in hooks (registered internally by Clew Code)';
     default:
       return source as string;
   }

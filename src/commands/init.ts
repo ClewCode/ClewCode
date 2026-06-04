@@ -3,7 +3,7 @@ import type { Command } from '../commands.js';
 import { maybeMarkProjectOnboardingComplete } from '../projectOnboardingState.js';
 import { isEnvTruthy } from '../utils/envUtils.js';
 
-const OLD_INIT_PROMPT = `Please analyze this codebase and create a CLAUDE.md file, which will be given to future instances of Claude Code to operate in this repository.
+const OLD_INIT_PROMPT = `Please analyze this codebase and create a CLAUDE.md file, which will be given to future instances of Clew Code to operate in this repository.
 
 What to add:
 1. Commands that will be commonly used, such as how to build, lint, and run tests. Include the necessary commands to develop in this codebase, such as how to run a single test.
@@ -22,10 +22,10 @@ Usage notes:
 \`\`\`
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Clew Code (claude.ai/code) when working with code in this repository.
 \`\`\``;
 
-const NEW_INIT_PROMPT = `Set up a minimal CLAUDE.md (and optionally skills and hooks) for this repo. CLAUDE.md is loaded into every Claude Code session, so it must be concise — only include what Claude would get wrong without it.
+const NEW_INIT_PROMPT = `Set up a minimal CLAUDE.md (and optionally skills and hooks) for this repo. CLAUDE.md is loaded into every Clew Code session, so it must be concise — only include what Claude would get wrong without it.
 
 ## Operating contract
 
@@ -215,7 +215,7 @@ Prefix the file with:
 \`\`\`
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Clew Code (claude.ai/code) when working with code in this repository.
 \`\`\`
 
 If CLAUDE.md already exists: read it, propose specific changes as diffs, and explain why each change improves it. Do not silently overwrite.
@@ -323,11 +323,11 @@ Recap what was set up — which files were written and the key points included i
 Then include a concise "Recommended next steps" list based on what was found. Do not repeat suggestions already accepted or completed in Phase 7. Present these as a single, well-formatted to-do list where every item is relevant to this repo. Put the most impactful items first.
 
 When building the list, work through these checks and include only what applies:
-- If frontend code was detected (React, Vue, Svelte, etc.) and the plugins are available or documented in this Claude Code installation: suggest \`/plugin install frontend-design@claude-plugins-official\` for design principles/component patterns and \`/plugin install playwright@claude-plugins-official\` for browser-based UI verification.
+- If frontend code was detected (React, Vue, Svelte, etc.) and the plugins are available or documented in this Clew Code installation: suggest \`/plugin install frontend-design@claude-plugins-official\` for design principles/component patterns and \`/plugin install playwright@claude-plugins-official\` for browser-based UI verification.
 - If you found gaps in Phase 7 (missing GitHub CLI, missing linting) and the user said no: list them here with a one-line reason why each helps.
 - If tests are missing or sparse: suggest setting up a test framework so Claude can verify its own changes.
-- If an official skill-creator plugin is available or documented in this Claude Code installation: suggest \`/plugin install skill-creator@claude-plugins-official\`, then \`/skill-creator <skill-name>\` to create new skills or refine existing skills.
-- If \`/plugin\` is available, suggest browsing official plugins with \`/plugin\`. Only mention specific plugin install commands when the plugin is visible in the local plugin marketplace or documented in this Claude Code installation.
+- If an official skill-creator plugin is available or documented in this Clew Code installation: suggest \`/plugin install skill-creator@claude-plugins-official\`, then \`/skill-creator <skill-name>\` to create new skills or refine existing skills.
+- If \`/plugin\` is available, suggest browsing official plugins with \`/plugin\`. Only mention specific plugin install commands when the plugin is visible in the local plugin marketplace or documented in this Clew Code installation.
 
 Report whether the generated instructions are working by these signals:
 - fewer unnecessary diffs

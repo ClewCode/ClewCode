@@ -67,7 +67,7 @@ export async function setup(
   const nodeVersion = process.version.match(/^v(\d+)\./)?.[1];
   if (!nodeVersion || parseInt(nodeVersion) < 18) {
     // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.error(chalk.bold.red('Error: Claude Code requires Node.js version 18 or higher.'));
+    console.error(chalk.bold.red('Error: Clew Code requires Node.js version 18 or higher.'));
     process.exit(1);
   }
 

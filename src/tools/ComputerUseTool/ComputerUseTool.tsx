@@ -1,7 +1,7 @@
 /**
  * Computer Use Tool — Main Tool Implementation
  *
- * Registers as a standard Tool in the Claude Code tool system.
+ * Registers as a standard Tool in the Clew Code tool system.
  * Supports dual-mode operation:
  *   - Anthropic provider: Uses official computer_20251124 schema (handled by API layer)
  *   - Other providers: Uses standard JSON schema tool definition (this tool)

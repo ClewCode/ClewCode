@@ -126,7 +126,7 @@ Plugin syntax: \`plugin-name@source\` where source is \`claude-code-marketplace\
 
 const HOOKS_DOCS = `## Hooks Configuration
 
-Hooks run commands at specific points in Claude Code's lifecycle.
+Hooks run commands at specific points in Clew Code's lifecycle.
 
 ### Hook Structure
 \`\`\`json
@@ -323,7 +323,7 @@ Given an event, matcher, target file, and desired behavior, follow this flow. Ea
 
 const UPDATE_CONFIG_PROMPT = `# Update Config Skill
 
-Modify Claude Code configuration by updating settings.json files.
+Modify Clew Code configuration by updating settings.json files.
 
 ## When Hooks Are Required (Not Memory)
 
@@ -463,7 +463,7 @@ export function registerUpdateConfigSkill(): void {
   registerBundledSkill({
     name: 'update-config',
     description:
-      'Use this skill to configure the Claude Code harness via settings.json. Automated behaviors ("from now on when X", "each time X", "whenever X", "before/after X") require hooks configured in settings.json - the harness executes these, not Claude, so memory/preferences cannot fulfill them. Also use for: permissions ("allow X", "add permission", "move permission to"), env vars ("set X=Y"), hook troubleshooting, or any changes to settings.json/settings.local.json files. Examples: "allow npm commands", "add bq permission to global settings", "move permission to user settings", "set DEBUG=true", "when claude stops show X". For simple settings like theme/model, use Config tool.',
+      'Use this skill to configure the Clew Code harness via settings.json. Automated behaviors ("from now on when X", "each time X", "whenever X", "before/after X") require hooks configured in settings.json - the harness executes these, not Claude, so memory/preferences cannot fulfill them. Also use for: permissions ("allow X", "add permission", "move permission to"), env vars ("set X=Y"), hook troubleshooting, or any changes to settings.json/settings.local.json files. Examples: "allow npm commands", "add bq permission to global settings", "move permission to user settings", "set DEBUG=true", "when claude stops show X". For simple settings like theme/model, use Config tool.',
     allowedTools: ['Read'],
     userInvocable: true,
     async getPromptForCommand(args) {

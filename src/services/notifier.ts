@@ -27,7 +27,7 @@ export async function sendNotification(notif: NotificationOptions, terminal: Ter
   });
 }
 
-const DEFAULT_TITLE = 'Claude Code';
+const DEFAULT_TITLE = 'Clew Code';
 
 async function sendToChannel(
   channel: string,

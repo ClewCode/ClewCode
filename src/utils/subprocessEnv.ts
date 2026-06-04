@@ -95,7 +95,7 @@ export function subprocessEnv(): NodeJS.ProcessEnv {
   }
 
   // Set CLAUDECODE=1 so MCP stdio servers and other subprocesses can detect
-  // they are running inside Claude Code and adapt behavior accordingly
+  // they are running inside Clew Code and adapt behavior accordingly
   // (e.g., session-aware logging, telemetry, conditional logic).
   env.CLAUDECODE = '1';
 
@@ -109,7 +109,7 @@ export function subprocessEnv(): NodeJS.ProcessEnv {
 
   // Re-apply NO_COLOR/FORCE_COLOR from merged settings for subprocesses only.
   // These are stripped from managedEnv's filterSettingsEnv() so they don't
-  // affect Claude Code's own UI, but subprocesses (Bash, MCP, LSP) should
+  // affect Clew Code's own UI, but subprocesses (Bash, MCP, LSP) should
   // still see them if configured.
   const mergedSettingsEnv = getSettings_DEPRECATED()?.env;
   if (mergedSettingsEnv) {

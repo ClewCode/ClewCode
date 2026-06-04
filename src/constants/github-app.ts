@@ -1,8 +1,8 @@
-export const PR_TITLE = 'Add Claude Code GitHub Workflow';
+export const PR_TITLE = 'Add Clew Code GitHub Workflow';
 
 export const GITHUB_ACTION_SETUP_DOCS_URL = 'https://github.com/anthropics/claude-code-action/blob/main/docs/setup.md';
 
-export const WORKFLOW_CONTENT = `name: Claude Code
+export const WORKFLOW_CONTENT = `name: Clew Code
 
 on:
   issue_comment:
@@ -34,7 +34,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Run Claude Code
+      - name: Run Clew Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
@@ -54,13 +54,13 @@ jobs:
 
 `;
 
-export const PR_BODY = `## 🤖 Installing Claude Code GitHub App
+export const PR_BODY = `## 🤖 Installing Clew Code GitHub App
 
-This PR adds a GitHub Actions workflow that enables Claude Code integration in our repository.
+This PR adds a GitHub Actions workflow that enables Clew Code integration in our repository.
 
-### What is Claude Code?
+### What is Clew Code?
 
-[Claude Code](https://claude.com/claude-code) is an AI coding agent that can help with:
+[Clew Code](https://claude.com/claude-code) is an AI coding agent that can help with:
 - Bug fixes and improvements  
 - Documentation updates
 - Implementing new features
@@ -96,7 +96,7 @@ There's more information in the [Claude Code action repo](https://github.com/ant
 
 After merging this PR, let's try mentioning @claude in a comment on any PR to get started!`;
 
-export const CODE_REVIEW_PLUGIN_WORKFLOW_CONTENT = `name: Claude Code Review
+export const CODE_REVIEW_PLUGIN_WORKFLOW_CONTENT = `name: Clew Code Review
 
 on:
   pull_request:
@@ -129,7 +129,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Run Claude Code Review
+      - name: Run Clew Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:

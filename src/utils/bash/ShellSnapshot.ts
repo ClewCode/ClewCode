@@ -242,7 +242,7 @@ function getUserSnapshotContent(configFile: string): string {
 }
 
 /**
- * Generates Claude Code specific snapshot content
+ * Generates Clew Code specific snapshot content
  * This content is always included regardless of user configuration
  */
 async function getClaudeCodeSnapshotContent(): Promise<string> {
@@ -296,7 +296,7 @@ RIPGREP_FUNC_END
   // For ant-native builds, shadow find/grep with bfs/ugrep embedded in the bun
   // binary. Unlike rg (which only activates if system rg is absent), we always
   // shadow find/grep since bfs/ugrep are drop-in replacements and we want
-  // consistent fast behavior in Claude's shell.
+  // consistent fast behavior in Clew's shell.
   const findGrepIntegration = createFindGrepShellIntegration();
   if (findGrepIntegration !== null) {
     content += `
@@ -329,7 +329,7 @@ async function getSnapshotScript(
   const configFile = getConfigFile(shellPath);
   const isZsh = configFile.endsWith('.zshrc');
 
-  // Generate the user content and Claude Code content
+  // Generate the user content and Clew Code content
   const userContent = configFileExists
     ? getUserSnapshotContent(configFile)
     : !isZsh
@@ -367,7 +367,7 @@ async function getSnapshotScript(
 /**
  * Creates and saves the shell environment snapshot by loading the user's shell configuration
  *
- * This function is a critical part of Claude CLI's shell integration strategy. It:
+ * This function is a critical part of Clew CLI's shell integration strategy. It:
  *
  * 1. Identifies the user's shell config file (.zshrc, .bashrc, etc.)
  * 2. Creates a temporary script that sources this configuration file
@@ -401,7 +401,7 @@ export const createAndSaveSnapshot = async (binShell: string): Promise<string | 
       const configFileExists = await pathExists(configFile);
 
       if (!configFileExists) {
-        logForDebugging(`Shell config file not found: ${configFile}, creating snapshot with Claude Code defaults only`);
+        logForDebugging(`Shell config file not found: ${configFile}, creating snapshot with Clew Code defaults only`);
       }
 
       // Create unique snapshot path with timestamp and random ID

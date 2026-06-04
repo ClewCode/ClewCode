@@ -10,7 +10,7 @@
 import { isLocalAgentTask } from '../../tasks/LocalAgentTask/LocalAgentTask.js';
 import type { TaskState } from '../../tasks/types.js';
 
-// 1 hour idle timeout as per official Claude Code spec
+// 1 hour idle timeout as per official Clew Code spec
 const IDLE_PROCESS_TIMEOUT_MS = 60 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // Check every 5 minutes
 

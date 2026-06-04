@@ -3,7 +3,7 @@
 // Only reachable in ant builds (gated by feature('VOICE_MODE') in useVoice.ts import).
 //
 // Connects to Anthropic's voice_stream WebSocket endpoint using the same
-// OAuth credentials as Claude Code.  The endpoint uses conversation_engine
+// OAuth credentials as Clew Code.  The endpoint uses conversation_engine
 // backed models for speech-to-text.  Designed for hold-to-talk: hold the
 // keybinding to record, release to stop and submit.
 //

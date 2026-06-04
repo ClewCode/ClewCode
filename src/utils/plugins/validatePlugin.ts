@@ -213,7 +213,7 @@ export async function validatePluginManifest(filePath: string): Promise<Validati
           path: key,
           message:
             `Field '${key}' belongs in the marketplace entry (marketplace.json), ` +
-            `not plugin.json. It's harmless here but unused — Claude Code ` +
+            `not plugin.json. It's harmless here but unused — Clew Code ` +
             `ignores it at load time.`,
         });
       }
@@ -242,7 +242,7 @@ export async function validatePluginManifest(filePath: string): Promise<Validati
       warnings.push({
         path: 'name',
         message:
-          `Plugin name "${manifest.name}" is not kebab-case. Claude Code accepts ` +
+          `Plugin name "${manifest.name}" is not kebab-case. Clew Code accepts ` +
           `it, but the Claude.ai marketplace sync requires kebab-case ` +
           `(lowercase letters, digits, and hyphens only, e.g., "my-plugin").`,
       });

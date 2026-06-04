@@ -362,7 +362,7 @@ Let the workflow guide you through all 7 phases.
 
 ## Requirements
 
-- Claude Code installed
+- Clew Code installed
 - Git repository (for code review)
 - Project with existing codebase (workflow assumes existing code to learn from)
 

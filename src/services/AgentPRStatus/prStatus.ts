@@ -2,7 +2,7 @@
  * AgentPRStatus — Detect and track pull request status for background agent sessions.
  *
  * Scans recent agent messages for PR creation patterns (gh pr create, GitHub API)
- * and maps status to the official Claude Code color scheme:
+ * and maps status to the official Clew Code color scheme:
  * - Yellow: waiting on checks/review, or checks failed
  * - Green: checks passed, no review blocking
  * - Purple: merged

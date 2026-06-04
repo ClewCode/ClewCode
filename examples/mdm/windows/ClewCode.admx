@@ -4,12 +4,12 @@
                    xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions"
                    revision="1.0" schemaVersion="1.0">
   <policyNamespaces>
-    <target prefix="claudecode" namespace="Anthropic.Policies.ClaudeCode" />
+    <target prefix="clewcode" namespace="Clew.Policies.ClewCode" />
     <using prefix="windows" namespace="Microsoft.Policies.Windows" />
   </policyNamespaces>
   <resources minRequiredRevision="1.0" />
   <categories>
-    <category name="Cat_ClaudeCode" displayName="$(string.Cat_ClaudeCode)" />
+    <category name="Cat_ClewCode" displayName="$(string.Cat_ClewCode)" />
   </categories>
   <policies>
     <policy name="ManagedSettings"
@@ -17,8 +17,8 @@
             displayName="$(string.ManagedSettings)"
             explainText="$(string.ManagedSettings_Explain)"
             presentation="$(presentation.ManagedSettings)"
-            key="SOFTWARE\Policies\ClaudeCode">
-      <parentCategory ref="Cat_ClaudeCode" />
+            key="SOFTWARE\Policies\ClewCode">
+      <parentCategory ref="Cat_ClewCode" />
       <supportedOn ref="windows:SUPPORTED_Windows_10_0" />
       <elements>
         <text id="SettingsJson" valueName="Settings" maxLength="1000000" required="true" />

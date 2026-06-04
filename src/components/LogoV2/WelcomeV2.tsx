@@ -32,7 +32,7 @@ export function WelcomeV2() {
     if ($[2] === Symbol.for('react.memo_cache_sentinel')) {
       t0 = (
         <Text>
-          <Text color="claude">{'Welcome to Claude Code'} </Text>
+          <Text color="claude">{'Welcome to Clew Code'} </Text>
           <Text dimColor={true}>v{MACRO.VERSION} </Text>
         </Text>
       );
@@ -206,7 +206,7 @@ export function WelcomeV2() {
   if ($[18] === Symbol.for('react.memo_cache_sentinel')) {
     t0 = (
       <Text>
-        <Text color="claude">{'Welcome to Claude Code'} </Text>
+        <Text color="claude">{'Welcome to Clew Code'} </Text>
         <Text dimColor={true}>v{MACRO.VERSION} </Text>
       </Text>
     );

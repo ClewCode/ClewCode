@@ -40,7 +40,7 @@ export function formatTimeAgo(timestamp: number): string {
 }
 
 /**
- * Shape-based icons matching official Claude Code agent view:
+ * Shape-based icons matching official Clew Code agent view:
  * ✻ (alive process, active), ✽ (alive process, animated),
  * ∙ (process exited), ✢ (loop/sleep session)
  */
@@ -67,7 +67,7 @@ const STATE_ICONS: Record<TaskCategory, string> = {
 } as const;
 
 /**
- * PR status colors matching official Claude Code spec:
+ * PR status colors matching official Clew Code spec:
  * - Yellow: waiting on checks/review, or checks failed
  * - Green: checks passed, no review blocking
  * - Purple: merged
