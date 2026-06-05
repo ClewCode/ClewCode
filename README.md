@@ -182,6 +182,22 @@ Task behavior:
 * One-shot tasks are removed after they run.
 * Local machine timezone is used for scheduled execution.
 
+## Clew taste-1
+
+Clew taste-1 is a local-first preference-learning runtime. It learns from accept, reject, edit, test, lint, and manual rules. It combines symbolic rules, semantic preference scoring, and contextual bandit optimization to adapt ClewCode to the user's coding taste and working style. It does not fine-tune the base LLM.
+
+```text
+/taste1              Show status panel
+/taste1 learn <rule> Add a manual rule
+/taste1 forget <id>  Remove a rule
+/taste1 profile      Show all rules
+/taste1 events       Show recent events
+/taste1 eval         Run self-evaluation
+/taste1 on/off       Enable/disable
+```
+
+See [docs/taste1.html](docs/taste1.html) for full documentation.
+
 ## Development
 
 ```bash
@@ -260,6 +276,7 @@ Terminal UI
 * [SearXNG Search](docs/features/searxng-search.html)
 * [Troubleshooting](docs/troubleshooting.html)
 * [Evals](docs/features/evals.html)
+* [Clew taste-1](docs/taste1.html)
 
 ## Debugging
 
