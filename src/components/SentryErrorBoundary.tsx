@@ -1,5 +1,7 @@
 import React from 'react';
+import { Box, Text } from '../ink.js';
 import { captureException } from '../utils/sentry.js';
+import { toError } from '../utils/errors.js';
 
 type Props = {
   children: React.ReactNode;
@@ -36,10 +38,13 @@ export class SentryErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    const componentStack =
+      (errorInfo as unknown as { componentStack?: string })?.componentStack ?? '';
+    process.stderr.write(`[SentryErrorBoundary] Caught render error: ${error.message}\n${componentStack}\n`);
     // Send to Sentry when enabled (fire-and-forget, never blocks)
     captureException(error, {
       source: 'react_error_boundary',
-      componentStack: (errorInfo as unknown as { componentStack?: string })?.componentStack ?? '',
+      componentStack,
     });
   }
 
@@ -48,8 +53,16 @@ export class SentryErrorBoundary extends React.Component<Props, State> {
       if (this.props.fallback !== undefined) {
         return this.props.fallback;
       }
-      // Default minimal fallback for terminal UI
-      return null;
+      const err = toError(this.state.error);
+      return (
+        <Box flexDirection="column" padding={1}>
+          <Box backgroundColor="red">
+            <Text color="white" inverse> RENDER ERROR </Text>
+          </Box>
+          <Text>{' '}</Text>
+          <Text>{err.message}</Text>
+        </Box>
+      );
     }
     return this.props.children;
   }

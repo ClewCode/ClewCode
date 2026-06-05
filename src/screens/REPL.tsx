@@ -2848,37 +2848,6 @@ export function REPL({
     [],
   );
 
-  // onMessageDisplay: called by Messages for each new rendered message.
-  // Delegates to executeMessageDisplayHooks which checks if any hook is configured.
-  const onMessageDisplay = useCallback(
-    async (msg: MessageType): Promise<{ hide?: boolean; text?: string } | null> => {
-      const abortController = new AbortController();
-      const context = getToolUseContext(messagesRef.current, [], abortController, mainLoopModel);
-      const msgText = msg.message.content
-        .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-        .map(b => b.text)
-        .join('\n');
-      if (!msgText) return null;
-
-      try {
-        for await (const result of executeMessageDisplayHooks(
-          msg.uuid,
-          msg.uuid,
-          0,
-          msgText,
-          true,
-          context as unknown as ToolUseContext,
-        )) {
-          if (result.message) return { hide: true };
-        }
-      } catch {
-        // Hooks must not break message display
-      }
-      return null;
-    },
-    [getToolUseContext, mainLoopModel],
-  );
-
   const getToolUseContext = useCallback(
     (
       messages: MessageType[],
@@ -3039,6 +3008,37 @@ export function REPL({
       appendSystemPrompt,
       setConversationId,
     ],
+  );
+
+  // onMessageDisplay: called by Messages for each new rendered message.
+  // Delegates to executeMessageDisplayHooks which checks if any hook is configured.
+  const onMessageDisplay = useCallback(
+    async (msg: MessageType): Promise<{ hide?: boolean; text?: string } | null> => {
+      const abortController = new AbortController();
+      const context = getToolUseContext(messagesRef.current, [], abortController, mainLoopModel);
+      const msgText = msg.message.content
+        .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+        .map(b => b.text)
+        .join('\n');
+      if (!msgText) return null;
+
+      try {
+        for await (const result of executeMessageDisplayHooks(
+          msg.uuid,
+          msg.uuid,
+          0,
+          msgText,
+          true,
+          context as unknown as ToolUseContext,
+        )) {
+          if (result.message) return { hide: true };
+        }
+      } catch {
+        // Hooks must not break message display
+      }
+      return null;
+    },
+    [getToolUseContext, mainLoopModel],
   );
 
   // Session backgrounding (Ctrl+B to background/foreground)
