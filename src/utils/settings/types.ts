@@ -535,9 +535,7 @@ export const SettingsSchema = lazySchema(() =>
       pluginSuggestionMarketplaces: z
         .array(z.string())
         .optional()
-        .describe(
-          'Enterprise allowlist of allowed marketplaces for plugin recommendations/suggestions.',
-        ),
+        .describe('Enterprise allowlist of allowed marketplaces for plugin recommendations/suggestions.'),
       // Force a specific login method: 'claudeai' for Claude Pro/Max, 'console' for Console billing
       forceLoginMethod: z
         .enum(['claudeai', 'console'])
@@ -614,6 +612,20 @@ export const SettingsSchema = lazySchema(() =>
         .catch(undefined)
         .describe('Persisted effort level for supported models.'),
       advisorModel: z.string().optional().describe('Advisor model for the server-side advisor tool.'),
+      taste1: z
+        .object({
+          enabled: z.boolean().optional().describe('Enable Clew taste-1 preference learning'),
+          autoLearn: z.boolean().optional().describe('Automatically learn from signals'),
+          injectPrompts: z.boolean().optional().describe('Inject taste context into system prompts'),
+          validateEdits: z.boolean().optional().describe('Validate edits against learned rules'),
+          minConfidence: z.number().optional().describe('Minimum confidence for rule application (0-1)'),
+          maxInjectedRules: z.number().optional().describe('Maximum rules to inject into system prompt'),
+          decayEnabled: z.boolean().optional().describe('Enable rule confidence decay over time'),
+          banditEnabled: z.boolean().optional().describe('Enable contextual bandit arm selection'),
+          neuralScoringEnabled: z.boolean().optional().describe('Enable neural/semantic preference scoring'),
+        })
+        .optional()
+        .describe('Clew taste-1: local-first preference-learning runtime config'),
       fastMode: z
         .boolean()
         .optional()
@@ -849,8 +861,17 @@ export const SettingsSchema = lazySchema(() =>
           enabled: z.boolean().optional().describe('When true, auto-trigger a dynamic workflow for complex tasks.'),
           confirmedOnce: z.boolean().optional().describe('Whether the user has accepted the first-run cost warning.'),
           workflowsStarted: z.number().int().optional().describe('Number of dynamic workflows started.'),
-          maxParallel: z.number().int().min(2).max(10).optional().describe('Override default parallel subtask cap (2-10).'),
-          estimatedTokenCostCeiling: z.enum(['low', 'medium', 'high', 'very-high']).optional().describe('Skip auto-trigger for plans above this cost tier.'),
+          maxParallel: z
+            .number()
+            .int()
+            .min(2)
+            .max(10)
+            .optional()
+            .describe('Override default parallel subtask cap (2-10).'),
+          estimatedTokenCostCeiling: z
+            .enum(['low', 'medium', 'high', 'very-high'])
+            .optional()
+            .describe('Skip auto-trigger for plans above this cost tier.'),
         })
         .optional()
         .describe('Dynamic-workflow / ultracode settings.'),
