@@ -133,6 +133,7 @@ Provider 文档：
 
 ```text id="89gxr6"
 /model        切换 model 或 provider
+/taste        打开 taste 偏好学习菜单
 /status       查看 provider、session 和 context 状态
 /doctor       运行 diagnostics
 /context      检查 context 使用情况
@@ -148,6 +149,34 @@ Provider 文档：
 ```
 
 在 CLI 中输入 `/` 查看全部命令。
+
+## Taste — 偏好学习
+
+Taste 是一个本地优先的偏好学习运行时。它从接受、拒绝、编辑、测试、lint 和手动规则中学习。结合符号规则、语义偏好评分和 contextual bandit 优化来适应用户的编码风格。**不会 fine-tune 基础 LLM。**
+
+```text
+/taste                打开交互菜单
+/taste learn <rule>   添加手动规则
+/taste forget <id>    删除规则
+/taste profile        显示所有规则
+/taste events         显示最近事件
+/taste decay          应用置信度衰减
+/taste eval           运行自我评估
+/taste export         导出高置信度规则
+/taste import <file>  从文件导入规则
+/taste on             启用 taste
+/taste off            禁用 taste
+```
+
+主要功能：
+
+- **交互菜单** — 方向键导航的 Dialog，11 个操作，Spinner 加载状态
+- **编辑验证** — 在权限请求期间扫描编辑内容，警告违反学习规则的操作
+- **配置热重载** — 通过 `subscribeToSettingsChanges()` 订阅 `settings.json` 变更
+- **状态行** — 在 PromptInputFooter 中显示 `ⓘ taste: N 条规则`
+- **提示注入** — 在系统提示中注入 `<clew_taste>` XML 区块，最多 8 条相关规则
+
+详见 [docs/taste.html](../docs/taste.html)。
 
 ## Scheduled Tasks
 
@@ -264,6 +293,7 @@ Terminal UI
 * [SearXNG Search](../docs/features/searxng-search.html)
 * [Troubleshooting](../docs/troubleshooting.html)
 * [Evals](../docs/features/evals.html)
+* [Taste](../docs/taste.html)
 
 ## 调试
 

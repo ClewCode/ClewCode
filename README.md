@@ -130,6 +130,7 @@ docs/providers.html
 
 ```text
 /model        Switch models or providers
+/taste        Open taste preference-learning menu
 /status       Show provider, session, and context status
 /doctor       Run diagnostics
 /context      Inspect active context usage
@@ -182,21 +183,35 @@ Task behavior:
 * One-shot tasks are removed after they run.
 * Local machine timezone is used for scheduled execution.
 
-## Clew taste-1
+## Taste
 
-Clew taste-1 is a local-first preference-learning runtime. It learns from accept, reject, edit, test, lint, and manual rules. It combines symbolic rules, semantic preference scoring, and contextual bandit optimization to adapt ClewCode to the user's coding taste and working style. It does not fine-tune the base LLM.
+Taste is a local-first preference-learning runtime. It learns from accept, reject, edit, test, lint, and manual rules. It combines symbolic rules, semantic preference scoring, and contextual bandit optimization to adapt Clew to your coding style. It does not fine-tune the base LLM.
 
 ```text
-/taste1              Show status panel
-/taste1 learn <rule> Add a manual rule
-/taste1 forget <id>  Remove a rule
-/taste1 profile      Show all rules
-/taste1 events       Show recent events
-/taste1 eval         Run self-evaluation
-/taste1 on/off       Enable/disable
+/taste                Open interactive menu
+/taste learn <rule>   Add a manual rule
+/taste forget <id>    Remove a rule
+/taste profile        Show all rules
+/taste events         Show recent events
+/taste decay          Apply confidence decay
+/taste eval           Run self-evaluation
+/taste export         Export high-confidence rules
+/taste import <file>  Import rules from file
+/taste on             Enable taste
+/taste off            Disable taste
 ```
 
-See [docs/taste1.html](docs/taste1.html) for full documentation.
+### Key Capabilities
+
+- **Interactive menu** — Arrow-key navigable Dialog with 11 actions, Spinner loading for async ops
+- **Edit validation** — Scans edits during permission request, warns when changes violate learned rules
+- **Config live-reload** — Subscribes to `settings.json` changes via `subscribeToSettingsChanges()`
+- **Status line** — `ⓘ taste: N rules` shown in PromptInputFooter alongside workflow status
+- **Prompt injection** — Injects `<clew_taste>` XML block with up to 8 relevant rules into system prompt
+- **Signal collection** — Fire-and-forget accept/reject/tool signals from PermissionContext and tool execution
+- **Decay engine** — Gradual confidence reduction for unused rules (half-life based, default 30 days)
+
+See [docs/taste.html](docs/taste.html) for full documentation.
 
 ## Development
 
@@ -276,7 +291,7 @@ Terminal UI
 * [SearXNG Search](docs/features/searxng-search.html)
 * [Troubleshooting](docs/troubleshooting.html)
 * [Evals](docs/features/evals.html)
-* [Clew taste-1](docs/taste1.html)
+* [Taste](docs/taste.html)
 
 ## Debugging
 
@@ -320,16 +335,17 @@ Use the private reporting process described in [SECURITY.md](SECURITY.md).
 
 ## Changelog
 
-### 0.1.2 (2026-06-03)
+### 0.2.1 (2026-06-05)
 
-- Initial Clew public release with `clew` and `clewcode` CLI commands.
-- Multi-provider routing, tools, plugins, skills, MCP, LSP, agents, daemon mode, scheduled tasks, bridge, research, and memory systems.
-- **Goal command overhaul** — simplified `/goal` parsing with pause state, edit, status, and last-achieved recall.
-- **Ultracode** — auto-classifier, dynamic workflow coordinator, and `workflow`/`ultracode` commands.
-- **Spinner component** with ignore directory configuration for crawl data.
-- **Background Agents** — `!bg` shell tasks, dispatch autocomplete, PR columns, agent logout.
-- **HTML docs** redesigned with clean Anthropic-style theme.
-- Fixed `/model` and `/providers` picker persistence bug; removed stale `CLAUDE_CODE_TEAM_NAME` references.
+- **Taste system** — local-first preference-learning runtime. Interactive `/taste` menu with Spinner loading, edit validation in FileEditPermissionRequest, status line in PromptInputFooter, config live-reload via settings change subscription, XML tag `<clew_taste>` prompt injection.
+- **Model picker** — `/model` now shows all models from all providers grouped by provider section.
+- **Provider auto-persist** — last-used provider+model saved to `provider.json` without `--global`.
+- **Security hardening** — PowerShell prefix/wildcard rules for native executables, malformed tool call guard, bash runtime 100MB output limit.
+- **Guardian auto-review** — LLM-based permission reviewer with circuit breaker and `/approve` override.
+- **Bridge v2** — Provider-agnostic Remote Control via WebSocket, relay client, REPL bridging.
+- **PR commands** — `/pr create`, `list`, `view`, `review`, `merge`, `status`.
+- **Dynamic Workflow** — Ultracode bootstrap, progress UI polling `.claude/runs/`, transcript classifier suggestion.
+- Fixed blank screen (SentryErrorBoundary + TDZ in REPL.tsx), autocomplete hint duplication, ProviderManager base URL resolution for session-level overrides.
 
 See [CHANGELOG.md](CHANGELOG.md) for full history.
 

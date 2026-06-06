@@ -11,12 +11,9 @@
  */
 
 import type { LocalCommandResult, LocalJSXCommandContext } from '../../types/command.js';
-import { listRecentDenials, markOverridden, clearDenials } from '../../utils/permissions/guardianDenialStore.js';
+import { clearDenials, listRecentDenials, markOverridden } from '../../utils/permissions/guardianDenialStore.js';
 
-export async function call(
-  args: string,
-  _context: LocalJSXCommandContext,
-): Promise<LocalCommandResult> {
+export async function call(args: string, _context: LocalJSXCommandContext): Promise<LocalCommandResult> {
   const trimmed = args.trim();
   const [verb] = trimmed.split(/\s+/);
 

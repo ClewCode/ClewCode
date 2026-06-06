@@ -87,7 +87,10 @@ export async function verifyFinding(params: {
 }
 
 function parseVerifierJson(text: string): VerifierVerdict {
-  const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+  const cleaned = text
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
   let obj: unknown;
   try {
     obj = JSON.parse(cleaned);

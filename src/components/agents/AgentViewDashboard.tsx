@@ -12,6 +12,7 @@
  */
 
 import * as React from 'react';
+import { useAgentDispatchAutocomplete } from '../../hooks/useAgentDispatchAutocomplete.js';
 import { useAgentViewSummaries } from '../../hooks/useAgentViewSummaries.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { Box, Text, useInput } from '../../ink.js';
@@ -44,7 +45,6 @@ import {
   type TaskCategory,
 } from './AgentViewRow.js';
 import { AgentViewShortcutsHelp } from './AgentViewShortcutsHelp.js';
-import { useAgentDispatchAutocomplete } from '../../hooks/useAgentDispatchAutocomplete.js';
 import { isWaitingForInput } from './utils.js';
 
 type GroupMode = 'state' | 'directory';
@@ -960,19 +960,16 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
             const isSelected = i === autocomplete.selectedIndex;
             return (
               <Box key={`${sug.type}-${sug.text}`} flexDirection="row" gap={1}>
-                <Text color={(isSelected ? 'cyan' : 'dim') as any}>
-                  {isSelected ? '▸' : ' '}
-                </Text>
+                <Text color={(isSelected ? 'cyan' : 'dim') as any}>{isSelected ? '▸' : ' '}</Text>
                 <Text bold={isSelected} color={(isSelected ? 'text' : 'dim') as any}>
-                  {autocomplete.prefix}{sug.text}
+                  {autocomplete.prefix}
+                  {sug.text}
                 </Text>
                 <Text dimColor>{sug.description}</Text>
               </Box>
             );
           })}
-          <Text dimColor>
-            tab to accept · ↑↓ to navigate
-          </Text>
+          <Text dimColor>tab to accept · ↑↓ to navigate</Text>
         </Box>
       )}
 

@@ -1,7 +1,5 @@
-import React from 'react';
 import { c as _c } from 'react/compiler-runtime';
 import { Box, Text, useTheme } from 'src/ink.js';
-import { getGlobalConfig } from '../../utils/config.js';
 import { env } from '../../utils/env.js';
 
 const WELCOME_V2_WIDTH = 58;
@@ -43,14 +41,7 @@ export function WelcomeV2() {
           }
         </Text>
       );
-      const shouldShowHorns = getGlobalConfig().showClawdHorns ?? true;
-      t2 = (
-        <Text>
-          {'      '}
-          <Text color="clawd_body">{shouldShowHorns ? ' ▗ ▖ ' : '     '}</Text>
-          {'                                    '}
-        </Text>
-      );
+      t2 = <Text>{'                                                          '}</Text>;
       t3 = <Text>{'                                                          '}</Text>;
       t4 = <Text>{'                                                          '}</Text>;
       t5 = <Text>{'            \u2591\u2591\u2591\u2591\u2591\u2591                                        '}</Text>;
@@ -112,7 +103,13 @@ export function WelcomeV2() {
           <Text>{'               \u2588\u2588\u2592\u2592\u2588\u2588  '}</Text>
         </Text>
       );
-      t11 = <Text>{'                                            \u2592\u2592      \u2588\u2588   \u2592'}</Text>;
+      t11 = (
+        <Text>
+          {'      '}
+          <Text color="clawd_body">{'   ▗   ▖   '}</Text>
+          {'                           \u2592\u2592      \u2588\u2588   \u2592'}
+        </Text>
+      );
       $[12] = t10;
       $[13] = t11;
     } else {
@@ -137,8 +134,10 @@ export function WelcomeV2() {
       t13 = (
         <Text>
           {'      '}
-          <Text color="clawd_body" backgroundColor="clawd_background">
-            ██▄█████▄██
+          <Text backgroundColor="clawd_background">
+            <Text color="clawd_body">████</Text>
+            <Text color="clawd_eye">▄▄▄</Text>
+            <Text color="clawd_body">████</Text>
           </Text>
           {'                           \u2592\u2592         \u2592\u2592 '}
         </Text>
@@ -285,10 +284,14 @@ export function WelcomeV2() {
       </Text>
     );
     t11 = (
-      <Text dimColor={true}>
-        {
-          '                               \u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591           '
-        }
+      <Text>
+        {'      '}
+        <Text color="clawd_body">{'   ▗   ▖   '}</Text>
+        <Text dimColor={true}>
+          {
+            '              \u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591           '
+          }
+        </Text>
       </Text>
     );
     $[25] = t10;
@@ -305,8 +308,7 @@ export function WelcomeV2() {
   }
   let t12;
   if ($[30] === Symbol.for('react.memo_cache_sentinel')) {
-    const shouldShowHorns = getGlobalConfig().showClawdHorns ?? true;
-    t12 = <Text color="clawd_body">{shouldShowHorns ? '       ^ ^' : '          '}</Text>;
+    t12 = <Text color="clawd_body"> █████████ </Text>;
     $[30] = t12;
   } else {
     t12 = $[30];
@@ -331,7 +333,9 @@ export function WelcomeV2() {
     t14 = (
       <Text>
         {'      '}
-        <Text color="clawd_body">██▄█████▄██</Text>
+        <Text color="clawd_body">████</Text>
+        <Text color="clawd_eye">▄▄▄</Text>
+        <Text color="clawd_body">████</Text>
         <Text>{'                        '}</Text>
         <Text bold={true}>*</Text>
         <Text>{'                '}</Text>
@@ -343,12 +347,11 @@ export function WelcomeV2() {
   }
   let t15;
   if ($[33] === Symbol.for('react.memo_cache_sentinel')) {
-    const shouldShowHorns = getGlobalConfig().showClawdHorns ?? true;
     t15 = (
       <Text>
         {'      '}
-        <Text color="clawd_body">{shouldShowHorns ? ' ▗ ▖ ' : '     '}</Text>
-        {'                                    '}
+        <Text color="clawd_body"> █████████ </Text>
+        {'     *                                   '}
       </Text>
     );
     $[33] = t15;
@@ -395,7 +398,7 @@ type AppleTerminalWelcomeV2Props = {
   theme: string;
   welcomeMessage: string;
 };
-function AppleTerminalWelcomeV2(t0) {
+function AppleTerminalWelcomeV2(t0: AppleTerminalWelcomeV2Props) {
   const $ = _c(44);
   const { theme, welcomeMessage } = t0;
   const isLightTheme = ['light', 'light-daltonized', 'light-ansi'].includes(theme);
@@ -525,9 +528,10 @@ function AppleTerminalWelcomeV2(t0) {
         <Text>
           {'      '}
           <Text color="clawd_body">▗</Text>
-          <Text color="clawd_background" backgroundColor="clawd_body">
-            {' '}
-            ▗{'     '}▖{' '}
+          <Text backgroundColor="clawd_body">
+            {'   '}
+            <Text color="clawd_eye">▄▄▄</Text>
+            {'   '}
           </Text>
           <Text color="clawd_body">▖</Text>
           {'                           \u2592\u2592         \u2592\u2592 '}
@@ -747,9 +751,10 @@ function AppleTerminalWelcomeV2(t0) {
       <Text>
         {'        '}
         <Text color="clawd_body">▗</Text>
-        <Text color="clawd_background" backgroundColor="clawd_body">
-          {' '}
-          ▗{'     '}▖{' '}
+        <Text backgroundColor="clawd_body">
+          {'   '}
+          <Text color="clawd_eye">▄▄▄</Text>
+          {'   '}
         </Text>
         <Text color="clawd_body">▖</Text>
         <Text>{'                       '}</Text>

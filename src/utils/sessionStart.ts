@@ -1,4 +1,5 @@
 import { getMainThreadAgentType } from '../bootstrap/state.js';
+import { clearSkillCaches } from '../skills/loadSkillsDir.js';
 import type { HookResultMessage } from '../types/message.js';
 import { createAttachmentMessage } from './attachments.js';
 import { logForDebugging } from './debug.js';
@@ -6,7 +7,6 @@ import { withDiagnosticsTiming } from './diagLogs.js';
 import { isBareMode } from './envUtils.js';
 import { updateWatchPaths } from './hooks/fileChangedWatcher.js';
 import { shouldAllowManagedHooksOnly } from './hooks/hooksConfigSnapshot.js';
-import { clearSkillCaches } from '../skills/loadSkillsDir.js';
 import { executeSessionStartHooks, executeSetupHooks } from './hooks.js';
 import { logError } from './log.js';
 import { loadPluginHooks } from './plugins/loadPluginHooks.js';

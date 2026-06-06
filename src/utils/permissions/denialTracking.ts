@@ -55,10 +55,7 @@ export function shouldFallbackToPrompting(state: DenialTrackingState): boolean {
  * Record a guardian review result (allow or deny).
  * Tracks the rolling window for circuit breaker.
  */
-export function recordGuardianReview(
-  state: DenialTrackingState,
-  allowed: boolean,
-): DenialTrackingState {
+export function recordGuardianReview(state: DenialTrackingState, allowed: boolean): DenialTrackingState {
   const newTotal = state.guardianTotalReviews + 1;
   // If we've accumulated window_size reviews, the window is saturated;
   // approximate the in-window denial count as a decaying ratio.
@@ -67,7 +64,12 @@ export function recordGuardianReview(
     : newTotal <= DENIAL_LIMITS.guardianWindowSize
       ? state.guardianDenialsInWindow + 1
       : // Beyond window: approximate decay
-        Math.max(0, state.guardianDenialsInWindow - Math.floor(state.guardianDenialsInWindow / DENIAL_LIMITS.guardianWindowSize) + 1);
+        Math.max(
+          0,
+          state.guardianDenialsInWindow -
+            Math.floor(state.guardianDenialsInWindow / DENIAL_LIMITS.guardianWindowSize) +
+            1,
+        );
 
   return {
     ...state,

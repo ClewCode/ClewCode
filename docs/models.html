@@ -56,11 +56,12 @@
   </table>
 
   <h2>Model Switching</h2>
-  <pre><code>/model                          # Interactive picker (recent models at top)
+  <pre><code>/model                          # Interactive picker (recent models at top, grouped by provider)
 /model list                     # List all available models
 /model claude-sonnet-4-7        # Switch by full ID
 /model sonnet                   # Alias-based switching
 --model opus                    # CLI flag at startup</code></pre>
+  <p>The picker shows <strong>all models from every provider</strong> in named sections — not just the active provider's models. Recent models appear at top with the active provider's default. Select any model from any provider directly.</p>
   <p>Model switching is instant — the next conversation turn uses the new model. Previous context is preserved.</p>
 
   <h2>Model Aliases</h2>
@@ -92,7 +93,7 @@
   </ul>
 
   <footer class="footer">
-    <span>Clew v0.1.2 — Open Source</span>
+    <span>Clew v0.2.1 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
       <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>

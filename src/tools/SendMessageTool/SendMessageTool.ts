@@ -184,9 +184,7 @@ async function handleBroadcast(
   const teamName = getTeamName(appState.teamContext);
 
   if (!teamName) {
-    throw new Error(
-      'Not in a team context. Create a team with Teammate spawnTeam first.',
-    );
+    throw new Error('Not in a team context. Create a team with Teammate spawnTeam first.');
   }
 
   const teamFile = await readTeamFileAsync(teamName);

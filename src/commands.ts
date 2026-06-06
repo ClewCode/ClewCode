@@ -135,8 +135,7 @@ import pluginDetails from './commands/plugin-details/index.js';
 import advisor from './commands/advisor.js';
 import agentCmd from './commands/agent/index.js';
 import capabilities from './commands/capabilities/index.js';
-import taste1 from './commands/taste1/index.js';
-import taste1 from './commands/taste1/index.js';
+import taste from './commands/taste/index.js';
 import { logError } from './utils/log.js';
 import { toError } from './utils/errors.js';
 import { logForDebugging } from './utils/debug.js';
@@ -300,7 +299,7 @@ const COMMANDS = memoize((): Command[] => [
   feedback,
   scrollSpeed,
   searxng,
-  taste1,
+  taste,
   review,
   ultrareview,
   rewind,

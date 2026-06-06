@@ -211,7 +211,7 @@ export function getEffortSuffix(model: string, effortValue: EffortValue | undefi
   if (!modelSupportsEffort(model)) return '';
   const resolved = resolveAppliedEffort(model, effortValue);
   if (resolved === undefined) return '';
-  return ` with ${convertEffortValueToLevel(resolved)} effort`;
+  return ` · ${convertEffortValueToLevel(resolved)} effort`;
 }
 
 export function isValidNumericEffort(value: number): boolean {

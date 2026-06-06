@@ -251,13 +251,18 @@ export class ProviderManager {
   }
 
   getBaseUrlForProvider(provider?: ProviderId): string | undefined {
-    const config = this.getSelectedProviderConfig();
-    const providerConfig = config.providerConfig;
-    if (providerConfig && typeof providerConfig.baseUrl === 'string') {
-      return providerConfig.baseUrl;
+    // When a session override or explicit provider ID is given, use that
+    // provider's built-in defaultBaseUrl from the registry instead of the
+    // persisted providerConfig.baseUrl (which may belong to a different provider).
+    const effectiveProvider = provider ?? this.getActiveProviderName();
+    if (this.sessionProvider || provider) {
+      return getProviderOptions(effectiveProvider).baseUrl;
     }
-    const providerName = provider ?? this.getActiveProviderName();
-    return getProviderOptions(providerName).baseUrl;
+    const config = this.getSelectedProviderConfig();
+    if (config.providerConfig && typeof config.providerConfig.baseUrl === 'string') {
+      return config.providerConfig.baseUrl;
+    }
+    return getProviderOptions(effectiveProvider).baseUrl;
   }
 
   getModelForProvider(provider?: ProviderId): string | undefined {

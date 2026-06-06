@@ -143,10 +143,7 @@ const ACTION_VERBS = [
   'consolidate',
 ];
 
-export function classifyTranscript(params: {
-  prompt: string;
-  context?: TranscriptContext;
-}): ClassifierResult {
+export function classifyTranscript(params: { prompt: string; context?: TranscriptContext }): ClassifierResult {
   const prompt = (params.prompt || '').trim();
   const lowered = prompt.toLowerCase();
   const context = params.context ?? {};
@@ -229,12 +226,12 @@ export function classifyTranscript(params: {
  */
 export function buildUltracodeSuggestion(result: ClassifierResult): string | null {
   if (!result.shouldSuggestUltracode) return null;
-  const cmd = result.recommendation === 'complex'
-    ? `/effort ultracode`
-    : `/ultracode on`;
-  return `◈ ultracode · this task looks ${result.recommendation} (score ${result.score}). ` +
+  const cmd = result.recommendation === 'complex' ? `/effort ultracode` : `/ultracode on`;
+  return (
+    `◈ ultracode · this task looks ${result.recommendation} (score ${result.score}). ` +
     `Run \`${cmd}\` to let Claude auto-decompose it into a parallel dynamic workflow. ` +
-    `${result.reasoning}`;
+    `${result.reasoning}`
+  );
 }
 
 function containsWord(haystack: string, word: string): boolean {

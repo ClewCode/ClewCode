@@ -133,6 +133,7 @@ export OLLAMA_HOST=http://localhost:11434
 
 ```text
 /model        สลับ model หรือ provider
+/taste        เปิดเมนูการเรียนรู้ความชอบ
 /status       ดูสถานะ provider, session และ context
 /doctor       รัน diagnostics
 /context      ตรวจการใช้ context
@@ -148,6 +149,34 @@ export OLLAMA_HOST=http://localhost:11434
 ```
 
 พิมพ์ `/` ใน CLI เพื่อดูรายการคำสั่งทั้งหมด
+
+## Taste — การเรียนรู้ความชอบ
+
+Taste คือระบบการเรียนรู้ความชอบเฉพาะที่ (local-first preference-learning runtime) มันเรียนรู้จากสัญญาณ accept, reject, edit, test, lint และกฎที่ผู้ใช้กำหนด ผสมผสาน symbolic rules, semantic preference scoring และ contextual bandit optimization เพื่อปรับ Clew ให้เข้ากับสไตล์การเขียนโค้ดของคุณ **ไม่มีการ fine-tune base LLM**
+
+```text
+/taste                เปิดเมนูแบบโต้ตอบ
+/taste learn <rule>   เพิ่มกฎ
+/taste forget <id>    ลบกฎ
+/taste profile        แสดงกฎทั้งหมด
+/taste events         แสดงเหตุการณ์ล่าสุด
+/taste decay          ลดความเชื่อมั่นของกฎที่ไม่ได้ใช้
+/taste eval           ประเมินผลตัวเอง
+/taste export         ส่งออกกฎที่มีความเชื่อมั่นสูง
+/taste import <file>  นำเข้ากฎจากไฟล์
+/taste on             เปิดใช้งาน taste
+/taste off            ปิดใช้งาน taste
+```
+
+ความสามารถหลัก:
+
+- **เมนูแบบโต้ตอบ** — Dialog ที่นำทางด้วยลูกศร มี 11 การกระทำ, Spinner สำหรับการโหลด
+- **การตรวจสอบก่อนแก้ไข** — สแกนการแก้ไขระหว่างขออนุญาต, เตือนเมื่อละเมิดกฎ
+- **โหลดการตั้งค่าใหม่แบบสด** — สมัครรับการเปลี่ยนแปลง `settings.json` ผ่าน `subscribeToSettingsChanges()`
+- **แถบสถานะ** — แสดง `ⓘ taste: N กฎ` ใน PromptInputFooter
+- **การแทรก prompt** — แทรกบล็อก XML `<clew_taste>` พร้อมกฎที่เกี่ยวข้องสูงสุด 8 รายการ
+
+ดูรายละเอียดที่ [docs/taste.html](../docs/taste.html)
 
 ## Scheduled Tasks
 
@@ -264,6 +293,7 @@ Terminal UI
 * [SearXNG Search](../docs/features/searxng-search.html)
 * [Troubleshooting](../docs/troubleshooting.html)
 * [Evals](../docs/features/evals.html)
+* [Taste](../docs/taste.html)
 
 ## การดีบัก
 

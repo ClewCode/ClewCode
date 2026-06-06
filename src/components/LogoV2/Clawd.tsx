@@ -3,11 +3,7 @@ import { Box, Text } from '../../ink.js';
 import { getGlobalConfig } from '../../utils/config.js';
 import { env } from '../../utils/env.js';
 
-export type ClawdPose =
-  | 'default'
-  | 'arms-up' // both arms raised (used during jump)
-  | 'look-left' // both pupils shifted left
-  | 'look-right'; // both pupils shifted right
+export type ClawdPose = 'default' | 'arms-up' | 'look-left' | 'look-right';
 
 type Props = {
   pose?: ClawdPose;
@@ -18,64 +14,50 @@ type Props = {
   eyeColor?: string;
 };
 
-// Standard-terminal pose fragments. Each row is split into segments so we can
-// vary only the parts that change (eyes, arms) while keeping the body/bg spans
-// stable. All poses end up 9 cols wide.
-type Segments = {
-  /** row 1 left (no bg): optional raised arm + side */
-  r1L: string;
-  /** row 1 eyes (with bg): left-eye, forehead, right-eye */
-  r1E: string;
-  /** row 1 right (no bg): side + optional raised arm */
-  r1R: string;
-  /** row 2 left (no bg): arm + body curve */
-  r2L: string;
-  /** row 2 right (no bg): body curve + arm */
-  r2R: string;
+type EyeLayout = {
+  left: number;
+  width: number;
+  right: number;
 };
 
-const POSES: Record<ClawdPose, Segments> = {
+const EYE_LAYOUTS: Record<ClawdPose, EyeLayout> = {
   default: {
-    r1L: ' ▐',
-    r1E: '▛███▜',
-    r1R: '▌',
-    r2L: '▝▜',
-    r2R: '▛▘',
+    left: 1,
+    width: 3,
+    right: 1,
   },
   'look-left': {
-    r1L: ' ▐',
-    r1E: '▟███▟',
-    r1R: '▌',
-    r2L: '▝▜',
-    r2R: '▛▘',
+    left: 0,
+    width: 3,
+    right: 2,
   },
   'look-right': {
-    r1L: ' ▐',
-    r1E: '▙███▙',
-    r1R: '▌',
-    r2L: '▝▜',
-    r2R: '▛▘',
+    left: 2,
+    width: 3,
+    right: 0,
   },
   'arms-up': {
-    r1L: '▗▟',
-    r1E: '▛███▜',
-    r1R: '▙▖',
-    r2L: ' ▜',
-    r2R: '▛ ',
+    left: 1,
+    width: 3,
+    right: 1,
   },
 };
 
-// Apple Terminal uses a bg-fill trick (see below), so only eye poses make
-// sense. Arm poses fall back to default.
-const APPLE_EYES: Record<ClawdPose, string> = {
-  default: ' ▗   ▖ ',
-  'look-left': ' ▘   ▘ ',
-  'look-right': ' ▝   ▝ ',
-  'arms-up': ' ▗   ▖ ',
-};
+function Eye({ eye, bodyColor, eyeColor }: { eye: EyeLayout; bodyColor: string; eyeColor: string }): React.ReactNode {
+  return (
+    <>
+      <Text backgroundColor={bodyColor}>{' '.repeat(eye.left)}</Text>
+      <Text color={eyeColor} backgroundColor={bodyColor}>
+        {'▄'.repeat(eye.width)}
+      </Text>
+      <Text backgroundColor={bodyColor}>{' '.repeat(eye.right)}</Text>
+    </>
+  );
+}
 
 export function Clawd({ pose = 'default', showHorns, bodyColor, eyeColor }: Props = {}): React.ReactNode {
   const config = getGlobalConfig();
+
   const shouldShowHorns = showHorns ?? (config as any).showClawdHorns ?? true;
   const bc = bodyColor ?? (config as any).clawdBodyColor ?? 'clawd_body';
   const ec = eyeColor ?? (config as any).clawdEyeColor ?? 'clawd_eye';
@@ -84,27 +66,41 @@ export function Clawd({ pose = 'default', showHorns, bodyColor, eyeColor }: Prop
     return <AppleTerminalClawd pose={pose} showHorns={shouldShowHorns} bodyColor={bc} eyeColor={ec} />;
   }
 
-  const p = POSES[pose];
+  const eye = EYE_LAYOUTS[pose];
+
   const tHorn = shouldShowHorns ? <Text color={bc}>{'  ▗   ▖  '}</Text> : null;
-  const t6 = (
-    <Text>
-      <Text color={bc}>{p.r1L}</Text>
-      <Text color={bc} backgroundColor={(config as any).clawdEyeColor ? ec : 'clawd_background'}>
-        {p.r1E}
+
+  const tFace =
+    pose === 'arms-up' ? (
+      <Text>
+        <Text color={bc}>▗▟</Text>
+        <Eye eye={eye} bodyColor={bc} eyeColor={ec} />
+        <Text color={bc}>▙▖</Text>
       </Text>
-      <Text color={bc}>{p.r1R}</Text>
-    </Text>
-  );
-  const t10 = (
-    <Text>
-      <Text color={bc}>{p.r2L}</Text>
-      <Text color={bc} backgroundColor={(config as any).clawdBodyColor ? bc : 'clawd_background'}>
-        █████
+    ) : (
+      <Text>
+        <Text color={bc}> ▐</Text>
+        <Eye eye={eye} bodyColor={bc} eyeColor={ec} />
+        <Text color={bc}>▌ </Text>
       </Text>
-      <Text color={bc}>{p.r2R}</Text>
-    </Text>
-  );
-  const t11 = (
+    );
+
+  const tBody =
+    pose === 'arms-up' ? (
+      <Text>
+        <Text color={bc}> ▜</Text>
+        <Text backgroundColor={bc}>{' '.repeat(5)}</Text>
+        <Text color={bc}>▛ </Text>
+      </Text>
+    ) : (
+      <Text>
+        <Text color={bc}>▝▜</Text>
+        <Text backgroundColor={bc}>{' '.repeat(5)}</Text>
+        <Text color={bc}>▛▘</Text>
+      </Text>
+    );
+
+  const tLegs = (
     <Text color={bc}>
       {'  '}▘▘ ▝▝{'  '}
     </Text>
@@ -113,39 +109,38 @@ export function Clawd({ pose = 'default', showHorns, bodyColor, eyeColor }: Prop
   return (
     <Box flexDirection="column">
       {tHorn}
-      {t6}
-      {t10}
-      {t11}
+      {tFace}
+      {tBody}
+      {tLegs}
     </Box>
   );
 }
 
-function AppleTerminalClawd({ pose, showHorns, bodyColor, eyeColor }: Props): React.ReactNode {
+function AppleTerminalClawd({ pose = 'default', showHorns, bodyColor, eyeColor }: Props): React.ReactNode {
   const bc = bodyColor ?? 'clawd_body';
   const ec = eyeColor ?? 'clawd_eye';
+
+  const eye = EYE_LAYOUTS[pose];
+
   const tHorn = showHorns ? <Text color={bc}>{'  ▗   ▖  '}</Text> : null;
-  const t2 = APPLE_EYES[pose];
-  const t3 = (
-    <Text color={ec} backgroundColor={bc}>
-      {t2}
-    </Text>
-  );
-  const t5 = (
+
+  const tFace = (
     <Text>
       <Text color={bc}>▗</Text>
-      {t3}
+      <Eye eye={eye} bodyColor={bc} eyeColor={ec} />
       <Text color={bc}>▖</Text>
     </Text>
   );
-  const t6 = <Text backgroundColor={bc}>{' '.repeat(7)}</Text>;
-  const t7 = <Text color={bc}>▘▘ ▝▝</Text>;
+
+  const tBody = <Text backgroundColor={bc}>{' '.repeat(7)}</Text>;
+  const tLegs = <Text color={bc}>▘▘ ▝▝</Text>;
 
   return (
     <Box flexDirection="column" alignItems="center">
       {tHorn}
-      {t5}
-      {t6}
-      {t7}
+      {tFace}
+      {tBody}
+      {tLegs}
     </Box>
   );
 }

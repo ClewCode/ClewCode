@@ -148,8 +148,7 @@ export function getRequestTooLargeErrorMessage(): string {
     ? `Request too large (${limits}). Try with a smaller file.`
     : `Request too large (${limits}). Double press esc to go back and try with a smaller file.`;
 }
-export const OAUTH_ORG_NOT_ALLOWED_ERROR_MESSAGE =
-  'Your account does not have access to Clew Code. Please run /login.';
+export const OAUTH_ORG_NOT_ALLOWED_ERROR_MESSAGE = 'Your account does not have access to Clew Code. Please run /login.';
 
 export function getTokenRevokedErrorMessage(): string {
   return getIsNonInteractiveSession()
