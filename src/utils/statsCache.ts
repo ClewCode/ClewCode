@@ -10,6 +10,7 @@ import { getFsImplementation } from './fsOperations.js';
 import { logError } from './log.js';
 import { jsonParse, jsonStringify } from './slowOperations.js';
 import type { DailyActivity, DailyModelTokens, SessionStats } from './stats.js';
+import { normalizeProviderId } from './stats.js';
 
 export const STATS_CACHE_VERSION = 5;
 const MIN_MIGRATABLE_VERSION = 5;
@@ -313,23 +314,46 @@ export function mergeCacheWithNewStats(
     }
   }
 
-  // Merge provider usage
-  const providerUsage = { ...existingCache.providerUsage };
-  for (const [provider, usage] of Object.entries(newStats.providerUsage || {})) {
-    if (providerUsage[provider]) {
-      providerUsage[provider] = {
-        inputTokens: providerUsage[provider]!.inputTokens + usage.inputTokens,
-        outputTokens: providerUsage[provider]!.outputTokens + usage.outputTokens,
-        cacheReadInputTokens: providerUsage[provider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
-        cacheCreationInputTokens: providerUsage[provider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
-        webSearchRequests: providerUsage[provider]!.webSearchRequests + usage.webSearchRequests,
-        costUSD: providerUsage[provider]!.costUSD + usage.costUSD,
-        contextWindow: Math.max(providerUsage[provider]!.contextWindow, usage.contextWindow),
-        maxOutputTokens: Math.max(providerUsage[provider]!.maxOutputTokens, usage.maxOutputTokens),
-        provider,
+  // Merge provider usage - normalize provider IDs to ensure consistent merging
+  const providerUsage: { [providerId: string]: ModelUsage } = {};
+
+  // First, add existing cache provider usage with normalized keys
+  for (const [provider, usage] of Object.entries(existingCache.providerUsage)) {
+    const normalizedProvider = normalizeProviderId(provider);
+    if (providerUsage[normalizedProvider]) {
+      providerUsage[normalizedProvider] = {
+        inputTokens: providerUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
+        outputTokens: providerUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
+        cacheReadInputTokens: providerUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
+        cacheCreationInputTokens: providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+        webSearchRequests: providerUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
+        costUSD: providerUsage[normalizedProvider]!.costUSD + usage.costUSD,
+        contextWindow: Math.max(providerUsage[normalizedProvider]!.contextWindow, usage.contextWindow),
+        maxOutputTokens: Math.max(providerUsage[normalizedProvider]!.maxOutputTokens, usage.maxOutputTokens),
+        provider: normalizedProvider,
       };
     } else {
-      providerUsage[provider] = { ...usage, provider };
+      providerUsage[normalizedProvider] = { ...usage, provider: normalizedProvider };
+    }
+  }
+
+  // Then merge new stats provider usage with normalized keys
+  for (const [provider, usage] of Object.entries(newStats.providerUsage || {})) {
+    const normalizedProvider = normalizeProviderId(provider);
+    if (providerUsage[normalizedProvider]) {
+      providerUsage[normalizedProvider] = {
+        inputTokens: providerUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
+        outputTokens: providerUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
+        cacheReadInputTokens: providerUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
+        cacheCreationInputTokens: providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+        webSearchRequests: providerUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
+        costUSD: providerUsage[normalizedProvider]!.costUSD + usage.costUSD,
+        contextWindow: Math.max(providerUsage[normalizedProvider]!.contextWindow, usage.contextWindow),
+        maxOutputTokens: Math.max(providerUsage[normalizedProvider]!.maxOutputTokens, usage.maxOutputTokens),
+        provider: normalizedProvider,
+      };
+    } else {
+      providerUsage[normalizedProvider] = { ...usage, provider: normalizedProvider };
     }
   }
 

@@ -350,6 +350,34 @@ function OverviewTab({
         </Box>
       </Box>
 
+      {/* Section 1b: Provider breakdown */}
+      {Object.keys(stats.providerUsage).length > 0 && (
+        <Box marginBottom={1}>
+          <Text bold>Providers</Text>
+          <Box flexDirection="row" gap={4} flexWrap="wrap">
+            {Object.entries(stats.providerUsage)
+              .sort(([, a], [, b]) => b.inputTokens + b.outputTokens - (a.inputTokens + a.outputTokens))
+              .map(([provider, usage]) => {
+                const providerTokens = usage.inputTokens + usage.outputTokens;
+                const percentage = totalTokens > 0 ? ((providerTokens / totalTokens) * 100).toFixed(1) : '0.0';
+                return (
+                  <Box key={provider} flexDirection="column" width={28}>
+                    <Text wrap="truncate">
+                      {formatProviderLabel(provider)}: <Text color="claude">{formatNumber(providerTokens)}</Text>
+                      <Text color="subtle"> ({percentage}%)</Text>
+                    </Text>
+                    {usage.costUSD > 0 && (
+                      <Text wrap="truncate" color="subtle">
+                        {'  '}Cost: {formatStatsCost(usage.costUSD)}
+                      </Text>
+                    )}
+                  </Box>
+                );
+              })}
+          </Box>
+        </Box>
+      )}
+
       {/* Section 2: Activity - Row 1: Sessions | Longest session */}
       <Box flexDirection="row" gap={4}>
         <Box flexDirection="column" width={28}>

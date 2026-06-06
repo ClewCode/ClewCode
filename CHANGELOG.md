@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] — 2026-06-06
+
+### Fixed
+
+- **Stats provider aggregation**: `/stats` now correctly aggregates usage across multiple providers
+  - Added `normalizeProviderId()` to map aliases (Bedrock→Anthropic, Vertex→Google, Grok→XAI, etc.) to canonical registry keys
+  - Provider extraction now prioritizes model name format (`provider/model`) over unreliable message metadata
+  - All merge paths (live + cache, cache-to-cache, filtered ranges) normalize provider IDs for consistent aggregation
+  - Added provider breakdown in Overview tab showing tokens, percentage, and cost per provider
+  - Models tab now correctly groups models by normalized provider ID
+
 ## [0.2.1] — 2026-06-06
 
 ### Added

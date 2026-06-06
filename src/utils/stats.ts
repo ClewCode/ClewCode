@@ -24,6 +24,35 @@ import {
 } from './statsCache.js';
 
 /**
+ * Normalize provider ID to match registry keys.
+ * Registry keys are lowercase (e.g., 'anthropic', 'openai', 'google', 'openrouter', etc.)
+ */
+export function normalizeProviderId(provider: string): string {
+  const normalized = provider.trim().toLowerCase();
+  // Map common aliases to registry keys
+  const aliasMap: Record<string, string> = {
+    'anthropic': 'anthropic',
+    'openai': 'openai',
+    'google': 'google',
+    'gemini': 'google',
+    'openrouter': 'openrouter',
+    'ollama': 'ollama',
+    'xai': 'xai',
+    'grok': 'xai',
+    'mistral': 'mistral',
+    'mixtral': 'mistral',
+    'deepseek': 'deepseek',
+    'cohere': 'cohere',
+    'copilot': 'copilot',
+    'kilocode': 'kilocode',
+    'bedrock': 'anthropic', // AWS Bedrock serves Anthropic models
+    'vertex': 'google',      // Google Vertex AI serves Google models
+    'foundry': 'anthropic',  // Azure AI Foundry serves Anthropic models
+  };
+  return aliasMap[normalized] ?? normalized;
+}
+
+/**
  * Extract provider ID from model name.
  * - If model contains "/", the prefix is the provider (e.g., "openai/gpt-5.5" -> "openai")
  * - Otherwise, use heuristics based on model name patterns
@@ -31,13 +60,14 @@ import {
 function extractProviderFromModel(model: string): string {
   // Handle provider/model format (e.g., "openai/gpt-5.5", "anthropic/claude-sonnet-4-6")
   if (model.includes('/')) {
-    return model.split('/')[0]!.toLowerCase();
+    return normalizeProviderId(model.split('/')[0]!);
   }
 
   // Heuristic based on model name patterns
   const lower = model.toLowerCase();
   if (lower.startsWith('claude-')) return 'anthropic';
   if (lower.startsWith('gpt-')) return 'openai';
+  if (lower.startsWith('o1-') || lower.startsWith('o3-') || lower.startsWith('o4-')) return 'openai';
   if (lower.startsWith('gemini-')) return 'google';
   if (lower.startsWith('llama') || lower.startsWith('ollama')) return 'ollama';
   if (lower.startsWith('grok-')) return 'xai';
@@ -45,12 +75,21 @@ function extractProviderFromModel(model: string): string {
   if (lower.startsWith('mixtral')) return 'mistral';
   if (lower.startsWith('kimi')) return 'openrouter'; // Often via OpenRouter
   if (lower.startsWith('deepseek')) return 'deepseek';
+  if (lower.startsWith('command')) return 'cohere';
+  if (lower.startsWith('nemotron')) return 'nvidia';
 
   // Default to 'unknown' if can't determine
   return 'unknown';
 }
 
 function extractProviderFromMessage(message: TranscriptMessage, model: string): string {
+  // First, try to extract from model name (most reliable when in "provider/model" format)
+  const modelProvider = extractProviderFromModel(model);
+  if (modelProvider !== 'unknown') {
+    return modelProvider;
+  }
+
+  // Fall back to message metadata
   const messageProvider =
     (message.message as any)?.provider ??
     (message.message as any)?._provider ??
@@ -58,10 +97,10 @@ function extractProviderFromMessage(message: TranscriptMessage, model: string): 
     (message as any)._provider;
 
   if (typeof messageProvider === 'string' && messageProvider.trim()) {
-    return messageProvider.trim().toLowerCase();
+    return normalizeProviderId(messageProvider);
   }
 
-  return extractProviderFromModel(model);
+  return 'unknown';
 }
 
 type TranscriptUsage = {
@@ -452,6 +491,7 @@ async function processSessionFiles(sessionFiles: string[], options: ProcessOptio
                 costUSD: 0,
                 contextWindow: 0,
                 maxOutputTokens: 0,
+                provider,
               };
             }
             providerUsageAgg[provider]!.inputTokens += usage.inputTokens;
@@ -460,6 +500,7 @@ async function processSessionFiles(sessionFiles: string[], options: ProcessOptio
             providerUsageAgg[provider]!.cacheCreationInputTokens += usage.cacheCreationInputTokens;
             providerUsageAgg[provider]!.webSearchRequests += usage.webSearchRequests;
             providerUsageAgg[provider]!.costUSD += usage.costUSD;
+            providerUsageAgg[provider]!.provider = provider;
           }
         }
       }
@@ -602,23 +643,47 @@ function cacheToStats(cache: PersistedStatsCache, todayStats: ProcessedStats | n
     }
   }
 
-  // Merge provider usage
-  const providerUsage = { ...(cache.providerUsage ?? {}) };
+  // Merge provider usage - normalize provider IDs to ensure consistent merging
+  const providerUsage: { [providerId: string]: ModelUsage } = {};
+
+  // First, add existing cache provider usage with normalized keys
+  for (const [provider, usage] of Object.entries(cache.providerUsage ?? {})) {
+    const normalizedProvider = normalizeProviderId(provider);
+    if (providerUsage[normalizedProvider]) {
+      providerUsage[normalizedProvider] = {
+        inputTokens: providerUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
+        outputTokens: providerUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
+        cacheReadInputTokens: providerUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
+        cacheCreationInputTokens: providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+        webSearchRequests: providerUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
+        costUSD: providerUsage[normalizedProvider]!.costUSD + usage.costUSD,
+        contextWindow: Math.max(providerUsage[normalizedProvider]!.contextWindow, usage.contextWindow),
+        maxOutputTokens: Math.max(providerUsage[normalizedProvider]!.maxOutputTokens, usage.maxOutputTokens),
+        provider: normalizedProvider,
+      };
+    } else {
+      providerUsage[normalizedProvider] = { ...usage, provider: normalizedProvider };
+    }
+  }
+
+  // Then merge today's provider usage with normalized keys
   if (todayStats?.providerUsage) {
     for (const [provider, usage] of Object.entries(todayStats.providerUsage)) {
-      if (providerUsage[provider]) {
-        providerUsage[provider] = {
-          inputTokens: providerUsage[provider]!.inputTokens + usage.inputTokens,
-          outputTokens: providerUsage[provider]!.outputTokens + usage.outputTokens,
-          cacheReadInputTokens: providerUsage[provider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
-          cacheCreationInputTokens: providerUsage[provider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
-          webSearchRequests: providerUsage[provider]!.webSearchRequests + usage.webSearchRequests,
-          costUSD: providerUsage[provider]!.costUSD + usage.costUSD,
-          contextWindow: Math.max(providerUsage[provider]!.contextWindow, usage.contextWindow),
-          maxOutputTokens: Math.max(providerUsage[provider]!.maxOutputTokens, usage.maxOutputTokens),
+      const normalizedProvider = normalizeProviderId(provider);
+      if (providerUsage[normalizedProvider]) {
+        providerUsage[normalizedProvider] = {
+          inputTokens: providerUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
+          outputTokens: providerUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
+          cacheReadInputTokens: providerUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
+          cacheCreationInputTokens: providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+          webSearchRequests: providerUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
+          costUSD: providerUsage[normalizedProvider]!.costUSD + usage.costUSD,
+          contextWindow: Math.max(providerUsage[normalizedProvider]!.contextWindow, usage.contextWindow),
+          maxOutputTokens: Math.max(providerUsage[normalizedProvider]!.maxOutputTokens, usage.maxOutputTokens),
+          provider: normalizedProvider,
         };
       } else {
-        providerUsage[provider] = { ...usage };
+        providerUsage[normalizedProvider] = { ...usage, provider: normalizedProvider };
       }
     }
   }
@@ -885,6 +950,27 @@ function processedStatsToClaudeCodeStats(stats: ProcessedStats): ClaudeCodeStats
         ) + 1
       : 0;
 
+  // Normalize provider usage IDs
+  const normalizedProviderUsage: { [providerId: string]: ModelUsage } = {};
+  for (const [provider, usage] of Object.entries(stats.providerUsage)) {
+    const normalizedProvider = normalizeProviderId(provider);
+    if (normalizedProviderUsage[normalizedProvider]) {
+      normalizedProviderUsage[normalizedProvider] = {
+        inputTokens: normalizedProviderUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
+        outputTokens: normalizedProviderUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
+        cacheReadInputTokens: normalizedProviderUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
+        cacheCreationInputTokens: normalizedProviderUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+        webSearchRequests: normalizedProviderUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
+        costUSD: normalizedProviderUsage[normalizedProvider]!.costUSD + usage.costUSD,
+        contextWindow: Math.max(normalizedProviderUsage[normalizedProvider]!.contextWindow, usage.contextWindow),
+        maxOutputTokens: Math.max(normalizedProviderUsage[normalizedProvider]!.maxOutputTokens, usage.maxOutputTokens),
+        provider: normalizedProvider,
+      };
+    } else {
+      normalizedProviderUsage[normalizedProvider] = { ...usage, provider: normalizedProvider };
+    }
+  }
+
   const result: ClaudeCodeStats = {
     totalSessions: stats.sessionStats.length,
     totalMessages: stats.totalMessages,
@@ -895,7 +981,7 @@ function processedStatsToClaudeCodeStats(stats: ProcessedStats): ClaudeCodeStats
     dailyModelTokens: dailyModelTokensSorted,
     longestSession,
     modelUsage: stats.modelUsage,
-    providerUsage: stats.providerUsage,
+    providerUsage: normalizedProviderUsage,
     firstSessionDate,
     lastSessionDate,
     peakActivityDay,

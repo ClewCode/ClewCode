@@ -709,8 +709,12 @@ function getEffectiveModelOptions(
     options.push(defaultModelOption);
   }
 
-  // 3. All providers with their models
+  // 3. All providers with their models (skip models already in Recently used)
+  const recentModelSet = new Set(recentModels);
   for (const section of providerSections) {
+    const sectionModels = section.options.filter(model => !recentModelSet.has(model.value));
+    // Skip empty sections entirely
+    if (sectionModels.length === 0) continue;
     options.push({
       value: `__SECTION_${section.id}__`,
       label: section.label,
@@ -718,7 +722,7 @@ function getEffectiveModelOptions(
       type: 'section',
       disabled: true,
     });
-    for (const model of section.options) {
+    for (const model of sectionModels) {
       options.push(model);
     }
   }
