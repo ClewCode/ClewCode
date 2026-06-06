@@ -81,7 +81,7 @@ clewcode
 
 ```bash
 git clone https://github.com/JonusNattapong/ClewCode.git
-cd claudecode
+cd ClewCode
 
 bun install
 bun run build
