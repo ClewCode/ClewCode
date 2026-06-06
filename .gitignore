@@ -51,6 +51,10 @@ desktop.ini
 .claude/*
 !.claude/skills/
 !.claude/settings.json
+.clew/
+.codegraph/
+.codex/
+.agents/
 .searxng/
 research-dossiers/
 .provider.json
