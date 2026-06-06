@@ -13,25 +13,22 @@
  * resume — this command only mutates run state on disk.
  */
 
-import { getCwd } from '../../utils/cwd.js';
 import {
   cancelDynamicRun,
-  listAllDynamicRuns,
-  loadDynamicRun,
   type DynamicRunState,
   type DynamicRunStatus,
+  listAllDynamicRuns,
+  loadDynamicRun,
 } from '../../agentRuntime/dynamicWorkflowPersistence.js';
 import type { LocalCommandResult, LocalJSXCommandContext } from '../../types/command.js';
+import { getCwd } from '../../utils/cwd.js';
 
 const VERB_LIST = new Set(['', 'list', 'ls']);
 const VERB_SHOW = new Set(['show', 'view', 'inspect']);
 const VERB_RESUME = new Set(['resume', 'continue', 'start']);
 const VERB_CANCEL = new Set(['cancel', 'stop', 'abort', 'kill']);
 
-export async function call(
-  args: string,
-  _context: LocalJSXCommandContext,
-): Promise<LocalCommandResult> {
+export async function call(args: string, _context: LocalJSXCommandContext): Promise<LocalCommandResult> {
   const trimmed = args.trim();
   const tokens = trimmed.split(/\s+/);
   const verbRaw = (tokens[0] || '').toLowerCase();
@@ -151,7 +148,10 @@ async function resumeRun(workspaceRoot: string, runId: string): Promise<LocalCom
     return { type: 'text', value: `◈ workflow · ${runId} is cancelled; use /workflow to inspect or start a new run.` };
   }
   if (loaded.state.status === 'failed') {
-    return { type: 'text', value: `◈ workflow · ${runId} is in a failed state; the coordinator can retry it from disk on next run.` };
+    return {
+      type: 'text',
+      value: `◈ workflow · ${runId} is in a failed state; the coordinator can retry it from disk on next run.`,
+    };
   }
   // The host's coordinator picks up runs whose state is 'paused' or
   // 'running'. Re-asserting 'running' here lets the user restart a
@@ -187,7 +187,8 @@ async function cancelRun(workspaceRoot: string, runId: string): Promise<LocalCom
 }
 
 function formatRunSummary(state: DynamicRunState, linkedToActiveGoal: boolean = false): string {
-  const tag = state.status === 'completed' ? '✓' : state.status === 'failed' ? '✗' : state.status === 'cancelled' ? '⊘' : '…';
+  const tag =
+    state.status === 'completed' ? '✓' : state.status === 'failed' ? '✗' : state.status === 'cancelled' ? '⊘' : '…';
   const id = state.workflowId;
   const completed = state.completedSubtaskIds.length;
   const total = state.results.length + state.completedSubtaskIds.length === 0 ? '?' : String(completed);

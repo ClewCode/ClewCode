@@ -93,7 +93,8 @@ function renderActiveStatus(state: AppStateSnapshot, goal: GoalState): string {
     lines.push(`  time:   ${renderTextProgressBar(ratio)}  (${Math.round(elapsedMinutes)}/${goal.maxMinutes} min)`);
     if (ratio >= WARN_THRESHOLD) warnings.push(`${Math.round(ratio * 100)}% of time budget used`);
   }
-  if (goal.maxTurns && turns >= goal.maxTurns) warnings.push('turn budget exhausted — goal will be cleared on next clear or session end');
+  if (goal.maxTurns && turns >= goal.maxTurns)
+    warnings.push('turn budget exhausted — goal will be cleared on next clear or session end');
   if (goal.maxMinutes && activeElapsed / 60_000 >= goal.maxMinutes) warnings.push('time budget exhausted');
 
   // Evaluator feedback
@@ -105,7 +106,9 @@ function renderActiveStatus(state: AppStateSnapshot, goal: GoalState): string {
   // Linked workflows
   if (goal.linkedWorkflowRunIds && goal.linkedWorkflowRunIds.length > 0) {
     lines.push('');
-    lines.push(`  workflows: ${goal.linkedWorkflowRunIds.length} linked run${goal.linkedWorkflowRunIds.length === 1 ? '' : 's'} (see /workflow)`);
+    lines.push(
+      `  workflows: ${goal.linkedWorkflowRunIds.length} linked run${goal.linkedWorkflowRunIds.length === 1 ? '' : 's'} (see /workflow)`,
+    );
   }
 
   // Permission mode
@@ -122,7 +125,8 @@ function renderActiveStatus(state: AppStateSnapshot, goal: GoalState): string {
 
 /** Compose a status block for a recently finished goal. */
 function renderAchievedStatus(goal: GoalState): string {
-  const elapsed = goal.endedAt && goal.setAt ? formatElapsed(goal.endedAt - goal.setAt - (goal.totalPausedMs ?? 0)) : '0s';
+  const elapsed =
+    goal.endedAt && goal.setAt ? formatElapsed(goal.endedAt - goal.setAt - (goal.totalPausedMs ?? 0)) : '0s';
   const turns = goal.turnCount ?? 0;
   const tokens = goal.evalTokens ?? 0;
   const lines: string[] = [];
@@ -177,7 +181,14 @@ export async function call(
   // ── Hooks disabled gate ──────────────────────────────────────────────────
   // Goal turn tracking depends on hooks. Show a clear message rather
   // than silently stalling.
-  if (trimmed && first !== 'status' && first !== 'show' && first !== 'pause' && first !== 'resume' && !CLEAR_VERBS.has(first)) {
+  if (
+    trimmed &&
+    first !== 'status' &&
+    first !== 'show' &&
+    first !== 'pause' &&
+    first !== 'resume' &&
+    !CLEAR_VERBS.has(first)
+  ) {
     const settings = getSettings_DEPRECATED();
     if (settings.disableAllHooks || settings.allowManagedHooksOnly) {
       const reason = settings.disableAllHooks ? 'disableAllHooks' : 'allowManagedHooksOnly';
@@ -237,7 +248,10 @@ export async function call(
     }));
 
     const restoreMsg = restoredMode ? `  permissions restored to '${restoredMode}'.` : '';
-    onDone(`⏸ Goal paused: "${goalState.goal}"\n  ${formatElapsed(Date.now() - (goalState.setAt ?? Date.now()))} elapsed · ${goalState.turnCount ?? 0} turns.${restoreMsg}\n  Use /goal resume to continue.`, { display: 'system' });
+    onDone(
+      `⏸ Goal paused: "${goalState.goal}"\n  ${formatElapsed(Date.now() - (goalState.setAt ?? Date.now()))} elapsed · ${goalState.turnCount ?? 0} turns.${restoreMsg}\n  Use /goal resume to continue.`,
+      { display: 'system' },
+    );
     return null;
   }
 
@@ -342,10 +356,9 @@ export async function call(
 
     const statsLine = `${elapsed} · ${turns} turns${tokens_ > 0 ? ` · ${tokens_.toLocaleString()} eval tokens` : ''}`;
     const restoreMsg = restoredMode ? `\n  permissions restored to '${restoredMode}'` : '';
-    onDone(
-      `◎ Goal cleared.\n  ${statsLine}${restoreMsg}\n  (run /goal again to see the finished stats next time)`,
-      { display: 'system' },
-    );
+    onDone(`◎ Goal cleared.\n  ${statsLine}${restoreMsg}\n  (run /goal again to see the finished stats next time)`, {
+      display: 'system',
+    });
     return null;
   }
 

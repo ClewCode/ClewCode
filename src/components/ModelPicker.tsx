@@ -1,12 +1,17 @@
 import chalk from 'chalk';
 import capitalize from 'lodash-es/capitalize.js';
 import type * as React from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { c as _c } from 'react/compiler-runtime';
 import { useExitOnCtrlCDWithKeybindings } from 'src/hooks/useExitOnCtrlCDWithKeybindings.js';
 import { useSearchInput } from 'src/hooks/useSearchInput.js';
 import { ProviderManager } from 'src/services/ai/ProviderManager.js';
-import { getProviderRegistryEntry, type ProviderModelInfo } from 'src/services/ai/providerRegistry.js';
+import {
+  getProviderRegistryEntry,
+  PROVIDER_IDS,
+  PROVIDER_REGISTRY,
+  type ProviderModelInfo,
+} from 'src/services/ai/providerRegistry.js';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -593,8 +598,6 @@ function getActiveProviderInfo(): {
 } | null {
   const providerManager = ProviderManager.getInstance();
   const providerId = providerManager.getActiveProviderName();
-  const config = providerManager.getSelectedProviderConfig(true);
-
   const entry = getProviderRegistryEntry(providerId);
   if (!entry) return null;
 
@@ -612,37 +615,50 @@ function getEffectiveModelOptions(
   initial?: string | null,
 ): ModelOption[] {
   const providerInfo = getActiveProviderInfo();
-  let options: ModelOption[];
 
+  // Fall back to legacy model options when no provider info
   if (!providerInfo && !entry) {
-    options = getModelOptions(fastMode);
-  } else {
-    const providerEntry = entry ?? providerInfo?.entry;
-    if (!providerEntry || !providerEntry.models) {
-      options = fetchedModels
-        ? fetchedModels.map(fetched => ({
-            value: fetched.id,
-            label: fetched.label,
-            description: fetched.description || fetched.id,
-            descriptionForModel: fetched.id,
-          }))
-        : [];
-    } else {
-      const implementationType = ProviderManager.getInstance().getImplementationType();
-      const defaultModel = providerInfo?.selectedModel ?? providerEntry.defaultModel ?? 'provider default';
+    return getModelOptions(fastMode);
+  }
 
-      // Start with static models from registry, filtered by implementation type
-      const staticModels = providerEntry.models
-        .filter(model => !model.supportedTypes || model.supportedTypes.includes(implementationType))
-        .map(model => toProviderModelOption(model));
+  const activeProviderId = providerInfo?.providerId;
+  const implementationType = ProviderManager.getInstance().getImplementationType();
 
-      // Merge with fetched models if available (deduplicate by id)
-      const allModels = [...staticModels];
-      if (fetchedModels && fetchedModels.length > 0) {
-        const existingIds = new Set(staticModels.map(m => m.value));
+  // Build per-provider model lists from all providers in the registry
+  const providerSections: Array<{ id: string; label: string; options: ModelOption[] }> = [];
+
+  for (const providerId of PROVIDER_IDS) {
+    const regEntry = PROVIDER_REGISTRY[providerId];
+    if (!regEntry || !regEntry.models || regEntry.models.length === 0) continue;
+
+    const models: ModelOption[] = regEntry.models
+      .filter(m => !m.supportedTypes || m.supportedTypes.includes(implementationType))
+      .map(m => toProviderModelOption(m));
+
+    if (models.length === 0) continue;
+
+    providerSections.push({ id: providerId, label: regEntry.label, options: models });
+  }
+
+  // For the active provider, merge API-fetched models and prepare the Default option
+  let defaultModelOption: ModelOption | undefined;
+  if (providerInfo) {
+    const providerEntry = entry ?? providerInfo.entry;
+    const defaultModel = providerInfo.selectedModel ?? providerEntry?.defaultModel ?? 'provider default';
+    defaultModelOption = {
+      value: null,
+      label: 'Default (recommended)',
+      description: `Use ${providerEntry?.label ?? providerInfo.entry.label} default (${defaultModel})`,
+    };
+
+    // Merge fetched models into the active provider's section
+    if (fetchedModels && fetchedModels.length > 0) {
+      const activeSection = providerSections.find(s => s.id === activeProviderId);
+      if (activeSection) {
+        const existingIds = new Set(activeSection.options.map(m => m.value));
         for (const fetched of fetchedModels) {
           if (!existingIds.has(fetched.id)) {
-            allModels.push({
+            activeSection.options.push({
               value: fetched.id,
               label: fetched.label,
               description: fetched.description || fetched.id,
@@ -652,64 +668,67 @@ function getEffectiveModelOptions(
           }
         }
       }
+    }
+  }
 
-      options = [
-        {
-          value: null,
-          label: 'Default (recommended)',
-          description: `Use ${providerEntry.label} default (${defaultModel})`,
-        },
-        ...allModels,
-      ];
+  // Build the final flat options list
+  const options: ModelOption[] = [];
 
-      // Always add custom input option as the last item
+  // 1. Recently used models (shown at top, also kept in their provider section)
+  const recentModels = mergeRecentModels([initial, providerInfo?.selectedModel]);
+  if (recentModels.length > 0) {
+    options.push({
+      value: '__SECTION_RECENT__',
+      label: 'Recent',
+      description: '',
+      type: 'section',
+      disabled: true,
+    });
+    for (const id of recentModels) {
+      let label = id;
+      let descriptionForModel = id;
+      for (const section of providerSections) {
+        const found = section.options.find(m => m.value === id);
+        if (found) {
+          label = found.label;
+          descriptionForModel = found.descriptionForModel ?? id;
+          break;
+        }
+      }
       options.push({
-        value: '__CUSTOM_INPUT__',
-        label: '✏️  Type custom model ID',
-        description: `Use: /model your-model-id`,
+        value: id,
+        label,
+        description: 'Recently used',
+        descriptionForModel,
       });
     }
   }
 
-  // Inject recently used models at the top
-  const recentModels = mergeRecentModels([initial, providerInfo?.selectedModel]);
-  if (recentModels.length > 0) {
-    const recentSet = new Set(recentModels);
-    const recentOptions = recentModels.map(id => {
-      const existing = options.find(m => m.value === id);
-      return {
-        value: id,
-        label: existing?.label ?? id,
-        description: 'Recently used',
-        descriptionForModel: existing?.descriptionForModel ?? id,
-      };
-    });
-
-    // Rebuild: Default + Recent + remaining (deduped) + Custom Input
-    const defaultOpt = options.find(o => o.value === null);
-    const customOpt = options.find(o => o.value === '__CUSTOM_INPUT__');
-    const rest = options.filter(o => o.value !== null && o.value !== '__CUSTOM_INPUT__' && !recentSet.has(o.value));
-    options = [
-      {
-        value: '__SECTION_RECENT__',
-        label: 'Recent',
-        description: '',
-        type: 'section',
-        disabled: true,
-      },
-      ...recentOptions,
-      {
-        value: '__SECTION_PROVIDER__',
-        label: providerInfo?.entry.label ?? 'Provider models',
-        description: '',
-        type: 'section',
-        disabled: true,
-      },
-      ...(defaultOpt ? [defaultOpt] : []),
-      ...rest,
-      ...(customOpt ? [customOpt] : []),
-    ];
+  // 2. Default option for the active provider
+  if (defaultModelOption) {
+    options.push(defaultModelOption);
   }
+
+  // 3. All providers with their models
+  for (const section of providerSections) {
+    options.push({
+      value: `__SECTION_${section.id}__`,
+      label: section.label,
+      description: '',
+      type: 'section',
+      disabled: true,
+    });
+    for (const model of section.options) {
+      options.push(model);
+    }
+  }
+
+  // 4. Custom input option (always last)
+  options.push({
+    value: '__CUSTOM_INPUT__',
+    label: '✏️  Type custom model ID',
+    description: 'Use: /model your-model-id',
+  });
 
   return options as any;
 }

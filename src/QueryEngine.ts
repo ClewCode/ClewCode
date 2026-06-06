@@ -26,6 +26,7 @@ import { hasAutoMemPathOverride } from './memdir/paths.js';
 import { query } from './query.js';
 import { categorizeRetryableAPIError } from './services/api/errors.js';
 import type { MCPServerConnection } from './services/mcp/types.js';
+import { getTasteInjectionBlock } from './services/taste/TasteIntegration.js';
 import type { AppState } from './state/AppState.js';
 import { type Tools, type ToolUseContext, toolMatchesName } from './Tool.js';
 import type { AgentDefinition } from './tools/AgentTool/loadAgentsDir.js';
@@ -78,7 +79,8 @@ const snipProjection = feature('HISTORY_SNIP')
 // `not-triggered` immediately, so the static require is safe to keep
 // unconditional. The require pattern matches the snip import above so
 // the import can be tree-shaken when nothing in the host wires it up.
-const { tryAutoRunDynamicWorkflow } = require('./agentRuntime/ultracodeBridge.js') as typeof import('./agentRuntime/ultracodeBridge.js');
+const { tryAutoRunDynamicWorkflow } =
+  require('./agentRuntime/ultracodeBridge.js') as typeof import('./agentRuntime/ultracodeBridge.js');
 // Goal state lookup for the ultracode classifier — same opt-in pattern.
 // The helper is a no-op when no goal is active, so the require is
 // safe to keep unconditional.
@@ -258,9 +260,13 @@ export class QueryEngine {
     const memoryMechanicsPrompt =
       customPrompt !== undefined && hasAutoMemPathOverride() ? await loadMemoryPrompt() : null;
 
+    // Inject Clew taste context into the system prompt
+    const tasteBlock = getTasteInjectionBlock();
+
     const systemPrompt = asSystemPrompt([
       ...(customPrompt !== undefined ? [customPrompt] : defaultSystemPrompt),
       ...(memoryMechanicsPrompt ? [memoryMechanicsPrompt] : []),
+      ...(tasteBlock ? [tasteBlock] : []),
       ...(appendSystemPrompt ? [appendSystemPrompt] : []),
     ]);
 

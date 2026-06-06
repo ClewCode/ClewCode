@@ -50,7 +50,7 @@
       <section class="hero">
         <div class="hero-badge">
           <span class="dot"></span>
-          v0.1.2 — Multi-Provider AI CLI
+          v0.2.1 — Multi-Provider AI CLI
         </div>
         <h1>
           Code with<br>
@@ -170,6 +170,11 @@
           <p>Default, Auto, Plan, YOLO Lite, YOLO, YOLO MAX — granular control over tool execution safety.</p>
           <span class="feature-tag">/permissions</span>
         </div>
+        <div class="feature-card">
+          <h3>Preference Learning</h3>
+          <p>Local-first taste system that learns your coding style from accept/reject/edit signals. Interactive menu, edit validation, config live-reload, and prompt injection.</p>
+          <span class="feature-tag">/taste</span>
+        </div>
       </div>
 
       <!-- ─── Usage ─── -->
@@ -266,12 +271,14 @@
       </table>
 
       <!-- ─── Changelog ─── -->
-      <h2 class="section-title" id="updates">v0.1.2 Updates</h2>
+      <h2 class="section-title" id="updates">v0.2.1 Updates</h2>
       <ul>
-        <li><strong><code>!bg &lt;command&gt;</code> — Background shell tasks</strong> — Shell commands run as persistent background agent sessions visible in <code>claude agents</code>. Live status, exit codes, and stderr capture.</li>
-        <li><strong>Dispatch input autocomplete</strong> — Agent view now suggests agents (<code>@name</code>), skills (<code>/skill</code>), PR numbers (<code>#123</code>), and filter syntax (<code>a:agent</code>, <code>s:state</code>) with Tab/arrow navigation.</li>
-        <li><strong>PR column display</strong> — Agent rows show PR info scaled to terminal width: status dot, number, title, and status label. Peek panel shows PR details inline.</li>
-        <li><strong>Agent logout hotkey</strong> — Press <kbd>l</kbd> to stop/delete the selected agent session with double-press confirmation.</li>
+        <li><strong>Taste system</strong> — Local-first preference-learning runtime. Interactive <code>/taste</code> menu with Spinner loading, edit validation in permission dialogs, status line in footer, config live-reload, and prompt injection with <code>&lt;clew_taste&gt;</code> block.</li>
+        <li><strong>Model picker grouped by provider</strong> — <code>/model</code> now shows all models from all providers in separate named sections instead of only the active provider's models.</li>
+        <li><strong>Provider auto-persist</strong> — Last-used provider+model saved to <code>provider.json</code> without <code>--global</code>.</li>
+        <li><strong>Security hardening</strong> — PowerShell prefix/wildcard rules, malformed tool call guard, bash 100MB output limit, Guardian auto-review with circuit breaker.</li>
+        <li><strong>Bridge v2</strong> — Provider-agnostic WebSocket remote control, relay client, REPL bridging.</li>
+        <li><strong>PR commands</strong> — <code>/pr create</code>, <code>list</code>, <code>view</code>, <code>review</code>, <code>merge</code>, <code>status</code>.</li>
       </ul>
 
       <div style="margin-top:var(--space-lg)">
@@ -280,7 +287,7 @@
 
       <!-- ─── Footer ─── -->
       <footer class="footer">
-        <span>Clew v0.1.2 — Open Source</span>
+        <span>Clew v0.2.1 — Open Source</span>
         <div class="footer-links">
           <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
           <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>

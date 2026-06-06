@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "projectId": "claudecode",
+  "rules": [],
+  "bandit": {
+    "arms": {
+      "minimal": {
+        "pulls": 1,
+        "totalReward": 0.5,
+        "averageReward": 0.5
+      },
+      "strict_style": {
+        "pulls": 1,
+        "totalReward": 0.5,
+        "averageReward": 0.5
+      },
+      "architecture_first": {
+        "pulls": 1,
+        "totalReward": 0.5,
+        "averageReward": 0.5
+      },
+      "test_first": {
+        "pulls": 1,
+        "totalReward": 0.5,
+        "averageReward": 0.5
+      },
+      "safety_first": {
+        "pulls": 1,
+        "totalReward": 0.5,
+        "averageReward": 0.5
+      },
+      "refactor_heavy": {
+        "pulls": 1,
+        "totalReward": 0.5,
+        "averageReward": 0.5
+      }
+    },
+    "epsilon": 0.2,
+    "updatedAt": "2026-06-05T22:57:06.792Z"
+  },
+  "stats": {
+    "totalEvents": 0,
+    "totalAccepts": 0,
+    "totalRejects": 0,
+    "totalEdits": 0,
+    "lastUpdatedAt": "2026-06-05T22:57:06.792Z"
+  }
+}

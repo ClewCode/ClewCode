@@ -203,9 +203,7 @@ function Install({ onDone, force, target }: InstallProps): React.ReactNode {
 
       {state.type === 'cleaning-npm' && <Text color="warning">Cleaning up old npm installations...</Text>}
 
-      {state.type === 'installing' && (
-        <Text color="claude">Installing Clew Code native build {state.version}...</Text>
-      )}
+      {state.type === 'installing' && <Text color="claude">Installing Clew Code native build {state.version}...</Text>}
 
       {state.type === 'setting-up' && <Text color="claude">Setting up launcher and shell integration...</Text>}
 

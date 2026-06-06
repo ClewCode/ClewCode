@@ -248,7 +248,9 @@ export async function getMatchingLspPlugins(filePath: string): Promise<LspPlugin
 
     // Filter: marketplace allowed for suggestions by policy
     if (!isMarketplaceAllowedForSuggestions(info.marketplaceName)) {
-      logForDebugging(`[lspRecommendation] Skipping ${pluginId} (marketplace ${info.marketplaceName} blocked by policy suggestion allowlist)`);
+      logForDebugging(
+        `[lspRecommendation] Skipping ${pluginId} (marketplace ${info.marketplaceName} blocked by policy suggestion allowlist)`,
+      );
       continue;
     }
 

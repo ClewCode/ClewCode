@@ -1336,7 +1336,11 @@ export async function powershellToolHasPermission(
     // the RAW name pre-strip — `scripts\Get-Content` → 'application' (has `\`).
     // Module-qualified cmdlets also classify 'application' — fail-safe over-fire.
     // An application should NEVER be auto-allowed by a cmdlet allow rule.
-    if (subResult.behavior === 'allow' && (element.nameType !== 'application' || ruleContentNamesElement(subResult, element)) && !hasSymlinkCreate) {
+    if (
+      subResult.behavior === 'allow' &&
+      (element.nameType !== 'application' || ruleContentNamesElement(subResult, element)) &&
+      !hasSymlinkCreate
+    ) {
       // SECURITY: User allow rule asserts the cmdlet is safe, NOT that
       // arbitrary variable expansion through it is safe. A user who allows
       // PowerShell(Write-Output:*) did not intend to auto-allow
@@ -1528,7 +1532,8 @@ export async function powershellToolHasPermission(
  * (`scripts\Get-Content /etc/shadow`) because `scripts\Get-Content` !== `Get-Content`.
  */
 function ruleContentNamesElement(result: PermissionResult, element: ParsedCommandElement): boolean {
-  const ruleContent = result.decisionReason?.type === 'rule' ? result.decisionReason.rule?.ruleValue?.ruleContent : undefined;
+  const ruleContent =
+    result.decisionReason?.type === 'rule' ? result.decisionReason.rule?.ruleValue?.ruleContent : undefined;
   if (!ruleContent || !element.name) return false;
   return ruleContent.startsWith(element.name);
 }

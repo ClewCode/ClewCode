@@ -2,8 +2,8 @@ import * as React from 'react';
 import { useCallback, useState } from 'react';
 import { useMainLoopModel } from '../../hooks/useMainLoopModel.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
-import { Box, Text, useInput, useAnimationTimer } from '../../ink.js';
 import { ClockContext } from '../../ink/components/ClockContext.js';
+import { Box, Text, useAnimationTimer, useInput } from '../../ink.js';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -35,7 +35,6 @@ const STD_COUNT = 5; // low … max
 
 // Purple panel animation. Keep this reasonably slow so the terminal does not flicker.
 const GLOW_INTERVAL_MS = 120;
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Core effort logic (preserved from original)
@@ -164,7 +163,9 @@ function hslToHex(h: number, s: number, l: number): string {
   const f = (n: number) => {
     const k = (n + h / 30) % 12;
     const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color).toString(16).padStart(2, '0');
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, '0');
   };
   return `#${f(0)}${f(8)}${f(4)}`;
 }
@@ -230,8 +231,8 @@ function computeExpandingPanelColors(
 
     // Beautiful concentric circular waves radiating from the center!
     // Using dist directly makes the waves perfectly circular/elliptical.
-    const wave1 = Math.sin(dist / 4.0 - frame * 0.10);
-    const wave2 = Math.cos(dist / 8.5 - frame * 0.05);
+    const wave1 = Math.sin(dist / 2.2 - frame * 0.1);
+    const wave2 = Math.cos(dist / 4.5 - frame * 0.05);
     // Combine two waves with different frequencies for a rich organic ripple effect
     const circularWave = wave1 * 0.65 + wave2 * 0.35;
 
@@ -254,13 +255,20 @@ function computeExpandingPanelColors(
 // Maps selected slider values to high-contrast colors
 function getSelectedColor(level: SliderLevel): string {
   switch (level) {
-    case 'low': return '#38bdf8'; // Cyan
-    case 'medium': return '#4ade80'; // Green
-    case 'high': return '#facc15'; // Yellow
-    case 'xhigh': return '#f472b6'; // Magenta/Pink
-    case 'max': return '#fb923c'; // Orange/Gold
-    case 'ultracode': return '#ffffff'; // White (since background is purple)
-    default: return '#ffffff';
+    case 'low':
+      return '#38bdf8'; // Cyan
+    case 'medium':
+      return '#4ade80'; // Green
+    case 'high':
+      return '#facc15'; // Yellow
+    case 'xhigh':
+      return '#f472b6'; // Magenta/Pink
+    case 'max':
+      return '#fb923c'; // Orange/Gold
+    case 'ultracode':
+      return '#ffffff'; // White (since background is purple)
+    default:
+      return '#ffffff';
   }
 }
 
@@ -407,9 +415,7 @@ function EffortSlider({
   // Keep shared Clock alive while in ultracode mode to drive background animations
   const selected = SLIDER_LEVELS[selectedIndex]!;
   const isUltra = selected === 'ultracode';
-  const [ultraEnterAnimTime, setUltraEnterAnimTime] = React.useState<number | null>(
-    isUltra ? animTime : null,
-  );
+  const [ultraEnterAnimTime, setUltraEnterAnimTime] = React.useState<number | null>(isUltra ? animTime : null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: animTime is intentionally omitted to avoid resetting the entrance animation
   React.useEffect(() => {
@@ -514,7 +520,7 @@ function EffortSlider({
     const col = labelCols[li]!;
     const isSel = li === selectedIndex;
 
-    let fgColor: string | undefined ;
+    let fgColor: string | undefined;
     let isBold = isSel;
     let isDim = !isSel;
 
@@ -576,14 +582,12 @@ function EffortSlider({
   // The first frames are a small oval around ultracode; the oval then expands until
   // it fills the slider panel.
   const totalRows = 8;
-  const revealMs = 3000;
+  const revealMs = 6000;
   const elapsedMs = ultraEnterAnimTime === null ? 0 : Math.max(0, animTime - ultraEnterAnimTime);
   const revealProgress = isUltra ? Math.min(1, elapsedMs / revealMs) : 0;
   // Once the reveal has filled the panel, freeze the wave. Otherwise the
   // background keeps drifting forever and turns into noisy vertical stripes.
-  const panelAnimTime = ultraEnterAnimTime === null
-    ? animTime
-    : ultraEnterAnimTime + Math.min(elapsedMs, revealMs);
+  const panelAnimTime = ultraEnterAnimTime === null ? animTime : ultraEnterAnimTime + Math.min(elapsedMs, revealMs);
   const ultraCenterX = labelCols[5]! + Math.floor('ultracode'.length / 2);
   const ultraCenterY = 4;
   const emptyPanelColors = React.useMemo(
@@ -593,14 +597,14 @@ function EffortSlider({
   const panelColorsForRow = (row: number) =>
     isUltra
       ? computeExpandingPanelColors(
-        totalWidth,
-        row,
-        totalRows,
-        panelAnimTime,
-        revealProgress,
-        ultraCenterX,
-        ultraCenterY,
-      )
+          totalWidth,
+          row,
+          totalRows,
+          panelAnimTime,
+          revealProgress,
+          ultraCenterX,
+          ultraCenterY,
+        )
       : emptyPanelColors;
 
   // Grid lines
@@ -660,11 +664,7 @@ function ApplyEffortAndClose({
   return null;
 }
 
-function EffortSliderWrapper({
-  onDone,
-}: {
-  onDone: LocalJSXCommandOnDone;
-}): React.ReactNode {
+function EffortSliderWrapper({ onDone }: { onDone: LocalJSXCommandOnDone }): React.ReactNode {
   const effortValue = useAppState(s => s.effortValue);
   const setAppState = useSetAppState();
   const model = useMainLoopModel();

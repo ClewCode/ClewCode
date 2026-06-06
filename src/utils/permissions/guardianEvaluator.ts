@@ -7,8 +7,8 @@
  * + policy rules and returns allow/deny with a rationale.
  */
 
-import { sideQuery } from '../sideQuery.js';
 import { getSmallFastModel } from '../model/model.js';
+import { sideQuery } from '../sideQuery.js';
 
 export type GuardianVerdict = {
   allow: boolean;
@@ -54,13 +54,7 @@ Respond with ONLY valid JSON: {"allow": true/false, "reason": "concise explanati
 - If uncertain, deny with "requires human review"`;
 
 export async function evaluateGuardian(params: GuardianEvalParams): Promise<GuardianVerdict> {
-  const {
-    toolName,
-    toolInput,
-    turnContext,
-    policy,
-    signal,
-  } = params;
+  const { toolName, toolInput, turnContext, policy, signal } = params;
 
   const policyText = policy || DEFAULT_POLICY;
   const truncatedContext = turnContext.slice(0, 2000);
@@ -101,12 +95,16 @@ export async function evaluateGuardian(params: GuardianEvalParams): Promise<Guar
 function parseVerdict(result: unknown): GuardianVerdict {
   try {
     const raw = result as { content?: Array<{ type: string; text?: string }> };
-    const text = raw.content
-      ?.filter((b): b is { type: string; text: string } => b.type === 'text' && typeof b.text === 'string')
-      .map(b => b.text)
-      .join('\n') ?? '';
+    const text =
+      raw.content
+        ?.filter((b): b is { type: string; text: string } => b.type === 'text' && typeof b.text === 'string')
+        .map(b => b.text)
+        .join('\n') ?? '';
 
-    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+    const cleaned = text
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/```\s*$/i, '')
+      .trim();
     const match = cleaned.match(/\{[\s\S]*"allow"[\s\S]*\}/);
     if (!match) {
       return { allow: false, reason: 'Guardian: could not parse verdict' };

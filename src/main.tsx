@@ -1322,6 +1322,10 @@ async function run(): Promise<CommanderCommand> {
     await Promise.all([ensureMdmSettingsLoaded(), ensureKeychainPrefetchCompleted()]);
     profileCheckpoint('preAction_after_mdm');
     await init();
+    // Initialize the Clew taste runtime (lazy, no delay if already called).
+    // Must happen after init() so settings are available for config loading.
+    const { initTasteOnStartup } = await import('./services/taste/TasteIntegration.js');
+    await initTasteOnStartup();
     profileCheckpoint('preAction_after_init');
 
     // process.title on Windows sets the console title directly; on POSIX,
@@ -3619,7 +3623,8 @@ async function run(): Promise<CommanderCommand> {
         // Bootstrap dynamic-workflow globals for the headless/SDK path
         // (the interactive path does this in AppStateProvider's mount effect).
         try {
-          const { bootstrapUltracodeGlobals } = require('./agentRuntime/ultracodeBootstrap.js') as typeof import('./agentRuntime/ultracodeBootstrap.js');
+          const { bootstrapUltracodeGlobals } =
+            require('./agentRuntime/ultracodeBootstrap.js') as typeof import('./agentRuntime/ultracodeBootstrap.js');
           bootstrapUltracodeGlobals(headlessStore as any);
         } catch {
           // bootstrap is best-effort; the app must work without it.

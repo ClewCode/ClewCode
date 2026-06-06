@@ -5,10 +5,10 @@
  * when a RemoteServer is running.
  */
 
-import * as React from 'react';
+import type * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Box, Text } from '../ink.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
+import { Box, Text } from '../ink.js';
 
 export type RemoteServerStatusProps = {
   running: boolean;
@@ -52,13 +52,7 @@ export function RemoteServerPanel({
   return (
     <Box flexDirection="column" paddingX={1} paddingY={1}>
       <Text bold>Remote Server</Text>
-      <Box paddingLeft={2}>
-        {running ? (
-          <Text>● Running</Text>
-        ) : (
-          <Text dimColor>○ Stopped</Text>
-        )}
-      </Box>
+      <Box paddingLeft={2}>{running ? <Text>● Running</Text> : <Text dimColor>○ Stopped</Text>}</Box>
       {running && (
         <>
           <Box paddingLeft={2}>
@@ -74,9 +68,7 @@ export function RemoteServerPanel({
             </Box>
           )}
           <Box paddingLeft={2}>
-            <Text>
-              Sessions: {sessionCount}
-            </Text>
+            <Text>Sessions: {sessionCount}</Text>
           </Box>
         </>
       )}

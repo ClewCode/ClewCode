@@ -2691,7 +2691,7 @@ function PromptInput({
     onIsPastingChange: setIsPasting,
     focus: isActive && !isSearchingHistory && !isModalOverlayActive && !footerItemSelected,
     showCursor: isActive && !footerItemSelected && !isSearchingHistory && !cursorAtImageChip,
-    argumentHint: commandArgumentHint,
+    argumentHint: inlineGhostText ? undefined : commandArgumentHint,
     onUndo: canUndo
       ? () => {
           const previousState = undo();

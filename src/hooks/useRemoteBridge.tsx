@@ -10,10 +10,10 @@
 
 import { randomUUID } from 'node:crypto';
 import { useCallback, useEffect, useRef } from 'react';
-import type { RemoteMessage } from '../remote/types.js';
 import type { RemoteServer } from '../remote/RemoteServer.js';
-import { enqueue } from '../utils/messageQueueManager.js';
+import type { RemoteMessage } from '../remote/types.js';
 import type { Message } from '../types/message.js';
+import { enqueue } from '../utils/messageQueueManager.js';
 
 /**
  * Hook to bridge a running RemoteServer into the REPL session.
@@ -51,9 +51,10 @@ export function useRemoteBridge(
       if (!origOnMessage) {
         (server as any)._bridge_onMessage = (sessionId: string, msg: RemoteMessage) => {
           if (msg.type === 'user' && msg.message) {
-            const text = typeof msg.message === 'string'
-              ? msg.message
-              : (msg.message as any)?.content?.[0]?.text ?? JSON.stringify(msg.message);
+            const text =
+              typeof msg.message === 'string'
+                ? msg.message
+                : ((msg.message as any)?.content?.[0]?.text ?? JSON.stringify(msg.message));
             // Wait a tick before enqueueing — the original message handler
             // in RemoteServer may still be processing.
             setTimeout(() => {
@@ -69,11 +70,13 @@ export function useRemoteBridge(
       }
 
       // Send a welcome message to all connected clients
-      server.broadcast(JSON.stringify({
-        type: 'system',
-        text: 'Session bridged. You can now send prompts.',
-        session_id: '',
-      }));
+      server.broadcast(
+        JSON.stringify({
+          type: 'system',
+          text: 'Session bridged. You can now send prompts.',
+          session_id: '',
+        }),
+      );
     }, 1_000);
 
     return () => {
@@ -108,7 +111,10 @@ export function useRemoteBridge(
 
       const content = msg.message.content;
       const text = Array.isArray(content)
-        ? content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n')
+        ? content
+            .filter((b: any) => b.type === 'text')
+            .map((b: any) => b.text)
+            .join('\n')
         : typeof content === 'string'
           ? content
           : '';

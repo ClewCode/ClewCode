@@ -107,7 +107,7 @@ export function registerCodeReviewSkill(): void {
         // Replace "Do NOT fix" instruction with "Apply fixes"
         prompt = prompt.replace(
           'Do NOT fix the bugs — only report them. The user will decide how to proceed.',
-          'Apply the fixes directly to your working tree using the Edit tool. Fix each bug as you find it.'
+          'Apply the fixes directly to your working tree using the Edit tool. Fix each bug as you find it.',
         );
       }
       if (commentMode) {

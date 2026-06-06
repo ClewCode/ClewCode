@@ -58,7 +58,9 @@ export function recordWorkflowStart(state: UltracodeState): UltracodeState {
  * more tokens than a typical session, so we recommend starting on a
  * scoped task to get a feel for usage."
  */
-export function formatConfirmationPrompt(workflow: Pick<DynamicWorkflow, 'subtasks' | 'estimatedTokenCost' | 'rationale'>): string {
+export function formatConfirmationPrompt(
+  workflow: Pick<DynamicWorkflow, 'subtasks' | 'estimatedTokenCost' | 'rationale'>,
+): string {
   const verifierCount = workflow.subtasks.filter(s => s.role === 'verifier').length;
   const totalNodes = workflow.subtasks.length;
   const cost = workflow.estimatedTokenCost;

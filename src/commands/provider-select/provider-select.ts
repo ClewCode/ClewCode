@@ -155,10 +155,19 @@ function applyProviderSelectionToSession(
     providerManager.setSessionApiKeys(config.apiKeys);
   }
 
+  // Auto-persist provider + model to provider.json so the last-used
+  // combination becomes the default on next startup.
+  // Only skip when --global was explicitly passed (it already saves).
+  if (!isGlobal) {
+    const current = providerManager.getSelectedProviderConfig();
+    providerManager.saveSelectedProviderConfig({
+      ...current,
+      provider: (config.provider ?? current.provider) as any,
+      model: config.model ?? current.model,
+    });
+  }
+
   // Always persist the model to settings so it survives across sessions.
-  // Previously only --global saved the model; the interactive picker set
-  // mainLoopModelForSession (session-only), so the model was lost on restart
-  // while the provider config file still pointed at the old selection.
   setAppState(prev => ({
     ...prev,
     mainLoopModel: config.model || prev.mainLoopModel,
@@ -608,15 +617,17 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     const nextConfig: ProviderConfig = {
       provider: existingConfig?.provider || provider,
       model: existingConfig?.model || (currentSessionModel as string) || info.defaultModel || '',
-      providerConfig: existingConfig?.providerConfig ?? {
-        ...getSerializableProviderInfo(provider),
-        ...(provider === 'anthropic' && anthropicType ? { anthropicType } : {}),
-        ...(provider === 'google' && googleType ? { googleType } : {}),
-        ...(provider === 'openai' && openaiType ? { openaiType } : {}),
-        // Store the value from prompt if needed
-        ...(provider === 'openai' && openaiType === 'azure' && apiKey ? { baseUrl: apiKey } : {}),
-        ...(provider === 'google' && googleType === 'vertex' && apiKey ? { projectId: apiKey } : {}),
-      } as any,
+      providerConfig:
+        existingConfig?.providerConfig ??
+        ({
+          ...getSerializableProviderInfo(provider),
+          ...(provider === 'anthropic' && anthropicType ? { anthropicType } : {}),
+          ...(provider === 'google' && googleType ? { googleType } : {}),
+          ...(provider === 'openai' && openaiType ? { openaiType } : {}),
+          // Store the value from prompt if needed
+          ...(provider === 'openai' && openaiType === 'azure' && apiKey ? { baseUrl: apiKey } : {}),
+          ...(provider === 'google' && googleType === 'vertex' && apiKey ? { projectId: apiKey } : {}),
+        } as any),
       apiKeys: nextApiKeys,
     };
 

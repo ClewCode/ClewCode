@@ -16,12 +16,12 @@
 
 import type { DynamicSubtask, DynamicWorkflow, PlannerLlm } from './dynamicWorkflow.js';
 import { computeExecutionWaves } from './dynamicWorkflow.js';
-import { verifyFinding } from './verifierAgent.js';
 import {
   type DynamicRunState,
   type PersistedSubtaskResult,
   recordSubtaskCompletion,
 } from './dynamicWorkflowPersistence.js';
+import { verifyFinding } from './verifierAgent.js';
 
 export type SubtaskResult = {
   subtaskId: string;

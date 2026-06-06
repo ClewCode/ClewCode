@@ -16,13 +16,7 @@
  * on top of whatever query/SDK the host is using.
  */
 
-export type DynamicSubtaskRole =
-  | 'researcher'
-  | 'coder'
-  | 'tester'
-  | 'reviewer'
-  | 'verifier'
-  | 'fixer';
+export type DynamicSubtaskRole = 'researcher' | 'coder' | 'tester' | 'reviewer' | 'verifier' | 'fixer';
 
 export type DynamicSubtask = {
   id: string;
@@ -109,7 +103,9 @@ export function shouldUseDynamicWorkflow(prompt: string): boolean {
     return false;
   }
   const actionVerbs = (
-    lowered.match(/\b(fix|implement|migrate|update|change|replace|add|remove|rewrite|port|find|scan|check|verify|test|refactor|document|review|audit)\b/g) || []
+    lowered.match(
+      /\b(fix|implement|migrate|update|change|replace|add|remove|rewrite|port|find|scan|check|verify|test|refactor|document|review|audit)\b/g,
+    ) || []
   ).length;
   if (actionVerbs >= 4 && prompt.length > 250) {
     return true;
@@ -230,7 +226,10 @@ function parsePlannerJson(text: string): {
   }>;
 } {
   // Strip accidental ```json fences
-  const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+  const cleaned = text
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
   let obj: unknown;
   try {
     obj = JSON.parse(cleaned);
@@ -337,9 +336,7 @@ export function computeExecutionWaves(workflow: DynamicWorkflow): DynamicSubtask
   const waves: DynamicSubtask[][] = [];
 
   while (completed.size < workflow.subtasks.length) {
-    const ready = workflow.subtasks.filter(
-      s => !completed.has(s.id) && s.dependsOn.every(d => completed.has(d)),
-    );
+    const ready = workflow.subtasks.filter(s => !completed.has(s.id) && s.dependsOn.every(d => completed.has(d)));
     if (ready.length === 0) {
       throw new Error('No progress possible — cycle or orphan in dynamic workflow');
     }

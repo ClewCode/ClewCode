@@ -37,10 +37,7 @@ function setEnabled(v: boolean): void {
   s.enabled = v;
 }
 
-export async function call(
-  args: string,
-  _context: LocalJSXCommandContext,
-): Promise<LocalCommandResult> {
+export async function call(args: string, _context: LocalJSXCommandContext): Promise<LocalCommandResult> {
   const trimmed = args.trim();
   const [verb, ...rest] = trimmed.split(/\s+/);
   const v = (verb ?? '').toLowerCase();
@@ -49,12 +46,19 @@ export async function call(
     case 'on':
     case 'enable':
       setEnabled(true);
-      return { type: 'text', value: '◈ guardian ON · auto-review enabled. Boundary-crossing actions will be reviewed by a Guardian agent.\n  Use /guardian off to disable.\n  Use /approve to override denials.' };
+      return {
+        type: 'text',
+        value:
+          '◈ guardian ON · auto-review enabled. Boundary-crossing actions will be reviewed by a Guardian agent.\n  Use /guardian off to disable.\n  Use /approve to override denials.',
+      };
 
     case 'off':
     case 'disable':
       setEnabled(false);
-      return { type: 'text', value: '◈ guardian OFF · auto-review disabled. Falling back to standard permission mode.' };
+      return {
+        type: 'text',
+        value: '◈ guardian OFF · auto-review disabled. Falling back to standard permission mode.',
+      };
 
     case 'status': {
       const s = getState();
@@ -92,12 +96,15 @@ export async function call(
     }
 
     default:
-      return { type: 'text', value:
-        'Usage:\n' +
-        '  /guardian on|off       Toggle guardian auto-review mode\n' +
-        '  /guardian status       Show guardian state + circuit breaker\n' +
-        '  /guardian policy       Show current policy\n' +
-        '  /guardian policy --set "..."  Set custom policy\n' +
-        '  /guardian reset        Reset circuit breaker counter' };
+      return {
+        type: 'text',
+        value:
+          'Usage:\n' +
+          '  /guardian on|off       Toggle guardian auto-review mode\n' +
+          '  /guardian status       Show guardian state + circuit breaker\n' +
+          '  /guardian policy       Show current policy\n' +
+          '  /guardian policy --set "..."  Set custom policy\n' +
+          '  /guardian reset        Reset circuit breaker counter',
+      };
   }
 }

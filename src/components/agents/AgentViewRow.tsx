@@ -233,7 +233,8 @@ export function AgentViewRow({ task, isSelected, prCount, prStatus, prUrl, prDis
       </Text>
       {prColumn && (
         <Text dimColor color={prColumn.color} backgroundColor={backgroundColor}>
-          {' '}{prColumn.text}
+          {' '}
+          {prColumn.text}
         </Text>
       )}
       {!prColumn && prDot && showPRCount && (

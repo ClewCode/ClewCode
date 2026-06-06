@@ -88,12 +88,12 @@ import {
   isToolSearchEnabledOptimistic,
   isToolSearchToolAvailable,
 } from '../../utils/toolSearch.js';
-
 import { McpAuthError, McpToolCallError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS } from '../mcp/client.js';
 import { mcpInfoFromString } from '../mcp/mcpStringUtils.js';
 import { normalizeNameForMCP } from '../mcp/normalization.js';
 import type { MCPServerConnection } from '../mcp/types.js';
 import { getLoggingSafeMcpBaseUrl, getMcpServerScopeFromToolName, isMcpTool } from '../mcp/utils.js';
+import { recordToolSignal } from '../taste/TasteIntegration.js';
 import {
   resolveHookPermissionDecision,
   runPostToolUseFailureHooks,
@@ -1218,6 +1218,8 @@ async function checkPermissionsAndCallTool(
 
     // Run PostToolUse hooks
     let toolOutput = result.data;
+    void recordToolSignal(true, tool.name);
+
     const hookResults = [];
     const toolContextModifier = result.contextModifier;
     const mcpMeta = result.mcpMeta;

@@ -10,15 +10,12 @@
  */
 
 import figures from 'figures';
-import * as React from 'react';
+import type * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Box, Text } from '../ink.js';
+import { listDynamicRuns, loadDynamicRun } from '../agentRuntime/dynamicWorkflowPersistence.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
+import { Box, Text } from '../ink.js';
 import { formatDuration } from '../utils/format.js';
-import {
-  listDynamicRuns,
-  loadDynamicRun,
-} from '../agentRuntime/dynamicWorkflowPersistence.js';
 
 type RunSummary = {
   id: string;
@@ -53,9 +50,7 @@ function useLiveDynamicRuns(workspaceRoot: string): RunSummary[] {
           const loaded = await loadDynamicRun(workspaceRoot, state.runId);
           if (!loaded) continue;
           const refuted = state.results.filter(r => r.verification === 'refuted').length;
-          const confirmed = state.results.filter(
-            r => r.verification === 'confirmed',
-          ).length;
+          const confirmed = state.results.filter(r => r.verification === 'confirmed').length;
           summaries.push({
             id: loaded.workflow.id,
             status: state.status,
@@ -70,9 +65,7 @@ function useLiveDynamicRuns(workspaceRoot: string): RunSummary[] {
 
         if (!cancelled) setRuns(summaries);
 
-        const hasActive = summaries.some(
-          r => r.status === 'running' || r.status === 'planning',
-        );
+        const hasActive = summaries.some(r => r.status === 'running' || r.status === 'planning');
         if (hasActive) {
           pollTimer = setTimeout(poll, 3_000);
         }
@@ -124,10 +117,7 @@ export function DynamicWorkflowStatusLine({
             ? '✗'
             : '…';
 
-  const parts: string[] = [
-    `${statusGlyph} ultracode`,
-    `[${run.completed}/${run.totalSubtasks}]`,
-  ];
+  const parts: string[] = [`${statusGlyph} ultracode`, `[${run.completed}/${run.totalSubtasks}]`];
 
   if (run.refuted > 0) {
     parts.push(`${figures.cross}${run.refuted}`);
@@ -152,11 +142,7 @@ export function DynamicWorkflowStatusLine({
  * Detailed panel view — shows every running/paused dynamic run with
  * per-subtask progress.
  */
-export function DynamicWorkflowPanel({
-  workspaceRoot,
-}: {
-  workspaceRoot: string;
-}): React.ReactNode {
+export function DynamicWorkflowPanel({ workspaceRoot }: { workspaceRoot: string }): React.ReactNode {
   const runs = useLiveDynamicRuns(workspaceRoot);
 
   if (runs.length === 0) {
@@ -177,20 +163,14 @@ export function DynamicWorkflowPanel({
 }
 
 function RunRow({ run }: { run: RunSummary }): React.ReactNode {
-  const duration = run.startedAt
-    ? formatDuration(Date.now() - new Date(run.startedAt).getTime())
-    : '';
+  const duration = run.startedAt ? formatDuration(Date.now() - new Date(run.startedAt).getTime()) : '';
 
   return (
     <Box flexDirection="column" paddingX={1} paddingY={0}>
       <Box>
-        <Text>
-          {run.status === 'running' ? figures.play : figures.square}
-        </Text>
+        <Text>{run.status === 'running' ? figures.play : figures.square}</Text>
         <Text> </Text>
-        <Text bold>
-          ultracode
-        </Text>
+        <Text bold>ultracode</Text>
         <Text> </Text>
         <Text dimColor>{run.id}</Text>
       </Box>
@@ -205,11 +185,7 @@ function RunRow({ run }: { run: RunSummary }): React.ReactNode {
       </Box>
       {run.rationale ? (
         <Box paddingLeft={2}>
-          <Text dimColor>
-            {run.rationale.length > 80
-              ? `${run.rationale.slice(0, 80)}…`
-              : run.rationale}
-          </Text>
+          <Text dimColor>{run.rationale.length > 80 ? `${run.rationale.slice(0, 80)}…` : run.rationale}</Text>
         </Box>
       ) : null}
     </Box>
