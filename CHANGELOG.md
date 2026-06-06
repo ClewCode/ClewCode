@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.2] — 2026-06-06
+## [0.2.1] — 2026-06-06
 
 ### Added
 
@@ -10,35 +10,24 @@ All notable changes to this project will be documented in this file.
 - **Edit validation via taste**: `validateEdit()` called in `FileEditPermissionRequest.tsx` — shows `⚠ Taste flagged this edit` warning in dialog title/question when edit violates learned rules.
 - **Settings change subscription**: `subscribeToSettingsChanges()` called during `initTasteOnStartup()` — live-reloads taste config when `settings.json` changes.
 - **TasteStatusLine component** (`src/components/TasteStatusLine.tsx`): Shows `ⓘ taste: N rules` in `PromptInputFooter.tsx` alongside `DynamicWorkflowStatusLine`.
+- **MessageDisplay hook infrastructure**: Added `onMessageDisplay` prop to Messages component with transform tracking ref and useEffect. Wired in REPL.tsx via `executeMessageDisplayHooks` with `ToolUseContext`. Enables future session hooks to hide or modify displayed messages.
 
 ### Changed
 
 - **Model picker grouped by all providers**: `/model` now iterates `PROVIDER_IDS` and shows models from every provider in separate named sections, instead of only the active provider's models. Recent models still appear at top with defaults.
 - **XML tag rename**: `<clew_taste1>` → `<clew_taste>`, `<clew_taste1_constraints>` → `<clew_taste_constraints>` in `TastePromptInjector.ts`, `TasteRegressionSuite.ts`, and tests.
 - **Provider auto-persist**: Last-used provider and model are saved to `provider.json` even without `--global` flag.
+- **Commander program name**: `.name('claude')` → `.name('clew')` in `src/main.tsx:1394`.
+- **Documentation**: All docs HTML, CHANGELOG, README (en/zh/th) updated with taste system, version bump.
 
 ### Fixed
 
 - **Autocomplete hint duplication**: `PromptInput.tsx` clears `argumentHint` when `inlineGhostText` is present, preventing duplicate hint display.
 - **Blank screen on startup**: Fixed SentryErrorBoundary + TDZ race in `REPL.tsx`.
 - **ProviderManager base URL**: Session-level `/providers` overrides now correctly resolve base URLs.
-
-## [0.2.1] — 2026-06-05
-
-### Added
-
-- **MessageDisplay hook infrastructure**: Added `onMessageDisplay` prop to Messages component with transform tracking ref and useEffect. Wired in REPL.tsx via `executeMessageDisplayHooks` with `ToolUseContext`. Enables future session hooks to hide or modify displayed messages.
-
-### Fixed
-
-- **PowerShell prefix/wildcard rules for native executables (Security 2.2)**: Rules like `PowerShell(dotnet.exe build:*)` now correctly pre-approve native executables. Added `ruleContentNamesElement()` check at the `nameType` gate in `powershellPermissions.ts:1339` — when the allow rule explicitly names the same application, the gate allows it through instead of falling through to the approval prompt.
-- **Malformed PowerShell tool calls misclassification (Security 2.4)**: Added `!input?.command` guard in `PowerShellTool.isReadOnly()` — empty/malformed input now defaults to non-read (requires approval) instead of potentially bypassing the permission prompt.
-- **Bash runtime output byte limit (Security 2.5)**: Added 100MB max output threshold in `BashTool.tsx exec()` — kills processes spewing unbounded output (e.g., `find / -name "*.txt"`) before they exhaust system resources (macOS vnode table, disk, memory).
-
-### Changed
-
-- **Commander program name**: `.name('claude')` → `.name('clew')` in `src/main.tsx:1394`.
-- Bumped version to 0.2.1.
+- **PowerShell prefix/wildcard rules for native executables (Security 2.2)**: Rules like `PowerShell(dotnet.exe build:*)` now correctly pre-approve native executables. Added `ruleContentNamesElement()` check at the `nameType` gate in `powershellPermissions.ts:1339`.
+- **Malformed PowerShell tool calls misclassification (Security 2.4)**: Added `!input?.command` guard in `PowerShellTool.isReadOnly()`.
+- **Bash runtime output byte limit (Security 2.5)**: Added 100MB max output threshold in `BashTool.tsx exec()`.
 
 ## [0.2.0] — 2026-06-04
 
