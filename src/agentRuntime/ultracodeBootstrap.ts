@@ -138,9 +138,7 @@ export function bootstrapUltracodeGlobals(
 
   g.__ultracodeAgentRunner = async (subtask, context) => {
     const { client, model } = await getClient();
-    const prompt = context
-      ? `${subtask.prompt}\n\n--- Prior context ---\n${context}`
-      : subtask.prompt;
+    const prompt = context ? `${subtask.prompt}\n\n--- Prior context ---\n${context}` : subtask.prompt;
 
     const roleInstructions: Record<string, string> = {
       researcher: 'Cite file paths and line numbers. Be thorough but concise.',
@@ -198,7 +196,11 @@ export function bootstrapUltracodeGlobals(
     return new Promise<boolean>(resolve => {
       const cleanup = () => {
         process.stdin.removeListener('data', handler);
-        try { process.stdin.setRawMode(true); } catch { /* best-effort */ }
+        try {
+          process.stdin.setRawMode(true);
+        } catch {
+          /* best-effort */
+        }
         process.stdin.ref();
       };
 

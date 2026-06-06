@@ -18,16 +18,12 @@ import { randomUUID } from 'node:crypto';
 import { type PlannerLlm, planDynamicWorkflow } from './dynamicWorkflow.js';
 import { runDynamicWorkflowAsCoordinator } from './dynamicWorkflowCoordinator.js';
 import {
-  type UltracodeState,
-  shouldAutoTriggerWorkflow,
-  shouldRequestConfirmation,
-} from './ultracode.js';
-import {
   buildUltracodeSuggestion,
   type ClassifierResult,
   classifyTranscript,
   type TranscriptContext,
 } from './transcriptClassifier.js';
+import { shouldAutoTriggerWorkflow, shouldRequestConfirmation, type UltracodeState } from './ultracode.js';
 
 const ULTRACODE_STATE_KEY = 'ultracodeState';
 
@@ -39,7 +35,18 @@ type GlobalAppState = {
 type GlobalHooks = {
   appState?: GlobalAppState;
   plannerLlm?: PlannerLlm;
-  agentRunner?: (subtask: { id: string; role: string; title: string; prompt: string; dependsOn: string[]; verifiedBy?: string; effort: number }, context: string) => Promise<{ output: string }>;
+  agentRunner?: (
+    subtask: {
+      id: string;
+      role: string;
+      title: string;
+      prompt: string;
+      dependsOn: string[];
+      verifiedBy?: string;
+      effort: number;
+    },
+    context: string,
+  ) => Promise<{ output: string }>;
   /**
    * Async confirmation prompt. Resolves `true` to run, `false` to skip.
    * The default implementation auto-confirms when not wired up (tests)
@@ -171,7 +178,11 @@ async function tryAutoRunInner(params: {
   const plan = await planDynamicWorkflow(params.prompt, hooks.plannerLlm);
 
   if (params.costCeiling && exceedsCostCeiling(plan.estimatedTokenCost, params.costCeiling)) {
-    return { kind: 'not-triggered', reason: `cost ${plan.estimatedTokenCost} exceeds ceiling ${params.costCeiling}`, classifier };
+    return {
+      kind: 'not-triggered',
+      reason: `cost ${plan.estimatedTokenCost} exceeds ceiling ${params.costCeiling}`,
+      classifier,
+    };
   }
 
   // First-time confirmation: ask the host's confirm hook (or default to
@@ -228,12 +239,19 @@ async function tryAutoRunInner(params: {
   };
 }
 
-function exceedsCostCeiling(plan: 'low' | 'medium' | 'high' | 'very-high', ceiling: 'low' | 'medium' | 'high' | 'very-high'): boolean {
+function exceedsCostCeiling(
+  plan: 'low' | 'medium' | 'high' | 'very-high',
+  ceiling: 'low' | 'medium' | 'high' | 'very-high',
+): boolean {
   const order = { low: 0, medium: 1, high: 2, 'very-high': 3 } as const;
   return order[plan] > order[ceiling];
 }
 
-function formatPlanSummary(plan: { subtasks: { role: string; id: string }[]; estimatedTokenCost: string; rationale: string }): string {
+function formatPlanSummary(plan: {
+  subtasks: { role: string; id: string }[];
+  estimatedTokenCost: string;
+  rationale: string;
+}): string {
   const total = plan.subtasks.length;
   const verifiers = plan.subtasks.filter(s => s.role === 'verifier').length;
   return [
@@ -245,8 +263,18 @@ function formatPlanSummary(plan: { subtasks: { role: string; id: string }[]; est
 }
 
 function buildAssistantMessage(
-  plan: { id: string; subtasks: { id: string; role: string; title: string }[]; estimatedTokenCost: string; rationale: string },
-  results: { subtaskId: string; output: string; verification?: 'confirmed' | 'refuted' | 'inconclusive'; verificationReason?: string }[],
+  plan: {
+    id: string;
+    subtasks: { id: string; role: string; title: string }[];
+    estimatedTokenCost: string;
+    rationale: string;
+  },
+  results: {
+    subtaskId: string;
+    output: string;
+    verification?: 'confirmed' | 'refuted' | 'inconclusive';
+    verificationReason?: string;
+  }[],
   sessionId: string,
 ): DynamicWorkflowAssistantMessage {
   const lines: string[] = [

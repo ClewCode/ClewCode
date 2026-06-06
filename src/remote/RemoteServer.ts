@@ -90,7 +90,9 @@ export class RemoteServer {
     for (const [id, client] of this.wsClients) {
       try {
         client.close();
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     this.wsClients.clear();
 
@@ -136,10 +138,7 @@ export class RemoteServer {
 
   // ── HTTP request handler ────────────────────────────────────────────
 
-  private handleHttpRequest(
-    req: import('node:http').IncomingMessage,
-    res: import('node:http').ServerResponse,
-  ): void {
+  private handleHttpRequest(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse): void {
     const url = req.url ?? '/';
     const method = req.method ?? 'GET';
 
@@ -211,13 +210,17 @@ export class RemoteServer {
       for await (const chunk of req) {
         body += chunk;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     let cwd = '';
     try {
       const parsed = JSON.parse(body);
       cwd = parsed.cwd ?? '';
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     // Register session
     const session: SessionInfo = {
@@ -416,7 +419,9 @@ export class RemoteServer {
             socket.write(this.encodeWsFrame(0x08, Buffer.alloc(0)));
             socket.end();
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       },
     };
   }
@@ -446,7 +451,10 @@ export class RemoteServer {
     return Buffer.concat([Buffer.from(header), payload]);
   }
 
-  private parseWebSocketFrames(buffer: Buffer): { messages: Array<{ opcode: number; payload: Buffer }>; remaining: Buffer } {
+  private parseWebSocketFrames(buffer: Buffer): {
+    messages: Array<{ opcode: number; payload: Buffer }>;
+    remaining: Buffer;
+  } {
     const messages: Array<{ opcode: number; payload: Buffer }> = [];
     let offset = 0;
 

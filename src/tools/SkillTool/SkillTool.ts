@@ -674,19 +674,27 @@ export const SkillTool: Tool<InputSchema, Output, Progress> = buildTool({
                   ...appState.toolPermissionContext,
                   alwaysAllowRules: {
                     ...appState.toolPermissionContext.alwaysAllowRules,
-                    command: allowedTools.length > 0
-                      ? [
-                          ...new Set([...(appState.toolPermissionContext.alwaysAllowRules.command || []), ...allowedTools]),
-                        ]
-                      : appState.toolPermissionContext.alwaysAllowRules.command,
+                    command:
+                      allowedTools.length > 0
+                        ? [
+                            ...new Set([
+                              ...(appState.toolPermissionContext.alwaysAllowRules.command || []),
+                              ...allowedTools,
+                            ]),
+                          ]
+                        : appState.toolPermissionContext.alwaysAllowRules.command,
                   },
                   alwaysDenyRules: {
                     ...appState.toolPermissionContext.alwaysDenyRules,
-                    command: disallowedTools.length > 0
-                      ? [
-                          ...new Set([...(appState.toolPermissionContext.alwaysDenyRules.command || []), ...disallowedTools]),
-                        ]
-                      : appState.toolPermissionContext.alwaysDenyRules.command,
+                    command:
+                      disallowedTools.length > 0
+                        ? [
+                            ...new Set([
+                              ...(appState.toolPermissionContext.alwaysDenyRules.command || []),
+                              ...disallowedTools,
+                            ]),
+                          ]
+                        : appState.toolPermissionContext.alwaysDenyRules.command,
                   },
                 },
               };

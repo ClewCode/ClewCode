@@ -612,9 +612,9 @@ export const SettingsSchema = lazySchema(() =>
         .catch(undefined)
         .describe('Persisted effort level for supported models.'),
       advisorModel: z.string().optional().describe('Advisor model for the server-side advisor tool.'),
-      taste1: z
+      taste: z
         .object({
-          enabled: z.boolean().optional().describe('Enable Clew taste-1 preference learning'),
+          enabled: z.boolean().optional().describe('Enable Clew taste preference learning'),
           autoLearn: z.boolean().optional().describe('Automatically learn from signals'),
           injectPrompts: z.boolean().optional().describe('Inject taste context into system prompts'),
           validateEdits: z.boolean().optional().describe('Validate edits against learned rules'),
@@ -625,7 +625,7 @@ export const SettingsSchema = lazySchema(() =>
           neuralScoringEnabled: z.boolean().optional().describe('Enable neural/semantic preference scoring'),
         })
         .optional()
-        .describe('Clew taste-1: local-first preference-learning runtime config'),
+        .describe('Clew taste: local-first preference-learning runtime config'),
       fastMode: z
         .boolean()
         .optional()

@@ -1,22 +1,19 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Box, Text, useInput } from '../../ink.js';
+import { type PlannerLlm, planDynamicWorkflow } from '../../agentRuntime/dynamicWorkflow.js';
 import {
-  type UltracodeState,
   createInitialUltracodeState,
-  enableUltracode,
   disableUltracode,
+  enableUltracode,
   formatConfirmationPrompt,
   markConfirmed,
   recordWorkflowStart,
   shouldRequestConfirmation,
+  type UltracodeState,
 } from '../../agentRuntime/ultracode.js';
-import { planDynamicWorkflow, type PlannerLlm } from '../../agentRuntime/dynamicWorkflow.js';
+import { Box, Text, useInput } from '../../ink.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
-import type {
-  LocalCommandResult,
-  LocalJSXCommandContext,
-} from '../../types/command.js';
+import type { LocalCommandResult, LocalJSXCommandContext } from '../../types/command.js';
 
 const ULTRACODE_STATE_KEY = 'ultracodeState';
 
@@ -48,10 +45,7 @@ function writeState(state: UltracodeState): void {
  *   /ultracode reset     — clear confirmation + workflow counter
  *   /ultracode run <p>   — explicitly plan a dynamic workflow for prompt <p>
  */
-export async function call(
-  args: string,
-  _context: LocalJSXCommandContext,
-): Promise<LocalCommandResult> {
+export async function call(args: string, _context: LocalJSXCommandContext): Promise<LocalCommandResult> {
   const trimmed = args.trim();
   const [verbRaw, ...rest] = trimmed.split(/\s+/);
   const verb = (verbRaw || '').toLowerCase();

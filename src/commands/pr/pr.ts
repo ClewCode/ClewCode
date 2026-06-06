@@ -13,21 +13,25 @@
 import { execSync } from 'node:child_process';
 import type { LocalCommandResult, LocalJSXCommandContext } from '../../types/command.js';
 
-export async function call(
-  args: string,
-  _context: LocalJSXCommandContext,
-): Promise<LocalCommandResult> {
+export async function call(args: string, _context: LocalJSXCommandContext): Promise<LocalCommandResult> {
   const trimmed = args.trim();
   const [verb, ...rest] = trimmed.split(/\s+/) as [string, ...string[]];
 
   switch (verb) {
-    case 'create':   return handleCreate();
-    case 'list':     return handleList();
-    case 'view':     return handleView(rest[0] ?? '');
-    case 'review':   return handleReview(rest[0] ?? '');
-    case 'merge':    return handleMerge(rest[0] ?? '');
-    case 'status':   return handleStatus();
-    default:         return { type: 'text', value: HELP_TEXT };
+    case 'create':
+      return handleCreate();
+    case 'list':
+      return handleList();
+    case 'view':
+      return handleView(rest[0] ?? '');
+    case 'review':
+      return handleReview(rest[0] ?? '');
+    case 'merge':
+      return handleMerge(rest[0] ?? '');
+    case 'status':
+      return handleStatus();
+    default:
+      return { type: 'text', value: HELP_TEXT };
   }
 }
 
@@ -41,7 +45,11 @@ function gh(args: string): string {
 }
 
 function ghSafe(args: string): string {
-  try { return gh(args); } catch { return ''; }
+  try {
+    return gh(args);
+  } catch {
+    return '';
+  }
 }
 
 // ─── create ─────────────────────────────────────────────────────────────
@@ -52,7 +60,9 @@ async function handleCreate(): Promise<LocalCommandResult> {
     const title = ghSafe('pr view --json title --jq .title') || `Changes on ${branch}`;
     const body = ghSafe('pr view --json body --jq .body') || '';
 
-    const result = gh(`pr create --title "${title.replace(/"/g, '\\"')}" --body "${body.replace(/"/g, '\\"').slice(0, 2000)}" --fill`);
+    const result = gh(
+      `pr create --title "${title.replace(/"/g, '\\"')}" --body "${body.replace(/"/g, '\\"').slice(0, 2000)}" --fill`,
+    );
     const url = result.match(/https:\/\/github\.com\/\S+/) ? result : ghSafe('pr view --json url --jq .url');
 
     return { type: 'text', value: `◈ pr · created\n  Branch: ${branch}\n  URL: ${url || result}` };
@@ -65,7 +75,9 @@ async function handleCreate(): Promise<LocalCommandResult> {
 
 async function handleList(): Promise<LocalCommandResult> {
   try {
-    const output = gh('pr list --state open --limit 20 --json number,title,headRefName,author,createdAt,mergeable,reviews --jq \'.[] | "#\(.number) \(.title) (\(.headRefName))"' );
+    const output = gh(
+      'pr list --state open --limit 20 --json number,title,headRefName,author,createdAt,mergeable,reviews --jq \'.[] | "#(.number) (.title) ((.headRefName))"',
+    );
     if (!output) return { type: 'text', value: '◈ pr · no open PRs.' };
     const lines = output.split('\n').filter(Boolean);
     return { type: 'text', value: `◈ pr · open PRs:\n${lines.map(l => `  ${l}`).join('\n')}` };
@@ -79,13 +91,24 @@ async function handleList(): Promise<LocalCommandResult> {
 async function handleView(prId: string): Promise<LocalCommandResult> {
   if (!prId) return { type: 'text', value: 'Usage: /pr view <number>' };
   try {
-    const info = gh(`pr view ${prId} --json number,title,state,headRefName,baseRefName,author,createdAt,mergeable,additions,deletions,files,reviews,body,url`);
+    const info = gh(
+      `pr view ${prId} --json number,title,state,headRefName,baseRefName,author,createdAt,mergeable,additions,deletions,files,reviews,body,url`,
+    );
     const data = JSON.parse(info) as {
-      number: number; title: string; state: string; headRefName: string;
-      baseRefName: string; author: { login: string }; createdAt: string;
-      mergeable: string; additions: number; deletions: number;
-      files?: Array<{ path: string }>; url: string;
-      body?: string; reviews?: Array<{ state: string; author: { login: string } }>;
+      number: number;
+      title: string;
+      state: string;
+      headRefName: string;
+      baseRefName: string;
+      author: { login: string };
+      createdAt: string;
+      mergeable: string;
+      additions: number;
+      deletions: number;
+      files?: Array<{ path: string }>;
+      url: string;
+      body?: string;
+      reviews?: Array<{ state: string; author: { login: string } }>;
     };
     const lines: string[] = [
       `◈ PR #${data.number}: ${data.title}`,
@@ -161,7 +184,9 @@ async function handleMerge(prId: string): Promise<LocalCommandResult> {
 async function handleStatus(): Promise<LocalCommandResult> {
   try {
     const branch = gh('branch --show-current');
-    const prInfo = ghSafe(`pr view --json number,title,state,mergeable,reviews --jq '[.number, .title, .state, .mergeable] | @tsv'`);
+    const prInfo = ghSafe(
+      `pr view --json number,title,state,mergeable,reviews --jq '[.number, .title, .state, .mergeable] | @tsv'`,
+    );
     const checks = ghSafe('pr checks --limit 10 --json name,state,branch');
 
     const lines = [`◈ pr · status for ${branch}`];

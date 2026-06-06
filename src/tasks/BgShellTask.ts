@@ -11,10 +11,10 @@
 import { randomBytes } from 'crypto';
 import type { SetAppState } from '../Task.js';
 import { createTaskStateBase } from '../Task.js';
-import type { LocalAgentTaskState } from './LocalAgentTask/LocalAgentTask.js';
-import { exec } from '../utils/Shell.js';
 import { logForDebugging } from '../utils/debug.js';
+import { exec } from '../utils/Shell.js';
 import { initTaskOutputAsSymlink } from '../utils/task/diskOutput.js';
+import type { LocalAgentTaskState } from './LocalAgentTask/LocalAgentTask.js';
 
 const TASK_ID_ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
 
@@ -45,16 +45,11 @@ export type BgShellTaskState = LocalAgentTaskState & {
  * @param setAppState - React state setter for the app
  * @returns The task ID
  */
-export function startBgShellCommand(
-  command: string,
-  setAppState: SetAppState,
-): string {
+export function startBgShellCommand(command: string, setAppState: SetAppState): string {
   const taskId = generateBgShellTaskId();
 
   // Initialize task output path for live stdout/stderr tracking
-  void initTaskOutputAsSymlink(taskId, taskId).catch(err =>
-    logForDebugging(`bg-shell init output failed: ${err}`),
-  );
+  void initTaskOutputAsSymlink(taskId, taskId).catch(err => logForDebugging(`bg-shell init output failed: ${err}`));
 
   // Register the task in app state
   setAppState(prev => ({
@@ -107,11 +102,7 @@ export function startBgShellCommand(
   return taskId;
 }
 
-async function executeShellBackground(
-  taskId: string,
-  command: string,
-  setAppState: SetAppState,
-): Promise<void> {
+async function executeShellBackground(taskId: string, command: string, setAppState: SetAppState): Promise<void> {
   try {
     const shellCommand = await exec(command, new AbortController().signal, 'bash', {
       timeout: 0, // no timeout for background tasks
@@ -146,9 +137,7 @@ async function executeShellBackground(
                   : `Failed (exit ${result.code}): ${result.stderr.slice(0, 100)}`,
               },
             },
-            rowSummary: success
-              ? `✓ ${command.slice(0, 60)}`
-              : `✗ ${command.slice(0, 55)} (exit ${result.code})`,
+            rowSummary: success ? `✓ ${command.slice(0, 60)}` : `✗ ${command.slice(0, 55)} (exit ${result.code})`,
             error: success ? undefined : result.stderr?.slice(0, 500),
           },
         },

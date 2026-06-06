@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] — 2026-06-06
+
+### Added
+
+- **Taste interactive menu** (`/taste`): Arrow-key navigable Dialog with 11 actions (learn, forget, profile, events, decay, eval, export, import, on, off, status). Spinner/loading state for async operations (decay, eval). Inline success messages. Pre-fills input for learn/forget/export via `nextInput`.
+- **Edit validation via taste**: `validateEdit()` called in `FileEditPermissionRequest.tsx` — shows `⚠ Taste flagged this edit` warning in dialog title/question when edit violates learned rules.
+- **Settings change subscription**: `subscribeToSettingsChanges()` called during `initTasteOnStartup()` — live-reloads taste config when `settings.json` changes.
+- **TasteStatusLine component** (`src/components/TasteStatusLine.tsx`): Shows `ⓘ taste: N rules` in `PromptInputFooter.tsx` alongside `DynamicWorkflowStatusLine`.
+
+### Changed
+
+- **Model picker grouped by all providers**: `/model` now iterates `PROVIDER_IDS` and shows models from every provider in separate named sections, instead of only the active provider's models. Recent models still appear at top with defaults.
+- **XML tag rename**: `<clew_taste1>` → `<clew_taste>`, `<clew_taste1_constraints>` → `<clew_taste_constraints>` in `TastePromptInjector.ts`, `TasteRegressionSuite.ts`, and tests.
+- **Provider auto-persist**: Last-used provider and model are saved to `provider.json` even without `--global` flag.
+
+### Fixed
+
+- **Autocomplete hint duplication**: `PromptInput.tsx` clears `argumentHint` when `inlineGhostText` is present, preventing duplicate hint display.
+- **Blank screen on startup**: Fixed SentryErrorBoundary + TDZ race in `REPL.tsx`.
+- **ProviderManager base URL**: Session-level `/providers` overrides now correctly resolve base URLs.
+
 ## [0.2.1] — 2026-06-05
 
 ### Added

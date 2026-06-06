@@ -258,11 +258,7 @@ function createCommandSuggestionItem(cmd: Command, matchedAlias?: string): Sugge
 
   // Commands loaded from skills dirs, legacy commands dirs, bundled, plugins,
   // or MCP servers are skills (not built-in commands).
-  const isSkill =
-    cmd.type === 'prompt' &&
-    !isWorkflow &&
-    cmd.loadedFrom !== undefined &&
-    cmd.loadedFrom !== 'managed';
+  const isSkill = cmd.type === 'prompt' && !isWorkflow && cmd.loadedFrom !== undefined && cmd.loadedFrom !== 'managed';
 
   return {
     id: getCommandId(cmd),

@@ -458,7 +458,13 @@ export async function installFromNpm(
  * @param ref - Optional branch or tag to checkout
  * @param sha - Optional specific commit SHA to checkout
  */
-export async function gitClone(gitUrl: string, targetPath: string, ref?: string, sha?: string, skipLfs?: boolean): Promise<void> {
+export async function gitClone(
+  gitUrl: string,
+  targetPath: string,
+  ref?: string,
+  sha?: string,
+  skipLfs?: boolean,
+): Promise<void> {
   // Use --recurse-submodules to initialize submodules
   // Always start with shallow clone for efficiency
   const args = ['clone', '--depth', '1', '--recurse-submodules', '--shallow-submodules'];
@@ -570,7 +576,13 @@ export async function gitClone(gitUrl: string, targetPath: string, ref?: string,
 /**
  * Install a plugin from a git URL
  */
-async function installFromGit(gitUrl: string, targetPath: string, ref?: string, sha?: string, skipLfs?: boolean): Promise<void> {
+async function installFromGit(
+  gitUrl: string,
+  targetPath: string,
+  ref?: string,
+  sha?: string,
+  skipLfs?: boolean,
+): Promise<void> {
   const safeUrl = validateGitUrl(gitUrl);
   await gitClone(safeUrl, targetPath, ref, sha, skipLfs);
   const refMessage = ref ? ` (ref: ${ref})` : '';
@@ -580,7 +592,13 @@ async function installFromGit(gitUrl: string, targetPath: string, ref?: string, 
 /**
  * Install a plugin from GitHub
  */
-async function installFromGitHub(repo: string, targetPath: string, ref?: string, sha?: string, skipLfs?: boolean): Promise<void> {
+async function installFromGitHub(
+  repo: string,
+  targetPath: string,
+  ref?: string,
+  sha?: string,
+  skipLfs?: boolean,
+): Promise<void> {
   if (!/^[a-zA-Z0-9-_.]+\/[a-zA-Z0-9-_.]+$/.test(repo)) {
     throw new Error(`Invalid GitHub repository format: ${repo}. Expected format: owner/repo`);
   }

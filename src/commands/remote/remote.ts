@@ -9,22 +9,24 @@
 
 import type { LocalCommandResult, LocalJSXCommandContext } from '../../types/command.js';
 
-export async function call(
-  args: string,
-  _context: LocalJSXCommandContext,
-): Promise<LocalCommandResult> {
+export async function call(args: string, _context: LocalJSXCommandContext): Promise<LocalCommandResult> {
   const trimmed = args.trim();
   const tokens = trimmed.split(/\s+/);
   const verb = (tokens[0]?.toLowerCase() ?? '') as string;
   const { generateToken, listTokens, revokeToken } = await import('../../remote/tokenStore.js');
 
   switch (verb) {
-    case 'listen':  return handleListen(tokens.slice(1), generateToken);
-    case 'connect': return handleConnect(tokens.slice(1));
-    case 'token':   return handleToken(tokens.slice(1), listTokens, revokeToken, generateToken);
+    case 'listen':
+      return handleListen(tokens.slice(1), generateToken);
+    case 'connect':
+      return handleConnect(tokens.slice(1));
+    case 'token':
+      return handleToken(tokens.slice(1), listTokens, revokeToken, generateToken);
     case '':
-    case 'help':    return { type: 'text', value: HELP_TEXT };
-    default:        return { type: 'text', value: `Unknown: ${verb}\n${HELP_TEXT}` };
+    case 'help':
+      return { type: 'text', value: HELP_TEXT };
+    default:
+      return { type: 'text', value: `Unknown: ${verb}\n${HELP_TEXT}` };
   }
 }
 
@@ -39,19 +41,31 @@ async function handleListen(
     if (tokens.includes('--stop') || tokens.includes('-s')) {
       await g.__remoteServer.stop();
       g.__remoteServer = null;
-      if (g.__relayClient) { g.__relayClient.disconnect(); g.__relayClient = null; }
+      if (g.__relayClient) {
+        g.__relayClient.disconnect();
+        g.__relayClient = null;
+      }
       return { type: 'text', value: '◈ remote · server stopped.' };
     }
     const a = g.__remoteServer.address;
-    return { type: 'text', value: `◈ remote · running on ws://${a?.host ?? '?'}:${a?.port ?? '?'}\nStop: /remote listen --stop` };
+    return {
+      type: 'text',
+      value: `◈ remote · running on ws://${a?.host ?? '?'}:${a?.port ?? '?'}\nStop: /remote listen --stop`,
+    };
   }
 
-  let port = 0, host = '127.0.0.1', relayUrl: string | undefined;
+  let port = 0,
+    host = '127.0.0.1',
+    relayUrl: string | undefined;
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i]!;
-    if (t === '--port' || t === '-p')       { port = parseInt(tokens[++i] ?? '', 10) || 0; }
-    else if (t === '--host')                { host = tokens[++i] ?? '127.0.0.1'; }
-    else if (t === '--relay')               { relayUrl = tokens[++i]; }
+    if (t === '--port' || t === '-p') {
+      port = parseInt(tokens[++i] ?? '', 10) || 0;
+    } else if (t === '--host') {
+      host = tokens[++i] ?? '127.0.0.1';
+    } else if (t === '--relay') {
+      relayUrl = tokens[++i];
+    }
   }
 
   const { raw } = generateTokenFn('remote-listen');
@@ -69,9 +83,12 @@ async function handleListen(
     }
 
     const hostD = host === '0.0.0.0' ? '<your-ip>' : host;
-    return { type: 'text', value:
-      `◈ remote · server started\n  URL: ws://${hostD}:${addr.port}\n  Token: ${raw}\n  Port: ${addr.port}\n\n` +
-      `Connect: clew remote connect ws://${hostD}:${addr.port} --token ${raw}\nStop: /remote listen --stop` };
+    return {
+      type: 'text',
+      value:
+        `◈ remote · server started\n  URL: ws://${hostD}:${addr.port}\n  Token: ${raw}\n  Port: ${addr.port}\n\n` +
+        `Connect: clew remote connect ws://${hostD}:${addr.port} --token ${raw}\nStop: /remote listen --stop`,
+    };
   } catch (err: unknown) {
     return { type: 'text', value: `◈ remote · failed: ${err instanceof Error ? err.message : String(err)}` };
   }
@@ -111,15 +128,19 @@ async function handleConnect(tokens: string[]): Promise<LocalCommandResult> {
       throw new Error(`Session creation failed (${sessionRes.status}): ${errBody.slice(0, 200)}`);
     }
 
-    const sessionData = await sessionRes.json() as { session_id: string; ws_url: string };
+    const sessionData = (await sessionRes.json()) as { session_id: string; ws_url: string };
     const wsUrl = sessionData.ws_url || `${url}?session_id=${sessionData.session_id}`;
 
     (globalThis as any).__remoteConnection = {
-      wsUrl, sessionId: sessionData.session_id, serverUrl: httpUrl,
+      wsUrl,
+      sessionId: sessionData.session_id,
+      serverUrl: httpUrl,
     };
 
-    return { type: 'text', value:
-      `◈ remote · connected!\n  Server: ${httpUrl}\n  Session: ${sessionData.session_id}\n  WS: ${wsUrl}` };
+    return {
+      type: 'text',
+      value: `◈ remote · connected!\n  Server: ${httpUrl}\n  Session: ${sessionData.session_id}\n  WS: ${wsUrl}`,
+    };
   } catch (err: unknown) {
     return { type: 'text', value: `◈ remote · failed: ${err instanceof Error ? err.message : String(err)}` };
   }
@@ -138,8 +159,10 @@ async function handleToken(
   if (verb === '--generate' || verb === '--gen' || verb === '-g') {
     const label = tokens.slice(1).join(' ') || undefined;
     const { raw, entry } = generateTokenFn(label);
-    return { type: 'text', value:
-      `◈ remote · token generated\n  Token: ${raw}\n  ID: ${entry.id}\n  Label: ${entry.label}\n  Expires: ${entry.expiresAt ? new Date(entry.expiresAt).toLocaleString() : 'never'}` };
+    return {
+      type: 'text',
+      value: `◈ remote · token generated\n  Token: ${raw}\n  ID: ${entry.id}\n  Label: ${entry.label}\n  Expires: ${entry.expiresAt ? new Date(entry.expiresAt).toLocaleString() : 'never'}`,
+    };
   }
 
   if (verb === '--list' || verb === '-l') {
@@ -156,12 +179,16 @@ async function handleToken(
   if (verb === '--revoke' || verb === '-r') {
     const id = tokens[1];
     if (!id) return { type: 'text', value: 'Usage: /remote token --revoke <id>' };
-    return { type: 'text', value: revokeTokenFn(id)
-      ? `◈ remote · token ${id.slice(0, 8)} revoked.`
-      : `◈ remote · token not found: ${id}` };
+    return {
+      type: 'text',
+      value: revokeTokenFn(id) ? `◈ remote · token ${id.slice(0, 8)} revoked.` : `◈ remote · token not found: ${id}`,
+    };
   }
 
-  return { type: 'text', value: 'Usage:\n  /remote token --generate [label]\n  /remote token --list\n  /remote token --revoke <id>' };
+  return {
+    type: 'text',
+    value: 'Usage:\n  /remote token --generate [label]\n  /remote token --list\n  /remote token --revoke <id>',
+  };
 }
 
 const HELP_TEXT = `◈ remote — provider-agnostic Remote Control

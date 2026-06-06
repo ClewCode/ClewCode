@@ -21,6 +21,7 @@ import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
 import { getLastAssistantMessageId, StatusLine, statusLineShouldDisplay } from '../StatusLine.js';
+import { TasteStatusLine } from '../TasteStatusLine.js';
 import { Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
 import { PromptInputFooterSuggestions, type SuggestionItem } from './PromptInputFooterSuggestions.js';
@@ -130,10 +131,13 @@ function PromptInputFooter({
   const suppressHint = suppressHintFromProps || statusLineShouldDisplay(settings) || isSearching;
   const showStatusLine = mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings);
   const goalActiveText = sessionGoal
-    ? `${sessionGoalPaused ? '⏸' : '◎'} /goal ${sessionGoalPaused ? 'paused' : 'active'} (${formatDuration(goalNow - (sessionGoalStartTime ?? goalNow) - (sessionGoalTotalPausedMs ?? 0), {
-        hideTrailingZeros: true,
-        mostSignificantOnly: true,
-      })})`
+    ? `${sessionGoalPaused ? '⏸' : '◎'} /goal ${sessionGoalPaused ? 'paused' : 'active'} (${formatDuration(
+        goalNow - (sessionGoalStartTime ?? goalNow) - (sessionGoalTotalPausedMs ?? 0),
+        {
+          hideTrailingZeros: true,
+          mostSignificantOnly: true,
+        },
+      )})`
     : undefined;
   const footerLeftSide = (
     <PromptInputFooterLeftSide
@@ -250,6 +254,7 @@ function PromptInputFooter({
       </Box>
       {'external' === 'ant' && <CoordinatorTaskPanel />}
       <DynamicWorkflowStatusLine />
+      <TasteStatusLine />
     </>
   );
 }

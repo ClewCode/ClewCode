@@ -79,7 +79,8 @@ export function AppStateProvider({ children, initialState, onChangeAppState }: P
   useEffect(() => {
     try {
       // Dynamic import to avoid circular dependency at module level.
-      const { bootstrapUltracodeGlobals } = require('../agentRuntime/ultracodeBootstrap.js') as typeof import('../agentRuntime/ultracodeBootstrap.js');
+      const { bootstrapUltracodeGlobals } =
+        require('../agentRuntime/ultracodeBootstrap.js') as typeof import('../agentRuntime/ultracodeBootstrap.js');
       bootstrapUltracodeGlobals(store as any);
     } catch {
       // bootstrap is best-effort; the app must work without it.

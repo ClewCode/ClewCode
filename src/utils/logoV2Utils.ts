@@ -220,6 +220,8 @@ function getProviderBillingLabel(): string {
     if (type === 'foundry') return 'Foundry';
     return 'API Usage Billing';
   }
+  if (provider === 'openai') return 'OpenAI';
+  if (provider === 'deepseek') return 'DeepSeek';
   // Show the active provider ID as label (openai, google, deepseek, etc.)
   return provider.charAt(0).toUpperCase() + provider.slice(1);
 }

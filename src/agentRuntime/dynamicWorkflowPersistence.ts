@@ -21,13 +21,7 @@ import type { DynamicSubtask, DynamicWorkflow } from './dynamicWorkflow.js';
 
 const RUNTIME_DIR = '.claude/runs';
 
-export type DynamicRunStatus =
-  | 'planning'
-  | 'running'
-  | 'paused'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+export type DynamicRunStatus = 'planning' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
 
 export type PersistedSubtaskResult = {
   subtaskId: string;
@@ -87,7 +81,10 @@ export async function createDynamicRun(workspaceRoot: string, workflow: DynamicW
   return state;
 }
 
-export async function loadDynamicRun(workspaceRoot: string, runId: string): Promise<{
+export async function loadDynamicRun(
+  workspaceRoot: string,
+  runId: string,
+): Promise<{
   workflow: DynamicWorkflow;
   state: DynamicRunState;
 } | null> {
@@ -106,10 +103,7 @@ export async function loadDynamicRun(workspaceRoot: string, runId: string): Prom
   }
 }
 
-export async function updateDynamicRun(
-  workspaceRoot: string,
-  state: DynamicRunState,
-): Promise<DynamicRunState> {
+export async function updateDynamicRun(workspaceRoot: string, state: DynamicRunState): Promise<DynamicRunState> {
   const dir = runDir(workspaceRoot, state.runId);
   await ensureDir(dir);
   const next: DynamicRunState = { ...state, updatedAt: nowIso() };

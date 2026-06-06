@@ -22,20 +22,20 @@ type ScrapeResult = {
 export async function collectWebSearch(cwd: string, query: string, runDir: string): Promise<ResearchSource[]> {
   const fsImpl = getFsImplementation();
   const sourcesDir = join(runDir, 'sources');
-  
+
   if (!fsImpl.existsSync(sourcesDir)) {
-    // Explicitly create sources directory using Node's fs implementation 
+    // Explicitly create sources directory using Node's fs implementation
     // wrapped in Bun compatibility layers if needed, or getFsImplementation
     const fs = require('fs');
     fs.mkdirSync(sourcesDir, { recursive: true });
   }
 
   console.log(`[webSearch] Querying DuckDuckGo for: "${query}"`);
-  
+
   // 1. Run DuckDuckGo search via our Python helper script
   const searchProcess = spawnSync('python', ['scripts/scrape.py', '--search', query, '--max-results', '5'], {
     encoding: 'utf-8',
-    timeout: 8000
+    timeout: 8000,
   });
 
   if (searchProcess.error || searchProcess.status !== 0) {
@@ -73,7 +73,7 @@ export async function collectWebSearch(cwd: string, query: string, runDir: strin
 
     const scrapeProcess = spawnSync('python', ['scripts/scrape.py', '--url', res.url], {
       encoding: 'utf-8',
-      timeout: 10000 // 10-second limit per scrape
+      timeout: 10000, // 10-second limit per scrape
     });
 
     if (scrapeProcess.error || scrapeProcess.status !== 0) {
@@ -115,7 +115,7 @@ export async function collectWebSearch(cwd: string, query: string, runDir: strin
       '',
       `# ${title}`,
       '',
-      markdown
+      markdown,
     ].join('\n');
 
     // 4. Save markdown file to disk
@@ -130,12 +130,12 @@ export async function collectWebSearch(cwd: string, query: string, runDir: strin
       path: relativePath,
       retrievedAt: new Date().toISOString(),
       trust: 'medium' as const,
-      excerpt: markdown.slice(0, 500) + '...'
+      excerpt: markdown.slice(0, 500) + '...',
     };
   });
 
   const scrapedSources = await Promise.all(scrapePromises);
-  
+
   for (const s of scrapedSources) {
     if (s) {
       sources.push(s);

@@ -16,6 +16,7 @@ import {
   countMessagesTokensWithAPI,
   countTokensViaHaikuFallback,
   roughTokenCountEstimation,
+  roughTokenCountEstimationForMessages,
 } from '../services/tokenEstimation.js';
 import { estimateSkillFrontmatterTokens } from '../skills/loadSkillsDir.js';
 import {
@@ -235,13 +236,14 @@ export async function countToolDefinitionTokens(
     ),
   );
   const result = await countTokensWithFallback([], toolSchemas);
-  if (result === null || result === 0) {
-    const toolNames = tools.map(t => t.name).join(', ');
-    logForDebugging(
-      `countToolDefinitionTokens returned ${result} for ${tools.length} tools: ${toolNames.slice(0, 100)}${toolNames.length > 100 ? '...' : ''}`,
-    );
+  if (result !== null) {
+    return result;
   }
-  return result ?? 0;
+  const toolNames = tools.map(t => t.name).join(', ');
+  logForDebugging(
+    `countToolDefinitionTokens returned null/0 for ${tools.length} tools: ${toolNames.slice(0, 100)}${toolNames.length > 100 ? '...' : ''}. Falling back to local estimation.`,
+  );
+  return roughTokenCountEstimation(jsonStringify(toolSchemas), 2);
 }
 
 /** Extract a human-readable name from a system prompt section's content */
@@ -253,7 +255,7 @@ function extractSectionName(content: string): string {
   }
   // Fall back to a truncated preview of the first non-empty line
   const firstLine = content.split('\n').find(l => l.trim().length > 0) ?? '';
-  return firstLine.length > 40 ? firstLine.slice(0, 40) + '…' : firstLine;
+  return firstLine.length > 40 ? `${firstLine.slice(0, 40)}…` : firstLine;
 }
 
 async function countSystemTokens(effectiveSystemPrompt: readonly string[]): Promise<{
@@ -279,7 +281,10 @@ async function countSystemTokens(effectiveSystemPrompt: readonly string[]): Prom
   }
 
   const systemTokenCounts = await Promise.all(
-    namedEntries.map(({ content }) => countTokensWithFallback([{ role: 'user', content }], [])),
+    namedEntries.map(async ({ content }) => {
+      const tokens = await countTokensWithFallback([{ role: 'user', content }], []);
+      return tokens ?? roughTokenCountEstimation(content);
+    }),
   );
 
   const systemPromptSections: SystemPromptSectionDetail[] = namedEntries.map((entry, i) => ({
@@ -316,7 +321,7 @@ async function countMemoryFileTokens(): Promise<{
     memoryFilesData.map(async file => {
       const tokens = await countTokensWithFallback([{ role: 'user', content: file.content }], []);
 
-      return { file, tokens: tokens || 0 };
+      return { file, tokens: tokens ?? roughTokenCountEstimation(file.content) };
     }),
   );
 
@@ -677,17 +682,19 @@ async function countCustomAgentTokens(agentDefinitions: { activeAgents: AgentDef
   let agentTokens = 0;
 
   const tokenCounts = await Promise.all(
-    customAgents.map(agent =>
-      countTokensWithFallback(
+    customAgents.map(async agent => {
+      const content = [agent.agentType, agent.whenToUse].join(' ');
+      const tokens = await countTokensWithFallback(
         [
           {
             role: 'user',
-            content: [agent.agentType, agent.whenToUse].join(' '),
+            content,
           },
         ],
         [],
-      ),
-    ),
+      );
+      return tokens ?? roughTokenCountEstimation(content);
+    }),
   );
 
   for (const [i, agent] of customAgents.entries()) {
@@ -830,7 +837,7 @@ async function approximateMessageTokens(messages: Message[]): Promise<MessageBre
     [],
   );
 
-  breakdown.totalTokens = approximateMessageTokens ?? 0;
+  breakdown.totalTokens = approximateMessageTokens ?? roughTokenCountEstimationForMessages(microcompactResult.messages);
   return breakdown;
 }
 

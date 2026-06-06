@@ -13,20 +13,22 @@
  * the same way the static `Orchestrator` does.
  */
 
-import { computeExecutionWaves, type DynamicSubtask, type DynamicWorkflow, type PlannerLlm } from './dynamicWorkflow.js';
-import { verifyFinding } from './verifierAgent.js';
-import { runDynamicWorkflow, type SubtaskResult } from './dynamicWorkflowRunner.js';
+import {
+  computeExecutionWaves,
+  type DynamicSubtask,
+  type DynamicWorkflow,
+  type PlannerLlm,
+} from './dynamicWorkflow.js';
 import {
   createDynamicRun,
-  loadDynamicRun,
   type DynamicRunState,
+  loadDynamicRun,
   type PersistedSubtaskResult,
 } from './dynamicWorkflowPersistence.js';
+import { runDynamicWorkflow, type SubtaskResult } from './dynamicWorkflowRunner.js';
+import { verifyFinding } from './verifierAgent.js';
 
-export type CoordinatorAgentRunner = (
-  subtask: DynamicSubtask,
-  context: string,
-) => Promise<{ output: string }>;
+export type CoordinatorAgentRunner = (subtask: DynamicSubtask, context: string) => Promise<{ output: string }>;
 
 /**
  * Run a dynamic workflow under the coordinator. Persists progress to

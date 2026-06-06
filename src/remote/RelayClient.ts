@@ -60,7 +60,9 @@ export class RelayClient {
     if (this.ws) {
       try {
         this.ws.close();
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       this.ws = null;
     }
   }
@@ -82,7 +84,9 @@ export class RelayClient {
     if (this.ws) {
       try {
         this.ws.close();
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     try {

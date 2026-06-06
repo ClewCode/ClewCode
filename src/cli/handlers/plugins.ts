@@ -511,7 +511,10 @@ export async function marketplaceListHandler(options: { json?: boolean; cowork?:
 }
 
 // marketplace remove (lines 5576–5598)
-export async function marketplaceRemoveHandler(name: string, options: { cowork?: boolean; scope?: string }): Promise<void> {
+export async function marketplaceRemoveHandler(
+  name: string,
+  options: { cowork?: boolean; scope?: string },
+): Promise<void> {
   if (options.cowork) setUseCoworkPlugins(true);
   try {
     await removeMarketplaceSource(name, options.scope);

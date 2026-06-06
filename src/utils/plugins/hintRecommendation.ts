@@ -22,7 +22,7 @@ import { logForDebugging } from '../debug.js';
 import { isPluginInstalled } from './installedPluginsManager.js';
 import { getPluginById } from './marketplaceManager.js';
 import { isOfficialMarketplaceName, parsePluginIdentifier } from './pluginIdentifier.js';
-import { isPluginBlockedByPolicy, isMarketplaceAllowedForSuggestions } from './pluginPolicy.js';
+import { isMarketplaceAllowedForSuggestions, isPluginBlockedByPolicy } from './pluginPolicy.js';
 
 /**
  * Hard cap on `claudeCodeHints.plugin[]` — bounds config growth. Each shown

@@ -1376,7 +1376,9 @@ async function loadAndCacheMarketplace(
           // SSH looks good, try it first
           safeCallProgress(onProgress, `Cloning via SSH: ${sshUrl}`);
           try {
-            await cacheMarketplaceFromGit(sshUrl, temporaryCachePath, source.ref, source.sparsePaths, onProgress, { skipLfs: source.skipLfs });
+            await cacheMarketplaceFromGit(sshUrl, temporaryCachePath, source.ref, source.sparsePaths, onProgress, {
+              skipLfs: source.skipLfs,
+            });
           } catch (err) {
             lastError = toError(err);
 
@@ -1395,7 +1397,9 @@ async function loadAndCacheMarketplace(
 
             // Try HTTPS
             try {
-              await cacheMarketplaceFromGit(httpsUrl, temporaryCachePath, source.ref, source.sparsePaths, onProgress, { skipLfs: source.skipLfs });
+              await cacheMarketplaceFromGit(httpsUrl, temporaryCachePath, source.ref, source.sparsePaths, onProgress, {
+                skipLfs: source.skipLfs,
+              });
               lastError = null; // Success!
             } catch (httpsErr) {
               // HTTPS also failed - use HTTPS error as the final error
@@ -1412,7 +1416,9 @@ async function loadAndCacheMarketplace(
           logForDebugging(`SSH not configured for GitHub, using HTTPS for ${source.repo}`, { level: 'info' });
 
           try {
-            await cacheMarketplaceFromGit(httpsUrl, temporaryCachePath, source.ref, source.sparsePaths, onProgress, { skipLfs: source.skipLfs });
+            await cacheMarketplaceFromGit(httpsUrl, temporaryCachePath, source.ref, source.sparsePaths, onProgress, {
+              skipLfs: source.skipLfs,
+            });
           } catch (err) {
             lastError = toError(err);
 
@@ -1432,7 +1438,9 @@ async function loadAndCacheMarketplace(
 
             // Try SSH
             try {
-              await cacheMarketplaceFromGit(sshUrl, temporaryCachePath, source.ref, source.sparsePaths, onProgress, { skipLfs: source.skipLfs });
+              await cacheMarketplaceFromGit(sshUrl, temporaryCachePath, source.ref, source.sparsePaths, onProgress, {
+                skipLfs: source.skipLfs,
+              });
               lastError = null; // Success!
             } catch (sshErr) {
               // SSH also failed - use SSH error as the final error
@@ -1456,7 +1464,9 @@ async function loadAndCacheMarketplace(
       case 'git': {
         temporaryCachePath = join(cacheDir, tempName);
         cleanupNeeded = true;
-        await cacheMarketplaceFromGit(source.url, temporaryCachePath, source.ref, source.sparsePaths, onProgress, { skipLfs: source.skipLfs });
+        await cacheMarketplaceFromGit(source.url, temporaryCachePath, source.ref, source.sparsePaths, onProgress, {
+          skipLfs: source.skipLfs,
+        });
         marketplacePath = join(temporaryCachePath, source.path || '.claude-plugin/marketplace.json');
         break;
       }

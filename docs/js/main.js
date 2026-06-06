@@ -63,6 +63,7 @@
       '    <a href="' + rootPrefix + 'features/bridge-mode.html" class="sidebar-link"><span class="link-icon"></span>Bridge Mode</a>' +
       '    <a href="' + rootPrefix + 'features/evals.html" class="sidebar-link"><span class="link-icon"></span>Evaluation Harness</a>' +
       '    <a href="' + rootPrefix + 'features/sentry-setup.html" class="sidebar-link"><span class="link-icon"></span>Sentry Setup</a>' +
+      '    <a href="' + rootPrefix + 'taste.html" class="sidebar-link"><span class="link-icon"></span>Taste</a>' +
       '  </nav>' +
       '</div>' +
       '<div class="sidebar-section">' +

@@ -3,8 +3,8 @@ import { getSystemPrompt } from '../../constants/prompts.js';
 import { getSystemContext, getUserContext } from '../../context.js';
 import { startBackgroundSession } from '../../tasks/LocalMainSessionTask.js';
 import type { LocalCommandCall } from '../../types/command.js';
-import { buildEffectiveSystemPrompt } from '../../utils/systemPrompt.js';
 import { getCurrentSessionTitle } from '../../utils/sessionStorage.js';
+import { buildEffectiveSystemPrompt } from '../../utils/systemPrompt.js';
 
 export const call: LocalCommandCall = async (args, context) => {
   const { messages } = context;

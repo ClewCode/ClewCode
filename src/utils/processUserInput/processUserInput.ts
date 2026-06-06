@@ -572,9 +572,11 @@ async function processUserInputBase(
           const { startBgShellCommand } = await import('../../tasks/BgShellTask.js');
           const taskId = startBgShellCommand(bgCommand, context.setAppState);
           return {
-            messages: [createUserMessage({
-              content: `Background shell started: ${bgCommand}`,
-            })],
+            messages: [
+              createUserMessage({
+                content: `Background shell started: ${bgCommand}`,
+              }),
+            ],
             shouldQuery: false,
           };
         }
