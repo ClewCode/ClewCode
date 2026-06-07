@@ -3,7 +3,7 @@ import type { Command } from '../../commands.js';
 const voice = {
   type: 'local',
   name: 'voice',
-  description: 'Toggle voice mode. /voice start to begin recording, /voice stop to stop',
+  description: 'Capture speech via browser microphone and return as text. /voice to start, Esc to stop',
   argumentHint: '[start|stop]',
   supportsNonInteractive: false,
   load: () => import('./voice.js'),
