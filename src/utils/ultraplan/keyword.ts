@@ -98,6 +98,10 @@ export function findPrTriggerPositions(text: string): TriggerPosition[] {
   return findKeywordTriggerPositions(text, 'pull request');
 }
 
+export function findWorkflowTriggerPositions(text: string): TriggerPosition[] {
+  return findKeywordTriggerPositions(text, 'workflow');
+}
+
 export function findUltrareviewTriggerPositions(text: string): TriggerPosition[] {
   return findKeywordTriggerPositions(text, 'ultrareview');
 }
