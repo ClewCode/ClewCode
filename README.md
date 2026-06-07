@@ -66,7 +66,7 @@ bun install && bun run build && bun run start
 | **Agents** | Background runtime with supervisor, multi-step workflows, approvals, live footer status. |
 | **Peer-to-peer** | LAN discovery (UDP multicast), task delegation, role-based naming, 14 AI tools for autonomous coordination. |
 | **Taste** | Preference-learning from accept/reject signals. Rules inject into every prompt. 4 AI tools for rule management. |
-| **Daemon** | 24/7 autonomous mode with task queue, auto-scheduling, health checks. |
+| **Daemon & loop** | 24/7 autonomous mode (`/loop`), task queue, auto-scheduling, health checks. |
 | **Plugins & hooks** | Pre/post tool hooks, dynamic skills (`.claude/skills/`), marketplace. |
 | **Bridge & relay** | WebSocket remote control, relay server for cross-network access. |
 | **Research** | Local-first multi-source research pipeline: plan → collect → extract → report. |
@@ -105,6 +105,7 @@ export OLLAMA_HOST=http://localhost:11434
 /agent        Background agent workflows
 /peer         LAN peer coordination
 /remote       WebSocket remote control
+/loop         24/7 autonomous agent loop
 /daemon       Autonomous daemon dashboard
 /task         Scheduled tasks
 ```
