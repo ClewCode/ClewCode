@@ -123,6 +123,7 @@ import {
   findFixTriggerPositions,
   findUltraplanTriggerPositions,
   findUltrareviewTriggerPositions,
+  findWorkflowTriggerPositions,
   findPrTriggerPositions,
 } from '../../utils/ultraplan/keyword.js';
 import { AutoModeOptInDialog } from '../AutoModeOptInDialog.js';
@@ -634,14 +635,12 @@ function PromptInput({
   );
   const ultrareviewTriggers = useMemo(
     () => (isUltrareviewEnabled() ? findUltrareviewTriggerPositions(displayedValue) : []),
-  );
-  const prTriggers = useMemo(
-    () => findPrTriggerPositions(displayedValue),
     [displayedValue],
   );
   const explainTriggers = useMemo(() => findExplainTriggerPositions(displayedValue), [displayedValue]);
   const fixTriggers = useMemo(() => findFixTriggerPositions(displayedValue), [displayedValue]);
   const debugTriggers = useMemo(() => findDebugTriggerPositions(displayedValue), [displayedValue]);
+  const workflowTriggers = useMemo(() => findWorkflowTriggerPositions(displayedValue), [displayedValue]);
   const btwTriggers = useMemo(() => findBtwTriggerPositions(displayedValue), [displayedValue]);
   const buddyTriggers = useMemo(() => findBuddyTriggerPositions(displayedValue), [displayedValue]);
   const slashCommandTriggers = useMemo(() => {
@@ -855,19 +854,6 @@ function PromptInput({
       }
     }
 
-    // Rainbow highlighting for "pull request" keyword
-    for (const trigger of prTriggers) {
-      for (let i = trigger.start; i < trigger.end; i++) {
-        highlights.push({
-          start: i,
-          end: i + 1,
-          color: getRainbowColor(i - trigger.start),
-          shimmerColor: getRainbowColor(i - trigger.start, true),
-          priority: 10,
-        });
-      }
-    }
-
     // Same rainbow treatment for the explain keyword
     for (const trigger of explainTriggers) {
       for (let i = trigger.start; i < trigger.end; i++) {
@@ -920,6 +906,19 @@ function PromptInput({
       }
     }
 
+    // Same rainbow treatment for the workflow keyword
+    for (const trigger of workflowTriggers) {
+      for (let i = trigger.start; i < trigger.end; i++) {
+        highlights.push({
+          start: i,
+          end: i + 1,
+          color: getRainbowColor(i - trigger.start),
+          shimmerColor: getRainbowColor(i - trigger.start, true),
+          priority: 10,
+        });
+      }
+    }
+
     // Rainbow for /buddy
     for (const trigger of buddyTriggers) {
       for (let i = trigger.start; i < trigger.end; i++) {
@@ -950,7 +949,6 @@ function PromptInput({
     thinkTriggers,
     ultraplanTriggers,
     ultrareviewTriggers,
-    prTriggers,
     buddyTriggers,
   ]);
   const { addNotification, removeNotification } = useNotifications();
