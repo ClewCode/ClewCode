@@ -1550,7 +1550,7 @@ export function REPL({
         // Dismiss the companion bubble on scroll — it's absolute-positioned
         // at bottom-right and covers transcript content. Scrolling = user is
         // trying to read something under it.
-        if (feature('BUDDY')) {
+        if ((typeof BUDDY !== 'undefined' && BUDDY)) {
           setAppState(prev =>
             prev.companionReaction === undefined ? prev : { ...prev, companionReaction: undefined },
           );
@@ -3429,7 +3429,7 @@ export function REPL({
         onQueryEvent(event);
       }
 
-      if (feature('BUDDY')) {
+      if ((typeof BUDDY !== 'undefined' && BUDDY)) {
         void fireCompanionObserver(messagesRef.current, reaction =>
           setAppState(prev => (prev.companionReaction === reaction ? prev : { ...prev, companionReaction: reaction })),
         );
@@ -5562,7 +5562,7 @@ export function REPL({
           scrollRef={scrollRef}
           overlay={toolPermissionOverlay}
           bottomFloat={
-            feature('BUDDY') && companionVisible && !companionNarrow ? <CompanionFloatingBubble /> : undefined
+            (typeof BUDDY !== 'undefined' && BUDDY) && companionVisible && !companionNarrow ? <CompanionFloatingBubble /> : undefined
           }
           modal={centeredModal}
           modalScrollRef={modalScrollRef}
@@ -5660,11 +5660,11 @@ export function REPL({
           }
           bottom={
             <Box
-              flexDirection={feature('BUDDY') && companionNarrow ? 'column' : 'row'}
+              flexDirection={(typeof BUDDY !== 'undefined' && BUDDY) && companionNarrow ? 'column' : 'row'}
               width="100%"
-              alignItems={feature('BUDDY') && companionNarrow ? undefined : 'flex-end'}
+              alignItems={(typeof BUDDY !== 'undefined' && BUDDY) && companionNarrow ? undefined : 'flex-end'}
             >
-              {feature('BUDDY') && companionNarrow && isFullscreenEnvEnabled() && companionVisible ? (
+              {(typeof BUDDY !== 'undefined' && BUDDY) && companionNarrow && isFullscreenEnvEnabled() && companionVisible ? (
                 <CompanionSprite />
               ) : null}
               <Box flexDirection="column" flexGrow={1}>
@@ -6338,7 +6338,7 @@ export function REPL({
                 )}
                 {'external' === 'ant' && <DevBar />}
               </Box>
-              {feature('BUDDY') && !(companionNarrow && isFullscreenEnvEnabled()) && companionVisible ? (
+              {companionVisible ? (
                 <CompanionSprite />
               ) : null}
             </Box>
