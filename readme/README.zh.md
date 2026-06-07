@@ -25,9 +25,9 @@ Clew 是一个非官方的 AI 辅助软件开发 CLI。
 
 本项目是一个源码级 rebuild 与 extension 项目，面向研究、本地开发、调试、自托管工作流和多供应商选择。
 
-本项目不是 Anthropic 的官方产品、发行版、合作项目或受支持实现。
+本项目不是任何公司的官方产品、发行版、合作项目或受支持实现。
 
-> **免责声明：** Anthropic、Claude 和 Claude Code 是其各自所有者的商标。Anthropic 的官方 Claude Code 产品是专有软件。本项目与 Anthropic PBC 无隶属、背书、赞助或批准关系。使用、修改、分发或部署本仓库前，请阅读 [LICENSE.md](../LICENSE.md)。
+> **免责声明：** 本项目与任何第三方无隶属、背书、赞助或批准关系。使用、修改、分发或部署本仓库前，请阅读 [LICENSE.md](../LICENSE.md)。
 
 ## 本项目提供什么
 
@@ -353,4 +353,4 @@ src/utils/vendor/ripgrep/x64-win32/rg.exe
 
 见 [LICENSE.md](../LICENSE.md)。
 
-只有 contributor-authored modifications 和 original additions 按 `LICENSE.md` 中说明的方式授权。本仓库不授予 Anthropic proprietary software、services、models、trademarks 或其他 protected materials 的任何权利。
+只有 contributor-authored modifications 和 original additions 按 `LICENSE.md` 中说明的方式授权。

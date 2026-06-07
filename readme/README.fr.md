@@ -25,9 +25,9 @@ Clew est un CLI non officiel orienté vers la recherche pour le développement l
 
 Il s'agit d'un projet de reconstruction et d'extension à partir des sources, conçu pour le développement local, le débogage, les workflows auto-hébergés et le choix du fournisseur d'IA.
 
-Ce dépôt n'est pas un produit officiel d'Anthropic, une distribution, un projet partenaire ou une implémentation supportée.
+Ce dépôt n'est pas un produit officiel, une distribution, un projet partenaire ou une implémentation supportée.
 
-> **Avis de non-responsabilité :** Anthropic, Claude et Claude Code sont des marques commerciales de leurs propriétaires respectifs. Ce projet n'est pas affilié, approuvé, sponsorisé ou autorisé par Anthropic PBC. Le produit officiel Claude Code d'Anthropic est un logiciel propriétaire. Veuillez lire [LICENSE.md](../LICENSE.md) avant d'utiliser, modifier, redistribuer ou déployer ce dépôt.
+> **Avis de non-responsabilité :** Ce projet n'est affilié, approuvé, sponsorisé ou autorisé par aucun tiers. Veuillez lire [LICENSE.md](../LICENSE.md) avant d'utiliser, modifier, redistribuer ou déployer ce dépôt.
 
 ## Ce que ce projet offre
 
@@ -347,4 +347,4 @@ Utilisez le processus de signalement privé décrit dans [SECURITY.md](../SECURI
 
 Voir [LICENSE.md](../LICENSE.md).
 
-Seules les modifications et ajouts originaux créés par le contributeur sont licenciés comme décrit dans `LICENSE.md`. Ce dépôt n'accorde pas de droits sur les logiciels propriétaires, services, modèles, marques commerciales ou autres matériels protégés d'Anthropic.
+Seules les modifications et ajouts originaux créés par le contributeur sont licenciés comme décrit dans `LICENSE.md`.

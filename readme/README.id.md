@@ -25,9 +25,9 @@ Clew adalah CLI tidak resmi berorientasi riset untuk pengembangan perangkat luna
 
 Ini adalah proyek rekonstruksi dan ekstensi berbasis sumber, dirancang untuk pengembangan lokal, debugging, alur kerja self-hosted, dan kebebasan memilih penyedia.
 
-Repositori ini bukan produk resmi Anthropic, distribusi, proyek mitra, atau implementasi yang didukung.
+Repositori ini bukan produk resmi, distribusi, proyek mitra, atau implementasi yang didukung.
 
-> **Penyangkalan:** Anthropic, Claude, dan Claude Code adalah merek dagang dari pemiliknya masing-masing. Proyek ini tidak berafiliasi, didukung, disponsori, atau disetujui oleh Anthropic PBC. Produk resmi Claude Code dari Anthropic adalah perangkat lunak berpemilik. Harap baca [LICENSE.md](../LICENSE.md) sebelum menggunakan, memodifikasi, mendistribusikan ulang, atau menyebarkan repositori ini.
+> **Penyangkalan:** Proyek ini tidak berafiliasi, didukung, disponsori, atau disetujui oleh pihak ketiga mana pun. Harap baca [LICENSE.md](../LICENSE.md) sebelum menggunakan, memodifikasi, mendistribusikan ulang, atau menyebarkan repositori ini.
 
 ## Apa yang Disediakan Proyek Ini
 
@@ -347,4 +347,4 @@ Gunakan proses pelaporan pribadi yang dijelaskan di [SECURITY.md](../SECURITY.md
 
 Lihat [LICENSE.md](../LICENSE.md).
 
-Hanya modifikasi dan tambahan asli yang dibuat oleh kontributor yang dilisensikan seperti yang dijelaskan dalam `LICENSE.md`. Repositori ini tidak memberikan hak atas perangkat lunak kepemilikan, layanan, model, merek dagang, atau materi protected lainnya milik Anthropic.
+Hanya modifikasi dan tambahan asli yang dibuat oleh kontributor yang dilisensikan seperti yang dijelaskan dalam `LICENSE.md`.
