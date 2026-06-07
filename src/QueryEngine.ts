@@ -264,20 +264,15 @@ export class QueryEngine {
     const tasteBlock = getTasteInjectionBlock();
     if (tasteBlock) {
       const rules = getTasteRuntime().getRules();
-      if (rules.length > 0) {
-        // Build a brief summary of active rules for the user
-        const top = rules
-          .filter(r => r.confidence >= 0.55)
+      const activeRules = rules.filter(r => r.confidence >= 0.55);
+      if (activeRules.length > 0) {
+        const lines = activeRules
           .sort((a, b) => b.confidence - a.confidence)
-          .slice(0, 5);
-        const brief = top.map(r => `- ${r.text} (${r.kind})`).join('\n');
-        import('./utils/messageQueueManager.js').then(({ enqueuePendingNotification }) => {
-          enqueuePendingNotification({
-            value: `Taste Brief (${rules.length} rules):\n${brief}`,
-            mode: 'task-notification',
-            priority: 'later',
-          });
-        });
+          .slice(0, 8)
+          .map(r => `  - ${r.text} (${r.kind}, ${Math.round(r.confidence * 100)}%)`);
+        const brief = [`● Taste Brief (${rules.length} rules):`, ...lines].join('\n');
+        const { createSystemMessage } = await import('./utils/messages.js');
+        this.mutableMessages.push(createSystemMessage(brief, 'info'));
       }
     }
 
