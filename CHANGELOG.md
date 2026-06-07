@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.4] - 2026-06-08
+
+### Added
+
+- **Peer-to-peer collaboration** (`/peer`): LAN peer discovery (UDP multicast + file registry), task delegation, role-based naming
+  - 14 AI peer tools: discover, join, send_task, send_message, run, broadcast, ping, disconnect, list_tasks, list_roles, list_messages, set_name, set_role, share
+  - Interactive PeerMenu with keyboard navigation
+  - Inbound tasks/messages auto-inject into AI prompt
+  - Compact single-line tool results with ✓/✗ markers
+- **Taste AI tools** (4): taste_learn, taste_forget, taste_profile, taste_suggest
+- **Taste brief** — system message in chat when `<clew_taste>` injects rules
+- **Autonomous agents** — agent loop, supervisor integration, task queue, Loop Lock
+- **Workflow Rainbow** — per-character gradient highlight for "workflow" keyword
+- **Model stats** — icon-based display with clickable provider switching
+
+### Fixed
+
+- PeerServer.start() made idempotent to fix "already started" error on `/peer share`
+- PeerStore.getPeerByPort() now searches both discovered and connected peers
+- Taste brief uses proper SystemMessage instead of task-notification
+
+### Changed
+
+- Dev script: `bun run dev` builds with `--external` flags before running
+
 ## [0.2.3] - 2026-06-07
 
 ### Fixed

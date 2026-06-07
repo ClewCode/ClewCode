@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คำสั่ง — Clew</title>
+  <meta name="description" content="ข้อมูลอ้างอิงคำสั่ง slash ทั้งหมดใน Clew — คำสั่งในตัว, สกิล, และคำสั่งปลั๊กอิน">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+</head>
+<body>
+<header class="header"><div class="header-inner"><a href="index.th.html" class="logo">
+      <span>Clew Code</span>
+    </a><nav class="header-nav"><a href="index.th.html">หน้าแรก</a><a href="index.th.html#features">ฟีเจอร์</a><a href="index.th.html#commands">คำสั่ง</a><a href="quick-start.th.html" class="active">เอกสาร</a><a href="https://github.com/JonusNattapong/ClewCode" target="_blank">GitHub</a>
+    <div class="lang-wrap">
+    <button class="lang-btn">🌐</button>
+    <div class="lang-menu">
+      <a href="../readme/README.zh.md">中文</a>
+      <a href="../readme/README.th.md">ไทย</a>
+      <a href="../readme/README.ja.md">日本語</a>
+      <a href="../readme/README.ko.md">한국어</a>
+      <a href="../readme/README.es.md">Español</a>
+      <a href="../readme/README.fr.md">Français</a>
+      <a href="../readme/README.de.md">Deutsch</a>
+      <a href="../readme/README.pt.md">Português</a>
+      <a href="../readme/README.vi.md">Tiếng Việt</a>
+      <a href="../readme/README.id.md">Bahasa Indonesia</a>
+      <a href="../readme/README.ru.md">Русский</a>
+      <a href="../readme/README.hi.md">हिन्दी</a>
+      <a href="commands.html">English</a>
+    </div>
+  </div>
+    </nav><button class="menu-btn" id="menuToggle" aria-label="เปิด/ปิดเมนู"><span></span><span></span><span></span></button></div></header>
+<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="content-wrap"><main class="content">
+  <div class="breadcrumbs"><a href="index.th.html">หน้าแรก</a><span class="sep">/</span><span>คำสั่ง</span></div>
+  <h1>คำสั่ง</h1>
+  <p class="section-subtitle">Clew มาพร้อมคำสั่ง slash ในตัว 80+ รายการ พร้อมสกิลที่โหลดแบบไดนามิกและคำสั่งปลั๊กอิน</p>
+
+  <h2>เซสชันและบริบท</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/clear</code></td><td>ล้างประวัติการสนทนาและเพิ่มพื้นที่บริบท</td></tr>
+    <tr><td><code>/compact</code></td><td>บีบอัดบริบทเซสชัน — ตัด log/trace, รวม, pruning</td></tr>
+    <tr><td><code>/context</code></td><td>แสดงภาพการใช้งานบริบทปัจจุบันเป็นกริดสี</td></tr>
+    <tr><td><code>/resume</code></td><td>กลับมาการสนทนาก่อนหน้า</td></tr>
+    <tr><td><code>/rename</code></td><td>เปลี่ยนชื่อการสนทนาปัจจุบัน</td></tr>
+    <tr><td><code>/rewind</code></td><td>คืนค่าโค้ดและ/หรือการสนทนาไปยังจุดก่อนหน้า</td></tr>
+    <tr><td><code>/session</code></td><td>แสดง URL เซสชันระยะไกลและ QR code</td></tr>
+  </table>
+
+  <h2>โมเดลและผู้ให้บริการ</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/model</code></td><td>สลับโมเดลหรือผู้ให้บริการ — ดึงโมเดลสดจาก API ผู้ให้บริการ</td></tr>
+    <tr><td><code>/taste</code></td><td>เปิดเมนูการเรียนรู้ความชอบแบบโต้ตอบ</td></tr>
+    <tr><td><code>/effort</code></td><td>ตั้งค่าระดับความพยายามสำหรับการใช้เหตุผล (low, medium, high, max)</td></tr>
+    <tr><td><code>/cost</code></td><td>แสดงค่าใช้จ่ายและระยะเวลาทั้งหมดของเซสชันปัจจุบัน</td></tr>
+    <tr><td><code>/usage</code></td><td>แสดงขีดจำกัดการใช้งานแผน</td></tr>
+    <tr><td><code>/stats</code></td><td>แสดงสถิติการใช้งาน Clew</td></tr>
+  </table>
+
+  <h2>เครื่องมือและสิทธิ์</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/tools</code></td><td>แสดงเครื่องมือทั้งหมดพร้อมสถิติและค่าใช้จ่ายโทเค็น</td></tr>
+    <tr><td><code>/permissions</code></td><td>จัดการกฎสิทธิ์อนุญาตและปฏิเสธเครื่องมือ</td></tr>
+    <tr><td><code>/plan</code></td><td>เปิดโหมดวางแผนหรือดูแผนเซสชันปัจจุบัน</td></tr>
+    <tr><td><code>/capabilities</code></td><td>แสดงความสามารถของระบบที่มี (git, tmux, browser, shells)</td></tr>
+  </table>
+
+  <h2>ส่วนขยาย (ปลั๊กอิน, MCP, สกิล)</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/plugin</code></td><td>จัดการปลั๊กอิน — list, install, remove</td></tr>
+    <tr><td><code>/mcp</code></td><td>จัดการเซิร์ฟเวอร์ MCP</td></tr>
+    <tr><td><code>/skill</code></td><td>แสดงสกิลที่มีหรือรายละเอียดสกิล</td></tr>
+    <tr><td><code>/code-review</code></td><td>รีวิวโค้ดที่เปลี่ยนแปลงหาบั๊ก</td></tr>
+  </table>
+
+  <h2>เอเจนต์</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/agent</code></td><td>จัดการการทำงานของ Clew AI Agents</td></tr>
+    <tr><td><code>/agents</code></td><td>เปิดแดชบอร์ดเอเจนต์แบบโต้ตอบ</td></tr>
+    <tr><td><code>/daemon</code></td><td>เปิดแผงควบคุม daemon อัตโนมัติ 24/7</td></tr>
+    <tr><td><code>/task</code></td><td>สร้างงานตามกำหนดการด้วยแบบฟอร์มโต้ตอบ</td></tr>
+    <tr><td><code>/loop</code></td><td>รันคำสั่งซ้ำตามช่วงเวลา</td></tr>
+  </table>
+
+  <h2>ระบบและการตรวจสอบ</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/help</code></td><td>แสดงความช่วยเหลือและคำสั่งที่มี</td></tr>
+    <tr><td><code>/status</code></td><td>แสดงสถานะ Clew รวมถึงเวอร์ชัน, โมเดล, บัญชี</td></tr>
+    <tr><td><code>/doctor</code></td><td>ตรวจสอบการติดตั้งและการตั้งค่า Clew</td></tr>
+    <tr><td><code>/exit</code></td><td>ออกจาก REPL</td></tr>
+  </table>
+
+  <h2>การตั้งค่า</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/config</code></td><td>เปิดแผงตั้งค่า</td></tr>
+    <tr><td><code>/theme</code></td><td>เปลี่ยนธีม</td></tr>
+    <tr><td><code>/color</code></td><td>ตั้งค่าสีแถบ prompt</td></tr>
+    <tr><td><code>/keybindings</code></td><td>เปิดหรือสร้างไฟล์ตั้งค่าคีย์ลัด</td></tr>
+  </table>
+
+  <h2>Git และรีวิวโค้ด</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/diff</code></td><td>ดูการเปลี่ยนแปลงที่ยังไม่ได้ commit</td></tr>
+    <tr><td><code>/commit</code></td><td>stage และ commit การเปลี่ยนแปลง</td></tr>
+    <tr><td><code>/review</code></td><td>รีวิวการเปลี่ยนแปลงโค้ด</td></tr>
+  </table>
+
+  <h2>การวิจัยและค้นหา</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/research</code></td><td>วิจัยเชิงลึกจากแหล่งที่มาในไฟล์ท้องถิ่น, wiki, และหน่วยความจำ</td></tr>
+    <tr><td><code>/memory</code></td><td>แก้ไขไฟล์หน่วยความจำ Claude</td></tr>
+    <tr><td><code>/memory-search</code></td><td>ค้นหาหน่วยความจำด้วยการค้นหาเชิงความหมาย (ข้ามภาษา)</td></tr>
+  </table>
+
+  <h2>การโหลดคำสั่ง</h2>
+  <p>คำสั่งถูกโหลดจากหลายแหล่งเมื่อเริ่มต้น:</p>
+  <ul>
+    <li><strong>ในตัว</strong> — คำสั่งหลักจาก <code>src/commands/</code> (พร้อมใช้เสมอ)</li>
+    <li><strong>สกิลที่มาพร้อม</strong> — สกิลที่มาพร้อมกับแอปพลิเคชัน</li>
+    <li><strong>ไดเรกทอรีสกิล</strong> — <code>~/.claude/skills/</code> และ <code>.claude/skills/</code></li>
+    <li><strong>คำสั่งปลั๊กอิน</strong> — จากปลั๊กอินที่ติดตั้ง</li>
+    <li><strong>MCP skills</strong> — จากเซิร์ฟเวอร์ MCP</li>
+  </ul>
+
+  <footer class="footer">
+    <span>Clew v0.2.4 — โอเพนซอร์ส</span>
+    <div class="footer-links">
+      <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
+      <a href="https://github.com/JonusNattapong/ClewCode/issues">ปัญหา</a>
+    </div>
+  </footer>
+</main>
+<nav class="toc-sidebar"></nav>
+</div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

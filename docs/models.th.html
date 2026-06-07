@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โมเดล — Clew</title>
+  <meta name="description" content="คู่มือการเลือกโมเดลสำหรับ Clew — วิธีเลือก, สลับ, และจัดการโมเดลจาก 27 ผู้ให้บริการ">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+</head>
+<body>
+<header class="header"><div class="header-inner"><a href="index.th.html" class="logo">
+      <span>Clew Code</span>
+    </a><nav class="header-nav"><a href="index.th.html">หน้าแรก</a><a href="index.th.html#features">ฟีเจอร์</a><a href="index.th.html#commands">คำสั่ง</a><a href="quick-start.th.html" class="active">เอกสาร</a><a href="https://github.com/JonusNattapong/ClewCode" target="_blank">GitHub</a>
+    <div class="lang-wrap">
+    <button class="lang-btn">🌐</button>
+    <div class="lang-menu">
+      <a href="../readme/README.zh.md">中文</a>
+      <a href="../readme/README.th.md">ไทย</a>
+      <a href="../readme/README.ja.md">日本語</a>
+      <a href="../readme/README.ko.md">한국어</a>
+      <a href="../readme/README.es.md">Español</a>
+      <a href="../readme/README.fr.md">Français</a>
+      <a href="../readme/README.de.md">Deutsch</a>
+      <a href="../readme/README.pt.md">Português</a>
+      <a href="../readme/README.vi.md">Tiếng Việt</a>
+      <a href="../readme/README.id.md">Bahasa Indonesia</a>
+      <a href="../readme/README.ru.md">Русский</a>
+      <a href="../readme/README.hi.md">हिन्दी</a>
+      <a href="models.html">English</a>
+    </div>
+  </div>
+    </nav><button class="menu-btn" id="menuToggle" aria-label="เปิด/ปิดเมนู"><span></span><span></span><span></span></button></div></header>
+<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="content-wrap"><main class="content">
+  <div class="breadcrumbs"><a href="index.th.html">หน้าแรก</a><span class="sep">/</span><span>โมเดล</span></div>
+  <h1>โมเดล</h1>
+  <p class="section-subtitle">Clew รองรับ 100+ โมเดลจาก 27 ผู้ให้บริการ เลือกโมเดลที่เหมาะกับแต่ละงาน — จากการใช้เหตุผลระดับสูงไปจนถึงการอนุมานในเครื่องที่รวดเร็ว</p>
+
+  <h2>คู่มือการเลือกโมเดล</h2>
+  <table>
+    <tr><th>ลักษณะงาน</th><th>โมเดลแนะนำ</th><th>บริบท</th><th>หมายเหตุ</th></tr>
+    <tr><td>สถาปัตยกรรมซับซ้อนและแก้ไขขนาดใหญ่</td><td>claude-opus-4-7, claude-sonnet-4-6, gpt-5.5, deepseek-v4-pro</td><td>1M โทเค็น</td><td>การเรียกใช้เครื่องมือดีที่สุด, การใช้เหตุผลแข็งแกร่ง, บริบทใหญ่ที่สุด</td></tr>
+    <tr><td>รีวิวโค้ดและดีบัก</td><td>claude-sonnet-4-6, gpt-5.5, gemini-3.1-pro</td><td>1M-2M โทเค็น</td><td>ทำตามคำแนะนำดี, ผลลัพธ์เชื่อถือได้</td></tr>
+    <tr><td>ค้นหาและสรุปผลอย่างรวดเร็ว</td><td>claude-haiku-4-5, deepseek-v4-flash, mistral-small-4, groq/llama-3.3-70b</td><td>128K-200K</td><td>เร็ว, คุ้มค่า, หน่วงเวลาต่ำ</td></tr>
+    <tr><td>ออฟไลน์ / ไม่มีเครือข่าย</td><td>ollama/llama4:70b, ollama/llama3.3</td><td>131K โทเค็น</td><td>ในเครื่องทั้งหมด, ไม่ต้องใช้เครือข่าย</td></tr>
+  </table>
+
+  <h2>การสลับโมเดล</h2>
+  <pre><code>/model                          # ตัวเลือกแบบโต้ตอบ
+/model list                     # แสดงโมเดลทั้งหมดจากผู้ให้บริการที่ใช้งาน
+/model claude-sonnet-4-7        # สลับด้วย ID เต็ม
+/model sonnet                   # สลับด้วย alias
+--model opus                    # CLI flag ตอนเริ่ม</code></pre>
+
+  <h2>CLI Flags สำหรับโมเดล</h2>
+  <table>
+    <tr><th>Flag</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>--model &lt;name&gt;</code></td><td>ตั้งค่าโมเดลตอนเริ่ม</td></tr>
+    <tr><td><code>--effort &lt;level&gt;</code></td><td>ตั้งค่าระดับการใช้เหตุผล: low, medium, high, max</td></tr>
+    <tr><td><code>--thinking &lt;mode&gt;</code></td><td>โหมดการคิด: enabled, adaptive, disabled</td></tr>
+    <tr><td><code>--fallback-model &lt;model&gt;</code></td><td>โมเดลสำรองเมื่อโมเดลหลักโอเวอร์โหลด</td></tr>
+  </table>
+
+  <footer class="footer">
+    <span>Clew v0.2.4 — โอเพนซอร์ส</span>
+    <div class="footer-links">
+      <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
+      <a href="https://github.com/JonusNattapong/ClewCode/issues">ปัญหา</a>
+    </div>
+  </footer>
+</main>
+<nav class="toc-sidebar"></nav>
+</div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

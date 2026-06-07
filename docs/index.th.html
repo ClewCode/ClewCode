@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clew — ผู้ช่วยเขียนโค้ด AI หลายผู้ให้บริการ</title>
+  <meta name="description" content="ผู้ช่วยเขียนโค้ดบนเทอร์มินัล รองรับผู้ให้บริการ AI 15+ ราย, คำสั่ง 80+ รายการ, ระบบปลั๊กอินที่ขยายได้">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+</head>
+<body>
+
+<!-- ─── Header ─── -->
+<header class="header">
+  <div class="header-inner">
+    <a href="index.th.html" class="logo">
+      <span>Clew Code</span>
+    </a>
+    <nav class="header-nav">
+      <a href="index.th.html" class="active">หน้าแรก</a>
+      <a href="#features">ฟีเจอร์</a>
+      <a href="#commands">คำสั่ง</a>
+      <a href="quick-start.th.html">เอกสาร</a>
+      <a href="https://github.com/JonusNattapong/ClewCode" target="_blank">GitHub</a>
+    <div class="lang-wrap">
+    <button class="lang-btn">🌐</button>
+    <div class="lang-menu">
+      <a href="../readme/README.zh.md">中文</a>
+      <a href="index.th.html" class="active">ไทย</a>
+      <a href="../readme/README.ja.md">日本語</a>
+      <a href="../readme/README.ko.md">한국어</a>
+      <a href="../readme/README.es.md">Español</a>
+      <a href="../readme/README.fr.md">Français</a>
+      <a href="../readme/README.de.md">Deutsch</a>
+      <a href="../readme/README.pt.md">Português</a>
+      <a href="../readme/README.vi.md">Tiếng Việt</a>
+      <a href="../readme/README.id.md">Bahasa Indonesia</a>
+      <a href="../readme/README.ru.md">Русский</a>
+      <a href="../readme/README.hi.md">हिन्दी</a>
+      <a href="index.html">English</a>
+    </div>
+  </div>
+    </nav>
+    <button class="menu-btn" id="menuToggle" aria-label="เปิด/ปิดเมนู">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- ─── Content Wrap ─── -->
+  <div class="content-wrap">
+    <main class="content">
+
+      <!-- ─── Breadcrumbs ─── -->
+      <div class="breadcrumbs">
+        <a href="index.th.html">หน้าแรก</a>
+      </div>
+
+      <!-- ─── Hero ─── -->
+      <section class="hero">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          v0.2.4 — CLI AI หลายผู้ให้บริการ
+        </div>
+        <h1>
+          เขียนโค้ดด้วย<br>
+          <span class="highlight">โมเดลไหนก็ได้</span>
+        </h1>
+        <p>
+          ผู้ช่วยเขียนโค้ดบนเทอร์มินัลพร้อมระบบ路由หลายผู้ให้บริการ
+          สถาปัตยกรรมปลั๊กอินที่ขยายได้ และระบบเครื่องมือครบครัน
+          สำหรับเวิร์กโฟลว์การพัฒนาระดับมืออาชีพ
+        </p>
+        <div class="hero-actions">
+          <a href="https://npmjs.com/package/clew-code" class="btn btn-primary">
+            npm install -g clew-code
+          </a>
+          <a href="https://github.com/JonusNattapong/ClewCode" class="btn btn-ghost" target="_blank">
+            GitHub →
+          </a>
+        </div>
+      </section>
+
+      <!-- ─── Terminal Demo ─── -->
+      <div class="terminal-window">
+        <div class="terminal-bar">
+          <span class="terminal-dot"></span>
+          <span class="terminal-dot"></span>
+          <span class="terminal-dot"></span>
+          <span class="terminal-title">clew — ~/project</span>
+        </div>
+        <div class="terminal-body">
+          <span class="line"><span class="prompt">$</span> <span class="cmd">clew</span></span>
+          <span class="line"><span class="output">╭──────────────────────────────────────────╮</span></span>
+          <span class="line"><span class="output">│ <span class="highlight-amber">Clew</span> · model: <span class="highlight-cyan">deepseek-v4-flash</span>  │</span></span>
+          <span class="line"><span class="output">│ provider: <span class="highlight-cyan">DeepSeek</span> · context: <span class="highlight-amber">78%</span>  │</span></span>
+          <span class="line"><span class="output">╰──────────────────────────────────────────╯</span></span>
+          <span class="line"><span class="prompt">></span> <span class="cmd">"ค้นหา unused exports ทั้งหมดใน src/"</span></span>
+          <span class="line"><span class="output">กำลังค้นหา <span class="highlight-cyan">3 ไฟล์</span>... พบ <span class="highlight-amber">2 unused exports</span>.</span></span>
+        </div>
+      </div>
+
+      <!-- ─── Stats ─── -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number">27</div>
+          <div class="stat-label">ผู้ให้บริการ AI</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">80+</div>
+          <div class="stat-label">คำสั่ง Slash</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">50+</div>
+          <div class="stat-label">เครื่องมือในตัว</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">โอเพนซอร์ส</div>
+        </div>
+      </div>
+
+      <!-- ─── Features ─── -->
+      <h2 class="section-title" id="features">ฟีเจอร์</h2>
+      <p class="section-subtitle">
+        ทุกสิ่งที่คุณต้องการสำหรับการพัฒนาแบบมี AI ช่วย — จากเทอร์มินัลเดียว
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>路由หลายผู้ให้บริการ</h3>
+          <p>สลับระหว่าง Anthropic, OpenAI, Google Gemini, DeepSeek, OpenRouter, Ollama, xAI, Mistral, Groq, Cohere, Copilot, KiloCode และอื่นๆ ได้ทันที</p>
+          <span class="feature-tag">/model</span>
+          <span class="feature-tag">/provider</span>
+        </div>
+        <div class="feature-card">
+          <h3>เครื่องมือในตัว 65+ รายการ</h3>
+          <p>Read, Edit, Write, Glob, Grep, Bash, Web Search, Research, MCP, LSP, Agent, Task, Monitor และ Workflow</p>
+          <span class="feature-tag">/tools</span>
+        </div>
+        <div class="feature-card">
+          <h3>ระบบปลั๊กอิน</h3>
+          <p>ขยายด้วยคำสั่ง, เอเจนต์, สกิล, ฮุค และ <a href="mcp.th.html">เซิร์ฟเวอร์ MCP</a> ระบบฮุคก่อน/หลังเครื่องมือสำหรับระบบอัตโนมัติ</p>
+          <span class="feature-tag">/plugin</span>
+          <span class="feature-tag">/skill</span>
+        </div>
+        <div class="feature-card">
+          <h3>มุมมองเอเจนต์</h3>
+          <p>แดชบอร์ดหลายเซสชันพร้อม daemon ผู้ดูแล, งานพื้นหลัง, การสื่อสาร IPC, การแยก worktree, คอลัมน์ PR, autocomplete และคีย์ลัด</p>
+          <span class="feature-tag">/agents</span>
+        </div>
+        <div class="feature-card">
+          <h3>เชลล์พื้นหลัง</h3>
+          <p>รันคำสั่งยาวเป็นงานเอเจนต์พื้นหลังด้วย <code>!bg &lt;command&gt;</code> สถานะสด, รหัสออก, การจับ stderr และการรวมแดชบอร์ด</p>
+          <span class="feature-tag">!bg</span>
+        </div>
+        <div class="feature-card">
+          <a href="daemon.th.html" style="color:inherit;text-decoration:none"><h3>โหมดอัตโนมัติ 24/7</h3>
+          <p>daemon ถาวรพร้อมคิวงาน, การจัดตารางอัตโนมัติ, การตรวจสอบสุขภาพ, การเริ่มใหม่อัตโนมัติ และการจัดระเบียบเวิร์กเกอร์</p></a>
+          <span class="feature-tag">/daemon</span>
+          <span class="feature-tag">/task</span>
+        </div>
+        <div class="feature-card">
+          <a href="research-memory.th.html" style="color:inherit;text-decoration:none"><h3>หน่วยความจำอัจฉริยะ</h3>
+          <p>การค้นหาเชิงความหมายข้ามภาษา, การเรียกคืนแบบผสม (local + LLM), การบันทึกอัตโนมัติ และการซิงค์ทีม</p></a>
+          <span class="feature-tag">/memory</span>
+        </div>
+        <div class="feature-card">
+          <h3>โหมด Bridge</h3>
+          <p>การทำงานร่วมกันระยะไกลผ่าน WebSocket, การแชร์เซสชัน, การเริ่มต้นทีม และไคลเอนต์มือถือ/เว็บ</p>
+          <span class="feature-tag">Bridge</span>
+        </div>
+        <div class="feature-card">
+          <h3>KiloCompact</h3>
+          <p>การบีบอัดบริบทในเครื่อง: การตัด log/trace, การรวมสถานะที่ล้มเหลว, การตัดรอบการสนทนาตามความหมาย</p>
+          <span class="feature-tag">/compact</span>
+        </div>
+        <div class="feature-card">
+          <h3>โหมดสิทธิ์</h3>
+          <p>ค่าเริ่มต้น, อัตโนมัติ, แผน, YOLO Lite, YOLO, YOLO MAX — ควบคุมความปลอดภัยในการใช้เครื่องมือแบบละเอียด</p>
+          <span class="feature-tag">/permissions</span>
+        </div>
+        <div class="feature-card">
+          <h3>การเรียนรู้ความชอบ</h3>
+          <p>ระบบ Taste ที่เรียนรู้สไตล์การเขียนโค้ดของคุณจากสัญญาณ accept/reject/edit เมนูแบบโต้ตอบ, การตรวจสอบการแก้ไข, การโหลดค่าตั้งค่าใหม่ทันที</p>
+          <span class="feature-tag">/taste</span>
+        </div>
+      </div>
+
+      <!-- ─── Usage ─── -->
+      <h2 class="section-title" id="usage">เริ่มต้นใช้งาน</h2>
+      <p class="section-subtitle">จากศูนย์ถึงการเขียนโค้ดในไม่ถึงนาที</p>
+
+      <div class="code-block-wrap">
+        <div class="code-block-header">
+          <span>bash</span>
+        </div>
+        <pre><code><span class="cmd-muted">$</span> <span class="cmd-primary">npm install -g clew-code</span>
+<span class="cmd-muted">$</span> <span class="cmd-primary">export ANTHROPIC_API_KEY=sk-ant-...</span>
+<span class="cmd-muted">$</span> <span class="cmd-primary">clew</span>
+
+<span class="cmd-muted"># ถามคำถาม</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">"ค้นหา unused exports ทั้งหมดใน src/"</span>
+
+<span class="cmd-muted"># สลับโมเดลทันที</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">/model deepseek-v4-flash</span>
+
+<span class="cmd-muted"># จัดการบริบท</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">/clear</span>    <span class="cmd-muted"># เริ่มใหม่</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">/compact</span> <span class="cmd-muted"># บีบอัดบริบท</span>
+<span class="cmd-muted">></span> <span class="cmd-primary">/resume</span>  <span class="cmd-muted"># กลับมาเซสชันล่าสุด</span></code></pre>
+      </div>
+
+      <!-- ─── Slash Commands ─── -->
+      <h2 class="section-title" id="commands">คำสั่ง Slash</h2>
+      <p class="section-subtitle">80+ คำสั่งสำหรับควบคุมทุกด้านของเวิร์กโฟลว์ของคุณ</p>
+
+      <table>
+        <thead>
+          <tr><th>หมวดหมู่</th><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="cmd-accent">ไฟล์</span></td><td><code>/read</code> <code>/edit</code> <code>/write</code> <code>/glob</code> <code>/grep</code></td><td>อ่าน, แก้ไข, สร้าง, และค้นหาไฟล์</td></tr>
+          <tr><td><span class="cmd-accent">Git</span></td><td><code>/diff</code> <code>/commit</code> <code>/branch</code></td><td>การดำเนินการควบคุมเวอร์ชัน</td></tr>
+          <tr><td><span class="cmd-accent">โมเดล</span></td><td><code>/model</code> <code>/provider</code> <code>/cost</code> <code>/usage</code> <code>/stats</code></td><td>สลับโมเดลและติดตามการใช้งาน</td></tr>
+          <tr><td><span class="cmd-accent">เซสชัน</span></td><td><code>/clear</code> <code>/compact</code> <code>/resume</code> <code>/session</code> <code>/rewind</code></td><td>จัดการบริบทและเซสชัน</td></tr>
+          <tr><td><span class="cmd-accent">ตั้งค่า</span></td><td><code>/permissions</code> <code>/plan</code> <code>/config</code> <code>/theme</code></td><td>การตั้งค่าและค่ากำหนด</td></tr>
+          <tr><td><span class="cmd-accent">ขยาย</span></td><td><code>/plugin</code> <code>/skill</code> <code>/agent</code> <code>/agents</code> <code>/mcp</code></td><td>ปลั๊กอิน, สกิล, เอเจนต์, MCP</td></tr>
+          <tr><td><span class="cmd-accent">Daemon</span></td><td><code>/daemon</code> <code>/task</code> <code>/loop</code></td><td>เอเจนต์อัตโนมัติ 24/7, คิวงาน, งานที่ทำซ้ำ</td></tr>
+          <tr><td><span class="cmd-accent">อัตโนมัติ</span></td><td><code>/autofix-pr</code></td><td>แก้ไข CI และรีวิว PR ผ่าน Clew บนเว็บ</td></tr>
+          <tr><td><span class="cmd-accent">ระบบ</span></td><td><code>/help</code> <code>/status</code> <code>/doctor</code> <code>/exit</code></td><td>ช่วยเหลือ, ตรวจสอบ, และออก</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Providers ─── -->
+      <h2 class="section-title" id="providers">ผู้ให้บริการ AI</h2>
+      <p class="section-subtitle">นำคีย์ของคุณเอง — ใช้โมเดลที่เหมาะกับแต่ละงาน</p>
+
+      <table>
+        <thead>
+          <tr><th>ผู้ให้บริการ</th><th>การตั้งค่า</th><th>โมเดล</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="cmd-info">Anthropic</span></td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-opus-4-7, claude-sonnet-4-6</td></tr>
+          <tr><td><span class="cmd-info">OpenAI</span></td><td><code>OPENAI_API_KEY</code></td><td>gpt-5.5, gpt-5.4-mini</td></tr>
+          <tr><td><span class="cmd-info">Google</span></td><td><code>GOOGLE_API_KEY</code></td><td>gemini-3.1-pro, gemini-3.1-flash</td></tr>
+          <tr><td><span class="cmd-info">DeepSeek</span></td><td><code>DEEPSEEK_API_KEY</code></td><td>deepseek-v4-pro, deepseek-v4-flash</td></tr>
+          <tr><td><span class="cmd-info">OpenRouter</span></td><td><code>OPENROUTER_API_KEY</code></td><td>100+ โมเดลผ่าน API</td></tr>
+          <tr><td><span class="cmd-info">Ollama</span></td><td><code>OLLAMA_HOST</code></td><td>llama3.3, llama4:70b, qwen3.6</td></tr>
+          <tr><td><span class="cmd-info">xAI</span></td><td><code>XAI_API_KEY</code></td><td>grok-4.3</td></tr>
+          <tr><td><span class="cmd-info">Mistral</span></td><td><code>MISTRAL_API_KEY</code></td><td>mistral-large-3, mistral-small-4</td></tr>
+          <tr><td><span class="cmd-info">Groq</span></td><td><code>GROQ_API_KEY</code></td><td>llama-3.3-70b, deepseek-v4</td></tr>
+          <tr><td><span class="cmd-info">Cohere</span></td><td><code>COHERE_API_KEY</code></td><td>command-a-plus</td></tr>
+          <tr><td><span class="cmd-info">Copilot</span></td><td><code>COPILOT_GITHUB_TOKEN</code></td><td>claude, GPT models</td></tr>
+          <tr><td><span class="cmd-info">KiloCode</span></td><td><code>KILOCODE_API_KEY</code></td><td>kilo-auto/free, kilo-auto/balanced</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Plugins ─── -->
+      <h2 class="section-title" id="plugins">ปลั๊กอินและสกิล</h2>
+      <p class="section-subtitle">ขยายความสามารถด้วยปลั๊กอินในตัวและจาก marketplace</p>
+
+      <table>
+        <thead>
+          <tr><th>ปลั๊กอิน</th><th>คำอธิบาย</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>commit-commands</code></td><td>เวิร์กโฟลว์ Git: commit, push, สร้าง PR</td></tr>
+          <tr><td><code>code-review</code></td><td>รีวิวโค้ด PR อัตโนมัติ</td></tr>
+          <tr><td><code>feature-dev</code></td><td>พัฒนาฟีเจอร์แบบมีคำแนะนำกับเอเจนต์</td></tr>
+          <tr><td><code>frontend-design</code></td><td>สร้าง UI/UX ระดับโปรดักชัน</td></tr>
+          <tr><td><code>verify</code></td><td>ตรวจสอบชนิด, lint, build, และ test</td></tr>
+          <tr><td><code>debug</code></td><td>ช่วยเหลือการดีบัก</td></tr>
+          <tr><td><code>commit</code></td><td>Git commit แบบ conventional</td></tr>
+          <tr><td><code>simplify</code></td><td>ตรวจสอบคุณภาพโค้ดและการใช้ซ้ำ</td></tr>
+          <tr><td><code>web-search</code></td><td>ค้นหาเว็บหลายผู้ให้บริการ</td></tr>
+          <tr><td><code>scrapling</code></td><td>ดึงข้อมูลเว็บด้วย Scrapling</td></tr>
+          <tr><td><code>skillify</code></td><td>สร้างสกิลจากเวิร์กโฟลว์</td></tr>
+          <tr><td><code>remember</code></td><td>บันทึกค่ากำหนดผู้ใช้</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Changelog ─── -->
+      <h2 class="section-title" id="updates">อัปเดต v0.2.4</h2>
+      <ul>
+        <li><strong>ระบบ Taste</strong> — ระบบเรียนรู้ความชอบในเครื่อง เมนู <code>/taste</code> แบบโต้ตอบ แถบสถานะ, โหลดค่าตั้งค่าใหม่ทันที</li>
+        <li><strong>ตัวเลือกโมเดลแบ่งตามผู้ให้บริการ</strong> — <code>/model</code> ตอนนี้แสดงโมเดลทั้งหมดจากทุกผู้ให้บริการ</li>
+        <li><strong>บันทึกผู้ให้บริการอัตโนมัติ</strong> — ผู้ให้บริการและโมเดลล่าสุดบันทึกใน <code>provider.json</code></li>
+        <li><strong>เพิ่มความปลอดภัย</strong> — กฎ PowerShell, การป้องกัน tool call ผิดรูปแบบ, Guardian ตรวจสอบอัตโนมัติ</li>
+        <li><strong>Bridge v2</strong> — ควบคุมระยะไกลผ่าน WebSocket, relay client, REPL bridging</li>
+        <li><strong>คำสั่ง PR</strong> — <code>/pr create</code>, <code>list</code>, <code>view</code>, <code>review</code>, <code>merge</code>, <code>status</code></li>
+      </ul>
+
+      <div style="margin-top:var(--space-lg)">
+        <a href="https://github.com/JonusNattapong/ClewCode/blob/main/CHANGELOG.md" class="btn btn-ghost">บันทึกการเปลี่ยนแปลงทั้งหมด →</a>
+      </div>
+
+      <!-- ─── Footer ─── -->
+      <footer class="footer">
+        <span>Clew v0.2.4 — โอเพนซอร์ส</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/ClewCode/issues">ปัญหา</a>
+          <a href="https://npmjs.com/package/clew-code">npm</a>
+        </div>
+      </footer>
+
+    </main>
+
+    <!-- ─── Right TOC ─── -->
+    <nav class="toc-sidebar"></nav>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>
