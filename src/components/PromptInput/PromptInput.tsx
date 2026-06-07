@@ -123,6 +123,7 @@ import {
   findFixTriggerPositions,
   findUltraplanTriggerPositions,
   findUltrareviewTriggerPositions,
+  findWorkflowTriggerPositions,
 } from '../../utils/ultraplan/keyword.js';
 import { AutoModeOptInDialog } from '../AutoModeOptInDialog.js';
 import { BridgeDialog } from '../BridgeDialog.js';
@@ -638,6 +639,7 @@ function PromptInput({
   const explainTriggers = useMemo(() => findExplainTriggerPositions(displayedValue), [displayedValue]);
   const fixTriggers = useMemo(() => findFixTriggerPositions(displayedValue), [displayedValue]);
   const debugTriggers = useMemo(() => findDebugTriggerPositions(displayedValue), [displayedValue]);
+  const workflowTriggers = useMemo(() => findWorkflowTriggerPositions(displayedValue), [displayedValue]);
   const btwTriggers = useMemo(() => findBtwTriggerPositions(displayedValue), [displayedValue]);
   const buddyTriggers = useMemo(() => findBuddyTriggerPositions(displayedValue), [displayedValue]);
   const slashCommandTriggers = useMemo(() => {
@@ -892,6 +894,19 @@ function PromptInput({
 
     // Same rainbow treatment for the ultrareview keyword
     for (const trigger of ultrareviewTriggers) {
+      for (let i = trigger.start; i < trigger.end; i++) {
+        highlights.push({
+          start: i,
+          end: i + 1,
+          color: getRainbowColor(i - trigger.start),
+          shimmerColor: getRainbowColor(i - trigger.start, true),
+          priority: 10,
+        });
+      }
+    }
+
+    // Same rainbow treatment for the workflow keyword
+    for (const trigger of workflowTriggers) {
       for (let i = trigger.start; i < trigger.end; i++) {
         highlights.push({
           start: i,
