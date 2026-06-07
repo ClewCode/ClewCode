@@ -107,9 +107,8 @@ function spriteColWidth(nameWidth: number): number {
 // Narrow terminals: 0 — REPL.tsx stacks the one-liner on its own row
 // (above input in fullscreen, below in scrollback), so no reservation.
 export function companionReservedColumns(terminalColumns: number, speaking: boolean): number {
-  if (!feature('BUDDY')) return 0;
   const companion = getCompanion();
-  if (!companion || getGlobalConfig().companionMuted) return 0;
+  if (!companion || getGlobalConfig().companionMuted || companion.visible === false) return 0;
   if (terminalColumns < MIN_COLS_FOR_FULL_SPRITE) return 0;
   const nameWidth = stringWidth(companion.name);
   const bubble = speaking && !isFullscreenActive() ? BUBBLE_WIDTH : 0;
@@ -154,9 +153,9 @@ export function CompanionSprite(): React.ReactNode {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tick intentionally captured at reaction-change, not tracked
   }, [reaction, setAppState]);
 
-  if (!feature('BUDDY')) return null;
+  if (!true) return null;
   const companion = getCompanion();
-  if (!companion || getGlobalConfig().companionMuted) return null;
+  if (!companion || getGlobalConfig().companionMuted || companion.visible === false) return null;
 
   const color = RARITY_COLORS[companion.rarity];
   const colWidth = spriteColWidth(stringWidth(companion.name));
@@ -277,9 +276,9 @@ export function CompanionFloatingBubble(): React.ReactNode {
     return () => clearInterval(timer);
   }, [reaction]);
 
-  if (!feature('BUDDY') || !reaction) return null;
+  if (!true || !reaction) return null;
   const companion = getCompanion();
-  if (!companion || getGlobalConfig().companionMuted) return null;
+  if (!companion || getGlobalConfig().companionMuted || companion.visible === false) return null;
 
   return (
     <SpeechBubble
