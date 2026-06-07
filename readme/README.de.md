@@ -25,9 +25,9 @@ Clew ist ein inoffizielles, forschungsorientiertes CLI für KI-gestützte Softwa
 
 Dieses Projekt ist eine quellcodebasierte Rekonstruktion und Erweiterung, entwickelt für lokale Entwicklung, Debugging, selbstgehostete Workflows und die freie Wahl des KI-Anbieters.
 
-Dieses Repository ist kein offizielles Anthropic-Produkt, keine Distribution, kein Partnerprojekt und keine unterstützte Implementierung.
+Dieses Repository ist kein offizielles Produkt, keine Distribution, kein Partnerprojekt und keine unterstützte Implementierung.
 
-> **Haftungsausschluss:** Anthropic, Claude und Claude Code sind Marken ihrer jeweiligen Eigentümer. Dieses Projekt ist nicht mit Anthropic PBC verbunden, wird nicht von ihr unterstützt, gesponsert oder genehmigt. Das offizielle Claude Code-Produkt von Anthropic ist proprietäre Software. Bitte lesen Sie [LICENSE.md](../LICENSE.md), bevor Sie dieses Repository verwenden, modifizieren, weiterverteilen oder bereitstellen.
+> **Haftungsausschluss:** Dieses Projekt ist mit keinem Dritten verbunden, wird nicht von ihm unterstützt, gesponsert oder genehmigt. Bitte lesen Sie [LICENSE.md](../LICENSE.md), bevor Sie dieses Repository verwenden, modifizieren, weiterverteilen oder bereitstellen.
 
 ## Was dieses Projekt bietet
 
@@ -347,4 +347,4 @@ Nutzen Sie den in [SECURITY.md](../SECURITY.md) beschriebenen privaten Meldeweg.
 
 Siehe [LICENSE.md](../LICENSE.md).
 
-Nur vom Mitwirkenden erstellte Änderungen und ursprüngliche Ergänzungen sind wie in `LICENSE.md` beschrieben lizenziert. Dieses Repository gewährt keine Rechte an proprietärer Software, Diensten, Modellen, Marken oder anderen geschützten Materialien von Anthropic.
+Nur vom Mitwirkenden erstellte Änderungen und ursprüngliche Ergänzungen sind wie in `LICENSE.md` beschrieben lizenziert.

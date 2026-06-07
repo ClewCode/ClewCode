@@ -25,9 +25,9 @@ Clew là CLI không chính thức, định hướng nghiên cứu dành cho phá
 
 Đây là dự án tái xây dựng và mở rộng từ mã nguồn, được thiết kế cho phát triển cục bộ, gỡ lỗi, quy trình làm việc tự quản và tự do lựa chọn nhà cung cấp.
 
-Kho lưu trữ này không phải là sản phẩm chính thức của Anthropic, bản phân phối, dự án đối tác hay triển khai được hỗ trợ.
+Kho lưu trữ này không phải là sản phẩm chính thức, bản phân phối, dự án đối tác hay triển khai được hỗ trợ.
 
-> **Tuyên bố miễn trừ:** Anthropic, Claude và Claude Code là nhãn hiệu của chủ sở hữu tương ứng. Dự án này không liên kết, được xác nhận, tài trợ hoặc phê duyệt bởi Anthropic PBC. Sản phẩm Claude Code chính thức của Anthropic là phần mềm độc quyền. Vui lòng đọc [LICENSE.md](../LICENSE.md) trước khi sử dụng, sửa đổi, phân phối lại hoặc triển khai kho lưu trữ này.
+> **Tuyên bố miễn trừ:** Dự án này không liên kết, được xác nhận, tài trợ hoặc phê duyệt bởi bên thứ ba nào. Vui lòng đọc [LICENSE.md](../LICENSE.md) trước khi sử dụng, sửa đổi, phân phối lại hoặc triển khai kho lưu trữ này.
 
 ## Dự án này cung cấp những gì
 
@@ -347,4 +347,4 @@ Sử dụng quy trình báo cáo riêng tư được mô tả trong [SECURITY.md
 
 Xem [LICENSE.md](../LICENSE.md).
 
-Chỉ các sửa đổi và bổ sung gốc do người đóng góp tạo ra mới được cấp phép theo mô tả trong `LICENSE.md`. Kho lưu trữ này không cấp quyền đối với phần mềm độc quyền, dịch vụ, mô hình, nhãn hiệu hoặc tài liệu được bảo vệ khác của Anthropic.
+Chỉ các sửa đổi và bổ sung gốc do người đóng góp tạo ra mới được cấp phép theo mô tả trong `LICENSE.md`.
