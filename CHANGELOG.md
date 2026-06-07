@@ -2,6 +2,65 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] — 2026-06-07
+
+### Added
+
+- **Effort support for all providers**: `/effort` now works with any provider that has `reasoningEffort: true` in its capabilities (NVIDIA, DeepSeek, OpenRouter, etc.)
+  - `modelSupportsEffort()` checks provider registry for `reasoningEffort` capability in addition to Claude model name matching
+  - `AnthropicAdapter.convertToOpenAI()` maps Anthropic `output_config.effort` → OpenAI `reasoning_effort` parameter, so effort settings are actually sent to the API
+
+- **NVIDIA model fetching from API**: `/model` now fetches live models from NVIDIA's `/v1/models` endpoint instead of relying solely on `providers.json`
+  - Added `nvidia` to `supportsModelFetching()` in `fetchProviderModels.ts`
+  - When API-fetched models are available, they replace the static `providers.json` list entirely (API is source of truth)
+
+- **Model picker capability display**: Shows context window, vision, tools, reasoning, and free tags per model
+
+- **Taste auto-learn system**: New `src/services/taste/auto-learn/` module
+  - `PatternDetector` — detects repeating coding patterns from accept/reject/edit events
+  - `AutoLearnEngine` — manages suggestions with confidence tracking and cooldown
+  - Auto-detection runs automatically on every signal (accept/reject), no manual trigger needed
+  - `/taste suggest` — view detected patterns, `/taste suggest accept <id>` — add as rule, `/taste suggest reject <id>` — dismiss
+
+- **AI-driven codebase analysis**: `/taste init` now analyzes git log, config files, and source samples via the current AI provider to generate 3-10 initial taste rules with confidence scores
+
+- **Taste init progress bar**: ASCII progress bar animation during initialization (`████████░░░░░░░░░░░░ 40%`)
+
+- **Relay server** (`src/remote/relay-server.ts`): WebSocket relay for cross-network remote control
+  - `/remote listen --relay <url>` — host connects through relay
+  - `/remote connect <url> --token <token> --relay` — connector connects
+  - `/remote exec <command>` — execute commands on remote host
+
+- **Dynamic workflow live subagent status**: Footer now shows running subagents in real-time
+  - `◈ ultracode [2/5] ⟐coder ⟐researcher` — live per-subtask status
+  - Runner saves "running" state to disk so the progress UI can poll it
+
+- **Voice input via browser Web Speech API**: `/voice` now captures speech through Google Chrome's built-in speech recognition — no API keys needed. Clean card UI with waveform visualization, Record/Stop/Send buttons, 20+ languages. Auto-submits transcript via `/voice check`. See `src/services/voiceInput/`
+- **Buddy card UI**: `/buddy` shows a full card with ASCII sprite, rarity badges, stat bars, and personality. `/buddy name <name>` renames companion.
+- **Context grid layout**: `/context` redesigned with 10×10 usage grid (⛁/⬚), model info, categories, and detail sections
+- **Usage history & preview data**: `ContextData` includes `usageHistory` array for sparkline and `preview` field on system prompt sections
+
+### Fixed
+
+- **Model picker scroll bugs**:
+  - `onUpFromFirstItem` now correctly detects the first non-disabled option instead of `options[0]`, which could be a section header (e.g. "Recent") that can never receive focus
+  - Focus position is preserved when options change (e.g. API-fetched models arrive mid-scroll) instead of resetting to the default
+  - Removed redundant `onUpFromFirstItem` from ModelPicker (search is already active by default)
+
+- **NVIDIA model validation**: Added `nvidia` to `nonAnthropicProviders` list in `validateModel.ts` to skip API validation for NVIDIA models
+
+- **NVIDIA model IDs**: Fixed model IDs in `providers.json` to match NVIDIA NIM API format (`glm-5.1` → `z-ai/glm-5.1`, `nemotron-3-super-120b-a12b` → `nvidia/nemotron-3-super-120b-a12b`)
+
+- **SPARKLINE_WIDTH missing**: Added missing constant in `ContextStats.tsx`
+
+### Changed
+
+- **Terminal title**: `process.title` changed from `claude` to `clew` in `src/main.tsx`
+- **Taste status line removed**: `ⓘ taste: N rules` no longer shown in footer
+- **Buddy rendering**: `CompanionSprite` no longer gated by compile-time flag — checks companion config directly; `/buddy hide` now respects `companion.visible` field
+- **Ultra mode decoration**: When ultracode is active (via `/effort ultracode`), prompt input shows a purple double-line border with "ultra" label
+- **PR badge refresh**: `usePrStatus` hook fetches immediately after a turn ends, so badge updates right after `gh` commands
+
 ## [0.2.2] — 2026-06-06
 
 ### Fixed

@@ -1,0 +1,33 @@
+<svg width="180" height="231" viewBox="0 0 190 231" role="img" xmlns="http://www.w3.org/2000/svg" style="margin: 2rem auto; image-rendering: crisp-edges; background: transparent;">
+  <title>Clawd one big eye</title>
+
+  <!-- HORNS -->
+  <rect fill="#8b5cf6" x="45"  y="0"  width="15" height="15"/>
+  <rect fill="#8b5cf6" x="120" y="0"  width="15" height="15"/>
+
+  <!-- HEAD top row -->
+  <rect fill="#8b5cf6" x="30"  y="15" width="120" height="15"/>
+
+  <!-- HEAD eye rows (2 rows tall): full purple bg, then big black eye -->
+  <rect fill="#8b5cf6" x="30"  y="30" width="120" height="30"/>
+  <!-- big eye: 6 cells wide (90px), 2 rows tall (30px), centered: x=30+(120-90)/2=45 -->
+  <rect fill="#000000" x="45"  y="30" width="90"  height="30"/>
+
+  <!-- HEAD bottom row -->
+  <rect fill="#8b5cf6" x="30"  y="60" width="120" height="15"/>
+
+  <!-- ARMS -->
+  <rect fill="#8b5cf6" x="0"   y="75" width="180" height="15"/>
+  <rect fill="#8b5cf6" x="0"   y="90" width="180" height="15"/>
+
+  <!-- BODY -->
+  <rect fill="#8b5cf6" x="30"  y="105" width="120" height="15"/>
+  <rect fill="#8b5cf6" x="30"  y="120" width="120" height="15"/>
+
+  <!-- LEGS -->
+  <rect fill="#8b5cf6" x="30"  y="135" width="15" height="45"/>
+  <rect fill="#8b5cf6" x="60"  y="135" width="15" height="45"/>
+  <rect fill="#8b5cf6" x="105" y="135" width="15" height="45"/>
+  <rect fill="#8b5cf6" x="135" y="135" width="15" height="45"/>
+
+</svg>

@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
 </head>
 <body>
 <header class="header"><div class="header-inner"><a href="index.html" class="logo">
@@ -58,12 +59,13 @@
   </table>
 
   <h2>Model Switching</h2>
-  <pre><code>/model                          # Interactive picker (recent models at top, grouped by provider)
-/model list                     # List all available models
+  <pre><code>/model                          # Interactive picker (fetches live models from provider API when supported)
+/model list                     # List all available models from the active provider API
 /model claude-sonnet-4-7        # Switch by full ID
 /model sonnet                   # Alias-based switching
 --model opus                    # CLI flag at startup</code></pre>
-  <p>The picker shows <strong>all models from every provider</strong> in named sections — not just the active provider's models. Recent models appear at top with the active provider's default. Select any model from any provider directly.</p>
+  <p>For providers with a /v1/models endpoint (OpenAI, DeepSeek, NVIDIA, etc.), the picker fetches live models from the API instead of the static providers.json list.
+    The picker shows <strong>all models from every provider</strong> in named sections — not just the active provider's models. Recent models appear at top with the active provider's default. Select any model from any provider directly.</p>
   <p>Model switching is instant — the next conversation turn uses the new model. Previous context is preserved.</p>
 
   <h2>Model Aliases</h2>
@@ -95,7 +97,7 @@
   </ul>
 
   <footer class="footer">
-    <span>Clew v0.2.1 — Open Source</span>
+    <span>Clew v0.2.3 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
       <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>

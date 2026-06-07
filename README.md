@@ -335,7 +335,16 @@ Use the private reporting process described in [SECURITY.md](SECURITY.md).
 
 ## Changelog
 
-### 0.2.1 (2026-06-05)
+### 0.2.3 (2026-06-07)
+
+- **Effort support for all providers** — `/effort` works with any provider that has `reasoningEffort: true` (NVIDIA, DeepSeek, OpenRouter, etc.).
+- **NVIDIA model fetching** — `/model` fetches live models from NVIDIA API. API models replace static `providers.json` when available.
+- **Model picker** — Shows context window, vision, tools, reasoning per model. Fixed scroll bugs.
+- **Taste auto-learn** — Automatic pattern detection from accept/reject signals. `/taste suggest` to view.
+- **AI codebase analysis** — `/taste init` analyzes git log + config + source files via AI, generates taste rules.
+- **Relay server** — Cross-network remote control via WebSocket relay. `/remote listen --relay`, `/remote exec`.
+- **Dynamic workflow** — Live subagent status in footer (`◈ ultracode [2/5] ⟐coder ⟐researcher`).
+- **Terminal title** — `claude` → `clew`.
 
 - **Taste system** — local-first preference-learning runtime. Interactive `/taste` menu with Spinner loading, edit validation in FileEditPermissionRequest, status line in PromptInputFooter, config live-reload via settings change subscription, XML tag `<clew_taste>` prompt injection.
 - **Model picker** — `/model` now shows all models from all providers grouped by provider section.
