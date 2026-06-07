@@ -115,6 +115,9 @@ Type `/` to browse all commands.
 
 Learns from accept, reject, edit, test, and lint signals. Combines symbolic rules, semantic scoring, and contextual bandit optimization. Confidence decays on a 30-day half-life.
 
+<details>
+<summary><strong>Commands</strong></summary>
+
 ```
 /taste                 Open menu
 /taste learn <rule>    Add a rule manually
@@ -127,7 +130,43 @@ Learns from accept, reject, edit, test, and lint signals. Combines symbolic rule
 /taste on / off
 ```
 
+**AI tools:** `taste_learn`, `taste_forget`, `taste_profile`, `taste_suggest`
+
+</details>
+
 See [docs/taste.html](docs/taste.html).
+
+---
+
+## Peer-to-Peer
+
+LAN peer discovery via UDP multicast. Discover workers, assign tasks, set roles, and coordinate autonomously.
+
+<details>
+<summary><strong>Commands</strong></summary>
+
+```
+/peer                  Open interactive menu
+/peer share            Start advertising as worker
+/peer share stop       Stop advertising
+/peer discover         Scan LAN for peers
+/peer join <port>      Connect to a peer
+/peer list             Show connected peers
+/peer todo <peer> <t>  Assign a task
+/peer todos            View received tasks
+/peer todo done <id>   Mark task complete
+/peer name <name>      Set display name
+/peer role <role>      Set role (builder, tester, etc.)
+/peer inbox            View pending messages
+/peer spawn [opts]     Spawn a new peer terminal
+/peer help             Show all commands
+```
+
+**AI tools (14):** `peer_discover`, `peer_join`, `peer_send_task`, `peer_send_message`, `peer_run`, `peer_broadcast`, `peer_ping`, `peer_disconnect`, `peer_list_tasks`, `peer_list_roles`, `peer_list_messages`, `peer_set_name`, `peer_set_role`, `peer_share`
+
+</details>
+
+See [docs/features/peer.html](docs/features/peer.html).
 
 ---
 
