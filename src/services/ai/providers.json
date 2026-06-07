@@ -979,98 +979,6 @@
       }
     ]
   },
-  "cline": {
-    "providerId": "cline",
-    "label": "Cline API",
-    "envKey": "CLINE_API_KEY",
-    "defaultBaseUrl": "https://api.cline.bot/api/v1",
-    "defaultModel": "anthropic/claude-opus-4-7",
-    "defaultModelVerified": true,
-    "note": "Cline API (OpenAI-compatible proxy). Source: api.cline.bot, May 2026.",
-    "capabilities": {
-      "chat": true,
-      "streaming": "full",
-      "toolCalling": true,
-      "vision": true,
-      "jsonSchema": true,
-      "reasoningEffort": true,
-      "contextLength": "1M"
-    },
-    "models": [
-      {
-        "id": "anthropic/claude-opus-4-7",
-        "label": "Claude Opus 4.7 (Cline)",
-        "tags": [
-          "tools",
-          "vision",
-          "latest",
-          "recommended"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 1000000,
-          "maxOutput": 128000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      },
-      {
-        "id": "anthropic/claude-sonnet-4-6",
-        "label": "Claude Sonnet 4.6 (Cline)",
-        "tags": [
-          "tools",
-          "vision"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 1000000,
-          "maxOutput": 64000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      },
-      {
-        "id": "openai/gpt-5.5",
-        "label": "GPT-5.5 (Cline)",
-        "tags": [
-          "tools",
-          "vision",
-          "latest"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 1050000,
-          "maxOutput": 128000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      },
-      {
-        "id": "google/gemini-3.1-pro",
-        "label": "Gemini 3.1 Pro (Cline)",
-        "tags": [
-          "tools",
-          "vision",
-          "reasoning"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 1000000,
-          "maxOutput": 128000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      }
-    ]
-  },
   "groq": {
     "providerId": "groq",
     "label": "Groq",
@@ -1657,7 +1565,7 @@
         }
       },
       {
-        "id": "glm-5.1",
+        "id": "z-ai/glm-5.1",
         "label": "GLM-5.1 (NVIDIA)",
         "tags": [
           "tools",
@@ -1676,7 +1584,7 @@
         }
       },
       {
-        "id": "nemotron-3-super-120b-a12b",
+        "id": "nvidia/nemotron-3-super-120b-a12b",
         "label": "Nemotron 3 Super 120B (NVIDIA)",
         "tags": [
           "tools",
@@ -2133,6 +2041,169 @@
       }
     ],
     "defaultModel": "llama3.3-70b-instruct",
+    "defaultModelVerified": true
+  },
+  "cline": {
+    "providerId": "cline",
+    "label": "Cline",
+    "envKey": "CLINE_API_KEY",
+    "defaultBaseUrl": "https://api.cline.bot/api/v1",
+    "note": "Cline API — managed multi-provider AI endpoint. Updated June 2026.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": true,
+      "jsonSchema": true,
+      "reasoningEffort": true,
+      "contextLength": "1M"
+    },
+    "models": [
+      {
+        "id": "deepseek/deepseek-v4-flash",
+        "label": "DeepSeek V4 Flash (Free)",
+        "tags": [
+          "tools",
+          "free"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "minimax/minimax-m3",
+        "label": "MiniMax M3 (Free)",
+        "tags": [
+          "tools",
+          "free"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "nvidia/nemotron-3-ultra-550b-a55b",
+        "label": "Nvidia Nemotron 3 Ultra 550b (Free)",
+        "tags": [
+          "tools",
+          "free"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "xiaomi/mimo-v2.5",
+        "label": "Xiaomi Mimo v2.5 (Free)",
+        "tags": [
+          "tools",
+          "free"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "anthropic/claude-opus-4.8",
+        "label": "Claude Opus 4.8",
+        "tags": [
+          "tools",
+          "vision",
+          "recommended",
+          "latest"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "openai/gpt-5.5",
+        "label": "GPT-5.5",
+        "tags": [
+          "tools",
+          "vision",
+          "recommended",
+          "latest"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1050000,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "deepseek/deepseek-v4-pro",
+        "label": "DeepSeek V4 Pro",
+        "tags": [
+          "tools",
+          "recommended",
+          "latest"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "anthropic/claude-sonnet-4.6",
+        "label": "Claude Sonnet 4.6",
+        "tags": [
+          "tools",
+          "vision",
+          "recommended",
+          "best"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 64000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      }
+    ],
+    "defaultModel": "anthropic/claude-sonnet-4.6",
     "defaultModelVerified": true
   }
 }

@@ -94,6 +94,10 @@ export function findUltraplanTriggerPositions(text: string): TriggerPosition[] {
   return findKeywordTriggerPositions(text, 'ultraplan');
 }
 
+export function findPrTriggerPositions(text: string): TriggerPosition[] {
+  return findKeywordTriggerPositions(text, 'pull request');
+}
+
 export function findUltrareviewTriggerPositions(text: string): TriggerPosition[] {
   return findKeywordTriggerPositions(text, 'ultrareview');
 }
