@@ -138,6 +138,7 @@ export interface SystemToolDetail {
 export interface SystemPromptSectionDetail {
   name: string;
   tokens: number;
+  preview?: string;
 }
 
 interface Agent {
@@ -210,6 +211,8 @@ export interface ContextData {
     }>;
     attachmentsByType: Array<{ name: string; tokens: number }>;
   };
+  /** Session usage history for sparkline display */
+  readonly usageHistory?: Array<{ totalTokens: number; percentage: number }>;
   /** Actual token usage from last API response (if available) */
   readonly apiUsage: {
     input_tokens: number;
@@ -290,6 +293,7 @@ async function countSystemTokens(effectiveSystemPrompt: readonly string[]): Prom
   const systemPromptSections: SystemPromptSectionDetail[] = namedEntries.map((entry, i) => ({
     name: entry.name,
     tokens: systemTokenCounts[i] || 0,
+    preview: entry.content.length > 0 ? entry.content.slice(0, 500) : undefined,
   }));
 
   const systemPromptTokens = systemTokenCounts.reduce((sum: number, tokens) => sum + (tokens || 0), 0);
