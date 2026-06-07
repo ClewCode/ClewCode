@@ -89,6 +89,13 @@ export async function runDynamicWorkflowAsCoordinator(params: {
         params.onProgress({ wave: waveIndex + 1, total: totalWaves, completed: completed.length });
       }
     },
+    onSubtaskStatus: (status) => {
+      params.onProgress?.({
+        wave: status.waveIndex + 1,
+        total: 0,
+        completed: 0,
+      });
+    },
   });
 
   runState = { ...runState, status: 'completed' };

@@ -42,6 +42,7 @@ import {
   getMcpInstructionsDeltaAttachment,
 } from '../../utils/attachments.js';
 import { getMemoryPath } from '../../utils/config.js';
+import { readCronTasks } from '../../utils/cronTasks.js';
 import { COMPACT_MAX_OUTPUT_TOKENS } from '../../utils/context.js';
 import { analyzeContext, tokenStatsToStatsigMetrics } from '../../utils/contextAnalysis.js';
 import { logForDebugging } from '../../utils/debug.js';
@@ -503,6 +504,12 @@ export async function compactConversation(
       postCompactFileAttachments.push(skillAttachment);
     }
 
+    // Forward pending scheduled tasks so the model knows about them after compact
+    const taskAttachment = await createTaskAttachmentIfNeeded();
+    if (taskAttachment) {
+      postCompactFileAttachments.push(taskAttachment);
+    }
+
     // Compaction ate prior delta attachments. Re-announce from the current
     // state so the model has tool/instruction context on the first
     // post-compact turn. Empty message history → diff against nothing →
@@ -857,6 +864,12 @@ export async function partialCompactConversation(
     const skillAttachment = createSkillAttachmentIfNeeded(context.agentId);
     if (skillAttachment) {
       postCompactFileAttachments.push(skillAttachment);
+    }
+
+    // Forward pending scheduled tasks so the model knows about them after compact
+    const taskAttachment = await createTaskAttachmentIfNeeded();
+    if (taskAttachment) {
+      postCompactFileAttachments.push(taskAttachment);
     }
 
     // Re-announce only what was in the summarized portion — messagesToKeep
@@ -1383,6 +1396,29 @@ export function createSkillAttachmentIfNeeded(agentId?: string): AttachmentMessa
     type: 'invoked_skills',
     skills,
   });
+}
+
+/**
+ * Creates a task reminder attachment if there are pending scheduled tasks.
+ * This ensures the model knows about active tasks after compaction.
+ */
+export async function createTaskAttachmentIfNeeded(): Promise<AttachmentMessage | null> {
+  const tasks = await readCronTasks();
+  const activeTasks = tasks.filter(t => t.recurring || !t.lastFiredAt);
+  if (activeTasks.length === 0) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return createAttachmentMessage({
+    type: 'task_reminder',
+    content: activeTasks.map(t => ({
+      id: t.id,
+      cron: t.cron,
+      prompt: t.prompt,
+      recurring: t.recurring ?? false,
+      createdAt: t.createdAt,
+    })),
+    itemCount: activeTasks.length,
+  } as any);
 }
 
 /**

@@ -609,7 +609,7 @@ export function Select<T>({
   if (hasDescriptions) {
     const maxLabelWidth = Math.max(
       ...optionData.map(data => {
-        if (data.option.type === 'input') return 0;
+        if (data.option.type === 'input' || data.option.type === 'section') return 0;
         const labelText = getTextContent(data.option.label);
         // Width: indicator (1) + space (1) + index + label + space + checkmark (1)
         const indexWidth = hideIndexes ? 0 : maxIndexWidth + 2;
@@ -624,6 +624,15 @@ export function Select<T>({
           if (data.option.type === 'input') {
             // Input options not supported in two-column layout
             return null;
+          }
+          if (data.option.type === 'section') {
+            return (
+              <Box key={String(data.option.value)} paddingLeft={1} marginTop={data.option.index === 0 ? 0 : 1}>
+                <Text color="remember" bold>
+                  {data.option.label}
+                </Text>
+              </Box>
+            );
           }
           const labelText = getTextContent(data.option.label);
           const indexWidth = hideIndexes ? 0 : maxIndexWidth + 2;

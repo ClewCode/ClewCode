@@ -124,6 +124,7 @@ import {
   findUltraplanTriggerPositions,
   findUltrareviewTriggerPositions,
   findWorkflowTriggerPositions,
+  findPrTriggerPositions,
 } from '../../utils/ultraplan/keyword.js';
 import { AutoModeOptInDialog } from '../AutoModeOptInDialog.js';
 import { BridgeDialog } from '../BridgeDialog.js';

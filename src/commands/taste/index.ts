@@ -20,7 +20,7 @@ const taste: Command = {
   type: 'local-jsx',
   name: 'taste',
   description: 'Clew taste: local-first preference-learning runtime',
-  argumentHint: '[status|learn|forget|profile|events|decay|eval|export|import|on|off]',
+  argumentHint: '[status|init|learn|forget|profile|events|decay|eval|export|import|suggest|on|off]',
   isHidden: false,
   load: () => import('./taste.js'),
 };

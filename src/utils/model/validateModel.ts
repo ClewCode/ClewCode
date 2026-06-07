@@ -63,6 +63,7 @@ export async function validateModel(model: string): Promise<{ valid: boolean; er
     'opencode-go',
     'ollama',
     'copilot',
+    'nvidia',
   ];
   if (nonAnthropicProviders.includes(activeProvider)) {
     // For non-Anthropic providers, accept any model ID that is in the allowlist

@@ -167,8 +167,13 @@ export function supportsExtendedKeys(): boolean {
  *  SetConsoleCursorPosition follows the cursor into scrollback
  *  (microsoft/terminal#14774), yanking users to the top of their buffer
  *  mid-stream. WT_SESSION catches WSL-in-Windows-Terminal where platform
- *  is linux but output still routes through conhost. */
+ *  is linux but output still routes through conhost.
+ *
+ *  Modern terminals with synchronized output (DEC 2026) support don't have
+ *  this bug — the BSU/ESU sequences keep the viewport stable. */
 export function hasCursorUpViewportYankBug(): boolean {
+  // Terminals with synchronized output support don't have the viewport yank bug
+  if (isSynchronizedOutputSupported()) return false;
   return process.platform === 'win32' || !!process.env.WT_SESSION;
 }
 

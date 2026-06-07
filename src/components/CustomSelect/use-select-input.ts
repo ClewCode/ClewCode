@@ -122,8 +122,11 @@ export const useSelectInput = <T>({
       };
       handlers['select:previous'] = () => {
         if (onUpFromFirstItem && state.visibleFromIndex === 0) {
-          const firstOption = options[0];
-          if (firstOption && state.focusedValue === firstOption.value) {
+          // Find the first non-disabled option — the options list may start
+          // with a disabled section header (e.g. "Recent") that can never
+          // receive focus, making a naive options[0] check always fail.
+          const firstEnabledOption = options.find(o => !o.disabled);
+          if (firstEnabledOption && state.focusedValue === firstEnabledOption.value) {
             onUpFromFirstItem();
             return;
           }

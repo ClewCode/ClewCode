@@ -1332,7 +1332,7 @@ async function run(): Promise<CommanderCommand> {
     // terminal shell integration may mirror the process name to the tab.
     // After init() so settings.json env can also gate this (gh-4765).
     if (!isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_TERMINAL_TITLE)) {
-      process.title = 'claude';
+      process.title = 'clew';
     }
 
     // Attach logging sinks so subcommand handlers can use logEvent/logError.
@@ -2466,15 +2466,14 @@ async function run(): Promise<CommanderCommand> {
       // devChannels is deferred: showSetupScreens shows a confirmation dialog
       // and only appends to allowedChannels on accept.
       let devChannels: ChannelEntry[] | undefined;
-      if (feature('KAIROS') || feature('KAIROS_CHANNELS')) {
-        // Parse plugin:name@marketplace / server:Y tags into typed entries.
-        // Tag decides trust model downstream: plugin-kind hits marketplace
-        // verification + GrowthBook allowlist, server-kind always fails
-        // allowlist (schema is plugin-only) unless dev flag is set.
-        // Untagged or marketplace-less plugin entries are hard errors —
-        // silently not-matching in the gate would look like channels are
-        // "on" but nothing ever fires.
-        const parseChannelEntries = (raw: string[], flag: string): ChannelEntry[] => {
+      // Parse plugin:name@marketplace / server:Y tags into typed entries.
+      // Tag decides trust model downstream: plugin-kind hits marketplace
+      // verification + GrowthBook allowlist, server-kind always fails
+      // allowlist (schema is plugin-only) unless dev flag is set.
+      // Untagged or marketplace-less plugin entries are hard errors —
+      // silently not-matching in the gate would look like channels are
+      // "on" but nothing ever fires.
+      const parseChannelEntries = (raw: string[], flag: string): ChannelEntry[] => {
           const entries: ChannelEntry[] = [];
           const bad: string[] = [];
           for (const c of raw) {
@@ -2552,7 +2551,6 @@ async function run(): Promise<CommanderCommand> {
             dev_plugins: joinPluginIds(devChannels ?? []),
           });
         }
-      }
 
       // SDK opt-in for SendUserMessage via --tools. All sessions require
       // explicit opt-in; listing it in --tools signals intent. Runs BEFORE
@@ -5084,20 +5082,18 @@ async function run(): Promise<CommanderCommand> {
   if (feature('KAIROS')) {
     program.addOption(new Option('--assistant', 'Force assistant mode (Agent SDK daemon use)').hideHelp());
   }
-  if (feature('KAIROS') || feature('KAIROS_CHANNELS')) {
-    program.addOption(
-      new Option(
-        '--channels <servers...>',
-        'MCP servers whose channel notifications (inbound push) should register this session. Space-separated server names.',
-      ).hideHelp(),
-    );
-    program.addOption(
-      new Option(
-        '--dangerously-load-development-channels <servers...>',
-        'Load channel servers not on the approved allowlist. For local channel development only. Shows a confirmation dialog at startup.',
-      ).hideHelp(),
-    );
-  }
+  program.addOption(
+    new Option(
+      '--channels <servers...>',
+      'MCP servers whose channel notifications (inbound push) should register this session. Space-separated server names.',
+    ).hideHelp(),
+  );
+  program.addOption(
+    new Option(
+      '--dangerously-load-development-channels <servers...>',
+      'Load channel servers not on the approved allowlist. For local channel development only. Shows a confirmation dialog at startup.',
+    ).hideHelp(),
+  );
 
   // Teammate identity options (set by leader when spawning tmux teammates)
   // These replace the CLAUDE_CODE_* environment variables

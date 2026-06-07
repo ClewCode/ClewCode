@@ -772,11 +772,17 @@ export default class Ink {
     // and no move is emitted.
     const decl = this.cursorDeclaration;
     const rect = decl !== null ? nodeCache.get(decl.node) : undefined;
+    const H = frame.screen.height;
+    const W = frame.screen.width;
     const target =
       decl !== null && rect !== undefined
         ? {
-            x: rect.x + decl.relativeX,
-            y: rect.y + decl.relativeY,
+            x: W > 0 ? Math.min(Math.max(rect.x + decl.relativeX, 0), W - 1) : rect.x + decl.relativeX,
+            y: this.altScreenActive
+              ? rect.y + decl.relativeY
+              : H > 0
+                ? Math.min(Math.max(rect.y + decl.relativeY, Math.max(0, H - terminalRows)), H - 1)
+                : rect.y + decl.relativeY,
           }
         : null;
     const parked = this.displayCursor;

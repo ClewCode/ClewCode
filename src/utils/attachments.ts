@@ -2777,6 +2777,15 @@ export async function generateFileAttachment(
       return null;
     }
 
+    // Compact mode: return lightweight reference without re-reading file content.
+    if (mode === 'compact') {
+      return {
+        type: 'compact_file_reference',
+        filename,
+        displayPath: relative(getCwd(), filename),
+      };
+    }
+
     try {
       const result = await FileReadTool.call(fileInput, toolUseContext);
       logEvent(successEventName, {});

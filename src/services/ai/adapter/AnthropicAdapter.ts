@@ -44,6 +44,19 @@ function getOpenAIResponseFormat(params: BetaMessageStreamParams): Record<string
   return {};
 }
 
+/**
+ * Map Anthropic output_config.effort to OpenAI reasoning_effort.
+ * Many OpenAI-compatible providers (DeepSeek, NVIDIA, etc.) support
+ * reasoning_effort to control the model's thinking budget.
+ */
+function getOpenAIReasoningEffort(params: BetaMessageStreamParams): Record<string, unknown> {
+  const outputConfig = (params as any).output_config as { effort?: string } | undefined;
+  if (outputConfig?.effort) {
+    return { reasoning_effort: outputConfig.effort };
+  }
+  return {};
+}
+
 // ── Provider Adapter Interface ───────────────────────────────────────────────
 
 /**
@@ -500,6 +513,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       stop: params.stop_sequences,
       ...(tools ? { tools } : {}),
       ...getOpenAIResponseFormat(params),
+      ...getOpenAIReasoningEffort(params),
     };
   }
 

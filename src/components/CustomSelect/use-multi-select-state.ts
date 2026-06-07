@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { isDeepStrictEqual } from 'util';
 import { useRegisterOverlay } from '../../context/overlayContext.js';
 import type { InputEvent } from '../../ink/events/input-event.js';
@@ -170,10 +170,12 @@ export function useMultiSelectState<T>({
   // defaultValue after mount). Mirrors the reset pattern in use-select-navigation.ts
   // and the deleted ui/useMultiSelectState.ts — without this, MCPServerDesktopImportDialog
   // keeps colliding servers checked after getAllMcpConfigs() resolves.
-  const [lastOptions, setLastOptions] = useState(options);
-  if (options !== lastOptions && !isDeepStrictEqual(options, lastOptions)) {
-    setSelectedValues(defaultValue);
-    setLastOptions(options);
+  const lastOptionsRef = useRef(options);
+  if (options !== lastOptionsRef.current) {
+    if (!isDeepStrictEqual(options, lastOptionsRef.current)) {
+      setSelectedValues(defaultValue);
+    }
+    lastOptionsRef.current = options;
   }
 
   // State for input type options

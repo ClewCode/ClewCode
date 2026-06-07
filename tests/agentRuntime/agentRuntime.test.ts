@@ -215,13 +215,16 @@ describe('PLAN I — Agent Runtime / Orchestrator Unit Tests', () => {
     // Let's check status after resume and run completion
     expect(finalRun.status).toBe('completed');
 
+    // Give a brief delay for final tasks like report building to complete saving to disk
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     const finalState = await orchestrator.runStore.loadState(runId);
     expect(finalState.taskSummary).toBe('Coding completed perfectly.');
     expect(finalState.changedFiles).toContain('mock-code.ts');
 
     // Verify report got written
     const report = await orchestrator.runStore.loadReport(runId);
-    expect(report).toContain('Claude Code Agent Run Report');
+    expect(report).toContain('Clew Code Agent Run Report');
     expect(report).toContain('mock-code.ts');
   });
 });

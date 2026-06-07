@@ -41,6 +41,8 @@ export type DynamicRunState = {
   updatedAt: string;
   /** Ids of subtasks whose results are persisted in `results`. */
   completedSubtaskIds: string[];
+  /** Ids of subtasks currently being executed (for live UI). */
+  runningSubtaskIds?: string[];
   results: PersistedSubtaskResult[];
   /** Last wave that finished; the runner resumes from `waveIndex + 1`. */
   lastCompletedWave: number;
@@ -58,6 +60,21 @@ async function ensureDir(dir: string): Promise<void> {
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+/**
+ * Write the currently-running subtask IDs to disk so the live progress
+ * UI can poll and show which agents are active. Called mid-wave by the
+ * runner before subtasks start executing.
+ */
+export async function recordRunningSubtasks(
+  workspaceRoot: string,
+  state: DynamicRunState,
+): Promise<void> {
+  const dir = runDir(workspaceRoot, state.runId);
+  await ensureDir(dir);
+  const next = { ...state, updatedAt: nowIso() };
+  await fs.writeFile(path.join(dir, 'state.json'), JSON.stringify(next, null, 2), 'utf-8');
 }
 
 export async function createDynamicRun(workspaceRoot: string, workflow: DynamicWorkflow): Promise<DynamicRunState> {

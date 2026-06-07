@@ -180,10 +180,15 @@ export function gateChannelServer(
     };
   }
 
+  // Check if this is a dev channel (--dangerously-load-development-channels)
+  // Dev channels skip runtime gate and OAuth checks for local development
+  const entry = findChannelEntry(serverName, getAllowedChannels());
+  const isDev = entry?.dev === true;
+
   // Overall runtime gate. After capability so normal MCP servers never hit
   // this path. Before auth/policy so the killswitch works regardless of
-  // session state.
-  if (!isChannelsEnabled()) {
+  // session state. Dev channels bypass this.
+  if (!isDev && !isChannelsEnabled()) {
     return {
       action: 'skip',
       kind: 'disabled',
@@ -194,14 +199,14 @@ export function gateChannelServer(
   // OAuth-only. API key users (console) are blocked — there's no
   // channelsEnabled admin surface in console yet, so the policy opt-in
   // flow doesn't exist for them. Drop this when console parity lands.
-  if (!getClaudeAIOAuthTokens()?.accessToken) {
+  // Dev channels bypass this check.
+  if (!isDev && !getClaudeAIOAuthTokens()?.accessToken) {
     return {
       action: 'skip',
       kind: 'auth',
       reason: 'channels requires claude.ai authentication (run /login)',
     };
   }
-
   // Teams/Enterprise opt-in. Managed orgs must explicitly enable channels.
   // Default OFF — absent or false blocks. Keyed off subscription tier, not
   // "policy settings exist" — a team org with zero configured policy keys
@@ -221,7 +226,6 @@ export function gateChannelServer(
   // User-level session opt-in. A server must be explicitly listed in
   // --channels to push inbound this session — protects against a trusted
   // server surprise-adding the capability.
-  const entry = findChannelEntry(serverName, getAllowedChannels());
   if (!entry) {
     return {
       action: 'skip',

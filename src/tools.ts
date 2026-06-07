@@ -94,6 +94,7 @@ import { TaskGetTool } from './tools/TaskGetTool/TaskGetTool.js';
 import { TaskUpdateTool } from './tools/TaskUpdateTool/TaskUpdateTool.js';
 import { TaskListTool } from './tools/TaskListTool/TaskListTool.js';
 import { SessionSearchTool } from './tools/SessionSearchTool/SessionSearchTool.js';
+import { PrTool } from './tools/PRTool/PRTool.js';
 import { BrowserTool } from './tools/BrowserTool/BrowserTool.js';
 import uniqBy from 'lodash-es/uniqBy.js';
 import { isToolSearchEnabledOptimistic } from './utils/toolSearch.js';
@@ -185,6 +186,7 @@ export function getAllBaseTools(): Tools {
     WebSearchTool,
     WebFetchTool,
     BrowserTool,
+    PrTool,
     // BrowserAgentTool — disabled until ready
     // MultiSearchTool, // Using official WebSearch instead
     JsonPathTool,

@@ -172,6 +172,9 @@ export function AttachmentMessage({ attachment, addMargin, verbose, isTranscript
         </Line>
       );
     case 'compact_file_reference':
+      // Hidden in default view to keep post-compact chat clean.
+      // Content is still in message data for the model.
+      if (!verbose && !isTranscriptMode) return null;
       return (
         <Line>
           Referenced file <Text bold>{attachment.displayPath}</Text>
@@ -284,6 +287,8 @@ export function AttachmentMessage({ attachment, addMargin, verbose, isTranscript
       );
     }
     case 'plan_file_reference':
+      // Hidden in default view alongside compact_file_reference.
+      if (!verbose && !isTranscriptMode) return null;
       return <Line>Plan file referenced ({getDisplayPath(attachment.planFilePath)})</Line>;
     case 'invoked_skills': {
       if (attachment.skills.length === 0) {

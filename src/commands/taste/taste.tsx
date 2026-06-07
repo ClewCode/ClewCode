@@ -1,6 +1,6 @@
 // Clew taste: Interactive command with Ink UI menu
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog } from '../../components/design-system/Dialog.js';
 import { Spinner } from '../../components/Spinner.js';
 import { Box, Text, useInput } from '../../ink.js';
@@ -11,6 +11,7 @@ import { getTasteRuntime, initRuntime } from './index.js';
 type Action =
   | 'status'
   | 'toggle'
+  | 'init'
   | 'learn'
   | 'forget'
   | 'rules'
@@ -21,9 +22,65 @@ type Action =
   | 'export'
   | 'close';
 
+const INIT_STAGES = [
+  { progress: 15, label: 'Scanning project structure...' },
+  { progress: 35, label: 'Analyzing code patterns...' },
+  { progress: 55, label: 'Learning coding preferences...' },
+  { progress: 75, label: 'Building taste profile...' },
+  { progress: 90, label: 'Finalizing...' },
+];
+
+function TasteInitProgress({
+  runtime,
+  onDone,
+}: {
+  runtime: TasteRuntime;
+  onDone: () => void;
+}): React.ReactNode {
+  const [stage, setStage] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async (): Promise<void> => {
+      // Animate through stages
+      for (let i = 0; i < INIT_STAGES.length; i++) {
+        if (cancelled) return;
+        setStage(i);
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      // Actually initialize
+      if (cancelled) return;
+      await runtime.initialize();
+      if (cancelled) return;
+      onDone();
+    };
+
+    void run();
+    return () => { cancelled = true; };
+  }, [runtime, onDone]);
+
+  const current = INIT_STAGES[Math.min(stage, INIT_STAGES.length - 1)];
+  const barWidth = 20;
+  const filled = Math.round((current.progress / 100) * barWidth);
+  const bar = '█'.repeat(filled) + '░'.repeat(barWidth - filled);
+
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text bold>Initializing Clew taste</Text>
+      <Text>
+        [{bar}] {current.progress}%
+      </Text>
+      <Text dimColor>{current.label}</Text>
+    </Box>
+  );
+}
+
 const ACTIONS: Array<{ value: Action; label: string; description: string }> = [
   { value: 'status', label: 'Status', description: 'Show current taste status summary' },
   { value: 'toggle', label: 'Toggle on/off', description: 'Enable or disable Clew taste' },
+  { value: 'init', label: 'Initialize', description: 'Initialize taste profile and study project patterns' },
   { value: 'learn', label: 'Learn a rule', description: 'Add a new preference rule manually' },
   { value: 'forget', label: 'Forget a rule', description: 'Remove a rule by ID' },
   { value: 'rules', label: 'List rules', description: 'View all learned rules' },
@@ -68,6 +125,7 @@ function TasteMenu({ onDone }: { onDone: LocalJSXCommandOnDone }) {
   const [busy, setBusy] = useState(false);
   const [busyMessage, setBusyMessage] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [initializing, setInitializing] = useState(false);
 
   const runAction = async (action: Action) => {
     setMessage(null);
@@ -96,6 +154,10 @@ function TasteMenu({ onDone }: { onDone: LocalJSXCommandOnDone }) {
           ].join('\n'),
           { display: 'system' },
         );
+        return;
+      }
+      case 'init': {
+        setInitializing(true);
         return;
       }
       case 'learn':
@@ -202,6 +264,28 @@ function TasteMenu({ onDone }: { onDone: LocalJSXCommandOnDone }) {
     { isActive: true },
   );
 
+  if (initializing) {
+    return (
+      <Dialog
+        title="Clew taste"
+        subtitle="Local-first preference-learning runtime"
+        onCancel={() => onDone('Done.', { display: 'system' })}
+        hideInputGuide
+      >
+        <Box flexDirection="column" gap={1} padding={1}>
+          <TasteInitProgress
+            runtime={runtime}
+            onDone={() => {
+              const count = runtime.getRules().length;
+              setInitializing(false);
+              onDone(`Taste initialized \u2014 ${count} rule${count === 1 ? '' : 's'} found.\nRun /taste again to manage preferences.`, { display: 'system' });
+            }}
+          />
+        </Box>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog
       title="Clew taste"
@@ -236,6 +320,106 @@ function TasteMenu({ onDone }: { onDone: LocalJSXCommandOnDone }) {
   );
 }
 
+function InitFlow({
+  runtime,
+  onDone,
+}: {
+  runtime: TasteRuntime;
+  onDone: LocalJSXCommandOnDone;
+}): React.ReactNode {
+  const [stage, setStage] = useState<'progress' | 'analyzing' | 'done'>('progress');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async (): Promise<void> => {
+      // Phase 1: Show progress bar for profile init
+      for (let i = 0; i < INIT_STAGES.length; i++) {
+        if (cancelled) return;
+        setStage(i < 3 ? 'progress' : 'analyzing');
+        await new Promise(r => setTimeout(r, 400));
+      }
+
+      if (cancelled) return;
+      setStage('analyzing');
+
+      // Phase 2: AI codebase analysis
+      const existingRules = runtime.getRules();
+      let result: string;
+
+      if (existingRules.length === 0) {
+        try {
+          const { TasteCodebaseAnalyzer } = await import('../../services/taste/auto-learn/TasteCodebaseAnalyzer.js');
+          const analyzer = new TasteCodebaseAnalyzer();
+          const context = analyzer.collectContext();
+
+          if (context.gitLog || Object.keys(context.configFiles).length > 0 || context.projectFiles.length > 0) {
+            await runtime.initialize();
+            const analysis = await analyzer.analyzeWithAI(context);
+
+            if (analysis.rules.length > 0) {
+              let added = 0;
+              for (const r of analysis.rules) {
+                runtime.addRule(r.text, r.kind, 'inferred', ['ai-detected']);
+                added++;
+              }
+              await runtime.saveProfile();
+              const lines = [
+                `Taste initialized \u2014 ${added} rule${added === 1 ? '' : 's'} added from codebase analysis.`,
+                '',
+                ...analysis.rules.map(
+                  r => `  [${r.kind}] ${r.text} (confidence: ${(r.confidence * 100).toFixed(0)}%)`,
+                ),
+              ];
+              result = lines.join('\n');
+            } else {
+              await runtime.initialize();
+              result = 'Taste initialized \u2014 no patterns detected.';
+            }
+          } else {
+            await runtime.initialize();
+            result = 'Taste initialized \u2014 no codebase context found.';
+          }
+        } catch (err) {
+          await runtime.initialize();
+          result = `Taste initialized \u2014 AI analysis unavailable: ${err instanceof Error ? err.message : 'Unknown error'}`;
+        }
+      } else {
+        await runtime.initialize();
+        result = `Taste initialized \u2014 ${existingRules.length} rule${existingRules.length === 1 ? '' : 's'} already exist.`;
+      }
+
+      if (cancelled) return;
+      setStage('done');
+      onDone(result, { display: 'system' });
+    };
+
+    void run();
+    return () => { cancelled = true; };
+  }, [runtime, onDone]);
+
+  const s = stage === 'done'
+    ? INIT_STAGES[INIT_STAGES.length - 1]
+    : INIT_STAGES[Math.min(Math.floor(INIT_STAGES.length * (stage === 'analyzing' ? 0.6 : 0.3)), INIT_STAGES.length - 1)];
+
+  const barWidth = 20;
+  const filled = Math.round((s.progress / 100) * barWidth);
+  const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barWidth - filled);
+  const label = stage === 'analyzing' && s.progress >= 75 ? 'Calling AI to analyze codebase...' : s.label;
+
+  return (
+    <Dialog title="Clew taste" subtitle="Local-first preference-learning runtime" hideInputGuide>
+      <Box flexDirection="column" gap={1} padding={1}>
+        <Text bold>Initializing Clew taste</Text>
+        <Text>
+          [{bar}] {s.progress}%
+        </Text>
+        <Text dimColor>{label}</Text>
+      </Box>
+    </Dialog>
+  );
+}
+
 export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
   const arg = args.trim();
 
@@ -261,6 +445,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
   if (
     arg.startsWith('learn ') ||
     arg.startsWith('forget ') ||
+    arg.startsWith('suggest') ||
     arg === 'profile' ||
     arg === 'events' ||
     arg === 'decay' ||
@@ -273,6 +458,10 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
     const result = await handleNonInteractive(arg, runtime);
     onDone(result, { display: 'system' });
     return null;
+  }
+
+  if (arg === 'init') {
+    return <InitFlow runtime={runtime} onDone={onDone} />;
   }
 
   return <TasteMenu onDone={onDone} />;

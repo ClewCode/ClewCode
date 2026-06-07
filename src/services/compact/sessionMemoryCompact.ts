@@ -27,7 +27,9 @@ import {
   buildPostCompactMessages,
   type CompactionResult,
   createPlanAttachmentIfNeeded,
+  createTaskAttachmentIfNeeded,
 } from './compact.js';
+import type { AttachmentMessage } from '../../types/message.js';
 import { estimateMessageTokens } from './microCompact.js';
 import { getCompactUserSummaryMessage } from './prompt.js';
 
@@ -393,14 +395,14 @@ export function shouldUseSessionMemoryCompaction(): boolean {
 /**
  * Create a CompactionResult from session memory
  */
-function createCompactionResultFromSessionMemory(
+async function createCompactionResultFromSessionMemory(
   messages: Message[],
   sessionMemory: string,
   messagesToKeep: Message[],
   hookResults: HookResultMessage[],
   transcriptPath: string,
   agentId?: AgentId,
-): CompactionResult {
+): Promise<CompactionResult> {
   const preCompactTokenCount = tokenCountFromLastAPIResponse(messages);
 
   const boundaryMarker = createCompactBoundaryMessage(
@@ -433,7 +435,8 @@ function createCompactionResultFromSessionMemory(
   ];
 
   const planAttachment = createPlanAttachmentIfNeeded(agentId);
-  const attachments = planAttachment ? [planAttachment] : [];
+  const taskAttachment = await createTaskAttachmentIfNeeded();
+  const attachments = [planAttachment, taskAttachment].filter(Boolean) as AttachmentMessage[];
 
   return {
     boundaryMarker: annotateBoundaryWithPreservedSegment(
@@ -532,7 +535,7 @@ export async function trySessionMemoryCompaction(
     // Get transcript path for the summary message
     const transcriptPath = getTranscriptPath();
 
-    const compactionResult = createCompactionResultFromSessionMemory(
+    const compactionResult = await createCompactionResultFromSessionMemory(
       messages,
       sessionMemory,
       messagesToKeep,
