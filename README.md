@@ -56,21 +56,23 @@ bun install && bun run build && bun run start
 
 ---
 
-## What it does
+## Features
 
-Clew runs in your terminal and can read/edit codebases, execute shell commands, switch AI providers mid-session, and run multi-step agent workflows.
-
-**Providers** — Anthropic, OpenAI, Gemini, OpenRouter, Ollama, NVIDIA, DeepSeek, GitHub Copilot, any OpenAI-compatible endpoint. Switch with `/model` at any time.
-
-**Coding tools** — file read/write/search, shell execution, LSP queries, MCP tool calls, `/code-review --fix`, `/simplify`, `/pr` commands.
-
-**Agents** — background agent runtime with supervisor, multi-step workflows, approvals, and live status in the footer (`◈ ultracode [2/5] ⟐coder ⟐researcher`).
-
-**Peer coordination** — LAN peer discovery via UDP multicast. Agents can discover each other, assign tasks, and coordinate autonomously over `/peer`.
-
-**Taste** — preference-learning that adapts to your coding style from accept/reject signals. No fine-tuning. Rules inject into every prompt as a `<clew_taste>` block.
-
-**Extensibility** — plugins, hooks, dynamic skills (`.claude/skills/`), scheduled tasks, MCP/LSP, WebSocket bridge, relay server.
+| Feature | Description |
+|---|---|
+| **Multi-provider** | Anthropic, OpenAI, Gemini, OpenRouter, Ollama, NVIDIA, DeepSeek, Copilot, any OpenAI-compatible endpoint. Switch via `/model`. |
+| **Coding tools** | File read/edit/write, shell exec, LSP, MCP, `Glob`, `Grep`, `WebSearch`, `WebFetch`, browser automation. |
+| **Code review** | `/code-review --fix`, `/simplify`, `/pr create/list/view/review/merge`. |
+| **Agents** | Background runtime with supervisor, multi-step workflows, approvals, live footer status. |
+| **Peer-to-peer** | LAN discovery (UDP multicast), task delegation, role-based naming, 14 AI tools for autonomous coordination. |
+| **Taste** | Preference-learning from accept/reject signals. Rules inject into every prompt. 4 AI tools for rule management. |
+| **Daemon** | 24/7 autonomous mode with task queue, auto-scheduling, health checks. |
+| **Plugins & hooks** | Pre/post tool hooks, dynamic skills (`.claude/skills/`), marketplace. |
+| **Bridge & relay** | WebSocket remote control, relay server for cross-network access. |
+| **Research** | Local-first multi-source research pipeline: plan → collect → extract → report. |
+| **Permission modes** | Default, Auto, Plan, YOLO levels — granular tool execution control. |
+| **Sessions** | Save, resume, compact, rewind — full conversation lifecycle. |
+| **Compact** | KiloCompact: log snipping, failed-state consolidation, semantic pruning. |
 
 ---
 
