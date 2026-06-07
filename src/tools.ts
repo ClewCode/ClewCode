@@ -92,6 +92,10 @@ import { PeerJoinTool } from './tools/PeerJoinTool/PeerJoinTool.js';
 import { PeerSetNameTool } from './tools/PeerSetNameTool/PeerSetNameTool.js';
 import { PeerSetRoleTool } from './tools/PeerSetRoleTool/PeerSetRoleTool.js';
 import { PeerListRolesTool } from './tools/PeerListRolesTool/PeerListRolesTool.js';
+import { PeerPingTool } from './tools/PeerPingTool/PeerPingTool.js';
+import { PeerDisconnectTool } from './tools/PeerDisconnectTool/PeerDisconnectTool.js';
+import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.js';
+import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
 import { LSPTool } from './tools/LSPTool/LSPTool.js';
 import { ListMcpResourcesTool } from './tools/ListMcpResourcesTool/ListMcpResourcesTool.js';
 import { ReadMcpResourceTool } from './tools/ReadMcpResourceTool/ReadMcpResourceTool.js';
@@ -226,6 +230,10 @@ export function getAllBaseTools(): Tools {
     PeerSetNameTool,
     PeerSetRoleTool,
     PeerListRolesTool,
+    PeerPingTool,
+    PeerDisconnectTool,
+    PeerBroadcastTool,
+    PeerListMessagesTool,
     ...(listPeersTool ? [listPeersTool] : []),
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),
     ...(isAgentSwarmsEnabled() ? [SubscribePrActivityTool, UnsubscribePrActivityTool] : []),
