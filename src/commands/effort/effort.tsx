@@ -135,7 +135,12 @@ export function executeEffort(args: string): EffortCommandResult {
     return unsetEffortLevel();
   }
   if (normalized === 'ultracode') {
-    return setEffortValue('xhigh', true);
+    const result = setEffortValue('xhigh', true);
+    try {
+      const g = globalThis as { __appState?: { set?: (k: string, v: unknown) => void } };
+      g.__appState?.set?.('ultracodeState', { enabled: true, confirmedOnce: true, workflowsStarted: 0 });
+    } catch { /* ignore */ }
+    return result;
   }
   if (!isEffortLevel(normalized)) {
     return {
@@ -682,6 +687,16 @@ function EffortSliderWrapper({ onDone }: { onDone: LocalJSXCommandOnDone }): Rea
           effortValue: result.effortUpdate!.value,
         }));
       }
+
+      // Enable ultracode state in global __appState so PromptInput shows
+      // the purple double border. Only when ultracode is selected.
+      if (isUltra) {
+        try {
+          const g = globalThis as { __appState?: { set?: (k: string, v: unknown) => void } };
+          g.__appState?.set?.('ultracodeState', { enabled: true, confirmedOnce: true, workflowsStarted: 0 });
+        } catch { /* ignore */ }
+      }
+
       onDone(result.message);
     },
     [setAppState, onDone],
