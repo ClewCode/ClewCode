@@ -58,6 +58,7 @@ Key features:
 * **Plugin marketplace support** — Includes support for `skipLfs` when downloading plugin sources.
 * **Local research workflow** — Use `/research <query>` for local-first web research and scraping workflows where configured.
 * **Agents and supervisor** — Manage background agents, multi-step workflows, summaries, task status, approvals, and session state.
+* **Peer-to-peer collaboration** — LAN peer discovery, task assignment, role-based naming, and autonomous AI peer coordination tools.
 * **Background shell commands** — Run long-lived commands with `!bg <command>`.
 * **Scheduled tasks** — Create one-shot or recurring tasks through `/task`.
 * **Sessions and bridge mode** — Save, resume, and coordinate development sessions.
@@ -151,6 +152,7 @@ docs/providers.html
 /plugin       Manage plugins and hooks
 /bridge       Configure bridge mode
 /agent        Manage background agent workflows
+/peer         Peer-to-peer collaboration (share, discover, join, tasks)
 /daemon       Open autonomous daemon dashboard
 /task         Create or manage scheduled tasks
 ```
@@ -267,6 +269,7 @@ src/
 ├── cli/                  # Terminal UI contexts
 ├── components/           # Terminal UI components
 ├── bridge/               # WebSocket bridge
+├── peer/                 # LAN peer discovery, server, and store
 ├── coordinator/          # Multi-agent coordinator
 ├── keybindings/          # Keyboard shortcut mappings
 ├── state/                # Reactive stores
@@ -297,6 +300,7 @@ Terminal UI
 * [Skills](docs/skills.html)
 * [Architecture](docs/architecture.html)
 * [Permission Model](docs/permission-model.html)
+* [Peer-to-Peer](docs/features/peer.html)
 * [Bridge Mode](docs/features/bridge-mode.html)
 * [SearXNG Search](docs/features/searxng-search.html)
 * [Troubleshooting](docs/troubleshooting.html)
@@ -344,6 +348,10 @@ Do not open public issues for security vulnerabilities.
 Use the private reporting process described in [SECURITY.md](SECURITY.md).
 
 ## Changelog
+
+### 0.2.4 (2026-06-08)
+
+- **Peer-to-peer collaboration** — LAN peer discovery via UDP multicast + file registry. `/peer share`, `/peer discover`, `/peer join`, `/peer list`, `/peer todo`, `/peer name`, `/peer role`. Interactive PeerMenu with keyboard navigation. 9 AI tools for autonomous coordination (discover, join, send_task, run, list_roles, list_tasks, set_name, set_role, share). Inbound tasks auto-inject to AI prompt via enqueue. Idempotent server start and port-based peer lookup fixes.
 
 ### 0.2.3 (2026-06-07)
 

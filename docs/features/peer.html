@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peer-to-Peer — LAN Collaboration — Clew</title>
+  <meta name="description" content="LAN peer discovery, task delegation, and autonomous AI peer coordination in Clew.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="../index.html" class="logo">
+      <span>Clew Code</span>
+    </a>
+    <nav class="header-nav">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#features">Features</a>
+      <a href="../index.html#commands">Commands</a>
+      <a href="../quick-start.html" class="active">Docs</a>
+      <a href="https://github.com/ClewCode/ClewCode" target="_blank">GitHub</a>
+    <div class="lang-wrap">
+    <button class="lang-btn">🌐</button>
+    <div class="lang-menu">
+      <a href="../../readme/README.th.md">ไทย</a>
+      <a href="../../README.md">English</a>
+    </div>
+  </div>
+    </nav>
+    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+
+      <div class="breadcrumbs">
+        <a href="../index.html">Home</a>
+        <span>›</span>
+        <span>Peer-to-Peer</span>
+      </div>
+
+      <h1>Peer-to-Peer Collaboration</h1>
+      <p>
+        Clew supports LAN peer discovery and task delegation, enabling a lead-worker model
+        where one instance can coordinate multiple worker instances on the same network.
+      </p>
+
+      <h2>Architecture</h2>
+      <p>
+        Each peer runs a lightweight HTTP server (PeerServer) on a random port.
+        Discovery uses UDP multicast broadcast (239.255.37.37:42069) plus a file-based
+        registry (<code>~/.claude/peers/</code>) for same-machine peers.
+      </p>
+
+      <pre><code>Peer A (Lead)                    Peer B (Worker)
+  |                                |
+  |--- UDP multicast query ------->|
+  |<--- response (host, port, cwd)-|
+  |                                |
+  |--- HTTP POST /peer-todo ------>|  Assign task
+  |--- HTTP POST /peer-exec ------>|  Run command
+  |<--- response ------------------|  Return result</code></pre>
+
+      <h2>Getting Started</h2>
+
+      <h3>Worker Setup</h3>
+      <pre><code># Start sharing (advertise on LAN)
+/peer share
+
+# Set display name and role
+/peer name Build Server
+/peer role builder</code></pre>
+
+      <h3>Lead Setup</h3>
+      <pre><code># Discover available peers
+/peer discover
+
+# Join a specific peer by port
+/peer join 127.0.0.1:59421
+
+# View connected peers
+/peer list</code></pre>
+
+      <h3>Assign Tasks</h3>
+      <pre><code># Direct task assignment
+/peer todo Build-Server "run the test suite"
+
+# Let the AI handle it
+> Assign a task to the build server to run all tests</code></pre>
+
+      <h2>Commands</h2>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/peer</code></td><td>Open interactive peer menu</td></tr>
+          <tr><td><code>/peer share</code></td><td>Start advertising as a worker</td></tr>
+          <tr><td><code>/peer share stop</code></td><td>Stop advertising</td></tr>
+          <tr><td><code>/peer discover</code></td><td>Scan LAN for peers (5s timeout)</td></tr>
+          <tr><td><code>/peer join &lt;port&gt;</code></td><td>Connect to a peer by port or host:port</td></tr>
+          <tr><td><code>/peer list</code></td><td>Open interactive peer list</td></tr>
+          <tr><td><code>/peer todo &lt;peer&gt; &lt;task&gt;</code></td><td>Assign a task to a worker</td></tr>
+          <tr><td><code>/peer todos</code></td><td>View received tasks</td></tr>
+          <tr><td><code>/peer todo done &lt;id&gt;</code></td><td>Mark task as complete</td></tr>
+          <tr><td><code>/peer name &lt;name&gt;</code></td><td>Set your display name</td></tr>
+          <tr><td><code>/peer role &lt;role&gt;</code></td><td>Set your role (e.g., builder, tester)</td></tr>
+          <tr><td><code>/peer inbox</code></td><td>View pending messages</td></tr>
+          <tr><td><code>/peer spawn [options]</code></td><td>Spawn a new peer shell terminal</td></tr>
+          <tr><td><code>/peer help</code></td><td>Show help</td></tr>
+        </tbody>
+      </table>
+
+      <h2>AI Peer Tools</h2>
+      <p>
+        Clew AI can autonomously coordinate peers using these tools:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Tool</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>peer_discover</code></td><td>Scan for workers on LAN and same machine</td></tr>
+          <tr><td><code>peer_join</code></td><td>Connect to a remote peer by host:port</td></tr>
+          <tr><td><code>peer_send_task</code></td><td>Assign a task to a worker via HTTP POST</td></tr>
+          <tr><td><code>peer_list_tasks</code></td><td>Check pending and completed tasks</td></tr>
+          <tr><td><code>peer_list_roles</code></td><td>List all peers with names, roles, and IPs</td></tr>
+          <tr><td><code>peer_run</code></td><td>Execute a shell command on a remote worker</td></tr>
+          <tr><td><code>peer_share</code></td><td>Start or stop advertising as a worker</td></tr>
+          <tr><td><code>peer_info</code></td><td>Get detailed info about a specific peer</td></tr>
+          <tr><td><code>peer_set_name</code></td><td>Set display name for a peer</td></tr>
+          <tr><td><code>peer_set_role</code></td><td>Set role for a peer</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Protocol</h2>
+      <p>Discovery uses UDP multicast on <code>239.255.37.37:42069</code>. Peer info is broadcast every 30 seconds. Peers are evicted after 90 seconds of inactivity.</p>
+      <p>Communication uses HTTP POST to registered peer endpoints:</p>
+      <table>
+        <thead>
+          <tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/peer-info</code></td><td>GET</td><td>Get peer metadata (host, port, cwd, name, role)</td></tr>
+          <tr><td><code>/peer-todo</code></td><td>POST</td><td>Accept inbound task assignment</td></tr>
+          <tr><td><code>/peer-msg</code></td><td>POST</td><td>Accept inbound message</td></tr>
+          <tr><td><code>/peer-exec</code></td><td>POST</td><td>Accept shell command execution</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Footer ─── -->
+      <footer class="footer">
+        <span>Clew v0.2.4 — Open Source</span>
+        <div class="footer-links">
+          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+        </div>
+      </footer>
+
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
+</div>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
