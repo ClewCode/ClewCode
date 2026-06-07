@@ -11,6 +11,39 @@ export async function handleNonInteractive(args: string, runtime: TasteRuntime):
     case 'status':
       return handleStatus(runtime);
 
+    case 'init': {
+      await runtime.initialize();
+      const existingRules = runtime.getRules();
+
+      // If no rules yet, try AI-driven codebase analysis
+      if (existingRules.length === 0) {
+        const { TasteCodebaseAnalyzer } = await import('../../services/taste/auto-learn/TasteCodebaseAnalyzer.js');
+        const analyzer = new TasteCodebaseAnalyzer();
+        const context = analyzer.collectContext();
+
+        // Quick check: if no codebase context found, skip AI analysis
+        if (context.gitLog || Object.keys(context.configFiles).length > 0 || context.projectFiles.length > 0) {
+          const analysis = await analyzer.analyzeWithAI(context);
+
+          if (analysis.rules.length > 0) {
+            let added = 0;
+            for (const r of analysis.rules) {
+              runtime.addRule(r.text, r.kind, 'inferred', ['ai-detected']);
+              added++;
+            }
+            await runtime.saveProfile();
+            return [
+              `Taste initialized \u2014 ${added} rule${added === 1 ? '' : 's'} added from codebase analysis.`,
+              '',
+              ...analysis.rules.map(r => `  [${r.kind}] ${r.text} (confidence: ${(r.confidence * 100).toFixed(0)}%)`),
+            ].join('\n');
+          }
+        }
+      }
+
+      return `Taste initialized \u2014 ${existingRules.length} rule${existingRules.length === 1 ? '' : 's'} found.`;
+    }
+
     case 'learn': {
       const ruleText = parts.slice(1).join(' ');
       if (!ruleText) return 'Usage: /taste learn <rule text>';
@@ -57,6 +90,44 @@ export async function handleNonInteractive(args: string, runtime: TasteRuntime):
           `${e.timestamp.slice(0, 19)} [${e.type}] reward=${e.reward.toFixed(2)}${e.prompt ? ` "${e.prompt.slice(0, 60)}"` : ''}${e.filePaths?.length ? ` files=${e.filePaths.length}` : ''}`,
       );
       return `Recent events (${events.length}):\n${lines.join('\n')}`;
+    }
+
+    case 'suggest': {
+      const sub = parts[1]?.toLowerCase();
+      if (sub === 'accept') {
+        const id = parts[2];
+        if (!id) return 'Usage: /taste suggest accept <suggestion-id>';
+        const rule = runtime.getAutoLearn().acceptSuggestion(id, (text, kind, source, tags) =>
+          runtime.addRule(text, kind, source, tags),
+        );
+        if (!rule) return `Suggestion not found: ${id}`;
+        await runtime.saveProfile();
+        return `Accepted suggestion: "${rule.text}" (confidence: ${(rule.confidence * 100).toFixed(0)}%)`;
+      }
+      if (sub === 'reject') {
+        const id = parts[2];
+        if (!id) return 'Usage: /taste suggest reject <suggestion-id>';
+        runtime.getAutoLearn().rejectSuggestion(id);
+        return `Rejected suggestion: ${id}`;
+      }
+      // Run detection
+      const suggestions = runtime.processAutoLearn();
+      const pending = runtime.getAutoLearn().getPendingSuggestions();
+      if (pending.length === 0 && suggestions.length === 0) {
+        return 'No suggestions available yet. Keep using Clew to generate more signals.';
+      }
+      const lines: string[] = ['Auto-learn suggestions:'];
+      if (suggestions.length > 0) {
+        lines.push(`\n${suggestions.length} new pattern${suggestions.length === 1 ? '' : 's'} detected!\n`);
+      }
+      for (const s of pending) {
+        lines.push(
+          `  [${s.id.slice(0, 8)}] ${s.pattern.text}`,
+          `       kind: ${s.pattern.kind}, confidence: ${(s.pattern.confidence * 100).toFixed(0)}%, seen ${s.pattern.frequency}x`,
+          `       /taste suggest accept ${s.id.slice(0, 8)}  or  /taste suggest reject ${s.id.slice(0, 8)}`,
+        );
+      }
+      return lines.join('\n');
     }
 
     case 'decay': {

@@ -17,6 +17,13 @@ import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { Box, Text } from '../ink.js';
 import { formatDuration } from '../utils/format.js';
 
+type SubTaskInfo = {
+  id: string;
+  role: string;
+  title: string;
+  status: 'running' | 'completed' | 'failed' | 'pending';
+};
+
 type RunSummary = {
   id: string;
   status: string;
@@ -26,6 +33,7 @@ type RunSummary = {
   confirmed: number;
   rationale: string;
   startedAt: string;
+  subtasks: SubTaskInfo[];
 };
 
 /**
@@ -51,6 +59,16 @@ function useLiveDynamicRuns(workspaceRoot: string): RunSummary[] {
           if (!loaded) continue;
           const refuted = state.results.filter(r => r.verification === 'refuted').length;
           const confirmed = state.results.filter(r => r.verification === 'confirmed').length;
+
+          const completedSet = new Set(state.completedSubtaskIds);
+          const runningSet = new Set(state.runningSubtaskIds ?? []);
+          const subtasks: SubTaskInfo[] = loaded.workflow.subtasks.map(s => ({
+            id: s.id,
+            role: s.role,
+            title: s.title,
+            status: completedSet.has(s.id) ? 'completed' : runningSet.has(s.id) ? 'running' : 'pending',
+          }));
+
           summaries.push({
             id: loaded.workflow.id,
             status: state.status,
@@ -60,6 +78,7 @@ function useLiveDynamicRuns(workspaceRoot: string): RunSummary[] {
             confirmed,
             rationale: loaded.workflow.rationale,
             startedAt: state.startedAt,
+            subtasks,
           });
         }
 
@@ -117,7 +136,13 @@ export function DynamicWorkflowStatusLine({
             ? '✗'
             : '…';
 
-  const parts: string[] = [`${statusGlyph} ultracode`, `[${run.completed}/${run.totalSubtasks}]`];
+  // Show running subtasks in status line
+  const running = run.subtasks.filter(s => s.status === 'running');
+  const runningStr = running.length > 0
+    ? ` ${running.map(s => `${s.role}`).join(' ')}`
+    : '';
+
+  const parts: string[] = [`${statusGlyph} ultracode`, `[${run.completed}/${run.totalSubtasks}]${runningStr}`];
 
   if (run.refuted > 0) {
     parts.push(`${figures.cross}${run.refuted}`);
@@ -165,6 +190,19 @@ export function DynamicWorkflowPanel({ workspaceRoot }: { workspaceRoot: string 
 function RunRow({ run }: { run: RunSummary }): React.ReactNode {
   const duration = run.startedAt ? formatDuration(Date.now() - new Date(run.startedAt).getTime()) : '';
 
+  const statusLines = run.subtasks.map(s => {
+    const glyph = s.status === 'running' ? '⟐' : s.status === 'completed' ? '✓' : s.status === 'failed' ? '✗' : '·';
+    const color = s.status === 'running' ? 'suggestion' : s.status === 'completed' ? 'success' : s.status === 'failed' ? 'error' : 'subtle';
+    return (
+      <Box key={s.id} paddingLeft={2}>
+        <Text color={color}>{glyph}</Text>
+        <Text> </Text>
+        <Text color={color} bold={s.status === 'running'}>{s.role}</Text>
+        <Text dimColor>: {s.title.length > 60 ? `${s.title.slice(0, 60)}…` : s.title}</Text>
+      </Box>
+    );
+  });
+
   return (
     <Box flexDirection="column" paddingX={1} paddingY={0}>
       <Box>
@@ -174,13 +212,14 @@ function RunRow({ run }: { run: RunSummary }): React.ReactNode {
         <Text> </Text>
         <Text dimColor>{run.id}</Text>
       </Box>
+      {statusLines}
       <Box paddingLeft={2}>
-        <Text>
+        <Text dimColor>
           {run.completed}/{run.totalSubtasks} subtasks
           {run.refuted > 0 ? ` · ${run.refuted} refuted` : ''}
           {run.confirmed > 0 ? ` · ${run.confirmed} confirmed` : ''}
           {' · '}
-          <Text dimColor>{duration}</Text>
+          {duration}
         </Text>
       </Box>
       {run.rationale ? (

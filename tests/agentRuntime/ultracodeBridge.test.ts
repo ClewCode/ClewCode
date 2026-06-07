@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { tryAutoRunDynamicWorkflow } from '../../src/agentRuntime/ultracodeBridge.ts';
 import { createInitialUltracodeState, enableUltracode, markConfirmed, recordWorkflowStart } from '../../src/agentRuntime/ultracode.ts';
 
@@ -19,6 +19,13 @@ function makeAppState() {
     _store: store,
   };
 }
+
+beforeEach(() => {
+  delete g.__appState;
+  delete g.__ultracodePlannerLlm;
+  delete g.__ultracodeAgentRunner;
+  delete g.__ultracodeConfirm;
+});
 
 afterEach(() => {
   delete g.__appState;

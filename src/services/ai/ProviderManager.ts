@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { join } from 'path';
 import { getGlobalConfig } from '../../utils/config.js';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
-import { DEFAULT_PROVIDER, getProviderOptions, PROVIDER_REGISTRY } from './providerRegistry.js';
+import { DEFAULT_PROVIDER, getProviderOptions, PROVIDER_REGISTRY, getProviderRegistryEntry } from './providerRegistry.js';
 import type { ProviderId, ProviderInitOptions, ProviderInterface } from './providers/ProviderInterface.js';
 
 const LEGACY_PROVIDER_CONFIG_PATH = join(
@@ -259,7 +259,13 @@ export class ProviderManager {
       return getProviderOptions(effectiveProvider).baseUrl;
     }
     const config = this.getSelectedProviderConfig();
-    if (config.providerConfig && typeof config.providerConfig.baseUrl === 'string') {
+    const registryEntry = getProviderRegistryEntry(effectiveProvider);
+    if (
+      config.providerConfig &&
+      typeof config.providerConfig.baseUrl === 'string' &&
+      (!config.providerConfig.providerId || config.providerConfig.providerId === effectiveProvider) &&
+      (!config.providerConfig.envKey || config.providerConfig.envKey === registryEntry?.envKey)
+    ) {
       return config.providerConfig.baseUrl;
     }
     return getProviderOptions(effectiveProvider).baseUrl;
@@ -314,9 +320,14 @@ export class ProviderManager {
     const model = options.model ?? this.getModelForProvider(effectiveProvider);
 
     const config = this.getSelectedProviderConfig();
+    const registryEntry = getProviderRegistryEntry(effectiveProvider);
+    const isConfigValid = config.providerConfig &&
+      (!config.providerConfig.providerId || config.providerConfig.providerId === effectiveProvider) &&
+      (!config.providerConfig.envKey || config.providerConfig.envKey === registryEntry?.envKey);
+
     return providerInstance.createClient({
+      ...(isConfigValid ? (config.providerConfig as any) : {}),
       ...options,
-      ...(config.providerConfig as any),
       apiKey,
       baseUrl,
       model,

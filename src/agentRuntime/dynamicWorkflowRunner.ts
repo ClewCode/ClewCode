@@ -59,6 +59,15 @@ export type PersistenceHook = (params: {
   waveIndex: number;
 }) => Promise<DynamicRunState>;
 
+/** Called when a subtask starts/finishes executing */
+export type SubtaskStatusCallback = (params: {
+  subtaskId: string;
+  role: string;
+  title: string;
+  status: 'running' | 'completed' | 'failed';
+  waveIndex: number;
+}) => void;
+
 /**
  * Resume a previously-paused run. Subtasks already in `runState` are
  * skipped; the runner continues from the next ready wave.
@@ -68,6 +77,8 @@ export async function runDynamicWorkflow(params: {
   runSubtask: SubtaskRunner;
   llm: PlannerLlm;
   onWaveProgress?: WaveProgressCallback;
+  /** Called when a subtask starts/finishes (for live status UI). */
+  onSubtaskStatus?: SubtaskStatusCallback;
   /** Hard cap on total subtask output chars to feed into the verifier context. */
   contextCharLimit?: number;
   /** Optional initial state for resume. */
@@ -109,11 +120,33 @@ export async function runDynamicWorkflow(params: {
     if (todo.length === 0) continue;
     const bounded = todo.slice(0, params.workflow.maxParallel);
 
+    // Save running state to disk so the progress UI can see live status
+    const runningIds = bounded.map(s => s.id);
+    if (runState && (params as any).workspaceRoot) {
+      const pendingRunState = {
+        ...runState,
+        runningSubtaskIds: runningIds,
+      };
+      try {
+        const { recordRunningSubtasks } = await import('./dynamicWorkflowPersistence.js');
+        await recordRunningSubtasks((params as any).workspaceRoot, pendingRunState);
+      } catch { /* non-critical */ }
+    }
+
     const settled = await Promise.all(
       bounded.map(async subtask => {
+        params.onSubtaskStatus?.({ subtaskId: subtask.id, role: subtask.role, title: subtask.title, status: 'running', waveIndex: i });
         const start = Date.now();
-        const context = buildSubtaskContext(subtask, resultById, contextCharLimit);
-        const { output } = await params.runSubtask(subtask, context);
+        let output: string;
+        try {
+          const context = buildSubtaskContext(subtask, resultById, contextCharLimit);
+          const result = await params.runSubtask(subtask, context);
+          output = result.output;
+          params.onSubtaskStatus?.({ subtaskId: subtask.id, role: subtask.role, title: subtask.title, status: 'completed', waveIndex: i });
+        } catch (err) {
+          output = `Error: ${err instanceof Error ? err.message : String(err)}`;
+          params.onSubtaskStatus?.({ subtaskId: subtask.id, role: subtask.role, title: subtask.title, status: 'failed', waveIndex: i });
+        }
         const base: SubtaskResult = {
           subtaskId: subtask.id,
           output,

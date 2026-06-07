@@ -20,7 +20,6 @@ import {
 } from '../../utils/fastMode.js';
 import { MODEL_ALIASES } from '../../utils/model/aliases.js';
 import { checkOpus1mAccess, checkSonnet1mAccess } from '../../utils/model/check1mAccess.js';
-import { fetchProviderModels, supportsModelFetching } from '../../utils/model/fetchProviderModels.js';
 import {
   getDefaultMainLoopModelSetting,
   isOpus1mMergeEnabled,
@@ -53,15 +52,49 @@ function ModelPickerWrapper({
   }
 
   function handleSelect(
-    model: string | null,
+    modelInput: string | null,
     effort: EffortLevel | undefined,
     options?: { persistAsDefault?: boolean },
   ): void {
+    let model = modelInput;
+    let targetProvider: string | undefined;
+
+    if (modelInput) {
+      const { PROVIDER_IDS } = require('../../services/ai/providerRegistry.js');
+      const parts = modelInput.split('/');
+      const firstSegment = parts[0];
+      if (firstSegment && PROVIDER_IDS.includes(firstSegment)) {
+        targetProvider = firstSegment;
+        model = parts.slice(1).join('/');
+      }
+    }
+
     logEvent('tengu_model_command_menu', {
       action: model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       from_model: mainLoopModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       to_model: model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     });
+
+    if (targetProvider && model !== null) {
+      try {
+        const pm = ProviderManager.getInstance();
+        const cfg = pm.getSelectedProviderConfig(true);
+        const { getProviderRegistryEntry } = require('../../services/ai/providerRegistry.js');
+        const registryEntry = getProviderRegistryEntry(targetProvider as any);
+
+        const updatedConfig = {
+          ...cfg,
+          provider: targetProvider,
+          model: model,
+          providerConfig: registryEntry,
+        };
+        pm.saveSelectedProviderConfig(updatedConfig as any);
+        pm.setSessionProvider(targetProvider as any);
+        pm.setSessionModel(model);
+      } catch {
+        // Non-critical configuration update error
+      }
+    }
 
     if (options?.persistAsDefault) {
       setAppState(prev => ({
@@ -71,14 +104,16 @@ function ModelPickerWrapper({
       }));
       if (model !== null) {
         addRecentModel(model);
-        try {
-          const pm = ProviderManager.getInstance();
-          const cfg = pm.getSelectedProviderConfig(true);
-          if (cfg.model !== model) {
-            pm.saveSelectedProviderConfig({ ...cfg, model });
+        if (!targetProvider) {
+          try {
+            const pm = ProviderManager.getInstance();
+            const cfg = pm.getSelectedProviderConfig(true);
+            if (cfg.model !== model) {
+              pm.saveSelectedProviderConfig({ ...cfg, model });
+            }
+          } catch {
+            // Non-critical: provider.json write is best-effort here.
           }
-        } catch {
-          // Non-critical: provider.json write is best-effort here.
         }
       }
     } else {
@@ -155,10 +190,44 @@ function SetModelAndClose({
 }): React.ReactNode {
   const isFastMode = useAppState(s => s.fastMode);
   const setAppState = useSetAppState();
-  const model = args === 'default' ? null : args;
+  
+  const initialModel = args === 'default' ? null : args;
+  let targetProvider: string | undefined;
+  let model = initialModel;
+
+  if (initialModel) {
+    const { PROVIDER_IDS } = require('../../services/ai/providerRegistry.js');
+    const parts = initialModel.split('/');
+    const firstSegment = parts[0];
+    if (firstSegment && PROVIDER_IDS.includes(firstSegment)) {
+      targetProvider = firstSegment;
+      model = parts.slice(1).join('/');
+    }
+  }
 
   React.useEffect(() => {
     async function handleModelChange(): Promise<void> {
+      if (targetProvider && model !== null) {
+        try {
+          const pm = ProviderManager.getInstance();
+          const cfg = pm.getSelectedProviderConfig(true);
+          const { getProviderRegistryEntry } = require('../../services/ai/providerRegistry.js');
+          const registryEntry = getProviderRegistryEntry(targetProvider as any);
+
+          const updatedConfig = {
+            ...cfg,
+            provider: targetProvider,
+            model: model,
+            providerConfig: registryEntry,
+          };
+          pm.saveSelectedProviderConfig(updatedConfig as any);
+          pm.setSessionProvider(targetProvider as any);
+          pm.setSessionModel(model);
+        } catch {
+          // Non-critical configuration update error
+        }
+      }
+
       if (model && !isModelAllowed(model)) {
         onDone(`Model '${model}' is not available. Your organization restricts model selection.`, {
           display: 'system',
@@ -259,7 +328,7 @@ function SetModelAndClose({
     }
 
     void handleModelChange();
-  }, [model, onDone, setAppState]);
+  }, [model, onDone, setAppState, isFastMode, targetProvider]);
 
   return null;
 }

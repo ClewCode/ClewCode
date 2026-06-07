@@ -23,6 +23,20 @@ export function modelSupportsEffort(model: string): boolean {
   if (supported3P !== undefined) {
     return supported3P;
   }
+  // For non-Anthropic providers, check if the provider supports reasoning effort
+  try {
+    const { ProviderManager } = require('../../services/ai/ProviderManager.js') as typeof import('../../services/ai/ProviderManager.js');
+    const { PROVIDER_REGISTRY } = require('../../services/ai/providerRegistry.js') as typeof import('../../services/ai/providerRegistry.js');
+    const activeProvider = ProviderManager.getInstance().getActiveProviderName();
+    if (activeProvider && activeProvider !== 'anthropic') {
+      const entry = PROVIDER_REGISTRY[activeProvider as keyof typeof PROVIDER_REGISTRY];
+      if (entry?.capabilities?.reasoningEffort) {
+        return true;
+      }
+    }
+  } catch {
+    // Fall through to Claude-specific checks
+  }
   // Supported by a subset of Claude 4 models
   if (m.includes('opus-4-7') || m.includes('opus-4-6') || m.includes('sonnet-4-6')) {
     return true;

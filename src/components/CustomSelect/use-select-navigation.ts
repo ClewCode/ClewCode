@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { isDeepStrictEqual } from 'util';
 import OptionMap from './option-map.js';
 import type { OptionWithDescription } from './select.js';
@@ -497,23 +497,27 @@ export function useSelectNavigation<T>({
   const onFocusRef = useRef(onFocus);
   onFocusRef.current = onFocus;
 
-  const [lastOptions, setLastOptions] = useState(options);
+  const lastOptionsRef = useRef(options);
 
-  if (options !== lastOptions && !isDeepStrictEqual(options, lastOptions)) {
-    dispatch({
-      type: 'reset',
-      state: createDefaultState({
-        visibleOptionCount,
-        options,
-        initialFocusValue: focusValue ?? state.focusedValue ?? initialFocusValue,
-        currentViewport: {
-          visibleFromIndex: state.visibleFromIndex,
-          visibleToIndex: state.visibleToIndex,
-        },
-      }),
-    });
-
-    setLastOptions(options);
+  if (options !== lastOptionsRef.current) {
+    if (!isDeepStrictEqual(options, lastOptionsRef.current)) {
+      dispatch({
+        type: 'reset',
+        state: createDefaultState({
+          visibleOptionCount,
+          options,
+          // Preserve user's scroll position when options change (e.g. fetched
+          // models arrive). Fall back to default only if the current focus
+          // doesn't exist in the new options (createDefaultState handles that).
+          initialFocusValue: state.focusedValue ?? focusValue ?? initialFocusValue,
+          currentViewport: {
+            visibleFromIndex: state.visibleFromIndex,
+            visibleToIndex: state.visibleToIndex,
+          },
+        }),
+      });
+    }
+    lastOptionsRef.current = options;
   }
 
   const focusNextOption = useCallback(() => {

@@ -157,6 +157,7 @@ export function supportsModelFetching(provider?: ProviderId): boolean {
       'opencode-go',
       'kilocode',
       'google',
+      'nvidia',
     ];
 
     return supportedProviders.includes(activeProvider);

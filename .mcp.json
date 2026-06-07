@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "clew-orc": {
+      "command": "bun",
+      "args": ["D:/Projects/Github/claude-orc/server.ts"]
+    }
+  }
+}

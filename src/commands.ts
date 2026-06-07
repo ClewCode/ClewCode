@@ -302,6 +302,7 @@ const COMMANDS = memoize((): Command[] => [
   taste,
   review,
   ultrareview,
+  ultracode,
   rewind,
   securityReview,
   terminalSetup,

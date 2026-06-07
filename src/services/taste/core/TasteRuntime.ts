@@ -6,6 +6,7 @@ import { TasteSignalCollector } from '../signals/TasteSignalCollector.js';
 import { TasteEventLog } from '../storage/TasteEventLog.js';
 import { TasteProfileStore } from '../storage/TasteProfileStore.js';
 import { TasteVectorStore } from '../storage/TasteVectorStore.js';
+import { AutoLearnEngine } from '../auto-learn/AutoLearnEngine.js';
 import { type BanditContext, TasteBandit } from './TasteBandit.js';
 import { TasteDecay } from './TasteDecay.js';
 import { TasteMemory } from './TasteMemory.js';
@@ -40,6 +41,7 @@ export class TasteRuntime {
   private vectorStore: TasteVectorStore;
   private injector: TastePromptInjector;
   private store: TasteProfileStore;
+  private autoLearn: AutoLearnEngine;
 
   constructor(config?: Partial<TasteConfig>) {
     this.config = { ...DEFAULT_TASTE_CONFIG, ...config };
@@ -70,6 +72,7 @@ export class TasteRuntime {
     this.collector = new TasteSignalCollector(this.eventLog, '');
     this.injector = new TastePromptInjector(this.config.maxInjectedRules, this.config.minConfidence);
     this.store = new TasteProfileStore();
+    this.autoLearn = new AutoLearnEngine({ enabled: config?.autoLearn ?? true });
   }
 
   async initialize(projectId?: string): Promise<void> {
@@ -183,6 +186,17 @@ export class TasteRuntime {
     return this.collector;
   }
 
+  getAutoLearn(): AutoLearnEngine {
+    return this.autoLearn;
+  }
+
+  /** Process events through auto-learn engine to detect patterns */
+  processAutoLearn(): import('../auto-learn/AutoLearnEngine.js').TasteSuggestion[] {
+    if (!this.config.autoLearn) return [];
+    const events = this.eventLog.getRecentEvents(100);
+    return this.autoLearn.processEvents(events);
+  }
+
   // -- Signals --
 
   async recordAccept(prompt?: string, filePaths?: string[]): Promise<TasteEvent> {
@@ -190,6 +204,8 @@ export class TasteRuntime {
     this.profile.stats.totalAccepts++;
     this.profile.stats.totalEvents++;
     await this.updateFromFeedback('accept', 1.0);
+    // Auto-detect patterns from new signal
+    this.processAutoLearn();
     return event;
   }
 
@@ -198,6 +214,8 @@ export class TasteRuntime {
     this.profile.stats.totalRejects++;
     this.profile.stats.totalEvents++;
     await this.updateFromFeedback('reject', -1.0);
+    // Auto-detect patterns from new signal
+    this.processAutoLearn();
     return event;
   }
 

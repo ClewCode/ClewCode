@@ -115,7 +115,21 @@ export function ModelPicker(t0) {
   });
   const t2 = Boolean(isFastMode);
 
-  const providerInfo = useMemo(() => getActiveProviderInfo(), [fetchedModelsData]);
+  const selectableProviderIds = useMemo(() => getSelectableProviderIds(), []);
+  const [activeProviderId, setActiveProviderId] = useState(() => {
+    const current = ProviderManager.getInstance().getActiveProviderName();
+    return selectableProviderIds.includes(current as any) ? current : selectableProviderIds[0] ?? current;
+  });
+
+  const providerInfo = useMemo(() => {
+    const entry = getProviderRegistryEntry(activeProviderId as any);
+    if (!entry) return null;
+    return {
+      entry,
+      selectedModel: ProviderManager.getInstance().getModelForProvider(activeProviderId as any),
+      providerId: activeProviderId,
+    };
+  }, [activeProviderId, fetchedModelsData]);
 
   // Fetch models from provider on mount
   useEffect(() => {
@@ -165,8 +179,8 @@ export function ModelPicker(t0) {
 
   // Compute model options with fetched models
   const modelOptions = useMemo(() => {
-    return getEffectiveModelOptions(t2, currentFetchedModels, providerInfo?.entry, initial);
-  }, [t2, currentFetchedModels, providerInfo?.entry, initial]);
+    return getEffectiveModelOptions(t2, currentFetchedModels, providerInfo?.entry, initial, activeProviderId);
+  }, [t2, currentFetchedModels, providerInfo?.entry, initial, activeProviderId]);
   let t4;
   bb0: {
     if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {
@@ -219,6 +233,8 @@ export function ModelPicker(t0) {
     () => filterModelOptions(selectOptions, searchQuery),
     [selectOptions, searchQuery],
   );
+  const totalModelCount = countRealModelOptions(selectOptions);
+  const matchedModelCount = countRealModelOptions(filteredSelectOptions);
   let t6;
   if ($[14] !== initialValue || $[15] !== filteredSelectOptions || $[1] !== searchQuery) {
     // If searching, focus the first result. Otherwise, prefer the current model (initialValue).
@@ -250,45 +266,17 @@ export function ModelPicker(t0) {
     t7 = $[19];
   }
   const focusedModelName = t7;
-  let focusedSupportsEffort;
-  let t8;
-  if ($[20] !== effectiveFocusedValue) {
-    const focusedModel = resolveOptionModel(effectiveFocusedValue);
-    focusedSupportsEffort = focusedModel ? modelSupportsEffort(focusedModel) : false;
-    t8 = focusedModel ? modelSupportsMaxEffort(focusedModel) : false;
-    $[20] = effectiveFocusedValue;
-    $[21] = focusedSupportsEffort;
-    $[22] = t8;
-  } else {
-    focusedSupportsEffort = $[21];
-    t8 = $[22];
-  }
-  const focusedSupportsMax = t8;
-  let t9;
-  if ($[23] !== effectiveFocusedValue) {
-    t9 = getDefaultEffortLevelForOption(effectiveFocusedValue);
-    $[23] = effectiveFocusedValue;
-    $[24] = t9;
-  } else {
-    t9 = $[24];
-  }
-  const focusedDefaultEffort = t9;
+  const focusedModel = resolveOptionModel(effectiveFocusedValue, activeProviderId);
+  const focusedSupportsEffort = focusedModel ? modelSupportsEffort(focusedModel) : false;
+  const focusedSupportsMax = focusedModel ? modelSupportsMaxEffort(focusedModel) : false;
+  const focusedDefaultEffort = getDefaultEffortLevelForOption(effectiveFocusedValue, activeProviderId);
   const displayEffort = effort === 'max' && !focusedSupportsMax ? 'high' : effort;
-  let t10;
-  if ($[25] !== effortValue || $[26] !== hasToggledEffort) {
-    t10 = value => {
-      setFocusedValue(value);
-      if (!hasToggledEffort && effortValue === undefined) {
-        setEffort(getDefaultEffortLevelForOption(value));
-      }
-    };
-    $[25] = effortValue;
-    $[26] = hasToggledEffort;
-    $[27] = t10;
-  } else {
-    t10 = $[27];
-  }
-  const handleFocus = t10;
+  const handleFocus = (value: string) => {
+    setFocusedValue(value);
+    if (!hasToggledEffort && effortValue === undefined) {
+      setEffort(getDefaultEffortLevelForOption(value, activeProviderId));
+    }
+  };
   let t11;
   if ($[28] !== focusedDefaultEffort || $[29] !== focusedSupportsEffort || $[30] !== focusedSupportsMax) {
     t11 = direction => {
@@ -318,7 +306,7 @@ export function ModelPicker(t0) {
         }
         if (key.return) {
           if (customModelId.trim()) {
-            onSelect(customModelId.trim(), effort);
+            onSelect?.(formatProviderModelSetting(activeProviderId, customModelId.trim()), effort);
           }
           return;
         }
@@ -328,6 +316,21 @@ export function ModelPicker(t0) {
         }
         if (input.length === 1 && !key.ctrl && !key.meta) {
           setCustomModelId(prev => prev + input);
+        }
+        return;
+      }
+
+      if (key.tab) {
+        if (selectableProviderIds.length > 1) {
+          setActiveProviderId(prev => {
+            const currentIndex = selectableProviderIds.indexOf(prev as any);
+            const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+            const direction = key.shift ? -1 : 1;
+            const nextIndex = (safeIndex + direction + selectableProviderIds.length) % selectableProviderIds.length;
+            return selectableProviderIds[nextIndex] ?? prev;
+          });
+          setFocusedValue(NO_PREFERENCE);
+          setIsSearchActive(true);
         }
         return;
       }
@@ -353,9 +356,15 @@ export function ModelPicker(t0) {
         !key.ctrl &&
         !key.meta
       ) {
-        const modelValue = resolveOptionModel(effectiveFocusedValue);
+        const modelValue = resolveOptionModel(effectiveFocusedValue, activeProviderId);
         const selectedEffort = hasToggledEffort && modelValue && modelSupportsEffort(modelValue) ? effort : undefined;
-        onSelect(effectiveFocusedValue === NO_PREFERENCE ? null : effectiveFocusedValue, selectedEffort);
+        const selectedValue =
+          effectiveFocusedValue === NO_PREFERENCE
+            ? `${activeProviderId}/default`
+            : effectiveFocusedValue
+              ? formatProviderModelSetting(activeProviderId, effectiveFocusedValue)
+              : null;
+        onSelect(selectedValue, selectedEffort);
       }
     },
     {
@@ -387,9 +396,11 @@ export function ModelPicker(t0) {
   if (
     $[35] !== effort ||
     $[36] !== hasToggledEffort ||
-    $[37] !== onSelect ||
-    $[38] !== setAppState ||
-    $[39] !== skipSettingsWrite
+    $[37] !== onSetDefault ||
+    $[38] !== onSelect ||
+    $[39] !== setAppState ||
+    $[40] !== skipSettingsWrite ||
+    $[41] !== activeProviderId
   ) {
     t14 = function handleSelect(value_0) {
       if (value_0 === '__CUSTOM_INPUT__') {
@@ -404,7 +415,7 @@ export function ModelPicker(t0) {
       if (!skipSettingsWrite) {
         const effortLevel = resolvePickerEffortPersistence(
           effort,
-          getDefaultEffortLevelForOption(value_0),
+          getDefaultEffortLevelForOption(value_0, activeProviderId),
           getSettingsForSource('userSettings')?.effortLevel,
           hasToggledEffort,
         );
@@ -419,16 +430,16 @@ export function ModelPicker(t0) {
           effortValue: effortLevel,
         }));
       }
-      const selectedModel = resolveOptionModel(value_0);
+      const selectedModel = resolveOptionModel(value_0, activeProviderId);
       const selectedEffort =
         hasToggledEffort && selectedModel && modelSupportsEffort(selectedModel) ? effort : undefined;
       const handler = onSetDefault ?? onSelect;
       if (handler) {
         if (value_0 === NO_PREFERENCE) {
-          handler(null, selectedEffort);
+          handler(activeProviderId + '/default', selectedEffort);
           return;
         }
-        handler(value_0, selectedEffort);
+        handler(formatProviderModelSetting(activeProviderId, value_0), selectedEffort);
       }
     };
     $[35] = effort;
@@ -437,12 +448,13 @@ export function ModelPicker(t0) {
     $[38] = onSelect;
     $[39] = setAppState;
     $[40] = skipSettingsWrite;
-    $[41] = t14;
+    $[41] = activeProviderId;
+    $[42] = t14;
   } else {
-    t14 = $[41];
+    t14 = $[42];
   }
   const handleSelect = t14;
-  const baseHeaderText = headerText ?? getDefaultHeaderText();
+  const baseHeaderText = headerText ?? getDefaultHeaderText(providerInfo);
   const displayHeaderText = isFetchingModels ? `${baseHeaderText} (fetching models...)` : baseHeaderText;
   const t20 = onCancel ?? _temp4;
 
@@ -485,13 +497,20 @@ export function ModelPicker(t0) {
               will undo this.
             </Text>
           )}
+          <ProviderTabs
+            providerIds={selectableProviderIds}
+            activeProviderId={activeProviderId}
+            modelCount={totalModelCount}
+            matchedModelCount={matchedModelCount}
+            isFiltering={Boolean(searchQuery.trim())}
+          />
         </Box>
         <ModelSearchBar
           isActive={isSearchActive}
           query={searchQuery}
           cursorOffset={searchCursorOffset}
-          matchCount={filteredSelectOptions.length}
-          totalCount={selectOptions.length}
+          matchCount={matchedModelCount}
+          totalCount={totalModelCount}
         />
         <Box flexDirection="column" marginBottom={1}>
           <Box flexDirection="column">
@@ -506,7 +525,6 @@ export function ModelPicker(t0) {
                 onCancel={t20}
                 visibleOptionCount={visibleCount}
                 highlightText={searchQuery}
-                onUpFromFirstItem={() => setIsSearchActive(true)}
               />
             ) : (
               <Box paddingLeft={3}>
@@ -570,7 +588,7 @@ export function ModelPicker(t0) {
   }
   return <Pane color="permission">{content}</Pane>;
 }
-function _temp4() {}
+function _temp4() { }
 function _temp3(opt_0) {
   return {
     ...opt_0,
@@ -583,12 +601,18 @@ function _temp2(s_0) {
 function _temp(s) {
   return isFastModeEnabled() ? s.fastMode : false;
 }
-function getDefaultHeaderText(): string {
-  const providerInfo = getActiveProviderInfo();
-  if (!providerInfo) {
-    return 'Switch between Claude models. Applies to this session.';
+function getDefaultHeaderText(
+  providerInfo?: {
+    entry: ReturnType<typeof getProviderRegistryEntry>;
+    selectedModel: string | undefined;
+    providerId: string;
+  } | null,
+): string {
+  const info = providerInfo ?? getActiveProviderInfo();
+  if (!info) {
+    return 'Switch between models. Applies to this session.';
   }
-  return `Switch to ${providerInfo.entry.label} model. Applies to the current session.`;
+  return `Switch to ${info.entry.label} model. Press Tab to change provider.`;
 }
 
 function getActiveProviderInfo(): {
@@ -613,69 +637,56 @@ function getEffectiveModelOptions(
   fetchedModels?: FetchedModel[] | null,
   entry?: ReturnType<typeof getProviderRegistryEntry>,
   initial?: string | null,
+  activeProviderId?: string,
 ): ModelOption[] {
-  const providerInfo = getActiveProviderInfo();
+  const providerManager = ProviderManager.getInstance();
+  const currentProviderId = activeProviderId ?? providerManager.getActiveProviderName();
+  const providerEntry = entry ?? getProviderRegistryEntry(currentProviderId as any);
 
   // Fall back to legacy model options when no provider info
-  if (!providerInfo && !entry) {
+  if (!providerEntry) {
     return getModelOptions(fastMode);
   }
 
-  const activeProviderId = providerInfo?.providerId;
-  const implementationType = ProviderManager.getInstance().getImplementationType();
+  const implementationType = providerManager.getImplementationType();
 
-  // Build per-provider model lists from all providers in the registry
-  const providerSections: Array<{ id: string; label: string; options: ModelOption[] }> = [];
-
-  for (const providerId of PROVIDER_IDS) {
-    const regEntry = PROVIDER_REGISTRY[providerId];
-    if (!regEntry || !regEntry.models || regEntry.models.length === 0) continue;
-
-    const models: ModelOption[] = regEntry.models
+  // When API-fetched models are available, use them directly instead of
+  // the static providers.json list — the API is the source of truth.
+  let providerModels: ModelOption[];
+  if (fetchedModels && fetchedModels.length > 0) {
+    providerModels = fetchedModels.map(m => {
+      const parts: string[] = [];
+      if (m.contextWindow) parts.push(`${formatContext(m.contextWindow)} ctx`);
+      if (m.description) parts.push(m.description);
+      return {
+        value: m.id,
+        label: m.label,
+        description: parts.length > 0 ? parts.join(' · ') : m.id,
+        descriptionForModel: m.id,
+      };
+    });
+  } else {
+    providerModels = (providerEntry.models ?? [])
       .filter(m => !m.supportedTypes || m.supportedTypes.includes(implementationType))
       .map(m => toProviderModelOption(m));
-
-    if (models.length === 0) continue;
-
-    providerSections.push({ id: providerId, label: regEntry.label, options: models });
   }
 
-  // For the active provider, merge API-fetched models and prepare the Default option
-  let defaultModelOption: ModelOption | undefined;
-  if (providerInfo) {
-    const providerEntry = entry ?? providerInfo.entry;
-    const defaultModel = providerInfo.selectedModel ?? providerEntry?.defaultModel ?? 'provider default';
-    defaultModelOption = {
-      value: null,
-      label: 'Default (recommended)',
-      description: `Use ${providerEntry?.label ?? providerInfo.entry.label} default (${defaultModel})`,
-    };
+  const defaultModel =
+    providerManager.getModelForProvider(currentProviderId as any) ?? providerEntry.defaultModel ?? 'provider default';
+  const defaultModelOption: ModelOption = {
+    value: null,
+    label: 'Default (recommended)',
+    description: `Use ${providerEntry.label} default (${defaultModel})`,
+  };
 
-    // Merge fetched models into the active provider's section
-    if (fetchedModels && fetchedModels.length > 0) {
-      const activeSection = providerSections.find(s => s.id === activeProviderId);
-      if (activeSection) {
-        const existingIds = new Set(activeSection.options.map(m => m.value));
-        for (const fetched of fetchedModels) {
-          if (!existingIds.has(fetched.id)) {
-            activeSection.options.push({
-              value: fetched.id,
-              label: fetched.label,
-              description: fetched.description || fetched.id,
-              descriptionForModel: fetched.id,
-            });
-            existingIds.add(fetched.id);
-          }
-        }
-      }
-    }
-  }
+  // Keep recents, but only show recents that belong to the active provider list.
+  const providerModelIds = new Set(providerModels.map(model => model.value));
+  const recentModels = mergeRecentModels([initial, providerManager.getModelForProvider(currentProviderId as any)]).filter(
+    (id): id is string => Boolean(id && providerModelIds.has(id)),
+  );
 
-  // Build the final flat options list
   const options: ModelOption[] = [];
 
-  // 1. Recently used models (shown at top, also kept in their provider section)
-  const recentModels = mergeRecentModels([initial, providerInfo?.selectedModel]);
   if (recentModels.length > 0) {
     options.push({
       value: '__SECTION_RECENT__',
@@ -685,49 +696,31 @@ function getEffectiveModelOptions(
       disabled: true,
     });
     for (const id of recentModels) {
-      let label = id;
-      let descriptionForModel = id;
-      for (const section of providerSections) {
-        const found = section.options.find(m => m.value === id);
-        if (found) {
-          label = found.label;
-          descriptionForModel = found.descriptionForModel ?? id;
-          break;
-        }
-      }
+      const found = providerModels.find(model => model.value === id);
       options.push({
         value: id,
-        label,
+        label: found?.label ?? id,
         description: 'Recently used',
-        descriptionForModel,
+        descriptionForModel: found?.descriptionForModel ?? id,
       });
     }
   }
 
-  // 2. Default option for the active provider
-  if (defaultModelOption) {
-    options.push(defaultModelOption);
-  }
+  options.push(defaultModelOption);
 
-  // 3. All providers with their models (skip models already in Recently used)
   const recentModelSet = new Set(recentModels);
-  for (const section of providerSections) {
-    const sectionModels = section.options.filter(model => !recentModelSet.has(model.value));
-    // Skip empty sections entirely
-    if (sectionModels.length === 0) continue;
+  const sectionModels = providerModels.filter(model => !recentModelSet.has(model.value));
+  if (sectionModels.length > 0) {
     options.push({
-      value: `__SECTION_${section.id}__`,
-      label: section.label,
+      value: `__SECTION_${currentProviderId}__`,
+      label: providerEntry.label,
       description: '',
       type: 'section',
       disabled: true,
     });
-    for (const model of sectionModels) {
-      options.push(model);
-    }
+    options.push(...sectionModels);
   }
 
-  // 4. Custom input option (always last)
   options.push({
     value: '__CUSTOM_INPUT__',
     label: '✏️  Type custom model ID',
@@ -738,13 +731,37 @@ function getEffectiveModelOptions(
 }
 function toProviderModelOption(model: ProviderModelInfo) {
   const label = model.label ?? model.id;
-  const tags = model.tags?.slice(0, 3).join(' · ');
+  const parts: string[] = [];
+  const cap = model.capabilities;
+
+  // Context window
+  if (cap.maxContext) {
+    const ctx = typeof cap.maxContext === 'number' ? formatContext(cap.maxContext) : 'varies';
+    parts.push(`${ctx} ctx`);
+  }
+  // Vision
+  if (cap.vision) parts.push('vision');
+  // Tool calling
+  if (cap.toolCalling && cap.toolCalling !== 'none') parts.push('tools');
+  // Reasoning
+  if (cap.reasoning) parts.push('reasoning');
+  // Free
+  if (cap.free) parts.push('free');
+
+  const description = parts.length > 0 ? parts.join(' · ') : (model.tags?.slice(0, 3).join(' · ') || model.id);
+
   return {
     value: model.id,
     label,
-    description: tags || model.id,
+    description,
     descriptionForModel: model.id,
   };
+}
+
+function formatContext(ctx: number): string {
+  if (ctx >= 1_000_000) return `${(ctx / 1_000_000).toFixed(0)}M`;
+  if (ctx >= 1_000) return `${(ctx / 1_000).toFixed(0)}K`;
+  return String(ctx);
 }
 
 type ModelSelectOption = {
@@ -764,6 +781,19 @@ type ModelOption = {
   type?: 'text' | 'section';
   disabled?: boolean;
 };
+
+
+function countRealModelOptions(options: ModelSelectOption[]): number {
+  return options.filter(option => isRealModelOption(option)).length;
+}
+
+function isRealModelOption(option: ModelSelectOption): boolean {
+  if (option.type === 'section') return false;
+  if (!option.value) return false;
+  if (option.value === NO_PREFERENCE) return false;
+  if (option.value === '__CUSTOM_INPUT__') return false;
+  return !option.value.startsWith('__SECTION_');
+}
 
 function filterModelOptions(options: ModelSelectOption[], query: string): ModelSelectOption[] {
   const trimmedQuery = query.trim().toLowerCase();
@@ -818,9 +848,17 @@ function ModelSearchBar({
     </Box>
   );
 }
-function resolveOptionModel(value?: string): string | undefined {
+function resolveOptionModel(value?: string, providerId?: string): string | undefined {
   if (!value) return undefined;
-  return value === NO_PREFERENCE ? getDefaultMainLoopModel() : parseUserSpecifiedModel(value);
+  if (value === NO_PREFERENCE) {
+    if (providerId) {
+      const providerManager = ProviderManager.getInstance();
+      const entry = getProviderRegistryEntry(providerId as any);
+      return providerManager.getModelForProvider(providerId as any) ?? entry?.defaultModel ?? getDefaultMainLoopModel();
+    }
+    return getDefaultMainLoopModel();
+  }
+  return parseUserSpecifiedModel(value);
 }
 function EffortLevelIndicator(t0) {
   const $ = _c(5);
@@ -858,8 +896,62 @@ function cycleEffortLevel(current: EffortLevel, direction: 'left' | 'right', inc
     return levels[(currentIndex - 1 + levels.length) % levels.length]!;
   }
 }
-function getDefaultEffortLevelForOption(value?: string): EffortLevel {
-  const resolved = resolveOptionModel(value) ?? getDefaultMainLoopModel();
+function getDefaultEffortLevelForOption(value?: string, providerId?: string): EffortLevel {
+  const resolved = resolveOptionModel(value, providerId) ?? getDefaultMainLoopModel();
   const defaultValue = getDefaultEffortForModel(resolved);
   return defaultValue !== undefined ? convertEffortValueToLevel(defaultValue) : 'high';
+}
+
+function formatProviderModelSetting(providerId: string, modelId: string): string {
+  return modelId.includes('/') ? modelId : `${providerId}/${modelId}`;
+}
+
+function getSelectableProviderIds(): string[] {
+  const providerManager = ProviderManager.getInstance();
+  const implementationType = providerManager.getImplementationType();
+
+  return PROVIDER_IDS.filter(providerId => {
+    const entry = PROVIDER_REGISTRY[providerId];
+    return Boolean(
+      entry?.models?.some(model => !model.supportedTypes || model.supportedTypes.includes(implementationType)),
+    );
+  });
+}
+
+function ProviderTabs({
+  providerIds,
+  activeProviderId,
+  modelCount,
+  matchedModelCount,
+  isFiltering,
+}: {
+  providerIds: string[];
+  activeProviderId: string;
+  modelCount: number;
+  matchedModelCount: number;
+  isFiltering: boolean;
+}) {
+  if (providerIds.length <= 1) return null;
+
+  const activeIndex = Math.max(0, providerIds.indexOf(activeProviderId));
+  const activeLabel = truncateProviderLabel(PROVIDER_REGISTRY[activeProviderId]?.label ?? activeProviderId, 24);
+  const modelCountLabel = isFiltering ? `${matchedModelCount}/${modelCount}` : String(modelCount);
+
+  return (
+    <Box marginTop={1}>
+      <Text dimColor={true}>Provider: </Text>
+      <Text color="remember" bold={true}>
+        [{activeLabel}]
+      </Text>
+      <Text color="subtle">
+        {' '}
+        {activeIndex + 1}/{providerIds.length} · Models {modelCountLabel} · Tab next · Shift+Tab prev
+      </Text>
+    </Box>
+  );
+}
+
+function truncateProviderLabel(label: string, maxLength: number): string {
+  if (label.length <= maxLength) return label;
+  return `${label.slice(0, Math.max(0, maxLength - 1))}…`;
 }
