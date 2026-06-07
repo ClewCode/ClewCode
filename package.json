@@ -1,6 +1,6 @@
 {
   "name": "clew-code",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "ClewCode — multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
   "type": "module",
@@ -26,6 +26,7 @@
   "scripts": {
     "dev": "bun --watch run --define.TRANSCRIPT_CLASSIFIER=true --define.CHICAGO_MCP=true --define.VOICE_MODE=true src/main.tsx",
     "start": "bun run --define.VOICE_MODE=true src/main.tsx",
+    "dev:channels": "bun run --define.VOICE_MODE=true src/main.tsx -- --dangerously-load-development-channels server:clew-orc",
     "build": "NODE_ENV=production bun build --production --define.TRANSCRIPT_CLASSIFIER=true --define.CHICAGO_MCP=true --define.VOICE_MODE=true src/main.tsx --outdir ./dist --target bun --external electron --external 'chromium-bidi*' --external '@ant/claude-for-chrome-mcp' --external '@anthropic-ai/bedrock-sdk' --external '@anthropic-ai/foundry-sdk' --external '@anthropic-ai/vertex-sdk' --external '@anthropic-ai/mcpb' --external '@aws-sdk/client-bedrock-runtime' --external 'google-auth-library' --external 'sharp' --external 'asciichart' --external 'audio-capture-napi' --external 'modifiers-napi' --external '@xenova/transformers' --external 'onnxruntime-node' --external playwright --external 'playwright-core'",
     "prepublishOnly": "bun run build",
     "test": "bun test",
@@ -38,7 +39,8 @@
     "ast-grep": "bun x ast-grep",
     "codegraph": "bun run scripts/codegraph.ts",
     "preload": "bun run scripts/preload.ts",
-    "session": "bun run scripts/session.ts"
+    "session": "bun run scripts/session.ts",
+    "relay": "bun run src/remote/relay-server.ts"
   },
   "keywords": [
     "ai",
