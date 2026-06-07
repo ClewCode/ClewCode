@@ -3,7 +3,6 @@
 </p>
 
 <p align="center">
-  <strong>Language:</strong>
   <a href="README.md"><strong>English</strong></a> ·
   <a href="readme/README.zh.md">中文</a> ·
   <a href="readme/README.th.md">ไทย</a> ·
@@ -19,100 +18,63 @@
   <a href="readme/README.hi.md">हिन्दी</a>
 </p>
 
+---
+
 # Clew
 
-Clew is an unofficial, research-oriented CLI for AI-assisted software development.
+An unofficial CLI for AI-assisted development. Source-built, locally modifiable, and not tied to any single provider.
 
-It is a source-built reconstruction and extension project designed for local development, debugging, self-hosted workflows, and provider choice.
+Not an official product or supported implementation of any third-party software.
 
-This repository is not an official product, distribution, partner project, or supported implementation.
+> **Disclaimer:** Not affiliated with, endorsed by, or approved by any third party. Read [LICENSE.md](LICENSE.md) before use.
 
-> **Disclaimer:** This project is not affiliated with, endorsed by, sponsored by, or approved by any third party. Read [LICENSE.md](LICENSE.md) before using, modifying, redistributing, or deploying this repository.
+---
 
-## What This Project Provides
-
-| Area                   | Description                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Source-built CLI       | A Bun/TypeScript terminal application that can be built, tested, inspected, and modified locally.                              |
-| Multi-provider routing | Support for multiple AI providers through provider adapters and model selection commands.                                      |
-| Developer tooling      | Commands for context inspection, code review, simplification, research, plugins, MCP, LSP, sessions, and background workflows. |
-| Local extensibility    | Support for plugins, hooks, skills, custom tools, scheduled tasks, and project-level configuration.                            |
-| Research use           | A transparent codebase for studying AI coding agent architecture, terminal UX, provider routing, and tool execution.           |
-
-## Features
-
-Clew runs directly in your terminal. It can inspect and edit local codebases, execute shell commands with permissions, switch model providers, and coordinate longer-running agent workflows.
-
-Key features:
-
-* **Multi-provider AI routing** — Supports Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, GitHub Copilot, and OpenAI-compatible endpoints.
-* **Runtime model switching** — Switch models or providers during a session using `/model`.
-* **Tool-driven workflows** — Read, search, edit, and write files; execute shell commands; query LSPs; run MCP tools; and integrate browser automation.
-* **Plugin hooks** — Hook into prompts, shell execution, tool calls, message display, session start, and file editing actions.
-* **Dynamic skills** — Load bundled and project-level skills from `.claude/skills/`.
-* **Code review tools** — Use `/code-review --fix` to review changed code and apply fixes. Use `/simplify` for cleanup-focused review.
-* **Guardian auto-review** — `/guardian` routes permission requests to an LLM reviewer with circuit breaker.
-* **PR management** — `/pr create`, `list`, `view`, `review`, `merge`, `status`.
-* **Provider-agnostic Remote Control** — `/remote` for WebSocket-based CLI sharing without claude.ai.
-* **Model picker** — Choose global or session-only model defaults.
-* **Plugin marketplace support** — Includes support for `skipLfs` when downloading plugin sources.
-* **Local research workflow** — Use `/research <query>` for local-first web research and scraping workflows where configured.
-* **Agents and supervisor** — Manage background agents, multi-step workflows, summaries, task status, approvals, and session state.
-* **Peer-to-peer collaboration** — LAN peer discovery, task assignment, role-based naming, and autonomous AI peer coordination tools.
-* **Background shell commands** — Run long-lived commands with `!bg <command>`.
-* **Scheduled tasks** — Create one-shot or recurring tasks through `/task`.
-* **Sessions and bridge mode** — Save, resume, and coordinate development sessions.
-
-## Quick Start
-
-### Install Globally
+## Install
 
 ```bash
 npm install -g clew-code
 ```
 
-Or:
-
-```bash
-bun install -g clew-code
-```
-
-Run the CLI inside a project directory:
+Run inside a project:
 
 ```bash
 clew
 ```
 
-> The global launcher requires Bun to be installed on your machine.
+> Requires Bun to be installed.
 
-### Run From Source
+**Build from source:**
 
 ```bash
 git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
-
-bun install
-bun run build
-bun run start
+bun install && bun run build && bun run start
 ```
 
-For development:
+**Requirements:** Bun 1.3+, Node.js 18+, Git, one provider API key (or Ollama locally).
 
-```bash
-bun run dev
-```
+---
 
-## System Requirements
+## What it does
 
-* Bun 1.3 or higher
-* Node.js 18 or higher
-* Git
-* Windows, macOS, Linux, or WSL2
-* At least one supported provider API key, unless using a local provider such as Ollama
+Clew runs in your terminal and can read/edit codebases, execute shell commands, switch AI providers mid-session, and run multi-step agent workflows.
 
-## Provider Configuration
+**Providers** — Anthropic, OpenAI, Gemini, OpenRouter, Ollama, NVIDIA, DeepSeek, GitHub Copilot, any OpenAI-compatible endpoint. Switch with `/model` at any time.
 
-Set provider keys in your shell or in a local `.env` file.
+**Coding tools** — file read/write/search, shell execution, LSP queries, MCP tool calls, `/code-review --fix`, `/simplify`, `/pr` commands.
+
+**Agents** — background agent runtime with supervisor, multi-step workflows, approvals, and live status in the footer (`◈ ultracode [2/5] ⟐coder ⟐researcher`).
+
+**Peer coordination** — LAN peer discovery via UDP multicast. Agents can discover each other, assign tasks, and coordinate autonomously over `/peer`.
+
+**Taste** — preference-learning that adapts to your coding style from accept/reject signals. No fine-tuning. Rules inject into every prompt as a `<clew_taste>` block.
+
+**Extensibility** — plugins, hooks, dynamic skills (`.claude/skills/`), scheduled tasks, MCP/LSP, WebSocket bridge, relay server.
+
+---
+
+## Provider setup
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -122,262 +84,148 @@ export OPENROUTER_API_KEY=sk-or-...
 export OLLAMA_HOST=http://localhost:11434
 ```
 
-Switch models or providers inside a session:
+---
 
-```text
-/model
-/model list
-/model openai/gpt-4o
-/model google/gemini-2.5-pro
+## Commands
+
 ```
-
-Provider documentation:
-
-```text
-docs/providers.html
-```
-
-## Frequently Used Commands
-
-```text
-/model        Switch models or providers
-/taste        Open taste preference-learning menu
-/status       Show provider, session, and context status
-/doctor       Run diagnostics
-/context      Inspect active context usage
+/model        Switch provider or model
+/taste        Preference-learning menu
+/status       Provider, session, context info
+/doctor       Diagnostics
+/context      Active context usage
 /compact      Compress conversation history
-/mcp          Manage Model Context Protocol servers
-/code-review  Review changed code for bugs
-/simplify     Run cleanup-focused review
-/plugin       Manage plugins and hooks
-/bridge       Configure bridge mode
-/agent        Manage background agent workflows
-/peer         Peer-to-peer collaboration (share, discover, join, tasks)
-/daemon       Open autonomous daemon dashboard
-/task         Create or manage scheduled tasks
+/mcp          MCP server management
+/code-review  Review changed files for bugs
+/simplify     Cleanup-focused review
+/plugin       Plugin and hook management
+/bridge       Bridge mode config
+/agent        Background agent workflows
+/peer         LAN peer coordination
+/remote       WebSocket remote control
+/daemon       Autonomous daemon dashboard
+/task         Scheduled tasks
 ```
 
-Type `/` in the CLI prompt to view available commands.
+Type `/` to browse all commands.
 
-## Scheduled Tasks
-
-The scheduled task system is available through `/task`.
-
-```text
-/task
-```
-
-Examples:
-
-```text
-/task
-Name: Server Check
-Schedule: Daily
-Time: 20:00
-Prompt: Verify the status of local servers
-Storage: Durable
-```
-
-```text
-/task
-Name: Commit Reminder
-Schedule: In N minutes
-Delay: 10
-Prompt: Remind me to commit the code
-Storage: Session-only
-```
-
-Task behavior:
-
-* Durable tasks are saved to `.claude/scheduled_tasks.json`.
-* Session-only tasks run only during the active session.
-* Recurring tasks use standard 5-field cron syntax.
-* One-shot tasks are removed after they run.
-* Local machine timezone is used for scheduled execution.
+---
 
 ## Taste
 
-Taste is a local-first preference-learning runtime. It learns from accept, reject, edit, test, lint, and manual rules. It combines symbolic rules, semantic preference scoring, and contextual bandit optimization to adapt Clew to your coding style. It does not fine-tune the base LLM.
+Learns from accept, reject, edit, test, and lint signals. Combines symbolic rules, semantic scoring, and contextual bandit optimization. Confidence decays on a 30-day half-life.
 
-```text
-/taste                Open interactive menu
-/taste learn <rule>   Add a manual rule
-/taste forget <id>    Remove a rule
-/taste profile        Show all rules
-/taste events         Show recent events
-/taste decay          Apply confidence decay
-/taste eval           Run self-evaluation
-/taste export         Export high-confidence rules
-/taste import <file>  Import rules from file
-/taste on             Enable taste
-/taste off            Disable taste
+```
+/taste                 Open menu
+/taste learn <rule>    Add a rule manually
+/taste forget <id>     Remove a rule
+/taste profile         All current rules
+/taste suggest         Auto-detected patterns
+/taste init            Analyze codebase to generate initial rules
+/taste eval            Self-evaluation
+/taste export / import
+/taste on / off
 ```
 
-### Key Capabilities
+See [docs/taste.html](docs/taste.html).
 
-- **Interactive menu** — Arrow-key navigable Dialog with 11 actions, Spinner loading for async ops
-- **Edit validation** — Scans edits during permission request, warns when changes violate learned rules
-- **Config live-reload** — Subscribes to `settings.json` changes via `subscribeToSettingsChanges()`
-- **Status line** — `ⓘ taste: N rules` shown in PromptInputFooter alongside workflow status
-- **Prompt injection** — Injects `<clew_taste>` XML block with up to 8 relevant rules into system prompt
-- **Signal collection** — Fire-and-forget accept/reject/tool signals from PermissionContext and tool execution
-- **Decay engine** — Gradual confidence reduction for unused rules (half-life based, default 30 days)
+---
 
-See [docs/taste.html](docs/taste.html) for full documentation.
+## Scheduled tasks
+
+```
+/task
+Name:     Server Check
+Schedule: Daily at 20:00
+Prompt:   Verify the status of local servers
+Storage:  Durable
+```
+
+Durable tasks persist to `.claude/scheduled_tasks.json`. Session-only tasks disappear when the session ends. Recurring tasks use 5-field cron.
+
+---
 
 ## Development
 
 ```bash
-bun run dev              # Start development mode
-bun run start            # Run the CLI from source
-bun run build            # Build into dist/
-bun test                 # Run tests
-bun x tsc --noEmit       # Type check
-bun run lint:check       # Check Biome lint rules
-bun run format:check     # Check Biome formatting
-bun run check:ci         # Run Biome CI validation
-```
+bun run dev          # live reload
+bun run build        # build to dist/
+bun test
+bun x tsc --noEmit
+bun run check:ci
 
-Developer utilities:
-
-```bash
-bun run preload <module>     # Preload module context
-bun run session <command>    # Save, list, or restore session context
-bun run codegraph            # Generate module dependency graphs
-bun run ast-grep -- <args>   # Run structural AST search or rewrite
-```
-
-## Project Structure
-
-```text
-src/
-├── main.tsx              # Terminal UI bootstrap and main loop
-├── query.ts              # Query processing and system prompt logic
-├── QueryEngine.ts        # Query orchestration, caching, deduplication, and rate limits
-├── agentRuntime/         # Agent orchestration and persistent run stores
-├── commands/             # Slash command implementations
-├── tools/                # Built-in developer tools
-├── services/
-│   ├── ai/               # Provider manager, adapters, normalizers, and providers.json
-│   ├── mcp/              # Model Context Protocol clients
-│   ├── plugins/          # Plugin lifecycle hooks and interceptors
-│   ├── tools/            # Tool execution service
-│   ├── lsp/              # Language Server Protocol integration
-│   ├── Supervisor/       # Background agent supervisor
-│   └── SessionMemory/    # Persistent session memory
-├── skills/               # Dynamic skill loader
-├── cli/                  # Terminal UI contexts
-├── components/           # Terminal UI components
-├── bridge/               # WebSocket bridge
-├── peer/                 # LAN peer discovery, server, and store
-├── coordinator/          # Multi-agent coordinator
-├── keybindings/          # Keyboard shortcut mappings
-├── state/                # Reactive stores
-└── vim/                  # Vim-like navigation mode
-```
-
-## Architecture
-
-```text
-Terminal UI
-  -> Command registry and keybindings
-  -> Provider manager and AI adapters
-  -> Query engine and streaming loops
-  -> Tool executor service
-  -> Plugins, MCP, LSP, agents, session memory, and bridge
-```
-
-## Documentation
-
-* [Installation](docs/installation.html)
-* [Quick Start](docs/quick-start.html)
-* [Configuration](docs/configuration.html)
-* [AI Providers](docs/providers.html)
-* [Models](docs/models.html)
-* [Commands](docs/commands.html)
-* [Tools](docs/tools.html)
-* [Plugins](docs/plugins.html)
-* [Skills](docs/skills.html)
-* [Architecture](docs/architecture.html)
-* [Permission Model](docs/permission-model.html)
-* [Peer-to-Peer](docs/features/peer.html)
-* [Bridge Mode](docs/features/bridge-mode.html)
-* [SearXNG Search](docs/features/searxng-search.html)
-* [Troubleshooting](docs/troubleshooting.html)
-* [Evals](docs/features/evals.html)
-* [Taste](docs/taste.html)
-
-## Debugging
-
-```bash
 DEBUG=1 bun run src/main.tsx
 DEBUG=provider:anthropic bun run src/main.tsx
 ```
 
-## Platform Notes
-
-### Windows
-
+**Windows:**
 ```powershell
 Remove-Item -Recurse -Force node_modules
-bun install
-bun run dev
+bun install && bun run dev
 ```
 
-A precompiled `ripgrep` binary for Windows may be bundled under:
+---
 
-```text
-src/utils/vendor/ripgrep/x64-win32/rg.exe
+## Project layout
+
 ```
+src/
+├── main.tsx              # entry point
+├── query.ts / QueryEngine.ts
+├── agentRuntime/         # background agent orchestration
+├── commands/             # slash command implementations
+├── tools/                # built-in tools
+├── services/
+│   ├── ai/               # provider manager and adapters
+│   ├── mcp/              # MCP clients
+│   ├── plugins/          # plugin hooks
+│   ├── lsp/              # LSP integration
+│   ├── Supervisor/       # agent supervisor
+│   └── SessionMemory/
+├── peer/                 # LAN peer discovery
+├── coordinator/          # multi-agent coordinator
+├── bridge/               # WebSocket bridge
+└── vim/                  # vim navigation mode
+```
+
+---
+
+## Docs
+
+[Installation](docs/installation.html) · [Configuration](docs/configuration.html) · [Providers](docs/providers.html) · [Commands](docs/commands.html) · [Tools](docs/tools.html) · [Plugins](docs/plugins.html) · [Skills](docs/skills.html) · [Architecture](docs/architecture.html) · [Peer-to-Peer](docs/features/peer.html) · [Bridge Mode](docs/features/bridge-mode.html) · [Taste](docs/taste.html) · [Troubleshooting](docs/troubleshooting.html)
+
+---
 
 ## Contributing
 
-Read these files before contributing:
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SECURITY.md](SECURITY.md), and [LICENSE.md](LICENSE.md) before submitting anything.
 
-* [CONTRIBUTING.md](CONTRIBUTING.md)
-* [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-* [SECURITY.md](SECURITY.md)
-* [LICENSE.md](LICENSE.md)
+Don't submit proprietary code, leaked material, or credentials. Report security issues privately per [SECURITY.md](SECURITY.md) — not as public issues.
 
-Do not submit proprietary code, copied source, leaked material, credentials, private keys, or content you do not have the right to license.
-
-## Security
-
-Do not open public issues for security vulnerabilities.
-
-Use the private reporting process described in [SECURITY.md](SECURITY.md).
+---
 
 ## Changelog
 
-### 0.2.4 (2026-06-08)
+### 0.2.4 — 2026-06-08
 
-- **Peer-to-peer collaboration** — LAN peer discovery via UDP multicast + file registry. `/peer share`, `/peer discover`, `/peer join`, `/peer list`, `/peer todo`, `/peer name`, `/peer role`. Interactive PeerMenu with keyboard navigation. 9 AI tools for autonomous coordination (discover, join, send_task, run, list_roles, list_tasks, set_name, set_role, share). Inbound tasks auto-inject to AI prompt via enqueue. Idempotent server start and port-based peer lookup fixes.
+**Peer-to-peer** — UDP multicast peer discovery, file registry, `/peer share/discover/join/list/todo/name/role`. Interactive PeerMenu. 9 autonomous coordination tools for agents. Inbound tasks auto-enqueue into the AI prompt.
 
-### 0.2.3 (2026-06-07)
+### 0.2.3 — 2026-06-07
 
-- **Effort support for all providers** — `/effort` works with any provider that has `reasoningEffort: true` (NVIDIA, DeepSeek, OpenRouter, etc.).
-- **NVIDIA model fetching** — `/model` fetches live models from NVIDIA API. API models replace static `providers.json` when available.
-- **Model picker** — Shows context window, vision, tools, reasoning per model. Fixed scroll bugs.
-- **Taste auto-learn** — Automatic pattern detection from accept/reject signals. `/taste suggest` to view.
-- **AI codebase analysis** — `/taste init` analyzes git log + config + source files via AI, generates taste rules.
-- **Relay server** — Cross-network remote control via WebSocket relay. `/remote listen --relay`, `/remote exec`.
-- **Dynamic workflow** — Live subagent status in footer (`◈ ultracode [2/5] ⟐coder ⟐researcher`).
-- **Terminal title** — `claude` → `clew`.
+- `/effort` now works with any provider exposing `reasoningEffort` (NVIDIA, DeepSeek, OpenRouter, etc.)
+- `/model` fetches live model list from NVIDIA API
+- Taste auto-learns patterns from accept/reject signals; `/taste suggest` to review, `/taste init` to bootstrap from codebase
+- Relay server for cross-network remote control (`/remote listen --relay`)
+- Guardian: LLM permission reviewer with circuit breaker and `/approve` override
+- Bridge v2: provider-agnostic remote control and REPL bridging
+- `/pr create/list/view/review/merge/status`
+- Security: PowerShell execution rules, malformed tool call guard, 100 MB bash output cap
+- Bug fixes: blank screen on startup, autocomplete duplication, provider base URL resolution
 
-- **Taste system** — local-first preference-learning runtime. Interactive `/taste` menu with Spinner loading, edit validation in FileEditPermissionRequest, status line in PromptInputFooter, config live-reload via settings change subscription, XML tag `<clew_taste>` prompt injection.
-- **Model picker** — `/model` now shows all models from all providers grouped by provider section.
-- **Provider auto-persist** — last-used provider+model saved to `provider.json` without `--global`.
-- **Security hardening** — PowerShell prefix/wildcard rules for native executables, malformed tool call guard, bash runtime 100MB output limit.
-- **Guardian auto-review** — LLM-based permission reviewer with circuit breaker and `/approve` override.
-- **Bridge v2** — Provider-agnostic Remote Control via WebSocket, relay client, REPL bridging.
-- **PR commands** — `/pr create`, `list`, `view`, `review`, `merge`, `status`.
-- **Dynamic Workflow** — Ultracode bootstrap, progress UI polling `.claude/runs/`, transcript classifier suggestion.
-- Fixed blank screen (SentryErrorBoundary + TDZ in REPL.tsx), autocomplete hint duplication, ProviderManager base URL resolution for session-level overrides.
+[Full changelog](CHANGELOG.md)
 
-See [CHANGELOG.md](CHANGELOG.md) for full history.
+---
 
 ## License
 
-See [LICENSE.md](LICENSE.md).
-
-Only contributor-authored modifications and original additions are licensed as described in `LICENSE.md`. This repository does not grant rights to proprietary software, services, models, trademarks, or other protected materials of third parties.
+[LICENSE.md](LICENSE.md) — covers only contributor-authored modifications and original additions. Does not grant rights to third-party software, models, or trademarks.
