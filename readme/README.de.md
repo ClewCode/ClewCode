@@ -343,6 +343,21 @@ Reichen Sie keinen proprietären Code, kopierte Quellen, durchgesickertes Materi
 
 Nutzen Sie den in [SECURITY.md](../SECURITY.md) beschriebenen privaten Meldeweg.
 
+
+## Changelog
+
+<details>
+<summary><strong>0.2.4 — 2026-06-08</strong></summary>
+
+- **Peer-to-peer** — LAN discovery, task delegation, 14 AI tools
+- **Taste tools** — taste_learn, taste_forget, taste_profile, taste_suggest
+- **Autonomous agents** — agent loop, supervisor, task queue, Loop Lock
+- **Workflow Rainbow** — per-character gradient
+
+</details>
+
+[Full changelog](../CHANGELOG.md)
+
 ## Lizenz
 
 Siehe [LICENSE.md](../LICENSE.md).

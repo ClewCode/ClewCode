@@ -343,6 +343,21 @@ Jangan buka masalah publik untuk kerentanan keamanan.
 
 Gunakan proses pelaporan pribadi yang dijelaskan di [SECURITY.md](../SECURITY.md).
 
+
+## Changelog
+
+<details>
+<summary><strong>0.2.4 — 2026-06-08</strong></summary>
+
+- **Peer-to-peer** — LAN discovery, task delegation, 14 AI tools
+- **Taste tools** — taste_learn, taste_forget, taste_profile, taste_suggest
+- **Autonomous agents** — agent loop, supervisor, task queue, Loop Lock
+- **Workflow Rainbow** — per-character gradient
+
+</details>
+
+[Full changelog](../CHANGELOG.md)
+
 ## Lisensi
 
 Lihat [LICENSE.md](../LICENSE.md).

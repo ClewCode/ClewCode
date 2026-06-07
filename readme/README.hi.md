@@ -343,6 +343,21 @@ src/utils/vendor/ripgrep/x64-win32/rg.exe
 
 [SECURITY.md](../SECURITY.md) में वर्णित निजी रिपोर्टिंग प्रक्रिया का उपयोग करें।
 
+
+## Changelog
+
+<details>
+<summary><strong>0.2.4 — 2026-06-08</strong></summary>
+
+- **Peer-to-peer** — LAN discovery, task delegation, 14 AI tools
+- **Taste tools** — taste_learn, taste_forget, taste_profile, taste_suggest
+- **Autonomous agents** — agent loop, supervisor, task queue, Loop Lock
+- **Workflow Rainbow** — per-character gradient
+
+</details>
+
+[Full changelog](../CHANGELOG.md)
+
 ## लाइसेंस
 
 [LICENSE.md](../LICENSE.md) देखें।

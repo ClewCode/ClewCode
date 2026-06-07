@@ -343,6 +343,21 @@ src/utils/vendor/ripgrep/x64-win32/rg.exe
 
 [SECURITY.md](../SECURITY.md) に記載されている非公開報告プロセスを使用してください。
 
+
+## Changelog
+
+<details>
+<summary><strong>0.2.4 — 2026-06-08</strong></summary>
+
+- **Peer-to-peer** — LAN discovery, task delegation, 14 AI tools
+- **Taste tools** — taste_learn, taste_forget, taste_profile, taste_suggest
+- **Autonomous agents** — agent loop, supervisor, task queue, Loop Lock
+- **Workflow Rainbow** — per-character gradient
+
+</details>
+
+[Full changelog](../CHANGELOG.md)
+
 ## ライセンス
 
 [LICENSE.md](../LICENSE.md) をご覧ください。
