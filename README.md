@@ -90,6 +90,9 @@ export OLLAMA_HOST=http://localhost:11434
 
 ## Commands
 
+<details>
+<summary><strong>17 commands</strong></summary>
+
 ```
 /model        Switch provider or model
 /taste        Preference-learning menu
@@ -109,6 +112,8 @@ export OLLAMA_HOST=http://localhost:11434
 /daemon       Autonomous daemon dashboard
 /task         Scheduled tasks
 ```
+
+</details>
 
 Type `/` to browse all commands.
 
@@ -210,6 +215,9 @@ bun install && bun run dev
 
 ## Project layout
 
+<details>
+<summary><strong>src/ tree</strong></summary>
+
 ```
 src/
 ├── main.tsx              # entry point
@@ -230,6 +238,8 @@ src/
 └── vim/                  # vim navigation mode
 ```
 
+</details>
+
 ---
 
 ## Docs
@@ -248,11 +258,18 @@ Don't submit proprietary code, leaked material, or credentials. Report security 
 
 ## Changelog
 
-### 0.2.4 — 2026-06-08
+<details>
+<summary><strong>0.2.4 — 2026-06-08</strong></summary>
 
-**Peer-to-peer** — UDP multicast peer discovery, file registry, `/peer share/discover/join/list/todo/name/role`. Interactive PeerMenu. 9 autonomous coordination tools for agents. Inbound tasks auto-enqueue into the AI prompt.
+- **Peer-to-peer** — UDP multicast peer discovery, file registry, `/peer share/discover/join/list/todo/name/role`. Interactive PeerMenu. 14 AI coordination tools. Inbound tasks auto-enqueue into AI prompt.
+- **Taste tools** — `taste_learn`, `taste_forget`, `taste_profile`, `taste_suggest`
+- **Autonomous agents** — agent loop, supervisor integration, task queue, Loop Lock
+- **Workflow Rainbow** — per-character gradient for "workflow" keyword
 
-### 0.2.3 — 2026-06-07
+</details>
+
+<details>
+<summary><strong>0.2.3 — 2026-06-07</strong></summary>
 
 - `/effort` now works with any provider exposing `reasoningEffort` (NVIDIA, DeepSeek, OpenRouter, etc.)
 - `/model` fetches live model list from NVIDIA API
@@ -263,6 +280,8 @@ Don't submit proprietary code, leaked material, or credentials. Report security 
 - `/pr create/list/view/review/merge/status`
 - Security: PowerShell execution rules, malformed tool call guard, 100 MB bash output cap
 - Bug fixes: blank screen on startup, autocomplete duplication, provider base URL resolution
+
+</details>
 
 [Full changelog](CHANGELOG.md)
 
