@@ -22,6 +22,7 @@ import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAge
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
 import { getLastAssistantMessageId, StatusLine, statusLineShouldDisplay } from '../StatusLine.js';
 import { TasteStatusLine } from '../TasteStatusLine.js';
+import { PeerStatusLine } from '../PeerStatusLine.js';
 import { Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
 import { PromptInputFooterSuggestions, type SuggestionItem } from './PromptInputFooterSuggestions.js';
@@ -255,6 +256,7 @@ function PromptInputFooter({
       {'external' === 'ant' && <CoordinatorTaskPanel />}
       <DynamicWorkflowStatusLine />
       <TasteStatusLine />
+      <PeerStatusLine />
     </>
   );
 }
