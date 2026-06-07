@@ -76,7 +76,7 @@ export async function autoModeCritiqueHandler(options: { model?: string }): Prom
     process.stdout.write(
       'No custom auto mode rules found.\n\n' +
         'Add rules to your settings file under autoMode.{allow, soft_deny, hard_deny, environment}.\n' +
-        'Run `claude auto-mode defaults` to see the default rules for reference.\n',
+        'Run `clew auto-mode defaults` to see the default rules for reference.\n',
     );
     return;
   }

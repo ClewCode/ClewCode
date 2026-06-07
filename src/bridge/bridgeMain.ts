@@ -1305,7 +1305,7 @@ export async function runBridgeLoop(
   // feature('KAIROS') gate: --session-id is ant-only; without the gate,
   // revert to the pre-PR behavior (archive + deregister on every shutdown).
   if (feature('KAIROS') && config.spawnMode === 'single-session' && initialSessionId && !fatalExit) {
-    logger.logStatus(`Resume this session by running \`claude remote-control --continue\``);
+    logger.logStatus(`Resume this session by running \`clew remote-control --continue\``);
     logForDebugging(`[bridge:shutdown] Skipping archive+deregister to allow resume of session ${initialSessionId}`);
     return;
   }
@@ -1558,7 +1558,7 @@ export function parseArgs(args: string[]): ParsedArgs {
     } else if (arg === '--no-create-session-in-dir') {
       createSessionInDir = false;
     } else {
-      return makeError(`Unknown argument: ${arg}\nRun 'claude remote-control --help' for usage.`);
+      return makeError(`Unknown argument: ${arg}\nRun 'clew remote-control --help' for usage.`);
     }
   }
 
@@ -1656,7 +1656,7 @@ async function printHelp(): Promise<void> {
 Remote Control - Connect your local environment to claude.ai/code
 
 USAGE
-  claude remote-control [options]
+  clew remote-control [options]
 OPTIONS
   --name <name>                    Name for the session (shown in claude.ai/code)
 ${
@@ -1679,7 +1679,7 @@ DESCRIPTION
 ${serverDescription}
 NOTES
   - You must be logged in with a Claude account that has a subscription
-  - Run \`claude\` first in the directory to accept the workspace trust dialog
+  - Run \`clew\` first in the directory to accept the workspace trust dialog
 ${serverNote}`;
   // biome-ignore lint/suspicious/noConsole: intentional help output
   console.log(help);
@@ -1811,7 +1811,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
   if (!checkHasTrustDialogAccepted()) {
     // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.error(
-      `Error: Workspace not trusted. Please run \`claude\` in ${dir} first to review and accept the workspace trust dialog.`,
+      `Error: Workspace not trusted. Please run \`clew\` in ${dir} first to review and accept the workspace trust dialog.`,
     );
     // eslint-disable-next-line custom-rules/no-process-exit
     process.exit(1);
@@ -1871,7 +1871,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     if (!found) {
       // biome-ignore lint/suspicious/noConsole: intentional error output
       console.error(
-        `Error: No recent session found in this directory or its worktrees. Run \`claude remote-control\` to start a new one.`,
+        `Error: No recent session found in this directory or its worktrees. Run \`clew remote-control\` to start a new one.`,
       );
       // eslint-disable-next-line custom-rules/no-process-exit
       process.exit(1);
@@ -2091,7 +2091,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
       }
       // biome-ignore lint/suspicious/noConsole: intentional error output
       console.error(
-        `Error: Session ${resumeSessionId} not found. It may have been archived or expired, or your login may have lapsed (run \`claude /login\`).`,
+        `Error: Session ${resumeSessionId} not found. It may have been archived or expired, or your login may have lapsed (run \`clew /login\`).`,
       );
       // eslint-disable-next-line custom-rules/no-process-exit
       process.exit(1);
@@ -2491,7 +2491,7 @@ export async function runBridgeHeadless(opts: HeadlessBridgeOpts, signal: AbortS
 
   if (!checkHasTrustDialogAccepted()) {
     throw new BridgeHeadlessPermanentError(
-      `Workspace not trusted: ${dir}. Run \`claude\` in that directory first to accept the trust dialog.`,
+      `Workspace not trusted: ${dir}. Run \`clew\` in that directory first to accept the trust dialog.`,
     );
   }
 

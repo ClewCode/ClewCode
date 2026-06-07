@@ -149,7 +149,7 @@ export async function mcpRemoveHandler(
       });
       process.stderr.write('\nTo remove from a specific scope, use:\n');
       scopes.forEach(scope => {
-        process.stderr.write(`  claude mcp remove "${name}" -s ${scope}\n`);
+        process.stderr.write(`  clew mcp remove "${name}" -s ${scope}\n`);
       });
       cliError();
     }
@@ -192,7 +192,7 @@ export async function mcpListHandler(): Promise<void> {
   const { servers: configs } = await getAllMcpConfigs();
   if (Object.keys(configs).length === 0) {
     // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.log('No MCP servers configured. Use `claude mcp add` to add a server.');
+    console.log('No MCP servers configured. Use `clew mcp add` to add a server.');
   } else {
     // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log('Checking MCP server health...\n');

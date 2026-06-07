@@ -2,13 +2,15 @@
 // Also hosts the global TasteRuntime singleton for cross-module access.
 
 import { TasteRuntime } from './core/TasteRuntime.js';
-import { DEFAULT_TASTE_CONFIG, type TasteConfig } from './core/TasteTypes.js';
+import { DEFAULT_TASTE_CONFIG, type TasteConfig, type TasteRule } from './core/TasteTypes.js';
 
 // ---------------------------------------------------------------------------
 // Global singleton
 // ---------------------------------------------------------------------------
 
 let _runtime: TasteRuntime | null = null;
+/** External callback for auto-learned rules — wired by the REPL to show toasts */
+let _onAutoLearnRule: ((rule: TasteRule) => void) | null = null;
 
 /**
  * Get (or lazily create) the global TasteRuntime singleton.
@@ -33,6 +35,11 @@ export function getTasteRuntime(): TasteRuntime {
  */
 export async function initTasteOnStartup(): Promise<void> {
   const r = getTasteRuntime();
+
+  // Wire up the auto-learn rule callback (for terminal notifications)
+  if (_onAutoLearnRule) {
+    r.onAutoLearnRule = _onAutoLearnRule;
+  }
 
   // Lazy-import settings to avoid circular deps at module level
   const { getInitialSettings } = await import('../../utils/settings/settings.js');
@@ -121,6 +128,22 @@ export function subscribeToSettingsChanges(): void {
 export function unsubscribeFromSettingsChanges(): void {
   _settingsUnsubscribe?.();
   _settingsUnsubscribe = null;
+}
+
+// ---------------------------------------------------------------------------
+// Auto-learn notification wiring
+// ---------------------------------------------------------------------------
+
+/**
+ * Set a callback that fires when taste auto-learns and auto-adds a rule.
+ * The REPL uses this to show "taste add" toast notifications.
+ */
+export function setOnTasteAutoLearnRule(cb: ((rule: TasteRule) => void) | null): void {
+  _onAutoLearnRule = cb;
+  // If runtime already exists, wire it immediately
+  if (_runtime) {
+    _runtime.onAutoLearnRule = cb;
+  }
 }
 
 // ---------------------------------------------------------------------------

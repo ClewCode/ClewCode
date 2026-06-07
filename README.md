@@ -19,7 +19,7 @@
   <a href="readme/README.hi.md">हिन्दी</a>
 </p>
 
-# Clew 🪽
+# Clew
 
 Clew is an unofficial, research-oriented CLI for AI-assisted software development.
 

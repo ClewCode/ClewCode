@@ -41,7 +41,7 @@ function SessionInfo({ onDone }: Props): React.ReactNode {
   if (!remoteSessionUrl) {
     return (
       <Pane>
-        <Text color="warning">Not in remote mode. Start with `claude --remote` to use this command.</Text>
+        <Text color="warning">Not in remote mode. Start with `clew --remote` to use this command.</Text>
         <Text dimColor>(press esc to close)</Text>
       </Pane>
     );

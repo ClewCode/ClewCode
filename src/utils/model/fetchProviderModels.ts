@@ -6,6 +6,16 @@ export interface FetchedModel {
   label: string;
   description?: string;
   contextWindow?: number;
+  /** Whether model supports tool/function calling */
+  supportsTools?: boolean;
+  /** Whether model supports vision/image input */
+  supportsVision?: boolean;
+  /** Whether model supports reasoning/thinking */
+  supportsReasoning?: boolean;
+  /** Maximum output tokens */
+  maxOutput?: number;
+  /** Whether model is free-tier */
+  free?: boolean;
 }
 
 // OpenAI-compatible /models response format
@@ -86,9 +96,12 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
 
     const data = (await response.json()) as OpenAIModelsResponse | OpenRouterModelsResponse | { data?: unknown };
 
+    // Parse raw models from API response into a common format
+    let parsedModels: FetchedModel[] | null = null;
+
     // Handle OpenAI-compatible format (OpenAI, DeepSeek, Groq, etc.)
     if ('object' in data && data.object === 'list' && Array.isArray(data.data)) {
-      return data.data.map(model => ({
+      parsedModels = data.data.map(model => ({
         id: model.id,
         label: model.id,
         description: model.owned_by ? `Owned by: ${model.owned_by}` : undefined,
@@ -96,8 +109,8 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
     }
 
     // Handle OpenRouter format (has architecture field and uses provider/model format)
-    if ('data' in data && Array.isArray(data.data) && data.data.length > 0 && 'architecture' in data.data[0]) {
-      return data.data
+    if (parsedModels === null && 'data' in data && Array.isArray(data.data) && data.data.length > 0 && 'architecture' in data.data[0]) {
+      parsedModels = data.data
         .map((model: OpenRouterModel) => ({
           id: model.id,
           label: model.name ?? model.id,
@@ -106,14 +119,13 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
         }))
         .filter(model => {
           // Filter out models that don't have the provider/model format
-          // OpenRouter requires model IDs in the format: provider/model
           return model.id.includes('/');
         });
     }
 
     // Handle generic format with data array (fallback for other providers)
-    if ('data' in data && Array.isArray(data.data)) {
-      return data.data.map((model: any) => ({
+    if (parsedModels === null && 'data' in data && Array.isArray(data.data)) {
+      parsedModels = data.data.map((model: any) => ({
         id: model.id || model.name,
         label: model.name || model.id || 'Unknown',
         description: model.description,
@@ -121,8 +133,32 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
       }));
     }
 
-    console.error('[fetchProviderModels] Unknown response format:', data);
-    return null;
+    if (!parsedModels) {
+      console.error('[fetchProviderModels] Unknown response format:', data);
+      return null;
+    }
+
+    // Merge static capability data from providers.json into fetched models
+    const staticModels = registryEntry?.models ?? [];
+    const staticMap = new Map<string, (typeof staticModels)[0]['capabilities']>();
+    for (const m of staticModels) {
+      staticMap.set(m.id, m.capabilities);
+    }
+
+    return parsedModels.map(fm => {
+      const staticCap = staticMap.get(fm.id);
+      if (staticCap) {
+        return {
+          ...fm,
+          supportsTools: staticCap.toolCalling !== 'none' && staticCap.toolCalling !== undefined,
+          supportsVision: staticCap.vision ?? false,
+          supportsReasoning: staticCap.reasoning ?? false,
+          maxOutput: typeof staticCap.maxOutput === 'number' ? (staticCap.maxOutput as number) : undefined,
+          free: staticCap.free ?? false,
+        };
+      }
+      return fm;
+    });
   } catch (error) {
     console.error('[fetchProviderModels] Error fetching models:', error);
     return null;

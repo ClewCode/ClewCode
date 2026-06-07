@@ -262,7 +262,7 @@ export async function authStatus(opts: { json?: boolean; text?: boolean }): Prom
       process.stdout.write('API key: ANTHROPIC_API_KEY\n');
     }
     if (!loggedIn) {
-      process.stdout.write('Not logged in. Run claude auth login to authenticate.\n');
+      process.stdout.write('Not logged in. Run clew auth login to authenticate.\n');
     }
   } else {
     const apiProvider = getAPIProvider();

@@ -362,7 +362,7 @@ export async function initReplBridge(options?: InitBridgeOptions): Promise<ReplB
     const versionError = await checkEnvLessBridgeMinVersion();
     if (versionError) {
       logBridgeSkip('version_too_old', `[bridge:repl] Skipping: ${versionError}`, true);
-      onStateChange?.('failed', 'run `claude update` to upgrade');
+      onStateChange?.('failed', 'run `clew update` to upgrade');
       return null;
     }
     logForDebugging('[bridge:repl] Using env-less bridge path (tengu_bridge_repl_v2)');
@@ -401,7 +401,7 @@ export async function initReplBridge(options?: InitBridgeOptions): Promise<ReplB
   const versionError = checkBridgeMinVersion();
   if (versionError) {
     logBridgeSkip('version_too_old', `[bridge:repl] Skipping: ${versionError}`);
-    onStateChange?.('failed', 'run `claude update` to upgrade');
+    onStateChange?.('failed', 'run `clew update` to upgrade');
     return null;
   }
 

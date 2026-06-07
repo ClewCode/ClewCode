@@ -72,13 +72,13 @@ export async function getBridgeDisabledReason(): Promise<string | null> {
       if (hasApiKeyOverride()) {
         return 'Remote Control requires a claude.ai subscription. ANTHROPIC_API_KEY, apiKeyHelper, or ANTHROPIC_AUTH_TOKEN is set — unset it to use Remote Control with your claude.ai login.';
       }
-      return 'Remote Control requires a claude.ai subscription. Run `claude auth login` to sign in with your claude.ai account.';
+      return 'Remote Control requires a claude.ai subscription. Run `clew auth login` to sign in with your claude.ai account.';
     }
     if (!hasProfileScope()) {
-      return 'Remote Control requires a full-scope login token. Long-lived tokens (from `claude setup-token` or CLAUDE_CODE_OAUTH_TOKEN) are limited to inference-only for security reasons. Run `claude auth login` to use Remote Control.';
+      return 'Remote Control requires a full-scope login token. Long-lived tokens (from `clew setup-token` or CLAUDE_CODE_OAUTH_TOKEN) are limited to inference-only for security reasons. Run `clew auth login` to use Remote Control.';
     }
     if (!getOauthAccountInfo()?.organizationUuid) {
-      return 'Unable to determine your organization for Remote Control eligibility. Run `claude auth login` to refresh your account information.';
+      return 'Unable to determine your organization for Remote Control eligibility. Run `clew auth login` to refresh your account information.';
     }
     if (!(await checkGate_CACHED_OR_BLOCKING('tengu_ccr_bridge'))) {
       return 'Remote Control is not yet enabled for your account.';

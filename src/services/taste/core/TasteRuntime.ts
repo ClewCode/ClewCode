@@ -1,12 +1,12 @@
 // Clew taste: Main runtime that orchestrates all subsystems
 
 import { randomUUID } from 'crypto';
+import { AutoLearnEngine } from '../auto-learn/AutoLearnEngine.js';
 import { TastePromptInjector } from '../prompt/TastePromptInjector.js';
 import { TasteSignalCollector } from '../signals/TasteSignalCollector.js';
 import { TasteEventLog } from '../storage/TasteEventLog.js';
 import { TasteProfileStore } from '../storage/TasteProfileStore.js';
 import { TasteVectorStore } from '../storage/TasteVectorStore.js';
-import { AutoLearnEngine } from '../auto-learn/AutoLearnEngine.js';
 import { type BanditContext, TasteBandit } from './TasteBandit.js';
 import { TasteDecay } from './TasteDecay.js';
 import { TasteMemory } from './TasteMemory.js';
@@ -42,6 +42,8 @@ export class TasteRuntime {
   private injector: TastePromptInjector;
   private store: TasteProfileStore;
   private autoLearn: AutoLearnEngine;
+  /** Callback fired when a pattern is auto-accepted as a rule */
+  onAutoLearnRule: ((rule: TasteRule) => void) | null = null;
 
   constructor(config?: Partial<TasteConfig>) {
     this.config = { ...DEFAULT_TASTE_CONFIG, ...config };
@@ -190,11 +192,34 @@ export class TasteRuntime {
     return this.autoLearn;
   }
 
-  /** Process events through auto-learn engine to detect patterns */
+  /** Minimum confidence threshold for auto-accepting suggestions (no manual approval needed) */
+  private autoAcceptThreshold = 0.7;
+
+  /** Process events through auto-learn engine to detect and auto-accept high-confidence patterns */
   processAutoLearn(): import('../auto-learn/AutoLearnEngine.js').TasteSuggestion[] {
     if (!this.config.autoLearn) return [];
     const events = this.eventLog.getRecentEvents(100);
-    return this.autoLearn.processEvents(events);
+    const newSuggestions = this.autoLearn.processEvents(events);
+
+    // Auto-accept suggestions with high confidence
+    for (const suggestion of newSuggestions) {
+      if (suggestion.pattern.confidence >= this.autoAcceptThreshold) {
+        const rule = this.autoLearn.acceptSuggestion(suggestion.id, (text, kind, source, tags) =>
+          this.addRule(text, kind, source, tags),
+        );
+        if (rule) {
+          this.saveProfile().catch(() => {});
+          this.onAutoLearnRule?.(rule);
+        }
+      }
+    }
+
+    return newSuggestions;
+  }
+
+  /** Set the confidence threshold for auto-accept */
+  setAutoAcceptThreshold(threshold: number): void {
+    this.autoAcceptThreshold = threshold;
   }
 
   // -- Signals --
