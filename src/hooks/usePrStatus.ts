@@ -29,6 +29,9 @@ const INITIAL_STATE: PrStatusState = {
  * don't spawn `gh` more than once per interval. Disables permanently
  * if a fetch exceeds 4s.
  *
+ * Also triggers an immediate fetch after a turn ends (isLoading goes
+ * from true → false), so the PR badge updates right after gh commands.
+ *
  * Pass `enabled: false` to skip polling entirely (hook still must be
  * called unconditionally to satisfy the rules of hooks).
  */
@@ -37,6 +40,15 @@ export function usePrStatus(isLoading: boolean, enabled = true): PrStatusState {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disabledRef = useRef(false);
   const lastFetchRef = useRef(0);
+  const prevLoadingRef = useRef(isLoading);
+
+  // Detect turn end: isLoading went from true → false → fetch immediately
+  if (!prevLoadingRef.current && isLoading) prevLoadingRef.current = true;
+  if (prevLoadingRef.current && !isLoading) {
+    prevLoadingRef.current = false;
+    // Schedule immediate fetch (skip the 60s interval wait)
+    lastFetchRef.current = 0;
+  }
 
   useEffect(() => {
     if (!enabled) return;
