@@ -1175,7 +1175,7 @@ export async function main() {
       // Headless (-p) mode is not supported with SSH in v1 — reject early
       // so the flag doesn't silently cause local execution.
       if (rest.includes('-p') || rest.includes('--print')) {
-        process.stderr.write('Error: headless (-p/--print) mode is not supported with claude ssh\n');
+        process.stderr.write('Error: headless (-p/--print) mode is not supported with clew ssh\n');
         gracefulShutdownSync(1);
         return;
       }
@@ -4542,7 +4542,7 @@ async function run(): Promise<CommanderCommand> {
           if (!isRemoteTuiEnabled && !hasInitialPrompt) {
             return await exitWithError(
               root,
-              'Error: --remote requires a description.\nUsage: claude --remote "your task description"',
+              'Error: --remote requires a description.\nUsage: clew --remote "your task description"',
               () => gracefulShutdown(1),
             );
           }
@@ -4573,7 +4573,7 @@ async function run(): Promise<CommanderCommand> {
             // Original behavior: print session info and exit
             process.stdout.write(`Created remote session: ${createdSession.title}\n`);
             process.stdout.write(`View: ${getRemoteSessionUrl(createdSession.id)}?m=0\n`);
-            process.stdout.write(`Resume with: claude --teleport ${createdSession.id}\n`);
+            process.stdout.write(`Resume with: clew --teleport ${createdSession.id}\n`);
             await gracefulShutdown(0);
             process.exit(0);
           }
@@ -4699,9 +4699,9 @@ async function run(): Promise<CommanderCommand> {
                   } else {
                     // No known paths - show original error
                     throw new TeleportOperationError(
-                      `You must run claude --teleport ${teleport} from a checkout of ${sessionRepo}.`,
+                      `You must run clew --teleport ${teleport} from a checkout of ${sessionRepo}.`,
                       chalk.red(
-                        `You must run claude --teleport ${teleport} from a checkout of ${chalk.bold(sessionRepo)}.\n`,
+                        `You must run clew --teleport ${teleport} from a checkout of ${chalk.bold(sessionRepo)}.\n`,
                       ),
                     );
                   }
@@ -5357,9 +5357,9 @@ async function run(): Promise<CommanderCommand> {
         // commander runs. Reaching here means host was missing or the
         // rewrite predicate didn't match.
         process.stderr.write(
-          'Usage: claude ssh <user@host | ssh-config-alias> [dir]\n\n' +
+          'Usage: clew ssh <user@host | ssh-config-alias> [dir]\n\n' +
             "Runs Clew Code on a remote Linux host. You don't need to install\n" +
-            'anything on the remote or run `claude auth login` there — the binary is\n' +
+            'anything on the remote or run `clew auth login` there — the binary is\n' +
             'deployed over SSH and API auth tunnels back through your local machine.\n',
         );
         process.exit(1);
@@ -5801,7 +5801,7 @@ async function run(): Promise<CommanderCommand> {
         // (e.g. `--debug assistant`) and the position-0 predicate
         // didn't match. Print usage like the ssh stub does.
         process.stderr.write(
-          'Usage: claude assistant [sessionId]\n\n' +
+          'Usage: clew assistant [sessionId]\n\n' +
             'Attach the REPL as a viewer client to a running bridge session.\n' +
             'Omit sessionId to discover and pick from available sessions.\n',
         );
@@ -6092,7 +6092,7 @@ Examples:
         break;
       case 'attach': {
         if (!bgArg) {
-          console.error('Usage: claude attach <session-id>');
+          console.error('Usage: clew attach <session-id>');
           process.exit(1);
         }
         await bg.attachHandler(bgArg);
@@ -6102,7 +6102,7 @@ Examples:
       case 'stop': {
         const targetId = bgArg || '';
         if (!targetId) {
-          console.error('Usage: claude stop <session-id>');
+          console.error('Usage: clew stop <session-id>');
           process.exit(1);
         }
         await bg.killHandler(targetId);

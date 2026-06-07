@@ -158,7 +158,7 @@ function printResumeHint(): void {
         resumeArg = sessionId;
       }
 
-      writeSync(1, chalk.dim(`\nResume this session with:\nclaude --resume ${resumeArg}\n`));
+      writeSync(1, chalk.dim(`\nResume this session with:\nclew --resume ${resumeArg}\n`));
       resumeHintPrinted = true;
     } catch {
       // Ignore write errors

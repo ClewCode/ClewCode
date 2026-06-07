@@ -946,6 +946,25 @@ export function REPL({
   const editorRenderingRef = useRef(false);
   const { addNotification, removeNotification } = useNotifications();
 
+  // Wire up taste auto-learn notifications
+  useEffect(() => {
+    import('../services/taste/TasteIntegration.js').then(({ setOnTasteAutoLearnRule }) => {
+      setOnTasteAutoLearnRule(rule => {
+        addNotification({
+          key: 'taste-auto-add',
+          text: `taste add: ${rule.text}`,
+          priority: 'low',
+          timeoutMs: 5000,
+        });
+      });
+    });
+    return () => {
+      import('../services/taste/TasteIntegration.js').then(({ setOnTasteAutoLearnRule }) => {
+        setOnTasteAutoLearnRule(null);
+      });
+    };
+  }, [addNotification]);
+
   // eslint-disable-next-line prefer-const
   const trySuggestBgPRIntercept = SUGGEST_BG_PR_NOOP;
 
@@ -1550,7 +1569,7 @@ export function REPL({
         // Dismiss the companion bubble on scroll — it's absolute-positioned
         // at bottom-right and covers transcript content. Scrolling = user is
         // trying to read something under it.
-        if ((typeof BUDDY !== 'undefined' && BUDDY)) {
+        if (typeof BUDDY !== 'undefined' && BUDDY) {
           setAppState(prev =>
             prev.companionReaction === undefined ? prev : { ...prev, companionReaction: undefined },
           );
@@ -3429,7 +3448,7 @@ export function REPL({
         onQueryEvent(event);
       }
 
-      if ((typeof BUDDY !== 'undefined' && BUDDY)) {
+      if (typeof BUDDY !== 'undefined' && BUDDY) {
         void fireCompanionObserver(messagesRef.current, reaction =>
           setAppState(prev => (prev.companionReaction === reaction ? prev : { ...prev, companionReaction: reaction })),
         );
@@ -5562,7 +5581,9 @@ export function REPL({
           scrollRef={scrollRef}
           overlay={toolPermissionOverlay}
           bottomFloat={
-            (typeof BUDDY !== 'undefined' && BUDDY) && companionVisible && !companionNarrow ? <CompanionFloatingBubble /> : undefined
+            typeof BUDDY !== 'undefined' && BUDDY && companionVisible && !companionNarrow ? (
+              <CompanionFloatingBubble />
+            ) : undefined
           }
           modal={centeredModal}
           modalScrollRef={modalScrollRef}
@@ -5660,11 +5681,15 @@ export function REPL({
           }
           bottom={
             <Box
-              flexDirection={(typeof BUDDY !== 'undefined' && BUDDY) && companionNarrow ? 'column' : 'row'}
+              flexDirection={typeof BUDDY !== 'undefined' && BUDDY && companionNarrow ? 'column' : 'row'}
               width="100%"
-              alignItems={(typeof BUDDY !== 'undefined' && BUDDY) && companionNarrow ? undefined : 'flex-end'}
+              alignItems={typeof BUDDY !== 'undefined' && BUDDY && companionNarrow ? undefined : 'flex-end'}
             >
-              {(typeof BUDDY !== 'undefined' && BUDDY) && companionNarrow && isFullscreenEnvEnabled() && companionVisible ? (
+              {typeof BUDDY !== 'undefined' &&
+              BUDDY &&
+              companionNarrow &&
+              isFullscreenEnvEnabled() &&
+              companionVisible ? (
                 <CompanionSprite />
               ) : null}
               <Box flexDirection="column" flexGrow={1}>
@@ -6338,9 +6363,7 @@ export function REPL({
                 )}
                 {'external' === 'ant' && <DevBar />}
               </Box>
-              {companionVisible ? (
-                <CompanionSprite />
-              ) : null}
+              {companionVisible ? <CompanionSprite /> : null}
             </Box>
           }
         />

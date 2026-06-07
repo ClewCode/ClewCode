@@ -61,6 +61,20 @@ All notable changes to this project will be documented in this file.
 - **Ultra mode decoration**: When ultracode is active (via `/effort ultracode`), prompt input shows a purple double-line border with "ultra" label
 - **PR badge refresh**: `usePrStatus` hook fetches immediately after a turn ends, so badge updates right after `gh` commands
 
+### Changed
+
+- **Model picker API-fetched capability display**: API-fetched models now show the same rich capability badges (`vision · tools · reasoning · free`) as static models
+  - Extended `FetchedModel` interface with `supportsTools`, `supportsVision`, `supportsReasoning`, `maxOutput`, `free` fields
+  - After fetching from API, capability data is merged from static `providers.json` by matching model IDs
+  - `/model list` text output now shows capability tags like `[200K ctx, vision, tools, reason]`
+  - Models not in `providers.json` still work — fall back to showing context window only
+
+- **CLI hints rebranded from `claude` to `clew`**: All user-facing CLI command hints in exit messages, session manager, bridge, teleport, auth, MCP, plugins, and SSH output now reference `clew` instead of `claude`
+  - Exit/resume messages now show `clew --teleport`, `clew remote-control --continue`
+  - Session manager commands: `clew agents`, `clew attach`, `clew stop`, etc.
+  - `clew auth login`, `clew mcp add`, `clew plugin install`, `clew ssh`
+  - `clew --bg` for background sessions
+
 ## [0.2.2] — 2026-06-06
 
 ### Fixed

@@ -296,7 +296,7 @@ export async function pluginListHandler(options: {
     // points at a nonexistent path). Don't early-exit over them — fall
     // through to the session section so the failure is visible.
     if (inlineLoadErrors.length === 0) {
-      cliOk('No plugins installed. Use `claude plugin install` to install a plugin.');
+      cliOk('No plugins installed. Use `clew plugin install` to install a plugin.');
     }
   }
 

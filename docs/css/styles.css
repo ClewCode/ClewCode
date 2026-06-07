@@ -42,7 +42,7 @@
   --danger:     #e85454;
 
   --font-display: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
-  --font-body:    'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body:    'DM Sans', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono:    'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
 
   --text-xs:  0.75rem;

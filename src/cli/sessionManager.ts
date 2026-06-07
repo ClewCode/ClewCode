@@ -102,8 +102,8 @@ export async function listSessionsCommand(): Promise<void> {
   if (!supervisorRunning) {
     console.log('No background sessions (supervisor not running).');
     console.log('');
-    console.log('Start one with: claude --bg "<prompt>"');
-    console.log('Or open agent view: claude agents');
+    console.log('Start one with: clew --bg "<prompt>"');
+    console.log('Or open agent view: clew agents');
     return;
   }
 
@@ -119,8 +119,8 @@ export async function listSessionsCommand(): Promise<void> {
   if (sessions.length === 0) {
     console.log('No background sessions.');
     console.log('');
-    console.log('Start one with: claude --bg "<prompt>"');
-    console.log('Or open agent view: claude agents');
+    console.log('Start one with: clew --bg "<prompt>"');
+    console.log('Or open agent view: clew agents');
     return;
   }
 
@@ -152,16 +152,16 @@ export async function listSessionsCommand(): Promise<void> {
 
 export async function attachCommand(sessionId?: string): Promise<void> {
   if (!sessionId) {
-    console.error('Usage: claude attach <session-id>');
+    console.error('Usage: clew attach <session-id>');
     console.error('');
-    console.error('Get session IDs with: claude agents list');
+    console.error('Get session IDs with: clew agents list');
     process.exit(1);
   }
 
   const result = await attachSession(sessionId);
   if (!result.ok) {
     console.error(`Error: ${result.error}`);
-    console.error('Get session IDs with: claude agents list');
+    console.error('Get session IDs with: clew agents list');
     process.exit(1);
   }
 
@@ -176,16 +176,16 @@ export async function attachCommand(sessionId?: string): Promise<void> {
   if (data.prompt) console.log(`  Prompt: ${data.prompt}`);
   console.log('');
   if (!data.isRunning) {
-    console.log(`Session is not running. Restart with: claude respawn ${getShortId(data.sessionId)}`);
+    console.log(`Session is not running. Restart with: clew respawn ${getShortId(data.sessionId)}`);
   } else {
     console.log('Note: Full terminal attach requires the interactive TUI.');
-    console.log('Open agent view with: claude agents');
+    console.log('Open agent view with: clew agents');
   }
 }
 
 export async function logsCommand(sessionId?: string): Promise<void> {
   if (!sessionId) {
-    console.error('Usage: claude logs <session-id>');
+    console.error('Usage: clew logs <session-id>');
     process.exit(1);
   }
 
@@ -209,7 +209,7 @@ export async function logsCommand(sessionId?: string): Promise<void> {
 
 export async function stopCommand(sessionId?: string): Promise<void> {
   if (!sessionId) {
-    console.error('Usage: claude stop <session-id>');
+    console.error('Usage: clew stop <session-id>');
     process.exit(1);
   }
 
@@ -233,14 +233,14 @@ export async function respawnCommand(sessionId?: string, all?: boolean): Promise
     const data = result.data as any;
     console.log(`Respawning ${data.respawned} session${data.respawned !== 1 ? 's' : ''}...`);
     console.log('');
-    console.log('Open agent view to re-attach: claude agents');
+    console.log('Open agent view to re-attach: clew agents');
     return;
   }
 
   if (!sessionId) {
     console.error('Usage:');
-    console.error('  claude respawn <session-id>      Restart a stopped session');
-    console.error('  claude respawn --all             Restart all stopped sessions');
+    console.error('  clew respawn <session-id>      Restart a stopped session');
+    console.error('  clew respawn --all             Restart all stopped sessions');
     process.exit(1);
   }
 
@@ -253,12 +253,12 @@ export async function respawnCommand(sessionId?: string, all?: boolean): Promise
   const data = result.data as any;
   console.log(`Respawning session: ${getShortId(data.sessionId)} (pid ${data.pid})`);
   console.log('');
-  console.log('Open agent view to re-attach: claude agents');
+  console.log('Open agent view to re-attach: clew agents');
 }
 
 export async function rmCommand(sessionId?: string): Promise<void> {
   if (!sessionId) {
-    console.error('Usage: claude rm <session-id>');
+    console.error('Usage: clew rm <session-id>');
     console.error('');
     console.error('Removes a session from the list and cleans up its worktree.');
     console.error('This does NOT delete the conversation transcript — it stays on disk.');
@@ -330,10 +330,10 @@ export async function bgFlagHandler(
   }
 
   console.log(`backgrounded · ${sessionId}`);
-  console.log(`claude agents             list sessions`);
-  console.log(`claude attach ${sessionId}          open in this terminal`);
-  console.log(`claude logs ${sessionId}            show recent output`);
-  console.log(`claude stop ${sessionId}            stop this session`);
+  console.log(`clew agents             list sessions`);
+  console.log(`clew attach ${sessionId}          open in this terminal`);
+  console.log(`clew logs ${sessionId}            show recent output`);
+  console.log(`clew stop ${sessionId}            stop this session`);
 
   return sessionId;
 }

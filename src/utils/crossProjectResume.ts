@@ -41,7 +41,7 @@ export function checkCrossProjectResume(
   // Gate worktree detection to ants only for staged rollout
   if (process.env.USER_TYPE !== 'ant') {
     const sessionId = getSessionIdFromLog(log);
-    const command = `cd ${quote([log.projectPath])} && claude --resume ${sessionId}`;
+    const command = `cd ${quote([log.projectPath])} && clew --resume ${sessionId}`;
     return {
       isCrossProject: true,
       isSameRepoWorktree: false,

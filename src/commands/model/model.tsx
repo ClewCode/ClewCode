@@ -463,10 +463,24 @@ function buildStaticList(providerLabel: string, staticModels: any[]): string[] {
   ];
 }
 
-function buildFetchedEntries(fetched: Array<{ id: string; label: string; contextWindow?: number }>): string[] {
+function buildFetchedEntries(fetched: Array<{
+  id: string;
+  label: string;
+  contextWindow?: number;
+  supportsTools?: boolean;
+  supportsVision?: boolean;
+  supportsReasoning?: boolean;
+  free?: boolean;
+}>): string[] {
   return fetched.map(m => {
-    const ctx = m.contextWindow ? `${(m.contextWindow / 1000).toFixed(0)}K ctx` : '';
-    return `  ${m.label.padEnd(50)}  ${m.id.padEnd(40)}  ${ctx}`;
+    const parts: string[] = [];
+    if (m.contextWindow) parts.push(`${(m.contextWindow / 1000).toFixed(0)}K ctx`);
+    if (m.supportsVision) parts.push('vision');
+    if (m.supportsTools) parts.push('tools');
+    if (m.supportsReasoning) parts.push('reason');
+    if (m.free) parts.push('free');
+    const capabilities = parts.length > 0 ? ` [${parts.join(', ')}]` : '';
+    return `  ${m.label.padEnd(50)}  ${m.id.padEnd(40)}${capabilities}`;
   });
 }
 

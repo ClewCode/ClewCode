@@ -2295,7 +2295,7 @@ export async function refreshMarketplace(
           `The marketplace.json file is no longer present in this repository.\n\n` +
             `${reason}\n` +
             `Source: ${sourceDisplay}\n\n` +
-            `You can remove this marketplace with: claude plugin marketplace remove "${name}"`,
+            `You can remove this marketplace with: clew plugin marketplace remove "${name}"`,
         );
       }
     } else if (source.source === 'url') {

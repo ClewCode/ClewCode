@@ -657,11 +657,15 @@ function getEffectiveModelOptions(
     providerModels = fetchedModels.map(m => {
       const parts: string[] = [];
       if (m.contextWindow) parts.push(`${formatContext(m.contextWindow)} ctx`);
-      if (m.description) parts.push(m.description);
+      if (m.supportsVision) parts.push('vision');
+      if (m.supportsTools) parts.push('tools');
+      if (m.supportsReasoning) parts.push('reasoning');
+      if (m.free) parts.push('free');
+      if (m.maxOutput) parts.push(`${formatContext(m.maxOutput)} out`);
       return {
         value: m.id,
         label: m.label,
-        description: parts.length > 0 ? parts.join(' · ') : m.id,
+        description: parts.length > 0 ? parts.join(' · ') : (m.description ?? m.id),
         descriptionForModel: m.id,
       };
     });
