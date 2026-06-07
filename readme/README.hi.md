@@ -42,7 +42,7 @@ Clew AI-सहायता प्राप्त सॉफ़्टवेयर 
 ## त्वरित आरंभ
 
 ```bash
-git clone https://github.com/JonusNattapong/ClewCode.git
+git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 bun install
 bun run build

@@ -47,7 +47,7 @@ export class SearXNGProvider implements SearchProvider {
     const response = await fetch(url.toString(), {
       headers: {
         Accept: 'application/json',
-        'User-Agent': 'ClaudeCode/2.1.145 (AI coding assistant; +https://github.com/JonusNattapong/ClewCode)',
+        'User-Agent': 'ClaudeCode/2.1.145 (AI coding assistant; +https://github.com/ClewCode/ClewCode)',
       },
     });
 

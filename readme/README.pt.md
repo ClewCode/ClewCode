@@ -42,7 +42,7 @@ Este projeto é uma reconstrução e extensão a partir do código-fonte, projet
 ## Início rápido
 
 ```bash
-git clone https://github.com/JonusNattapong/ClewCode.git
+git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 bun install
 bun run build

@@ -32,7 +32,7 @@ Contributor-authored modifications and original additions may be licensed under 
 ### Installation
 
 ```bash
-git clone https://github.com/JonusNattapong/ClewCode.git
+git clone https://github.com/ClewCode/ClewCode.git
 cd claudecode
 
 bun install

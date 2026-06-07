@@ -64,13 +64,13 @@ Clew 直接在终端中运行。它可以检查和编辑本地代码库，在权
 ### 全局安装
 
 ```bash id="8rzhsy"
-npm install -g @jonusnattapong/claudecode
+npm install -g clew-code
 ```
 
 或：
 
 ```bash id="soh0em"
-bun install -g @jonusnattapong/claudecode
+bun install -g clew-code
 ```
 
 在项目目录中运行 CLI：
@@ -90,7 +90,7 @@ clewcode
 ### 从源码运行
 
 ```bash id="1hwbnw"
-git clone https://github.com/JonusNattapong/ClewCode.git
+git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 
 bun install

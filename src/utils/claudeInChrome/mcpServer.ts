@@ -16,7 +16,7 @@ import { sideQuery } from '../sideQuery.js';
 import { getAllSocketPaths, getSecureSocketPath } from './common.js';
 
 const EXTENSION_DOWNLOAD_URL = 'https://claude.ai/chrome';
-const BUG_REPORT_URL = 'https://github.com/JonusNattapong/ClewCode/issues/new?labels=bug,claude-in-chrome';
+const BUG_REPORT_URL = 'https://github.com/ClewCode/ClewCode/issues/new?labels=bug,claude-in-chrome';
 
 // String metadata keys safe to forward to analytics. Keys like error_message
 // are excluded because they could contain page content or user data.

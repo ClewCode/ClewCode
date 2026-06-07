@@ -42,7 +42,7 @@ Clew は、AI を用いたソフトウェア開発のための非公式の研究
 ## クイックスタート
 
 ```bash
-git clone https://github.com/JonusNattapong/ClewCode.git
+git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 bun install
 bun run build

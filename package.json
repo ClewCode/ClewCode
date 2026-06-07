@@ -17,12 +17,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JonusNattapong/ClewCode.git"
+    "url": "git+https://github.com/ClewCode/ClewCode.git"
   },
   "bugs": {
-    "url": "https://github.com/JonusNattapong/ClewCode/issues"
+    "url": "https://github.com/ClewCode/ClewCode/issues"
   },
-  "homepage": "https://github.com/JonusNattapong/ClewCode#readme",
+  "homepage": "https://github.com/ClewCode/ClewCode#readme",
   "scripts": {
     "dev": "bun build --target=bun --define.TRANSCRIPT_CLASSIFIER=true --define.CHICAGO_MCP=true --define.VOICE_MODE=true --external 'electron' --external 'chromium-bidi*' --external '@ant/claude-for-chrome-mcp' --external '@anthropic-ai/bedrock-sdk' --external '@anthropic-ai/foundry-sdk' --external '@anthropic-ai/vertex-sdk' --external '@anthropic-ai/mcpb' --external '@aws-sdk/client-bedrock-runtime' --external 'google-auth-library' --external 'sharp' --external 'asciichart' --external 'audio-capture-napi' --external 'modifiers-napi' --external '@xenova/transformers' --external 'onnxruntime-node' --external 'playwright' --external 'playwright-core' src/main.tsx --outfile ./dist/clew-dev.js && bun --watch run dist/clew-dev.js",
     "start": "bun run --define.VOICE_MODE=true src/main.tsx",

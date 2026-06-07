@@ -42,7 +42,7 @@ Dự án này là bản tái thiết và mở rộng từ mã nguồn, được 
 ## Bắt đầu nhanh
 
 ```bash
-git clone https://github.com/JonusNattapong/ClewCode.git
+git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 bun install
 bun run build

@@ -42,7 +42,7 @@ Proyek ini merupakan rekonstruksi dan ekstensi berbasis sumber, dirancang untuk 
 ## Mulai cepat
 
 ```bash
-git clone https://github.com/JonusNattapong/ClewCode.git
+git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 bun install
 bun run build

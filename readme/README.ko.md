@@ -42,7 +42,7 @@ Clew는 AI 기반 소프트웨어 개발을 위한 비공식 연구용 CLI입니
 ## 퀵스타트
 
 ```bash
-git clone https://github.com/JonusNattapong/ClewCode.git
+git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 bun install
 bun run build

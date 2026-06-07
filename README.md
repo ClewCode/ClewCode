@@ -87,7 +87,7 @@ clew
 ### Run From Source
 
 ```bash
-git clone https://github.com/JonusNattapong/ClewCode.git
+git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 
 bun install
