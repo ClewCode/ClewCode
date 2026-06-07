@@ -241,6 +241,7 @@ type Props = {
     end: number;
   } | null;
   isActive?: boolean;
+  isLoopActive?: boolean;
 };
 
 // Bottom slot has maxHeight="50%"; reserve lines for footer, border, status.
@@ -290,6 +291,7 @@ function PromptInput({
   insertTextRef,
   voiceInterimRange,
   isActive = true,
+  isLoopActive = false,
 }: Props): React.ReactNode {
   const mainLoopModel = useMainLoopModel();
   // A local-jsx command (e.g., /mcp while agent is running) renders a full-
@@ -2723,6 +2725,10 @@ function PromptInput({
     inputFilter: lazySpaceInputFilter,
   };
   const getBorderColor = (): keyof Theme => {
+    if (isLoopActive) {
+      return 'warning';
+    }
+
     const modeColors: Record<string, keyof Theme> = {
       bash: 'bashBorder',
     };
@@ -2771,6 +2777,14 @@ function PromptInput({
   return (
     <Box flexDirection="column" marginTop={briefOwnsGap ? 0 : 1}>
       {!isFullscreenEnvEnabled() && <PromptInputQueuedCommands />}
+      {isLoopActive && (
+        <Box paddingLeft={2} paddingRight={2} marginBottom={0} flexDirection="row">
+          <Text color="yellow" bold>🔒 LOOP LOCKED: </Text>
+          <Text color="cyan">Autonomous Loop is running. Use </Text>
+          <Text color="green" bold>/looplock &lt;message&gt;</Text>
+          <Text color="cyan"> to send instructions.</Text>
+        </Box>
+      )}
       {hasSuppressedDialogs && (
         <Box marginTop={1} marginLeft={2}>
           <Text dimColor>Waiting for permission…</Text>
@@ -2817,7 +2831,7 @@ function PromptInput({
           borderRight={false}
           borderBottom
           width="100%"
-          borderText={buildBorderText(showFastIcon ?? false, showFastIconHint, fastModeCooldown, isUltraActive())}
+          borderText={buildBorderText(showFastIcon ?? false, showFastIconHint, fastModeCooldown, isUltraActive(), isLoopActive)}
         >
           <PromptInputModeIndicator
             mode={mode}
@@ -2953,8 +2967,12 @@ function buildBorderText(
   showFastIconHint: boolean,
   fastModeCooldown: boolean,
   isUltra: boolean,
+  isLoopActive?: boolean,
 ): BorderTextOptions | undefined {
   const segments: string[] = [];
+  if (isLoopActive) {
+    segments.push(chalk.bold(chalk.yellow('🔒 LOOP LOCKED')));
+  }
   if (isUltra) segments.push(chalk.bold(chalk.hex('#8B5CF6')(' ultra ')));
   if (showFastIcon) {
     const fastSeg = showFastIconHint

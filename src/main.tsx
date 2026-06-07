@@ -1675,10 +1675,8 @@ async function run(): Promise<CommanderCommand> {
     .option('--chrome', 'Enable Claude in Chrome integration')
     .option('--no-chrome', 'Disable Claude in Chrome integration')
     .option('--computer', 'Enable Computer Use tool (Windows only)')
-    .option(
-      '--file <specs...>',
-      'File resources to download at startup. Format: file_id:relative_path (e.g., --file file_abc:doc.txt file_def:img.png)',
-    )
+    .option('--peer-name <name>', 'Set display name for peer discovery')
+    .option('--peer-share', 'Automatically start sharing as a worker peer on startup', () => true)
     .action(async (prompt, options) => {
       profileCheckpoint('action_handler_start');
       applyProviderOption((options as { provider?: string }).provider, (options as { model?: string }).model);
@@ -1835,6 +1833,102 @@ async function run(): Promise<CommanderCommand> {
         includeHookEvents,
         includePartialMessages,
       } = options;
+
+      // Handle peer name configuration
+      const peerNameOpt = (options as { peerName?: string }).peerName;
+      if (peerNameOpt) {
+        const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
+        getGlobalDiscovery().setLocalName(peerNameOpt);
+      }
+
+      // Register peer callbacks globally (for all peers to receive messages)
+      (async () => {
+        try {
+          const { getGlobalPeerServer } = await import('./peer/PeerServer.js');
+          const { getGlobalPeerStore } = await import('./peer/PeerStore.js');
+          const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
+          
+          const server = getGlobalPeerServer();
+          
+          server.setCallbacks({
+            onTodo: (todo) => {
+              getGlobalPeerStore().addTodo(todo);
+              import('./utils/messageQueueManager.js').then(({ enqueue }) => {
+                enqueue({ value: `Task from ${todo.fromName}: ${todo.message}`, mode: 'prompt', priority: 'next' });
+              });
+            },
+            onMessage: (msg) => {
+              getGlobalPeerStore().addMessage(msg);
+              import('./utils/messageQueueManager.js').then(({ enqueue }) => {
+                enqueue({ value: `From ${msg.fromName}: ${msg.text}`, mode: 'prompt', priority: 'next' });
+              });
+            },
+            onExec: async (command: string) => {
+              const { executeCommand } = await import('./tools/PeerRunTool/PeerRunTool.js');
+              return executeCommand(command, 60_000);
+            }
+          });
+
+          // Auto-start PeerServer on all peers (so they can receive messages)
+          // unless --peer-share is used (which handles it separately)
+          if (!peerShareOpt) {
+            const discovery = getGlobalDiscovery();
+            const myPeerId = discovery.peerId;
+            const myName = peerNameOpt || discovery.hostname;
+
+            const peerInfo = {
+              id: myPeerId,
+              hostname: myName,
+              ip: '',
+              port: 0,
+              cwd: process.cwd(),
+              version: '',
+              lastSeen: Date.now(),
+              status: 'online' as const,
+            };
+
+            const port = await server.start(peerInfo);
+            logForDebugging(`[Peer] PeerServer auto-started on port ${port} to receive messages`);
+          }
+        } catch (err) {
+          // Silent fail if peer modules not available
+        }
+      })();
+
+      // Handle peer sharing on startup
+      const peerShareOpt = (options as { peerShare?: boolean }).peerShare;
+      if (peerShareOpt) {
+        (async () => {
+          try {
+            const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
+            const { getGlobalPeerServer } = await import('./peer/PeerServer.js');
+            
+            const discovery = getGlobalDiscovery();
+            const server = getGlobalPeerServer();
+            const myPeerId = discovery.peerId;
+            const myName = peerNameOpt || discovery.hostname;
+
+            const peerInfo = {
+              id: myPeerId,
+              hostname: myName,
+              ip: '',
+              port: 0,
+              cwd: process.cwd(),
+              version: '',
+              lastSeen: Date.now(),
+              status: 'online' as const,
+            };
+
+            const port = await server.start(peerInfo);
+            peerInfo.port = port;
+            await discovery.startAdvertising(port, process.cwd());
+            logForDebugging(`[Peer] Automatically sharing as worker peer on port ${port} with name "${myName}"`);
+          } catch (err) {
+            logError(new Error(`Failed to auto-start peer sharing: ${(err as Error).message}`));
+          }
+        })();
+      }
+
       if (
         (
           options as {

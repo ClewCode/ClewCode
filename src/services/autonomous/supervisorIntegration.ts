@@ -50,6 +50,23 @@ export async function isAutonomousEnabled(): Promise<boolean> {
   return false;
 }
 
+export async function isAutonomousAgentActive(): Promise<boolean> {
+  try {
+    const status = await loadStatus();
+    if (status && status.running) {
+      const now = Date.now();
+      const age = now - status.lastHeartbeat;
+      // Heartbeat is updated every 60s in the loop. Allow up to 120s (2 min) before considering it stale.
+      if (age < 120_000) {
+        return true;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
 export async function isAutoStartEnabled(): Promise<boolean> {
   try {
     if (existsSync(AUTONOMOUS_ENABLED_PATH)) {
