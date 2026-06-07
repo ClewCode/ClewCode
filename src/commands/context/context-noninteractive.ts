@@ -11,6 +11,12 @@ import { getSourceDisplayName } from '../../utils/settings/constants.js';
 import { plural } from '../../utils/stringUtils.js';
 
 /**
+ * Session-level history of context usage snapshots, used by the sparkline
+ * in ContextStats. Accumulates across consecutive /context invocations.
+ */
+const contextUsageHistory: Array<{ totalTokens: number; percentage: number }> = [];
+
+/**
  * Shared data-collection path for `/context` (slash command) and the SDK
  * `get_context_usage` control request. Mirrors query.ts's pre-API transforms
  * (compact boundary, projectView, microcompact) so the token count reflects
@@ -47,7 +53,7 @@ export async function collectContextData(context: CollectContextDataInput): Prom
   const { messages: compactedMessages } = await microcompactMessages(apiView);
   const appState = getAppState();
 
-  return analyzeContextUsage(
+  const data = await analyzeContextUsage(
     compactedMessages,
     mainLoopModel,
     async () => appState.toolPermissionContext,
@@ -60,6 +66,13 @@ export async function collectContextData(context: CollectContextDataInput): Prom
     undefined, // mainThreadAgentDefinition
     apiView, // original messages for API usage extraction
   );
+
+  // Accumulate history for sparkline
+  contextUsageHistory.push({ totalTokens: data.totalTokens, percentage: data.percentage });
+  if (contextUsageHistory.length > 50) contextUsageHistory.shift(); // cap at 50
+  data.usageHistory = [...contextUsageHistory];
+
+  return data;
 }
 
 export async function call(_args: string, context: ToolUseContext): Promise<{ type: 'text'; value: string }> {
