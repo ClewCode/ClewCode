@@ -263,11 +263,17 @@ export class QueryEngine {
     // Inject Clew taste context into the system prompt
     const tasteBlock = getTasteInjectionBlock();
     if (tasteBlock) {
-      const ruleCount = getTasteRuntime().getRules().length;
-      if (ruleCount > 0) {
+      const rules = getTasteRuntime().getRules();
+      if (rules.length > 0) {
+        // Build a brief summary of active rules for the user
+        const top = rules
+          .filter(r => r.confidence >= 0.55)
+          .sort((a, b) => b.confidence - a.confidence)
+          .slice(0, 5);
+        const brief = top.map(r => `- ${r.text} (${r.kind})`).join('\n');
         import('./utils/messageQueueManager.js').then(({ enqueuePendingNotification }) => {
           enqueuePendingNotification({
-            value: `Taste: ${ruleCount} learned preference(s) applied`,
+            value: `Taste Brief (${rules.length} rules):\n${brief}`,
             mode: 'task-notification',
             priority: 'later',
           });
