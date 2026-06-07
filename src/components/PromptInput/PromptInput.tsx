@@ -2795,13 +2795,13 @@ function PromptInput({
           flexDirection="row"
           alignItems="flex-start"
           justifyContent="flex-start"
-          borderColor={getBorderColor()}
-          borderStyle="round"
+          borderColor={isUltraActive() ? '#8B5CF6' : getBorderColor()}
+          borderStyle={isUltraActive() ? 'double' : 'round'}
           borderLeft={false}
           borderRight={false}
           borderBottom
           width="100%"
-          borderText={buildBorderText(showFastIcon ?? false, showFastIconHint, fastModeCooldown)}
+          borderText={buildBorderText(showFastIcon ?? false, showFastIconHint, fastModeCooldown, isUltraActive())}
         >
           <PromptInputModeIndicator
             mode={mode}
@@ -2924,17 +2924,31 @@ function getInitialPasteId(messages: Message[]): number {
   }
   return maxId + 1;
 }
+function isUltraActive(): boolean {
+  try {
+    const g = globalThis as { __appState?: { get?: (k: string) => unknown } };
+    const raw = g.__appState?.get?.('ultracodeState') as { enabled?: boolean } | undefined;
+    return raw?.enabled === true;
+  } catch { return false; }
+}
+
 function buildBorderText(
   showFastIcon: boolean,
   showFastIconHint: boolean,
   fastModeCooldown: boolean,
+  isUltra: boolean,
 ): BorderTextOptions | undefined {
-  if (!showFastIcon) return undefined;
-  const fastSeg = showFastIconHint
-    ? `${getFastIconString(true, fastModeCooldown)} ${chalk.dim('/fast')}`
-    : getFastIconString(true, fastModeCooldown);
+  const segments: string[] = [];
+  if (isUltra) segments.push(chalk.bold(chalk.hex('#8B5CF6')(' ultra ')));
+  if (showFastIcon) {
+    const fastSeg = showFastIconHint
+      ? `${getFastIconString(true, fastModeCooldown)} ${chalk.dim('/fast')}`
+      : getFastIconString(true, fastModeCooldown);
+    segments.push(fastSeg);
+  }
+  if (segments.length === 0) return undefined;
   return {
-    content: ` ${fastSeg} `,
+    content: ` ${segments.join(' ')} `,
     position: 'top',
     align: 'end',
     offset: 0,
