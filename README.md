@@ -5,8 +5,18 @@
 <p align="center">
   <strong>Language:</strong>
   <a href="README.md"><strong>English</strong></a> ·
-  <a href="readme/README.zh.md">中文 (简体)</a> ·
-  <a href="readme/README.th.md">ไทย</a>
+  <a href="readme/README.zh.md">中文</a> ·
+  <a href="readme/README.th.md">ไทย</a> ·
+  <a href="readme/README.ja.md">日本語</a> ·
+  <a href="readme/README.ko.md">한국어</a> ·
+  <a href="readme/README.es.md">Español</a> ·
+  <a href="readme/README.fr.md">Français</a> ·
+  <a href="readme/README.de.md">Deutsch</a> ·
+  <a href="readme/README.pt.md">Português</a> ·
+  <a href="readme/README.vi.md">Tiếng Việt</a> ·
+  <a href="readme/README.id.md">Bahasa Indonesia</a> ·
+  <a href="readme/README.ru.md">Русский</a> ·
+  <a href="readme/README.hi.md">हिन्दी</a>
 </p>
 
 # Clew 🪽
