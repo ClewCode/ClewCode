@@ -26,7 +26,7 @@ import { hasAutoMemPathOverride } from './memdir/paths.js';
 import { query } from './query.js';
 import { categorizeRetryableAPIError } from './services/api/errors.js';
 import type { MCPServerConnection } from './services/mcp/types.js';
-import { getTasteInjectionBlock } from './services/taste/TasteIntegration.js';
+import { getTasteInjectionBlock, getTasteRuntime } from './services/taste/TasteIntegration.js';
 import type { AppState } from './state/AppState.js';
 import { type Tools, type ToolUseContext, toolMatchesName } from './Tool.js';
 import type { AgentDefinition } from './tools/AgentTool/loadAgentsDir.js';
@@ -262,6 +262,18 @@ export class QueryEngine {
 
     // Inject Clew taste context into the system prompt
     const tasteBlock = getTasteInjectionBlock();
+    if (tasteBlock) {
+      const ruleCount = getTasteRuntime().getRules().length;
+      if (ruleCount > 0) {
+        import('./utils/messageQueueManager.js').then(({ enqueuePendingNotification }) => {
+          enqueuePendingNotification({
+            value: `Taste: ${ruleCount} learned preference(s) applied`,
+            mode: 'task-notification',
+            priority: 'later',
+          });
+        });
+      }
+    }
 
     const systemPrompt = asSystemPrompt([
       ...(customPrompt !== undefined ? [customPrompt] : defaultSystemPrompt),
