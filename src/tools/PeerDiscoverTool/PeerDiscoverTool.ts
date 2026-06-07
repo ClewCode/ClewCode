@@ -61,7 +61,7 @@ export const PeerDiscoverTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.workers || output.workers.length === 0) return { tool_use_id: toolUseID, type: 'tool_result', content: 'No peers found.' };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: output.workers.map((w: any) => `/peer join ${w.ip}:${w.port}  (${w.hostname})`).join('\n') };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ ${output.workers.length} peer(s): ` + output.workers.map((w: any) => `${w.hostname}:${w.port}`).join(', ') };
   },
   async call(input: { timeout?: number }) {
     const discovery = getGlobalDiscovery();

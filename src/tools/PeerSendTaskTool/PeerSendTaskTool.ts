@@ -63,7 +63,7 @@ export const PeerSendTaskTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `Sent task to ${output.workerHostname} (id: ${output.taskId ?? '?'}): "${output.taskText ?? ''}"` };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ → ${output.workerHostname}: "${output.taskText ?? ''}"` };
   },
   async call(input: { worker: string; task: string }) {
     const store = getGlobalPeerStore();

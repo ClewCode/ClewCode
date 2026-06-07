@@ -35,7 +35,7 @@ export const PeerListRolesTool = buildTool({
   getPath() { return getCwd(); },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.workers || output.workers.length === 0) return { tool_use_id: toolUseID, type: 'tool_result', content: 'No peers joined.' };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: output.workers.map((w: any) => `${(w.displayName || w.hostname).padEnd(20)} ${(w.role || '-').padEnd(12)} ${w.ip}`).join('\n') };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ ${output.count} peer(s): ` + output.workers.map((w: any) => `${w.displayName || w.hostname}${w.role ? `[${w.role}]` : ''}`).join(', ') };
   },
   async call() {
     const store = getGlobalPeerStore();

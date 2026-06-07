@@ -63,7 +63,7 @@ export const PeerSendMessageTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `Sent to ${output.peerHostname}: "${output.messageText ?? ''}"` };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ → ${output.peerHostname}: "${output.messageText ?? ''}"` };
   },
   async call(input: { peer: string; message: string }) {
     const store = getGlobalPeerStore();

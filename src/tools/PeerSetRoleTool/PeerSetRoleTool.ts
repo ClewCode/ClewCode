@@ -37,7 +37,7 @@ export const PeerSetRoleTool = buildTool({
   getPath() { return getCwd(); },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `Role: ${output.role}` };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ role: ${output.role}` };
   },
   async call(input: { worker: string; role: string }) {
     const store = getGlobalPeerStore();

@@ -58,7 +58,7 @@ export const PeerInfoTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.found) return { tool_use_id: toolUseID, type: 'tool_result', content: `Not found: ${output.error}` };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `${output.hostname} | ${output.ip}:${output.port} | ${output.shell || '?'} | ${output.cwd || ''}` };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ ${output.hostname} :${output.port} ${output.cwd || ''}` };
   },
   async call(input: { worker: string }) {
     const store = getGlobalPeerStore();

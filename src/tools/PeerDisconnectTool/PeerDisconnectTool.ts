@@ -41,7 +41,7 @@ export const PeerDisconnectTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `Disconnected ${output.hostname}` };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✗ disconnected ${output.hostname}` };
   },
   async call(input: { peer: string }) {
     const store = getGlobalPeerStore();

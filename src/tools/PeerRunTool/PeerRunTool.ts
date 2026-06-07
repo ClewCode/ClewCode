@@ -74,7 +74,8 @@ export const PeerRunTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Error: ${output.error}` };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `Exit ${output.exitCode}:\n${(output.stdout || '(no output)').slice(0, 2000)}` };
+    const out = (output.stdout || '').trim() || output.stderr || '(empty)';
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `${output.exitCode === 0 ? '✓' : '✗'} exit ${output.exitCode}: ${out.slice(0, 500)}` };
   },
   async call(input: { worker: string; command: string; timeout?: number }) {
     const store = getGlobalPeerStore();

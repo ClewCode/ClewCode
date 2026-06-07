@@ -47,7 +47,7 @@ export const PeerPingTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.online) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Offline: ${output.error}` };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `${output.hostname} (${output.displayName || '-'}) ${output.role ? `[${output.role}]` : ''} :${output.port} — ${output.cwd}` };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ ${output.hostname}:${output.port} ${output.displayName || ''} ${output.role ? `[${output.role}]` : ''}`.trim() };
   },
   async call(input: { peer: string }) {
     const store = getGlobalPeerStore();

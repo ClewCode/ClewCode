@@ -37,9 +37,9 @@ export const PeerListMessagesTool = buildTool({
     return {
       tool_use_id: toolUseID,
       type: 'tool_result',
-      content: output.messages.map((m: any) =>
-        `[${new Date(m.timestamp).toLocaleTimeString()}] ${m.fromName}: ${m.text}`
-      ).join('\n'),
+      content: `✓ ${output.count} msg(s): ` + output.messages.map((m: any) =>
+        `${m.fromName}: ${m.text.slice(0, 60)}`
+      ).join(' | '),
     };
   },
   async call() {

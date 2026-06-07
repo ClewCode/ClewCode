@@ -42,11 +42,8 @@ export const PeerBroadcastTool = buildTool({
   getPath() { return getCwd(); },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Broadcast failed` };
-    const lines = [`Broadcast to ${output.totalPeers} peers: ${output.delivered} ok, ${output.failed} failed`];
-    for (const r of output.results) {
-      lines.push(`  ${r.success ? '✓' : '✗'} ${r.hostname} ${r.taskId || r.error || ''}`);
-    }
-    return { tool_use_id: toolUseID, type: 'tool_result', content: lines.join('\n') };
+    const summary = output.results.map((r: any) => `${r.success ? '✓' : '✗'}${r.hostname}`).join(' ');
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ broadcast ${output.delivered}/${output.totalPeers}: ${summary}` };
   },
   async call(input: { task: string }) {
     const store = getGlobalPeerStore();

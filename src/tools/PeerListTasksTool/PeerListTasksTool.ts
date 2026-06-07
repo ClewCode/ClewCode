@@ -20,6 +20,8 @@ const outputSchema = lazySchema(() =>
         }),
       ),
     count: z.number(),
+    pending: z.number(),
+    total: z.number(),
   }),
 );
 
@@ -49,7 +51,7 @@ export const PeerListTasksTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.tasks || output.tasks.length === 0) return { tool_use_id: toolUseID, type: 'tool_result', content: 'No tasks.' };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: output.tasks.map((t: any) => `[${t.status === 'pending' ? 'PENDING' : t.status === 'done' ? 'DONE' : 'REJECTED'}] ${t.fromName}: ${t.message}`).join('\n') };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ ${output.pending}/${output.total} pending: ` + output.tasks.map((t: any) => `${t.status[0]?.toUpperCase() || '?'}:${t.fromName}: ${t.message}`).join(' | ') };
   },
   async call() {
     const todos = getGlobalPeerStore().getTodos();
@@ -64,6 +66,8 @@ export const PeerListTasksTool = buildTool({
           createdAt: t.createdAt,
         })),
         count: todos.length,
+        pending: todos.filter(t => t.status === 'pending').length,
+        total: todos.length,
       },
     };
   },

@@ -37,7 +37,7 @@ export const PeerSetNameTool = buildTool({
   getPath() { return getCwd(); },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `Name: ${output.name}` };
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ name: ${output.name}` };
   },
   async call(input: { worker: string; name: string }) {
     const store = getGlobalPeerStore();

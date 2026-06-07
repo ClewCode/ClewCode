@@ -41,12 +41,8 @@ export const PeerJoinTool = buildTool({
   getPath() { return getCwd(); },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Failed: ${output.error}` };
-    const parts = [`Joined ${output.peerHostname}:${output.peerPort}`];
-    if (output.displayName) parts.push(`Name: ${output.displayName}`);
-    if (output.role) parts.push(`Role: ${output.role}`);
-    if (output.shell) parts.push(`Shell: ${output.shell}`);
-    if (output.cwd) parts.push(`Dir: ${output.cwd}`);
-    return { tool_use_id: toolUseID, type: 'tool_result', content: parts.join('\n') };
+    const extra = [output.displayName, output.role, output.shell].filter(Boolean).join(' ');
+    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ joined ${output.peerHostname}:${output.peerPort} ${extra}`.trim() };
   },
   async call(input: { host?: string; port: number }) {
     const host = input.host || '127.0.0.1';
