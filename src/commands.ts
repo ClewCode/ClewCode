@@ -36,6 +36,7 @@ import breakCache from './commands/break-cache/index.js';
 import mcp from './commands/mcp/index.js';
 import mobile from './commands/mobile/index.js';
 import onboarding from './commands/onboarding/index.js';
+import peer from './commands/peer/index.js';
 import pr_comments from './commands/pr_comments/index.js';
 import releaseNotes from './commands/release-notes/index.js';
 import rename from './commands/rename/index.js';
@@ -127,6 +128,7 @@ import stickers from './commands/stickers/index.js';
 import goal from './commands/goal/index.js';
 import bg from './commands/bg/index.js';
 import daemonCmd from './commands/daemon/index.js';
+import looplockCmd from './commands/looplock/index.js';
 import dashboard from './commands/dashboard/index.js';
 import taskCmd from './commands/task/index.js';
 import scrollSpeed from './commands/scroll-speed/index.js';
@@ -254,6 +256,7 @@ const COMMANDS = memoize((): Command[] => [
   contextNonInteractive,
   cost,
   daemonCmd,
+  looplockCmd,
   dashboard,
   diff,
   doctor,
@@ -277,6 +280,7 @@ const COMMANDS = memoize((): Command[] => [
   model,
   outputStyle,
   onboarding,
+  peer,
   skill,
   powerup,
   providerSelect,

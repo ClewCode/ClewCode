@@ -124,13 +124,53 @@ function migrateStatsCache(parsed: Partial<PersistedStatsCache> & { version: num
   ) {
     return null;
   }
+
+  // Normalize provider IDs in cached model usage (for backward compatibility with old cache files)
+  const normalizedModelUsage: { [model: string]: any } = {};
+  for (const [model, usage] of Object.entries(parsed.modelUsage ?? {})) {
+    normalizedModelUsage[model] = {
+      ...usage,
+      provider: usage.provider ? normalizeProviderId(usage.provider as string) : undefined,
+    };
+  }
+
+  // Normalize provider IDs in cached provider usage (for backward compatibility with old cache files)
+  const normalizedProviderUsage: { [providerId: string]: any } = {};
+  for (const [provider, usage] of Object.entries(parsed.providerUsage ?? {})) {
+    const normalizedProvider = normalizeProviderId(provider);
+    // Merge if we already have this normalized provider
+    if (normalizedProviderUsage[normalizedProvider]) {
+      normalizedProviderUsage[normalizedProvider] = {
+        inputTokens: (normalizedProviderUsage[normalizedProvider] as any).inputTokens + usage.inputTokens,
+        outputTokens: (normalizedProviderUsage[normalizedProvider] as any).outputTokens + usage.outputTokens,
+        cacheReadInputTokens:
+          (normalizedProviderUsage[normalizedProvider] as any).cacheReadInputTokens + usage.cacheReadInputTokens,
+        cacheCreationInputTokens:
+          (normalizedProviderUsage[normalizedProvider] as any).cacheCreationInputTokens + usage.cacheCreationInputTokens,
+        webSearchRequests: (normalizedProviderUsage[normalizedProvider] as any).webSearchRequests + usage.webSearchRequests,
+        costUSD: (normalizedProviderUsage[normalizedProvider] as any).costUSD + usage.costUSD,
+        contextWindow: Math.max((normalizedProviderUsage[normalizedProvider] as any).contextWindow, usage.contextWindow),
+        maxOutputTokens: Math.max(
+          (normalizedProviderUsage[normalizedProvider] as any).maxOutputTokens,
+          usage.maxOutputTokens,
+        ),
+        provider: normalizedProvider,
+      };
+    } else {
+      normalizedProviderUsage[normalizedProvider] = {
+        ...usage,
+        provider: normalizedProvider,
+      };
+    }
+  }
+
   return {
     version: STATS_CACHE_VERSION,
     lastComputedDate: parsed.lastComputedDate ?? null,
     dailyActivity: parsed.dailyActivity,
     dailyModelTokens: parsed.dailyModelTokens,
-    modelUsage: parsed.modelUsage ?? {},
-    providerUsage: parsed.providerUsage ?? {},
+    modelUsage: normalizedModelUsage,
+    providerUsage: normalizedProviderUsage,
     totalSessions: parsed.totalSessions,
     totalMessages: parsed.totalMessages,
     longestSession: parsed.longestSession ?? null,

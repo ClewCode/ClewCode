@@ -107,7 +107,7 @@ async function handleCreate(): Promise<{ data: Output }> {
 async function handleList(): Promise<{ data: Output }> {
   try {
     const output = gh(
-      'pr list --state open --limit 20 --json number,title,headRefName,author,createdAt,mergeable,reviews --jq \'.[] | "#\(.number) \(.title) (\(.headRefName))"',
+      'pr list --state open --limit 20 --json number,title,headRefName,author,createdAt,mergeable,reviews --jq \'.[] | "#(.number) (.title) ((.headRefName))"',
     );
     if (!output) {
       return { data: { success: true, action: 'list', message: 'No open PRs.' } };

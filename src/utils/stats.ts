@@ -448,6 +448,7 @@ async function processSessionFiles(sessionFiles: string[], options: ProcessOptio
             }
 
             const provider = extractProviderFromMessage(message, model);
+            const normalizedProvider = normalizeProviderId(provider);
 
             if (!modelUsageAgg[model]) {
               modelUsageAgg[model] = {
@@ -459,10 +460,10 @@ async function processSessionFiles(sessionFiles: string[], options: ProcessOptio
                 costUSD: 0,
                 contextWindow: 0,
                 maxOutputTokens: 0,
-                provider,
+                provider: normalizedProvider,
               };
             } else {
-              modelUsageAgg[model]!.provider = provider;
+              modelUsageAgg[model]!.provider = normalizedProvider;
             }
 
             modelUsageAgg[model]!.inputTokens += usage.inputTokens;
@@ -480,9 +481,10 @@ async function processSessionFiles(sessionFiles: string[], options: ProcessOptio
               dailyModelTokensMap.set(dateKey, dayTokens);
             }
 
-            // Track provider usage
-            if (!providerUsageAgg[provider]) {
-              providerUsageAgg[provider] = {
+            // Track provider usage - normalize provider ID for consistent keys
+            const normalizedProviderId = normalizeProviderId(provider);
+            if (!providerUsageAgg[normalizedProviderId]) {
+              providerUsageAgg[normalizedProviderId] = {
                 inputTokens: 0,
                 outputTokens: 0,
                 cacheReadInputTokens: 0,
@@ -491,16 +493,16 @@ async function processSessionFiles(sessionFiles: string[], options: ProcessOptio
                 costUSD: 0,
                 contextWindow: 0,
                 maxOutputTokens: 0,
-                provider,
+                provider: normalizedProviderId,
               };
             }
-            providerUsageAgg[provider]!.inputTokens += usage.inputTokens;
-            providerUsageAgg[provider]!.outputTokens += usage.outputTokens;
-            providerUsageAgg[provider]!.cacheReadInputTokens += usage.cacheReadInputTokens;
-            providerUsageAgg[provider]!.cacheCreationInputTokens += usage.cacheCreationInputTokens;
-            providerUsageAgg[provider]!.webSearchRequests += usage.webSearchRequests;
-            providerUsageAgg[provider]!.costUSD += usage.costUSD;
-            providerUsageAgg[provider]!.provider = provider;
+            providerUsageAgg[normalizedProviderId]!.inputTokens += usage.inputTokens;
+            providerUsageAgg[normalizedProviderId]!.outputTokens += usage.outputTokens;
+            providerUsageAgg[normalizedProviderId]!.cacheReadInputTokens += usage.cacheReadInputTokens;
+            providerUsageAgg[normalizedProviderId]!.cacheCreationInputTokens += usage.cacheCreationInputTokens;
+            providerUsageAgg[normalizedProviderId]!.webSearchRequests += usage.webSearchRequests;
+            providerUsageAgg[normalizedProviderId]!.costUSD += usage.costUSD;
+            providerUsageAgg[normalizedProviderId]!.provider = normalizedProviderId;
           }
         }
       }

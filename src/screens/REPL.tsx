@@ -928,6 +928,30 @@ export function REPL({
   );
 
   const [screen, setScreen] = useState<Screen>('prompt');
+  const [isLoopActive, setIsLoopActive] = useState(false);
+
+  // Poll autonomous agent activity status to show warning in footer
+  useEffect(() => {
+    let active = true;
+    const checkActive = async () => {
+      try {
+        const { isAutonomousAgentActive } = await import('../services/autonomous/supervisorIntegration.js');
+        const running = await isAutonomousAgentActive();
+        if (active) {
+          setIsLoopActive(running);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    checkActive();
+    const timer = setInterval(checkActive, 3000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, []);
+
   const [showAllInTranscript, setShowAllInTranscript] = useState(false);
   // [ forces the dump-to-scrollback path inside transcript mode. Separate
   // from CLAUDE_CODE_NO_FLICKER=0 (which is process-lifetime) — this is
@@ -3899,6 +3923,34 @@ export function REPL({
       // exchange (matches OpenCode's auto-scroll behavior).
       repinScroll();
 
+      // Check if background loop is active and block input if it is, unless it's a looplock command
+      try {
+        const { isAutonomousAgentActive } = await import('../services/autonomous/supervisorIntegration.js');
+        const isLoopActive = await isAutonomousAgentActive();
+        
+        const normalizedInput = input.trim();
+        const isLooplockCmd = normalizedInput.startsWith('/looplock') || normalizedInput.startsWith('/loop-lock');
+
+        if (isLoopActive && !isLooplockCmd) {
+          const chalk = (await import('chalk')).default;
+
+          addNotification({
+            key: 'loop-active-blocked',
+            text: chalk.yellow('ขณะนี้ Loop ทำงานอยู่ กรุณาใช้ `/looplock <คำสั่ง>` เพื่อป้อนงานใหม่'),
+            priority: 'high',
+          });
+
+          // Clear input to prevent disturbance
+          setInputValue('');
+          helpers.setCursorOffset(0);
+          helpers.clearBuffer();
+          setPastedContents({});
+          return;
+        }
+      } catch (err) {
+        logForDebugging(`Error checking autonomous agent status: ${(err as Error).message}`);
+      }
+
       // Resume loop mode if paused
       if (feature('PROACTIVE') || feature('KAIROS')) {
         proactiveModule?.resumeProactive();
@@ -6182,6 +6234,7 @@ export function REPL({
                     <PromptInput
                       debug={debug}
                       ideSelection={ideSelection}
+                      isLoopActive={isLoopActive}
                       hasSuppressedDialogs={!!hasSuppressedDialogs}
                       isLocalJSXCommandActive={isShowingLocalJSXCommand}
                       getToolUseContext={getToolUseContext}

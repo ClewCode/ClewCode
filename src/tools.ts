@@ -81,6 +81,16 @@ import { RequestShutdownTool } from './tools/RequestShutdownTool/RequestShutdown
 import { SubscribePrActivityTool, UnsubscribePrActivityTool } from './tools/PrSubscriptionTool/PrSubscriptionTool.js';
 import { SendMessageTool } from './tools/SendMessageTool/SendMessageTool.js';
 import { AskUserQuestionTool } from './tools/AskUserQuestionTool/AskUserQuestionTool.js';
+import { PeerDiscoverTool } from './tools/PeerDiscoverTool/PeerDiscoverTool.js';
+import { PeerSendTaskTool } from './tools/PeerSendTaskTool/PeerSendTaskTool.js';
+import { PeerListTasksTool } from './tools/PeerListTasksTool/PeerListTasksTool.js';
+import { PeerShareTool } from './tools/PeerShareTool/PeerShareTool.js';
+import { PeerInfoTool } from './tools/PeerInfoTool/PeerInfoTool.js';
+import { PeerRunTool } from './tools/PeerRunTool/PeerRunTool.js';
+import { PeerJoinTool } from './tools/PeerJoinTool/PeerJoinTool.js';
+import { PeerSetNameTool } from './tools/PeerSetNameTool/PeerSetNameTool.js';
+import { PeerSetRoleTool } from './tools/PeerSetRoleTool/PeerSetRoleTool.js';
+import { PeerListRolesTool } from './tools/PeerListRolesTool/PeerListRolesTool.js';
 import { LSPTool } from './tools/LSPTool/LSPTool.js';
 import { ListMcpResourcesTool } from './tools/ListMcpResourcesTool/ListMcpResourcesTool.js';
 import { ReadMcpResourceTool } from './tools/ReadMcpResourceTool/ReadMcpResourceTool.js';
@@ -204,6 +214,16 @@ export function getAllBaseTools(): Tools {
     ...(isEnvTruthy(process.env.ENABLE_LSP_TOOL) ? [LSPTool] : []),
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     SendMessageTool,
+    PeerDiscoverTool,
+    PeerSendTaskTool,
+    PeerListTasksTool,
+    PeerShareTool,
+    PeerInfoTool,
+    PeerRunTool,
+    PeerJoinTool,
+    PeerSetNameTool,
+    PeerSetRoleTool,
+    PeerListRolesTool,
     ...(listPeersTool ? [listPeersTool] : []),
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),
     ...(isAgentSwarmsEnabled() ? [SubscribePrActivityTool, UnsubscribePrActivityTool] : []),
