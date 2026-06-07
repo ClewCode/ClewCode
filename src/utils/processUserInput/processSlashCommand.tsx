@@ -840,6 +840,22 @@ async function getMessagesForSlashCommand(
           }
 
           // Text result — use system message so it doesn't render as a user bubble
+          // Voice command: auto-submit transcript as user message
+          if (command.name === 'voice' && result.value && result.value.length > 0 && !result.value.startsWith('Voice ')) {
+            return {
+              messages: [
+                createUserMessage({
+                  content: prepareUserContent({
+                    inputString: result.value,
+                    precedingInputBlocks: [],
+                  }),
+                  timestamp: new Date(Date.now() + 100).toISOString(),
+                }),
+              ],
+              shouldQuery: true,
+              command,
+            };
+          }
           return {
             messages: [
               userMessage,
