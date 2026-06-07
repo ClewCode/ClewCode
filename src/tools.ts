@@ -83,6 +83,7 @@ import { SendMessageTool } from './tools/SendMessageTool/SendMessageTool.js';
 import { AskUserQuestionTool } from './tools/AskUserQuestionTool/AskUserQuestionTool.js';
 import { PeerDiscoverTool } from './tools/PeerDiscoverTool/PeerDiscoverTool.js';
 import { PeerSendTaskTool } from './tools/PeerSendTaskTool/PeerSendTaskTool.js';
+import { PeerSendMessageTool } from './tools/PeerSendMessageTool/PeerSendMessageTool.js';
 import { PeerListTasksTool } from './tools/PeerListTasksTool/PeerListTasksTool.js';
 import { PeerShareTool } from './tools/PeerShareTool/PeerShareTool.js';
 import { PeerInfoTool } from './tools/PeerInfoTool/PeerInfoTool.js';
@@ -216,6 +217,7 @@ export function getAllBaseTools(): Tools {
     SendMessageTool,
     PeerDiscoverTool,
     PeerSendTaskTool,
+    PeerSendMessageTool,
     PeerListTasksTool,
     PeerShareTool,
     PeerInfoTool,
