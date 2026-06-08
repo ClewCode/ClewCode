@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/clew-logo-long.png" alt="Clew Code" width="480" />
+
 # Clew Code
 
 **The open-source AI coding agent — in your terminal and on your LAN.**
