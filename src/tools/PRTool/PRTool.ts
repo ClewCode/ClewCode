@@ -336,6 +336,14 @@ export const PrTool = buildTool({
   renderToolResultMessage,
   renderToolUseRejectedMessage,
 
+  mapToolResultToToolResultBlockParam(content: Output, toolUseID: string) {
+    return {
+      type: 'tool_result' as const,
+      tool_use_id: toolUseID,
+      content: [content.message, content.data].filter(Boolean).join('\n'),
+    };
+  },
+
   async call(input: Input): Promise<{ data: Output }> {
     switch (input.action) {
       case 'create':
