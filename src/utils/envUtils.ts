@@ -16,6 +16,16 @@ export const getClaudeConfigHomeDir = memoize(
   () => process.env.CLAUDE_CONFIG_DIR,
 );
 
+export const getClewConfigHomeDir = memoize(
+  (): string => {
+    if (process.env.CLEW_CONFIG_DIR) {
+      return process.env.CLEW_CONFIG_DIR.normalize('NFC');
+    }
+    return join(homedir(), '.clew').normalize('NFC');
+  },
+  () => process.env.CLEW_CONFIG_DIR,
+);
+
 export function getTeamsDir(): string {
   return join(getClaudeConfigHomeDir(), 'teams');
 }
