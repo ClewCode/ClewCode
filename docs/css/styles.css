@@ -188,6 +188,28 @@ kbd {
 .header-nav a:hover { color: var(--text-primary); background: var(--bg-hover); text-decoration: none; }
 .header-nav a.active { color: var(--accent); background: var(--accent-muted); }
 
+/* ── Lang Select ─────────────────────────────────────────────────────────── */
+.lang-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 6px 28px 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: var(--text-sm);
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+  min-width: 56px;
+}
+.lang-select:hover { border-color: var(--border); color: var(--text-primary); }
+.lang-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-muted); }
+.lang-select option { color: var(--text-primary); background: var(--bg-surface); }
+
 /* ── Layout ────────────────────────────────────────────────────────────── */
 .app { display: flex; min-height: 100vh; }
 

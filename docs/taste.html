@@ -12,35 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
 </head>
 <body>
-<header class="header">
-  <div class="header-inner">
-    <a href="index.html" class="logo">
-      <span>Clew Code</span>
-    </a>
-    <nav class="header-nav">
-      <a href="index.html">Home</a><a href="index.html#features">Features</a><a href="index.html#commands">Commands</a><a href="quick-start.html" class="active">Docs</a><a href="https://github.com/JonusNattapong/ClewCode" target="_blank">GitHub</a>
-    <div class="lang-wrap">
-    <button class="lang-btn">🌐</button>
-    <div class="lang-menu">
-      <a href="../readme/README.zh.md">中文</a>
-      <a href="../readme/README.th.md">ไทย</a>
-      <a href="../readme/README.ja.md">日本語</a>
-      <a href="../readme/README.ko.md">한국어</a>
-      <a href="../readme/README.es.md">Español</a>
-      <a href="../readme/README.fr.md">Français</a>
-      <a href="../readme/README.de.md">Deutsch</a>
-      <a href="../readme/README.pt.md">Português</a>
-      <a href="../readme/README.vi.md">Tiếng Việt</a>
-      <a href="../readme/README.id.md">Bahasa Indonesia</a>
-      <a href="../readme/README.ru.md">Русский</a>
-      <a href="../readme/README.hi.md">हिन्दी</a>
-      <a href="../README.md">English</a>
-    </div>
-  </div>
-    </nav>
-    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
-  </div>
-</header>
+<header class="header"></header>
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -240,6 +212,101 @@
       </div>
 
       <h2>Architecture</h2>
+      <pre><code> ╔══════════════════════════════════════════════════════════════════════════════╗
+ ║                        TASTE — PREFERENCE LEARNING RUNTIME                   ║
+ ╚══════════════════════════════════════════════════════════════════════════════╝
+
+                          ┌──────────────────────────┐
+                          │     USER INTERACTION      │
+                          │  accept / reject / edit   │
+                          │  test pass / lint signal  │
+                          └────────────┬─────────────┘
+                                       │
+         ┌─────────────────────────────┼─────────────────────────────┐
+         │                             │                             │
+         ▼                             ▼                             ▼
+ ┌───────────────┐           ┌───────────────┐           ┌───────────────┐
+ │ AcceptReject  │           │ DiffSignal    │           │EditDistance   │
+ │ Tracker       │           │ Extractor     │           │ Reward        │
+ │ (accept/reject│           │ (diff delta)  │           │ (edit cost)   │
+ │  signals)     │           │               │           │               │
+ └───────┬───────┘           └───────┬───────┘           └───────┬───────┘
+         │                          │                           │
+         └──────────────────────────┼───────────────────────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │  TasteSignalCollector │
+                         │  (unified event hub)  │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   TasteRewardModel   │
+                         │  signal → reward map  │
+                         │  accept = +1.0       │
+                         │  reject = -1.0       │
+                         │  test pass = +0.4    │
+                         └──────────┬──────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    │               │               │
+                    ▼               ▼               ▼
+          ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+          │TasteBandit   │ │AutoLearn     │ │TasteDecay    │
+          │ε-greedy (6   │ │Engine        │ │confidence ↓  │
+          │strategy arms)│ │pattern→rule  │ │over time     │
+          │pick optimal  │ │              │ │if unused     │
+          │arm per ctx   │ │              │ │              │
+          └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+                 │                │                │
+                 │    ┌───────────┘                │
+                 │    │                            │
+                 ▼    ▼                            │
+          ┌──────────────────┐                     │
+          │ TasteRuntime     │◄────────────────────┘
+          │ (orchestrator)   │
+          └────────┬─────────┘
+                   │
+     ┌─────────────┼─────────────┬──────────────────┐
+     │             │             │                  │
+     ▼             ▼             ▼                  ▼
+┌─────────┐ ┌──────────┐ ┌──────────────┐ ┌────────────────┐
+│Symbolic │ │Neural    │ │PromptInjector│ │ TasteEventLog  │
+│Engine   │ │Scorer    │ │injects       │ │ append-only    │
+│compile  │ │Jaccard/  │ │&lt;clew_taste&gt; │ │ JSONL          │
+│rules→   │ │TF-IDF    │ │block (max 8  │ │                │
+│check    │ │relevance │ │rules)        │ │                │
+└────┬────┘ └────┬─────┘ └──────┬───────┘ └────────────────┘
+     │           │              │
+     ▼           │              ▼
+┌─────────┐      │     ┌────────────────┐
+│validate │      │     │ SYSTEM PROMPT  │
+│Edit()   │      └────►│ (taste block)  │
+│block if │             │                │
+│conf ≥   │             │ → AI adapts    │
+│0.85     │             │   output style │
+└─────────┘             └────────────────┘
+
+
+ ═══ CODEBASE AUTO-LEARN (parallel path) ═══
+
+   Codebase ──► TasteCodebaseAnalyzer ──► PatternDetector ──► AutoLearnEngine
+                 (reads conventions)      (finds patterns)    (creates rules)
+                                                                    │
+                                                                    ▼
+                                                            TasteProfileStore
+                                                            .clew/taste/profile.json
+
+
+ ═══ DATA LIFECYCLE ═══
+
+   Signal ──► EventLog (JSONL) ──► Rule confidence +/- ──► Decay if unused 30d
+                                                          │
+                                                          ▼
+                                                   Profile persisted
+                                                   to .clew/taste/</code></pre>
+
       <p>Taste consists of several subsystems:</p>
       <ol>
         <li><strong>Signal Collection</strong> — Captures accept, reject, edit, test, lint, and tool signals from user interactions and converts them into learning events.</li>

@@ -11,9 +11,13 @@ interface BuddyProps {
   setAppState: LocalJSXCommandContext['setAppState'];
 }
 
-function pokemonBar(value: number, max = 15): string {
-  const fill = Math.round((value / 100) * max);
-  return '█'.repeat(fill) + '░'.repeat(max - fill);
+const CARD_W = 44;
+const INNER_W = CARD_W - 4; // minus border(2) + padding(2)
+const BAR_FULL = 10;
+
+function statBar(value: number): string {
+  const fill = Math.round((value / 100) * BAR_FULL);
+  return '█'.repeat(fill) + '░'.repeat(BAR_FULL - fill);
 }
 
 function BuddyCard({ setAppState, onDone }: BuddyProps): React.ReactNode {
@@ -27,7 +31,7 @@ function BuddyCard({ setAppState, onDone }: BuddyProps): React.ReactNode {
 
   if (!companion) {
     return (
-      <Box width={40} flexDirection="column" padding={1} borderStyle="round" borderColor="subtle">
+      <Box width={CARD_W} flexDirection="column" padding={1} borderStyle="round" borderColor="subtle">
         <Text bold>Buddy</Text>
         <Text dimColor>No buddy yet. Use /buddy show to create one.</Text>
         <Box marginTop={1}><Text dimColor>any key to close</Text></Box>
@@ -35,89 +39,68 @@ function BuddyCard({ setAppState, onDone }: BuddyProps): React.ReactNode {
     );
   }
 
-  const color = (RARITY_COLORS[companion.rarity] as string) ?? 'inactive';
+  const color = RARITY_COLORS[companion.rarity] as string;
   const stars = RARITY_STARS[companion.rarity];
   const sprite = renderSprite(companion);
-  const hp = companion.stats.DEBUGGING ?? 50;
 
-  // ── Top 2 stats become "moves" ──────────────────────
-  type SE = [string, number];
-  const entries = Object.entries(companion.stats) as SE[];
-  const tops = [...entries].sort(([, a], [, b]) => b - a).slice(0, 2);
-  const MOVE_NAMES: Record<string, string> = {
-    DEBUGGING: 'Debug Beam',
-    PATIENCE: 'Patience Rest',
-    CHAOS: 'Chaos Blast',
-    WISDOM: 'Wisdom Aura',
-    SNARK: 'Snark Slap',
-  };
+  // ── Header line: rarity + species ─────────────────────
+  const headerR = `${stars} ${companion.rarity.toUpperCase()}`;
+  const headerL = companion.species.toUpperCase();
 
-  const flavor = companion.personality
-    ? companion.personality.slice(0, 36)
-    : `${companion.name} is ready to code!`;
+  // ── Stat lines ─────────────────────────────────────────
+  const maxNameLen = Math.max(...Object.keys(companion.stats).map(k => k.length));
+  const statLines = (Object.entries(companion.stats) as Array<[string, number]>).map(([k, v]) => {
+    const padded = k.padEnd(maxNameLen);
+    return `${padded} ${statBar(v)} ${String(v).padStart(3)}`;
+  });
 
   return (
-    <Box width={44} flexDirection="column" borderStyle="bold" borderColor={color} paddingX={1} paddingY={0}>
-
-      {/* ═══ Top bar: Name + HP ═══ */}
+    <Box width={CARD_W} flexDirection="column" borderStyle="round" borderColor={color} padding={1}>
+      {/* Header */}
       <Box flexDirection="row" justifyContent="space-between">
-        <Text bold>{companion.name}</Text>
-        <Box flexDirection="row" gap={1}>
-          <Text color={color}>{stars}</Text>
-          <Text dimColor>HP</Text>
-          <Text bold color={hp > 50 ? 'success' : 'warning'}>{hp}</Text>
-        </Box>
+        <Text bold color={color}>{headerR}</Text>
+        <Text bold>{headerL}</Text>
       </Box>
 
-      {/* ── Type bar ── */}
-      <Box flexDirection="row">
-        <Text dimColor>{companion.species.toUpperCase()} · {companion.rarity.toUpperCase()}</Text>
-      </Box>
-
-      {/* ═══════ Sprite ═══════ */}
+      {/* Sprite */}
       <Box flexDirection="column" alignItems="center" marginTop={1}>
         {sprite.map((line, i) => (
           <Text key={i} color={color}>{line}</Text>
         ))}
       </Box>
+
+      {/* Name */}
       <Box flexDirection="row" justifyContent="center">
-        <Text dimColor italic>"{flavor}"</Text>
+        <Text bold color={color}>{companion.name}</Text>
       </Box>
 
-      {/* ═══════ Moves ═══════ */}
-      <Box marginTop={1} flexDirection="column" borderStyle="single" borderColor="subtle" paddingX={1}>
-        {tops.map(([stat, val]) => {
-          const name = MOVE_NAMES[stat] ?? stat;
-          return (
-            <Box key={stat} flexDirection="row" gap={1}>
-              <Text dimColor color={color}>{name.padEnd(14)}</Text>
-              <Text>{pokemonBar(val, 12)}</Text>
-              <Text dimColor>{String(val).padStart(3)}</Text>
-            </Box>
-          );
-        })}
-      </Box>
+      {/* Personality */}
+      {companion.personality ? (
+        <Box flexDirection="row" justifyContent="center" paddingX={1}>
+          <Text dimColor italic wrap="truncate-end">"{companion.personality}"</Text>
+        </Box>
+      ) : null}
 
-      {/* ═══════ Stats ═══════ */}
-      <Box marginTop={1} flexDirection="column">
-        {entries.map(([k, v]) => (
-          <Box key={k} flexDirection="row" gap={1}>
-            <Text dimColor>{k.padEnd(10)}</Text>
-            <Text>{pokemonBar(v, 10)}</Text>
-            <Text dimColor>{String(v).padStart(3)}</Text>
-          </Box>
+      {/* Stats */}
+      <Box flexDirection="column" marginTop={1}>
+        {statLines.map((line, i) => (
+          <Text key={i} dimColor>{line}</Text>
         ))}
       </Box>
 
-      {/* ═══ Footer ═══ */}
-      <Box marginTop={1} flexDirection="row" gap={2}>
-        <Text dimColor>
-          {companion.shiny ? '✦ SHINY ' : ''}
-          {companion.eye}{companion.hat === 'none' ? '' : `·${companion.hat}`}
-        </Text>
+      {/* Footer */}
+      <Box marginTop={1}>
+        <Text dimColor>{companion.name} is here · it'll chime in as you code</Text>
       </Box>
       <Box>
-        <Text dimColor>/buddy · any key to close</Text>
+        <Text dimColor>your buddy won't count toward your usage</Text>
+      </Box>
+      <Box>
+        <Text dimColor>say its name to get its take · /buddy off</Text>
+      </Box>
+
+      <Box marginTop={0}>
+        <Text dimColor>any key</Text>
       </Box>
     </Box>
   );

@@ -17,6 +17,82 @@
     }
   }
 
+  // ── Header Injection ─────────────────────────────────────────────────────
+  function injectHeader() {
+    var header = document.querySelector('.header');
+    if (!header) return;
+
+    var path = window.location.pathname;
+    var isThai = /\.th\.html$/.test(path);
+    var isIndex = /\/index(\.th)?\.html$/.test(path) || path === '/' || path.endsWith('/docs/');
+    var currentPage = path.split('/').pop() || 'index.html';
+
+    var logoHref = isThai ? 'index.th.html' : 'index.html';
+    var docsHref = isThai ? 'quick-start.th.html' : 'quick-start.html';
+    var ariaLabel = isThai ? 'เปิด/ปิดเมนู' : 'Toggle navigation';
+
+    // Build language dropdown
+    var langEn = isThai
+      ? currentPage.replace(/\.th\.html$/, '.html')
+      : '../README.md';
+
+    var langs = [
+      { url: langEn,                   label: 'English', code: 'en' },
+      { url: '../readme/README.th.md', label: 'ไทย',     code: 'th' }
+    ];
+
+    var langOptionsHtml = langs.map(function (lang) {
+      var sel = (lang.code === (isThai ? 'th' : 'en')) ? ' selected' : '';
+      return '<option value="' + lang.url + '"' + sel + '>' + lang.label + '</option>';
+    }).join('');
+
+    var langSelectHtml =
+      '<select class="lang-select" aria-label="Language">' +
+      '  <option value="" disabled hidden>🌐</option>' +
+      langOptionsHtml +
+      '</select>';
+
+    header.innerHTML =
+      '<div class="header-inner">' +
+      '  <a href="' + logoHref + '" class="logo"><span>Clew Code</span></a>' +
+      '  <nav class="header-nav">' +
+      '    <a href="' + logoHref + '">' + (isThai ? 'หน้าแรก' : 'Home') + '</a>' +
+      '    <a href="' + logoHref + '#features">' + (isThai ? 'ฟีเจอร์' : 'Features') + '</a>' +
+      '    <a href="' + logoHref + '#commands">' + (isThai ? 'คำสั่ง' : 'Commands') + '</a>' +
+      '    <a href="' + docsHref + '">' + (isThai ? 'เอกสาร' : 'Docs') + '</a>' +
+      '    <a href="https://github.com/JonusNattapong/ClewCode" target="_blank">GitHub</a>' +
+      '    ' + langSelectHtml +
+      '  </nav>' +
+      '  <button class="menu-btn" id="menuToggle" aria-label="' + ariaLabel + '"><span></span><span></span><span></span></button>' +
+      '</div>';
+
+    // Language select change handler
+    var langSelect = header.querySelector('.lang-select');
+    if (langSelect) {
+      langSelect.addEventListener('change', function () {
+        var url = this.value;
+        if (url) window.location.href = url;
+      });
+    }
+
+    // Active link: exact page match
+    var navLinks = header.querySelectorAll('.header-nav a');
+    navLinks.forEach(function (link) {
+      var href = link.getAttribute('href');
+      if (!href) return;
+      var hrefPage = href.split('/').pop().split('#')[0];
+      if (hrefPage === currentPage) link.classList.add('active');
+    });
+
+    // Non-index pages: mark "Docs" as active
+    if (!isIndex) {
+      var docsLink = header.querySelector('.header-nav a[href*="quick-start"]');
+      if (docsLink) docsLink.classList.add('active');
+    }
+  }
+
+  injectHeader();
+
   // ── Sidebar Injection ────────────────────────────────────────────────────
   if (sidebar) {
     sidebar.innerHTML =
@@ -64,6 +140,7 @@
       '    <a href="' + rootPrefix + 'features/evals.html" class="sidebar-link"><span class="link-icon"></span>Evaluation Harness</a>' +
       '    <a href="' + rootPrefix + 'features/sentry-setup.html" class="sidebar-link"><span class="link-icon"></span>Sentry Setup</a>' +
       '    <a href="' + rootPrefix + 'taste.html" class="sidebar-link"><span class="link-icon"></span>Taste</a>' +
+      '    <a href="' + rootPrefix + 'peer.html" class="sidebar-link"><span class="link-icon"></span>Peer System</a>' +
       '  </nav>' +
       '</div>' +
       '<div class="sidebar-section">' +
@@ -111,13 +188,6 @@
   if (currentPage === '') currentPage = 'index.html';
 
   document.querySelectorAll('.sidebar-link').forEach(function (link) {
-    var href = link.getAttribute('href');
-    if (!href) return;
-    var hrefPage = href.split('/').pop().split('#')[0];
-    if (hrefPage === currentPage) link.classList.add('active');
-  });
-
-  document.querySelectorAll('.header-nav a').forEach(function (link) {
     var href = link.getAttribute('href');
     if (!href) return;
     var hrefPage = href.split('/').pop().split('#')[0];
