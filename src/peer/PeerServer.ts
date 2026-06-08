@@ -12,7 +12,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import type { AddressInfo } from 'node:net';
 import { logForDebugging } from '../utils/debug.js';
 import { errorMessage } from '../utils/errors.js';
-import { peerColorFromId, type PeerColor, type PeerInfo, type PeerTodo, type PeerChatMessage } from './types.js';
+import { type PeerChatMessage, type PeerColor, type PeerInfo, type PeerTodo, peerColorFromId } from './types.js';
 
 export type PeerServerCallbacks = {
   onMessage?: (msg: PeerChatMessage) => void;
@@ -57,13 +57,13 @@ export class PeerServer {
         this.handleWebSocketUpgrade(req, socket, head);
       });
 
-      this.server.on('error', (err) => {
+      this.server.on('error', err => {
         logForDebugging(`[PeerServer] Error: ${errorMessage(err)}`);
         reject(err);
       });
 
-      // Listen on port 0 (OS picks a free port)
-      this.server.listen(0, '0.0.0.0', () => {
+      // Listen on port 0 (OS picks a free port) on localhost only
+      this.server.listen(0, '127.0.0.1', () => {
         const addr = this.server!.address() as AddressInfo;
         this.actualPort = addr.port;
         this.started = true;
@@ -80,11 +80,19 @@ export class PeerServer {
     this.started = false;
     // Close all WebSocket connections
     for (const ws of this.wsClients) {
-      try { ws.close(); } catch { /* ignore */ }
+      try {
+        ws.close();
+      } catch {
+        /* ignore */
+      }
     }
     this.wsClients.clear();
     if (this.server) {
-      try { this.server.close(); } catch { /* ignore */ }
+      try {
+        this.server.close();
+      } catch {
+        /* ignore */
+      }
       this.server = null;
     }
   }
@@ -167,7 +175,8 @@ export class PeerServer {
           case '/peer-exec': {
             const data = JSON.parse(Buffer.concat(body).toString());
             if (this.callbacks.onExec) {
-              this.callbacks.onExec(data.command ?? '')
+              this.callbacks
+                .onExec(data.command ?? '')
                 .then(result => {
                   res.writeHead(200, { 'Content-Type': 'application/json' });
                   res.end(JSON.stringify(result));

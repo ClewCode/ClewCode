@@ -1,11 +1,12 @@
 import { formatBibliography } from './citations.js';
-import type { Citation, ResearchClaim, ResearchPlan } from './types.js';
+import type { Citation, ResearchClaim, ResearchPlan, SynthesizerResult } from './types.js';
 
 export function buildResearchReport(
   query: string,
   plan: ResearchPlan,
   claims: ResearchClaim[],
   citations: Citation[],
+  synthesis?: SynthesizerResult,
 ): string {
   const date = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -24,61 +25,73 @@ export function buildResearchReport(
               .join(', ');
 
             return [
-              `### Finding ${index + 1} — ${claim.claim.slice(0, 50)}...`,
+              `### Finding ${index + 1}`,
               '',
               `**Claim:** ${claim.claim} ${sourceCites ? `(${sourceCites})` : ''}`,
               `**Type:** ${claim.type}  `,
               `**Confidence:** ${claim.confidence}  `,
-              `**Implication for Claude:** Essential design pattern reference.`,
               '',
             ].join('\n');
           })
           .join('\n');
 
-  const comparisonRows = claims
-    .filter(c => c.type === 'design_principle' || c.type === 'recommendation')
-    .map(c => `| ${c.claim.slice(0, 30)}... | High | Low | Strong Fit |`)
-    .join('\n');
-
-  const comparisonMatrix = [
-    '| Option / Feature | Strength | Weakness | Fit for Claude |',
-    '|---|---|---|---|',
-    comparisonRows || '| Base Architecture | Multi-provider support | Complex routing | Highly Compatible |',
-  ].join('\n');
+  const synthesisSection = synthesis
+    ? [
+        '## Synthesis',
+        '',
+        `**Overall Confidence:** ${synthesis.overallConfidence}`,
+        '',
+        synthesis.summary,
+        '',
+        synthesis.consensusFindings.length > 0
+          ? [
+              '### Consensus Findings',
+              '',
+              ...synthesis.consensusFindings.map(
+                c => `- **${c.topic}** (${c.sourceCount} sources): ${c.claims.slice(0, 2).join('; ')}`,
+              ),
+              '',
+            ].join('\n')
+          : '',
+        synthesis.conflicts.length > 0
+          ? [
+              '### Conflicts to Resolve',
+              '',
+              ...synthesis.conflicts.map(
+                c => `- **${c.topic}** — A: "${c.claimA.slice(0, 80)}" vs B: "${c.claimB.slice(0, 80)}"`,
+              ),
+              '',
+            ].join('\n')
+          : '',
+        synthesis.gaps.length > 0
+          ? ['### Research Gaps', '', ...synthesis.gaps.map(g => `- ${g}`), ''].join('\n')
+          : '',
+      ].join('\n')
+    : '';
 
   const report = [
     `# Research Report — ${query}`,
     '',
     `**Date:** ${date}  `,
     `**Mode:** ${plan.mode}  `,
-    `**Status:** Grounded & Verified  `,
+    `**Sources:** ${citations.length}  `,
+    `**Claims:** ${claims.length}  `,
     '',
     '## Question',
     '',
     query,
     '',
-    '## Executive Summary',
+    '## Sub-Questions',
     '',
-    `This report details findings for "${query}" following the PLAN F Source-grounded Research process. All key claims are cited directly from local codebase files, wiki, and memory records.`,
+    plan.subQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n'),
     '',
     '## Key Findings',
     '',
     findingsText,
-    '## Comparison Matrix',
-    '',
-    comparisonMatrix,
-    '',
-    '## Recommended Design',
-    '',
-    'Based on the key findings, we recommend adopting a clean modular design with high-quality validation rules and strict boundaries between public/private research passes.',
-    '',
-    '## Implementation Plan',
-    '',
-    plan.subQuestions.map((q, i) => `${i + 1}. Resolve sub-question: "${q}"`).join('\n'),
-    '',
+    synthesisSection,
     '## Risks',
     '',
-    plan.risks.map(r => `- **Risk:** ${r}`).join('\n'),
+    plan.risks.map(r => `- ${r}`).join('\n'),
     '',
     '## Sources',
     '',

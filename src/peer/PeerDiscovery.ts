@@ -12,7 +12,7 @@
  *   discoverPeers()              — scan peer files + send UDP query
  */
 
-import * as dgram from 'node:dgram';
+import type * as dgram from 'node:dgram';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -162,7 +162,9 @@ export class PeerDiscovery {
         data.id = this.localId;
         fs.writeFileSync(myFile, JSON.stringify(data, null, 2));
       }
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
   }
 
   // ── Shell detection ──────────────────────────────────────
@@ -208,7 +210,7 @@ export class PeerDiscovery {
         pid: this.pid,
         id: this.localId,
         hostname: this.localHostname,
-        ip: this.localIp,
+        ip: '127.0.0.1',
         port: this.localPort,
         cwd,
         shell: this.detectShell(),
@@ -309,50 +311,7 @@ export class PeerDiscovery {
   // ── UDP socket (LAN) ─────────────────────────────────────
 
   private async ensureSocket(): Promise<dgram.Socket | null> {
-    if (this.socket) return this.socket;
-
-    const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true });
-
-    return new Promise<dgram.Socket | null>(resolve => {
-      const timeout = setTimeout(() => {
-        try {
-          socket.close();
-        } catch {
-          /* ignore */
-        }
-        resolve(null);
-      }, 1000);
-
-      socket.on('error', () => {
-        clearTimeout(timeout);
-        resolve(null);
-      });
-
-      socket.on('message', (msg, rinfo) => {
-        this.handleMessage(msg, rinfo);
-      });
-
-      socket.on('listening', () => {
-        clearTimeout(timeout);
-        try {
-          socket.addMembership(PEER_MULTICAST_GROUP, this.localIp);
-          socket.setMulticastInterface(this.localIp);
-          socket.setMulticastLoopback(true);
-        } catch {
-          // Multicast not available — ok
-        }
-        socket.setBroadcast(true);
-        this.socket = socket;
-        resolve(socket);
-      });
-
-      try {
-        socket.bind(PEER_DISCOVERY_PORT, undefined, () => {});
-      } catch {
-        clearTimeout(timeout);
-        resolve(null);
-      }
-    });
+    return null; // Disabled UDP Multicast for localhost-only safety
   }
 
   private sendUdpMessage(msg: object, targetPort = PEER_DISCOVERY_PORT, targetAddress = PEER_MULTICAST_GROUP): void {
@@ -467,22 +426,35 @@ export class PeerDiscovery {
         if (fs.existsSync(myFile)) {
           const data = JSON.parse(fs.readFileSync(myFile, 'utf-8')) as PeerFile;
           this.peers.set(this.localId, {
-            id: data.id, hostname: data.hostname,
-            ip: data.ip, port: data.port, cwd: data.cwd,
-            sessionId: data.sessionId, version: '',
-            shell: data.shell, platform: data.platform, term: data.term,
-            lastSeen: Date.now(), status: 'online',
+            id: data.id,
+            hostname: data.hostname,
+            ip: data.ip,
+            port: data.port,
+            cwd: data.cwd,
+            sessionId: data.sessionId,
+            version: '',
+            shell: data.shell,
+            platform: data.platform,
+            term: data.term,
+            lastSeen: Date.now(),
+            status: 'online',
           });
         }
       } catch {
         // No peer file — still try advertising flag
         if (this.isAdvertising && this.localPort) {
           this.peers.set(this.localId, {
-            id: this.localId, hostname: this.localHostname,
-            ip: this.localIp, port: this.localPort,
-            cwd: process.cwd(), version: '',
-            shell: this.detectShell(), platform: this.platformName, term: this.termName,
-            lastSeen: Date.now(), status: 'online',
+            id: this.localId,
+            hostname: this.localHostname,
+            ip: this.localIp,
+            port: this.localPort,
+            cwd: process.cwd(),
+            version: '',
+            shell: this.detectShell(),
+            platform: this.platformName,
+            term: this.termName,
+            lastSeen: Date.now(),
+            status: 'online',
           });
         }
       }

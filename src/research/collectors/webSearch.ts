@@ -1,145 +1,87 @@
-import { spawnSync } from 'child_process';
-import { join } from 'path';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { getFsImplementation } from '../../utils/fsOperations.js';
+import { searchWithProviders } from '../../tools/ResearchTool/searchProviders.js';
 import type { ResearchSource } from '../types.js';
 
-type SearchResult = {
-  title: string;
-  url: string;
-  body: string;
-};
-
-type ScrapeResult = {
-  status: 'ok' | 'failed';
-  title?: string;
-  author?: string;
-  published_at?: string;
-  markdown?: string;
-  url?: string;
-  error?: string;
-};
-
-export async function collectWebSearch(cwd: string, query: string, runDir: string): Promise<ResearchSource[]> {
+/**
+ * Collect web sources using native search providers (DuckDuckGo, Tavily, Brave).
+ * Replaces the old Python subprocess approach.
+ */
+export async function collectWebSearch(_cwd: string, query: string, runDir: string): Promise<ResearchSource[]> {
   const fsImpl = getFsImplementation();
   const sourcesDir = join(runDir, 'sources');
 
   if (!fsImpl.existsSync(sourcesDir)) {
-    // Explicitly create sources directory using Node's fs implementation
-    // wrapped in Bun compatibility layers if needed, or getFsImplementation
-    const fs = require('fs');
-    fs.mkdirSync(sourcesDir, { recursive: true });
+    mkdirSync(sourcesDir, { recursive: true });
   }
 
-  console.log(`[webSearch] Querying DuckDuckGo for: "${query}"`);
+  console.log(`[webSearch] Searching for: "${query}"`);
 
-  // 1. Run DuckDuckGo search via our Python helper script
-  const searchProcess = spawnSync('python', ['scripts/scrape.py', '--search', query, '--max-results', '5'], {
-    encoding: 'utf-8',
-    timeout: 8000,
-  });
+  let allResults: Array<{ title: string; url: string; excerpt: string }> = [];
 
-  if (searchProcess.error || searchProcess.status !== 0) {
-    console.error(`[webSearch] Search failed: ${searchProcess.stderr || 'Subprocess error'}`);
-    return [];
-  }
-
-  let searchData;
   try {
-    searchData = JSON.parse(searchProcess.stdout.trim());
+    const providerResults = await searchWithProviders(query, { maxResults: 5 });
+    for (const provider of providerResults) {
+      for (const result of provider.results) {
+        allResults.push({
+          title: result.title,
+          url: result.url,
+          excerpt: result.excerpt || (result as any).content || (result as any).description || '',
+        });
+      }
+    }
+
+    // Deduplicate by URL
+    const seen = new Set<string>();
+    allResults = allResults.filter(r => {
+      if (seen.has(r.url)) return false;
+      seen.add(r.url);
+      return true;
+    }).slice(0, 5);
   } catch (err) {
-    console.error(`[webSearch] Failed to parse search JSON output`);
-    return [];
+    console.error(`[webSearch] Search failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  if (searchData.status !== 'ok' || !searchData.results) {
-    console.error(`[webSearch] Search returned error: ${searchData.error || 'unknown error'}`);
-    return [];
-  }
+  console.log(`[webSearch] Found ${allResults.length} results`);
 
-  const results: SearchResult[] = searchData.results;
   const sources: ResearchSource[] = [];
+  const runDirName = runDir.split(/[\\/]/).pop() || '';
 
-  console.log(`[webSearch] Found ${results.length} search results. Scraping concurrently...`);
-
-  // 2. Concurrently scrape each URL using Scrapling via our Python helper
-  // We limit concurrent Playwright/HTTP fetches to respect rate limits and keep CLI responsive.
-  const scrapePromises = results.map(async (res, idx) => {
+  for (let idx = 0; idx < allResults.length; idx++) {
+    const res = allResults[idx]!;
     const sourceId = `src_web_${(idx + 1).toString().padStart(3, '0')}`;
     const filename = `${sourceId}.md`;
-    const relativePath = join('.claude', 'research', 'runs', runDir.split(/[\\/]/).pop() || '', 'sources', filename);
-    const fullPath = join(cwd, relativePath);
+    const relativePath = join('.claude', 'research', 'runs', runDirName, 'sources', filename);
 
-    console.log(`[webSearch] [${sourceId}] Scraping: ${res.url}`);
-
-    const scrapeProcess = spawnSync('python', ['scripts/scrape.py', '--url', res.url], {
-      encoding: 'utf-8',
-      timeout: 10000, // 10-second limit per scrape
-    });
-
-    if (scrapeProcess.error || scrapeProcess.status !== 0) {
-      console.error(`[webSearch] [${sourceId}] Failed to scrape URL: ${res.url}`);
-      return null;
-    }
-
-    let scrapeData: ScrapeResult;
-    try {
-      scrapeData = JSON.parse(scrapeProcess.stdout.trim());
-    } catch (err) {
-      console.error(`[webSearch] [${sourceId}] Failed to parse scraped JSON`);
-      return null;
-    }
-
-    if (scrapeData.status !== 'ok' || !scrapeData.markdown) {
-      console.error(`[webSearch] [${sourceId}] Scraper returned error: ${scrapeData.error || 'Empty content'}`);
-      return null;
-    }
-
-    const title = scrapeData.title || res.title || 'Untitled Web Page';
-    const author = scrapeData.author || '';
-    const publishedAt = scrapeData.published_at || '';
-    const markdown = scrapeData.markdown;
-
-    // 3. Construct frontmatter metadata and Markdown body
+    const markdown = res.excerpt || '';
     const mdContent = [
       '---',
       `source_id: ${sourceId}`,
       `url: ${res.url}`,
-      `canonical_url: ${res.url}`,
-      `title: ${JSON.stringify(title)}`,
-      `author: ${JSON.stringify(author)}`,
-      `published_at: ${publishedAt}`,
+      `title: ${JSON.stringify(res.title)}`,
       `retrieved_at: ${new Date().toISOString()}`,
-      `extractor: scrapling-stealth`,
+      `extractor: search-providers`,
       `status: ok`,
       '---',
       '',
-      `# ${title}`,
+      `# ${res.title}`,
       '',
       markdown,
     ].join('\n');
 
-    // 4. Save markdown file to disk
-    const fs = require('fs');
-    fs.writeFileSync(fullPath, mdContent, 'utf-8');
+    writeFileSync(join(runDir, 'sources', filename), mdContent, 'utf-8');
 
-    return {
+    sources.push({
       id: `source:web:${sourceId}`,
       type: 'web' as const,
-      title: title,
+      title: res.title,
       url: res.url,
       path: relativePath,
       retrievedAt: new Date().toISOString(),
       trust: 'medium' as const,
-      excerpt: markdown.slice(0, 500) + '...',
-    };
-  });
-
-  const scrapedSources = await Promise.all(scrapePromises);
-
-  for (const s of scrapedSources) {
-    if (s) {
-      sources.push(s);
-    }
+      excerpt: markdown.slice(0, 500),
+    });
   }
 
   return sources;

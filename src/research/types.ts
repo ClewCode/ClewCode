@@ -63,6 +63,14 @@ export type ResearchPlan = {
   risks: string[];
 };
 
+export type SynthesizerResult = {
+  summary: string;
+  consensusFindings: { topic: string; claims: string[]; sourceCount: number }[];
+  conflicts: { topic: string; claimA: string; claimB: string; sources: string[] }[];
+  gaps: string[];
+  overallConfidence: 'high' | 'medium' | 'low';
+};
+
 export type ResearchRun = {
   id: string;
   query: string;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Taste — Clew Code</title>
-  <meta name="description" content="รันไทม์การเรียนรู้ความชอบในเครื่องสำหรับ Clew — สัญญาณ accept/reject, กฎสัญลักษณ์, และการปรับแต่ง bandit">
+  <meta name="description" content="ระบบเรียนรู้ preference แบบ local-first สำหรับ Clew Code — accept/reject signals, symbolic rules, bandit optimization">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,18 +20,101 @@
     <main class="content">
       <div class="breadcrumbs"><a href="index.th.html">หน้าแรก</a><span class="sep">/</span><span>Taste</span></div>
       <h1>Taste</h1>
-      <p class="section-subtitle">รันไทม์การเรียนรู้ความชอบในเครื่องสำหรับ Clew Code</p>
+      <p class="section-subtitle">ระบบเรียนรู้ preference แบบ local-first — จากสัญญาณ accept/reject/edit/lint/test สู่กฎที่ปรับแต่งได้</p>
 
-      <p>Taste เรียนรู้สไตล์การเขียนโค้ดของคุณจากสัญญาณ accept, reject, edit, test, lint และกฎที่ผู้ใช้กำหนด มันรวมกฎสัญลักษณ์, การให้คะแนนความชอบเชิงความหมาย, และการปรับแต่ง contextual bandit เพื่อปรับผลลัพธ์ของ Clew ให้ตรงกับความชอบของคุณ</p>
+      <p>Taste เรียนรู้สไตล์โค้ดของคุณจากสัญญาณ accept, reject, edit, test, lint และกฎที่ผู้ใช้กำหนด มันรวมกฎสัญลักษณ์, การให้คะแนน preference เชิงความหมาย, และ contextual bandit optimization เพื่อปรับให้ Clew ตอบสนองตรงตามความต้องการของคุณ</p>
 
-      <h2>สิ่งที่มันเรียนรู้</h2>
+      <p>มัน<strong>ไม่ได้</strong> fine-tune LLM — การเรียนรู้ทั้งหมดเป็น local, online, และ preference-based</p>
+
+      <h2>เทคนิคและหลักการ</h2>
+
+      <h3>เหตุใดต้องใช้ Preference Learning แทนที่จะใช้ Prompt เพียงอย่างเดียว?</h3>
+      <p>CLAUDE.md และ system prompt กำหนดกฎแบบ static — ใช้ได้ดีสำหรับกฎที่คุณรู้ล่วงหน้า แต่<strong>ไม่สามารถปรับตัวตาม feedback จริง</strong>ได้:</p>
       <ul>
-        <li><strong>สไตล์โค้ด</strong> — การจัดรูปแบบ, หลักการตั้งชื่อ, รูปแบบที่ชอบ</li>
-        <li><strong>สถาปัตยกรรม</strong> — โครงสร้างโมดูล, ทิศทาง dependencies, การแบ่งชั้น</li>
-        <li><strong>เครื่องมือ</strong> — build tools, linters, test frameworks ที่ชอบ</li>
-        <li><strong>การทดสอบ</strong> — สไตล์การทดสอบ, ความคาดหวังความครอบคลุม, รูปแบบ mocking</li>
-        <li><strong>การตั้งชื่อ</strong> — หลักการตั้งชื่อตัวแปร, ฟังก์ชัน, และคลาส</li>
-        <li><strong>ความปลอดภัย</strong> — รูปแบบที่ปลอดภัย vs ไม่ปลอดภัย</li>
+        <li><strong>คุณไม่รู้ทุกกฎล่วงหน้า</strong> — บางทีคุณอาจไม่รู้ด้วยซ้ำว่าตัวเองชอบ pattern แบบไหนจนกว่าจะเห็นผลลัพธ์</li>
+        <li><strong>กฎเปลี่ยนตามโปรเจค</strong> — React project กับ Python library มีสไตล์ต่างกันโดยสิ้นเชิง</li>
+        <li><strong>มนุษย์สื่อสาร preference ได้ไม่สมบูรณ์</strong> — "เขียนโค้ดให้ดี" ไม่ใช่ instruction ที่ชัดเจนพอสำหรับ LLM</li>
+      </ul>
+      <p>Taste เรียนรู้จาก<em>พฤติกรรม</em>ของคุณแทน — ถ้าคุณ accept output ที่ใช้ <code>const</code> แทน <code>let</code> บ่อยๆ มันจะเรียนรู้ ถ้าคุณ reject หรือแก้ไข มันจะลดน้ำหนัก</p>
+
+      <h3>Online Feedback Loop — ไม่ใช่ Batch Training</h3>
+      <p>Taste ใช้<strong>online learning</strong> — เรียนรู้ทันทีจากทุก interaction:</p>
+      <pre><code>User interaction ──► Signal collector ──► Reward model (+1.0 / -1.0 / +0.4)
+                                          │
+                                          ▼
+                                   Rule confidence update
+                                          │
+                          ┌───────────────┼───────────────┐
+                          ▼               ▼               ▼
+                    Confidence ↑    Confidence ↓    Decay if unused
+                    (accept/       (reject/edit)    (30 day half-life)
+                     test pass)</code></pre>
+
+      <h3>Multi-Signal Reward Model</h3>
+      <p>ไม่ใช่แค่ accept/reject — ใช้หลายสัญญาณประกอบกัน:</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>สัญญาณ</th><th>Reward</th><th>เหตุผล</th></tr>
+          <tr><td>Accept</td><td>+1.0</td><td>ผู้ใช้พอใจ — สัญญาณบวกแรงที่สุด</td></tr>
+          <tr><td>Reject</td><td>-1.0</td><td>ผู้ใช้ปฏิเสธ — สัญญาณลบแรงที่สุด</td></tr>
+          <tr><td>Edit (small)</td><td>-0.3</td><td>แก้ไขเล็กน้อย — เกือบพอใจ</td></tr>
+          <tr><td>Edit (large)</td><td>-0.7</td><td>แก้ไขเยอะ — output ห่างจากที่ต้องการ</td></tr>
+          <tr><td>Test pass</td><td>+0.4</td><td>โค้ดถูกต้องทางเทคนิค</td></tr>
+          <tr><td>Test fail</td><td>-0.6</td><td>โค้ดมี bug</td></tr>
+          <tr><td>Lint pass</td><td>+0.2</td><td>ตรงตาม style convention</td></tr>
+          <tr><td>Tool result OK</td><td>+0.3</td><td>เลือกใช้ tool ถูกต้อง</td></tr>
+        </table>
+      </div>
+
+      <h3>Contextual Bandit — เลือกกลยุทธ์ตามบริบท</h3>
+      <p>ไม่ใช่ทุกงานต้องการสไตล์เดียวกัน — refactor เน้น architecture, bug fix เน้น safety:</p>
+      <ul>
+        <li><strong>ε-greedy bandit 6 แขน</strong> — minimal, strict_style, architecture_first, test_first, safety_first, refactor_heavy</li>
+        <li><strong>Context features</strong> — วิเคราะห์ task context แล้วเลือกแขนที่ให้ reward สูงสุดในอดีต</li>
+        <li><strong>Exploration vs exploitation</strong> — ε โอกาสสุ่มลองแขนใหม่ (explore), 1-ε เลือกที่รู้ว่าดี (exploit) — default ε = 0.1</li>
+        <li><strong>ทำไมต้อง bandit?</strong> — กฎ "use const" อาจขัดกับ "minimal changes" ในบางบริบท Bandit ช่วย balance หลาย objective</li>
+      </ul>
+
+      <h3>Three-Tier Rule Engine</h3>
+      <p>ไม่ใช่ทุกกฎที่สำคัญเท่ากัน — แบ่งเป็น 3 ระดับตาม confidence:</p>
+      <ul>
+        <li><strong>Tier 1 — Symbolic (≥ 0.85)</strong> — <em>block</em> การแก้ไขที่ไม่ตรง: เช่น "ห้ามใช้ <code>any</code>" → block + แจ้งเหตุผล</li>
+        <li><strong>Tier 2 — Prompt Injection (≥ 0.55)</strong> — ใส่ใน system prompt เป็น <code>&lt;clew_taste&gt;</code> block (max 8 rules)</li>
+        <li><strong>Tier 3 — Scored (&lt; 0.55)</strong> — ใช้ neural scorer (Jaccard/TF-IDF) เทียบ relevance แต่ไม่ inject</li>
+      </ul>
+
+      <h3>Auto-Learn — AI วิเคราะห์ Codebase</h3>
+      <p><code>TasteCodebaseAnalyzer</code> อ่าน .editorconfig, biome.json, tsconfig.json, สุ่ม 20 source files, git log 50 commits → ส่งให้ fast model วิเคราะห์ → หา patterns → เสนอเป็น suggestion ให้ผู้ใช้ accept/reject</p>
+
+      <h3>Decay — ป้องกัน Stale Rules</h3>
+      <ul>
+        <li><strong>Half-life decay</strong> — confidence ลดลงครึ่งทุก 30 วันถ้าไม่ใช้</li>
+        <li><strong>Cooldown</strong> — หลัง reject → cooldown 30 นาทีก่อนเสนอใหม่</li>
+        <li><strong>ทำไม?</strong> — โปรเจคเปลี่ยน, สไตล์ทีมเปลี่ยน, toolchain upgrade — กฎเก่าอาจไม่เกี่ยวข้องแล้ว</li>
+      </ul>
+
+      <h3>Privacy-First</h3>
+      <p>ทุกอย่าง local — ไม่ส่งข้อมูลไป cloud, event log เป็น append-only JSONL, export/import เกิดเมื่อผู้ใช้สั่งเท่านั้น</p>
+
+      <h2>สิ่งที่ระบบเรียนรู้</h2>
+      <ul>
+        <li><strong>Code style</strong> — formatting, naming conventions, preferred patterns</li>
+        <li><strong>Architecture</strong> — module structure, dependency direction, layering</li>
+        <li><strong>Tooling</strong> — preferred build tools, linters, test frameworks</li>
+        <li><strong>Testing</strong> — test style, coverage expectations, mocking patterns</li>
+        <li><strong>Naming</strong> — variable, function, and class naming conventions</li>
+        <li><strong>Security</strong> — safe patterns vs unsafe patterns</li>
+        <li><strong>Performance</strong> — efficient algorithms, caching, resource management</li>
+        <li><strong>UI patterns</strong> — component structure, state management, styling approach</li>
+        <li><strong>Workflow</strong> — commit style, review preferences, deployment habits</li>
+      </ul>
+
+      <h2>สิ่งที่ Taste ไม่ทำ</h2>
+      <ul>
+        <li>ไม่ fine-tune หรือแก้ไข base LLM</li>
+        <li>ไม่ส่งข้อมูลไปยัง remote services</li>
+        <li>ไม่ block การแก้ไขโดยไม่แสดงเหตุผล</li>
+        <li>ไม่แทนที่ memory, skills, หรือ CLAUDE.md</li>
       </ul>
 
       <h2>สถาปัตยกรรม</h2>
@@ -51,8 +134,6 @@
  ┌───────────────┐           ┌───────────────┐           ┌───────────────┐
  │ AcceptReject  │           │ DiffSignal    │           │EditDistance   │
  │ Tracker       │           │ Extractor     │           │ Reward        │
- │ (accept/reject│           │ (diff delta)  │           │ (edit cost)   │
- │  signals)     │           │               │           │               │
  └───────┬───────┘           └───────┬───────┘           └───────┬───────┘
          │                          │                           │
          └──────────────────────────┼───────────────────────────┘
@@ -67,9 +148,6 @@
                          ┌─────────────────────┐
                          │   TasteRewardModel   │
                          │  signal → reward map  │
-                         │  accept = +1.0       │
-                         │  reject = -1.0       │
-                         │  test pass = +0.4    │
                          └──────────┬──────────┘
                                     │
                     ┌───────────────┼───────────────┐
@@ -79,8 +157,6 @@
           │TasteBandit   │ │AutoLearn     │ │TasteDecay    │
           │ε-greedy (6   │ │Engine        │ │confidence ↓  │
           │strategy arms)│ │pattern→rule  │ │over time     │
-          │pick optimal  │ │              │ │if unused     │
-          │arm per ctx   │ │              │ │              │
           └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
                  │                │                │
                  │    ┌───────────┘                │
@@ -112,48 +188,43 @@
 └─────────┘             └────────────────┘
 
 
- ═══ CODEBASE AUTO-LEARN (เส้นทางคู่ขนาน) ═══
+ ═══ CODEBASE AUTO-LEARN ═══
 
    Codebase ──► TasteCodebaseAnalyzer ──► PatternDetector ──► AutoLearnEngine
                  (อ่าน conventions)        (ค้นหา patterns)    (สร้าง rules)
                                                                     │
                                                                     ▼
                                                             TasteProfileStore
-                                                            .clew/taste/profile.json
-
-
- ═══ DATA LIFECYCLE ═══
-
-   Signal ──► EventLog (JSONL) ──► Rule confidence +/- ──► Decay if unused 30d
-                                                          │
-                                                          ▼
-                                                   Profile persisted
-                                                   to .clew/taste/</code></pre>
+                                                            .clew/taste/profile.json</code></pre>
 
       <h2>คำสั่ง</h2>
-      <table>
-        <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
-        <tr><td><code>/taste</code></td><td>เปิดเมนูแบบโต้ตอบ (นำทางด้วยลูกศร)</td></tr>
-        <tr><td><code>/taste status</code></td><td>แสดงสถานะ</td></tr>
-        <tr><td><code>/taste learn &lt;rule&gt;</code></td><td>เพิ่มกฎด้วยตนเอง</td></tr>
-        <tr><td><code>/taste forget &lt;id&gt;</code></td><td>ลบกฎตาม ID</td></tr>
-        <tr><td><code>/taste profile</code></td><td>แสดงโปรไฟล์ทั้งหมดพร้อมกฎ</td></tr>
-        <tr><td><code>/taste on</code></td><td>เปิดใช้งาน taste</td></tr>
-        <tr><td><code>/taste off</code></td><td>ปิดใช้งาน taste</td></tr>
-      </table>
+      <div class="table-wrap">
+        <table>
+          <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+          <tr><td><code>/taste</code></td><td>เปิดเมนู interactive</td></tr>
+          <tr><td><code>/taste status</code></td><td>แสดงสถานะ</td></tr>
+          <tr><td><code>/taste profile</code></td><td>แสดง rules ทั้งหมด</td></tr>
+          <tr><td><code>/taste learn &lt;rule&gt;</code></td><td>เพิ่ม rule เอง</td></tr>
+          <tr><td><code>/taste forget &lt;id&gt;</code></td><td>ลบ rule</td></tr>
+          <tr><td><code>/taste suggest</code></td><td>ดูข้อเสนอจาก auto-learn</td></tr>
+          <tr><td><code>/taste accept &lt;id&gt;</code></td><td>ยอมรับ suggestion</td></tr>
+          <tr><td><code>/taste reject &lt;id&gt;</code></td><td>ปฏิเสธ suggestion</td></tr>
+        </table>
+      </div>
 
       <h2>ความเป็นส่วนตัว</h2>
       <ul>
-        <li>ข้อมูล taste ทั้งหมดอยู่ในเครื่องโดยค่าเริ่มต้น</li>
-        <li>โปรไฟล์และบันทึกเหตุการณ์ถูกเก็บใน <code>.clew/taste/</code> หรือ <code>~/.clew/taste/</code></li>
-        <li>ไม่มีข้อมูลถูกส่งไปยังบริการระยะไกล</li>
+        <li>ข้อมูล taste ทั้งหมดอยู่ local</li>
+        <li>โปรไฟล์และ event log ใน <code>.clew/taste/</code> หรือ <code>~/.clew/taste/</code></li>
+        <li>ไม่ส่งข้อมูลไป cloud หรือ training</li>
+        <li>Export/import เกิดเมื่อผู้ใช้สั่งเท่านั้น</li>
       </ul>
 
       <footer class="footer">
-        <span>Clew Code v0.2.4 — โอเพนซอร์ส</span>
+        <span>Clew Code — Open Source</span>
         <div class="footer-links">
           <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
-          <a href="https://github.com/JonusNattapong/ClewCode/issues">ปัญหา</a>
+          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
         </div>
       </footer>
     </main>

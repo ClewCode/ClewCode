@@ -6,8 +6,8 @@
  * - Query by ID or list all
  */
 
-import { type PeerInfo, type PeerChatMessage, type PeerTodo, peerColorFromId, PEER_STALE_TIMEOUT } from './types.js';
 import { logForDebugging } from '../utils/debug.js';
+import { PEER_STALE_TIMEOUT, type PeerChatMessage, type PeerInfo, type PeerTodo, peerColorFromId } from './types.js';
 
 export type PeerStoreCallbacks = {
   onPeerAdded?: (peer: PeerInfo) => void;

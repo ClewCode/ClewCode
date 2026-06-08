@@ -141,6 +141,7 @@
       '    <a href="' + rootPrefix + 'features/sentry-setup.html" class="sidebar-link"><span class="link-icon"></span>Sentry Setup</a>' +
       '    <a href="' + rootPrefix + 'taste.html" class="sidebar-link"><span class="link-icon"></span>Taste</a>' +
       '    <a href="' + rootPrefix + 'peer.html" class="sidebar-link"><span class="link-icon"></span>Peer System</a>' +
+      '    <a href="' + rootPrefix + 'loop.html" class="sidebar-link"><span class="link-icon"></span>Agent Loop</a>' +
       '  </nav>' +
       '</div>' +
       '<div class="sidebar-section">' +

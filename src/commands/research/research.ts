@@ -1,10 +1,11 @@
 import { join } from 'path';
-import { buildCitations, formatBibliography } from '../../research/citations.js';
+import { buildCitations } from '../../research/citations.js';
 import { extractClaimsFromText } from '../../research/claims.js';
 import { collectLocalMemory } from '../../research/collectors/localMemory.js';
 import { collectLocalRepo } from '../../research/collectors/localRepo.js';
 import { collectLocalWiki } from '../../research/collectors/localWiki.js';
 import { collectWebSearch } from '../../research/collectors/webSearch.js';
+import { researchHeader, stepStart, stepDone, sourceLine, claimLine, synthesisBox, summaryFooter, C } from '../../research/outputUI.js';
 import { createResearchPlan } from '../../research/planner.js';
 import { buildResearchReport } from '../../research/reportBuilder.js';
 import {
@@ -22,12 +23,13 @@ import {
 import { savePendingMemory } from '../../research/savePendingMemory.js';
 import { saveReportToWiki } from '../../research/saveToWiki.js';
 import { readSourceDocument } from '../../research/sourceReader.js';
+import { synthesizeClaims } from '../../research/synthesizer.js';
 import type { ResearchMode } from '../../research/types.js';
 import { getResearchWorkspaceStatus, initWorkspace } from '../../research/workspace.js';
 import type { LocalCommandCall } from '../../types/command.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 
-export const call: LocalCommandCall = async (args, context) => {
+export const call: LocalCommandCall = async (args, _context) => {
   const cwd = process.cwd();
   const trimmed = args.trim();
   if (!trimmed) {
@@ -84,10 +86,7 @@ export const call: LocalCommandCall = async (args, context) => {
   switch (subcommand) {
     case 'init': {
       await initWorkspace(cwd);
-      return {
-        type: 'text',
-        value: '🟢 Research workspace directories initialized successfully under `.claude/`',
-      };
+      return { type: 'text', value: 'Research workspace initialized under `.claude/`' };
     }
 
     case 'plan': {
@@ -103,15 +102,15 @@ export const call: LocalCommandCall = async (args, context) => {
       return {
         type: 'text',
         value: [
-          `🟢 Research Plan generated for: "${query}" (Mode: ${mode})`,
-          `Saved to run directory: \`${runDir}\``,
+          `Research Plan: "${query}" (Mode: ${mode})`,
+          `Saved to: \`${runDir}\``,
           '',
           `**Sub-questions:**`,
           ...plan.subQuestions.map((q, i) => `  ${i + 1}. ${q}`),
           '',
-          `**Expected Sources:** ${plan.sourceStrategy.join(', ')}`,
-          `**Done Criteria:** ${plan.doneCriteria.join(', ')}`,
-          `**Risks Identified:** ${plan.risks.join(', ')}`,
+          `**Sources:** ${plan.sourceStrategy.join(', ')}`,
+          `**Done criteria:** ${plan.doneCriteria.join(', ')}`,
+          `**Risks:** ${plan.risks.join(', ')}`,
         ].join('\n'),
       };
     }
@@ -122,14 +121,17 @@ export const call: LocalCommandCall = async (args, context) => {
       }
 
       await initWorkspace(cwd);
+
+      // 0. Plan
       const plan = createResearchPlan(query, mode);
       const { runId, runDir } = await createRunStore(cwd, query, mode);
       await writePlanToRun(runDir, plan);
 
-      console.log(`[Research Run] Starting pipeline for run ${runId}`);
+      const lines: string[] = [];
+      lines.push(researchHeader(query, mode));
 
       // 1. Source Collection
-      console.log('[Research Run] Collecting sources...');
+      lines.push(stepStart('Collecting sources'));
       const repoSources = plan.sourceStrategy.includes('local_repo') ? await collectLocalRepo(cwd, query) : [];
       const wikiSources = plan.sourceStrategy.includes('local_wiki') ? await collectLocalWiki(cwd, query) : [];
       const memorySources = plan.sourceStrategy.includes('local_memory') ? await collectLocalMemory(cwd, query) : [];
@@ -139,9 +141,13 @@ export const call: LocalCommandCall = async (args, context) => {
       for (const source of allSources) {
         await appendSourceToRun(runDir, source);
       }
+      lines.push(stepDone('Sources collected', `${allSources.length} found`));
+      for (const s of allSources.slice(0, 5)) {
+        lines.push(sourceLine(allSources.indexOf(s) + 1, s.title.slice(0, 50), s.type, s.trust));
+      }
 
       // 2. Claim Extraction
-      console.log('[Research Run] Extracting claims...');
+      lines.push(stepStart('Extracting claims'));
       const allClaims = [];
       for (const source of allSources) {
         const text = await readSourceDocument(cwd, source);
@@ -151,27 +157,36 @@ export const call: LocalCommandCall = async (args, context) => {
           allClaims.push(claim);
         }
       }
+      lines.push(stepDone('Claims extracted', `${allClaims.length} claims`));
+      for (const c of allClaims.slice(0, 5)) {
+        lines.push(claimLine(allClaims.indexOf(c) + 1, c.claim, c.confidence));
+      }
+      if (allClaims.length > 5) lines.push(`  ${C.dim}... and ${allClaims.length - 5} more${C.reset}`);
 
-      // 3. Citations & Report Assembly
-      console.log('[Research Run] Building report...');
+      // 3. Synthesis
+      lines.push(stepStart('Synthesizing'));
+      const synthesis = await synthesizeClaims(allClaims, allSources, query);
+      lines.push(synthesisBox({
+        overallConfidence: synthesis.overallConfidence,
+        summary: synthesis.summary,
+        consensusCount: synthesis.consensusFindings.length,
+        conflictCount: synthesis.conflicts.length,
+        gapCount: synthesis.gaps.length,
+      }));
+
+      // 4. Report
+      lines.push(stepStart('Building report'));
       const citations = buildCitations(allSources, allClaims);
-      const reportMarkdown = buildResearchReport(query, plan, allClaims, citations);
+      const reportMarkdown = buildResearchReport(query, plan, allClaims, citations, synthesis);
       await writeReportToRun(runDir, reportMarkdown);
-
       await completeRunStore(runDir);
+      lines.push(stepDone('Report ready', runId));
+      lines.push('');
+      lines.push(summaryFooter(runId, allSources.length, allClaims.length, citations.length));
+      lines.push('');
+      lines.push(reportMarkdown);
 
-      return {
-        type: 'text',
-        value: [
-          `🟢 Research Run completed successfully!`,
-          `Run ID: \`${runId}\``,
-          `Collected Sources: ${allSources.length}`,
-          `Extracted Claims: ${allClaims.length}`,
-          `Citations Map: ${citations.length} sources used`,
-          '',
-          reportMarkdown,
-        ].join('\n'),
-      };
+      return { type: 'text', value: lines.join('\n') };
     }
 
     case 'sources': {
@@ -188,14 +203,14 @@ export const call: LocalCommandCall = async (args, context) => {
       return {
         type: 'text',
         value: [
-          `Collected Sources for Latest Run (${latest.run.id}):`,
-          ...sources.map((s, i) => `${i + 1}. **[${s.id}]** ${s.title} (${s.type}) - Path: \`${s.path || 'N/A'}\``),
+          `Sources for ${latest.run.id}:`,
+          ...sources.map((s, i) => `${i + 1}. **[${s.id}]** ${s.title} (${s.type}) — ${s.trust} trust`),
         ].join('\n'),
       };
     }
 
     case 'open': {
-      const sourceId = query; // argv[1]
+      const sourceId = query;
       if (!sourceId) {
         return {
           type: 'text',
@@ -212,7 +227,7 @@ export const call: LocalCommandCall = async (args, context) => {
       const matched = sources.find(s => s.id === sourceId || s.id.endsWith(sourceId));
 
       if (!matched) {
-        return { type: 'text', value: `Error: Source with ID "${sourceId}" not found in latest run.` };
+        return { type: 'text', value: `Source "${sourceId}" not found in latest run.` };
       }
 
       const text = await readSourceDocument(cwd, matched);
@@ -225,18 +240,17 @@ export const call: LocalCommandCall = async (args, context) => {
         return { type: 'text', value: 'No research runs found.' };
       }
 
-      const claims = await readClaimsFromRun(latest.runDir);
-      if (claims.length === 0) {
+      const claimsList = await readClaimsFromRun(latest.runDir);
+      if (claimsList.length === 0) {
         return { type: 'text', value: 'No claims extracted in the latest run.' };
       }
 
       return {
         type: 'text',
         value: [
-          `Extracted Claims for Latest Run (${latest.run.id}):`,
-          ...claims.map(
-            (c, i) =>
-              `${i + 1}. **[${c.id}]** ${c.claim} (Type: ${c.type}, Confidence: ${c.confidence}, Status: ${c.status})`,
+          `Claims for ${latest.run.id}:`,
+          ...claimsList.map(
+            (c, i) => `${i + 1}. **[${c.id}]** ${c.claim} (${c.type}, ${c.confidence})`,
           ),
         ].join('\n'),
       };
@@ -275,7 +289,7 @@ export const call: LocalCommandCall = async (args, context) => {
       }
 
       const reportMarkdown = fsImpl.readFileSync(reportPath, { encoding: 'utf-8' });
-      const claims = await readClaimsFromRun(latest.runDir);
+      const claimsList = await readClaimsFromRun(latest.runDir);
 
       let savedWiki = false;
       let savedMemory = false;
@@ -285,22 +299,19 @@ export const call: LocalCommandCall = async (args, context) => {
 
       if (saveTarget === 'wiki' || saveTarget === 'both' || saveTarget === 'to-wiki') {
         const wikiPath = await saveReportToWiki(cwd, latest.run.query, reportMarkdown, latest.run.id);
-        outputMessage += `🟢 Saved report to Wiki at: \`${wikiPath}\`\n`;
+        outputMessage += `Saved report to Wiki: \`${wikiPath}\`\n`;
         savedWiki = true;
       }
 
       if (saveTarget === 'memory' || saveTarget === 'both' || saveTarget === 'to-memory-pending') {
-        const pendingPath = await savePendingMemory(cwd, latest.run.query, latest.run.id, claims);
-        outputMessage += `🟢 Proposed findings to Pending Memory at: \`${pendingPath}\`\n`;
+        const pendingPath = await savePendingMemory(cwd, latest.run.query, latest.run.id, claimsList);
+        outputMessage += `Saved findings to Pending Memory: \`${pendingPath}\`\n`;
         savedMemory = true;
       }
 
       await completeRunStore(latest.runDir, savedWiki, savedMemory);
 
-      return {
-        type: 'text',
-        value: outputMessage || 'No save targets selected.',
-      };
+      return { type: 'text', value: outputMessage || 'No save targets selected.' };
     }
 
     case 'doctor': {
@@ -310,14 +321,13 @@ export const call: LocalCommandCall = async (args, context) => {
       return {
         type: 'text',
         value: [
-          'Research Agent Diagnostics:',
-          `  Initialized: ${status.initialized ? 'Yes 🟢' : 'No 🔴'}`,
-          `  Workspace Path: \`${status.researchDir}\``,
-          `  Total Runs Logged: ${runs.length}`,
-          `  Latest Run: ${runs[0] ? `\`${runs[0].id}\` (Status: ${runs[0].status})` : 'None'}`,
-          `  Wiki Directory: \`${status.wikiResearchDir}\``,
-          `  Pending Memory Directory: \`${status.pendingMemoryDir}\``,
-          `  Index Directory: \`${status.indexDir}\``,
+          'Research Diagnostics:',
+          `  Initialized: ${status.initialized ? 'Yes' : 'No'}`,
+          `  Workspace: \`${status.researchDir}\``,
+          `  Total Runs: ${runs.length}`,
+          `  Latest Run: ${runs[0] ? `\`${runs[0].id}\` (${runs[0].status})` : 'None'}`,
+          `  Wiki: \`${status.wikiResearchDir}\``,
+          `  Pending Memory: \`${status.pendingMemoryDir}\``,
         ].join('\n'),
       };
     }

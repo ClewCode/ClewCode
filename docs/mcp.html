@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCP — Clew</title>
-  <meta name="description" content="Model Context Protocol (MCP) server management — connect external tools, resources, and services to Clew.">
+  <title>MCP — Clew Code</title>
+  <meta name="description" content="Model Context Protocol (MCP) support — connect external tools, resources, and services with stdio, SSE, and OAuth authentication.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,97 +20,218 @@
     <main class="content">
       <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>MCP</span></div>
       <h1>Model Context Protocol (MCP)</h1>
-      <p class="section-subtitle">Connect Clew to external tools, data sources, and services via the Model Context Protocol — an open standard for AI-application integration.</p>
+      <p class="section-subtitle">Connect Clew to external tools, data sources, and services via the Model Context Protocol — the open standard for AI-tool integration.</p>
 
-      <p>MCP support is implemented in <code>src/services/mcp/</code>. Servers are discovered at startup and their tools, resources, and prompts are merged into Clew's runtime.</p>
+      <p>MCP support lives in <code>src/services/mcp/</code>. Clew discovers MCP servers from <strong>settings.json</strong>, <strong>CLI flags</strong>, and <strong>plugin manifests</strong>, then merges their tools into the runtime at startup and via <code>/mcp</code> at runtime.</p>
+
+      <h2>Architecture</h2>
+      <pre><code> ┌──────────────────────────────────────────────────────────────────────────┐
+ │                         MCP — MODEL CONTEXT PROTOCOL                    │
+ └──────────────────────────────────────────────────────────────────────────┘
+
+                         ┌──────────────────────────┐
+                         │   Settings / CLI Config   │
+                         │  src/services/mcp/config  │
+                         │   (servers.json schema)   │
+                         └────────────┬─────────────┘
+                                      │
+                                      ▼
+                     ┌──────────────────────────┐
+                     │   MCPConnectionManager   │
+                     │   src/services/mcp/       │
+                     │   MCPConnectionManager.tsx │
+                     └────────────┬─────────────┘
+                                  │
+              ┌───────────────────┼───────────────────┐
+              ▼                   ▼                   ▼
+      ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+      │  Stdio MCP   │   │   SSE MCP    │   │Direct Connect│
+      │ (subprocess) │   │  (remote)    │   │ (in-process) │
+      │ npx/node/etc │   │  WebSocket   │   │              │
+      └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
+             │                  │                   │
+             └──────────────────┼───────────────────┘
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │   Client (JSON-RPC)  │
+                     │  tools/list          │
+                     │  resources/list      │
+                     │  prompts/list        │
+                     │  tools/call          │
+                     │  resources/read      │
+                     └──────────┬───────────┘
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │   assembleToolPool   │
+                     │  (MCP tools + built- │
+                     │   in tools merged)   │
+                     └──────────┬───────────┘
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │    Query Engine      │
+                     │  Model sees all tools│
+                     │  Tool calls routed   │
+                     │  to correct server   │
+                     └──────────────────────┘
+
+
+ ═══ MCP SERVER TYPES ═══
+
+ ┌─────────────────────────────────────────────────────────────────────┐
+ │ Type        │ Transport   │ Auth        │ Use Case                  │
+ ├─────────────┼─────────────┼─────────────┼───────────────────────────┤
+ │ Stdio       │ stdin/stdout│ None        │ Local tools (npx, node)   │
+ │ SSE         │ HTTP+SSE    │ OAuth/Token │ Remote services           │
+ │ Direct      │ In-process  │ Internal    │ Plugin-bundled servers    │
+ └─────────────────────────────────────────────────────────────────────┘</code></pre>
 
       <h2>How It Works</h2>
-      <pre><code>  MCP Server Config (JSON or inline)
-       |
-       v
-  + MCP Manager (src/services/mcp/)
-  |    Server connection lifecycle
-  |    Tool discovery via tools/list
-  |    Resource access via resources/read
-  |    Paginated responses
-  |
-  + Tool Pool (assembleToolPool)
-  |    MCP tools merged with built-in tools
-  |    Availability toggled by permission rules
-  |
-  + Query Loop
-       Model sees MCP tools alongside built-ins
-       Tool calls routed to the appropriate MCP server</code></pre>
+
+      <h3>Server Discovery</h3>
+      <p>MCP servers are found from <strong>three sources</strong> at startup:</p>
+      <ol>
+        <li><strong><code>settings.json</code></strong> — <code>mcpServers</code> key with server definitions (command, args, env)</li>
+        <li><strong>CLI <code>--mcp-config</code></strong> — JSON file or inline JSON with server definitions</li>
+        <li><strong>Plugins</strong> — plugin manifests can declare MCP servers; started when plugin loads, stopped when unloaded</li>
+      </ol>
+      <p>At runtime, <code>/mcp</code> command can add, remove, or reconnect servers dynamically.</p>
+
+      <h3>Server Connection Types</h3>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Type</th><th>Protocol</th><th>How It Works</th></tr>
+          <tr>
+            <td><strong>Stdio</strong></td>
+            <td>JSON-RPC over stdin/stdout</td>
+            <td>Clew spawns a subprocess (e.g. <code>npx @modelcontextprotocol/server-filesystem</code>) and communicates via its stdin/stdout streams. The subprocess advertises its capabilities via <code>tools/list</code> and handles <code>tools/call</code> requests.</td>
+          </tr>
+          <tr>
+            <td><strong>SSE</strong></td>
+            <td>HTTP + Server-Sent Events</td>
+            <td>Connects to remote MCP servers over HTTP. Uses SSE for server-to-client messages (tool results, resource updates) and HTTP POST for client-to-server requests. Supports OAuth authentication.</td>
+          </tr>
+          <tr>
+            <td><strong>Direct Connect</strong></td>
+            <td>In-process</td>
+            <td>Runs an MCP server in the same process via an in-process transport pair. Used by internal subsystems and plugin-bundled servers. No network overhead, no subprocess spawning.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Tool Lifecycle</h3>
+      <pre><code>  ┌─────────────────────────────────────────────────────────────────┐
+  │                    MCP TOOL LIFECYCLE                           │
+  └─────────────────────────────────────────────────────────────────┘
+
+  1. CONNECT     ──► MCPConnectionManager connects to server
+                       │
+                       ▼
+  2. DISCOVER    ──► Clew calls tools/list (paginated)
+                       │
+                       ▼
+  3. MERGE       ──► assembleToolPool() merges MCP tools with
+                       built-in tools (sorted by name, deduplicated)
+                       │
+                       ▼
+  4. PRESENT     ──► Model sees MCP tools as native tools
+                       │  (with permission gating, hooks, logging)
+                       ▼
+  5. EXECUTE     ──► Model calls tool → toolExecution.ts
+                       │  routes to correct MCP server
+                       │  mapToolResultToToolResultBlockParam
+                       ▼
+  6. RESPOND     ──► Result returned to model</code></pre>
+
+      <h3>Authentication</h3>
+      <p>MCP supports multiple auth flows defined in <code>src/services/mcp/auth.ts</code> and <code>src/services/mcp/oauthPort.ts</code>:</p>
+      <ul>
+        <li><strong>OAuth 2.0</strong> — redirect-based flow for remote MCP servers. Opens a local HTTP port to receive the callback.</li>
+        <li><strong>Bearer token</strong> — static API token in the <code>Authorization</code> header</li>
+        <li><strong>XAA token</strong> — Claude-specific auth provider token, handled in <code>src/services/mcp/xaa.ts</code></li>
+        <li><strong>Credential vault</strong> — stored credentials injected via <code>credential_item_ids</code></li>
+      </ul>
 
       <h2>MCP Commands</h2>
       <table>
         <tr><th>Command</th><th>Description</th></tr>
-        <tr><td><code>/mcp</code></td><td>Manage MCP servers — list, add, remove, view status</td></tr>
+        <tr><td><code>/mcp</code></td><td>Open interactive MCP management menu — list servers, add, remove, reconnect</td></tr>
+        <tr><td><code>/mcp list</code></td><td>List all connected MCP servers with their tools, resources, and prompts</td></tr>
+        <tr><td><code>/mcp add &lt;name&gt; &lt;command&gt; [args...]</code></td><td>Add a new stdio MCP server</td></tr>
+        <tr><td><code>/mcp remove &lt;name&gt;</code></td><td>Remove a connected MCP server</td></tr>
+        <tr><td><code>/mcp reconnect &lt;name&gt;</code></td><td>Reconnect a disconnected MCP server</td></tr>
       </table>
 
-      <h2>CLI Configuration</h2>
-      <p>MCP servers are configured at startup via CLI flags:</p>
-      <pre><code># Load servers from a JSON config file
-clew --mcp-config ./mcp-servers.json
-
-# Load multiple configs
-clew --mcp-config ./servers.json ./extra.json
-
-# Pass inline JSON
-clew --mcp-config '{"servers":{...}}'
-
-# Strict mode (only use MCP servers, no built-ins)
-clew --strict-mcp-config</code></pre>
-
-      <h2>MCP Server Config Format</h2>
-      <p>Each MCP server is defined with a command, arguments, and environment variables:</p>
-      <pre><code>{
-    "servers": {
-      "filesystem": {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"],
-        "env": {}
-      },
-      "database": {
-        "command": "node",
-        "args": ["./mcp/db-server.js"],
-        "env": { "DB_URL": "postgresql://..." }
+      <h2>Server Config Format (settings.json)</h2>
+      <div class="code-block-wrap">
+        <div class="code-block-header"><span>json</span></div>
+        <pre><code>{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"],
+      "env": {}
+    },
+    "database": {
+      "command": "node",
+      "args": ["./mcp/db-server.js"],
+      "env": {
+        "DB_URL": "postgresql://localhost:5432/mydb"
+      }
+    },
+    "remote-api": {
+      "url": "https://mcp.example.com",
+      "headers": {
+        "Authorization": "Bearer sk-..."
       }
     }
-  }</code></pre>
-
-      <h2>Tool Discovery</h2>
-      <p>When an MCP server connects, Clew:</p>
-      <ol>
-        <li>Sends <code>tools/list</code> to discover available tools</li>
-        <li>Merges discovered tools into the global tool pool via <code>assembleToolPool()</code></li>
-        <li>Handles paginated responses for servers with many tools</li>
-        <li>Makes tools available to the model alongside built-in tools</li>
-      </ol>
-
-      <p>MCP-provided tools inherit their schemas from the server and go through the same permission gating and hook system as built-in tools.</p>
-
-      <h2>Resources</h2>
-      <p>MCP servers can also expose resources — structured data that Clew can read:</p>
-      <ul>
-        <li><strong>ListMcpResources</strong> — List available resources from all connected servers</li>
-        <li><strong>ReadMcpResource</strong> — Read a specific resource by URI</li>
-      </ul>
-
-      <p>Resources are useful for accessing database schemas, API documentation, configuration files, and other structured data through MCP servers.</p>
+  }
+}</code></pre>
+      </div>
 
       <h2>Plugin-Bundled MCP Servers</h2>
-      <p>Plugins can declare MCP servers in their manifest. These are automatically started when the plugin is loaded and stopped when the plugin is unloaded. See <a href="plugins.html">Plugins</a> for details.</p>
+      <p>Plugins can declare MCP servers in their manifest. When a plugin loads, Clew creates a <strong>DirectConnect</strong> session internally — no subprocess, no network. The MCP server's tools become available as soon as the plugin registers. When the plugin is unloaded, the server is stopped.</p>
+      <p>See <a href="plugins.html">Plugins</a> for details on plugin development.</p>
+
+      <h2>Tool Pool Integration</h2>
+      <p>MCP tools are merged with built-in tools via <code>assembleToolPool()</code> in <code>src/tools.ts</code>:</p>
+      <ul>
+        <li>Both lists are sorted alphabetically, then concatenated, then deduplicated by name (<code>uniqBy('name')</code>)</li>
+        <li>Built-in tools take precedence when names collide</li>
+        <li>MCP tools go through the same permission gating and hook pipeline</li>
+        <li>Results are formatted via <code>mapToolResultToToolResultBlockParam</code> just like built-in tools</li>
+      </ul>
+
+      <h2>Integration with Built-in Tools</h2>
+      <p>Several built-in tools use MCP under the hood:</p>
+      <table>
+        <tr><th>Tool</th><th>MCP Used For</th></tr>
+        <tr><td><code>ListMcpResources</code></td><td>Lists resources from all connected MCP servers (resources/list)</td></tr>
+        <tr><td><code>ReadMcpResource</code></td><td>Reads a specific resource by URI from an MCP server (resources/read)</td></tr>
+      </table>
 
       <h2>Architecture Files</h2>
       <table>
         <tr><th>Path</th><th>Role</th></tr>
-        <tr><td><code>src/services/mcp/</code></td><td>MCP server connection management, tool discovery, resource access</td></tr>
-        <tr><td><code>src/tools.ts</code></td><td>Tool registry — MCP tools merged via assembleToolPool()</td></tr>
+        <tr><td><code>src/services/mcp/MCPConnectionManager.tsx</code></td><td>Server lifecycle manager — connect, reconnect, disconnect, list servers</td></tr>
+        <tr><td><code>src/services/mcp/config.ts</code></td><td>MCP server config loading from settings.json and CLI flags</td></tr>
+        <tr><td><code>src/services/mcp/client.ts</code></td><td>JSON-RPC client — sends requests, receives responses and notifications</td></tr>
+        <tr><td><code>src/services/mcp/auth.ts</code></td><td>OAuth and bearer token authentication flow</td></tr>
+        <tr><td><code>src/services/mcp/oauthPort.ts</code></td><td>Local HTTP server for OAuth callback handling</td></tr>
+        <tr><td><code>src/services/mcp/types.ts</code></td><td>MCP type definitions and protocol constants</td></tr>
+        <tr><td><code>src/services/mcp/InProcessTransport.ts</code></td><td>In-process linked transport pair for DirectConnect mode</td></tr>
+        <tr><td><code>src/services/mcp/SdkControlTransport.ts</code></td><td>SDK-level transport for programmatic control</td></tr>
+        <tr><td><code>src/services/mcp/normalization.ts</code></td><td>Tool name normalization between MCP and internal formats</td></tr>
+        <tr><td><code>src/services/mcp/envExpansion.ts</code></td><td>Environment variable expansion in server config</td></tr>
+        <tr><td><code>src/services/mcp/officialRegistry.ts</code></td><td>Official MCP server registry lookup</td></tr>
+        <tr><td><code>src/services/mcp/xaa.ts</code></td><td>XAA auth token integration for Claude-specific servers</td></tr>
+        <tr><td><code>src/tools.ts</code></td><td>Tool registry — assembleToolPool merges MCP tools</td></tr>
       </table>
 
       <footer class="footer">
-        <span>Clew v0.1.2 — Open Source</span>
+        <span>Clew Code — Open Source</span>
         <div class="footer-links">
           <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
           <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
