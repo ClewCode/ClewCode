@@ -60,10 +60,10 @@ export function getAttributionTexts(): AttributionTexts {
 
   // @[MODEL LAUNCH]: Update the hardcoded fallback model name below (guards against codename leaks).
   // For internal repos, use the real model name. For external repos,
-  // fall back to "Claude" for unrecognized models to avoid leaking codenames.
+  // fall back to "Clew" for unrecognized models to avoid leaking codenames.
   const model = getMainLoopModel();
   const isKnownPublicModel = getPublicModelDisplayName(model) !== null;
-  const modelName = isInternalModelRepoCached() || isKnownPublicModel ? getPublicModelName(model) : 'Claude';
+  const modelName = isInternalModelRepoCached() || isKnownPublicModel ? getPublicModelName(model) : 'Clew';
   const coAuthoredEmail = process.env.CLAUDE_CODE_CO_AUTHOR_EMAIL || '204852177+Clew-Code@users.noreply.github.com';
   const defaultAttribution = `Generated with [${PRODUCT_NAME}](${PRODUCT_URL})`;
   const defaultCommit = `Co-Authored-By: ${modelName} <${coAuthoredEmail}>`;

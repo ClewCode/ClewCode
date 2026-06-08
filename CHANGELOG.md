@@ -12,6 +12,10 @@ All notable changes to this project will be documented in this file.
   - Inbound tasks/messages auto-inject into AI prompt
   - Compact single-line tool results with ✓/✗ markers
 - **Taste AI tools** (4): taste_learn, taste_forget, taste_profile, taste_suggest
+- **AGENTS.md support**: loads alongside CLAUDE.md at all levels (Managed, User, Project, Additional dirs)
+- **`.clew/` config directory**: primary instruction/config directory — `AGENTS.md`, `CLAUDE.md`, and `rules/*.md` in `.clew/` load before `.claude/` variants (legacy fallback preserved)
+  - User-level: `~/.clew/` via `getClewConfigHomeDir()` with `CLEW_CONFIG_DIR` env var support
+  - Load order per directory: `AGENTS.md` → `CLAUDE.md` → `.clew/*` → `.claude/*`
 - **Taste brief** — system message in chat when `<clew_taste>` injects rules
 - **Autonomous agents** — agent loop, supervisor integration, task queue, Loop Lock
 - **Workflow Rainbow** — per-character gradient highlight for "workflow" keyword

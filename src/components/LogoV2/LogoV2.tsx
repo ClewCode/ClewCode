@@ -435,8 +435,8 @@ export function LogoV2() {
   const welcomeMessage_0 = formatWelcomeMessage(username);
   const modelLine =
     !process.env.IS_DEMO && config.oauthAccount?.organizationName
-      ? `${modelDisplayName} · ${billingType} · ${config.oauthAccount.organizationName}`
-      : `${modelDisplayName} · ${billingType}`;
+      ? `${billingType} · ${modelDisplayName} · ${config.oauthAccount.organizationName}`
+      : `${billingType} · ${modelDisplayName}`;
   const cwdAvailableWidth_0 = agentName ? LEFT_PANEL_MAX_WIDTH - 1 - stringWidth(agentName) - 3 : LEFT_PANEL_MAX_WIDTH;
   const truncatedCwd_0 = truncatePath(cwd, Math.max(cwdAvailableWidth_0, 10));
   const cwdLine = agentName ? `@${agentName} · ${truncatedCwd_0}` : truncatedCwd_0;
