@@ -22,11 +22,24 @@
 
 # Clew
 
-An unofficial CLI for AI-assisted development. Source-built, locally modifiable, and not tied to any single provider.
+Build from source. Run with any LLM. Own every line.
 
-Not an official product or supported implementation of any third-party software.
+## What you get that you won't find elsewhere
 
-> **Disclaimer:** Not affiliated with, endorsed by, or approved by any third party. Read [LICENSE.md](LICENSE.md) before use.
+**A peer-to-peer LAN mesh for your agents.** Most coding agents live on one machine. Clew Code discovers every machine on your LAN — desktops, laptops, build servers — and delegates work across them. Same-machine instances find each other through a shared file registry; cross-machine discovery runs on UDP multicast. 14 AI tools let your agent manage peers autonomously: discover, assign, run, coordinate. You're not the orchestrator anymore.
+
+**An agent that learns how you work.** Every time you accept or reject an edit, Clew Code's Taste engine records it. Over time, a symbolic rule engine, neural scorer, and contextual bandit optimizer surface the patterns that actually matter — and inject them into every prompt. No more repeating the same correction in CLAUDE.md files that sit stale for months. Preferences auto-tighten, decay when unused, and get suggested back when they become relevant again.
+
+**A cron scheduler that runs your agent on a clock.** Nightly checks, recurring maintenance, scheduled reports — `/loop` keeps your agent running 24/7 with a task queue and health checks. The 5-field cron scheduler handles jitter, lock-based dedup across sessions, and aged-out task cleanup. You don't need a shell script wrapper or a separate CI cron.
+
+**Remote access without SSH gymnastics.** Behind NAT, on a phone, at a coffee shop — Clew Code's bridge and relay system tunnels WebSocket-based remote control through a self-hosted relay server. Permission prompts forward to your client. It feels local.
+
+**Multi-agent swarm with a supervisor.** Split work across agents, let the supervisor handle coordination, approvals, and live status. Parallel work runs in parallel — not as a queue of sequential prompts.
+
+**A plugin marketplace inside your terminal.** Browse, install, and manage plugins without leaving the CLI. Multi-scope support (user, project, local), dependency resolution, install counts. No scavenger hunt required.
+
+**A research pipeline that does the digging.** Plan → collect → extract → report — one end-to-end flow across web search, scraping, and browser automation. No 15-tab bingo.
+
 
 ---
 
