@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบ Peer — Clew</title>
+  <meta name="description" content="ระบบ peer-to-peer บน LAN — ค้นหา, ส่งข้อความ, มอบหมายงาน, และรันคำสั่งระยะไกลระหว่าง Clew instances">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+</head>
+<body>
+<header class="header"></header>
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="index.th.html">หน้าแรก</a><span class="sep">/</span><span>ระบบ Peer</span></div>
+      <h1>ระบบ Peer</h1>
+      <p class="section-subtitle">Peer-to-peer บน LAN — ค้นหา Clew instances อื่น, ส่งข้อความ, มอบหมายงาน, และรันคำสั่งระยะไกล</p>
+
+      <p>ระบบ peer อยู่ใน <code>src/peer/</code> และประกอบด้วย 3 ชั้นหลัก: <strong>PeerServer</strong> (HTTP server), <strong>PeerDiscovery</strong> (สแกน LAN), และ <strong>PeerStore</strong> (registry ในหน่วยความจำ)</p>
+
+      <h2>สถาปัตยกรรม</h2>
+      <pre><code> ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                          PEER SYSTEM FLOW                                   │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+                          ┌──────────────────────────┐
+                          │      /peer share          │
+                          │  (Machine A — Worker)     │
+                          └────────────┬─────────────┘
+                                       │
+                     ┌─────────────────┼─────────────────┐
+                     ▼                  ▼                  ▼
+            ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+            │ PeerServer   │  │PeerDiscovery │  │  PeerStore   │
+            │ HTTP :random  │  │              │  │  (in-memory) │
+            │  port         │  │              │  │              │
+            └──────┬───────┘  └──────┬───────┘  └──────────────┘
+                   │                 │
+                   │    ┌────────────┼────────────┐
+                   │    │            │            │
+                   │    ▼            ▼            ▼
+                   │ ┌────────┐ ┌────────┐ ┌─────────────┐
+                   │ │  File  │ │  UDP   │ │  PeerStore   │
+                   │ │ ~/.cl/ │ │multicast│ │ (singleton) │
+                   │ │ peers/ │ │239...  │ │             │
+                   │ │{pid}.  │ │:42069  │ │             │
+                   │ │ json   │ │        │ │             │
+                   │ └────┬───┘ └────┬───┘ └─────────────┘
+                   │      │          │
+                   │      │          │  heartbeat ทุก 30s
+                   │      │          │  stale timeout 90s
+                   │      │          │
+                   ▼      ▼          ▼
+ ┌─────────────────────────────────────────────────────┐
+ │                   LAN NETWORK                        │
+ │                                                     │
+ │   ┌─────────┐         ┌─────────┐                   │
+ │   │ Machine B│◄───────►│ Machine C│  ...             │
+ │   │ Clew Code│  query  │ Clew Code│                   │
+ │   └────┬─────┘         └────┬─────┘                   │
+ │        │                    │                         │
+ └────────┼────────────────────┼─────────────────────────┘
+          │                    │
+          │  /peer discover    │  /peer discover
+          ▼                    ▼
+
+
+ ═══ WORKER (Machine A) ENDPOINTS ═══
+
+      Peer อื่น          POST /peer-info     ──►  { hostname, ip, cwd, shell, ... }
+         │                POST /peer-msg      ──►  รับข้อความ chat
+         ├───────────────► POST /peer-todo     ──►  รับ task (ไปอยู่ใน inbox)
+         │                POST /peer-exec     ──►  รัน shell command + คืน stdout/stderr
+
+
+ ═══ CLIENT (Machine B) TOOLS ═══
+
+      /peer discover  ──►  scan files + UDP query (3s timeout)
+                               │
+                               ▼
+                          [peer list]
+                               │
+           ┌───────────────────┼───────────────────┐
+           ▼                   ▼                   ▼
+    /peer join          /peer send_task      /peer run
+    (POST /peer-info)   (POST /peer-todo)    (POST /peer-exec)
+
+           │
+           ▼
+    /peer send_message   ──►  POST /peer-msg  ──►  inbox ปลายทาง
+    /peer broadcast      ──►  POST /peer-msg  ──►  ทุก peer ที่เชื่อมต่อ
+    /peer ping           ──►  GET  /peer-info  ──►  เช็ค alive
+
+
+ ═══ DAEMON (agentLoop.ts) ═══
+
+      ┌───────────────────────────────────┐
+      │  Autonomous Agent Loop            │
+      │  - ฟัง /peer-todo ตลอด 24/7      │
+      │  - รับ task จาก remote peers     │
+      │  - execute ใน background worker   │
+      │  - สูงสุด 3 workers พร้อมกัน      │
+      └───────────────────────────────────┘
+
+
+ ═══ DATA LIFECYCLE ═══
+
+      advertise ──► heartbeat ทุก 30s
+                        │
+                        ├── 90s ไม่มี heartbeat ──► stale → evict
+                        │
+      stop share ──► send UDP "offline"
+                     delete peer file
+                     close HTTP server</code></pre>
+
+      <h2>เทคนิคและหลักการ</h2>
+
+      <h3>Discovery แบบสองชั้น (Two-Layer Discovery)</h3>
+      <p>ทำไมไม่ใช้แค่ UDP multicast หรือแค่ file-based อย่างเดียว?</p>
+      <ul>
+        <li><strong>File-based</strong> — ทำงานบนเครื่องเดียวกันได้ทันที โดยไม่ต้องใช้ network เลย แค่อ่าน/เขียนไฟล์ JSON ใน <code>~/.claude/peers/</code> ซึ่งเร็วกว่าและไม่ต้องกังวลเรื่อง firewall</li>
+        <li><strong>UDP Multicast</strong> — ข้ามเครื่องได้ผ่าน LAN ใช้ multicast group <code>239.255.37.37:42069</code> ไม่ต้องรู้ IP ปลายทางล่วงหน้า</li>
+        <li><strong>ทำไมต้องทั้งสอง?</strong> — แต่ละวิธีมีข้อจำกัด: file-based ข้ามเครื่องไม่ได้, UDP multicast อาจถูกบล็อคด้วย network policy การใช้ทั้งสองวิธีทำให้ discovery ทำงานได้ในทุกสภาพแวดล้อม โดยไม่ต้องให้ผู้ใช้ configure อะไรเลย</li>
+      </ul>
+
+      <h3>Lease-based Task Claiming</h3>
+      <p>เมื่อมีหลาย worker (หรือหลาย daemon process) วิ่งพร้อมกัน จะป้องกันไม่ให้ task ถูกทำซ้ำได้อย่างไร?</p>
+      <ul>
+        <li><strong>Atomic lease</strong> — ก่อนเริ่ม task, worker ต้องขอ lease ด้วย <code>leaseTask(id, agentId)</code> ซึ่งเช็คว่า task ยังไม่มีใครจอง และเขียน lease owner + expiry timestamp ลงไฟล์แบบ atomic (read-modify-write ภายใต้ lock)</li>
+        <li><strong>Lease expiry</strong> — ถ้า worker crash หรือ disconnect, lease จะหมดอายุเอง (default 30 นาที) ทำให้ worker อื่นมารับงานต่อได้ — <em>crash recovery โดยไม่ต้องมี distributed coordinator</em></li>
+        <li><strong>Stale lease cleanup</strong> — ตอน startLoop จะรอ 2 วินาที แล้วเรียก <code>expireLeases()</code> เพื่อ clear lease เก่าจาก session ก่อนหน้า</li>
+        <li><strong>ทำไมไม่ใช้ lock file?</strong> — lock file แบบ OS-level (flock) ใช้ข้าม process บนเครื่องเดียวกันได้ แต่ใช้ข้ามเครื่องไม่ได้ Lease บนไฟล์ JSON แก้ปัญหานี้ได้โดยไม่ต้องพึ่ง external service อย่าง Redis/ZooKeeper</li>
+      </ul>
+
+      <h3>Heartbeat + Stale Eviction</h3>
+      <p>Peer discovery ต้องรู้ว่าใครยัง alive อยู่ โดยไม่ต้อง polling:</p>
+      <ul>
+        <li><strong>Push-based heartbeat</strong> — แต่ละ peer ส่ง beacon ทุก 30 วินาที ผ่านทั้ง file (เขียน timestamp ใหม่) และ UDP multicast</li>
+        <li><strong>Pull-based eviction</strong> — consumer เช็คอายุของ peer entry ถ้าเกิน 90 วินาที (<code>PEER_STALE_TIMEOUT</code>) ถือว่า stale → evict</li>
+        <li><strong>3× heartbeat interval</strong> — timeout = 3 × heartbeat interval เป็นค่า default ในระบบ distributed systems (ให้โอกาส retry ก่อน宣布ตาย)</li>
+        <li><strong>Graceful shutdown</strong> — ตอน <code>/peer stop</code> จะส่ง UDP "offline" message + ลบไฟล์ peer ทันที ไม่ต้องรอ timeout</li>
+      </ul>
+
+      <h3>Random Port Binding</h3>
+      <p>PeerServer bind ที่ port 0 (OS เลือก port ว่างให้):</p>
+      <ul>
+        <li><strong>No port conflicts</strong> — ถ้าใช้ fixed port แล้วมีหลาย instance จะชนกัน</li>
+        <li><strong>Security through obscurity</strong> — port สุ่มทำให้ attacker สแกนหายากกว่า fixed port (แต่ไม่ใช่ security หลัก — security จริงอยู่ที่ authentication layer)</li>
+        <li><strong>Discovery solves discovery</strong> — ไม่ต้องรู้ port ล่วงหน้า เพราะ discovery protocol จะบอก port ให้เอง</li>
+      </ul>
+
+      <h3>Message Broadcasting</h3>
+      <p><code>peer_broadcast</code> ส่ง task ไปทุก peer ที่เชื่อมต่อพร้อมกัน:</p>
+      <ul>
+        <li>ไม่ใช่ UDP broadcast — ใช้ HTTP POST sequential ไปทีละ peer (fire-and-forget)</li>
+        <li>รองรับ parallel สูงสุด 8 peers ต่อ 1 batch</li>
+        <li>เหมาะสำหรับ: deploy to all machines, run tests everywhere, health check ทุก node</li>
+      </ul>
+
+      <h2>องค์ประกอบหลัก</h2>
+
+      <h3>PeerServer <code>src/peer/PeerServer.ts</code></h3>
+      <p>HTTP server ขนาดเล็กที่เริ่มบน port สุ่ม (OS เลือกให้) เมื่อรัน <code>/peer share</code> แต่ละ endpoint รองรับการโต้ตอบแบบต่างๆ:</p>
+      <table>
+        <tr><th>Endpoint</th><th>Method</th><th>หน้าที่</th></tr>
+        <tr><td><code>/peer-info</code></td><td>GET</td><td>ส่งข้อมูล peer (hostname, IP, cwd, shell, platform)</td></tr>
+        <tr><td><code>/peer-msg</code></td><td>POST</td><td>รับข้อความ chat จาก peer อื่น</td></tr>
+        <tr><td><code>/peer-todo</code></td><td>POST</td><td>รับ task ที่ถูกมอบหมายจาก peer อื่น</td></tr>
+        <tr><td><code>/peer-exec</code></td><td>POST</td><td>รันคำสั่ง shell และส่งคืน stdout/stderr</td></tr>
+      </table>
+
+      <h3>PeerDiscovery <code>src/peer/PeerDiscovery.ts</code></h3>
+      <p>กลไกค้นหา 2 วิธีทำงานร่วมกัน:</p>
+      <ul>
+        <li><strong>File-based</strong> — แต่ละ instance เขียนไฟล์ <code>~/.claude/peers/{pid}.json</code> เก็บข้อมูล hostname, IP, port, shell, cwd instances อื่นอ่านไฟล์เพื่อค้นหา peer ในเครื่องเดียวกัน</li>
+        <li><strong>UDP Multicast</strong> — ส่ง heartbeat beacon ไปที่ <code>239.255.37.37:42069</code> ทุก 30 วินาที ตอบกลับ <code>clew-peer-query</code> ด้วย <code>clew-peer-info</code> ใช้ข้ามเครื่อง</li>
+        <li><strong>Stale eviction</strong> — Peer ที่ไม่เห็น 90 วินาที (<code>PEER_STALE_TIMEOUT</code>) จะถูกลบอัตโนมัติ</li>
+      </ul>
+
+      <h3>PeerStore <code>src/peer/PeerStore.ts</code></h3>
+      <p>Singleton registry ในหน่วยความจำที่เก็บ peer ทั้งหมดที่รู้จัก (ทั้งที่ค้นพบและที่ join เอง), ข้อความ chat, todos, และ custom tags (ชื่อที่กำหนดเอง, บทบาท)</p>
+      <ul>
+        <li><strong>Discovered peers</strong> — ถูกลบอัตโนมัติเมื่อ stale</li>
+        <li><strong>Joined connections</strong> — คงอยู่ถาวร ไม่ถูกลบอัตโนมัติ</li>
+        <li><strong>Tags</strong> — ชื่อที่กำหนดเองและบทบาทต่อ peer</li>
+      </ul>
+
+      <h2>Discovery Protocol</h2>
+      <pre><code>DiscoveryMessage =
+  | { type: "clew-peer-query",  version: 1 }                    // broadcast scan
+  | { type: "clew-peer-info",   version: 1,                     // heartbeat / response
+      id: string, hostname: string, ip: string, port: number,
+      cwd: string, sessionId?: string, appVersion: string,
+      shell?: string, platform?: string, term?: string,
+      status: "online" | "offline" }
+
+UDP port:     42069
+Multicast IP: 239.255.37.37
+Heartbeat:    ทุก 30 วินาที
+Stale after:  90 วินาที</code></pre>
+
+      <h2>คำสั่ง</h2>
+      <table>
+        <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+        <tr><td><code>/peer</code></td><td>เปิดเมนู interactive (share, join, discover, inbox)</td></tr>
+        <tr><td><code>/peer share</code></td><td>เริ่มประกาศ instance นี้เป็น worker บน LAN</td></tr>
+        <tr><td><code>/peer stop</code></td><td>หยุดประกาศและปิด peer server</td></tr>
+        <tr><td><code>/peer discover</code></td><td>สแกนหา peers (file + UDP, timeout 3s)</td></tr>
+        <tr><td><code>/peer join &lt;host&gt; &lt;port&gt;</code></td><td>เชื่อมต่อกับ remote peer ด้วย host และ port</td></tr>
+        <tr><td><code>/peer name &lt;ชื่อ&gt;</code></td><td>กำหนดชื่อที่แสดงสำหรับตัวเอง</td></tr>
+        <tr><td><code>/peer role &lt;บทบาท&gt;</code></td><td>กำหนดบทบาท (builder, tester, deployer, ฯลฯ)</td></tr>
+        <tr><td><code>/peer inbox</code></td><td>ดูข้อความและ todos ที่รออยู่จาก peers</td></tr>
+        <tr><td><code>/peer disconnect &lt;peer&gt;</code></td><td>ตัดการเชื่อมต่อจาก peer ที่ระบุ</td></tr>
+        <tr><td><code>/peer todos</code></td><td>แสดงรายการ task ทั้งหมดที่ได้รับ</td></tr>
+        <tr><td><code>/peer todo done &lt;id&gt;</code></td><td>ทำเครื่องหมาย task ว่าเสร็จแล้ว</td></tr>
+      </table>
+
+      <h2>AI Tools</h2>
+      <p>เครื่องมือที่ AI agent ใช้เพื่อโต้ตอบกับระบบ peer:</p>
+      <table>
+        <tr><th>Tool</th><th>คำอธิบาย</th></tr>
+        <tr><td><code>peer_discover</code></td><td>สแกน LAN หา Clew workers</td></tr>
+        <tr><td><code>peer_join</code></td><td>เชื่อมต่อกับ remote peer ผ่าน HTTP</td></tr>
+        <tr><td><code>peer_ping</code></td><td>ตรวจสอบว่า peer ออนไลน์อยู่หรือไม่ (GET /peer-info)</td></tr>
+        <tr><td><code>peer_info</code></td><td>ดึงข้อมูล peer อย่างละเอียด</td></tr>
+        <tr><td><code>peer_send_message</code></td><td>ส่งข้อความ chat ไปที่ peer</td></tr>
+        <tr><td><code>peer_send_task</code></td><td>มอบหมาย task ให้ remote worker</td></tr>
+        <tr><td><code>peer_broadcast</code></td><td>ส่ง task ไปทุก peer ที่เชื่อมต่อพร้อมกัน</td></tr>
+        <tr><td><code>peer_run</code></td><td>รันคำสั่ง shell บน remote worker</td></tr>
+        <tr><td><code>peer_disconnect</code></td><td>ลบ peer ออกจากรายการเชื่อมต่อ</td></tr>
+        <tr><td><code>peer_list_messages</code></td><td>แสดงข้อความ chat ทั้งหมดที่ได้รับ</td></tr>
+        <tr><td><code>peer_list_roles</code></td><td>แสดงรายการ peers พร้อมบทบาท</td></tr>
+        <tr><td><code>peer_list_tasks</code></td><td>แสดง task ทั้งหมดและสถานะ</td></tr>
+        <tr><td><code>peer_set_name</code></td><td>กำหนดชื่อที่แสดงให้ peer</td></tr>
+        <tr><td><code>peer_set_role</code></td><td>กำหนดบทบาทให้ peer</td></tr>
+        <tr><td><code>peer_share</code></td><td>เปิด/ปิด/เช็คสถานะการแชร์</td></tr>
+      </table>
+
+      <h2>การเชื่อมต่อกับ DAEMON</h2>
+      <p>Autonomous agent loop (<code>src/services/autonomous/agentLoop.ts</code>) เชื่อมต่อกับ PeerServer เพื่อรับ task จาก remote peers:</p>
+      <ul>
+        <li>ฟัง <code>/peer-todo</code> POST ตลอด 24/7</li>
+        <li>จัดคิว task ที่ได้รับและประมวลผลใน background workers</li>
+        <li>สูงสุด 3 workers พร้อมกัน; task timeout หลัง 30 นาที</li>
+        <li>ดูผลลัพธ์ผ่าน <code>/peer todos</code> และ <code>/tasks</code></li>
+      </ul>
+
+      <h2>ไฟล์ในระบบ</h2>
+      <table>
+        <tr><th>ไฟล์</th><th>หน้าที่</th></tr>
+        <tr><td><code>src/peer/PeerServer.ts</code></td><td>HTTP server พร้อม endpoint /peer-info, /peer-msg, /peer-todo, /peer-exec</td></tr>
+        <tr><td><code>src/peer/PeerDiscovery.ts</code></td><td>ค้นหา peer ผ่านไฟล์ + UDP multicast บน LAN</td></tr>
+        <tr><td><code>src/peer/PeerStore.ts</code></td><td>Singleton registry ใน memory (peers, messages, todos, tags)</td></tr>
+        <tr><td><code>src/peer/types.ts</code></td><td>Shared types และค่าคงที่ของ protocol</td></tr>
+        <tr><td><code>src/commands/peer/</code></td><td>Interactive peer menu และ CLI commands</td></tr>
+        <tr><td><code>src/tools/Peer*Tool/</code></td><td>16 AI agent tools สำหรับ peer operations</td></tr>
+        <tr><td><code>src/services/autonomous/agentLoop.ts</code></td><td>Daemon integration: รับ remote tasks ผ่าน PeerServer</td></tr>
+      </table>
+
+      <footer class="footer">
+        <span>Clew Code v0.2.4 — Open Source</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

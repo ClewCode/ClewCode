@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Loop — Clew Code</title>
+  <meta name="description" content="Autonomous agent loop — task queue consumer, worker lifecycle, retry logic, dead-letter queue, lease-based concurrency">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+</head>
+<body>
+<header class="header"></header>
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Agent Loop</span></div>
+      <h1>Autonomous Agent Loop</h1>
+      <p class="section-subtitle">24/7 background execution loop — pulls tasks from queue, spawns workers, monitors status, retries on failure, dead-letters when exhausted.</p>
+
+      <p>The agent loop lives in <code>src/services/autonomous/agentLoop.ts</code> — the single consumer that reads the task queue and manages the lifecycle of all worker processes.</p>
+
+      <h2>Techniques &amp; Principles</h2>
+
+      <h3>Why a Loop instead of a Message Queue?</h3>
+      <p>Message queue systems like RabbitMQ/Kafka carry setup and maintenance overhead. The agent loop uses a <strong>JSON file as a persistent queue</strong> — zero external dependencies:</p>
+      <ul>
+        <li><strong>Zero external deps</strong> — uses <code>fs.watch</code> to detect queue file changes</li>
+        <li><strong>File-based atomicity</strong> — single-file read/write under lock allows multiple processes to compete for consumption</li>
+        <li><strong>Self-debouncing</strong> — <code>ourWriteInProgress</code> flag prevents self-triggered re-reads</li>
+        <li><strong>Cross-platform</strong> — JSON files work everywhere, no broker installation needed</li>
+      </ul>
+
+      <h3>Lease-Based Concurrency</h3>
+      <p>The classic distributed worker problem: two workers see the same task and duplicate work. Leases solve this without a distributed lock:</p>
+      <pre><code>Main Loop                    Queue File (.json)              Worker Process
+    │                              │                              │
+    │ getNextTask()                │                              │
+    │─────────────────────────────►│                              │
+    │◄─── task {id, status:pending}│                              │
+    │                              │                              │
+    │ leaseTask(id, agentId)      │                              │
+    │─────────────────────────────►│                              │
+    │  (atomic: check no lease     │                              │
+    │   → write leaseOwner +       │                              │
+    │   leaseExpiresAt)            │                              │
+    │◄─────── true (leased) ──────│                              │
+    │                              │                              │
+    │ spawnWorker(prompt)          │                              │
+    │─────────────────────────────────────────────────────────────►│
+    │◄──── WorkerSession {id, pid}  │                              │
+    │                              │                              │
+    │          ═══ LOOP ═══         │                              │
+    │   while running:              │                              │
+    │     checkWorker(sessionId)    │                              │
+    │     ────────────────────────────────────────────────────────►│
+    │     ◄─── "running" / "completed" / "failed"                 │
+    │                              │                              │
+    │   [completed] → releaseLease │                              │
+    │              → markCompleted │                              │
+    │                              │                              │
+    │   [failed] → markFailed      │                              │
+    │           → retryTask()      │                              │
+    │           → stopWorker()     │                              │
+    │                              │                              │
+    │   [timeout 30m] → stopWorker │                              │
+    │                → releaseLease│                              │
+    │                → retryTask() │                              │</code></pre>
+
+      <h3>Retry with Exponential Backoff</h3>
+      <pre><code>Retry attempt     Backoff delay         Cumulative wait
+─────────────     ─────────────         ──────────────
+      1           base × 2¹ = 30s              30s
+      2           base × 2² = 60s              90s
+      3           base × 2³ = 120s            210s
+      4           base × 2⁴ = 240s            450s
+      5 (max)      base × 2⁵ = 480s            930s (~15 min)
+
+After max retries → dead_letter queue
+Dead-letter preserves: title, description, lastError, errorLog, retryCount</code></pre>
+      <ul>
+        <li><strong>Exponential backoff</strong> — base = 15s, factor = 2</li>
+        <li><strong>Max retries</strong> — 5 per task (default)</li>
+        <li><strong>Dead-letter queue</strong> — exhausted tasks are moved to <code>dead_letter</code> status with reason + error log</li>
+      </ul>
+
+      <h3>Worker Lifecycle + Concurrent Cap</h3>
+      <ul>
+        <li><strong>MAX_CONCURRENT_WORKERS = 3</strong> — prevents resource exhaustion</li>
+        <li><strong>Worker timeout = 30 min</strong> — long-running tasks are killed to free resources</li>
+        <li><strong>Worker poll = 10s</strong> — status checks via supervisor IPC</li>
+        <li><strong>Loop sleep = 5s</strong> — idle interval when no tasks or workers full</li>
+      </ul>
+
+      <h3>Supervisor Integration</h3>
+      <p>Workers are spawned through a <strong>Supervisor process</strong> (child_process) for crash isolation:</p>
+      <ul>
+        <li><strong>Crash isolation</strong> — worker crash doesn't crash the loop</li>
+        <li><strong>Output capture</strong> — stdout/stderr saved to <code>~/.claude/daemon/jobs/{sessionId}/output.log</code></li>
+        <li><strong>Health via IPC</strong> — loop checks status through supervisor, not raw PID (avoids PID reuse bugs)</li>
+      </ul>
+
+      <h3>Integration Points</h3>
+      <ul>
+        <li><strong>Peer todo listener</strong> — receives tasks from remote peers via <code>/peer-todo</code> HTTP endpoint → adds to queue</li>
+        <li><strong>Cron scheduler</strong> — fires scheduled tasks → adds to queue</li>
+        <li><strong>File watcher</strong> — <code>fs.watch</code> on queue file detects new tasks from other processes (e.g. CLI <code>/task add</code>)</li>
+      </ul>
+
+      <h3>Crash Recovery</h3>
+      <pre><code>Previous Run Crash
+      │
+      ▼
+startLoop() called
+      │
+      ├── loadQueue() — restore queue from disk
+      ├── sleep(2000ms) — ensure old process is dead
+      ├── expireLeases() — clear all stale leases
+      ├── start heartbeat (every 60s)
+      ├── start cron scheduler
+      ├── start peer sharing
+      ├── start file watcher
+      └── MAIN LOOP ──► getNextTask() → processTask() → loop</code></pre>
+
+      <h2>Task Lifecycle (State Machine)</h2>
+      <pre><code>                 ┌──────────┐
+                 │ pending   │◄──────────────────────────────┐
+                 └────┬─────┘                               │
+                      │ leaseTask()                          │
+                      ▼                                      │
+                 ┌──────────┐                               │
+                 │in_progress│                               │
+                 └────┬─────┘                               │
+          ┌───────────┼───────────┐                         │
+          ▼           ▼           ▼                         │
+    ┌──────────┐ ┌──────────┐ ┌──────────┐                 │
+    │completed │ │ failed   │ │cancelled │                 │
+    └──────────┘ └────┬─────┘ └──────────┘                 │
+                      │ retryTask()                         │
+                      ├── retryCount < max → backoff → ────┘
+                      │
+                      └── retryCount ≥ max
+                              │
+                              ▼
+                         ┌──────────────┐
+                         │ dead_letter   │
+                         │ (preserved    │
+                         │  for review)  │
+                         └──────────────┘</code></pre>
+
+      <h2>Related Files</h2>
+      <table>
+        <tr><th>File</th><th>Role</th></tr>
+        <tr><td><code>src/services/autonomous/agentLoop.ts</code></td><td>Main loop — start, stop, processTask, worker lifecycle</td></tr>
+        <tr><td><code>src/services/autonomous/taskQueue.ts</code></td><td>Queue CRUD, lease management, retry, dead-letter, file watcher</td></tr>
+        <tr><td><code>src/services/autonomous/daemonMode.ts</code></td><td>Daemon entry point — calls startLoop/stopLoop</td></tr>
+        <tr><td><code>src/Task.ts</code></td><td>Task type definitions, state machine, task ID generation</td></tr>
+        <tr><td><code>src/tasks/LocalAgentTask/</code></td><td>Local worker task — UI + lifecycle</td></tr>
+        <tr><td><code>src/tasks/RemoteAgentTask/</code></td><td>Remote worker task — UI + lifecycle</td></tr>
+        <tr><td><code>src/components/AutonomousExecutionAccordion.tsx</code></td><td>UI component for task queue display in REPL</td></tr>
+      </table>
+
+      <footer class="footer">
+        <span>Clew Code — Open Source</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

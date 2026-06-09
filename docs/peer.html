@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peer System — Clew</title>
+  <meta name="description" content="LAN peer-to-peer system — discovery, messaging, task delegation, and remote execution between Clew instances.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+</head>
+<body>
+<header class="header"></header>
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Peer System</span></div>
+      <h1>Peer System</h1>
+      <p class="section-subtitle">LAN peer-to-peer — discover other Clew instances, send messages, delegate tasks, and execute commands remotely.</p>
+
+      <p>The peer system lives in <code>src/peer/</code> and consists of three core layers: <strong>PeerServer</strong> (HTTP server), <strong>PeerDiscovery</strong> (LAN scanning), and <strong>PeerStore</strong> (in-memory registry).</p>
+
+      <h2>Architecture</h2>
+      <pre><code> ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                          PEER SYSTEM FLOW                                   │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+                          ┌──────────────────────────┐
+                          │      /peer share          │
+                          │  (Machine A — Worker)     │
+                          └────────────┬─────────────┘
+                                       │
+                     ┌─────────────────┼─────────────────┐
+                     ▼                  ▼                  ▼
+            ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+            │ PeerServer   │  │PeerDiscovery │  │  PeerStore   │
+            │ HTTP :random  │  │              │  │  (in-memory) │
+            │  port         │  │              │  │              │
+            └──────┬───────┘  └──────┬───────┘  └──────────────┘
+                   │                 │
+                   │    ┌────────────┼────────────┐
+                   │    │            │            │
+                   │    ▼            ▼            ▼
+                   │ ┌────────┐ ┌────────┐ ┌─────────────┐
+                   │ │  File  │ │  UDP   │ │  PeerStore   │
+                   │ │ ~/.cl/ │ │multicast│ │ (singleton) │
+                   │ │ peers/ │ │239...  │ │             │
+                   │ │{pid}.  │ │:42069  │ │             │
+                   │ │ json   │ │        │ │             │
+                   │ └────┬───┘ └────┬───┘ └─────────────┘
+                   │      │          │
+                   │      │          │  heartbeat every 30s
+                   │      │          │  stale timeout 90s
+                   │      │          │
+                   ▼      ▼          ▼
+ ┌─────────────────────────────────────────────────────┐
+ │                   LAN NETWORK                        │
+ │                                                     │
+ │   ┌─────────┐         ┌─────────┐                   │
+ │   │ Machine B│◄───────►│ Machine C│  ...             │
+ │   │ Clew Code│  query  │ Clew Code│                   │
+ │   └────┬─────┘         └────┬─────┘                   │
+ │        │                    │                         │
+ └────────┼────────────────────┼─────────────────────────┘
+          │                    │
+          │  /peer discover    │  /peer discover
+          ▼                    ▼
+
+
+ ═══ WORKER (Machine A) ENDPOINTS ═══
+
+      Peer อื่น          POST /peer-info     ──►  { hostname, ip, cwd, shell, ... }
+         │                POST /peer-msg      ──►  receive chat message
+         ├───────────────► POST /peer-todo     ──►  receive task (goes to inbox)
+         │                POST /peer-exec     ──►  run shell command + return stdout/stderr
+
+
+ ═══ CLIENT (Machine B) TOOLS ═══
+
+      /peer discover  ──►  scan files + UDP query (3s timeout)
+                               │
+                               ▼
+                          [peer list]
+                               │
+           ┌───────────────────┼───────────────────┐
+           ▼                   ▼                   ▼
+    /peer join          /peer send_task      /peer run
+    (POST /peer-info)   (POST /peer-todo)    (POST /peer-exec)
+
+           │
+           ▼
+    /peer send_message   ──►  POST /peer-msg  ──►  destination inbox
+    /peer broadcast      ──►  POST /peer-msg  ──►  all connected peers
+    /peer ping           ──►  GET  /peer-info  ──►  check alive
+
+
+ ═══ DAEMON (agentLoop.ts) ═══
+
+      ┌───────────────────────────────────┐
+      │  Autonomous Agent Loop            │
+      │  - listens /peer-todo 24/7       │
+      │  - receives tasks from peers      │
+      │  - executes in background worker   │
+      │  - max 3 concurrent workers       │
+      └───────────────────────────────────┘
+
+
+ ═══ DATA LIFECYCLE ═══
+
+      advertise ──► heartbeat every 30s
+                        │
+                        ├── 90s no heartbeat ──► stale → evict
+                        │
+      stop share ──► send UDP "offline"
+                     delete peer file
+                     close HTTP server</code></pre>
+
+      <h2>Core Components</h2>
+
+      <h3>PeerServer <code>src/peer/PeerServer.ts</code></h3>
+      <p>Lightweight HTTP server started on a random OS-assigned port when <code>/peer share</code> is invoked. Each endpoint handles a different peer interaction:</p>
+      <table>
+        <tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr>
+        <tr><td><code>/peer-info</code></td><td>GET</td><td>Return peer metadata (hostname, IP, cwd, shell, platform)</td></tr>
+        <tr><td><code>/peer-msg</code></td><td>POST</td><td>Receive a chat message from another peer</td></tr>
+        <tr><td><code>/peer-todo</code></td><td>POST</td><td>Receive a task delegation from another peer</td></tr>
+        <tr><td><code>/peer-exec</code></td><td>POST</td><td>Execute a shell command and return stdout/stderr</td></tr>
+      </table>
+
+      <h3>PeerDiscovery <code>src/peer/PeerDiscovery.ts</code></h3>
+      <p>Two discovery mechanisms work together:</p>
+      <ul>
+        <li><strong>File-based</strong> — Each instance writes <code>~/.claude/peers/{pid}.json</code> with hostname, IP, port, shell, cwd. Other instances scan this directory to discover local peers.</li>
+        <li><strong>UDP Multicast</strong> — Broadcasts heartbeat beacons to <code>239.255.37.37:42069</code> every 30 seconds. Responds to <code>clew-peer-query</code> with <code>clew-peer-info</code>. Cross-machine only.</li>
+        <li><strong>Stale eviction</strong> — Peers unseen for 90 seconds (<code>PEER_STALE_TIMEOUT</code>) are automatically removed.</li>
+      </ul>
+
+      <h3>PeerStore <code>src/peer/PeerStore.ts</code></h3>
+      <p>Singleton in-memory registry holding all known peers (discovered + explicitly joined), chat messages, todos, and custom tags (display names, roles).</p>
+      <ul>
+        <li><strong>Discovered peers</strong> — Auto-evicted after stale timeout</li>
+        <li><strong>Joined connections</strong> — Persistent; never auto-cleaned</li>
+        <li><strong>Tags</strong> — Custom display names and roles per peer</li>
+      </ul>
+
+      <h2>Discovery Protocol</h2>
+      <pre><code>DiscoveryMessage =
+  | { type: "clew-peer-query",  version: 1 }                    // broadcast scan
+  | { type: "clew-peer-info",   version: 1,                     // heartbeat / response
+      id: string, hostname: string, ip: string, port: number,
+      cwd: string, sessionId?: string, appVersion: string,
+      shell?: string, platform?: string, term?: string,
+      status: "online" | "offline" }
+
+UDP port:     42069
+Multicast IP: 239.255.37.37
+Heartbeat:    every 30 seconds
+Stale after:  90 seconds</code></pre>
+
+      <h2>Commands</h2>
+      <table>
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td><code>/peer</code></td><td>Open interactive peer menu (share, join, discover, inbox)</td></tr>
+        <tr><td><code>/peer share</code></td><td>Start advertising this instance as a worker on the LAN</td></tr>
+        <tr><td><code>/peer stop</code></td><td>Stop advertising and shut down the peer server</td></tr>
+        <tr><td><code>/peer discover</code></td><td>Scan for available peers (file + UDP, 3s timeout)</td></tr>
+        <tr><td><code>/peer join &lt;host&gt; &lt;port&gt;</code></td><td>Connect to a remote peer by host and port</td></tr>
+        <tr><td><code>/peer name &lt;name&gt;</code></td><td>Set a custom display name for yourself</td></tr>
+        <tr><td><code>/peer role &lt;role&gt;</code></td><td>Set a role label (builder, tester, deployer, etc.)</td></tr>
+        <tr><td><code>/peer inbox</code></td><td>View pending messages and todos from peers</td></tr>
+        <tr><td><code>/peer disconnect &lt;peer&gt;</code></td><td>Disconnect from a specific peer</td></tr>
+        <tr><td><code>/peer todos</code></td><td>List all received tasks</td></tr>
+        <tr><td><code>/peer todo done &lt;id&gt;</code></td><td>Mark a received task as done</td></tr>
+      </table>
+
+      <h2>AI Tools</h2>
+      <p>These are the tools the AI agent uses to interact with the peer system:</p>
+      <table>
+        <tr><th>Tool</th><th>Description</th></tr>
+        <tr><td><code>peer_discover</code></td><td>Scan LAN for available Clew workers</td></tr>
+        <tr><td><code>peer_join</code></td><td>Connect to a remote peer via HTTP</td></tr>
+        <tr><td><code>peer_ping</code></td><td>Check if a peer is online (GET /peer-info)</td></tr>
+        <tr><td><code>peer_info</code></td><td>Fetch detailed peer information</td></tr>
+        <tr><td><code>peer_send_message</code></td><td>Send a chat message to a peer</td></tr>
+        <tr><td><code>peer_send_task</code></td><td>Assign a task to a remote worker</td></tr>
+        <tr><td><code>peer_broadcast</code></td><td>Send a task to all connected peers simultaneously</td></tr>
+        <tr><td><code>peer_run</code></td><td>Execute a shell command on a remote worker</td></tr>
+        <tr><td><code>peer_disconnect</code></td><td>Remove a peer from the connection list</td></tr>
+        <tr><td><code>peer_list_messages</code></td><td>List all received chat messages</td></tr>
+        <tr><td><code>peer_list_roles</code></td><td>List all peers with their roles</td></tr>
+        <tr><td><code>peer_list_tasks</code></td><td>List all task assignments and their status</td></tr>
+        <tr><td><code>peer_set_name</code></td><td>Assign a custom display name to a peer</td></tr>
+        <tr><td><code>peer_set_role</code></td><td>Assign a functional role to a peer</td></tr>
+        <tr><td><code>peer_share</code></td><td>Toggle sharing (start/stop/status)</td></tr>
+      </table>
+
+      <h2>DAEMON Integration</h2>
+      <p>The autonomous agent loop (<code>src/services/autonomous/agentLoop.ts</code>) integrates with PeerServer to accept tasks from remote peers:</p>
+      <ul>
+        <li>Listens for incoming <code>/peer-todo</code> POSTs 24/7</li>
+        <li>Queues received tasks and processes them in background workers</li>
+        <li>Max 3 concurrent workers; tasks time out after 30 minutes</li>
+        <li>Results are available via <code>/peer todos</code> and <code>/tasks</code></li>
+      </ul>
+
+      <h2>Architecture Files</h2>
+      <table>
+        <tr><th>File</th><th>Role</th></tr>
+        <tr><td><code>src/peer/PeerServer.ts</code></td><td>HTTP server with /peer-info, /peer-msg, /peer-todo, /peer-exec endpoints</td></tr>
+        <tr><td><code>src/peer/PeerDiscovery.ts</code></td><td>File-based + UDP multicast LAN peer discovery</td></tr>
+        <tr><td><code>src/peer/PeerStore.ts</code></td><td>In-memory singleton registry (peers, messages, todos, tags)</td></tr>
+        <tr><td><code>src/peer/types.ts</code></td><td>Shared types and protocol constants</td></tr>
+        <tr><td><code>src/commands/peer/</code></td><td>Interactive peer menu and CLI commands</td></tr>
+        <tr><td><code>src/tools/Peer*Tool/</code></td><td>16 AI agent tools wrapping peer operations</td></tr>
+        <tr><td><code>src/services/autonomous/agentLoop.ts</code></td><td>Daemon integration: accepts remote tasks via PeerServer</td></tr>
+      </table>
+
+      <footer class="footer">
+        <span>Clew Code v0.2.4 — Open Source</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

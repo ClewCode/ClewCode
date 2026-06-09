@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Loop — Clew Code</title>
+  <meta name="description" content="Autonomous agent loop — task queue consumer, worker lifecycle, retry logic, dead-letter queue, lease-based concurrency">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+</head>
+<body>
+<header class="header"></header>
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="index.th.html">หน้าแรก</a><span class="sep">/</span><span>Agent Loop</span></div>
+      <h1>Autonomous Agent Loop</h1>
+      <p class="section-subtitle">Loop ที่รันอัตโนมัติ 24/7 — ดึงงานจากคิว, spawn worker, เช็คสถานะ, retry เมื่อ fail, dead-letter เมื่อเกิน max retry</p>
+
+      <p>Agent Loop อยู่ใน <code>src/services/autonomous/agentLoop.ts</code> — เป็น consumer ตัวเดียวที่อ่าน task queue และบริหาร lifecycle ของ worker process ทั้งหมด</p>
+
+      <h2>เทคนิคและหลักการ</h2>
+
+      <h3>ทำไมต้องเป็น Loop แทนที่จะเป็น Message Queue?</h3>
+      <p>ระบบ message queue แบบ RabbitMQ/Kafka มี overhead ในการ setup และ maintenance Agent Loop ใช้<strong>ไฟล์ JSON เป็น persistent queue</strong> — ทำงานได้โดยไม่ต้องมี external dependency:</p>
+      <ul>
+        <li><strong>Zero external deps</strong> — ใช้ <code>fs.watch</code> ตรวจจับการเปลี่ยนแปลงของไฟล์ queue</li>
+        <li><strong>File-based atomicity</strong> — อ่าน/เขียนไฟล์เดียวภายใต้ lock ทำให้หลาย process แข่งกัน consume ได้</li>
+        <li><strong>Self-debouncing</strong> — <code>ourWriteInProgress</code> flag ป้องกัน self-trigger เมื่อเราเป็นคนเขียนเอง</li>
+        <li><strong>Cross-platform</strong> — ไฟล์ JSON ทำงานได้ทุก OS ไม่ต้องติดตั้ง message broker</li>
+      </ul>
+
+      <h3>Lease-Based Concurrency — ป้องกัน Task Duplicate</h3>
+      <p>ปัญหาคลาสสิกของ distributed workers: มี 2 worker เห็น task เดียวกันและทำงานซ้ำ Lease แก้ปัญหานี้โดยไม่ต้องใช้ distributed lock:</p>
+      <pre><code>Main Loop                    Queue File (.json)              Worker Process
+    │                              │                              │
+    │ getNextTask()                │                              │
+    │─────────────────────────────►│                              │
+    │◄─── task {id, status:pending}│                              │
+    │                              │                              │
+    │ leaseTask(id, agentId)      │                              │
+    │─────────────────────────────►│                              │
+    │  (atomic: check no lease    │                              │
+    │   → write leaseOwner +      │                              │
+    │   leaseExpiresAt)           │                              │
+    │◄─────── true (leased) ──────│                              │
+    │                              │                              │
+    │ spawnWorker(prompt)         │                              │
+    │─────────────────────────────────────────────────────────────►│
+    │◄──── WorkerSession {id, pid} │                              │
+    │                              │                              │
+    │          ═══ LOOP ═══        │                              │
+    │   while running:             │                              │
+    │     checkWorker(sessionId)   │                              │
+    │     ────────────────────────────────────────────────────────►│
+    │     ◄─── "running" / "completed" / "failed"                 │
+    │                              │                              │
+    │                              │  (worker ทำงาน autonomously) │
+    │                              │                              │
+    │   [completed] → releaseLease │                              │
+    │              → markCompleted │                              │
+    │                              │                              │
+    │   [failed] → markFailed      │                              │
+    │           → retryTask()      │                              │
+    │           → stopWorker()     │                              │
+    │                              │                              │
+    │   [timeout 30m] → stopWorker │                              │
+    │                → releaseLease│                              │
+    │                → retryTask() │                              │</code></pre>
+      <ul>
+        <li><strong>Lease owner</strong> — ระบุว่า worker ไหนกำลังทำ task นี้</li>
+        <li><strong>Lease expiry</strong> — ถ้า worker crash โดยไม่ release, lease จะหมดอายุเอง → worker อื่นรับงานต่อได้</li>
+        <li><strong>Startup recovery</strong> — ตอน <code>startLoop</code> จะรอ 2 วินาที (ให้ process เก่าตายแน่ๆ) แล้วเรียก <code>expireLeases()</code> ล้าง stale lease ทั้งหมด</li>
+      </ul>
+
+      <h3>Retry with Exponential Backoff</h3>
+      <p>Task ที่ fail ไม่ได้แปลว่าต้อง dead-letter ทันที:</p>
+      <pre><code>Retry attempt     Backoff delay         Cumulative wait
+─────────────     ─────────────         ──────────────
+      1           base × 2¹ = 30s              30s
+      2           base × 2² = 60s              90s
+      3           base × 2³ = 120s            210s
+      4           base × 2⁴ = 240s            450s
+      5 (max)      base × 2⁵ = 480s            930s (~15 min)
+
+After max retries → dead_letter queue
+Dead-letter preserves: title, description, lastError, errorLog, retryCount</code></pre>
+      <ul>
+        <li><strong>Exponential backoff</strong> — base = 15s, factor = 2 — ลดการถล่ม queue เมื่อ task fail ซ้ำๆ</li>
+        <li><strong>Max retries</strong> — default 5 ครั้งต่อ task</li>
+        <li><strong>Retry interval</strong> — <code>retryAfter</code> timestamp ป้องกันไม่ให้ retry ก่อนเวลาที่กำหนด</li>
+        <li><strong>Dead-letter queue</strong> — task ที่ใช้ retry หมดจะถูกย้ายไปสถานะ <code>dead_letter</code> พร้อม <code>deadLetterReason</code> และ <code>errorLog</code> — ไม่หายไปไหน ตรวจสอบย้อนหลังได้</li>
+      </ul>
+
+      <h3>Worker Lifecycle + Concurrent Cap</h3>
+      <p>Main loop มีกลไกจำกัดจำนวน worker พร้อมกัน:</p>
+      <ul>
+        <li><strong>MAX_CONCURRENT_WORKERS = 3</strong> — ป้องกันไม่ให้ spawn worker มากเกินไปจนเครื่องพัง</li>
+        <li><strong>Loop poll interval</strong> — ถ้า worker เต็ม → sleep <code>LOOP_SLEEP_MS</code> (5s) แล้วตรวจใหม่</li>
+        <li><strong>Worker timeout = 30 นาที</strong> — task ที่รันนานเกินจะถูก kill เพื่อคืน resource</li>
+        <li><strong>Worker poll = 10s</strong> — เช็คสถานะ worker ทุก 10 วินาทีผ่าน supervisor IPC</li>
+      </ul>
+
+      <h3>Supervisor Integration — Process Health</h3>
+      <p>Worker ไม่ได้ถูกรันโดยตรง แต่ spawn ผ่าน<strong>Supervisor process</strong> (child_process):</p>
+      <pre><code>Agent Loop                    Supervisor                   Worker
+    │                              │                         │
+    │ sendRequest({type:'spawn'})  │                         │
+    │─────────────────────────────►│                         │
+    │                              │ spawn child_process     │
+    │                              │────────────────────────►│
+    │◄─── {ok:true, sessionId, pid}│                         │
+    │                              │                         │
+    │ sendRequest({type:'attach'}) │                         │
+    │─────────────────────────────►│                         │
+    │                              │ check process status    │
+    │◄─── {status, isRunning}      │                         │
+    │                              │                         │
+    │ sendRequest({type:'stop'})   │                         │
+    │─────────────────────────────►│                         │
+    │                              │ kill + cleanup          │
+    │                              │────────────────────────►│</code></pre>
+      <ul>
+        <li><strong>Crash isolation</strong> — worker crash ไม่ทำให้ loop crash — supervisor แยก process คนละตัว</li>
+        <li><strong>Output capture</strong> — supervisor เก็บ stdout/stderr ของ worker ไว้ใน <code>~/.claude/daemon/jobs/{sessionId}/output.log</code></li>
+        <li><strong>Health monitoring</strong> — loop เช็คผ่าน supervisor แทนที่จะ monitor PID โดยตรง (PID reuse problem)</li>
+      </ul>
+
+      <h3>Integration Points — Peer + Cron + Watch</h3>
+      <p>Agent Loop ไม่ได้อยู่เดี่ยวๆ — มัน integrate กับระบบอื่นของ Clew:</p>
+      <ul>
+        <li><strong>Peer todo listener</strong> — ฟัง <code>/peer-todo</code> HTTP endpoint → รับ task จาก remote peer → add เข้า queue</li>
+        <li><strong>Cron scheduler</strong> — <code>daemonCronScheduler</code> fire task ตาม schedule → add เข้า queue</li>
+        <li><strong>File watcher</strong> — <code>fs.watch</code> บน queue file → ตรวจจับ task ใหม่จาก process อื่น (เช่นจาก CLI <code>/task add</code>)</li>
+      </ul>
+      <p>architecture แบบนี้ทำให้ task เข้า queue ได้จากหลายช่องทาง — CLI, remote peer, cron — แต่มี consumer เดียว (loop) ที่คุมการ execute</p>
+
+      <h3>Task Log Persistence</h3>
+      <p>ทุก task มี log ของตัวเอง:</p>
+      <ul>
+        <li><strong>Per-task log</strong> — <code>~/.claude/daemon/logs/{taskId}.log</code> — 500 บรรทัดสุดท้ายของ worker output</li>
+        <li><strong>Error extraction</strong> — ตอน task fail, loop จะ extract non-noise lines (20 บรรทัดสุดท้าย) เก็บเป็น <code>errorLog[]</code> ใน queue entry</li>
+        <li><strong>Worker exit code</strong> — บันทึกว่า worker จบด้วย exit code 0 (success) หรือ 1 (failure)</li>
+      </ul>
+
+      <h3>Crash Recovery Flow</h3>
+      <p>ถ้า loop process ตาย (kill -9, power loss, OOM):</p>
+      <pre><code>Previous Run Crash
+      │
+      ▼
+startLoop() called
+      │
+      ├── loadQueue() — อ่านไฟล์ queue จาก disk
+      │
+      ├── sleep(2000ms) — รอให้แน่ใจว่า process เก่าตายแล้ว
+      │
+      ├── expireLeases() — ล้าง lease ทั้งหมดที่หมดอายุ
+      │   (task ที่ถูก lease โดย processID เก่าจะถูก reset → pending)
+      │
+      ├── start heartbeat (ทุก 60s)
+      │
+      ├── start cron scheduler
+      │
+      ├── start peer sharing
+      │
+      ├── start file watcher
+      │
+      └── MAIN LOOP ──► getNextTask() → processTask() → loop</code></pre>
+
+      <h2>Task Lifecycle (State Machine)</h2>
+      <pre><code>                 ┌──────────┐
+                 │ pending   │◄──────────────────────────────┐
+                 └────┬─────┘                               │
+                      │ leaseTask()                          │
+                      ▼                                      │
+                 ┌──────────┐                               │
+                 │in_progress│                               │
+                 └────┬─────┘                               │
+          ┌───────────┼───────────┐                         │
+          ▼           ▼           ▼                         │
+    ┌──────────┐ ┌──────────┐ ┌──────────┐                 │
+    │completed │ │ failed   │ │cancelled │                 │
+    └──────────┘ └────┬─────┘ └──────────┘                 │
+                      │ retryTask()                         │
+                      ├── retryCount < max → backoff → ────┘
+                      │
+                      └── retryCount ≥ max
+                              │
+                              ▼
+                         ┌──────────────┐
+                         │ dead_letter   │
+                         │ (preserved    │
+                         │  for review)  │
+                         └──────────────┘</code></pre>
+
+      <h2>ไฟล์ที่เกี่ยวข้อง</h2>
+      <table>
+        <tr><th>ไฟล์</th><th>หน้าที่</th></tr>
+        <tr><td><code>src/services/autonomous/agentLoop.ts</code></td><td>Main loop — start, stop, processTask, worker lifecycle</td></tr>
+        <tr><td><code>src/services/autonomous/taskQueue.ts</code></td><td>Queue CRUD, lease management, retry, dead-letter, file watcher</td></tr>
+        <tr><td><code>src/services/autonomous/daemonMode.ts</code></td><td>Daemon entry point — calls startLoop/stopLoop</td></tr>
+        <tr><td><code>src/Task.ts</code></td><td>Task type definitions, state machine, task ID generation</td></tr>
+        <tr><td><code>src/tasks/LocalAgentTask/</code></td><td>Local worker task — UI + lifecycle</td></tr>
+        <tr><td><code>src/tasks/RemoteAgentTask/</code></td><td>Remote worker task — UI + lifecycle</td></tr>
+        <tr><td><code>src/components/AutonomousExecutionAccordion.tsx</code></td><td>UI component สำหรับแสดง task queue ใน REPL</td></tr>
+      </table>
+
+      <footer class="footer">
+        <span>Clew Code — Open Source</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>

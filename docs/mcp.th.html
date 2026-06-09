@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP — Clew Code</title>
+  <meta name="description" content="Model Context Protocol (MCP) — เชื่อมต่อเครื่องมือภายนอก, ทรัพยากร, และบริการ ผ่าน stdio, SSE, และ OAuth">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+</head>
+<body>
+<header class="header"></header>
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+      <div class="breadcrumbs"><a href="index.th.html">หน้าแรก</a><span class="sep">/</span><span>MCP</span></div>
+      <h1>Model Context Protocol (MCP)</h1>
+      <p class="section-subtitle">เชื่อมต่อ Clew กับเครื่องมือภายนอก, แหล่งข้อมูล, และบริการผ่าน MCP — มาตรฐานเปิดสำหรับ AI-tool integration</p>
+
+      <p>MCP อยู่ใน <code>src/services/mcp/</code> — Clew ค้นหาเซิร์ฟเวอร์ MCP จาก <strong>settings.json</strong>, <strong>CLI flags</strong>, และ <strong>plugin manifests</strong> แล้วรวมเครื่องมือเข้าสู่ runtime</p>
+
+      <h2>สถาปัตยกรรม</h2>
+      <pre><code> ┌──────────────────────────────────────────────────────────────────────────┐
+ │                    MCP — MODEL CONTEXT PROTOCOL                           │
+ └──────────────────────────────────────────────────────────────────────────┘
+
+                         ┌──────────────────────────┐
+                         │   Settings / CLI Config   │
+                         │  src/services/mcp/config  │
+                         └────────────┬─────────────┘
+                                      │
+                                      ▼
+                     ┌──────────────────────────┐
+                     │   MCPConnectionManager   │
+                     │  จัดการ lifecycle        │
+                     │  ของเซิร์ฟเวอร์ MCP ทั้งหมด │
+                     └────────────┬─────────────┘
+                                  │
+              ┌───────────────────┼───────────────────┐
+              ▼                   ▼                   ▼
+      ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+      │  Stdio MCP   │   │   SSE MCP    │   │Direct Connect│
+      │ (subprocess) │   │  (remote)    │   │ (in-process) │
+      │ npx/node/etc │   │  HTTP + SSE  │   │              │
+      └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
+             │                  │                   │
+             └──────────────────┼───────────────────┘
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │   Client (JSON-RPC)  │
+                     │  tools/list          │
+                     │  tools/call          │
+                     │  resources/list      │
+                     └──────────┬───────────┘
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │   assembleToolPool   │
+                     │  (MCP + built-in     │
+                     │   tools รวมกัน)      │
+                     └──────────┬───────────┘
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │    Query Engine      │
+                     │  Model เห็น tools     │
+                     │  ทั้งหมดใน pool      │
+                     └──────────────────────┘</code></pre>
+
+      <h2>วิธีการทำงาน</h2>
+
+      <h3>การค้นหาเซิร์ฟเวอร์</h3>
+      <p>MCP servers ถูกค้นหาจาก 3 แหล่งเมื่อเริ่มต้น:</p>
+      <ol>
+        <li><strong><code>settings.json</code></strong> — คีย์ <code>mcpServers</code> กำหนด command, args, env</li>
+        <li><strong>CLI <code>--mcp-config</code></strong> — ไฟล์หรือ inline JSON</li>
+        <li><strong>Plugins</strong> — manifest ของ plugin สามารถประกาศ MCP server ได้; เริ่มเมื่อ plugin โหลด, หยุดเมื่อ unload</li>
+      </ol>
+
+      <h3>ประเภทการเชื่อมต่อ</h3>
+      <table>
+        <tr><th>ประเภท</th><th>Transport</th><th>วิธีการ</th></tr>
+        <tr>
+          <td><strong>Stdio</strong></td>
+          <td>stdin/stdout</td>
+          <td>Clew spawn subprocess (เช่น <code>npx @modelcontextprotocol/server-filesystem</code>) และสื่อสารผ่าน JSON-RPC ทาง stdin/stdout</td>
+        </tr>
+        <tr>
+          <td><strong>SSE</strong></td>
+          <td>HTTP + SSE</td>
+          <td>เชื่อมต่อ remote MCP server ผ่าน HTTP ใช้ SSE สำหรับ server→client, HTTP POST สำหรับ client→server รองรับ OAuth</td>
+        </tr>
+        <tr>
+          <td><strong>Direct Connect</strong></td>
+          <td>In-process</td>
+          <td>รัน MCP server ใน process เดียวกัน ใช้ InProcessTransport — ไม่มี network, ไม่มี subprocess ใช้ใน plugin-bundled servers</td>
+        </tr>
+      </table>
+
+      <h3>Tool Lifecycle</h3>
+      <pre><code>  1. CONNECT    ──► MCPConnectionManager เชื่อมต่อ server
+                       │
+                       ▼
+  2. DISCOVER   ──► เรียก tools/list (รองรับ paginated)
+                       │
+                       ▼
+  3. MERGE      ──► assembleToolPool() รวม MCP tools
+                       │  กับ built-in tools (sort + dedup)
+                       ▼
+  4. PRESENT    ──► Model เห็น MCP tools เป็น native tools
+                       │  (permission gating, hooks, logging)
+                       ▼
+  5. EXECUTE    ──► Model เรียก tool → toolExecution.ts
+                       │  route ไปยัง server ที่ถูกต้อง
+                       ▼
+  6. RESPOND    ──► ผลลัพธ์กลับไปหา model</code></pre>
+
+      <h3>การยืนยันตัวตน (Authentication)</h3>
+      <ul>
+        <li><strong>OAuth 2.0</strong> — redirect flow สำหรับ remote MCP servers เปิด local HTTP port เพื่อรับ callback</li>
+        <li><strong>Bearer token</strong> — static API token ใน <code>Authorization</code> header</li>
+        <li><strong>XAA token</strong> — auth provider token สำหรับ Claude-specific servers</li>
+        <li><strong>Credential vault</strong> — credentials ที่เก็บไว้ใน vault ถูก inject อัตโนมัติ</li>
+      </ul>
+
+      <h2>คำสั่ง MCP</h2>
+      <table>
+        <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+        <tr><td><code>/mcp</code></td><td>เปิดเมนูจัดการ MCP — list servers, add, remove, reconnect</td></tr>
+        <tr><td><code>/mcp list</code></td><td>แสดงเซิร์ฟเวอร์ MCP ทั้งหมด พร้อม tools, resources, prompts</td></tr>
+        <tr><td><code>/mcp add &lt;name&gt; &lt;command&gt; [args...]</code></td><td>เพิ่ม stdio MCP server ใหม่</td></tr>
+        <tr><td><code>/mcp remove &lt;name&gt;</code></td><td>ลบ MCP server</td></tr>
+        <tr><td><code>/mcp reconnect &lt;name&gt;</code></td><td>เชื่อมต่อ MCP server ใหม่</td></tr>
+      </table>
+
+      <h2>รูปแบบ Config (settings.json)</h2>
+      <div class="code-block-wrap">
+        <div class="code-block-header"><span>json</span></div>
+        <pre><code>{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"],
+      "env": {}
+    },
+    "database": {
+      "command": "node",
+      "args": ["./mcp/db-server.js"],
+      "env": {
+        "DB_URL": "postgresql://localhost:5432/mydb"
+      }
+    },
+    "remote-api": {
+      "url": "https://mcp.example.com",
+      "headers": {
+        "Authorization": "Bearer sk-..."
+      }
+    }
+  }
+}</code></pre>
+      </div>
+
+      <h2>Plugin-Bundled MCP Servers</h2>
+      <p>Plugin สามารถประกาศ MCP server ใน manifest เมื่อ plugin โหลด Clew จะสร้าง DirectConnect session ให้อัตโนมัติ — ไม่ต้อง subprocess ไม่ต้อง network — server จะพร้อมใช้งานทันที</p>
+
+      <h2>เครื่องมือ Built-in ที่ใช้ MCP</h2>
+      <table>
+        <tr><th>Tool</th><th>MCP ใช้ทำอะไร</th></tr>
+        <tr><td><code>ListMcpResources</code></td><td>แสดง resources จาก MCP servers ทั้งหมด (resources/list)</td></tr>
+        <tr><td><code>ReadMcpResource</code></td><td>อ่าน resource ตาม URI จาก MCP server (resources/read)</td></tr>
+      </table>
+
+      <h2>ไฟล์สำคัญ</h2>
+      <table>
+        <tr><th>ไฟล์</th><th>หน้าที่</th></tr>
+        <tr><td><code>src/services/mcp/MCPConnectionManager.tsx</code></td><td>จัดการ lifecycle ของเซิร์ฟเวอร์ MCP</td></tr>
+        <tr><td><code>src/services/mcp/config.ts</code></td><td>โหลด config จาก settings.json และ CLI flags</td></tr>
+        <tr><td><code>src/services/mcp/client.ts</code></td><td>JSON-RPC client</td></tr>
+        <tr><td><code>src/services/mcp/auth.ts</code></td><td>OAuth + Bearer token authentication</td></tr>
+        <tr><td><code>src/services/mcp/oauthPort.ts</code></td><td>Local HTTP server สำหรับ OAuth callback</td></tr>
+        <tr><td><code>src/services/mcp/types.ts</code></td><td>Type definitions</td></tr>
+        <tr><td><code>src/services/mcp/InProcessTransport.ts</code></td><td>In-process transport สำหรับ DirectConnect</td></tr>
+        <tr><td><code>src/services/mcp/officialRegistry.ts</code></td><td>ทะเบียน MCP server ทางการ</td></tr>
+        <tr><td><code>src/tools.ts</code></td><td>assembleToolPool() รวม MCP tools</td></tr>
+      </table>
+
+      <footer class="footer">
+        <span>Clew Code — โอเพนซอร์ส</span>
+        <div class="footer-links">
+          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
+          <a href="https://github.com/JonusNattapong/ClewCode/issues">ปัญหา</a>
+        </div>
+      </footer>
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>
