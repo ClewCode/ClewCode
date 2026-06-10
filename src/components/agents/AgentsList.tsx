@@ -41,11 +41,13 @@ export function AgentsList({ source, agents, onBack, onSelect, onCreateNew, chan
 
   const renderCreateNewOption = () => {
     return (
-      <Box>
+      <Box paddingLeft={1}>
         <Text color={isCreateNewSelected ? 'suggestion' : undefined}>
           {isCreateNewSelected ? `${figures.pointer} ` : '  '}
         </Text>
-        <Text color={isCreateNewSelected ? 'suggestion' : undefined}>Create new agent</Text>
+        <Text bold color={isCreateNewSelected ? 'suggestion' : undefined}>
+          + Create new agent
+        </Text>
       </Box>
     );
   };
@@ -65,23 +67,23 @@ export function AgentsList({ source, agents, onBack, onSelect, onCreateNew, chan
     const resolvedModel = resolveAgentModelDisplay(agent);
 
     return (
-      <Box key={`${agent.agentType}-${agent.source}`}>
+      <Box key={`${agent.agentType}-${agent.source}`} paddingLeft={1}>
         <Text dimColor={dimmed && !isSelected} color={textColor}>
-          {isBuiltIn ? '' : isSelected ? `${figures.pointer} ` : '  '}
+          {isBuiltIn ? '  ' : isSelected ? `${figures.pointer} ` : '  '}
         </Text>
-        <Text dimColor={dimmed && !isSelected} color={textColor}>
+        <Text dimColor={!isSelected} color={textColor} bold={isSelected}>
           {agent.agentType}
         </Text>
         {resolvedModel && (
-          <Text dimColor={true} color={textColor}>
+          <Text dimColor color={textColor}>
             {' · '}
             {resolvedModel}
           </Text>
         )}
         {agent.memory && (
-          <Text dimColor={true} color={textColor}>
+          <Text dimColor color={textColor}>
             {' · '}
-            {agent.memory} memory
+            {agent.memory} mem
           </Text>
         )}
         {overriddenBy && (
@@ -170,10 +172,10 @@ export function AgentsList({ source, agents, onBack, onSelect, onCreateNew, chan
     }
   };
 
-  const renderBuiltInAgentsSection = (title = 'Built-in (always available):') => {
+  const renderBuiltInAgentsSection = (title = 'Built-in agents (always available)') => {
     const builtInAgents = sortedAgents.filter(a => a.source === 'built-in');
     return (
-      <Box flexDirection="column" marginBottom={1} paddingLeft={2}>
+      <Box flexDirection="column" marginBottom={1}>
         <Text bold dimColor>
           {title}
         </Text>
@@ -189,18 +191,16 @@ export function AgentsList({ source, agents, onBack, onSelect, onCreateNew, chan
 
     return (
       <Box flexDirection="column" marginBottom={1}>
-        <Box paddingLeft={2}>
-          <Text bold dimColor>
-            {title}
-          </Text>
-          {folderPath && <Text dimColor> ({folderPath})</Text>}
-        </Box>
+        <Text bold dimColor>
+          {title}
+        </Text>
+        {folderPath && <Text dimColor>{folderPath}</Text>}
         {groupAgents.map(agent => renderAgent(agent))}
       </Box>
     );
   };
 
-  const sourceTitle = getAgentSourceDisplayName(source);
+  const sourceTitle = source === 'all' ? 'Agents' : getAgentSourceDisplayName(source);
 
   const builtInAgents = sortedAgents.filter(a => a.source === 'built-in');
 
@@ -215,7 +215,7 @@ export function AgentsList({ source, agents, onBack, onSelect, onCreateNew, chan
           <Text dimColor>No agents found. Create specialized subagents that Clew can delegate to.</Text>
           <Text dimColor>Each subagent has its own context window, custom system prompt, and specific tools.</Text>
           <Text dimColor>
-            Try creating: Code Reviewer, Code Simplifier, Security Reviewer, Tech Lead, or UX Reviewer.
+            Try creating: Code Reviewer, Security Reviewer, Tech Lead, or UX Reviewer.
           </Text>
           {source !== 'built-in' && sortedAgents.some(a => a.source === 'built-in') && (
             <>
@@ -231,7 +231,7 @@ export function AgentsList({ source, agents, onBack, onSelect, onCreateNew, chan
   return (
     <Dialog
       title={sourceTitle}
-      subtitle={`${count(sortedAgents, a => !a.overriddenBy)} agents`}
+      subtitle={`${count(sortedAgents, a => !a.overriddenBy)} agent${count(sortedAgents, a => !a.overriddenBy) !== 1 ? 's' : ''}`}
       onCancel={onBack}
       hideInputGuide
     >
@@ -253,23 +253,18 @@ export function AgentsList({ source, agents, onBack, onSelect, onCreateNew, chan
               </React.Fragment>
             ))}
             {builtInAgents.length > 0 && (
-              <Box flexDirection="column" marginBottom={1} paddingLeft={2}>
-                <Text dimColor>
-                  <Text bold>Built-in agents</Text> (always available)
-                </Text>
-                {builtInAgents.map(renderAgent)}
+              <Box flexDirection="column" marginTop={1}>
+                {renderBuiltInAgentsSection()}
               </Box>
             )}
           </>
         ) : source === 'built-in' ? (
-          <>
+          <Box flexDirection="column">
             <Text dimColor italic>
               Built-in agents are provided by default and cannot be modified.
             </Text>
-            <Box marginTop={1} flexDirection="column">
-              {sortedAgents.map(agent => renderAgent(agent))}
-            </Box>
-          </>
+            <Box marginTop={1}>{sortedAgents.map(agent => renderAgent(agent))}</Box>
+          </Box>
         ) : (
           <>
             {sortedAgents.filter(a => a.source !== 'built-in').map(agent => renderAgent(agent))}

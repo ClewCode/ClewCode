@@ -173,15 +173,16 @@ function formatRowLine({
   previewText: string;
   width: number;
 }): string {
-  const nameWidth = width >= 96 ? 24 : width >= 72 ? 20 : 16;
+  const nameWidth = width >= 96 ? 22 : width >= 72 ? 18 : 14;
   const timeWidth = 5;
-  const iconWidth = 2;
-  const gapWidth = 2;
-  const minPreviewWidth = 10;
-  const previewWidth = Math.max(minPreviewWidth, width - iconWidth - nameWidth - gapWidth - timeWidth);
+  const gapWidth = 3;
+  // name + gap + preview + gap + time = width
+  const previewWidth = Math.max(8, width - nameWidth - gapWidth - timeWidth);
   const name = (task as any).customName ?? task.agentType ?? 'Agent';
   const time = task.startTime ? formatTimeAgo(task.startTime) : '';
-  return `${truncateToWidth(name, nameWidth)}${truncateToWidth(previewText, previewWidth)}${time.padStart(timeWidth)}`;
+  const padName = name.padEnd(nameWidth).slice(0, nameWidth);
+  const padPreview = previewText.padEnd(previewWidth).slice(0, previewWidth);
+  return `${padName} ${padPreview} ${time.padStart(timeWidth)}`;
 }
 
 export function AgentViewRow({ task, isSelected, prCount, prStatus, prUrl, prDisplayInfo, width = 96 }: Props) {
@@ -217,14 +218,14 @@ export function AgentViewRow({ task, isSelected, prCount, prStatus, prUrl, prDis
   }, [prDisplayInfo, prDot, width]);
 
   return (
-    <Box key={task.id} flexDirection="row" height={1} width={width}>
+    <Box key={task.id} flexDirection="row" height={1} width={width} paddingLeft={2}>
       <Text color={isSelected ? textColor : (statusStyle.color as any)} backgroundColor={backgroundColor}>
-        {statusStyle.isAnimated ? figures.circleDotted : statusStyle.icon}
+        {statusStyle.icon}
       </Text>
       <Text backgroundColor={backgroundColor}> </Text>
       <Text
         bold={isSelected}
-        dimColor={!isSelected && cat !== 'needs-input' && cat !== 'completed'}
+        dimColor={!isSelected}
         color={textColor as any}
         backgroundColor={backgroundColor}
         wrap="truncate"
@@ -237,18 +238,15 @@ export function AgentViewRow({ task, isSelected, prCount, prStatus, prUrl, prDis
           {prColumn.text}
         </Text>
       )}
-      {!prColumn && prDot && showPRCount && (
-        <Text dimColor backgroundColor={backgroundColor}>
-          {prCount}
-        </Text>
-      )}
     </Box>
   );
 }
 
 export function AgentViewGroupHeader({
   label,
+  count,
   color,
+  isCollapsed,
   isSelected,
 }: {
   label: string;
@@ -258,11 +256,14 @@ export function AgentViewGroupHeader({
   onToggle: () => void;
   isSelected: boolean;
 }) {
+  const arrow = isCollapsed ? figures.arrowRight : figures.arrowDown;
   return (
     <Box flexDirection="row" height={1} marginTop={1}>
-      <Text color={isSelected ? 'text' : (color as any)} bold={isSelected} dimColor={!isSelected}>
+      <Text dimColor>{arrow} </Text>
+      <Text color={isSelected ? 'text' : (color as any)} bold>
         {label}
       </Text>
+      <Text dimColor> · {count}</Text>
     </Box>
   );
 }
