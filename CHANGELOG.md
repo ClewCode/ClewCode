@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.5] — 2026-06-10
+
+### Added
+
+- **Provider and model selection**: Added `/providers` for session-level provider overrides and expanded provider/model picker behavior, including live provider support and Clew Gateway provider registration.
+- **Ask User Question tool**: Added an interactive multiple-choice prompt tool with 2-4 options, multi-select support, optional previews, annotations, and channel-aware availability.
+- **Memory search command**: Added `/memory search` for searching stored memory entries from the CLI.
+- **Peer collaboration improvements**:
+  - Added `peer_send_message` and peer help tooling for LAN peer workflows.
+  - Added `PeerHelpTool` with discovery, messaging, roles, chunking, and request-response guidance.
+  - Added peer auto-injection support so peer identity and status are sent automatically.
+  - Show peer connection count in the status footer.
+- **Taste tooling and UI**:
+  - Added taste AI tools for learn, forget, profile, and suggest workflows.
+  - Added taste system notifications when learned rules are applied.
+  - Show taste briefs as chat system messages with rule summaries.
+- **Agent and workflow enhancements**: Added agent command support, loop lock command support, and dynamic workflow runner/persistence improvements.
+- **Documentation system**: Added `.clew/` config directory support and project `AGENTS.md` priority ordering.
+
+### Changed
+
+- Rebranded documentation and UI copy from Claude/Claude Code references to Clew Code.
+- Rewrote README intro, commands, project layout, and changelog sections with a clearer feature narrative.
+- Expanded multilingual README coverage and added Thai README/changelog content.
+- Added Clew Code logo to README and refreshed Clew logo assets.
+- Collapsed and reorganized command, project layout, peer, and taste documentation sections.
+- Redesigned the buddy card as a Pokédex-style layout.
+- Compacted all 15 peer tool result outputs into single-line success/failure summaries.
+- Updated repository URLs from `JonusNattapong/ClewCode` to `ClewCode/ClewCode`.
+
+### Fixed
+
+- Fixed PR tool result mapping with `mapToolResultToToolResultBlockParam`.
+- Fixed provider label ordering and fallback display in the model header.
+- Fixed taste brief rendering so it appears as a proper chat system message instead of a task notification.
+- Restored missing peer, loop, and MCP Thai documentation to git tracking.
+- Updated AskUserQuestion result copy to say "Clew's questions" instead of the old product name.
+
 ## [0.2.4] - 2026-06-08
 
 ### Added

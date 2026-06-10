@@ -155,7 +155,7 @@ function AskUserQuestionResultMessage({ answers }: { answers: Output['answers'] 
     <Box flexDirection="column" marginTop={1}>
       <Box flexDirection="row">
         <Text color={getModeColor('default')}>{BLACK_CIRCLE} </Text>
-        <Text>User answered Claude's questions:</Text>
+        <Text>User answered Clew's questions:</Text>
       </Box>
       <MessageResponse>
         <Box flexDirection="column">
