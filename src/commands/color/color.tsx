@@ -87,14 +87,6 @@ function ColorPanel({
   const [showHorns, setShowHorns] = useState<boolean>((config as any).showClawdHorns ?? true);
   // Spinner color
   const [spinnerColor, setSpinnerColor] = useState<string>((config as any).spinnerColor ?? 'default');
-  // Focused pane within mascot tab: 'body' | 'eyes' | 'horns'
-  const [mascotPane, setMascotPane] = useState<'body' | 'eyes' | 'horns'>('body');
-  const [focusedBodyIdx, setFocusedBodyIdx] = useState(
-    CLAWD_BODY_COLORS.findIndex(c => c.value === ((config as any).clawdBodyColor ?? 'clawd_body')),
-  );
-  const [focusedEyeIdx, setFocusedEyeIdx] = useState(
-    CLAWD_EYE_COLORS.findIndex(c => c.value === ((config as any).clawdEyeColor ?? 'clawd_eye')),
-  );
 
   const handleCancel = () => {
     setAppState(prev => ({
@@ -108,76 +100,56 @@ function ColorPanel({
     onDone('Color picker dismissed', { display: 'system' });
   };
 
-  // Keyboard navigation for mascot tab
+
+  // Which section is active for cycling
+  const [sectionIdx, setSectionIdx] = useState(0); // 0=body, 1=eyes, 2=horns
+
   useInput(
     (input, key) => {
       if (selectedTab !== 'mascot') return;
 
-      if (key.tab) {
-        setMascotPane(p => {
-          if (p === 'body') return 'eyes';
-          if (p === 'eyes') return 'horns';
-          return 'body';
-        });
+      // Shift+Up/Down: switch between sections
+      if (key.shift && (key.upArrow || key.downArrow)) {
+        setSectionIdx(s => key.upArrow
+          ? (s <= 0 ? 2 : s - 1)
+          : (s >= 2 ? 0 : s + 1));
         return;
       }
 
-      if (mascotPane === 'body') {
-        if (key.upArrow) {
-          setFocusedBodyIdx(i => {
-            const next = i <= 0 ? CLAWD_BODY_COLORS.length - 1 : i - 1;
-            setBodyColor(CLAWD_BODY_COLORS[next]!.value);
-            return next;
+      // Plain Up/Down: cycle value within current section
+      if (key.upArrow || key.downArrow) {
+        const forward = key.downArrow;
+        if (sectionIdx === 0) {
+          setBodyColor(c => {
+            const idx = CLAWD_BODY_COLORS.findIndex(x => x.value === c);
+            const next = forward
+              ? (idx >= CLAWD_BODY_COLORS.length - 1 ? 0 : idx + 1)
+              : (idx <= 0 ? CLAWD_BODY_COLORS.length - 1 : idx - 1);
+            return CLAWD_BODY_COLORS[next]!.value;
           });
-          return;
-        }
-        if (key.downArrow) {
-          setFocusedBodyIdx(i => {
-            const next = i >= CLAWD_BODY_COLORS.length - 1 ? 0 : i + 1;
-            setBodyColor(CLAWD_BODY_COLORS[next]!.value);
-            return next;
+        } else if (sectionIdx === 1) {
+          setEyeColor(c => {
+            const idx = CLAWD_EYE_COLORS.findIndex(x => x.value === c);
+            const next = forward
+              ? (idx >= CLAWD_EYE_COLORS.length - 1 ? 0 : idx + 1)
+              : (idx <= 0 ? CLAWD_EYE_COLORS.length - 1 : idx - 1);
+            return CLAWD_EYE_COLORS[next]!.value;
           });
-          return;
+        } else if (sectionIdx === 2) {
+          setShowHorns(h => !h);
         }
-        // Enter saves body color
-        if (key.return) {
-          saveGlobalConfig(prev => ({ ...prev, clawdBodyColor: bodyColor }));
-          return;
-        }
+        return;
       }
 
-      if (mascotPane === 'eyes') {
-        if (key.upArrow) {
-          setFocusedEyeIdx(i => {
-            const next = i <= 0 ? CLAWD_EYE_COLORS.length - 1 : i - 1;
-            setEyeColor(CLAWD_EYE_COLORS[next]!.value);
-            return next;
-          });
-          return;
-        }
-        if (key.downArrow) {
-          setFocusedEyeIdx(i => {
-            const next = i >= CLAWD_EYE_COLORS.length - 1 ? 0 : i + 1;
-            setEyeColor(CLAWD_EYE_COLORS[next]!.value);
-            return next;
-          });
-          return;
-        }
-        if (key.return) {
-          saveGlobalConfig(prev => ({ ...prev, clawdEyeColor: eyeColor }));
-          return;
-        }
-      }
-
-      if (mascotPane === 'horns') {
-        if (key.return || key.leftArrow || key.rightArrow || key.upArrow || key.downArrow || input === ' ') {
-          setShowHorns(h => {
-            const next = !h;
-            saveGlobalConfig(prev => ({ ...prev, showClawdHorns: next }));
-            return next;
-          });
-          return;
-        }
+      // Enter saves all mascot settings
+      if (key.return) {
+        saveGlobalConfig(prev => ({
+          ...prev,
+          clawdBodyColor: bodyColor,
+          clawdEyeColor: eyeColor,
+          showClawdHorns: showHorns,
+        }));
+        return;
       }
     },
     { isActive: true },
@@ -255,65 +227,40 @@ function ColorPanel({
             {/* Clawd Preview */}
             <Box flexDirection="column" alignItems="center">
               <Clawd pose="default" showHorns={showHorns} bodyColor={bodyColor} eyeColor={eyeColor} />
-              <Text dimColor italic marginTop={0}>
-                Live preview
+              <Text dimColor italic>Live preview</Text>
+            </Box>
+
+            {/* Body row */}
+            <Box flexDirection="row" gap={2}>
+              <Text bold color={sectionIdx === 0 ? 'suggestion' : undefined}>
+                {sectionIdx === 0 ? '▸ ' : '  '}Body
+              </Text>
+              <Text color={bodyColor}>●</Text>
+              <Text bold color={sectionIdx === 0 ? 'suggestion' : undefined}>
+                {CLAWD_BODY_COLORS.find(c => c.value === bodyColor)?.label ?? bodyColor}
               </Text>
             </Box>
 
-            <Divider />
-
-            {/* Body Color Selection */}
-            <Box flexDirection="column" gap={0}>
-              <Text bold color={mascotPane === 'body' ? 'suggestion' : undefined}>
-                {mascotPane === 'body' ? '▸ ' : '  '}Body Color
+            {/* Eye row */}
+            <Box flexDirection="row" gap={2}>
+              <Text bold color={sectionIdx === 1 ? 'suggestion' : undefined}>
+                {sectionIdx === 1 ? '▸ ' : '  '}Eye
               </Text>
-              {CLAWD_BODY_COLORS.map((c, idx) => (
-                <Box key={c.value} marginLeft={2}>
-                  <Text
-                    bold={idx === focusedBodyIdx && mascotPane === 'body'}
-                    color={idx === focusedBodyIdx && mascotPane === 'body' ? 'suggestion' : undefined}
-                  >
-                    {idx === focusedBodyIdx ? '> ' : '  '}
-                    {c.label}
-                    {idx === focusedBodyIdx && bodyColor === c.value ? '  ◄' : ''}
-                  </Text>
-                </Box>
-              ))}
+              <Text color={eyeColor}>●</Text>
+              <Text bold color={sectionIdx === 1 ? 'suggestion' : undefined}>
+                {CLAWD_EYE_COLORS.find(c => c.value === eyeColor)?.label ?? eyeColor}
+              </Text>
             </Box>
 
-            <Divider />
-
-            {/* Eye Color Selection */}
-            <Box flexDirection="column" gap={0}>
-              <Text bold color={mascotPane === 'eyes' ? 'suggestion' : undefined}>
-                {mascotPane === 'eyes' ? '▸ ' : '  '}Eye Color
+            {/* Horns row */}
+            <Box flexDirection="row" gap={2}>
+              <Text bold color={sectionIdx === 2 ? 'suggestion' : undefined}>
+                {sectionIdx === 2 ? '▸ ' : '  '}Horns
               </Text>
-              {CLAWD_EYE_COLORS.map((c, idx) => (
-                <Box key={c.value} marginLeft={2}>
-                  <Text
-                    bold={idx === focusedEyeIdx && mascotPane === 'eyes'}
-                    color={idx === focusedEyeIdx && mascotPane === 'eyes' ? 'suggestion' : undefined}
-                  >
-                    {idx === focusedEyeIdx ? '> ' : '  '}
-                    {c.label}
-                    {idx === focusedEyeIdx && eyeColor === c.value ? '  ◄' : ''}
-                  </Text>
-                </Box>
-              ))}
-            </Box>
-
-            <Divider />
-
-            {/* Horns Toggle Selection */}
-            <Box flexDirection="column" gap={0}>
-              <Text bold color={mascotPane === 'horns' ? 'suggestion' : undefined}>
-                {mascotPane === 'horns' ? '▸ ' : '  '}Horns Visibility
+              <Text color={showHorns ? 'ansi:green' : 'ansi:red'}>●</Text>
+              <Text bold color={sectionIdx === 2 ? 'suggestion' : undefined}>
+                {showHorns ? 'Show' : 'Hide'}
               </Text>
-              <Box marginLeft={2}>
-                <Text bold={mascotPane === 'horns'} color={mascotPane === 'horns' ? 'suggestion' : undefined}>
-                  {showHorns ? '[x] Show Horns' : '[ ] Show Horns'}
-                </Text>
-              </Box>
             </Box>
           </Box>
         </Tab>
@@ -323,16 +270,10 @@ function ColorPanel({
       <Box marginTop={1} justifyContent="center">
         <Text dimColor>
           Tab switch tabs ·{' '}
-          {selectedTab === 'prompt'
-            ? '↑↓ select · Enter confirm'
-            : selectedTab === 'spinner'
-              ? '↑↓ select · Enter confirm'
-              : mascotPane === 'body'
-                ? '↑↓ body · Tab eyes'
-                : mascotPane === 'eyes'
-                  ? '↑↓ eyes · Tab horns'
-                  : 'Space/Enter/Arrows toggle horns · Tab body'}
-          {' · '}Enter save · Esc close
+          {selectedTab === 'mascot'
+            ? '↑↓ color · Shift↑↓ section · Enter save'
+            : '↑↓ select · Enter confirm'}
+          {' · '}Esc close
         </Text>
       </Box>
     </Dialog>
