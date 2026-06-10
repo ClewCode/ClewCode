@@ -48,10 +48,16 @@ export async function getImageProcessor(): Promise<SharpFunction> {
 
   // Use sharp for non-bundled builds or as fallback.
   // Single structural cast: our SharpFunction is a subset of sharp's actual type surface.
-  const imported = (await import('sharp')) as unknown as MaybeDefault<SharpFunction>;
-  const sharp = unwrapDefault(imported);
-  imageProcessorModule = { default: sharp };
-  return sharp;
+  try {
+    const imported = (await import('sharp')) as unknown as MaybeDefault<SharpFunction>;
+    const sharp = unwrapDefault(imported);
+    imageProcessorModule = { default: sharp };
+    return sharp;
+  } catch {
+    throw new Error(
+      'Image processing is not available. Install sharp: npm install sharp (or bun add sharp).',
+    );
+  }
 }
 
 /**
