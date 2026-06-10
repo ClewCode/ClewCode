@@ -226,12 +226,13 @@ For each issue found, cite the exact file and line number.`;
 
 async function handleMerge(prNumber: number): Promise<{ data: Output }> {
   try {
-    const result = gh(`pr merge ${prNumber} --merge --subject "Merge PR #${prNumber}"`);
+    const title = ghSafe(`pr view ${prNumber} --json title -q '.title'`) || `PR #${prNumber}`;
+    const result = gh(`pr merge ${prNumber} --squash --subject "${title.replace(/"/g, '\\"')}"`);
     return {
       data: {
         success: true,
         action: 'merge',
-        message: `PR #${prNumber} merged successfully.`,
+        message: `PR #${prNumber} merged (squash): ${title}`,
         data: result,
       },
     };
