@@ -6,6 +6,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_RUN_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -80,12 +81,12 @@ export const PeerRunTool = buildTool({
     return getCwd();
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
-    if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Error: ${output.error}` };
+    if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Peer command failed: ${output.error}` };
     const out = (output.stdout || '').trim() || output.stderr || '(empty)';
     return {
       tool_use_id: toolUseID,
       type: 'tool_result',
-      content: `${output.exitCode === 0 ? '✓' : '✗'} exit ${output.exitCode}: ${out.slice(0, 500)}`,
+      content: `${output.exitCode === 0 ? '✓' : '✗'} exit ${output.exitCode}: ${truncateText(out, 500)}`,
     };
   },
   async call(input: { worker: string; command: string; timeout?: number }) {
@@ -106,11 +107,14 @@ export const PeerRunTool = buildTool({
     }
 
     if (!peer) {
-      return { data: { success: false, error: `Worker "${input.worker}" not found` } };
+      const message = `Worker "${input.worker}" not found`;
+      notifyPeerFeedback(message, 'peer-run-not-found', 'high');
+      return { data: { success: false, error: message } };
     }
 
     try {
       const timeout = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
+      notifyPeerFeedback(`running on ${peer.hostname}:${peer.port}`, 'peer-run', 'low');
       const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-exec`;
       const response = await fetch(url, {
         method: 'POST',
@@ -120,10 +124,17 @@ export const PeerRunTool = buildTool({
       });
 
       if (!response.ok) {
-        return { data: { success: false, error: `Worker responded with HTTP ${response.status}` } };
+        const message = `Worker responded with HTTP ${response.status}`;
+        notifyPeerFeedback(message, 'peer-run-error', 'high');
+        return { data: { success: false, error: message } };
       }
 
       const result = await response.json();
+      notifyPeerFeedback(
+        `command ${result.exitCode === 0 ? 'succeeded' : 'failed'} with exit ${result.exitCode ?? 1}`,
+        'peer-run-result',
+        result.exitCode === 0 ? 'medium' : 'high',
+      );
       return {
         data: {
           success: result.exitCode === 0,
@@ -133,7 +144,9 @@ export const PeerRunTool = buildTool({
         },
       };
     } catch (err) {
-      return { data: { success: false, error: `Failed: ${errorMessage(err)}` } };
+      const error = errorMessage(err);
+      notifyPeerFeedback(`failed: ${truncateText(error, 120)}`, 'peer-run-error', 'high');
+      return { data: { success: false, error: `Failed: ${error}` } };
     }
   },
 });

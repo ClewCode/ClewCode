@@ -129,8 +129,11 @@ function TasteMenu({ onDone }: { onDone: LocalJSXCommandOnDone }) {
     switch (action) {
       case 'toggle': {
         const config = runtime.getConfig();
-        runtime.updateConfig({ enabled: !config.enabled });
-        setMessage(config.enabled ? 'taste disabled' : 'taste enabled');
+        const enabled = !config.enabled;
+        runtime.updateConfig({ enabled });
+        const message = enabled ? 'taste enabled' : 'taste disabled';
+        runtime.notifyTaste(message.replace('taste ', ''), `taste-${enabled ? 'enabled' : 'disabled'}`, 'medium');
+        setMessage(message);
         return;
       }
       case 'status': {
@@ -273,11 +276,10 @@ function TasteMenu({ onDone }: { onDone: LocalJSXCommandOnDone }) {
             runtime={runtime}
             onDone={() => {
               const count = runtime.getRules().length;
+              const message = `Taste initialized \u2014 ${count} rule${count === 1 ? '' : 's'} found.\nRun /taste again to manage preferences.`;
+              runtime.notifyTaste(message.split('\n')[0]!, 'taste-init', 'medium');
               setInitializing(false);
-              onDone(
-                `Taste initialized \u2014 ${count} rule${count === 1 ? '' : 's'} found.\nRun /taste again to manage preferences.`,
-                { display: 'system' },
-              );
+              onDone(message, { display: 'system' });
             }}
           />
         </Box>
@@ -363,6 +365,7 @@ function InitFlow({ runtime, onDone }: { runtime: TasteRuntime; onDone: LocalJSX
                 ...analysis.rules.map(r => `  [${r.kind}] ${r.text} (confidence: ${(r.confidence * 100).toFixed(0)}%)`),
               ];
               result = lines.join('\n');
+              runtime.notifyTaste(lines[0]!, 'taste-init', 'medium');
             } else {
               await runtime.initialize();
               result = 'Taste initialized \u2014 no patterns detected.';
@@ -379,6 +382,7 @@ function InitFlow({ runtime, onDone }: { runtime: TasteRuntime; onDone: LocalJSX
         await runtime.initialize();
         result = `Taste initialized \u2014 ${existingRules.length} rule${existingRules.length === 1 ? '' : 's'} already exist.`;
       }
+      runtime.notifyTaste(result.split('\n')[0]!, 'taste-init', 'medium');
 
       if (cancelled) return;
       setStage('done');
@@ -428,12 +432,14 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
 
   if (arg === 'on') {
     runtime.updateConfig({ enabled: true });
+    runtime.notifyTaste('enabled', 'taste-enabled', 'medium');
     onDone('taste enabled', { display: 'system' });
     return null;
   }
 
   if (arg === 'off') {
     runtime.updateConfig({ enabled: false });
+    runtime.notifyTaste('disabled', 'taste-disabled', 'medium');
     onDone('taste disabled', { display: 'system' });
     return null;
   }

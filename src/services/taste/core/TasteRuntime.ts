@@ -19,6 +19,7 @@ import {
   type TasteBanditArm,
   type TasteConfig,
   type TasteEvent,
+  type TasteFeedbackPriority,
   type TasteProfile,
   type TasteRule,
   type TasteRuleKind,
@@ -44,6 +45,7 @@ export class TasteRuntime {
   private autoLearn: AutoLearnEngine;
   /** Callback fired when a pattern is auto-accepted as a rule */
   onAutoLearnRule: ((rule: TasteRule) => void) | null = null;
+  onTasteFeedback: ((message: string, key?: string, priority?: TasteFeedbackPriority) => void) | null = null;
 
   constructor(config?: Partial<TasteConfig>) {
     this.config = { ...DEFAULT_TASTE_CONFIG, ...config };
@@ -125,6 +127,10 @@ export class TasteRuntime {
     return this.config.enabled;
   }
 
+  notifyTaste(message: string, key = 'taste-feedback', priority: TasteFeedbackPriority = 'medium'): void {
+    this.onTasteFeedback?.(message, key, priority);
+  }
+
   // -- Profile --
 
   getProfile(): TasteProfile {
@@ -201,6 +207,14 @@ export class TasteRuntime {
     const events = this.eventLog.getRecentEvents(100);
     const newSuggestions = this.autoLearn.processEvents(events);
 
+    if (newSuggestions.length > 0) {
+      this.notifyTaste(
+        `detected ${newSuggestions.length} new pattern${newSuggestions.length === 1 ? '' : 's'}; run /taste suggest`,
+        'taste-suggest',
+        'medium',
+      );
+    }
+
     // Auto-accept suggestions with high confidence
     for (const suggestion of newSuggestions) {
       if (suggestion.pattern.confidence >= this.autoAcceptThreshold) {
@@ -209,6 +223,7 @@ export class TasteRuntime {
         );
         if (rule) {
           this.saveProfile().catch(() => {});
+          this.notifyTaste(`auto-learned: ${rule.text}`, 'taste-auto-add', 'low');
           this.onAutoLearnRule?.(rule);
         }
       }
@@ -249,6 +264,7 @@ export class TasteRuntime {
     this.profile.stats.totalEdits++;
     this.profile.stats.totalEvents++;
     await this.updateFromFeedback('edit', event.reward);
+    this.processAutoLearn();
     return event;
   }
 

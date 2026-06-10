@@ -7,12 +7,21 @@
  */
 
 import { logForDebugging } from '../utils/debug.js';
-import { PEER_STALE_TIMEOUT, type PeerChatMessage, type PeerInfo, type PeerTodo, peerColorFromId } from './types.js';
+import {
+  PEER_CONNECTION_PING_INTERVAL,
+  PEER_PING_TIMEOUT,
+  PEER_STALE_TIMEOUT,
+  type PeerChatMessage,
+  type PeerInfo,
+  type PeerTodo,
+  peerColorFromId,
+} from './types.js';
 
 export type PeerStoreCallbacks = {
   onPeerAdded?: (peer: PeerInfo) => void;
   onPeerUpdated?: (peer: PeerInfo) => void;
   onPeerRemoved?: (peerId: string) => void;
+  onPeerLost?: (peerId: string) => void;
   onMessageReceived?: (msg: PeerChatMessage) => void;
   onTodoReceived?: (todo: PeerTodo) => void;
 };
@@ -31,6 +40,7 @@ export class PeerStore {
   private todos: PeerTodo[] = [];
   private peerTags = new Map<string, PeerTags>();
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+  private pingTimer: ReturnType<typeof setInterval> | null = null;
   private callbacks: PeerStoreCallbacks;
   /** Resolve functions waiting for new messages, keyed by a unique ID */
   private messageWaiters = new Map<
@@ -42,6 +52,8 @@ export class PeerStore {
     this.callbacks = callbacks ?? {};
     // Start stale peer cleanup
     this.cleanupTimer = setInterval(() => this.cleanup(), 30_000);
+    // Start HTTP liveness pings for joined connections
+    this.pingTimer = setInterval(() => this.pingConnections(), PEER_CONNECTION_PING_INTERVAL);
   }
 
   /** Update callbacks after creation (e.g., to wire up SSE events). */
@@ -376,6 +388,41 @@ export class PeerStore {
   }
 
   /**
+   * HTTP-liveness-ping all joined connections and mark offline on failure.
+   */
+  private pingConnections(): void {
+    for (const [id, peer] of this.connections) {
+      this.pingPeerInfo(id, peer);
+    }
+  }
+
+  /**
+   * Ping a single peer's HTTP /peer-info endpoint.
+   * On success: update lastSeen + status to online.
+   * On failure: mark offline and fire callback.
+   */
+  private async pingPeerInfo(id: string, peer: PeerInfo): Promise<void> {
+    try {
+      const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-info`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(PEER_PING_TIMEOUT) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const info = await res.json();
+      peer.lastSeen = Date.now();
+      peer.status = 'online';
+      peer.cwd = info.cwd || peer.cwd;
+      peer.sessionId = info.sessionId || peer.sessionId;
+      logForDebugging(`[PeerStore] Liveness ok: ${peer.hostname}:${peer.port}`);
+    } catch {
+      // Peer is unreachable — mark offline
+      if (peer.status !== 'offline') {
+        peer.status = 'offline';
+        this.callbacks.onPeerLost?.(id);
+        logForDebugging(`[PeerStore] Liveness fail: ${peer.hostname}:${peer.port} — marked offline`);
+      }
+    }
+  }
+
+  /**
    * Remove stale peers.
    */
   private cleanup(): void {
@@ -396,6 +443,10 @@ export class PeerStore {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = null;
+    }
+    if (this.pingTimer) {
+      clearInterval(this.pingTimer);
+      this.pingTimer = null;
     }
     this.peers.clear();
     this.messages = [];

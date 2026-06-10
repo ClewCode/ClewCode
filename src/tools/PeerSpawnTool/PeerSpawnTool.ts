@@ -92,14 +92,14 @@ export const PeerSpawnTool = buildTool({
 
       // Use same model as the main session
       const spawnModel = input.model || getMainLoopModel();
-      let cmd = `cd "${cwd}" && bun run start --peer-share --peer-name "${targetName}" --name "${targetName}" --model "${spawnModel}"`;
+      let cmd = `cd "${cwd}" && clew --peer-share --peer-name "${targetName}" --name "${targetName}" --model "${spawnModel}"`;
       cmd += ` --system-prompt "${effectivePrompt.replace(/"/g, '\\"')}"`;
       const visualName = `Clew Peer - ${targetName}`;
 
       if (platform === 'win32') {
         // Windows: use start command (simple, no system prompt to avoid quoting issues)
         const winArgs = `--peer-share --peer-name ${targetName} --name "${targetName}" --model ${spawnModel}`;
-        childExec(`start "Clew Peer - ${targetName}" /D "${cwd}" bun run start ${winArgs}`, {
+        childExec(`start "Clew Peer - ${targetName}" /D "${cwd}" clew ${winArgs}`, {
           cwd,
           windowsHide: false,
         });

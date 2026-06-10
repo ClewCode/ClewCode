@@ -25,6 +25,8 @@ export type TasteRuleKind =
 
 export type TasteRuleSource = 'manual' | 'inferred' | 'imported';
 
+export type TasteFeedbackPriority = 'low' | 'medium' | 'high' | 'immediate';
+
 export type TasteRule = {
   id: string;
   kind: TasteRuleKind;

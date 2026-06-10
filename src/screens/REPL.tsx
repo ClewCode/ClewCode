@@ -971,21 +971,40 @@ export function REPL({
   const editorRenderingRef = useRef(false);
   const { addNotification, removeNotification } = useNotifications();
 
-  // Wire up taste auto-learn notifications
+  // Wire up taste feedback notifications
   useEffect(() => {
-    import('../services/taste/TasteIntegration.js').then(({ setOnTasteAutoLearnRule }) => {
-      setOnTasteAutoLearnRule(rule => {
+    import('../services/taste/TasteIntegration.js').then(({ setOnTasteFeedback }) => {
+      setOnTasteFeedback((message, key = 'taste-feedback', priority = 'medium') => {
         addNotification({
-          key: 'taste-auto-add',
-          text: `taste add: ${rule.text}`,
-          priority: 'low',
+          key,
+          text: `taste: ${message}`,
+          priority,
           timeoutMs: 5000,
         });
       });
     });
     return () => {
-      import('../services/taste/TasteIntegration.js').then(({ setOnTasteAutoLearnRule }) => {
-        setOnTasteAutoLearnRule(null);
+      import('../services/taste/TasteIntegration.js').then(({ setOnTasteFeedback }) => {
+        setOnTasteFeedback(null);
+      });
+    };
+  }, [addNotification]);
+
+  // Wire up peer tool feedback notifications
+  useEffect(() => {
+    import('../tools/peer/peerFeedback.js').then(({ setPeerFeedbackHandler }) => {
+      setPeerFeedbackHandler((message, key = 'peer-feedback', priority = 'medium') => {
+        addNotification({
+          key,
+          text: `peer: ${message}`,
+          priority,
+          timeoutMs: 5000,
+        });
+      });
+    });
+    return () => {
+      import('../tools/peer/peerFeedback.js').then(({ setPeerFeedbackHandler }) => {
+        setPeerFeedbackHandler(null);
       });
     };
   }, [addNotification]);

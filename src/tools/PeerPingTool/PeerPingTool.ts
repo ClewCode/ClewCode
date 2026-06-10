@@ -6,6 +6,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_PING_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -75,9 +76,9 @@ export const PeerPingTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.online) {
-      let content = `[Peer] Offline: ${output.error}`;
-      if (output.waited && output.timedOut) content = `[Peer] Still offline after waiting: ${output.error}`;
-      else if (output.waited) content = `[Peer] Not found yet (waiting...)`;
+      let content = `Peer is offline or unreachable: ${output.error}`;
+      if (output.waited && output.timedOut) content = `Still offline after waiting: ${output.error}`;
+      else if (output.waited) content = 'Peer not found yet; still waiting for discovery.';
       return { tool_use_id: toolUseID, type: 'tool_result', content };
     }
     let prefix = '✓';
@@ -92,6 +93,8 @@ export const PeerPingTool = buildTool({
   async call(input: { peer: string; wait?: boolean; timeout?: number }) {
     const store = getGlobalPeerStore();
     const timeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
+
+    notifyPeerFeedback(input.wait ? `waiting up to ${Math.round(timeoutMs / 1000)}s for ${input.peer}` : `pinging ${input.peer}`, 'peer-ping', 'low');
 
     // Try to find and ping peer, optionally with retry
     const attemptPing = async (): Promise<{ ok: boolean; result?: any; error?: string }> => {
@@ -149,6 +152,7 @@ export const PeerPingTool = buildTool({
     }
 
     if (!attempt.ok) {
+      notifyPeerFeedback(`offline: ${truncateText(attempt.error, 120)}`, 'peer-ping-result', 'high');
       return {
         data: {
           online: false,
@@ -160,6 +164,7 @@ export const PeerPingTool = buildTool({
     }
 
     const info = attempt.result!;
+    notifyPeerFeedback(`online: ${info.hostname ?? input.peer}:${info.port ?? ''}`, 'peer-ping-result', 'medium');
     return {
       data: {
         online: true,

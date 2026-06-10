@@ -14,6 +14,7 @@ export async function handleNonInteractive(args: string, runtime: TasteRuntime):
     case 'init': {
       await runtime.initialize();
       const existingRules = runtime.getRules();
+      let result = `Taste initialized \u2014 ${existingRules.length} rule${existingRules.length === 1 ? '' : 's'} found.`;
 
       // If no rules yet, try AI-driven codebase analysis
       if (existingRules.length === 0) {
@@ -32,16 +33,21 @@ export async function handleNonInteractive(args: string, runtime: TasteRuntime):
               added++;
             }
             await runtime.saveProfile();
-            return [
+            result = [
               `Taste initialized \u2014 ${added} rule${added === 1 ? '' : 's'} added from codebase analysis.`,
               '',
               ...analysis.rules.map(r => `  [${r.kind}] ${r.text} (confidence: ${(r.confidence * 100).toFixed(0)}%)`),
             ].join('\n');
+          } else {
+            result = 'Taste initialized \u2014 no patterns detected.';
           }
+        } else {
+          result = 'Taste initialized \u2014 no codebase context found.';
         }
       }
 
-      return `Taste initialized \u2014 ${existingRules.length} rule${existingRules.length === 1 ? '' : 's'} found.`;
+      runtime.notifyTaste(result.split('\n')[0]!, 'taste-init', 'medium');
+      return result;
     }
 
     case 'learn': {
@@ -49,7 +55,9 @@ export async function handleNonInteractive(args: string, runtime: TasteRuntime):
       if (!ruleText) return 'Usage: /taste learn <rule text>';
       const rule = runtime.addRule(ruleText);
       await runtime.saveProfile();
-      return `Learned rule: "${rule.text}" (id: ${rule.id}, confidence: ${rule.confidence})`;
+      const message = `Learned rule: "${rule.text}" (id: ${rule.id}, confidence: ${rule.confidence})`;
+      runtime.notifyTaste(message, 'taste-learn', 'medium');
+      return message;
     }
 
     case 'forget': {
@@ -58,7 +66,9 @@ export async function handleNonInteractive(args: string, runtime: TasteRuntime):
       const removed = runtime.removeRule(id);
       if (!removed) return `Rule not found: ${id}`;
       await runtime.saveProfile();
-      return `Forgot rule: ${id}`;
+      const message = `Forgot rule: ${id}`;
+      runtime.notifyTaste(message, 'taste-forget', 'medium');
+      return message;
     }
 
     case 'profile': {
@@ -102,19 +112,26 @@ export async function handleNonInteractive(args: string, runtime: TasteRuntime):
           .acceptSuggestion(id, (text, kind, source, tags) => runtime.addRule(text, kind, source, tags));
         if (!rule) return `Suggestion not found: ${id}`;
         await runtime.saveProfile();
-        return `Accepted suggestion: "${rule.text}" (confidence: ${(rule.confidence * 100).toFixed(0)}%)`;
+        const message = `Accepted suggestion: "${rule.text}" (confidence: ${(rule.confidence * 100).toFixed(0)}%)`;
+        runtime.notifyTaste(message, 'taste-suggest-accept', 'medium');
+        return message;
       }
       if (sub === 'reject') {
         const id = parts[2];
         if (!id) return 'Usage: /taste suggest reject <suggestion-id>';
         runtime.getAutoLearn().rejectSuggestion(id);
-        return `Rejected suggestion: ${id}`;
+        const message = `Rejected suggestion: ${id}`;
+        runtime.notifyTaste(message, 'taste-suggest-reject', 'medium');
+        return message;
       }
       // Run detection
       const suggestions = runtime.processAutoLearn();
       const pending = runtime.getAutoLearn().getPendingSuggestions();
       if (pending.length === 0 && suggestions.length === 0) {
-        return 'No suggestions available yet. Keep using Clew to generate more signals.';
+        const message =
+          'No suggestions available yet. Keep using Clew to generate accept, reject, edit, test, or lint signals.';
+        runtime.notifyTaste(message, 'taste-suggest-empty', 'low');
+        return message;
       }
       const lines: string[] = ['Auto-learn suggestions:'];
       if (suggestions.length > 0) {
@@ -188,7 +205,7 @@ function handleStatus(runtime: TasteRuntime): string {
   const rules = runtime.getRules();
   const arm = runtime.getCurrentArm();
 
-  return [
+  const lines = [
     `Clew taste: ${config.enabled ? 'ENABLED' : 'DISABLED'}`,
     `Profile: ${profile.projectId} (${rules.length} rules)`,
     `Events: ${profile.stats.totalEvents} (${profile.stats.totalAccepts} accepts, ${profile.stats.totalRejects} rejects, ${profile.stats.totalEdits} edits)`,
@@ -197,5 +214,14 @@ function handleStatus(runtime: TasteRuntime): string {
     `Auto-learn: ${config.autoLearn ? 'on' : 'off'}`,
     `Decay: ${config.decayEnabled ? 'on' : 'off'}`,
     `Min confidence: ${config.minConfidence}`,
-  ].join('\n');
+  ];
+
+  if (rules.length === 0) {
+    lines.push('No learned rules yet: run /taste learn <rule> or /taste init to create the profile.');
+  }
+  if (profile.stats.totalEvents === 0) {
+    lines.push('No feedback events yet: accept/reject tools or edit files to generate Taste signals.');
+  }
+
+  return lines.join('\n');
 }

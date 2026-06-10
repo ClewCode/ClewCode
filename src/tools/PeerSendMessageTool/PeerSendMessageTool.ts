@@ -8,6 +8,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_SEND_MESSAGE_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -105,20 +106,20 @@ export const PeerSendMessageTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success)
-      return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
-    let content = `✓ → ${output.peerHostname}: "${output.messageText ?? ''}"`;
+      return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Send failed: ${output.error}` };
+    let content = `✓ sent to ${output.peerHostname}: "${truncateText(output.messageText, 120)}"`;
     if (output.chunksSent) {
       const st = output.chunkStatus ? ` | ${output.chunkStatus}` : '';
-      content = `✓ → ${output.peerHostname}: sent ${output.chunksSent} chunks (${output.totalChars} chars total, group: ${output.chunkGroup})${st}`;
+      content = `✓ sent to ${output.peerHostname}: ${output.chunksSent} chunks (${output.totalChars} chars total)${st}`;
     } else if (output.response) {
       const respText = output.response.text;
       if (respText.length > 500) {
-        content = `✓ → ${output.peerHostname}: "${(output.messageText ?? '').slice(0, 80)}" | response (${respText.length} chars) ← ${output.response.fromName} (full text in output.response.text)`;
+        content = `✓ sent to ${output.peerHostname}: response (${respText.length} chars) ← ${output.response.fromName} (full text in output.response.text)`;
       } else {
-        content = `✓ → ${output.peerHostname}: "${(output.messageText ?? '').slice(0, 80)}" | response ← ${output.response.fromName}: "${respText}"`;
+        content = `✓ sent to ${output.peerHostname}: response ← ${output.response.fromName}: "${truncateText(respText, 240)}"`;
       }
     } else if (output.timedOut) {
-      content = `✓ → ${output.peerHostname}: "${(output.messageText ?? '').slice(0, 80)}" (no response after wait)`;
+      content = `✓ sent to ${output.peerHostname}: no response after wait`;
     }
     return {
       tool_use_id: toolUseID,
@@ -138,8 +139,11 @@ export const PeerSendMessageTool = buildTool({
     const discovery = getGlobalDiscovery();
     const server = getGlobalPeerServer();
 
+    notifyPeerFeedback(`sending message to ${input.peer}`, 'peer-send', 'low');
+
     // Auto-start sharing if not already sharing
     if (!discovery.isSharing) {
+      notifyPeerFeedback('starting peer sharing so the peer can reply', 'peer-share-start', 'low');
       const peerInfo: PeerInfo = {
         id: discovery.peerId,
         hostname: discovery.hostname,
@@ -166,6 +170,7 @@ export const PeerSendMessageTool = buildTool({
 
     if (!peer) {
       const discovery = getGlobalDiscovery();
+      notifyPeerFeedback(`looking for ${input.peer}`, 'peer-send-lookup', 'low');
       const peers = await discovery.discoverPeers(3000);
       for (const p of peers) store.addPeer(p);
       peer = store.findPeer(input.peer);
@@ -173,10 +178,12 @@ export const PeerSendMessageTool = buildTool({
     }
 
     if (!peer) {
+      const message = `Peer "${input.peer}" not found. Run peer_discover first.`;
+      notifyPeerFeedback(message, 'peer-send-not-found', 'high');
       return {
         data: {
           success: false,
-          error: `Peer "${input.peer}" not found. Run peer_discover first.`,
+          error: message,
         },
       };
     }
@@ -207,6 +214,7 @@ export const PeerSendMessageTool = buildTool({
       body: Record<string, unknown>,
     ): Promise<{ ok: boolean; id?: string; error?: string }> => {
       try {
+        notifyPeerFeedback('posting message to peer', 'peer-send-post', 'low');
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -232,6 +240,7 @@ export const PeerSendMessageTool = buildTool({
       const total = chunks.length;
 
       for (let i = 0; i < total; i++) {
+        notifyPeerFeedback(`sending chunk ${i + 1}/${total}`, 'peer-send-chunk', 'low');
         const result = await postMessage({
           ...identityBody,
           text: chunks[i],
@@ -240,7 +249,9 @@ export const PeerSendMessageTool = buildTool({
           chunkTotal: total,
         });
         if (!result.ok) {
-          return { data: { success: false, error: `Chunk ${i + 1}/${total} failed: ${result.error}` } };
+          const message = `Chunk ${i + 1}/${total} failed: ${result.error}`;
+          notifyPeerFeedback(message, 'peer-send-error', 'high');
+          return { data: { success: false, error: message } };
         }
         // Record each chunk locally
         store.addMessage({
@@ -270,6 +281,7 @@ export const PeerSendMessageTool = buildTool({
       // If waitResponse, wait after all chunks sent
       if (input.waitResponse) {
         const timeoutMs = Math.min(Math.max(1, input.responseTimeout ?? 60), 300) * 1000;
+        notifyPeerFeedback(`waiting up to ${Math.round(timeoutMs / 1000)}s for a response`, 'peer-send-wait', 'low');
         const responses = await store.waitForMessageFrom(sendTimestamp, timeoutMs, peer.hostname);
         if (responses.length > 0) {
           const resp = responses[0]!;
@@ -323,8 +335,11 @@ export const PeerSendMessageTool = buildTool({
     });
 
     if (!result.ok) {
-      return { data: { success: false, error: `Peer ${peer.hostname} responded with HTTP ${result.error}` } };
+      const message = `Peer ${peer.hostname} responded with HTTP ${result.error}`;
+      notifyPeerFeedback(message, 'peer-send-error', 'high');
+      return { data: { success: false, error: message } };
     }
+    notifyPeerFeedback(`sent to ${peer.hostname}`, 'peer-send-result', 'medium');
 
     store.addMessage({
       id: result.id ?? `msg_${Date.now()}_local`,
@@ -338,6 +353,7 @@ export const PeerSendMessageTool = buildTool({
     // If waitResponse, wait for a message from the specific peer
     if (input.waitResponse) {
       const timeoutMs = Math.min(Math.max(1, input.responseTimeout ?? 60), 300) * 1000;
+      notifyPeerFeedback(`waiting up to ${Math.round(timeoutMs / 1000)}s for a response`, 'peer-send-wait', 'low');
       const responses = await store.waitForMessageFrom(sendTimestamp, timeoutMs, peer.hostname);
       if (responses.length > 0) {
         const resp = responses[0]!;

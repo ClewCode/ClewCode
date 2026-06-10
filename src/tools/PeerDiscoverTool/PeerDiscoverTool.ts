@@ -3,6 +3,7 @@ import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { formatPeerList, notifyPeerFeedback } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_DISCOVER_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -82,18 +83,18 @@ export const PeerDiscoverTool = buildTool({
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.workers || output.workers.length === 0) {
-      let content = 'No peers found.';
-      if (output.waited && output.timedOut) content = 'Waited but no peers appeared (timeout).';
-      else if (output.waited) content = 'No peers yet (waiting\u2026)';
+      let content = 'No peers found on the local network.';
+      if (output.waited && output.timedOut) content = 'Waited for peers but none appeared before timeout.';
+      else if (output.waited) content = 'No peers yet; still waiting for discovery.';
       return { tool_use_id: toolUseID, type: 'tool_result', content };
     }
-    let prefix = `✓ ${output.workers.length} peer(s)`;
-    if (output.waited && !output.timedOut) prefix = `⬇ ${output.workers.length} peer(s) (found)`;
-    else if (output.waited) prefix = `⌛ ${output.workers.length} peer(s) (timed out)`;
+    let prefix = `✓ discovered ${output.workers.length} peer(s)`;
+    if (output.waited && !output.timedOut) prefix = `✓ discovered ${output.workers.length} peer(s) after waiting`;
+    else if (output.waited) prefix = `⌛ discovered ${output.workers.length} peer(s) before timeout`;
     return {
       tool_use_id: toolUseID,
       type: 'tool_result',
-      content: `${prefix}: ` + output.workers.map((w: any) => `${w.hostname}:${w.port}`).join(', '),
+      content: `${prefix}: ${formatPeerList(output.workers)}`,
     };
   },
   async call(input: { timeout?: number; wait?: boolean; waitTimeout?: number; minPeers?: number }) {
@@ -102,6 +103,8 @@ export const PeerDiscoverTool = buildTool({
     const scanTimeout = Math.min(Math.max(1, input.timeout ?? 3), 10) * 1000;
     const minPeers = input.minPeers ?? 1;
     const waitTimeoutMs = Math.min(Math.max(1, input.waitTimeout ?? 30), 120) * 1000;
+
+    notifyPeerFeedback(input.wait ? `discovering peers for up to ${Math.round(waitTimeoutMs / 1000)}s` : 'discovering peers', 'peer-discover', 'low');
 
     // Helper to do one discover round
     const doDiscover = async (): Promise<number> => {
@@ -131,6 +134,11 @@ export const PeerDiscoverTool = buildTool({
     }
 
     const peers = store.getPeers();
+    notifyPeerFeedback(
+      peers.length > 0 ? `found ${peers.length} peer(s)` : 'no peers found',
+      'peer-discover-result',
+      peers.length > 0 ? 'medium' : 'low',
+    );
     return {
       data: {
         workers: peers.map(p => ({

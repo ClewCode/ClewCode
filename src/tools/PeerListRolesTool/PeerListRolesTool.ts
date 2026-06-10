@@ -4,6 +4,7 @@ import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_LIST_ROLES_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -75,13 +76,13 @@ export const PeerListRolesTool = buildTool({
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.workers || output.workers.length === 0) {
       let content = 'No peers joined.';
-      if (output.waited && output.timedOut) content = 'Waited but no peers appeared (timeout).';
-      else if (output.waited) content = 'No peers yet (waiting\u2026)';
+      if (output.waited && output.timedOut) content = 'Waited for peers but none appeared before timeout.';
+      else if (output.waited) content = 'No peers yet; still waiting.';
       return { tool_use_id: toolUseID, type: 'tool_result', content };
     }
     let prefix = `✓ ${output.count} peer(s)`;
-    if (output.waited && !output.timedOut) prefix = `⬇ ${output.count} peer(s) (appeared)`;
-    else if (output.waited) prefix = `⌛ ${output.count} peer(s) (timed out, got ${output.count})`;
+    if (output.waited && !output.timedOut) prefix = `✓ ${output.count} peer(s) appeared after waiting`;
+    else if (output.waited) prefix = `⌛ ${output.count} peer(s) found before timeout`;
     return {
       tool_use_id: toolUseID,
       type: 'tool_result',
@@ -94,6 +95,8 @@ export const PeerListRolesTool = buildTool({
     const store = getGlobalPeerStore();
     const minPeers = input.minPeers ?? 1;
     const timeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
+
+    notifyPeerFeedback(input.wait ? `waiting up to ${Math.round(timeoutMs / 1000)}s for peer roles` : 'reading peer roles', 'peer-list-roles', 'low');
 
     // Helper to build response data from current store
     const buildData = (waited?: boolean, timedOut?: boolean) => {
@@ -161,6 +164,12 @@ export const PeerListRolesTool = buildTool({
       }
     }
 
-    return { data: buildData(waited, timedOut) };
+    const data = buildData(waited, timedOut);
+    notifyPeerFeedback(
+      data.count > 0 ? `found ${data.count} peer role(s)` : 'no peer roles found',
+      'peer-list-roles-result',
+      data.count > 0 ? 'medium' : 'low',
+    );
+    return { data };
   },
 });

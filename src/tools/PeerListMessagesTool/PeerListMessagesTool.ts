@@ -4,6 +4,7 @@ import type { PeerChatMessage } from '../../peer/types.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_LIST_MESSAGES_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -106,13 +107,13 @@ export const PeerListMessagesTool = buildTool({
       let content = 'No messages.';
       if (output.waited && output.timedOut) {
         if (output.peerStatus === 'offline') content = 'Peer went offline while waiting — no messages received.';
-        else content = 'Waited but no new messages arrived (timeout).';
+        else content = 'Waited but no new messages arrived before timeout.';
       } else if (output.waited) {
         content = 'No new messages yet.';
       }
       return { tool_use_id: toolUseID, type: 'tool_result', content };
     }
-    let prefix = `✓ ${output.count} msg(s)`;
+    let prefix = `✓ ${output.count} new msg(s)`;
     if (output.waited)
       prefix = output.timedOut ? `⌛ ${output.count} msg(s) (timed out)` : `⬇ ${output.count} msg(s) (new)`;
     if (output.peerStatus === 'offline') prefix += ' [peer offline]';
@@ -124,7 +125,7 @@ export const PeerListMessagesTool = buildTool({
         output.messages
           .map((m: any) => {
             const tag = m.senderRole ? `[${m.senderRole}]` : '';
-            return `${m.fromName}${tag}: ${(m.text || '').slice(0, 200)}`;
+            return `${m.fromName}${tag}: ${truncateText(m.text || '', 200)}`;
           })
           .join(' | '),
     };
@@ -139,6 +140,12 @@ export const PeerListMessagesTool = buildTool({
   }) {
     const store = getGlobalPeerStore();
     const after = input.after ?? 0;
+
+    notifyPeerFeedback(
+      input.wait ? `waiting up to ${Math.min(Math.max(1, input.timeout ?? 30), 120)}s for new messages` : 'listing peer messages',
+      'peer-list-msgs',
+      'low',
+    );
 
     // If `from` is set, filter messages by sender
     const filterByFrom = (msgs: PeerChatMessage[]) =>
@@ -192,17 +199,23 @@ export const PeerListMessagesTool = buildTool({
       }
     }
 
+    const dataMessages = messages.map(m => ({
+      from: m.from,
+      fromName: m.fromName,
+      text: m.text,
+      timestamp: m.timestamp,
+      senderRole: m.senderRole,
+      senderPort: m.senderPort,
+    }));
+    notifyPeerFeedback(
+      dataMessages.length > 0 ? `found ${dataMessages.length} message(s)` : 'no new messages',
+      'peer-list-msgs-result',
+      dataMessages.length > 0 ? 'medium' : 'low',
+    );
     return {
       data: {
-        messages: messages.map(m => ({
-          from: m.from,
-          fromName: m.fromName,
-          text: m.text,
-          timestamp: m.timestamp,
-          senderRole: m.senderRole,
-          senderPort: m.senderPort,
-        })),
-        count: messages.length,
+        messages: dataMessages,
+        count: dataMessages.length,
         waited,
         timedOut,
         peerStatus: peerStatus ?? (input.trackPeer ? 'unknown' : undefined),

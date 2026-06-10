@@ -2,7 +2,12 @@
 // Also hosts the global TasteRuntime singleton for cross-module access.
 
 import { TasteRuntime } from './core/TasteRuntime.js';
-import { DEFAULT_TASTE_CONFIG, type TasteConfig, type TasteRule } from './core/TasteTypes.js';
+import {
+  DEFAULT_TASTE_CONFIG,
+  type TasteConfig,
+  type TasteFeedbackPriority,
+  type TasteRule,
+} from './core/TasteTypes.js';
 
 // ---------------------------------------------------------------------------
 // Global singleton
@@ -11,6 +16,7 @@ import { DEFAULT_TASTE_CONFIG, type TasteConfig, type TasteRule } from './core/T
 let _runtime: TasteRuntime | null = null;
 /** External callback for auto-learned rules — wired by the REPL to show toasts */
 let _onAutoLearnRule: ((rule: TasteRule) => void) | null = null;
+let _onTasteFeedback: ((message: string, key?: string, priority?: TasteFeedbackPriority) => void) | null = null;
 
 /**
  * Get (or lazily create) the global TasteRuntime singleton.
@@ -20,6 +26,7 @@ let _onAutoLearnRule: ((rule: TasteRule) => void) | null = null;
 export function getTasteRuntime(): TasteRuntime {
   if (!_runtime) {
     _runtime = new TasteRuntime();
+    _runtime.onTasteFeedback = _onTasteFeedback;
   }
   return _runtime;
 }
@@ -40,6 +47,7 @@ export async function initTasteOnStartup(): Promise<void> {
   if (_onAutoLearnRule) {
     r.onAutoLearnRule = _onAutoLearnRule;
   }
+  r.onTasteFeedback = _onTasteFeedback;
 
   // Lazy-import settings to avoid circular deps at module level
   const { getInitialSettings } = await import('../../utils/settings/settings.js');
@@ -143,6 +151,15 @@ export function setOnTasteAutoLearnRule(cb: ((rule: TasteRule) => void) | null):
   // If runtime already exists, wire it immediately
   if (_runtime) {
     _runtime.onAutoLearnRule = cb;
+  }
+}
+
+export function setOnTasteFeedback(
+  cb: ((message: string, key?: string, priority?: TasteFeedbackPriority) => void) | null,
+): void {
+  _onTasteFeedback = cb;
+  if (_runtime) {
+    _runtime.onTasteFeedback = cb;
   }
 }
 

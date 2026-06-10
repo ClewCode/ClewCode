@@ -4,6 +4,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_JOIN_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -54,16 +55,17 @@ export const PeerJoinTool = buildTool({
     return getCwd();
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
-    if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Failed: ${output.error}` };
+    if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Failed to join peer: ${output.error}` };
     const extra = [output.displayName, output.role, output.shell].filter(Boolean).join(' ');
     return {
       tool_use_id: toolUseID,
       type: 'tool_result',
-      content: `✓ joined ${output.peerHostname}:${output.peerPort} ${extra}`.trim(),
+      content: `✓ joined ${output.peerHostname}:${output.peerPort}${extra ? ` (${extra})` : ''}`,
     };
   },
   async call(input: { host?: string; port: number }) {
     const host = input.host || '127.0.0.1';
+    notifyPeerFeedback(`joining ${host}:${input.port}`, 'peer-join', 'low');
     try {
       const url = `http://${host}:${input.port}/peer-info`;
       const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -86,6 +88,7 @@ export const PeerJoinTool = buildTool({
       // Copy display name and role if present
       if (info.displayName) store.setPeerName(info.id, info.displayName);
       if (info.role) store.setPeerRole(info.id, info.role);
+      notifyPeerFeedback(`joined ${info.hostname ?? host}:${info.port ?? input.port}`, 'peer-join-result', 'medium');
       return {
         data: {
           success: true,
@@ -98,7 +101,9 @@ export const PeerJoinTool = buildTool({
         },
       };
     } catch (err) {
-      return { data: { success: false, error: `Failed: ${errorMessage(err)}` } };
+      const error = errorMessage(err);
+      notifyPeerFeedback(`join failed: ${truncateText(error, 120)}`, 'peer-join-error', 'high');
+      return { data: { success: false, error: `Failed: ${error}` } };
     }
   },
 });

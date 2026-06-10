@@ -122,6 +122,12 @@ export const PEER_HEARTBEAT_INTERVAL = 30_000;
 /** Stale timeout in ms -- peer is marked offline after this */
 export const PEER_STALE_TIMEOUT = 90_000;
 
+/** Interval between HTTP liveness pings for joined connections (ms) */
+export const PEER_CONNECTION_PING_INTERVAL = 60_000;
+
+/** Timeout per HTTP ping to a peer (ms) */
+export const PEER_PING_TIMEOUT = 5_000;
+
 /**
  * Assign a consistent color to a peer based on their ID.
  */
