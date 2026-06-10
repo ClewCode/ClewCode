@@ -13,7 +13,6 @@ export type ProviderId =
   | 'mistral'
   | 'kilocode'
   | 'ollama'
-  | 'copilot'
   | 'deepseek'
   | 'together'
   | 'fireworks'

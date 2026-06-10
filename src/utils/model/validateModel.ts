@@ -62,7 +62,6 @@ export async function validateModel(model: string): Promise<{ valid: boolean; er
     'opencode',
     'opencode-go',
     'ollama',
-    'copilot',
     'nvidia',
   ];
   if (nonAnthropicProviders.includes(activeProvider)) {

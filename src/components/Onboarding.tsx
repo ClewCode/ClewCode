@@ -95,9 +95,6 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
       } else if (activeProvider === 'gemini') {
         name = 'Gemini';
         docUrl = 'https://support.google.com/gemini/answer/13594961';
-      } else if (activeProvider === 'copilot') {
-        name = 'Copilot';
-        docUrl = 'https://github.com/features/copilot/safety';
       } else if (activeProvider === 'ollama') {
         name = 'Ollama';
         docUrl = 'https://ollama.com/';

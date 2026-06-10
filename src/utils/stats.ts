@@ -43,7 +43,6 @@ export function normalizeProviderId(provider: string): string {
     mixtral: 'mistral',
     deepseek: 'deepseek',
     cohere: 'cohere',
-    copilot: 'copilot',
     kilocode: 'kilocode',
     bedrock: 'anthropic', // AWS Bedrock serves Anthropic models
     vertex: 'google', // Google Vertex AI serves Google models

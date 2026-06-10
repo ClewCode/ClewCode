@@ -193,7 +193,7 @@ export function supportsModelFetching(provider?: ProviderId): boolean {
     // - anthropic, openai, gemini, openrouter, deepseek, opencode, groq, xai, mistral, kilocode, ollama have modelsUrl
     // - cline does NOT support /models endpoint (returns 404)
     // - google uses native SDK, no HTTP models endpoint
-    // - openai_browser, openai_headless, copilot use session tokens, no models endpoint
+    // - openai_browser, openai_headless use session tokens, no models endpoint
     const supportedProviders: ProviderId[] = [
       'anthropic',
       'openai',

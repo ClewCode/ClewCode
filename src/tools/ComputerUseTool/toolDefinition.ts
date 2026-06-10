@@ -205,7 +205,6 @@ export function isComputerUseCapable(provider: ProviderId): boolean {
     'cline',
     'xai',
     'mistral',
-    'copilot',
     'deepseek',
   ];
   return visionProviders.includes(provider);

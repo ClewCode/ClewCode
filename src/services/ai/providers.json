@@ -269,150 +269,6 @@
       }
     ]
   },
-  "copilot": {
-    "providerId": "copilot",
-    "label": "GitHub Copilot",
-    "envKey": "COPILOT_GITHUB_TOKEN",
-    "defaultBaseUrl": "https://api.githubcopilot.com",
-    "defaultModel": "gpt-5.5",
-    "defaultModelVerified": true,
-    "note": "GitHub Copilot — real API data from api.githubcopilot.com/models, May 2026. Note: Copilot enforces lower context limits than direct APIs.",
-    "capabilities": {
-      "chat": true,
-      "streaming": "full",
-      "toolCalling": true,
-      "vision": true,
-      "jsonSchema": true,
-      "reasoningEffort": true,
-      "contextLength": "400K"
-    },
-    "models": [
-      {
-        "id": "claude-opus-4.7",
-        "label": "Claude Opus 4.7 (Copilot)",
-        "tags": [
-          "tools",
-          "vision",
-          "recommended"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 144000,
-          "maxOutput": 64000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      },
-      {
-        "id": "claude-sonnet-4.6",
-        "label": "Claude Sonnet 4.6 (Copilot)",
-        "tags": [
-          "tools",
-          "vision",
-          "recommended"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 200000,
-          "maxOutput": 32000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      },
-      {
-        "id": "claude-haiku-4.5",
-        "label": "Claude Haiku 4.5 (Copilot)",
-        "tags": [
-          "tools",
-          "vision",
-          "fast"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 144000,
-          "maxOutput": 32000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      },
-      {
-        "id": "gpt-5.5",
-        "label": "GPT-5.5 (Copilot)",
-        "tags": [
-          "tools",
-          "vision",
-          "latest"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 400000,
-          "maxOutput": 128000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      },
-      {
-        "id": "gpt-5.4",
-        "label": "GPT-5.4 (Copilot)",
-        "tags": [
-          "tools",
-          "vision"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 400000,
-          "maxOutput": 128000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      },
-      {
-        "id": "gpt-5.4-mini",
-        "label": "GPT-5.4 Mini (Copilot)",
-        "tags": [
-          "tools",
-          "vision",
-          "fast"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 400000,
-          "maxOutput": 128000,
-          "reasoning": true,
-          "supportsSystemPrompt": true
-        }
-      },
-      {
-        "id": "gpt-4.1",
-        "label": "GPT-4.1 (Copilot)",
-        "tags": [
-          "tools",
-          "vision"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 128000,
-          "maxOutput": 16384,
-          "reasoning": false,
-          "supportsSystemPrompt": true
-        }
-      }
-    ]
-  },
   "openrouter": {
     "providerId": "openrouter",
     "label": "OpenRouter",
@@ -2227,7 +2083,13 @@
       {
         "id": "clew-code",
         "label": "Clew Code (gateway)",
-        "tags": ["tools", "vision", "recommended", "verified", "gateway"],
+        "tags": [
+          "tools",
+          "vision",
+          "recommended",
+          "verified",
+          "gateway"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,
@@ -2241,7 +2103,11 @@
       {
         "id": "clew-fast",
         "label": "Clew Fast (gateway)",
-        "tags": ["tools", "fast", "gateway"],
+        "tags": [
+          "tools",
+          "fast",
+          "gateway"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": false,
@@ -2255,7 +2121,11 @@
       {
         "id": "clew-cheap",
         "label": "Clew Cheap (gateway)",
-        "tags": ["tools", "cheap", "gateway"],
+        "tags": [
+          "tools",
+          "cheap",
+          "gateway"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": false,
@@ -2269,7 +2139,12 @@
       {
         "id": "clew-reasoning",
         "label": "Clew Reasoning (gateway)",
-        "tags": ["tools", "vision", "reasoning", "gateway"],
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "gateway"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,
@@ -2283,7 +2158,12 @@
       {
         "id": "clew-local",
         "label": "Clew Local (gateway)",
-        "tags": ["tools", "local", "free", "gateway"],
+        "tags": [
+          "tools",
+          "local",
+          "free",
+          "gateway"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": false,

@@ -1,7 +1,6 @@
 import { AnthropicProvider } from './providers/AnthropicProvider.js';
 import { ClewGatewayProvider } from './providers/ClewGatewayProvider.js';
 import { CohereProvider } from './providers/CohereProvider.js';
-import { CopilotProvider } from './providers/CopilotProvider.js';
 import { GoogleProvider } from './providers/GoogleProvider.js';
 import { KiloCodeProvider } from './providers/KiloCodeProvider.js';
 import { OllamaProvider } from './providers/OllamaProvider.js';
@@ -74,8 +73,6 @@ function createProvider(key: string, entry: any): ProviderInterface {
       return new GoogleProvider();
     case 'cohere':
       return new CohereProvider();
-    case 'copilot':
-      return new CopilotProvider();
     case 'openrouter':
       return new OpenRouterProvider();
     case 'kilocode':
@@ -148,7 +145,6 @@ const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
   deepinfra: 'automatic',
   perplexity: 'automatic',
   cerebras: 'automatic',
-  copilot: 'automatic',
   opencode: 'automatic',
   'opencode-go': 'automatic',
   cline: 'automatic',

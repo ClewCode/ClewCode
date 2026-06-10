@@ -20,7 +20,6 @@ import {
   type ProviderRegistryEntry,
 } from '../../services/ai/providerRegistry.js';
 import type { GoogleOAuthTokens } from '../../services/googleOAuth/index.js';
-import type { GitHubOAuthTokens } from '../../services/oauth/githubOAuth.js';
 import type { OpenAIOAuthTokens } from '../../services/openaiOAuth/index.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
 import type { LocalCommandResult, LocalJSXCommandCall, LocalJSXCommandOnDone } from '../../types/command.js';
@@ -409,7 +408,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   const [apiKeyError, setApiKeyError] = React.useState<string | null>(null);
   const [config, setConfig] = React.useState<ProviderConfig | null>(null);
   const [showChangeKey, setShowChangeKey] = React.useState(false);
-  const [isGhLogin, setIsGhLogin] = React.useState(false);
   const [anthropicType, setAnthropicType] = React.useState<
     'direct' | 'bedrock' | 'vertex' | 'foundry' | 'subscriber' | null
   >(null);
@@ -420,7 +418,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   const [showOpenAIOAuth, setShowOpenAIOAuth] = React.useState(false);
   const [showGoogleOAuth, setShowGoogleOAuth] = React.useState(false);
   const [showAnthropicOAuth, setShowAnthropicOAuth] = React.useState(false);
-  const [showGitHubCopilotAuth, setShowGitHubCopilotAuth] = React.useState(false);
   const [customName, setCustomName] = React.useState('');
   const [customBaseUrl, setCustomBaseUrl] = React.useState('');
   const [customModel, setCustomModel] = React.useState('');
@@ -456,52 +453,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
       );
     });
   }, [searchQuery]);
-
-  async function handleGhLogin() {
-    setIsGhLogin(true);
-    try {
-      const { spawn } = await import('child_process');
-
-      // Check if gh is installed
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const check = spawn('gh', ['--version'], { stdio: 'inherit' });
-          check.on('close', code => {
-            if (code === 0) resolve();
-            else reject(new Error('gh command failed'));
-          });
-        });
-      } catch {
-        setApiKeyError('GitHub CLI not installed. Install from https://cli.github.com/');
-        setIsGhLogin(false);
-        return;
-      }
-
-      // Just get token directly (user should have already run gh auth login)
-      const token = await new Promise<string>((resolve, reject) => {
-        const tokenCmd = spawn('gh', ['auth', 'token'], { stdio: ['ignore', 'pipe', 'inherit'] });
-        let stdout = '';
-        tokenCmd.stdout.on('data', data => {
-          stdout += data.toString();
-        });
-        tokenCmd.on('close', code => {
-          if (code === 0) resolve(stdout.trim());
-          else reject(new Error('gh auth token failed - please run "gh auth login" first'));
-        });
-      });
-
-      if (!token) {
-        setApiKeyError('Failed to get GitHub token. Please run "gh auth login" in your terminal first.');
-        setIsGhLogin(false);
-        return;
-      }
-
-      await saveProviderSelection(token);
-    } catch (error) {
-      setApiKeyError(`GitHub CLI login failed: ${(error as Error).message}`);
-      setIsGhLogin(false);
-    }
-  }
 
   // Store OpenAI OAuth token
   async function saveOpenAIToken(token: string) {
@@ -569,39 +520,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     applyProviderSelectionToSession(setAppState, { model: currentModel, provider }, false);
 
     onDone(`Set provider to ${provider} (Google OAuth)\nModel: ${currentModel}\n(Session only)`, { display: 'system' });
-  }
-
-  // Store GitHub Copilot token
-  async function saveCopilotToken(token: string) {
-    if (!provider) return;
-
-    const currentConfig = await loadConfig();
-    const nextConfig: ProviderConfig = {
-      provider,
-      model: (currentSessionModel as string) || currentConfig?.model || getDefaultModelForProvider(provider) || '',
-      providerConfig: getSerializableProviderInfo(provider),
-      apiKeys: {
-        ...(currentConfig?.apiKeys ?? {}),
-        copilot: token,
-      },
-    };
-
-    await saveConfig(nextConfig);
-    clearProviderModelsCache(provider);
-
-    // Set the token in environment for immediate use
-    process.env.COPILOT_GITHUB_TOKEN = token;
-
-    // Invalidate provider config cache to force reload
-    const providerManager = ProviderManager.getInstance();
-    providerManager.invalidateConfigCache();
-
-    const currentModel = nextConfig.model || getDefaultModelForProvider(provider);
-    applyProviderSelectionToSession(setAppState, { model: currentModel, provider }, false);
-
-    onDone(`Set provider to ${provider} (GitHub Copilot)\nModel: ${currentModel}\n(Session only)`, {
-      display: 'system',
-    });
   }
 
   async function saveProviderSelection(apiKey?: string) {
@@ -1106,85 +1024,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
           setSearchQuery('');
           setSearchCursorOffset(0);
         }
-      },
-    });
-  }
-
-  const hasExistingKey = Boolean(config?.apiKeys?.[provider] || process.env[info.envKey]);
-
-  // Show GitHub CLI login option for copilot
-  if (provider === 'copilot' && !hasExistingKey && !info.isLocal && !showChangeKey && !isGhLogin) {
-    return React.createElement(
-      Box,
-      { flexDirection: 'column' },
-      React.createElement(Text, { marginBottom: 1 }, `Login method for ${info.label} (${info.envKey})`),
-      React.createElement(Select, {
-        options: [
-          {
-            label: 'Device Flow (Browser)',
-            value: 'device_flow',
-            description: 'Open browser to authenticate, get code from github.com/login/device',
-          },
-          {
-            label: 'Login with GitHub CLI',
-            value: 'gh_login',
-            description: 'Use gh auth login to authenticate',
-          },
-          {
-            label: 'Enter token manually',
-            value: 'manual',
-            description: `Paste ${info.envKey} directly`,
-          },
-        ],
-        visibleOptionCount: 3,
-        onChange: value => {
-          if (value === 'device_flow') {
-            setShowGitHubCopilotAuth(true);
-          } else if (value === 'gh_login') {
-            void handleGhLogin();
-          } else {
-            setShowChangeKey(true);
-          }
-        },
-        onCancel: () => {
-          setProvider(null);
-          setShowChangeKey(false);
-          setSearchQuery('');
-          setSearchCursorOffset(0);
-        },
-      }),
-    );
-  }
-
-  // Show loading state for gh login
-  if (isGhLogin) {
-    return React.createElement(
-      Box,
-      { flexDirection: 'column' },
-      React.createElement(Text, { color: 'yellow' }, 'Getting GitHub token from CLI...'),
-      React.createElement(Text, { dimColor: true }, 'If not logged in, run this in a separate terminal:'),
-      React.createElement(Text, { color: 'cyan' }, '  gh auth login'),
-      React.createElement(Text, { dimColor: true }, 'Then press Enter here to get the token'),
-    );
-  }
-
-  // GitHub Copilot Device Flow auth
-  if (provider === 'copilot' && showGitHubCopilotAuth) {
-    return React.createElement(GitHubCopilotAuthFlow, {
-      onDone: (tokens: GitHubOAuthTokens | null) => {
-        setShowGitHubCopilotAuth(false);
-        if (tokens?.accessToken) {
-          // Save the GitHub token and continue
-          void saveCopilotToken(tokens.accessToken);
-        } else {
-          setProvider(null);
-        }
-      },
-      onCancel: () => {
-        setShowGitHubCopilotAuth(false);
-        setProvider(null);
-        setSearchQuery('');
-        setSearchCursorOffset(0);
       },
     });
   }

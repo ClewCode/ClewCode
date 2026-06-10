@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { ConsoleOAuthFlow } from '../../components/ConsoleOAuthFlow.js';
 import { Select } from '../../components/CustomSelect/select.js';
-import { GitHubCopilotAuthFlow } from '../../components/GitHubCopilotAuthFlow.js';
 import { ModelPicker } from '../../components/ModelPicker.js';
 import { OpenAIOAuthFlow } from '../../components/OpenAIOAuthFlow.js';
 import TextInput from '../../components/TextInput.js';
@@ -76,7 +75,6 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
               { label: 'Anthropic Claude (Official)', value: 'anthropic' },
               { label: 'OpenAI GPT (ChatGPT)', value: 'openai' },
               { label: 'Google Gemini', value: 'google' },
-              { label: 'GitHub Copilot', value: 'copilot' },
               { label: 'DeepSeek V4 (moe)', value: 'deepseek' },
               { label: 'OpenRouter AI', value: 'openrouter' },
               { label: 'OpenCode AI', value: 'opencode' },
@@ -97,16 +95,13 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
       React.useEffect(() => {
         if (provider === 'ollama') {
           goNext();
-        } else if (provider === 'copilot') {
-          updateWizardData({ authMethod: 'oauth' });
-          goNext();
         } else if (provider !== 'anthropic' && provider !== 'openai') {
           updateWizardData({ authMethod: 'apikey' });
           goNext();
         }
       }, [provider]);
 
-      if (provider === 'ollama' || provider === 'copilot' || (provider !== 'anthropic' && provider !== 'openai')) {
+      if (provider === 'ollama' || (provider !== 'anthropic' && provider !== 'openai')) {
         return null;
       }
 
@@ -172,13 +167,6 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
           return (
             <WizardDialogLayout title="OpenAI Login" subtitle="Authenticate with OpenAI">
               <OpenAIOAuthFlow onDone={handleOAuthDone} onCancel={goBack} />
-            </WizardDialogLayout>
-          );
-        }
-        if (provider === 'copilot') {
-          return (
-            <WizardDialogLayout title="GitHub Copilot Login" subtitle="Authenticate with GitHub Copilot">
-              <GitHubCopilotAuthFlow onDone={handleOAuthDone} onCancel={goBack} />
             </WizardDialogLayout>
           );
         }

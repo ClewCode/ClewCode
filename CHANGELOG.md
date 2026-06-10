@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.6] — 2026-06-10
+
+### Removed
+
+- **GitHub Copilot provider**: Removed entire Copilot provider (CopilotProvider.ts, GitHubCopilotAuthFlow.tsx) and all copilot references from registry, provider list, onboarding, login, stats, model validation, and ComputerUseTool.
+- **sharp from core dependencies**: Moved sharp to optionalDependencies so npm/bun install does not fail when native builds cannot compile. Added graceful fallback error in imageProcessor.ts.
+
+### Added
+
+- **User-visible Taste feedback**: Taste now shows notification toasts for init, learn, forget, suggest, auto-add, enable/disable actions. Added `onTasteFeedback` callback and `notifyTaste()` method. `recordEdit()` now triggers `processAutoLearn()`.
+- **User-visible Peer feedback**: Added peerFeedback helper with REPL notification wiring. Peer tool calls now show progress and result notifications for discover, join, ping, run, send-message, list-roles, list-messages.
+- **Peer HTTP liveness pings**: PeerStore now pings joined connections every 60s via `/peer-info`. Offline peers are marked immediately with `onPeerLost` callback instead of waiting 90s stale timeout.
+
+### Changed
+
+- **PeerSpawnTool**: Replaced `bun run start` with `clew` for spawning peer sessions.
+
 ## [0.2.5] — 2026-06-10
 
 ### Added

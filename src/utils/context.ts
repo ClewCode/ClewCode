@@ -232,7 +232,6 @@ function getContextWindowFromRegistry(model: string): number | null {
     kilocode: 'kilocode',
     ollama: 'ollama',
     chatgpt: 'chatgpt',
-    copilot: 'copilot',
     cline: 'cline',
     groq: 'groq',
     xai: 'xai',

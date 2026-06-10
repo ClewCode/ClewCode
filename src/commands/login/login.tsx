@@ -6,7 +6,6 @@ import type { LocalJSXCommandContext } from '../../commands.js';
 import { ConfigurableShortcutHint } from '../../components/ConfigurableShortcutHint.js';
 import { ConsoleOAuthFlow } from '../../components/ConsoleOAuthFlow.js';
 import { Dialog } from '../../components/design-system/Dialog.js';
-import { GitHubCopilotAuthFlow } from '../../components/GitHubCopilotAuthFlow.js';
 import { GoogleOAuthFlow } from '../../components/GoogleOAuthFlow.js';
 import { OpenAIOAuthFlow } from '../../components/OpenAIOAuthFlow.js';
 import TextInput from '../../components/TextInput.js';
@@ -121,14 +120,6 @@ export function Login(props: {
           />
         );
       }
-    }
-    if (provider === 'copilot') {
-      return (
-        <GitHubCopilotAuthFlow
-          onDone={() => props.onDone(true, mainLoopModel)}
-          onCancel={() => props.onDone(false, mainLoopModel)}
-        />
-      );
     }
     if (provider === 'ollama') {
       return (

@@ -81,8 +81,6 @@ const MCP_SERVER_PATTERNS: Array<{
   // AI coding assistants
   { pattern: /^aider$/i, tool: 'aider' },
   { pattern: /^continue$/i, tool: 'continue' },
-  { pattern: /^github[-_]?copilot$/i, tool: 'github-copilot' },
-  { pattern: /^copilot$/i, tool: 'github-copilot' },
   { pattern: /^cursor$/i, tool: 'cursor' },
   { pattern: /^tabby$/i, tool: 'tabby' },
   { pattern: /^codeium$/i, tool: 'codeium' },
