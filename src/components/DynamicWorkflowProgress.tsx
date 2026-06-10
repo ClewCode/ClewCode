@@ -138,9 +138,7 @@ export function DynamicWorkflowStatusLine({
 
   // Show running subtasks in status line
   const running = run.subtasks.filter(s => s.status === 'running');
-  const runningStr = running.length > 0
-    ? ` ${running.map(s => `${s.role}`).join(' ')}`
-    : '';
+  const runningStr = running.length > 0 ? ` ${running.map(s => `${s.role}`).join(' ')}` : '';
 
   const parts: string[] = [`${statusGlyph} ultracode`, `[${run.completed}/${run.totalSubtasks}]${runningStr}`];
 
@@ -192,12 +190,21 @@ function RunRow({ run }: { run: RunSummary }): React.ReactNode {
 
   const statusLines = run.subtasks.map(s => {
     const glyph = s.status === 'running' ? '⟐' : s.status === 'completed' ? '✓' : s.status === 'failed' ? '✗' : '·';
-    const color = s.status === 'running' ? 'suggestion' : s.status === 'completed' ? 'success' : s.status === 'failed' ? 'error' : 'subtle';
+    const color =
+      s.status === 'running'
+        ? 'suggestion'
+        : s.status === 'completed'
+          ? 'success'
+          : s.status === 'failed'
+            ? 'error'
+            : 'subtle';
     return (
       <Box key={s.id} paddingLeft={2}>
         <Text color={color}>{glyph}</Text>
         <Text> </Text>
-        <Text color={color} bold={s.status === 'running'}>{s.role}</Text>
+        <Text color={color} bold={s.status === 'running'}>
+          {s.role}
+        </Text>
         <Text dimColor>: {s.title.length > 60 ? `${s.title.slice(0, 60)}…` : s.title}</Text>
       </Box>
     );

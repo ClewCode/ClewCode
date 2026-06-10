@@ -5,6 +5,7 @@ import memoize from 'lodash-es/memoize.js';
 import { join } from 'path';
 import { z } from 'zod/v4';
 import { OAUTH_BETA_HEADER } from '../../constants/oauth.js';
+import { getProviderRegistryEntry } from '../../services/ai/providerRegistry.js';
 import { getAnthropicClient } from '../../services/api/client.js';
 import { isClaudeAISubscriber } from '../auth.js';
 import { logForDebugging } from '../debug.js';
@@ -82,22 +83,27 @@ export function getModelCapability(model: string): ModelCapability | undefined {
     }
   }
 
-  // Non-Anthropic providers: return known capabilities from provider registry
+  // Non-Anthropic providers: look up capabilities from providers.json
   const providerId = getActiveProviderId();
   if (providerId !== 'anthropic') {
-    const modelLower = model.toLowerCase();
-    // Known context windows for popular non-Anthropic models
-    const KNOWN_CAPABILITIES: Record<string, ModelCapability> = {
-      'deepseek-v4-pro': { id: 'deepseek-v4-pro', max_input_tokens: 1_000_000, max_tokens: 128_000 },
-      'deepseek-v4-flash': { id: 'deepseek-v4-flash', max_input_tokens: 1_000_000, max_tokens: 128_000 },
-      'gpt-5.5': { id: 'gpt-5.5', max_input_tokens: 1_050_000, max_tokens: 128_000 },
-      'gpt-5.5-pro': { id: 'gpt-5.5-pro', max_input_tokens: 1_050_000, max_tokens: 128_000 },
-      'gemini-3.1-pro': { id: 'gemini-3.1-pro', max_input_tokens: 2_000_000, max_tokens: 128_000 },
-      'gemini-3.1-flash': { id: 'gemini-3.1-flash', max_input_tokens: 2_000_000, max_tokens: 128_000 },
-    };
-    // Try exact match first, then substring match
-    for (const [key, cap] of Object.entries(KNOWN_CAPABILITIES)) {
-      if (modelLower.includes(key)) return cap;
+    const entry = getProviderRegistryEntry(providerId);
+    if (entry) {
+      const modelLower = model.toLowerCase();
+      // Try exact match first, then substring match
+      const modelInfo =
+        entry.models.find(m => m.id.toLowerCase() === modelLower) ??
+        entry.models.find(m => modelLower.includes(m.id.toLowerCase()) || m.id.toLowerCase().includes(modelLower));
+
+      if (modelInfo?.capabilities) {
+        const caps = modelInfo.capabilities;
+        if (caps.maxContext && caps.maxContext !== 'varies') {
+          return {
+            id: modelInfo.id,
+            max_input_tokens: caps.maxContext as number,
+            max_tokens: typeof caps.maxOutput === 'number' ? (caps.maxOutput as number) : undefined,
+          };
+        }
+      }
     }
   }
 

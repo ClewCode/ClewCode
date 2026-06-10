@@ -15,11 +15,24 @@ type PROutput = {
 };
 
 export function renderToolUseMessage(input: PRInput): React.ReactNode {
-  const label = input.action === 'create' ? 'Creating PR' : input.action === 'list' ? 'Listing PRs' : input.action === 'view' ? `Viewing PR #${input.pr_number}` : input.action === 'review' ? `Reviewing PR #${input.pr_number}` : input.action === 'merge' ? `Merging PR #${input.pr_number}` : input.action === 'status' ? 'Checking PR status' : `PR ${input.action}`;
+  const label =
+    input.action === 'create'
+      ? 'Creating PR'
+      : input.action === 'list'
+        ? 'Listing PRs'
+        : input.action === 'view'
+          ? `Viewing PR #${input.pr_number}`
+          : input.action === 'review'
+            ? `Reviewing PR #${input.pr_number}`
+            : input.action === 'merge'
+              ? `Merging PR #${input.pr_number}`
+              : input.action === 'status'
+                ? 'Checking PR status'
+                : `PR ${input.action}`;
   return (
     <Box>
       <Text color="cyan">PR</Text>
-      <Text>{' '}</Text>
+      <Text> </Text>
       <Text dimColor>{label}</Text>
     </Box>
   );
@@ -29,7 +42,9 @@ export function renderToolResultMessage(output: PROutput): React.ReactNode {
   if (!output.success) {
     return (
       <Box>
-        <Text color="error">PR {output.action} failed: {output.message}</Text>
+        <Text color="error">
+          PR {output.action} failed: {output.message}
+        </Text>
       </Box>
     );
   }

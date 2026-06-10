@@ -139,7 +139,9 @@ export function executeEffort(args: string): EffortCommandResult {
     try {
       const g = globalThis as { __appState?: { set?: (k: string, v: unknown) => void } };
       g.__appState?.set?.('ultracodeState', { enabled: true, confirmedOnce: true, workflowsStarted: 0 });
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return result;
   }
   if (!isEffortLevel(normalized)) {
@@ -694,7 +696,9 @@ function EffortSliderWrapper({ onDone }: { onDone: LocalJSXCommandOnDone }): Rea
         try {
           const g = globalThis as { __appState?: { set?: (k: string, v: unknown) => void } };
           g.__appState?.set?.('ultracodeState', { enabled: true, confirmedOnce: true, workflowsStarted: 0 });
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
 
       onDone(result.message);

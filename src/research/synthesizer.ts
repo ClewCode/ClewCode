@@ -75,7 +75,10 @@ export async function synthesizeClaims(
     try {
       const prompt = buildSynthesisPrompt(query, claims, sources, consensusFindings, conflicts);
       const response = await ask(prompt);
-      const json = response.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+      const json = response
+        .replace(/^```json\s*/i, '')
+        .replace(/```\s*$/, '')
+        .trim();
       const parsed = JSON.parse(json) as {
         summary?: string;
         gaps?: string[];
@@ -84,9 +87,9 @@ export async function synthesizeClaims(
 
       summary = parsed.summary || buildFallbackSummary(consensusFindings, conflicts);
       gaps = parsed.gaps || [];
-      overallConfidence = (['high', 'medium', 'low'].includes(parsed.overallConfidence || '')
+      overallConfidence = ['high', 'medium', 'low'].includes(parsed.overallConfidence || '')
         ? (parsed.overallConfidence as SynthesizerResult['overallConfidence'])
-        : computeOverallConfidence(claims));
+        : computeOverallConfidence(claims);
     } catch {
       summary = buildFallbackSummary(consensusFindings, conflicts);
       overallConfidence = computeOverallConfidence(claims);
@@ -122,8 +125,18 @@ function groupClaimsByTopic(claims: ResearchClaim[]): Map<string, ResearchClaim[
 }
 
 function isSemanticallySimilar(a: string, b: string): boolean {
-  const wordsA = new Set(a.toLowerCase().split(/\s+/).filter(w => w.length > 3));
-  const wordsB = new Set(b.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+  const wordsA = new Set(
+    a
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(w => w.length > 3),
+  );
+  const wordsB = new Set(
+    b
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(w => w.length > 3),
+  );
   if (wordsA.size === 0 || wordsB.size === 0) return false;
   const intersection = [...wordsA].filter(w => wordsB.has(w)).length;
   const union = new Set([...wordsA, ...wordsB]).size;
@@ -139,7 +152,9 @@ function buildSynthesisPrompt(
 ): string {
   const claimsText = claims.map(c => `- [${c.confidence}] ${c.claim} (source: ${c.sourceIds.join(',')})`).join('\n');
   const consensusText = consensus.map(c => `- Consensus: "${c.topic}" (${c.sourceCount} sources)`).join('\n');
-  const conflictText = conflicts.map(c => `- Conflict: "${c.topic}" — A: "${c.claimA.slice(0, 80)}" vs B: "${c.claimB.slice(0, 80)}"`).join('\n');
+  const conflictText = conflicts
+    .map(c => `- Conflict: "${c.topic}" — A: "${c.claimA.slice(0, 80)}" vs B: "${c.claimB.slice(0, 80)}"`)
+    .join('\n');
 
   return [
     `Synthesize the following research claims for the query: "${query}"`,

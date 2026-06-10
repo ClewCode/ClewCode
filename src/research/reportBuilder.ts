@@ -63,9 +63,7 @@ export function buildResearchReport(
               '',
             ].join('\n')
           : '',
-        synthesis.gaps.length > 0
-          ? ['### Research Gaps', '', ...synthesis.gaps.map(g => `- ${g}`), ''].join('\n')
-          : '',
+        synthesis.gaps.length > 0 ? ['### Research Gaps', '', ...synthesis.gaps.map(g => `- ${g}`), ''].join('\n') : '',
       ].join('\n')
     : '';
 

@@ -1,7 +1,7 @@
 import { z } from 'zod/v4';
-import { buildTool } from '../../Tool.js';
-import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
+import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { DESCRIPTION, PEER_SET_NAME_TOOL_NAME, PROMPT } from './prompt.js';
@@ -25,18 +25,33 @@ const outputSchema = lazySchema(() =>
 export type Output = z.infer<ReturnType<typeof outputSchema>>;
 
 export const PeerSetNameTool = buildTool({
-  isConcurrencySafe() { return true; },
-  isReadOnly() { return false; },
+  isConcurrencySafe() {
+    return true;
+  },
+  isReadOnly() {
+    return false;
+  },
   name: PEER_SET_NAME_TOOL_NAME,
   searchHint: 'set peer display name',
   maxResultSizeChars: 1_000,
-  async description() { return DESCRIPTION; },
-  async prompt() { return PROMPT; },
-  get inputSchema() { return inputSchema(); },
-  get outputSchema() { return outputSchema(); },
-  getPath() { return getCwd(); },
+  async description() {
+    return DESCRIPTION;
+  },
+  async prompt() {
+    return PROMPT;
+  },
+  get inputSchema() {
+    return inputSchema();
+  },
+  get outputSchema() {
+    return outputSchema();
+  },
+  getPath() {
+    return getCwd();
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
-    if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
+    if (!output.success)
+      return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
     return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ name: ${output.name}` };
   },
   async call(input: { worker: string; name: string }) {

@@ -146,7 +146,8 @@ export class PatternDetector {
         const idx = lower.indexOf(matchedKeyword.toLowerCase());
         const snippetStart = Math.max(0, idx - 30);
         const snippetEnd = Math.min(text.length, idx + matchedKeyword.length + 30);
-        const snippet = (snippetStart > 0 ? '...' : '') +
+        const snippet =
+          (snippetStart > 0 ? '...' : '') +
           text.slice(snippetStart, snippetEnd).trim() +
           (snippetEnd < text.length ? '...' : '');
         p.evidence.push({ eventId: event.id, text: snippet });
@@ -171,8 +172,10 @@ export class PatternDetector {
     const combined = `${before}\n${after}\n${diff}`.toLowerCase();
 
     // Detect var → let/const preference
-    if ((combined.includes('var ') || combined.includes('var\t')) &&
-        (combined.includes('let ') || combined.includes('const '))) {
+    if (
+      (combined.includes('var ') || combined.includes('var\t')) &&
+      (combined.includes('let ') || combined.includes('const '))
+    ) {
       const key = 'style:Use const/let instead of var';
       if (!patterns.has(key)) {
         patterns.set(key, {
@@ -206,8 +209,10 @@ export class PatternDetector {
     }
 
     // Detect error handling additions
-    if ((combined.includes('try') || combined.includes('catch')) &&
-        (combined.includes('error') || combined.includes('err'))) {
+    if (
+      (combined.includes('try') || combined.includes('catch')) &&
+      (combined.includes('error') || combined.includes('err'))
+    ) {
       const key = 'security:Add error handling for operations that may fail';
       if (!patterns.has(key)) {
         patterns.set(key, {

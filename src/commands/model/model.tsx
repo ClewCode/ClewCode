@@ -190,7 +190,7 @@ function SetModelAndClose({
 }): React.ReactNode {
   const isFastMode = useAppState(s => s.fastMode);
   const setAppState = useSetAppState();
-  
+
   const initialModel = args === 'default' ? null : args;
   let targetProvider: string | undefined;
   let model = initialModel;
@@ -463,15 +463,17 @@ function buildStaticList(providerLabel: string, staticModels: any[]): string[] {
   ];
 }
 
-function buildFetchedEntries(fetched: Array<{
-  id: string;
-  label: string;
-  contextWindow?: number;
-  supportsTools?: boolean;
-  supportsVision?: boolean;
-  supportsReasoning?: boolean;
-  free?: boolean;
-}>): string[] {
+function buildFetchedEntries(
+  fetched: Array<{
+    id: string;
+    label: string;
+    contextWindow?: number;
+    supportsTools?: boolean;
+    supportsVision?: boolean;
+    supportsReasoning?: boolean;
+    free?: boolean;
+  }>,
+): string[] {
   return fetched.map(m => {
     const parts: string[] = [];
     if (m.contextWindow) parts.push(`${(m.contextWindow / 1000).toFixed(0)}K ctx`);

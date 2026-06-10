@@ -130,22 +130,42 @@ export async function runDynamicWorkflow(params: {
       try {
         const { recordRunningSubtasks } = await import('./dynamicWorkflowPersistence.js');
         await recordRunningSubtasks((params as any).workspaceRoot, pendingRunState);
-      } catch { /* non-critical */ }
+      } catch {
+        /* non-critical */
+      }
     }
 
     const settled = await Promise.all(
       bounded.map(async subtask => {
-        params.onSubtaskStatus?.({ subtaskId: subtask.id, role: subtask.role, title: subtask.title, status: 'running', waveIndex: i });
+        params.onSubtaskStatus?.({
+          subtaskId: subtask.id,
+          role: subtask.role,
+          title: subtask.title,
+          status: 'running',
+          waveIndex: i,
+        });
         const start = Date.now();
         let output: string;
         try {
           const context = buildSubtaskContext(subtask, resultById, contextCharLimit);
           const result = await params.runSubtask(subtask, context);
           output = result.output;
-          params.onSubtaskStatus?.({ subtaskId: subtask.id, role: subtask.role, title: subtask.title, status: 'completed', waveIndex: i });
+          params.onSubtaskStatus?.({
+            subtaskId: subtask.id,
+            role: subtask.role,
+            title: subtask.title,
+            status: 'completed',
+            waveIndex: i,
+          });
         } catch (err) {
           output = `Error: ${err instanceof Error ? err.message : String(err)}`;
-          params.onSubtaskStatus?.({ subtaskId: subtask.id, role: subtask.role, title: subtask.title, status: 'failed', waveIndex: i });
+          params.onSubtaskStatus?.({
+            subtaskId: subtask.id,
+            role: subtask.role,
+            title: subtask.title,
+            status: 'failed',
+            waveIndex: i,
+          });
         }
         const base: SubtaskResult = {
           subtaskId: subtask.id,

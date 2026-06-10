@@ -121,10 +121,10 @@ import {
   findDebugTriggerPositions,
   findExplainTriggerPositions,
   findFixTriggerPositions,
+  findPrTriggerPositions,
   findUltraplanTriggerPositions,
   findUltrareviewTriggerPositions,
   findWorkflowTriggerPositions,
-  findPrTriggerPositions,
 } from '../../utils/ultraplan/keyword.js';
 import { AutoModeOptInDialog } from '../AutoModeOptInDialog.js';
 import { BridgeDialog } from '../BridgeDialog.js';
@@ -2779,9 +2779,13 @@ function PromptInput({
       {!isFullscreenEnvEnabled() && <PromptInputQueuedCommands />}
       {isLoopActive && (
         <Box paddingLeft={2} paddingRight={2} marginBottom={0} flexDirection="row">
-          <Text color="yellow" bold>🔒 LOOP LOCKED: </Text>
+          <Text color="yellow" bold>
+            🔒 LOOP LOCKED:{' '}
+          </Text>
           <Text color="cyan">Autonomous Loop is running. Use </Text>
-          <Text color="green" bold>/looplock &lt;message&gt;</Text>
+          <Text color="green" bold>
+            /looplock &lt;message&gt;
+          </Text>
           <Text color="cyan"> to send instructions.</Text>
         </Box>
       )}
@@ -2831,7 +2835,13 @@ function PromptInput({
           borderRight={false}
           borderBottom
           width="100%"
-          borderText={buildBorderText(showFastIcon ?? false, showFastIconHint, fastModeCooldown, isUltraActive(), isLoopActive)}
+          borderText={buildBorderText(
+            showFastIcon ?? false,
+            showFastIconHint,
+            fastModeCooldown,
+            isUltraActive(),
+            isLoopActive,
+          )}
         >
           <PromptInputModeIndicator
             mode={mode}
@@ -2959,7 +2969,9 @@ function isUltraActive(): boolean {
     const g = globalThis as { __appState?: { get?: (k: string) => unknown } };
     const raw = g.__appState?.get?.('ultracodeState') as { enabled?: boolean } | undefined;
     return raw?.enabled === true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 function buildBorderText(

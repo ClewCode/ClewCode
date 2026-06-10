@@ -772,13 +772,9 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal: boolean = fal
     // Process User ~/.clew/ files (primary — read first)
     const clewConfigDir = getClewConfigHomeDir();
     const userClewAgentsMd = join(clewConfigDir, 'AGENTS.md');
-    result.push(
-      ...(await processMemoryFile(userClewAgentsMd, 'User', processedPaths, true)),
-    );
+    result.push(...(await processMemoryFile(userClewAgentsMd, 'User', processedPaths, true)));
     const userClewMd = join(clewConfigDir, 'CLAUDE.md');
-    result.push(
-      ...(await processMemoryFile(userClewMd, 'User', processedPaths, true)),
-    );
+    result.push(...(await processMemoryFile(userClewMd, 'User', processedPaths, true)));
     // Process User ~/.clew/rules/*.md files
     const clewUserRulesDir = join(clewConfigDir, 'rules');
     result.push(
@@ -794,14 +790,7 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal: boolean = fal
     // Process User ~/.claude/ files (legacy fallback)
     const userClaudeMd = getMemoryPath('User');
     const userAgentsMd = join(dirname(userClaudeMd), 'AGENTS.md');
-    result.push(
-      ...(await processMemoryFile(
-        userAgentsMd,
-        'User',
-        processedPaths,
-        true,
-      )),
-    );
+    result.push(...(await processMemoryFile(userAgentsMd, 'User', processedPaths, true)));
     result.push(
       ...(await processMemoryFile(
         userClaudeMd,
@@ -1378,7 +1367,10 @@ export function isMemoryFilePath(filePath: string): boolean {
   }
 
   // .md files in .claude/rules/ or .clew/rules/ directories
-  if (name.endsWith('.md') && (filePath.includes(`${sep}.claude${sep}rules${sep}`) || filePath.includes(`${sep}.clew${sep}rules${sep}`))) {
+  if (
+    name.endsWith('.md') &&
+    (filePath.includes(`${sep}.claude${sep}rules${sep}`) || filePath.includes(`${sep}.clew${sep}rules${sep}`))
+  ) {
     return true;
   }
 

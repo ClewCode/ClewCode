@@ -506,9 +506,7 @@ export async function teleportResumeCodeSession(
             : repoValidation.sessionRepo;
         throw new TeleportOperationError(
           `You must run clew --teleport ${sessionId} from a checkout of ${notInRepoDisplay}.`,
-          chalk.red(
-            `You must run clew --teleport ${sessionId} from a checkout of ${chalk.bold(notInRepoDisplay)}.\n`,
-          ),
+          chalk.red(`You must run clew --teleport ${sessionId} from a checkout of ${chalk.bold(notInRepoDisplay)}.\n`),
         );
       }
       case 'mismatch': {

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { getSessionId } from '../../bootstrap/state.js';
 import { useAppState, useAppStateStore } from '../../state/AppState.js';
 import { getActiveAgentForInput, getViewedTeammateTask } from '../../state/selectors.js';
 import {
@@ -7,6 +8,7 @@ import {
   type AgentColorName,
   getAgentColor,
 } from '../../tools/AgentTool/agentColorManager.js';
+import { getCurrentSessionTitle } from '../../utils/sessionStorage.js';
 import { getStandaloneAgentName } from '../../utils/standaloneAgent.js';
 import { isInsideTmux } from '../../utils/swarm/backends/detection.js';
 import { getCachedDetectionResult, isInProcessEnabled } from '../../utils/swarm/backends/registry.js';
@@ -118,6 +120,15 @@ export function useSwarmBanner(): SwarmBannerInfo {
     return {
       text: agent,
       bgColor: toThemeColor(agentDef?.color, 'promptBorder'),
+    };
+  }
+
+  // --name CLI flag: show session title in the prompt banner
+  const sessionTitle = getCurrentSessionTitle(getSessionId());
+  if (sessionTitle) {
+    return {
+      text: sessionTitle,
+      bgColor: 'promptBorder',
     };
   }
 

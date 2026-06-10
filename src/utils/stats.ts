@@ -31,23 +31,23 @@ export function normalizeProviderId(provider: string): string {
   const normalized = provider.trim().toLowerCase();
   // Map common aliases to registry keys
   const aliasMap: Record<string, string> = {
-    'anthropic': 'anthropic',
-    'openai': 'openai',
-    'google': 'google',
-    'gemini': 'google',
-    'openrouter': 'openrouter',
-    'ollama': 'ollama',
-    'xai': 'xai',
-    'grok': 'xai',
-    'mistral': 'mistral',
-    'mixtral': 'mistral',
-    'deepseek': 'deepseek',
-    'cohere': 'cohere',
-    'copilot': 'copilot',
-    'kilocode': 'kilocode',
-    'bedrock': 'anthropic', // AWS Bedrock serves Anthropic models
-    'vertex': 'google',      // Google Vertex AI serves Google models
-    'foundry': 'anthropic',  // Azure AI Foundry serves Anthropic models
+    anthropic: 'anthropic',
+    openai: 'openai',
+    google: 'google',
+    gemini: 'google',
+    openrouter: 'openrouter',
+    ollama: 'ollama',
+    xai: 'xai',
+    grok: 'xai',
+    mistral: 'mistral',
+    mixtral: 'mistral',
+    deepseek: 'deepseek',
+    cohere: 'cohere',
+    copilot: 'copilot',
+    kilocode: 'kilocode',
+    bedrock: 'anthropic', // AWS Bedrock serves Anthropic models
+    vertex: 'google', // Google Vertex AI serves Google models
+    foundry: 'anthropic', // Azure AI Foundry serves Anthropic models
   };
   return aliasMap[normalized] ?? normalized;
 }
@@ -656,7 +656,8 @@ function cacheToStats(cache: PersistedStatsCache, todayStats: ProcessedStats | n
         inputTokens: providerUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
         outputTokens: providerUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
         cacheReadInputTokens: providerUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
-        cacheCreationInputTokens: providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+        cacheCreationInputTokens:
+          providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
         webSearchRequests: providerUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
         costUSD: providerUsage[normalizedProvider]!.costUSD + usage.costUSD,
         contextWindow: Math.max(providerUsage[normalizedProvider]!.contextWindow, usage.contextWindow),
@@ -677,7 +678,8 @@ function cacheToStats(cache: PersistedStatsCache, todayStats: ProcessedStats | n
           inputTokens: providerUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
           outputTokens: providerUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
           cacheReadInputTokens: providerUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
-          cacheCreationInputTokens: providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+          cacheCreationInputTokens:
+            providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
           webSearchRequests: providerUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
           costUSD: providerUsage[normalizedProvider]!.costUSD + usage.costUSD,
           contextWindow: Math.max(providerUsage[normalizedProvider]!.contextWindow, usage.contextWindow),
@@ -960,8 +962,10 @@ function processedStatsToClaudeCodeStats(stats: ProcessedStats): ClaudeCodeStats
       normalizedProviderUsage[normalizedProvider] = {
         inputTokens: normalizedProviderUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
         outputTokens: normalizedProviderUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
-        cacheReadInputTokens: normalizedProviderUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
-        cacheCreationInputTokens: normalizedProviderUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+        cacheReadInputTokens:
+          normalizedProviderUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
+        cacheCreationInputTokens:
+          normalizedProviderUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
         webSearchRequests: normalizedProviderUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
         costUSD: normalizedProviderUsage[normalizedProvider]!.costUSD + usage.costUSD,
         contextWindow: Math.max(normalizedProviderUsage[normalizedProvider]!.contextWindow, usage.contextWindow),

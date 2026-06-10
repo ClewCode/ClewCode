@@ -56,7 +56,19 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
   const { PROVIDER_REGISTRY } = await import('../../services/ai/providerRegistry.js');
   const registryEntry = PROVIDER_REGISTRY[activeProvider];
 
-  if (!('modelsUrl' in registryEntry) || !registryEntry.modelsUrl) {
+  let modelsUrl: string | undefined;
+
+  if ('modelsUrl' in registryEntry && registryEntry.modelsUrl) {
+    modelsUrl = registryEntry.modelsUrl;
+  } else {
+    // For providers without a fixed modelsUrl (e.g. custom), derive from baseUrl
+    const baseUrl = providerManager.getBaseUrlForProvider(activeProvider);
+    if (baseUrl) {
+      modelsUrl = baseUrl.replace(/\/+$/, '') + '/models';
+    }
+  }
+
+  if (!modelsUrl) {
     console.log(`[fetchProviderModels] No modelsUrl for provider: ${activeProvider}`);
     return null;
   }
@@ -64,11 +76,6 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
   const apiKey = providerManager.getApiKeyForProvider(activeProvider);
   if (!apiKey) {
     console.log(`[fetchProviderModels] No API key for provider: ${activeProvider}`);
-    return null;
-  }
-
-  const modelsUrl = (registryEntry as { modelsUrl?: string }).modelsUrl;
-  if (!modelsUrl) {
     return null;
   }
 
@@ -109,7 +116,13 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
     }
 
     // Handle OpenRouter format (has architecture field and uses provider/model format)
-    if (parsedModels === null && 'data' in data && Array.isArray(data.data) && data.data.length > 0 && 'architecture' in data.data[0]) {
+    if (
+      parsedModels === null &&
+      'data' in data &&
+      Array.isArray(data.data) &&
+      data.data.length > 0 &&
+      'architecture' in data.data[0]
+    ) {
       parsedModels = data.data
         .map((model: OpenRouterModel) => ({
           id: model.id,
@@ -150,10 +163,11 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
       if (staticCap) {
         return {
           ...fm,
+          contextWindow: typeof staticCap.maxContext === 'number' ? staticCap.maxContext : fm.contextWindow,
           supportsTools: staticCap.toolCalling !== 'none' && staticCap.toolCalling !== undefined,
           supportsVision: staticCap.vision ?? false,
           supportsReasoning: staticCap.reasoning ?? false,
-          maxOutput: typeof staticCap.maxOutput === 'number' ? (staticCap.maxOutput as number) : undefined,
+          maxOutput: typeof staticCap.maxOutput === 'number' ? (staticCap.maxOutput as number) : fm.maxOutput,
           free: staticCap.free ?? false,
         };
       }
@@ -194,6 +208,7 @@ export function supportsModelFetching(provider?: ProviderId): boolean {
       'kilocode',
       'google',
       'nvidia',
+      'custom',
     ];
 
     return supportedProviders.includes(activeProvider);

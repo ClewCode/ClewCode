@@ -1,8 +1,8 @@
 // Clew taste auto-learn: Engine that coordinates pattern detection and suggestions
 
 import { randomUUID } from 'crypto';
-import type { TasteRule, TasteRuleSource, TasteRuleKind } from '../core/TasteTypes.js';
-import { PatternDetector, type DetectedPattern } from './PatternDetector.js';
+import type { TasteRule, TasteRuleKind, TasteRuleSource } from '../core/TasteTypes.js';
+import { type DetectedPattern, PatternDetector } from './PatternDetector.js';
 
 // ── Suggestion ────────────────────────────────────────────────────────────────
 
@@ -124,8 +124,7 @@ export class AutoLearnEngine {
 
   /** Get all pending (unresolved) suggestions */
   getPendingSuggestions(): TasteSuggestion[] {
-    return Array.from(this.suggestions.values())
-      .filter(s => s.resolved === null);
+    return Array.from(this.suggestions.values()).filter(s => s.resolved === null);
   }
 
   /** Get all suggestions */

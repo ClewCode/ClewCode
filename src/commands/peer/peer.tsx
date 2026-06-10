@@ -14,8 +14,8 @@
  */
 
 import chalk from 'chalk';
-import type * as React from 'react';
 import { spawn as childSpawn } from 'child_process';
+import type * as React from 'react';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
@@ -29,7 +29,11 @@ let myPeerId = '';
 const myName = '';
 
 function sharingStatus(): boolean {
-  try { return getGlobalDiscovery().isSharing; } catch { return false; }
+  try {
+    return getGlobalDiscovery().isSharing;
+  } catch {
+    return false;
+  }
 }
 
 function getMyName(): string {
@@ -66,7 +70,7 @@ function getFlagValue(tokens: string[], flag: string): string | undefined {
 function spawnPeerTerminal(options: { name?: string; prompt?: string; model?: string; agent?: string }): void {
   const mainScript = process.argv[1]!;
   const args = [
-    ...(process.argv[1].endsWith('.tsx') || process.argv[1].endsWith('.ts') ? ['run', mainScript] : [mainScript])
+    ...(process.argv[1].endsWith('.tsx') || process.argv[1].endsWith('.ts') ? ['run', mainScript] : [mainScript]),
   ];
   if (options.name) {
     args.push('--peer-name', options.name);
@@ -129,13 +133,13 @@ async function startSharing(onDone: (msg: string) => void): Promise<void> {
 
     // Always set callbacks (overwrites main.tsx defaults to include enqueue and onExec)
     server.setCallbacks({
-      onTodo: (todo) => {
+      onTodo: todo => {
         getGlobalPeerStore().addTodo(todo);
         import('../../utils/messageQueueManager.js').then(({ enqueue }) => {
           enqueue({ value: `Task from ${todo.fromName}: ${todo.message}`, mode: 'prompt', priority: 'next' });
         });
       },
-      onMessage: (msg) => {
+      onMessage: msg => {
         getGlobalPeerStore().addMessage(msg);
         import('../../utils/messageQueueManager.js').then(({ enqueue }) => {
           enqueue({ value: `From ${msg.fromName}: ${msg.text}`, mode: 'prompt', priority: 'next' });
@@ -144,7 +148,7 @@ async function startSharing(onDone: (msg: string) => void): Promise<void> {
       onExec: async (command: string) => {
         const { executeCommand } = await import('../../tools/PeerRunTool/PeerRunTool.js');
         return executeCommand(command, 60_000);
-      }
+      },
     });
 
     // Start server if needed (idempotent)
@@ -155,7 +159,7 @@ async function startSharing(onDone: (msg: string) => void): Promise<void> {
       const peerInfo: PeerInfo = {
         id: myPeerId,
         hostname: discovery.hostname,
-        ip: '',
+        ip: '127.0.0.1',
         port: 0,
         cwd: process.cwd(),
         version: '',
@@ -271,7 +275,12 @@ function showTodos(onDone: (msg: string) => void): void {
   }
   const lines = ['Pending tasks:', ''];
   for (const todo of todos) {
-    const status = todo.status === 'pending' ? chalk.yellow('pending') : todo.status === 'done' ? chalk.green('done') : chalk.red('rejected');
+    const status =
+      todo.status === 'pending'
+        ? chalk.yellow('pending')
+        : todo.status === 'done'
+          ? chalk.green('done')
+          : chalk.red('rejected');
     lines.push(`  ${chalk.bold(todo.id.slice(0, 12))}  ${status}  from ${todo.fromName}: ${todo.message}`);
   }
   onDone(lines.join('\n'));
@@ -390,8 +399,12 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     const messages = getGlobalPeerStore().getMessages();
     const todos = getGlobalPeerStore().getTodos();
     const inboxItems = [
-      ...messages.filter(m => m.from !== 'local').map(m => ({ type: 'msg' as const, text: `[${m.fromName}] ${m.text}`, raw: m.text })),
-      ...todos.filter(t => t.status === 'pending' && t.from !== 'local').map(t => ({ type: 'todo' as const, text: `[Task from ${t.fromName}] ${t.message}`, raw: t.message })),
+      ...messages
+        .filter(m => m.from !== 'local')
+        .map(m => ({ type: 'msg' as const, text: `[${m.fromName}] ${m.text}`, raw: m.text })),
+      ...todos
+        .filter(t => t.status === 'pending' && t.from !== 'local')
+        .map(t => ({ type: 'todo' as const, text: `[Task from ${t.fromName}] ${t.message}`, raw: t.message })),
     ];
 
     if (inboxItems.length === 0) {
@@ -415,7 +428,11 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     const name = getFlagValue(tokens, '--name') ?? getFlagValue(tokens, '-n');
     const prompt = getFlagValue(tokens, '--prompt') ?? getFlagValue(tokens, '-p');
     const model = getFlagValue(tokens, '--model') ?? getFlagValue(tokens, '-m');
-    const agent = getFlagValue(tokens, '--role') ?? getFlagValue(tokens, '-r') ?? getFlagValue(tokens, '--agent') ?? getFlagValue(tokens, '-a');
+    const agent =
+      getFlagValue(tokens, '--role') ??
+      getFlagValue(tokens, '-r') ??
+      getFlagValue(tokens, '--agent') ??
+      getFlagValue(tokens, '-a');
 
     try {
       spawnPeerTerminal({ name, prompt, model, agent });
@@ -427,23 +444,26 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
   }
 
   if (args === 'help' || args === '--help' || args === '-h') {
-    onDone([
-      'Peer commands:',
-      '  /peer share              Start sharing (listen for connections)',
-      '  /peer share stop         Stop sharing',
-      '  /peer join <host>:<port> Connect to a peer (e.g. /peer join 127.0.0.1:61459)',
-      '  /peer list               Show connected peers',
-      '  /peer send <peer> <msg>  Send a message to a peer',
-      '  /peer todo <peer> <task> Assign a task to a peer',
-      '  /peer todos              Show received tasks',
-      '  /peer todo done <id>     Mark task done',
-      '  /peer inbox              View pending messages',
-      '  /peer spawn [options]    Spawn a new peer shell terminal window',
-      '                           Options: -n, --name <name> (peer display name)',
-      '                                    -p, --prompt <prompt> (custom system prompt)',
-      '                                    -m, --model <model> (custom AI model)',
-      '                                    -r, --role <role> / -a, --agent <agent> (custom agent role)',
-    ].join('\n'), { display: 'system' });
+    onDone(
+      [
+        'Peer commands:',
+        '  /peer share              Start sharing (listen for connections)',
+        '  /peer share stop         Stop sharing',
+        '  /peer join <host>:<port> Connect to a peer (e.g. /peer join 127.0.0.1:61459)',
+        '  /peer list               Show connected peers',
+        '  /peer send <peer> <msg>  Send a message to a peer',
+        '  /peer todo <peer> <task> Assign a task to a peer',
+        '  /peer todos              Show received tasks',
+        '  /peer todo done <id>     Mark task done',
+        '  /peer inbox              View pending messages',
+        '  /peer spawn [options]    Spawn a new peer shell terminal window',
+        '                           Options: -n, --name <name> (peer display name)',
+        '                                    -p, --prompt <prompt> (custom system prompt)',
+        '                                    -m, --model <model> (custom AI model)',
+        '                                    -r, --role <role> / -a, --agent <agent> (custom agent role)',
+      ].join('\n'),
+      { display: 'system' },
+    );
     return;
   }
 

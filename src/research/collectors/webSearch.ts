@@ -1,7 +1,7 @@
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getFsImplementation } from '../../utils/fsOperations.js';
 import { searchWithProviders } from '../../tools/ResearchTool/searchProviders.js';
+import { getFsImplementation } from '../../utils/fsOperations.js';
 import type { ResearchSource } from '../types.js';
 
 /**
@@ -34,11 +34,13 @@ export async function collectWebSearch(_cwd: string, query: string, runDir: stri
 
     // Deduplicate by URL
     const seen = new Set<string>();
-    allResults = allResults.filter(r => {
-      if (seen.has(r.url)) return false;
-      seen.add(r.url);
-      return true;
-    }).slice(0, 5);
+    allResults = allResults
+      .filter(r => {
+        if (seen.has(r.url)) return false;
+        seen.add(r.url);
+        return true;
+      })
+      .slice(0, 5);
   } catch (err) {
     console.error(`[webSearch] Search failed: ${err instanceof Error ? err.message : String(err)}`);
   }

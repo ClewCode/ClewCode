@@ -19,6 +19,7 @@ import { BASH_TOOL_NAME } from '../tools/BashTool/toolName.js';
 import { getCanonicalName, getMarketingNameForModel } from '../utils/model/model.js';
 import { getAntModelOverrideConfig } from '../utils/model/antModels.js';
 import { ProviderManager } from '../services/ai/ProviderManager.js';
+import { getProviderRegistryEntry } from '../services/ai/providerRegistry.js';
 import { getSkillToolCommands } from 'src/commands.js';
 import { SKILL_TOOL_NAME } from '../tools/SkillTool/constants.js';
 import { getOutputStyleConfig } from './outputStyles.js';
@@ -397,7 +398,7 @@ export async function getSystemPrompt(
     const isAnthropic = process.env.CLAUDE_CODE_PROVIDER === 'anthropic' || !process.env.CLAUDE_CODE_PROVIDER;
     return [
       isAnthropic
-        ? `You are Clew Code, Anthropic's official CLI for Claude.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`
+        ? `You are Clew Code, a CLI coding agent.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`
         : `You are an AI coding assistant.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
     ];
   }
@@ -552,6 +553,9 @@ export async function computeEnvInfo(modelId: string, additionalWorkingDirectori
   const cutoff = getKnowledgeCutoff(modelId);
   const knowledgeCutoffMessage = cutoff ? `\n\nAssistant knowledge cutoff is ${cutoff}.` : '';
 
+  const capabilitiesText = getModelCapabilitiesText(modelId);
+  const capabilitiesBlock = capabilitiesText ? `\n\n${capabilitiesText}` : '';
+
   return `Here is useful information about the environment you are running in:
 <env>
 Working directory: ${getCwd()}
@@ -560,7 +564,76 @@ ${additionalDirsInfo}Platform: ${env.platform}
 ${getShellInfoLine()}
 OS Version: ${unameSR}
 </env>
-${modelDescription}${knowledgeCutoffMessage}`;
+${modelDescription}${capabilitiesBlock}${knowledgeCutoffMessage}`;
+}
+
+/**
+ * Build a human-readable capability summary for the system prompt.
+ * Sources data from providers.json for accurate per-model capabilities.
+ */
+function getModelCapabilitiesText(modelId: string): string | null {
+  // Undercover: suppress model capability details
+  if (process.env.USER_TYPE === 'ant' && isUndercover()) {
+    return null;
+  }
+
+  const providerManager = ProviderManager.getInstance();
+  const activeProvider = providerManager.getActiveProviderName();
+  const entry = getProviderRegistryEntry(activeProvider);
+  if (!entry) return null;
+
+  // Try exact match first
+  let modelInfo = entry.models.find(m => m.id === modelId);
+  if (!modelInfo) {
+    // Try canonical/substring matching
+    const canonical = getCanonicalName(modelId);
+    modelInfo = entry.models.find(m => canonical.includes(m.id) || m.id.includes(canonical) || m.id === modelId);
+  }
+
+  if (!modelInfo) return null;
+
+  const caps = modelInfo.capabilities;
+  const parts: string[] = [];
+
+  parts.push(`Provider: ${entry.label}`);
+  parts.push(`Model ID: ${modelInfo.id}`);
+
+  // Context window
+  const ctx =
+    typeof caps.maxContext === 'number'
+      ? caps.maxContext >= 1_000_000
+        ? `${(caps.maxContext / 1_000_000).toFixed(0)}M`
+        : `${Math.round(caps.maxContext / 1000)}K`
+      : caps.maxContext;
+  parts.push(`Context window: ${ctx} tokens`);
+
+  // Max output
+  if (caps.maxOutput) {
+    const maxOut =
+      typeof caps.maxOutput === 'number'
+        ? caps.maxOutput >= 1_000
+          ? `${Math.round(caps.maxOutput / 1000)}K`
+          : String(caps.maxOutput)
+        : caps.maxOutput;
+    parts.push(`Max output: ${maxOut} tokens`);
+  }
+
+  // Vision
+  parts.push(`Vision: ${caps.vision ? 'supported' : 'not supported'}`);
+
+  // Tool calling
+  parts.push(
+    `Tool calling: ${caps.toolCalling === 'native' ? 'native' : caps.toolCalling === 'json-text' ? 'JSON-text only' : 'none'}`,
+  );
+
+  // Reasoning/thinking
+  parts.push(`Reasoning/thinking: ${caps.reasoning ? 'supported' : 'not supported'}`);
+
+  // Streaming
+  const streamLabel = caps.streaming === 'full' ? 'full' : caps.streaming === 'partial' ? 'partial' : 'none';
+  parts.push(`Streaming: ${streamLabel}`);
+
+  return parts.join('\n');
 }
 
 export async function computeSimpleEnvInfo(modelId: string, additionalWorkingDirectories?: string[]): Promise<string> {
@@ -581,6 +654,8 @@ export async function computeSimpleEnvInfo(modelId: string, additionalWorkingDir
   const cutoff = getKnowledgeCutoff(modelId);
   const knowledgeCutoffMessage = cutoff ? `Assistant knowledge cutoff is ${cutoff}.` : null;
 
+  const capabilitiesText = getModelCapabilitiesText(modelId);
+
   const cwd = getCwd();
   const isWorktree = getCurrentWorktreeSession() !== null;
   const isAnthropic = ProviderManager.getInstance().getActiveProviderName() === 'anthropic';
@@ -597,6 +672,7 @@ export async function computeSimpleEnvInfo(modelId: string, additionalWorkingDir
     getShellInfoLine(),
     `OS Version: ${unameSR}`,
     modelDescription,
+    capabilitiesText,
     knowledgeCutoffMessage,
     !isAnthropic || (process.env.USER_TYPE === 'ant' && isUndercover())
       ? null

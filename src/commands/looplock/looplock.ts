@@ -1,9 +1,9 @@
-import { startAutonomousAgent, getAutonomousStatus } from '../../services/autonomous/supervisorIntegration.js';
+import chalk from 'chalk';
+import type * as React from 'react';
+import { getAutonomousStatus, startAutonomousAgent } from '../../services/autonomous/supervisorIntegration.js';
 import { addTask } from '../../services/autonomous/taskQueue.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
-import chalk from 'chalk';
-import type * as React from 'react';
 
 export async function call(
   onDone: LocalJSXCommandOnDone,
@@ -29,12 +29,17 @@ export async function call(
         projectRoot: process.cwd(),
         tags: ['user-command'],
       });
-      onDone(chalk.green(`Autonomous agent loop started and task successfully enqueued (Task ID: ${taskId})!`), { display: 'system' });
+      onDone(chalk.green(`Autonomous agent loop started and task successfully enqueued (Task ID: ${taskId})!`), {
+        display: 'system',
+      });
     } catch (err) {
       onDone(chalk.red(`Failed to enqueue task: ${(err as Error).message}`), { display: 'system' });
     }
   } else {
-    onDone(chalk.green('24/7 autonomous agent loop successfully enabled and started! Use `/daemon status` to check status.'), { display: 'system' });
+    onDone(
+      chalk.green('24/7 autonomous agent loop successfully enabled and started! Use `/daemon status` to check status.'),
+      { display: 'system' },
+    );
   }
   return null;
 }

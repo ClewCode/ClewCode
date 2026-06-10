@@ -101,6 +101,7 @@ import {
 } from '../utils/swarm/leaderPermissionBridge.js';
 import { endInteractionSpan } from '../utils/telemetry/sessionTracing.js';
 import { useLogMessages } from '../hooks/useLogMessages.js';
+import { usePeerAutoInject } from '../hooks/usePeerAutoInject.js';
 import { useReplBridge } from '../hooks/useReplBridge.js';
 import { useRemoteBridge } from '../hooks/useRemoteBridge.js';
 import {
@@ -1517,6 +1518,9 @@ export function REPL({
     }
     rawSetMessages(next);
   }, []);
+  // Wire peer events → agent conversation as system_reminder messages.
+  // Eliminates polling-based peer_list_messages tool.
+  usePeerAutoInject(setMessages);
   // Capture the baseline message count alongside the placeholder text so
   // the render can hide it once displayedMessages grows past the baseline.
   const setUserInputOnProcessing = useCallback((input: string | undefined) => {
@@ -2339,7 +2343,7 @@ export function REPL({
 
         const formattedExchanges = recentExchanges
           .map(msg => {
-            const speaker = msg.type === 'user' ? 'User' : log.agentName || 'Claude';
+            const speaker = msg.type === 'user' ? 'User' : log.agentName || 'Clew';
             const rawText = msg.message?.content ? getContentText(msg.message.content) : null;
             if (!rawText) return null;
             const singleLineText = rawText.replace(/\s+/g, ' ').trim();
@@ -2349,7 +2353,7 @@ export function REPL({
           .filter((line): line is string => line !== null);
 
         const bannerLines = [
-          `Resumed session: ${log.agentName || 'Claude'} (${sessionId.slice(0, 8)})`,
+          `Resumed session: ${log.agentName || 'Clew'} (${sessionId.slice(0, 8)})`,
           log.projectPath ? `  Project: ${basename(log.projectPath)}` : '',
           hasActiveGoal ? `  Active Goal: ${goalState.goal}` : '',
           formattedExchanges.length > 0 ? '\n  Recent activity:' : '',
@@ -3927,7 +3931,7 @@ export function REPL({
       try {
         const { isAutonomousAgentActive } = await import('../services/autonomous/supervisorIntegration.js');
         const isLoopActive = await isAutonomousAgentActive();
-        
+
         const normalizedInput = input.trim();
         const isLooplockCmd = normalizedInput.startsWith('/looplock') || normalizedInput.startsWith('/loop-lock');
 
@@ -4837,7 +4841,7 @@ export function REPL({
         ) {
           void sendNotification(
             {
-              message: 'Claude is waiting for your input',
+              message: 'Clew is waiting for your input',
               notificationType: 'idle_prompt',
             },
             terminal,
@@ -6194,7 +6198,7 @@ export function REPL({
                         inputValue={inputValue}
                         setInputValue={setInputValue}
                         onRequestFeedback={handleSurveyRequestFeedback}
-                        message="How well did Claude use its memory? (optional)"
+                        message="How well did Clew use its memory? (optional)"
                       />
                     ) : (
                       <FeedbackSurvey

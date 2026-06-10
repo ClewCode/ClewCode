@@ -6,10 +6,12 @@ const MODE_PROMPTS: Record<ResearchMode, string> = {
   deep: 'In-depth analysis. Uncover underlying mechanisms, best practices, design patterns, known pitfalls, and implementation guidance.',
   compare:
     'Side-by-side comparison. Evaluate options by components, strengths, weaknesses, integration path, and risk. Produce a recommendation matrix.',
-  paper: 'Academic research review. Look for peer-reviewed sources, formal citations, methodology critique, and research gaps. Prioritize papers over blog posts.',
+  paper:
+    'Academic research review. Look for peer-reviewed sources, formal citations, methodology critique, and research gaps. Prioritize papers over blog posts.',
   codebase:
     'Codebase-centric investigation. Trace dependency graphs, call chains, pattern usage, and architectural impact across the repository.',
-  trend: 'Trend and time-series analysis. Decompose by date ranges, compare past vs present state, project direction. Look for momentum indicators.',
+  trend:
+    'Trend and time-series analysis. Decompose by date ranges, compare past vs present state, project direction. Look for momentum indicators.',
   decision:
     'Decision-support research. Extract pros/cons, score risks, map stakeholder impact, and produce an actionable recommendation with confidence levels.',
   security:
@@ -73,7 +75,11 @@ export function createResearchPlan(query: string, mode: ResearchMode): ResearchP
         `What methodologies are used and how do they compare?`,
         `What open questions or research gaps exist?`,
       );
-      doneCriteria.push('Key papers identified with DOI/citation', 'Methodology comparison completed', 'Research gaps documented');
+      doneCriteria.push(
+        'Key papers identified with DOI/citation',
+        'Methodology comparison completed',
+        'Research gaps documented',
+      );
       risks.push('Paywalled papers inaccessible', 'Preprint quality varies widely');
       break;
 
@@ -84,7 +90,11 @@ export function createResearchPlan(query: string, mode: ResearchMode): ResearchP
         `What patterns or anti-patterns exist around this area?`,
         `What would be the impact radius of changing this?`,
       );
-      doneCriteria.push('File-level map of relevant code created', 'Dependency graph traced', 'Impact assessment completed');
+      doneCriteria.push(
+        'File-level map of relevant code created',
+        'Dependency graph traced',
+        'Impact assessment completed',
+      );
       risks.push('Dynamic dispatch may hide real call graph', 'Large repos may hit search limits');
       break;
 
@@ -106,7 +116,11 @@ export function createResearchPlan(query: string, mode: ResearchMode): ResearchP
         `What are the risks, costs, and trade-offs?`,
         `Which stakeholders are affected and how?`,
       );
-      doneCriteria.push('Pro/con matrix for each option', 'Risk-weighted scoring completed', 'Clear recommendation with rationale');
+      doneCriteria.push(
+        'Pro/con matrix for each option',
+        'Risk-weighted scoring completed',
+        'Clear recommendation with rationale',
+      );
       risks.push('Incomplete option space', 'Stakeholder impact may be underestimated');
       break;
 
@@ -116,7 +130,11 @@ export function createResearchPlan(query: string, mode: ResearchMode): ResearchP
         `What attack surfaces exist and how are they protected?`,
         `What mitigations are in place and what gaps remain?`,
       );
-      doneCriteria.push('Security audit report with risk levels', 'Mitigation plan documented', 'Each finding has severity rating');
+      doneCriteria.push(
+        'Security audit report with risk levels',
+        'Mitigation plan documented',
+        'Each finding has severity rating',
+      );
       risks.push('Hidden code paths may be missed', 'Zero-day threats not covered');
       break;
 
@@ -173,7 +191,10 @@ export async function createResearchPlanLLM(
   try {
     const response = await ask(prompt);
     // Strip possible markdown code fences
-    const json = response.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+    const json = response
+      .replace(/^```json\s*/i, '')
+      .replace(/```\s*$/, '')
+      .trim();
     const parsed = JSON.parse(json) as {
       subQuestions?: string[];
       doneCriteria?: string[];

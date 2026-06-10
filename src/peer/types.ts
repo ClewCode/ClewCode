@@ -49,6 +49,16 @@ export interface PeerChatMessage {
   color: PeerColor;
   /** Timestamp (epoch ms) */
   timestamp: number;
+  /** If this message is part of a chunked group, the shared group ID */
+  chunkGroup?: string;
+  /** Index of this chunk within the group (0-based) */
+  chunkIndex?: number;
+  /** Total number of chunks in the group */
+  chunkTotal?: number;
+  /** Sender's role (e.g. "builder", "researcher") */
+  senderRole?: string;
+  /** Sender's peer server port */
+  senderPort?: number;
 }
 
 /** A todo item assigned by a peer */

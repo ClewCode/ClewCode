@@ -10,7 +10,7 @@ let activeServer: { server: ReturnType<typeof createServer>; url: string; transc
  *   /voice check      — get transcript (auto-submits if ready)
  *   /voice stop       — stop the server
  */
-export const call: import('../../types/command.js').LocalCommandCall = async (args) => {
+export const call: import('../../types/command.js').LocalCommandCall = async args => {
   const cmd = args?.toLowerCase().trim() ?? '';
 
   if (cmd === 'stop' || cmd === 'off') {
@@ -32,10 +32,13 @@ export const call: import('../../types/command.js').LocalCommandCall = async (ar
 
   // Start or reuse server
   if (activeServer) {
-    return { type: 'text' as const, value: `Voice server already running.\nOpen ${activeServer.url} in Chrome\nThen run /voice check` };
+    return {
+      type: 'text' as const,
+      value: `Voice server already running.\nOpen ${activeServer.url} in Chrome\nThen run /voice check`,
+    };
   }
 
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const server = createServer((req, res) => {
       const u = new URL(req.url ?? '/', `http://${req.headers.host}`);
       const p = u.pathname;
@@ -48,7 +51,9 @@ export const call: import('../../types/command.js').LocalCommandCall = async (ar
 
       if (p === '/result' && req.method === 'POST') {
         let body = '';
-        req.on('data', (chunk: string) => { body += chunk; });
+        req.on('data', (chunk: string) => {
+          body += chunk;
+        });
         req.on('end', () => {
           try {
             const data = JSON.parse(body);
@@ -62,7 +67,9 @@ export const call: import('../../types/command.js').LocalCommandCall = async (ar
 
       if (p === '/check') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ text: activeServer?.transcript ?? '', done: (activeServer?.transcript?.length ?? 0) > 0 }));
+        res.end(
+          JSON.stringify({ text: activeServer?.transcript ?? '', done: (activeServer?.transcript?.length ?? 0) > 0 }),
+        );
         return;
       }
 

@@ -1,6 +1,6 @@
 import { z } from 'zod/v4';
-import { buildTool } from '../../Tool.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
@@ -29,20 +29,38 @@ const outputSchema = lazySchema(() =>
 export type Output = z.infer<ReturnType<typeof outputSchema>>;
 
 export const PeerJoinTool = buildTool({
-  isConcurrencySafe() { return true; },
-  isReadOnly() { return false; },
+  isConcurrencySafe() {
+    return true;
+  },
+  isReadOnly() {
+    return false;
+  },
   name: PEER_JOIN_TOOL_NAME,
   searchHint: 'join a peer',
   maxResultSizeChars: 2_000,
-  async description() { return DESCRIPTION; },
-  async prompt() { return PROMPT; },
-  get inputSchema() { return inputSchema(); },
-  get outputSchema() { return outputSchema(); },
-  getPath() { return getCwd(); },
+  async description() {
+    return DESCRIPTION;
+  },
+  async prompt() {
+    return PROMPT;
+  },
+  get inputSchema() {
+    return inputSchema();
+  },
+  get outputSchema() {
+    return outputSchema();
+  },
+  getPath() {
+    return getCwd();
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Failed: ${output.error}` };
     const extra = [output.displayName, output.role, output.shell].filter(Boolean).join(' ');
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ joined ${output.peerHostname}:${output.peerPort} ${extra}`.trim() };
+    return {
+      tool_use_id: toolUseID,
+      type: 'tool_result',
+      content: `✓ joined ${output.peerHostname}:${output.peerPort} ${extra}`.trim(),
+    };
   },
   async call(input: { host?: string; port: number }) {
     const host = input.host || '127.0.0.1';

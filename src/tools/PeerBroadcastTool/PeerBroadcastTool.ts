@@ -1,6 +1,6 @@
 import { z } from 'zod/v4';
-import { buildTool } from '../../Tool.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
@@ -18,32 +18,52 @@ const outputSchema = lazySchema(() =>
     totalPeers: z.number(),
     delivered: z.number(),
     failed: z.number(),
-    results: z.array(z.object({
-      hostname: z.string(),
-      success: z.boolean(),
-      taskId: z.string().optional(),
-      error: z.string().optional(),
-    })),
+    results: z.array(
+      z.object({
+        hostname: z.string(),
+        success: z.boolean(),
+        taskId: z.string().optional(),
+        error: z.string().optional(),
+      }),
+    ),
   }),
 );
 
 export type Output = z.infer<ReturnType<typeof outputSchema>>;
 
 export const PeerBroadcastTool = buildTool({
-  isConcurrencySafe() { return true; },
-  isReadOnly() { return false; },
+  isConcurrencySafe() {
+    return true;
+  },
+  isReadOnly() {
+    return false;
+  },
   name: PEER_BROADCAST_TOOL_NAME,
   searchHint: 'broadcast a task to all peers',
   maxResultSizeChars: 5_000,
-  async description() { return DESCRIPTION; },
-  async prompt() { return PROMPT; },
-  get inputSchema() { return inputSchema(); },
-  get outputSchema() { return outputSchema(); },
-  getPath() { return getCwd(); },
+  async description() {
+    return DESCRIPTION;
+  },
+  async prompt() {
+    return PROMPT;
+  },
+  get inputSchema() {
+    return inputSchema();
+  },
+  get outputSchema() {
+    return outputSchema();
+  },
+  getPath() {
+    return getCwd();
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Broadcast failed` };
     const summary = output.results.map((r: any) => `${r.success ? '✓' : '✗'}${r.hostname}`).join(' ');
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ broadcast ${output.delivered}/${output.totalPeers}: ${summary}` };
+    return {
+      tool_use_id: toolUseID,
+      type: 'tool_result',
+      content: `✓ broadcast ${output.delivered}/${output.totalPeers}: ${summary}`,
+    };
   },
   async call(input: { task: string }) {
     const store = getGlobalPeerStore();
@@ -67,7 +87,7 @@ export const PeerBroadcastTool = buildTool({
 
     for (const peer of peers) {
       try {
-        const url = `http://${peer.ip}:${peer.port}/peer-todo`;
+        const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-todo`;
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

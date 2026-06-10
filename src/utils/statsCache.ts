@@ -146,10 +146,15 @@ function migrateStatsCache(parsed: Partial<PersistedStatsCache> & { version: num
         cacheReadInputTokens:
           (normalizedProviderUsage[normalizedProvider] as any).cacheReadInputTokens + usage.cacheReadInputTokens,
         cacheCreationInputTokens:
-          (normalizedProviderUsage[normalizedProvider] as any).cacheCreationInputTokens + usage.cacheCreationInputTokens,
-        webSearchRequests: (normalizedProviderUsage[normalizedProvider] as any).webSearchRequests + usage.webSearchRequests,
+          (normalizedProviderUsage[normalizedProvider] as any).cacheCreationInputTokens +
+          usage.cacheCreationInputTokens,
+        webSearchRequests:
+          (normalizedProviderUsage[normalizedProvider] as any).webSearchRequests + usage.webSearchRequests,
         costUSD: (normalizedProviderUsage[normalizedProvider] as any).costUSD + usage.costUSD,
-        contextWindow: Math.max((normalizedProviderUsage[normalizedProvider] as any).contextWindow, usage.contextWindow),
+        contextWindow: Math.max(
+          (normalizedProviderUsage[normalizedProvider] as any).contextWindow,
+          usage.contextWindow,
+        ),
         maxOutputTokens: Math.max(
           (normalizedProviderUsage[normalizedProvider] as any).maxOutputTokens,
           usage.maxOutputTokens,
@@ -365,7 +370,8 @@ export function mergeCacheWithNewStats(
         inputTokens: providerUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
         outputTokens: providerUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
         cacheReadInputTokens: providerUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
-        cacheCreationInputTokens: providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+        cacheCreationInputTokens:
+          providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
         webSearchRequests: providerUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
         costUSD: providerUsage[normalizedProvider]!.costUSD + usage.costUSD,
         contextWindow: Math.max(providerUsage[normalizedProvider]!.contextWindow, usage.contextWindow),
@@ -385,7 +391,8 @@ export function mergeCacheWithNewStats(
         inputTokens: providerUsage[normalizedProvider]!.inputTokens + usage.inputTokens,
         outputTokens: providerUsage[normalizedProvider]!.outputTokens + usage.outputTokens,
         cacheReadInputTokens: providerUsage[normalizedProvider]!.cacheReadInputTokens + usage.cacheReadInputTokens,
-        cacheCreationInputTokens: providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+        cacheCreationInputTokens:
+          providerUsage[normalizedProvider]!.cacheCreationInputTokens + usage.cacheCreationInputTokens,
         webSearchRequests: providerUsage[normalizedProvider]!.webSearchRequests + usage.webSearchRequests,
         costUSD: providerUsage[normalizedProvider]!.costUSD + usage.costUSD,
         contextWindow: Math.max(providerUsage[normalizedProvider]!.contextWindow, usage.contextWindow),

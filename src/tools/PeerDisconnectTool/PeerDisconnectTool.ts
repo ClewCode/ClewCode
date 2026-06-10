@@ -1,7 +1,7 @@
 import { z } from 'zod/v4';
-import { buildTool } from '../../Tool.js';
-import type { ValidationResult } from '../../Tool.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import type { ValidationResult } from '../../Tool.js';
+import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { DESCRIPTION, PEER_DISCONNECT_TOOL_NAME, PROMPT } from './prompt.js';
@@ -23,16 +23,30 @@ const outputSchema = lazySchema(() =>
 export type Output = z.infer<ReturnType<typeof outputSchema>>;
 
 export const PeerDisconnectTool = buildTool({
-  isConcurrencySafe() { return true; },
-  isReadOnly() { return false; },
+  isConcurrencySafe() {
+    return true;
+  },
+  isReadOnly() {
+    return false;
+  },
   name: PEER_DISCONNECT_TOOL_NAME,
   searchHint: 'disconnect a peer',
   maxResultSizeChars: 1_000,
-  async description() { return DESCRIPTION; },
-  async prompt() { return PROMPT; },
-  get inputSchema() { return inputSchema(); },
-  get outputSchema() { return outputSchema(); },
-  getPath() { return getCwd(); },
+  async description() {
+    return DESCRIPTION;
+  },
+  async prompt() {
+    return PROMPT;
+  },
+  get inputSchema() {
+    return inputSchema();
+  },
+  get outputSchema() {
+    return outputSchema();
+  },
+  getPath() {
+    return getCwd();
+  },
   async validateInput(input: any): Promise<ValidationResult> {
     if (!input.peer || typeof input.peer !== 'string' || input.peer.length < 1) {
       return { result: false, message: 'peer must be a non-empty hostname or peer ID', errorCode: 1 };
@@ -40,7 +54,8 @@ export const PeerDisconnectTool = buildTool({
     return { result: true };
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
-    if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
+    if (!output.success)
+      return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
     return { tool_use_id: toolUseID, type: 'tool_result', content: `✗ disconnected ${output.hostname}` };
   },
   async call(input: { peer: string }) {

@@ -1,10 +1,9 @@
 import { z } from 'zod/v4';
-import { buildTool } from '../../Tool.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import type { PeerInfo } from '../../peer/types.js';
-import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
@@ -53,7 +52,11 @@ export const PeerShareTool = buildTool({
     return getCwd();
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
-    return { tool_use_id: toolUseID, type: 'tool_result', content: output.sharing ? `Sharing (port ${output.port || '?'})` : 'Not sharing' };
+    return {
+      tool_use_id: toolUseID,
+      type: 'tool_result',
+      content: output.sharing ? `Sharing (port ${output.port || '?'})` : 'Not sharing',
+    };
   },
   async call(input: { action: 'start' | 'stop' | 'status' }) {
     const discovery = getGlobalDiscovery();
@@ -81,10 +84,34 @@ export const PeerShareTool = buildTool({
     try {
       const store = getGlobalPeerStore();
 
+      // Wire up callbacks so incoming messages/todos get stored locally
+      server.setCallbacks({
+        onMessage: msg => {
+          store.addMessage(msg);
+        },
+        onTodo: todo => {
+          store.addTodo(todo);
+        },
+      });
+
+      // Wire up PeerStore callbacks to broadcast SSE events
+      store.setCallbacks({
+        onPeerAdded: peer => {
+          server.broadcastEvent('peer_online', {
+            id: peer.id,
+            hostname: peer.hostname,
+            port: peer.port,
+          });
+        },
+        onPeerRemoved: peerId => {
+          server.broadcastEvent('peer_offline', { id: peerId });
+        },
+      });
+
       const peerInfo: PeerInfo = {
         id: discovery.peerId,
         hostname: discovery.hostname,
-        ip: '',
+        ip: '127.0.0.1',
         port: 0,
         cwd: process.cwd(),
         version: '',

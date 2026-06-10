@@ -23,6 +23,9 @@ import {
 
 const DEFAULT_PROMPT = 'Extract and summarize the main content';
 const WEB_FETCH_TOTAL_TIMEOUT_MS = 15_000;
+// Threshold below which we skip Haiku summarization and return raw content.
+// Pages under this size are cheap enough to pass directly to the model.
+const RAW_CONTENT_THRESHOLD = 50_000;
 
 type FetchSingleUrlResult = {
   url: string;
@@ -112,28 +115,37 @@ async function fetchSingleUrl(
 
     const { content, bytes, code, codeText } = response as FetchedContent;
 
-    const elapsedMs = Date.now() - start;
-    const remainingMs = Math.max(1, WEB_FETCH_TOTAL_TIMEOUT_MS - elapsedMs);
-    const promptApplied = await withTimeout(
-      applyPromptToMarkdown(
-        prompt,
-        content,
-        childAbortController.signal,
-        isNonInteractiveSession,
-        isPreapprovedUrl(url),
-      ),
-      childAbortController,
-      remainingMs,
-      timeoutMessage,
-    );
-    const truncated = promptApplied.slice(0, MAX_MARKDOWN_LENGTH);
+    // For reasonably-sized pages, skip the Haiku summarization pass and
+    // return raw Markdown directly. The main model can process it more
+    // accurately than a summary. Large pages still get summarized to
+    // avoid consuming excessive context budget.
+    let result: string;
+    if (content.length <= RAW_CONTENT_THRESHOLD) {
+      result = content.slice(0, MAX_MARKDOWN_LENGTH);
+    } else {
+      const elapsedMs = Date.now() - start;
+      const remainingMs = Math.max(1, WEB_FETCH_TOTAL_TIMEOUT_MS - elapsedMs);
+      const promptApplied = await withTimeout(
+        applyPromptToMarkdown(
+          prompt,
+          content,
+          childAbortController.signal,
+          isNonInteractiveSession,
+          isPreapprovedUrl(url),
+        ),
+        childAbortController,
+        remainingMs,
+        timeoutMessage,
+      );
+      result = promptApplied.slice(0, MAX_MARKDOWN_LENGTH);
+    }
 
     return {
       url,
       bytes,
       code,
       codeText,
-      result: truncated,
+      result,
       durationMs: Date.now() - start,
     };
   } catch (error) {
@@ -413,8 +425,8 @@ ${DESCRIPTION}`;
       if (r.error) {
         lines.push(`Error: ${r.error}`);
       } else {
-        lines.push(r.result.slice(0, 500));
-        if (r.result.length > 500) lines.push('... (truncated)');
+        lines.push(r.result.slice(0, 8_000));
+        if (r.result.length > 8_000) lines.push(`... (${r.result.length - 8_000} more chars)`);
       }
       lines.push('');
     }

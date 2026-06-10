@@ -67,10 +67,7 @@ function nowIso(): string {
  * UI can poll and show which agents are active. Called mid-wave by the
  * runner before subtasks start executing.
  */
-export async function recordRunningSubtasks(
-  workspaceRoot: string,
-  state: DynamicRunState,
-): Promise<void> {
+export async function recordRunningSubtasks(workspaceRoot: string, state: DynamicRunState): Promise<void> {
   const dir = runDir(workspaceRoot, state.runId);
   await ensureDir(dir);
   const next = { ...state, updatedAt: nowIso() };

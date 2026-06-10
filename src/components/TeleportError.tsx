@@ -98,14 +98,14 @@ export function TeleportError({
       }
 
       return (
-        <Dialog title="Log in to Claude" onCancel={onCancel}>
+        <Dialog title="Log in to Clew" onCancel={onCancel}>
           <Box flexDirection="column">
-            <Text dimColor>Teleport requires a Claude.ai account.</Text>
-            <Text dimColor>Your Claude Pro/Max subscription will be used by Clew Code.</Text>
+            <Text dimColor>Teleport requires a Clew.ai account.</Text>
+            <Text dimColor>Your Clew Pro/Max subscription will be used by Clew Code.</Text>
           </Box>
           <Select
             options={[
-              { label: 'Login with Claude account', value: 'login' },
+              { label: 'Login with Clew account', value: 'login' },
               { label: 'Exit', value: 'exit' },
             ]}
             onChange={handleLoginDialogSelect}

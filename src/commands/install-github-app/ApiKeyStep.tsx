@@ -99,7 +99,7 @@ export function ApiKeyStep({
           <Box marginBottom={1}>
             <Text>
               {selectedOption === 'oauth' ? color('success', theme)('> ') : '  '}
-              Create a long-lived token with your Claude subscription
+              Create a long-lived token with your Clew subscription
             </Text>
           </Box>
         )}

@@ -10,6 +10,7 @@ import {
 } from '../../constants/apiLimits.js';
 import { hasBinaryExtension } from '../../constants/files.js';
 import { memoryFreshnessNote } from '../../memdir/memoryAge.js';
+import { ProviderManager } from '../../services/ai/ProviderManager.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
 import { logEvent } from '../../services/analytics/index.js';
 import {
@@ -50,7 +51,6 @@ import { logError } from '../../utils/log.js';
 import { isAutoMemFile } from '../../utils/memoryFileDetection.js';
 import { createUserMessage } from '../../utils/messages.js';
 import { getCanonicalName, getMainLoopModel } from '../../utils/model/model.js';
-import { ProviderManager } from '../../services/ai/ProviderManager.js';
 import { mapNotebookCellsToToolResult, readNotebook } from '../../utils/notebook.js';
 import { expandPath } from '../../utils/path.js';
 import { extractPDFPages, getPDFPageCount, readPDF } from '../../utils/pdf.js';

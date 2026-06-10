@@ -1,8 +1,8 @@
 // Clew taste: AI-driven codebase analysis for taste rule generation
 
 import { execSync } from 'child_process';
-import { readFileSync, existsSync } from 'fs';
-import { join, relative, extname } from 'path';
+import { existsSync, readFileSync } from 'fs';
+import { extname, join, relative } from 'path';
 import type { TasteRule, TasteRuleKind } from '../core/TasteTypes.js';
 
 // ── Analyzer Result ───────────────────────────────────────────────────────────
@@ -75,7 +75,10 @@ Rules must be:
         .join('\n'),
       '',
       '# Project Files (samples)',
-      context.projectFiles.slice(0, 10).map(f => `--- ${f.path} ---\n${f.content}`).join('\n'),
+      context.projectFiles
+        .slice(0, 10)
+        .map(f => `--- ${f.path} ---\n${f.content}`)
+        .join('\n'),
       '',
       '# Dependencies',
       JSON.stringify(context.dependencies, null, 2),
@@ -122,7 +125,17 @@ Rules must be:
       if (!Array.isArray(rules)) {
         return { rules: [], summary: 'AI returned invalid format.' };
       }
-      const validKinds = new Set(['style', 'architecture', 'testing', 'naming', 'security', 'performance', 'tooling', 'ui', 'workflow']);
+      const validKinds = new Set([
+        'style',
+        'architecture',
+        'testing',
+        'naming',
+        'security',
+        'performance',
+        'tooling',
+        'ui',
+        'workflow',
+      ]);
       const parsed = rules
         .filter((r: any) => r.text && typeof r.text === 'string')
         .map((r: any) => ({
@@ -155,11 +168,22 @@ Rules must be:
 
   private readConfigFiles(): Record<string, string> {
     const configFiles = [
-      '.editorconfig', '.eslintrc', '.eslintrc.js', '.eslintrc.json', '.eslintrc.yaml',
-      '.prettierrc', '.prettierrc.js', '.prettierrc.json', '.prettierrc.yaml',
-      'tsconfig.json', '.stylelintrc', '.stylelintrc.json',
-      'biome.json', 'biome.jsonc',
-      'rustfmt.toml', '.rubocop.yml',
+      '.editorconfig',
+      '.eslintrc',
+      '.eslintrc.js',
+      '.eslintrc.json',
+      '.eslintrc.yaml',
+      '.prettierrc',
+      '.prettierrc.js',
+      '.prettierrc.json',
+      '.prettierrc.yaml',
+      'tsconfig.json',
+      '.stylelintrc',
+      '.stylelintrc.json',
+      'biome.json',
+      'biome.jsonc',
+      'rustfmt.toml',
+      '.rubocop.yml',
     ];
     const result: Record<string, string> = {};
     for (const file of configFiles) {
@@ -167,7 +191,9 @@ Rules must be:
       if (existsSync(fullPath)) {
         try {
           result[file] = readFileSync(fullPath, 'utf-8').slice(0, 2000);
-        } catch { /* skip unreadable */ }
+        } catch {
+          /* skip unreadable */
+        }
       }
     }
     return result;
@@ -183,8 +209,12 @@ Rules must be:
       if (depth > 4 || samples.length >= 20) return;
       try {
         const entries = execSync(`ls -1 "${dir}" 2>/dev/null || dir "${dir}" 2>nul`, {
-          cwd: this.cwd, encoding: 'utf-8',
-        }).trim().split('\n').filter(Boolean);
+          cwd: this.cwd,
+          encoding: 'utf-8',
+        })
+          .trim()
+          .split('\n')
+          .filter(Boolean);
         for (const entry of entries) {
           const fullPath = join(this.cwd, dir, entry);
           const relPath = relative(this.cwd, fullPath);
@@ -192,22 +222,28 @@ Rules must be:
           visited.add(relPath);
           try {
             const stat = execSync(`stat -f "%N %z" "${fullPath}" 2>/dev/null || echo 0`, {
-              cwd: this.cwd, encoding: 'utf-8',
+              cwd: this.cwd,
+              encoding: 'utf-8',
             });
             if (stat.includes('Is a directory') || stat.startsWith('d')) {
               walkDir(join(dir, entry), depth + 1);
             } else if (sourceExts.has(extname(entry))) {
               const fileSize = Buffer.byteLength(stat) || 0;
-              if (fileSize > 0 && fileSize < 50000) { // Skip empty or large files
+              if (fileSize > 0 && fileSize < 50000) {
+                // Skip empty or large files
                 const content = readFileSync(fullPath, 'utf-8').slice(0, 3000);
                 if (content.trim()) {
                   samples.push({ path: relPath, content });
                 }
               }
             }
-          } catch { /* skip unreadable */ }
+          } catch {
+            /* skip unreadable */
+          }
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     };
 
     for (const dir of ['src', 'app', 'lib', 'components', 'pages', 'api', ''] as const) {

@@ -83,7 +83,10 @@ export async function extractClaimsLLM(
 
   try {
     const response = await ask(prompt);
-    const json = response.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+    const json = response
+      .replace(/^```json\s*/i, '')
+      .replace(/```\s*$/, '')
+      .trim();
     const parsed = JSON.parse(json) as Array<{
       claim?: string;
       type?: string;
@@ -92,23 +95,27 @@ export async function extractClaimsLLM(
 
     if (!Array.isArray(parsed)) return [];
 
-    return parsed.slice(0, 8).map((c, i) =>
-      createClaim(
-        `claim:${sourceId.split(':').pop()}:${(i + 1).toString().padStart(3, '0')}`,
-        c.claim || 'Untitled claim',
-        (['fact', 'design_principle', 'recommendation', 'risk', 'decision'].includes(c.type || '')
-          ? c.type
-          : 'fact') as ResearchClaim['type'],
-        (c.confidence === 'high' || c.confidence === 'low' ? c.confidence : 'medium') === 'high'
-          ? 'supported'
-          : (c.confidence === 'low' ? 'partially_supported' : 'supported'),
-        (['high', 'medium', 'low'].includes(c.confidence || '')
-          ? c.confidence
-          : 'medium') as ResearchClaim['confidence'],
-        [sourceId],
-        `LLM-extracted from source document`,
-      ),
-    );
+    return parsed
+      .slice(0, 8)
+      .map((c, i) =>
+        createClaim(
+          `claim:${sourceId.split(':').pop()}:${(i + 1).toString().padStart(3, '0')}`,
+          c.claim || 'Untitled claim',
+          (['fact', 'design_principle', 'recommendation', 'risk', 'decision'].includes(c.type || '')
+            ? c.type
+            : 'fact') as ResearchClaim['type'],
+          (c.confidence === 'high' || c.confidence === 'low' ? c.confidence : 'medium') === 'high'
+            ? 'supported'
+            : c.confidence === 'low'
+              ? 'partially_supported'
+              : 'supported',
+          (['high', 'medium', 'low'].includes(c.confidence || '')
+            ? c.confidence
+            : 'medium') as ResearchClaim['confidence'],
+          [sourceId],
+          `LLM-extracted from source document`,
+        ),
+      );
   } catch {
     return [];
   }

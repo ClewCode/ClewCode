@@ -4,11 +4,7 @@ import { buildTool } from '../../Tool.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { PR_TOOL_NAME, PR_TOOL_SEARCH_HINT } from './constants.js';
 import { DESCRIPTION, generatePrompt } from './prompt.js';
-import {
-  renderToolResultMessage,
-  renderToolUseMessage,
-  renderToolUseRejectedMessage,
-} from './UI.js';
+import { renderToolResultMessage, renderToolUseMessage, renderToolUseRejectedMessage } from './UI.js';
 
 // --- Schema ---
 
