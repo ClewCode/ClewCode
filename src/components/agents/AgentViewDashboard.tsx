@@ -842,8 +842,6 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
   const cwdLabel = cwd ? (cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? cwd) : process.cwd().split(/[\\/]/).at(-1);
   const divider = '─'.repeat(contentWidth);
   const inputPlaceholder = filterText ? 'filter sessions' : 'describe a task for a new session';
-  const isCompact = contentWidth < 80;
-
   return (
     <Pane color="permission">
       <Box flexDirection="column" width={contentWidth} paddingLeft={1}>
