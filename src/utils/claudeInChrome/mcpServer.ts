@@ -88,7 +88,7 @@ export function createChromeContext(env?: Record<string, string>): ClaudeForChro
     }
   }
   return {
-    serverName: 'Claude in Chrome',
+    serverName: 'Clew in Chrome',
     logger,
     socketPath: getSecureSocketPath(),
     getSocketPaths: getAllSocketPaths,

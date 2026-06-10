@@ -16,6 +16,10 @@
 import { existsSync, readFileSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
+import { getGlobalPeerServer } from '../../peer/PeerServer.js';
+import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import { createCronScheduler } from '../../utils/cronScheduler.js';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
 import { ensureSupervisor, sendRequest } from '../Supervisor/ipcClient.js';
@@ -39,10 +43,6 @@ import {
   watchQueue,
   writeTaskLog,
 } from './taskQueue.js';
-import { createCronScheduler } from '../../utils/cronScheduler.js';
-import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
-import { getGlobalPeerServer } from '../../peer/PeerServer.js';
-import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 
 // ─── Constants ────────────────────────────────────────────────
 
@@ -384,7 +384,7 @@ export async function startLoop(): Promise<void> {
       dir: process.cwd(),
       lockIdentity: `daemon-cron-${process.pid}`,
       isLoading: () => false,
-      onFireTask: async (task) => {
+      onFireTask: async task => {
         console.log(`[Autonomous] Scheduled task ${task.id} fired! Enqueuing to task queue.`);
         try {
           const taskId = await addTask({
@@ -415,7 +415,7 @@ export async function startLoop(): Promise<void> {
     const peerInfo = {
       id: myPeerId,
       hostname: discovery.hostname,
-      ip: '',
+      ip: '127.0.0.1',
       port: 0,
       cwd: process.cwd(),
       version: '',
@@ -424,7 +424,7 @@ export async function startLoop(): Promise<void> {
     };
 
     server.setCallbacks({
-      onTodo: async (todo) => {
+      onTodo: async todo => {
         console.log(`[Autonomous] Received Peer Todo from ${todo.fromName}: ${todo.message}`);
         try {
           const taskId = await addTask({
@@ -438,7 +438,7 @@ export async function startLoop(): Promise<void> {
         } catch (err) {
           console.error(`[Autonomous] Failed to enqueue peer todo:`, err);
         }
-      }
+      },
     });
 
     const port = await server.start(peerInfo);

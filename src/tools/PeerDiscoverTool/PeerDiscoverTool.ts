@@ -1,7 +1,7 @@
 import { z } from 'zod/v4';
-import { buildTool } from '../../Tool.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import { buildTool } from '../../Tool.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { DESCRIPTION, PEER_DISCOVER_TOOL_NAME, PROMPT } from './prompt.js';
 
@@ -11,7 +11,26 @@ const inputSchema = lazySchema(() =>
       .number()
       .optional()
       .default(3)
-      .describe('Time in seconds to wait for responses (default: 3, max: 10)'),
+      .describe(
+        'Per-round scan time in seconds (default: 3, max: 10). When `wait: true`, each re-scan uses this duration.',
+      ),
+    wait: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        'If true, keep discovering every few seconds until `minPeers` peers are found. Use instead of looping.',
+      ),
+    waitTimeout: z
+      .number()
+      .optional()
+      .default(30)
+      .describe('Total max seconds to wait when `wait` is true (default: 30, max: 120).'),
+    minPeers: z
+      .number()
+      .optional()
+      .default(1)
+      .describe('Minimum number of peers to wait for when `wait` is true (default: 1).'),
   }),
 );
 
@@ -32,6 +51,8 @@ const outputSchema = lazySchema(() =>
       )
       .describe('List of discovered workers'),
     count: z.number().describe('Number of workers found'),
+    waited: z.boolean().optional().describe('Whether the tool waited for peers'),
+    timedOut: z.boolean().optional().describe('Whether the wait timed out without enough peers'),
   }),
 );
 
@@ -60,17 +81,56 @@ export const PeerDiscoverTool = buildTool({
     return outputSchema();
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
-    if (!output.workers || output.workers.length === 0) return { tool_use_id: toolUseID, type: 'tool_result', content: 'No peers found.' };
-    return { tool_use_id: toolUseID, type: 'tool_result', content: `✓ ${output.workers.length} peer(s): ` + output.workers.map((w: any) => `${w.hostname}:${w.port}`).join(', ') };
+    if (!output.workers || output.workers.length === 0) {
+      let content = 'No peers found.';
+      if (output.waited && output.timedOut) content = 'Waited but no peers appeared (timeout).';
+      else if (output.waited) content = 'No peers yet (waiting\u2026)';
+      return { tool_use_id: toolUseID, type: 'tool_result', content };
+    }
+    let prefix = `✓ ${output.workers.length} peer(s)`;
+    if (output.waited && !output.timedOut) prefix = `⬇ ${output.workers.length} peer(s) (found)`;
+    else if (output.waited) prefix = `⌛ ${output.workers.length} peer(s) (timed out)`;
+    return {
+      tool_use_id: toolUseID,
+      type: 'tool_result',
+      content: `${prefix}: ` + output.workers.map((w: any) => `${w.hostname}:${w.port}`).join(', '),
+    };
   },
-  async call(input: { timeout?: number }) {
+  async call(input: { timeout?: number; wait?: boolean; waitTimeout?: number; minPeers?: number }) {
     const discovery = getGlobalDiscovery();
     const store = getGlobalPeerStore();
-    const timeout = Math.min(Math.max(1, input.timeout ?? 3), 10) * 1000;
+    const scanTimeout = Math.min(Math.max(1, input.timeout ?? 3), 10) * 1000;
+    const minPeers = input.minPeers ?? 1;
+    const waitTimeoutMs = Math.min(Math.max(1, input.waitTimeout ?? 30), 120) * 1000;
 
-    const peers = await discovery.discoverPeers(timeout);
-    for (const p of peers) store.addPeer(p);
+    // Helper to do one discover round
+    const doDiscover = async (): Promise<number> => {
+      const peers = await discovery.discoverPeers(scanTimeout);
+      for (const p of peers) store.addPeer(p);
+      return store.getPeers().length;
+    };
 
+    let count = await doDiscover();
+    let waited = false;
+    let timedOut = false;
+
+    // If `wait` is true and not enough peers, keep trying
+    if (input.wait && count < minPeers) {
+      waited = true;
+      const deadline = Date.now() + waitTimeoutMs;
+      const retryInterval = 2000;
+
+      while (Date.now() < deadline && count < minPeers) {
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) break;
+        await new Promise(resolve => setTimeout(resolve, Math.min(retryInterval, remaining)));
+        count = await doDiscover();
+      }
+
+      if (count < minPeers) timedOut = true;
+    }
+
+    const peers = store.getPeers();
     return {
       data: {
         workers: peers.map(p => ({
@@ -84,6 +144,8 @@ export const PeerDiscoverTool = buildTool({
           lastSeen: p.lastSeen,
         })),
         count: peers.length,
+        waited,
+        timedOut,
       },
     };
   },

@@ -4,12 +4,12 @@
 
 import chalk from 'chalk';
 import * as React from 'react';
-import { Box, Text, useInput } from '../../ink.js';
-import { Pane } from '../../components/design-system/Pane.js';
 import { Byline } from '../../components/design-system/Byline.js';
 import { KeyboardShortcutHint } from '../../components/design-system/KeyboardShortcutHint.js';
-import { getGlobalPeerStore, type PeerTags } from '../../peer/PeerStore.js';
+import { Pane } from '../../components/design-system/Pane.js';
+import { Box, Text, useInput } from '../../ink.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
+import { getGlobalPeerStore, type PeerTags } from '../../peer/PeerStore.js';
 import type { PeerInfo } from '../../peer/types.js';
 
 type Props = {
@@ -88,10 +88,14 @@ export function PeerList({ isSharing, myPeerId, onRefresh, onConnect, onClose }:
       <Box flexDirection="column">
         {/* Header */}
         <Box marginBottom={1} flexDirection="column">
-          <Text color="remember" bold>Peer Discovery</Text>
+          <Text color="remember" bold>
+            Peer Discovery
+          </Text>
           <Text dimColor>{header}</Text>
           {peers.length === 0 && (
-            <Text dimColor italic>No connected peers. Use /peer join to connect to one, or /peer discover to find available peers.</Text>
+            <Text dimColor italic>
+              No connected peers. Use /peer join to connect to one, or /peer discover to find available peers.
+            </Text>
           )}
         </Box>
 
@@ -100,7 +104,10 @@ export function PeerList({ isSharing, myPeerId, onRefresh, onConnect, onClose }:
           <>
             {/* Column headers */}
             <Box flexDirection="row" paddingLeft={1} marginBottom={1}>
-              <Text dimColor underline>  Port  Name              Role       Shell         Directory</Text>
+              <Text dimColor underline>
+                {' '}
+                Port Name Role Shell Directory
+              </Text>
             </Box>
 
             {/* Peer rows */}

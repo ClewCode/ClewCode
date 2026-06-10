@@ -30,13 +30,7 @@ const INIT_STAGES = [
   { progress: 90, label: 'Finalizing...' },
 ];
 
-function TasteInitProgress({
-  runtime,
-  onDone,
-}: {
-  runtime: TasteRuntime;
-  onDone: () => void;
-}): React.ReactNode {
+function TasteInitProgress({ runtime, onDone }: { runtime: TasteRuntime; onDone: () => void }): React.ReactNode {
   const [stage, setStage] = useState(0);
 
   useEffect(() => {
@@ -58,7 +52,9 @@ function TasteInitProgress({
     };
 
     void run();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [runtime, onDone]);
 
   const current = INIT_STAGES[Math.min(stage, INIT_STAGES.length - 1)];
@@ -278,7 +274,10 @@ function TasteMenu({ onDone }: { onDone: LocalJSXCommandOnDone }) {
             onDone={() => {
               const count = runtime.getRules().length;
               setInitializing(false);
-              onDone(`Taste initialized \u2014 ${count} rule${count === 1 ? '' : 's'} found.\nRun /taste again to manage preferences.`, { display: 'system' });
+              onDone(
+                `Taste initialized \u2014 ${count} rule${count === 1 ? '' : 's'} found.\nRun /taste again to manage preferences.`,
+                { display: 'system' },
+              );
             }}
           />
         </Box>
@@ -320,13 +319,7 @@ function TasteMenu({ onDone }: { onDone: LocalJSXCommandOnDone }) {
   );
 }
 
-function InitFlow({
-  runtime,
-  onDone,
-}: {
-  runtime: TasteRuntime;
-  onDone: LocalJSXCommandOnDone;
-}): React.ReactNode {
+function InitFlow({ runtime, onDone }: { runtime: TasteRuntime; onDone: LocalJSXCommandOnDone }): React.ReactNode {
   const [stage, setStage] = useState<'progress' | 'analyzing' | 'done'>('progress');
 
   useEffect(() => {
@@ -367,9 +360,7 @@ function InitFlow({
               const lines = [
                 `Taste initialized \u2014 ${added} rule${added === 1 ? '' : 's'} added from codebase analysis.`,
                 '',
-                ...analysis.rules.map(
-                  r => `  [${r.kind}] ${r.text} (confidence: ${(r.confidence * 100).toFixed(0)}%)`,
-                ),
+                ...analysis.rules.map(r => `  [${r.kind}] ${r.text} (confidence: ${(r.confidence * 100).toFixed(0)}%)`),
               ];
               result = lines.join('\n');
             } else {
@@ -395,12 +386,17 @@ function InitFlow({
     };
 
     void run();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [runtime, onDone]);
 
-  const s = stage === 'done'
-    ? INIT_STAGES[INIT_STAGES.length - 1]
-    : INIT_STAGES[Math.min(Math.floor(INIT_STAGES.length * (stage === 'analyzing' ? 0.6 : 0.3)), INIT_STAGES.length - 1)];
+  const s =
+    stage === 'done'
+      ? INIT_STAGES[INIT_STAGES.length - 1]
+      : INIT_STAGES[
+          Math.min(Math.floor(INIT_STAGES.length * (stage === 'analyzing' ? 0.6 : 0.3)), INIT_STAGES.length - 1)
+        ];
 
   const barWidth = 20;
   const filled = Math.round((s.progress / 100) * barWidth);

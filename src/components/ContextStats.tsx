@@ -232,7 +232,9 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
 
   // ── Build flat detail rows for scrolling ──────────────────
   const detailRows = useMemo(() => {
-    const rows: Array<{ type: 'section' | 'item' } & ({ title: string; hint?: string } | { label: string; value: string })> = [];
+    const rows: Array<
+      { type: 'section' | 'item' } & ({ title: string; hint?: string } | { label: string; value: string })
+    > = [];
     for (const sec of detailSections) {
       rows.push({ type: 'section', title: sec.title, hint: sec.hint } as any);
       for (const item of sec.items) {
@@ -260,7 +262,9 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
       <Box flexDirection="column" gap={0}>
         {/* Title */}
         <Box paddingLeft={2} marginBottom={0}>
-          <Text bold color="claude">└ Context Usage</Text>
+          <Text bold color="claude">
+            └ Context Usage
+          </Text>
         </Box>
 
         {/* Grid rows */}
@@ -271,7 +275,10 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
               <Box key={i} flexDirection="row" paddingLeft={2} gap={2}>
                 <Text>{line}</Text>
                 {rightLabel ? (
-                  <Text dimColor={!rightLabel.color} color={rightLabel.color ? (DOT_COLORS[rightLabel.color] ?? rightLabel.color) : undefined}>
+                  <Text
+                    dimColor={!rightLabel.color}
+                    color={rightLabel.color ? (DOT_COLORS[rightLabel.color] ?? rightLabel.color) : undefined}
+                  >
                     {rightLabel.text}
                   </Text>
                 ) : null}
@@ -297,7 +304,10 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
               const item = row as any;
               return (
                 <Box key={`i-${i}`} flexDirection="row">
-                  <Text dimColor> └ {item.label}: {item.value}</Text>
+                  <Text dimColor>
+                    {' '}
+                    └ {item.label}: {item.value}
+                  </Text>
                 </Box>
               );
             })}
@@ -318,7 +328,9 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
           <Box flexDirection="row" justifyContent="space-between" width="100%">
             <Text dimColor>
               Esc/q close · ↑↓/jk scroll
-              {detailRows.length > VISIBLE ? ` · ${scrollOffset + 1}–${Math.min(scrollOffset + VISIBLE, detailRows.length)} of ${detailRows.length}` : ''}
+              {detailRows.length > VISIBLE
+                ? ` · ${scrollOffset + 1}–${Math.min(scrollOffset + VISIBLE, detailRows.length)} of ${detailRows.length}`
+                : ''}
             </Text>
           </Box>
         </Box>

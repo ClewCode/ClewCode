@@ -8,11 +8,9 @@ import { getKairosActive, getUserMsgOptIn } from '../bootstrap/state.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
 import { isEnvTruthy } from '../utils/envUtils.js';
 import { count } from '../utils/array.js';
-import sample from 'lodash-es/sample.js';
 import { formatDuration, formatNumber } from '../utils/format.js';
 import type { Theme } from 'src/utils/theme.js';
 import { activityManager } from '../utils/activityManager.js';
-import { getSpinnerVerbs } from '../constants/spinnerVerbs.js';
 import { MessageResponse } from './MessageResponse.js';
 import { TaskListV2 } from './TaskListV2.js';
 import { useTasksV2 } from '../hooks/useTasksV2.js';
@@ -169,16 +167,14 @@ function SpinnerWithVerbInner({
   const currentTodo = tasksV2?.find(task => task.status !== 'pending' && task.status !== 'completed');
   const nextTask = findNextPendingTask(tasksV2);
 
-  // Use useState with initializer to pick a random verb once on mount
-  const [randomVerb] = useState(() => sample(getSpinnerVerbs()));
+  // Fallback verb based on actual mode instead of random fun verbs
+  const modeVerb = mode === 'thinking' ? 'Thinking' : mode === 'loading' ? 'Loading' : 'Processing';
 
   // Leader's own verb (always the leader's, regardless of who is foregrounded)
-  const leaderVerb = overrideMessage ?? currentTodo?.activeForm ?? currentTodo?.subject ?? randomVerb;
+  const leaderVerb = overrideMessage ?? currentTodo?.activeForm ?? currentTodo?.subject ?? modeVerb;
 
   const effectiveVerb =
-    foregroundedTeammate && !foregroundedTeammate.isIdle
-      ? (foregroundedTeammate.spinnerVerb ?? randomVerb)
-      : leaderVerb;
+    foregroundedTeammate && !foregroundedTeammate.isIdle ? (foregroundedTeammate.spinnerVerb ?? modeVerb) : leaderVerb;
   const message = `${effectiveVerb}…`;
 
   // Track CLI activity when spinner is active
@@ -401,8 +397,8 @@ type BriefSpinnerProps = {
 function BriefSpinner({ mode, overrideMessage }: BriefSpinnerProps): React.ReactNode {
   const settings = useSettings();
   const reducedMotion = settings.prefersReducedMotion ?? false;
-  const [randomVerb] = useState(() => sample(getSpinnerVerbs()) ?? 'Working');
-  const verb = overrideMessage ?? randomVerb;
+  const modeVerb = mode === 'thinking' ? 'Thinking' : mode === 'loading' ? 'Loading' : 'Processing';
+  const verb = overrideMessage ?? modeVerb;
   const connStatus = useAppState(s => s.remoteConnectionStatus);
 
   // Track CLI activity so OS/IDE "busy" indicators fire in brief mode too

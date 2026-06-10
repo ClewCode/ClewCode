@@ -27,7 +27,9 @@ export type ProviderId =
   | 'zhipu'
   | 'huggingface'
   | 'poe'
-  | 'digitalocean';
+  | 'digitalocean'
+  | 'clew-gateway'
+  | 'custom';
 
 export interface ProviderInitOptions {
   apiKey?: string;

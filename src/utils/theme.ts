@@ -155,8 +155,8 @@ const lightTheme: Theme = {
   clawd_body: 'rgb(135,0,255)',
   clawd_background: 'rgb(0,0,0)',
   clawd_eye: 'rgb(255,0,0)',
-  userMessageBackground: 'rgb(240, 240, 240)', // Slightly darker grey for optimal contrast
-  userMessageBackgroundHover: 'rgb(252, 252, 252)', // ≥250 to quantize distinct from base at 256-color level
+  userMessageBackground: 'rgb(245, 240, 252)', // Light purple-tinted
+  userMessageBackgroundHover: 'rgb(252, 250, 255)',
   messageActionsBackground: 'rgb(232, 236, 244)', // cool gray — darker than userMsg 240 (visible on white), slight blue toward `suggestion`
   selectionBg: 'rgb(180, 213, 255)', // classic light-mode selection blue (macOS/VS Code-ish); dark fgs stay readable
   bashMessageBackgroundColor: 'rgb(250, 245, 250)',
@@ -402,8 +402,8 @@ const lightDaltonizedTheme: Theme = {
   clawd_body: 'rgb(178,102,255)',
   clawd_background: 'rgb(0,0,0)',
   clawd_eye: 'rgb(255,0,0)',
-  userMessageBackground: 'rgb(220, 220, 220)', // Slightly darker grey for optimal contrast
-  userMessageBackgroundHover: 'rgb(232, 232, 232)', // ≥230 to quantize distinct from base at 256-color level
+  userMessageBackground: 'rgb(225, 218, 240)', // Light purple-tinted
+  userMessageBackgroundHover: 'rgb(238, 232, 248)', // ≥230 to quantize distinct from base at 256-color level
   messageActionsBackground: 'rgb(210, 216, 226)', // cool gray — darker than userMsg 220, slight blue
   selectionBg: 'rgb(180, 213, 255)', // light selection blue; daltonized fgs are yellows/blues, both readable on light blue
   bashMessageBackgroundColor: 'rgb(250, 245, 250)',
@@ -447,7 +447,7 @@ const darkTheme: Theme = {
   planMode: 'rgb(72,150,140)', // Muted sage green
   ide: 'rgb(71,130,200)', // Muted blue
   promptBorder: 'rgb(136,136,136)', // Medium gray
-  promptBorderShimmer: 'rgb(166,166,166)', // Lighter gray for shimmer
+  promptBorderShimmer: 'rgb(166,166,166)', // Lighter gray for shimmer effect
   text: 'rgb(255,255,255)', // White
   inverseText: 'rgb(0,0,0)', // Black
   inactive: 'rgb(153,153,153)', // Light gray
@@ -484,8 +484,8 @@ const darkTheme: Theme = {
   clawd_body: 'rgb(175,135,255)',
   clawd_background: 'rgb(0,0,0)',
   clawd_eye: 'rgb(255,0,0)',
-  userMessageBackground: 'rgb(55, 55, 55)', // Lighter grey for better visual contrast
-  userMessageBackgroundHover: 'rgb(70, 70, 70)',
+  userMessageBackground: 'rgb(55, 45, 72)', // Dark purple-tinted
+  userMessageBackgroundHover: 'rgb(70, 60, 90)',
   messageActionsBackground: 'rgb(44, 50, 62)', // cool gray, slight blue
   selectionBg: 'rgb(38, 79, 120)', // classic dark-mode selection blue (VS Code dark default); light fgs stay readable
   bashMessageBackgroundColor: 'rgb(65, 60, 65)',
@@ -566,8 +566,8 @@ const darkDaltonizedTheme: Theme = {
   clawd_body: 'rgb(178,102,255)',
   clawd_background: 'rgb(0,0,0)',
   clawd_eye: 'rgb(255,0,0)',
-  userMessageBackground: 'rgb(55, 55, 55)', // Lighter grey for better visual contrast
-  userMessageBackgroundHover: 'rgb(70, 70, 70)',
+  userMessageBackground: 'rgb(55, 45, 72)', // Dark purple-tinted
+  userMessageBackgroundHover: 'rgb(70, 60, 90)',
   messageActionsBackground: 'rgb(44, 50, 62)', // cool gray, slight blue
   selectionBg: 'rgb(38, 79, 120)', // classic dark-mode selection blue (VS Code dark default); light fgs stay readable
   bashMessageBackgroundColor: 'rgb(65, 60, 65)',

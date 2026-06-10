@@ -10,7 +10,7 @@ export const DESCRIPTION =
 
 export const PROMPT =
   'Executes a shell command on a remote worker peer via its HTTP API. ' +
-  'The worker\'s PeerServer runs the command with the default shell (bash on Linux/macOS, ' +
+  "The worker's PeerServer runs the command with the default shell (bash on Linux/macOS, " +
   'cmd/powershell on Windows) and returns stdout, stderr, and exit code. ' +
   'Only works for workers that are currently sharing on the same LAN. ' +
   'Use peer_discover to find available workers first.';

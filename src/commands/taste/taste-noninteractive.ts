@@ -97,9 +97,9 @@ export async function handleNonInteractive(args: string, runtime: TasteRuntime):
       if (sub === 'accept') {
         const id = parts[2];
         if (!id) return 'Usage: /taste suggest accept <suggestion-id>';
-        const rule = runtime.getAutoLearn().acceptSuggestion(id, (text, kind, source, tags) =>
-          runtime.addRule(text, kind, source, tags),
-        );
+        const rule = runtime
+          .getAutoLearn()
+          .acceptSuggestion(id, (text, kind, source, tags) => runtime.addRule(text, kind, source, tags));
         if (!rule) return `Suggestion not found: ${id}`;
         await runtime.saveProfile();
         return `Accepted suggestion: "${rule.text}" (confidence: ${(rule.confidence * 100).toFixed(0)}%)`;

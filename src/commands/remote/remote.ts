@@ -82,7 +82,7 @@ async function handleListen(
       { host, port, authToken: raw, relayUrl, maxSessions: 8, idleTimeoutMs: 1_800_000 },
       {
         onMessage: (sessionId, message) => void bridge.handleMessage(sessionId, message),
-        onSessionStart: (sessionId) => {
+        onSessionStart: sessionId => {
           bridge.setSend((data: string) => server.sendMessage(sessionId, data));
         },
       },
@@ -100,7 +100,9 @@ async function handleListen(
               const msg = typeof parsed.payload === 'string' ? JSON.parse(parsed.payload) : parsed.payload;
               void bridge.handleMessage('relay', msg);
             }
-          } catch { /* ignore non-JSON */ }
+          } catch {
+            /* ignore non-JSON */
+          }
         },
         onConnected: () => {
           bridge.setSend((data: string) => relay.send(data));
@@ -166,7 +168,7 @@ async function handleConnect(tokens: string[]): Promise<LocalCommandResult> {
         onConnected: () => {
           (globalThis as any).__remoteCmdMode = true;
         },
-        onResult: (result) => {
+        onResult: result => {
           if (result.output) {
             process.stdout.write(`\n${result.output}\n\n`);
           }
@@ -174,7 +176,7 @@ async function handleConnect(tokens: string[]): Promise<LocalCommandResult> {
             process.stdout.write(`\n${result.error}\n\n`);
           }
         },
-        onError: (error) => {
+        onError: error => {
           process.stdout.write(`\nError: ${error}\n`);
         },
       });

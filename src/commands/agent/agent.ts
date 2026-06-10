@@ -7,6 +7,7 @@ import { type OptionWithDescription, Select } from '../../components/CustomSelec
 import { Dialog } from '../../components/design-system/Dialog.js';
 import { Box, Text } from '../../ink.js';
 import type { ToolUseContext } from '../../Tool.js';
+import { spawnTeammate } from '../../tools/shared/spawnMultiAgent.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
 
 function parseArgs(args: string): string[] {
@@ -52,6 +53,75 @@ export async function call(
 
   if (!subcommand) {
     return React.createElement(AgentCommandMenu, { onDone, workspaceRoot });
+  }
+
+  // /agent run → spawn real subagent via AgentTool system
+  if (subcommand === 'run') {
+    const task = tokens.slice(1).join(' ');
+    if (!task) {
+      onDone('Error: Please specify a task. Example: /agent run "Find bugs in auth module"', { display: 'system' });
+      return null;
+    }
+
+    try {
+      // Ensure a team exists
+      const appState = _context.getAppState();
+      let teamName = appState.teamContext?.teamName;
+      if (!teamName) {
+        const { mkdir, writeFile } = await import('node:fs/promises');
+        const { join } = await import('node:path');
+        const { homedir } = await import('node:os');
+        teamName = 'agent-cli';
+        const teamDir = join(homedir(), '.claude', 'teams', teamName);
+        await mkdir(teamDir, { recursive: true });
+        const lid = `team-lead@${teamName}`;
+        await writeFile(
+          join(teamDir, 'config.json'),
+          JSON.stringify(
+            {
+              name: teamName,
+              createdAt: Date.now(),
+              leadAgentId: lid,
+              members: [
+                {
+                  agentId: lid,
+                  name: 'team-lead',
+                  joinedAt: Date.now(),
+                  tmuxPaneId: '',
+                  cwd: process.cwd(),
+                  subscriptions: [],
+                },
+              ],
+            },
+            null,
+            2,
+          ),
+        );
+      }
+
+      const name =
+        task
+          .slice(0, 30)
+          .replace(/[^a-zA-Z0-9]/g, '-')
+          .toLowerCase() || 'agent';
+      const userModel = appState.mainLoopModelForSession || appState.mainLoopModel;
+      const result = await spawnTeammate(
+        {
+          name,
+          prompt: task,
+          agent_type: 'general-purpose',
+          description: task.slice(0, 100),
+          team_name: teamName,
+          model: userModel,
+        },
+        _context,
+      );
+      const { agent_id, model } = result.data;
+      onDone(`Subagent spawned: ${agent_id}\nModel: ${model || 'default'}\nTask: ${task}`, { display: 'system' });
+    } catch (err) {
+      onDone(`Error spawning agent: ${(err as Error).message}`, { display: 'system' });
+    }
+    return null;
   }
 
   await executeAgentCommand(onDone, workspaceRoot, args);

@@ -408,7 +408,7 @@ function OAuthStatusMessage({
           <Text bold>
             {startingMessage
               ? startingMessage
-              : `Clew Code can be used with your Claude subscription or billed based on API usage through your Console account.`}
+              : `Clew Code can be used with your Clew subscription or billed based on API usage through your Console account.`}
           </Text>
 
           <Text>Select login method:</Text>
@@ -419,7 +419,7 @@ function OAuthStatusMessage({
                 {
                   label: (
                     <Text>
-                      Claude account with subscription · <Text dimColor>Pro, Max, Team, or Enterprise</Text>
+                      Clew account with subscription · <Text dimColor>Pro, Max, Team, or Enterprise</Text>
                       {'external' === 'ant' && (
                         <Text>
                           {'\n'}

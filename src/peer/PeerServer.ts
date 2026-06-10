@@ -22,6 +22,14 @@ export type PeerServerCallbacks = {
   onChatDisconnected?: (peerName: string) => void;
 };
 
+export type PeerEventType = 'new_message' | 'new_todo' | 'peer_online' | 'peer_offline';
+
+export type PeerEvent = {
+  type: PeerEventType;
+  data: any;
+  timestamp: number;
+};
+
 export class PeerServer {
   private server: ReturnType<typeof createServer> | null = null;
   private wsClients = new Set<WebSocket>();
@@ -32,6 +40,8 @@ export class PeerServer {
   private todos: PeerTodo[] = [];
   /** Extra metadata broadcast via /peer-info */
   extraInfo: Record<string, string> = {};
+  /** SSE clients — response objects kept alive for real-time events */
+  private sseClients = new Set<ServerResponse>();
 
   constructor(callbacks?: PeerServerCallbacks) {
     this.callbacks = callbacks ?? {};
@@ -39,6 +49,15 @@ export class PeerServer {
 
   setCallbacks(callbacks: PeerServerCallbacks): void {
     this.callbacks = { ...this.callbacks, ...callbacks };
+  }
+
+  /**
+   * Update the stored peer info (e.g. after a name change via setLocalName).
+   */
+  updatePeerInfo(updates: Partial<PeerInfo>): void {
+    if (this.currentPeerInfo) {
+      this.currentPeerInfo = { ...this.currentPeerInfo, ...updates };
+    }
   }
 
   /**
@@ -121,6 +140,64 @@ export class PeerServer {
     return true;
   }
 
+  // ── SSE (Server-Sent Events) ──────────────────────────────
+
+  /**
+   * Send an event to all connected SSE clients.
+   */
+  private broadcastSSE(event: PeerEvent): void {
+    const data = `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+    for (const client of this.sseClients) {
+      try {
+        client.write(data);
+      } catch {
+        this.sseClients.delete(client);
+      }
+    }
+  }
+
+  /**
+   * Handle an SSE subscription request.
+   * Keeps the connection open and sends events as they occur.
+   */
+  private handleSSE(req: IncomingMessage, res: ServerResponse): void {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    });
+
+    // Send initial connection event
+    res.write(`event: connected\ndata: {"status":"ok"}\n\n`);
+
+    this.sseClients.add(res);
+
+    // Keep-alive ping every 30s to prevent proxy timeouts
+    const keepAlive = setInterval(() => {
+      try {
+        res.write(`:keepalive\n\n`);
+      } catch {
+        clearInterval(keepAlive);
+        this.sseClients.delete(res);
+      }
+    }, 30_000);
+
+    // Clean up on disconnect
+    req.on('close', () => {
+      clearInterval(keepAlive);
+      this.sseClients.delete(res);
+    });
+  }
+
+  /**
+   * Broadcast an event to all SSE subscribers.
+   * Can be called externally to notify about peer store changes.
+   */
+  broadcastEvent(type: PeerEventType, data: any): void {
+    this.broadcastSSE({ type, data, timestamp: Date.now() });
+  }
+
   /**
    * Handle HTTP requests.
    */
@@ -139,6 +216,11 @@ export class PeerServer {
             break;
           }
 
+          case '/peer-events': {
+            this.handleSSE(req, res);
+            break;
+          }
+
           case '/peer-msg': {
             const data = JSON.parse(Buffer.concat(body).toString());
             const msg: PeerChatMessage = {
@@ -148,8 +230,14 @@ export class PeerServer {
               text: data.text ?? '',
               color: peerColorFromId(data.from ?? ''),
               timestamp: Date.now(),
+              chunkGroup: data.chunkGroup,
+              chunkIndex: data.chunkIndex !== undefined ? Number(data.chunkIndex) : undefined,
+              chunkTotal: data.chunkTotal !== undefined ? Number(data.chunkTotal) : undefined,
+              senderRole: data.senderRole,
+              senderPort: data.senderPort !== undefined ? Number(data.senderPort) : undefined,
             };
             this.callbacks.onMessage?.(msg);
+            this.broadcastSSE({ type: 'new_message', data: msg, timestamp: Date.now() });
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true, id: msg.id }));
             break;
@@ -167,6 +255,7 @@ export class PeerServer {
             };
             this.todos.push(todo);
             this.callbacks.onTodo?.(todo);
+            this.broadcastSSE({ type: 'new_todo', data: todo, timestamp: Date.now() });
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true, id: todo.id }));
             break;

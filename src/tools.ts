@@ -95,6 +95,7 @@ import { PeerPingTool } from './tools/PeerPingTool/PeerPingTool.js';
 import { PeerDisconnectTool } from './tools/PeerDisconnectTool/PeerDisconnectTool.js';
 import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.js';
 import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
+import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { TasteLearnTool } from './tools/TasteLearnTool/TasteLearnTool.js';
 import { TasteForgetTool } from './tools/TasteForgetTool/TasteForgetTool.js';
 import { TasteProfileTool } from './tools/TasteProfileTool/TasteProfileTool.js';
@@ -236,6 +237,7 @@ export function getAllBaseTools(): Tools {
     PeerDisconnectTool,
     PeerBroadcastTool,
     PeerListMessagesTool,
+    PeerHelpTool,
     TasteProfileTool,
     TasteLearnTool,
     TasteForgetTool,

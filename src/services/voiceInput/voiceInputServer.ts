@@ -42,7 +42,9 @@ export async function captureVoiceInput(lang = 'en-US'): Promise<VoiceInputResul
       // API endpoint: receive transcript
       if (pathname === '/result' && req.method === 'POST') {
         let body = '';
-        req.on('data', chunk => { body += chunk; });
+        req.on('data', chunk => {
+          body += chunk;
+        });
         req.on('end', () => {
           try {
             const data = JSON.parse(body);
@@ -120,7 +122,7 @@ export async function captureVoiceInput(lang = 'en-US'): Promise<VoiceInputResul
 
         try {
           const res = await fetch(`${url}/check`);
-          const data = await res.json() as { text: string; done: boolean };
+          const data = (await res.json()) as { text: string; done: boolean };
           if (data.done && data.text) {
             transcript = data.text;
           }

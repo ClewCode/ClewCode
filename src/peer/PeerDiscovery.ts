@@ -165,6 +165,14 @@ export class PeerDiscovery {
     } catch {
       /* best-effort */
     }
+    // Also update PeerServer's stored info so /peer-info returns the new name
+    import('./PeerServer.js')
+      .then(({ getGlobalPeerServer }) => {
+        getGlobalPeerServer().updatePeerInfo({ hostname: name, id: this.localId });
+      })
+      .catch(() => {
+        /* peer server not yet started */
+      });
   }
 
   // ── Shell detection ──────────────────────────────────────

@@ -13,7 +13,7 @@ export function MethodStep(): ReactNode {
 
   const methodOptions = [
     {
-      label: 'Generate with Claude (recommended)',
+      label: 'Generate with Clew (recommended)',
       value: 'generate',
     },
     {

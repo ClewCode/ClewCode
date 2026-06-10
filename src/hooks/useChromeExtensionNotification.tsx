@@ -25,7 +25,7 @@ async function _temp() {
   if (process.env.ENABLE_CHROME_MCP !== '1' && !isClaudeAISubscriber()) {
     return {
       key: 'chrome-requires-subscription',
-      jsx: <Text color="error">Claude in Chrome requires a claude.ai subscription</Text>,
+      jsx: <Text color="error">Clew in Chrome requires a claude.ai subscription</Text>,
       priority: 'immediate',
       timeoutMs: 5000,
     };
@@ -42,7 +42,7 @@ async function _temp() {
   if (chromeFlag === undefined) {
     return {
       key: 'claude-in-chrome-default-enabled',
-      text: 'Claude in Chrome enabled \xB7 /chrome',
+      text: 'Clew in Chrome enabled \xB7 /chrome',
       priority: 'low',
     };
   }

@@ -275,7 +275,7 @@ export function getClaudeInChromeMCPToolOverrides(toolName: string): {
     userFacingName(_input?: Record<string, unknown>) {
       // Trim the _mcp postfix that show up in some of the tool names
       const displayName = toolName.replace(/_mcp$/, '');
-      return `Claude in Chrome[${displayName}]`;
+      return `Clew in Chrome[${displayName}]`;
     },
     renderToolUseMessage(
       input: Record<string, unknown>,

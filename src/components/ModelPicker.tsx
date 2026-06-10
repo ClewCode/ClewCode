@@ -118,7 +118,7 @@ export function ModelPicker(t0) {
   const selectableProviderIds = useMemo(() => getSelectableProviderIds(), []);
   const [activeProviderId, setActiveProviderId] = useState(() => {
     const current = ProviderManager.getInstance().getActiveProviderName();
-    return selectableProviderIds.includes(current as any) ? current : selectableProviderIds[0] ?? current;
+    return selectableProviderIds.includes(current as any) ? current : (selectableProviderIds[0] ?? current);
   });
 
   const providerInfo = useMemo(() => {
@@ -588,7 +588,7 @@ export function ModelPicker(t0) {
   }
   return <Pane color="permission">{content}</Pane>;
 }
-function _temp4() { }
+function _temp4() {}
 function _temp3(opt_0) {
   return {
     ...opt_0,
@@ -685,9 +685,10 @@ function getEffectiveModelOptions(
 
   // Keep recents, but only show recents that belong to the active provider list.
   const providerModelIds = new Set(providerModels.map(model => model.value));
-  const recentModels = mergeRecentModels([initial, providerManager.getModelForProvider(currentProviderId as any)]).filter(
-    (id): id is string => Boolean(id && providerModelIds.has(id)),
-  );
+  const recentModels = mergeRecentModels([
+    initial,
+    providerManager.getModelForProvider(currentProviderId as any),
+  ]).filter((id): id is string => Boolean(id && providerModelIds.has(id)));
 
   const options: ModelOption[] = [];
 
@@ -752,7 +753,7 @@ function toProviderModelOption(model: ProviderModelInfo) {
   // Free
   if (cap.free) parts.push('free');
 
-  const description = parts.length > 0 ? parts.join(' · ') : (model.tags?.slice(0, 3).join(' · ') || model.id);
+  const description = parts.length > 0 ? parts.join(' · ') : model.tags?.slice(0, 3).join(' · ') || model.id;
 
   return {
     value: model.id,
@@ -785,7 +786,6 @@ type ModelOption = {
   type?: 'text' | 'section';
   disabled?: boolean;
 };
-
 
 function countRealModelOptions(options: ModelSelectOption[]): number {
   return options.filter(option => isRealModelOption(option)).length;

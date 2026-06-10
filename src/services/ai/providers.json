@@ -2205,5 +2205,113 @@
     ],
     "defaultModel": "anthropic/claude-sonnet-4.6",
     "defaultModelVerified": true
+  },
+  "clew-gateway": {
+    "providerId": "clew-gateway",
+    "label": "Clew Gateway",
+    "envKey": "CLEW_GATEWAY_KEY",
+    "defaultBaseUrl": "http://localhost:8787/v1",
+    "defaultModel": "clew-code",
+    "defaultModelVerified": true,
+    "note": "Clew Gateway — OpenAI-compatible model router. Set CLEW_GATEWAY_URL and CLEW_GATEWAY_KEY. One key to rule them all.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": true,
+      "jsonSchema": true,
+      "reasoningEffort": true,
+      "contextLength": "1M"
+    },
+    "models": [
+      {
+        "id": "clew-code",
+        "label": "Clew Code (gateway)",
+        "tags": ["tools", "vision", "recommended", "verified", "gateway"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "clew-fast",
+        "label": "Clew Fast (gateway)",
+        "tags": ["tools", "fast", "gateway"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 128000,
+          "maxOutput": 16000,
+          "reasoning": false,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "clew-cheap",
+        "label": "Clew Cheap (gateway)",
+        "tags": ["tools", "cheap", "gateway"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 128000,
+          "maxOutput": 16000,
+          "reasoning": false,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "clew-reasoning",
+        "label": "Clew Reasoning (gateway)",
+        "tags": ["tools", "vision", "reasoning", "gateway"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true
+        }
+      },
+      {
+        "id": "clew-local",
+        "label": "Clew Local (gateway)",
+        "tags": ["tools", "local", "free", "gateway"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 32768,
+          "maxOutput": 8192,
+          "reasoning": false,
+          "supportsSystemPrompt": true
+        }
+      }
+    ]
+  },
+  "custom": {
+    "providerId": "custom",
+    "label": "Custom (OpenAI-Compatible)",
+    "envKey": "CUSTOM_API_KEY",
+    "defaultBaseUrl": "",
+    "defaultModel": "",
+    "note": "Custom OpenAI-compatible endpoint. Set base URL, API key, and model in /provider.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": false,
+      "jsonSchema": false,
+      "reasoningEffort": false,
+      "contextLength": "varies"
+    },
+    "models": []
   }
 }

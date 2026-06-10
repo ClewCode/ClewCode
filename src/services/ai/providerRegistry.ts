@@ -1,4 +1,5 @@
 import { AnthropicProvider } from './providers/AnthropicProvider.js';
+import { ClewGatewayProvider } from './providers/ClewGatewayProvider.js';
 import { CohereProvider } from './providers/CohereProvider.js';
 import { CopilotProvider } from './providers/CopilotProvider.js';
 import { GoogleProvider } from './providers/GoogleProvider.js';
@@ -81,6 +82,10 @@ function createProvider(key: string, entry: any): ProviderInterface {
       return new KiloCodeProvider();
     case 'ollama':
       return new OllamaProvider();
+    case 'clew-gateway':
+      return new ClewGatewayProvider();
+    case 'custom':
+      return new OpenAICompatibleProvider(entry.providerId, entry.label, entry.envKey, entry.defaultBaseUrl);
     default:
       if (entry.envKey && entry.defaultBaseUrl) {
         return new OpenAICompatibleProvider(entry.providerId, entry.label, entry.envKey, entry.defaultBaseUrl);
@@ -153,11 +158,13 @@ const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
   huggingface: 'automatic',
   poe: 'automatic',
   digitalocean: 'automatic',
+  'clew-gateway': 'automatic',
   nvidia: 'automatic',
   cohere: 'automatic',
   google: 'none',
   kilocode: 'none',
   ollama: 'none',
+  custom: 'automatic',
 };
 
 export function getPromptCachingSupport(providerId: ProviderId): PromptCachingSupport {

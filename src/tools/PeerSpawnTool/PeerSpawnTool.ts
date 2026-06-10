@@ -1,4 +1,7 @@
-import { spawn as childSpawn } from 'node:child_process';
+import { exec as childExec, spawn as childSpawn } from 'node:child_process';
+import { readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { z } from 'zod/v4';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
@@ -6,6 +9,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { getMainLoopModel } from '../../utils/model/model.js';
 import { DESCRIPTION, PEER_SPAWN_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -71,46 +75,46 @@ export const PeerSpawnTool = buildTool({
     const targetName = input.name || `peer-${randomId}`;
 
     try {
-      const mainScript = process.argv[1]!;
-      const args = [
-        ...(process.argv[1].endsWith('.tsx') || process.argv[1].endsWith('.ts') ? ['run', mainScript] : [mainScript]),
-      ];
-
-      args.push('--peer-name', targetName);
-
-      if (input.prompt) {
-        args.push('--system-prompt', input.prompt);
-      }
-      if (input.model) {
-        args.push('--model', input.model);
-      }
-      if (input.role) {
-        args.push('--agent', input.role);
-      }
-      args.push('--peer-share');
-
-      const execPath = process.execPath;
-      const fullCommand = `"${execPath}" ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(' ')}`;
+      const cwd = process.cwd();
       const platform = process.platform;
 
+      // Default peer behavior: when receiving a message, reply back to sender
+      const DEFAULT_PEER_PROMPT =
+        'You are a spawned peer agent. ' +
+        'When you receive a message from another peer via peer_send_message, ' +
+        'you MUST reply back using peer_send_message with waitResponse: true. ' +
+        'Use the sender\'s fromName or hostname as the "peer" parameter when replying.\n\n' +
+        'Prefer MCP tools over built-in tools when available. ' +
+        'MCP tools (tinyfish, firecrawl) return richer results with full page content, ' +
+        'while built-in tools may fall back to limited providers.';
+
+      const effectivePrompt = input.prompt ? `${input.prompt}\n\n${DEFAULT_PEER_PROMPT}` : DEFAULT_PEER_PROMPT;
+
+      // Use same model as the main session
+      const spawnModel = input.model || getMainLoopModel();
+      let cmd = `cd "${cwd}" && bun run start --peer-share --peer-name "${targetName}" --name "${targetName}" --model "${spawnModel}"`;
+      cmd += ` --system-prompt "${effectivePrompt.replace(/"/g, '\\"')}"`;
+      const visualName = `Clew Peer - ${targetName}`;
+
       if (platform === 'win32') {
-        childSpawn('cmd.exe', ['/c', 'start', 'cmd.exe', '/k', fullCommand], {
-          detached: true,
-          stdio: 'ignore',
-          shell: true,
+        // Windows: use start command (simple, no system prompt to avoid quoting issues)
+        const winArgs = `--peer-share --peer-name ${targetName} --name "${targetName}" --model ${spawnModel}`;
+        childExec(`start "Clew Peer - ${targetName}" /D "${cwd}" bun run start ${winArgs}`, {
+          cwd,
+          windowsHide: false,
         });
       } else if (platform === 'darwin') {
-        const appleScript = `tell application "Terminal" to do script "${fullCommand.replace(/"/g, '\\"')}"`;
+        const appleScript = `tell application "Terminal" to do script "${cmd}"`;
         childSpawn('osascript', ['-e', appleScript], {
           detached: true,
           stdio: 'ignore',
         });
       } else {
-        childSpawn('x-terminal-emulator', ['-e', fullCommand], {
+        childSpawn('x-terminal-emulator', ['-e', 'sh', '-c', `${cmd}; exec sh`], {
           detached: true,
           stdio: 'ignore',
         }).on('error', () => {
-          childSpawn('gnome-terminal', ['--', 'sh', '-c', `${fullCommand}; exec sh`], {
+          childSpawn('gnome-terminal', ['--', 'sh', '-c', `${cmd}; exec sh`], {
             detached: true,
             stdio: 'ignore',
           });
@@ -121,28 +125,49 @@ export const PeerSpawnTool = buildTool({
       let detectedPort: number | undefined;
 
       if (input.autoJoin !== false) {
-        const discovery = getGlobalDiscovery();
         const store = getGlobalPeerStore();
         const maxAttempts = 30; // 15 seconds
+        const myPid = process.pid;
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
           await new Promise(resolve => setTimeout(resolve, 500));
 
-          const peers = await discovery.discoverPeers(100);
-          const found = peers.find(p => p.hostname === targetName);
+          // Scan peer files directly (same machine) — more reliable than UDP
+          try {
+            const peerDir = path.join(os.homedir(), '.claude', 'peers');
+            const dir = readdirSync(peerDir, { withFileTypes: true });
+            for (const entry of dir) {
+              if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+              if (entry.name === `${myPid}.json`) continue; // skip self
 
-          if (found) {
-            try {
-              const url = `http://${found.ip}:${found.port}/peer-info`;
-              const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
-              if (res.ok) {
+              const filePath = path.join(peerDir, entry.name);
+              try {
+                const data = JSON.parse(readFileSync(filePath, 'utf-8')) as {
+                  port?: number;
+                  id?: string;
+                  ip?: string;
+                  hostname?: string;
+                  cwd?: string;
+                  pid?: number;
+                };
+                if (!data.port || data.port === 0) continue;
+                const peerId = data.id ?? `pid-${data.pid}`;
+
+                // Check if already connected
+                if (store.findPeer(peerId)) continue;
+
+                // Verify HTTP server is running
+                const url = `http://${data.ip || '127.0.0.1'}:${data.port}/peer-info`;
+                const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
+                if (!res.ok) continue;
+
                 const info = await res.json();
                 store.addConnection({
-                  id: info.id ?? found.id,
-                  hostname: info.hostname ?? targetName,
-                  ip: info.ip ?? found.ip,
-                  port: info.port ?? found.port,
-                  cwd: info.cwd ?? found.cwd,
+                  id: info.id ?? data.id,
+                  hostname: info.hostname ?? data.hostname,
+                  ip: info.ip ?? data.ip ?? '127.0.0.1',
+                  port: info.port ?? data.port,
+                  cwd: info.cwd ?? data.cwd,
                   version: info.version ?? '',
                   lastSeen: Date.now(),
                   status: 'online',
@@ -151,19 +176,21 @@ export const PeerSpawnTool = buildTool({
                   term: info.term,
                 });
 
-                if (info.displayName) store.setPeerName(info.id, info.displayName);
-                if (info.role || input.role) {
-                  store.setPeerRole(info.id, input.role || info.role);
-                }
+                if (info.displayName) store.setPeerName(peerId, info.displayName);
+                if (input.role) store.setPeerRole(peerId, input.role);
 
                 joined = true;
-                detectedPort = found.port;
+                detectedPort = data.port;
                 break;
+              } catch {
+                // File might be stale or server not ready
               }
-            } catch {
-              // Wait and retry - HTTP server might not be running yet
             }
+          } catch {
+            // Peer dir might not exist
           }
+
+          if (joined) break;
         }
       }
 

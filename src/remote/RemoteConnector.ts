@@ -30,7 +30,9 @@ export class RemoteConnector {
     this.relay = new RelayClient(relayUrl, 'connector', token, {
       onMessage: (data: string) => {
         try {
-          const msg = JSON.parse(data) as RemoteMessage & { message?: { status: string; output?: string; error?: string } };
+          const msg = JSON.parse(data) as RemoteMessage & {
+            message?: { status: string; output?: string; error?: string };
+          };
 
           if (msg.type === 'paired') {
             this.callbacks.onConnected?.();
@@ -39,7 +41,9 @@ export class RemoteConnector {
           } else if (msg.type === 'system' && msg.message) {
             // Status update (e.g., "executing")
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       },
       onConnected: () => {
         // Wait for 'paired' message from relay

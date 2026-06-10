@@ -212,7 +212,7 @@ export function AgentsList({ source, agents, onBack, onSelect, onCreateNew, chan
       <Dialog title={sourceTitle} subtitle="No agents found" onCancel={onBack} hideInputGuide>
         <Box flexDirection="column" gap={1} tabIndex={0} autoFocus onKeyDown={handleKeyDown}>
           {onCreateNew && <Box>{renderCreateNewOption()}</Box>}
-          <Text dimColor>No agents found. Create specialized subagents that Claude can delegate to.</Text>
+          <Text dimColor>No agents found. Create specialized subagents that Clew can delegate to.</Text>
           <Text dimColor>Each subagent has its own context window, custom system prompt, and specific tools.</Text>
           <Text dimColor>
             Try creating: Code Reviewer, Code Simplifier, Security Reviewer, Tech Lead, or UX Reviewer.

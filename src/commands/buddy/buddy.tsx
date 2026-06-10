@@ -1,10 +1,10 @@
 import * as React from 'react';
-import { Box, Text, useInput } from '../../ink.js';
-import type { LocalJSXCommandCall, LocalJSXCommandContext } from '../../types/command.js';
-import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { getCompanion } from '../../buddy/companion.js';
 import { renderSprite } from '../../buddy/sprites.js';
 import { RARITY_COLORS, RARITY_STARS } from '../../buddy/types.js';
+import { Box, Text, useInput } from '../../ink.js';
+import type { LocalJSXCommandCall, LocalJSXCommandContext } from '../../types/command.js';
+import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 
 interface BuddyProps {
   onDone: (result?: string, options?: { display?: 'system' | 'user' | 'skip' }) => void;
@@ -34,7 +34,9 @@ function BuddyCard({ setAppState, onDone }: BuddyProps): React.ReactNode {
       <Box width={CARD_W} flexDirection="column" padding={1} borderStyle="round" borderColor="subtle">
         <Text bold>Buddy</Text>
         <Text dimColor>No buddy yet. Use /buddy show to create one.</Text>
-        <Box marginTop={1}><Text dimColor>any key to close</Text></Box>
+        <Box marginTop={1}>
+          <Text dimColor>any key to close</Text>
+        </Box>
       </Box>
     );
   }
@@ -58,33 +60,43 @@ function BuddyCard({ setAppState, onDone }: BuddyProps): React.ReactNode {
     <Box width={CARD_W} flexDirection="column" borderStyle="round" borderColor={color} padding={1}>
       {/* Header */}
       <Box flexDirection="row" justifyContent="space-between">
-        <Text bold color={color}>{headerR}</Text>
+        <Text bold color={color}>
+          {headerR}
+        </Text>
         <Text bold>{headerL}</Text>
       </Box>
 
       {/* Sprite */}
       <Box flexDirection="column" alignItems="center" marginTop={1}>
         {sprite.map((line, i) => (
-          <Text key={i} color={color}>{line}</Text>
+          <Text key={i} color={color}>
+            {line}
+          </Text>
         ))}
       </Box>
 
       {/* Name */}
       <Box flexDirection="row" justifyContent="center">
-        <Text bold color={color}>{companion.name}</Text>
+        <Text bold color={color}>
+          {companion.name}
+        </Text>
       </Box>
 
       {/* Personality */}
       {companion.personality ? (
         <Box flexDirection="row" justifyContent="center" paddingX={1}>
-          <Text dimColor italic wrap="truncate-end">"{companion.personality}"</Text>
+          <Text dimColor italic wrap="truncate-end">
+            "{companion.personality}"
+          </Text>
         </Box>
       ) : null}
 
       {/* Stats */}
       <Box flexDirection="column" marginTop={1}>
         {statLines.map((line, i) => (
-          <Text key={i} dimColor>{line}</Text>
+          <Text key={i} dimColor>
+            {line}
+          </Text>
         ))}
       </Box>
 

@@ -20,9 +20,13 @@
 
 const PORT = parseInt(
   process.argv.find(a => a.startsWith('--port='))?.split('=')[1] ??
-  process.argv[process.argv.indexOf('--port') + 1] ?? '8080', 10);
+    process.argv[process.argv.indexOf('--port') + 1] ??
+    '8080',
+  10,
+);
 
-const STATIC_TOKEN = process.argv.find(a => a.startsWith('--token='))?.split('=')[1] ??
+const STATIC_TOKEN =
+  process.argv.find(a => a.startsWith('--token='))?.split('=')[1] ??
   process.argv[process.argv.indexOf('--token') + 1] ??
   `clew-relay-${crypto.randomUUID().slice(0, 8)}`;
 

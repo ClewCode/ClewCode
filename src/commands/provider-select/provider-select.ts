@@ -421,6 +421,11 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   const [showGoogleOAuth, setShowGoogleOAuth] = React.useState(false);
   const [showAnthropicOAuth, setShowAnthropicOAuth] = React.useState(false);
   const [showGitHubCopilotAuth, setShowGitHubCopilotAuth] = React.useState(false);
+  const [customName, setCustomName] = React.useState('');
+  const [customBaseUrl, setCustomBaseUrl] = React.useState('');
+  const [customModel, setCustomModel] = React.useState('');
+  const [customStep, setCustomStep] = React.useState<'name' | 'baseUrl' | 'apiKey' | 'model' | null>(null);
+  const [customCursorOffset, setCustomCursorOffset] = React.useState(0);
   const setAppState = useSetAppState();
   const currentSessionModel = useAppState(s => (s.mainLoopModelForSession || s.mainLoopModel) as string | null);
 
@@ -747,6 +752,192 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
           setSearchCursorOffset(0);
           onDone('Provider selection cancelled', { display: 'system' });
         },
+      }),
+    );
+  }
+
+  // Custom provider flow: prompt for name, URL, key, model
+  if (provider === 'custom' && !customStep) {
+    setCustomStep('name');
+    setCustomCursorOffset(0);
+  }
+
+  if (provider === 'custom' && customStep) {
+    const stepLabel =
+      customStep === 'name'
+        ? `Provider label (e.g. "My LLM")`
+        : customStep === 'baseUrl'
+          ? `Base URL (e.g. https://api.example.com/v1)`
+          : customStep === 'apiKey'
+            ? `API Key (optional, press Enter to skip)`
+            : `Model name (e.g. gpt-4o)`;
+
+    const stepValue =
+      customStep === 'name'
+        ? customName
+        : customStep === 'baseUrl'
+          ? customBaseUrl
+          : customStep === 'model'
+            ? customModel
+            : apiKeyInput;
+
+    const stepOnChange =
+      customStep === 'name'
+        ? (v: string) => {
+            setCustomName(v);
+          }
+        : customStep === 'baseUrl'
+          ? (v: string) => {
+              setCustomBaseUrl(v);
+            }
+          : customStep === 'model'
+            ? (v: string) => {
+                setCustomModel(v);
+              }
+            : (v: string) => {
+                setApiKeyInput(v);
+                setApiKeyError(null);
+              };
+
+    const advanceStep = async (value: string) => {
+      const trimmed = value.trim();
+      if (customStep === 'name') {
+        setCustomName(trimmed);
+        if (!trimmed) return;
+        setCustomStep('baseUrl');
+        setCustomCursorOffset(0);
+      } else if (customStep === 'baseUrl') {
+        setCustomBaseUrl(trimmed);
+        if (!trimmed) return;
+        setCustomStep('apiKey');
+        setCustomCursorOffset(0);
+      } else if (customStep === 'apiKey') {
+        setCustomStep('model');
+        setCustomCursorOffset(0);
+      } else if (customStep === 'model') {
+        let model = trimmed;
+        let fetchedMsg = '';
+
+        // If model is empty, try to auto-fetch from /models endpoint
+        if (!model) {
+          const label = customName || 'Custom';
+          const baseUrl = customBaseUrl;
+          const apiKeyVal = apiKeyInput.trim();
+
+          // Temporarily set the provider config so fetchProviderModels can use it
+          const currentConfig = await loadConfig();
+          const tempConfig: ProviderConfig = {
+            provider: 'custom',
+            model: '',
+            providerConfig: {
+              ...(getSerializableProviderInfo('custom') as any),
+              providerId: 'custom',
+              label,
+              envKey: 'CUSTOM_API_KEY',
+              baseUrl,
+            } as any,
+            apiKeys: {
+              ...(currentConfig?.apiKeys ?? {}),
+              ...(apiKeyVal ? { custom: apiKeyVal } : {}),
+            },
+          };
+          await saveConfig(tempConfig);
+          const providerManager = ProviderManager.getInstance();
+          providerManager.invalidateConfigCache();
+
+          try {
+            const fetched = await fetchProviderModels('custom');
+            if (fetched && fetched.length > 0) {
+              model = fetched[0].id;
+              fetchedMsg = `\nAuto-detected ${fetched.length} model(s) from API`;
+            }
+          } catch {
+            fetchedMsg = '\nCould not auto-detect models from API';
+          }
+        }
+
+        if (!model) return; // still no model after fetch
+
+        const label = customName || 'Custom';
+        const baseUrl = customBaseUrl;
+        const apiKeyVal = apiKeyInput.trim();
+
+        const currentConfig = await loadConfig();
+        const nextConfig: ProviderConfig = {
+          provider: 'custom',
+          model,
+          providerConfig: {
+            ...(getSerializableProviderInfo('custom') as any),
+            providerId: 'custom',
+            label,
+            envKey: 'CUSTOM_API_KEY',
+            baseUrl,
+          } as any,
+          apiKeys: {
+            ...(currentConfig?.apiKeys ?? {}),
+            ...(apiKeyVal ? { custom: apiKeyVal } : {}),
+          },
+        };
+
+        await saveConfig(nextConfig);
+        clearProviderModelsCache('custom');
+
+        const providerManager = ProviderManager.getInstance();
+        providerManager.invalidateConfigCache();
+        applyProviderSelectionToSession(setAppState, { model, provider: 'custom' }, false);
+
+        setCustomName('');
+        setCustomBaseUrl('');
+        setCustomModel('');
+        setCustomStep(null);
+        setApiKeyInput('');
+        setApiKeyCursorOffset(0);
+
+        onDone(
+          `Set provider to Custom (${label})\nBase URL: ${baseUrl}\nModel: ${model}${fetchedMsg}\n(Session only)`,
+          {
+            display: 'system',
+          },
+        );
+      }
+    };
+
+    const cancelCustom = () => {
+      setCustomName('');
+      setCustomBaseUrl('');
+      setCustomModel('');
+      setCustomStep(null);
+      setApiKeyInput('');
+      setApiKeyCursorOffset(0);
+      setApiKeyError(null);
+      setProvider(null);
+      setSearchQuery('');
+      setSearchCursorOffset(0);
+    };
+
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(
+        Text,
+        { marginBottom: 1 },
+        `Custom Provider — Step ${customStep === 'name' ? '1/4' : customStep === 'baseUrl' ? '2/4' : customStep === 'apiKey' ? '3/4' : '4/4'}: ${stepLabel}`,
+      ),
+      apiKeyError ? React.createElement(Text, { color: 'error', marginBottom: 1 }, apiKeyError) : null,
+      React.createElement(TextInput, {
+        value: stepValue,
+        onChange: stepOnChange,
+        onSubmit: value => {
+          void advanceStep(value);
+        },
+        onExit: cancelCustom,
+        placeholder: stepLabel,
+        mask: customStep === 'apiKey' ? '*' : undefined,
+        focus: true,
+        showCursor: true,
+        columns: 80,
+        cursorOffset: customCursorOffset,
+        onChangeCursorOffset: setCustomCursorOffset,
       }),
     );
   }

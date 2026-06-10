@@ -1420,7 +1420,7 @@ async function run(): Promise<CommanderCommand> {
     .option('--verbose', 'Override verbose mode setting from config', () => true)
     .option(
       '-p, --print',
-      'Print response and exit (useful for pipes). Note: The workspace trust dialog is skipped when Claude is run with the -p mode. Only use this flag in directories you trust.',
+      'Print response and exit (useful for pipes). Note: The workspace trust dialog is skipped when Clew is run with the -p mode. Only use this flag in directories you trust.',
       () => true,
     )
     .option(
@@ -1672,8 +1672,8 @@ async function run(): Promise<CommanderCommand> {
       [] as string[],
     )
     .option('--disable-slash-commands', 'Disable all skills', () => true)
-    .option('--chrome', 'Enable Claude in Chrome integration')
-    .option('--no-chrome', 'Disable Claude in Chrome integration')
+    .option('--chrome', 'Enable Clew in Chrome integration')
+    .option('--no-chrome', 'Disable Clew in Chrome integration')
     .option('--computer', 'Enable Computer Use tool (Windows only)')
     .option('--peer-name <name>', 'Set display name for peer discovery')
     .option('--peer-share', 'Automatically start sharing as a worker peer on startup', () => true)
@@ -1847,17 +1847,17 @@ async function run(): Promise<CommanderCommand> {
           const { getGlobalPeerServer } = await import('./peer/PeerServer.js');
           const { getGlobalPeerStore } = await import('./peer/PeerStore.js');
           const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
-          
+
           const server = getGlobalPeerServer();
-          
+
           server.setCallbacks({
-            onTodo: (todo) => {
+            onTodo: todo => {
               getGlobalPeerStore().addTodo(todo);
               import('./utils/messageQueueManager.js').then(({ enqueue }) => {
                 enqueue({ value: `Task from ${todo.fromName}: ${todo.message}`, mode: 'prompt', priority: 'next' });
               });
             },
-            onMessage: (msg) => {
+            onMessage: msg => {
               getGlobalPeerStore().addMessage(msg);
               import('./utils/messageQueueManager.js').then(({ enqueue }) => {
                 enqueue({ value: `From ${msg.fromName}: ${msg.text}`, mode: 'prompt', priority: 'next' });
@@ -1866,7 +1866,7 @@ async function run(): Promise<CommanderCommand> {
             onExec: async (command: string) => {
               const { executeCommand } = await import('./tools/PeerRunTool/PeerRunTool.js');
               return executeCommand(command, 60_000);
-            }
+            },
           });
 
           // Auto-start PeerServer on all peers (so they can receive messages)
@@ -1879,7 +1879,7 @@ async function run(): Promise<CommanderCommand> {
             const peerInfo = {
               id: myPeerId,
               hostname: myName,
-              ip: '',
+              ip: '127.0.0.1',
               port: 0,
               cwd: process.cwd(),
               version: '',
@@ -1902,7 +1902,7 @@ async function run(): Promise<CommanderCommand> {
           try {
             const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
             const { getGlobalPeerServer } = await import('./peer/PeerServer.js');
-            
+
             const discovery = getGlobalDiscovery();
             const server = getGlobalPeerServer();
             const myPeerId = discovery.peerId;
@@ -1911,7 +1911,7 @@ async function run(): Promise<CommanderCommand> {
             const peerInfo = {
               id: myPeerId,
               hostname: myName,
-              ip: '',
+              ip: '127.0.0.1',
               port: 0,
               cwd: process.cwd(),
               version: '',
@@ -2469,10 +2469,10 @@ async function run(): Promise<CommanderCommand> {
           logEvent('tengu_claude_in_chrome_setup_failed', {
             platform: platform as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
           });
-          logForDebugging(`[Claude in Chrome] Error: ${error}`);
+          logForDebugging(`[Clew in Chrome] Error: ${error}`);
           logError(error);
           // biome-ignore lint/suspicious/noConsole:: intentional console output
-          console.error(`Error: Failed to run with Claude in Chrome.`);
+          console.error(`Error: Failed to run with Clew in Chrome.`);
           process.exit(1);
         }
       } else if (autoEnableClaudeInChrome) {
@@ -2489,7 +2489,7 @@ async function run(): Promise<CommanderCommand> {
           appendSystemPrompt = appendSystemPrompt ? `${appendSystemPrompt}\n\n${hint}` : hint;
         } catch (error) {
           // Silently skip any errors for the auto-enable
-          logForDebugging(`[Claude in Chrome] Error (auto-enable): ${error}`);
+          logForDebugging(`[Clew in Chrome] Error (auto-enable): ${error}`);
         }
       }
 
@@ -2568,83 +2568,83 @@ async function run(): Promise<CommanderCommand> {
       // silently not-matching in the gate would look like channels are
       // "on" but nothing ever fires.
       const parseChannelEntries = (raw: string[], flag: string): ChannelEntry[] => {
-          const entries: ChannelEntry[] = [];
-          const bad: string[] = [];
-          for (const c of raw) {
-            if (c.startsWith('plugin:')) {
-              const rest = c.slice(7);
-              const at = rest.indexOf('@');
-              if (at <= 0 || at === rest.length - 1) {
-                bad.push(c);
-              } else {
-                entries.push({
-                  kind: 'plugin',
-                  name: rest.slice(0, at),
-                  marketplace: rest.slice(at + 1),
-                });
-              }
-            } else if (c.startsWith('server:') && c.length > 7) {
-              entries.push({
-                kind: 'server',
-                name: c.slice(7),
-              });
-            } else {
+        const entries: ChannelEntry[] = [];
+        const bad: string[] = [];
+        for (const c of raw) {
+          if (c.startsWith('plugin:')) {
+            const rest = c.slice(7);
+            const at = rest.indexOf('@');
+            if (at <= 0 || at === rest.length - 1) {
               bad.push(c);
+            } else {
+              entries.push({
+                kind: 'plugin',
+                name: rest.slice(0, at),
+                marketplace: rest.slice(at + 1),
+              });
             }
+          } else if (c.startsWith('server:') && c.length > 7) {
+            entries.push({
+              kind: 'server',
+              name: c.slice(7),
+            });
+          } else {
+            bad.push(c);
           }
-          if (bad.length > 0) {
-            process.stderr.write(
-              chalk.red(
-                `${flag} entries must be tagged: ${bad.join(', ')}\n` +
-                  `  plugin:<name>@<marketplace>  — plugin-provided channel (allowlist enforced)\n` +
-                  `  server:<name>                — manually configured MCP server\n`,
-              ),
-            );
-            process.exit(1);
-          }
-          return entries;
+        }
+        if (bad.length > 0) {
+          process.stderr.write(
+            chalk.red(
+              `${flag} entries must be tagged: ${bad.join(', ')}\n` +
+                `  plugin:<name>@<marketplace>  — plugin-provided channel (allowlist enforced)\n` +
+                `  server:<name>                — manually configured MCP server\n`,
+            ),
+          );
+          process.exit(1);
+        }
+        return entries;
+      };
+      const channelOpts = options as {
+        channels?: string[];
+        dangerouslyLoadDevelopmentChannels?: string[];
+      };
+      const rawChannels = channelOpts.channels;
+      const rawDev = channelOpts.dangerouslyLoadDevelopmentChannels;
+      // Always parse + set. ChannelsNotice reads getAllowedChannels() and
+      // renders the appropriate branch (disabled/noAuth/policyBlocked/
+      // listening) in the startup screen. gateChannelServer() enforces.
+      // --channels works in both interactive and print/SDK modes; dev-channels
+      // stays interactive-only (requires a confirmation dialog).
+      let channelEntries: ChannelEntry[] = [];
+      if (rawChannels && rawChannels.length > 0) {
+        channelEntries = parseChannelEntries(rawChannels, '--channels');
+        setAllowedChannels(channelEntries);
+      }
+      if (!isNonInteractiveSession) {
+        if (rawDev && rawDev.length > 0) {
+          devChannels = parseChannelEntries(rawDev, '--dangerously-load-development-channels');
+        }
+      }
+      // Flag-usage telemetry. Plugin identifiers are logged (same tier as
+      // tengu_plugin_installed — public-registry-style names); server-kind
+      // names are not (MCP-server-name tier, opt-in-only elsewhere).
+      // Per-server gate outcomes land in tengu_mcp_channel_gate once
+      // servers connect. Dev entries go through a confirmation dialog after
+      // this — dev_plugins captures what was typed, not what was accepted.
+      if (channelEntries.length > 0 || (devChannels?.length ?? 0) > 0) {
+        const joinPluginIds = (entries: ChannelEntry[]) => {
+          const ids = entries.flatMap(e => (e.kind === 'plugin' ? [`${e.name}@${e.marketplace}`] : []));
+          return ids.length > 0
+            ? (ids.sort().join(',') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS)
+            : undefined;
         };
-        const channelOpts = options as {
-          channels?: string[];
-          dangerouslyLoadDevelopmentChannels?: string[];
-        };
-        const rawChannels = channelOpts.channels;
-        const rawDev = channelOpts.dangerouslyLoadDevelopmentChannels;
-        // Always parse + set. ChannelsNotice reads getAllowedChannels() and
-        // renders the appropriate branch (disabled/noAuth/policyBlocked/
-        // listening) in the startup screen. gateChannelServer() enforces.
-        // --channels works in both interactive and print/SDK modes; dev-channels
-        // stays interactive-only (requires a confirmation dialog).
-        let channelEntries: ChannelEntry[] = [];
-        if (rawChannels && rawChannels.length > 0) {
-          channelEntries = parseChannelEntries(rawChannels, '--channels');
-          setAllowedChannels(channelEntries);
-        }
-        if (!isNonInteractiveSession) {
-          if (rawDev && rawDev.length > 0) {
-            devChannels = parseChannelEntries(rawDev, '--dangerously-load-development-channels');
-          }
-        }
-        // Flag-usage telemetry. Plugin identifiers are logged (same tier as
-        // tengu_plugin_installed — public-registry-style names); server-kind
-        // names are not (MCP-server-name tier, opt-in-only elsewhere).
-        // Per-server gate outcomes land in tengu_mcp_channel_gate once
-        // servers connect. Dev entries go through a confirmation dialog after
-        // this — dev_plugins captures what was typed, not what was accepted.
-        if (channelEntries.length > 0 || (devChannels?.length ?? 0) > 0) {
-          const joinPluginIds = (entries: ChannelEntry[]) => {
-            const ids = entries.flatMap(e => (e.kind === 'plugin' ? [`${e.name}@${e.marketplace}`] : []));
-            return ids.length > 0
-              ? (ids.sort().join(',') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS)
-              : undefined;
-          };
-          logEvent('tengu_mcp_channel_flags', {
-            channels_count: channelEntries.length,
-            dev_count: devChannels?.length ?? 0,
-            plugins: joinPluginIds(channelEntries),
-            dev_plugins: joinPluginIds(devChannels ?? []),
-          });
-        }
+        logEvent('tengu_mcp_channel_flags', {
+          channels_count: channelEntries.length,
+          dev_count: devChannels?.length ?? 0,
+          plugins: joinPluginIds(channelEntries),
+          dev_plugins: joinPluginIds(devChannels ?? []),
+        });
+      }
 
       // SDK opt-in for SendUserMessage via --tools. All sessions require
       // explicit opt-in; listing it in --tools signals intent. Runs BEFORE
@@ -5154,7 +5154,7 @@ async function run(): Promise<CommanderCommand> {
         .argParser(String)
         .hideHelp(),
     );
-    program.option('--agent-teams', '[ANT-ONLY] Force Claude to use multi-agent mode for solving problems', () => true);
+    program.option('--agent-teams', '[ANT-ONLY] Force Clew to use multi-agent mode for solving problems', () => true);
   }
   if (feature('TRANSCRIPT_CLASSIFIER')) {
     program.addOption(new Option('--enable-auto-mode', 'Opt in to auto mode').hideHelp());
@@ -5514,8 +5514,8 @@ async function run(): Promise<CommanderCommand> {
     .description('Sign in to your Anthropic account')
     .option('--email <email>', 'Pre-populate email address on the login page')
     .option('--sso', 'Force SSO login flow')
-    .option('--console', 'Use Anthropic Console (API usage billing) instead of Claude subscription')
-    .option('--claudeai', 'Use Claude subscription (default)')
+    .option('--console', 'Use Anthropic Console (API usage billing) instead of Clew subscription')
+    .option('--clewai', 'Use Clew subscription (default)')
     .action(
       async ({
         email,
@@ -5773,7 +5773,7 @@ async function run(): Promise<CommanderCommand> {
   // Setup token command
   program
     .command('setup-token')
-    .description('Set up a long-lived authentication token (requires Claude subscription)')
+    .description('Set up a long-lived authentication token (requires Clew subscription)')
     .action(async () => {
       const [{ setupTokenHandler }, { createRoot }] = await Promise.all([
         import('./cli/handlers/util.js'),

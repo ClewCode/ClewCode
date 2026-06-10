@@ -319,7 +319,7 @@ export async function runBridgeLoop(
       debugGlob =
         ext > 0 ? `${config.debugFile.slice(0, ext)}-*${config.debugFile.slice(ext)}` : `${config.debugFile}-*`;
     } else {
-      debugGlob = join(tmpdir(), 'claude', 'bridge-session-*.log');
+      debugGlob = join(tmpdir(), 'clew', 'bridge-session-*.log');
     }
     logger.setDebugLogPath(debugGlob);
   }
@@ -973,7 +973,7 @@ export async function runBridgeLoop(
               sessionDebugFile = `${config.debugFile}-${safeId}`;
             }
           } else if (config.verbose || process.env.USER_TYPE === 'ant') {
-            sessionDebugFile = join(tmpdir(), 'claude', `bridge-session-${safeId}.log`);
+            sessionDebugFile = join(tmpdir(), 'clew', `bridge-session-${safeId}.log`);
           }
 
           if (sessionDebugFile) {
@@ -1653,12 +1653,12 @@ async function printHelp(): Promise<void> {
 `
     : '';
   const help = `
-Remote Control - Connect your local environment to claude.ai/code
+Remote Control - Connect your local environment to clew.ai/code
 
 USAGE
   clew remote-control [options]
 OPTIONS
-  --name <name>                    Name for the session (shown in claude.ai/code)
+  --name <name>                    Name for the session (shown in clew.ai/code)
 ${
   feature('KAIROS')
     ? `  -c, --continue                   Resume the last session in this directory
@@ -1674,11 +1674,11 @@ ${
 ${serverOptions}
 DESCRIPTION
   Remote Control allows you to control sessions on your local device from
-  claude.ai/code (https://claude.ai/code). Run this command in the
-  directory you want to work in, then connect from the Claude app or web.
+  Clew.ai/code (https://clew.ai/code). Run this command in the
+  directory you want to work in, then connect from the Clew app or web.
 ${serverDescription}
 NOTES
-  - You must be logged in with a Claude account that has a subscription
+  - You must be logged in with a Clew account that has a subscription
   - Run \`clew\` first in the directory to accept the workspace trust dialog
 ${serverNote}`;
   // biome-ignore lint/suspicious/noConsole: intentional help output
@@ -1841,7 +1841,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     });
     // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(
-      '\nRemote Control lets you access this CLI session from the web (claude.ai/code)\nor the Claude app, so you can pick up where you left off on any device.\n\nYou can disconnect remote access anytime by running /remote-control again.\n',
+      '\nRemote Control lets you access this CLI session from the web (claude.ai/code)\nor the Clew app, so you can pick up where you left off on any device.\n\nYou can disconnect remote access anytime by running /remote-control again.\n',
     );
     const answer = await new Promise<string>(resolve => {
       rl.question('Enable Remote Control? (y/n) ', resolve);
@@ -1956,7 +1956,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     });
     // biome-ignore lint/suspicious/noConsole: intentional dialog output
     console.log(
-      `\nClaude Remote Control is launching in spawn mode which lets you create new sessions in this project from Clew Code on Web or your Mobile app. Learn more here: https://code.claude.com/docs/en/remote-control\n\n` +
+      `\nClew Remote Control is launching in spawn mode which lets you create new sessions in this project from Clew Code on Web or your Mobile app. Learn more here: https://code.claude.com/docs/en/remote-control\n\n` +
         `Spawn mode for this project:\n` +
         `  [1] same-dir \u2014 sessions share the current directory (default)\n` +
         `  [2] worktree \u2014 each session gets an isolated git worktree\n\n` +

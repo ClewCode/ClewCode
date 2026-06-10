@@ -51,7 +51,7 @@ export async function update() {
       logForDebugging(`update: Warning detected: ${warning.issue}`);
 
       // Don't skip PATH warnings - they're always relevant
-      // The user needs to know that 'which claude' points elsewhere
+      // The user needs to know that 'which Clew' points elsewhere
       logForDebugging(`update: Showing warning: ${warning.issue}`);
 
       writeToStdout(chalk.yellow(`Warning: ${warning.issue}\n`));
@@ -102,7 +102,7 @@ export async function update() {
     writeToStdout('\n');
 
     if (packageManager === 'homebrew') {
-      writeToStdout('Claude is managed by Homebrew.\n');
+      writeToStdout('Clew is managed by Homebrew.\n');
       const homebrewChannel = detectHomebrewCaskChannel() ?? 'stable';
       const latest = await getLatestVersion(homebrewChannel);
       if (latest && !gte(MACRO.VERSION, latest)) {
@@ -113,10 +113,10 @@ export async function update() {
           chalk.bold(`  brew upgrade ${homebrewChannel === 'latest' ? 'clew-code@latest' : 'clew-code'}`) + '\n',
         );
       } else {
-        writeToStdout('Claude is up to date!\n');
+        writeToStdout('Clew is up to date!\n');
       }
     } else if (packageManager === 'winget') {
-      writeToStdout('Claude is managed by winget.\n');
+      writeToStdout('Clew is managed by winget.\n');
       const latest = await getLatestVersion(channel);
       if (latest && !gte(MACRO.VERSION, latest)) {
         writeToStdout(`Update available: ${MACRO.VERSION} → ${latest}\n`);
@@ -124,10 +124,10 @@ export async function update() {
         writeToStdout('To update, run:\n');
         writeToStdout(chalk.bold('  winget upgrade Clew.Clew') + '\n');
       } else {
-        writeToStdout('Claude is up to date!\n');
+        writeToStdout('Clew is up to date!\n');
       }
     } else if (packageManager === 'apk') {
-      writeToStdout('Claude is managed by apk.\n');
+      writeToStdout('Clew is managed by apk.\n');
       const latest = await getLatestVersion(channel);
       if (latest && !gte(MACRO.VERSION, latest)) {
         writeToStdout(`Update available: ${MACRO.VERSION} → ${latest}\n`);
@@ -135,13 +135,13 @@ export async function update() {
         writeToStdout('To update, run:\n');
         writeToStdout(chalk.bold('  apk upgrade clew-code') + '\n');
       } else {
-        writeToStdout('Claude is up to date!\n');
+        writeToStdout('Clew is up to date!\n');
       }
     } else {
       // pacman, deb, and rpm don't get specific commands because they each have
       // multiple frontends (pacman: yay/paru/makepkg, deb: apt/apt-get/aptitude/nala,
       // rpm: dnf/yum/zypper)
-      writeToStdout('Claude is managed by a package manager.\n');
+      writeToStdout('Clew is managed by a package manager.\n');
       writeToStdout('Please use your package manager to update.\n');
     }
 
@@ -194,7 +194,7 @@ export async function update() {
       if (result.lockFailed) {
         const pidInfo = result.lockHolderPid ? ` (PID ${result.lockHolderPid})` : '';
         writeToStdout(
-          chalk.yellow(`Another Claude process${pidInfo} is currently running. Please try again in a moment.`) + '\n',
+          chalk.yellow(`Another Clew process${pidInfo} is currently running. Please try again in a moment.`) + '\n',
         );
         await gracefulShutdown(0);
       }

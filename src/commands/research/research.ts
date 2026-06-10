@@ -5,7 +5,16 @@ import { collectLocalMemory } from '../../research/collectors/localMemory.js';
 import { collectLocalRepo } from '../../research/collectors/localRepo.js';
 import { collectLocalWiki } from '../../research/collectors/localWiki.js';
 import { collectWebSearch } from '../../research/collectors/webSearch.js';
-import { researchHeader, stepStart, stepDone, sourceLine, claimLine, synthesisBox, summaryFooter, C } from '../../research/outputUI.js';
+import {
+  C,
+  claimLine,
+  researchHeader,
+  sourceLine,
+  stepDone,
+  stepStart,
+  summaryFooter,
+  synthesisBox,
+} from '../../research/outputUI.js';
 import { createResearchPlan } from '../../research/planner.js';
 import { buildResearchReport } from '../../research/reportBuilder.js';
 import {
@@ -166,13 +175,15 @@ export const call: LocalCommandCall = async (args, _context) => {
       // 3. Synthesis
       lines.push(stepStart('Synthesizing'));
       const synthesis = await synthesizeClaims(allClaims, allSources, query);
-      lines.push(synthesisBox({
-        overallConfidence: synthesis.overallConfidence,
-        summary: synthesis.summary,
-        consensusCount: synthesis.consensusFindings.length,
-        conflictCount: synthesis.conflicts.length,
-        gapCount: synthesis.gaps.length,
-      }));
+      lines.push(
+        synthesisBox({
+          overallConfidence: synthesis.overallConfidence,
+          summary: synthesis.summary,
+          consensusCount: synthesis.consensusFindings.length,
+          conflictCount: synthesis.conflicts.length,
+          gapCount: synthesis.gaps.length,
+        }),
+      );
 
       // 4. Report
       lines.push(stepStart('Building report'));
@@ -249,9 +260,7 @@ export const call: LocalCommandCall = async (args, _context) => {
         type: 'text',
         value: [
           `Claims for ${latest.run.id}:`,
-          ...claimsList.map(
-            (c, i) => `${i + 1}. **[${c.id}]** ${c.claim} (${c.type}, ${c.confidence})`,
-          ),
+          ...claimsList.map((c, i) => `${i + 1}. **[${c.id}]** ${c.claim} (${c.type}, ${c.confidence})`),
         ].join('\n'),
       };
     }

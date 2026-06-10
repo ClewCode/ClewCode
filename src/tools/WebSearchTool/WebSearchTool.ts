@@ -248,10 +248,12 @@ export const WebSearchTool = buildTool({
     }
 
     // For all other providers (OpenAI, Google, OpenRouter, Ollama,
-    // DeepSeek, etc.), the tool is enabled but will fall back to direct
-    // search providers (Tavily/Brave/Serper/DuckDuckGo) when the
-    // Anthropic server-side web_search returns no results.
-    return true;
+    // DeepSeek, etc.), the Anthropic server-side web_search tool is not
+    // available. Only enable WebSearch if a good API-key-based search
+    // provider (Tavily/Brave/Serper) is configured — DuckDuckGo alone
+    // gives too-poor results. When disabled, the model will use MCP
+    // search tools (tinyfish, firecrawl) which return richer results.
+    return isProviderConfigured('tavily') || isProviderConfigured('brave') || isProviderConfigured('serper');
   },
   get inputSchema(): InputSchema {
     return inputSchema();

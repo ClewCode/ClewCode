@@ -57,11 +57,7 @@ export function synthesisBox(synthesis: {
   gapCount: number;
 }): string {
   const confColor =
-    synthesis.overallConfidence === 'high'
-      ? C.green
-      : synthesis.overallConfidence === 'low'
-        ? C.yellow
-        : C.cyan;
+    synthesis.overallConfidence === 'high' ? C.green : synthesis.overallConfidence === 'low' ? C.yellow : C.cyan;
   return [
     `${C.bold}${C.magenta}╭── Synthesis${C.reset}`,
     `${C.bold}${C.magenta}│${C.reset}  ${confColor}${synthesis.overallConfidence.toUpperCase()}${C.reset} confidence`,

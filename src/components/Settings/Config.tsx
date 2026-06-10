@@ -935,7 +935,7 @@ export function Config({
       : []),
     {
       id: 'claudeInChromeDefaultEnabled',
-      label: 'Claude in Chrome enabled by default',
+      label: 'Clew in Chrome enabled by default',
       value: globalConfig.claudeInChromeDefaultEnabled ?? true,
       type: 'boolean' as const,
       onChange(enabled: boolean) {

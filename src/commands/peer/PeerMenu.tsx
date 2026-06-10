@@ -8,13 +8,13 @@
  */
 
 import * as React from 'react';
-import { Box, Text, useInput } from '../../ink.js';
-import { Pane } from '../../components/design-system/Pane.js';
 import { Byline } from '../../components/design-system/Byline.js';
 import { KeyboardShortcutHint } from '../../components/design-system/KeyboardShortcutHint.js';
-import { getGlobalPeerStore } from '../../peer/PeerStore.js';
-import { getGlobalPeerServer } from '../../peer/PeerServer.js';
+import { Pane } from '../../components/design-system/Pane.js';
+import { Box, Text, useInput } from '../../ink.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
+import { getGlobalPeerServer } from '../../peer/PeerServer.js';
+import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import type { PeerInfo } from '../../peer/types.js';
 
 type View = 'main' | 'peers';
@@ -42,7 +42,9 @@ function PeerRow({ peer, tags }: { peer: PeerInfo; tags: any }) {
       <Text color="ansi:green">* </Text>
       <Text>{name.padEnd(16)}</Text>
       <Text dimColor>{role.padEnd(12)}</Text>
-      <Text dimColor>{peer.ip}:{peer.port}</Text>
+      <Text dimColor>
+        {peer.ip}:{peer.port}
+      </Text>
     </Box>
   );
 }
@@ -67,13 +69,19 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
 
   useInput((_key, k) => {
     if (k.escape) {
-      if (view === 'peers') { setView('main'); return; }
+      if (view === 'peers') {
+        setView('main');
+        return;
+      }
       onDone(undefined, { display: 'skip' });
       return;
     }
 
     if (view === 'peers') {
-      if (k.return) { setView('main'); return; }
+      if (k.return) {
+        setView('main');
+        return;
+      }
       if (k.upArrow) setFocus(f => Math.max(0, f - 1));
       if (k.downArrow) setFocus(f => Math.min(peers.length - 1, f + 1));
       return;
@@ -83,7 +91,9 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
       const item = MENU_ITEMS[focus];
       if (!item) return;
       switch (item.id) {
-        case 'close': onDone(undefined, { display: 'skip' }); return;
+        case 'close':
+          onDone(undefined, { display: 'skip' });
+          return;
         case 'share': {
           if (isSharing) {
             discovery.stopAdvertising();
@@ -91,7 +101,16 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
             setIsSharing(false);
           } else {
             (async () => {
-              const info: PeerInfo = { id: discovery.peerId, hostname: discovery.hostname, ip: '', port: 0, cwd: process.cwd(), version: '', lastSeen: Date.now(), status: 'online' };
+              const info: PeerInfo = {
+                id: discovery.peerId,
+                hostname: discovery.hostname,
+                ip: '127.0.0.1',
+                port: 0,
+                cwd: process.cwd(),
+                version: '',
+                lastSeen: Date.now(),
+                status: 'online',
+              };
               const port = await getGlobalPeerServer().start(info);
               info.port = port;
               await discovery.startAdvertising(port, process.cwd());
@@ -100,12 +119,25 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
           }
           return;
         }
-        case 'join': onDone(undefined, { display: 'skip', nextInput: '/peer join ', submitNextInput: false }); return;
-        case 'name': onDone(undefined, { display: 'skip', nextInput: '/peer name ', submitNextInput: false }); return;
-        case 'role': onDone(undefined, { display: 'skip', nextInput: '/peer role ', submitNextInput: false }); return;
-        case 'discover': onDone(undefined, { display: 'skip', nextInput: '/peer discover', submitNextInput: true }); return;
-        case 'inbox': onDone(undefined, { display: 'skip', nextInput: '/peer inbox', submitNextInput: true }); return;
-        case 'peers': setView('peers'); setFocus(0); return;
+        case 'join':
+          onDone(undefined, { display: 'skip', nextInput: '/peer join ', submitNextInput: false });
+          return;
+        case 'name':
+          onDone(undefined, { display: 'skip', nextInput: '/peer name ', submitNextInput: false });
+          return;
+        case 'role':
+          onDone(undefined, { display: 'skip', nextInput: '/peer role ', submitNextInput: false });
+          return;
+        case 'discover':
+          onDone(undefined, { display: 'skip', nextInput: '/peer discover', submitNextInput: true });
+          return;
+        case 'inbox':
+          onDone(undefined, { display: 'skip', nextInput: '/peer inbox', submitNextInput: true });
+          return;
+        case 'peers':
+          setView('peers');
+          setFocus(0);
+          return;
       }
     }
 
@@ -117,29 +149,41 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
     return (
       <Pane color="claude">
         <Box flexDirection="column">
-          <Text color="remember" bold>Connected Peers</Text>
+          <Text color="remember" bold>
+            Connected Peers
+          </Text>
           <Text dimColor>{peers.length + (isSharing ? 1 : 0)} peer(s)</Text>
           <Box marginTop={1} flexDirection="column">
             {/* Self */}
             {isSharing && (
               <Box flexDirection="row">
-                <Text color="ansi:cyan">  * </Text>
+                <Text color="ansi:cyan"> * </Text>
                 <Text color="ansi:cyan">{store.getPeerTags(discovery.peerId)?.displayName || 'Me'.padEnd(16)}</Text>
                 <Text dimColor>:{(getGlobalPeerServer().port || '?').toString().padEnd(6)}</Text>
-                <Text color="ansi:cyan" dimColor>(self)</Text>
+                <Text color="ansi:cyan" dimColor>
+                  (self)
+                </Text>
               </Box>
             )}
             {/* Connected peers */}
             {peers.length === 0 && !isSharing ? (
-              <Text dimColor italic>No connected peers.</Text>
-            ) : peers.map((p, i) => (
-              <Box key={p.id} flexDirection="row">
-                <Text color={i === focus ? 'suggestion' : 'ansi:green'}>{i === focus ? '>' : ' '} </Text>
-                <PeerRow peer={p} tags={store.getPeerTags(p.id)} />
-              </Box>
-            ))}
+              <Text dimColor italic>
+                No connected peers.
+              </Text>
+            ) : (
+              peers.map((p, i) => (
+                <Box key={p.id} flexDirection="row">
+                  <Text color={i === focus ? 'suggestion' : 'ansi:green'}>{i === focus ? '>' : ' '} </Text>
+                  <PeerRow peer={p} tags={store.getPeerTags(p.id)} />
+                </Box>
+              ))
+            )}
           </Box>
-          <Box marginTop={1}><Byline><KeyboardShortcutHint shortcut="Esc" action="back" /></Byline></Box>
+          <Box marginTop={1}>
+            <Byline>
+              <KeyboardShortcutHint shortcut="Esc" action="back" />
+            </Byline>
+          </Box>
         </Box>
       </Pane>
     );
@@ -153,7 +197,9 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
       <Box flexDirection="column">
         {/* Status */}
         <Box marginBottom={1} flexDirection="column">
-          <Text color="remember" bold>Peer System</Text>
+          <Text color="remember" bold>
+            Peer System
+          </Text>
           <Text dimColor>
             {isSharing ? `:${getGlobalPeerServer().port || '?'}  ` : 'Inactive  '}
             {store.getPeerTags(discovery.peerId)?.displayName || discovery.hostname}
@@ -169,20 +215,20 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
               <Text color={i === focus ? 'suggestion' : undefined} bold={i === focus}>
                 {i === focus ? '> ' : '  '}
               </Text>
-              <Text color={i === focus ? 'suggestion' : undefined}>
-                {item.label.padEnd(20)}
-              </Text>
+              <Text color={i === focus ? 'suggestion' : undefined}>{item.label.padEnd(20)}</Text>
               <Text dimColor>{item.desc}</Text>
             </Box>
           ))}
         </Box>
 
         {/* Footer */}
-        <Box><Byline>
-          <KeyboardShortcutHint shortcut="arrows" action="navigate" />
-          <KeyboardShortcutHint shortcut="Enter" action="select" />
-          <KeyboardShortcutHint shortcut="Esc" action="close" />
-        </Byline></Box>
+        <Box>
+          <Byline>
+            <KeyboardShortcutHint shortcut="arrows" action="navigate" />
+            <KeyboardShortcutHint shortcut="Enter" action="select" />
+            <KeyboardShortcutHint shortcut="Esc" action="close" />
+          </Byline>
+        </Box>
       </Box>
     </Pane>
   );
