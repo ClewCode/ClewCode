@@ -12,10 +12,12 @@
  */
 
 import * as React from 'react';
+import figures from 'figures';
 import { useAgentDispatchAutocomplete } from '../../hooks/useAgentDispatchAutocomplete.js';
 import { useAgentViewSummaries } from '../../hooks/useAgentViewSummaries.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { Box, Text, useInput } from '../../ink.js';
+import { Pane } from '../design-system/Pane.js';
 import { touchSessionAttach } from '../../services/SessionLifecycle/sessionLifecycle.js';
 import { listSessions, pingDaemon } from '../../services/Supervisor/ipcClient.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
@@ -840,20 +842,47 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
   const cwdLabel = cwd ? (cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? cwd) : process.cwd().split(/[\\/]/).at(-1);
   const divider = '─'.repeat(contentWidth);
   const inputPlaceholder = filterText ? 'filter sessions' : 'describe a task for a new session';
+  const isCompact = contentWidth < 80;
 
   return (
-    <Box flexDirection="column" width={contentWidth} paddingX={1}>
-      <Box flexDirection="column" marginBottom={2}>
-        <Text bold>Clew Code</Text>
-        <Text dimColor>Opus (1M context) · ~/{cwdLabel ?? 'workspace'}</Text>
-        <Text dimColor>
-          {counts.awaiting} awaiting input · {counts.working} working · {counts.completed} completed
-        </Text>
-      </Box>
+    <Pane color="permission">
+      <Box flexDirection="column" width={contentWidth} paddingLeft={1}>
+        {/* Header */}
+        <Box flexDirection="column" marginBottom={1}>
+          <Text bold color="permission">
+            Clew Code
+          </Text>
+          <Text dimColor>
+            Opus · 1M context · ~/{cwdLabel ?? 'workspace'}
+          </Text>
+          <Box flexDirection="row" gap={1}>
+            {counts.awaiting > 0 && (
+              <Text color="yellow">
+                {figures.bullet} {counts.awaiting} awaiting
+              </Text>
+            )}
+            {counts.working > 0 && (
+              <Text color="blue">
+                {counts.awaiting > 0 ? ' · ' : ''}
+                {figures.circleDotted} {counts.working} working
+              </Text>
+            )}
+            {counts.completed > 0 && (
+              <Text color="green">
+                {(counts.awaiting > 0 || counts.working > 0) ? ' · ' : ''}
+                {figures.tick} {counts.completed} completed
+              </Text>
+            )}
+            {counts.awaiting === 0 && counts.working === 0 && counts.completed === 0 && (
+              <Text dimColor>No background agents</Text>
+            )}
+          </Box>
+        </Box>
 
       {backgroundTasks.length === 0 ? (
-        <Box flexDirection="column" marginBottom={1}>
+        <Box flexDirection="column" marginY={1} paddingLeft={2}>
           <Text dimColor>No background agents are currently running.</Text>
+          <Text dimColor>Type a task below or use @agent to dispatch.</Text>
         </Box>
       ) : (
         groupedTasks.map(group => {
@@ -928,8 +957,8 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
       )}
 
       <Text dimColor>{divider}</Text>
-      <Box flexDirection="row" height={1}>
-        <Text bold>› </Text>
+      <Box flexDirection="row" height={1} alignItems="center">
+        <Text bold color="suggestion">› </Text>
         <TextInput
           value={filterText || dispatchText}
           onChange={text => {
@@ -973,9 +1002,12 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
         </Box>
       )}
 
-      <Text dimColor>enter to open · space to reply · ctrl+x to delete</Text>
+      <Text dimColor>
+        enter:open · space:peek · /:dispatch · ?:help · esc:back
+      </Text>
 
       {shortcutsHelpOpen && <AgentViewShortcutsHelp onClose={() => setShortcutsHelpOpen(false)} />}
-    </Box>
+      </Box>
+    </Pane>
   );
 }

@@ -8,7 +8,6 @@ import * as React from 'react';
 import { Box, Text } from '../../ink.js';
 import type { ToolUseConfirm } from '../../Tool.js';
 import type { LocalAgentTaskState } from '../../tasks/LocalAgentTask/LocalAgentTask.js';
-import { Divider } from '../design-system/Divider.js';
 import { PermissionRequest } from '../permissions/PermissionRequest.js';
 import TextInput from '../TextInput.js';
 import { formatTimeAgo, getActivityPreview, getPRStatusLabel } from './AgentViewRow.js';
@@ -47,13 +46,12 @@ export function AgentViewPeekPanel({
   const needsInput = isWaitingForInput(task);
 
   return (
-    <Box flexDirection="column" gap={0}>
-      <Divider />
-      <Box flexDirection="column" padding={1} borderStyle="single" borderColor="dim">
+    <Box flexDirection="column" paddingY={1}>
+      <Box flexDirection="column" paddingX={2} paddingY={1}>
         {/* Header: name + ID + PR info */}
         <Box flexDirection="row" justifyContent="space-between">
           <Box flexDirection="row" gap={2}>
-            <Text bold>{(task as any).customName ?? task.agentType ?? 'Agent'}</Text>
+            <Text bold color="permission">{(task as any).customName ?? task.agentType ?? 'Agent'}</Text>
             {(task as any)._prInfo && (
               <Text dimColor>
                 {figures.arrowRight} PR #{((task as any)._prInfo as any)?.number ?? ''}{' '}
@@ -61,12 +59,12 @@ export function AgentViewPeekPanel({
               </Text>
             )}
           </Box>
-          <Text dimColor>ID: {task.id.slice(0, 8)}</Text>
+          <Text dimColor>{task.id.slice(0, 8)}</Text>
         </Box>
 
         {/* Prompt / description */}
         <Box marginY={1}>
-          <Text wrap="wrap">{task.prompt ?? getActivityPreview(task)}</Text>
+          <Text wrap="wrap" dimColor>{task.prompt ?? getActivityPreview(task)}</Text>
         </Box>
 
         {/* Row summary (AI-generated) */}
@@ -81,9 +79,9 @@ export function AgentViewPeekPanel({
 
         {/* Recent activity */}
         {activityPreviewLines.length > 0 && (
-          <Box flexDirection="column" gap={0} marginBottom={1}>
+          <Box flexDirection="column" marginBottom={1}>
             <Text bold dimColor>
-              Recent Activity:
+              Recent:
             </Text>
             {activityPreviewLines.map((line: string, i: number) => (
               <Box key={i} paddingLeft={1}>
@@ -97,9 +95,9 @@ export function AgentViewPeekPanel({
 
         {/* Pending permissions */}
         {pendingPermissions.length > 0 && (
-          <Box flexDirection="column" marginY={1} padding={1} borderStyle="double" borderColor="warning">
+          <Box flexDirection="column" marginY={1} paddingX={1} paddingY={1} borderStyle="round" borderColor="warning">
             <Text color="warning" bold>
-              Pending Permission: {pendingPermissions[0]!.tool.name}
+              {figures.warning} Pending: {pendingPermissions[0]!.tool.name}
             </Text>
             <Box marginTop={1}>
               <PermissionRequest
@@ -116,8 +114,10 @@ export function AgentViewPeekPanel({
 
         {/* Needs input indicator */}
         {needsInput && (
-          <Box flexDirection="column" marginTop={1} padding={1} borderStyle="single" borderColor="yellow">
-            <Text color="yellow">This agent needs your input.</Text>
+          <Box marginTop={1}>
+            <Text color="yellow">
+              {figures.play} This agent needs your input
+            </Text>
           </Box>
         )}
 
@@ -142,9 +142,8 @@ export function AgentViewPeekPanel({
 
       {/* Reply input (shown when needs input) */}
       {needsInput && (
-        <Box>
-          <Divider />
-          <Box flexDirection="row" gap={1} marginTop={1}>
+        <Box flexDirection="column" paddingX={2} paddingY={1}>
+          <Box flexDirection="row" gap={1}>
             <Text color="suggestion">&gt;</Text>
             <TextInput
               value={replyText}

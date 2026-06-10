@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { constants as fsConstants } from 'fs';
 import { access, writeFile } from 'fs/promises';
 import { homedir } from 'os';
@@ -23,9 +22,6 @@ import { getInitialSettings } from './settings/settings.js';
 import { filterClaudeAliases, getShellConfigPaths, readFileLines, writeFileLines } from './shellConfig.js';
 import { sleep } from './sleep.js';
 import { jsonParse } from './slowOperations.js';
-
-const GCS_BUCKET_URL =
-  'https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases';
 
 class AutoUpdaterError extends ClaudeError {}
 
@@ -425,40 +421,19 @@ export async function getNpmDistTags(): Promise<NpmDistTags> {
 }
 
 /**
- * Get the latest version from GCS bucket for a given release channel.
- * This is used by installations that don't have npm (e.g. package manager installs).
+ * Get the latest version from npm registry for a given release channel.
+ * Delegates to npm view (same as getLatestVersion).
  */
 export async function getLatestVersionFromGcs(channel: ReleaseChannel): Promise<string | null> {
-  const maxRetries = 2;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await axios.get(`${GCS_BUCKET_URL}/${channel}`, {
-        timeout: 5000,
-        responseType: 'text',
-      });
-      return response.data.trim();
-    } catch (error) {
-      const { category, osCode } = classifyUpdateError(error);
-      logForDebugging(
-        `Failed to fetch ${channel} from GCS (attempt ${attempt + 1}/${maxRetries + 1}): ${category}${osCode ? ` (${osCode})` : ''} - ${error}`,
-      );
-      if (category === 'permissions' || attempt >= maxRetries) {
-        return null;
-      }
-      await sleep(1000 * (attempt + 1));
-    }
-  }
-  return null;
+  return getLatestVersion(channel);
 }
 
 /**
- * Get available versions from GCS bucket (for native installations).
- * Fetches both latest and stable channel pointers.
+ * Get available versions from npm registry (for all installations).
+ * Uses npm dist-tags directly.
  */
 export async function getGcsDistTags(): Promise<NpmDistTags> {
-  const [latest, stable] = await Promise.all([getLatestVersionFromGcs('latest'), getLatestVersionFromGcs('stable')]);
-
-  return { latest, stable };
+  return getNpmDistTags();
 }
 
 /**
@@ -565,7 +540,7 @@ To fix this issue:
     });
     if (installResult.code !== 0) {
       const error = new AutoUpdaterError(
-        `Failed to install new version of claude: ${installResult.stdout} ${installResult.stderr}`,
+        `Failed to install new version: ${installResult.stdout} ${installResult.stderr}`,
       );
       logError(error);
       return 'install_failed';

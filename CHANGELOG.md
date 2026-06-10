@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **PeerSpawnTool**: Replaced `bun run start` with `clew` for spawning peer sessions.
+- **`/agents` visual polish**: Redesigned AgentViewDashboard header with colored status dots, improved AgentViewRow column layout, cleaned up AgentViewGroupHeader with collapse arrows and counts, removed border clutter from AgentViewPeekPanel, and polished AgentsList dialog with cleaner agent grouping and typography.
 
 ## [0.2.5] — 2026-06-10
 
@@ -51,6 +52,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **`/providers` broken at runtime**: Fixed duplicate `const info` declaration in `provider-select.ts` that caused a runtime error preventing the provider picker from rendering.
 - Fixed PR tool result mapping with `mapToolResultToToolResultBlockParam`.
 - Fixed provider label ordering and fallback display in the model header.
 - Fixed taste brief rendering so it appears as a proper chat system message instead of a task notification.

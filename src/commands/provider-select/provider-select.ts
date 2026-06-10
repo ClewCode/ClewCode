@@ -5,6 +5,7 @@ import { type OptionWithDescription, Select } from '../../components/CustomSelec
 import { GoogleOAuthFlow } from '../../components/GoogleOAuthFlow.js';
 import { OpenAIOAuthFlow } from '../../components/OpenAIOAuthFlow.js';
 import TextInput from '../../components/TextInput.js';
+import { Dialog } from '../../components/design-system/Dialog.js';
 import { Box, Text } from '../../ink.js';
 import {
   getEffectiveProviderConfigPath,
@@ -425,6 +426,11 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   const setAppState = useSetAppState();
   const currentSessionModel = useAppState(s => (s.mainLoopModelForSession || s.mainLoopModel) as string | null);
 
+  const info = provider ? getProviderInfo(provider) : null;
+  const hasExistingKey = provider && info
+    ? Boolean(config?.apiKeys?.[provider] || (info.envKey ? process.env[info.envKey] : false))
+    : false;
+
   React.useEffect(() => {
     void loadConfig().then(loadedConfig => {
       setConfig(loadedConfig);
@@ -623,53 +629,66 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
         ];
 
     return React.createElement(
-      Box,
-      { flexDirection: 'column' },
-      React.createElement(Text, { marginBottom: 1 }, 'Select AI Provider:'),
-      React.createElement(TextInput, {
-        value: searchQuery,
-        onChange: value => {
-          setSearchQuery(value);
-          setSearchCursorOffset(value.length);
-        },
-        onSubmit: () => {
-          // Enter on search input moves to selection
-        },
-        onExit: () => {
-          setSearchQuery('');
-          setSearchCursorOffset(0);
-          onDone('Provider selection cancelled', { display: 'system' });
-        },
-        placeholder: 'Search providers... (type to filter)',
-        focus: true,
-        showCursor: true,
-        columns: 50,
-        cursorOffset: searchCursorOffset,
-        onChangeCursorOffset: setSearchCursorOffset,
-      }),
-      React.createElement(Box, { marginTop: 1 }),
-      React.createElement(Select, {
-        options,
-        visibleOptionCount: query ? 10 : 12,
-        highlightText: searchQuery,
-        onChange: value => {
-          if (value === '__SECTION_RECENT__' || value === '__SECTION_PROVIDERS__') {
-            return;
-          }
-          setProvider(value as ProviderKey);
-          setApiKeyInput('');
-          setApiKeyCursorOffset(0);
-          setApiKeyError(null);
-          setSearchQuery('');
-          setSearchCursorOffset(0);
-        },
+      Dialog,
+      {
+        title: 'AI Providers',
+        subtitle: 'Select active provider for the session and configure credentials',
         onCancel: () => {
-          setShowChangeKey(false);
           setSearchQuery('');
           setSearchCursorOffset(0);
           onDone('Provider selection cancelled', { display: 'system' });
         },
-      }),
+        isCancelActive: !searchQuery,
+        hideInputGuide: true,
+      },
+      React.createElement(
+        Box,
+        { flexDirection: 'column' },
+        React.createElement(TextInput, {
+          value: searchQuery,
+          onChange: value => {
+            setSearchQuery(value);
+            setSearchCursorOffset(value.length);
+          },
+          onSubmit: () => {
+            // Enter on search input moves to selection
+          },
+          onExit: () => {
+            setSearchQuery('');
+            setSearchCursorOffset(0);
+            onDone('Provider selection cancelled', { display: 'system' });
+          },
+          placeholder: 'Search providers... (type to filter)',
+          focus: true,
+          showCursor: true,
+          columns: 50,
+          cursorOffset: searchCursorOffset,
+          onChangeCursorOffset: setSearchCursorOffset,
+        }),
+        React.createElement(Box, { marginTop: 1 }),
+        React.createElement(Select, {
+          options,
+          visibleOptionCount: query ? 10 : 12,
+          highlightText: searchQuery,
+          onChange: value => {
+            if (value === '__SECTION_RECENT__' || value === '__SECTION_PROVIDERS__') {
+              return;
+            }
+            setProvider(value as ProviderKey);
+            setApiKeyInput('');
+            setApiKeyCursorOffset(0);
+            setApiKeyError(null);
+            setSearchQuery('');
+            setSearchCursorOffset(0);
+          },
+          onCancel: () => {
+            setShowChangeKey(false);
+            setSearchQuery('');
+            setSearchCursorOffset(0);
+            onDone('Provider selection cancelled', { display: 'system' });
+          },
+        }),
+      ),
     );
   }
 
@@ -858,8 +877,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
       }),
     );
   }
-
-  const info = getProviderInfo(provider);
 
   // Sub-menu for Anthropic implementation type
   if (provider === 'anthropic' && !anthropicType && !showChangeKey) {
