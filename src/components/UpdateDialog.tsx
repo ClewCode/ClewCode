@@ -1,4 +1,4 @@
-import { createInterface, emitKeypressEvents } from 'node:readline';
+import { emitKeypressEvents } from 'node:readline';
 import { LOADING_BAR_BODY, LOADING_BAR_EMPTY, LOADING_BAR_FILLED } from '../constants/figures.js';
 import { installGlobalPackage } from '../utils/autoUpdater.js';
 
@@ -91,11 +91,6 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
       return;
     }
 
-    const rl = createInterface({
-      input: process.stdin,
-      escapeCodeTimeout: 50,
-    });
-
     emitKeypressEvents(process.stdin);
     process.stdin.setRawMode(true);
     process.stdin.resume();
@@ -103,9 +98,9 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
 
     function cleanup() {
       if (installTimer) clearInterval(installTimer);
+      process.stdin.removeListener('keypress', onKeypress);
       process.stdin.setRawMode(false);
       process.stdin.pause();
-      rl.close();
       process.stdout.write(SHOW_CURSOR);
       process.stdout.write(CLEAR_SCREEN);
     }
