@@ -36,7 +36,7 @@ const MAX_COLLAPSED_COMPLETED = 4;
 function statusGlyph(task: TaskQueueEntry): { glyph: string; color: 'success' | 'warning' | 'error' | 'suggestion' } {
   switch (task.status) {
     case 'completed':
-      return { glyph: '■', color: 'success' };
+      return { glyph: '✔', color: 'success' };
     case 'in_progress':
       return { glyph: '▾', color: 'suggestion' };
     case 'failed':

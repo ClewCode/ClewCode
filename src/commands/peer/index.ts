@@ -4,7 +4,7 @@ import { shouldInferenceConfigCommandBeImmediate } from '../../utils/immediateCo
 export default {
   type: 'local-jsx',
   name: 'peer',
-  description: 'Discover workers on LAN and assign tasks',
+  description: 'Discover other Clew instances on LAN and assign tasks',
   argumentHint: '[share|discover|list|todo|todos]',
   get immediate() {
     return shouldInferenceConfigCommandBeImmediate();

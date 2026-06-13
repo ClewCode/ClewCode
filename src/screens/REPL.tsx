@@ -971,24 +971,7 @@ export function REPL({
   const editorRenderingRef = useRef(false);
   const { addNotification, removeNotification } = useNotifications();
 
-  // Wire up taste feedback notifications
-  useEffect(() => {
-    import('../services/taste/TasteIntegration.js').then(({ setOnTasteFeedback }) => {
-      setOnTasteFeedback((message, key = 'taste-feedback', priority = 'medium') => {
-        addNotification({
-          key,
-          text: `taste: ${message}`,
-          priority,
-          timeoutMs: 5000,
-        });
-      });
-    });
-    return () => {
-      import('../services/taste/TasteIntegration.js').then(({ setOnTasteFeedback }) => {
-        setOnTasteFeedback(null);
-      });
-    };
-  }, [addNotification]);
+
 
   // Wire up peer tool feedback notifications
   useEffect(() => {

@@ -23,7 +23,7 @@ import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
 import { ACPStatusLine } from '../ACPStatusLine.js';
 import { PeerStatusLine } from '../PeerStatusLine.js';
 import { getLastAssistantMessageId, StatusLine, statusLineShouldDisplay } from '../StatusLine.js';
-import { TasteStatusLine } from '../TasteStatusLine.js';
+
 import { Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
 import { PromptInputFooterSuggestions, type SuggestionItem } from './PromptInputFooterSuggestions.js';
@@ -256,7 +256,7 @@ function PromptInputFooter({
       </Box>
       {'external' === 'ant' && <CoordinatorTaskPanel />}
       <DynamicWorkflowStatusLine />
-      <TasteStatusLine />
+
       <ACPStatusLine />
       <PeerStatusLine />
     </>

@@ -1,4 +1,4 @@
-﻿import { feature } from 'bun:bundle';
+import { feature } from 'bun:bundle';
 import { z } from 'zod/v4';
 import { SandboxSettingsSchema } from '../../entrypoints/sandboxTypes.js';
 import { isEnvTruthy } from '../envUtils.js';
@@ -612,20 +612,7 @@ export const SettingsSchema = lazySchema(() =>
         .catch(undefined)
         .describe('Persisted effort level for supported models.'),
       advisorModel: z.string().optional().describe('Advisor model for the server-side advisor tool.'),
-      taste: z
-        .object({
-          enabled: z.boolean().optional().describe('Enable Clew taste preference learning'),
-          autoLearn: z.boolean().optional().describe('Automatically learn from signals'),
-          injectPrompts: z.boolean().optional().describe('Inject taste context into system prompts'),
-          validateEdits: z.boolean().optional().describe('Validate edits against learned rules'),
-          minConfidence: z.number().optional().describe('Minimum confidence for rule application (0-1)'),
-          maxInjectedRules: z.number().optional().describe('Maximum rules to inject into system prompt'),
-          decayEnabled: z.boolean().optional().describe('Enable rule confidence decay over time'),
-          banditEnabled: z.boolean().optional().describe('Enable contextual bandit arm selection'),
-          neuralScoringEnabled: z.boolean().optional().describe('Enable neural/semantic preference scoring'),
-        })
-        .optional()
-        .describe('Clew taste: local-first preference-learning runtime config'),
+
       fastMode: z
         .boolean()
         .optional()

@@ -6,7 +6,7 @@ import {
 } from 'src/services/analytics/index.js';
 import { sanitizeToolNameForAnalytics } from 'src/services/analytics/metadata.js';
 import type { ToolUseConfirm } from '../../components/permissions/PermissionRequest.js';
-import { recordAcceptSignal, recordRejectSignal } from '../../services/taste/TasteIntegration.js';
+
 import type { ToolPermissionContext, Tool as ToolType, ToolUseContext } from '../../Tool.js';
 import { awaitClassifierAutoApproval } from '../../tools/BashTool/bashPermissions.js';
 import { BASH_TOOL_NAME } from '../../tools/BashTool/toolName.js';
@@ -143,8 +143,7 @@ function createPermissionContext(
       return true;
     },
     cancelAndAbort(feedback?: string, isAbort?: boolean, contentBlocks?: ContentBlockParam[]): PermissionDecision {
-      // Fire-and-forget taste signal: user rejected a tool/action
-      void recordRejectSignal(feedback);
+
 
       const sub = !!toolUseContext.agentId;
       const baseMessage = feedback
@@ -268,8 +267,7 @@ function createPermissionContext(
       contentBlocks?: ContentBlockParam[],
       decisionReason?: PermissionDecisionReason,
     ): Promise<PermissionAllowDecision> {
-      // Fire-and-forget taste signal: user accepted a tool/action
-      void recordAcceptSignal();
+
 
       const acceptedPermanentUpdates = await this.persistPermissions(permissionUpdates);
       this.logDecision(

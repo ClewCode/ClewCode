@@ -328,7 +328,9 @@ async function runProcessPeer(rest: string, onDone: (msg: string) => void): Prom
   const provider = getProcessPeerProvider(parsed.providerId);
   if (!provider) {
     onDone(
-      chalk.red(`Unknown process peer "${parsed.providerId}". Available: ${getProcessPeerProviderIds().join(', ')}`),
+      chalk.red(
+        `Unknown process worker provider "${parsed.providerId}". Available: ${getProcessPeerProviderIds().join(', ')}`,
+      ),
     );
     return;
   }
@@ -569,17 +571,15 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
   if (args === 'help' || args === '--help' || args === '-h') {
     onDone(
       [
-        'Peer commands — external process peers and providers:',
-        '  /peer share              Start sharing (listen for connections)',
+        'Peer commands - Clew-to-Clew collaboration:',
+        '  /peer share              Start sharing this Clew instance',
         '  /peer share stop         Stop sharing',
-        '  /peer join <host>:<port> Connect to a peer (e.g. /peer join 127.0.0.1:61459)',
-        '  /peer list               Show connected peers',
-        '  /peer send <peer> <msg>  Send a message to a peer',
-        '  /peer todo <peer> <task> Assign a task to a peer',
+        '  /peer join <host>:<port> Connect to another Clew peer (e.g. /peer join 127.0.0.1:61459)',
+        '  /peer list               Show connected Clew peers',
+        '  /peer send <peer> <msg>  Send a message to a Clew peer',
+        '  /peer todo <peer> <task> Assign a task to a Clew peer',
         '  /peer todos              Show received tasks',
         '  /peer todo done <id>     Mark task done',
-        '  /peer run codex <task>   Run a one-shot local Codex process peer',
-        '                           Options: -C, --cwd <dir>; -m, --model <model>; -t, --timeout <seconds>',
         '  /peer inbox              View pending messages',
         '  /peer spawn [options]    Spawn a new peer shell terminal window',
         '                           Options: -n, --name <name> (peer display name)',
@@ -587,7 +587,12 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
         '                                    -m, --model <model> (custom AI model)',
         '                                    -r, --role <role> (custom peer role)',
         '',
-        '  For Clew background specialists, use /agent <task>',
+        'Local process runners:',
+        '  /peer run codex <task>   Run the local Codex CLI once; this is not a LAN peer or /agent subagent',
+        '                           Options: -C, --cwd <dir>; -m, --model <model>; -t, --timeout <seconds>',
+        '',
+        'Subagents:',
+        '  Use /agent for managed Clew subagents. They are separate from /peer and Codex CLI.',
       ].join('\n'),
       { display: 'system' },
     );

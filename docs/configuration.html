@@ -24,7 +24,7 @@
   <table>
     <tr><th>Flag</th><th>Description</th></tr>
     <tr><td><code>-p, --print</code></td><td>Print response and exit (useful for pipes). Skips workspace trust dialog.</td></tr>
-    <tr><td><code>--bare</code></td><td>Minimal mode: skip hooks, LSP, plugins, attribution, auto-memory, keychain reads, CLAUDE.md discovery. Sets CLAUDE_CODE_SIMPLE=1.</td></tr>
+    <tr><td><code>--bare</code></td><td>Minimal mode: skip hooks, LSP, plugins, attribution, auto-memory, keychain reads, CLEW.md discovery. Sets CLEW_CODE_SIMPLE=1.</td></tr>
     <tr><td><code>-d, --debug [filter]</code></td><td>Enable debug mode with optional category filtering (e.g., "api,hooks" or "!1p,!file")</td></tr>
     <tr><td><code>--debug-file &lt;path&gt;</code></td><td>Write debug logs to a file</td></tr>
     <tr><td><code>--verbose</code></td><td>Override verbose mode setting from config</td></tr>
@@ -94,7 +94,7 @@
   </table>
 
   <h2>Settings File</h2>
-  <p>Config file at <code>~/.claude/settings.json</code> (TypeBox-validated). Stores:</p>
+  <p>Config file at <code>~/.clew/settings.json</code> (TypeBox-validated). Stores:</p>
   <ul>
     <li>Default provider and model</li>
     <li>Permission mode and rules</li>
@@ -107,12 +107,12 @@
   <h2>Config Paths</h2>
   <table>
     <tr><th>Path</th><th>Content</th></tr>
-    <tr><td><code>~/.claude/settings.json</code></td><td>Main configuration (TypeBox schema)</td></tr>
-    <tr><td><code>~/.claude/credentials/</code></td><td>Stored credentials</td></tr>
-    <tr><td><code>~/.claude/sessions/</code></td><td>Session persistence</td></tr>
-    <tr><td><code>~/.claude/logs/</code></td><td>Debug and error logs</td></tr>
-    <tr><td><code>~/.claude/skills/</code></td><td>User-installed skills</td></tr>
-    <tr><td><code>.claude/skills/</code></td><td>Project-level skills</td></tr>
+    <tr><td><code>~/.clew/settings.json</code></td><td>Main configuration (TypeBox schema)</td></tr>
+    <tr><td><code>~/.clew/credentials/</code></td><td>Stored credentials</td></tr>
+    <tr><td><code>~/.clew/sessions/</code></td><td>Session persistence</td></tr>
+    <tr><td><code>~/.clew/logs/</code></td><td>Debug and error logs</td></tr>
+    <tr><td><code>~/.clew/skills/</code></td><td>User-installed skills</td></tr>
+    <tr><td><code>.clew/skills/</code></td><td>Project-level skills</td></tr>
   </table>
 
   <h2>In-Session Configuration</h2>

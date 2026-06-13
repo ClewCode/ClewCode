@@ -14,6 +14,7 @@ import {
 } from '../../utils/permissions/filesystem.js';
 import type { PermissionDecision } from '../../utils/permissions/PermissionResult.js';
 import { getPlatform } from '../../utils/platform.js';
+import { getCachedSearch, searchCacheKey, setCachedSearch } from '../../utils/searchCache.js';
 
 /**
  * On Windows, ripgrep returns paths like C:\Users\...\file.ts:42:content.
@@ -415,12 +416,44 @@ export const GrepTool = buildTool({
       args.push('--glob', exclusion);
     }
 
-    // WSL has severe performance penalty for file reads (3-5x slower on WSL2)
-    // The timeout is handled by ripgrep itself via execFile timeout option
-    // We don't use AbortController for timeout to avoid interrupting the agent loop
-    // If ripgrep times out, it throws RipgrepTimeoutError which propagates up
-    // so Claude knows the search didn't complete (rather than thinking there were no matches)
-    const results = await ripGrep(args, absolutePath, abortController.signal);
+    // Check cache for files_with_matches mode — identical searches within TTL
+    // skip ripgrep entirely.
+    let results: string[] | undefined;
+    if (output_mode === 'files_with_matches') {
+      const cacheKey = searchCacheKey({
+        pattern,
+        absolutePath,
+        glob,
+        type,
+        outputMode: output_mode,
+        multiline,
+        caseInsensitive: case_insensitive,
+      });
+      results = getCachedSearch(cacheKey);
+    }
+
+    if (!results) {
+      // WSL has severe performance penalty for file reads (3-5x slower on WSL2)
+      // The timeout is handled by ripgrep itself via execFile timeout option
+      // We don't use AbortController for timeout to avoid interrupting the agent loop
+      // If ripgrep times out, it throws RipgrepTimeoutError which propagates up
+      // so Claude knows the search didn't complete (rather than thinking there were no matches)
+      results = await ripGrep(args, absolutePath, abortController.signal);
+
+      // Cache result for files_with_matches mode
+      if (output_mode === 'files_with_matches') {
+        const cacheKey = searchCacheKey({
+          pattern,
+          absolutePath,
+          glob,
+          type,
+          outputMode: output_mode,
+          multiline,
+          caseInsensitive: case_insensitive,
+        });
+        setCachedSearch(cacheKey, results);
+      }
+    }
 
     if (output_mode === 'content') {
       // For content mode, results are the actual content lines
@@ -500,45 +533,61 @@ export const GrepTool = buildTool({
     }
 
     // For files_with_matches mode (default)
-    // Use allSettled so a single ENOENT (file deleted between ripgrep's scan
-    // and this stat) does not reject the whole batch. Failed stats sort as mtime 0.
-    const stats = await Promise.allSettled(results.map(_ => getFsImplementation().stat(_)));
-    const sortedMatches = results
-      // Sort by modification time
-      .map((_, i) => {
-        const r = stats[i]!;
-        return [_, r.status === 'fulfilled' ? (r.value.mtimeMs ?? 0) : 0] as const;
-      })
-      .sort((a, b) => {
-        if (process.env.NODE_ENV === 'test') {
-          // In tests, we always want to sort by filename, so that results are deterministic
-          return a[0].localeCompare(b[0]);
-        }
-        const timeComparison = b[1] - a[1];
-        if (timeComparison === 0) {
-          // Sort by filename as a tiebreaker
-          return a[0].localeCompare(b[0]);
-        }
-        return timeComparison;
-      })
-      .map(_ => _[0]);
+    // Smart stat() optimization: if results fit within head_limit, skip stat() + sort entirely.
+    // Stat() on every file is expensive on slow filesystems (NFS, WSL, network drives).
+    // Only pay the cost when we actually need to decide which files to keep.
+    const effectiveLimit = head_limit ?? DEFAULT_HEAD_LIMIT;
+    const needSort = head_limit !== 0 && results.length > effectiveLimit;
 
-    // Apply head_limit to sorted file list (like "| head -N")
-    const { items: finalMatches, appliedLimit } = applyHeadLimit(sortedMatches, head_limit, offset);
+    if (needSort) {
+      // Only stat() the candidates we might keep (head_limit + offset).
+      // These are the files that ripgrep returned first — typically they're
+      // already in a reasonable order (rg walks the tree), but we sort by
+      // mtime for the "most recently modified first" UX.
+      const candidates = results.slice(0, effectiveLimit + offset);
+      const stats = await Promise.allSettled(candidates.map(_ => getFsImplementation().stat(_)));
+      const sortedMatches = candidates
+        .map((_, i) => {
+          const r = stats[i]!;
+          return [_, r.status === 'fulfilled' ? (r.value.mtimeMs ?? 0) : 0] as const;
+        })
+        .sort((a, b) => {
+          if (process.env.NODE_ENV === 'test') {
+            return a[0].localeCompare(b[0]);
+          }
+          const timeComparison = b[1] - a[1];
+          if (timeComparison === 0) {
+            return a[0].localeCompare(b[0]);
+          }
+          return timeComparison;
+        })
+        .map(_ => _[0]);
 
-    // Convert absolute paths to relative paths to save tokens
-    const relativeMatches = finalMatches.map(toRelativePath);
+      const { items: finalMatches, appliedLimit } = applyHeadLimit(sortedMatches, head_limit, offset);
+      const relativeMatches = finalMatches.map(toRelativePath);
+      return {
+        data: {
+          mode: 'files_with_matches' as const,
+          filenames: relativeMatches,
+          numFiles: relativeMatches.length,
+          ...(appliedLimit !== undefined && { appliedLimit }),
+          ...(offset > 0 && { appliedOffset: offset }),
+        },
+      };
+    }
 
-    const output = {
-      mode: 'files_with_matches' as const,
-      filenames: relativeMatches,
-      numFiles: relativeMatches.length,
-      ...(appliedLimit !== undefined && { appliedLimit }),
-      ...(offset > 0 && { appliedOffset: offset }),
-    };
-
+    // Fast path: results fit entirely within head_limit (or unlimited).
+    // No stat() needed — just apply offset and relativize.
+    const trimmed = head_limit === 0 ? results : results.slice(offset);
+    const relativeMatches = trimmed.map(toRelativePath);
     return {
-      data: output,
+      data: {
+        mode: 'files_with_matches' as const,
+        filenames: relativeMatches,
+        numFiles: relativeMatches.length,
+        ...(head_limit === 0 ? {} : { appliedLimit: effectiveLimit }),
+        ...(offset > 0 && { appliedOffset: offset }),
+      },
     };
   },
 } satisfies ToolDef<InputSchema, Output>);

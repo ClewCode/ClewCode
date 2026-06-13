@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import { buildCitations, formatBibliography } from './citations.js';
 import { createClaim, extractClaimsFromText } from './claims.js';
@@ -49,7 +50,7 @@ describe('Research Agent Pipeline', () => {
 
     const statusAfter = await getResearchWorkspaceStatus(tempCwd);
     expect(statusAfter.initialized).toBe(true);
-    expect(statusAfter.researchDir).toContain('.claude');
+    expect(statusAfter.researchDir).toContain(DOT_CLEW);
   });
 
   test('Research Planner generates valid plans', () => {
@@ -194,9 +195,10 @@ describe('Research Agent Pipeline', () => {
 
     const report = buildResearchReport(query, plan, claims, citations);
     expect(report).toContain('# Research Report — GrowthBook Setup');
-    expect(report).toContain('Executive Summary');
+    expect(report).toContain('Question');
     expect(report).toContain('Key Findings');
-    expect(report).toContain('Comparison Matrix');
+    expect(report).toContain('GrowthBook is integrated locally.');
+    expect(report).toContain('Risks');
     expect(report).toContain('Sources');
   });
 

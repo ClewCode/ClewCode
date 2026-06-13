@@ -1,11 +1,9 @@
 import { basename, relative } from 'path';
 import type React from 'react';
-import { useMemo } from 'react';
 import { FileEditToolDiff } from 'src/components/FileEditToolDiff.js';
 import { getCwd } from 'src/utils/cwd.js';
 import type { z } from 'zod/v4';
 import { Box, Text } from '../../../ink.js';
-import { validateEdit } from '../../../services/taste/TasteIntegration.js';
 import { FileEditTool } from '../../../tools/FileEditTool/FileEditTool.js';
 import { FilePermissionDialog } from '../FilePermissionDialog/FilePermissionDialog.js';
 import {
@@ -42,9 +40,6 @@ export function FileEditPermissionRequest(props: PermissionRequestProps): React.
   const parsed = parseInput(props.toolUseConfirm.input);
   const { file_path, old_string, new_string, replace_all } = parsed;
 
-  const tasteValidation = useMemo(() => validateEdit(old_string, new_string), [old_string, new_string]);
-  const isFlagged = tasteValidation?.shouldBlock === true;
-
   return (
     <FilePermissionDialog
       toolUseConfirm={props.toolUseConfirm}
@@ -52,18 +47,13 @@ export function FileEditPermissionRequest(props: PermissionRequestProps): React.
       onDone={props.onDone}
       onReject={props.onReject}
       workerBadge={props.workerBadge}
-      title={isFlagged ? 'Edit file (flagged by taste)' : 'Edit file'}
+      title="Edit file"
       subtitle={relative(getCwd(), file_path)}
       question={
         <Box flexDirection="column" gap={1}>
           <Text>
             Do you want to make this edit to <Text bold>{basename(file_path)}</Text>?
           </Text>
-          {tasteValidation?.shouldBlock && (
-            <Text color="warning">
-              ⚠ Taste flagged this edit: {tasteValidation.reason ?? 'violates learned preferences'}
-            </Text>
-          )}
         </Box>
       }
       content={

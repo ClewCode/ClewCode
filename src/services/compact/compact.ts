@@ -82,6 +82,7 @@ import { getRetryDelay } from '../api/withRetry.js';
 import { logPermissionContextForAnts } from '../internalLogging.js';
 import { roughTokenCountEstimation, roughTokenCountEstimationForMessages } from '../tokenEstimation.js';
 import { groupMessagesByApiRound } from './grouping.js';
+import { selectPostCompactMessagesToKeep } from './postCompactTail.js';
 import { getCompactPrompt, getCompactUserSummaryMessage, getPartialCompactPrompt } from './prompt.js';
 
 export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5;
@@ -467,6 +468,7 @@ export async function compactConversation(
 
     // Store the current file state before clearing
     const preCompactReadFileState = cacheToObject(context.readFileState);
+    const messagesToKeep = selectPostCompactMessagesToKeep(messages);
 
     // Clear the cache
     context.readFileState.clear();
@@ -481,7 +483,12 @@ export async function compactConversation(
 
     // Run async attachment generation in parallel
     const [fileAttachments, asyncAgentAttachments] = await Promise.all([
-      createPostCompactFileAttachments(preCompactReadFileState, context, POST_COMPACT_MAX_FILES_TO_RESTORE),
+      createPostCompactFileAttachments(
+        preCompactReadFileState,
+        context,
+        POST_COMPACT_MAX_FILES_TO_RESTORE,
+        messagesToKeep,
+      ),
       createAsyncAgentAttachmentsIfNeeded(context),
     ]);
 
@@ -576,6 +583,7 @@ export async function compactConversation(
     const truePostCompactTokenCount = roughTokenCountEstimationForMessages([
       boundaryMarker,
       ...summaryMessages,
+      ...messagesToKeep,
       ...postCompactFileAttachments,
       ...hookMessages,
     ]);
@@ -662,10 +670,12 @@ export async function compactConversation(
     const combinedUserDisplayMessage = [userDisplayMessage, postCompactHookResult.userDisplayMessage]
       .filter(Boolean)
       .join('\n');
+    const anchorUuid = summaryMessages.at(-1)?.uuid ?? boundaryMarker.uuid;
 
     return {
-      boundaryMarker,
+      boundaryMarker: annotateBoundaryWithPreservedSegment(boundaryMarker, anchorUuid, messagesToKeep),
       summaryMessages,
+      messagesToKeep,
       attachments: postCompactFileAttachments,
       hookResults: hookMessages,
       userDisplayMessage: combinedUserDisplayMessage || undefined,
