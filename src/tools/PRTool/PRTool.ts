@@ -118,9 +118,7 @@ async function handleList(): Promise<{ data: Output }> {
     if (prs.length === 0) {
       return { data: { success: true, action: 'list', message: 'No open PRs.' } };
     }
-    const lines = prs.map(
-      pr => `#${pr.number} ${pr.title} (${pr.headRefName})`,
-    );
+    const lines = prs.map(pr => `#${pr.number} ${pr.title} (${pr.headRefName})`);
     return {
       data: {
         success: true,
@@ -262,9 +260,7 @@ async function handleMerge(prNumber: number): Promise<{ data: Output }> {
 async function handleStatus(branch?: string): Promise<{ data: Output }> {
   try {
     const currentBranch = branch || ghSafe('branch --show-current') || 'unknown';
-    const prInfo = ghSafe(
-      `pr view --json number,title,state,mergeable,reviews`,
-    );
+    const prInfo = ghSafe(`pr view --json number,title,state,mergeable,reviews`);
     const checks = ghSafe('pr checks --limit 10 --json name,state,branch');
 
     const lines = [`Status for ${currentBranch}`];

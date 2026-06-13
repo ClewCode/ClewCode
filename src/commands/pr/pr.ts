@@ -190,9 +190,7 @@ async function handleMerge(prId: string): Promise<LocalCommandResult> {
 async function handleStatus(): Promise<LocalCommandResult> {
   try {
     const branch = gh('branch --show-current');
-    const prInfo = ghSafe(
-      `pr view --json number,title,state,mergeable,reviews`,
-    );
+    const prInfo = ghSafe(`pr view --json number,title,state,mergeable,reviews`);
     const checks = ghSafe('pr checks --limit 10 --json name,state,branch');
 
     const lines = [`◈ pr · status for ${branch}`];
