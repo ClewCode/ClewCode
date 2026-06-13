@@ -3229,6 +3229,9 @@ async function run(): Promise<CommanderCommand> {
           const { showUpdateDialog } = await import('./components/UpdateDialog.js');
           const result = await checkForUpdate();
           if (result.hasUpdate && result.latestVersion) {
+            const { stopCapturingEarlyInput } = await import('./utils/earlyInput.js');
+            stopCapturingEarlyInput();
+
             const choice = await showUpdateDialog({
               currentVersion: result.currentVersion,
               latestVersion: result.latestVersion,
