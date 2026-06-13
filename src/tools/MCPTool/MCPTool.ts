@@ -7,7 +7,7 @@ import { DESCRIPTION, PROMPT } from './prompt.js';
 import { renderToolResultMessage, renderToolUseMessage, renderToolUseProgressMessage } from './UI.js';
 
 // Allow any input object since MCP tools define their own schemas
-export const inputSchema = lazySchema(() => z.object({}).passthrough());
+export const inputSchema = lazySchema(() => z.looseObject({}));
 type InputSchema = ReturnType<typeof inputSchema>;
 
 export const outputSchema = lazySchema(() => z.string().describe('MCP tool execution result'));

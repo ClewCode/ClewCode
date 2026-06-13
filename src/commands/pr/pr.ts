@@ -75,11 +75,17 @@ async function handleCreate(): Promise<LocalCommandResult> {
 
 async function handleList(): Promise<LocalCommandResult> {
   try {
-    const output = gh(
-      'pr list --state open --limit 20 --json number,title,headRefName,author,createdAt,mergeable,reviews --jq \'.[] | "#(.number) (.title) ((.headRefName))"',
+    const json = gh(
+      'pr list --state open --limit 20 --json number,title,headRefName,author,createdAt,mergeable,reviews',
     );
-    if (!output) return { type: 'text', value: '◈ pr · no open PRs.' };
-    const lines = output.split('\n').filter(Boolean);
+    if (!json) return { type: 'text', value: '◈ pr · no open PRs.' };
+    const prs = JSON.parse(json) as Array<{
+      number: number;
+      title: string;
+      headRefName: string;
+    }>;
+    if (prs.length === 0) return { type: 'text', value: '◈ pr · no open PRs.' };
+    const lines = prs.map(pr => `#${pr.number} ${pr.title} (${pr.headRefName})`);
     return { type: 'text', value: `◈ pr · open PRs:\n${lines.map(l => `  ${l}`).join('\n')}` };
   } catch (e: unknown) {
     return { type: 'text', value: `◈ pr · list failed: ${e instanceof Error ? e.message : String(e)}` };
@@ -185,15 +191,15 @@ async function handleStatus(): Promise<LocalCommandResult> {
   try {
     const branch = gh('branch --show-current');
     const prInfo = ghSafe(
-      `pr view --json number,title,state,mergeable,reviews --jq '[.number, .title, .state, .mergeable] | @tsv'`,
+      `pr view --json number,title,state,mergeable,reviews`,
     );
     const checks = ghSafe('pr checks --limit 10 --json name,state,branch');
 
     const lines = [`◈ pr · status for ${branch}`];
 
     if (prInfo) {
-      const [num, title, state] = prInfo.split('\t');
-      lines.push(`  PR #${num}: ${title} [${state}]`);
+      const parsed = JSON.parse(prInfo) as { number: number; title: string; state: string };
+      lines.push(`  PR #${parsed.number}: ${parsed.title} [${parsed.state}]`);
     } else {
       lines.push('  No PR found for this branch.');
     }

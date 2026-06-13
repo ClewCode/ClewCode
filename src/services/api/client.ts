@@ -11,7 +11,6 @@ import { AnthropicAdapter } from '../ai/adapter/AnthropicAdapter.js';
 import { ProviderManager } from '../ai/ProviderManager.js';
 import type { ProviderId } from '../ai/providers/ProviderInterface.js';
 import { createAnthropicClient } from './anthropicClient.js';
-import '../ai/adapter/GoogleAdapter.js'; // side-effect: registers Google adapter
 
 // ── Unified client interface ─────────────────────────────────────────────────
 

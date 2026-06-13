@@ -76,7 +76,7 @@ const messageSchema = lazySchema(() =>
     .object({
       type: z.string(),
     })
-    .passthrough(),
+    .loose(),
 );
 
 type ToolRequest = {

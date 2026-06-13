@@ -68,7 +68,7 @@ export const PermissionsSchema = lazySchema(() =>
         .optional()
         .describe('Additional directories to include in the permission scope'),
     })
-    .passthrough(),
+    .loose(),
 );
 
 /**
@@ -193,7 +193,7 @@ export const DeniedMcpServerEntrySchema = lazySchema(() =>
  * The settings system handles backward compatibility automatically:
  * - When updating settings, invalid fields are preserved in the file (see settings.ts lines 233-249)
  * - Type coercion via z.coerce (e.g., env vars convert numbers to strings)
- * - .passthrough() preserves unknown fields in permissions object
+ * - .loose() preserves unknown fields in permissions object
  * - Invalid settings are simply not used, but remain in the file to be fixed by the user
  */
 
@@ -220,7 +220,7 @@ export const SettingsSchema = lazySchema(() =>
         .describe('Command to refresh GCP authentication (e.g., gcloud auth application-default login)'),
       // Gated so the SDK generator (which runs without CLAUDE_CODE_ENABLE_XAA)
       // doesn't surface this in GlobalClaudeSettings. Read via getXaaIdpSettings().
-      // .passthrough() on the outer object keeps an existing settings.json key
+      // .loose() on the outer object keeps an existing settings.json key
       // alive across env-var-off sessions â€” it's just not schema-validated then.
       ...(isEnvTruthy(process.env.CLAUDE_CODE_ENABLE_XAA)
         ? {
@@ -779,7 +779,7 @@ export const SettingsSchema = lazySchema(() =>
       // works when explicitly enabled. Which servers can connect at all is
       // still governed by allowedMcpServers/deniedMcpServers. Not
       // feature-spread: KAIROS_CHANNELS is external:true, and the spread
-      // wrecks type inference for allowedChannelPlugins (the .passthrough()
+      // wrecks type inference for allowedChannelPlugins (the .loose()
       // catch-all gives {} instead of the array type).
       channelsEnabled: z
         .boolean()
@@ -950,7 +950,7 @@ export const SettingsSchema = lazySchema(() =>
         .optional()
         .describe('Preferred file explorer mode. sidebar: shows a tree on the side, fullscreen: interactive explorer.'),
     })
-    .passthrough(),
+    .loose(),
 );
 
 /**
