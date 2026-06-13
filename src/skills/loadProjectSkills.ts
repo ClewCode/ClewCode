@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'fs/promises';
 import { basename, join } from 'path';
 import type { Command } from '../types/command.js';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { logForDebugging } from '../utils/debug.js';
 import { parseFrontmatter } from '../utils/frontmatterParser.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
@@ -12,7 +13,7 @@ import { extractDescriptionFromMarkdown } from '../utils/markdownConfigLoader.js
  */
 export async function loadProjectSkills(cwd: string): Promise<Command[]> {
   const fs = getFsImplementation();
-  const skillsDir = join(cwd, '.claude', 'skills');
+  const skillsDir = join(cwd, DOT_CLEW, 'skills');
   const skills: Command[] = [];
 
   try {

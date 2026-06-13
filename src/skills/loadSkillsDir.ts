@@ -10,6 +10,7 @@ import {
 import { roughTokenCountEstimation } from '../services/tokenEstimation.js';
 import type { Command, PromptCommand } from '../types/command.js';
 import { parseArgumentNames, substituteArguments } from '../utils/argumentSubstitution.js';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { logForDebugging } from '../utils/debug.js';
 import { EFFORT_LEVELS, type EffortValue, parseEffortValue } from '../utils/effort.js';
 import { getClaudeConfigHomeDir, isBareMode, isEnvTruthy } from '../utils/envUtils.js';
@@ -52,11 +53,11 @@ export type LoadedFrom = 'commands_DEPRECATED' | 'skills' | 'plugin' | 'managed'
 export function getSkillsPath(source: SettingSource | 'plugin', dir: 'skills' | 'commands'): string {
   switch (source) {
     case 'policySettings':
-      return join(getManagedFilePath(), '.claude', dir);
+      return join(getManagedFilePath(), DOT_CLEW, dir);
     case 'userSettings':
       return join(getClaudeConfigHomeDir(), dir);
     case 'projectSettings':
-      return `.claude/${dir}`;
+      return `${DOT_CLEW}/${dir}`;
     case 'plugin':
       return 'plugin';
     default:
@@ -551,7 +552,7 @@ async function loadSkillsFromCommandsDir(cwd: string): Promise<SkillWithPath[]> 
  */
 export const getSkillDirCommands = memoize(async (cwd: string): Promise<Command[]> => {
   const userSkillsDir = join(getClaudeConfigHomeDir(), 'skills');
-  const managedSkillsDir = join(getManagedFilePath(), '.claude', 'skills');
+  const managedSkillsDir = join(getManagedFilePath(), DOT_CLEW, 'skills');
   const projectSkillsDirs = getProjectDirsUpToHome('skills', cwd);
 
   logForDebugging(
@@ -575,7 +576,7 @@ export const getSkillDirCommands = memoize(async (cwd: string): Promise<Command[
       return [];
     }
     const additionalSkillsNested = await Promise.all(
-      additionalDirs.map(dir => loadSkillsFromSkillsDir(join(dir, '.claude', 'skills'), 'projectSettings')),
+      additionalDirs.map(dir => loadSkillsFromSkillsDir(join(dir, DOT_CLEW, 'skills'), 'projectSettings')),
     );
     // No dedup needed — explicit dirs, user controls uniqueness.
     return additionalSkillsNested.flat().map(s => s.skill);
@@ -596,7 +597,7 @@ export const getSkillDirCommands = memoize(async (cwd: string): Promise<Command[
         : Promise.resolve([]),
       projectSettingsEnabled
         ? Promise.all(
-            additionalDirs.map(dir => loadSkillsFromSkillsDir(join(dir, '.claude', 'skills'), 'projectSettings')),
+            additionalDirs.map(dir => loadSkillsFromSkillsDir(join(dir, DOT_CLEW, 'skills'), 'projectSettings')),
           )
         : Promise.resolve([]),
       // Load simple .md files from .claude/skills/ (no directory structure required)
@@ -758,7 +759,7 @@ export async function discoverSkillDirsForPaths(filePaths: string[], cwd: string
     // CWD-level skills are already loaded at startup, so we only discover nested ones
     // Use prefix+separator check to avoid matching /project-backup when cwd is /project
     while (currentDir.startsWith(resolvedCwd + pathSep)) {
-      const skillDir = join(currentDir, '.claude', 'skills');
+      const skillDir = join(currentDir, DOT_CLEW, 'skills');
 
       // Skip if we've already checked this path (hit or miss) — avoids
       // repeating the same failed stat on every Read/Write/Edit call when

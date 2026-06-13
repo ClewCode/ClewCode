@@ -28,7 +28,7 @@ import {
 } from './types.js';
 
 /** Peer registry dir — use home dir for consistency across terminals */
-const PEER_DIR = path.join(os.homedir(), '.claude', 'peers');
+const PEER_DIR = path.join(os.homedir(), '.clew', 'peers');
 
 interface PeerFile {
   pid: number;

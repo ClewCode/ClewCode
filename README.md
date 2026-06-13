@@ -37,7 +37,7 @@ Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) 
 - **Peer-to-peer LAN mesh** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 14 AI tools let your agent coordinate autonomously.
 - **Preference learning (Taste)** — learns from accept, reject, edit, test, and lint signals. Three-tier rule engine (≥0.85 blocks edits, ≥0.55 injects into prompts, <0.55 scores silently). Contextual bandit with 6 strategy arms. Auto-decay on 30-day half-life.
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
-- **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, peer tools, MCP tools.
+- **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, peer tools, MCP tools, ProcessPeer (exec/pty).
 - **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
 - **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
 - **7 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk. Granular allow/deny rules with pattern matching.
@@ -229,6 +229,41 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 ---
 
 ## Changelog
+
+<details>
+<summary><strong>v0.2.7 — 2026-06-11</strong></summary>
+
+- **process_peer PTY terminal box** — terminal-style progress box with ANSI-preserving output tail
+- **`/peer run codex <task>`** — run one-shot Codex process peer from chat
+- **Auto-update dialog** — npm update notification before app starts
+- **Rich model fetching** — API models now carry context window, vision, tools, reasoning, free tags
+- **`/model list` capability tags** — `[200K ctx, vision, tools, reason, free]` per model
+- **GlimmerMessage gradient** — per-character color interpolation with fade effect
+- **Cost in status line** — shows session cost when >$0
+
+</details>
+
+<details>
+<summary><strong>v0.2.6 — 2026-06-10</strong></summary>
+
+- **Taste notifications** — toasts for init, learn, forget, suggest actions
+- **Peer HTTP heartbeat** — 60s liveness checks, offline peers detected immediately
+- **Removed GitHub Copilot** — provider and all references cleaned out
+- **`/agents` visual polish** — redesigned dashboard, cleaner layout
+- **Auto-updater** — switched from Anthropic GCS to npm registry
+
+</details>
+
+<details>
+<summary><strong>v0.2.5 — 2026-06-10</strong></summary>
+
+- **Rebranded to Clew Code** — docs, UI copy, and package updated
+- **Memory search** — `/memory search` for stored entries
+- **Peer tools** — 14 AI coordination tools, peer help, connection count in footer
+- **Taste AI tools** — learn, forget, profile, suggest with system notifications
+- **Fixed `/providers`** — duplicate `const info` runtime error fixed
+
+</details>
 
 <details>
 <summary><strong>v0.2.4 — 2026-06-08</strong></summary>

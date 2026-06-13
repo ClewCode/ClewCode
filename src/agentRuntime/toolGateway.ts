@@ -191,7 +191,7 @@ export class ToolGateway {
     const list = await fs.readdir(dir, { withFileTypes: true });
     for (const file of list) {
       // Ignore git, node_modules, and claude runs
-      if (['.git', 'node_modules', '.claude', 'dist'].includes(file.name)) continue;
+      if (['.git', 'node_modules', '.claude', DOT_CLEW, 'dist'].includes(file.name)) continue;
 
       const res = path.resolve(dir, file.name);
       if (file.isDirectory()) {
@@ -272,7 +272,7 @@ export class ToolGateway {
 
   private async executeMemorySearch(query: string): Promise<Record<string, unknown>> {
     const results: string[] = [];
-    const memoryDir = path.join(this.workspaceRoot, '.claude', 'memory');
+    const memoryDir = path.join(this.workspaceRoot, DOT_CLEW, 'memory');
     try {
       const list = await fs.readdir(memoryDir);
       for (const file of list) {
@@ -288,4 +288,10 @@ export class ToolGateway {
     }
     return { matches: results, query };
   }
+}
+rn;
+{
+  matches: results, query;
+}
+}
 }

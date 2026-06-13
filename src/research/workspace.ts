@@ -1,18 +1,19 @@
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 
 export async function initWorkspace(cwd: string): Promise<void> {
   const fsImpl = getFsImplementation();
   const dirs = [
-    join(cwd, '.claude'),
-    join(cwd, '.claude', 'research'),
-    join(cwd, '.claude', 'research', 'runs'),
-    join(cwd, '.claude', 'wiki'),
-    join(cwd, '.claude', 'wiki', 'Research'),
-    join(cwd, '.claude', 'memory'),
-    join(cwd, '.claude', 'memory', 'pending'),
-    join(cwd, '.claude', 'index'),
+    join(cwd, DOT_CLEW),
+    join(cwd, DOT_CLEW, 'research'),
+    join(cwd, DOT_CLEW, 'research', 'runs'),
+    join(cwd, DOT_CLEW, 'wiki'),
+    join(cwd, DOT_CLEW, 'wiki', 'Research'),
+    join(cwd, DOT_CLEW, 'memory'),
+    join(cwd, DOT_CLEW, 'memory', 'pending'),
+    join(cwd, DOT_CLEW, 'index'),
   ];
 
   for (const dir of dirs) {
@@ -31,11 +32,11 @@ export async function getResearchWorkspaceStatus(cwd: string): Promise<{
   indexDir: string;
 }> {
   const fsImpl = getFsImplementation();
-  const researchDir = join(cwd, '.claude', 'research');
-  const runsDir = join(cwd, '.claude', 'research', 'runs');
-  const wikiResearchDir = join(cwd, '.claude', 'wiki', 'Research');
-  const pendingMemoryDir = join(cwd, '.claude', 'memory', 'pending');
-  const indexDir = join(cwd, '.claude', 'index');
+  const researchDir = join(cwd, DOT_CLEW, 'research');
+  const runsDir = join(cwd, DOT_CLEW, 'research', 'runs');
+  const wikiResearchDir = join(cwd, DOT_CLEW, 'wiki', 'Research');
+  const pendingMemoryDir = join(cwd, DOT_CLEW, 'memory', 'pending');
+  const indexDir = join(cwd, DOT_CLEW, 'index');
 
   const initialized =
     fsImpl.existsSync(researchDir) &&

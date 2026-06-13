@@ -14,7 +14,7 @@ import { execSync } from 'child_process'
 
 const ROOT = join(import.meta.dirname, '..')
 const SRC = join(ROOT, 'src')
-const CONTEXT_DIR = join(ROOT, '.claude', 'context')
+const CONTEXT_DIR = join(ROOT, '.clew', 'context')
 
 const moduleArg = process.argv[2]
 if (!moduleArg) {

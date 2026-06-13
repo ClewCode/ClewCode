@@ -1,6 +1,7 @@
 import type React from 'react';
 import { stringWidth } from '../ink/stringWidth.js';
 import { Box, Text } from '../ink.js';
+import { PROVIDER_REGISTRY } from '../services/ai/providerRegistry.js';
 import type { NormalizedMessage } from '../types/message.js';
 
 type Props = {
@@ -19,9 +20,15 @@ export function MessageModel({ message, isTranscriptMode }: Props): React.ReactN
     return null;
   }
 
+  // Provider ID is injected at runtime in claude.ts (both Anthropic and OpenAI-compatible paths)
+  // but is not part of the static type definition, so we access it via `as any`.
+  const providerId = (message.message as any).provider as string | undefined;
+  const providerLabel = providerId ? PROVIDER_REGISTRY[providerId]?.label : undefined;
+  const displayText = providerLabel ? `${providerLabel} · ${message.message.model}` : message.message.model;
+
   return (
-    <Box minWidth={stringWidth(message.message.model) + 8}>
-      <Text dimColor>{message.message.model}</Text>
+    <Box minWidth={stringWidth(displayText) + 8}>
+      <Text dimColor>{displayText}</Text>
     </Box>
   );
 }

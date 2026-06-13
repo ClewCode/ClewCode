@@ -23,7 +23,7 @@ export function renderToolResultMessage(
         <Text> Entered plan mode</Text>
       </Box>
       <Box paddingLeft={2}>
-        <Text dimColor>Claude is now exploring and designing an implementation approach.</Text>
+        <Text dimColor>Clew is now exploring and designing an implementation approach.</Text>
       </Box>
     </Box>
   );

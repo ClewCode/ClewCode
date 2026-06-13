@@ -66,7 +66,9 @@ export type CronTask = {
 
 type CronFile = { tasks: CronTask[] };
 
-const CRON_FILE_REL = join('.claude', 'scheduled_tasks.json');
+import { DOT_CLEW, SCHEDULED_TASKS_JSON } from './clewPaths.js';
+
+const CRON_FILE_REL = join(DOT_CLEW, SCHEDULED_TASKS_JSON);
 
 /**
  * Path to the cron file. `dir` defaults to getProjectRoot() — pass it
@@ -153,7 +155,7 @@ export function hasCronTasksSync(dir?: string): boolean {
  */
 export async function writeCronTasks(tasks: CronTask[], dir?: string): Promise<void> {
   const root = dir ?? getProjectRoot();
-  await mkdir(join(root, '.claude'), { recursive: true });
+  await mkdir(join(root, DOT_CLEW), { recursive: true });
   // Strip the runtime-only `durable` flag — everything on disk is durable
   // by definition, and keeping the flag out means readCronTasks() naturally
   // yields durable: undefined without having to set it explicitly.

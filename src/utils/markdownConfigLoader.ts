@@ -9,6 +9,7 @@ import {
   logEvent,
 } from 'src/services/analytics/index.js';
 import { getProjectRoot } from '../bootstrap/state.js';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { logForDebugging } from './debug.js';
 import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { isFsInaccessible } from './errors.js';
@@ -226,7 +227,7 @@ export function getProjectDirsUpToHome(subdir: ClaudeConfigDirectory, cwd: strin
       break;
     }
 
-    const claudeSubdir = join(current, '.claude', subdir);
+    const claudeSubdir = join(current, DOT_CLEW, subdir);
     // Filter to existing dirs. This is a perf filter (avoids spawning
     // ripgrep on non-existent dirs downstream) and the worktree fallback
     // in loadMarkdownFilesForSubdir relies on it. statSync + explicit error
@@ -236,8 +237,18 @@ export function getProjectDirsUpToHome(subdir: ClaudeConfigDirectory, cwd: strin
     try {
       statSync(claudeSubdir);
       dirs.push(claudeSubdir);
-    } catch (e: unknown) {
-      if (!isFsInaccessible(e)) throw e;
+    } catch {
+      // .clew/subdir doesn't exist — check legacy .claude/subdir
+    }
+    // Legacy fallback: also check .claude/subdir
+    if (DOT_CLEW !== '.claude') {
+      try {
+        const legacySubdir = join(current, '.claude', subdir);
+        statSync(legacySubdir);
+        dirs.push(legacySubdir);
+      } catch {
+        // .claude/subdir doesn't exist either
+      }
     }
 
     // Stop after processing the git root directory - this prevents commands from parent
@@ -270,7 +281,7 @@ export const loadMarkdownFilesForSubdir = memoize(
   async (subdir: ClaudeConfigDirectory, cwd: string): Promise<MarkdownFile[]> => {
     const searchStartTime = Date.now();
     const userDir = join(getClaudeConfigHomeDir(), subdir);
-    const managedDir = join(getManagedFilePath(), '.claude', subdir);
+    const managedDir = join(getManagedFilePath(), DOT_CLEW, subdir);
     const projectDirs = getProjectDirsUpToHome(subdir, cwd);
 
     // For git worktrees where the worktree does NOT have .claude/<subdir> checked
@@ -289,10 +300,10 @@ export const loadMarkdownFilesForSubdir = memoize(
     const gitRoot = findGitRoot(cwd);
     const canonicalRoot = findCanonicalGitRoot(cwd);
     if (gitRoot && canonicalRoot && canonicalRoot !== gitRoot) {
-      const worktreeSubdir = normalizePathForComparison(join(gitRoot, '.claude', subdir));
+      const worktreeSubdir = normalizePathForComparison(join(gitRoot, DOT_CLEW, subdir));
       const worktreeHasSubdir = projectDirs.some(dir => normalizePathForComparison(dir) === worktreeSubdir);
       if (!worktreeHasSubdir) {
-        const mainClaudeSubdir = join(canonicalRoot, '.claude', subdir);
+        const mainClaudeSubdir = join(canonicalRoot, DOT_CLEW, subdir);
         if (!projectDirs.includes(mainClaudeSubdir)) {
           projectDirs.push(mainClaudeSubdir);
         }

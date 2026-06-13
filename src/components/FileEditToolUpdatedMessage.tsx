@@ -31,17 +31,8 @@ export function FileEditToolUpdatedMessage({
 
   const text = (
     <Text>
-      {numAdditions > 0 ? (
-        <>
-          Added <Text bold>{numAdditions}</Text> {numAdditions > 1 ? 'lines' : 'line'}
-        </>
-      ) : null}
-      {numAdditions > 0 && numRemovals > 0 ? ', ' : null}
-      {numRemovals > 0 ? (
-        <>
-          {numAdditions === 0 ? 'R' : 'r'}emoved <Text bold>{numRemovals}</Text> {numRemovals > 1 ? 'lines' : 'line'}
-        </>
-      ) : null}
+      Updated {filePath} (<Text color="diffAddedWord">+{numAdditions}</Text>{' '}
+      <Text color="diffRemovedWord">-{numRemovals}</Text>)
     </Text>
   );
 

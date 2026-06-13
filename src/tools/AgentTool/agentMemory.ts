@@ -2,6 +2,7 @@ import { join, normalize, sep } from 'path';
 import { getProjectRoot } from '../../bootstrap/state.js';
 import { buildMemoryPrompt, ensureMemoryDirExists } from '../../memdir/memdir.js';
 import { getMemoryBaseDir } from '../../memdir/paths.js';
+import { AGENT_MEMORY_DIR, AGENT_MEMORY_LOCAL_DIR, DOT_CLEW } from '../../utils/clewPaths.js';
 import { getCwd } from '../../utils/cwd.js';
 import { findCanonicalGitRoot } from '../../utils/git.js';
 import { sanitizePath } from '../../utils/path.js';
@@ -35,7 +36,7 @@ function getLocalAgentMemoryDir(dirName: string): string {
       ) + sep
     );
   }
-  return join(getCwd(), '.claude', 'agent-memory-local', dirName) + sep;
+  return join(getCwd(), DOT_CLEW, AGENT_MEMORY_LOCAL_DIR, dirName) + sep;
 }
 
 /**
@@ -48,7 +49,7 @@ export function getAgentMemoryDir(agentType: string, scope: AgentMemoryScope): s
   const dirName = sanitizeAgentTypeForPath(agentType);
   switch (scope) {
     case 'project':
-      return join(getCwd(), '.claude', 'agent-memory', dirName) + sep;
+      return join(getCwd(), DOT_CLEW, AGENT_MEMORY_DIR, dirName) + sep;
     case 'local':
       return getLocalAgentMemoryDir(dirName);
     case 'user':
@@ -68,7 +69,7 @@ export function isAgentMemoryPath(absolutePath: string): boolean {
   }
 
   // Project scope: always cwd-based (not redirected)
-  if (normalizedPath.startsWith(join(getCwd(), '.claude', 'agent-memory') + sep)) {
+  if (normalizedPath.startsWith(join(getCwd(), DOT_CLEW, AGENT_MEMORY_DIR) + sep)) {
     return true;
   }
 
@@ -80,7 +81,7 @@ export function isAgentMemoryPath(absolutePath: string): boolean {
     ) {
       return true;
     }
-  } else if (normalizedPath.startsWith(join(getCwd(), '.claude', 'agent-memory-local') + sep)) {
+  } else if (normalizedPath.startsWith(join(getCwd(), DOT_CLEW, AGENT_MEMORY_LOCAL_DIR) + sep)) {
     return true;
   }
 

@@ -7,6 +7,7 @@ import {
   logEvent,
 } from '../../services/analytics/index.js';
 import { clearSkillCaches, getSkillsPath, onDynamicSkillsLoaded } from '../../skills/loadSkillsDir.js';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { resetSentSkillNames } from '../attachments.js';
 import { registerCleanup } from '../cleanupRegistry.js';
 import { logForDebugging } from '../debug.js';
@@ -223,7 +224,7 @@ async function getWatchablePaths(): Promise<string[]> {
 
   // Additional directories (--add-dir) skills
   for (const dir of getAdditionalDirectoriesForClaudeMd()) {
-    const additionalSkillsPath = platformPath.join(dir, '.claude', 'skills');
+    const additionalSkillsPath = platformPath.join(dir, DOT_CLEW, 'skills');
     try {
       await fs.stat(additionalSkillsPath);
       paths.push(additionalSkillsPath);

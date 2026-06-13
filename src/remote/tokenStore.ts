@@ -13,7 +13,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { TokenEntry } from './types.js';
 
-const TOKEN_DIR = join(homedir(), '.claude');
+const TOKEN_DIR = join(homedir(), '.clew');
 const TOKEN_FILE = join(TOKEN_DIR, 'remote-tokens.json');
 
 const DEFAULT_EXPIRY_MS = 24 * 60 * 60 * 1_000; // 24 hours

@@ -53,6 +53,7 @@ import { errorMessage } from '../errors.js';
 import { getClaudeTempDir } from '../permissions/filesystem.js';
 import type { PermissionRuleValue } from '../permissions/PermissionRule.js';
 import { ripgrepCommand } from '../ripgrep.js';
+import { DOT_CLEW } from '../clewPaths.js';
 
 // Local copies to avoid circular dependency
 // (permissions.ts imports SandboxManager, bashPermissions.ts imports permissions.ts)
@@ -214,14 +215,14 @@ export function convertToSandboxRuntimeConfig(settings: SettingsJson): SandboxRu
     denyWrite.push(resolve(cwd, '.claude', 'settings.local.json'));
   }
 
-  // Block writes to .claude/skills in both original and current working directories.
-  // The sandbox-runtime's getDangerousDirectories() protects .claude/commands and
-  // .claude/agents but not .claude/skills. Skills have the same privilege level
+  // Block writes to .clew/skills in both original and current working directories.
+  // The sandbox-runtime's getDangerousDirectories() protects .clew/commands and
+  // .clew/agents but not .clew/skills. Skills have the same privilege level
   // (auto-discovered, auto-loaded, full Claude capabilities) so they need the
   // same OS-level sandbox protection.
-  denyWrite.push(resolve(originalCwd, '.claude', 'skills'));
+  denyWrite.push(resolve(originalCwd, DOT_CLEW, 'skills'));
   if (cwd !== originalCwd) {
-    denyWrite.push(resolve(cwd, '.claude', 'skills'));
+    denyWrite.push(resolve(cwd, DOT_CLEW, 'skills'));
   }
 
   // SECURITY: Git's is_git_directory() treats cwd as a bare repo if it has

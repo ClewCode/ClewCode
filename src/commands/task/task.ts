@@ -2,7 +2,6 @@
  * /task command implementation.
  */
 
-import { createElement, type ReactNode } from 'react';
 import {
   addTask,
   getTask,
@@ -19,7 +18,6 @@ import {
 } from '../../services/autonomous/taskQueue.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
-import { ScheduledTaskForm } from './ScheduledTaskForm.js';
 
 function parseArgs(args: string): string[] {
   const result: string[] = [];
@@ -62,14 +60,25 @@ export async function call(
   const subcommand = tokens[0]?.toLowerCase();
 
   if (!subcommand) {
-    return createElement(ScheduledTaskForm, { onDone });
+    await loadQueue();
+    const tasks = listTasks({ limit: 20 });
+    if (tasks.length === 0) {
+      onDone('No tasks found. Use `/task add <title>` to create one.', { display: 'system' });
+      return null;
+    }
+
+    const lines: string[] = [`=== Task Queue (${tasks.length} tasks) ===`];
+    for (const t of tasks) {
+      const age = Math.round((Date.now() - t.createdAt) / 60000);
+      lines.push(`[${t.status}] ${t.id} — ${t.title} (${t.priority}, ${age}m ago)`);
+    }
+    lines.push('');
+    lines.push('Use `/task add <title>` to create a task.');
+    onDone(lines.join('\n'), { display: 'system' });
+    return null;
   }
 
   switch (subcommand) {
-    case 'scheduled':
-    case 'schedule':
-      return createElement(ScheduledTaskForm, { onDone });
-
     case 'add': {
       // Everything after subcommand, before flags
       const title = tokens

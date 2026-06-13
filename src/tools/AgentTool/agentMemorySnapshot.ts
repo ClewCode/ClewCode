@@ -1,6 +1,7 @@
 import { mkdir, readdir, readFile, unlink, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { z } from 'zod/v4';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { getCwd } from '../../utils/cwd.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { lazySchema } from '../../utils/lazySchema.js';
@@ -29,7 +30,7 @@ type SyncedMeta = z.infer<ReturnType<typeof syncedMetaSchema>>;
  * e.g., <cwd>/.claude/agent-memory-snapshots/<agentType>/
  */
 export function getSnapshotDirForAgent(agentType: string): string {
-  return join(getCwd(), '.claude', SNAPSHOT_BASE, agentType);
+  return join(getCwd(), DOT_CLEW, SNAPSHOT_BASE, agentType);
 }
 
 function getSnapshotJsonPath(agentType: string): string {

@@ -68,7 +68,7 @@ export function FileTree({ onFileSelect, width = 30, isFocused = true }: FileTre
         for (const entry of sortedEntries) {
           const fullPath = join(dirPath, entry.name);
           // Skip hidden files/folders (except .claude if we want, but let's stick to standard)
-          if (entry.name.startsWith('.') && entry.name !== '.claude') continue;
+          if (entry.name.startsWith('.') && entry.name !== '.claude' && entry.name !== '.clew') continue;
 
           const node: FileNode = {
             path: fullPath,

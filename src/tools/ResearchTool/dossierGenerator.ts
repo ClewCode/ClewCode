@@ -35,7 +35,7 @@ export interface DossierOptions {
   includeCodeExamples?: boolean;
 }
 
-const DEFAULT_OUTPUT_DIR = path.join(os.homedir(), '.claude', 'research-dossiers');
+const DEFAULT_OUTPUT_DIR = path.join(os.homedir(), '.clew', 'research-dossiers');
 
 /**
  * Ensure the output directory exists

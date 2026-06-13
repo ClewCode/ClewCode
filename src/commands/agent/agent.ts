@@ -1,14 +1,39 @@
+/**
+ * /agent command implementation.
+ *
+ * Unified agent command: dispatch background agents, monitor sessions,
+ * manage agent definitions, and control the agent runtime (orchestrator).
+ *
+ * /agents is registered as an alias and routes here.
+ */
+
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import React, { useState } from 'react';
+import type * as React from 'react';
 import { Orchestrator } from '../../agentRuntime/orchestrator.js';
 import { RunStore } from '../../agentRuntime/runStore.js';
-import { type OptionWithDescription, Select } from '../../components/CustomSelect/select.js';
-import { Dialog } from '../../components/design-system/Dialog.js';
-import { Box, Text } from '../../ink.js';
+import { AgentsMenu } from '../../components/agents/AgentsMenu.js';
+import { AgentViewDashboard } from '../../components/agents/AgentViewDashboard.js';
 import type { ToolUseContext } from '../../Tool.js';
-import { spawnTeammate } from '../../tools/shared/spawnMultiAgent.js';
+import { registerAsyncAgent } from '../../tasks/LocalAgentTask/LocalAgentTask.js';
+import { GENERAL_PURPOSE_AGENT } from '../../tools/AgentTool/built-in/generalPurposeAgent.js';
+import type { AgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js';
+import { getTools } from '../../tools.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
+
+const HELP = `AGENT — dispatch Clew internal background specialists from chat
+
+  /agent <task>            dispatch a background specialist
+  /agent @<agent> <task>   dispatch with a specific specialist
+  /agent view              monitor running agents
+  /agent config            manage agent definitions
+  /agent run "<task>"      legacy orchestrator workflow
+  /agent status [id]       view orchestrator runs
+  /agent trace <id>        display execution timeline
+  /agent doctor            verify runtime installation
+
+  For external CLIs like Codex, use /peer run <provider> <task>`;
 
 function parseArgs(args: string): string[] {
   const result: string[] = [];
@@ -42,271 +67,114 @@ function parseArgs(args: string): string[] {
   return result;
 }
 
+/** Subcommands that route to the legacy orchestrator. */
+const ORCHESTRATOR_SUBCOMMANDS = new Set([
+  'run',
+  'status',
+  'trace',
+  'pause',
+  'resume',
+  'approvals',
+  'approve',
+  'deny',
+  'report',
+  'doctor',
+]);
+
 export async function call(
   onDone: LocalJSXCommandOnDone,
-  _context: ToolUseContext & LocalJSXCommandContext,
+  context: ToolUseContext & LocalJSXCommandContext,
   args: string,
-): Promise<React.ReactNode> {
-  const tokens = parseArgs(args || '');
-  const subcommand = tokens[0]?.toLowerCase();
-  const workspaceRoot = process.cwd();
+): Promise<React.ReactNode | null> {
+  const trimmedArgs = args.trim();
+  const argTokens = trimmedArgs.split(/\s+/).filter(Boolean);
+  const subcommand = argTokens[0]?.toLowerCase();
 
-  if (!subcommand) {
-    return React.createElement(AgentCommandMenu, { onDone, workspaceRoot });
+  // Handle view/dashboard — returns JSX
+  if (subcommand === 'view' || subcommand === 'dashboard') {
+    const cwdMatch = trimmedArgs.match(/--cwd\s+(\S+)/);
+    const cwd = cwdMatch ? cwdMatch[1] : undefined;
+    return React.createElement(AgentViewDashboard, {
+      cwd,
+      onBack: () => onDone('Agent view dismissed', { display: 'system' }),
+    });
   }
 
-  // /agent run → spawn real subagent via AgentTool system
-  if (subcommand === 'run') {
-    const task = tokens.slice(1).join(' ');
-    if (!task) {
-      onDone('Error: Please specify a task. Example: /agent run "Find bugs in auth module"', { display: 'system' });
-      return null;
-    }
+  // Handle config/manage — returns JSX
+  if (subcommand === 'config' || subcommand === '--config' || subcommand === 'manage') {
+    const appState = context.getAppState();
+    const permissionContext = appState.toolPermissionContext;
+    const tools = getTools(permissionContext);
+    return React.createElement(AgentsMenu, { tools, onExit: onDone });
+  }
 
-    try {
-      // Ensure a team exists
-      const appState = _context.getAppState();
-      let teamName = appState.teamContext?.teamName;
-      if (!teamName) {
-        const { mkdir, writeFile } = await import('node:fs/promises');
-        const { join } = await import('node:path');
-        const { homedir } = await import('node:os');
-        teamName = 'agent-cli';
-        const teamDir = join(homedir(), '.claude', 'teams', teamName);
-        await mkdir(teamDir, { recursive: true });
-        const lid = `team-lead@${teamName}`;
-        await writeFile(
-          join(teamDir, 'config.json'),
-          JSON.stringify(
-            {
-              name: teamName,
-              createdAt: Date.now(),
-              leadAgentId: lid,
-              members: [
-                {
-                  agentId: lid,
-                  name: 'team-lead',
-                  joinedAt: Date.now(),
-                  tmuxPaneId: '',
-                  cwd: process.cwd(),
-                  subscriptions: [],
-                },
-              ],
-            },
-            null,
-            2,
-          ),
-        );
-      }
-
-      const name =
-        task
-          .slice(0, 30)
-          .replace(/[^a-zA-Z0-9]/g, '-')
-          .toLowerCase() || 'agent';
-      const userModel = appState.mainLoopModelForSession || appState.mainLoopModel;
-      const result = await spawnTeammate(
-        {
-          name,
-          prompt: task,
-          agent_type: 'general-purpose',
-          description: task.slice(0, 100),
-          team_name: teamName,
-          model: userModel,
-        },
-        _context,
-      );
-      const { agent_id, model } = result.data;
-      onDone(`Subagent spawned: ${agent_id}\nModel: ${model || 'default'}\nTask: ${task}`, { display: 'system' });
-    } catch (err) {
-      onDone(`Error spawning agent: ${(err as Error).message}`, { display: 'system' });
-    }
+  // Delegate to legacy orchestrator for known subcommands
+  if (subcommand && ORCHESTRATOR_SUBCOMMANDS.has(subcommand)) {
+    await executeOrchestratorCommand(onDone, args);
     return null;
   }
 
-  await executeAgentCommand(onDone, workspaceRoot, args);
+  // Handle --cwd flag (strip before dispatching)
+  const cwdMatch = trimmedArgs.match(/--cwd\s+(\S+)/);
+  let taskArgs = cwdMatch ? trimmedArgs.replace(/--cwd\s+\S+\s*/, '').trim() : trimmedArgs;
+  const taskTokens = taskArgs.split(/\s+/).filter(Boolean);
+
+  // No args or unknown subcommand — show help
+  if (taskTokens.length === 0 || subcommand === 'help' || subcommand === '--help') {
+    onDone(HELP, { display: 'system' });
+    return null;
+  }
+
+  // Background dispatch: parse @agentName or bare agent name prefix
+  const agents: AgentDefinition[] = context.options?.agentDefinitions?.activeAgents ?? [];
+  let selectedAgent: AgentDefinition | undefined;
+  const firstToken = taskTokens[0]!;
+
+  if (firstToken.startsWith('@')) {
+    const agentName = firstToken.slice(1);
+    selectedAgent = agents.find(a => a.agentType?.toLowerCase() === agentName.toLowerCase());
+    taskArgs = taskTokens.slice(1).join(' ').trim();
+  } else {
+    const matched = agents.find(a => a.agentType?.toLowerCase() === firstToken.toLowerCase());
+    if (matched) {
+      selectedAgent = matched;
+      taskArgs = taskTokens.slice(1).join(' ').trim();
+    }
+  }
+
+  if (!taskArgs) {
+    onDone(HELP, { display: 'system' });
+    return null;
+  }
+
+  selectedAgent ??= agents[0] ?? GENERAL_PURPOSE_AGENT;
+
+  const agentId = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const taskShort = taskArgs.length > 48 ? `${taskArgs.slice(0, 45)}...` : taskArgs;
+
+  registerAsyncAgent({
+    agentId,
+    description: taskShort,
+    prompt: taskArgs,
+    selectedAgent,
+    setAppState: context.setAppState,
+  });
+
+  onDone(`dispatched ${selectedAgent.agentType} · ${taskShort} · \`${agentId}\`\n  → /agent view to track progress`, {
+    display: 'system',
+  });
   return null;
 }
 
-type AgentMenuAction =
-  | 'status'
-  | 'approvals'
-  | 'doctor'
-  | 'help'
-  | 'run'
-  | 'status-detail'
-  | 'trace'
-  | 'pause'
-  | 'resume'
-  | 'report'
-  | 'approve'
-  | 'deny';
-
-function AgentCommandMenu({
-  onDone,
-  workspaceRoot,
-}: {
-  onDone: LocalJSXCommandOnDone;
-  workspaceRoot: string;
-}): React.ReactNode {
-  const [isRunning, setIsRunning] = useState(false);
-  const [runningLabel, setRunningLabel] = useState<string | null>(null);
-
-  const execute = (commandArgs: string, label: string): void => {
-    setIsRunning(true);
-    setRunningLabel(label);
-    void executeAgentCommand(onDone, workspaceRoot, commandArgs);
-  };
-
-  const options: OptionWithDescription<AgentMenuAction>[] = [
-    {
-      label: 'Start a new run',
-      value: 'run',
-      type: 'input',
-      placeholder: 'Describe the task',
-      description: 'Run an agent from a task prompt',
-      onChange: task => execute(`run ${task}`, 'Starting agent run'),
-    },
-    {
-      label: 'Status',
-      value: 'status',
-      description: 'Show all agent runs',
-    },
-    {
-      label: 'Run status',
-      value: 'status-detail',
-      type: 'input',
-      placeholder: 'Run ID',
-      description: 'Show one run in detail',
-      onChange: runId => execute(`status ${runId}`, 'Loading run status'),
-    },
-    {
-      label: 'Trace',
-      value: 'trace',
-      type: 'input',
-      placeholder: 'Run ID',
-      description: 'Show timeline and events for a run',
-      onChange: runId => execute(`trace ${runId}`, 'Loading run trace'),
-    },
-    {
-      label: 'Pause',
-      value: 'pause',
-      type: 'input',
-      placeholder: 'Run ID',
-      description: 'Pause a running execution',
-      onChange: runId => execute(`pause ${runId}`, 'Pausing run'),
-    },
-    {
-      label: 'Resume',
-      value: 'resume',
-      type: 'input',
-      placeholder: 'Run ID',
-      description: 'Resume a paused or blocked run',
-      onChange: runId => execute(`resume ${runId}`, 'Resuming run'),
-    },
-    {
-      label: 'Approvals',
-      value: 'approvals',
-      description: 'View pending human approvals',
-    },
-    {
-      label: 'Approve',
-      value: 'approve',
-      type: 'input',
-      placeholder: 'run-id approval-id',
-      description: 'Approve a blocked operation',
-      onChange: value => execute(`approve ${value}`, 'Approving operation'),
-    },
-    {
-      label: 'Deny',
-      value: 'deny',
-      type: 'input',
-      placeholder: 'run-id approval-id',
-      description: 'Deny a blocked operation',
-      onChange: value => execute(`deny ${value}`, 'Denying operation'),
-    },
-    {
-      label: 'Report',
-      value: 'report',
-      type: 'input',
-      placeholder: 'Run ID',
-      description: 'Display a run report',
-      onChange: runId => execute(`report ${runId}`, 'Loading report'),
-    },
-    {
-      label: 'Doctor',
-      value: 'doctor',
-      description: 'Verify runtime directories and registries',
-    },
-    {
-      label: 'Help',
-      value: 'help',
-      description: 'Show command reference',
-    },
-  ];
-
-  const handleChange = (action: AgentMenuAction): void => {
-    switch (action) {
-      case 'status':
-      case 'approvals':
-      case 'doctor':
-      case 'help':
-        execute(action === 'help' ? '' : action, action === 'help' ? 'Opening help' : `Running ${action}`);
-        return;
-      default:
-        return;
-    }
-  };
-
-  return React.createElement(
-    Dialog,
-    {
-      title: 'Clew Code Agent',
-      subtitle: 'Use arrows to choose; Enter on input rows lets you type the value here.',
-      onCancel: () => onDone('Agent menu dismissed', { display: 'system' }),
-      isCancelActive: !isRunning,
-      hideInputGuide: isRunning,
-    },
-    React.createElement(
-      Box,
-      { flexDirection: 'column' },
-      isRunning ? React.createElement(Text, { dimColor: true }, `${runningLabel ?? 'Running command'}...`) : null,
-      React.createElement(Select<AgentMenuAction>, {
-        isDisabled: isRunning,
-        options,
-        onChange: handleChange,
-        onCancel: () => onDone('Agent menu dismissed', { display: 'system' }),
-        visibleOptionCount: 8,
-        layout: 'compact-vertical',
-      }),
-    ),
-  );
-}
-
-async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot: string, args: string): Promise<null> {
+/**
+ * Orchestrator subcommand execution (legacy /agent runtime).
+ */
+async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: string): Promise<void> {
   const tokens = parseArgs(args || '');
   const subcommand = tokens[0]?.toLowerCase();
+  const workspaceRoot = process.cwd();
   const runStore = new RunStore(workspaceRoot);
   const orchestrator = new Orchestrator(workspaceRoot);
-
-  if (!subcommand) {
-    onDone(
-      `Clew Code Agent CLI\n\n` +
-        `Usage:\n` +
-        `  /agent run "<task>"       - Start a new AI Agent run\n` +
-        `  /agent status [run-id]    - View current active runs or run details\n` +
-        `  /agent trace <run-id>     - Display full history logs / timeline of events\n` +
-        `  /agent pause <run-id>     - Pause a running execution\n` +
-        `  /agent resume <run-id>    - Resume a paused or blocked execution\n` +
-        `  /agent approvals          - View all open human-in-the-loop approvals\n` +
-        `  /agent approve <run-id> <app-id> - Approve a blocked operation\n` +
-        `  /agent deny <run-id> <app-id>    - Deny/Cancel a blocked operation\n` +
-        `  /agent report <run-id>    - Display run results report\n` +
-        `  /agent doctor             - Verify runtime installation & directories`,
-      { display: 'system' },
-    );
-    return null;
-  }
 
   try {
     switch (subcommand) {
@@ -314,14 +182,13 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
         const task = tokens.slice(1).join(' ');
         if (!task) {
           onDone('Error: Please specify a task. Example: /agent run "Implement login logic"', { display: 'system' });
-          return null;
+          return;
         }
 
         onDone(`Initializing agent workspace...\nStarting task: "${task}"...`, { display: 'system' });
         const runId = await orchestrator.startRun(task);
         onDone(`Run created with ID: ${runId}\nExecuting workflow loop...`, { display: 'system' });
 
-        // Run the orchestrator loop
         await orchestrator.runLoop(runId);
 
         const finalRun = await runStore.loadRun(runId);
@@ -368,7 +235,7 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
           const runs = await runStore.listRuns();
           if (runs.length === 0) {
             onDone('No agent runs found. Start one with `/agent run "<task>"`', { display: 'system' });
-            return null;
+            return;
           }
 
           let table = `**Agent Runs History**\n\n`;
@@ -385,7 +252,7 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
               // state file might not exist or is corrupted
             }
             const dateStr = new Date(run.createdAt).toLocaleString();
-            const truncatedTask = run.task.length > 40 ? run.task.slice(0, 37) + '...' : run.task;
+            const truncatedTask = run.task.length > 40 ? `${run.task.slice(0, 37)}...` : run.task;
             table += `| \`${run.id}\` | \`${run.status.toUpperCase()}\` | ${activeAgent} | ${step}/${run.budget.maxSteps} | ${dateStr} | ${truncatedTask} |\n`;
           }
           onDone(table, { display: 'system' });
@@ -397,13 +264,13 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
         const targetRunId = tokens[1];
         if (!targetRunId) {
           onDone('Error: Please specify a Run ID. Usage: /agent trace <run-id>', { display: 'system' });
-          return null;
+          return;
         }
 
         const events = await runStore.loadEvents(targetRunId);
         if (events.length === 0) {
           onDone(`No events found for run \`${targetRunId}\`.`, { display: 'system' });
-          return null;
+          return;
         }
 
         let traceStr = `**Execution Trace for Run: ${targetRunId}**\n\n`;
@@ -433,7 +300,7 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
           } else if (evt.type === 'run.failed') {
             dataInfo = `❌ Run Failed: ${evt.data?.summary || ''}`;
           } else {
-            continue; // Skip noise events like llm.requested/completed to keep trace readable
+            continue;
           }
           traceStr += `[${time}] \`${evt.type.toUpperCase()}\` | ${evt.agent || '-'} | ${dataInfo}\n`;
         }
@@ -445,7 +312,7 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
         const targetRunId = tokens[1];
         if (!targetRunId) {
           onDone('Error: Please specify a Run ID. Usage: /agent pause <run-id>', { display: 'system' });
-          return null;
+          return;
         }
 
         await orchestrator.pauseRun(targetRunId);
@@ -457,7 +324,7 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
         const targetRunId = tokens[1];
         if (!targetRunId) {
           onDone('Error: Please specify a Run ID. Usage: /agent resume <run-id>', { display: 'system' });
-          return null;
+          return;
         }
 
         onDone(`Resuming run \`${targetRunId}\` in the background...`, { display: 'system' });
@@ -504,7 +371,7 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
           onDone('Error: Please specify both Run ID and Approval ID. Usage: /agent approve <run-id> <approval-id>', {
             display: 'system',
           });
-          return null;
+          return;
         }
 
         onDone(`Processing approval for run \`${targetRunId}\`, gate \`${approvalId}\`...`, { display: 'system' });
@@ -520,7 +387,7 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
           onDone('Error: Please specify both Run ID and Approval ID. Usage: /agent deny <run-id> <approval-id>', {
             display: 'system',
           });
-          return null;
+          return;
         }
 
         onDone(`Processing denial for run \`${targetRunId}\`, gate \`${approvalId}\`...`, { display: 'system' });
@@ -533,7 +400,7 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
         const targetRunId = tokens[1];
         if (!targetRunId) {
           onDone('Error: Please specify a Run ID. Usage: /agent report <run-id>', { display: 'system' });
-          return null;
+          return;
         }
 
         const report = await runStore.loadReport(targetRunId);
@@ -545,10 +412,10 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
         let doctorStr = `**Clew Code Agent Runtime Diagnostics**\n\n`;
 
         const dirs = [
-          path.join(workspaceRoot, '.claude'),
-          path.join(workspaceRoot, '.claude', 'runs'),
-          path.join(workspaceRoot, '.claude', 'agents'),
-          path.join(workspaceRoot, '.claude', 'workflows'),
+          path.join(workspaceRoot, DOT_CLEW),
+          path.join(workspaceRoot, DOT_CLEW, 'runs'),
+          path.join(workspaceRoot, DOT_CLEW, 'agents'),
+          path.join(workspaceRoot, DOT_CLEW, 'workflows'),
         ];
 
         for (const dir of dirs) {
@@ -560,7 +427,6 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
           }
         }
 
-        // Check agents registered
         try {
           await orchestrator.init();
           doctorStr += `✅ Registries and databases initialized successfully.\n`;
@@ -571,13 +437,8 @@ async function executeAgentCommand(onDone: LocalJSXCommandOnDone, workspaceRoot:
         onDone(doctorStr, { display: 'system' });
         break;
       }
-
-      default:
-        onDone(`Error: Unknown subcommand '${subcommand}'. Type \`/agent\` for help.`, { display: 'system' });
     }
   } catch (err) {
     onDone(`❌ CLI Error: ${(err as Error).message}`, { display: 'system' });
   }
-
-  return null;
 }

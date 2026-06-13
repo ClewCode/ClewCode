@@ -1,11 +1,12 @@
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import type { ResearchSource } from '../types.js';
 
 export async function collectLocalMemory(cwd: string, query: string): Promise<ResearchSource[]> {
   const fsImpl = getFsImplementation();
-  const memoryDir = join(cwd, '.claude', 'memory');
+  const memoryDir = join(cwd, DOT_CLEW, 'memory');
   if (!fsImpl.existsSync(memoryDir)) {
     return [];
   }

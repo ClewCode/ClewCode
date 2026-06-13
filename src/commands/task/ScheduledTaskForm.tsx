@@ -227,7 +227,7 @@ export function ScheduledTaskForm({ onDone }: { onDone: LocalJSXCommandOnDone })
         `Scheduled task ${id}`,
         `Schedule: ${cronToHuman(built.cron)} (${built.cron})`,
         `Type: ${built.recurring ? 'recurring' : 'one-shot'}`,
-        `Storage: ${effectiveDurable ? '.claude/scheduled_tasks.json' : 'session-only'}`,
+        `Storage: ${effectiveDurable ? '.clew/scheduled_tasks.json' : 'session-only'}`,
       ].join('\n'),
       { display: 'system' },
     );

@@ -1,12 +1,3 @@
-import type { Command } from '../../commands.js';
-
-const agents = {
-  type: 'local-jsx',
-  name: 'agents',
-  description: 'Open agent view',
-  load: () => import('./agents.js'),
-} satisfies Command;
-
 /**
  * Check if agent view is disabled via settings, environment variable, or non-TTY.
  * Called by the entrypoint before opening agent view.
@@ -22,11 +13,8 @@ export function getAgentViewDisabledReason(): string | null {
 
 /**
  * Check if agent view is disabled via settings or environment variable.
- * Called by the entrypoint before opening agent view.
  * @deprecated Use getAgentViewDisabledReason() for detailed gate information.
  */
 export function isAgentViewDisabled(): boolean {
   return getAgentViewDisabledReason() !== null;
 }
-
-export default agents;

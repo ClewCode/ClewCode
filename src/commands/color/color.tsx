@@ -100,7 +100,6 @@ function ColorPanel({
     onDone('Color picker dismissed', { display: 'system' });
   };
 
-
   // Which section is active for cycling
   const [sectionIdx, setSectionIdx] = useState(0); // 0=body, 1=eyes, 2=horns
 
@@ -110,9 +109,7 @@ function ColorPanel({
 
       // Shift+Up/Down: switch between sections
       if (key.shift && (key.upArrow || key.downArrow)) {
-        setSectionIdx(s => key.upArrow
-          ? (s <= 0 ? 2 : s - 1)
-          : (s >= 2 ? 0 : s + 1));
+        setSectionIdx(s => (key.upArrow ? (s <= 0 ? 2 : s - 1) : s >= 2 ? 0 : s + 1));
         return;
       }
 
@@ -123,16 +120,24 @@ function ColorPanel({
           setBodyColor(c => {
             const idx = CLAWD_BODY_COLORS.findIndex(x => x.value === c);
             const next = forward
-              ? (idx >= CLAWD_BODY_COLORS.length - 1 ? 0 : idx + 1)
-              : (idx <= 0 ? CLAWD_BODY_COLORS.length - 1 : idx - 1);
+              ? idx >= CLAWD_BODY_COLORS.length - 1
+                ? 0
+                : idx + 1
+              : idx <= 0
+                ? CLAWD_BODY_COLORS.length - 1
+                : idx - 1;
             return CLAWD_BODY_COLORS[next]!.value;
           });
         } else if (sectionIdx === 1) {
           setEyeColor(c => {
             const idx = CLAWD_EYE_COLORS.findIndex(x => x.value === c);
             const next = forward
-              ? (idx >= CLAWD_EYE_COLORS.length - 1 ? 0 : idx + 1)
-              : (idx <= 0 ? CLAWD_EYE_COLORS.length - 1 : idx - 1);
+              ? idx >= CLAWD_EYE_COLORS.length - 1
+                ? 0
+                : idx + 1
+              : idx <= 0
+                ? CLAWD_EYE_COLORS.length - 1
+                : idx - 1;
             return CLAWD_EYE_COLORS[next]!.value;
           });
         } else if (sectionIdx === 2) {
@@ -223,44 +228,49 @@ function ColorPanel({
         </Tab>
 
         <Tab title="Mascot" id="mascot">
-          <Box flexDirection="column" gap={1} marginTop={1}>
+          <Box flexDirection="row" gap={4} marginTop={1} alignItems="center">
             {/* Clawd Preview */}
             <Box flexDirection="column" alignItems="center">
               <Clawd pose="default" showHorns={showHorns} bodyColor={bodyColor} eyeColor={eyeColor} />
-              <Text dimColor italic>Live preview</Text>
-            </Box>
-
-            {/* Body row */}
-            <Box flexDirection="row" gap={2}>
-              <Text bold color={sectionIdx === 0 ? 'suggestion' : undefined}>
-                {sectionIdx === 0 ? '▸ ' : '  '}Body
-              </Text>
-              <Text color={bodyColor}>●</Text>
-              <Text bold color={sectionIdx === 0 ? 'suggestion' : undefined}>
-                {CLAWD_BODY_COLORS.find(c => c.value === bodyColor)?.label ?? bodyColor}
+              <Text dimColor italic>
+                Live preview
               </Text>
             </Box>
 
-            {/* Eye row */}
-            <Box flexDirection="row" gap={2}>
-              <Text bold color={sectionIdx === 1 ? 'suggestion' : undefined}>
-                {sectionIdx === 1 ? '▸ ' : '  '}Eye
-              </Text>
-              <Text color={eyeColor}>●</Text>
-              <Text bold color={sectionIdx === 1 ? 'suggestion' : undefined}>
-                {CLAWD_EYE_COLORS.find(c => c.value === eyeColor)?.label ?? eyeColor}
-              </Text>
-            </Box>
+            {/* Menu Options Column */}
+            <Box flexDirection="column" gap={1}>
+              {/* Body row */}
+              <Box flexDirection="row" gap={2}>
+                <Text bold color={sectionIdx === 0 ? 'suggestion' : undefined}>
+                  {sectionIdx === 0 ? '▸ ' : '  '}Body
+                </Text>
+                <Text color={bodyColor}>●</Text>
+                <Text bold color={sectionIdx === 0 ? 'suggestion' : undefined}>
+                  {CLAWD_BODY_COLORS.find(c => c.value === bodyColor)?.label ?? bodyColor}
+                </Text>
+              </Box>
 
-            {/* Horns row */}
-            <Box flexDirection="row" gap={2}>
-              <Text bold color={sectionIdx === 2 ? 'suggestion' : undefined}>
-                {sectionIdx === 2 ? '▸ ' : '  '}Horns
-              </Text>
-              <Text color={showHorns ? 'ansi:green' : 'ansi:red'}>●</Text>
-              <Text bold color={sectionIdx === 2 ? 'suggestion' : undefined}>
-                {showHorns ? 'Show' : 'Hide'}
-              </Text>
+              {/* Eye row */}
+              <Box flexDirection="row" gap={2}>
+                <Text bold color={sectionIdx === 1 ? 'suggestion' : undefined}>
+                  {sectionIdx === 1 ? '▸ ' : '  '}Eye
+                </Text>
+                <Text color={eyeColor}>●</Text>
+                <Text bold color={sectionIdx === 1 ? 'suggestion' : undefined}>
+                  {CLAWD_EYE_COLORS.find(c => c.value === eyeColor)?.label ?? eyeColor}
+                </Text>
+              </Box>
+
+              {/* Horns row */}
+              <Box flexDirection="row" gap={2}>
+                <Text bold color={sectionIdx === 2 ? 'suggestion' : undefined}>
+                  {sectionIdx === 2 ? '▸ ' : '  '}Horns
+                </Text>
+                <Text color={showHorns ? 'ansi:green' : 'ansi:red'}>●</Text>
+                <Text bold color={sectionIdx === 2 ? 'suggestion' : undefined}>
+                  {showHorns ? 'Show' : 'Hide'}
+                </Text>
+              </Box>
             </Box>
           </Box>
         </Tab>
@@ -270,9 +280,7 @@ function ColorPanel({
       <Box marginTop={1} justifyContent="center">
         <Text dimColor>
           Tab switch tabs ·{' '}
-          {selectedTab === 'mascot'
-            ? '↑↓ color · Shift↑↓ section · Enter save'
-            : '↑↓ select · Enter confirm'}
+          {selectedTab === 'mascot' ? '↑↓ color · Shift↑↓ section · Enter save' : '↑↓ select · Enter confirm'}
           {' · '}Esc close
         </Text>
       </Box>

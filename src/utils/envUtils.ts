@@ -2,29 +2,32 @@ import memoize from 'lodash-es/memoize.js';
 import { homedir } from 'os';
 import { join } from 'path';
 
-// Memoized: 150+ callers, many on hot paths. Keyed off CLAUDE_CONFIG_DIR so
-// tests that change it get a fresh value.
+/**
+ * Read an env var with CLEW_* primary and CLAUDE_* legacy fallback.
+ */
+export function getEnvWithAlias(primary: string, legacy: string): string | undefined {
+  return process.env[primary] ?? process.env[legacy];
+}
+
+/**
+ * Primary config home: ~/.clew (or CLEW_CONFIG_DIR / CLAUDE_CONFIG_DIR fallback).
+ *
+ * ~170 callers across the codebase. Named `getClaudeConfigHomeDir` for backward
+ * compatibility — it returns the Clew home, not the old Claude home.
+ */
 export const getClaudeConfigHomeDir = memoize(
   (): string => {
-    // CLAUDE_CONFIG_DIR env var always wins (backward compat, testing)
-    if (process.env.CLAUDE_CONFIG_DIR) {
-      return process.env.CLAUDE_CONFIG_DIR.normalize('NFC');
-    }
-
-    return join(homedir(), '.claude').normalize('NFC');
-  },
-  () => process.env.CLAUDE_CONFIG_DIR,
-);
-
-export const getClewConfigHomeDir = memoize(
-  (): string => {
-    if (process.env.CLEW_CONFIG_DIR) {
-      return process.env.CLEW_CONFIG_DIR.normalize('NFC');
+    const clewDir = getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR');
+    if (clewDir) {
+      return clewDir.normalize('NFC');
     }
     return join(homedir(), '.clew').normalize('NFC');
   },
-  () => process.env.CLEW_CONFIG_DIR,
+  () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR') ?? '.clew',
 );
+
+/** Alias for the same function. */
+export const getClewConfigHomeDir = getClaudeConfigHomeDir;
 
 export function getTeamsDir(): string {
   return join(getClaudeConfigHomeDir(), 'teams');
@@ -58,9 +61,9 @@ export function isEnvDefinedFalsy(envVar: string | boolean | undefined): boolean
 }
 
 /**
- * --bare / CLAUDE_CODE_SIMPLE — skip hooks, LSP, plugin sync, skill dir-walk,
- * attribution, background prefetches, and ALL keychain/credential reads.
- * Auth is strictly ANTHROPIC_API_KEY env or apiKeyHelper from --settings.
+ * --bare / CLAUDE_CODE_SIMPLE / CLEW_CODE_SIMPLE — skip hooks, LSP, plugin sync,
+ * skill dir-walk, attribution, background prefetches, and ALL keychain/credential
+ * reads. Auth is strictly ANTHROPIC_API_KEY env or apiKeyHelper from --settings.
  * Explicit CLI flags (--plugin-dir, --add-dir, --mcp-config) still honored.
  * ~30 gates across the codebase.
  *
@@ -69,7 +72,7 @@ export function isEnvDefinedFalsy(envVar: string | boolean | undefined): boolean
  * — notably startKeychainPrefetch() at main.tsx top-level.
  */
 export function isBareMode(): boolean {
-  return isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE) || process.argv.includes('--bare');
+  return isEnvTruthy(getEnvWithAlias('CLEW_CODE_SIMPLE', 'CLAUDE_CODE_SIMPLE')) || process.argv.includes('--bare');
 }
 
 /**
@@ -112,10 +115,12 @@ export function getDefaultVertexRegion(): string {
 
 /**
  * Check if bash commands should maintain project working directory (reset to original after each command)
- * @returns true if CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR is set to a truthy value
+ * @returns true if CLEW_BASH_MAINTAIN_PROJECT_WORKING_DIR or CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR is set
  */
 export function shouldMaintainProjectWorkingDir(): boolean {
-  return isEnvTruthy(process.env.CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR);
+  return isEnvTruthy(
+    getEnvWithAlias('CLEW_BASH_MAINTAIN_PROJECT_WORKING_DIR', 'CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR'),
+  );
 }
 
 /**

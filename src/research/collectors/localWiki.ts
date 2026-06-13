@@ -1,11 +1,12 @@
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import type { ResearchSource } from '../types.js';
 
 export async function collectLocalWiki(cwd: string, query: string): Promise<ResearchSource[]> {
   const fsImpl = getFsImplementation();
-  const wikiDir = join(cwd, '.claude', 'wiki');
+  const wikiDir = join(cwd, DOT_CLEW, 'wiki');
   if (!fsImpl.existsSync(wikiDir)) {
     return [];
   }

@@ -45,6 +45,12 @@ export type GoalState = {
   pausedAt?: number;
   /** Total accumulated pause time in ms */
   totalPausedMs?: number;
+  /** Whether the goal is currently blocked */
+  blocked?: boolean;
+  /** When the goal was blocked (timestamp) */
+  blockedAt?: number;
+  /** Reason why the goal is blocked */
+  blockedReason?: string;
   /** Workflow run ids that were started in service of this goal. */
   linkedWorkflowRunIds?: string[];
 };
@@ -170,6 +176,22 @@ export function updateGoalState(updates: Partial<GoalState>): void {
   if (!currentGoalState) return;
   currentGoalState = { ...currentGoalState, ...updates };
   persistGoal(currentGoalState).catch(() => {});
+}
+
+export function blockGoal(reason: string): void {
+  if (!currentGoalState) return;
+  currentGoalState = {
+    ...currentGoalState,
+    blocked: true,
+    blockedAt: Date.now(),
+    blockedReason: reason,
+    lastReason: reason,
+  };
+  persistGoal(currentGoalState).catch(() => {});
+}
+
+export function isGoalBlocked(): boolean {
+  return currentGoalState?.blocked ?? false;
 }
 
 /** Most recent goal that finished in this session (achieved or cleared). */

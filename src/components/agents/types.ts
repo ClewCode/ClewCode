@@ -1,9 +1,10 @@
 import type { SettingSource } from 'src/utils/settings/constants.js';
 import type { AgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js';
+import { AGENTS_DIR, DOT_CLEW } from '../../utils/clewPaths.js';
 
 export const AGENT_PATHS = {
-  FOLDER_NAME: '.claude',
-  AGENTS_DIR: 'agents',
+  FOLDER_NAME: DOT_CLEW,
+  AGENTS_DIR,
 } as const;
 
 // Base types for common patterns

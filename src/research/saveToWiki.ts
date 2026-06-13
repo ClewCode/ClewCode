@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 
 export async function saveReportToWiki(
@@ -9,7 +10,7 @@ export async function saveReportToWiki(
   runId: string,
 ): Promise<string> {
   const fsImpl = getFsImplementation();
-  const wikiDir = join(cwd, '.claude', 'wiki', 'Research');
+  const wikiDir = join(cwd, DOT_CLEW, 'wiki', 'Research');
 
   if (!fsImpl.existsSync(wikiDir)) {
     await mkdir(wikiDir, { recursive: true });

@@ -13,6 +13,7 @@ import { dirname, join } from 'path';
 import { z } from 'zod/v4';
 import { getProjectRoot, getSessionId } from '../bootstrap/state.js';
 import { registerCleanup } from './cleanupRegistry.js';
+import { DOT_CLEW, SCHEDULED_TASKS_LOCK } from './clewPaths.js';
 import { logForDebugging } from './debug.js';
 import { getErrnoCode } from './errors.js';
 import { isProcessRunning } from './genericProcessUtils.js';
@@ -20,7 +21,7 @@ import { safeParseJSON } from './json.js';
 import { lazySchema } from './lazySchema.js';
 import { jsonStringify } from './slowOperations.js';
 
-const LOCK_FILE_REL = join('.claude', 'scheduled_tasks.lock');
+const LOCK_FILE_REL = join(DOT_CLEW, SCHEDULED_TASKS_LOCK);
 
 const schedulerLockSchema = lazySchema(() =>
   z.object({

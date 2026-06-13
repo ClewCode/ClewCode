@@ -59,6 +59,7 @@ export type ProviderContentBlock =
   | { type: 'tool_result'; tool_use_id: string; content: unknown; is_error?: boolean }
   | { type: 'thinking'; thinking: string; signature?: string }
   | { type: 'image'; source: unknown; media_type?: string }
+  | { type: 'video'; source: unknown; media_type?: string }
   | { type: 'refusal'; refusal: string };
 
 export interface MessageParam {

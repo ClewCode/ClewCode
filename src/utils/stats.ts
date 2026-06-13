@@ -88,6 +88,14 @@ function extractProviderFromMessage(message: TranscriptMessage, model: string): 
     return modelProvider;
   }
 
+  // Next, try to extract from sessionModel (often contains the provider prefix)
+  if (message.sessionModel) {
+    const sessionProvider = extractProviderFromModel(message.sessionModel);
+    if (sessionProvider !== 'unknown') {
+      return sessionProvider;
+    }
+  }
+
   // Fall back to message metadata
   const messageProvider =
     (message.message as any)?.provider ??
@@ -439,7 +447,16 @@ async function processSessionFiles(sessionFiles: string[], options: ProcessOptio
           // Track model usage if available (skip synthetic messages)
           if (message.message?.usage) {
             const usage = normalizeTranscriptUsage(message.message.usage);
-            const model = message.message.model || 'unknown';
+            let model = message.message.model || 'unknown';
+
+            // Prefer specific sessionModel if available, as some API responses return a generic provider name
+            if (message.sessionModel) {
+              const parts = message.sessionModel.split('/');
+              const sessionModelName = parts.length > 1 ? parts[1]! : parts[0]!;
+              if (sessionModelName && sessionModelName !== 'default') {
+                model = sessionModelName;
+              }
+            }
 
             // Skip synthetic messages - they are internal and shouldn't appear in stats
             if (model === SYNTHETIC_MODEL) {

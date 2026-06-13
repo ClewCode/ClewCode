@@ -220,7 +220,7 @@ async function detectMultipleInstallations(): Promise<Array<{ type: string; path
   const installations: Array<{ type: string; path: string }> = [];
 
   // Check for local installation
-  const localPath = join(homedir(), '.claude', 'local');
+  const localPath = join(homedir(), '.clew', 'local');
   if (await localInstallationExists()) {
     installations.push({ type: 'npm-local', path: localPath });
   }

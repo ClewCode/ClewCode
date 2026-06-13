@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Peer System — Clew</title>
-  <meta name="description" content="LAN peer-to-peer system — discovery, messaging, task delegation, and remote execution between Clew instances.">
+  <title>Peer System â€” Clew</title>
+  <meta name="description" content="LAN peer-to-peer system â€” discovery, messaging, task delegation, and remote execution between Clew instances.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,102 +20,102 @@
     <main class="content">
       <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Peer System</span></div>
       <h1>Peer System</h1>
-      <p class="section-subtitle">LAN peer-to-peer — discover other Clew instances, send messages, delegate tasks, and execute commands remotely.</p>
+      <p class="section-subtitle">LAN peer-to-peer â€” discover other Clew instances, send messages, delegate tasks, and execute commands remotely.</p>
 
       <p>The peer system lives in <code>src/peer/</code> and consists of three core layers: <strong>PeerServer</strong> (HTTP server), <strong>PeerDiscovery</strong> (LAN scanning), and <strong>PeerStore</strong> (in-memory registry).</p>
 
       <h2>Architecture</h2>
-      <pre><code> ┌─────────────────────────────────────────────────────────────────────────────┐
- │                          PEER SYSTEM FLOW                                   │
- └─────────────────────────────────────────────────────────────────────────────┘
+      <pre><code> â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+ â”‚                          PEER SYSTEM FLOW                                   â”‚
+ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
-                          ┌──────────────────────────┐
-                          │      /peer share          │
-                          │  (Machine A — Worker)     │
-                          └────────────┬─────────────┘
-                                       │
-                     ┌─────────────────┼─────────────────┐
-                     ▼                  ▼                  ▼
-            ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-            │ PeerServer   │  │PeerDiscovery │  │  PeerStore   │
-            │ HTTP :random  │  │              │  │  (in-memory) │
-            │  port         │  │              │  │              │
-            └──────┬───────┘  └──────┬───────┘  └──────────────┘
-                   │                 │
-                   │    ┌────────────┼────────────┐
-                   │    │            │            │
-                   │    ▼            ▼            ▼
-                   │ ┌────────┐ ┌────────┐ ┌─────────────┐
-                   │ │  File  │ │  UDP   │ │  PeerStore   │
-                   │ │ ~/.cl/ │ │multicast│ │ (singleton) │
-                   │ │ peers/ │ │239...  │ │             │
-                   │ │{pid}.  │ │:42069  │ │             │
-                   │ │ json   │ │        │ │             │
-                   │ └────┬───┘ └────┬───┘ └─────────────┘
-                   │      │          │
-                   │      │          │  heartbeat every 30s
-                   │      │          │  stale timeout 90s
-                   │      │          │
-                   ▼      ▼          ▼
- ┌─────────────────────────────────────────────────────┐
- │                   LAN NETWORK                        │
- │                                                     │
- │   ┌─────────┐         ┌─────────┐                   │
- │   │ Machine B│◄───────►│ Machine C│  ...             │
- │   │ Clew Code│  query  │ Clew Code│                   │
- │   └────┬─────┘         └────┬─────┘                   │
- │        │                    │                         │
- └────────┼────────────────────┼─────────────────────────┘
-          │                    │
-          │  /peer discover    │  /peer discover
-          ▼                    ▼
-
-
- ═══ WORKER (Machine A) ENDPOINTS ═══
-
-      Peer อื่น          POST /peer-info     ──►  { hostname, ip, cwd, shell, ... }
-         │                POST /peer-msg      ──►  receive chat message
-         ├───────────────► POST /peer-todo     ──►  receive task (goes to inbox)
-         │                POST /peer-exec     ──►  run shell command + return stdout/stderr
+                          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                          â”‚      /peer share          â”‚
+                          â”‚  (Machine A â€” Worker)     â”‚
+                          â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                       â”‚
+                     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                     â–¼                  â–¼                  â–¼
+            â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+            â”‚ PeerServer   â”‚  â”‚PeerDiscovery â”‚  â”‚  PeerStore   â”‚
+            â”‚ HTTP :random  â”‚  â”‚              â”‚  â”‚  (in-memory) â”‚
+            â”‚  port         â”‚  â”‚              â”‚  â”‚              â”‚
+            â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚                 â”‚
+                   â”‚    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                   â”‚    â”‚            â”‚            â”‚
+                   â”‚    â–¼            â–¼            â–¼
+                   â”‚ â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                   â”‚ â”‚  File  â”‚ â”‚  UDP   â”‚ â”‚  PeerStore   â”‚
+                   â”‚ â”‚ ~/.cl/ â”‚ â”‚multicastâ”‚ â”‚ (singleton) â”‚
+                   â”‚ â”‚ peers/ â”‚ â”‚239...  â”‚ â”‚             â”‚
+                   â”‚ â”‚{pid}.  â”‚ â”‚:42069  â”‚ â”‚             â”‚
+                   â”‚ â”‚ json   â”‚ â”‚        â”‚ â”‚             â”‚
+                   â”‚ â””â”€â”€â”€â”€â”¬â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”¬â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚      â”‚          â”‚
+                   â”‚      â”‚          â”‚  heartbeat every 30s
+                   â”‚      â”‚          â”‚  stale timeout 90s
+                   â”‚      â”‚          â”‚
+                   â–¼      â–¼          â–¼
+ â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+ â”‚                   LAN NETWORK                        â”‚
+ â”‚                                                     â”‚
+ â”‚   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”                   â”‚
+ â”‚   â”‚ Machine Bâ”‚â—„â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚ Machine Câ”‚  ...             â”‚
+ â”‚   â”‚ Clew Codeâ”‚  query  â”‚ Clew Codeâ”‚                   â”‚
+ â”‚   â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜         â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜                   â”‚
+ â”‚        â”‚                    â”‚                         â”‚
+ â””â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+          â”‚                    â”‚
+          â”‚  /peer discover    â”‚  /peer discover
+          â–¼                    â–¼
 
 
- ═══ CLIENT (Machine B) TOOLS ═══
+ â•â•â• WORKER (Machine A) ENDPOINTS â•â•â•
 
-      /peer discover  ──►  scan files + UDP query (3s timeout)
-                               │
-                               ▼
+      Peer à¸­à¸·à¹ˆà¸™          POST /peer-info     â”€â”€â–º  { hostname, ip, cwd, shell, ... }
+         â”‚                POST /peer-msg      â”€â”€â–º  receive chat message
+         â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–º POST /peer-todo     â”€â”€â–º  receive task (goes to inbox)
+         â”‚                POST /peer-exec     â”€â”€â–º  run shell command + return stdout/stderr
+
+
+ â•â•â• CLIENT (Machine B) TOOLS â•â•â•
+
+      /peer discover  â”€â”€â–º  scan files + UDP query (3s timeout)
+                               â”‚
+                               â–¼
                           [peer list]
-                               │
-           ┌───────────────────┼───────────────────┐
-           ▼                   ▼                   ▼
+                               â”‚
+           â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+           â–¼                   â–¼                   â–¼
     /peer join          /peer send_task      /peer run
     (POST /peer-info)   (POST /peer-todo)    (POST /peer-exec)
 
-           │
-           ▼
-    /peer send_message   ──►  POST /peer-msg  ──►  destination inbox
-    /peer broadcast      ──►  POST /peer-msg  ──►  all connected peers
-    /peer ping           ──►  GET  /peer-info  ──►  check alive
+           â”‚
+           â–¼
+    /peer send_message   â”€â”€â–º  POST /peer-msg  â”€â”€â–º  destination inbox
+    /peer broadcast      â”€â”€â–º  POST /peer-msg  â”€â”€â–º  all connected peers
+    /peer ping           â”€â”€â–º  GET  /peer-info  â”€â”€â–º  check alive
 
 
- ═══ DAEMON (agentLoop.ts) ═══
+ â•â•â• DAEMON (agentLoop.ts) â•â•â•
 
-      ┌───────────────────────────────────┐
-      │  Autonomous Agent Loop            │
-      │  - listens /peer-todo 24/7       │
-      │  - receives tasks from peers      │
-      │  - executes in background worker   │
-      │  - max 3 concurrent workers       │
-      └───────────────────────────────────┘
+      â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+      â”‚  Autonomous Agent Loop            â”‚
+      â”‚  - listens /peer-todo 24/7       â”‚
+      â”‚  - receives tasks from peers      â”‚
+      â”‚  - executes in background worker   â”‚
+      â”‚  - max 3 concurrent workers       â”‚
+      â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
 
- ═══ DATA LIFECYCLE ═══
+ â•â•â• DATA LIFECYCLE â•â•â•
 
-      advertise ──► heartbeat every 30s
-                        │
-                        ├── 90s no heartbeat ──► stale → evict
-                        │
-      stop share ──► send UDP "offline"
+      advertise â”€â”€â–º heartbeat every 30s
+                        â”‚
+                        â”œâ”€â”€ 90s no heartbeat â”€â”€â–º stale â†’ evict
+                        â”‚
+      stop share â”€â”€â–º send UDP "offline"
                      delete peer file
                      close HTTP server</code></pre>
 
@@ -134,17 +134,17 @@
       <h3>PeerDiscovery <code>src/peer/PeerDiscovery.ts</code></h3>
       <p>Two discovery mechanisms work together:</p>
       <ul>
-        <li><strong>File-based</strong> — Each instance writes <code>~/.claude/peers/{pid}.json</code> with hostname, IP, port, shell, cwd. Other instances scan this directory to discover local peers.</li>
-        <li><strong>UDP Multicast</strong> — Broadcasts heartbeat beacons to <code>239.255.37.37:42069</code> every 30 seconds. Responds to <code>clew-peer-query</code> with <code>clew-peer-info</code>. Cross-machine only.</li>
-        <li><strong>Stale eviction</strong> — Peers unseen for 90 seconds (<code>PEER_STALE_TIMEOUT</code>) are automatically removed.</li>
+        <li><strong>File-based</strong> â€” Each instance writes <code>~/.claude/peers/{pid}.json</code> with hostname, IP, port, shell, cwd. Other instances scan this directory to discover local peers.</li>
+        <li><strong>UDP Multicast</strong> â€” Broadcasts heartbeat beacons to <code>239.255.37.37:42069</code> every 30 seconds. Responds to <code>clew-peer-query</code> with <code>clew-peer-info</code>. Cross-machine only.</li>
+        <li><strong>Stale eviction</strong> â€” Peers unseen for 90 seconds (<code>PEER_STALE_TIMEOUT</code>) are automatically removed.</li>
       </ul>
 
       <h3>PeerStore <code>src/peer/PeerStore.ts</code></h3>
       <p>Singleton in-memory registry holding all known peers (discovered + explicitly joined), chat messages, todos, and custom tags (display names, roles).</p>
       <ul>
-        <li><strong>Discovered peers</strong> — Auto-evicted after stale timeout</li>
-        <li><strong>Joined connections</strong> — Persistent; never auto-cleaned</li>
-        <li><strong>Tags</strong> — Custom display names and roles per peer</li>
+        <li><strong>Discovered peers</strong> â€” Auto-evicted after stale timeout</li>
+        <li><strong>Joined connections</strong> â€” Persistent; never auto-cleaned</li>
+        <li><strong>Tags</strong> â€” Custom display names and roles per peer</li>
       </ul>
 
       <h2>Discovery Protocol</h2>
@@ -220,10 +220,10 @@ Stale after:  90 seconds</code></pre>
       </table>
 
       <footer class="footer">
-        <span>Clew Code v0.2.4 — Open Source</span>
+        <span>Clew Code v0.2.7 â€” Open Source</span>
         <div class="footer-links">
-          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
-          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
         </div>
       </footer>
     </main>
@@ -233,3 +233,4 @@ Stale after:  90 seconds</code></pre>
 <script src="js/main.js"></script>
 </body>
 </html>
+

@@ -508,6 +508,8 @@ function maskModelCodename(baseName: string): string {
 }
 
 export function renderModelName(model: ModelName, providerOverride?: string, style?: 'full' | 'short'): string {
+  const formattedModel = model.includes('/') ? model : model.replace(':', '/');
+
   const publicName = getPublicModelDisplayName(model);
   if (publicName) {
     return publicName;
@@ -533,7 +535,7 @@ export function renderModelName(model: ModelName, providerOverride?: string, sty
         model.toLowerCase().startsWith(provider.toLowerCase()) ||
         model.toLowerCase().startsWith(registryEntry.label.toLowerCase())
       ) {
-        return model;
+        return formattedModel;
       }
       // If the model name is unknown, show only the provider label
       if (model === 'unknown') {
@@ -541,9 +543,9 @@ export function renderModelName(model: ModelName, providerOverride?: string, sty
       }
       // 'short' style: bare model name without provider prefix (for stats list)
       if (style === 'short') {
-        return model;
+        return formattedModel;
       }
-      return `${registryEntry.label}: ${model}`;
+      return `${registryEntry.label}: ${formattedModel}`;
     }
   }
 
@@ -557,11 +559,11 @@ export function renderModelName(model: ModelName, providerOverride?: string, sty
       return masked + suffix;
     }
     if (resolved !== model) {
-      return `${model} (${resolved})`;
+      return `${formattedModel} (${resolved})`;
     }
     return resolved;
   }
-  return model;
+  return formattedModel;
 }
 
 /**

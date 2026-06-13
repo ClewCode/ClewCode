@@ -1,10 +1,11 @@
 import path from 'node:path';
+import { AGENTS_DIR, DOT_CLEW, RUNS_DIR, WORKFLOWS_DIR } from '../utils/clewPaths.js';
 import type { AgentDefinition, RuntimeBudget, WorkflowDefinition } from './types.js';
 
 export const RUNTIME_DIRS = {
-  runs: '.claude/runs',
-  agents: '.claude/agents',
-  workflows: '.claude/workflows',
+  runs: `${DOT_CLEW}/${RUNS_DIR}`,
+  agents: `${DOT_CLEW}/${AGENTS_DIR}`,
+  workflows: `${DOT_CLEW}/${WORKFLOWS_DIR}`,
 };
 
 export const DEFAULT_BUDGET: RuntimeBudget = {

@@ -13,6 +13,7 @@ import type { ConnectedMCPServer, MCPServerConnection } from '../services/mcp/ty
 import { getGlobalConfig, saveGlobalConfig } from './config.js';
 import { env } from './env.js';
 import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { DOT_CLEW } from './clewPaths.js';
 import { execFileNoThrow, execFileNoThrowWithCwd, execSyncWithDefaults_DEPRECATED } from './execFileNoThrow.js';
 import { getFsImplementation } from './fsOperations.js';
 import { getAncestorPidsAsync } from './genericProcessUtils.js';
@@ -448,7 +449,7 @@ export async function getIdeLockfilesPaths(): Promise<string[]> {
   if (windowsHome) {
     const converter = new WindowsToWSLConverter(process.env.WSL_DISTRO_NAME);
     const wslPath = converter.toLocalPath(windowsHome);
-    paths.push(resolve(wslPath, '.claude', 'ide'));
+    paths.push(resolve(wslPath, DOT_CLEW, 'ide'));
   }
 
   // Construct the path based on the standard Windows WSL locations
@@ -473,7 +474,7 @@ export async function getIdeLockfilesPaths(): Promise<string[]> {
       ) {
         continue; // Skip system directories
       }
-      paths.push(join(usersDir, user.name, '.claude', 'ide'));
+      paths.push(join(usersDir, user.name, '.clew', 'ide'));
     }
   } catch (error: unknown) {
     if (isFsInaccessible(error)) {

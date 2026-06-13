@@ -19,6 +19,7 @@ import type * as React from 'react';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import { getProcessPeerProvider, getProcessPeerProviderIds } from '../../peer/ProcessPeerProvider.js';
 import type { PeerInfo } from '../../peer/types.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { errorMessage } from '../../utils/errors.js';
@@ -267,6 +268,92 @@ async function sendTask(peerQuery: string, text: string, onDone: (msg: string) =
   }
 }
 
+type ProcessPeerRunArgs = {
+  providerId: string;
+  prompt: string;
+  cwd?: string;
+  model?: string;
+  timeoutMs?: number;
+};
+
+function parseProcessPeerRunArgs(rest: string): ProcessPeerRunArgs | { error: string } {
+  const tokens = parseArgs(rest);
+  const providerId = tokens.shift();
+  if (!providerId) {
+    return { error: `Usage: /peer run <${getProcessPeerProviderIds().join('|')}> [options] <task>` };
+  }
+
+  const promptTokens: string[] = [];
+  let cwd: string | undefined;
+  let model: string | undefined;
+  let timeoutMs: number | undefined;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]!;
+    if (token === '--cwd' || token === '-C') {
+      cwd = tokens[++i];
+      continue;
+    }
+    if (token === '--model' || token === '-m') {
+      model = tokens[++i];
+      continue;
+    }
+    if (token === '--timeout' || token === '-t') {
+      const raw = tokens[++i];
+      const seconds = Number(raw);
+      if (!Number.isFinite(seconds) || seconds <= 0) {
+        return { error: '--timeout must be a positive number of seconds' };
+      }
+      timeoutMs = Math.round(seconds * 1000);
+      continue;
+    }
+    promptTokens.push(token);
+  }
+
+  const prompt = promptTokens.join(' ').trim();
+  if (!prompt) {
+    return { error: `Usage: /peer run ${providerId} [options] <task>` };
+  }
+
+  return { providerId, prompt, cwd, model, timeoutMs };
+}
+
+async function runProcessPeer(rest: string, onDone: (msg: string) => void): Promise<void> {
+  const parsed = parseProcessPeerRunArgs(rest);
+  if ('error' in parsed) {
+    onDone(chalk.yellow(parsed.error));
+    return;
+  }
+
+  const provider = getProcessPeerProvider(parsed.providerId);
+  if (!provider) {
+    onDone(
+      chalk.red(`Unknown process peer "${parsed.providerId}". Available: ${getProcessPeerProviderIds().join(', ')}`),
+    );
+    return;
+  }
+
+  try {
+    const result = await provider.runTask({
+      prompt: parsed.prompt,
+      cwd: parsed.cwd,
+      model: parsed.model,
+      timeoutMs: parsed.timeoutMs,
+    });
+    const output = result.stdout.trim() || result.stderr.trim() || '(no output)';
+    const status =
+      result.exitCode === 0 && !result.timedOut
+        ? chalk.dim(`${provider.label} peer finished in ${(result.durationMs / 1000).toFixed(1)}s`)
+        : chalk.red(
+            `${provider.label} peer failed${result.timedOut ? ' (timed out)' : ''}: exit ${result.exitCode ?? result.signal ?? 'unknown'}`,
+          );
+
+    onDone([status, '', output].join('\n'));
+  } catch (err) {
+    onDone(chalk.red(`Failed to run ${provider.label} peer: ${errorMessage(err)}`));
+  }
+}
+
 function showTodos(onDone: (msg: string) => void): void {
   const todos = getGlobalPeerStore().getTodos();
   if (todos.length === 0) {
@@ -351,6 +438,37 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     return;
   }
 
+  if (args.startsWith('name ')) {
+    const name = args.slice(5).trim();
+    if (!name) {
+      onDone(chalk.yellow('Usage: /peer name <new_name>'), { display: 'system' });
+      return;
+    }
+    const store = getGlobalPeerStore();
+    const discovery = getGlobalDiscovery();
+    discovery.setLocalName(name);
+    store.setPeerName(discovery.peerId, name);
+    const server = getGlobalPeerServer();
+    server.extraInfo.displayName = name;
+    onDone(chalk.dim(`Set local display name to "${name}"`), { display: 'system' });
+    return;
+  }
+
+  if (args.startsWith('role ')) {
+    const role = args.slice(5).trim();
+    if (!role) {
+      onDone(chalk.yellow('Usage: /peer role <new_role>'), { display: 'system' });
+      return;
+    }
+    const store = getGlobalPeerStore();
+    const discovery = getGlobalDiscovery();
+    store.setPeerRole(discovery.peerId, role);
+    const server = getGlobalPeerServer();
+    server.extraInfo.role = role;
+    onDone(chalk.dim(`Set local role to "${role}"`), { display: 'system' });
+    return;
+  }
+
   if (args === 'list') return <PeerMenu onDone={onDone} />;
 
   if (args.startsWith('send ')) {
@@ -391,6 +509,11 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
 
   if (args === 'todos') {
     showTodos(msg => onDone(msg, { display: 'system' }));
+    return;
+  }
+
+  if (args.startsWith('run ')) {
+    await runProcessPeer(args.slice(4).trim(), msg => onDone(msg, { display: 'system' }));
     return;
   }
 
@@ -446,7 +569,7 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
   if (args === 'help' || args === '--help' || args === '-h') {
     onDone(
       [
-        'Peer commands:',
+        'Peer commands — external process peers and providers:',
         '  /peer share              Start sharing (listen for connections)',
         '  /peer share stop         Stop sharing',
         '  /peer join <host>:<port> Connect to a peer (e.g. /peer join 127.0.0.1:61459)',
@@ -455,12 +578,16 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
         '  /peer todo <peer> <task> Assign a task to a peer',
         '  /peer todos              Show received tasks',
         '  /peer todo done <id>     Mark task done',
+        '  /peer run codex <task>   Run a one-shot local Codex process peer',
+        '                           Options: -C, --cwd <dir>; -m, --model <model>; -t, --timeout <seconds>',
         '  /peer inbox              View pending messages',
         '  /peer spawn [options]    Spawn a new peer shell terminal window',
         '                           Options: -n, --name <name> (peer display name)',
         '                                    -p, --prompt <prompt> (custom system prompt)',
         '                                    -m, --model <model> (custom AI model)',
-        '                                    -r, --role <role> / -a, --agent <agent> (custom agent role)',
+        '                                    -r, --role <role> (custom peer role)',
+        '',
+        '  For Clew background specialists, use /agent <task>',
       ].join('\n'),
       { display: 'system' },
     );

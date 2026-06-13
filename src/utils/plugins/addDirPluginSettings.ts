@@ -9,6 +9,7 @@
 import { join } from 'path';
 import type { z } from 'zod/v4';
 import { getAdditionalDirectoriesForClaudeMd } from '../../bootstrap/state.js';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { parseSettingsFile } from '../settings/settings.js';
 import type { ExtraKnownMarketplaceSchema, SettingsJson } from '../settings/types.js';
 
@@ -30,7 +31,7 @@ export function getAddDirEnabledPlugins(): NonNullable<SettingsJson['enabledPlug
   const result: NonNullable<SettingsJson['enabledPlugins']> = {};
   for (const dir of getAdditionalDirectoriesForClaudeMd()) {
     for (const file of SETTINGS_FILES) {
-      const { settings } = parseSettingsFile(join(dir, '.claude', file));
+      const { settings } = parseSettingsFile(join(dir, DOT_CLEW, file));
       if (!settings?.enabledPlugins) {
         continue;
       }
@@ -50,7 +51,7 @@ export function getAddDirExtraMarketplaces(): Record<string, ExtraKnownMarketpla
   const result: Record<string, ExtraKnownMarketplace> = {};
   for (const dir of getAdditionalDirectoriesForClaudeMd()) {
     for (const file of SETTINGS_FILES) {
-      const { settings } = parseSettingsFile(join(dir, '.claude', file));
+      const { settings } = parseSettingsFile(join(dir, DOT_CLEW, file));
       if (!settings?.extraKnownMarketplaces) {
         continue;
       }

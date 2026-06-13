@@ -47,6 +47,12 @@ export function fromAnthropicContentBlock(block: ContentBlockParam): ProviderCon
         source: (block as any).source,
         media_type: (block as any).media_type,
       };
+    case 'video':
+      return {
+        type: 'video',
+        source: (block as any).source,
+        media_type: (block as any).media_type,
+      } as ProviderContentBlock;
     case 'refusal':
       return { type: 'refusal', refusal: (block as any).refusal ?? '' };
     default:

@@ -104,7 +104,6 @@ import privacySettings from './commands/privacy-settings/index.js';
 import hooks from './commands/hooks/index.js';
 import files from './commands/files/index.js';
 import branch from './commands/branch/index.js';
-import agents from './commands/agents/index.js';
 import plugin from './commands/plugin/index.js';
 import reloadPlugins from './commands/reload-plugins/index.js';
 import rewind from './commands/rewind/index.js';
@@ -237,7 +236,6 @@ const COMMANDS = memoize((): Command[] => [
   addDir,
   advisor,
   agentCmd,
-  agents,
   ant,
   autofixPr,
   bg,
@@ -676,7 +674,7 @@ export function findCommand(commandName: string, commands: Command[]): Command |
   // space with ":" as a fallback.
   const colonSepIdx = commandName.indexOf(' ');
   if (colonSepIdx > 0) {
-    const withColon = commandName.slice(0, colonSepIdx) + ':' + commandName.slice(colonSepIdx + 1);
+    const withColon = `${commandName.slice(0, colonSepIdx)}:${commandName.slice(colonSepIdx + 1)}`;
     return findCommand(withColon, commands);
   }
 

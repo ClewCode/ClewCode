@@ -39,6 +39,7 @@ import { getAdditionalDirectoriesForClaudeMd, getOriginalCwd } from '../bootstra
 import { truncateEntrypointContent } from '../memdir/memdir.js';
 import { getAutoMemEntrypoint, isAutoMemoryEnabled } from '../memdir/paths.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getCurrentProjectConfig, getManagedClaudeRulesDir, getMemoryPath, getUserClaudeRulesDir } from './config.js';
 import { logForDebugging } from './debug.js';
 import { logForDiagnosticsNoPII } from './diagLogs.js';
@@ -876,15 +877,15 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal: boolean = fal
       );
 
       // Try reading .claude/AGENTS.md (Project) — legacy fallback
-      const dotAgentsPath = join(dir, '.claude', 'AGENTS.md');
+      const dotAgentsPath = join(dir, DOT_CLEW, 'AGENTS.md');
       result.push(...(await processMemoryFile(dotAgentsPath, 'Project', processedPaths, includeExternal)));
 
       // Try reading .claude/CLAUDE.md (Project) — legacy fallback
-      const dotClaudePath = join(dir, '.claude', 'CLAUDE.md');
+      const dotClaudePath = join(dir, DOT_CLEW, 'CLAUDE.md');
       result.push(...(await processMemoryFile(dotClaudePath, 'Project', processedPaths, includeExternal)));
 
       // Try reading .claude/rules/*.md files (Project) — legacy fallback
-      const rulesDir = join(dir, '.claude', 'rules');
+      const rulesDir = join(dir, DOT_CLEW, 'rules');
       result.push(
         ...(await processMdRules({
           rulesDir,
@@ -939,15 +940,15 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal: boolean = fal
       );
 
       // Try reading .claude/AGENTS.md from the additional directory — legacy fallback
-      const dotAgentsPath = join(dir, '.claude', 'AGENTS.md');
+      const dotAgentsPath = join(dir, DOT_CLEW, 'AGENTS.md');
       result.push(...(await processMemoryFile(dotAgentsPath, 'Project', processedPaths, includeExternal)));
 
       // Try reading .claude/CLAUDE.md from the additional directory — legacy fallback
-      const dotClaudePath = join(dir, '.claude', 'CLAUDE.md');
+      const dotClaudePath = join(dir, DOT_CLEW, 'CLAUDE.md');
       result.push(...(await processMemoryFile(dotClaudePath, 'Project', processedPaths, includeExternal)));
 
       // Try reading .claude/rules/*.md files from the additional directory — legacy fallback
-      const rulesDir = join(dir, '.claude', 'rules');
+      const rulesDir = join(dir, DOT_CLEW, 'rules');
       result.push(
         ...(await processMdRules({
           rulesDir,
@@ -1199,9 +1200,9 @@ export async function getMemoryFilesForNestedDirectory(
     result.push(...(await processMemoryFile(dotClewAgentsPath, 'Project', processedPaths, false)));
     const dotClewPath = join(dir, '.clew', 'CLAUDE.md');
     result.push(...(await processMemoryFile(dotClewPath, 'Project', processedPaths, false)));
-    const dotAgentsPath = join(dir, '.claude', 'AGENTS.md');
+    const dotAgentsPath = join(dir, DOT_CLEW, 'AGENTS.md');
     result.push(...(await processMemoryFile(dotAgentsPath, 'Project', processedPaths, false)));
-    const dotClaudePath = join(dir, '.claude', 'CLAUDE.md');
+    const dotClaudePath = join(dir, DOT_CLEW, 'CLAUDE.md');
     result.push(...(await processMemoryFile(dotClaudePath, 'Project', processedPaths, false)));
   }
 
@@ -1228,7 +1229,7 @@ export async function getMemoryFilesForNestedDirectory(
   result.push(...(await processConditionedMdRules(targetPath, clewRulesDir, 'Project', processedPaths, false)));
 
   // Process project unconditional .claude/rules/*.md files (legacy fallback)
-  const rulesDir = join(dir, '.claude', 'rules');
+  const rulesDir = join(dir, DOT_CLEW, 'rules');
   const unconditionalProcessedPaths = new Set(processedPaths);
   result.push(
     ...(await processMdRules({
@@ -1273,7 +1274,7 @@ export async function getConditionalRulesForCwdLevelDirectory(
   const clewRulesDir = join(dir, '.clew', 'rules');
   result.push(...(await processConditionedMdRules(targetPath, clewRulesDir, 'Project', processedPaths, false)));
   // Process .claude/rules/ conditional rules (legacy fallback)
-  const rulesDir = join(dir, '.claude', 'rules');
+  const rulesDir = join(dir, DOT_CLEW, 'rules');
   result.push(...(await processConditionedMdRules(targetPath, rulesDir, 'Project', processedPaths, false)));
   return result;
 }
@@ -1361,8 +1362,14 @@ export async function shouldShowClaudeMdExternalIncludesWarning(): Promise<boole
 export function isMemoryFilePath(filePath: string): boolean {
   const name = basename(filePath);
 
-  // CLAUDE.md, AGENTS.md, or CLAUDE.local.md anywhere
-  if (name === 'CLAUDE.md' || name === 'AGENTS.md' || name === 'CLAUDE.local.md') {
+  // CLEW.md, CLEW.local.md, CLAUDE.md, AGENTS.md, or CLAUDE.local.md anywhere
+  if (
+    name === 'CLEW.md' ||
+    name === 'CLEW.local.md' ||
+    name === 'CLAUDE.md' ||
+    name === 'AGENTS.md' ||
+    name === 'CLAUDE.local.md'
+  ) {
     return true;
   }
 

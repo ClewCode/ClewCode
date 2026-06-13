@@ -1,4 +1,5 @@
 import { join } from 'path';
+import { DOT_CLEW, INDEX_DIR, MEMORY_DIR, RUNS_DIR, WIKI_DIR } from '../utils/clewPaths.js';
 
 export interface ClaudeMemoryConfig {
   enabled: boolean;
@@ -21,10 +22,10 @@ export function getDefaultConfig(rootDir: string): ClaudeMemoryConfig {
   return {
     enabled: true,
     rootDir,
-    memoryDir: join(rootDir, '.claude', 'memory'),
-    wikiDir: join(rootDir, '.claude', 'wiki'),
-    indexDir: join(rootDir, '.claude', 'index'),
-    runsDir: join(rootDir, '.claude', 'runs'),
+    memoryDir: join(rootDir, DOT_CLEW, MEMORY_DIR),
+    wikiDir: join(rootDir, DOT_CLEW, WIKI_DIR),
+    indexDir: join(rootDir, DOT_CLEW, INDEX_DIR),
+    runsDir: join(rootDir, DOT_CLEW, RUNS_DIR),
     maxChunkTokens: 3000,
     redactSecrets: true,
     autoCapture: true,

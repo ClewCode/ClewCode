@@ -1,4 +1,7 @@
+import * as React from 'react';
 import { z } from 'zod/v4';
+import { MessageResponse } from '../../components/MessageResponse.js';
+import { Box, Text } from '../../ink.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
@@ -80,6 +83,32 @@ export const PeerDiscoverTool = buildTool({
   },
   get outputSchema() {
     return outputSchema();
+  },
+  userFacingName() {
+    return 'PeerDiscover';
+  },
+  renderToolUseMessage(input) {
+    const timeoutStr = input.timeout !== undefined ? `timeout: ${input.timeout}s` : 'default timeout';
+    const waitStr = input.wait ? `, wait: true (minPeers: ${input.minPeers ?? 1})` : '';
+    return `${timeoutStr}${waitStr}`;
+  },
+  renderToolResultMessage(output) {
+    if (!output.success && output.count === 0) {
+      return React.createElement(
+        MessageResponse,
+        null,
+        React.createElement(Text, { dimColor: true, italic: true }, 'No peers found on LAN.'),
+      );
+    }
+    return React.createElement(
+      MessageResponse,
+      null,
+      React.createElement(
+        Text,
+        { dimColor: true },
+        `Discovered ${output.count} peer(s): ${formatPeerList(output.workers)}`,
+      ),
+    );
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.workers || output.workers.length === 0) {

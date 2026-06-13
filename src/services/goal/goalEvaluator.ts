@@ -30,6 +30,8 @@ export type GoalEvaluationResult = {
   durationMs: number;
   /** Model used for evaluation */
   model: string;
+  /** Whether the goal is considered blocked */
+  blocked?: boolean;
 };
 
 /**

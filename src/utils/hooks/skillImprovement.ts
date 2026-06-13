@@ -9,6 +9,7 @@ import {
 import { queryModelWithoutStreaming } from '../../services/api/claude.js';
 import { getEmptyToolPermissionContext } from '../../Tool.js';
 import type { Message } from '../../types/message.js';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { createAbortController } from '../abortController.js';
 import { count } from '../array.js';
 import { getCwd } from '../cwd.js';
@@ -177,7 +178,7 @@ export async function applySkillImprovement(skillName: string, updates: SkillUpd
   const fs = await import('fs/promises');
 
   // Skills live at .claude/skills/<name>/SKILL.md relative to CWD
-  const filePath = join(getCwd(), '.claude', 'skills', skillName, 'SKILL.md');
+  const filePath = join(getCwd(), DOT_CLEW, 'skills', skillName, 'SKILL.md');
 
   let currentContent: string;
   try {

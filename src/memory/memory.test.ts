@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import { injectMemoryIntoPrompt } from '../utils/injectMemoryIntoPrompt.js';
 import { chunkMarkdown, estimateTokenCount } from './chunker.js';
@@ -126,7 +127,7 @@ describe('Claude Memory System (PLAN E)', () => {
       sourceType: 'project',
       uri: 'project/conventions.md',
       title: 'Coding Conventions',
-      sourcePath: join(tempCwd, '.claude', 'memory', 'project', 'conventions.md'),
+      sourcePath: join(tempCwd, DOT_CLEW, 'memory', 'project', 'conventions.md'),
       contentHash: 'hash-abc',
       truthPriority: 60,
       editable: 1,

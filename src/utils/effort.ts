@@ -351,8 +351,9 @@ export function getDefaultEffortForModel(model: string): EffortValue | undefined
     }
   }
 
-  // When ultrathink feature is on, default effort to medium (ultrathink bumps to high)
-  if (isUltrathinkEnabled() && modelSupportsEffort(model)) {
+  // When ultrathink feature is on, default effort to medium (ultrathink bumps to high).
+  // Only for first-party models — 3P models have varying per-model effort support.
+  if (isUltrathinkEnabled() && modelSupportsEffort(model) && getAPIProvider() === 'firstParty') {
     return 'medium';
   }
 

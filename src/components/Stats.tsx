@@ -631,6 +631,7 @@ function ModelsTab({
     stats.dailyModelTokens,
     modelEntries.map(([model]) => model),
     terminalWidth,
+    stats.modelUsage,
   );
 
   // Get visible models, grouped by provider, and split into two columns
@@ -848,6 +849,7 @@ function generateTokenChart(
   dailyTokens: DailyModelTokens[],
   models: string[],
   terminalWidth: number,
+  modelUsage?: { [modelName: string]: { provider?: string } },
 ): ChartOutput | null {
   if (dailyTokens.length < 2 || models.length === 0) {
     return null;
@@ -895,8 +897,9 @@ function generateTokenChart(
       series.push(data);
       // Use theme colors that match the chart
       const bulletColors = [theme.suggestion, theme.success, theme.warning];
+      const provider = modelUsage?.[model]?.provider;
       legend.push({
-        model: renderModelName(model),
+        model: renderModelName(model, provider),
         coloredBullet: applyColor(figures.bullet, bulletColors[i % bulletColors.length] as Color),
       });
     }
@@ -1154,6 +1157,7 @@ function renderModelsToAnsi(stats: ClaudeCodeStats): string[] {
     stats.dailyModelTokens,
     modelEntries.map(([model]) => model),
     80, // Fixed width for screenshot
+    stats.modelUsage,
   );
 
   if (chartOutput) {

@@ -94,6 +94,7 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
     const response = await fetch(modelsUrl, {
       method: 'GET',
       headers,
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!response.ok) {
@@ -136,14 +137,27 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
         });
     }
 
-    // Handle generic format with data array (fallback for other providers)
+    // Handle generic format with data array (fallback for other providers like KiloCode/OpenCode)
     if (parsedModels === null && 'data' in data && Array.isArray(data.data)) {
-      parsedModels = data.data.map((model: any) => ({
-        id: model.id || model.name,
-        label: model.name || model.id || 'Unknown',
-        description: model.description,
-        contextWindow: model.context_length || model.context_window,
-      }));
+      parsedModels = data.data.map((model: any) => {
+        const supportedParams: string[] = Array.isArray(model.supported_parameters)
+          ? model.supported_parameters
+          : [];
+        const inputModalities: string[] = Array.isArray(model.architecture?.input_modalities)
+          ? model.architecture.input_modalities
+          : [];
+        return {
+          id: model.id || model.name,
+          label: model.name || model.id || 'Unknown',
+          description: model.description,
+          contextWindow: model.top_provider?.context_length || model.context_length || model.context_window,
+          supportsTools: supportedParams.includes('tools'),
+          supportsVision: inputModalities.includes('image'),
+          supportsReasoning: supportedParams.includes('reasoning') || supportedParams.includes('include_reasoning'),
+          maxOutput: model.top_provider?.max_completion_tokens || model.max_output_tokens,
+          free: model.isFree ?? false,
+        };
+      });
     }
 
     if (!parsedModels) {
@@ -158,20 +172,35 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
       staticMap.set(m.id, m.capabilities);
     }
 
-    return parsedModels.map(fm => {
-      const staticCap = staticMap.get(fm.id);
-      if (staticCap) {
-        return {
-          ...fm,
-          contextWindow: typeof staticCap.maxContext === 'number' ? staticCap.maxContext : fm.contextWindow,
-          supportsTools: staticCap.toolCalling !== 'none' && staticCap.toolCalling !== undefined,
-          supportsVision: staticCap.vision ?? false,
-          supportsReasoning: staticCap.reasoning ?? false,
-          maxOutput: typeof staticCap.maxOutput === 'number' ? (staticCap.maxOutput as number) : fm.maxOutput,
-          free: staticCap.free ?? false,
-        };
+    function lookupStaticCap(fmId: string) {
+      // Exact match
+      if (staticMap.has(fmId)) return staticMap.get(fmId);
+      // Try stripping provider/ prefix (API often returns "kilo/model" but json has "model")
+      const slashIdx = fmId.indexOf('/');
+      if (slashIdx > 0 && slashIdx < fmId.length - 1) {
+        const withoutPrefix = fmId.slice(slashIdx + 1);
+        if (staticMap.has(withoutPrefix)) return staticMap.get(withoutPrefix);
       }
-      return fm;
+      // Try substring match (api returns "openai/gpt-5.5", json has "gpt-5.5")
+      for (const [key, cap] of staticMap) {
+        if (fmId.includes(key) || key.includes(fmId)) return cap;
+      }
+      return undefined;
+    }
+
+    return parsedModels.map(fm => {
+      const staticCap = lookupStaticCap(fm.id);
+      if (!staticCap) return fm;
+      // API data takes priority; static only fills gaps
+      return {
+        ...fm,
+        contextWindow: fm.contextWindow ?? (typeof staticCap.maxContext === 'number' ? staticCap.maxContext : undefined),
+        supportsTools: fm.supportsTools ?? (staticCap.toolCalling !== 'none' && staticCap.toolCalling !== undefined),
+        supportsVision: fm.supportsVision ?? (staticCap.vision ?? false),
+        supportsReasoning: fm.supportsReasoning ?? (staticCap.reasoning ?? false),
+        maxOutput: fm.maxOutput ?? (typeof staticCap.maxOutput === 'number' ? (staticCap.maxOutput as number) : undefined),
+        free: fm.free ?? (staticCap.free ?? false),
+      };
     });
   } catch (error) {
     console.error('[fetchProviderModels] Error fetching models:', error);

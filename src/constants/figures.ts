@@ -37,3 +37,10 @@ export const HEAVY_HORIZONTAL = '\u2501'; // ━ - heavy box-drawing horizontal
 export const BRIDGE_SPINNER_FRAMES = ['\u00b7|\u00b7', '\u00b7/\u00b7', '\u00b7\u2014\u00b7', '\u00b7\\\u00b7'];
 export const BRIDGE_READY_INDICATOR = '\u00b7\u2714\ufe0e\u00b7';
 export const BRIDGE_FAILED_INDICATOR = '\u00d7';
+
+// Update progress bar characters
+export const LOADING_BAR_FILLED = '\u2588'; // █
+export const LOADING_BAR_BODY = '\u2592'; // ▒
+export const LOADING_BAR_EMPTY = '\u2591'; // ░
+export const LOADING_BAR_HEAD_L = '\u2594'; // ▔
+export const LOADING_BAR_HEAD_R = '\u2595'; // ▕

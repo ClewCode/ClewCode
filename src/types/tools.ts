@@ -32,3 +32,15 @@ export interface WebSearchProgress {
   status: 'searching' | 'fetching' | 'complete';
   urlsFound?: number;
 }
+
+export interface ProcessPeerProgress {
+  type: 'process_peer';
+  provider: string;
+  mode: 'exec' | 'pty';
+  command: string;
+  displayCommand: string;
+  cwd: string;
+  elapsedMs: number;
+  outputTail?: string;
+  status: 'starting' | 'running' | 'complete';
+}

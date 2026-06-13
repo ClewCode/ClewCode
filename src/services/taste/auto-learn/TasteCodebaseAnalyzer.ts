@@ -1,9 +1,9 @@
 // Clew taste: AI-driven codebase analysis for taste rule generation
 
 import { execSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { extname, join, relative } from 'path';
-import type { TasteRule, TasteRuleKind } from '../core/TasteTypes.js';
+import type { TasteRuleKind } from '../core/TasteTypes.js';
 
 // ── Analyzer Result ───────────────────────────────────────────────────────────
 
@@ -105,6 +105,73 @@ Rules must be:
     }
   }
 
+  /** Deterministic fallback when AI analysis is unavailable or returns no rules. */
+  analyzeWithHeuristics(context: CodebaseContext): CodebaseAnalysis {
+    const rules: CodebaseAnalysis['rules'] = [];
+    const configNames = new Set(Object.keys(context.configFiles));
+    const deps = context.dependencies;
+    const sampleText = context.projectFiles.map(file => file.content).join('\n');
+
+    if (configNames.has('biome.json') || configNames.has('biome.jsonc')) {
+      rules.push({
+        text: 'Use Biome formatting and lint rules for TypeScript and JavaScript changes.',
+        kind: 'tooling',
+        confidence: 0.82,
+        evidence: 'Biome configuration is present.',
+      });
+    }
+
+    if (configNames.has('tsconfig.json') || context.projectFiles.some(file => file.path.endsWith('.ts'))) {
+      rules.push({
+        text: 'Keep TypeScript changes type-safe and preserve existing module boundaries.',
+        kind: 'architecture',
+        confidence: 0.74,
+        evidence: 'TypeScript configuration and source files are present.',
+      });
+    }
+
+    if ('bun' in deps || existsSync(join(this.cwd, 'bun.lock'))) {
+      rules.push({
+        text: 'Use Bun project scripts for local development and verification.',
+        kind: 'tooling',
+        confidence: 0.78,
+        evidence: 'Bun lockfile or dependency metadata is present.',
+      });
+    }
+
+    if ('ink' in deps || context.projectFiles.some(file => file.content.includes("from '../../ink.js'"))) {
+      rules.push({
+        text: 'For CLI UI, follow existing Ink components and keep transient flows compact.',
+        kind: 'ui',
+        confidence: 0.72,
+        evidence: 'Ink is used in dependencies and command UI samples.',
+      });
+    }
+
+    if (sampleText.includes("from '../../components/design-system/") || sampleText.includes('design-system')) {
+      rules.push({
+        text: 'Reuse the local design-system components instead of adding one-off UI patterns.',
+        kind: 'ui',
+        confidence: 0.7,
+        evidence: 'Source samples import shared design-system components.',
+      });
+    }
+
+    if (sampleText.includes('bun test') || Object.keys(deps).some(name => name.includes('test'))) {
+      rules.push({
+        text: 'Run focused verification first, then broaden checks when the change touches shared behavior.',
+        kind: 'testing',
+        confidence: 0.68,
+        evidence: 'Test tooling is configured in project metadata.',
+      });
+    }
+
+    return {
+      rules: rules.slice(0, 8),
+      summary: `Heuristic analysis found ${Math.min(rules.length, 8)} patterns.`,
+    };
+  }
+
   private parseResponse(text: string): CodebaseAnalysis {
     // Try to extract JSON array from the response
     const jsonMatch = text.match(/\[\s*\{.*\}\s*\]/s);
@@ -156,7 +223,7 @@ Rules must be:
 
   private getGitLog(): string {
     try {
-      return execSync('git log --oneline -50 --no-color 2>/dev/null || true', {
+      return execSync('git log --oneline -50 --no-color', {
         cwd: this.cwd,
         encoding: 'utf-8',
         maxBuffer: 1024 * 1024,
@@ -207,29 +274,25 @@ Rules must be:
     // Walk src/ directory up to depth 4
     const walkDir = (dir: string, depth: number) => {
       if (depth > 4 || samples.length >= 20) return;
+      const baseDir = join(this.cwd, dir);
+      if (!existsSync(baseDir)) return;
       try {
-        const entries = execSync(`ls -1 "${dir}" 2>/dev/null || dir "${dir}" 2>nul`, {
-          cwd: this.cwd,
-          encoding: 'utf-8',
-        })
-          .trim()
-          .split('\n')
-          .filter(Boolean);
+        const entries = readdirSync(baseDir, { withFileTypes: true });
         for (const entry of entries) {
-          const fullPath = join(this.cwd, dir, entry);
+          if (samples.length >= 20) break;
+          if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist') continue;
+
+          const fullPath = join(baseDir, entry.name);
           const relPath = relative(this.cwd, fullPath);
           if (visited.has(relPath)) continue;
           visited.add(relPath);
+
           try {
-            const stat = execSync(`stat -f "%N %z" "${fullPath}" 2>/dev/null || echo 0`, {
-              cwd: this.cwd,
-              encoding: 'utf-8',
-            });
-            if (stat.includes('Is a directory') || stat.startsWith('d')) {
-              walkDir(join(dir, entry), depth + 1);
-            } else if (sourceExts.has(extname(entry))) {
-              const fileSize = Buffer.byteLength(stat) || 0;
-              if (fileSize > 0 && fileSize < 50000) {
+            if (entry.isDirectory()) {
+              walkDir(join(dir, entry.name), depth + 1);
+            } else if (sourceExts.has(extname(entry.name))) {
+              const { size } = statSync(fullPath);
+              if (size > 0 && size < 50000) {
                 // Skip empty or large files
                 const content = readFileSync(fullPath, 'utf-8').slice(0, 3000);
                 if (content.trim()) {

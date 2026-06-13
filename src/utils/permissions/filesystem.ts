@@ -16,6 +16,7 @@ import { getOriginalCwd, getSessionId } from '../../bootstrap/state.js';
 import { checkStatsigFeatureGate_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
 import type { AnyObject, Tool, ToolPermissionContext } from '../../Tool.js';
 import { FILE_READ_TOOL_NAME } from '../../tools/FileReadTool/prompt.js';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { getCwd } from '../cwd.js';
 import { getClaudeConfigHomeDir } from '../envUtils.js';
 import { getFsImplementation, getPathsForPermissionCheck } from '../fsOperations.js';
@@ -57,7 +58,7 @@ export const DANGEROUS_FILES = [
  * Dangerous directories that should be protected from auto-editing.
  * These directories contain sensitive configuration or executable files.
  */
-export const DANGEROUS_DIRECTORIES = ['.git', '.vscode', '.idea', '.claude', '.husky'] as const;
+export const DANGEROUS_DIRECTORIES = ['.git', '.vscode', '.idea', '.clew', '.claude', '.husky'] as const;
 
 /**
  * Normalizes a path for case-insensitive comparison.
@@ -85,11 +86,11 @@ export function getClaudeSkillScope(filePath: string): { skillName: string; patt
 
   const bases = [
     {
-      dir: expandPath(join(getOriginalCwd(), '.claude', 'skills')),
+      dir: expandPath(join(getOriginalCwd(), DOT_CLEW, 'skills')),
       prefix: '/.claude/skills/',
     },
     {
-      dir: expandPath(join(homedir(), '.claude', 'skills')),
+      dir: expandPath(join(homedir(), '.clew', 'skills')),
       prefix: '~/.claude/skills/',
     },
   ];
@@ -200,9 +201,9 @@ function isClaudeConfigFilePath(filePath: string): boolean {
   // Check if file is within .claude/commands or .claude/agents directories
   // using proper path segment validation (not string matching with includes())
   // pathInWorkingPath now handles case-insensitive comparison to prevent bypasses
-  const commandsDir = join(getOriginalCwd(), '.claude', 'commands');
-  const agentsDir = join(getOriginalCwd(), '.claude', 'agents');
-  const skillsDir = join(getOriginalCwd(), '.claude', 'skills');
+  const commandsDir = join(getOriginalCwd(), DOT_CLEW, 'commands');
+  const agentsDir = join(getOriginalCwd(), DOT_CLEW, 'agents');
+  const skillsDir = join(getOriginalCwd(), DOT_CLEW, 'skills');
 
   return (
     pathInWorkingPath(filePath, commandsDir) ||
@@ -412,14 +413,15 @@ function isDangerousFilePathToAutoEdit(path: string): boolean {
         continue;
       }
 
-      // Special case: .claude/worktrees/ is a structural path (where Claude stores
-      // git worktrees), not a user-created dangerous directory. Skip the .claude
-      // segment when it's followed by 'worktrees'. Any nested .claude directories
-      // within the worktree (not followed by 'worktrees') are still blocked.
-      if (dir === '.claude') {
+      // Special case: .claude/worktrees/ or .clew/worktrees/ is a structural path
+      // (where Clew stores git worktrees), not a user-created dangerous directory.
+      // Skip the .claude/.clew segment when it's followed by 'worktrees'.
+      // Any nested .claude/.clew directories within the worktree (not followed
+      // by 'worktrees') are still blocked.
+      if (dir === '.claude' || dir === '.clew') {
         const nextSegment = pathSegments[i + 1];
         if (nextSegment && normalizeCaseForComparison(nextSegment) === 'worktrees') {
-          break; // Skip this .claude, continue checking other segments
+          break; // Skip this .claude/.clew, continue checking other segments
         }
       }
 
@@ -1423,7 +1425,7 @@ export function checkEditableInternalPath(absolutePath: string, input: { [key: s
   // .claude/ only (not ~/.claude/) since launch.json is per-project.
   if (
     normalizeCaseForComparison(normalizedPath) ===
-    normalizeCaseForComparison(join(getOriginalCwd(), '.claude', 'launch.json'))
+    normalizeCaseForComparison(join(getOriginalCwd(), DOT_CLEW, 'launch.json'))
   ) {
     return {
       behavior: 'allow',

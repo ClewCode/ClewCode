@@ -17,6 +17,14 @@ type Props = {
 };
 
 const ERROR_RED = { r: 171, g: 43, b: 63 };
+const FADE_START_RATIO = 0.35;
+
+function fadeRatioAtColumn(column: number, messageWidth: number): number {
+  if (messageWidth <= 1) return 0;
+
+  const ratio = column / (messageWidth - 1);
+  return Math.max(0, Math.min(1, (ratio - FADE_START_RATIO) / (1 - FADE_START_RATIO)));
+}
 
 export function GlimmerMessage({
   message,
@@ -103,7 +111,14 @@ export function GlimmerMessage({
   const shimmerStart = glimmerIndex - 1;
   const shimmerEnd = glimmerIndex + 1;
 
-  if (shimmerStart >= messageWidth || shimmerEnd < 0) {
+  const baseColorStr = theme[messageColor];
+  const shimmerColorStr = theme[shimmerColor];
+  const subtleColorStr = theme.subtle;
+  const baseRGB = baseColorStr ? parseRGB(baseColorStr) : null;
+  const shimmerRGB = shimmerColorStr ? parseRGB(shimmerColorStr) : null;
+  const subtleRGB = subtleColorStr ? parseRGB(subtleColorStr) : null;
+
+  if (!baseRGB || !shimmerRGB || !subtleRGB) {
     return (
       <>
         <Text color={messageColor}>{message}</Text>
@@ -112,29 +127,26 @@ export function GlimmerMessage({
     );
   }
 
-  // Split into at most 3 segments by visual column position
-  const clampedStart = Math.max(0, shimmerStart);
   let colPos = 0;
-  let before = '';
-  let shim = '';
-  let after = '';
-  for (const { segment, width } of segments) {
-    if (colPos + width <= clampedStart) {
-      before += segment;
-    } else if (colPos > shimmerEnd) {
-      after += segment;
-    } else {
-      shim += segment;
-    }
+  const renderedSegments = segments.map(({ segment, width }) => {
+    const segmentStart = colPos;
+    const midpoint = colPos + Math.max(0, width - 1) / 2;
+    const isShimmer = colPos + width > shimmerStart && colPos <= shimmerEnd;
+    const fadeRatio = fadeRatioAtColumn(midpoint, messageWidth);
+    const color = toRGBColor(interpolateColor(isShimmer ? shimmerRGB : baseRGB, subtleRGB, isShimmer ? 0 : fadeRatio));
     colPos += width;
-  }
+
+    return (
+      <Text key={`${segmentStart}-${segment}`} color={color}>
+        {segment}
+      </Text>
+    );
+  });
 
   return (
     <>
-      {before && <Text color={messageColor}>{before}</Text>}
-      <Text color={shimmerColor}>{shim}</Text>
-      {after && <Text color={messageColor}>{after}</Text>}
-      <Text color={messageColor}> </Text>
+      {renderedSegments}
+      <Text color={toRGBColor(interpolateColor(baseRGB, subtleRGB, 1))}> </Text>
     </>
   );
 }

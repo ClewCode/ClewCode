@@ -841,7 +841,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
   };
   const cwdLabel = cwd ? (cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? cwd) : process.cwd().split(/[\\/]/).at(-1);
   const divider = '─'.repeat(contentWidth);
-  const inputPlaceholder = filterText ? 'filter sessions' : 'describe a task for a new session';
+  const inputPlaceholder = filterText ? 'filter sessions' : 'choose a specialist or describe a task';
   return (
     <Pane color="permission">
       <Box flexDirection="column" width={contentWidth} paddingLeft={1}>
@@ -872,15 +872,17 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
               </Text>
             )}
             {counts.awaiting === 0 && counts.working === 0 && counts.completed === 0 && (
-              <Text dimColor>No background agents</Text>
+              <Text dimColor>No active sessions · /agent &lt;task&gt; to launch from chat</Text>
             )}
           </Box>
         </Box>
 
       {backgroundTasks.length === 0 ? (
-        <Box flexDirection="column" marginY={1} paddingLeft={2}>
-          <Text dimColor>No background agents are currently running.</Text>
-          <Text dimColor>Type a task below or use @agent to dispatch.</Text>
+        <Box flexDirection="column" marginY={1} paddingLeft={2} gap={0}>
+          <Text bold>Agent Monitor</Text>
+          <Text dimColor>No agents running. Launch from chat:</Text>
+          <Text dimColor>  /agent &lt;task&gt;  — quick dispatch with default agent</Text>
+          <Text dimColor>  /agent @name &lt;task&gt;  — dispatch with a specific agent</Text>
         </Box>
       ) : (
         groupedTasks.map(group => {
@@ -1001,7 +1003,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
       )}
 
       <Text dimColor>
-        enter:open · space:peek · /:dispatch · ?:help · esc:back
+        enter:dispatch/open · tab:agents · space:peek · /:dispatch · ?:help · esc:back
       </Text>
 
       {shortcutsHelpOpen && <AgentViewShortcutsHelp onClose={() => setShortcutsHelpOpen(false)} />}

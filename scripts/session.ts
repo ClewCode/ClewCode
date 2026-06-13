@@ -17,7 +17,7 @@ import { join, dirname, basename } from 'path'
 import { execSync } from 'child_process'
 
 const ROOT = join(import.meta.dirname, '..')
-const SESSIONS_DIR = join(ROOT, '.claude', 'sessions')
+const SESSIONS_DIR = join(ROOT, '.clew', 'sessions')
 const CURRENT_LINK = join(SESSIONS_DIR, 'CURRENT.md')
 const MAX_SESSIONS = 20
 

@@ -1,5 +1,6 @@
 import { Database } from 'bun:sqlite';
 import { join } from 'path';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 
 let _db: Database | null = null;
@@ -8,7 +9,7 @@ export function getMemoryDb(cwd: string): Database {
   if (_db) return _db;
 
   const fsImpl = getFsImplementation();
-  const indexDir = join(cwd, '.claude', 'index');
+  const indexDir = join(cwd, DOT_CLEW, 'index');
   const dbPath = join(indexDir, 'chunks.db');
 
   _db = new Database(dbPath, { create: true });

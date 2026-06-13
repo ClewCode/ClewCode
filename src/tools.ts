@@ -72,6 +72,7 @@ import { MultiSearchTool } from './tools/MultiSearchTool/MultiSearchTool.js';
 import { JsonPathTool } from './tools/JsonPathTool/JsonPathTool.js';
 import { TodoWriteTool } from './tools/TodoWriteTool/TodoWriteTool.js';
 import { ExitPlanModeV2Tool } from './tools/ExitPlanModeTool/ExitPlanModeV2Tool.js';
+import { ReadMediaFileTool } from './tools/ReadMediaFileTool/ReadMediaFileTool.js';
 import { TestingPermissionTool } from './tools/testing/TestingPermissionTool.js';
 import { GrepTool } from './tools/GrepTool/GrepTool.js';
 import { TungstenTool } from './tools/TungstenTool/TungstenTool.js';
@@ -96,6 +97,8 @@ import { PeerDisconnectTool } from './tools/PeerDisconnectTool/PeerDisconnectToo
 import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.js';
 import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
+import { ProcessPeerTool } from './tools/ProcessPeerTool/ProcessPeerTool.js';
+import { CodexPeerTool } from './tools/CodexPeerTool/CodexPeerTool.js';
 import { TasteLearnTool } from './tools/TasteLearnTool/TasteLearnTool.js';
 import { TasteForgetTool } from './tools/TasteForgetTool/TasteForgetTool.js';
 import { TasteProfileTool } from './tools/TasteProfileTool/TasteProfileTool.js';
@@ -198,6 +201,7 @@ export function getAllBaseTools(): Tools {
     ...(hasEmbeddedSearchTools() ? [] : [GlobTool, GrepTool]),
     ExitPlanModeV2Tool,
     FileReadTool,
+    ReadMediaFileTool,
     FileEditTool,
     FileWriteTool,
     NotebookEditTool,
@@ -238,6 +242,7 @@ export function getAllBaseTools(): Tools {
     PeerBroadcastTool,
     PeerListMessagesTool,
     PeerHelpTool,
+    ProcessPeerTool,
     TasteProfileTool,
     TasteLearnTool,
     TasteForgetTool,

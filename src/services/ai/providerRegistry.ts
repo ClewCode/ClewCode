@@ -18,6 +18,10 @@ export type PromptCachingSupport = 'explicit' | 'automatic' | 'none';
 export interface ModelCapabilities {
   toolCalling: ToolCallingSupport;
   vision: boolean;
+  /** @since 0.2.8 — whether the model accepts image (base64/URL) in user messages */
+  imageIn?: boolean;
+  /** @since 0.2.8 — whether the model accepts video (base64/URL) in user messages */
+  videoIn?: boolean;
   streaming: ProviderStreamingSupport;
   maxContext: number | 'varies';
   maxOutput?: number | 'varies';
@@ -32,6 +36,8 @@ export interface ProviderCapabilities {
   streaming: ProviderStreamingSupport;
   toolCalling: boolean;
   vision: boolean;
+  imageIn?: boolean;
+  videoIn?: boolean;
   jsonSchema: boolean;
   reasoningEffort: boolean;
   contextLength: string;

@@ -151,6 +151,7 @@ export {
   NOTIFICATION_CHANNELS,
 } from './configConstants.js';
 
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import type { EDITOR_MODES, NOTIFICATION_CHANNELS } from './configConstants.js';
 
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
@@ -1710,7 +1711,7 @@ export function getMemoryPath(memoryType: MemoryType): string {
 }
 
 export function getManagedClaudeRulesDir(): string {
-  return join(getManagedFilePath(), '.claude', 'rules');
+  return join(getManagedFilePath(), DOT_CLEW, 'rules');
 }
 
 export function getUserClaudeRulesDir(): string {

@@ -350,6 +350,7 @@ export async function getLatestVersion(channel: ReleaseChannel): Promise<string 
   const maxRetries = 2;
   const baseDelay = 1000;
 
+  // Strategy 1: Try npm view first (original behavior)
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     // Run from home directory to avoid reading project-level .npmrc
     // which could be maliciously crafted to redirect to an attacker's registry
@@ -375,12 +376,48 @@ export async function getLatestVersion(channel: ReleaseChannel): Promise<string 
 
     // Don't retry permission errors — they're not transient
     if (category.category === 'permissions') {
-      return null;
+      break;
     }
 
     if (attempt < maxRetries) {
       await sleep(baseDelay * (attempt + 1));
     }
+  }
+
+  // Strategy 2: If running on Bun, try bun x npm as fallback
+  if (env.isRunningWithBun()) {
+    logForDebugging('npm view failed, trying bun x npm as fallback');
+    try {
+      const bunResult = await execFileNoThrowWithCwd(
+        'bun',
+        ['x', 'npm', 'view', `${MACRO.PACKAGE_URL}@${npmTag}`, 'version', '--prefer-online'],
+        { abortSignal: AbortSignal.timeout(5000), cwd: homedir() },
+      );
+      if (bunResult.code === 0) {
+        return bunResult.stdout.trim();
+      }
+      logForDebugging(`bun x npm view failed: ${bunResult.stderr || bunResult.stdout}`);
+    } catch (error) {
+      logForDebugging(`bun x npm view threw: ${error}`);
+    }
+  }
+
+  // Strategy 3: HTTP fallback — fetch directly from npm registry API
+  // This works without npm or bun CLI tools
+  logForDebugging('npm/bun view failed, trying HTTP registry API fallback');
+  try {
+    const url = `https://registry.npmjs.org/${encodeURIComponent(MACRO.PACKAGE_URL)}/${encodeURIComponent(npmTag)}`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (response.ok) {
+      const data = (await response.json()) as { version?: string };
+      if (data?.version) {
+        logForDebugging(`HTTP registry API returned version: ${data.version}`);
+        return data.version;
+      }
+    }
+    logForDebugging(`HTTP registry API failed: ${response.status} ${response.statusText}`);
+  } catch (error) {
+    logForDebugging(`HTTP registry API threw: ${error}`);
   }
 
   return null;
@@ -396,6 +433,21 @@ export type NpmDistTags = {
  * This is used by the doctor command to show users what versions are available.
  */
 export async function getNpmDistTags(): Promise<NpmDistTags> {
+  // Create a helper to parse dist-tags JSON
+  function parseDistTags(json: string): NpmDistTags {
+    try {
+      const parsed = jsonParse(json.trim()) as Record<string, unknown>;
+      return {
+        latest: typeof parsed.latest === 'string' ? parsed.latest : null,
+        stable: typeof parsed.stable === 'string' ? parsed.stable : null,
+      };
+    } catch (error) {
+      logForDebugging(`Failed to parse dist-tags: ${error}`);
+      return { latest: null, stable: null };
+    }
+  }
+
+  // Strategy 1: Try npm view (original behavior)
   // Run from home directory to avoid reading project-level .npmrc
   const result = await execFileNoThrowWithCwd(
     'npm',
@@ -403,21 +455,50 @@ export async function getNpmDistTags(): Promise<NpmDistTags> {
     { abortSignal: AbortSignal.timeout(5000), cwd: homedir() },
   );
 
-  if (result.code !== 0) {
-    logForDebugging(`npm view dist-tags failed with code ${result.code}`);
-    return { latest: null, stable: null };
+  if (result.code === 0 && result.stdout) {
+    return parseDistTags(result.stdout);
+  }
+  logForDebugging(`npm view dist-tags failed with code ${result.code}`);
+
+  // Strategy 2: If running on Bun, try bun x npm as fallback
+  if (env.isRunningWithBun()) {
+    logForDebugging('npm dist-tags failed, trying bun x npm as fallback');
+    try {
+      const bunResult = await execFileNoThrowWithCwd(
+        'bun',
+        ['x', 'npm', 'view', MACRO.PACKAGE_URL, 'dist-tags', '--json', '--prefer-online'],
+        { abortSignal: AbortSignal.timeout(5000), cwd: homedir() },
+      );
+      if (bunResult.code === 0 && bunResult.stdout) {
+        return parseDistTags(bunResult.stdout);
+      }
+      logForDebugging(`bun x npm dist-tags failed: ${bunResult.stderr || bunResult.stdout}`);
+    } catch (error) {
+      logForDebugging(`bun x npm dist-tags threw: ${error}`);
+    }
   }
 
+  // Strategy 3: HTTP fallback — fetch directly from npm registry API
+  logForDebugging('npm/bun dist-tags failed, trying HTTP registry API fallback');
   try {
-    const parsed = jsonParse(result.stdout.trim()) as Record<string, unknown>;
-    return {
-      latest: typeof parsed.latest === 'string' ? parsed.latest : null,
-      stable: typeof parsed.stable === 'string' ? parsed.stable : null,
-    };
+    const url = `https://registry.npmjs.org/${encodeURIComponent(MACRO.PACKAGE_URL)}`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (response.ok) {
+      const data = (await response.json()) as { 'dist-tags'?: Record<string, string> };
+      if (data?.['dist-tags']) {
+        logForDebugging(`HTTP registry API returned dist-tags`);
+        return {
+          latest: data['dist-tags'].latest ?? null,
+          stable: data['dist-tags'].stable ?? null,
+        };
+      }
+    }
+    logForDebugging(`HTTP registry API failed: ${response.status}`);
   } catch (error) {
-    logForDebugging(`Failed to parse dist-tags: ${error}`);
-    return { latest: null, stable: null };
+    logForDebugging(`HTTP registry API threw: ${error}`);
   }
+
+  return { latest: null, stable: null };
 }
 
 /**

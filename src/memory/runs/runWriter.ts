@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import { redactSecrets } from '../redact.js';
 
@@ -20,7 +21,7 @@ export async function writeRunSummary(
 ): Promise<string> {
   const fsImpl = getFsImplementation();
   const dateStr = new Date().toISOString().slice(0, 10);
-  const runDir = join(cwd, '.claude', 'runs', dateStr);
+  const runDir = join(cwd, DOT_CLEW, 'runs', dateStr);
 
   if (!fsImpl.existsSync(runDir)) {
     await mkdir(runDir, { recursive: true });

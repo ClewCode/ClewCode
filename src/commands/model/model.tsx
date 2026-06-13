@@ -395,7 +395,11 @@ function ShowModelListAndClose({ onDone }: { onDone: (result: string) => void })
           lines = buildStaticList(providerLabel, staticModels);
         } else {
           try {
-            const fetched = await fetchProviderModels(providerId as any);
+            // Race with a timeout so a hung API doesn't block the command forever
+            const fetched = await Promise.race([
+              fetchProviderModels(providerId as any),
+              new Promise<null>(resolve => setTimeout(() => resolve(null), 15_000)),
+            ]);
             if (cancelled) return;
 
             if (!fetched || fetched.length === 0) {
@@ -415,6 +419,7 @@ function ShowModelListAndClose({ onDone }: { onDone: (result: string) => void })
               ];
             }
           } catch (apiErr) {
+            if (cancelled) return;
             const staticModels = (providersConfig as any)?.[providerId]?.models ?? [];
             const errMsg = apiErr instanceof Error ? apiErr.message : 'Unknown error';
             lines = [
@@ -448,9 +453,20 @@ function ShowModelListAndClose({ onDone }: { onDone: (result: string) => void })
 function buildStaticEntries(staticModels: any[]): string[] {
   const lines: string[] = [`${staticModels.length} model${staticModels.length !== 1 ? 's' : ''} available:`, ''];
   for (const m of staticModels) {
-    const ctx = m.capabilities?.maxContext ? `${(m.capabilities.maxContext / 1000).toFixed(0)}K ctx` : '';
-    const cw = m.capabilities?.maxOutput ? `${(m.capabilities.maxOutput / 1000).toFixed(0)}K out` : '';
-    lines.push(`  ${(m.label || m.id).padEnd(50)}  ${m.id.padEnd(40)}  ${ctx}  ${cw}`);
+    const caps = m.capabilities ?? {};
+    const parts: string[] = [];
+    if (caps.maxContext && caps.maxContext !== 'varies') {
+      parts.push(`${(Number(caps.maxContext) / 1000).toFixed(0)}K ctx`);
+    }
+    if (caps.maxOutput && caps.maxOutput !== 'varies') {
+      parts.push(`${(Number(caps.maxOutput) / 1000).toFixed(0)}K out`);
+    }
+    if (caps.vision) parts.push('vision');
+    if (caps.toolCalling && caps.toolCalling !== 'none') parts.push('tools');
+    if (caps.reasoning) parts.push('reason');
+    if (m.tags?.includes('free')) parts.push('free');
+    const info = parts.length > 0 ? ` [${parts.join(', ')}]` : '';
+    lines.push(`  ${(m.label || m.id).padEnd(50)}  ${m.id.padEnd(40)}${info}`);
   }
   return lines;
 }

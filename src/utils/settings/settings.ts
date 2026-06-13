@@ -13,6 +13,7 @@ import { uniq } from '../array.js';
 import { logForDebugging } from '../debug.js';
 import { logForDiagnosticsNoPII } from '../diagLogs.js';
 import { getClaudeConfigHomeDir, isEnvTruthy } from '../envUtils.js';
+import { DOT_CLEW } from '../clewPaths.js';
 import { getErrnoCode, isENOENT } from '../errors.js';
 import { writeFileSyncAndFlush_DEPRECATED } from '../file.js';
 import { readFileSync } from '../fileRead.js';
@@ -259,9 +260,9 @@ export function getSettingsFilePathForSource(source: SettingSource): string | un
 export function getRelativeSettingsFilePathForSource(source: 'projectSettings' | 'localSettings'): string {
   switch (source) {
     case 'projectSettings':
-      return join('.claude', 'settings.json');
+      return join(DOT_CLEW, 'settings.json');
     case 'localSettings':
-      return join('.claude', 'settings.local.json');
+      return join(DOT_CLEW, 'settings.local.json');
   }
 }
 

@@ -23,6 +23,7 @@ import { useAppState } from '../state/AppState.js';
 import { getPluginErrorMessage } from '../types/plugin.js';
 import { isAuthorized } from '../utils/auth.js';
 import { getGcsDistTags, getNpmDistTags, type NpmDistTags } from '../utils/autoUpdater.js';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { type ContextWarnings, checkContextWarnings } from '../utils/doctorContextWarnings.js';
 import { type DiagnosticInfo, getDoctorDiagnostic } from '../utils/doctorDiagnostic.js';
 import { validateBoundedIntEnvVar } from '../utils/envValidation.js';
@@ -136,7 +137,7 @@ export function Doctor({ onDone }: Props): React.ReactNode {
 
     void (async () => {
       const userAgentsDir = join(getClaudeConfigHomeDir(), 'agents');
-      const projectAgentsDir = join(getOriginalCwd(), '.claude', 'agents');
+      const projectAgentsDir = join(getOriginalCwd(), DOT_CLEW, 'agents');
 
       const { activeAgents, allAgents, failedFiles } = agentDefinitions;
 

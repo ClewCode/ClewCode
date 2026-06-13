@@ -9,6 +9,7 @@ import {
   PROVIDER_REGISTRY,
 } from './providerRegistry.js';
 import type { ProviderId, ProviderInitOptions, ProviderInterface } from './providers/ProviderInterface.js';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 
 const LEGACY_PROVIDER_CONFIG_PATH = join(
   process.env.HOME || process.env.USERPROFILE || '',
@@ -19,7 +20,7 @@ export const PROVIDER_CONFIG_PATH = join(getClaudeConfigHomeDir(), 'provider.jso
 
 export function getProjectProviderConfigPath(): string | null {
   const cwd = process.cwd();
-  const projectPath = join(cwd, '.claude', 'provider.json');
+  const projectPath = join(cwd, DOT_CLEW, 'provider.json');
   return existsSync(projectPath) ? projectPath : null;
 }
 

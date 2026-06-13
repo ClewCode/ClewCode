@@ -3225,6 +3225,31 @@ async function run(): Promise<CommanderCommand> {
       let getFpsMetrics!: () => FpsMetrics | undefined;
       let stats!: StatsStore;
 
+      // Check for updates before starting the Ink app
+      if (!isNonInteractiveSession) {
+        try {
+          const { checkForUpdate } = await import('./utils/updateCheck.js');
+          const { showUpdateDialog } = await import('./components/UpdateDialog.js');
+          const result = await checkForUpdate();
+          if (result.hasUpdate && result.latestVersion) {
+            const choice = await showUpdateDialog({
+              currentVersion: result.currentVersion,
+              latestVersion: result.latestVersion,
+            });
+            if (choice === 'update') {
+              gracefulShutdownSync(0);
+              return;
+            }
+            if (choice === 'exit') {
+              gracefulShutdownSync(0);
+              return;
+            }
+          }
+        } catch (err) {
+          logForDebugging(`Update check failed (will continue): ${err}`);
+        }
+      }
+
       // Show setup screens after commands are loaded
       if (!isNonInteractiveSession) {
         const ctx = getRenderContext(false);
@@ -5117,6 +5142,9 @@ async function run(): Promise<CommanderCommand> {
   );
   // --model already added earlier (line 1016), skip duplicate
   // program.option('--model <model>', 'Override the default model for the selected provider');
+  program.option('--acp', 'Start in ACP server mode (Agent Client Protocol) — for editor integration');
+  program.option('--acp-rest', 'Start the ACP REST API server (Agent Communication Protocol / i-am-bee)');
+  program.option('--acp-rest-port <port>', 'ACP REST API port (default: 8000)');
   if (canUserConfigureAdvisor()) {
     program.addOption(
       new Option(
@@ -5274,6 +5302,32 @@ async function run(): Promise<CommanderCommand> {
         debug,
         verbose,
       });
+    });
+
+  // clew acp — Agent Client Protocol server (editor integration)
+  const acpCmd = program
+    .command('acp')
+    .description('Start the ACP server (Agent Client Protocol) — for editor integration')
+    .configureHelp(createSortedHelpConfig());
+  acpCmd
+    .command('serve', { isDefault: true })
+    .description('Start the ACP server in stdio mode (default) or WebSocket mode with --port')
+    .option('--port <port>', 'WebSocket port for remote connections (default: stdio mode)')
+    .option('--host <host>', 'Host to bind WebSocket server to (default: 127.0.0.1)')
+    .action(async (options: { port?: string; host?: string }) => {
+      const { startACPStdioServer, resolveACPConfig } = await import('./services/acp/index.js');
+      const config = resolveACPConfig({
+        acp: true,
+        acpTransport: options.port ? 'websocket' : 'stdio',
+        acpPort: options.port ? Number(options.port) : undefined,
+        acpHost: options.host,
+      });
+
+      // biome-ignore lint/suspicious/noConsole: intentional startup message
+      console.log(
+        `ACP server starting in ${config.transport} mode${config.transport === 'websocket' ? ` on ${config.host}:${config.port}` : ''}`,
+      );
+      startACPStdioServer(config);
     });
 
   // Register the mcp add subcommand (extracted for testability)
@@ -6247,6 +6301,23 @@ Examples:
   }
 
   profileCheckpoint('run_before_parse');
+
+  // ACP (Agent Client Protocol) — start as ACP server for editor integration
+  if (process.argv.includes('--acp')) {
+    const { startACPStdioServer, resolveACPConfig } = await import('./services/acp/index.js');
+    startACPStdioServer(resolveACPConfig({ acp: true }));
+    return program;
+  }
+
+  // ACP REST API (Agent Communication Protocol / i-am-bee)
+  if (process.argv.includes('--acp-rest')) {
+    const { startACPRestServer, resolveACPRestConfig } = await import('./acp-agents/index.js');
+    const portIdx = process.argv.indexOf('--acp-rest-port');
+    const port = portIdx >= 0 ? Number(process.argv[portIdx + 1]) : undefined;
+    await startACPRestServer(resolveACPRestConfig({ acpRest: true, acpRestPort: port }));
+    // Keep running after starting the REST server
+  }
+
   await program.parseAsync(process.argv);
   profileCheckpoint('run_after_parse');
 

@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Research & Memory — Clew</title>
-  <meta name="description" content="Deep research system and semantic memory — citation extraction, claim verification, dossier generation, cross-lingual memory search.">
+  <title>Research & Memory â€” Clew</title>
+  <meta name="description" content="Deep research system and semantic memory â€” citation extraction, claim verification, dossier generation, cross-lingual memory search.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,16 +20,16 @@
     <main class="content">
       <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Research &amp; Memory</span></div>
       <h1>Research &amp; Memory</h1>
-      <p class="section-subtitle">Clew provides a built-in deep research system and cross-session semantic memory — both designed to work with local files, web sources, and a persistent knowledge store.</p>
+      <p class="section-subtitle">Clew provides a built-in deep research system and cross-session semantic memory â€” both designed to work with local files, web sources, and a persistent knowledge store.</p>
 
       <h2>Research System</h2>
       <p>The research system lives in <code>src/research/</code> and supports deep, source-grounded research across local files, wiki content, and memory:</p>
       <ul>
-        <li><strong>Citation extraction</strong> — Automatic extraction of citations from research sources</li>
-        <li><strong>Claim verification</strong> — Fact-check claims against multiple sources</li>
-        <li><strong>Dossier generation</strong> — Structured reports with source attribution</li>
-        <li><strong>Truth checking</strong> — Cross-reference claims for accuracy</li>
-        <li><strong>Source ranking</strong> — Prioritize authoritative sources</li>
+        <li><strong>Citation extraction</strong> â€” Automatic extraction of citations from research sources</li>
+        <li><strong>Claim verification</strong> â€” Fact-check claims against multiple sources</li>
+        <li><strong>Dossier generation</strong> â€” Structured reports with source attribution</li>
+        <li><strong>Truth checking</strong> â€” Cross-reference claims for accuracy</li>
+        <li><strong>Source ranking</strong> â€” Prioritize authoritative sources</li>
       </ul>
 
       <h3>Research Commands</h3>
@@ -39,35 +39,35 @@
       </table>
 
       <h2>Memory System</h2>
-      <p>The memory system lives in <code>src/memdir/</code> and provides cross-session persistent knowledge storage with semantic search:</p>
+      <p>The memory system lives in <code>src/memory/</code> and provides cross-session persistent knowledge storage with SQLite FTS5 search:</p>
       <ul>
-        <li><strong>Semantic search</strong> — Find relevant memories using text embedding similarity</li>
-        <li><strong>Cross-lingual</strong> — Search across languages using semantic embeddings</li>
-        <li><strong>Memory age tracking</strong> — Automatically age and prune old memories</li>
-        <li><strong>Auto-memory capture</strong> — Automatically save important information</li>
-        <li><strong>Hybrid recall</strong> — Combines local embedding search with LLM-based retrieval</li>
-        <li><strong>Team sync</strong> — Share memory across team members</li>
+        <li><strong>SQLite FTS5 search</strong> â€” Find relevant memories using FTS5 similarity</li>
+        <li><strong>Cross-lingual</strong> â€” Search across languages using FTS5 indexing</li>
+        <li><strong>Memory age tracking</strong> â€” Automatically prune old memories</li>
+        <li><strong>Auto-memory capture</strong> â€” Automatically save important information</li>
+        <li><strong>Token-aware chunking</strong> - 3000-token chunks with word-boundary splitting</li>
+        <li><strong>Secret redaction</strong> - Strips API keys and tokens before indexing</li>
       </ul>
 
       <h3>Memory Commands</h3>
       <table>
         <tr><th>Command</th><th>Description</th></tr>
         <tr><td><code>/memory</code></td><td>Edit Claude memory files</td></tr>
-        <tr><td><code>/memory-search</code></td><td>Search memories using semantic search (cross-lingual)</td></tr>
+        <tr><td><code>/memory-search</code></td><td>Search memories using SQLite FTS5 search (cross-lingual)</td></tr>
       </table>
 
       <h2>Architecture Files</h2>
       <table>
         <tr><th>Path</th><th>Role</th></tr>
         <tr><td><code>src/research/</code></td><td>Deep research, dossier generation, truth checking, source ranking</td></tr>
-        <tr><td><code>src/memdir/</code></td><td>Semantic memory search and storage</td></tr>
+        <tr><td><code>src/memory/</code></td><td>SQLite FTS5 memory search (14 files, no embeddings)</td></tr>
       </table>
 
       <footer class="footer">
-        <span>Clew Code v0.2.4 — Open Source</span>
+        <span>Clew Code v0.2.7 â€” Open Source</span>
         <div class="footer-links">
-          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
-          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
         </div>
       </footer>
     </main>
@@ -77,3 +77,6 @@
 <script src="js/main.js"></script>
 </body>
 </html>
+
+
+

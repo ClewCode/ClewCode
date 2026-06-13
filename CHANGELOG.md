@@ -2,6 +2,91 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.8] — 2026-06-12
+
+### Added
+
+- **Agent Client Protocol (ACP) fully functional**: `@agentclientprotocol/sdk@0.25.0` — Clew Code now runs as a full ACP agent that editors like Zed can connect to.
+  - `clew acp` (or `clew acp serve`) starts the ACP server — defaults to stdio mode for editor subprocess integration
+  - `clew acp --port 15793` starts in WebSocket mode for remote connections
+  - `clew --acp` CLI flag as backward-compatible alias
+  - `session/prompt` executes prompts through the Codex process peer, sends `session/update` streaming notifications, and returns results with proper `stopReason`
+  - `/acp start`, `/acp status`, `/acp sessions`, `/acp config` commands for managing the ACP server
+  - `ACPStatusLine` component shows server status in footer with active session count
+  - `ACPStatusManager` singleton tracks server state with signal-based subscriptions
+  - Handles `initialize`, `authenticate`, `session/new`, `session/load`, `session/prompt`, `session/cancel`, `session/list`, `session/delete`, `session/close`, `session/set_mode`, `session/set_config_option`, `logout`
+  - New module `src/services/acp/`: `ACPServer.ts`, `ACPSessionManager.ts`, `ACPConfig.ts`
+  - 5 unit tests for session management
+
+- **Agent Communication Protocol (i-am-bee ACP) REST API server**: `acp-sdk@1.0.3` — Clew Code can now be used as an ACP/A2A-compatible agent via HTTP.
+  - `clew --acp-rest [--acp-rest-port 8000]` starts the REST API server
+  - `GET /agents` — agent discovery (returns clew-code manifest)
+  - `POST /runs` — create and execute a task (runs via Codex process peer, returns `run_id` for polling)
+  - `GET /runs/:id` — check run status and output
+  - `DELETE /runs/:id` — cancel a running task
+  - `GET /ping` — health check endpoint
+  - CORS headers for cross-origin access
+  - New files: `ACPRestServer.ts`, `ACPRestConfig.ts`
+
+- **ACP agent client for external agents**: `ACPAgentClient` wraps the `acp-sdk` Client to discover and delegate tasks to external ACP/A2A-compatible agents.
+  - `discoverAgents()`, `getAgent()`, `runAgentSync()`, `runAgentAsync()`, `runAgentStream()`, `getRunStatus()`, `cancelRun()`
+  - New module `src/acp-agents/`: `ACPAgentManifest.ts`, `ACPRunManager.ts`, `ACPMessageConverter.ts`, `ACPAgentClient.ts`, `ACPRestServer.ts`, `ACPRestConfig.ts`
+  - 10 unit tests for run management and message conversion
+
+### Fixed
+
+- **`reasoning_effort` 400 error on unsupported models**: `getOpenAIReasoningEffort()` now checks both provider-level (`reasoningEffort` capability) and model-level (`reasoning` capability) before sending `reasoning_effort` to OpenAI-compatible APIs. If the model is not in the registry, `reasoning_effort` is skipped conservatively — preventing 400 errors on models like `codestral-latest`, `deepseek-v4-flash-free`, and `stepfun/step-3.7-flash:free`.
+
+
+- **Update dialog not showing when npm is unavailable**: The auto-update system (`getLatestVersion()`, `getNpmDistTags()`) now has a 3-tier fallback strategy — tries `npm view` first, then `bun x npm` when running on Bun, and finally fetches directly from the npm registry HTTP API. This ensures the interactive update dialog appears even when users don't have `npm` installed. The silent `catch` in `main.tsx` was also replaced with a `logForDebugging` call so update failures are no longer swallowed without trace.
+
+- **`installOrUpdateClaudePackage()` Bun fallback**: The local package installer now falls back to `bun install` when `npm install` fails and the runtime is Bun, instead of immediately returning `install_failed`.
+
+
+## [0.2.8] — 2026-06-12
+
+### Added
+
+- **`ReadMediaFile` tool**: New capability-gated media input tool that sends image/video files as multimodal content blocks to the model. Availability is gated per-model by `imageIn`/`videoIn` capability flags — vision-free models never see the tool, preventing wasted tool_use blocks that the API would reject.
+- **`imageIn`/`videoIn` capability fields**: Added to both `ModelCapabilities` and `ProviderCapabilities` interfaces (`providerRegistry.ts`) and populated for all 32 providers in `providers.json`. Each model entry now carries `imageIn: true/false` and `videoIn: false` (video support is opt-in; default off).
+- **`video` content block type**: Added `{ type: 'video'; source; media_type }` to `ProviderContentBlock` union and wired through `contentBlockUtils.ts` (`fromAnthropicContentBlock` / `toAnthropicContentBlock`) so video blocks survive the Anthropic ↔ provider-agnostic conversion round-trip.
+- **AnthropicAdapter video support**: `convertToOpenAI()` now handles `type: 'video'` content blocks (converted to `image_url` parts for OpenAI-compatible APIs). New `modelSupportsVideo()` method checks `videoIn` capability before sending.
+- **AnthropicAdapter `imageIn` gating**: `modelSupportsVision()` now checks `imageIn` first (model-level, then provider-level), falling back to legacy `vision` flag for backward compatibility.
+
+### Changed
+
+- **ProviderManager exposed methods**: `getActiveProviderName()` and `getModelForProvider()` are now accessible from tool code, enabling tools like `ReadMediaFile` to check model capabilities at runtime.
+
+## [0.2.7] — 2026-06-11
+
+### Added
+
+- **process_peer PTY terminal box UI**: When `mode: "pty"`, the tool progress now renders a bordered terminal-style Ink box showing provider, mode, cwd, elapsed time, and the command being run. PTY output is tailed with bounded recent-output buffer (16 lines) preserving ANSI SGR color while stripping unsupported terminal controls. Periodic progress updates keep elapsed time moving even when Codex produces no output.
+- **`/peer run codex <task>` command**: New interactive command to run a one-shot Codex process peer directly from chat. Supports `-C, --cwd <dir>`, `-m, --model <model>`, and `-t, --timeout <seconds>` options.
+- **Auto-update dialog**: Shows an update notification dialog before starting the Ink app when a newer npm version is available, with options to update or exit.
+- **Model fetching from provider API**: API-fetched models now include `contextWindow`, `maxOutput`, `supportsTools`, `supportsVision`, `supportsReasoning`, and `free` fields parsed from API responses. Smart fallback between API data and static `providers.json` — API data takes priority, static fills gaps, with fuzzy model ID matching.
+- **`/model list` capability tags**: Text output now shows per-model capability badges like `[200K ctx, vision, tools, reason, free]`.
+- **`/model list` fetch timeout**: API model fetches now race against a 15-second timeout so a hung endpoint doesn't block the command.
+- **Loading bar Unicode figures**: Added `█`, `▒`, `░`, `▔`, `▕` characters for custom progress rendering.
+- **Message model display**: `MessageModel` component now shows provider label alongside model name (e.g. `OpenAI · gpt-5.5`) instead of the bare model string.
+- **Cost in status line**: Total session cost is now shown in the status footer when spend is greater than $0.
+- **GlimmerMessage gradient animation**: Rewritten shimmer animation with per-character color interpolation and fade-out effect at the tail end.
+- **Added `displayCommand` field** to `ProcessPeerProgress` so the UI shows the logical command (e.g. `codex exec -C ...`) instead of the internal shell invocation.
+- **Tool registry**: `ProcessPeerTool` registered in `getAllBaseTools()`.
+
+### Changed
+
+- **Model name rendering**: `renderModelName` now preserves `provider/model` format when the model contains a slash, instead of stripping the prefix.
+- **Stats: sessionModel extraction**: Stats processing now prefers `message.sessionModel` for accurate provider and model extraction, improving aggregation accuracy across providers.
+- **File edit message**: Updated file summary now shows compact `+N -M` format instead of verbose "Added N lines, Removed M lines" text.
+- **PR merge strategy**: `gh pr merge` now uses `--squash` with the PR title as commit subject for cleaner history.
+- **Mascot color UI**: Simplified color panel layout with section-cycle navigation and horizontal layout.
+- **Anthropic API adapter**: OpenAI-compatible response path now correctly preserves the `provider` field and uses the more specific model name from the API response.
+
+### Removed
+
+- Removed unused `isCompact` variable.
+
 ## [0.2.6] — 2026-06-10
 
 ### Removed

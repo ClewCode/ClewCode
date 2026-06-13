@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taste — Clew Code</title>
-  <meta name="description" content="Local-first preference-learning runtime for Clew — accept/reject signals, symbolic rules, and bandit optimization.">
+  <title>Taste â€” Clew Code</title>
+  <meta name="description" content="Local-first preference-learning runtime for Clew â€” accept/reject signals, symbolic rules, and bandit optimization.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -28,15 +28,15 @@
 
       <h2>What It Learns</h2>
       <ul>
-        <li><strong>Code style</strong> — formatting, naming conventions, preferred patterns</li>
-        <li><strong>Architecture</strong> — module structure, dependency direction, layering</li>
-        <li><strong>Tooling</strong> — preferred build tools, linters, test frameworks</li>
-        <li><strong>Testing</strong> — test style, coverage expectations, mocking patterns</li>
-        <li><strong>Naming</strong> — variable, function, and class naming conventions</li>
-        <li><strong>Security</strong> — safe patterns vs unsafe patterns</li>
-        <li><strong>Performance</strong> — efficient algorithms, caching, resource management</li>
-        <li><strong>UI patterns</strong> — component structure, state management, styling approach</li>
-        <li><strong>Workflow</strong> — commit style, review preferences, deployment habits</li>
+        <li><strong>Code style</strong> â€” formatting, naming conventions, preferred patterns</li>
+        <li><strong>Architecture</strong> â€” module structure, dependency direction, layering</li>
+        <li><strong>Tooling</strong> â€” preferred build tools, linters, test frameworks</li>
+        <li><strong>Testing</strong> â€” test style, coverage expectations, mocking patterns</li>
+        <li><strong>Naming</strong> â€” variable, function, and class naming conventions</li>
+        <li><strong>Security</strong> â€” safe patterns vs unsafe patterns</li>
+        <li><strong>Performance</strong> â€” efficient algorithms, caching, resource management</li>
+        <li><strong>UI patterns</strong> â€” component structure, state management, styling approach</li>
+        <li><strong>Workflow</strong> â€” commit style, review preferences, deployment habits</li>
       </ul>
 
       <h2>What It Does Not Do</h2>
@@ -68,7 +68,7 @@
             <tr>
               <td><strong>Memory</strong></td>
               <td>Cross-session facts</td>
-              <td><code>memdir/</code></td>
+              <td><code>memory/</code></td>
               <td>Recall</td>
             </tr>
             <tr>
@@ -212,120 +212,120 @@
       </div>
 
       <h2>Architecture</h2>
-      <pre><code> ╔══════════════════════════════════════════════════════════════════════════════╗
- ║                        TASTE — PREFERENCE LEARNING RUNTIME                   ║
- ╚══════════════════════════════════════════════════════════════════════════════╝
+      <pre><code> â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+ â•‘                        TASTE â€” PREFERENCE LEARNING RUNTIME                   â•‘
+ â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-                          ┌──────────────────────────┐
-                          │     USER INTERACTION      │
-                          │  accept / reject / edit   │
-                          │  test pass / lint signal  │
-                          └────────────┬─────────────┘
-                                       │
-         ┌─────────────────────────────┼─────────────────────────────┐
-         │                             │                             │
-         ▼                             ▼                             ▼
- ┌───────────────┐           ┌───────────────┐           ┌───────────────┐
- │ AcceptReject  │           │ DiffSignal    │           │EditDistance   │
- │ Tracker       │           │ Extractor     │           │ Reward        │
- │ (accept/reject│           │ (diff delta)  │           │ (edit cost)   │
- │  signals)     │           │               │           │               │
- └───────┬───────┘           └───────┬───────┘           └───────┬───────┘
-         │                          │                           │
-         └──────────────────────────┼───────────────────────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │  TasteSignalCollector │
-                         │  (unified event hub)  │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │   TasteRewardModel   │
-                         │  signal → reward map  │
-                         │  accept = +1.0       │
-                         │  reject = -1.0       │
-                         │  test pass = +0.4    │
-                         └──────────┬──────────┘
-                                    │
-                    ┌───────────────┼───────────────┐
-                    │               │               │
-                    ▼               ▼               ▼
-          ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-          │TasteBandit   │ │AutoLearn     │ │TasteDecay    │
-          │ε-greedy (6   │ │Engine        │ │confidence ↓  │
-          │strategy arms)│ │pattern→rule  │ │over time     │
-          │pick optimal  │ │              │ │if unused     │
-          │arm per ctx   │ │              │ │              │
-          └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
-                 │                │                │
-                 │    ┌───────────┘                │
-                 │    │                            │
-                 ▼    ▼                            │
-          ┌──────────────────┐                     │
-          │ TasteRuntime     │◄────────────────────┘
-          │ (orchestrator)   │
-          └────────┬─────────┘
-                   │
-     ┌─────────────┼─────────────┬──────────────────┐
-     │             │             │                  │
-     ▼             ▼             ▼                  ▼
-┌─────────┐ ┌──────────┐ ┌──────────────┐ ┌────────────────┐
-│Symbolic │ │Neural    │ │PromptInjector│ │ TasteEventLog  │
-│Engine   │ │Scorer    │ │injects       │ │ append-only    │
-│compile  │ │Jaccard/  │ │&lt;clew_taste&gt; │ │ JSONL          │
-│rules→   │ │TF-IDF    │ │block (max 8  │ │                │
-│check    │ │relevance │ │rules)        │ │                │
-└────┬────┘ └────┬─────┘ └──────┬───────┘ └────────────────┘
-     │           │              │
-     ▼           │              ▼
-┌─────────┐      │     ┌────────────────┐
-│validate │      │     │ SYSTEM PROMPT  │
-│Edit()   │      └────►│ (taste block)  │
-│block if │             │                │
-│conf ≥   │             │ → AI adapts    │
-│0.85     │             │   output style │
-└─────────┘             └────────────────┘
+                          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                          â”‚     USER INTERACTION      â”‚
+                          â”‚  accept / reject / edit   â”‚
+                          â”‚  test pass / lint signal  â”‚
+                          â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                       â”‚
+         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+         â”‚                             â”‚                             â”‚
+         â–¼                             â–¼                             â–¼
+ â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”           â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”           â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+ â”‚ AcceptReject  â”‚           â”‚ DiffSignal    â”‚           â”‚EditDistance   â”‚
+ â”‚ Tracker       â”‚           â”‚ Extractor     â”‚           â”‚ Reward        â”‚
+ â”‚ (accept/rejectâ”‚           â”‚ (diff delta)  â”‚           â”‚ (edit cost)   â”‚
+ â”‚  signals)     â”‚           â”‚               â”‚           â”‚               â”‚
+ â””â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜           â””â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜           â””â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜
+         â”‚                          â”‚                           â”‚
+         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                    â”‚
+                                    â–¼
+                         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                         â”‚  TasteSignalCollector â”‚
+                         â”‚  (unified event hub)  â”‚
+                         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                    â”‚
+                                    â–¼
+                         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                         â”‚   TasteRewardModel   â”‚
+                         â”‚  signal â†’ reward map  â”‚
+                         â”‚  accept = +1.0       â”‚
+                         â”‚  reject = -1.0       â”‚
+                         â”‚  test pass = +0.4    â”‚
+                         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                    â”‚
+                    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                    â”‚               â”‚               â”‚
+                    â–¼               â–¼               â–¼
+          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+          â”‚TasteBandit   â”‚ â”‚AutoLearn     â”‚ â”‚TasteDecay    â”‚
+          â”‚Îµ-greedy (6   â”‚ â”‚Engine        â”‚ â”‚confidence â†“  â”‚
+          â”‚strategy arms)â”‚ â”‚patternâ†’rule  â”‚ â”‚over time     â”‚
+          â”‚pick optimal  â”‚ â”‚              â”‚ â”‚if unused     â”‚
+          â”‚arm per ctx   â”‚ â”‚              â”‚ â”‚              â”‚
+          â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜
+                 â”‚                â”‚                â”‚
+                 â”‚    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                â”‚
+                 â”‚    â”‚                            â”‚
+                 â–¼    â–¼                            â”‚
+          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                     â”‚
+          â”‚ TasteRuntime     â”‚â—„â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+          â”‚ (orchestrator)   â”‚
+          â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚
+     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+     â”‚             â”‚             â”‚                  â”‚
+     â–¼             â–¼             â–¼                  â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚Symbolic â”‚ â”‚Neural    â”‚ â”‚PromptInjectorâ”‚ â”‚ TasteEventLog  â”‚
+â”‚Engine   â”‚ â”‚Scorer    â”‚ â”‚injects       â”‚ â”‚ append-only    â”‚
+â”‚compile  â”‚ â”‚Jaccard/  â”‚ â”‚&lt;clew_taste&gt; â”‚ â”‚ JSONL          â”‚
+â”‚rulesâ†’   â”‚ â”‚TF-IDF    â”‚ â”‚block (max 8  â”‚ â”‚                â”‚
+â”‚check    â”‚ â”‚relevance â”‚ â”‚rules)        â”‚ â”‚                â”‚
+â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+     â”‚           â”‚              â”‚
+     â–¼           â”‚              â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”      â”‚     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚validate â”‚      â”‚     â”‚ SYSTEM PROMPT  â”‚
+â”‚Edit()   â”‚      â””â”€â”€â”€â”€â–ºâ”‚ (taste block)  â”‚
+â”‚block if â”‚             â”‚                â”‚
+â”‚conf â‰¥   â”‚             â”‚ â†’ AI adapts    â”‚
+â”‚0.85     â”‚             â”‚   output style â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜             â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
 
- ═══ CODEBASE AUTO-LEARN (parallel path) ═══
+ â•â•â• CODEBASE AUTO-LEARN (parallel path) â•â•â•
 
-   Codebase ──► TasteCodebaseAnalyzer ──► PatternDetector ──► AutoLearnEngine
+   Codebase â”€â”€â–º TasteCodebaseAnalyzer â”€â”€â–º PatternDetector â”€â”€â–º AutoLearnEngine
                  (reads conventions)      (finds patterns)    (creates rules)
-                                                                    │
-                                                                    ▼
+                                                                    â”‚
+                                                                    â–¼
                                                             TasteProfileStore
                                                             .clew/taste/profile.json
 
 
- ═══ DATA LIFECYCLE ═══
+ â•â•â• DATA LIFECYCLE â•â•â•
 
-   Signal ──► EventLog (JSONL) ──► Rule confidence +/- ──► Decay if unused 30d
-                                                          │
-                                                          ▼
+   Signal â”€â”€â–º EventLog (JSONL) â”€â”€â–º Rule confidence +/- â”€â”€â–º Decay if unused 30d
+                                                          â”‚
+                                                          â–¼
                                                    Profile persisted
                                                    to .clew/taste/</code></pre>
 
       <p>Taste consists of several subsystems:</p>
       <ol>
-        <li><strong>Signal Collection</strong> — Captures accept, reject, edit, test, lint, and tool signals from user interactions and converts them into learning events.</li>
-        <li><strong>Reward Model</strong> — Maps signal types to numeric reward values (accept = +1.0, reject = -1.0, test pass = +0.4, etc.) and computes edit distance rewards dynamically.</li>
-        <li><strong>Symbolic Engine</strong> — Compiles high-confidence rules into checkable constraints. Rules with confidence &gt;= 0.85 can block edit acceptance. Rules below threshold warn without blocking. Never blocks silently.</li>
-        <li><strong>Neural Scorer</strong> — Provider-agnostic lexical similarity scoring (Jaccard/TF-IDF) that scores candidate output against active rules. Extensible to use embedding APIs when available.</li>
-        <li><strong>Contextual Bandit</strong> — Epsilon-greedy bandit with 6 strategy arms (minimal, strict_style, architecture_first, test_first, safety_first, refactor_heavy). Selects optimal strategy based on feedback and context features.</li>
-        <li><strong>Prompt Injection</strong> — Injects a compact <code>&lt;clew_taste&gt;</code> block into the system prompt with relevant rules. Max 8 rules by default, filtered by confidence and sorted by relevance.</li>
-        <li><strong>Decay Engine</strong> — Gradual confidence reduction for unused rules (half-life based, default 30 days). Prevents stale preferences from persisting.</li>
-        <li><strong>Event Log</strong> — Append-only JSONL file storing all raw learning events for auditability and regression analysis.</li>
+        <li><strong>Signal Collection</strong> â€” Captures accept, reject, edit, test, lint, and tool signals from user interactions and converts them into learning events.</li>
+        <li><strong>Reward Model</strong> â€” Maps signal types to numeric reward values (accept = +1.0, reject = -1.0, test pass = +0.4, etc.) and computes edit distance rewards dynamically.</li>
+        <li><strong>Symbolic Engine</strong> â€” Compiles high-confidence rules into checkable constraints. Rules with confidence &gt;= 0.85 can block edit acceptance. Rules below threshold warn without blocking. Never blocks silently.</li>
+        <li><strong>Neural Scorer</strong> â€” Provider-agnostic lexical similarity scoring (Jaccard/TF-IDF) that scores candidate output against active rules. Extensible to use embedding APIs when available.</li>
+        <li><strong>Contextual Bandit</strong> â€” Epsilon-greedy bandit with 6 strategy arms (minimal, strict_style, architecture_first, test_first, safety_first, refactor_heavy). Selects optimal strategy based on feedback and context features.</li>
+        <li><strong>Prompt Injection</strong> â€” Injects a compact <code>&lt;clew_taste&gt;</code> block into the system prompt with relevant rules. Max 8 rules by default, filtered by confidence and sorted by relevance.</li>
+        <li><strong>Decay Engine</strong> â€” Gradual confidence reduction for unused rules (half-life based, default 30 days). Prevents stale preferences from persisting.</li>
+        <li><strong>Event Log</strong> â€” Append-only JSONL file storing all raw learning events for auditability and regression analysis.</li>
       </ol>
 
       <h2>Continuous RL (Local Online Preference Optimization)</h2>
       <p>Taste implements <strong>local online preference optimization</strong>:</p>
       <ul>
-        <li><strong>Online</strong> — learns continuously from each interaction, no batch training</li>
-        <li><strong>Local</strong> — all computation and storage stays on the user's machine</li>
-        <li><strong>Preference-based</strong> — optimizes for user preferences via reward signals</li>
-        <li><strong>Multi-objective</strong> — balances style, correctness, safety, and efficiency</li>
+        <li><strong>Online</strong> â€” learns continuously from each interaction, no batch training</li>
+        <li><strong>Local</strong> â€” all computation and storage stays on the user's machine</li>
+        <li><strong>Preference-based</strong> â€” optimizes for user preferences via reward signals</li>
+        <li><strong>Multi-objective</strong> â€” balances style, correctness, safety, and efficiency</li>
       </ul>
       
       <p>The learning loop:</p>
@@ -420,10 +420,10 @@
 /taste export</code></pre>
 
       <footer class="footer">
-        <span>Clew Code v0.2.4 — Open Source</span>
+        <span>Clew Code v0.2.7 â€” Open Source</span>
         <div class="footer-links">
-          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
-          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
           <a href="https://npmjs.com/package/clew-code">npm</a>
         </div>
       </footer>
@@ -434,3 +434,4 @@
 <script src="js/main.js"></script>
 </body>
 </html>
+

@@ -1,5 +1,8 @@
 import { exec } from 'node:child_process';
+import * as React from 'react';
 import { z } from 'zod/v4';
+import { MessageResponse } from '../../components/MessageResponse.js';
+import { Box, Text } from '../../ink.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
@@ -79,6 +82,31 @@ export const PeerRunTool = buildTool({
   },
   getPath() {
     return getCwd();
+  },
+  userFacingName() {
+    return 'PeerRun';
+  },
+  renderToolUseMessage(input) {
+    return `on ${input.worker}: $ ${input.command}`;
+  },
+  renderToolResultMessage(output) {
+    if (!output.success) {
+      return React.createElement(
+        MessageResponse,
+        null,
+        React.createElement(Text, { color: 'ansi:red' }, `Failed: ${output.error || `exit ${output.exitCode}`}`),
+      );
+    }
+    const out = (output.stdout || '').trim() || output.stderr || '(empty)';
+    return React.createElement(
+      MessageResponse,
+      null,
+      React.createElement(
+        Text,
+        { dimColor: true },
+        `exit ${output.exitCode}: ${truncateText(out, 120)}`,
+      ),
+    );
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Peer command failed: ${output.error}` };

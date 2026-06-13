@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Commands — Clew</title>
-  <meta name="description" content="Complete reference for all slash commands in Clew — built-in commands, skills, and plugin commands.">
+  <title>Commands â€” Clew</title>
+  <meta name="description" content="Complete reference for all slash commands in Clew â€” built-in commands, skills, and plugin commands.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 <div class="content-wrap"><main class="content">
   <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Commands</span></div>
   <h1>Commands</h1>
-  <p class="section-subtitle">Clew ships with 80+ built-in slash commands plus dynamically loaded skills and plugin commands. Commands can be <strong>local</strong> (terminal execution), <strong>prompt</strong> (text expanded to the model), or <strong>local-jsx</strong> (Ink UI panels).</p>
+  <p class="section-subtitle">Clew ships with <strong>120+ slash commands</strong> (411 files across 120+ directories) plus dynamically loaded skills and plugin commands. Commands can be <strong>local</strong> (terminal execution), <strong>prompt</strong> (text expanded to the model), or <strong>local-jsx</strong> (Ink UI panels).</p>
 
   <div class="callout callout-tip">
     <strong>Discovery</strong>
@@ -28,7 +28,7 @@
   <table>
     <tr><th>Command</th><th>Description</th></tr>
     <tr><td><code>/clear</code></td><td>Clear conversation history and free up context</td></tr>
-    <tr><td><code>/compact</code></td><td>Compress session context — log/trace snipping, consolidation, pruning</td></tr>
+    <tr><td><code>/compact</code></td><td>Compress session context â€” log/trace snipping, consolidation, pruning</td></tr>
     <tr><td><code>/context</code></td><td>Visualize current context usage as a colored grid</td></tr>
     <tr><td><code>/resume</code></td><td>Resume a previous conversation</td></tr>
     <tr><td><code>/rename</code></td><td>Rename the current conversation</td></tr>
@@ -43,10 +43,10 @@
   <h2>Model &amp; Provider</h2>
   <table>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/model</code></td><td>Switch model or provider — fetches live models from provider API when available (Enter=save default, <code>s</code>=session-only)</td></tr>
+    <tr><td><code>/model</code></td><td>Switch model or provider â€” fetches live models from provider API when available (Enter=save default, <code>s</code>=session-only)</td></tr>
     <tr><td><code>/provider-select</code></td><td>Show or change the active AI provider and model</td></tr>
     <tr><td><code>/taste</code></td><td>Open taste preference-learning interactive menu (learn, forget, profile, events, decay, eval, on/off)</td></tr>
-    <tr><td><code>/effort</code></td><td>Set effort level for model reasoning (low, medium, high, max) â works with all providers that support reasoning_effort</td></tr>
+    <tr><td><code>/effort</code></td><td>Set effort level for model reasoning (low, medium, high, max) Ã¢Â€Â” works with all providers that support reasoning_effort</td></tr>
     <tr><td><code>/cost</code></td><td>Show the total cost and duration of the current session</td></tr>
     <tr><td><code>/usage</code></td><td>Show plan usage limits</td></tr>
     <tr><td><code>/usage-credits</code></td><td>Configure usage credits to keep working when limits are hit</td></tr>
@@ -71,7 +71,7 @@
   <h2>Extensions (Plugins, MCP, Skills)</h2>
   <table>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/plugin</code></td><td>Manage plugins — list, install, remove</td></tr>
+    <tr><td><code>/plugin</code></td><td>Manage plugins â€” list, install, remove</td></tr>
     <tr><td><code>/plugin-details</code></td><td>Show plugin component inventory, hooks, MCP servers, and per-session token cost</td></tr>
     <tr><td><code>/reload-plugins</code></td><td>Activate pending plugin changes in the current session</td></tr>
     <tr><td><code>/mcp</code></td><td>Manage MCP servers (<code>list</code> shows pending approval for unapproved .mcp.json servers)</td></tr>
@@ -183,35 +183,35 @@
   <p>Clew features an inline ghost text system that predicts the next argument as you type commands:</p>
   <ul>
     <li>Type <code>/goal</code> followed by a space inline ghost text shows <code>[condition]</code> in dim text after the cursor</li>
-    <li>Press <kbd>Tab</kbd> or <kbd>→</kbd> (Right Arrow) to accept the ghost text and fill the placeholder</li>
+    <li>Press <kbd>Tab</kbd> or <kbd>â†’</kbd> (Right Arrow) to accept the ghost text and fill the placeholder</li>
     <li>Supports progressive hints: <code>/goal fix [name] [priority]</code> reveals remaining args as you fill each one</li>
     <li>Commands with <code>argumentHint</code> (e.g. <code>/plugin-details &lt;plugin-name&gt;</code>) show static placeholder hints</li>
   </ul>
   <p>For mid-input command completion, the same ghost text engine fills in partial command names:</p>
   <ul>
     <li>Type <code>/com</code> ghost text shows <code>mit</code> for <code>/commit</code></li>
-    <li>Press <kbd>Tab</kbd> or <kbd>→</kbd> to complete the command name</li>
+    <li>Press <kbd>Tab</kbd> or <kbd>â†’</kbd> to complete the command name</li>
   </ul>
 
   <h2>Command Loading</h2>
   <p>Commands are loaded from multiple sources at startup:</p>
   <ul>
-    <li><strong>Built-in</strong> — Core commands from <code>src/commands/</code> (always available)</li>
-    <li><strong>Bundled skills</strong> — Skills shipped with the application</li>
-    <li><strong>Built-in plugin skills</strong> — From enabled built-in plugins</li>
-    <li><strong>Skill directory</strong> — <code>~/.claude/skills/</code> and project <code>.claude/skills/</code></li>
-    <li><strong>Plugin commands</strong> — From installed plugins</li>
-    <li><strong>Plugin skills</strong> — From plugin skill directories</li>
-    <li><strong>MCP skills</strong> — From MCP servers (when <code>MCP_SKILLS</code> feature is enabled)</li>
-    <li><strong>Dynamic skills</strong> — Discovered during file operations</li>
+    <li><strong>Built-in</strong> â€” Core commands from <code>src/commands/</code> (always available)</li>
+    <li><strong>Bundled skills</strong> â€” Skills shipped with the application</li>
+    <li><strong>Built-in plugin skills</strong> â€” From enabled built-in plugins</li>
+    <li><strong>Skill directory</strong> â€” <code>~/.claude/skills/</code> and project <code>.claude/skills/</code></li>
+    <li><strong>Plugin commands</strong> â€” From installed plugins</li>
+    <li><strong>Plugin skills</strong> â€” From plugin skill directories</li>
+    <li><strong>MCP skills</strong> â€” From MCP servers (when <code>MCP_SKILLS</code> feature is enabled)</li>
+    <li><strong>Dynamic skills</strong> â€” Discovered during file operations</li>
   </ul>
   <p>Use <code>/reload-plugins</code> to reload plugin-provided commands without restarting. Remote-safe and bridge-safe commands have explicit allowlists in <code>src/commands.ts</code>.</p>
 
   <footer class="footer">
-    <span>Clew v0.2.4 — Open Source</span>
+    <span>Clew v0.2.7 â€” Open Source</span>
     <div class="footer-links">
-      <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
-      <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
     </div>
   </footer>
 </main>
@@ -221,3 +221,4 @@
 <script src="js/main.js"></script>
 </body>
 </html>
+

@@ -1,5 +1,6 @@
 import { readFile, unlink, writeFile } from 'fs/promises';
 import { basename, join } from 'path';
+import { DOT_CLEW, MEMORY_DIR } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import { getMemoryDb } from './db.js';
 import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.js';
@@ -21,7 +22,7 @@ export async function proposeMemory(
   target: 'user' | 'project' | 'feedback' | 'agent' = 'project',
 ): Promise<string> {
   const fsImpl = getFsImplementation();
-  const pendingDir = join(cwd, '.claude', 'memory', 'pending');
+  const pendingDir = join(cwd, DOT_CLEW, 'memory', 'pending');
 
   const date = new Date().toISOString().slice(0, 10);
   const randomSlug = Math.random().toString(36).substring(2, 7);
@@ -58,7 +59,7 @@ export async function proposeMemory(
 
 export async function listPending(cwd: string): Promise<PendingSuggestion[]> {
   const fsImpl = getFsImplementation();
-  const pendingDir = join(cwd, '.claude', 'memory', 'pending');
+  const pendingDir = join(cwd, DOT_CLEW, 'memory', 'pending');
   if (!fsImpl.existsSync(pendingDir)) return [];
 
   const files = fsImpl.readdirSync(pendingDir);
@@ -115,7 +116,7 @@ export async function approveMemory(cwd: string, pendingId: string): Promise<str
     throw new Error(`Pending memory suggestion with ID "${pendingId}" not found.`);
   }
 
-  const targetPath = join(cwd, '.claude', 'memory', matched.suggestedTarget);
+  const targetPath = join(cwd, DOT_CLEW, 'memory', matched.suggestedTarget);
 
   let targetMetadata: MemoryMetadata = {
     id: `claude:memory:${matched.suggestedTarget.replace(/\//g, ':').replace(/\.md$/, '')}`,

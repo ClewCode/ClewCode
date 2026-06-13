@@ -1113,11 +1113,13 @@ function createAssistantMessageFromOpenAIResponse(
               { type: 'text' as const, text: content === '' ? 'No content' : content },
             ]
           : content;
+    const responseModel = response?.model;
+    const finalModel = responseModel && responseModel.length >= model.length ? responseModel : model;
     const assistantMessage = createAssistantMessage({
       content: contentWithReasoning as string | BetaContentBlock[],
       usage,
     });
-    assistantMessage.message.model = response?.model ?? model;
+    assistantMessage.message.model = finalModel;
     (assistantMessage.message as any).provider = provider;
     if (reasoningContent) {
       (assistantMessage.message as any).reasoning_content = reasoningContent;
@@ -2339,9 +2341,13 @@ async function* queryModel(
               });
               throw new Error('Message not found');
             }
+            const responseModel = partialMessage?.model;
+            const finalModel =
+              responseModel && responseModel.length >= resolvedModel.length ? responseModel : resolvedModel;
             const m: AssistantMessage = {
               message: {
                 ...partialMessage,
+                model: finalModel,
                 provider: providerId,
                 content: normalizeContentFromAPI([contentBlock] as BetaContentBlock[], tools, options.agentId),
               },

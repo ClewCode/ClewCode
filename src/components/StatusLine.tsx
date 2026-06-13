@@ -48,6 +48,7 @@ import { getCurrentSessionTitle } from '../utils/sessionStorage.js';
 import { doesMostRecentAssistantMessageExceed200k, getCurrentUsage } from '../utils/tokens.js';
 import { getCurrentWorktreeSession } from '../utils/worktree.js';
 import { isVimModeEnabled } from './PromptInput/utils.js';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 export function statusLineShouldDisplay(settings: ReadonlySettings): boolean {
   if (feature('KAIROS') && getKairosActive()) return false;
   if (getGlobalConfig().statusLineEnabled === false) return false;
@@ -314,7 +315,7 @@ function _countClaudeFiles(cwd: string): number {
   let dir = cwd;
   while (dir && dirname(dir) !== dir) {
     addIfExists(join(dir, 'CLAUDE.md'));
-    addIfExists(join(dir, '.claude', 'CLAUDE.md'));
+    addIfExists(join(dir, DOT_CLEW, 'CLAUDE.md'));
     dir = dirname(dir);
   }
   addIfExists(join(dir, 'CLAUDE.md'));

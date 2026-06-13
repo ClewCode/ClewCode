@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import type { ResearchClaim } from './types.js';
 
@@ -10,7 +11,7 @@ export async function savePendingMemory(
   claims: ResearchClaim[],
 ): Promise<string> {
   const fsImpl = getFsImplementation();
-  const pendingDir = join(cwd, '.claude', 'memory', 'pending');
+  const pendingDir = join(cwd, DOT_CLEW, 'memory', 'pending');
 
   if (!fsImpl.existsSync(pendingDir)) {
     await mkdir(pendingDir, { recursive: true });

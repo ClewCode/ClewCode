@@ -1,392 +1,184 @@
 // Clew taste: Interactive command with Ink UI menu
 
 import { useEffect, useState } from 'react';
-import { Dialog } from '../../components/design-system/Dialog.js';
 import { Spinner } from '../../components/Spinner.js';
-import { Box, Text, useInput } from '../../ink.js';
+import { Box, Text } from '../../ink.js';
 import type { TasteRuntime } from '../../services/taste/core/TasteRuntime.js';
+import { useAppState } from '../../state/AppState.js';
+import { AGENT_COLOR_TO_THEME_COLOR } from '../../tools/AgentTool/agentColorManager.js';
 import type { LocalJSXCommandCall, LocalJSXCommandOnDone } from '../../types/command.js';
 import { getTasteRuntime, initRuntime } from './index.js';
 
-type Action =
-  | 'status'
-  | 'toggle'
-  | 'init'
-  | 'learn'
-  | 'forget'
-  | 'rules'
-  | 'profile'
-  | 'events'
-  | 'decay'
-  | 'eval'
-  | 'export'
-  | 'close';
+interface LogItem {
+  badge: string;
+  label: string;
+  subLines?: string[];
+  status: 'pending' | 'running' | 'done' | 'failed';
+}
 
-const INIT_STAGES = [
-  { progress: 15, label: 'Scanning project structure...' },
-  { progress: 35, label: 'Analyzing code patterns...' },
-  { progress: 55, label: 'Learning coding preferences...' },
-  { progress: 75, label: 'Building taste profile...' },
-  { progress: 90, label: 'Finalizing...' },
-];
+function TasteInitProgress({
+  runtime,
+  onDone,
+}: {
+  runtime: TasteRuntime;
+  onDone: (result: string) => void;
+}): React.ReactNode {
+  const [steps, setSteps] = useState<LogItem[]>([
+    { badge: 'SCANNING', label: 'Scanning project structure & history', status: 'pending' },
+    { badge: 'ANALYZING', label: 'Extracting codebase context', status: 'pending' },
+    { badge: 'AI_DETECT', label: 'Detecting coding preferences with AI', status: 'pending' },
+    { badge: 'FINALIZE', label: 'Saving preference rules', status: 'pending' },
+  ]);
 
-function TasteInitProgress({ runtime, onDone }: { runtime: TasteRuntime; onDone: () => void }): React.ReactNode {
-  const [stage, setStage] = useState(0);
+  const agentColor = useAppState(s => s.standaloneAgentContext?.color);
+  const themeColor = agentColor ? AGENT_COLOR_TO_THEME_COLOR[agentColor] : 'purple_FOR_SUBAGENTS_ONLY';
 
   useEffect(() => {
     let cancelled = false;
 
     const run = async (): Promise<void> => {
-      // Animate through stages
-      for (let i = 0; i < INIT_STAGES.length; i++) {
+      const updateStep = (badge: string, update: Partial<LogItem>) => {
         if (cancelled) return;
-        setStage(i);
-        await new Promise(r => setTimeout(r, 500));
-      }
+        setSteps(prev => prev.map(s => (s.badge === badge ? { ...s, ...update } : s)));
+      };
 
-      // Actually initialize
-      if (cancelled) return;
-      await runtime.initialize();
-      if (cancelled) return;
-      onDone();
-    };
+      try {
+        // Phase 1: SCANNING
+        updateStep('SCANNING', { status: 'running' });
+        await new Promise(r => setTimeout(r, 600));
 
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [runtime, onDone]);
+        const { TasteCodebaseAnalyzer } = await import('../../services/taste/auto-learn/TasteCodebaseAnalyzer.js');
+        const analyzer = new TasteCodebaseAnalyzer();
+        const context = analyzer.collectContext();
 
-  const current = INIT_STAGES[Math.min(stage, INIT_STAGES.length - 1)];
-  const barWidth = 20;
-  const filled = Math.round((current.progress / 100) * barWidth);
-  const bar = '█'.repeat(filled) + '░'.repeat(barWidth - filled);
-
-  return (
-    <Box flexDirection="column" gap={1}>
-      <Text bold>Initializing Clew taste</Text>
-      <Text>
-        [{bar}] {current.progress}%
-      </Text>
-      <Text dimColor>{current.label}</Text>
-    </Box>
-  );
-}
-
-const ACTIONS: Array<{ value: Action; label: string; description: string }> = [
-  { value: 'status', label: 'Status', description: 'Show current taste status summary' },
-  { value: 'toggle', label: 'Toggle on/off', description: 'Enable or disable Clew taste' },
-  { value: 'init', label: 'Initialize', description: 'Initialize taste profile and study project patterns' },
-  { value: 'learn', label: 'Learn a rule', description: 'Add a new preference rule manually' },
-  { value: 'forget', label: 'Forget a rule', description: 'Remove a rule by ID' },
-  { value: 'rules', label: 'List rules', description: 'View all learned rules' },
-  { value: 'profile', label: 'Profile info', description: 'Show taste profile details' },
-  { value: 'events', label: 'Recent events', description: 'Show recent taste learning events' },
-  { value: 'decay', label: 'Apply decay', description: 'Run confidence decay on stale rules' },
-  { value: 'eval', label: 'Evaluate', description: 'Run self-evaluation of the taste system' },
-  { value: 'export', label: 'Export profile', description: 'Export taste profile to a package file' },
-  { value: 'close', label: 'Close', description: 'Exit the taste menu' },
-];
-
-function StatusSummary({ runtime }: { runtime: TasteRuntime }) {
-  const config = runtime.getConfig();
-  const profile = runtime.getProfile();
-  const rules = runtime.getRules();
-  const arm = runtime.getCurrentArm();
-  const kindCounts: Record<string, number> = {};
-  for (const rule of rules) {
-    kindCounts[rule.kind] = (kindCounts[rule.kind] ?? 0) + 1;
-  }
-  const topKinds = Object.entries(kindCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3);
-  return (
-    <Box flexDirection="column">
-      <Text>
-        Clew taste <Text color={config.enabled ? 'green' : 'red'}>{config.enabled ? 'ENABLED' : 'DISABLED'}</Text>
-        {' · '}
-        <Text dimColor>{profile.projectId || 'no project'}</Text>
-      </Text>
-      <Text dimColor>
-        {rules.length} rules · {profile.stats.totalEvents} events · arm: {arm}
-      </Text>
-      {topKinds.length > 0 && <Text dimColor>top kinds: {topKinds.map(([k, n]) => `${k} (${n})`).join(', ')}</Text>}
-    </Box>
-  );
-}
-
-function TasteMenu({ onDone }: { onDone: LocalJSXCommandOnDone }) {
-  const [runtime] = useState(() => getTasteRuntime());
-  const [focused, setFocused] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [busyMessage, setBusyMessage] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [initializing, setInitializing] = useState(false);
-
-  const runAction = async (action: Action) => {
-    setMessage(null);
-    setBusyMessage(null);
-    switch (action) {
-      case 'toggle': {
-        const config = runtime.getConfig();
-        const enabled = !config.enabled;
-        runtime.updateConfig({ enabled });
-        const message = enabled ? 'taste enabled' : 'taste disabled';
-        runtime.notifyTaste(message.replace('taste ', ''), `taste-${enabled ? 'enabled' : 'disabled'}`, 'medium');
-        setMessage(message);
-        return;
-      }
-      case 'status': {
-        const config = runtime.getConfig();
-        const profile = runtime.getProfile();
-        const rules = runtime.getRules();
-        onDone(
-          [
-            `Clew taste: ${config.enabled ? 'ENABLED' : 'DISABLED'}`,
-            `Profile: ${profile.projectId} (${rules.length} rules)`,
-            `Events: ${profile.stats.totalEvents} (${profile.stats.totalAccepts} accepts, ${profile.stats.totalRejects} rejects)`,
-            `Bandit arm: ${runtime.getCurrentArm()}`,
-            `Prompt injection: ${config.injectPrompts ? 'on' : 'off'}`,
-            `Auto-learn: ${config.autoLearn ? 'on' : 'off'}`,
-            `Decay: ${config.decayEnabled ? 'on' : 'off'}`,
-            `Min confidence: ${config.minConfidence}`,
-          ].join('\n'),
-          { display: 'system' },
-        );
-        return;
-      }
-      case 'init': {
-        setInitializing(true);
-        return;
-      }
-      case 'learn':
-        onDone(undefined, { display: 'skip', nextInput: '/taste learn ', submitNextInput: false });
-        return;
-      case 'forget':
-        onDone(undefined, { display: 'skip', nextInput: '/taste forget ', submitNextInput: false });
-        return;
-      case 'rules': {
-        const rules = runtime.getRules();
-        if (rules.length === 0) {
-          setMessage('No rules learned yet.');
-          return;
-        }
-        const lines = rules.map(
-          r =>
-            `[${r.id.slice(0, 8)}] ${r.text} (kind: ${r.kind}, confidence: ${r.confidence.toFixed(2)}, source: ${r.source})`,
-        );
-        onDone(`Rules (${rules.length}):\n${lines.join('\n')}`, { display: 'system' });
-        return;
-      }
-      case 'profile': {
-        const profile = runtime.getProfile();
-        onDone(
-          [
-            `Taste profile: ${profile.projectId}`,
-            `Version: ${profile.version}`,
-            `Rules: ${profile.rules.length}`,
-            `Events: ${profile.stats.totalEvents}`,
-            `Last updated: ${profile.stats.lastUpdatedAt}`,
-          ].join('\n'),
-          { display: 'system' },
-        );
-        return;
-      }
-      case 'events': {
-        const events = runtime.getEventLog().getRecentEvents(20);
-        if (events.length === 0) {
-          setMessage('No events recorded yet.');
-          return;
-        }
-        const lines = events.map(
-          e =>
-            `${e.timestamp.slice(0, 19)} [${e.type}] reward=${e.reward.toFixed(2)}${e.prompt ? ` "${e.prompt.slice(0, 60)}"` : ''}`,
-        );
-        onDone(`Recent events (${events.length}):\n${lines.join('\n')}`, { display: 'system' });
-        return;
-      }
-      case 'decay': {
-        setBusy(true);
-        setBusyMessage('Applying decay...');
-        const count = await runtime.applyDecay();
-        setBusy(false);
-        setBusyMessage(null);
-        setMessage(`Decay applied: ${count} rules affected.`);
-        return;
-      }
-      case 'eval': {
-        setBusy(true);
-        setBusyMessage('Evaluating...');
-        const { TasteEvaluator } = await import('../../services/taste/eval/TasteEvaluator.js');
-        const profile = runtime.getProfile();
-        const result = new TasteEvaluator().evaluate(profile);
-        setBusy(false);
-        setBusyMessage(null);
-        onDone(
-          [
-            result.summary,
-            `Neural score: ${result.neuralScore.toFixed(3)}`,
-            `Symbolic checks: ${result.symbolicChecks.filter(c => c.passed).length}/${result.symbolicChecks.length} passed`,
-          ].join('\n'),
-          { display: 'system' },
-        );
-        return;
-      }
-      case 'export':
-        onDone(undefined, { display: 'skip', nextInput: '/taste export', submitNextInput: true });
-        return;
-      case 'close':
-        onDone('Done.', { display: 'system' });
-        return;
-    }
-  };
-
-  useInput(
-    (_input, key) => {
-      if (busy) return;
-      if (key.escape) {
-        onDone('Done.', { display: 'system' });
-        return;
-      }
-      if (key.upArrow) {
-        setFocused(i => Math.max(0, i - 1));
-        return;
-      }
-      if (key.downArrow || key.tab) {
-        setFocused(i => Math.min(ACTIONS.length - 1, i + 1));
-        return;
-      }
-      if (key.return) {
-        void runAction(ACTIONS[focused]!.value);
-      }
-    },
-    { isActive: true },
-  );
-
-  if (initializing) {
-    return (
-      <Dialog
-        title="Clew taste"
-        subtitle="Local-first preference-learning runtime"
-        onCancel={() => onDone('Done.', { display: 'system' })}
-        hideInputGuide
-      >
-        <Box flexDirection="column" gap={1} padding={1}>
-          <TasteInitProgress
-            runtime={runtime}
-            onDone={() => {
-              const count = runtime.getRules().length;
-              const message = `Taste initialized \u2014 ${count} rule${count === 1 ? '' : 's'} found.\nRun /taste again to manage preferences.`;
-              runtime.notifyTaste(message.split('\n')[0]!, 'taste-init', 'medium');
-              setInitializing(false);
-              onDone(message, { display: 'system' });
-            }}
-          />
-        </Box>
-      </Dialog>
-    );
-  }
-
-  return (
-    <Dialog
-      title="Clew taste"
-      subtitle="Local-first preference-learning runtime"
-      onCancel={() => onDone('Done.', { display: 'system' })}
-      hideInputGuide
-    >
-      <Box flexDirection="column" gap={1}>
-        <StatusSummary runtime={runtime} />
-        <Box flexDirection="column">
-          {ACTIONS.map((action, index) => {
-            const isFocused = index === focused;
-            return (
-              <Text key={action.value}>
-                <Text color={isFocused ? 'suggestion' : undefined}>{isFocused ? '> ' : '  '}</Text>
-                <Text bold={isFocused}>{action.label.padEnd(18)}</Text>
-                <Text dimColor>{action.description}</Text>
-              </Text>
-            );
-          })}
-        </Box>
-        {busy && (
-          <Box>
-            <Spinner />
-            <Text> {busyMessage || 'Working...'}</Text>
-          </Box>
-        )}
-        {!busy && message && <Text color="success">{message}</Text>}
-        {!busy && <Text dimColor>↑↓ navigate · Enter select · Esc close</Text>}
-      </Box>
-    </Dialog>
-  );
-}
-
-function InitFlow({ runtime, onDone }: { runtime: TasteRuntime; onDone: LocalJSXCommandOnDone }): React.ReactNode {
-  const [stage, setStage] = useState<'progress' | 'analyzing' | 'done'>('progress');
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = async (): Promise<void> => {
-      // Phase 1: Show progress bar for profile init
-      for (let i = 0; i < INIT_STAGES.length; i++) {
+        const fileCount = context.projectFiles.length;
         if (cancelled) return;
-        setStage(i < 3 ? 'progress' : 'analyzing');
-        await new Promise(r => setTimeout(r, 400));
-      }
+        updateStep('SCANNING', {
+          status: 'done',
+          subLines: [
+            `Found ${fileCount} project file${fileCount === 1 ? '' : 's'}`,
+            `Read git log history (${context.gitLog ? 'available' : 'empty'})`,
+          ],
+        });
 
-      if (cancelled) return;
-      setStage('analyzing');
+        // Phase 2: ANALYZING
+        updateStep('ANALYZING', { status: 'running' });
+        await new Promise(r => setTimeout(r, 600));
 
-      // Phase 2: AI codebase analysis
-      const existingRules = runtime.getRules();
-      let result: string;
+        const configCount = Object.keys(context.configFiles).length;
+        if (cancelled) return;
+        updateStep('ANALYZING', {
+          status: 'done',
+          subLines: [
+            `Analyzed ${configCount} configuration file${configCount === 1 ? '' : 's'}`,
+            `Project ID resolved to: ${runtime.getProfile().projectId || 'default'}`,
+          ],
+        });
 
-      if (existingRules.length === 0) {
-        try {
-          const { TasteCodebaseAnalyzer } = await import('../../services/taste/auto-learn/TasteCodebaseAnalyzer.js');
-          const analyzer = new TasteCodebaseAnalyzer();
-          const context = analyzer.collectContext();
+        // Phase 3: AI_DETECT
+        updateStep('AI_DETECT', { status: 'running' });
+        const existingRules = runtime.getRules();
+        const learnedRules: Array<{ text: string; kind: string; confidence: number }> = [];
+        let added = 0;
+        let resultMessage = '';
 
+        if (existingRules.length === 0) {
           if (context.gitLog || Object.keys(context.configFiles).length > 0 || context.projectFiles.length > 0) {
             await runtime.initialize();
-            const analysis = await analyzer.analyzeWithAI(context);
+            let analysis = await analyzer.analyzeWithAI(context);
+            if (analysis.rules.length === 0) {
+              analysis = analyzer.analyzeWithHeuristics(context);
+            }
 
             if (analysis.rules.length > 0) {
-              let added = 0;
               for (const r of analysis.rules) {
                 runtime.addRule(r.text, r.kind, 'inferred', ['ai-detected']);
+                learnedRules.push({ text: r.text, kind: r.kind, confidence: r.confidence });
                 added++;
               }
               await runtime.saveProfile();
-              const lines = [
-                `Taste initialized \u2014 ${added} rule${added === 1 ? '' : 's'} added from codebase analysis.`,
-                '',
-                ...analysis.rules.map(r => `  [${r.kind}] ${r.text} (confidence: ${(r.confidence * 100).toFixed(0)}%)`),
-              ];
-              result = lines.join('\n');
-              runtime.notifyTaste(lines[0]!, 'taste-init', 'medium');
+              resultMessage = formatTasteLearnedResult({
+                added,
+                configCount,
+                fileCount,
+                learnedRules,
+                totalRules: runtime.getRules().length,
+              });
             } else {
               await runtime.initialize();
-              result = 'Taste initialized \u2014 no patterns detected.';
+              resultMessage = formatTasteLearnedResult({
+                added: 0,
+                configCount,
+                fileCount,
+                learnedRules,
+                totalRules: runtime.getRules().length,
+              });
             }
           } else {
             await runtime.initialize();
-            result = 'Taste initialized \u2014 no codebase context found.';
+            resultMessage = formatTasteLearnedResult({
+              added: 0,
+              configCount,
+              fileCount,
+              learnedRules,
+              totalRules: runtime.getRules().length,
+            });
           }
-        } catch (err) {
+        } else {
           await runtime.initialize();
-          result = `Taste initialized \u2014 AI analysis unavailable: ${err instanceof Error ? err.message : 'Unknown error'}`;
+          resultMessage = formatTasteLearnedResult({
+            added: 0,
+            configCount,
+            fileCount,
+            learnedRules: existingRules.slice(0, 8).map(rule => ({
+              text: rule.text,
+              kind: rule.kind,
+              confidence: rule.confidence,
+            })),
+            totalRules: existingRules.length,
+            reusedExisting: true,
+          });
         }
-      } else {
-        await runtime.initialize();
-        result = `Taste initialized \u2014 ${existingRules.length} rule${existingRules.length === 1 ? '' : 's'} already exist.`;
-      }
-      runtime.notifyTaste(result.split('\n')[0]!, 'taste-init', 'medium');
 
-      if (cancelled) return;
-      setStage('done');
-      onDone(result, { display: 'system' });
+        if (cancelled) return;
+        updateStep('AI_DETECT', {
+          status: 'done',
+          subLines: [
+            existingRules.length > 0
+              ? 'Skipped AI detection (profile already exists)'
+              : `AI detected ${added} preference rule${added === 1 ? '' : 's'}`,
+          ],
+        });
+
+        // Phase 4: FINALIZE
+        updateStep('FINALIZE', { status: 'running' });
+        await new Promise(r => setTimeout(r, 500));
+
+        if (cancelled) return;
+        const totalRules = runtime.getRules().length;
+        updateStep('FINALIZE', {
+          status: 'done',
+          subLines: ['Profile saved successfully', `Loaded ${totalRules} active rule${totalRules === 1 ? '' : 's'}`],
+        });
+
+        runtime.notifyTaste(
+          added > 0 ? `learned ${added} coding taste rule${added === 1 ? '' : 's'}` : 'taste learning complete',
+          'taste-init',
+          'medium',
+        );
+
+        await new Promise(r => setTimeout(r, 800));
+        if (cancelled) return;
+        onDone(resultMessage);
+      } catch (err) {
+        if (cancelled) return;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setSteps(prev => prev.map(s => (s.status === 'running' ? { ...s, status: 'failed', subLines: [errMsg] } : s)));
+        await runtime.initialize();
+        await new Promise(r => setTimeout(r, 1500));
+        if (cancelled) return;
+        onDone(`Taste initialized \u2014 with errors: ${errMsg}`);
+      }
     };
 
     void run();
@@ -395,28 +187,137 @@ function InitFlow({ runtime, onDone }: { runtime: TasteRuntime; onDone: LocalJSX
     };
   }, [runtime, onDone]);
 
-  const s =
-    stage === 'done'
-      ? INIT_STAGES[INIT_STAGES.length - 1]
-      : INIT_STAGES[
-          Math.min(Math.floor(INIT_STAGES.length * (stage === 'analyzing' ? 0.6 : 0.3)), INIT_STAGES.length - 1)
-        ];
-
-  const barWidth = 20;
-  const filled = Math.round((s.progress / 100) * barWidth);
-  const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barWidth - filled);
-  const label = stage === 'analyzing' && s.progress >= 75 ? 'Calling AI to analyze codebase...' : s.label;
-
   return (
-    <Dialog title="Clew taste" subtitle="Local-first preference-learning runtime" hideInputGuide>
-      <Box flexDirection="column" gap={1} padding={1}>
-        <Text bold>Initializing Clew taste</Text>
-        <Text>
-          [{bar}] {s.progress}%
+    <Box flexDirection="column" gap={0} paddingX={1} paddingY={0}>
+      <Box flexDirection="row" gap={1} marginBottom={1}>
+        <Text color="white" backgroundColor={themeColor} bold>
+          {' '}
+          TASTE{' '}
         </Text>
-        <Text dimColor>{label}</Text>
+        <Text bold>Preference-learning initialization</Text>
       </Box>
-    </Dialog>
+
+      {steps.map((step, idx) => {
+        const isLastStep = idx === steps.length - 1;
+        const branchChar = isLastStep ? '└──' : '├──';
+        const verticalChar = isLastStep ? '   ' : '│  ';
+
+        let statusText = '';
+        if (step.status === 'running') {
+          statusText = ' (running...)';
+        } else if (step.status === 'done') {
+          statusText = ' (done)';
+        } else if (step.status === 'failed') {
+          statusText = ' (failed)';
+        } else {
+          statusText = ' (queued)';
+        }
+
+        const isVisible = step.status !== 'pending' || idx === 0 || steps[idx - 1]?.status === 'done';
+        if (!isVisible) return null;
+
+        return (
+          <Box flexDirection="column" key={step.badge} marginLeft={0}>
+            <Box flexDirection="row" gap={1} alignItems="center">
+              <Text dimColor>{branchChar} </Text>
+              <Text color="white" backgroundColor={themeColor} bold>
+                {' '}
+                {step.badge}{' '}
+              </Text>
+              <Text dimColor={step.status === 'pending'}>{step.label}</Text>
+              {step.status === 'running' && <Spinner />}
+              <Text dimColor italic>
+                {statusText}
+              </Text>
+            </Box>
+
+            {step.subLines?.map((sub, sIdx) => {
+              const isLastSub = sIdx === step.subLines!.length - 1;
+              const subBranch = isLastSub ? '└──' : '├──';
+              return (
+                <Box flexDirection="row" gap={1} key={sub} marginLeft={0}>
+                  <Text dimColor>
+                    {verticalChar} {subBranch}{' '}
+                  </Text>
+                  <Text dimColor>{sub}</Text>
+                </Box>
+              );
+            })}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+function formatTasteLearnedResult({
+  added,
+  configCount,
+  fileCount,
+  learnedRules,
+  totalRules,
+  reusedExisting,
+}: {
+  added: number;
+  configCount: number;
+  fileCount: number;
+  learnedRules: Array<{ text: string; kind: string; confidence: number }>;
+  totalRules: number;
+  reusedExisting?: boolean;
+}): string {
+  const lines = [
+    'TASTE',
+    `└ ${reusedExisting ? 'loaded your coding taste' : 'learned your coding taste'}`,
+    '  ■ Organizing your sessions',
+    `  ● Codebase: ${fileCount} file${fileCount === 1 ? '' : 's'} sampled`,
+    `  ● Config: ${configCount} file${configCount === 1 ? '' : 's'} analyzed`,
+    '  ■ Learning your coding taste',
+  ];
+
+  if (learnedRules.length === 0) {
+    lines.push('    ◦ No strong patterns detected yet.');
+    lines.push('    ◦ Keep accepting, rejecting, and editing outputs so Taste can learn from real feedback.');
+  } else {
+    for (const rule of learnedRules.slice(0, 8)) {
+      lines.push(`    ${getRuleGlyph(rule.kind)} ${rule.text}`);
+    }
+  }
+
+  lines.push('  ■ Learning complete');
+  if (reusedExisting) {
+    lines.push(`    Loaded ${totalRules} existing rule${totalRules === 1 ? '' : 's'}.`);
+  } else {
+    lines.push(`    Learned from ${added} new pattern${added === 1 ? '' : 's'} (${totalRules} total rules).`);
+  }
+
+  return lines.join('\n');
+}
+
+function getRuleGlyph(kind: string): string {
+  switch (kind) {
+    case 'tooling':
+      return '◆';
+    case 'workflow':
+      return '▶';
+    case 'architecture':
+      return '▲';
+    case 'testing':
+      return '★';
+    case 'ui':
+      return '■';
+    default:
+      return '●';
+  }
+}
+
+function InitFlow({ runtime, onDone }: { runtime: TasteRuntime; onDone: LocalJSXCommandOnDone }): React.ReactNode {
+  return (
+    <TasteInitProgress
+      runtime={runtime}
+      onDone={result => {
+        onDone(result, { display: 'system' });
+      }}
+    />
   );
 }
 
@@ -444,6 +345,16 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
     return null;
   }
 
+  if (arg === 'learn') {
+    onDone(undefined, { display: 'skip', nextInput: '/taste learn ', submitNextInput: false });
+    return null;
+  }
+
+  if (arg === 'forget') {
+    onDone(undefined, { display: 'skip', nextInput: '/taste forget ', submitNextInput: false });
+    return null;
+  }
+
   if (
     arg.startsWith('learn ') ||
     arg.startsWith('forget ') ||
@@ -466,5 +377,5 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
     return <InitFlow runtime={runtime} onDone={onDone} />;
   }
 
-  return <TasteMenu onDone={onDone} />;
+  return <InitFlow runtime={runtime} onDone={onDone} />;
 };

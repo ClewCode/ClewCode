@@ -5,6 +5,8 @@
 import { access, chmod, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { type ReleaseChannel, saveGlobalConfig } from './config.js';
+import { logForDebugging } from './debug.js';
+import { env } from './env.js';
 import { getClaudeConfigHomeDir } from './envUtils.js';
 import { getErrnoCode } from './errors.js';
 import { execFileNoThrowWithCwd } from './execFileNoThrow.js';
@@ -98,10 +100,22 @@ export async function installOrUpdateClaudePackage(
 
     // Use specific version if provided, otherwise use channel tag
     const versionSpec = specificVersion ? specificVersion : channel === 'stable' ? 'stable' : 'latest';
-    const result = await execFileNoThrowWithCwd('npm', ['install', `${MACRO.PACKAGE_URL}@${versionSpec}`], {
+
+    // Try npm install first
+    logForDebugging(`Installing Claude CLI package with npm: ${MACRO.PACKAGE_URL}@${versionSpec}`);
+    let result = await execFileNoThrowWithCwd('npm', ['install', `${MACRO.PACKAGE_URL}@${versionSpec}`], {
       cwd: getLocalInstallDir(),
       maxBuffer: 1000000,
     });
+
+    // If npm fails and running with Bun, try bun install as fallback
+    if (result.code !== 0 && env.isRunningWithBun()) {
+      logForDebugging('npm install failed, retrying with bun install');
+      result = await execFileNoThrowWithCwd('bun', ['install', `${MACRO.PACKAGE_URL}@${versionSpec}`], {
+        cwd: getLocalInstallDir(),
+        maxBuffer: 1000000,
+      });
+    }
 
     if (result.code !== 0) {
       const error = new Error(`Failed to install Claude CLI package: ${result.stderr}`);

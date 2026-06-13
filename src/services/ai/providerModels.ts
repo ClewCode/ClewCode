@@ -7,6 +7,10 @@ type RemoteModelPayload = {
   name?: string;
   supported_parameters?: string[];
   capabilities?: { tools?: boolean; tool_calling?: boolean };
+  max_input_tokens?: number;
+  max_output_tokens?: number;
+  context_window?: number;
+  contextWindow?: number;
 };
 
 const MODELS_CACHE = new Map<ProviderId, { data: ProviderModelInfo[]; timestamp: number }>();
@@ -71,7 +75,9 @@ function getFallbackModels(provider: ProviderId): ProviderModelInfo[] {
         toolCalling: info.capabilities.toolCalling ? 'native' : 'none',
         vision: info.capabilities.vision,
         streaming: info.capabilities.streaming,
-        maxContext: 'varies',
+        maxContext: typeof info.capabilities.contextLength === 'string'
+          ? info.capabilities.contextLength === '1M' ? 1_000_000 : 200_000
+          : 200_000,
         maxOutput: 'varies',
         reasoning: info.capabilities.reasoningEffort,
         supportsSystemPrompt: true,
@@ -88,6 +94,32 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
   }
 
   const info = getProviderRegistryEntry(provider);
+
+  // Try to get context window from API response, fall back to providers.json
+  const apiMaxContext =
+    model.max_input_tokens ?? model.context_window ?? model.contextWindow;
+  const registryModel = info.models.find(
+    m => m.id.toLowerCase() === id.toLowerCase() || id.toLowerCase().includes(m.id.toLowerCase()),
+  );
+  const registryMaxContext =
+    registryModel?.capabilities?.maxContext !== undefined &&
+    registryModel.capabilities.maxContext !== 'varies'
+      ? registryModel.capabilities.maxContext
+      : undefined;
+  const maxContext = (
+    typeof apiMaxContext === 'number' ? apiMaxContext : registryMaxContext
+  ) ?? 'varies';
+
+  const apiMaxOutput = model.max_output_tokens;
+  const registryMaxOutput =
+    registryModel?.capabilities?.maxOutput !== undefined &&
+    registryModel.capabilities.maxOutput !== 'varies'
+      ? registryModel.capabilities.maxOutput
+      : undefined;
+  const maxOutput = (
+    typeof apiMaxOutput === 'number' ? apiMaxOutput : registryMaxOutput
+  ) ?? 'varies';
+
   const toolCalling = modelSupportsToolCalling(provider, id, model);
 
   return {
@@ -96,9 +128,11 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
     capabilities: {
       toolCalling: toolCalling ? 'native' : 'none',
       vision: info.capabilities.vision,
+      imageIn: info.capabilities.imageIn ?? info.capabilities.vision,
+      videoIn: info.capabilities.videoIn ?? false,
       streaming: info.capabilities.streaming,
-      maxContext: 'varies',
-      maxOutput: 'varies',
+      maxContext,
+      maxOutput,
       reasoning: info.capabilities.reasoningEffort,
       supportsSystemPrompt: true,
     },

@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sentry Error Reporting — Clew</title>
-  <meta name="description" content="Opt-in Sentry crash/error telemetry for Clew — default off, privacy-first.">
+  <title>Sentry Error Reporting â€” Clew</title>
+  <meta name="description" content="Opt-in Sentry crash/error telemetry for Clew â€” default off, privacy-first.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,22 +22,22 @@
       <a href="../index.html#features">Features</a>
       <a href="../index.html#commands">Commands</a>
       <a href="../quick-start.html" class="active">Docs</a>
-      <a href="https://github.com/JonusNattapong/ClewCode" target="_blank">GitHub</a>
+      <a href="https://github.com/ClewCode/ClewCode" target="_blank">GitHub</a>
     <div class="lang-wrap">
-    <button class="lang-btn">🌐</button>
+    <button class="lang-btn">ðŸŒ</button>
     <div class="lang-menu">
-      <a href="../../readme/README.zh.md">中文</a>
-      <a href="../../readme/README.th.md">ไทย</a>
-      <a href="../../readme/README.ja.md">日本語</a>
-      <a href="../../readme/README.ko.md">한국어</a>
-      <a href="../../readme/README.es.md">Español</a>
-      <a href="../../readme/README.fr.md">Français</a>
+      <a href="../../readme/README.zh.md">ä¸­æ–‡</a>
+      <a href="../../readme/README.th.md">à¹„à¸—à¸¢</a>
+      <a href="../../readme/README.ja.md">æ—¥æœ¬èªž</a>
+      <a href="../../readme/README.ko.md">í•œêµ­ì–´</a>
+      <a href="../../readme/README.es.md">EspaÃ±ol</a>
+      <a href="../../readme/README.fr.md">FranÃ§ais</a>
       <a href="../../readme/README.de.md">Deutsch</a>
-      <a href="../../readme/README.pt.md">Português</a>
-      <a href="../../readme/README.vi.md">Tiếng Việt</a>
+      <a href="../../readme/README.pt.md">PortuguÃªs</a>
+      <a href="../../readme/README.vi.md">Tiáº¿ng Viá»‡t</a>
       <a href="../../readme/README.id.md">Bahasa Indonesia</a>
-      <a href="../../readme/README.ru.md">Русский</a>
-      <a href="../../readme/README.hi.md">हिन्दी</a>
+      <a href="../../readme/README.ru.md">Ð ÑƒÑÑÐºÐ¸Ð¹</a>
+      <a href="../../readme/README.hi.md">à¤¹à¤¿à¤¨à¥à¤¦à¥€</a>
       <a href="../../README.md">English</a>
     </div>
   </div>
@@ -52,11 +52,11 @@
     <main class="content">
       <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><a href="../index.html#features">Features</a><span class="sep">/</span><span>Sentry Setup</span></div>
       <h1>Sentry Error Reporting</h1>
-      <p class="section-subtitle">Optional, opt-in crash and error telemetry — <strong>completely disabled by default</strong>. No data leaves your machine unless you explicitly set <code>SENTRY_DSN</code>.</p>
+      <p class="section-subtitle">Optional, opt-in crash and error telemetry â€” <strong>completely disabled by default</strong>. No data leaves your machine unless you explicitly set <code>SENTRY_DSN</code>.</p>
 
       <div class="callout callout-tip">
         <strong>TL;DR</strong>
-        <code>SENTRY_DSN=https://key@sentry.io/123 claude</code> — that's it. Without it, zero network requests, zero telemetry.
+        <code>SENTRY_DSN=https://key@sentry.io/123 claude</code> â€” that's it. Without it, zero network requests, zero telemetry.
       </div>
 
       <h2>Quick Start</h2>
@@ -72,14 +72,14 @@
       <h2>Environment Variables</h2>
       <table>
         <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
-        <tr><td><code>SENTRY_DSN</code></td><td><strong>yes</strong></td><td>—</td><td>Sentry DSN to enable. Without this, everything is no-op.</td></tr>
+        <tr><td><code>SENTRY_DSN</code></td><td><strong>yes</strong></td><td>â€”</td><td>Sentry DSN to enable. Without this, everything is no-op.</td></tr>
         <tr><td><code>SENTRY_ENVIRONMENT</code></td><td>no</td><td><code>NODE_ENV</code> or <code>production</code></td><td>Environment tag in Sentry dashboard</td></tr>
         <tr><td><code>SENTRY_RELEASE</code></td><td>no</td><td>auto from package.json</td><td>Release version tag</td></tr>
-        <tr><td><code>SENTRY_SAMPLE_RATE</code></td><td>no</td><td><code>1.0</code></td><td>Error sample rate (0.0–1.0)</td></tr>
+        <tr><td><code>SENTRY_SAMPLE_RATE</code></td><td>no</td><td><code>1.0</code></td><td>Error sample rate (0.0â€“1.0)</td></tr>
       </table>
 
       <h2>What Gets Sent</h2>
-      <p>Only error metadata — <strong>never prompts, responses, file contents, or command output</strong>:</p>
+      <p>Only error metadata â€” <strong>never prompts, responses, file contents, or command output</strong>:</p>
       <ul>
         <li>Error name, message, and stack trace (without local variable values)</li>
         <li>Runtime info: OS platform, Node/Bun version</li>
@@ -106,13 +106,13 @@
       <h2>Privacy Scrubber</h2>
       <p>Every event passes through a <code>beforeSend</code> hook that:</p>
       <ol>
-        <li><strong>Scrubs strings</strong> — removes API key patterns (<code>sk-*</code>, <code>Bearer</code> tokens), auth headers, cookie values</li>
-        <li><strong>Strips stack frame variables</strong> — removes <code>vars</code>, <code>pre_context</code>, <code>context_line</code>, <code>post_context</code></li>
-        <li><strong>Removes breadcrumbs</strong> — user actions are never tracked</li>
-        <li><strong>Cleans request data</strong> — removes headers, cookies, query strings</li>
-        <li><strong>Anonymizes home directory</strong> — replaces paths with <code>[HOME]</code></li>
-        <li><strong>Drops oversized strings</strong> — over 2000 chars truncated</li>
-        <li><strong>Recursively scrubs nested objects</strong> — drops keys named prompt, response, content, message, input, output, text, body, data, payload, token, key, secret, password, auth, cookie</li>
+        <li><strong>Scrubs strings</strong> â€” removes API key patterns (<code>sk-*</code>, <code>Bearer</code> tokens), auth headers, cookie values</li>
+        <li><strong>Strips stack frame variables</strong> â€” removes <code>vars</code>, <code>pre_context</code>, <code>context_line</code>, <code>post_context</code></li>
+        <li><strong>Removes breadcrumbs</strong> â€” user actions are never tracked</li>
+        <li><strong>Cleans request data</strong> â€” removes headers, cookies, query strings</li>
+        <li><strong>Anonymizes home directory</strong> â€” replaces paths with <code>[HOME]</code></li>
+        <li><strong>Drops oversized strings</strong> â€” over 2000 chars truncated</li>
+        <li><strong>Recursively scrubs nested objects</strong> â€” drops keys named prompt, response, content, message, input, output, text, body, data, payload, token, key, secret, password, auth, cookie</li>
       </ol>
 
       <h2>Checking Status</h2>
@@ -124,13 +124,13 @@ Sentry Telemetry: Enabled</code></pre>
 
       <div class="callout callout-info">
         <strong>DSN Masking</strong>
-        The DSN is masked in the UI — only the first 8 and last 4 characters of the key are shown. The full DSN is never displayed in any output.
+        The DSN is masked in the UI â€” only the first 8 and last 4 characters of the key are shown. The full DSN is never displayed in any output.
       </div>
 
       <h2>Files</h2>
       <table>
         <tr><th>File</th><th>Purpose</th></tr>
-        <tr><td><code>src/utils/sentry.ts</code></td><td>Core wrapper — init, capture, close, scrubber</td></tr>
+        <tr><td><code>src/utils/sentry.ts</code></td><td>Core wrapper â€” init, capture, close, scrubber</td></tr>
         <tr><td><code>src/utils/sentry.test.ts</code></td><td>Unit tests (11 tests)</td></tr>
         <tr><td><code>src/entrypoints/init.ts</code></td><td>Calls <code>initSentry()</code> at startup</td></tr>
         <tr><td><code>src/utils/gracefulShutdown.ts</code></td><td>Calls <code>closeSentry()</code> before exit</td></tr>
@@ -141,10 +141,10 @@ Sentry Telemetry: Enabled</code></pre>
       </table>
 
       <footer class="footer">
-        <span>Clew Code v0.2.4</span>
+        <span>Clew Code v0.2.7</span>
         <div class="footer-links">
-          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
-          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
         </div>
       </footer>
     </main>
@@ -154,3 +154,4 @@ Sentry Telemetry: Enabled</code></pre>
 <script src="../js/main.js"></script>
 </body>
 </html>
+

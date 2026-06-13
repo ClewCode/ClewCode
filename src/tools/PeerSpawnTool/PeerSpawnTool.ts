@@ -78,12 +78,29 @@ export const PeerSpawnTool = buildTool({
       const cwd = process.cwd();
       const platform = process.platform;
 
-      // Default peer behavior: when receiving a message, reply back to sender
+      // Default peer behavior: share → receive task → reply back to sender
       const DEFAULT_PEER_PROMPT =
-        'You are a spawned peer agent. ' +
-        'When you receive a message from another peer via peer_send_message, ' +
-        'you MUST reply back using peer_send_message with waitResponse: true. ' +
-        'Use the sender\'s fromName or hostname as the "peer" parameter when replying.\n\n' +
+        'You are a spawned peer. You are already sharing via --peer-share.\n' +
+        '\n' +
+        '=== FLOW WHEN RECEIVING A TASK ===\n' +
+        '1. SHARE — Run `peer_share status` to confirm sharing and learn your port.\n' +
+        '   Your port is how the sender will reach you.\n' +
+        '2. RECEIVE — A task message arrives from a sender. It should include:\n' +
+        '   - Sender\'s peer name (e.g. "I am {name}")\n' +
+        '   - Sender\'s port (e.g. "on port {port}")\n' +
+        '   - The task description\n' +
+        '3. DO — Complete the task using your tools.\n' +
+        '4. REPLY — Send the result back via:\n' +
+        '   `peer_send_message({ peer: "<sender_peer_name>", message: "<result>" })`\n' +
+        '   Do NOT use waitResponse — just send the result.\n' +
+        '\n' +
+        '=== RULES ===\n' +
+        '- Always confirm your port first with `peer_share status`\n' +
+        "- When replying, use the sender's peer name (not hostname)\n" +
+        '- Include the task result clearly in the message\n' +
+        '- If unsure about a command, use --help to explore\n' +
+        '\n' +
+        '=== TOOLS ===\n' +
         'Prefer MCP tools over built-in tools when available. ' +
         'MCP tools (tinyfish, firecrawl) return richer results with full page content, ' +
         'while built-in tools may fall back to limited providers.';
@@ -134,7 +151,7 @@ export const PeerSpawnTool = buildTool({
 
           // Scan peer files directly (same machine) — more reliable than UDP
           try {
-            const peerDir = path.join(os.homedir(), '.claude', 'peers');
+            const peerDir = path.join(os.homedir(), '.clew', 'peers');
             const dir = readdirSync(peerDir, { withFileTypes: true });
             for (const entry of dir) {
               if (!entry.isFile() || !entry.name.endsWith('.json')) continue;

@@ -1,5 +1,6 @@
 import { appendFile, mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import type { ResearchClaim, ResearchPlan, ResearchRun, ResearchSource } from './types.js';
 
@@ -28,7 +29,7 @@ export type RunStore = {
 
 export async function createRunStore(cwd: string, query: string, mode: any): Promise<RunStore> {
   const runId = generateRunId(query);
-  const runDir = join(cwd, '.claude', 'research', 'runs', runId);
+  const runDir = join(cwd, DOT_CLEW, 'research', 'runs', runId);
 
   const fsImpl = getFsImplementation();
   if (!fsImpl.existsSync(runDir)) {
@@ -166,7 +167,7 @@ export async function completeRunStore(
 
 export async function getLatestRun(cwd: string): Promise<{ run: ResearchRun; runDir: string } | null> {
   const fsImpl = getFsImplementation();
-  const runsDir = join(cwd, '.claude', 'research', 'runs');
+  const runsDir = join(cwd, DOT_CLEW, 'research', 'runs');
   if (!fsImpl.existsSync(runsDir)) {
     return null;
   }
@@ -197,7 +198,7 @@ export async function getLatestRun(cwd: string): Promise<{ run: ResearchRun; run
 
 export async function listAllRuns(cwd: string): Promise<ResearchRun[]> {
   const fsImpl = getFsImplementation();
-  const runsDir = join(cwd, '.claude', 'research', 'runs');
+  const runsDir = join(cwd, DOT_CLEW, 'research', 'runs');
   if (!fsImpl.existsSync(runsDir)) {
     return [];
   }

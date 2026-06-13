@@ -48,13 +48,36 @@ function getOpenAIResponseFormat(params: BetaMessageStreamParams): Record<string
  * Map Anthropic output_config.effort to OpenAI reasoning_effort.
  * Many OpenAI-compatible providers (DeepSeek, NVIDIA, etc.) support
  * reasoning_effort to control the model's thinking budget.
+ *
+ * Checks both provider-level capability and model-level reasoning
+ * support before sending reasoning_effort. If the specific model is
+ * not in the provider registry, defaults to NOT sending it to avoid
+ * 400 errors on models that don't support it.
  */
-function getOpenAIReasoningEffort(params: BetaMessageStreamParams): Record<string, unknown> {
+function getOpenAIReasoningEffort(
+  params: BetaMessageStreamParams,
+  providerId: string,
+): Record<string, unknown> {
   const outputConfig = (params as any).output_config as { effort?: string } | undefined;
-  if (outputConfig?.effort) {
-    return { reasoning_effort: outputConfig.effort };
+  if (!outputConfig?.effort) return {};
+
+  // Check provider-level capability first
+  try {
+    const entry = getProviderRegistryEntry(providerId as any);
+    if (!entry.capabilities.reasoningEffort) return {};
+
+    // Check model-level reasoning support
+    const modelInfo = getProviderModelInfo(providerId as any, params.model);
+    if (modelInfo && !modelInfo.capabilities.reasoning) return {};
+
+    // If model is not in registry, be conservative — skip reasoning_effort
+    // since we can't confirm the model supports it.
+    if (!modelInfo) return {};
+  } catch {
+    return {};
   }
-  return {};
+
+  return { reasoning_effort: outputConfig.effort };
 }
 
 // ── Provider Adapter Interface ───────────────────────────────────────────────
@@ -277,21 +300,42 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
   }
 
   /**
-   * Check whether the target model supports vision (image inputs).
-   * First checks provider-level capability, then model-level capability.
+   * Check whether the target model supports image inputs (base64/URL).
+   * First checks model-level `imageIn`, falls back to provider-level `imageIn`,
+   * then to the legacy `vision` flag.
    */
   private modelSupportsVision(modelId: string): boolean {
     try {
       const entry = getProviderRegistryEntry(this.providerId as any);
-      if (!entry.capabilities.vision) return false;
 
+      // Check model-level imageIn first
       const modelInfo = getProviderModelInfo(this.providerId as any, modelId);
+      if (modelInfo?.capabilities.imageIn !== undefined) return modelInfo.capabilities.imageIn;
       if (modelInfo) return modelInfo.capabilities.vision;
 
+      // Fall back to provider-level imageIn, then legacy vision
+      if (entry.capabilities.imageIn !== undefined) return entry.capabilities.imageIn;
       return entry.capabilities.vision;
     } catch {
       // If registry lookup fails, assume yes — let the provider reject if needed
       return true;
+    }
+  }
+
+  /**
+   * Check whether the target model supports video inputs (base64/URL).
+   * Model-level check first, then provider-level.
+   * @since 0.2.8
+   */
+  private modelSupportsVideo(modelId: string): boolean {
+    try {
+      const entry = getProviderRegistryEntry(this.providerId as any);
+      const modelInfo = getProviderModelInfo(this.providerId as any, modelId);
+      if (modelInfo?.capabilities.videoIn !== undefined) return modelInfo.capabilities.videoIn;
+      if (entry.capabilities.videoIn !== undefined) return entry.capabilities.videoIn;
+      return false;  // No provider declares video support by default
+    } catch {
+      return false;
     }
   }
 
@@ -417,6 +461,23 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
                 },
               });
             }
+          } else if (c.type === 'video') {
+            // Skip video if model doesn't support it
+            if (!this.modelSupportsVideo(params.model)) {
+              textParts.push(`[Video not sent — ${params.model} does not support video input]`);
+              continue;
+            }
+            // Convert Anthropic video block to OpenAI image content part
+            // (OpenAI treats video as a sequence of image frames or a single thumbnail)
+            const source = c.source;
+            if (source?.type === 'base64') {
+              imageParts.push({
+                type: 'image_url',
+                image_url: {
+                  url: `data:${source.media_type};base64,${source.data}`,
+                },
+              });
+            }
           } else if (c.type === 'thinking') {
             reasoningParts.push(c.thinking);
           } else if (c.type === 'tool_use') {
@@ -513,7 +574,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       stop: params.stop_sequences,
       ...(tools ? { tools } : {}),
       ...getOpenAIResponseFormat(params),
-      ...getOpenAIReasoningEffort(params),
+      ...getOpenAIReasoningEffort(params, this.providerId),
     };
   }
 

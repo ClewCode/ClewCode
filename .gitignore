@@ -83,6 +83,9 @@ bun-linux-x64/
 # Vendored binaries (downloaded locally, not committed)
 src/utils/vendor/ripgrep/
 
+# Lint / tool output
+linter_output.txt
+
 # Temp
 tmp/
 temp/

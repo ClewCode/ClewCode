@@ -17,8 +17,17 @@ export const getGlobalClaudeFile = memoize((): string => {
     return join(getClaudeConfigHomeDir(), '.config.json');
   }
 
-  const filename = `.claude${fileSuffixForOauthConfig()}.json`;
-  return join(process.env.CLAUDE_CONFIG_DIR || homedir(), filename);
+  // Check for existing legacy .claude.json
+  const legacyFilename = `.claude${fileSuffixForOauthConfig()}.json`;
+  const legacyPath = join(process.env.CLAUDE_CONFIG_DIR || homedir(), legacyFilename);
+  if (getFsImplementation().existsSync(legacyPath)) {
+    return legacyPath;
+  }
+
+  // Primary: .clew.json
+  const suffix = fileSuffixForOauthConfig();
+  const filename = `.clew${suffix}.json`;
+  return join(getClaudeConfigHomeDir(), filename);
 });
 
 const hasInternetAccess = memoize(async (): Promise<boolean> => {

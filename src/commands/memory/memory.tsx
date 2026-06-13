@@ -107,7 +107,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
     switch (subcommand) {
       case 'init': {
         await initMemoryWorkspace(cwd);
-        onDone('🟢 Claude Memory workspace layout successfully initialized under `.claude/`', { display: 'system' });
+        onDone('🟢 Clew Memory workspace layout successfully initialized under `.clew/`', { display: 'system' });
         return null;
       }
 

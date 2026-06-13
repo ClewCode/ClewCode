@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Configuration — Clew</title>
-  <meta name="description" content="Comprehensive configuration guide for Clew — CLI flags, environment variables, settings file, and in-session commands.">
+  <title>Configuration â€” Clew</title>
+  <meta name="description" content="Comprehensive configuration guide for Clew â€” CLI flags, environment variables, settings file, and in-session commands.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 <div class="content-wrap"><main class="content">
   <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Configuration</span></div>
   <h1>Configuration</h1>
-  <p class="section-subtitle">Clew is configured through CLI flags (Commander.js), environment variables, a JSON settings file (<code>~/.clawdbot/moltbot.json</code> validated with TypeBox), and in-session slash commands.</p>
+  <p class="section-subtitle">Clew is configured through CLI flags (Commander.js), environment variables, a JSON settings file (validated with Zod), and in-session slash commands.</p>
 
   <h2>CLI Flags</h2>
   <p>Defined in <code>src/main.tsx</code> with Commander.js <code>.option()</code> and <code>.addOption()</code>:</p>
@@ -71,7 +71,7 @@
   <h2>Environment Variables</h2>
 
   <h3>Provider API Keys</h3>
-  <p>27 providers — set one or more. See <a href="providers.html">Providers page</a> for the full list.</p>
+  <p>27 providers â€” set one or more. See <a href="providers.html">Providers page</a> for the full list.</p>
 
   <h3>Runtime &amp; Feature Flags</h3>
   <table>
@@ -94,7 +94,7 @@
   </table>
 
   <h2>Settings File</h2>
-  <p>Config file at <code>~/.clawdbot/moltbot.json</code> (TypeBox-validated). Stores:</p>
+  <p>Config file at <code>~/.claude/settings.json</code> (TypeBox-validated). Stores:</p>
   <ul>
     <li>Default provider and model</li>
     <li>Permission mode and rules</li>
@@ -107,10 +107,10 @@
   <h2>Config Paths</h2>
   <table>
     <tr><th>Path</th><th>Content</th></tr>
-    <tr><td><code>~/.clawdbot/moltbot.json</code></td><td>Main configuration (TypeBox schema)</td></tr>
-    <tr><td><code>~/.clawdbot/credentials/</code></td><td>Stored credentials</td></tr>
-    <tr><td><code>~/.clawdbot/sessions/</code></td><td>Session persistence</td></tr>
-    <tr><td><code>~/.clawdbot/logs/</code></td><td>Debug and error logs</td></tr>
+    <tr><td><code>~/.claude/settings.json</code></td><td>Main configuration (TypeBox schema)</td></tr>
+    <tr><td><code>~/.claude/credentials/</code></td><td>Stored credentials</td></tr>
+    <tr><td><code>~/.claude/sessions/</code></td><td>Session persistence</td></tr>
+    <tr><td><code>~/.claude/logs/</code></td><td>Debug and error logs</td></tr>
     <tr><td><code>~/.claude/skills/</code></td><td>User-installed skills</td></tr>
     <tr><td><code>.claude/skills/</code></td><td>Project-level skills</td></tr>
   </table>
@@ -130,10 +130,10 @@
 --define.VOICE_MODE=true             # Enables voice input support</code></pre>
 
   <footer class="footer">
-    <span>Clew Code v0.2.4 — Open Source</span>
+    <span>Clew Code v0.2.7 â€” Open Source</span>
     <div class="footer-links">
-      <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
-      <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
     </div>
   </footer>
 </main>
@@ -143,3 +143,5 @@
 <script src="js/main.js"></script>
 </body>
 </html>
+
+

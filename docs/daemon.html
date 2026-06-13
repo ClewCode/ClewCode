@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autonomous Daemon — Clew</title>
-  <meta name="description" content="24/7 autonomous background execution — task queue, agent loop, supervisor integration, and recurring tasks.">
+  <title>Autonomous Daemon â€” Clew</title>
+  <meta name="description" content="24/7 autonomous background execution â€” task queue, agent loop, supervisor integration, and recurring tasks.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
     <main class="content">
       <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Daemon Mode</span></div>
       <h1>Autonomous Daemon Mode</h1>
-      <p class="section-subtitle">Run Clew as a 24/7 background daemon — task queue, agent loop, health checks, and supervisor auto-respawn for unattended autonomous operation.</p>
+      <p class="section-subtitle">Run Clew as a 24/7 background daemon â€” task queue, agent loop, health checks, and supervisor auto-respawn for unattended autonomous operation.</p>
 
       <p>The autonomous system lives in <code>src/services/autonomous/</code> and consists of four main components: the <strong>task queue</strong>, <strong>agent loop</strong>, <strong>daemon entry point</strong>, and <strong>supervisor integration</strong>.</p>
 
@@ -41,21 +41,21 @@
       <h2>Task Queue</h2>
       <p>The file-backed persistent queue (<code>src/services/autonomous/taskQueue.ts</code>) is the foundation of the autonomous system:</p>
       <ul>
-        <li><strong>Persistence</strong> — Tasks survive process restarts via on-disk storage</li>
-        <li><strong>Priorities</strong> — Urgent tasks skip ahead in the queue</li>
-        <li><strong>Leases</strong> — Tasks are leased to workers with TTL; expired leases are retried</li>
-        <li><strong>Dead-letter</strong> — Tasks that exhaust retries are moved to dead-letter for inspection</li>
-        <li><strong>Scheduling</strong> — One-shot and recurring (cron) tasks supported</li>
+        <li><strong>Persistence</strong> â€” Tasks survive process restarts via on-disk storage</li>
+        <li><strong>Priorities</strong> â€” Urgent tasks skip ahead in the queue</li>
+        <li><strong>Leases</strong> â€” Tasks are leased to workers with TTL; expired leases are retried</li>
+        <li><strong>Dead-letter</strong> â€” Tasks that exhaust retries are moved to dead-letter for inspection</li>
+        <li><strong>Scheduling</strong> â€” One-shot and recurring (cron) tasks supported</li>
       </ul>
 
       <h2>Agent Loop</h2>
       <p>The continuous agent loop (<code>src/services/autonomous/agentLoop.ts</code>) runs in the background:</p>
       <ol>
-        <li><strong>Dequeue</strong> — Pull the highest-priority ready task</li>
-        <li><strong>Spawn worker</strong> — Launch a worker session for the task</li>
-        <li><strong>Monitor</strong> — Track progress, streaming output, and resource usage</li>
-        <li><strong>Retry or complete</strong> — On failure, retry with backoff; on success, record result</li>
-        <li><strong>Repeat</strong> — Check for new tasks and repeat the cycle</li>
+        <li><strong>Dequeue</strong> â€” Pull the highest-priority ready task</li>
+        <li><strong>Spawn worker</strong> â€” Launch a worker session for the task</li>
+        <li><strong>Monitor</strong> â€” Track progress, streaming output, and resource usage</li>
+        <li><strong>Retry or complete</strong> â€” On failure, retry with backoff; on success, record result</li>
+        <li><strong>Repeat</strong> â€” Check for new tasks and repeat the cycle</li>
       </ol>
 
       <h2>Daemon Entry Point</h2>
@@ -70,10 +70,10 @@
       <h2>Supervisor Integration</h2>
       <p><code>src/services/autonomous/supervisorIntegration.ts</code> ensures the daemon stays running:</p>
       <ul>
-        <li><strong>Health checks</strong> — Periodic heartbeat and resource checks</li>
-        <li><strong>Auto-respawn</strong> — Automatic restart on unexpected exit</li>
-        <li><strong>State tracking</strong> — Current status, running tasks, error counts</li>
-        <li><strong>Graceful degradation</strong> — Reduces polling frequency on repeated failures</li>
+        <li><strong>Health checks</strong> â€” Periodic heartbeat and resource checks</li>
+        <li><strong>Auto-respawn</strong> â€” Automatic restart on unexpected exit</li>
+        <li><strong>State tracking</strong> â€” Current status, running tasks, error counts</li>
+        <li><strong>Graceful degradation</strong> â€” Reduces polling frequency on repeated failures</li>
       </ul>
 
       <h2>Commands</h2>
@@ -90,8 +90,8 @@
       <h2>Task Scheduling</h2>
       <p>Scheduled tasks can be created through the interactive <code>/task</code> form or programmatically. Storage modes:</p>
       <ul>
-        <li><strong>Durable</strong> — Persists to <code>.claude/scheduled_tasks.json</code>, survives restarts</li>
-        <li><strong>Session-only</strong> — Kept in memory for the current session only</li>
+        <li><strong>Durable</strong> â€” Persists to <code>.claude/scheduled_tasks.json</code>, survives restarts</li>
+        <li><strong>Session-only</strong> â€” Kept in memory for the current session only</li>
       </ul>
 
       <p>Recurring tasks auto-expire after 30 days. One-shot tasks auto-delete after firing. Custom cron expressions are supported (standard 5-field format).</p>
@@ -113,10 +113,10 @@ Storage: Durable</code></pre>
       </table>
 
       <footer class="footer">
-        <span>Clew Code v0.2.4 — Open Source</span>
+        <span>Clew Code v0.2.7 â€” Open Source</span>
         <div class="footer-links">
-          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
-          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
         </div>
       </footer>
     </main>
@@ -126,3 +126,4 @@ Storage: Durable</code></pre>
 <script src="js/main.js"></script>
 </body>
 </html>
+

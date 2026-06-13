@@ -7,7 +7,7 @@
     "modelsUrl": "https://api.anthropic.com/v1/models",
     "defaultModel": "claude-opus-4-7",
     "defaultModelVerified": true,
-    "note": "Anthropic Claude — native tool calling, adaptive thinking, 1M context. Source: platform.claude.com/docs, May 2026.",
+    "note": "Anthropic Claude â€” native tool calling, adaptive thinking, 1M context. Source: platform.claude.com/docs, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -15,7 +15,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -43,7 +45,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -70,7 +74,9 @@
           "maxContext": 1000000,
           "maxOutput": 64000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -92,7 +98,9 @@
           "maxContext": 200000,
           "maxOutput": 64000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -118,7 +126,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -131,7 +141,7 @@
     "modelsUrl": "https://api.openai.com/v1/models",
     "defaultModel": "gpt-5.5",
     "defaultModelVerified": true,
-    "note": "OpenAI — GPT-5.5 flagship. Source: developers.openai.com/docs/models, May 2026.",
+    "note": "OpenAI â€” GPT-5.5 flagship. Source: developers.openai.com/docs/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -139,7 +149,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -160,7 +172,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -179,7 +193,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -198,7 +214,9 @@
           "maxContext": 400000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -219,7 +237,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M+"
+      "contextLength": "1M+",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -241,7 +261,9 @@
           "maxContext": 1048576,
           "maxOutput": 8192,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -264,7 +286,9 @@
           "maxContext": 1048576,
           "maxOutput": 8192,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -277,7 +301,7 @@
     "modelsUrl": "https://openrouter.ai/api/v1/models",
     "defaultModel": "anthropic/claude-opus-4.7",
     "defaultModelVerified": true,
-    "note": "OpenRouter — 358 models across 56 providers. Source: openrouter.ai/api/v1/models, May 2026.",
+    "note": "OpenRouter â€” 358 models across 56 providers. Source: openrouter.ai/api/v1/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -285,7 +309,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "10M"
+      "contextLength": "10M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -303,7 +329,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -321,7 +349,9 @@
           "maxContext": 1050000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -339,7 +369,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -358,7 +390,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -375,7 +409,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -392,7 +428,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -411,7 +449,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -428,7 +468,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ]
@@ -441,7 +483,7 @@
     "modelsUrl": "https://api.deepseek.com/v1/models",
     "defaultModel": "deepseek-v4-pro",
     "defaultModelVerified": true,
-    "note": "DeepSeek V4 family. Released April 24, 2026. Text-only — does not support image_url content blocks.",
+    "note": "DeepSeek V4 family. Released April 24, 2026. Text-only â€” does not support image_url content blocks.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -449,7 +491,9 @@
       "vision": false,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": false,
+      "videoIn": false
     },
     "models": [
       {
@@ -467,7 +511,9 @@
           "maxContext": 1000000,
           "maxOutput": "varies",
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -485,7 +531,9 @@
           "maxContext": 1000000,
           "maxOutput": "varies",
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ]
@@ -506,7 +554,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -524,7 +574,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -542,7 +594,9 @@
           "maxContext": 1000000,
           "maxOutput": 64000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -560,7 +614,9 @@
           "maxContext": 1050000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -577,7 +633,9 @@
           "maxContext": 1050000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -594,7 +652,9 @@
           "maxContext": 1050000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -613,7 +673,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -631,7 +693,9 @@
           "maxContext": 1048576,
           "maxOutput": 8192,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -649,7 +713,9 @@
           "maxContext": 256000,
           "maxOutput": 65536,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -667,7 +733,9 @@
           "maxContext": 202752,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -685,7 +753,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -706,7 +776,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -723,7 +795,9 @@
           "maxContext": 196608,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -740,7 +814,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -758,7 +834,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -776,7 +854,9 @@
           "maxContext": 256000,
           "maxOutput": 65536,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -794,7 +874,9 @@
           "maxContext": 202752,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -812,7 +894,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -830,7 +914,9 @@
           "maxContext": 1048576,
           "maxOutput": 131072,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -843,7 +929,7 @@
     "modelsUrl": "https://api.groq.com/openai/v1/models",
     "defaultModel": "llama-3.3-70b-versatile",
     "defaultModelVerified": true,
-    "note": "Groq LPU inference — fastest tokens/sec. Source: console.groq.com/docs/models, May 2026.",
+    "note": "Groq LPU inference â€” fastest tokens/sec. Source: console.groq.com/docs/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -851,7 +937,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "131k"
+      "contextLength": "131k",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -870,7 +958,9 @@
           "maxContext": 131072,
           "maxOutput": 32768,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -887,7 +977,9 @@
           "maxContext": 131072,
           "maxOutput": 131072,
           "reasoning": false,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -905,7 +997,9 @@
           "maxContext": 131072,
           "maxOutput": 65536,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -922,7 +1016,9 @@
           "maxContext": 131072,
           "maxOutput": 8192,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -935,7 +1031,7 @@
     "modelsUrl": "https://api.x.ai/v1/models",
     "defaultModel": "grok-4.3",
     "defaultModelVerified": true,
-    "note": "xAI Grok — grok-4.3 is the only current model (old models retired May 15, 2026). Source: docs.x.ai, May 2026.",
+    "note": "xAI Grok â€” grok-4.3 is the only current model (old models retired May 15, 2026). Source: docs.x.ai, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "partial",
@@ -943,7 +1039,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -963,7 +1061,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -976,7 +1076,7 @@
     "modelsUrl": "https://api.mistral.ai/v1/models",
     "defaultModel": "mistral-small-latest",
     "defaultModelVerified": true,
-    "note": "Mistral AI — frontier coding (Medium 3.5), hybrid (Small 4). Source: docs.mistral.ai/models, May 2026.",
+    "note": "Mistral AI â€” frontier coding (Medium 3.5), hybrid (Small 4). Source: docs.mistral.ai/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -984,7 +1084,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "128k"
+      "contextLength": "128k",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1004,7 +1106,9 @@
           "maxContext": 128000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1023,7 +1127,9 @@
           "maxContext": 128000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1042,7 +1148,9 @@
           "maxContext": 128000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1061,7 +1169,9 @@
           "maxContext": 128000,
           "maxOutput": 64000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -1082,7 +1192,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1101,7 +1213,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1119,7 +1233,9 @@
           "maxContext": 1000000,
           "maxOutput": 65536,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1136,7 +1252,9 @@
           "maxContext": 256000,
           "maxOutput": 65536,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -1154,7 +1272,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -1176,7 +1296,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "varies"
+      "contextLength": "varies",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1194,7 +1316,9 @@
           "maxContext": 131072,
           "maxOutput": 32768,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -1212,7 +1336,9 @@
           "maxContext": 131072,
           "maxOutput": 32768,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -1230,7 +1356,9 @@
           "maxContext": 131072,
           "maxOutput": 32768,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1247,7 +1375,9 @@
           "maxContext": 131072,
           "maxOutput": 32768,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ]
@@ -1260,7 +1390,7 @@
     "modelsUrl": "https://api.together.xyz/v1/models",
     "defaultModel": "deepseek-ai/DeepSeek-V4-Pro",
     "defaultModelVerified": true,
-    "note": "Together AI — 200+ models, function calling. Source: together.ai/models, May 2026.",
+    "note": "Together AI â€” 200+ models, function calling. Source: together.ai/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1268,7 +1398,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M+"
+      "contextLength": "1M+",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1287,7 +1419,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1306,7 +1440,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1325,7 +1461,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1344,7 +1482,9 @@
           "maxContext": 256000,
           "maxOutput": 65536,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ]
@@ -1363,7 +1503,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "varies"
+      "contextLength": "varies",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1375,7 +1517,9 @@
           "streaming": "full",
           "maxContext": 131072,
           "maxOutput": 32768,
-          "reasoning": true
+          "reasoning": true,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ],
@@ -1390,7 +1534,7 @@
     "modelsUrl": "https://integrate.api.nvidia.com/v1/models",
     "defaultModel": "deepseek-ai/deepseek-v4-pro",
     "defaultModelVerified": true,
-    "note": "NVIDIA NIM � optimized inference. Source: build.nvidia.com, May 2026.",
+    "note": "NVIDIA NIM ï¿½ optimized inference. Source: build.nvidia.com, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1398,7 +1542,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1417,7 +1563,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1436,7 +1584,9 @@
           "maxContext": 202752,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1453,7 +1603,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ]
@@ -1474,7 +1626,9 @@
       "vision": false,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "256K"
+      "contextLength": "256K",
+      "imageIn": false,
+      "videoIn": false
     },
     "models": [
       {
@@ -1493,7 +1647,9 @@
           "maxContext": 256000,
           "maxOutput": 32768,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ]
@@ -1512,7 +1668,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "varies"
+      "contextLength": "varies",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1529,7 +1687,9 @@
           "streaming": "full",
           "maxContext": 327680,
           "maxOutput": 32768,
-          "reasoning": true
+          "reasoning": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ],
@@ -1552,7 +1712,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "200K"
+      "contextLength": "200K",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1570,7 +1732,9 @@
           "maxContext": 200000,
           "maxOutput": 32768,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1587,7 +1751,9 @@
           "maxContext": 127072,
           "maxOutput": 32768,
           "reasoning": false,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1604,7 +1770,9 @@
           "maxContext": 128000,
           "maxOutput": 32768,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -1621,7 +1789,9 @@
           "maxContext": 128000,
           "maxOutput": 32768,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ]
@@ -1640,7 +1810,9 @@
       "vision": false,
       "jsonSchema": true,
       "reasoningEffort": false,
-      "contextLength": "8k"
+      "contextLength": "8k",
+      "imageIn": false,
+      "videoIn": false
     },
     "models": [
       {
@@ -1656,7 +1828,9 @@
           "streaming": "full",
           "maxContext": 128000,
           "maxOutput": 32768,
-          "reasoning": true
+          "reasoning": true,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ],
@@ -1677,7 +1851,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "varies"
+      "contextLength": "varies",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1695,7 +1871,9 @@
           "streaming": "full",
           "maxContext": 128000,
           "maxOutput": 32768,
-          "reasoning": true
+          "reasoning": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -1711,7 +1889,9 @@
           "streaming": "full",
           "maxContext": 1000000,
           "maxOutput": 128000,
-          "reasoning": true
+          "reasoning": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ],
@@ -1732,7 +1912,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "128k"
+      "contextLength": "128k",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1750,7 +1932,9 @@
           "streaming": "full",
           "maxContext": 262144,
           "maxOutput": 65536,
-          "reasoning": true
+          "reasoning": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ],
@@ -1770,7 +1954,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "128k"
+      "contextLength": "128k",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1788,7 +1974,9 @@
           "streaming": "full",
           "maxContext": 128000,
           "maxOutput": 32768,
-          "reasoning": true
+          "reasoning": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ],
@@ -1808,7 +1996,9 @@
       "vision": false,
       "jsonSchema": false,
       "reasoningEffort": false,
-      "contextLength": "varies"
+      "contextLength": "varies",
+      "imageIn": false,
+      "videoIn": false
     },
     "models": [
       {
@@ -1820,7 +2010,9 @@
           "streaming": "full",
           "maxContext": 8192,
           "maxOutput": 32768,
-          "reasoning": false
+          "reasoning": false,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ],
@@ -1840,7 +2032,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "varies"
+      "contextLength": "varies",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1856,7 +2050,9 @@
           "streaming": "full",
           "maxContext": 200000,
           "maxOutput": 64000,
-          "reasoning": true
+          "reasoning": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ],
@@ -1876,7 +2072,9 @@
       "vision": false,
       "jsonSchema": true,
       "reasoningEffort": false,
-      "contextLength": "varies"
+      "contextLength": "varies",
+      "imageIn": false,
+      "videoIn": false
     },
     "models": [
       {
@@ -1892,7 +2090,9 @@
           "streaming": "full",
           "maxContext": 131072,
           "maxOutput": 32768,
-          "reasoning": false
+          "reasoning": false,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ],
@@ -1904,7 +2104,7 @@
     "label": "Cline",
     "envKey": "CLINE_API_KEY",
     "defaultBaseUrl": "https://api.cline.bot/api/v1",
-    "note": "Cline API — managed multi-provider AI endpoint. Updated June 2026.",
+    "note": "Cline API â€” managed multi-provider AI endpoint. Updated June 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1912,7 +2112,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -1929,7 +2131,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -1946,7 +2150,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -1963,7 +2169,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -1980,7 +2188,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -1999,7 +2209,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -2018,7 +2230,9 @@
           "maxContext": 1050000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -2036,7 +2250,9 @@
           "maxContext": 1048576,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -2055,7 +2271,9 @@
           "maxContext": 1000000,
           "maxOutput": 64000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       }
     ],
@@ -2069,7 +2287,7 @@
     "defaultBaseUrl": "http://localhost:8787/v1",
     "defaultModel": "clew-code",
     "defaultModelVerified": true,
-    "note": "Clew Gateway — OpenAI-compatible model router. Set CLEW_GATEWAY_URL and CLEW_GATEWAY_KEY. One key to rule them all.",
+    "note": "Clew Gateway â€” OpenAI-compatible model router. Set CLEW_GATEWAY_URL and CLEW_GATEWAY_KEY. One key to rule them all.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -2077,7 +2295,9 @@
       "vision": true,
       "jsonSchema": true,
       "reasoningEffort": true,
-      "contextLength": "1M"
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
     },
     "models": [
       {
@@ -2097,7 +2317,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -2115,7 +2337,9 @@
           "maxContext": 128000,
           "maxOutput": 16000,
           "reasoning": false,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -2133,7 +2357,9 @@
           "maxContext": 128000,
           "maxOutput": 16000,
           "reasoning": false,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       },
       {
@@ -2152,7 +2378,9 @@
           "maxContext": 1000000,
           "maxOutput": 128000,
           "reasoning": true,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
         }
       },
       {
@@ -2171,7 +2399,9 @@
           "maxContext": 32768,
           "maxOutput": 8192,
           "reasoning": false,
-          "supportsSystemPrompt": true
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
         }
       }
     ]
@@ -2190,7 +2420,9 @@
       "vision": false,
       "jsonSchema": false,
       "reasoningEffort": false,
-      "contextLength": "varies"
+      "contextLength": "varies",
+      "imageIn": false,
+      "videoIn": false
     },
     "models": []
   }

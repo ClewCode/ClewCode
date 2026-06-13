@@ -1,4 +1,7 @@
+import * as React from 'react';
 import { z } from 'zod/v4';
+import { MessageResponse } from '../../components/MessageResponse.js';
+import { Box, Text } from '../../ink.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
@@ -94,6 +97,33 @@ export const PeerSendMessageTool = buildTool({
   },
   getPath() {
     return getCwd();
+  },
+  userFacingName() {
+    return 'PeerSendMessage';
+  },
+  renderToolUseMessage(input) {
+    const preview = input.message ? ` "${truncateText(input.message, 60)}"` : '';
+    return `to: ${input.peer}${preview}`;
+  },
+  renderToolResultMessage(output) {
+    if (!output.success) {
+      return React.createElement(
+        MessageResponse,
+        null,
+        React.createElement(Text, { color: 'ansi:red' }, `Failed: ${output.error}`),
+      );
+    }
+    const chunkStr = output.chunksSent ? ` (${output.chunksSent} chunks)` : '';
+    const responseStr = output.response ? ` | Response from ${output.response.fromName}: "${truncateText(output.response.text, 80)}"` : '';
+    return React.createElement(
+      MessageResponse,
+      null,
+      React.createElement(
+        Text,
+        { dimColor: true },
+        `Sent to ${output.peerHostname}${chunkStr}${responseStr}`,
+      ),
+    );
   },
   async validateInput(input: any): Promise<ValidationResult> {
     if (!input.peer || typeof input.peer !== 'string' || input.peer.length < 1) {

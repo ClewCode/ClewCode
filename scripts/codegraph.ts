@@ -14,7 +14,7 @@ import { execSync } from 'child_process'
 
 const ROOT = join(import.meta.dirname, '..')
 const SRC = join(ROOT, 'src')
-const OUT = join(ROOT, '.claude', 'CODEGRAPH.md')
+const OUT = join(ROOT, '.clew', 'CODEGRAPH.md')
 
 function rg(args: string): string {
   try {

@@ -34,6 +34,7 @@ import type {
   AgentToolProgress,
   BashProgress,
   MCPProgress,
+  ProcessPeerProgress,
   REPLToolProgress,
   SkillToolProgress,
   TaskOutputProgress,
@@ -50,6 +51,7 @@ export type {
   AgentToolProgress,
   BashProgress,
   MCPProgress,
+  ProcessPeerProgress,
   REPLToolProgress,
   SkillToolProgress,
   TaskOutputProgress,
@@ -707,7 +709,8 @@ type DefaultableToolKeys =
   | 'isDestructive'
   | 'checkPermissions'
   | 'toAutoClassifierInput'
-  | 'userFacingName';
+  | 'userFacingName'
+  | 'renderToolUseMessage';
 
 /**
  * Tool definition accepted by `buildTool`. Same shape as `Tool` but with the
@@ -754,6 +757,7 @@ const TOOL_DEFAULTS = {
     Promise.resolve({ behavior: 'allow', updatedInput: input }),
   toAutoClassifierInput: (_input?: unknown) => '',
   userFacingName: (_input?: unknown) => '',
+  renderToolUseMessage: () => '',
 };
 
 // The defaults type is the ACTUAL shape of TOOL_DEFAULTS (optional params so

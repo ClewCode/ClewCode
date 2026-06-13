@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taste — Clew Code</title>
-  <meta name="description" content="ระบบเรียนรู้ preference แบบ local-first สำหรับ Clew Code — accept/reject signals, symbolic rules, bandit optimization">
+  <title>Taste â€” Clew Code</title>
+  <meta name="description" content="à¸£à¸°à¸šà¸šà¹€à¸£à¸µà¸¢à¸™à¸£à¸¹à¹‰ preference à¹à¸šà¸š local-first à¸ªà¸³à¸«à¸£à¸±à¸š Clew Code â€” accept/reject signals, symbolic rules, bandit optimization">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,213 +18,213 @@
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <div class="content-wrap">
     <main class="content">
-      <div class="breadcrumbs"><a href="index.th.html">หน้าแรก</a><span class="sep">/</span><span>Taste</span></div>
+      <div class="breadcrumbs"><a href="index.th.html">à¸«à¸™à¹‰à¸²à¹à¸£à¸</a><span class="sep">/</span><span>Taste</span></div>
       <h1>Taste</h1>
-      <p class="section-subtitle">ระบบเรียนรู้ preference แบบ local-first — จากสัญญาณ accept/reject/edit/lint/test สู่กฎที่ปรับแต่งได้</p>
+      <p class="section-subtitle">à¸£à¸°à¸šà¸šà¹€à¸£à¸µà¸¢à¸™à¸£à¸¹à¹‰ preference à¹à¸šà¸š local-first â€” à¸ˆà¸²à¸à¸ªà¸±à¸à¸à¸²à¸“ accept/reject/edit/lint/test à¸ªà¸¹à¹ˆà¸à¸Žà¸—à¸µà¹ˆà¸›à¸£à¸±à¸šà¹à¸•à¹ˆà¸‡à¹„à¸”à¹‰</p>
 
-      <p>Taste เรียนรู้สไตล์โค้ดของคุณจากสัญญาณ accept, reject, edit, test, lint และกฎที่ผู้ใช้กำหนด มันรวมกฎสัญลักษณ์, การให้คะแนน preference เชิงความหมาย, และ contextual bandit optimization เพื่อปรับให้ Clew ตอบสนองตรงตามความต้องการของคุณ</p>
+      <p>Taste à¹€à¸£à¸µà¸¢à¸™à¸£à¸¹à¹‰à¸ªà¹„à¸•à¸¥à¹Œà¹‚à¸„à¹‰à¸”à¸‚à¸­à¸‡à¸„à¸¸à¸“à¸ˆà¸²à¸à¸ªà¸±à¸à¸à¸²à¸“ accept, reject, edit, test, lint à¹à¸¥à¸°à¸à¸Žà¸—à¸µà¹ˆà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸à¸³à¸«à¸™à¸” à¸¡à¸±à¸™à¸£à¸§à¸¡à¸à¸Žà¸ªà¸±à¸à¸¥à¸±à¸à¸©à¸“à¹Œ, à¸à¸²à¸£à¹ƒà¸«à¹‰à¸„à¸°à¹à¸™à¸™ preference à¹€à¸Šà¸´à¸‡à¸„à¸§à¸²à¸¡à¸«à¸¡à¸²à¸¢, à¹à¸¥à¸° contextual bandit optimization à¹€à¸žà¸·à¹ˆà¸­à¸›à¸£à¸±à¸šà¹ƒà¸«à¹‰ Clew à¸•à¸­à¸šà¸ªà¸™à¸­à¸‡à¸•à¸£à¸‡à¸•à¸²à¸¡à¸„à¸§à¸²à¸¡à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¸‚à¸­à¸‡à¸„à¸¸à¸“</p>
 
-      <p>มัน<strong>ไม่ได้</strong> fine-tune LLM — การเรียนรู้ทั้งหมดเป็น local, online, และ preference-based</p>
+      <p>à¸¡à¸±à¸™<strong>à¹„à¸¡à¹ˆà¹„à¸”à¹‰</strong> fine-tune LLM â€” à¸à¸²à¸£à¹€à¸£à¸µà¸¢à¸™à¸£à¸¹à¹‰à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¹€à¸›à¹‡à¸™ local, online, à¹à¸¥à¸° preference-based</p>
 
-      <h2>เทคนิคและหลักการ</h2>
+      <h2>à¹€à¸—à¸„à¸™à¸´à¸„à¹à¸¥à¸°à¸«à¸¥à¸±à¸à¸à¸²à¸£</h2>
 
-      <h3>เหตุใดต้องใช้ Preference Learning แทนที่จะใช้ Prompt เพียงอย่างเดียว?</h3>
-      <p>CLAUDE.md และ system prompt กำหนดกฎแบบ static — ใช้ได้ดีสำหรับกฎที่คุณรู้ล่วงหน้า แต่<strong>ไม่สามารถปรับตัวตาม feedback จริง</strong>ได้:</p>
+      <h3>à¹€à¸«à¸•à¸¸à¹ƒà¸”à¸•à¹‰à¸­à¸‡à¹ƒà¸Šà¹‰ Preference Learning à¹à¸—à¸™à¸—à¸µà¹ˆà¸ˆà¸°à¹ƒà¸Šà¹‰ Prompt à¹€à¸žà¸µà¸¢à¸‡à¸­à¸¢à¹ˆà¸²à¸‡à¹€à¸”à¸µà¸¢à¸§?</h3>
+      <p>CLAUDE.md à¹à¸¥à¸° system prompt à¸à¸³à¸«à¸™à¸”à¸à¸Žà¹à¸šà¸š static â€” à¹ƒà¸Šà¹‰à¹„à¸”à¹‰à¸”à¸µà¸ªà¸³à¸«à¸£à¸±à¸šà¸à¸Žà¸—à¸µà¹ˆà¸„à¸¸à¸“à¸£à¸¹à¹‰à¸¥à¹ˆà¸§à¸‡à¸«à¸™à¹‰à¸² à¹à¸•à¹ˆ<strong>à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸›à¸£à¸±à¸šà¸•à¸±à¸§à¸•à¸²à¸¡ feedback à¸ˆà¸£à¸´à¸‡</strong>à¹„à¸”à¹‰:</p>
       <ul>
-        <li><strong>คุณไม่รู้ทุกกฎล่วงหน้า</strong> — บางทีคุณอาจไม่รู้ด้วยซ้ำว่าตัวเองชอบ pattern แบบไหนจนกว่าจะเห็นผลลัพธ์</li>
-        <li><strong>กฎเปลี่ยนตามโปรเจค</strong> — React project กับ Python library มีสไตล์ต่างกันโดยสิ้นเชิง</li>
-        <li><strong>มนุษย์สื่อสาร preference ได้ไม่สมบูรณ์</strong> — "เขียนโค้ดให้ดี" ไม่ใช่ instruction ที่ชัดเจนพอสำหรับ LLM</li>
+        <li><strong>à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¸£à¸¹à¹‰à¸—à¸¸à¸à¸à¸Žà¸¥à¹ˆà¸§à¸‡à¸«à¸™à¹‰à¸²</strong> â€” à¸šà¸²à¸‡à¸—à¸µà¸„à¸¸à¸“à¸­à¸²à¸ˆà¹„à¸¡à¹ˆà¸£à¸¹à¹‰à¸”à¹‰à¸§à¸¢à¸‹à¹‰à¸³à¸§à¹ˆà¸²à¸•à¸±à¸§à¹€à¸­à¸‡à¸Šà¸­à¸š pattern à¹à¸šà¸šà¹„à¸«à¸™à¸ˆà¸™à¸à¸§à¹ˆà¸²à¸ˆà¸°à¹€à¸«à¹‡à¸™à¸œà¸¥à¸¥à¸±à¸žà¸˜à¹Œ</li>
+        <li><strong>à¸à¸Žà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸•à¸²à¸¡à¹‚à¸›à¸£à¹€à¸ˆà¸„</strong> â€” React project à¸à¸±à¸š Python library à¸¡à¸µà¸ªà¹„à¸•à¸¥à¹Œà¸•à¹ˆà¸²à¸‡à¸à¸±à¸™à¹‚à¸”à¸¢à¸ªà¸´à¹‰à¸™à¹€à¸Šà¸´à¸‡</li>
+        <li><strong>à¸¡à¸™à¸¸à¸©à¸¢à¹Œà¸ªà¸·à¹ˆà¸­à¸ªà¸²à¸£ preference à¹„à¸”à¹‰à¹„à¸¡à¹ˆà¸ªà¸¡à¸šà¸¹à¸£à¸“à¹Œ</strong> â€” "à¹€à¸‚à¸µà¸¢à¸™à¹‚à¸„à¹‰à¸”à¹ƒà¸«à¹‰à¸”à¸µ" à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ instruction à¸—à¸µà¹ˆà¸Šà¸±à¸”à¹€à¸ˆà¸™à¸žà¸­à¸ªà¸³à¸«à¸£à¸±à¸š LLM</li>
       </ul>
-      <p>Taste เรียนรู้จาก<em>พฤติกรรม</em>ของคุณแทน — ถ้าคุณ accept output ที่ใช้ <code>const</code> แทน <code>let</code> บ่อยๆ มันจะเรียนรู้ ถ้าคุณ reject หรือแก้ไข มันจะลดน้ำหนัก</p>
+      <p>Taste à¹€à¸£à¸µà¸¢à¸™à¸£à¸¹à¹‰à¸ˆà¸²à¸<em>à¸žà¸¤à¸•à¸´à¸à¸£à¸£à¸¡</em>à¸‚à¸­à¸‡à¸„à¸¸à¸“à¹à¸—à¸™ â€” à¸–à¹‰à¸²à¸„à¸¸à¸“ accept output à¸—à¸µà¹ˆà¹ƒà¸Šà¹‰ <code>const</code> à¹à¸—à¸™ <code>let</code> à¸šà¹ˆà¸­à¸¢à¹† à¸¡à¸±à¸™à¸ˆà¸°à¹€à¸£à¸µà¸¢à¸™à¸£à¸¹à¹‰ à¸–à¹‰à¸²à¸„à¸¸à¸“ reject à¸«à¸£à¸·à¸­à¹à¸à¹‰à¹„à¸‚ à¸¡à¸±à¸™à¸ˆà¸°à¸¥à¸”à¸™à¹‰à¸³à¸«à¸™à¸±à¸</p>
 
-      <h3>Online Feedback Loop — ไม่ใช่ Batch Training</h3>
-      <p>Taste ใช้<strong>online learning</strong> — เรียนรู้ทันทีจากทุก interaction:</p>
-      <pre><code>User interaction ──► Signal collector ──► Reward model (+1.0 / -1.0 / +0.4)
-                                          │
-                                          ▼
+      <h3>Online Feedback Loop â€” à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ Batch Training</h3>
+      <p>Taste à¹ƒà¸Šà¹‰<strong>online learning</strong> â€” à¹€à¸£à¸µà¸¢à¸™à¸£à¸¹à¹‰à¸—à¸±à¸™à¸—à¸µà¸ˆà¸²à¸à¸—à¸¸à¸ interaction:</p>
+      <pre><code>User interaction â”€â”€â–º Signal collector â”€â”€â–º Reward model (+1.0 / -1.0 / +0.4)
+                                          â”‚
+                                          â–¼
                                    Rule confidence update
-                                          │
-                          ┌───────────────┼───────────────┐
-                          ▼               ▼               ▼
-                    Confidence ↑    Confidence ↓    Decay if unused
+                                          â”‚
+                          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                          â–¼               â–¼               â–¼
+                    Confidence â†‘    Confidence â†“    Decay if unused
                     (accept/       (reject/edit)    (30 day half-life)
                      test pass)</code></pre>
 
       <h3>Multi-Signal Reward Model</h3>
-      <p>ไม่ใช่แค่ accept/reject — ใช้หลายสัญญาณประกอบกัน:</p>
+      <p>à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¹à¸„à¹ˆ accept/reject â€” à¹ƒà¸Šà¹‰à¸«à¸¥à¸²à¸¢à¸ªà¸±à¸à¸à¸²à¸“à¸›à¸£à¸°à¸à¸­à¸šà¸à¸±à¸™:</p>
       <div class="table-wrap">
         <table>
-          <tr><th>สัญญาณ</th><th>Reward</th><th>เหตุผล</th></tr>
-          <tr><td>Accept</td><td>+1.0</td><td>ผู้ใช้พอใจ — สัญญาณบวกแรงที่สุด</td></tr>
-          <tr><td>Reject</td><td>-1.0</td><td>ผู้ใช้ปฏิเสธ — สัญญาณลบแรงที่สุด</td></tr>
-          <tr><td>Edit (small)</td><td>-0.3</td><td>แก้ไขเล็กน้อย — เกือบพอใจ</td></tr>
-          <tr><td>Edit (large)</td><td>-0.7</td><td>แก้ไขเยอะ — output ห่างจากที่ต้องการ</td></tr>
-          <tr><td>Test pass</td><td>+0.4</td><td>โค้ดถูกต้องทางเทคนิค</td></tr>
-          <tr><td>Test fail</td><td>-0.6</td><td>โค้ดมี bug</td></tr>
-          <tr><td>Lint pass</td><td>+0.2</td><td>ตรงตาม style convention</td></tr>
-          <tr><td>Tool result OK</td><td>+0.3</td><td>เลือกใช้ tool ถูกต้อง</td></tr>
+          <tr><th>à¸ªà¸±à¸à¸à¸²à¸“</th><th>Reward</th><th>à¹€à¸«à¸•à¸¸à¸œà¸¥</th></tr>
+          <tr><td>Accept</td><td>+1.0</td><td>à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸žà¸­à¹ƒà¸ˆ â€” à¸ªà¸±à¸à¸à¸²à¸“à¸šà¸§à¸à¹à¸£à¸‡à¸—à¸µà¹ˆà¸ªà¸¸à¸”</td></tr>
+          <tr><td>Reject</td><td>-1.0</td><td>à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸›à¸à¸´à¹€à¸ªà¸˜ â€” à¸ªà¸±à¸à¸à¸²à¸“à¸¥à¸šà¹à¸£à¸‡à¸—à¸µà¹ˆà¸ªà¸¸à¸”</td></tr>
+          <tr><td>Edit (small)</td><td>-0.3</td><td>à¹à¸à¹‰à¹„à¸‚à¹€à¸¥à¹‡à¸à¸™à¹‰à¸­à¸¢ â€” à¹€à¸à¸·à¸­à¸šà¸žà¸­à¹ƒà¸ˆ</td></tr>
+          <tr><td>Edit (large)</td><td>-0.7</td><td>à¹à¸à¹‰à¹„à¸‚à¹€à¸¢à¸­à¸° â€” output à¸«à¹ˆà¸²à¸‡à¸ˆà¸²à¸à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¸à¸²à¸£</td></tr>
+          <tr><td>Test pass</td><td>+0.4</td><td>à¹‚à¸„à¹‰à¸”à¸–à¸¹à¸à¸•à¹‰à¸­à¸‡à¸—à¸²à¸‡à¹€à¸—à¸„à¸™à¸´à¸„</td></tr>
+          <tr><td>Test fail</td><td>-0.6</td><td>à¹‚à¸„à¹‰à¸”à¸¡à¸µ bug</td></tr>
+          <tr><td>Lint pass</td><td>+0.2</td><td>à¸•à¸£à¸‡à¸•à¸²à¸¡ style convention</td></tr>
+          <tr><td>Tool result OK</td><td>+0.3</td><td>à¹€à¸¥à¸·à¸­à¸à¹ƒà¸Šà¹‰ tool à¸–à¸¹à¸à¸•à¹‰à¸­à¸‡</td></tr>
         </table>
       </div>
 
-      <h3>Contextual Bandit — เลือกกลยุทธ์ตามบริบท</h3>
-      <p>ไม่ใช่ทุกงานต้องการสไตล์เดียวกัน — refactor เน้น architecture, bug fix เน้น safety:</p>
+      <h3>Contextual Bandit â€” à¹€à¸¥à¸·à¸­à¸à¸à¸¥à¸¢à¸¸à¸—à¸˜à¹Œà¸•à¸²à¸¡à¸šà¸£à¸´à¸šà¸—</h3>
+      <p>à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¸—à¸¸à¸à¸‡à¸²à¸™à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¸ªà¹„à¸•à¸¥à¹Œà¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸™ â€” refactor à¹€à¸™à¹‰à¸™ architecture, bug fix à¹€à¸™à¹‰à¸™ safety:</p>
       <ul>
-        <li><strong>ε-greedy bandit 6 แขน</strong> — minimal, strict_style, architecture_first, test_first, safety_first, refactor_heavy</li>
-        <li><strong>Context features</strong> — วิเคราะห์ task context แล้วเลือกแขนที่ให้ reward สูงสุดในอดีต</li>
-        <li><strong>Exploration vs exploitation</strong> — ε โอกาสสุ่มลองแขนใหม่ (explore), 1-ε เลือกที่รู้ว่าดี (exploit) — default ε = 0.1</li>
-        <li><strong>ทำไมต้อง bandit?</strong> — กฎ "use const" อาจขัดกับ "minimal changes" ในบางบริบท Bandit ช่วย balance หลาย objective</li>
+        <li><strong>Îµ-greedy bandit 6 à¹à¸‚à¸™</strong> â€” minimal, strict_style, architecture_first, test_first, safety_first, refactor_heavy</li>
+        <li><strong>Context features</strong> â€” à¸§à¸´à¹€à¸„à¸£à¸²à¸°à¸«à¹Œ task context à¹à¸¥à¹‰à¸§à¹€à¸¥à¸·à¸­à¸à¹à¸‚à¸™à¸—à¸µà¹ˆà¹ƒà¸«à¹‰ reward à¸ªà¸¹à¸‡à¸ªà¸¸à¸”à¹ƒà¸™à¸­à¸”à¸µà¸•</li>
+        <li><strong>Exploration vs exploitation</strong> â€” Îµ à¹‚à¸­à¸à¸²à¸ªà¸ªà¸¸à¹ˆà¸¡à¸¥à¸­à¸‡à¹à¸‚à¸™à¹ƒà¸«à¸¡à¹ˆ (explore), 1-Îµ à¹€à¸¥à¸·à¸­à¸à¸—à¸µà¹ˆà¸£à¸¹à¹‰à¸§à¹ˆà¸²à¸”à¸µ (exploit) â€” default Îµ = 0.1</li>
+        <li><strong>à¸—à¸³à¹„à¸¡à¸•à¹‰à¸­à¸‡ bandit?</strong> â€” à¸à¸Ž "use const" à¸­à¸²à¸ˆà¸‚à¸±à¸”à¸à¸±à¸š "minimal changes" à¹ƒà¸™à¸šà¸²à¸‡à¸šà¸£à¸´à¸šà¸— Bandit à¸Šà¹ˆà¸§à¸¢ balance à¸«à¸¥à¸²à¸¢ objective</li>
       </ul>
 
       <h3>Three-Tier Rule Engine</h3>
-      <p>ไม่ใช่ทุกกฎที่สำคัญเท่ากัน — แบ่งเป็น 3 ระดับตาม confidence:</p>
+      <p>à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¸—à¸¸à¸à¸à¸Žà¸—à¸µà¹ˆà¸ªà¸³à¸„à¸±à¸à¹€à¸—à¹ˆà¸²à¸à¸±à¸™ â€” à¹à¸šà¹ˆà¸‡à¹€à¸›à¹‡à¸™ 3 à¸£à¸°à¸”à¸±à¸šà¸•à¸²à¸¡ confidence:</p>
       <ul>
-        <li><strong>Tier 1 — Symbolic (≥ 0.85)</strong> — <em>block</em> การแก้ไขที่ไม่ตรง: เช่น "ห้ามใช้ <code>any</code>" → block + แจ้งเหตุผล</li>
-        <li><strong>Tier 2 — Prompt Injection (≥ 0.55)</strong> — ใส่ใน system prompt เป็น <code>&lt;clew_taste&gt;</code> block (max 8 rules)</li>
-        <li><strong>Tier 3 — Scored (&lt; 0.55)</strong> — ใช้ neural scorer (Jaccard/TF-IDF) เทียบ relevance แต่ไม่ inject</li>
+        <li><strong>Tier 1 â€” Symbolic (â‰¥ 0.85)</strong> â€” <em>block</em> à¸à¸²à¸£à¹à¸à¹‰à¹„à¸‚à¸—à¸µà¹ˆà¹„à¸¡à¹ˆà¸•à¸£à¸‡: à¹€à¸Šà¹ˆà¸™ "à¸«à¹‰à¸²à¸¡à¹ƒà¸Šà¹‰ <code>any</code>" â†’ block + à¹à¸ˆà¹‰à¸‡à¹€à¸«à¸•à¸¸à¸œà¸¥</li>
+        <li><strong>Tier 2 â€” Prompt Injection (â‰¥ 0.55)</strong> â€” à¹ƒà¸ªà¹ˆà¹ƒà¸™ system prompt à¹€à¸›à¹‡à¸™ <code>&lt;clew_taste&gt;</code> block (max 8 rules)</li>
+        <li><strong>Tier 3 â€” Scored (&lt; 0.55)</strong> â€” à¹ƒà¸Šà¹‰ neural scorer (Jaccard/TF-IDF) à¹€à¸—à¸µà¸¢à¸š relevance à¹à¸•à¹ˆà¹„à¸¡à¹ˆ inject</li>
       </ul>
 
-      <h3>Auto-Learn — AI วิเคราะห์ Codebase</h3>
-      <p><code>TasteCodebaseAnalyzer</code> อ่าน .editorconfig, biome.json, tsconfig.json, สุ่ม 20 source files, git log 50 commits → ส่งให้ fast model วิเคราะห์ → หา patterns → เสนอเป็น suggestion ให้ผู้ใช้ accept/reject</p>
+      <h3>Auto-Learn â€” AI à¸§à¸´à¹€à¸„à¸£à¸²à¸°à¸«à¹Œ Codebase</h3>
+      <p><code>TasteCodebaseAnalyzer</code> à¸­à¹ˆà¸²à¸™ .editorconfig, biome.json, tsconfig.json, à¸ªà¸¸à¹ˆà¸¡ 20 source files, git log 50 commits â†’ à¸ªà¹ˆà¸‡à¹ƒà¸«à¹‰ fast model à¸§à¸´à¹€à¸„à¸£à¸²à¸°à¸«à¹Œ â†’ à¸«à¸² patterns â†’ à¹€à¸ªà¸™à¸­à¹€à¸›à¹‡à¸™ suggestion à¹ƒà¸«à¹‰à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰ accept/reject</p>
 
-      <h3>Decay — ป้องกัน Stale Rules</h3>
+      <h3>Decay â€” à¸›à¹‰à¸­à¸‡à¸à¸±à¸™ Stale Rules</h3>
       <ul>
-        <li><strong>Half-life decay</strong> — confidence ลดลงครึ่งทุก 30 วันถ้าไม่ใช้</li>
-        <li><strong>Cooldown</strong> — หลัง reject → cooldown 30 นาทีก่อนเสนอใหม่</li>
-        <li><strong>ทำไม?</strong> — โปรเจคเปลี่ยน, สไตล์ทีมเปลี่ยน, toolchain upgrade — กฎเก่าอาจไม่เกี่ยวข้องแล้ว</li>
+        <li><strong>Half-life decay</strong> â€” confidence à¸¥à¸”à¸¥à¸‡à¸„à¸£à¸¶à¹ˆà¸‡à¸—à¸¸à¸ 30 à¸§à¸±à¸™à¸–à¹‰à¸²à¹„à¸¡à¹ˆà¹ƒà¸Šà¹‰</li>
+        <li><strong>Cooldown</strong> â€” à¸«à¸¥à¸±à¸‡ reject â†’ cooldown 30 à¸™à¸²à¸—à¸µà¸à¹ˆà¸­à¸™à¹€à¸ªà¸™à¸­à¹ƒà¸«à¸¡à¹ˆ</li>
+        <li><strong>à¸—à¸³à¹„à¸¡?</strong> â€” à¹‚à¸›à¸£à¹€à¸ˆà¸„à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™, à¸ªà¹„à¸•à¸¥à¹Œà¸—à¸µà¸¡à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™, toolchain upgrade â€” à¸à¸Žà¹€à¸à¹ˆà¸²à¸­à¸²à¸ˆà¹„à¸¡à¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡à¹à¸¥à¹‰à¸§</li>
       </ul>
 
       <h3>Privacy-First</h3>
-      <p>ทุกอย่าง local — ไม่ส่งข้อมูลไป cloud, event log เป็น append-only JSONL, export/import เกิดเมื่อผู้ใช้สั่งเท่านั้น</p>
+      <p>à¸—à¸¸à¸à¸­à¸¢à¹ˆà¸²à¸‡ local â€” à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹„à¸› cloud, event log à¹€à¸›à¹‡à¸™ append-only JSONL, export/import à¹€à¸à¸´à¸”à¹€à¸¡à¸·à¹ˆà¸­à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸ªà¸±à¹ˆà¸‡à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™</p>
 
-      <h2>สิ่งที่ระบบเรียนรู้</h2>
+      <h2>à¸ªà¸´à¹ˆà¸‡à¸—à¸µà¹ˆà¸£à¸°à¸šà¸šà¹€à¸£à¸µà¸¢à¸™à¸£à¸¹à¹‰</h2>
       <ul>
-        <li><strong>Code style</strong> — formatting, naming conventions, preferred patterns</li>
-        <li><strong>Architecture</strong> — module structure, dependency direction, layering</li>
-        <li><strong>Tooling</strong> — preferred build tools, linters, test frameworks</li>
-        <li><strong>Testing</strong> — test style, coverage expectations, mocking patterns</li>
-        <li><strong>Naming</strong> — variable, function, and class naming conventions</li>
-        <li><strong>Security</strong> — safe patterns vs unsafe patterns</li>
-        <li><strong>Performance</strong> — efficient algorithms, caching, resource management</li>
-        <li><strong>UI patterns</strong> — component structure, state management, styling approach</li>
-        <li><strong>Workflow</strong> — commit style, review preferences, deployment habits</li>
+        <li><strong>Code style</strong> â€” formatting, naming conventions, preferred patterns</li>
+        <li><strong>Architecture</strong> â€” module structure, dependency direction, layering</li>
+        <li><strong>Tooling</strong> â€” preferred build tools, linters, test frameworks</li>
+        <li><strong>Testing</strong> â€” test style, coverage expectations, mocking patterns</li>
+        <li><strong>Naming</strong> â€” variable, function, and class naming conventions</li>
+        <li><strong>Security</strong> â€” safe patterns vs unsafe patterns</li>
+        <li><strong>Performance</strong> â€” efficient algorithms, caching, resource management</li>
+        <li><strong>UI patterns</strong> â€” component structure, state management, styling approach</li>
+        <li><strong>Workflow</strong> â€” commit style, review preferences, deployment habits</li>
       </ul>
 
-      <h2>สิ่งที่ Taste ไม่ทำ</h2>
+      <h2>à¸ªà¸´à¹ˆà¸‡à¸—à¸µà¹ˆ Taste à¹„à¸¡à¹ˆà¸—à¸³</h2>
       <ul>
-        <li>ไม่ fine-tune หรือแก้ไข base LLM</li>
-        <li>ไม่ส่งข้อมูลไปยัง remote services</li>
-        <li>ไม่ block การแก้ไขโดยไม่แสดงเหตุผล</li>
-        <li>ไม่แทนที่ memory, skills, หรือ CLAUDE.md</li>
+        <li>à¹„à¸¡à¹ˆ fine-tune à¸«à¸£à¸·à¸­à¹à¸à¹‰à¹„à¸‚ base LLM</li>
+        <li>à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹„à¸›à¸¢à¸±à¸‡ remote services</li>
+        <li>à¹„à¸¡à¹ˆ block à¸à¸²à¸£à¹à¸à¹‰à¹„à¸‚à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¹à¸ªà¸”à¸‡à¹€à¸«à¸•à¸¸à¸œà¸¥</li>
+        <li>à¹„à¸¡à¹ˆà¹à¸—à¸™à¸—à¸µà¹ˆ memory, skills, à¸«à¸£à¸·à¸­ CLAUDE.md</li>
       </ul>
 
-      <h2>สถาปัตยกรรม</h2>
-      <pre><code> ╔══════════════════════════════════════════════════════════════════════════════╗
- ║                        TASTE — PREFERENCE LEARNING RUNTIME                   ║
- ╚══════════════════════════════════════════════════════════════════════════════╝
+      <h2>à¸ªà¸–à¸²à¸›à¸±à¸•à¸¢à¸à¸£à¸£à¸¡</h2>
+      <pre><code> â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+ â•‘                        TASTE â€” PREFERENCE LEARNING RUNTIME                   â•‘
+ â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-                          ┌──────────────────────────┐
-                          │     USER INTERACTION      │
-                          │  accept / reject / edit   │
-                          │  test pass / lint signal  │
-                          └────────────┬─────────────┘
-                                       │
-         ┌─────────────────────────────┼─────────────────────────────┐
-         │                             │                             │
-         ▼                             ▼                             ▼
- ┌───────────────┐           ┌───────────────┐           ┌───────────────┐
- │ AcceptReject  │           │ DiffSignal    │           │EditDistance   │
- │ Tracker       │           │ Extractor     │           │ Reward        │
- └───────┬───────┘           └───────┬───────┘           └───────┬───────┘
-         │                          │                           │
-         └──────────────────────────┼───────────────────────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │  TasteSignalCollector │
-                         │  (unified event hub)  │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │   TasteRewardModel   │
-                         │  signal → reward map  │
-                         └──────────┬──────────┘
-                                    │
-                    ┌───────────────┼───────────────┐
-                    │               │               │
-                    ▼               ▼               ▼
-          ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-          │TasteBandit   │ │AutoLearn     │ │TasteDecay    │
-          │ε-greedy (6   │ │Engine        │ │confidence ↓  │
-          │strategy arms)│ │pattern→rule  │ │over time     │
-          └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
-                 │                │                │
-                 │    ┌───────────┘                │
-                 │    │                            │
-                 ▼    ▼                            │
-          ┌──────────────────┐                     │
-          │ TasteRuntime     │◄────────────────────┘
-          │ (orchestrator)   │
-          └────────┬─────────┘
-                   │
-     ┌─────────────┼─────────────┬──────────────────┐
-     │             │             │                  │
-     ▼             ▼             ▼                  ▼
-┌─────────┐ ┌──────────┐ ┌──────────────┐ ┌────────────────┐
-│Symbolic │ │Neural    │ │PromptInjector│ │ TasteEventLog  │
-│Engine   │ │Scorer    │ │injects       │ │ append-only    │
-│compile  │ │Jaccard/  │ │&lt;clew_taste&gt; │ │ JSONL          │
-│rules→   │ │TF-IDF    │ │block (max 8  │ │                │
-│check    │ │relevance │ │rules)        │ │                │
-└────┬────┘ └────┬─────┘ └──────┬───────┘ └────────────────┘
-     │           │              │
-     ▼           │              ▼
-┌─────────┐      │     ┌────────────────┐
-│validate │      │     │ SYSTEM PROMPT  │
-│Edit()   │      └────►│ (taste block)  │
-│block if │             │                │
-│conf ≥   │             │ → AI adapts    │
-│0.85     │             │   output style │
-└─────────┘             └────────────────┘
+                          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                          â”‚     USER INTERACTION      â”‚
+                          â”‚  accept / reject / edit   â”‚
+                          â”‚  test pass / lint signal  â”‚
+                          â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                       â”‚
+         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+         â”‚                             â”‚                             â”‚
+         â–¼                             â–¼                             â–¼
+ â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”           â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”           â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+ â”‚ AcceptReject  â”‚           â”‚ DiffSignal    â”‚           â”‚EditDistance   â”‚
+ â”‚ Tracker       â”‚           â”‚ Extractor     â”‚           â”‚ Reward        â”‚
+ â””â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜           â””â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜           â””â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜
+         â”‚                          â”‚                           â”‚
+         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                    â”‚
+                                    â–¼
+                         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                         â”‚  TasteSignalCollector â”‚
+                         â”‚  (unified event hub)  â”‚
+                         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                    â”‚
+                                    â–¼
+                         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                         â”‚   TasteRewardModel   â”‚
+                         â”‚  signal â†’ reward map  â”‚
+                         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                    â”‚
+                    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                    â”‚               â”‚               â”‚
+                    â–¼               â–¼               â–¼
+          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+          â”‚TasteBandit   â”‚ â”‚AutoLearn     â”‚ â”‚TasteDecay    â”‚
+          â”‚Îµ-greedy (6   â”‚ â”‚Engine        â”‚ â”‚confidence â†“  â”‚
+          â”‚strategy arms)â”‚ â”‚patternâ†’rule  â”‚ â”‚over time     â”‚
+          â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜
+                 â”‚                â”‚                â”‚
+                 â”‚    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                â”‚
+                 â”‚    â”‚                            â”‚
+                 â–¼    â–¼                            â”‚
+          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                     â”‚
+          â”‚ TasteRuntime     â”‚â—„â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+          â”‚ (orchestrator)   â”‚
+          â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                   â”‚
+     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+     â”‚             â”‚             â”‚                  â”‚
+     â–¼             â–¼             â–¼                  â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚Symbolic â”‚ â”‚Neural    â”‚ â”‚PromptInjectorâ”‚ â”‚ TasteEventLog  â”‚
+â”‚Engine   â”‚ â”‚Scorer    â”‚ â”‚injects       â”‚ â”‚ append-only    â”‚
+â”‚compile  â”‚ â”‚Jaccard/  â”‚ â”‚&lt;clew_taste&gt; â”‚ â”‚ JSONL          â”‚
+â”‚rulesâ†’   â”‚ â”‚TF-IDF    â”‚ â”‚block (max 8  â”‚ â”‚                â”‚
+â”‚check    â”‚ â”‚relevance â”‚ â”‚rules)        â”‚ â”‚                â”‚
+â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+     â”‚           â”‚              â”‚
+     â–¼           â”‚              â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”      â”‚     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚validate â”‚      â”‚     â”‚ SYSTEM PROMPT  â”‚
+â”‚Edit()   â”‚      â””â”€â”€â”€â”€â–ºâ”‚ (taste block)  â”‚
+â”‚block if â”‚             â”‚                â”‚
+â”‚conf â‰¥   â”‚             â”‚ â†’ AI adapts    â”‚
+â”‚0.85     â”‚             â”‚   output style â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜             â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
 
- ═══ CODEBASE AUTO-LEARN ═══
+ â•â•â• CODEBASE AUTO-LEARN â•â•â•
 
-   Codebase ──► TasteCodebaseAnalyzer ──► PatternDetector ──► AutoLearnEngine
-                 (อ่าน conventions)        (ค้นหา patterns)    (สร้าง rules)
-                                                                    │
-                                                                    ▼
+   Codebase â”€â”€â–º TasteCodebaseAnalyzer â”€â”€â–º PatternDetector â”€â”€â–º AutoLearnEngine
+                 (à¸­à¹ˆà¸²à¸™ conventions)        (à¸„à¹‰à¸™à¸«à¸² patterns)    (à¸ªà¸£à¹‰à¸²à¸‡ rules)
+                                                                    â”‚
+                                                                    â–¼
                                                             TasteProfileStore
                                                             .clew/taste/profile.json</code></pre>
 
-      <h2>คำสั่ง</h2>
+      <h2>à¸„à¸³à¸ªà¸±à¹ˆà¸‡</h2>
       <div class="table-wrap">
         <table>
-          <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
-          <tr><td><code>/taste</code></td><td>เปิดเมนู interactive</td></tr>
-          <tr><td><code>/taste status</code></td><td>แสดงสถานะ</td></tr>
-          <tr><td><code>/taste profile</code></td><td>แสดง rules ทั้งหมด</td></tr>
-          <tr><td><code>/taste learn &lt;rule&gt;</code></td><td>เพิ่ม rule เอง</td></tr>
-          <tr><td><code>/taste forget &lt;id&gt;</code></td><td>ลบ rule</td></tr>
-          <tr><td><code>/taste suggest</code></td><td>ดูข้อเสนอจาก auto-learn</td></tr>
-          <tr><td><code>/taste accept &lt;id&gt;</code></td><td>ยอมรับ suggestion</td></tr>
-          <tr><td><code>/taste reject &lt;id&gt;</code></td><td>ปฏิเสธ suggestion</td></tr>
+          <tr><th>à¸„à¸³à¸ªà¸±à¹ˆà¸‡</th><th>à¸„à¸³à¸­à¸˜à¸´à¸šà¸²à¸¢</th></tr>
+          <tr><td><code>/taste</code></td><td>à¹€à¸›à¸´à¸”à¹€à¸¡à¸™à¸¹ interactive</td></tr>
+          <tr><td><code>/taste status</code></td><td>à¹à¸ªà¸”à¸‡à¸ªà¸–à¸²à¸™à¸°</td></tr>
+          <tr><td><code>/taste profile</code></td><td>à¹à¸ªà¸”à¸‡ rules à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”</td></tr>
+          <tr><td><code>/taste learn &lt;rule&gt;</code></td><td>à¹€à¸žà¸´à¹ˆà¸¡ rule à¹€à¸­à¸‡</td></tr>
+          <tr><td><code>/taste forget &lt;id&gt;</code></td><td>à¸¥à¸š rule</td></tr>
+          <tr><td><code>/taste suggest</code></td><td>à¸”à¸¹à¸‚à¹‰à¸­à¹€à¸ªà¸™à¸­à¸ˆà¸²à¸ auto-learn</td></tr>
+          <tr><td><code>/taste accept &lt;id&gt;</code></td><td>à¸¢à¸­à¸¡à¸£à¸±à¸š suggestion</td></tr>
+          <tr><td><code>/taste reject &lt;id&gt;</code></td><td>à¸›à¸à¸´à¹€à¸ªà¸˜ suggestion</td></tr>
         </table>
       </div>
 
-      <h2>ความเป็นส่วนตัว</h2>
+      <h2>à¸„à¸§à¸²à¸¡à¹€à¸›à¹‡à¸™à¸ªà¹ˆà¸§à¸™à¸•à¸±à¸§</h2>
       <ul>
-        <li>ข้อมูล taste ทั้งหมดอยู่ local</li>
-        <li>โปรไฟล์และ event log ใน <code>.clew/taste/</code> หรือ <code>~/.clew/taste/</code></li>
-        <li>ไม่ส่งข้อมูลไป cloud หรือ training</li>
-        <li>Export/import เกิดเมื่อผู้ใช้สั่งเท่านั้น</li>
+        <li>à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ taste à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¸­à¸¢à¸¹à¹ˆ local</li>
+        <li>à¹‚à¸›à¸£à¹„à¸Ÿà¸¥à¹Œà¹à¸¥à¸° event log à¹ƒà¸™ <code>.clew/taste/</code> à¸«à¸£à¸·à¸­ <code>~/.clew/taste/</code></li>
+        <li>à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹„à¸› cloud à¸«à¸£à¸·à¸­ training</li>
+        <li>Export/import à¹€à¸à¸´à¸”à¹€à¸¡à¸·à¹ˆà¸­à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸ªà¸±à¹ˆà¸‡à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™</li>
       </ul>
 
       <footer class="footer">
-        <span>Clew Code — Open Source</span>
+        <span>Clew Code â€” Open Source</span>
         <div class="footer-links">
-          <a href="https://github.com/JonusNattapong/ClewCode">GitHub</a>
-          <a href="https://github.com/JonusNattapong/ClewCode/issues">Issues</a>
+          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
         </div>
       </footer>
     </main>
@@ -234,3 +234,4 @@
 <script src="js/main.js"></script>
 </body>
 </html>
+

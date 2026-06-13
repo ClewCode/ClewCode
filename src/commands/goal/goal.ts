@@ -7,6 +7,7 @@ import {
   getLastAchieved,
   linkWorkflowToActiveGoal,
   setFullGoalState,
+  blockGoal,
 } from '../../utils/sessionGoalState.js';
 import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
 
@@ -37,6 +38,7 @@ import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
  */
 
 const CLEAR_VERBS = new Set(['clear', 'stop', 'off', 'reset', 'none', 'cancel']);
+const UNBLOCK_VERBS = new Set(['unblock', 'resume', 'continue']);
 
 const WARN_THRESHOLD = 0.8;
 
@@ -58,6 +60,31 @@ function formatElapsed(ms: number): string {
   return `${seconds}s`;
 }
 
+function renderBlockedStatus(state: AppStateSnapshot, goal: GoalState): string {
+  const now = Date.now();
+  const totalPausedMs = goal.totalPausedMs ?? 0;
+  const rawElapsed = state.sessionGoalStartTime ? now - state.sessionGoalStartTime : 0;
+  const activeElapsed = Math.max(0, rawElapsed - totalPausedMs);
+  const turns = state.sessionGoalTurnCount ?? 0;
+  const elapsedStr = formatElapsed(activeElapsed);
+
+  const lines: string[] = [];
+  lines.push(`⊘ Goal [BLOCKED]  ${goal.goal}`);
+  lines.push('');
+  lines.push(`  ${elapsedStr} · ${turns} turns`);
+  if (goal.blockedReason) {
+    lines.push('');
+    lines.push(`  reason: ${goal.blockedReason}`);
+  }
+  if (goal.linkedWorkflowRunIds && goal.linkedWorkflowRunIds.length > 0) {
+    lines.push('');
+    lines.push(
+      `  workflows: ${goal.linkedWorkflowRunIds.length} linked run${goal.linkedWorkflowRunIds.length === 1 ? '' : 's'} (see /workflow)`,
+    );
+  }
+  return lines.join('\n');
+}
+
 /** Compose a human-readable status block for an active or paused goal. */
 function renderActiveStatus(state: AppStateSnapshot, goal: GoalState): string {
   const now = Date.now();
@@ -68,6 +95,11 @@ function renderActiveStatus(state: AppStateSnapshot, goal: GoalState): string {
   const elapsedStr = formatElapsed(activeElapsed);
   const tokens = goal.evalTokens ?? 0;
   const isPaused = goal.paused ?? false;
+
+  // Show blocked status first if goal is blocked
+  if (goal.blocked) {
+    return renderBlockedStatus(state, goal);
+  }
 
   const lines: string[] = [];
   const statusIcon = isPaused ? '⏸' : '◎';
@@ -232,6 +264,10 @@ export async function call(
       onDone('◎ Goal is already paused. Use /goal resume to continue.', { display: 'system' });
       return null;
     }
+    if (goalState.blocked) {
+      onDone('◎ Goal is blocked. Use /goal clear to remove it, or /goal edit to update the condition.', { display: 'system' });
+      return null;
+    }
 
     const restoredMode = goalState.preGoalMode;
     goalState.paused = true;
@@ -271,6 +307,9 @@ export async function call(
     goalState.totalPausedMs = (goalState.totalPausedMs ?? 0) + pausedMs;
     goalState.paused = false;
     goalState.pausedAt = undefined;
+    goalState.blocked = false;
+    goalState.blockedAt = undefined;
+    goalState.blockedReason = undefined;
     goalState.lastReason = undefined;
     setFullGoalState(goalState);
 
