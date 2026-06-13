@@ -1,6 +1,6 @@
-import { createInterface } from 'node:readline';
-import { installGlobalPackage } from '../utils/autoUpdater.js';
+import { createInterface, emitKeypressEvents } from 'node:readline';
 import { LOADING_BAR_BODY, LOADING_BAR_EMPTY, LOADING_BAR_FILLED } from '../constants/figures.js';
+import { installGlobalPackage } from '../utils/autoUpdater.js';
 
 // ANSI colors matching Clawd theme
 const PURPLE = '\x1b[38;2;135;0;255m';
@@ -45,12 +45,19 @@ function renderBar(percent: number): string {
   return ` ${GREEN}${bar}${RESET} ${BOLD}${Math.round(percent)}%${RESET}`;
 }
 
-function renderClawdLine(line: string): string {
-  return `  ║  ${line}`;
+function stripAnsi(str: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: standard regex to strip ANSI codes
+  return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=<>]/g, '');
 }
 
-function padRight(text: string, width: number): string {
-  return text + ' '.repeat(Math.max(0, width - text.length));
+function getVisibleLength(str: string): number {
+  return stripAnsi(str).length;
+}
+
+function padLine(content: string, width: number): string {
+  const visibleLen = getVisibleLength(content);
+  const padding = Math.max(0, width - visibleLen);
+  return content + ' '.repeat(padding);
 }
 
 /**
@@ -89,6 +96,7 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
       escapeCodeTimeout: 50,
     });
 
+    emitKeypressEvents(process.stdin);
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdout.write(HIDE_CURSOR);
@@ -104,61 +112,61 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
 
     function draw() {
       const lines: string[] = [];
+      const contentWidth = 53;
 
-      // Top border
-      lines.push(`  ╔═══════════════════════════════════════════════════╗`);
-      lines.push(`  ║${' '.repeat(53)}║`);
-      lines.push(`  ║${' '.repeat(53)}║`);
+      // Top border (53 ═ chars)
+      lines.push(`  ╔${'═'.repeat(contentWidth)}╗`);
+      lines.push(`  ║${' '.repeat(contentWidth)}║`);
+      lines.push(`  ║${' '.repeat(contentWidth)}║`);
 
       // Clawd mascot area - first line with title
-      // Row 0: top
       const title =
         phase === 'menu' ? `${BOLD}${YELLOW}Update Available!${RESET}` : `${BOLD}${CYAN}Updating Clew...${RESET}`;
-      lines.push(`${renderClawdLine(CLAWD[0])}    ${title}${' '.repeat(18)}║`);
+      lines.push(`  ║${padLine(`  ${CLAWD[0]}    ${title}`, contentWidth)}║`);
 
       // Row 1: ears
-      lines.push(`${renderClawdLine(CLAWD[1])}${' '.repeat(25)}║`);
+      lines.push(`  ║${padLine(`  ${CLAWD[1]}`, contentWidth)}║`);
 
       // Row 2: face top + version info
       const versionLine = `${DIM}v${currentVersion}${RESET} ${DIM}→${RESET} ${GREEN}v${latestVersion}${RESET}`;
-      lines.push(`${renderClawdLine(CLAWD[2])}  ${versionLine}${' '.repeat(18)}║`);
+      lines.push(`  ║${padLine(`  ${CLAWD[2]}  ${versionLine}`, contentWidth)}║`);
 
       // Row 3: eyes
-      lines.push(`${renderClawdLine(CLAWD[3])}${' '.repeat(25)}║`);
+      lines.push(`  ║${padLine(`  ${CLAWD[3]}`, contentWidth)}║`);
 
       // Row 4: body
-      lines.push(`${renderClawdLine(CLAWD[4])}${' '.repeat(25)}║`);
+      lines.push(`  ║${padLine(`  ${CLAWD[4]}`, contentWidth)}║`);
 
       // Row 5: feet
-      lines.push(`${renderClawdLine(CLAWD[5])}${' '.repeat(25)}║`);
+      lines.push(`  ║${padLine(`  ${CLAWD[5]}`, contentWidth)}║`);
 
-      lines.push(`  ║${' '.repeat(53)}║`);
-      lines.push(`  ║${' '.repeat(53)}║`);
+      lines.push(`  ║${' '.repeat(contentWidth)}║`);
+      lines.push(`  ║${' '.repeat(contentWidth)}║`);
 
       if (phase === 'menu') {
         const options = ['Update now', 'Use current version', 'Exit'];
         for (let i = 0; i < options.length; i++) {
           const prefix = i === selectedIndex ? `${CYAN}>${RESET}` : ' ';
           const style = i === selectedIndex ? `${BOLD}${options[i]}${RESET}` : `${options[i]}`;
-          lines.push(`  ║  ${prefix} ${padRight(style, 48)}║`);
+          lines.push(`  ║${padLine(`  ${prefix} ${style}`, contentWidth)}║`);
         }
-        lines.push(`  ║${' '.repeat(53)}║`);
-        lines.push(`  ║  ${DIM}↑↓ navigate · enter confirm · q quit${RESET}${' '.repeat(9)}║`);
+        lines.push(`  ║${' '.repeat(contentWidth)}║`);
+        lines.push(`  ║${padLine(`  ${DIM}↑↓ navigate · enter confirm · q quit${RESET}`, contentWidth)}║`);
       } else {
-        lines.push(`  ║  ${DIM}npm install -g ${MACRO.PACKAGE_URL}${RESET}           ║`);
-        lines.push(`  ║${' '.repeat(53)}║`);
-        lines.push(`  ║  ${renderBar(barPercent)}${' '.repeat(20)}║`);
-        lines.push(`  ║${' '.repeat(53)}║`);
+        lines.push(`  ║${padLine(`  ${DIM}npm install -g ${MACRO.PACKAGE_URL}${RESET}`, contentWidth)}║`);
+        lines.push(`  ║${' '.repeat(contentWidth)}║`);
+        lines.push(`  ║${padLine(`  ${renderBar(barPercent)}`, contentWidth)}║`);
+        lines.push(`  ║${' '.repeat(contentWidth)}║`);
 
         if (barPercent >= 100) {
-          lines.push(`  ║  ${GREEN}✓ Update complete!${RESET}${' '.repeat(34)}║`);
+          lines.push(`  ║${padLine(`  ${GREEN}✓ Update complete!${RESET}`, contentWidth)}║`);
         } else {
-          lines.push(`  ║  ${DIM}Please wait...${RESET}${' '.repeat(40)}║`);
+          lines.push(`  ║${padLine(`  ${DIM}Please wait...${RESET}`, contentWidth)}║`);
         }
       }
 
-      lines.push(`  ║${' '.repeat(53)}║`);
-      lines.push(`  ╚═══════════════════════════════════════════════════╝`);
+      lines.push(`  ║${' '.repeat(contentWidth)}║`);
+      lines.push(`  ╚${'═'.repeat(contentWidth)}╝`);
 
       process.stdout.write(CLEAR_SCREEN);
       process.stdout.write(lines.join('\n'));
@@ -166,7 +174,8 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
     }
 
     // Keypress handler
-    function onKeypress(_str: string, key: { name: string; ctrl?: boolean }) {
+    function onKeypress(_str: string, key?: { name?: string; ctrl?: boolean }) {
+      if (!key) return;
       if (phase === 'installing') return;
 
       if (key.name === 'up' || key.name === 'k') {
