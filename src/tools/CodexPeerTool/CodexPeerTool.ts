@@ -1,7 +1,7 @@
 /**
  * CodexPeerTool — dedicated tool for invoking the local Codex CLI.
  *
- * This is a focused wrapper around the Codex process peer. Unlike the generic
+ * This is a focused wrapper around the Codex process runner. Unlike the generic
  * `process_peer` tool, this one is hardcoded to the `codex` provider and has
  * a description that tells the model exactly when to use it.
  */
@@ -19,16 +19,17 @@ import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 
+const DEFAULT_CODEX_PEER_MODE = 'pty' as const;
+const TERMINAL_OUTPUT_MAX_LINES = 16;
+
 const inputSchema = lazySchema(() =>
   z.object({
     prompt: z.string().describe('Task or message to send to Codex CLI'),
     mode: z
       .enum(['exec', 'pty'])
       .optional()
-      .default('exec')
-      .describe(
-        'Execution mode. "exec" is stable one-shot capture; "pty" runs through a pseudo-terminal with live output.',
-      ),
+      .default(DEFAULT_CODEX_PEER_MODE)
+      .describe('Execution mode. "pty" is the default terminal-style live view; "exec" is stable one-shot capture.'),
     cwd: z.string().optional().describe('Working directory for Codex. Defaults to the current Clew cwd.'),
     model: z.string().optional().describe('Optional model override for providers that support it.'),
     timeout: z.number().optional().default(600).describe('Max execution time in seconds (default: 600, max: 1800).'),
@@ -51,8 +52,6 @@ const outputSchema = lazySchema(() =>
 
 export type Output = z.infer<ReturnType<typeof outputSchema>>;
 
-const TERMINAL_OUTPUT_MAX_LINES = 16;
-
 export const CODEX_PEER_TOOL_NAME = 'codex_peer';
 
 export const CodexPeerTool = buildTool({
@@ -67,9 +66,10 @@ export const CodexPeerTool = buildTool({
   maxResultSizeChars: 30_000,
   async description() {
     return (
-      'Run a local Codex CLI instance (`codex exec`) and return its output. ' +
+      'Run a local Codex CLI instance as a terminal-style worker and return its output. ' +
       'Use this when you want Codex to independently execute a subtask, review code, ' +
       'debug an issue, or implement a focused change. ' +
+      'Defaults to PTY mode so progress appears as a live terminal panel; use `exec` only for one-shot capture. ' +
       'Your `prompt` is sent verbatim to Codex as its sole instruction. ' +
       'Available providers: ' +
       getProcessPeerProviderIds().join(', ') +
@@ -78,8 +78,8 @@ export const CodexPeerTool = buildTool({
   },
   async prompt() {
     return (
-      'Runs a local Codex CLI process for one task and returns stdout/stderr. ' +
-      'Use this when you want Codex (not the main Clew model) to handle a subtask independently. ' +
+      'Runs a local Codex CLI process for one task and returns stdout/stderr. Defaults to PTY terminal mode. ' +
+      'Use this when you want the local Codex CLI (not a Clew peer or /agents subagent) to handle a subtask independently. ' +
       'The prompt is sent verbatim — write self-contained instructions with context, ' +
       'expected output format, and working directory. ' +
       'Do NOT call this for simple file reads, searches, or questions you can answer directly. ' +
@@ -96,24 +96,25 @@ export const CodexPeerTool = buildTool({
     return input.cwd ?? getCwd();
   },
   userFacingName() {
-    return 'Codex Peer';
+    return 'Codex CLI';
   },
   renderToolUseMessage(input: Partial<{ prompt?: string; cwd?: string; mode?: string }>) {
     return React.createElement(
       Text,
       null,
-      `codex ${input.mode ?? 'exec'}${input.cwd ? ` in ${input.cwd}` : ''}: `,
+      `codex ${input.mode ?? DEFAULT_CODEX_PEER_MODE}${input.cwd ? ` in ${input.cwd}` : ''}: `,
       React.createElement(Text, { dimColor: true }, truncateText(input.prompt ?? '', 120)),
     );
   },
   renderToolUseProgressMessage(progressMessages): React.ReactNode {
     const latest = progressMessages.at(-1)?.data as ProcessPeerProgress | undefined;
-    const provider = latest?.provider ?? 'codex';
-    const mode = latest?.mode ?? 'exec';
-    const elapsed = latest ? ` · ${(latest.elapsedMs / 1000).toFixed(1)}s` : '';
+    const mode = latest?.mode ?? DEFAULT_CODEX_PEER_MODE;
+    const elapsed = latest ? `${(latest.elapsedMs / 1000).toFixed(1)}s` : '0.0s';
     const status = latest?.status ?? 'starting';
     const command = latest?.displayCommand ?? latest?.command ?? `codex ${mode}`;
     const outputLines = latest?.outputTail ? latest.outputTail.split(/\r?\n/).slice(-TERMINAL_OUTPUT_MAX_LINES) : [];
+    const borderColor = status === 'complete' ? 'green' : status === 'running' ? 'cyan' : 'yellow';
+    const statusColor = status === 'complete' ? 'green' : status === 'running' ? 'cyan' : 'yellow';
 
     return React.createElement(
       MessageResponse,
@@ -126,29 +127,34 @@ export const CodexPeerTool = buildTool({
           {
             flexDirection: 'column',
             borderStyle: 'single',
-            borderColor: 'cyan',
+            borderColor,
             paddingX: 1,
             width: '100%',
           },
           React.createElement(
             Box,
             { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
-            React.createElement(Text, { bold: true }, `codex ${mode}`),
-            React.createElement(Text, { dimColor: true }, `${status}${elapsed}`),
+            React.createElement(Text, { bold: true }, 'Codex CLI terminal'),
+            React.createElement(Text, { color: statusColor }, `${status} | ${mode} | ${elapsed}`),
           ),
-          React.createElement(Text, { dimColor: true, wrap: 'truncate-end' }, `$ ${command}`),
           latest?.cwd
             ? React.createElement(Text, { dimColor: true, wrap: 'truncate-end' }, `cwd: ${latest.cwd}`)
             : null,
-          outputLines.length > 0
-            ? React.createElement(
-                Box,
-                { flexDirection: 'column', marginTop: 1 },
-                ...outputLines.map((line, index) =>
-                  React.createElement(Text, { key: index, wrap: 'truncate-end' }, line || '\u00A0'),
-                ),
-              )
-            : React.createElement(Text, { dimColor: true }, 'waiting for codex output...'),
+          React.createElement(Text, { dimColor: true, wrap: 'truncate-end' }, `$ ${command}`),
+          React.createElement(
+            Box,
+            { borderStyle: 'single', borderColor: 'gray', flexDirection: 'column', marginTop: 1, paddingX: 1 },
+            React.createElement(Text, { dimColor: true }, 'live output'),
+            outputLines.length > 0
+              ? React.createElement(
+                  Box,
+                  { flexDirection: 'column' },
+                  ...outputLines.map((line, index) =>
+                    React.createElement(Text, { key: `${index}:${line}`, wrap: 'truncate-end' }, line || '\u00A0'),
+                  ),
+                )
+              : React.createElement(Text, { dimColor: true }, 'waiting for codex output...'),
+          ),
         ),
       ),
     );
@@ -157,14 +163,14 @@ export const CodexPeerTool = buildTool({
     return React.createElement(
       Box,
       { paddingLeft: 2 },
-      React.createElement(Text, { dimColor: true }, 'Queued Codex peer'),
+      React.createElement(Text, { dimColor: true }, 'Queued Codex CLI terminal'),
     );
   },
   getActivityDescription(input: Partial<{ prompt?: string; cwd?: string; mode?: string }>) {
-    return `Asking Codex (${input.mode ?? 'exec'}): ${truncateText(input.prompt ?? '', 80)}`;
+    return `Running Codex CLI (${input.mode ?? DEFAULT_CODEX_PEER_MODE}): ${truncateText(input.prompt ?? '', 80)}`;
   },
   getToolUseSummary(input: Partial<{ prompt?: string; cwd?: string; mode?: string }>) {
-    return `Codex ${input.mode ?? 'exec'}: ${truncateText(input.prompt ?? '', 80)}`;
+    return `Codex ${input.mode ?? DEFAULT_CODEX_PEER_MODE}: ${truncateText(input.prompt ?? '', 80)}`;
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) {
@@ -216,7 +222,7 @@ export const CodexPeerTool = buildTool({
       notifyPeerFeedback(`asking codex`, 'process-peer', 'low');
       const result = await provider.runTask({
         prompt: input.prompt,
-        mode: input.mode ?? 'exec',
+        mode: input.mode ?? DEFAULT_CODEX_PEER_MODE,
         cwd: input.cwd ?? getCwd(),
         model: input.model,
         timeoutMs: timeout,

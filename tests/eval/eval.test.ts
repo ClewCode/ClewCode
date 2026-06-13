@@ -1,6 +1,7 @@
 import { expect, test, describe, beforeAll, afterAll } from 'bun:test';
 import { mkdir, rm, writeFile, readFile } from 'fs/promises';
 import { join } from 'path';
+import { DOT_CLEW } from '../../src/utils/clewPaths.js';
 import { getFsImplementation } from '../../src/utils/fsOperations.js';
 
 // Imports from our new eval library
@@ -34,8 +35,8 @@ describe('PLAN G — Eval & Verification Harness Unit Tests', () => {
 
   test('Workspace initialization & config correctness', async () => {
     const config = getEvalConfig(TEST_CWD);
-    expect(config.tasksDir.replace(/\\/g, '/')).toContain('.claude/evals/tasks');
-    expect(config.gradersDir.replace(/\\/g, '/')).toContain('.claude/evals/graders');
+    expect(config.tasksDir.replace(/\\/g, '/')).toContain(`${DOT_CLEW}/evals/tasks`);
+    expect(config.gradersDir.replace(/\\/g, '/')).toContain(`${DOT_CLEW}/evals/graders`);
 
     await initializeEvalWorkspace(TEST_CWD);
     const fsImpl = getFsImplementation();

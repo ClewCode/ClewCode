@@ -6,7 +6,7 @@ import { type OptionWithDescription, Select } from '../CustomSelect/select.js';
 export type TreeNode<T> = {
   id: string | number;
   value: T;
-  label: string;
+  label: React.ReactNode;
   description?: string;
   dimDescription?: boolean;
   children?: TreeNode<T>[];
@@ -186,8 +186,8 @@ export function TreeSelect<T>({
 
   // Build the label with appropriate prefixes based on tree position
   const buildLabel = React.useCallback(
-    (flatNode: FlattenedNode<T>): string => {
-      let prefix = '';
+    (flatNode: FlattenedNode<T>): React.ReactNode => {
+      let prefix: string | null = null;
 
       if (flatNode.hasChildren) {
         // Parent node with children
@@ -197,7 +197,12 @@ export function TreeSelect<T>({
         prefix = childPrefixFn(flatNode.depth);
       }
 
-      return prefix + flatNode.node.label;
+      return (
+        <>
+          {prefix}
+          {flatNode.node.label}
+        </>
+      );
     },
     [parentPrefixFn, childPrefixFn],
   );
@@ -215,7 +220,9 @@ export function TreeSelect<T>({
   // Map from node ID to the actual node for quick lookup
   const nodeMap = React.useMemo(() => {
     const map = new Map<string | number, TreeNode<T>>();
-    flattenedNodes.forEach(fn => map.set(fn.node.id, fn.node));
+    flattenedNodes.forEach(fn => {
+      map.set(fn.node.id, fn.node);
+    });
     return map;
   }, [flattenedNodes]);
 
@@ -231,7 +238,7 @@ export function TreeSelect<T>({
   const toggleExpand = React.useCallback(
     (nodeId: string | number, shouldExpand: boolean) => {
       const flatNode = findFlattenedNode(nodeId);
-      if (!flatNode || !flatNode.hasChildren) return;
+      if (!flatNode?.hasChildren) return;
 
       if (shouldExpand) {
         if (onExpand) {

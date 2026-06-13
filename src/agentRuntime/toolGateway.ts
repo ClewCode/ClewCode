@@ -289,9 +289,3 @@ export class ToolGateway {
     return { matches: results, query };
   }
 }
-rn;
-{
-  matches: results, query;
-}
-}
-}

@@ -35,7 +35,7 @@ Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) 
 
 - **27 providers** — Anthropic, OpenAI, Google Gemini, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, GitHub Copilot, OpenCode, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, OpenCode Go. Switch mid-session.
 - **Peer-to-peer LAN mesh** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 14 AI tools let your agent coordinate autonomously.
-- **Preference learning (Taste)** — learns from accept, reject, edit, test, and lint signals. Three-tier rule engine (≥0.85 blocks edits, ≥0.55 injects into prompts, <0.55 scores silently). Contextual bandit with 6 strategy arms. Auto-decay on 30-day half-life.
+
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
 - **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, peer tools, MCP tools, ProcessPeer (exec/pty).
 - **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
@@ -95,7 +95,6 @@ clew
 # In-session commands
 ❯ /help           # list everything
 ❯ /status         # current provider, model, context info
-❯ /taste          # preference-learning menu
 ❯ /peer discover  # find other Clew instances on LAN
 ❯ /mcp list       # connected MCP servers
 ❯ /loop start     # background autonomous loop
@@ -127,11 +126,10 @@ export COPILOT_GITHUB_TOKEN=gho_...
 ## Commands
 
 <details>
-<summary><strong>17 slash commands</strong></summary>
+<summary><strong>16 slash commands</strong></summary>
 
 ```
 /model        Switch provider or model
-/taste        Preference-learning menu
 /status       Provider, session, context info
 /doctor       Diagnostics
 /context      Active context usage
@@ -170,7 +168,6 @@ src/
 │   ├── mcp/                 # MCP client + auth + transports
 │   ├── plugins/             # Plugin hooks + marketplace
 │   ├── autonomous/          # Agent loop + task queue + cron
-│   ├── taste/               # Preference-learning engine
 │   ├── lsp/                 # LSP integration
 │   └── Supervisor/          # Agent supervisor IPC
 ├── peer/                    # PeerServer + PeerDiscovery
@@ -224,7 +221,7 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 
 ## Documentation
 
-[Installation](docs/installation.html) · [Configuration](docs/configuration.html) · [Providers](docs/providers.html) · [Models](docs/models.html) · [Commands](docs/commands.html) · [Tools](docs/tools.html) · [MCP](docs/mcp.html) · [Plugins](docs/plugins.html) · [Skills](docs/skills.html) · [Peer-to-Peer](docs/peer.html) · [Taste](docs/taste.html) · [Agent Loop](docs/loop.html) · [Permission Model](docs/permission-model.html) · [Daemon](docs/daemon.html) · [Bridge Mode](docs/features/bridge-mode.html) · [Troubleshooting](docs/troubleshooting.html)
+[Installation](docs/installation.html) · [Configuration](docs/configuration.html) · [Providers](docs/providers.html) · [Models](docs/models.html) · [Commands](docs/commands.html) · [Tools](docs/tools.html) · [MCP](docs/mcp.html) · [Plugins](docs/plugins.html) · [Skills](docs/skills.html) · [Peer-to-Peer](docs/peer.html) · [Agent Loop](docs/loop.html) · [Permission Model](docs/permission-model.html) · [Daemon](docs/daemon.html) · [Bridge Mode](docs/features/bridge-mode.html) · [Troubleshooting](docs/troubleshooting.html)
 
 ---
 
@@ -246,7 +243,6 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 <details>
 <summary><strong>v0.2.6 — 2026-06-10</strong></summary>
 
-- **Taste notifications** — toasts for init, learn, forget, suggest actions
 - **Peer HTTP heartbeat** — 60s liveness checks, offline peers detected immediately
 - **Removed GitHub Copilot** — provider and all references cleaned out
 - **`/agents` visual polish** — redesigned dashboard, cleaner layout
@@ -260,7 +256,6 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 - **Rebranded to Clew Code** — docs, UI copy, and package updated
 - **Memory search** — `/memory search` for stored entries
 - **Peer tools** — 14 AI coordination tools, peer help, connection count in footer
-- **Taste AI tools** — learn, forget, profile, suggest with system notifications
 - **Fixed `/providers`** — duplicate `const info` runtime error fixed
 
 </details>
@@ -269,7 +264,6 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 <summary><strong>v0.2.4 — 2026-06-08</strong></summary>
 
 - **Peer-to-peer** — UDP multicast discovery, file registry, 14 AI coordination tools, interactive PeerMenu
-- **Taste** — `taste_learn`, `taste_forget`, `taste_profile`, `taste_suggest` tools
 - **Autonomous agents** — agent loop, supervisor integration, task queue, Loop Lock
 - **Workflow Rainbow** — per-character gradient highlight for "workflow" keyword
 
@@ -280,7 +274,6 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 
 - `/effort` works with any provider exposing `reasoningEffort` (NVIDIA, DeepSeek, OpenRouter, etc.)
 - `/model` fetches live model list from provider APIs
-- Taste auto-learns patterns from accept/reject signals
 - Relay server for cross-network remote control
 - Bridge v2: provider-agnostic remote control
 - `/pr create/list/view/review/merge/status`

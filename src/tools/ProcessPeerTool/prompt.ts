@@ -1,9 +1,9 @@
 export const PROCESS_PEER_TOOL_NAME = 'process_peer';
 
 export const DESCRIPTION =
-  'Delegate a task to a local process-backed peer (e.g. Codex) and return its output. ' +
+  'Delegate a task to a local process-backed worker (e.g. Codex CLI) and return its output. ' +
   'Use this for independent review, debugging, planning, or focused implementation subtasks. ' +
-  'Your `prompt` is sent verbatim to the peer as its sole instruction. ' +
+  'Your `prompt` is sent verbatim to the process worker as its sole instruction. ' +
   'Follow the PEER_PROMPT_TEMPLATE to write self-contained prompts that include ' +
   'sender identity, tool guidance, workflow sequence, and output format.';
 
@@ -75,10 +75,10 @@ The sender only sees stdout after you finish.
 `;
 
 export const PROMPT =
-  'Runs a local process-backed AI peer for one task and returns stdout/stderr. ' +
-  'The default provider is Codex (via `codex exec -C <cwd> --color never`), which uses the existing ' +
-  'Codex CLI session without exposing tokens. ' +
-  'Use it for peer review, second opinions, debugging, focused implementation subtasks, or ' +
+  'Runs a local process-backed AI worker for one task and returns stdout/stderr. ' +
+  'The default provider is Codex in PTY mode, which shows a live terminal-style progress panel and uses the ' +
+  'existing Codex CLI session without exposing tokens. Use `mode: "exec"` only when one-shot capture is preferred. ' +
+  'Use it for second-opinion review, debugging, focused implementation subtasks, or ' +
   'asking Codex to inspect a repo.\n' +
   '\n' +
   '**PEER PROMPT TEMPLATE (use this structure when writing prompts):**\n' +

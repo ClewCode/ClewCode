@@ -99,10 +99,7 @@ import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessa
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { ProcessPeerTool } from './tools/ProcessPeerTool/ProcessPeerTool.js';
 import { CodexPeerTool } from './tools/CodexPeerTool/CodexPeerTool.js';
-import { TasteLearnTool } from './tools/TasteLearnTool/TasteLearnTool.js';
-import { TasteForgetTool } from './tools/TasteForgetTool/TasteForgetTool.js';
-import { TasteProfileTool } from './tools/TasteProfileTool/TasteProfileTool.js';
-import { TasteSuggestTool } from './tools/TasteSuggestTool/TasteSuggestTool.js';
+
 import { LSPTool } from './tools/LSPTool/LSPTool.js';
 import { ListMcpResourcesTool } from './tools/ListMcpResourcesTool/ListMcpResourcesTool.js';
 import { ReadMcpResourceTool } from './tools/ReadMcpResourceTool/ReadMcpResourceTool.js';
@@ -243,10 +240,7 @@ export function getAllBaseTools(): Tools {
     PeerListMessagesTool,
     PeerHelpTool,
     ProcessPeerTool,
-    TasteProfileTool,
-    TasteLearnTool,
-    TasteForgetTool,
-    TasteSuggestTool,
+
     ...(listPeersTool ? [listPeersTool] : []),
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),
     ...(isAgentSwarmsEnabled() ? [SubscribePrActivityTool, UnsubscribePrActivityTool] : []),

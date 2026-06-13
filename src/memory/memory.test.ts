@@ -54,7 +54,7 @@ describe('Claude Memory System (PLAN E)', () => {
 
     const statusAfter = getMemoryWorkspaceStatus(tempCwd);
     expect(statusAfter.initialized).toBe(true);
-    expect(statusAfter.memoryDir).toContain('.claude');
+    expect(statusAfter.memoryDir).toContain(DOT_CLEW);
   });
 
   test('Frontmatter parsing & stringifying', () => {
