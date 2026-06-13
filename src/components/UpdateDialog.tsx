@@ -2,11 +2,6 @@ import { emitKeypressEvents } from 'node:readline';
 import { LOADING_BAR_BODY, LOADING_BAR_EMPTY, LOADING_BAR_FILLED } from '../constants/figures.js';
 import { installGlobalPackage } from '../utils/autoUpdater.js';
 
-// ANSI colors matching Clawd theme
-const PURPLE = '\x1b[38;2;135;0;255m';
-const PURPLE_BOLD = '\x1b[38;2;135;0;255;1m';
-const RED = '\x1b[38;2;255;0;0m';
-const BLACK_BG = '\x1b[48;2;0;0;0m';
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
 const DIM = '\x1b[2m';
@@ -16,15 +11,6 @@ const YELLOW = '\x1b[33m';
 const HIDE_CURSOR = '\x1b[?25l';
 const SHOW_CURSOR = '\x1b[?25h';
 const CLEAR_SCREEN = '\x1b[2J\x1b[1;1H';
-
-const CLAWD = [
-  `${PURPLE}          ▗   ▖          ${RESET}`,
-  `${PURPLE}         ▐${PURPLE_BOLD}█████${PURPLE}▌         ${RESET}`,
-  `${PURPLE}        ▗${BLACK_BG}${PURPLE}█████${RESET}${PURPLE}███▖        ${RESET}`,
-  `${PURPLE}        ${BLACK_BG}${PURPLE}████${RED}▄▄▄${PURPLE}████${RESET}${PURPLE}         ${RESET}`,
-  `${PURPLE}         ${BLACK_BG}${PURPLE}████${RED}▄▄▄${PURPLE}████${RESET}${PURPLE}          ${RESET}`,
-  `${PURPLE}          █ █   █ █          ${RESET}`,
-];
 
 const BAR_WIDTH = 28;
 
@@ -63,11 +49,18 @@ function getVisibleLength(str: string): number {
   }
   return width;
 }
-
-function padLine(content: string, width: number): string {
+function padLineLeft(content: string, width: number, leftMargin: number): string {
   const visibleLen = getVisibleLength(content);
-  const padding = Math.max(0, width - visibleLen);
-  return content + ' '.repeat(padding);
+  const padding = Math.max(0, width - visibleLen - leftMargin);
+  return ' '.repeat(leftMargin) + content + ' '.repeat(padding);
+}
+
+function centerLine(content: string, width: number): string {
+  const visibleLen = getVisibleLength(content);
+  const totalPadding = Math.max(0, width - visibleLen);
+  const leftPadding = Math.floor(totalPadding / 2);
+  const rightPadding = totalPadding - leftPadding;
+  return ' '.repeat(leftPadding) + content + ' '.repeat(rightPadding);
 }
 
 /**
@@ -76,17 +69,15 @@ function padLine(content: string, width: number): string {
  * Layout optimized for 80-col terminals:
  *
  *   ╔═══════════════════════════════════════════════╗
- *   ║                                              ║
- *   ║        ▗   ▖         Update Available!       ║
- *   ║       ▐█████▌                                ║
- *   ║      ▗███████▖       v1.2.3  →  v1.3.0      ║
- *   ║       ██▄▄▄██                                 ║
- *   ║        █ █ █ █                                ║
- *   ║                                              ║
- *   ║  > Update now                                ║
- *   ║    Use current version                       ║
- *   ║    Exit                                      ║
- *   ║                                              ║
+ *   ║                                               ║
+ *   ║               Update Available!               ║
+ *   ║                v1.2.3 → v1.3.0                ║
+ *   ║                                               ║
+ *   ║      > Update now                             ║
+ *   ║        Use current version                    ║
+ *   ║        Exit                                   ║
+ *   ║                                               ║
+ *   ║      ↑↓ navigate · enter confirm · q quit     ║
  *   ╚═══════════════════════════════════════════════╝
  */
 export async function showUpdateDialog({ currentVersion, latestVersion }: Props): Promise<UpdateChoice> {
@@ -117,35 +108,21 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
 
     function draw() {
       const lines: string[] = [];
-      const contentWidth = 53;
+      const contentWidth = 46;
 
-      // Top border (53 ═ chars)
+      // Top border (46 ═ chars)
       lines.push(`  ╔${'═'.repeat(contentWidth)}╗`);
       lines.push(`  ║${' '.repeat(contentWidth)}║`);
-      lines.push(`  ║${' '.repeat(contentWidth)}║`);
 
-      // Clawd mascot area - first line with title
+      // Title line
       const title =
         phase === 'menu' ? `${BOLD}${YELLOW}Update Available!${RESET}` : `${BOLD}${CYAN}Updating Clew...${RESET}`;
-      lines.push(`  ║${padLine(`  ${CLAWD[0]}    ${title}`, contentWidth)}║`);
+      lines.push(`  ║${centerLine(title, contentWidth)}║`);
 
-      // Row 1: ears
-      lines.push(`  ║${padLine(`  ${CLAWD[1]}`, contentWidth)}║`);
-
-      // Row 2: face top + version info
+      // Version line
       const versionLine = `${DIM}v${currentVersion}${RESET} ${DIM}→${RESET} ${GREEN}v${latestVersion}${RESET}`;
-      lines.push(`  ║${padLine(`  ${CLAWD[2]}  ${versionLine}`, contentWidth)}║`);
+      lines.push(`  ║${centerLine(versionLine, contentWidth)}║`);
 
-      // Row 3: eyes
-      lines.push(`  ║${padLine(`  ${CLAWD[3]}`, contentWidth)}║`);
-
-      // Row 4: body
-      lines.push(`  ║${padLine(`  ${CLAWD[4]}`, contentWidth)}║`);
-
-      // Row 5: feet
-      lines.push(`  ║${padLine(`  ${CLAWD[5]}`, contentWidth)}║`);
-
-      lines.push(`  ║${' '.repeat(contentWidth)}║`);
       lines.push(`  ║${' '.repeat(contentWidth)}║`);
 
       if (phase === 'menu') {
@@ -153,20 +130,20 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
         for (let i = 0; i < options.length; i++) {
           const prefix = i === selectedIndex ? `${CYAN}>${RESET}` : ' ';
           const style = i === selectedIndex ? `${BOLD}${options[i]}${RESET}` : `${options[i]}`;
-          lines.push(`  ║${padLine(`  ${prefix} ${style}`, contentWidth)}║`);
+          lines.push(`  ║${padLineLeft(`${prefix} ${style}`, contentWidth, 6)}║`);
         }
         lines.push(`  ║${' '.repeat(contentWidth)}║`);
-        lines.push(`  ║${padLine(`  ${DIM}↑↓ navigate · enter confirm · q quit${RESET}`, contentWidth)}║`);
+        lines.push(`  ║${centerLine(`${DIM}↑↓ navigate · enter confirm · q quit${RESET}`, contentWidth)}║`);
       } else {
-        lines.push(`  ║${padLine(`  ${DIM}npm install -g ${MACRO.PACKAGE_URL}${RESET}`, contentWidth)}║`);
+        lines.push(`  ║${centerLine(`${DIM}npm install -g ${MACRO.PACKAGE_URL}${RESET}`, contentWidth)}║`);
         lines.push(`  ║${' '.repeat(contentWidth)}║`);
-        lines.push(`  ║${padLine(`  ${renderBar(barPercent)}`, contentWidth)}║`);
+        lines.push(`  ║${centerLine(renderBar(barPercent), contentWidth)}║`);
         lines.push(`  ║${' '.repeat(contentWidth)}║`);
 
         if (barPercent >= 100) {
-          lines.push(`  ║${padLine(`  ${GREEN}✓ Update complete!${RESET}`, contentWidth)}║`);
+          lines.push(`  ║${centerLine(`${GREEN}✓ Update complete!${RESET}`, contentWidth)}║`);
         } else {
-          lines.push(`  ║${padLine(`  ${DIM}Please wait...${RESET}`, contentWidth)}║`);
+          lines.push(`  ║${centerLine(`${DIM}Please wait...${RESET}`, contentWidth)}║`);
         }
       }
 
