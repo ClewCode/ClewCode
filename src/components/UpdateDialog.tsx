@@ -51,7 +51,17 @@ function stripAnsi(str: string): string {
 }
 
 function getVisibleLength(str: string): number {
-  return stripAnsi(str).length;
+  const clean = stripAnsi(str);
+  let width = 0;
+  for (const char of clean) {
+    const codePoint = char.codePointAt(0);
+    if (codePoint !== undefined && codePoint >= 0x2580 && codePoint <= 0x259f) {
+      width += 2;
+    } else {
+      width += 1;
+    }
+  }
+  return width;
 }
 
 function padLine(content: string, width: number): string {
