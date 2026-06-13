@@ -118,7 +118,7 @@ export const SandboxSettingsSchema = lazySchema(() =>
             'When false (default), a warning is shown and commands run unsandboxed. ' +
             'Intended for managed-settings deployments that require sandboxing as a hard gate.',
         ),
-      // Note: enabledPlatforms is an undocumented setting read via .passthrough()
+      // Note: enabledPlatforms is an undocumented setting read via .loose()
       // It restricts sandboxing to specific platforms (e.g., ["macos"]).
       //
       // Added to unblock NVIDIA enterprise rollout: they want to enable
@@ -157,7 +157,7 @@ export const SandboxSettingsSchema = lazySchema(() =>
         .optional()
         .describe('Custom ripgrep configuration for bundled ripgrep support'),
     })
-    .passthrough(),
+    .loose(),
 );
 
 // Inferred types from schemas

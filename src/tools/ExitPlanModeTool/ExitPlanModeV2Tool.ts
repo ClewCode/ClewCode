@@ -60,7 +60,7 @@ const inputSchema = lazySchema(() =>
           'Prompt-based permissions needed to implement the plan. These describe categories of actions rather than specific commands.',
         ),
     })
-    .passthrough(),
+    .loose(),
 );
 type InputSchema = ReturnType<typeof inputSchema>;
 

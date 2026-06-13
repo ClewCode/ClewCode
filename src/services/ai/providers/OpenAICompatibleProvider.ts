@@ -132,7 +132,7 @@ export class OpenAICompatibleProvider implements ProviderInterface {
             }
 
             const data = await response.json();
-            return this.normalizeResponse(data);
+            return this.normalizeResponse(data, response);
           },
         },
       },
@@ -213,7 +213,7 @@ export class OpenAICompatibleProvider implements ProviderInterface {
     }
   }
 
-  protected normalizeResponse(data: unknown): unknown {
+  protected normalizeResponse(data: unknown, _response?: Response): unknown {
     return {
       ...(data as Record<string, unknown>),
       _normalized: true,

@@ -225,7 +225,7 @@
     "providerId": "google",
     "label": "Google",
     "envKey": "GOOGLE_API_KEY",
-    "defaultBaseUrl": "https://generativelanguage.googleapis.com/v1beta",
+    "defaultBaseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
     "modelsUrl": "https://generativelanguage.googleapis.com/v1beta/openai/v1/models",
     "defaultModel": "gemini-3.1-pro-preview",
     "defaultModelVerified": true,

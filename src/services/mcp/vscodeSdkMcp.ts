@@ -21,7 +21,7 @@ export const LogEventNotificationSchema = lazySchema(() =>
     method: z.literal('log_event'),
     params: z.object({
       eventName: z.string(),
-      eventData: z.object({}).passthrough(),
+      eventData: z.looseObject({}),
     }),
   }),
 );
