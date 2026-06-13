@@ -75,9 +75,12 @@ function getFallbackModels(provider: ProviderId): ProviderModelInfo[] {
         toolCalling: info.capabilities.toolCalling ? 'native' : 'none',
         vision: info.capabilities.vision,
         streaming: info.capabilities.streaming,
-        maxContext: typeof info.capabilities.contextLength === 'string'
-          ? info.capabilities.contextLength === '1M' ? 1_000_000 : 200_000
-          : 200_000,
+        maxContext:
+          typeof info.capabilities.contextLength === 'string'
+            ? info.capabilities.contextLength === '1M'
+              ? 1_000_000
+              : 200_000
+            : 200_000,
         maxOutput: 'varies',
         reasoning: info.capabilities.reasoningEffort,
         supportsSystemPrompt: true,
@@ -96,29 +99,22 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
   const info = getProviderRegistryEntry(provider);
 
   // Try to get context window from API response, fall back to providers.json
-  const apiMaxContext =
-    model.max_input_tokens ?? model.context_window ?? model.contextWindow;
+  const apiMaxContext = model.max_input_tokens ?? model.context_window ?? model.contextWindow;
   const registryModel = info.models.find(
     m => m.id.toLowerCase() === id.toLowerCase() || id.toLowerCase().includes(m.id.toLowerCase()),
   );
   const registryMaxContext =
-    registryModel?.capabilities?.maxContext !== undefined &&
-    registryModel.capabilities.maxContext !== 'varies'
+    registryModel?.capabilities?.maxContext !== undefined && registryModel.capabilities.maxContext !== 'varies'
       ? registryModel.capabilities.maxContext
       : undefined;
-  const maxContext = (
-    typeof apiMaxContext === 'number' ? apiMaxContext : registryMaxContext
-  ) ?? 'varies';
+  const maxContext = (typeof apiMaxContext === 'number' ? apiMaxContext : registryMaxContext) ?? 'varies';
 
   const apiMaxOutput = model.max_output_tokens;
   const registryMaxOutput =
-    registryModel?.capabilities?.maxOutput !== undefined &&
-    registryModel.capabilities.maxOutput !== 'varies'
+    registryModel?.capabilities?.maxOutput !== undefined && registryModel.capabilities.maxOutput !== 'varies'
       ? registryModel.capabilities.maxOutput
       : undefined;
-  const maxOutput = (
-    typeof apiMaxOutput === 'number' ? apiMaxOutput : registryMaxOutput
-  ) ?? 'varies';
+  const maxOutput = (typeof apiMaxOutput === 'number' ? apiMaxOutput : registryMaxOutput) ?? 'varies';
 
   const toolCalling = modelSupportsToolCalling(provider, id, model);
 

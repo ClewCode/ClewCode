@@ -22,13 +22,12 @@ export const DEFAULT_ACP_REST_CONFIG: ACPRestConfig = {
   host: '127.0.0.1',
 };
 
-export function resolveACPRestConfig(flags?: {
-  acpRest?: boolean;
-  acpRestPort?: number;
-}): ACPRestConfig {
+export function resolveACPRestConfig(flags?: { acpRest?: boolean; acpRestPort?: number }): ACPRestConfig {
   return {
     enabled: flags?.acpRest ?? process.env.ACP_REST_ENABLED === 'true',
-    port: flags?.acpRestPort ?? (process.env.ACP_REST_PORT ? Number(process.env.ACP_REST_PORT) : DEFAULT_ACP_REST_CONFIG.port),
+    port:
+      flags?.acpRestPort ??
+      (process.env.ACP_REST_PORT ? Number(process.env.ACP_REST_PORT) : DEFAULT_ACP_REST_CONFIG.port),
     host: DEFAULT_ACP_REST_CONFIG.host,
   };
 }

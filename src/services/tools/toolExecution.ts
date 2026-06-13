@@ -1219,7 +1219,6 @@ async function checkPermissionsAndCallTool(
     // Run PostToolUse hooks
     let toolOutput = result.data;
 
-
     const hookResults = [];
     const toolContextModifier = result.contextModifier;
     const mcpMeta = result.mcpMeta;

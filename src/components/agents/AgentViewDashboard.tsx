@@ -850,9 +850,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
           <Text bold color="permission">
             Clew Code
           </Text>
-          <Text dimColor>
-            Opus · 1M context · ~/{cwdLabel ?? 'workspace'}
-          </Text>
+          <Text dimColor>Opus · 1M context · ~/{cwdLabel ?? 'workspace'}</Text>
           <Box flexDirection="row" gap={1}>
             {counts.awaiting > 0 && (
               <Text color="yellow">
@@ -867,7 +865,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
             )}
             {counts.completed > 0 && (
               <Text color="green">
-                {(counts.awaiting > 0 || counts.working > 0) ? ' · ' : ''}
+                {counts.awaiting > 0 || counts.working > 0 ? ' · ' : ''}
                 {figures.tick} {counts.completed} completed
               </Text>
             )}
@@ -877,136 +875,137 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
           </Box>
         </Box>
 
-      {backgroundTasks.length === 0 ? (
-        <Box flexDirection="column" marginY={1} paddingLeft={2} gap={0}>
-          <Text bold>Agent Monitor</Text>
-          <Text dimColor>No agents running. Launch from chat:</Text>
-          <Text dimColor>  /agent &lt;task&gt;  — quick dispatch with default agent</Text>
-          <Text dimColor>  /agent @name &lt;task&gt;  — dispatch with a specific agent</Text>
-        </Box>
-      ) : (
-        groupedTasks.map(group => {
-          const info = CATEGORY_LABELS[group.key as TaskCategory] ?? { label: group.label, color: 'dim' };
-          return (
-            <React.Fragment key={group.key}>
-              <AgentViewGroupHeader
-                label={info.label}
-                count={group.tasks.length}
-                color={info.color}
-                isCollapsed={group.isCollapsed}
-                onToggle={() => handleGroupToggle(group.key)}
-                isSelected={false}
-              />
-              {!group.isCollapsed &&
-                group.tasks.map(task => {
-                  const lt = task as LocalAgentTaskState;
-                  const flatIdx = flatList.findIndex(item => item.task?.id === lt.id);
-                  const isSelected = flatIdx === selectedIndex;
-                  const prInfo = (lt as any)._prInfo as PRDisplayInfo | undefined;
+        {backgroundTasks.length === 0 ? (
+          <Box flexDirection="column" marginY={1} paddingLeft={2} gap={0}>
+            <Text bold>Agent Monitor</Text>
+            <Text dimColor>No agents running. Launch from chat:</Text>
+            <Text dimColor> /agent &lt;task&gt; — quick dispatch with default agent</Text>
+            <Text dimColor> /agent @name &lt;task&gt; — dispatch with a specific agent</Text>
+          </Box>
+        ) : (
+          groupedTasks.map(group => {
+            const info = CATEGORY_LABELS[group.key as TaskCategory] ?? { label: group.label, color: 'dim' };
+            return (
+              <React.Fragment key={group.key}>
+                <AgentViewGroupHeader
+                  label={info.label}
+                  count={group.tasks.length}
+                  color={info.color}
+                  isCollapsed={group.isCollapsed}
+                  onToggle={() => handleGroupToggle(group.key)}
+                  isSelected={false}
+                />
+                {!group.isCollapsed &&
+                  group.tasks.map(task => {
+                    const lt = task as LocalAgentTaskState;
+                    const flatIdx = flatList.findIndex(item => item.task?.id === lt.id);
+                    const isSelected = flatIdx === selectedIndex;
+                    const prInfo = (lt as any)._prInfo as PRDisplayInfo | undefined;
 
-                  return (
-                    <AgentViewRow
-                      key={task.id}
-                      task={lt}
-                      index={flatIdx}
-                      isSelected={isSelected}
-                      prCount={prInfo ? 1 : 0}
-                      prStatus={prInfo?.status as PRStatus | null}
-                      prUrl={prInfo?.url as string | null}
-                      prDisplayInfo={prInfo ?? null}
-                      width={contentWidth}
-                    />
-                  );
-                })}
-            </React.Fragment>
-          );
-        })
-      )}
+                    return (
+                      <AgentViewRow
+                        key={task.id}
+                        task={lt}
+                        index={flatIdx}
+                        isSelected={isSelected}
+                        prCount={prInfo ? 1 : 0}
+                        prStatus={prInfo?.status as PRStatus | null}
+                        prUrl={prInfo?.url as string | null}
+                        prDisplayInfo={prInfo ?? null}
+                        width={contentWidth}
+                      />
+                    );
+                  })}
+              </React.Fragment>
+            );
+          })
+        )}
 
-      <Box flexGrow={1} minHeight={2} />
+        <Box flexGrow={1} minHeight={2} />
 
-      {stopConfirmIndex !== null && selectedTask && (
-        <Box marginBottom={1}>
-          <Text color="error">
-            press ctrl+x again to delete {(selectedTask as any).customName ?? selectedTask.agentType ?? selectedTask.id}
+        {stopConfirmIndex !== null && selectedTask && (
+          <Box marginBottom={1}>
+            <Text color="error">
+              press ctrl+x again to delete{' '}
+              {(selectedTask as any).customName ?? selectedTask.agentType ?? selectedTask.id}
+            </Text>
+          </Box>
+        )}
+
+        {peekOpen && selectedTask && (
+          <Box flexDirection="column" marginBottom={1}>
+            <Text dimColor>{divider}</Text>
+            <AgentViewPeekPanel
+              task={selectedTask}
+              pendingPermissions={pendingPermissions as ToolUseConfirm[]}
+              replyText={replyText}
+              onReplyChange={setReplyText}
+              onReplySubmit={handleReplySubmit}
+              cursorOffset={cursorOffset}
+              onCursorOffsetChange={setCursorOffset}
+            />
+          </Box>
+        )}
+
+        {renameSessionId !== null && (
+          <Box flexDirection="row" gap={1} marginBottom={1}>
+            <Text color="suggestion">rename</Text>
+            <Text dimColor={!renameText}>{renameText || '(empty)'}</Text>
+            <Text dimColor>enter to confirm · esc to cancel</Text>
+          </Box>
+        )}
+
+        <Text dimColor>{divider}</Text>
+        <Box flexDirection="row" height={1} alignItems="center">
+          <Text bold color="suggestion">
+            ›{' '}
           </Text>
-        </Box>
-      )}
-
-      {peekOpen && selectedTask && (
-        <Box flexDirection="column" marginBottom={1}>
-          <Text dimColor>{divider}</Text>
-          <AgentViewPeekPanel
-            task={selectedTask}
-            pendingPermissions={pendingPermissions as ToolUseConfirm[]}
-            replyText={replyText}
-            onReplyChange={setReplyText}
-            onReplySubmit={handleReplySubmit}
-            cursorOffset={cursorOffset}
-            onCursorOffsetChange={setCursorOffset}
+          <TextInput
+            value={filterText || dispatchText}
+            onChange={text => {
+              if (filterText) {
+                setFilterText(text);
+                if (!text) setMode('browse');
+              } else {
+                setDispatchText(text);
+                if (text) setMode('dispatch');
+              }
+            }}
+            onSubmit={text => {
+              if (filterText) return;
+              handleDispatch(text);
+            }}
+            columns={Math.max(10, contentWidth - 2)}
+            cursorOffset={dispatchCursor}
+            onChangeCursorOffset={setDispatchCursor}
+            placeholder={inputPlaceholder}
           />
         </Box>
-      )}
+        <Text dimColor>{divider}</Text>
 
-      {renameSessionId !== null && (
-        <Box flexDirection="row" gap={1} marginBottom={1}>
-          <Text color="suggestion">rename</Text>
-          <Text dimColor={!renameText}>{renameText || '(empty)'}</Text>
-          <Text dimColor>enter to confirm · esc to cancel</Text>
-        </Box>
-      )}
+        {/* Autocomplete suggestions dropdown */}
+        {autocomplete.suggestions.length > 0 && dispatchText && (
+          <Box flexDirection="column" marginBottom={1}>
+            {autocomplete.suggestions.map((sug, i) => {
+              const isSelected = i === autocomplete.selectedIndex;
+              return (
+                <Box key={`${sug.type}-${sug.text}`} flexDirection="row" gap={1}>
+                  <Text color={(isSelected ? 'cyan' : 'dim') as any}>{isSelected ? '▸' : ' '}</Text>
+                  <Text bold={isSelected} color={(isSelected ? 'text' : 'dim') as any}>
+                    {autocomplete.prefix}
+                    {sug.text}
+                  </Text>
+                  <Text dimColor>{sug.description}</Text>
+                </Box>
+              );
+            })}
+            <Text dimColor>tab to accept · ↑↓ to navigate</Text>
+          </Box>
+        )}
 
-      <Text dimColor>{divider}</Text>
-      <Box flexDirection="row" height={1} alignItems="center">
-        <Text bold color="suggestion">› </Text>
-        <TextInput
-          value={filterText || dispatchText}
-          onChange={text => {
-            if (filterText) {
-              setFilterText(text);
-              if (!text) setMode('browse');
-            } else {
-              setDispatchText(text);
-              if (text) setMode('dispatch');
-            }
-          }}
-          onSubmit={text => {
-            if (filterText) return;
-            handleDispatch(text);
-          }}
-          columns={Math.max(10, contentWidth - 2)}
-          cursorOffset={dispatchCursor}
-          onChangeCursorOffset={setDispatchCursor}
-          placeholder={inputPlaceholder}
-        />
-      </Box>
-      <Text dimColor>{divider}</Text>
+        <Text dimColor>enter:dispatch/open · tab:agents · space:peek · /:dispatch · ?:help · esc:back</Text>
 
-      {/* Autocomplete suggestions dropdown */}
-      {autocomplete.suggestions.length > 0 && dispatchText && (
-        <Box flexDirection="column" marginBottom={1}>
-          {autocomplete.suggestions.map((sug, i) => {
-            const isSelected = i === autocomplete.selectedIndex;
-            return (
-              <Box key={`${sug.type}-${sug.text}`} flexDirection="row" gap={1}>
-                <Text color={(isSelected ? 'cyan' : 'dim') as any}>{isSelected ? '▸' : ' '}</Text>
-                <Text bold={isSelected} color={(isSelected ? 'text' : 'dim') as any}>
-                  {autocomplete.prefix}
-                  {sug.text}
-                </Text>
-                <Text dimColor>{sug.description}</Text>
-              </Box>
-            );
-          })}
-          <Text dimColor>tab to accept · ↑↓ to navigate</Text>
-        </Box>
-      )}
-
-      <Text dimColor>
-        enter:dispatch/open · tab:agents · space:peek · /:dispatch · ?:help · esc:back
-      </Text>
-
-      {shortcutsHelpOpen && <AgentViewShortcutsHelp onClose={() => setShortcutsHelpOpen(false)} />}
+        {shortcutsHelpOpen && <AgentViewShortcutsHelp onClose={() => setShortcutsHelpOpen(false)} />}
       </Box>
     </Pane>
   );

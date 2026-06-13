@@ -103,11 +103,7 @@ function buildArgs(task: SearchTask, cwd: string): string[] {
  * Results are returned as-is from ripGrep (no stat() sorting, no relativization —
  * caller can post-process if needed).
  */
-async function executeOne(
-  task: SearchTask,
-  abortSignal: AbortSignal,
-  cwd: string,
-): Promise<string[]> {
+async function executeOne(task: SearchTask, abortSignal: AbortSignal, cwd: string): Promise<string[]> {
   const absolutePath = task.path ? expandPath(task.path) : cwd;
 
   // Check cache first (files_with_matches only — content/count too memory-heavy)
@@ -144,9 +140,10 @@ async function executeOne(
 
   // Apply pagination
   const effectiveLimit = task.head_limit ?? 250;
-  const sliced = task.head_limit === 0
-    ? results.slice(task.offset ?? 0)
-    : results.slice(task.offset ?? 0, (task.offset ?? 0) + effectiveLimit);
+  const sliced =
+    task.head_limit === 0
+      ? results.slice(task.offset ?? 0)
+      : results.slice(task.offset ?? 0, (task.offset ?? 0) + effectiveLimit);
 
   return sliced;
 }
@@ -165,9 +162,7 @@ export async function parallelSearch(
   cwd: string,
 ): Promise<ParallelSearchResult> {
   const settled = await Promise.allSettled(
-    tasks.map(task =>
-      executeOne(task, abortSignal, cwd).then(results => ({ task, results })),
-    ),
+    tasks.map(task => executeOne(task, abortSignal, cwd).then(results => ({ task, results }))),
   );
 
   const taskResults: ParallelSearchResultTask[] = [];

@@ -101,15 +101,12 @@ export const PeerRunTool = buildTool({
     return React.createElement(
       MessageResponse,
       null,
-      React.createElement(
-        Text,
-        { dimColor: true },
-        `exit ${output.exitCode}: ${truncateText(out, 120)}`,
-      ),
+      React.createElement(Text, { dimColor: true }, `exit ${output.exitCode}: ${truncateText(out, 120)}`),
     );
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
-    if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Peer command failed: ${output.error}` };
+    if (!output.success)
+      return { tool_use_id: toolUseID, type: 'tool_result', content: `Peer command failed: ${output.error}` };
     const out = (output.stdout || '').trim() || output.stderr || '(empty)';
     return {
       tool_use_id: toolUseID,

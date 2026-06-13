@@ -142,7 +142,9 @@ export const PeerListMessagesTool = buildTool({
     const after = input.after ?? 0;
 
     notifyPeerFeedback(
-      input.wait ? `waiting up to ${Math.min(Math.max(1, input.timeout ?? 30), 120)}s for new messages` : 'listing peer messages',
+      input.wait
+        ? `waiting up to ${Math.min(Math.max(1, input.timeout ?? 30), 120)}s for new messages`
+        : 'listing peer messages',
       'peer-list-msgs',
       'low',
     );

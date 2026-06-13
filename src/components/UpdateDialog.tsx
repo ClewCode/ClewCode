@@ -112,9 +112,8 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
 
       // Clawd mascot area - first line with title
       // Row 0: top
-      const title = phase === 'menu'
-        ? `${BOLD}${YELLOW}Update Available!${RESET}`
-        : `${BOLD}${CYAN}Updating Clew...${RESET}`;
+      const title =
+        phase === 'menu' ? `${BOLD}${YELLOW}Update Available!${RESET}` : `${BOLD}${CYAN}Updating Clew...${RESET}`;
       lines.push(`${renderClawdLine(CLAWD[0])}    ${title}${' '.repeat(18)}║`);
 
       // Row 1: ears

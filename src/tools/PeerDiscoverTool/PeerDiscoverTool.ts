@@ -133,7 +133,11 @@ export const PeerDiscoverTool = buildTool({
     const minPeers = input.minPeers ?? 1;
     const waitTimeoutMs = Math.min(Math.max(1, input.waitTimeout ?? 30), 120) * 1000;
 
-    notifyPeerFeedback(input.wait ? `discovering peers for up to ${Math.round(waitTimeoutMs / 1000)}s` : 'discovering peers', 'peer-discover', 'low');
+    notifyPeerFeedback(
+      input.wait ? `discovering peers for up to ${Math.round(waitTimeoutMs / 1000)}s` : 'discovering peers',
+      'peer-discover',
+      'low',
+    );
 
     // Helper to do one discover round
     const doDiscover = async (): Promise<number> => {

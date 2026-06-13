@@ -55,7 +55,8 @@ export const PeerJoinTool = buildTool({
     return getCwd();
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
-    if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `Failed to join peer: ${output.error}` };
+    if (!output.success)
+      return { tool_use_id: toolUseID, type: 'tool_result', content: `Failed to join peer: ${output.error}` };
     const extra = [output.displayName, output.role, output.shell].filter(Boolean).join(' ');
     return {
       tool_use_id: toolUseID,

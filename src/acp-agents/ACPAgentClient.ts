@@ -76,7 +76,11 @@ export class ACPAgentClient {
   /**
    * Stream results from an agent run.
    */
-  async *runAgentStream(agentName: string, input: string, signal?: AbortSignal): AsyncGenerator<unknown, void, unknown> {
+  async *runAgentStream(
+    agentName: string,
+    input: string,
+    signal?: AbortSignal,
+  ): AsyncGenerator<unknown, void, unknown> {
     for await (const event of this.client.runStream(agentName, input, signal)) {
       yield event;
     }

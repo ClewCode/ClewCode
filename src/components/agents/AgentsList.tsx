@@ -214,9 +214,7 @@ export function AgentsList({ source, agents, onBack, onSelect, onCreateNew, chan
           {onCreateNew && <Box>{renderCreateNewOption()}</Box>}
           <Text dimColor>No agents found. Create specialized subagents that Clew can delegate to.</Text>
           <Text dimColor>Each subagent has its own context window, custom system prompt, and specific tools.</Text>
-          <Text dimColor>
-            Try creating: Code Reviewer, Security Reviewer, Tech Lead, or UX Reviewer.
-          </Text>
+          <Text dimColor>Try creating: Code Reviewer, Security Reviewer, Tech Lead, or UX Reviewer.</Text>
           {source !== 'built-in' && sortedAgents.some(a => a.source === 'built-in') && (
             <>
               <Divider />

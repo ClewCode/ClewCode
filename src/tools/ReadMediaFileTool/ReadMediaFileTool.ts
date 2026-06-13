@@ -267,8 +267,10 @@ export const ReadMediaFileTool = buildTool({
   },
 
   renderToolResultMessage(result: any) {
-    if (result.data?.type === 'image') return `📷 Image loaded (${(result.data.file.original_size / 1024).toFixed(0)} KB)`;
-    if (result.data?.type === 'video') return `🎬 Video loaded (${(result.data.file.original_size / 1024 / 1024).toFixed(1)} MB)`;
+    if (result.data?.type === 'image')
+      return `📷 Image loaded (${(result.data.file.original_size / 1024).toFixed(0)} KB)`;
+    if (result.data?.type === 'video')
+      return `🎬 Video loaded (${(result.data.file.original_size / 1024 / 1024).toFixed(1)} MB)`;
     return `Media file read`;
   },
 

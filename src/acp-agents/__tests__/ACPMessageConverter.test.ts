@@ -16,10 +16,7 @@ describe('ACPMessageConverter', () => {
   });
 
   it('should convert ACP messages to a prompt string', () => {
-    const messages = [
-      textToACPMessage('user', 'Hello'),
-      textToACPMessage('user', 'How are you?'),
-    ];
+    const messages = [textToACPMessage('user', 'Hello'), textToACPMessage('user', 'How are you?')];
     const prompt = acpMessagesToPrompt(messages);
     expect(prompt).toContain('Hello');
     expect(prompt).toContain('How are you?');

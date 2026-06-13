@@ -51,7 +51,9 @@ export function AgentViewPeekPanel({
         {/* Header: name + ID + PR info */}
         <Box flexDirection="row" justifyContent="space-between">
           <Box flexDirection="row" gap={2}>
-            <Text bold color="permission">{(task as any).customName ?? task.agentType ?? 'Agent'}</Text>
+            <Text bold color="permission">
+              {(task as any).customName ?? task.agentType ?? 'Agent'}
+            </Text>
             {(task as any)._prInfo && (
               <Text dimColor>
                 {figures.arrowRight} PR #{((task as any)._prInfo as any)?.number ?? ''}{' '}
@@ -64,7 +66,9 @@ export function AgentViewPeekPanel({
 
         {/* Prompt / description */}
         <Box marginY={1}>
-          <Text wrap="wrap" dimColor>{task.prompt ?? getActivityPreview(task)}</Text>
+          <Text wrap="wrap" dimColor>
+            {task.prompt ?? getActivityPreview(task)}
+          </Text>
         </Box>
 
         {/* Row summary (AI-generated) */}
@@ -115,9 +119,7 @@ export function AgentViewPeekPanel({
         {/* Needs input indicator */}
         {needsInput && (
           <Box marginTop={1}>
-            <Text color="yellow">
-              {figures.play} This agent needs your input
-            </Text>
+            <Text color="yellow">{figures.play} This agent needs your input</Text>
           </Box>
         )}
 

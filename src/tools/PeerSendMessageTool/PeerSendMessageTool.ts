@@ -114,15 +114,13 @@ export const PeerSendMessageTool = buildTool({
       );
     }
     const chunkStr = output.chunksSent ? ` (${output.chunksSent} chunks)` : '';
-    const responseStr = output.response ? ` | Response from ${output.response.fromName}: "${truncateText(output.response.text, 80)}"` : '';
+    const responseStr = output.response
+      ? ` | Response from ${output.response.fromName}: "${truncateText(output.response.text, 80)}"`
+      : '';
     return React.createElement(
       MessageResponse,
       null,
-      React.createElement(
-        Text,
-        { dimColor: true },
-        `Sent to ${output.peerHostname}${chunkStr}${responseStr}`,
-      ),
+      React.createElement(Text, { dimColor: true }, `Sent to ${output.peerHostname}${chunkStr}${responseStr}`),
     );
   },
   async validateInput(input: any): Promise<ValidationResult> {

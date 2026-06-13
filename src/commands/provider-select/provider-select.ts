@@ -427,9 +427,8 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   const currentSessionModel = useAppState(s => (s.mainLoopModelForSession || s.mainLoopModel) as string | null);
 
   const info = provider ? getProviderInfo(provider) : null;
-  const hasExistingKey = provider && info
-    ? Boolean(config?.apiKeys?.[provider] || (info.envKey ? process.env[info.envKey] : false))
-    : false;
+  const hasExistingKey =
+    provider && info ? Boolean(config?.apiKeys?.[provider] || (info.envKey ? process.env[info.envKey] : false)) : false;
 
   React.useEffect(() => {
     void loadConfig().then(loadedConfig => {

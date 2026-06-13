@@ -265,7 +265,9 @@ export async function call(
       return null;
     }
     if (goalState.blocked) {
-      onDone('◎ Goal is blocked. Use /goal clear to remove it, or /goal edit to update the condition.', { display: 'system' });
+      onDone('◎ Goal is blocked. Use /goal clear to remove it, or /goal edit to update the condition.', {
+        display: 'system',
+      });
       return null;
     }
 

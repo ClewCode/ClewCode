@@ -94,7 +94,11 @@ export const PeerPingTool = buildTool({
     const store = getGlobalPeerStore();
     const timeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
 
-    notifyPeerFeedback(input.wait ? `waiting up to ${Math.round(timeoutMs / 1000)}s for ${input.peer}` : `pinging ${input.peer}`, 'peer-ping', 'low');
+    notifyPeerFeedback(
+      input.wait ? `waiting up to ${Math.round(timeoutMs / 1000)}s for ${input.peer}` : `pinging ${input.peer}`,
+      'peer-ping',
+      'low',
+    );
 
     // Try to find and ping peer, optionally with retry
     const attemptPing = async (): Promise<{ ok: boolean; result?: any; error?: string }> => {

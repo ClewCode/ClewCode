@@ -96,7 +96,11 @@ export const PeerListRolesTool = buildTool({
     const minPeers = input.minPeers ?? 1;
     const timeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
 
-    notifyPeerFeedback(input.wait ? `waiting up to ${Math.round(timeoutMs / 1000)}s for peer roles` : 'reading peer roles', 'peer-list-roles', 'low');
+    notifyPeerFeedback(
+      input.wait ? `waiting up to ${Math.round(timeoutMs / 1000)}s for peer roles` : 'reading peer roles',
+      'peer-list-roles',
+      'low',
+    );
 
     // Helper to build response data from current store
     const buildData = (waited?: boolean, timedOut?: boolean) => {

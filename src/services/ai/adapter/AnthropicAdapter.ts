@@ -54,10 +54,7 @@ function getOpenAIResponseFormat(params: BetaMessageStreamParams): Record<string
  * not in the provider registry, defaults to NOT sending it to avoid
  * 400 errors on models that don't support it.
  */
-function getOpenAIReasoningEffort(
-  params: BetaMessageStreamParams,
-  providerId: string,
-): Record<string, unknown> {
+function getOpenAIReasoningEffort(params: BetaMessageStreamParams, providerId: string): Record<string, unknown> {
   const outputConfig = (params as any).output_config as { effort?: string } | undefined;
   if (!outputConfig?.effort) return {};
 
@@ -333,7 +330,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       const modelInfo = getProviderModelInfo(this.providerId as any, modelId);
       if (modelInfo?.capabilities.videoIn !== undefined) return modelInfo.capabilities.videoIn;
       if (entry.capabilities.videoIn !== undefined) return entry.capabilities.videoIn;
-      return false;  // No provider declares video support by default
+      return false; // No provider declares video support by default
     } catch {
       return false;
     }

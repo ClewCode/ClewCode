@@ -54,9 +54,7 @@ export async function getImageProcessor(): Promise<SharpFunction> {
     imageProcessorModule = { default: sharp };
     return sharp;
   } catch {
-    throw new Error(
-      'Image processing is not available. Install sharp: npm install sharp (or bun add sharp).',
-    );
+    throw new Error('Image processing is not available. Install sharp: npm install sharp (or bun add sharp).');
   }
 }
 

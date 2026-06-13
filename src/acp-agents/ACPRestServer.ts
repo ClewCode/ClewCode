@@ -217,14 +217,10 @@ async function executeRunAsync(runId: string, prompt: string): Promise<void> {
 
     const { completeRun, failRun } = await import('./ACPRunManager.js');
     if (result.exitCode === 0 && !result.timedOut) {
-      const output = [
-        resultToACPMessage(result.stdout || '(completed with no output)'),
-      ];
+      const output = [resultToACPMessage(result.stdout || '(completed with no output)')];
       completeRun(runId, output);
     } else {
-      const errorMsg = result.timedOut
-        ? 'Task timed out'
-        : result.stderr || `Exit code ${result.exitCode}`;
+      const errorMsg = result.timedOut ? 'Task timed out' : result.stderr || `Exit code ${result.exitCode}`;
       failRun(runId, errorMsg);
     }
   } catch (err: unknown) {

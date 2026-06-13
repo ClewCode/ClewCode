@@ -140,9 +140,7 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
     // Handle generic format with data array (fallback for other providers like KiloCode/OpenCode)
     if (parsedModels === null && 'data' in data && Array.isArray(data.data)) {
       parsedModels = data.data.map((model: any) => {
-        const supportedParams: string[] = Array.isArray(model.supported_parameters)
-          ? model.supported_parameters
-          : [];
+        const supportedParams: string[] = Array.isArray(model.supported_parameters) ? model.supported_parameters : [];
         const inputModalities: string[] = Array.isArray(model.architecture?.input_modalities)
           ? model.architecture.input_modalities
           : [];
@@ -194,12 +192,14 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
       // API data takes priority; static only fills gaps
       return {
         ...fm,
-        contextWindow: fm.contextWindow ?? (typeof staticCap.maxContext === 'number' ? staticCap.maxContext : undefined),
+        contextWindow:
+          fm.contextWindow ?? (typeof staticCap.maxContext === 'number' ? staticCap.maxContext : undefined),
         supportsTools: fm.supportsTools ?? (staticCap.toolCalling !== 'none' && staticCap.toolCalling !== undefined),
-        supportsVision: fm.supportsVision ?? (staticCap.vision ?? false),
-        supportsReasoning: fm.supportsReasoning ?? (staticCap.reasoning ?? false),
-        maxOutput: fm.maxOutput ?? (typeof staticCap.maxOutput === 'number' ? (staticCap.maxOutput as number) : undefined),
-        free: fm.free ?? (staticCap.free ?? false),
+        supportsVision: fm.supportsVision ?? staticCap.vision ?? false,
+        supportsReasoning: fm.supportsReasoning ?? staticCap.reasoning ?? false,
+        maxOutput:
+          fm.maxOutput ?? (typeof staticCap.maxOutput === 'number' ? (staticCap.maxOutput as number) : undefined),
+        free: fm.free ?? staticCap.free ?? false,
       };
     });
   } catch (error) {

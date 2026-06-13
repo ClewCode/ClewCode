@@ -971,8 +971,6 @@ export function REPL({
   const editorRenderingRef = useRef(false);
   const { addNotification, removeNotification } = useNotifications();
 
-
-
   // Wire up peer tool feedback notifications
   useEffect(() => {
     import('../tools/peer/peerFeedback.js').then(({ setPeerFeedbackHandler }) => {

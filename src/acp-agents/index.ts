@@ -15,7 +15,12 @@ export { createClewCodeManifest, peerInfoToManifest } from './ACPAgentManifest.j
 export type { ACPAgentManifest } from './ACPAgentManifest.js';
 export { createRun, getRun, listRuns, completeRun, failRun, cancelRun, clearRuns } from './ACPRunManager.js';
 export type { ACPRun, ACPRunStatus } from './ACPRunManager.js';
-export { textToACPMessage, acpMessagesToPrompt, resultToACPMessage, extractTextFromMessage } from './ACPMessageConverter.js';
+export {
+  textToACPMessage,
+  acpMessagesToPrompt,
+  resultToACPMessage,
+  extractTextFromMessage,
+} from './ACPMessageConverter.js';
 export { ACPAgentClient } from './ACPAgentClient.js';
 export type { ACPAgentClientConfig } from './ACPAgentClient.js';
 export { startACPRestServer, stopACPRestServer } from './ACPRestServer.js';

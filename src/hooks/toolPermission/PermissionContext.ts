@@ -143,8 +143,6 @@ function createPermissionContext(
       return true;
     },
     cancelAndAbort(feedback?: string, isAbort?: boolean, contentBlocks?: ContentBlockParam[]): PermissionDecision {
-
-
       const sub = !!toolUseContext.agentId;
       const baseMessage = feedback
         ? `${sub ? SUBAGENT_REJECT_MESSAGE_WITH_REASON_PREFIX : REJECT_MESSAGE_WITH_REASON_PREFIX}${feedback}`
@@ -267,8 +265,6 @@ function createPermissionContext(
       contentBlocks?: ContentBlockParam[],
       decisionReason?: PermissionDecisionReason,
     ): Promise<PermissionAllowDecision> {
-
-
       const acceptedPermanentUpdates = await this.persistPermissions(permissionUpdates);
       this.logDecision(
         {
