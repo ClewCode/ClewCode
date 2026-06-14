@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.15] — 2026-06-14
+
+### Added
+
+- **ACP + Mesh integration**: `AcpMeshBoundary` (`src/acp-agents/AcpMeshBoundary.ts`) — shared execution boundary routing both editor ACP and REST ACP through the process peer / mesh layer with `AbortSignal` and `onProgress` support.
+- **AcpRunController** (`src/acp-agents/AcpRunController.ts`) — lifecycle owner for ACP runs: creates run, wires `AbortController`, executes through mesh boundary, maps results to terminal state via `ACPRunManager`.
+- **Terminal state guards**: `ACPRunManager` now prevents overwriting completed/failed/cancelled runs. `isTerminalStatus()` helper exported.
+- **Cancel path**: Editor `session/cancel` and REST `DELETE /runs/:id` both route through `AcpRunController.cancel()` → `AbortController.abort()` → boundary returns `'Cancelled'`.
+- **WebSocket transport**: `ACPWebSocketServer.ts` — Bun-native WebSocket server bridging remote editor connections to `AgentSideConnection` via NDJSON stream. `clew acp serve --port 3099` now starts WebSocket server.
+- **SSE streaming**: `GET /runs/:id/stream` endpoint with 500ms polling, keepalive comments every 15s, auto-close on terminal state.
+- **ACPMessageConverter fixes**: Added missing `content_encoding: 'plain'` and `created_at`/`completed_at` fields to match `acp-sdk` `Message`/`MessagePart` types.
+
+### Changed
+
+- **Editor ACP shapes fixed**: `PromptResponse` now returns only `{ stopReason }` (removed invalid `messages`/`error`). `sessionUpdate` uses `SessionNotification` shape with `agent_message_chunk` discriminated union.
+- **REST ACP**: Replaced inline execution with `AcpRunController`. Fixed bug where missing provider called both `completeRun` AND `failRun`.
+- **`acp-agents/index.ts`**: Exports `AcpRunController`, `runPromptThroughMesh`, `isTerminalStatus`, and their types.
+
+### Fixed
+
+- ACP REST fallback no longer produces both completed and failed states.
+- `content_encoding: 'plain'` now present on all ACP MessagePart outputs.
+
 ## [0.2.14] — 2026-06-14
 
 ### Added
