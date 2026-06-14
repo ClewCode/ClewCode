@@ -30,6 +30,7 @@ biome.json
 src/utils/vendor/
 
 # Dev / scratch
+scripts/
 scratch/
 research-dossiers/
 .searxng/
