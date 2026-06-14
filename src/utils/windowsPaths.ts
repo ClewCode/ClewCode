@@ -91,7 +91,46 @@ export function setShellIfWindows(): void {
 }
 
 /**
+ * Find the path to bash.exe from Git for Windows installation.
+ * Searches common installation locations.
+ */
+function findGitBashFromCommonLocations(): string | null {
+  const commonPaths = [
+    // Standard Git for Windows paths
+    'C:\\Program Files\\Git\\bin\\bash.exe',
+    'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+    // Portable Git
+    'C:\\PortableGit\\bin\\bash.exe',
+    // GitHub Desktop bundled Git
+    process.env.LOCALAPPDATA
+      ? pathWin32.join(process.env.LOCALAPPDATA, 'GitHubDesktop', 'app-bin', 'bin', 'bash.exe')
+      : null,
+    // Scoop installed Git
+    process.env.USERPROFILE
+      ? pathWin32.join(process.env.USERPROFILE, 'scoop', 'apps', 'git', 'current', 'bin', 'bash.exe')
+      : null,
+    // Choco installed Git
+    'C:\\ProgramData\\chocolatey\\lib\\git\\tools\\bin\\bash.exe',
+  ].filter(Boolean) as string[];
+
+  for (const location of commonPaths) {
+    if (checkPathExists(location)) {
+      return location;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Find the path where `bash.exe` included with git-bash exists, exiting the process if not found.
+ *
+ * Resolution order:
+ * 1. CLAUDE_CODE_GIT_BASH_PATH env var
+ * 2. Git installation directory (via where.exe or PATH)
+ * 3. Common installation paths (Program Files, Scoop, Choco, etc.)
+ * 4. WSL bash (if WSL is installed)
+ * 5. Exit with helpful error message
  */
 export const findGitBashPath = memoize((): string => {
   if (process.env.CLAUDE_CODE_GIT_BASH_PATH) {
@@ -106,12 +145,29 @@ export const findGitBashPath = memoize((): string => {
     process.exit(1);
   }
 
+  // Try finding git and resolving bash from its location
   const gitPath = findExecutable('git');
   if (gitPath) {
     const bashPath = pathWin32.join(gitPath, '..', '..', 'bin', 'bash.exe');
     if (checkPathExists(bashPath)) {
       return bashPath;
     }
+  }
+
+  // Try common installation paths
+  const commonPath = findGitBashFromCommonLocations();
+  if (commonPath) {
+    return commonPath;
+  }
+
+  // Try WSL bash as fallback
+  try {
+    const result = execSync_DEPRECATED('wsl which bash', { stdio: 'pipe', encoding: 'utf8', timeout: 5000 }).trim();
+    if (result) {
+      return `wsl ${result}`;
+    }
+  } catch {
+    // WSL not available
   }
 
   // biome-ignore lint/suspicious/noConsole:: intentional console output
@@ -121,6 +177,22 @@ export const findGitBashPath = memoize((): string => {
   // eslint-disable-next-line custom-rules/no-process-exit
   process.exit(1);
 });
+
+/**
+ * Check if the default Windows shell is cmd.exe (no Git Bash or WSL available).
+ */
+export function isCmdExeDefault(): boolean {
+  if (getPlatform() !== 'windows') return false;
+
+  try {
+    // If Git Bash or WSL bash is available, cmd.exe is not the default
+    if (findGitBashPath()) return false;
+  } catch {
+    // findGitBashPath exits on failure, but catch just in case
+  }
+
+  return true;
+}
 
 /** Convert a Windows path to a POSIX path using pure JS. */
 export const windowsPathToPosixPath = memoizeWithLRU(

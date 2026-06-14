@@ -139,6 +139,13 @@ export async function createBashShellProvider(
 
       const commandParts: string[] = [];
 
+      // On Windows/Git Bash, set locale to UTF-8 to avoid codepage issues
+      // with non-ASCII characters in command output. Git Bash defaults to
+      // the system's OEM codepage (e.g., CP437, CP850) which mangles Unicode.
+      if (isWindows) {
+        commandParts.push('export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 2>/dev/null || true');
+      }
+
       // Source the snapshot file. The `|| true` guards the race between the
       // access() check above and the spawned shell's `source` — if the file
       // vanishes in that window, the `&&` chain still continues.

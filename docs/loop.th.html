@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent Loop â€” Clew Code</title>
-  <meta name="description" content="Autonomous agent loop â€” task queue consumer, worker lifecycle, retry logic, dead-letter queue, lease-based concurrency">
+  <title>Agent Loop — Clew Code</title>
+  <meta name="description" content="Autonomous agent loop — task queue consumer, worker lifecycle, retry logic, dead-letter queue, lease-based concurrency">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,200 +18,200 @@
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <div class="content-wrap">
     <main class="content">
-      <div class="breadcrumbs"><a href="index.th.html">à¸«à¸™à¹‰à¸²à¹à¸£à¸</a><span class="sep">/</span><span>Agent Loop</span></div>
+      <div class="breadcrumbs"><a href="index.th.html">หน้าแรก</a><span class="sep">/</span><span>Agent Loop</span></div>
       <h1>Autonomous Agent Loop</h1>
-      <p class="section-subtitle">Loop à¸—à¸µà¹ˆà¸£à¸±à¸™à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´ 24/7 â€” à¸”à¸¶à¸‡à¸‡à¸²à¸™à¸ˆà¸²à¸à¸„à¸´à¸§, spawn worker, à¹€à¸Šà¹‡à¸„à¸ªà¸–à¸²à¸™à¸°, retry à¹€à¸¡à¸·à¹ˆà¸­ fail, dead-letter à¹€à¸¡à¸·à¹ˆà¸­à¹€à¸à¸´à¸™ max retry</p>
+      <p class="section-subtitle">Loop ที่รันอัตโนมัติ 24/7 — ดึงงานจากคิว, spawn worker, เช็คสถานะ, retry เมื่อ fail, dead-letter เมื่อเกิน max retry</p>
 
-      <p>Agent Loop à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ <code>src/services/autonomous/agentLoop.ts</code> â€” à¹€à¸›à¹‡à¸™ consumer à¸•à¸±à¸§à¹€à¸”à¸µà¸¢à¸§à¸—à¸µà¹ˆà¸­à¹ˆà¸²à¸™ task queue à¹à¸¥à¸°à¸šà¸£à¸´à¸«à¸²à¸£ lifecycle à¸‚à¸­à¸‡ worker process à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”</p>
+      <p>Agent Loop อยู่ใน <code>src/services/autonomous/agentLoop.ts</code> — เป็น consumer ตัวเดียวที่อ่าน task queue และบริหาร lifecycle ของ worker process ทั้งหมด</p>
 
-      <h2>à¹€à¸—à¸„à¸™à¸´à¸„à¹à¸¥à¸°à¸«à¸¥à¸±à¸à¸à¸²à¸£</h2>
+      <h2>เทคนิคและหลักการ</h2>
 
-      <h3>à¸—à¸³à¹„à¸¡à¸•à¹‰à¸­à¸‡à¹€à¸›à¹‡à¸™ Loop à¹à¸—à¸™à¸—à¸µà¹ˆà¸ˆà¸°à¹€à¸›à¹‡à¸™ Message Queue?</h3>
-      <p>à¸£à¸°à¸šà¸š message queue à¹à¸šà¸š RabbitMQ/Kafka à¸¡à¸µ overhead à¹ƒà¸™à¸à¸²à¸£ setup à¹à¸¥à¸° maintenance Agent Loop à¹ƒà¸Šà¹‰<strong>à¹„à¸Ÿà¸¥à¹Œ JSON à¹€à¸›à¹‡à¸™ persistent queue</strong> â€” à¸—à¸³à¸‡à¸²à¸™à¹„à¸”à¹‰à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¸¡à¸µ external dependency:</p>
+      <h3>ทำไมต้องเป็น Loop แทนที่จะเป็น Message Queue?</h3>
+      <p>ระบบ message queue แบบ RabbitMQ/Kafka มี overhead ในการ setup และ maintenance Agent Loop ใช้<strong>ไฟล์ JSON เป็น persistent queue</strong> — ทำงานได้โดยไม่ต้องมี external dependency:</p>
       <ul>
-        <li><strong>Zero external deps</strong> â€” à¹ƒà¸Šà¹‰ <code>fs.watch</code> à¸•à¸£à¸§à¸ˆà¸ˆà¸±à¸šà¸à¸²à¸£à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¹à¸›à¸¥à¸‡à¸‚à¸­à¸‡à¹„à¸Ÿà¸¥à¹Œ queue</li>
-        <li><strong>File-based atomicity</strong> â€” à¸­à¹ˆà¸²à¸™/à¹€à¸‚à¸µà¸¢à¸™à¹„à¸Ÿà¸¥à¹Œà¹€à¸”à¸µà¸¢à¸§à¸ à¸²à¸¢à¹ƒà¸•à¹‰ lock à¸—à¸³à¹ƒà¸«à¹‰à¸«à¸¥à¸²à¸¢ process à¹à¸‚à¹ˆà¸‡à¸à¸±à¸™ consume à¹„à¸”à¹‰</li>
-        <li><strong>Self-debouncing</strong> â€” <code>ourWriteInProgress</code> flag à¸›à¹‰à¸­à¸‡à¸à¸±à¸™ self-trigger à¹€à¸¡à¸·à¹ˆà¸­à¹€à¸£à¸²à¹€à¸›à¹‡à¸™à¸„à¸™à¹€à¸‚à¸µà¸¢à¸™à¹€à¸­à¸‡</li>
-        <li><strong>Cross-platform</strong> â€” à¹„à¸Ÿà¸¥à¹Œ JSON à¸—à¸³à¸‡à¸²à¸™à¹„à¸”à¹‰à¸—à¸¸à¸ OS à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ message broker</li>
+        <li><strong>Zero external deps</strong> — ใช้ <code>fs.watch</code> ตรวจจับการเปลี่ยนแปลงของไฟล์ queue</li>
+        <li><strong>File-based atomicity</strong> — อ่าน/เขียนไฟล์เดียวภายใต้ lock ทำให้หลาย process แข่งกัน consume ได้</li>
+        <li><strong>Self-debouncing</strong> — <code>ourWriteInProgress</code> flag ป้องกัน self-trigger เมื่อเราเป็นคนเขียนเอง</li>
+        <li><strong>Cross-platform</strong> — ไฟล์ JSON ทำงานได้ทุก OS ไม่ต้องติดตั้ง message broker</li>
       </ul>
 
-      <h3>Lease-Based Concurrency â€” à¸›à¹‰à¸­à¸‡à¸à¸±à¸™ Task Duplicate</h3>
-      <p>à¸›à¸±à¸à¸«à¸²à¸„à¸¥à¸²à¸ªà¸ªà¸´à¸à¸‚à¸­à¸‡ distributed workers: à¸¡à¸µ 2 worker à¹€à¸«à¹‡à¸™ task à¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸™à¹à¸¥à¸°à¸—à¸³à¸‡à¸²à¸™à¸‹à¹‰à¸³ Lease à¹à¸à¹‰à¸›à¸±à¸à¸«à¸²à¸™à¸µà¹‰à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¹ƒà¸Šà¹‰ distributed lock:</p>
+      <h3>Lease-Based Concurrency — ป้องกัน Task Duplicate</h3>
+      <p>ปัญหาคลาสสิกของ distributed workers: มี 2 worker เห็น task เดียวกันและทำงานซ้ำ Lease แก้ปัญหานี้โดยไม่ต้องใช้ distributed lock:</p>
       <pre><code>Main Loop                    Queue File (.json)              Worker Process
-    â”‚                              â”‚                              â”‚
-    â”‚ getNextTask()                â”‚                              â”‚
-    â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚                              â”‚
-    â”‚â—„â”€â”€â”€ task {id, status:pending}â”‚                              â”‚
-    â”‚                              â”‚                              â”‚
-    â”‚ leaseTask(id, agentId)      â”‚                              â”‚
-    â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚                              â”‚
-    â”‚  (atomic: check no lease    â”‚                              â”‚
-    â”‚   â†’ write leaseOwner +      â”‚                              â”‚
-    â”‚   leaseExpiresAt)           â”‚                              â”‚
-    â”‚â—„â”€â”€â”€â”€â”€â”€â”€ true (leased) â”€â”€â”€â”€â”€â”€â”‚                              â”‚
-    â”‚                              â”‚                              â”‚
-    â”‚ spawnWorker(prompt)         â”‚                              â”‚
-    â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚
-    â”‚â—„â”€â”€â”€â”€ WorkerSession {id, pid} â”‚                              â”‚
-    â”‚                              â”‚                              â”‚
-    â”‚          â•â•â• LOOP â•â•â•        â”‚                              â”‚
-    â”‚   while running:             â”‚                              â”‚
-    â”‚     checkWorker(sessionId)   â”‚                              â”‚
-    â”‚     â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚
-    â”‚     â—„â”€â”€â”€ "running" / "completed" / "failed"                 â”‚
-    â”‚                              â”‚                              â”‚
-    â”‚                              â”‚  (worker à¸—à¸³à¸‡à¸²à¸™ autonomously) â”‚
-    â”‚                              â”‚                              â”‚
-    â”‚   [completed] â†’ releaseLease â”‚                              â”‚
-    â”‚              â†’ markCompleted â”‚                              â”‚
-    â”‚                              â”‚                              â”‚
-    â”‚   [failed] â†’ markFailed      â”‚                              â”‚
-    â”‚           â†’ retryTask()      â”‚                              â”‚
-    â”‚           â†’ stopWorker()     â”‚                              â”‚
-    â”‚                              â”‚                              â”‚
-    â”‚   [timeout 30m] â†’ stopWorker â”‚                              â”‚
-    â”‚                â†’ releaseLeaseâ”‚                              â”‚
-    â”‚                â†’ retryTask() â”‚                              â”‚</code></pre>
+    │                              │                              │
+    │ getNextTask()                │                              │
+    │─────────────────────────────►│                              │
+    │◄─── task {id, status:pending}│                              │
+    │                              │                              │
+    │ leaseTask(id, agentId)      │                              │
+    │─────────────────────────────►│                              │
+    │  (atomic: check no lease    │                              │
+    │   → write leaseOwner +      │                              │
+    │   leaseExpiresAt)           │                              │
+    │◄─────── true (leased) ──────│                              │
+    │                              │                              │
+    │ spawnWorker(prompt)         │                              │
+    │─────────────────────────────────────────────────────────────►│
+    │◄──── WorkerSession {id, pid} │                              │
+    │                              │                              │
+    │          ═══ LOOP ═══        │                              │
+    │   while running:             │                              │
+    │     checkWorker(sessionId)   │                              │
+    │     ────────────────────────────────────────────────────────►│
+    │     ◄─── "running" / "completed" / "failed"                 │
+    │                              │                              │
+    │                              │  (worker ทำงาน autonomously) │
+    │                              │                              │
+    │   [completed] → releaseLease │                              │
+    │              → markCompleted │                              │
+    │                              │                              │
+    │   [failed] → markFailed      │                              │
+    │           → retryTask()      │                              │
+    │           → stopWorker()     │                              │
+    │                              │                              │
+    │   [timeout 30m] → stopWorker │                              │
+    │                → releaseLease│                              │
+    │                → retryTask() │                              │</code></pre>
       <ul>
-        <li><strong>Lease owner</strong> â€” à¸£à¸°à¸šà¸¸à¸§à¹ˆà¸² worker à¹„à¸«à¸™à¸à¸³à¸¥à¸±à¸‡à¸—à¸³ task à¸™à¸µà¹‰</li>
-        <li><strong>Lease expiry</strong> â€” à¸–à¹‰à¸² worker crash à¹‚à¸”à¸¢à¹„à¸¡à¹ˆ release, lease à¸ˆà¸°à¸«à¸¡à¸”à¸­à¸²à¸¢à¸¸à¹€à¸­à¸‡ â†’ worker à¸­à¸·à¹ˆà¸™à¸£à¸±à¸šà¸‡à¸²à¸™à¸•à¹ˆà¸­à¹„à¸”à¹‰</li>
-        <li><strong>Startup recovery</strong> â€” à¸•à¸­à¸™ <code>startLoop</code> à¸ˆà¸°à¸£à¸­ 2 à¸§à¸´à¸™à¸²à¸—à¸µ (à¹ƒà¸«à¹‰ process à¹€à¸à¹ˆà¸²à¸•à¸²à¸¢à¹à¸™à¹ˆà¹†) à¹à¸¥à¹‰à¸§à¹€à¸£à¸µà¸¢à¸ <code>expireLeases()</code> à¸¥à¹‰à¸²à¸‡ stale lease à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”</li>
+        <li><strong>Lease owner</strong> — ระบุว่า worker ไหนกำลังทำ task นี้</li>
+        <li><strong>Lease expiry</strong> — ถ้า worker crash โดยไม่ release, lease จะหมดอายุเอง → worker อื่นรับงานต่อได้</li>
+        <li><strong>Startup recovery</strong> — ตอน <code>startLoop</code> จะรอ 2 วินาที (ให้ process เก่าตายแน่ๆ) แล้วเรียก <code>expireLeases()</code> ล้าง stale lease ทั้งหมด</li>
       </ul>
 
       <h3>Retry with Exponential Backoff</h3>
-      <p>Task à¸—à¸µà¹ˆ fail à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¹à¸›à¸¥à¸§à¹ˆà¸²à¸•à¹‰à¸­à¸‡ dead-letter à¸—à¸±à¸™à¸—à¸µ:</p>
+      <p>Task ที่ fail ไม่ได้แปลว่าต้อง dead-letter ทันที:</p>
       <pre><code>Retry attempt     Backoff delay         Cumulative wait
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€     â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€         â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      1           base Ã— 2Â¹ = 30s              30s
-      2           base Ã— 2Â² = 60s              90s
-      3           base Ã— 2Â³ = 120s            210s
-      4           base Ã— 2â´ = 240s            450s
-      5 (max)      base Ã— 2âµ = 480s            930s (~15 min)
+─────────────     ─────────────         ──────────────
+      1           base × 2¹ = 30s              30s
+      2           base × 2² = 60s              90s
+      3           base × 2³ = 120s            210s
+      4           base × 2⁴ = 240s            450s
+      5 (max)      base × 2⁵ = 480s            930s (~15 min)
 
-After max retries â†’ dead_letter queue
+After max retries → dead_letter queue
 Dead-letter preserves: title, description, lastError, errorLog, retryCount</code></pre>
       <ul>
-        <li><strong>Exponential backoff</strong> â€” base = 15s, factor = 2 â€” à¸¥à¸”à¸à¸²à¸£à¸–à¸¥à¹ˆà¸¡ queue à¹€à¸¡à¸·à¹ˆà¸­ task fail à¸‹à¹‰à¸³à¹†</li>
-        <li><strong>Max retries</strong> â€” default 5 à¸„à¸£à¸±à¹‰à¸‡à¸•à¹ˆà¸­ task</li>
-        <li><strong>Retry interval</strong> â€” <code>retryAfter</code> timestamp à¸›à¹‰à¸­à¸‡à¸à¸±à¸™à¹„à¸¡à¹ˆà¹ƒà¸«à¹‰ retry à¸à¹ˆà¸­à¸™à¹€à¸§à¸¥à¸²à¸—à¸µà¹ˆà¸à¸³à¸«à¸™à¸”</li>
-        <li><strong>Dead-letter queue</strong> â€” task à¸—à¸µà¹ˆà¹ƒà¸Šà¹‰ retry à¸«à¸¡à¸”à¸ˆà¸°à¸–à¸¹à¸à¸¢à¹‰à¸²à¸¢à¹„à¸›à¸ªà¸–à¸²à¸™à¸° <code>dead_letter</code> à¸žà¸£à¹‰à¸­à¸¡ <code>deadLetterReason</code> à¹à¸¥à¸° <code>errorLog</code> â€” à¹„à¸¡à¹ˆà¸«à¸²à¸¢à¹„à¸›à¹„à¸«à¸™ à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸¢à¹‰à¸­à¸™à¸«à¸¥à¸±à¸‡à¹„à¸”à¹‰</li>
+        <li><strong>Exponential backoff</strong> — base = 15s, factor = 2 — ลดการถล่ม queue เมื่อ task fail ซ้ำๆ</li>
+        <li><strong>Max retries</strong> — default 5 ครั้งต่อ task</li>
+        <li><strong>Retry interval</strong> — <code>retryAfter</code> timestamp ป้องกันไม่ให้ retry ก่อนเวลาที่กำหนด</li>
+        <li><strong>Dead-letter queue</strong> — task ที่ใช้ retry หมดจะถูกย้ายไปสถานะ <code>dead_letter</code> พร้อม <code>deadLetterReason</code> และ <code>errorLog</code> — ไม่หายไปไหน ตรวจสอบย้อนหลังได้</li>
       </ul>
 
       <h3>Worker Lifecycle + Concurrent Cap</h3>
-      <p>Main loop à¸¡à¸µà¸à¸¥à¹„à¸à¸ˆà¸³à¸à¸±à¸”à¸ˆà¸³à¸™à¸§à¸™ worker à¸žà¸£à¹‰à¸­à¸¡à¸à¸±à¸™:</p>
+      <p>Main loop มีกลไกจำกัดจำนวน worker พร้อมกัน:</p>
       <ul>
-        <li><strong>MAX_CONCURRENT_WORKERS = 3</strong> â€” à¸›à¹‰à¸­à¸‡à¸à¸±à¸™à¹„à¸¡à¹ˆà¹ƒà¸«à¹‰ spawn worker à¸¡à¸²à¸à¹€à¸à¸´à¸™à¹„à¸›à¸ˆà¸™à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸žà¸±à¸‡</li>
-        <li><strong>Loop poll interval</strong> â€” à¸–à¹‰à¸² worker à¹€à¸•à¹‡à¸¡ â†’ sleep <code>LOOP_SLEEP_MS</code> (5s) à¹à¸¥à¹‰à¸§à¸•à¸£à¸§à¸ˆà¹ƒà¸«à¸¡à¹ˆ</li>
-        <li><strong>Worker timeout = 30 à¸™à¸²à¸—à¸µ</strong> â€” task à¸—à¸µà¹ˆà¸£à¸±à¸™à¸™à¸²à¸™à¹€à¸à¸´à¸™à¸ˆà¸°à¸–à¸¹à¸ kill à¹€à¸žà¸·à¹ˆà¸­à¸„à¸·à¸™ resource</li>
-        <li><strong>Worker poll = 10s</strong> â€” à¹€à¸Šà¹‡à¸„à¸ªà¸–à¸²à¸™à¸° worker à¸—à¸¸à¸ 10 à¸§à¸´à¸™à¸²à¸—à¸µà¸œà¹ˆà¸²à¸™ supervisor IPC</li>
+        <li><strong>MAX_CONCURRENT_WORKERS = 3</strong> — ป้องกันไม่ให้ spawn worker มากเกินไปจนเครื่องพัง</li>
+        <li><strong>Loop poll interval</strong> — ถ้า worker เต็ม → sleep <code>LOOP_SLEEP_MS</code> (5s) แล้วตรวจใหม่</li>
+        <li><strong>Worker timeout = 30 นาที</strong> — task ที่รันนานเกินจะถูก kill เพื่อคืน resource</li>
+        <li><strong>Worker poll = 10s</strong> — เช็คสถานะ worker ทุก 10 วินาทีผ่าน supervisor IPC</li>
       </ul>
 
-      <h3>Supervisor Integration â€” Process Health</h3>
-      <p>Worker à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸–à¸¹à¸à¸£à¸±à¸™à¹‚à¸”à¸¢à¸•à¸£à¸‡ à¹à¸•à¹ˆ spawn à¸œà¹ˆà¸²à¸™<strong>Supervisor process</strong> (child_process):</p>
+      <h3>Supervisor Integration — Process Health</h3>
+      <p>Worker ไม่ได้ถูกรันโดยตรง แต่ spawn ผ่าน<strong>Supervisor process</strong> (child_process):</p>
       <pre><code>Agent Loop                    Supervisor                   Worker
-    â”‚                              â”‚                         â”‚
-    â”‚ sendRequest({type:'spawn'})  â”‚                         â”‚
-    â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚                         â”‚
-    â”‚                              â”‚ spawn child_process     â”‚
-    â”‚                              â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚
-    â”‚â—„â”€â”€â”€ {ok:true, sessionId, pid}â”‚                         â”‚
-    â”‚                              â”‚                         â”‚
-    â”‚ sendRequest({type:'attach'}) â”‚                         â”‚
-    â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚                         â”‚
-    â”‚                              â”‚ check process status    â”‚
-    â”‚â—„â”€â”€â”€ {status, isRunning}      â”‚                         â”‚
-    â”‚                              â”‚                         â”‚
-    â”‚ sendRequest({type:'stop'})   â”‚                         â”‚
-    â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚                         â”‚
-    â”‚                              â”‚ kill + cleanup          â”‚
-    â”‚                              â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–ºâ”‚</code></pre>
+    │                              │                         │
+    │ sendRequest({type:'spawn'})  │                         │
+    │─────────────────────────────►│                         │
+    │                              │ spawn child_process     │
+    │                              │────────────────────────►│
+    │◄─── {ok:true, sessionId, pid}│                         │
+    │                              │                         │
+    │ sendRequest({type:'attach'}) │                         │
+    │─────────────────────────────►│                         │
+    │                              │ check process status    │
+    │◄─── {status, isRunning}      │                         │
+    │                              │                         │
+    │ sendRequest({type:'stop'})   │                         │
+    │─────────────────────────────►│                         │
+    │                              │ kill + cleanup          │
+    │                              │────────────────────────►│</code></pre>
       <ul>
-        <li><strong>Crash isolation</strong> â€” worker crash à¹„à¸¡à¹ˆà¸—à¸³à¹ƒà¸«à¹‰ loop crash â€” supervisor à¹à¸¢à¸ process à¸„à¸™à¸¥à¸°à¸•à¸±à¸§</li>
-        <li><strong>Output capture</strong> â€” supervisor à¹€à¸à¹‡à¸š stdout/stderr à¸‚à¸­à¸‡ worker à¹„à¸§à¹‰à¹ƒà¸™ <code>~/.claude/daemon/jobs/{sessionId}/output.log</code></li>
-        <li><strong>Health monitoring</strong> â€” loop à¹€à¸Šà¹‡à¸„à¸œà¹ˆà¸²à¸™ supervisor à¹à¸—à¸™à¸—à¸µà¹ˆà¸ˆà¸° monitor PID à¹‚à¸”à¸¢à¸•à¸£à¸‡ (PID reuse problem)</li>
+        <li><strong>Crash isolation</strong> — worker crash ไม่ทำให้ loop crash — supervisor แยก process คนละตัว</li>
+        <li><strong>Output capture</strong> — supervisor เก็บ stdout/stderr ของ worker ไว้ใน <code>~/.claude/daemon/jobs/{sessionId}/output.log</code></li>
+        <li><strong>Health monitoring</strong> — loop เช็คผ่าน supervisor แทนที่จะ monitor PID โดยตรง (PID reuse problem)</li>
       </ul>
 
-      <h3>Integration Points â€” Peer + Cron + Watch</h3>
-      <p>Agent Loop à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸­à¸¢à¸¹à¹ˆà¹€à¸”à¸µà¹ˆà¸¢à¸§à¹† â€” à¸¡à¸±à¸™ integrate à¸à¸±à¸šà¸£à¸°à¸šà¸šà¸­à¸·à¹ˆà¸™à¸‚à¸­à¸‡ Clew:</p>
+      <h3>Integration Points — Peer + Cron + Watch</h3>
+      <p>Agent Loop ไม่ได้อยู่เดี่ยวๆ — มัน integrate กับระบบอื่นของ Clew:</p>
       <ul>
-        <li><strong>Peer todo listener</strong> â€” à¸Ÿà¸±à¸‡ <code>/peer-todo</code> HTTP endpoint â†’ à¸£à¸±à¸š task à¸ˆà¸²à¸ remote peer â†’ add à¹€à¸‚à¹‰à¸² queue</li>
-        <li><strong>Cron scheduler</strong> â€” <code>daemonCronScheduler</code> fire task à¸•à¸²à¸¡ schedule â†’ add à¹€à¸‚à¹‰à¸² queue</li>
-        <li><strong>File watcher</strong> â€” <code>fs.watch</code> à¸šà¸™ queue file â†’ à¸•à¸£à¸§à¸ˆà¸ˆà¸±à¸š task à¹ƒà¸«à¸¡à¹ˆà¸ˆà¸²à¸ process à¸­à¸·à¹ˆà¸™ (à¹€à¸Šà¹ˆà¸™à¸ˆà¸²à¸ CLI <code>/task add</code>)</li>
+        <li><strong>Peer todo listener</strong> — ฟัง <code>/peer-todo</code> HTTP endpoint → รับ task จาก remote peer → add เข้า queue</li>
+        <li><strong>Cron scheduler</strong> — <code>daemonCronScheduler</code> fire task ตาม schedule → add เข้า queue</li>
+        <li><strong>File watcher</strong> — <code>fs.watch</code> บน queue file → ตรวจจับ task ใหม่จาก process อื่น (เช่นจาก CLI <code>/task add</code>)</li>
       </ul>
-      <p>architecture à¹à¸šà¸šà¸™à¸µà¹‰à¸—à¸³à¹ƒà¸«à¹‰ task à¹€à¸‚à¹‰à¸² queue à¹„à¸”à¹‰à¸ˆà¸²à¸à¸«à¸¥à¸²à¸¢à¸Šà¹ˆà¸­à¸‡à¸—à¸²à¸‡ â€” CLI, remote peer, cron â€” à¹à¸•à¹ˆà¸¡à¸µ consumer à¹€à¸”à¸µà¸¢à¸§ (loop) à¸—à¸µà¹ˆà¸„à¸¸à¸¡à¸à¸²à¸£ execute</p>
+      <p>architecture แบบนี้ทำให้ task เข้า queue ได้จากหลายช่องทาง — CLI, remote peer, cron — แต่มี consumer เดียว (loop) ที่คุมการ execute</p>
 
       <h3>Task Log Persistence</h3>
-      <p>à¸—à¸¸à¸ task à¸¡à¸µ log à¸‚à¸­à¸‡à¸•à¸±à¸§à¹€à¸­à¸‡:</p>
+      <p>ทุก task มี log ของตัวเอง:</p>
       <ul>
-        <li><strong>Per-task log</strong> â€” <code>~/.claude/daemon/logs/{taskId}.log</code> â€” 500 à¸šà¸£à¸£à¸—à¸±à¸”à¸ªà¸¸à¸”à¸—à¹‰à¸²à¸¢à¸‚à¸­à¸‡ worker output</li>
-        <li><strong>Error extraction</strong> â€” à¸•à¸­à¸™ task fail, loop à¸ˆà¸° extract non-noise lines (20 à¸šà¸£à¸£à¸—à¸±à¸”à¸ªà¸¸à¸”à¸—à¹‰à¸²à¸¢) à¹€à¸à¹‡à¸šà¹€à¸›à¹‡à¸™ <code>errorLog[]</code> à¹ƒà¸™ queue entry</li>
-        <li><strong>Worker exit code</strong> â€” à¸šà¸±à¸™à¸—à¸¶à¸à¸§à¹ˆà¸² worker à¸ˆà¸šà¸”à¹‰à¸§à¸¢ exit code 0 (success) à¸«à¸£à¸·à¸­ 1 (failure)</li>
+        <li><strong>Per-task log</strong> — <code>~/.claude/daemon/logs/{taskId}.log</code> — 500 บรรทัดสุดท้ายของ worker output</li>
+        <li><strong>Error extraction</strong> — ตอน task fail, loop จะ extract non-noise lines (20 บรรทัดสุดท้าย) เก็บเป็น <code>errorLog[]</code> ใน queue entry</li>
+        <li><strong>Worker exit code</strong> — บันทึกว่า worker จบด้วย exit code 0 (success) หรือ 1 (failure)</li>
       </ul>
 
       <h3>Crash Recovery Flow</h3>
-      <p>à¸–à¹‰à¸² loop process à¸•à¸²à¸¢ (kill -9, power loss, OOM):</p>
+      <p>ถ้า loop process ตาย (kill -9, power loss, OOM):</p>
       <pre><code>Previous Run Crash
-      â”‚
-      â–¼
+      │
+      ▼
 startLoop() called
-      â”‚
-      â”œâ”€â”€ loadQueue() â€” à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œ queue à¸ˆà¸²à¸ disk
-      â”‚
-      â”œâ”€â”€ sleep(2000ms) â€” à¸£à¸­à¹ƒà¸«à¹‰à¹à¸™à¹ˆà¹ƒà¸ˆà¸§à¹ˆà¸² process à¹€à¸à¹ˆà¸²à¸•à¸²à¸¢à¹à¸¥à¹‰à¸§
-      â”‚
-      â”œâ”€â”€ expireLeases() â€” à¸¥à¹‰à¸²à¸‡ lease à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¸—à¸µà¹ˆà¸«à¸¡à¸”à¸­à¸²à¸¢à¸¸
-      â”‚   (task à¸—à¸µà¹ˆà¸–à¸¹à¸ lease à¹‚à¸”à¸¢ processID à¹€à¸à¹ˆà¸²à¸ˆà¸°à¸–à¸¹à¸ reset â†’ pending)
-      â”‚
-      â”œâ”€â”€ start heartbeat (à¸—à¸¸à¸ 60s)
-      â”‚
-      â”œâ”€â”€ start cron scheduler
-      â”‚
-      â”œâ”€â”€ start peer sharing
-      â”‚
-      â”œâ”€â”€ start file watcher
-      â”‚
-      â””â”€â”€ MAIN LOOP â”€â”€â–º getNextTask() â†’ processTask() â†’ loop</code></pre>
+      │
+      ├── loadQueue() — อ่านไฟล์ queue จาก disk
+      │
+      ├── sleep(2000ms) — รอให้แน่ใจว่า process เก่าตายแล้ว
+      │
+      ├── expireLeases() — ล้าง lease ทั้งหมดที่หมดอายุ
+      │   (task ที่ถูก lease โดย processID เก่าจะถูก reset → pending)
+      │
+      ├── start heartbeat (ทุก 60s)
+      │
+      ├── start cron scheduler
+      │
+      ├── start peer sharing
+      │
+      ├── start file watcher
+      │
+      └── MAIN LOOP ──► getNextTask() → processTask() → loop</code></pre>
 
       <h2>Task Lifecycle (State Machine)</h2>
-      <pre><code>                 â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-                 â”‚ pending   â”‚â—„â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-                 â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜                               â”‚
-                      â”‚ leaseTask()                          â”‚
-                      â–¼                                      â”‚
-                 â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                               â”‚
-                 â”‚in_progressâ”‚                               â”‚
-                 â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜                               â”‚
-          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                         â”‚
-          â–¼           â–¼           â–¼                         â”‚
-    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”                 â”‚
-    â”‚completed â”‚ â”‚ failed   â”‚ â”‚cancelled â”‚                 â”‚
-    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”˜ â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                 â”‚
-                      â”‚ retryTask()                         â”‚
-                      â”œâ”€â”€ retryCount < max â†’ backoff â†’ â”€â”€â”€â”€â”˜
-                      â”‚
-                      â””â”€â”€ retryCount â‰¥ max
-                              â”‚
-                              â–¼
-                         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-                         â”‚ dead_letter   â”‚
-                         â”‚ (preserved    â”‚
-                         â”‚  for review)  â”‚
-                         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜</code></pre>
+      <pre><code>                 ┌──────────┐
+                 │ pending   │◄──────────────────────────────┐
+                 └────┬─────┘                               │
+                      │ leaseTask()                          │
+                      ▼                                      │
+                 ┌──────────┐                               │
+                 │in_progress│                               │
+                 └────┬─────┘                               │
+          ┌───────────┼───────────┐                         │
+          ▼           ▼           ▼                         │
+    ┌──────────┐ ┌──────────┐ ┌──────────┐                 │
+    │completed │ │ failed   │ │cancelled │                 │
+    └──────────┘ └────┬─────┘ └──────────┘                 │
+                      │ retryTask()                         │
+                      ├── retryCount < max → backoff → ────┘
+                      │
+                      └── retryCount ≥ max
+                              │
+                              ▼
+                         ┌──────────────┐
+                         │ dead_letter   │
+                         │ (preserved    │
+                         │  for review)  │
+                         └──────────────┘</code></pre>
 
-      <h2>à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¹€à¸à¸µà¹ˆà¸¢à¸§à¸‚à¹‰à¸­à¸‡</h2>
+      <h2>ไฟล์ที่เกี่ยวข้อง</h2>
       <table>
-        <tr><th>à¹„à¸Ÿà¸¥à¹Œ</th><th>à¸«à¸™à¹‰à¸²à¸—à¸µà¹ˆ</th></tr>
-        <tr><td><code>src/services/autonomous/agentLoop.ts</code></td><td>Main loop â€” start, stop, processTask, worker lifecycle</td></tr>
+        <tr><th>ไฟล์</th><th>หน้าที่</th></tr>
+        <tr><td><code>src/services/autonomous/agentLoop.ts</code></td><td>Main loop — start, stop, processTask, worker lifecycle</td></tr>
         <tr><td><code>src/services/autonomous/taskQueue.ts</code></td><td>Queue CRUD, lease management, retry, dead-letter, file watcher</td></tr>
-        <tr><td><code>src/services/autonomous/daemonMode.ts</code></td><td>Daemon entry point â€” calls startLoop/stopLoop</td></tr>
+        <tr><td><code>src/services/autonomous/daemonMode.ts</code></td><td>Daemon entry point — calls startLoop/stopLoop</td></tr>
         <tr><td><code>src/Task.ts</code></td><td>Task type definitions, state machine, task ID generation</td></tr>
-        <tr><td><code>src/tasks/LocalAgentTask/</code></td><td>Local worker task â€” UI + lifecycle</td></tr>
-        <tr><td><code>src/tasks/RemoteAgentTask/</code></td><td>Remote worker task â€” UI + lifecycle</td></tr>
-        <tr><td><code>src/components/AutonomousExecutionAccordion.tsx</code></td><td>UI component à¸ªà¸³à¸«à¸£à¸±à¸šà¹à¸ªà¸”à¸‡ task queue à¹ƒà¸™ REPL</td></tr>
+        <tr><td><code>src/tasks/LocalAgentTask/</code></td><td>Local worker task — UI + lifecycle</td></tr>
+        <tr><td><code>src/tasks/RemoteAgentTask/</code></td><td>Remote worker task — UI + lifecycle</td></tr>
+        <tr><td><code>src/components/AutonomousExecutionAccordion.tsx</code></td><td>UI component สำหรับแสดง task queue ใน REPL</td></tr>
       </table>
 
       <footer class="footer">
-        <span>Clew Code â€” Open Source</span>
+        <span>Clew Code — Open Source</span>
         <div class="footer-links">
           <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
           <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

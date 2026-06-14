@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SearXNG Search â€” Clew</title>
+  <title>SearXNG Search — Clew</title>
   <meta name="description" content="Self-hosted privacy-respecting web search via Docker SearXNG.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,39 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
 </head>
 <body>
-<header class="header">
-  <div class="header-inner">
-    <a href="../index.html" class="logo">
-      <span>Clew Code</span>
-    </a>
-    <nav class="header-nav">
-      <a href="../index.html">Home</a>
-      <a href="../index.html#features">Features</a>
-      <a href="../index.html#commands">Commands</a>
-      <a href="../quick-start.html" class="active">Docs</a>
-      <a href="https://github.com/ClewCode/ClewCode" target="_blank">GitHub</a>
-    <div class="lang-wrap">
-    <button class="lang-btn">ðŸŒ</button>
-    <div class="lang-menu">
-      <a href="../../readme/README.zh.md">ä¸­æ–‡</a>
-      <a href="../../readme/README.th.md">à¹„à¸—à¸¢</a>
-      <a href="../../readme/README.ja.md">æ—¥æœ¬èªž</a>
-      <a href="../../readme/README.ko.md">í•œêµ­ì–´</a>
-      <a href="../../readme/README.es.md">EspaÃ±ol</a>
-      <a href="../../readme/README.fr.md">FranÃ§ais</a>
-      <a href="../../readme/README.de.md">Deutsch</a>
-      <a href="../../readme/README.pt.md">PortuguÃªs</a>
-      <a href="../../readme/README.vi.md">Tiáº¿ng Viá»‡t</a>
-      <a href="../../readme/README.id.md">Bahasa Indonesia</a>
-      <a href="../../readme/README.ru.md">Ð ÑƒÑÑÐºÐ¸Ð¹</a>
-      <a href="../../readme/README.hi.md">à¤¹à¤¿à¤¨à¥à¤¦à¥€</a>
-      <a href="../../README.md">English</a>
-    </div>
-  </div>
-    </nav>
-    <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
-  </div>
-</header>
+<header class="header"></header>
 <div class="app">
   <aside class="sidebar" id="sidebar"></aside>
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -87,7 +55,7 @@ docker compose -f searxng/docker-compose.yml logs -f</code></pre>
         <tr><td><code>searxng/docker-compose.yml</code></td><td>Container definition, port 188899 8080</td></tr>
         <tr><td><code>searxng/.env</code></td><td>Host, port, and secret key</td></tr>
         <tr><td><code>searxng/config/settings.yml</code></td><td>SearXNG configuration with JSON API enabled</td></tr>
-        <tr><td><code>searxng/limiter.toml</code></td><td>Rate limiter â€” relaxed for local network IPs</td></tr>
+        <tr><td><code>searxng/limiter.toml</code></td><td>Rate limiter — relaxed for local network IPs</td></tr>
         <tr><td><code>searxng/start.bat</code></td><td>Start wrapper</td></tr>
         <tr><td><code>searxng/stop.bat</code></td><td>Stop wrapper</td></tr>
         <tr><td><code>searxng/restart.bat</code></td><td>Restart wrapper</td></tr>
@@ -104,21 +72,21 @@ docker compose -f searxng/docker-compose.yml logs -f</code></pre>
 
       <h2>Engines Enabled</h2>
       <ul>
-        <li><strong>DuckDuckGo</strong> â€” primary general search (no API key needed)</li>
-        <li><strong>Google</strong> â€” general search</li>
-        <li><strong>Wikipedia</strong> â€” infobox and article results</li>
-        <li><strong>StackOverflow</strong> â€” technical Q&amp;A</li>
-        <li><strong>GitHub</strong> â€” repository search</li>
-        <li><strong>Wikidata</strong> â€” structured data infoboxes</li>
+        <li><strong>DuckDuckGo</strong> — primary general search (no API key needed)</li>
+        <li><strong>Google</strong> — general search</li>
+        <li><strong>Wikipedia</strong> — infobox and article results</li>
+        <li><strong>StackOverflow</strong> — technical Q&amp;A</li>
+        <li><strong>GitHub</strong> — repository search</li>
+        <li><strong>Wikidata</strong> — structured data infoboxes</li>
       </ul>
 
       <h2>Provider Selection Priority</h2>
       <ol>
-        <li><strong>Tavily</strong> â€” requires <code>TAVILY_API_KEY</code></li>
-        <li><strong>Brave</strong> â€” requires <code>BRAVE_API_KEY</code></li>
-        <li><strong>Serper</strong> â€” requires <code>SERPER_API_KEY</code></li>
-        <li><strong>SearXNG</strong> â€” only if <code>SEARXNG_INSTANCE_URL</code> is explicitly set</li>
-        <li><strong>DuckDuckGo</strong> â€” always available, free, no API key</li>
+        <li><strong>Tavily</strong> — requires <code>TAVILY_API_KEY</code></li>
+        <li><strong>Brave</strong> — requires <code>BRAVE_API_KEY</code></li>
+        <li><strong>Serper</strong> — requires <code>SERPER_API_KEY</code></li>
+        <li><strong>SearXNG</strong> — only if <code>SEARXNG_INSTANCE_URL</code> is explicitly set</li>
+        <li><strong>DuckDuckGo</strong> — always available, free, no API key</li>
       </ol>
 
       <h2>Troubleshooting</h2>
@@ -135,7 +103,7 @@ docker compose pull
 docker compose up -d</code></pre>
 
       <footer class="footer">
-        <span>Clew Code v0.2.7</span>
+        <span>Clew Code 0.2.13</span>
         <div class="footer-links">
           <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
           <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

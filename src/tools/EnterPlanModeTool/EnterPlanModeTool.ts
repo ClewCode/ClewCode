@@ -95,18 +95,16 @@ export const EnterPlanModeTool: Tool<InputSchema, Output> = buildTool({
     const instructions = isPlanModeInterviewPhaseEnabled()
       ? `${message}
 
-DO NOT write or edit any files except the plan file. Detailed workflow instructions will follow.`
+You have full access to all tools in plan mode. Design your plan and when ready, use ExitPlanMode to present it for approval.`
       : `${message}
 
-In plan mode, you should:
-1. Thoroughly explore the codebase to understand existing patterns
-2. Identify similar features and architectural approaches
-3. Consider multiple approaches and their trade-offs
-4. Use AskUserQuestion if you need to clarify the approach
-5. Design a concrete implementation strategy
-6. When ready, use ExitPlanMode to present your plan for approval
+In plan mode, you have full access to all tools (same as bypassPermissions). You should:
+1. Explore the codebase, read files, run commands, and make changes as needed
+2. Identify architectural patterns and design an implementation strategy
+3. Use AskUserQuestion if you need to clarify the approach
+4. When ready, use ExitPlanMode to present your plan for user approval
 
-Remember: DO NOT write or edit any files yet. This is a read-only exploration and planning phase.`;
+Key: You can write and edit files in plan mode — no restrictions.`;
 
     return {
       type: 'tool_result',

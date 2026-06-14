@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Permission Model â€” Clew</title>
-  <meta name="description" content="Tool execution permissions in Clew â€” modes, rules, and security.">
+  <title>Permission Model — Clew</title>
+  <meta name="description" content="Tool execution permissions in Clew — modes, rules, and security.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,11 +25,11 @@
     <tr><th>Mode</th><th>Behavior</th></tr>
     <tr><td><code>default</code></td><td>Ask before sensitive tool actions (read/write/bash/network). Safe default.</td></tr>
     <tr><td><code>ask</code></td><td>Always ask before any tool execution.</td></tr>
-    <tr><td><code>plan</code></td><td>Prefer planning mode â€” AI must present a plan before executing tools.</td></tr>
+    <tr><td><code>plan</code></td><td>Prefer planning mode — AI must present a plan before executing tools.</td></tr>
     <tr><td><code>auto</code></td><td>Auto-approve low-risk actions using transcript classifier (requires <code>TRANSCRIPT_CLASSIFIER</code> feature). Prompt for risky operations.</td></tr>
     <tr><td><code>acceptEdits</code></td><td>Auto-approve file edit operations. Useful for rapid iteration.</td></tr>
     <tr><td><code>bypassPermissions</code></td><td>Skip all permission prompts. Use only in trusted sandboxes.</td></tr>
-    <tr><td><code>dontAsk</code></td><td>Never ask â€” auto-deny anything that would require permission.</td></tr>
+    <tr><td><code>dontAsk</code></td><td>Never ask — auto-deny anything that would require permission.</td></tr>
   </table>
 
   <h2>Permission Rules</h2>
@@ -37,19 +37,19 @@
   <pre><code>/permissions     # Open interactive permission rule manager</code></pre>
   <p>Rules can target specific tools with pattern matching:</p>
   <ul>
-    <li><code>Bash(git *)</code> â€” Allow/deny git commands specifically</li>
-    <li><code>Edit</code> â€” Allow/deny all file edits</li>
-    <li><code>Bash(rm *)</code> â€” Warn/block destructive shell commands</li>
+    <li><code>Bash(git *)</code> — Allow/deny git commands specifically</li>
+    <li><code>Edit</code> — Allow/deny all file edits</li>
+    <li><code>Bash(rm *)</code> — Warn/block destructive shell commands</li>
   </ul>
 
   <h2>Rule Sources</h2>
   <p>Permission rules come from multiple sources (evaluated in order, with later sources overriding earlier ones):</p>
   <ul>
-    <li><code>userSettings</code> â€” From user config file</li>
-    <li><code>projectSettings</code> â€” From project-level settings</li>
-    <li><code>localSettings</code> â€” Local overrides</li>
-    <li><code>flagSettings</code> â€” From CLI flags (<code>--allowedTools</code>, <code>--disallowedTools</code>)</li>
-    <li><code>policySettings</code> â€” Managed/organization policy</li>
+    <li><code>userSettings</code> — From user config file</li>
+    <li><code>projectSettings</code> — From project-level settings</li>
+    <li><code>localSettings</code> — Local overrides</li>
+    <li><code>flagSettings</code> — From CLI flags (<code>--allowedTools</code>, <code>--disallowedTools</code>)</li>
+    <li><code>policySettings</code> — Managed/organization policy</li>
   </ul>
 
   <h2>Tool Permission Flow</h2>
@@ -86,7 +86,7 @@
   </div>
 
   <footer class="footer">
-    <span>Clew Code v0.2.7 â€” Open Source</span>
+    <span>Clew Code 0.2.13 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Models â€” Clew</title>
-  <meta name="description" content="Model selection guide for Clew â€” how to pick, switch, and manage models across 27 providers.">
+  <title>Models — Clew</title>
+  <meta name="description" content="Model selection guide for Clew — how to pick, switch, and manage models across 28 providers.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,18 +17,18 @@
 <div class="content-wrap"><main class="content">
   <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Models</span></div>
   <h1>Models</h1>
-  <p class="section-subtitle">Clew supports 100+ models across 27 providers. Pick the right model for each task â€” from frontier reasoning to fast local inference.</p>
+  <p class="section-subtitle">Clew supports 100+ models across 28 providers. Pick the right model for each task — from frontier reasoning to fast local inference.</p>
 
   <h2>Model Selection Guide</h2>
   <table>
     <tr><th>Workload</th><th>Recommended Models</th><th>Context</th><th>Notes</th></tr>
     <tr><td>Complex architecture &amp; large edits</td><td>claude-opus-4-7, claude-sonnet-4-6, gpt-5.5, deepseek-v4-pro</td><td>1M tokens</td><td>Best tool calling, strong reasoning, largest context</td></tr>
-    <tr><td>Code review &amp; debugging</td><td>claude-sonnet-4-6, gpt-5.5, gemini-3.1-pro</td><td>1M-2M tokens</td><td>Good instruction following, reliable output</td></tr>
+    <tr><td>Code review &amp; debugging</td><td>claude-sonnet-4-6, gpt-5.5, gemini-3.1-pro-preview</td><td>1M-2M tokens</td><td>Good instruction following, reliable output</td></tr>
     <tr><td>Quick search &amp; summarization</td><td>claude-haiku-4-5, deepseek-v4-flash, mistral-small-4, groq/llama-3.3-70b</td><td>128K-200K</td><td>Fast, cost-effective, lower latency</td></tr>
     <tr><td>Offline / air-gapped</td><td>ollama/llama4:70b, ollama/llama3.3</td><td>131K tokens</td><td>Fully local, no network needed</td></tr>
     <tr><td>Cost-sensitive bulk</td><td>kilocode/kilo-auto/free, opencode-go/minimax-m2.7, groq/llama-3.1-8b</td><td>Varies</td><td>Free or minimal cost tiers available</td></tr>
-    <tr><td>Research &amp; reasoning</td><td>claude-opus-4-7, deepseek-v4-pro, gemini-3.1-pro</td><td>1M-2M tokens</td><td>Deep reasoning, chain-of-thought</td></tr>
-    <tr><td>Vision / multimodal</td><td>claude-sonnet-4-6, gpt-5.5, gemini-3.1-pro, deepseek-v4-flash</td><td>1M tokens</td><td>Image understanding, document analysis</td></tr>
+    <tr><td>Research &amp; reasoning</td><td>claude-opus-4-7, deepseek-v4-pro, gemini-3.1-pro-preview</td><td>1M-2M tokens</td><td>Deep reasoning, chain-of-thought</td></tr>
+    <tr><td>Vision / multimodal</td><td>claude-sonnet-4-6, gpt-5.5, gemini-3.1-pro-preview, deepseek-v4-flash</td><td>1M tokens</td><td>Image understanding, document analysis</td></tr>
   </table>
 
   <h2>Notable Models by Provider</h2>
@@ -36,13 +36,12 @@
     <tr><th>Provider</th><th>Models Available</th></tr>
     <tr><td>Anthropic</td><td>claude-opus-4-7 (1M ctx), claude-sonnet-4-6 (1M ctx, recommended), claude-haiku-4-5 (200K ctx, fast)</td></tr>
     <tr><td>OpenAI</td><td>gpt-5.5 (1M ctx), gpt-5.4 (1M ctx), gpt-5.4-mini (fast)</td></tr>
-    <tr><td>Google</td><td>gemini-3.1-pro (2M ctx), gemini-3.1-flash-lite (1M ctx, fast)</td></tr>
+    <tr><td>Google</td><td>gemini-3.1-pro-preview (2M ctx), gemini-3.1-flash-lite (1M ctx, fast)</td></tr>
     <tr><td>DeepSeek</td><td>deepseek-v4-pro (1M ctx, MoE), deepseek-v4-flash (1M ctx, fast MoE)</td></tr>
     <tr><td>xAI</td><td>grok-4.3 (128K ctx)</td></tr>
     <tr><td>Mistral</td><td>mistral-medium-3.5, mistral-small-4, mistral-large-3</td></tr>
     <tr><td>Groq</td><td>llama-3.3-70b, llama-3.1-8b-instant (fast)</td></tr>
     <tr><td>Ollama</td><td>llama4:70b (local), llama3.3 (local), qwen3.6-plus (local)</td></tr>
-    <tr><td>GitHub Copilot</td><td>claude-opus-4.7, claude-sonnet-4.6, claude-haiku-4.5, gpt-5.5</td></tr>
     <tr><td>OpenCode</td><td>claude-opus-4-7, claude-sonnet-4-6, gpt-5.5, gemini-3.1-pro, kimi-k2.6</td></tr>
     <tr><td>KiloCode</td><td>kilo-auto/free, kilo-auto/balanced, kilo-auto/frontier</td></tr>
     <tr><td>Cohere</td><td>command-a-plus (128K ctx)</td></tr>
@@ -63,8 +62,8 @@
 /model sonnet                   # Alias-based switching
 --model opus                    # CLI flag at startup</code></pre>
   <p>For providers with a /v1/models endpoint (OpenAI, DeepSeek, NVIDIA, etc.), the picker fetches live models from the API instead of the static providers.json list.
-    The picker shows <strong>all models from every provider</strong> in named sections â€” not just the active provider's models. Recent models appear at top with the active provider's default. Select any model from any provider directly.</p>
-  <p>Model switching is instant â€” the next conversation turn uses the new model. Previous context is preserved.</p>
+    The picker shows <strong>all models from every provider</strong> in named sections — not just the active provider's models. Recent models appear at top with the active provider's default. Select any model from any provider directly.</p>
+  <p>Model switching is instant — the next conversation turn uses the new model. Previous context is preserved.</p>
 
   <h2>Model Aliases</h2>
   <p>Short aliases are resolved to full model IDs: <code>sonnet</code>, <code>opus</code>, <code>haiku</code>, <code>gpt5</code>, <code>flash</code>, etc.</p>
@@ -95,7 +94,7 @@
   </ul>
 
   <footer class="footer">
-    <span>Clew v0.2.7 â€” Open Source</span>
+    <span>Clew 0.2.13 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

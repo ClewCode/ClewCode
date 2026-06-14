@@ -82,23 +82,23 @@ import { RequestShutdownTool } from './tools/RequestShutdownTool/RequestShutdown
 import { SubscribePrActivityTool, UnsubscribePrActivityTool } from './tools/PrSubscriptionTool/PrSubscriptionTool.js';
 import { SendMessageTool } from './tools/SendMessageTool/SendMessageTool.js';
 import { AskUserQuestionTool } from './tools/AskUserQuestionTool/AskUserQuestionTool.js';
-import { PeerDiscoverTool } from './tools/PeerDiscoverTool/PeerDiscoverTool.js';
-import { PeerSendMessageTool } from './tools/PeerSendMessageTool/PeerSendMessageTool.js';
-import { PeerSpawnTool } from './tools/PeerSpawnTool/PeerSpawnTool.js';
-import { PeerShareTool } from './tools/PeerShareTool/PeerShareTool.js';
-import { PeerInfoTool } from './tools/PeerInfoTool/PeerInfoTool.js';
-import { PeerRunTool } from './tools/PeerRunTool/PeerRunTool.js';
-import { PeerJoinTool } from './tools/PeerJoinTool/PeerJoinTool.js';
-import { PeerSetNameTool } from './tools/PeerSetNameTool/PeerSetNameTool.js';
-import { PeerSetRoleTool } from './tools/PeerSetRoleTool/PeerSetRoleTool.js';
-import { PeerListRolesTool } from './tools/PeerListRolesTool/PeerListRolesTool.js';
-import { PeerPingTool } from './tools/PeerPingTool/PeerPingTool.js';
-import { PeerDisconnectTool } from './tools/PeerDisconnectTool/PeerDisconnectTool.js';
-import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.js';
-import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
-import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
-import { ProcessPeerTool } from './tools/ProcessPeerTool/ProcessPeerTool.js';
-import { CodexPeerTool } from './tools/CodexPeerTool/CodexPeerTool.js';
+import { SwarmDiscoverTool } from './tools/SwarmDiscoverTool/SwarmDiscoverTool.js';
+import { SwarmSendMessageTool } from './tools/SwarmSendMessageTool/SwarmSendMessageTool.js';
+import { SwarmSpawnTool } from './tools/SwarmSpawnTool/SwarmSpawnTool.js';
+import { SwarmShareTool } from './tools/SwarmShareTool/SwarmShareTool.js';
+import { SwarmInfoTool } from './tools/SwarmInfoTool/SwarmInfoTool.js';
+import { SwarmRunTool } from './tools/SwarmRunTool/SwarmRunTool.js';
+import { SwarmJoinTool } from './tools/SwarmJoinTool/SwarmJoinTool.js';
+import { SwarmSetNameTool } from './tools/SwarmSetNameTool/SwarmSetNameTool.js';
+import { SwarmSetRoleTool } from './tools/SwarmSetRoleTool/SwarmSetRoleTool.js';
+import { SwarmListRolesTool } from './tools/SwarmListRolesTool/SwarmListRolesTool.js';
+import { SwarmPingTool } from './tools/SwarmPingTool/SwarmPingTool.js';
+import { SwarmDisconnectTool } from './tools/SwarmDisconnectTool/SwarmDisconnectTool.js';
+import { SwarmBroadcastTool } from './tools/SwarmBroadcastTool/SwarmBroadcastTool.js';
+import { SwarmListMessagesTool } from './tools/SwarmListMessagesTool/SwarmListMessagesTool.js';
+import { SwarmHelpTool } from './tools/SwarmHelpTool/SwarmHelpTool.js';
+import { ProcessSwarmTool } from './tools/ProcessSwarmTool/ProcessSwarmTool.js';
+import { CodexSwarmTool } from './tools/CodexSwarmTool/CodexSwarmTool.js';
 
 import { LSPTool } from './tools/LSPTool/LSPTool.js';
 import { ListMcpResourcesTool } from './tools/ListMcpResourcesTool/ListMcpResourcesTool.js';
@@ -224,22 +224,22 @@ export function getAllBaseTools(): Tools {
     ...(isEnvTruthy(process.env.ENABLE_LSP_TOOL) ? [LSPTool] : []),
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     SendMessageTool,
-    PeerDiscoverTool,
-    PeerSendMessageTool,
-    PeerSpawnTool,
-    PeerShareTool,
-    PeerInfoTool,
-    PeerRunTool,
-    PeerJoinTool,
-    PeerSetNameTool,
-    PeerSetRoleTool,
-    PeerListRolesTool,
-    PeerPingTool,
-    PeerDisconnectTool,
-    PeerBroadcastTool,
-    PeerListMessagesTool,
-    PeerHelpTool,
-    ProcessPeerTool,
+    SwarmDiscoverTool,
+    SwarmSendMessageTool,
+    SwarmSpawnTool,
+    SwarmShareTool,
+    SwarmInfoTool,
+    SwarmRunTool,
+    SwarmJoinTool,
+    SwarmSetNameTool,
+    SwarmSetRoleTool,
+    SwarmListRolesTool,
+    SwarmPingTool,
+    SwarmDisconnectTool,
+    SwarmBroadcastTool,
+    SwarmListMessagesTool,
+    SwarmHelpTool,
+    ProcessSwarmTool,
 
     ...(listPeersTool ? [listPeersTool] : []),
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),

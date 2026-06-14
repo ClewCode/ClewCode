@@ -121,3 +121,75 @@ const NUL_REDIRECT_REGEX = /(\d?&?>+\s*)[Nn][Uu][Ll](?=\s|$|[|&;)\n])/g;
 export function rewriteWindowsNullRedirect(command: string): string {
   return command.replace(NUL_REDIRECT_REGEX, '$1/dev/null');
 }
+
+/**
+ * Characters that are special in Git Bash / MSYS2 paths and need escaping.
+ * These are Windows console special chars that Git Bash interprets differently.
+ */
+const GIT_BASH_SPECIAL_CHARS = /[!@#$%^&*()\[\]{}|;:'",.<>?~`=+\\ ]/g;
+
+/**
+ * Escape a Windows path for use in Git Bash commands.
+ * Handles paths with spaces, special characters, and drive letters.
+ *
+ * Examples:
+ *   C:\Users\foo\file.txt  →  /c/Users/foo/file.txt
+ *   C:\Program Files\app    →  '/c/Program Files/app'
+ *   \\server\share\file     →  //server/share/file
+ *
+ * @param windowsPath - The Windows path to escape
+ * @returns The path as a POSIX-style path safe for Git Bash
+ */
+export function escapeWindowsPathForGitBash(windowsPath: string): string {
+  // Handle UNC paths: \\server\share\path → //server/share/path
+  if (windowsPath.startsWith('\\\\')) {
+    return windowsPath.replace(/\\/g, '/');
+  }
+
+  // Handle drive letter paths: C:\Users\foo → /c/Users/foo
+  const match = windowsPath.match(/^([A-Za-z]):[/\\](.*)$/);
+  if (match) {
+    const driveLetter = match[1]!.toLowerCase();
+    const rest = match[2]!.replace(/\\/g, '/');
+    const posixPath = `/${driveLetter}/${rest}`;
+
+    // If the path contains special characters, quote it
+    if (GIT_BASH_SPECIAL_CHARS.test(posixPath)) {
+      GIT_BASH_SPECIAL_CHARS.lastIndex = 0;
+      // Use single quotes and escape any single quotes inside
+      return `'${posixPath.replace(/'/g, "'\\''")}'`;
+    }
+    return posixPath;
+  }
+
+  // Already a POSIX path or relative path — just normalize
+  const normalized = windowsPath.replace(/\\/g, '/');
+  if (GIT_BASH_SPECIAL_CHARS.test(normalized)) {
+    GIT_BASH_SPECIAL_CHARS.lastIndex = 0;
+    return `'${normalized.replace(/'/g, "'\\''")}'`;
+  }
+  return normalized;
+}
+
+/**
+ * Check if a path string contains characters that need escaping in Git Bash.
+ */
+export function needsGitBashEscaping(path: string): boolean {
+  GIT_BASH_SPECIAL_CHARS.lastIndex = 0;
+  const needs = GIT_BASH_SPECIAL_CHARS.test(path);
+  GIT_BASH_SPECIAL_CHARS.lastIndex = 0;
+  return needs;
+}
+
+/**
+ * Escape special characters in a path for use in POSIX shell (Git Bash on Windows).
+ * Safer alternative to full shell quoting when you just need to handle a path argument.
+ */
+export function shellEscapePath(path: string): string {
+  // On Windows paths with drive letters, convert to POSIX first
+  if (/^[A-Za-z]:[/\\]/.test(path)) {
+    return escapeWindowsPathForGitBash(path);
+  }
+  // For already-POSIX paths, just wrap in single quotes with escape for embedded quotes
+  return `'${path.replace(/'/g, "'\\''")}'`;
+}

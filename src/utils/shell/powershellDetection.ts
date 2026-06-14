@@ -100,3 +100,30 @@ export async function getPowerShellEdition(): Promise<PowerShellEdition | null> 
 export function resetPowerShellCache(): void {
   cachedPowerShellPath = null;
 }
+
+/**
+ * Default output encoding for the detected PowerShell edition.
+ * - 'core' (pwsh 7+): UTF-8 without BOM (default)
+ * - 'desktop' (powershell 5.1): UTF-16LE with BOM (default)
+ *
+ * The encodingPreamble in powershellProvider.ts overrides both to UTF-8
+ * for consistent behavior, but this function is useful for diagnostics
+ * and for tools that need to know the native encoding.
+ */
+export async function getPowerShellDefaultEncoding(): Promise<'utf8' | 'utf16le' | null> {
+  const edition = await getPowerShellEdition();
+  if (edition === null) return null;
+  return edition === 'core' ? 'utf8' : 'utf16le';
+}
+
+/**
+ * Whether PowerShell needs explicit UTF-8 encoding directives to avoid
+ * codepage-related character corruption.
+ * - pwsh 7+ (core): defaults to UTF-8, no extra setup needed
+ * - powershell 5.1 (desktop): defaults to UTF-16LE, needs explicit UTF-8
+ */
+export async function needsPowerShellEncodingSetup(): Promise<boolean> {
+  const edition = await getPowerShellEdition();
+  if (edition === null) return false;
+  return edition === 'desktop';
+}

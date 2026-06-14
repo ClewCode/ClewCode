@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Architecture â€” Clew</title>
+  <title>Architecture — Clew</title>
   <meta name="description" content="Runtime architecture, layered design, and data flow for Clew CLI.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
 <div class="content-wrap"><main class="content">
   <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Architecture</span></div>
   <h1>Architecture</h1>
-  <p class="section-subtitle">Clew is a terminal-based AI coding assistant â€” a React/Ink TUI, Commander.js CLI, multi-provider AI engine, and extensible tool/plugin runtime all in one process.</p>
+  <p class="section-subtitle">Clew is a terminal-based AI coding assistant — a React/Ink TUI, Commander.js CLI, multi-provider AI engine, and extensible tool/plugin runtime all in one process.</p>
 
   <h2>Layered Design</h2>
   <p>The application is structured as four cooperative layers:</p>
@@ -26,10 +26,10 @@
   <p>Renders the interactive REPL: prompt input, streaming markdown output, status bar with context meter, arc spinner, permission dialogs, file explorer, inline images, buddy (duck) companion, and fullscreen mode. Components live in <code>src/components/</code>, state management in <code>src/state/</code>, and React context in <code>src/context/</code>.</p>
 
   <h3>2. CLI &amp; Command Layer (Commander.js 13)</h3>
-  <p>Entry point at <code>src/main.tsx</code> â€” parses CLI flags (<code>--model</code>, <code>--print</code>, <code>--permission-mode</code>, <code>--mcp-config</code>, etc.), loads config, initializes providers and telemetry, then launches the REPL or print-mode query. Slash commands are registered in <code>src/commands.ts</code> and implemented under <code>src/commands/</code>. Commands are categorized as <code>local</code> (runs in-terminal), <code>prompt</code> (skills that expand to text), or <code>local-jsx</code> (Ink UI panels).</p>
+  <p>Entry point at <code>src/main.tsx</code> — parses CLI flags (<code>--model</code>, <code>--print</code>, <code>--permission-mode</code>, <code>--mcp-config</code>, etc.), loads config, initializes providers and telemetry, then launches the REPL or print-mode query. Slash commands are registered in <code>src/commands.ts</code> and implemented under <code>src/commands/</code>. Commands are categorized as <code>local</code> (runs in-terminal), <code>prompt</code> (skills that expand to text), or <code>local-jsx</code> (Ink UI panels).</p>
 
   <h3>3. AI Provider &amp; Adapter Layer</h3>
-  <p><strong>ProviderManager</strong> (<code>src/services/ai/ProviderManager.ts</code>) resolves API keys, selects models, and manages provider config. Provider metadata is declared in <code>src/services/ai/providers.json</code> â€” currently <strong>32 providers</strong> (9 dedicated classes + 23 OpenAI-compatible) with model listings, capabilities, base URLs, and env key mappings. Non-Anthropic providers are wrapped by the <strong>AnthropicAdapter</strong> or <strong>GoogleAdapter</strong>, which normalize content blocks (<code>contentBlockUtils.ts</code>), tool calls (<code>toolCallParser.ts</code>), errors (<code>errorNormalizer.ts</code>), and usage (<code>usageNormalizer.ts</code>) to a uniform format.</p>
+  <p><strong>ProviderManager</strong> (<code>src/services/ai/ProviderManager.ts</code>) resolves API keys, selects models, and manages provider config. Provider metadata is declared in <code>src/services/ai/providers.json</code> — currently <strong>28 providers</strong> (10 dedicated classes + 18 OpenAI-compatible) with model listings, capabilities, base URLs, and env key mappings. Non-Anthropic providers are wrapped by the <strong>AnthropicAdapter</strong> or <strong>GoogleAdapter</strong>, which normalize content blocks (<code>contentBlockUtils.ts</code>), tool calls (<code>toolCallParser.ts</code>), errors (<code>errorNormalizer.ts</code>), and usage (<code>usageNormalizer.ts</code>) to a uniform format.</p>
 
   <h3>4. Tool Execution &amp; Query Loop</h3>
   <p>Tools use Zod schemas and are executed by the <strong>StreamingToolExecutor</strong> (<code>src/services/tools/StreamingToolExecutor.ts</code>). Permission gating via hooks in <code>src/utils/permissions/permissions.ts</code>. The query loop in <code>src/query.ts</code> + <code>src/QueryEngine.ts</code> orchestrates message building, context management, streaming, and tool call cycling. MCP tools (<code>src/services/mcp/</code>) are discovered at runtime and merged into the tool pool.</p>
@@ -44,7 +44,7 @@
   |    Streaming response handling
   |
   + Provider Manager Adapter AI Model API
-  |    27 providers via providers.json
+  |    28 providers via providers.json
   |    AnthropicAdapter / GoogleAdapter normalization
   |
   + Tool Executor (StreamingToolExecutor)
@@ -60,37 +60,37 @@
   <h2>Key Subsystems</h2>
 
   <h3>MCP (Model Context Protocol)</h3>
-  <p><code>src/services/mcp/</code> â€” manages external MCP server connections, tool discovery, resource access, and paginated <code>tools/list</code> responses. Servers configured via <code>--mcp-config</code> or <code>/mcp</code> command. See <a href="mcp.html">MCP</a> for detailed setup and configuration.</p>
+  <p><code>src/services/mcp/</code> — manages external MCP server connections, tool discovery, resource access, and paginated <code>tools/list</code> responses. Servers configured via <code>--mcp-config</code> or <code>/mcp</code> command. See <a href="mcp.html">MCP</a> for detailed setup and configuration.</p>
 
   <h3>Plugins &amp; Hooks</h3>
-  <p><code>src/services/plugins/</code> â€” plugin loading, installation, marketplace reconciliation, and hook dispatch. Hook points: <code>PreToolUse</code>, <code>PostToolUse</code>, <code>PreBash</code>, <code>PostPrompt</code>, <code>PreAcceptEdit</code>. Plugins can provide commands, agents, skills, MCP servers, and LSP integrations.</p>
+  <p><code>src/services/plugins/</code> — plugin loading, installation, marketplace reconciliation, and hook dispatch. Hook points: <code>PreToolUse</code>, <code>PostToolUse</code>, <code>PreBash</code>, <code>PostPrompt</code>, <code>PreAcceptEdit</code>. Plugins can provide commands, agents, skills, MCP servers, and LSP integrations.</p>
 
   <h3>LSP (Language Server Protocol)</h3>
-  <p><code>src/services/lsp/</code> â€” language-aware code intelligence via LSP servers. Diagnostics, completions, and symbol navigation. Enable with <code>ENABLE_LSP_TOOL=1</code>.</p>
+  <p><code>src/services/lsp/</code> — language-aware code intelligence via LSP servers. Diagnostics, completions, and symbol navigation. Enable with <code>ENABLE_LSP_TOOL=1</code>.</p>
 
   <h3>Bridge Mode</h3>
-  <p><code>src/bridge/bridgeMain.ts</code> â€” WebSocket remote control and collaboration. Gated behind <code>BRIDGE_MODE=1</code>. Remote clients can send commands and receive responses.</p>
+  <p><code>src/bridge/bridgeMain.ts</code> — WebSocket remote control and collaboration. Gated behind <code>BRIDGE_MODE=1</code>. Remote clients can send commands and receive responses.</p>
 
   <h3>Session System</h3>
-  <p><code>src/services/SessionLifecycle/</code> — cross-session context persistence. <code>src/services/SessionMemory/</code> — persistent knowledge with cross-lingual semantic search and auto-memory capture.</p>
+  <p><code>src/services/SessionLifecycle/</code> � cross-session context persistence. <code>src/services/SessionMemory/</code> � persistent knowledge with cross-lingual semantic search and auto-memory capture.</p>
 
   <h3>GrowthBook Feature Flags</h3>
-  <p><code>src/services/analytics/growthbook.js</code> â€” A/B testing and feature flag platform. Initialized at startup, evaluates flags locally with caching.</p>
+  <p><code>src/services/analytics/growthbook.js</code> — A/B testing and feature flag platform. Initialized at startup, evaluates flags locally with caching.</p>
 
   <h3>Agent Runtime</h3>
-  <p><code>src/agentRuntime/</code> â€” manages multi-agent orchestration. The <strong>orchestrator</strong> coordinates agent sessions, <strong>runStore</strong> persists agent run data, <strong>toolGateway</strong> routes tools between agents, and <strong>workflowRegistry</strong> / <strong>agentRegistry</strong> declare named workflows and agent configurations.</p>
+  <p><code>src/agentRuntime/</code> — manages multi-agent orchestration. The <strong>orchestrator</strong> coordinates agent sessions, <strong>runStore</strong> persists agent run data, <strong>toolGateway</strong> routes tools between agents, and <strong>workflowRegistry</strong> / <strong>agentRegistry</strong> declare named workflows and agent configurations.</p>
 
   <h3>Autonomous / Daemon</h3>
-  <p><code>src/services/autonomous/</code> â€” enables 24/7 background execution. The <strong>taskQueue</strong> is a file-backed queue with priorities, leases, and dead-letter handling. <strong>agentLoop</strong> runs the continuous dequeue spawn worker monitor retry cycle. <strong>daemonMode</strong> provides the supervisor-managed background process entry point, and <strong>supervisorIntegration</strong> handles health checks and auto-respawn. See <a href="daemon.html">Daemon Mode</a> for detailed configuration and usage.</p>
+  <p><code>src/services/autonomous/</code> — enables 24/7 background execution. The <strong>taskQueue</strong> is a file-backed queue with priorities, leases, and dead-letter handling. <strong>agentLoop</strong> runs the continuous dequeue spawn worker monitor retry cycle. <strong>daemonMode</strong> provides the supervisor-managed background process entry point, and <strong>supervisorIntegration</strong> handles health checks and auto-respawn. See <a href="daemon.html">Daemon Mode</a> for detailed configuration and usage.</p>
 
   <h3>Coordinator (Multi-Agent)</h3>
-  <p><code>src/coordinator/</code> â€” supports multi-agent collaboration. <strong>coordinatorMode</strong> delegates tasks to sub-agents, and <strong>workerAgent</strong> provides standalone workers for delegated subtasks.</p>
+  <p><code>src/coordinator/</code> — supports multi-agent collaboration. <strong>coordinatorMode</strong> delegates tasks to sub-agents, and <strong>workerAgent</strong> provides standalone workers for delegated subtasks.</p>
 
   <h3>Memory</h3>
-  <p><code>src/memory/</code> â€” local embedding-free memory with SQLite FTS5 full-text search. Token-aware chunking (3000 tokens), truth priority scoring, secret redaction, and auto-ingest from <code>.claude/memory/</code>. See <a href="research-memory.html">Memory</a> for detailed usage.</p>
+  <p><code>src/memory/</code> — local embedding-free memory with SQLite FTS5 full-text search. Token-aware chunking (3000 tokens), truth priority scoring, secret redaction, and auto-ingest from <code>.claude/memory/</code>. See <a href="research-memory.html">Memory</a> for detailed usage.</p>
 
   <h3>Voice Mode</h3>
-  <p><code>src/voice/</code> â€” compile-time gated voice input support (<code>VOICE_MODE=1</code>). Provides speech-to-text and voice command processing for hands-free operation.</p>
+  <p><code>src/voice/</code> — compile-time gated voice input support (<code>VOICE_MODE=1</code>). Provides speech-to-text and voice command processing for hands-free operation.</p>
 
   <h3>State Management</h3>
   <p>The app uses a lightweight observable store pattern (<code>createStore&lt;T&gt;</code> in <code>src/state/store.ts</code>). Stores are plain functions with <code>getState</code>, <code>setState</code>, and <code>subscribe</code>. React components subscribe via the <strong>AppState</strong> React context (<code>src/state/AppState.tsx</code>).</p>
@@ -105,7 +105,7 @@
     <tr><td><code>src/tools.ts</code></td><td>Tool registry (40+ built-in tools)</td></tr>
     <tr><td><code>src/Tool.ts</code></td><td>Base tool types, schemas, buildTool() helper</td></tr>
     <tr><td><code>src/services/ai/ProviderManager.ts</code></td><td>Provider selection, API key resolution</td></tr>
-    <tr><td><code>src/services/ai/providers.json</code></td><td>Declarative provider config (27 providers)</td></tr>
+    <tr><td><code>src/services/ai/providers.json</code></td><td>Declarative provider config (28 providers)</td></tr>
     <tr><td><code>src/services/ai/adapter/</code></td><td>AnthropicAdapter, GoogleAdapter</td></tr>
     <tr><td><code>src/services/tools/StreamingToolExecutor.ts</code></td><td>Streaming tool execution</td></tr>
     <tr><td><code>src/utils/permissions/permissions.ts</code></td><td>Permission evaluation logic</td></tr>
@@ -127,10 +127,10 @@
   </table>
 
   <h2>Build System</h2>
-  <p>Built with Bun bundler â€” <code>bun run build</code> outputs a single binary to <code>dist/</code>. TypeScript with strict mode and ESM/NodeNext module resolution. External dependencies include Electron, chromium-bidi, AWS SDK, Google Auth, and platform-specific native modules. Lint/format via Biome 2.4.</p>
+  <p>Built with Bun bundler — <code>bun run build</code> outputs a single binary to <code>dist/</code>. TypeScript with strict mode and ESM/NodeNext module resolution. External dependencies include Electron, chromium-bidi, AWS SDK, Google Auth, and platform-specific native modules. Lint/format via Biome 2.4.</p>
 
   <footer class="footer">
-    <span>Clew Code v0.2.7 â€” Open Source</span>
+    <span>Clew Code 0.2.13 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

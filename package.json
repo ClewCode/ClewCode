@@ -1,6 +1,6 @@
 {
   "name": "clew-code",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "description": "ClewCode — multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
   "type": "module",
@@ -38,6 +38,8 @@
     "check:ci": "biome ci src/",
     "ast-grep": "bun x ast-grep",
     "codegraph": "bun run scripts/codegraph.ts",
+    "docs:generate": "bun run scripts/generate-docs.ts",
+    "docs:watch": "bun --watch run scripts/generate-docs.ts",
     "preload": "bun run scripts/preload.ts",
     "session": "bun run scripts/session.ts",
     "relay": "bun run src/remote/relay-server.ts"
@@ -131,6 +133,7 @@
     "ora": "^9.4.0",
     "p-map": "^7.0.4",
     "picomatch": "^4.0.4",
+    "playwright": "^1.60.0",
     "proper-lockfile": "^4.1.2",
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
@@ -157,6 +160,6 @@
     "@types/semver": "^7.7.1"
   },
   "optionalDependencies": {
-    "sharp": "0.35.1"
+    "sharp": "^0.35.1"
   }
 }

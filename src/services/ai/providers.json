@@ -293,6 +293,57 @@
       }
     ]
   },
+  "google-assist": {
+    "providerId": "google-assist",
+    "label": "Gemini Code Assist (OAuth)",
+    "envKey": "GEMINI_API_KEY",
+    "defaultBaseUrl": "https://cloudcode-pa.googleapis.com/v1internal",
+    "defaultModel": "gemini-2.5-flash",
+    "defaultModelVerified": true,
+    "isLocal": false,
+    "note": "Gemini Code Assist via OAuth — uses ~/.gemini/oauth_creds.json from Gemini CLI. Free tier via Google Code Assist API.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": false,
+      "vision": true,
+      "jsonSchema": false,
+      "reasoningEffort": false,
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
+    },
+    "models": [
+      {
+        "id": "gemini-2.5-flash",
+        "label": "Gemini 2.5 Flash",
+        "tags": ["fast", "recommended"],
+        "capabilities": {
+          "toolCalling": "none",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": false,
+          "supportsSystemPrompt": false
+        }
+      },
+      {
+        "id": "gemini-2.5-pro",
+        "label": "Gemini 2.5 Pro",
+        "tags": ["reasoning"],
+        "capabilities": {
+          "toolCalling": "none",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": true,
+          "supportsSystemPrompt": false
+        }
+      }
+    ]
+  },
   "openrouter": {
     "providerId": "openrouter",
     "label": "OpenRouter",

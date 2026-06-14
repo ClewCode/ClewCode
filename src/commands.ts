@@ -36,7 +36,7 @@ import breakCache from './commands/break-cache/index.js';
 import mcp from './commands/mcp/index.js';
 import mobile from './commands/mobile/index.js';
 import onboarding from './commands/onboarding/index.js';
-import peer from './commands/peer/index.js';
+import swarmCmd from './commands/swarm/index.js';
 import pr_comments from './commands/pr_comments/index.js';
 import releaseNotes from './commands/release-notes/index.js';
 import rename from './commands/rename/index.js';
@@ -89,7 +89,6 @@ const ultracode = (require('./commands/ultracode/index.ts') as typeof import('./
 const workflow = (require('./commands/workflow/index.ts') as typeof import('./commands/workflow/index.ts')).default;
 const torch = null;
 const workflowsCmd = null;
-const peersCmd = null;
 const forkCmd = null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 import thinkback from './commands/thinkback/index.js';
@@ -135,6 +134,7 @@ import searxng from './commands/searxng/index.js';
 import pluginDetails from './commands/plugin-details/index.js';
 import advisor from './commands/advisor.js';
 import agentCmd from './commands/agent/index.js';
+import agentsCmd from './commands/agents/index.js';
 import capabilities from './commands/capabilities/index.js';
 
 import { logError } from './utils/log.js';
@@ -236,6 +236,7 @@ const COMMANDS = memoize((): Command[] => [
   addDir,
   advisor,
   agentCmd,
+  agentsCmd,
   ant,
   autofixPr,
   bg,
@@ -278,7 +279,7 @@ const COMMANDS = memoize((): Command[] => [
   model,
   outputStyle,
   onboarding,
-  peer,
+  swarmCmd,
   skill,
   powerup,
   providerSelect,
@@ -341,7 +342,6 @@ const COMMANDS = memoize((): Command[] => [
   sandboxToggle,
   ...(!isUsing3PServices() && isActiveProviderAnthropic() ? [logout, login()] : []),
   passes,
-  ...(peersCmd ? [peersCmd] : []),
   tasks,
   ...(workflowsCmd ? [workflowsCmd] : []),
   ...(torch ? [torch] : []),

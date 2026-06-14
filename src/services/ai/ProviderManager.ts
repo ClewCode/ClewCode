@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { join } from 'path';
 import { getGlobalConfig } from '../../utils/config.js';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { readLocalProviderKey } from '../../utils/localProviderKeys.js';
 import {
   DEFAULT_PROVIDER,
   getProviderOptions,
@@ -252,6 +253,7 @@ export class ProviderManager {
     return (
       config.apiKeys?.[providerName] ||
       (providerEntry?.envKey ? process.env[providerEntry.envKey] : undefined) ||
+      readLocalProviderKey(providerName) ||
       undefined
     );
   }

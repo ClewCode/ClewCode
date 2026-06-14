@@ -208,6 +208,59 @@ export const ExitPlanModeV2Tool: Tool<InputSchema, Output> = buildTool({
     if (inputPlan !== undefined && filePath) {
       await writeFile(filePath, inputPlan, 'utf-8').catch(e => logError(e));
       void persistFileSnapshotIfRemote();
+
+      // Mirror long plans + task progress to .clew/plans/long-term-plan.md
+      // so they can be reviewed, shared, and checked into git.
+      // When resuming, the agent reads this file and picks up where it left off.
+      if (plan && plan.length > 1000) {
+        const { mkdirSync } = await import('node:fs');
+        const { join } = await import('node:path');
+        const { getCwd } = await import('../../utils/cwd.js');
+        const { listTasks, getTaskListId } = await import('../../utils/tasks.js');
+        const clewPlansDir = join(getCwd(), '.clew', 'plans');
+        try {
+          mkdirSync(clewPlansDir, { recursive: true });
+
+          // Build task progress snapshot
+          let taskContent = '';
+          try {
+            const taskListId = getTaskListId();
+            const tasks = await listTasks(taskListId);
+            const active = tasks.filter(t => t.status !== 'completed');
+            const completed = tasks.filter(t => t.status === 'completed');
+            if (active.length > 0 || completed.length > 0) {
+              taskContent = '\n\n## Task Progress\n\n';
+              if (active.length > 0) {
+                taskContent += '### Active\n';
+                for (const t of active) {
+                  const icon = t.status === 'in_progress' ? '⏳' : '⬜';
+                  taskContent += `- ${icon} **#${t.id}** ${t.subject}`;
+                  if (t.blockedBy.length > 0) taskContent += ` (blocked by: ${t.blockedBy.join(', ')})`;
+                  taskContent += '\n';
+                }
+                taskContent += '\n';
+              }
+              if (completed.length > 0) {
+                taskContent += '### Completed\n';
+                for (const t of completed.slice(-10)) {
+                  taskContent += `- ✅ **#${t.id}** ${t.subject}\n`;
+                }
+              }
+            }
+          } catch {
+            // Task list unavailable — skip task section
+          }
+
+          await writeFile(
+            join(clewPlansDir, 'long-term-plan.md'),
+            plan + taskContent,
+            'utf-8',
+          ).catch(e => logError(e));
+          logForDebugging(`Plan mirrored to .clew/plans/long-term-plan.md (${plan.length} chars + tasks)`, { level: 'info' });
+        } catch (e) {
+          logError(e);
+        }
+      }
     }
 
     // Check if this is a teammate that requires leader approval
@@ -330,6 +383,8 @@ export const ExitPlanModeV2Tool: Tool<InputSchema, Output> = buildTool({
           ...baseContext,
           mode: restoreMode,
           prePlanMode: undefined,
+          // Restore bypass permissions to pre-plan state; plan mode always sets this true
+          isBypassPermissionsModeAvailable: restoreMode === 'bypassPermissions',
         },
       };
     });

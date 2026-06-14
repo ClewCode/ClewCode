@@ -21,7 +21,7 @@ import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
 import { ACPStatusLine } from '../ACPStatusLine.js';
-import { PeerStatusLine } from '../PeerStatusLine.js';
+import { SwarmStatusLine } from '../SwarmStatusLine.js';
 import { getLastAssistantMessageId, StatusLine, statusLineShouldDisplay } from '../StatusLine.js';
 
 import { Notifications } from './Notifications.js';
@@ -258,7 +258,7 @@ function PromptInputFooter({
       <DynamicWorkflowStatusLine />
 
       <ACPStatusLine />
-      <PeerStatusLine />
+      <SwarmStatusLine />
     </>
   );
 }

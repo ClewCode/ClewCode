@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tools â€” Clew</title>
-  <meta name="description" content="Complete reference for built-in tools in Clew â€” file operations, shell, search, agents, MCP, and automation.">
+  <title>Tools — Clew</title>
+  <meta name="description" content="Complete reference for built-in tools in Clew — file operations, shell, search, agents, MCP, and automation.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -65,8 +65,9 @@
   <h2>Browser &amp; Automation</h2>
   <table>
     <tr><th>Tool</th><th>Description</th></tr>
-    <tr><td><code>Browser</code> (BrowserTool)</td><td>Stealth Playwright browser â€” navigate, click, type, screenshot, extract, fill forms</td></tr>
+    <tr><td><code>Browser</code> (BrowserTool)</td><td>Stealth Playwright browser — navigate, click, type, screenshot, extract, fill forms, tab management (list_tabs, close_tab, switch_tab)</td></tr>
     <tr><td><code>ComputerUse</code> (ComputerUseTool)</td><td>Windows-only computer use automation (feature-gated: ENABLE_COMPUTER_USE)</td></tr>
+	    <tr><td><code>BrowserAgent</code> (BrowserAgentTool)</td><td>Autonomous web agent with vision (screenshot) and text (accessibility tree) modes via Playwright. Multi-step AI planning, anti-bot stealth, CAPTCHA detection, tab management.</td></tr>
   </table>
 
   <h2>Agent &amp; Task Management</h2>
@@ -136,13 +137,13 @@ Storage: Durable</code></pre>
   <h2>Tool Safety &amp; Permissions</h2>
   <p>Each tool declares:</p>
   <ul>
-    <li><strong>isEnabled()</strong> â€” Whether the tool is available in the current build</li>
-    <li><strong>isConcurrencySafe()</strong> â€” Can run in parallel with other tools</li>
-    <li><strong>isReadOnly()</strong> â€” Does not modify filesystem</li>
-    <li><strong>isDestructive()</strong> â€” Performs irreversible operations</li>
-    <li><strong>checkPermissions()</strong> â€” Tool-specific permission logic</li>
-    <li><strong>validateInput()</strong> â€” Input validation before execution</li>
-    <li><strong>maxResultSizeChars</strong> â€” Max result size before disk persistence</li>
+    <li><strong>isEnabled()</strong> — Whether the tool is available in the current build</li>
+    <li><strong>isConcurrencySafe()</strong> — Can run in parallel with other tools</li>
+    <li><strong>isReadOnly()</strong> — Does not modify filesystem</li>
+    <li><strong>isDestructive()</strong> — Performs irreversible operations</li>
+    <li><strong>checkPermissions()</strong> — Tool-specific permission logic</li>
+    <li><strong>validateInput()</strong> — Input validation before execution</li>
+    <li><strong>maxResultSizeChars</strong> — Max result size before disk persistence</li>
   </ul>
 
   <p>MCP tools from external servers are merged into the tool pool at runtime via <code>assembleToolPool()</code>. Tools are filtered by deny rules from the permission context.</p>
@@ -153,7 +154,7 @@ Storage: Durable</code></pre>
   </div>
 
   <footer class="footer">
-    <span>Clew Code v0.2.7 â€” Open Source</span>
+    <span>Clew Code 0.2.13 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

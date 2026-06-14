@@ -133,6 +133,14 @@ export const JsonPathTool = buildTool({
   searchHint: 'query validate format minify JSON',
   maxResultSizeChars: 100_000,
   strict: true,
+  mapToolResultToToolResultBlockParam(data: any, toolUseID: string) {
+    const content = data.success ? JSON.stringify(data.result, null, 2) || 'Success' : `Error: ${data.error}`;
+    return {
+      tool_use_id: toolUseID,
+      type: 'tool_result' as const,
+      content,
+    };
+  },
   async description() {
     return DESCRIPTION;
   },

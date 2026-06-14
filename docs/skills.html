@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Skills â€” Clew</title>
-  <meta name="description" content="Reusable task instructions and workflows in Clew â€” create, use, and share skills across projects.">
+  <title>Skills — Clew</title>
+  <meta name="description" content="Reusable task instructions and workflows in Clew — create, use, and share skills across projects.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,10 +17,10 @@
 <div class="content-wrap"><main class="content">
   <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Skills</span></div>
   <h1>Skills</h1>
-  <p class="section-subtitle">Skills are reusable prompt-type commands â€” markdown files that provide structured instructions to the AI model. They are loaded from bundled, user, project, and plugin directories.</p>
+  <p class="section-subtitle">Skills are reusable prompt-type commands — markdown files that provide structured instructions to the AI model. They are loaded from bundled, user, project, and plugin directories.</p>
 
   <h2>Overview</h2>
-  <p>Skills are commands of type <code>prompt</code> â€” they expand to text that is sent to the model. Unlike plugins (which provide JavaScript code), skills are purely instructional. They bridge the gap between ad-hoc prompts and full plugin development.</p>
+  <p>Skills are commands of type <code>prompt</code> — they expand to text that is sent to the model. Unlike plugins (which provide JavaScript code), skills are purely instructional. They bridge the gap between ad-hoc prompts and full plugin development.</p>
 
   <h2>Skill Locations</h2>
   <p>Skills are loaded from four sources (order: bundled user project plugin):</p>
@@ -68,12 +68,12 @@ context: fork
 ---</code></pre>
   <p>Key frontmatter fields:</p>
   <ul>
-    <li><code>allowed-tools</code> â€” Restrict which tools the model can use while this skill is active</li>
-    <li><code>disallowed-tools</code> â€” Explicitly block tools (e.g., <code>Bash</code>, <code>Edit</code>) for read-only skills</li>
-    <li><code>hooks</code> â€” Register PreToolUse, PostToolUse, or MessageDisplay hooks for the skill</li>
-    <li><code>model</code> â€” Override the model used when this skill runs</li>
-    <li><code>effort</code> â€” Set effort level (low, medium, high, xhigh, max)</li>
-    <li><code>context</code> â€” <code>inline</code> (default) expands into current conversation; <code>fork</code> runs as sub-agent</li>
+    <li><code>allowed-tools</code> — Restrict which tools the model can use while this skill is active</li>
+    <li><code>disallowed-tools</code> — Explicitly block tools (e.g., <code>Bash</code>, <code>Edit</code>) for read-only skills</li>
+    <li><code>hooks</code> — Register PreToolUse, PostToolUse, or MessageDisplay hooks for the skill</li>
+    <li><code>model</code> — Override the model used when this skill runs</li>
+    <li><code>effort</code> — Set effort level (low, medium, high, xhigh, max)</li>
+    <li><code>context</code> — <code>inline</code> (default) expands into current conversation; <code>fork</code> runs as sub-agent</li>
   </ul>
 
   <h2>Creating a Skill</h2>
@@ -97,11 +97,11 @@ touch ~/.claude/skills/my-skill/SKILL.md
 
   <div class="callout callout-info">
     <strong>Skills vs. Plugins</strong>
-    Skills are instruction-only (markdown), no code required. Plugins provide executable JavaScript â€” commands, hooks, agents, MCP servers. Use skills to standardize AI behavior; use plugins for custom tooling.
+    Skills are instruction-only (markdown), no code required. Plugins provide executable JavaScript — commands, hooks, agents, MCP servers. Use skills to standardize AI behavior; use plugins for custom tooling.
   </div>
 
   <footer class="footer">
-    <span>Clew Code v0.2.7 â€” Open Source</span>
+    <span>Clew Code 0.2.13 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

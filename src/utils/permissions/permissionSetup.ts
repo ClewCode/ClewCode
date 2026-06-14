@@ -1297,13 +1297,14 @@ export function prepareContextForPlanMode(context: ToolPermissionContext): ToolP
     const planAutoMode = shouldPlanUseAutoMode();
     if (currentMode === 'auto') {
       if (planAutoMode) {
-        return { ...context, prePlanMode: 'auto' };
+        return { ...context, prePlanMode: 'auto', isBypassPermissionsModeAvailable: true };
       }
       autoModeStateModule?.setAutoModeActive(false);
       setNeedsAutoModeExitAttachment(true);
       return {
         ...restoreDangerousPermissions(context),
         prePlanMode: 'auto',
+        isBypassPermissionsModeAvailable: true,
       };
     }
     if (planAutoMode && currentMode !== 'bypassPermissions') {
@@ -1311,11 +1312,17 @@ export function prepareContextForPlanMode(context: ToolPermissionContext): ToolP
       return {
         ...stripDangerousPermissionsForAutoMode(context),
         prePlanMode: currentMode,
+        isBypassPermissionsModeAvailable: true,
       };
     }
   }
   logForDebugging(`[prepareContextForPlanMode] plain plan entry, prePlanMode=${currentMode}`, { level: 'info' });
-  return { ...context, prePlanMode: currentMode };
+  return {
+    ...context,
+    prePlanMode: currentMode,
+    // Plan mode has full bypass permissions — like bypassPermissions mode
+    isBypassPermissionsModeAvailable: true,
+  };
 }
 
 /**

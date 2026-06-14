@@ -18,7 +18,7 @@ import type { ACPRestConfig } from './ACPRestConfig.js';
 import { createClewCodeManifest } from './ACPAgentManifest.js';
 import { createRun, getRun, cancelRun } from './ACPRunManager.js';
 import { textToACPMessage, resultToACPMessage, acpMessagesToPrompt } from './ACPMessageConverter.js';
-import { getProcessPeerProvider } from '../peer/ProcessPeerProvider.js';
+import { getProcessSwarmProvider } from '../swarm/ProcessSwarmProvider.js';
 import { logForDebugging } from '../utils/debug.js';
 
 let server: ReturnType<typeof createServer> | null = null;
@@ -198,7 +198,7 @@ async function handleRequest(
  */
 async function executeRunAsync(runId: string, prompt: string): Promise<void> {
   try {
-    const provider = getProcessPeerProvider('codex');
+    const provider = getProcessSwarmProvider('codex');
     if (!provider) {
       // Fallback: just complete with a message
       const { completeRun } = await import('./ACPRunManager.js');

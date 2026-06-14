@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Orchestrator } from '../../agentRuntime/orchestrator.js';
 import { RunStore } from '../../agentRuntime/runStore.js';
 import type { AgentRun, AgentState } from '../../agentRuntime/types.js';
+import { DashboardMonitor } from '../../components/dashboard/DashboardMonitor.js';
 import { Dialog } from '../../components/design-system/Dialog.js';
 import { Divider } from '../../components/design-system/Divider.js';
 import { ProgressBar } from '../../components/design-system/ProgressBar.js';
@@ -599,6 +600,9 @@ export function DashboardComponent({ onDone }: DashboardProps): React.ReactNode 
         </Tab>
         <Tab title="Tasks" id="tasks">
           {renderTasks()}
+        </Tab>
+        <Tab title="Monitor" id="monitor">
+          <DashboardMonitor onDone={onDone} />
         </Tab>
       </Tabs>
 

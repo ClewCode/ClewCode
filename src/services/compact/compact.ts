@@ -42,7 +42,7 @@ import {
   getMcpInstructionsDeltaAttachment,
 } from '../../utils/attachments.js';
 import { getMemoryPath } from '../../utils/config.js';
-import { COMPACT_MAX_OUTPUT_TOKENS } from '../../utils/context.js';
+import { COMPACT_MAX_OUTPUT_TOKENS, getContextWindowForModel } from '../../utils/context.js';
 import { analyzeContext, tokenStatsToStatsigMetrics } from '../../utils/contextAnalysis.js';
 import { readCronTasks } from '../../utils/cronTasks.js';
 import { logForDebugging } from '../../utils/debug.js';
@@ -246,6 +246,292 @@ export function truncateHeadForPTLRetry(messages: Message[], ptlResponse: Assist
   return sliced;
 }
 
+// ── Multi-Pass Compact Helpers ──
+
+/**
+ * Calculate how many tokens each chunk can safely occupy.
+ * Reserves space for the compact prompt, system prompt, tool definitions, and safety margin.
+ */
+export function calculateSafeChunkTokens(model: string): number {
+  const contextLimit = getContextWindowForModel(model);
+  // Reserve ~5000 for compact prompt (~1000), system prompt (~200), tool defs (~800), safety (~3000)
+  const overhead = 5000;
+  return Math.max(1000, contextLimit - overhead);
+}
+
+/**
+ * Split messages into chunks that each fit within `maxTokensPerChunk`.
+ * Uses API-round groups (via groupMessagesByApiRound) as the atomic unit — groups
+ * are never split, preserving conversation coherence.
+ */
+export function splitIntoCompactChunks(
+  messages: Message[],
+  maxTokensPerChunk: number,
+): Message[][] {
+  const groups = groupMessagesByApiRound(messages);
+  const chunks: Message[][] = [];
+  let current: Message[] = [];
+  let currentTokens = 0;
+
+  for (const group of groups) {
+    const groupTokens = roughTokenCountEstimationForMessages(group);
+    // If a single group exceeds the budget, we must still include it (can't split groups)
+    if (currentTokens + groupTokens > maxTokensPerChunk && current.length > 0) {
+      chunks.push(current);
+      current = [];
+      currentTokens = 0;
+    }
+    current.push(...group);
+    currentTokens += groupTokens;
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
+/**
+ * Compact a single chunk of messages via a minimal streaming API call.
+ * Returns the summary text, or null on failure.
+ */
+async function compactSingleChunk(
+  chunk: Message[],
+  context: ToolUseContext,
+  customInstructions?: string,
+  passNumber?: number,
+): Promise<string | null> {
+  const compactPrompt = getCompactPrompt(customInstructions);
+  const summaryRequest = createUserMessage({ content: compactPrompt });
+
+  const appState = context.getAppState();
+
+  // Build a minimal tool set — just FileReadTool (required for API compatibility)
+  const tools: Tool[] = [FileReadTool];
+
+  try {
+    const streamingGen = queryModelWithStreaming({
+      messages: normalizeMessagesForAPI(
+        stripImagesFromMessages(
+          stripReinjectedAttachments([...getMessagesAfterCompactBoundary(chunk), summaryRequest]),
+        ),
+        context.options.tools,
+      ),
+      systemPrompt: asSystemPrompt([
+        'You are a helpful AI assistant tasked with summarizing conversations.',
+      ]),
+      thinkingConfig: { type: 'disabled' as const },
+      tools,
+      signal: context.abortController.signal,
+      options: {
+        async getToolPermissionContext() {
+          return appState.toolPermissionContext;
+        },
+        model: context.options.mainLoopModel,
+        toolChoice: undefined,
+        isNonInteractiveSession: context.options.isNonInteractiveSession,
+        hasAppendSystemPrompt: !!context.options.appendSystemPrompt,
+        maxOutputTokensOverride: Math.min(
+          COMPACT_MAX_OUTPUT_TOKENS,
+          getMaxOutputTokensForModel(context.options.mainLoopModel),
+        ),
+        querySource: 'compact',
+        agents: context.options.agentDefinitions.activeAgents,
+        mcpTools: [],
+        effortValue: appState.effortValue,
+      },
+    });
+
+    const streamIter = streamingGen[Symbol.asyncIterator]();
+    let response: AssistantMessage | undefined;
+    let next = await streamIter.next();
+
+    while (!next.done) {
+      const event = next.value;
+      if (event.type === 'assistant') {
+        response = event;
+      }
+      next = await streamIter.next();
+    }
+
+    if (!response) return null;
+
+    const text = getAssistantMessageText(response);
+    if (!text || startsWithApiErrorPrefix(text) || text.startsWith(PROMPT_TOO_LONG_ERROR_MESSAGE)) {
+      return null;
+    }
+
+    // Strip the <analysis> draft and format the summary
+    let summary = text.replace(/<analysis>[\s\S]*?<\/analysis>/, '');
+    const summaryMatch = summary.match(/<summary>([\s\S]*?)<\/summary>/);
+    if (summaryMatch) {
+      summary = summaryMatch[1]!.trim();
+    }
+
+    const prefix = passNumber ? `[Pass ${passNumber}]\n` : '';
+    return prefix + summary;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Multi-pass compaction: splits oversized messages into chunks, compacts each
+ * independently, merges summaries, and recursively re-compacts if needed.
+ *
+ * Used as a fallback when the compact request itself exceeds the model context
+ * window (PTL retries exhausted). Returns null when multi-pass is impossible
+ * (single chunk still too large, or all chunk compactions failed).
+ */
+async function multiPassCompact(
+  messages: Message[],
+  context: ToolUseContext,
+  customInstructions?: string,
+): Promise<CompactionResult | null> {
+  const model = context.options.mainLoopModel;
+  const chunkBudget = calculateSafeChunkTokens(model);
+
+  // Keep recent messages — only compact the older portion
+  const messagesToKeep = selectPostCompactMessagesToKeep(messages);
+  const messagesToCompact = messages.slice(0, messages.length - messagesToKeep.length);
+
+  if (messagesToCompact.length === 0) return null;
+
+  // Split older messages into chunks
+  let chunks = splitIntoCompactChunks(messagesToCompact, chunkBudget);
+
+  if (chunks.length <= 1) {
+    // Can't split further — the single chunk may still be too large.
+    // Try with a larger budget (reserve less) as last resort.
+    const desperateBudget = getContextWindowForModel(model) - 2000;
+    chunks = splitIntoCompactChunks(messagesToCompact, desperateBudget);
+    if (chunks.length <= 1) return null;
+  }
+
+  // Pass 1: compact each chunk independently
+  const summaries: string[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    context.onCompactProgress?.({
+      type: 'compact_start',
+    });
+    const summary = await compactSingleChunk(chunks[i]!, context, customInstructions);
+    if (!summary) return null; // chunk compaction failed
+    summaries.push(summary);
+  }
+
+  // Combine summaries
+  let combinedSummary = summaries.join('\n\n---\n\n');
+  let combinedUserMessage = createUserMessage({
+    content: getCompactUserSummaryMessage(combinedSummary, false, getTranscriptPath()),
+    isCompactSummary: true,
+    isVisibleInTranscriptOnly: true,
+  });
+
+  // Re-compaction loop: if combined summaries + messagesToKeep still don't fit,
+  // compact the summaries themselves (recursive compaction)
+  const MAX_RECOMPACT_PASSES = 10;
+  let prevTokens = Infinity;
+
+  for (let pass = 2; pass <= MAX_RECOMPACT_PASSES; pass++) {
+    const allMessages = [combinedUserMessage, ...messagesToKeep];
+    const totalTokens = roughTokenCountEstimationForMessages(allMessages);
+
+    // Check convergence: if we're making progress
+    if (totalTokens <= chunkBudget) break; // fits!
+    if (totalTokens >= prevTokens) break; // no progress, give up
+
+    prevTokens = totalTokens;
+
+    // Compact the summaries into a single re-compacted summary
+    const reSummary = await compactSingleChunk(
+      [combinedUserMessage],
+      context,
+      customInstructions,
+      pass,
+    );
+    if (!reSummary) break;
+
+    combinedSummary = reSummary;
+    combinedUserMessage = createUserMessage({
+      content: getCompactUserSummaryMessage(combinedSummary, false, getTranscriptPath()),
+      isCompactSummary: true,
+      isVisibleInTranscriptOnly: true,
+    });
+  }
+
+  // Assemble CompactionResult
+  const preCompactTokenCount = tokenCountWithEstimation(messages);
+
+  const boundaryMarker = createCompactBoundaryMessage(
+    'manual',
+    preCompactTokenCount ?? 0,
+    messages.at(-1)?.uuid,
+  );
+
+  const preCompactDiscovered = extractDiscoveredToolNames(messages);
+  if (preCompactDiscovered.size > 0) {
+    boundaryMarker.compactMetadata.preCompactDiscoveredTools = [...preCompactDiscovered].sort();
+  }
+
+  // Run post-compact processing (file attachments, hooks, etc.)
+  const preCompactReadFileState = cacheToObject(context.readFileState);
+  context.readFileState.clear();
+  context.loadedNestedMemoryPaths?.clear();
+
+  const [fileAttachments, asyncAgentAttachments] = await Promise.all([
+    createPostCompactFileAttachments(preCompactReadFileState, context, POST_COMPACT_MAX_FILES_TO_RESTORE, messagesToKeep),
+    createAsyncAgentAttachmentsIfNeeded(context),
+  ]);
+
+  const postCompactFileAttachments: AttachmentMessage[] = [...fileAttachments, ...asyncAgentAttachments];
+  const planAttachment = createPlanAttachmentIfNeeded(context.agentId);
+  if (planAttachment) postCompactFileAttachments.push(planAttachment);
+  const planModeAttachment = await createPlanModeAttachmentIfNeeded(context);
+  if (planModeAttachment) postCompactFileAttachments.push(planModeAttachment);
+  const skillAttachment = createSkillAttachmentIfNeeded(context.agentId);
+  if (skillAttachment) postCompactFileAttachments.push(skillAttachment);
+  const taskAttachment = await createTaskAttachmentIfNeeded();
+  if (taskAttachment) postCompactFileAttachments.push(taskAttachment);
+
+  for (const att of getDeferredToolsDeltaAttachment(context.options.tools, context.options.mainLoopModel, [], {
+    callSite: 'compact_full',
+  })) {
+    postCompactFileAttachments.push(createAttachmentMessage(att));
+  }
+  for (const att of getAgentListingDeltaAttachment(context, [])) {
+    postCompactFileAttachments.push(createAttachmentMessage(att));
+  }
+  for (const att of getMcpInstructionsDeltaAttachment(
+    context.options.mcpClients, context.options.tools, context.options.mainLoopModel, [],
+  )) {
+    postCompactFileAttachments.push(createAttachmentMessage(att));
+  }
+
+  const hookMessages = await processSessionStartHooks('compact', { model: context.options.mainLoopModel });
+
+  const truePostCompactTokenCount = roughTokenCountEstimationForMessages([
+    boundaryMarker,
+    combinedUserMessage,
+    ...messagesToKeep,
+    ...postCompactFileAttachments,
+    ...hookMessages,
+  ]);
+
+  logEvent('tengu_multi_pass_compact', {
+    preCompactTokenCount,
+    truePostCompactTokenCount,
+    numChunks: chunks.length,
+    numRecompactPasses: pass > 1 ? pass - 1 : 0,
+  });
+
+  return {
+    boundaryMarker,
+    summaryMessages: [combinedUserMessage],
+    messagesToKeep,
+    attachments: postCompactFileAttachments,
+    hookResults: hookMessages,
+    preCompactTokenCount,
+    truePostCompactTokenCount,
+  };
+}
+
 export const ERROR_MESSAGE_PROMPT_TOO_LONG =
   'Conversation too long. Press esc twice to go up a few messages and try again.';
 export const ERROR_MESSAGE_EXTRA_USAGE_REQUIRED =
@@ -419,12 +705,18 @@ export async function compactConversation(
         break;
       }
 
-      // CC-1180: compact request itself hit prompt-too-long. Truncate the
-      // oldest API-round groups and retry rather than leaving the user stuck.
+      // CC-1180 / Multi-Pass: compact request itself hit prompt-too-long.
+      // Retry 1: drop oldest API-round groups (standard truncation).
+      // Retry 2..N: try multi-pass chunked compaction when truncation can't help.
       ptlAttempts++;
       const truncated =
         ptlAttempts <= MAX_PTL_RETRIES ? truncateHeadForPTLRetry(messagesToSummarize, summaryResponse) : null;
       if (!truncated) {
+        // Standard truncation exhausted — try multi-pass before giving up
+        if (!isAutoCompact) {
+          const multiResult = await multiPassCompact(messages, context, customInstructions);
+          if (multiResult) return multiResult;
+        }
         logEvent('tengu_compact_failed', {
           reason: 'prompt_too_long' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
           preCompactTokenCount,

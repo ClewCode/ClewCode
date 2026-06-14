@@ -160,8 +160,14 @@ type Props = {
 function truncateToWidth(text: string, width: number): string {
   if (width <= 0) return '';
   if (text.length <= width) return text.padEnd(width);
-  if (width === 1) return '…';
-  return `${text.slice(0, width - 1)}…`;
+  if (width <= 3) return text.slice(0, width);
+  return `${text.slice(0, width - 3)}...`;
+}
+
+function formatTokenCount(tokens: number): string {
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
+  if (tokens >= 1_000) return `${Math.round(tokens / 100) / 10}K`;
+  return String(tokens);
 }
 
 function formatRowLine({
@@ -176,23 +182,25 @@ function formatRowLine({
   const nameWidth = width >= 96 ? 22 : width >= 72 ? 18 : 14;
   const timeWidth = 5;
   const gapWidth = 3;
-  // name + gap + preview + gap + time = width
-  const previewWidth = Math.max(8, width - nameWidth - gapWidth - timeWidth);
+  const tokenCount = task.progress?.tokenCount ?? 0;
+  const tokenText = width >= 80 && tokenCount > 0 ? `${formatTokenCount(tokenCount)} tok` : '';
+  const tokenWidth = tokenText ? Math.max(8, tokenText.length) : 0;
+  // name + gap + preview + optional token + gap + time = width
+  const previewWidth = Math.max(8, width - nameWidth - gapWidth - timeWidth - (tokenWidth ? tokenWidth + 1 : 0));
   const name = (task as any).customName ?? task.agentType ?? 'Agent';
   const time = task.startTime ? formatTimeAgo(task.startTime) : '';
   const padName = name.padEnd(nameWidth).slice(0, nameWidth);
   const padPreview = previewText.padEnd(previewWidth).slice(0, previewWidth);
-  return `${padName} ${padPreview} ${time.padStart(timeWidth)}`;
+  const tokenSegment = tokenText ? ` ${tokenText.padStart(tokenWidth)}` : '';
+  return `${padName} ${padPreview}${tokenSegment} ${time.padStart(timeWidth)}`;
 }
 
-export function AgentViewRow({ task, isSelected, prCount, prStatus, prUrl, prDisplayInfo, width = 96 }: Props) {
-  const cat = getTaskCategory(task);
+export function AgentViewRow({ task, isSelected, prStatus, prDisplayInfo, width = 96 }: Props) {
   const statusStyle = getStatusIcon(task);
   const previewText = getActivityPreview(task);
 
   // PR status dot
   const prDot = prStatus ? getPRStatusIcon(prStatus) : null;
-  const showPRCount = prCount && prCount > 1;
   const rowLine = formatRowLine({ task, previewText, width: Math.max(40, width - 3) });
   const backgroundColor = isSelected ? '#3a3a3a' : undefined;
   const textColor = isSelected ? 'text' : undefined;

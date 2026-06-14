@@ -4,7 +4,6 @@ const agentCmd: Command = {
   type: 'local-jsx',
   name: 'agent',
   description: 'AI Agents: dispatch from chat, monitor sessions, manage definitions, and control the agent runtime',
-  aliases: ['agents'],
   isEnabled: () => true,
   argumentHint: '<task|view|config|run|status|trace> [args]',
   load: () => import('./agent.js'),

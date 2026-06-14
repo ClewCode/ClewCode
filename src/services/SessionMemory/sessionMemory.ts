@@ -41,6 +41,7 @@ import {
   setLastSummarizedMessageId,
   setSessionMemoryConfig,
 } from './sessionMemoryUtils.js';
+import { consolidateSessionMemory } from './consolidation.js';
 
 // ============================================================================
 // Feature Gate and Config (Cached - Non-blocking)
@@ -300,6 +301,11 @@ const extractSessionMemory = sequential(async (context: REPLHookContext): Promis
   // Update lastSummarizedMessageId after successful completion
   updateLastSummarizedMessageIdIfSafe(messages);
 
+  // Consolidate session notes into long-term memories
+  void consolidateSessionMemory().catch(err => {
+    logError(new Error(`Session memory consolidation failed: ${errorMessage(err)}`));
+  });
+
   markExtractionCompleted();
 });
 
@@ -390,6 +396,11 @@ export async function manuallyExtractSessionMemory(
 
     // Update lastSummarizedMessageId after successful completion
     updateLastSummarizedMessageIdIfSafe(messages);
+
+    // Consolidate session notes into long-term memories
+    void consolidateSessionMemory().catch(err => {
+      logError(new Error(`Session memory consolidation failed: ${errorMessage(err)}`));
+    });
 
     return { success: true, memoryPath };
   } catch (error) {

@@ -278,6 +278,129 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
         return null;
       }
 
+      case 'timeline': {
+        try {
+          const { queryTimeline, formatTimeline } = await import('../../services/longTermMemory/timeline.js');
+          const rows = queryTimeline(cwd, { limit: 20 });
+          if (rows.length === 0) {
+            onDone('No session history yet. Sessions are recorded automatically.', { display: 'system' });
+          } else {
+            onDone(formatTimeline(rows), { display: 'system' });
+          }
+        } catch (err: any) {
+          onDone(`Error loading timeline: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
+      case 'stats': {
+        try {
+          const { computeDensity } = await import('../../services/longTermMemory/timeline.js');
+          const density = computeDensity(cwd);
+          onDone(
+            [
+              '## Memory Stats',
+              '',
+              `Total sessions: ${density.total}`,
+              `First session: ${density.firstSession ?? 'N/A'}`,
+              `Last session: ${density.lastSession ?? 'N/A'}`,
+              `Average: ${density.avgPerDay} sessions/day`,
+              '',
+              density.byDay.length > 0 ? '### Activity (last 30 days)' : '',
+              ...density.byDay.map(d => `  ${d.date}: ${'█'.repeat(Math.min(d.count, 20))} ${d.count}`),
+            ].filter(Boolean).join('\n'),
+            { display: 'system' },
+          );
+        } catch (err: any) {
+          onDone(`Error loading stats: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
+      case 'save': {
+        const summary = argv.slice(1).join(' ') || 'Session completed';
+        try {
+          const { saveSessionSummary } = await import('../../services/longTermMemory/crossSession.js');
+          const { recordSessionGraph } = await import('../../services/longTermMemory/graph.js');
+          // Save to both flat tables and knowledge graph
+          saveSessionSummary(cwd, summary, [], [], []);
+          recordSessionGraph(cwd, summary, [], [], [], 'deepseek', 'openrouter');
+          onDone('Session saved to memory (flat + graph).', { display: 'system' });
+        } catch (err: any) {
+          onDone(`Error saving memory: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
+      case 'xp':
+      case 'experience': {
+        try {
+          const { getExperienceReport } = await import('../../services/longTermMemory/experience.js');
+          onDone(getExperienceReport(cwd), { display: 'system' });
+        } catch (err: any) {
+          onDone(`Error: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
+      case 'graph': {
+        try {
+          const { getGraphStats, recordSessionGraph } = await import('../../services/longTermMemory/graph.js');
+          const stats = getGraphStats(cwd);
+          onDone(
+            [
+              '## Knowledge Graph Memory',
+              '',
+              `Nodes: ${stats.nodeCount} | Edges: ${stats.edgeCount}`,
+              ...Object.entries(stats.byType).map(([t, c]) => `  ${t}: ${c}`),
+              '',
+              '/memory save — records session as graph nodes+edges',
+              '/memory timeline — view session history',
+            ].join('\n'),
+            { display: 'system' },
+          );
+        } catch (err: any) {
+          onDone(`Error: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
+      case 'digest':
+      case 'digests': {
+        try {
+          const { formatDigests } = await import('../../services/longTermMemory/timeline.js');
+          onDone(formatDigests(cwd), { display: 'system' });
+        } catch (err: any) {
+          onDone(`Error loading digests: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
+      case 'preview':
+      case 'consolidate': {
+        try {
+          const { previewConsolidation, getConsolidationCandidates } =
+            await import('../../services/longTermMemory/consolidate.js');
+          if (subcommand === 'preview') {
+            onDone(previewConsolidation(cwd), { display: 'system' });
+          } else {
+            const groups = getConsolidationCandidates(cwd);
+            if (!groups.length) {
+              onDone('No sessions need consolidation.', { display: 'system' });
+            } else {
+              const total = groups.reduce((a, g) => a + g.total, 0);
+              onDone(
+                `🔄 ${total} sessions ready for consolidation. Run AI summary to create digests.\n\n${previewConsolidation(cwd)}`,
+                { display: 'system' },
+              );
+            }
+          }
+        } catch (err: any) {
+          onDone(`Error: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
       default: {
         onDone(
           [
@@ -292,7 +415,15 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             '  approve <id>         Approve candidate memory suggestion and append to memory',
             '  reject <id>          Reject candidate memory suggestion and delete suggestion',
             '  forget <id>          Permanently delete a memory record from disk and index',
-            '  doctor               Display Claude Memory status, metrics, and health diagnostics',
+            '  doctor               Display memory status, metrics, and health diagnostics',
+            '  timeline             Show session timeline (cross-session history)',
+            '  stats                Show memory density stats and activity chart',
+            '  save [summary]       Save current session to long-term memory',
+            '  digest               Show consolidated weekly/monthly digests',
+            '  preview              Preview sessions ready for consolidation',
+            '  consolidate          Mark old sessions as consolidated',
+            '  graph                Show knowledge graph stats',
+            '  xp                   Show experience report and expertise profile',
           ].join('\n'),
           { display: 'system' },
         );

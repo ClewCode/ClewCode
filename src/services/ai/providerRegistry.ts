@@ -1,5 +1,6 @@
 import { AnthropicProvider } from './providers/AnthropicProvider.js';
 import { ClewGatewayProvider } from './providers/ClewGatewayProvider.js';
+import { CodeAssistProvider } from './providers/CodeAssistProvider.js';
 import { CohereProvider } from './providers/CohereProvider.js';
 import { GoogleProvider } from './providers/GoogleProvider.js';
 import { KiloCodeProvider } from './providers/KiloCodeProvider.js';
@@ -77,6 +78,8 @@ function createProvider(key: string, entry: any): ProviderInterface {
       return new OpenAIProvider();
     case 'google':
       return new GoogleProvider();
+    case 'google-assist':
+      return new CodeAssistProvider();
     case 'cohere':
       return new CohereProvider();
     case 'openrouter':
@@ -164,6 +167,7 @@ const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
   nvidia: 'automatic',
   cohere: 'automatic',
   google: 'none',
+  'google-assist': 'none',
   kilocode: 'none',
   ollama: 'none',
   custom: 'automatic',

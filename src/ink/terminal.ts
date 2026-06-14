@@ -100,8 +100,11 @@ export function isSynchronizedOutputSupported(): boolean {
   // Zed uses the alacritty_terminal crate which supports DEC 2026
   if (process.env.ZED_TERM) return true;
 
-  // Windows Terminal
+  // Windows Terminal / ConPTY-based terminals
   if (process.env.WT_SESSION) return true;
+
+  // mintty (Git Bash) supports DEC 2026 in recent versions
+  if (process.env.TERM_PROGRAM === 'mintty') return true;
 
   // macOS Terminal.app does not support DEC 2026 — BSU/ESU sequences cause
   // garbled output since the native terminal renderer ignores the sequences but

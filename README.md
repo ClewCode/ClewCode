@@ -44,6 +44,16 @@ Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) 
 
 ---
 
+## Concepts: Agents, Subagents, and Swarm
+
+Clew Code uses a tiered architecture for distributed task execution:
+
+- **Agents:** Specialized AI personas running locally on your machine. You can dispatch them manually using `/agent <task>` or specific specialists via `/agent @<specialist_name> <task>`. You can view and manage all active agents with the `/agents` dashboard (operational view).
+- **Subagents:** Autonomous child agents spawned programmatically by parent agents using the `Agent` tool to break down complex problems into smaller tasks. These are managed automatically without direct user intervention.
+- **Swarm:** A local network (LAN) mesh of Clew instances coordinating with each other (formerly Peer). You can pair machines, share resources, and delegate tasks to remote worker nodes using `/swarm` commands.
+
+---
+
 ## Install
 
 ```bash
@@ -95,7 +105,7 @@ clew
 # In-session commands
 ❯ /help           # list everything
 ❯ /status         # current provider, model, context info
-❯ /peer discover  # find other Clew instances on LAN
+❯ /swarm discover # find other Clew instances on LAN
 ❯ /mcp list       # connected MCP servers
 ❯ /loop start     # background autonomous loop
 
@@ -126,7 +136,7 @@ export COPILOT_GITHUB_TOKEN=gho_...
 ## Commands
 
 <details>
-<summary><strong>16 slash commands</strong></summary>
+<summary><strong>17 slash commands</strong></summary>
 
 ```
 /model        Switch provider or model
@@ -139,8 +149,9 @@ export COPILOT_GITHUB_TOKEN=gho_...
 /simplify     Cleanup-focused review
 /plugin       Plugin and hook management
 /bridge       Bridge mode config
-/agent        Background agent workflows
-/peer         LAN peer coordination
+/agent        Background agent dispatch & subcommands
+/agents       TUI Agent dashboard (operational view)
+/swarm        Collaborate with Clew instances on LAN (formerly /peer)
 /remote       WebSocket remote control
 /loop         24/7 autonomous agent loop
 /daemon       Autonomous daemon dashboard
@@ -231,7 +242,7 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 <summary><strong>v0.2.7 — 2026-06-11</strong></summary>
 
 - **process_peer PTY terminal box** — terminal-style progress box with ANSI-preserving output tail
-- **`/peer run codex <task>`** — run one-shot Codex process peer from chat
+- **`/swarm run codex <task>`** — run one-shot Codex process peer from chat
 - **Auto-update dialog** — npm update notification before app starts
 - **Rich model fetching** — API models now carry context window, vision, tools, reasoning, free tags
 - **`/model list` capability tags** — `[200K ctx, vision, tools, reason, free]` per model

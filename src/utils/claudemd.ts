@@ -856,6 +856,10 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal: boolean = fal
       const dotClewPath = join(dir, DOT_CLEW, 'CLAUDE.md');
       result.push(...(await processMemoryFile(dotClewPath, 'Project', processedPaths, includeExternal)));
 
+      // Try reading .clew/plans/long-term-plan.md (Project) — long-term plan with task progress
+      const longTermPlanPath = join(dir, DOT_CLEW, 'plans', 'long-term-plan.md');
+      result.push(...(await processMemoryFile(longTermPlanPath, 'Project', processedPaths, includeExternal)));
+
       // Try reading .clew/rules/*.md files (Project) — primary
       const clewRulesDir = join(dir, DOT_CLEW, 'rules');
       result.push(
@@ -926,6 +930,10 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal: boolean = fal
       // Try reading .clew/CLAUDE.md from the additional directory — primary
       const dotClewPath = join(dir, DOT_CLEW, 'CLAUDE.md');
       result.push(...(await processMemoryFile(dotClewPath, 'Project', processedPaths, includeExternal)));
+
+      // Try reading .clew/plans/long-term-plan.md from the additional directory
+      const longTermPlanPath = join(dir, DOT_CLEW, 'plans', 'long-term-plan.md');
+      result.push(...(await processMemoryFile(longTermPlanPath, 'Project', processedPaths, includeExternal)));
 
       // Try reading .clew/rules/*.md files from the additional directory — primary
       const clewRulesDir = join(dir, DOT_CLEW, 'rules');
@@ -1204,6 +1212,8 @@ export async function getMemoryFilesForNestedDirectory(
     result.push(...(await processMemoryFile(dotClewAgentsPath, 'Project', processedPaths, false)));
     const dotClewPath = join(dir, DOT_CLEW, 'CLAUDE.md');
     result.push(...(await processMemoryFile(dotClewPath, 'Project', processedPaths, false)));
+    const longTermPlanPath = join(dir, DOT_CLEW, 'plans', 'long-term-plan.md');
+    result.push(...(await processMemoryFile(longTermPlanPath, 'Project', processedPaths, false)));
     const dotClaudeAgentsPath = join(dir, DOT_CLAUDE, 'AGENTS.md');
     result.push(...(await processMemoryFile(dotClaudeAgentsPath, 'Project', processedPaths, false)));
     const dotClaudePath = join(dir, DOT_CLAUDE, 'CLAUDE.md');

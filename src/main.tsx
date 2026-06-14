@@ -416,6 +416,13 @@ const CLI_PROVIDER_DEFAULTS = {
     defaultModel: 'gemini-2.5-flash',
     defaultModelVerified: true,
   },
+  'google-assist': {
+    label: 'Gemini Code Assist (OAuth)',
+    envKey: 'GEMINI_API_KEY',
+    baseUrl: 'https://cloudcode-pa.googleapis.com/v1internal',
+    defaultModel: 'gemini-2.5-flash',
+    defaultModelVerified: true,
+  },
   openrouter: {
     label: 'OpenRouter',
     envKey: 'OPENROUTER_API_KEY',
@@ -1832,49 +1839,49 @@ async function run(): Promise<CommanderCommand> {
       } = options;
 
       // Handle peer name configuration
-      const peerNameOpt = (options as { peerName?: string }).peerName;
+      const peerNameOpt = (options as { swarmName?: string }).swarmName;
       if (peerNameOpt) {
-        const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
+        const { getGlobalDiscovery } = await import('./swarm/SwarmDiscovery.js');
         getGlobalDiscovery().setLocalName(peerNameOpt);
       }
 
       // Register peer callbacks globally (for all peers to receive messages)
       (async () => {
         try {
-          const { getGlobalPeerServer } = await import('./peer/PeerServer.js');
-          const { getGlobalPeerStore } = await import('./peer/PeerStore.js');
-          const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
+          const { getGlobalSwarmServer } = await import('./swarm/SwarmServer.js');
+          const { getGlobalSwarmStore } = await import('./swarm/SwarmStore.js');
+          const { getGlobalDiscovery } = await import('./swarm/SwarmDiscovery.js');
 
-          const server = getGlobalPeerServer();
+          const server = getGlobalSwarmServer();
 
           server.setCallbacks({
             onTodo: todo => {
-              getGlobalPeerStore().addTodo(todo);
+              getGlobalSwarmStore().addTodo(todo);
               import('./utils/messageQueueManager.js').then(({ enqueue }) => {
                 enqueue({ value: `Task from ${todo.fromName}: ${todo.message}`, mode: 'prompt', priority: 'next' });
               });
             },
             onMessage: msg => {
-              getGlobalPeerStore().addMessage(msg);
+              getGlobalSwarmStore().addMessage(msg);
               import('./utils/messageQueueManager.js').then(({ enqueue }) => {
                 enqueue({ value: `From ${msg.fromName}: ${msg.text}`, mode: 'prompt', priority: 'next' });
               });
             },
             onExec: async (command: string) => {
-              const { executeCommand } = await import('./tools/PeerRunTool/PeerRunTool.js');
+              const { executeCommand } = await import('./tools/SwarmRunTool/SwarmRunTool.js');
               return executeCommand(command, 60_000);
             },
           });
 
-          // Auto-start PeerServer on all peers (so they can receive messages)
+          // Auto-start SwarmServer on all peers (so they can receive messages)
           // unless --peer-share is used (which handles it separately)
           if (!peerShareOpt) {
             const discovery = getGlobalDiscovery();
-            const myPeerId = discovery.peerId;
+            const mySwarmId = discovery.swarmId;
             const myName = peerNameOpt || discovery.hostname;
 
-            const peerInfo = {
-              id: myPeerId,
+            const swarmInfo = {
+              id: mySwarmId,
               hostname: myName,
               ip: '127.0.0.1',
               port: 0,
@@ -1884,8 +1891,8 @@ async function run(): Promise<CommanderCommand> {
               status: 'online' as const,
             };
 
-            const port = await server.start(peerInfo);
-            logForDebugging(`[Peer] PeerServer auto-started on port ${port} to receive messages`);
+            const port = await server.start(swarmInfo);
+            logForDebugging(`[Peer] SwarmServer auto-started on port ${port} to receive messages`);
           }
         } catch (err) {
           // Silent fail if peer modules not available
@@ -1897,16 +1904,16 @@ async function run(): Promise<CommanderCommand> {
       if (peerShareOpt) {
         (async () => {
           try {
-            const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
-            const { getGlobalPeerServer } = await import('./peer/PeerServer.js');
+            const { getGlobalDiscovery } = await import('./swarm/SwarmDiscovery.js');
+            const { getGlobalSwarmServer } = await import('./swarm/SwarmServer.js');
 
             const discovery = getGlobalDiscovery();
-            const server = getGlobalPeerServer();
-            const myPeerId = discovery.peerId;
+            const server = getGlobalSwarmServer();
+            const mySwarmId = discovery.swarmId;
             const myName = peerNameOpt || discovery.hostname;
 
-            const peerInfo = {
-              id: myPeerId,
+            const swarmInfo = {
+              id: mySwarmId,
               hostname: myName,
               ip: '127.0.0.1',
               port: 0,
@@ -1916,8 +1923,8 @@ async function run(): Promise<CommanderCommand> {
               status: 'online' as const,
             };
 
-            const port = await server.start(peerInfo);
-            peerInfo.port = port;
+            const port = await server.start(swarmInfo);
+            swarmInfo.port = port;
             await discovery.startAdvertising(port, process.cwd());
             logForDebugging(`[Peer] Automatically sharing as worker peer on port ${port} with name "${myName}"`);
           } catch (err) {
@@ -3237,6 +3244,17 @@ async function run(): Promise<CommanderCommand> {
               latestVersion: result.latestVersion,
             });
             if (choice === 'update') {
+              // Spawn a new process (auto relaunch) before exiting
+              try {
+                const { spawn } = await import('node:child_process');
+                const child = spawn(process.execPath, process.argv.slice(1), {
+                  stdio: 'inherit',
+                  detached: false,
+                });
+                child.unref();
+              } catch {
+                // relaunch spawn failed — user just re-runs manually
+              }
               gracefulShutdownSync(0);
               return;
             }

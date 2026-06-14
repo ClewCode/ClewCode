@@ -3,6 +3,8 @@ import { join } from 'path';
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import { type ClaudeMemoryConfig, getDefaultConfig } from './config.js';
+import { ingestMemoryWorkspace } from './ingest.js';
+import { logError } from '../utils/log.js';
 
 export async function initMemoryWorkspace(cwd: string): Promise<ClaudeMemoryConfig> {
   const fsImpl = getFsImplementation();
@@ -126,4 +128,19 @@ export function getMemoryWorkspaceStatus(cwd: string): {
     runsDir,
     configPath,
   };
+}
+
+export async function autoIngestWorkspaceMemory(cwd: string): Promise<void> {
+  try {
+    const status = getMemoryWorkspaceStatus(cwd);
+    if (status.initialized) {
+      const config = getDefaultConfig(cwd);
+      // Run ingestion asynchronously in the background
+      void ingestMemoryWorkspace(cwd, config).catch(err => {
+        logError(new Error(`Failed to auto-ingest memory workspace: ${err.message}`));
+      });
+    }
+  } catch (err: any) {
+    logError(new Error(`Failed to check memory workspace status for auto-ingest: ${err.message}`));
+  }
 }

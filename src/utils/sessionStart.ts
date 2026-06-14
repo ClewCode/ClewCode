@@ -132,6 +132,19 @@ export async function processSessionStartHooks(
     }
   }
 
+  // Inject previous session memory context (non-critical, fail silently)
+  try {
+    const { injectPreviousSessionContext } = await import('../services/longTermMemory/integrate.js');
+    const ctx = injectPreviousSessionContext();
+    if (ctx) {
+      hookMessages.push({
+        role: 'user',
+        content: [{ type: 'text', text: ctx }],
+        isMeta: true,
+      });
+    }
+  } catch {}
+
   // Execute SessionStart hooks, ignoring blocking errors
   // Use the provided agentType or fall back to the one stored in bootstrap state
   const resolvedAgentType = agentType ?? getMainThreadAgentType();

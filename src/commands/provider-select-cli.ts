@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { createInterface } from 'readline';
 import { getClaudeConfigHomeDir } from '../utils/envUtils.js';
+import { readLocalProviderKey } from '../utils/localProviderKeys.js';
 
 interface ProviderInfo {
   label: string;
@@ -46,6 +47,17 @@ const PROVIDERS: Record<string, ProviderInfo> = {
     defaultModelVerified: true,
     timeout: 60000,
     note: 'gemini-2.5-flash = best price-performance',
+  },
+  'google-assist': {
+    label: 'Gemini Code Assist (OAuth)',
+    envKey: 'GEMINI_API_KEY',
+    baseUrl: 'https://cloudcode-pa.googleapis.com/v1internal',
+    modelsUrl: '',
+    defaultModel: 'gemini-2.5-flash',
+    defaultModelVerified: true,
+    timeout: 60000,
+    note: 'ใช้ OAuth จาก ~/.gemini/oauth_creds.json, ไม่ต้องใช้ API key',
+    isLocal: false,
   },
   openrouter: {
     label: 'OpenRouter',
@@ -147,7 +159,7 @@ async function fetchModels(provider: string): Promise<string[]> {
   if (!p) return [];
 
   const config = loadConfig();
-  const apiKey = config?.apiKeys?.[provider] || process.env[p.envKey];
+  const apiKey = config?.apiKeys?.[provider] || process.env[p.envKey] || readLocalProviderKey(provider);
 
   if (!apiKey && !p.isLocal) {
     if (p.defaultModelVerified && p.defaultModel) {
@@ -220,7 +232,7 @@ async function promptForApiKey(provider: string): Promise<string> {
   }
 
   const config = loadConfig();
-  const hasExistingKey = Boolean(config?.apiKeys?.[provider] || process.env[p.envKey]);
+  const hasExistingKey = Boolean(config?.apiKeys?.[provider] || process.env[p.envKey] || readLocalProviderKey(provider));
 
   const readline = createInterface({
     input: process.stdin,
@@ -314,7 +326,7 @@ async function selectProvider() {
 
   const apiKey = await promptForApiKey(provider);
   const currentConfig = loadConfig();
-  const hasExistingKey = Boolean(currentConfig?.apiKeys?.[provider] || process.env[PROVIDERS[provider]!.envKey]);
+  const hasExistingKey = Boolean(currentConfig?.apiKeys?.[provider] || process.env[PROVIDERS[provider]!.envKey] || readLocalProviderKey(provider));
 
   if (!PROVIDERS[provider]!.isLocal && !apiKey && !hasExistingKey) {
     console.log(`❌ No API key provided for ${PROVIDERS[provider]!.envKey}. Aborting.`);

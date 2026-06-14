@@ -33,7 +33,7 @@ const HELP = `AGENT — dispatch Clew internal background specialists from chat
   /agent trace <id>        display execution timeline
   /agent doctor            verify runtime installation
 
-  For external CLIs like Codex, use /peer run <provider> <task>`;
+  For external CLIs like Codex, use /swarm run <provider> <task>`;
 
 function parseArgs(args: string): string[] {
   const result: string[] = [];
@@ -160,7 +160,7 @@ export async function call(
     setAppState: context.setAppState,
   });
 
-  onDone(`dispatched ${selectedAgent.agentType} · ${taskShort} · \`${agentId}\`\n  → /agent view to track progress`, {
+  onDone(`dispatched ${selectedAgent.agentType} · ${taskShort} · \`${agentId}\`\n  → /agents to track progress`, {
     display: 'system',
   });
   return null;

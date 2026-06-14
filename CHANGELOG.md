@@ -2,6 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.14] — 2026-06-14
+
+### Added
+
+- **Peer task queue system**: `PeerServer` now supports queuing commands when busy (`/peer-exec`). Tasks are queued with priority levels (`low`/`normal`/`high`), auto-dequeued when the server is free, and exposed via `/peer-queue-status`, `/peer-queue-cancel`, `/peer-queue-cancel-all` endpoints with SSE queue events.
+- **Peer health monitoring**: `peerHealth.ts` with `getPeerHealth()` (healthy/lagging/offline), `formatPeerLatency()`, and `summarizePeerMesh()`. PeerStore tracks liveness ping latency (`latencyMs`), busy/queue state, and connection errors.
+- **Long-term memory system**: New module `src/services/longTermMemory/` with auto-extraction (`autoExtract.ts`), session consolidation (`consolidate.ts`, `consolidator.ts`), cross-session history (`crossSession.ts`), timeline querying (`timeline.ts`), and `prompts.ts` — all exported via `index.ts`.
+- **Session memory consolidation**: `src/services/SessionMemory/consolidation.ts` parses notes sections, de-duplicates redundant content, and compacts session memory into structured summaries.
+- **Gemini Code Assist provider**: `CodeAssistProvider.ts` — OAuth-based Google Code Assist provider with token caching and project ID detection, registered as `google-assist` in `CLI_PROVIDER_DEFAULTS`.
+- **Dashboard Monitor**: `DashboardMonitor.tsx` — real-time agent, daemon, and task execution monitor with tabbed views (queue, agents, timeline).
+- **Fallback UI**: `fallbackUI.ts` — strips unsupported ANSI escape sequences on legacy Windows consoles (conhost.exe) and non-TTY terminals.
+- **Windows terminal utilities**: `windowsTerminal.ts` (console detection, ANSI support checks) and `windowsEncoding.ts` (code page handling).
+- **Local provider keys store**: `localProviderKeys.ts` for managing per-provider API keys.
+- **Auto-relaunch on update**: `main.tsx` now spawns a child process before shutting down during auto-update, so the new version launches immediately without manual re-run.
+- **Auto-ingest workspace memory**: `setup.ts` calls `autoIngestWorkspaceMemory(cwd)` asynchronously on startup to load workspace-level memories.
+
+### Changed
+
+- **peer → swarm rename**: All `src/commands/peer/` → `src/commands/swarm/` and docs (`peer.html` → `swarm.html`, `peer.th.html` → `swarm.th.html`). Import references updated across `commands.ts`, components, and tools.
+- **PeerStore fields**: Extended `PeerInfo` with `isBusy`, `queueDepth`, `latencyMs`, `lastConnectionError`. On liveness pings, latency is measured via `performance.now()`.
+- **`/agents` command registered**: New `agentsCmd` imported and added to the command registry.
+- **Docs regenerated**: All HTML docs rebuilt to reflect swarm rename and latest features.
+
+### Fixed
+
+- Fixed `displayName?.startsWith()` optional chaining in `PeerStore` (removed redundant `displayName &&` guard).
+
+## [0.2.13] — 2026-06-13
+
+### Changed
+
+- **Formatting pass**: Trailing commas and line breaks fixed across the codebase via Biome.
+- **bun.lock synchronized**: Lockfile updated to match updated `package.json` dependencies.
+
+## [0.2.12] — 2026-06-13
+
+### Added
+
+- **PR #37 — Provider consolidation & Zod v4 migration**:
+  - `GoogleProvider` and `ClewGatewayProvider` now extend `OpenAICompatibleProvider`, eliminating 679 lines of duplicated HTTP client/streaming/error-handling logic.
+  - Deleted `GoogleAdapter.ts` (496 lines) — no longer needed after consolidation.
+  - Migrated `.passthrough()` → `.loose()` and `z.object({}).passthrough()` → `z.looseObject({})` across 7 files for Zod v4 compatibility.
+  - Refactored `PR` command and `PRTool` list/status to use `--json` + `JSON.parse` instead of `--jq`.
+  - Renamed SDK type files `runtimeTypes.d.ts` → `runtimeTypes.ts` and `toolTypes.d.ts` → `toolTypes.ts` for consistency.
+  - Updated dependencies: `@agentclientprotocol/sdk@^0.25.1`, `@ai-sdk/*`, `@anthropic-ai/sdk@^0.104.1`, `@aws-sdk/*@^3.1068.0`, `@commander-js/extra-typings@^15.0.0`, and others.
+
+## [0.2.11] — 2026-06-13
+
+### Fixed
+
+- **UpdateDialog mascot removal**: Removed CLAWD mascot entirely to avoid terminal-dependent layout breakages on Windows and non-UTF-8 terminals.
+- **UpdateDialog box border alignment**: Fixed layout by treating block characters (`─`, `│`) as double-width for proper box-drawing alignment.
+
+## [0.2.10] — 2026-06-13
+
+### Fixed
+
+- **CLI early input capture during update dialog**: `cli.ts` now defers stdin listening until after the update dialog resolves, preventing the keyboard from freezing when the dialog appears.
+- **UpdateDialog stdin consumption**: Removed `createInterface` call that was consuming stdin and blocking keypress events during the update prompt.
+
+## [0.2.9] — 2026-06-13
+
+### Fixed
+
+- **UpdateDialog layout alignment**: Fixed layout misalignment in the update notification dialog and enabled arrow-key navigation for Yes/No options.
+
 ## [0.2.8] — 2026-06-12
 
 ### Added

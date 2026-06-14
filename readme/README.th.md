@@ -154,7 +154,7 @@ export OLLAMA_HOST=http://localhost:11434
 /plugin       จัดการ plugins และ hooks
 /bridge       ตั้งค่า bridge mode
 /agent        จัดการ background agent workflows
-/peer         ค้นหาและประสานงาน peers บน LAN
+/swarm         ค้นหาและประสานงาน peers บน LAN
 /remote       WebSocket remote control
 /loop         เปิดโหมด agent อัตโนมัติ 24/7
 /daemon       เปิด autonomous daemon dashboard
@@ -175,20 +175,20 @@ export OLLAMA_HOST=http://localhost:11434
 <summary><strong>คำสั่งและ AI tools</strong></summary>
 
 ```text
-/peer                  เปิดเมนูแบบโต้ตอบ
-/peer share            เริ่มแชร์เป็น worker
-/peer share stop       หยุดแชร์
-/peer discover         สแกน LAN หา peers
-/peer join <port>      เชื่อมต่อกับ peer
-/peer list             แสดง peers ที่เชื่อมต่อ
-/peer todo <peer> <t>  มอบหมายงาน
-/peer todos            ดูงานที่ได้รับ
-/peer todo done <id>   ทำเครื่องหมายว่างานเสร็จ
-/peer name <name>      ตั้งชื่อ display
-/peer role <role>      ตั้ง role (builder, tester, etc.)
-/peer inbox            ดูข้อความที่ยังไม่ได้อ่าน
-/peer spawn [opts]     เปิด peer shell ใหม่
-/peer help             แสดงคำสั่งทั้งหมด
+/swarm                  เปิดเมนูแบบโต้ตอบ
+/swarm share            เริ่มแชร์เป็น worker
+/swarm share stop       หยุดแชร์
+/swarm discover         สแกน LAN หา peers
+/swarm join <port>      เชื่อมต่อกับ peer
+/swarm list             แสดง peers ที่เชื่อมต่อ
+/swarm todo <peer> <t>  มอบหมายงาน
+/swarm todos            ดูงานที่ได้รับ
+/swarm todo done <id>   ทำเครื่องหมายว่างานเสร็จ
+/swarm name <name>      ตั้งชื่อ display
+/swarm role <role>      ตั้ง role (builder, tester, etc.)
+/swarm inbox            ดูข้อความที่ยังไม่ได้อ่าน
+/swarm spawn [opts]     เปิด peer shell ใหม่
+/swarm help             แสดงคำสั่งทั้งหมด
 ```
 
 **AI tools (14):** `peer_discover`, `peer_join`, `peer_send_task`, `peer_send_message`, `peer_run`, `peer_broadcast`, `peer_ping`, `peer_disconnect`, `peer_list_tasks`, `peer_list_roles`, `peer_list_messages`, `peer_set_name`, `peer_set_role`, `peer_share`
@@ -361,7 +361,7 @@ src/utils/vendor/ripgrep/x64-win32/rg.exe
 <details>
 <summary><strong>0.2.4 — 2026-06-08</strong></summary>
 
-- **Peer-to-peer** — ค้นพบ peers บน LAN (UDP multicast), file registry, `/peer share/discover/join/list/todo/name/role` Interactive PeerMenu, 14 AI tools สำหรับประสานงาน
+- **Peer-to-peer** — ค้นพบ peers บน LAN (UDP multicast), file registry, `/swarm share/discover/join/list/todo/name/role` Interactive PeerMenu, 14 AI tools สำหรับประสานงาน
 
 - **Autonomous agents** — agent loop, supervisor integration, task queue, Loop Lock
 - **Workflow Rainbow** — ไล่สีคำว่า "workflow"

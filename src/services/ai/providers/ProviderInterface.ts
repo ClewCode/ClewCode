@@ -28,6 +28,7 @@ export type ProviderId =
   | 'poe'
   | 'digitalocean'
   | 'clew-gateway'
+  | 'google-assist'
   | 'custom';
 
 export interface ProviderInitOptions {

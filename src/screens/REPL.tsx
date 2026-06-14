@@ -101,7 +101,7 @@ import {
 } from '../utils/swarm/leaderPermissionBridge.js';
 import { endInteractionSpan } from '../utils/telemetry/sessionTracing.js';
 import { useLogMessages } from '../hooks/useLogMessages.js';
-import { usePeerAutoInject } from '../hooks/usePeerAutoInject.js';
+import { useSwarmAutoInject } from '../hooks/useSwarmAutoInject.js';
 import { useReplBridge } from '../hooks/useReplBridge.js';
 import { useRemoteBridge } from '../hooks/useRemoteBridge.js';
 import {
@@ -971,10 +971,10 @@ export function REPL({
   const editorRenderingRef = useRef(false);
   const { addNotification, removeNotification } = useNotifications();
 
-  // Wire up peer tool feedback notifications
+  // Wire up swarm tool feedback notifications
   useEffect(() => {
-    import('../tools/peer/peerFeedback.js').then(({ setPeerFeedbackHandler }) => {
-      setPeerFeedbackHandler((message, key = 'peer-feedback', priority = 'medium') => {
+    import('../tools/swarm/swarmFeedback.js').then(({ setSwarmFeedbackHandler }) => {
+      setSwarmFeedbackHandler((message, key = 'swarm-feedback', priority = 'medium') => {
         addNotification({
           key,
           text: `peer: ${message}`,
@@ -984,8 +984,8 @@ export function REPL({
       });
     });
     return () => {
-      import('../tools/peer/peerFeedback.js').then(({ setPeerFeedbackHandler }) => {
-        setPeerFeedbackHandler(null);
+      import('../tools/swarm/swarmFeedback.js').then(({ setSwarmFeedbackHandler }) => {
+        setSwarmFeedbackHandler(null);
       });
     };
   }, [addNotification]);
@@ -1519,8 +1519,8 @@ export function REPL({
     rawSetMessages(next);
   }, []);
   // Wire peer events → agent conversation as system_reminder messages.
-  // Eliminates polling-based peer_list_messages tool.
-  usePeerAutoInject(setMessages);
+  // Eliminates polling-based swarm_list_messages tool.
+  useSwarmAutoInject(setMessages);
   // Capture the baseline message count alongside the placeholder text so
   // the render can hide it once displayedMessages grows past the baseline.
   const setUserInputOnProcessing = useCallback((input: string | undefined) => {

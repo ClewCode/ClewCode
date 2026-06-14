@@ -16,9 +16,9 @@
 import { existsSync, readFileSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
-import { getGlobalPeerServer } from '../../peer/PeerServer.js';
-import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import { getGlobalDiscovery } from '../../swarm/SwarmDiscovery.js';
+import { getGlobalSwarmServer } from '../../swarm/SwarmServer.js';
+import { getGlobalSwarmStore } from '../../swarm/SwarmStore.js';
 import { createCronScheduler } from '../../utils/cronScheduler.js';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
@@ -409,11 +409,11 @@ export async function startLoop(): Promise<void> {
   // Start Peer sharing
   try {
     const discovery = getGlobalDiscovery();
-    const server = getGlobalPeerServer();
-    const myPeerId = discovery.peerId;
+    const server = getGlobalSwarmServer();
+    const mySwarmId = discovery.swarmId;
 
-    const peerInfo = {
-      id: myPeerId,
+    const swarmInfo = {
+      id: mySwarmId,
       hostname: discovery.hostname,
       ip: '127.0.0.1',
       port: 0,
@@ -441,8 +441,8 @@ export async function startLoop(): Promise<void> {
       },
     });
 
-    const port = await server.start(peerInfo);
-    peerInfo.port = port;
+    const port = await server.start(swarmInfo);
+    swarmInfo.port = port;
     await discovery.startAdvertising(port, process.cwd());
     isPeerSharingActive = true;
     console.log(`[Autonomous] Background peer sharing active on port ${port} as hostname "${discovery.hostname}"`);
@@ -513,7 +513,7 @@ export async function stopLoop(): Promise<void> {
     console.log('[Autonomous] Stopping background peer sharing...');
     try {
       getGlobalDiscovery().stopAdvertising();
-      getGlobalPeerServer().stop();
+      getGlobalSwarmServer().stop();
     } catch {
       // best effort
     }

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swarm — LAN Swarm Coordination — Clew</title>
+  <meta name="description" content="LAN swarm discovery, task delegation, and autonomous AI swarm coordination in Clew.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+</head>
+<body>
+<header class="header"></header>
+
+
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <div class="content-wrap">
+    <main class="content">
+
+      <div class="breadcrumbs">
+        <a href="../index.html">Home</a>
+        <span>›</span>
+        <span>Swarm Coordination</span>
+      </div>
+
+      <h1>Swarm Coordination</h1>
+      <p>
+        Clew supports LAN swarm discovery and task delegation, enabling a lead-worker model
+        where one instance can coordinate multiple worker instances (swarm nodes) on the same network.
+      </p>
+
+      <h2>Architecture</h2>
+      <p>
+        Each swarm node runs a lightweight HTTP server (PeerServer) on a random port.
+        Discovery uses UDP multicast broadcast (239.255.37.37:42069) plus a file-based
+        registry (<code>~/.claude/peers/</code>) for same-machine instances.
+      </p>
+
+      <pre><code>Node A (Lead)                    Node B (Worker)
+  |                                |
+  |--- UDP multicast query ------->|
+  |<--- response (host, port, cwd)-|
+  |                                |
+  |--- HTTP POST /peer-todo ------>|  Assign task
+  |--- HTTP POST /peer-exec ------>|  Run command
+  |<--- response ------------------|  Return result</code></pre>
+
+      <h2>Getting Started</h2>
+
+      <h3>Worker Setup</h3>
+      <pre><code># Start sharing (advertise on LAN)
+/swarm share
+
+# Set display name and role
+/swarm name Build Server
+/swarm role builder</code></pre>
+
+      <h3>Lead Setup</h3>
+      <pre><code># Discover available swarm nodes
+/swarm discover
+
+# Join a specific node by port
+/swarm join 127.0.0.1:59421
+
+# View connected swarm nodes
+/swarm list</code></pre>
+
+      <h3>Assign Tasks</h3>
+      <pre><code># Direct task assignment
+/swarm todo Build-Server "run the test suite"
+
+# Let the AI handle it
+> Assign a task to the build server to run all tests</code></pre>
+
+      <h2>Commands</h2>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/swarm</code></td><td>Open interactive swarm menu</td></tr>
+          <tr><td><code>/swarm share</code></td><td>Start advertising as a worker</td></tr>
+          <tr><td><code>/swarm share stop</code></td><td>Stop advertising</td></tr>
+          <tr><td><code>/swarm discover</code></td><td>Scan LAN for swarm nodes (5s timeout)</td></tr>
+          <tr><td><code>/swarm join &lt;port&gt;</code></td><td>Connect to a swarm node by port or host:port</td></tr>
+          <tr><td><code>/swarm list</code></td><td>Open interactive swarm node list</td></tr>
+          <tr><td><code>/swarm todo &lt;node&gt; &lt;task&gt;</code></td><td>Assign a task to a worker node</td></tr>
+          <tr><td><code>/swarm todos</code></td><td>View received tasks</td></tr>
+          <tr><td><code>/swarm todo done &lt;id&gt;</code></td><td>Mark task as complete</td></tr>
+          <tr><td><code>/swarm name &lt;name&gt;</code></td><td>Set your display name</td></tr>
+          <tr><td><code>/swarm role &lt;role&gt;</code></td><td>Set your role (e.g., builder, tester)</td></tr>
+          <tr><td><code>/swarm inbox</code></td><td>View pending messages</td></tr>
+          <tr><td><code>/swarm spawn [options]</code></td><td>Spawn a new swarm node shell terminal</td></tr>
+          <tr><td><code>/swarm help</code></td><td>Show help</td></tr>
+        </tbody>
+      </table>
+
+      <h2>AI Swarm Tools</h2>
+      <p>
+        Clew AI can autonomously coordinate swarm nodes using these tools:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Tool</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>peer_discover</code></td><td>Scan for swarm workers on LAN and same machine</td></tr>
+          <tr><td><code>peer_join</code></td><td>Connect to a remote swarm node by host:port</td></tr>
+          <tr><td><code>peer_send_task</code></td><td>Assign a task to a worker via HTTP POST</td></tr>
+          <tr><td><code>peer_list_tasks</code></td><td>Check pending and completed tasks</td></tr>
+          <tr><td><code>peer_list_roles</code></td><td>List all swarm nodes with names, roles, and IPs</td></tr>
+          <tr><td><code>peer_run</code></td><td>Execute a shell command on a remote worker</td></tr>
+          <tr><td><code>peer_share</code></td><td>Start or stop advertising as a worker</td></tr>
+          <tr><td><code>peer_info</code></td><td>Get detailed info about a specific swarm node</td></tr>
+          <tr><td><code>peer_set_name</code></td><td>Set display name for a swarm node</td></tr>
+          <tr><td><code>peer_set_role</code></td><td>Set role for a swarm node</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Protocol</h2>
+      <p>Discovery uses UDP multicast on <code>239.255.37.37:42069</code>. Node info is broadcast every 30 seconds. Nodes are evicted after 90 seconds of inactivity.</p>
+      <p>Communication uses HTTP POST to registered node endpoints:</p>
+      <table>
+        <thead>
+          <tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/peer-info</code></td><td>GET</td><td>Get node metadata (host, port, cwd, name, role)</td></tr>
+          <tr><td><code>/peer-todo</code></td><td>POST</td><td>Accept inbound task assignment</td></tr>
+          <tr><td><code>/peer-msg</code></td><td>POST</td><td>Accept inbound message</td></tr>
+          <tr><td><code>/peer-exec</code></td><td>POST</td><td>Accept shell command execution</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ─── Footer ─── -->
+      <footer class="footer">
+        <span>Clew 0.2.13 — Open Source</span>
+        <div class="footer-links">
+          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+        </div>
+      </footer>
+
+    </main>
+    <nav class="toc-sidebar"></nav>
+  </div>
+</div>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
+

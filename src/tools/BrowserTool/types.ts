@@ -52,6 +52,8 @@ export type BrowserAction =
   | 'extract_data'
   | 'switch_tab'
   | 'open_new_tab'
+  | 'close_tab'
+  | 'list_tabs'
   | 'drag_and_drop';
 
 export interface BrowserActionInput {
@@ -64,6 +66,7 @@ export interface BrowserActionInput {
   amount?: number;
   x?: number;
   y?: number;
+  index?: number; // Tab index for switch_tab / close_tab
   // Extended fields
   role?: string; // ARIA role (button, link, textbox, checkbox, etc.)
   name?: string; // Accessible name for getByRole
@@ -83,9 +86,16 @@ export interface BrowserActionInput {
 }
 
 export interface BrowserResult {
+  ok: boolean;
   url: string;
   title: string;
   content?: string;
   screenshot?: string;
   error?: string;
+  tabs?: Array<{
+    index: number;
+    title: string;
+    url: string;
+    active: boolean;
+  }>;
 }

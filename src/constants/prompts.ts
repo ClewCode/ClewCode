@@ -383,6 +383,8 @@ function getSimpleToneAndStyleSection(): string {
     `When referencing specific functions or pieces of code include the pattern file_path:line_number to allow the user to easily navigate to the source code location.`,
     `When referencing GitHub issues or pull requests, use the owner/repo#123 format (e.g. anthropics/claude-code#100) so they render as clickable links.`,
     `Do not use a colon before tool calls. Your tool calls may not be shown directly in the output, so text like "Let me read the file:" followed by a read tool call should just be "Let me read the file." with a period.`,
+    `When explaining plans, lists of steps, or execution progress, format it as a vertical timeline with connecting lines: Use "▼ [title] • [N] steps" as the header. Use "●" for main steps/milestones and "○" for sub-steps, actions, or tool calls. Connect consecutive bullets with a vertical line "│" on its own line.`,
+    `When describing the loading or activation of skills or tools, format it as a nested vertical list under the main action: Use "● [Action description]" for the main action, and " │ ♦ Skill activated: [skill-name]" on the subsequent lines (with a space, vertical line, space, and diamond bullet "♦" for each skill).`,
   ].filter(item => item !== null);
 
   return [`# Tone and style`, ...prependBullets(items)].join(`\n`);

@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quick Start â€” Clew</title>
-  <meta name="description" content="Get started with Clew in minutes â€” install, configure a provider, and run your first session.">
+  <title>Quick Start — Clew</title>
+  <meta name="description" content="Get started with Clew in minutes — install, configure a provider, and run your first session.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -28,7 +28,7 @@ clew --version</code></pre>
       <p>Make sure <a href="installation.html">Bun 1.3+</a> is installed first. The npm package does not bundle Bun.</p>
 
       <h2>2. Set a Provider Key</h2>
-      <p>Set at least one API key as an environment variable. See <a href="providers.html">Providers</a> for all 27 options.</p>
+      <p>Set at least one API key as an environment variable. See <a href="providers.html">Providers</a> for all 28 options.</p>
       <pre><code># Anthropic (recommended for best tool calling)
 export ANTHROPIC_API_KEY=sk-ant-...
 
@@ -58,7 +58,7 @@ clew</code></pre>
       <table>
         <tr><th>Command</th><th>Use</th></tr>
         <tr><td><code>/clear</code></td><td>Clear conversation and free context</td></tr>
-        <tr><td><code>/compact</code></td><td>Compress context to save tokens</td></tr>
+        <tr><td><code>/compact</code></td><td>Compress context to save tokens (auto multi-pass for large sessions)</td></tr>
         <tr><td><code>/model &lt;name&gt;</code></td><td>Switch model or provider</td></tr>
         <tr><td><code>/permissions</code></td><td>Manage tool permission rules</td></tr>
         <tr><td><code>/plan</code></td><td>Toggle plan mode</td></tr>

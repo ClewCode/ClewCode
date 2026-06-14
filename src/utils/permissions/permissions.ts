@@ -1132,25 +1132,7 @@ async function hasPermissionsToUseToolInner(
   const shouldBypassPermissions =
     appState.toolPermissionContext.mode === 'bypassPermissions' ||
     appState.toolPermissionContext.mode === 'dontAsk' ||
-    (appState.toolPermissionContext.mode === 'plan' && appState.toolPermissionContext.isBypassPermissionsModeAvailable);
-
-  // Plan mode is read-only: even with bypass permissions, block file editing
-  // tools (Edit, Write, NotebookEdit). This prevents an Edit allow rule from
-  // bypassing plan mode's write block — the user must exit plan mode first.
-  if (
-    appState.toolPermissionContext.mode === 'plan' &&
-    shouldBypassPermissions &&
-    (tool.name === FILE_EDIT_TOOL_NAME || tool.name === FILE_WRITE_TOOL_NAME || tool.name === NOTEBOOK_EDIT_TOOL_NAME)
-  ) {
-    return {
-      behavior: 'deny',
-      message: 'Writing or editing files is not allowed in plan mode. Please exit plan mode first to make changes.',
-      decisionReason: {
-        type: 'mode',
-        mode: 'plan',
-      },
-    };
-  }
+    appState.toolPermissionContext.mode === 'plan';
 
   if (shouldBypassPermissions) {
     return {

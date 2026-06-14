@@ -1,3 +1,5 @@
+import type { Command } from '../../commands.js';
+
 /**
  * Check if agent view is disabled via settings, environment variable, or non-TTY.
  * Called by the entrypoint before opening agent view.
@@ -18,3 +20,13 @@ export function getAgentViewDisabledReason(): string | null {
 export function isAgentViewDisabled(): boolean {
   return getAgentViewDisabledReason() !== null;
 }
+
+const agentsCmd: Command = {
+  type: 'local-jsx',
+  name: 'agents',
+  description: 'AI Agents: monitor sessions, manage definitions, and control the agent runtime',
+  isEnabled: () => getAgentViewDisabledReason() === null,
+  load: () => import('./agents.js'),
+};
+
+export default agentsCmd;

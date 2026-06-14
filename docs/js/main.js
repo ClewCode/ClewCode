@@ -1,85 +1,8 @@
-// Clew Docs — Mobile Nav, TOC, Code Copy, Heading Tracking
+// Clew Docs — Mobile Nav, Header, Sidebar, TOC, Code Copy
 (function () {
   'use strict';
 
-  var cp1252Bytes = {
-    0x20ac: 0x80,
-    0x201a: 0x82,
-    0x0192: 0x83,
-    0x201e: 0x84,
-    0x2026: 0x85,
-    0x2020: 0x86,
-    0x2021: 0x87,
-    0x02c6: 0x88,
-    0x2030: 0x89,
-    0x0160: 0x8a,
-    0x2039: 0x8b,
-    0x0152: 0x8c,
-    0x017d: 0x8e,
-    0x2018: 0x91,
-    0x2019: 0x92,
-    0x201c: 0x93,
-    0x201d: 0x94,
-    0x2022: 0x95,
-    0x2013: 0x96,
-    0x2014: 0x97,
-    0x02dc: 0x98,
-    0x2122: 0x99,
-    0x0161: 0x9a,
-    0x203a: 0x9b,
-    0x0153: 0x9c,
-    0x017e: 0x9e,
-    0x0178: 0x9f
-  };
-
-  var utf8Decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { fatal: false }) : null;
-
-  function looksMojibake(text) {
-    return /(?:â.|Ã.|Â.|à¸|à¹|ðŸ)/.test(text);
-  }
-
-  function cp1252ByteFor(char) {
-    var code = char.charCodeAt(0);
-    if (code <= 0xff) return code;
-    return cp1252Bytes[code];
-  }
-
-  function repairMojibake(text) {
-    if (!utf8Decoder || !looksMojibake(text)) return text;
-
-    var bytes = [];
-    for (var i = 0; i < text.length; i++) {
-      var byte = cp1252ByteFor(text.charAt(i));
-      if (byte === undefined) return text;
-      bytes.push(byte);
-    }
-
-    var repaired = utf8Decoder.decode(new Uint8Array(bytes));
-    return repaired && repaired !== text ? repaired : text;
-  }
-
-  function repairDocumentText() {
-    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    var node;
-    while ((node = walker.nextNode())) {
-      var fixed = repairMojibake(node.nodeValue || '');
-      if (fixed !== node.nodeValue) node.nodeValue = fixed;
-    }
-
-    document.title = repairMojibake(document.title);
-    document.querySelectorAll('meta[content], option[value], a[href]').forEach(function (el) {
-      ['content', 'value', 'href', 'aria-label'].forEach(function (attr) {
-        var value = el.getAttribute(attr);
-        if (value) el.setAttribute(attr, repairMojibake(value));
-      });
-    });
-  }
-
-  var menuBtn = document.getElementById('menuToggle');
-  var sidebar = document.getElementById('sidebar');
-  var overlay = document.getElementById('sidebarOverlay');
-
-  // ── Root Prefix ──────────────────────────────────────────────────────────
+  // ── Root Prefix (for script location detection) ──
   var rootPrefix = '';
   var scripts = document.getElementsByTagName('script');
   for (var i = 0; i < scripts.length; i++) {
@@ -90,7 +13,7 @@
     }
   }
 
-  // ── Header Injection ─────────────────────────────────────────────────────
+  // ── Header Injection ──
   function injectHeader() {
     var header = document.querySelector('.header');
     if (!header) return;
@@ -102,44 +25,42 @@
 
     var logoHref = isThai ? 'index.th.html' : 'index.html';
     var docsHref = isThai ? 'quick-start.th.html' : 'quick-start.html';
-    var ariaLabel = isThai ? 'เปิด/ปิดเมนู' : 'Toggle navigation';
+    var ariaLabel = isThai ? '\u0E40\u0E1B\u0E34\u0E14/\u0E1B\u0E34\u0E14\u0E40\u0E21\u0E19\u0E39' : 'Toggle navigation';
 
-    // Build language dropdown
+    // Language dropdown
     var langEn = isThai
       ? currentPage.replace(/\.th\.html$/, '.html')
       : '../README.md';
 
-    var langs = [
+    var langOptionsHtml = [
       { url: langEn,                   label: 'English', code: 'en' },
-      { url: '../readme/README.th.md', label: 'ไทย',     code: 'th' }
-    ];
-
-    var langOptionsHtml = langs.map(function (lang) {
+      { url: '../readme/README.th.md', label: '\u0E44\u0E17\u0E22', code: 'th' }
+    ].map(function (lang) {
       var sel = (lang.code === (isThai ? 'th' : 'en')) ? ' selected' : '';
       return '<option value="' + lang.url + '"' + sel + '>' + lang.label + '</option>';
     }).join('');
 
     var langSelectHtml =
       '<select class="lang-select" aria-label="Language">' +
-      '  <option value="" disabled hidden>🌐</option>' +
+      '  <option value="" disabled hidden>\uD83C\uDF10</option>' +
       langOptionsHtml +
       '</select>';
 
     header.innerHTML =
       '<div class="header-inner">' +
-      '  <a href="' + logoHref + '" class="logo"><span>Clew Code</span></a>' +
+      '  <a href="' + logoHref + '" class="logo"><span class="logo-mark">C</span>Clew</a>' +
       '  <nav class="header-nav">' +
-      '    <a href="' + logoHref + '">' + (isThai ? 'หน้าแรก' : 'Home') + '</a>' +
-      '    <a href="' + logoHref + '#features">' + (isThai ? 'ฟีเจอร์' : 'Features') + '</a>' +
-      '    <a href="' + logoHref + '#commands">' + (isThai ? 'คำสั่ง' : 'Commands') + '</a>' +
-      '    <a href="' + docsHref + '">' + (isThai ? 'เอกสาร' : 'Docs') + '</a>' +
+      '    <a href="' + logoHref + '">' + (isThai ? '\u0E2B\u0E19\u0E49\u0E32\u0E41\u0E23\u0E01' : 'Home') + '</a>' +
+      '    <a href="' + logoHref + '#features">' + (isThai ? '\u0E1F\u0E35\u0E40\u0E08\u0E2D\u0E23\u0E4C' : 'Features') + '</a>' +
+      '    <a href="' + logoHref + '#commands">' + (isThai ? '\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07' : 'Commands') + '</a>' +
+      '    <a href="' + docsHref + '">' + (isThai ? '\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23' : 'Docs') + '</a>' +
       '    <a href="https://github.com/JonusNattapong/ClewCode" target="_blank">GitHub</a>' +
       '    ' + langSelectHtml +
       '  </nav>' +
       '  <button class="menu-btn" id="menuToggle" aria-label="' + ariaLabel + '"><span></span><span></span><span></span></button>' +
       '</div>';
 
-    // Language select change handler
+    // Language change handler
     var langSelect = header.querySelector('.lang-select');
     if (langSelect) {
       langSelect.addEventListener('change', function () {
@@ -148,7 +69,7 @@
       });
     }
 
-    // Active link: exact page match
+    // Active nav link
     var navLinks = header.querySelectorAll('.header-nav a');
     navLinks.forEach(function (link) {
       var href = link.getAttribute('href');
@@ -163,7 +84,6 @@
       }
     });
 
-    // Non-index pages: mark "Docs" as active
     if (!isIndex) {
       var docsLink = header.querySelector('.header-nav a[href*="quick-start"]');
       if (docsLink) docsLink.classList.add('active');
@@ -172,7 +92,8 @@
 
   injectHeader();
 
-  // ── Sidebar Injection ────────────────────────────────────────────────────
+  // ── Sidebar Injection ──
+  var sidebar = document.getElementById('sidebar');
   if (sidebar) {
     sidebar.innerHTML =
       '<div class="sidebar-section">' +
@@ -218,8 +139,7 @@
       '    <a href="' + rootPrefix + 'features/bridge-mode.html" class="sidebar-link"><span class="link-icon"></span>Bridge Mode</a>' +
       '    <a href="' + rootPrefix + 'features/evals.html" class="sidebar-link"><span class="link-icon"></span>Evaluation Harness</a>' +
       '    <a href="' + rootPrefix + 'features/sentry-setup.html" class="sidebar-link"><span class="link-icon"></span>Sentry Setup</a>' +
-
-      '    <a href="' + rootPrefix + 'peer.html" class="sidebar-link"><span class="link-icon"></span>Peer System</a>' +
+      '    <a href="' + rootPrefix + 'swarm.html" class="sidebar-link"><span class="link-icon"></span>Swarm System</a>' +
       '    <a href="' + rootPrefix + 'loop.html" class="sidebar-link"><span class="link-icon"></span>Agent Loop</a>' +
       '  </nav>' +
       '</div>' +
@@ -232,16 +152,21 @@
       '</div>';
   }
 
-  // ── Mobile Nav ───────────────────────────────────────────────────────────
+  // ── Mobile Nav ──
+  var menuBtn = document.getElementById('menuToggle');
+  var overlay = document.getElementById('sidebarOverlay');
+
   function openSidebar() {
-    if (sidebar) sidebar.classList.add('open');
-    if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
+    sidebar && sidebar.classList.add('open');
+    menuBtn && menuBtn.setAttribute('aria-expanded', 'true');
+    overlay && overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
 
   function closeSidebar() {
-    if (sidebar) sidebar.classList.remove('open');
-    if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+    sidebar && sidebar.classList.remove('open');
+    menuBtn && menuBtn.setAttribute('aria-expanded', 'false');
+    overlay && overlay.classList.remove('open');
     document.body.style.overflow = '';
   }
 
@@ -262,7 +187,7 @@
     });
   }
 
-  // ── Active Link Highlighting ─────────────────────────────────────────────
+  // ── Active Sidebar Link ──
   var currentPath = window.location.pathname;
   var currentPage = currentPath.split('/').pop() || 'index.html';
   if (currentPage === '') currentPage = 'index.html';
@@ -274,10 +199,9 @@
     if (hrefPage === currentPage) link.classList.add('active');
   });
 
-  // ── Code Copy Buttons ────────────────────────────────────────────────────
+  // ── Code Copy Buttons ──
   function addCopyButtons() {
     document.querySelectorAll('.content pre').forEach(function (pre) {
-      // Skip if already wrapped
       if (pre.parentElement && pre.parentElement.classList.contains('code-block-wrap')) return;
 
       var wrap = document.createElement('div');
@@ -287,7 +211,6 @@
       header.className = 'code-block-header';
 
       var lang = document.createElement('span');
-      // Detect language from class or content
       var code = pre.querySelector('code');
       var langName = '';
       if (code) {
@@ -296,6 +219,7 @@
         if (match) langName = match[1];
       }
       lang.textContent = langName || '';
+      lang.style.textTransform = 'lowercase';
 
       var btn = document.createElement('button');
       btn.className = 'copy-btn';
@@ -304,7 +228,6 @@
 
       btn.addEventListener('click', function () {
         var text = pre.textContent || '';
-        // Strip leading/trailing newlines
         text = text.replace(/^\n+|\n+$/g, '');
         navigator.clipboard.writeText(text).then(function () {
           btn.textContent = 'Copied!';
@@ -332,7 +255,7 @@
 
   addCopyButtons();
 
-  // ── Table Wrapping ───────────────────────────────────────────────────────
+  // ── Table Wrapping ──
   document.querySelectorAll('.content table').forEach(function (table) {
     if (table.parentElement && table.parentElement.classList.contains('table-wrap')) return;
     var wrapper = document.createElement('div');
@@ -341,7 +264,7 @@
     wrapper.appendChild(table);
   });
 
-  // ── TOC Generation ───────────────────────────────────────────────────────
+  // ── TOC Generation ──
   function buildTOC() {
     var toc = document.querySelector('.toc-sidebar');
     if (!toc) return;
@@ -365,11 +288,10 @@
 
     var items = [];
     headings.forEach(function (h) {
-      // Ensure heading has an id
       if (!h.id) {
         var text = (h.textContent || '')
           .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/[^a-z0-9\u0E00-\u0E7F]+/g, '-')
           .replace(/^-|-$/g, '');
         h.id = text || 'section-' + Math.random().toString(36).slice(2, 6);
       }
@@ -386,29 +308,18 @@
 
     toc.appendChild(list);
 
-    // IntersectionObserver for active heading
     if (typeof IntersectionObserver !== 'undefined' && items.length > 0) {
       var observeTargets = [];
       headings.forEach(function (h) { observeTargets.push(h); });
 
       var observer = new IntersectionObserver(function (entries) {
-        var visible = [];
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            visible.push(entry.target.id);
+            items.forEach(function (item) {
+              item.el.classList.toggle('active', item.id === entry.target.id);
+            });
           }
         });
-        if (visible.length > 0) {
-          // Use the last visible heading (closest to top of viewport)
-          var active = visible[0];
-          items.forEach(function (item) {
-            if (item.id === active) {
-              item.el.classList.add('active');
-            } else {
-              item.el.classList.remove('active');
-            }
-          });
-        }
       }, {
         rootMargin: '-64px 0px -60% 0px',
         threshold: 0
@@ -419,5 +330,4 @@
   }
 
   buildTOC();
-  repairDocumentText();
 })();

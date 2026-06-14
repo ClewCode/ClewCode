@@ -24,6 +24,7 @@ import type { OpenAIOAuthTokens } from '../../services/openaiOAuth/index.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
 import type { LocalCommandResult, LocalJSXCommandCall, LocalJSXCommandOnDone } from '../../types/command.js';
 import { getOauthAccountInfo } from '../../utils/auth.js';
+import { readLocalProviderKey } from '../../utils/localProviderKeys.js';
 import { Login as AnthropicLogin } from '../login/login.js';
 
 type SerializableProviderRegistryEntry = Omit<ProviderRegistryEntry, 'provider'>;
@@ -109,7 +110,7 @@ async function providerList(): Promise<string> {
 
   const entries = PROVIDER_KEYS.map(provider => {
     const info = getProviderInfo(provider);
-    const hasKey = Boolean(config?.apiKeys?.[provider] || process.env[info.envKey]);
+    const hasKey = Boolean(config?.apiKeys?.[provider] || process.env[info.envKey] || readLocalProviderKey(provider));
     const isActive = provider === currentProvider;
 
     return [

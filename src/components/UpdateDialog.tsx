@@ -1,18 +1,19 @@
+import { spawn } from 'node:child_process';
+import { homedir } from 'node:os';
 import { emitKeypressEvents } from 'node:readline';
-import { LOADING_BAR_BODY, LOADING_BAR_EMPTY, LOADING_BAR_FILLED } from '../constants/figures.js';
-import { installGlobalPackage } from '../utils/autoUpdater.js';
-
-const RESET = '\x1b[0m';
-const BOLD = '\x1b[1m';
-const DIM = '\x1b[2m';
-const CYAN = '\x1b[36m';
-const GREEN = '\x1b[32m';
-const YELLOW = '\x1b[33m';
-const HIDE_CURSOR = '\x1b[?25l';
-const SHOW_CURSOR = '\x1b[?25h';
-const CLEAR_SCREEN = '\x1b[2J\x1b[1;1H';
-
-const BAR_WIDTH = 28;
+import {
+  ANSI_BOLD,
+  ANSI_CLEAR_SCREEN,
+  ANSI_CYAN,
+  ANSI_DIM,
+  ANSI_GREEN,
+  ANSI_HIDE_CURSOR,
+  ANSI_RESET,
+  ANSI_SHOW_CURSOR,
+  ANSI_YELLOW,
+} from '../constants/figures.js';
+import { isRunningWithBun } from '../utils/bundledMode.js';
+import { logForDebugging } from '../utils/debug.js';
 
 export type UpdateChoice = 'update' | 'skip' | 'exit';
 
@@ -21,183 +22,171 @@ type Props = {
   latestVersion: string;
 };
 
+const BAR_WIDTH = 28;
+const INPUT_TIMEOUT_MS = 30_000;
+
 /** Render an animated progress bar */
 function renderBar(percent: number): string {
   const filled = Math.round((percent / 100) * BAR_WIDTH);
-  const bar =
-    LOADING_BAR_FILLED.repeat(filled) +
-    (filled < BAR_WIDTH ? LOADING_BAR_BODY : '') +
-    LOADING_BAR_EMPTY.repeat(Math.max(0, BAR_WIDTH - filled - 1));
-  return ` ${GREEN}${bar}${RESET} ${BOLD}${Math.round(percent)}%${RESET}`;
+  const empty = BAR_WIDTH - filled;
+  const block = '\u2588'; // █
+  const dot = '\u2591'; // ░
+  return ` ${ANSI_GREEN}${block.repeat(filled)}${dot.repeat(empty)}${ANSI_RESET} ${ANSI_BOLD}${Math.round(percent)}%${ANSI_RESET}`;
 }
 
-function stripAnsi(str: string): string {
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: standard regex to strip ANSI codes
-  return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=<>]/g, '');
-}
-
-function getVisibleLength(str: string): number {
-  const clean = stripAnsi(str);
-  let width = 0;
-  for (const char of clean) {
-    const codePoint = char.codePointAt(0);
-    if (codePoint !== undefined && codePoint >= 0x2580 && codePoint <= 0x259f) {
-      width += 2;
-    } else {
-      width += 1;
-    }
-  }
-  return width;
-}
-function padLineLeft(content: string, width: number, leftMargin: number): string {
-  const visibleLen = getVisibleLength(content);
-  const padding = Math.max(0, width - visibleLen - leftMargin);
-  return ' '.repeat(leftMargin) + content + ' '.repeat(padding);
-}
-
-function centerLine(content: string, width: number): string {
-  const visibleLen = getVisibleLength(content);
-  const totalPadding = Math.max(0, width - visibleLen);
-  const leftPadding = Math.floor(totalPadding / 2);
-  const rightPadding = totalPadding - leftPadding;
-  return ' '.repeat(leftPadding) + content + ' '.repeat(rightPadding);
+/** Format install output lines for display: keep last meaningful lines */
+function formatOutputLines(lines: string[], maxLines: number = 3): string[] {
+  const meaningful = lines.filter(
+    l => l.trim() && !l.includes('npm WARN') && !l.startsWith('npm http') && !l.startsWith('npm timing'),
+  );
+  return meaningful.slice(-maxLines);
 }
 
 /**
  * Shows an interactive terminal dialog when an update is available.
  *
- * Layout optimized for 80-col terminals:
+ * Layout:
  *
- *   ╔═══════════════════════════════════════════════╗
- *   ║                                               ║
- *   ║               Update Available!               ║
- *   ║                v1.2.3 → v1.3.0                ║
- *   ║                                               ║
- *   ║      > Update now                             ║
- *   ║        Use current version                    ║
- *   ║        Exit                                   ║
- *   ║                                               ║
- *   ║      ↑↓ navigate · enter confirm · q quit     ║
- *   ╚═══════════════════════════════════════════════╝
+ *   Update Available!
+ *   v1.2.3 → v1.3.0
+ *
+ *   > Update now
+ *     Use current version
+ *     Exit
+ *
+ *   ↑↓ navigate · enter confirm · q quit
  */
 export async function showUpdateDialog({ currentVersion, latestVersion }: Props): Promise<UpdateChoice> {
   return new Promise<UpdateChoice>(resolve => {
     let selectedIndex = 0;
-    let phase: 'menu' | 'installing' = 'menu';
+    let phase: 'menu' | 'installing' | 'done' | 'error' = 'menu';
     let barPercent = 0;
-    let installTimer: ReturnType<typeof setInterval> | null = null;
+    let installOutput: string[] = [];
+    let installError: string | null = null;
+    let autoTimeout: ReturnType<typeof setTimeout> | null = null;
+    let inputActive = true;
 
-    if (!process.stdin.isTTY || !process.stdout.isTTY) {
-      resolve('skip');
-      return;
+    // ── Terminal setup with error recovery ──────────────────────────────
+    function setupInput(): boolean {
+      try {
+        if (!process.stdin.isTTY || !process.stdout.isTTY) return false;
+        emitKeypressEvents(process.stdin);
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        process.stdout.write(ANSI_HIDE_CURSOR);
+        return true;
+      } catch (err) {
+        logForDebugging(`UpdateDialog: input setup failed: ${err}`);
+        return false;
+      }
     }
-
-    emitKeypressEvents(process.stdin);
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdout.write(HIDE_CURSOR);
 
     function cleanup() {
-      if (installTimer) clearInterval(installTimer);
-      process.stdin.removeListener('keypress', onKeypress);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      process.stdout.write(SHOW_CURSOR);
-      process.stdout.write(CLEAR_SCREEN);
+      inputActive = false;
+      if (autoTimeout) clearTimeout(autoTimeout);
+      try {
+        process.stdin.removeListener('keypress', onKeypress);
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+      } catch {
+        // ignore cleanup errors
+      }
+      process.stdout.write(ANSI_SHOW_CURSOR);
+      process.stdout.write(ANSI_CLEAR_SCREEN);
     }
 
+    // ── Timeout: auto-skip if user doesn't respond within 30s ──────────
+    function startInputTimeout() {
+      autoTimeout = setTimeout(() => {
+        if (inputActive && phase === 'menu') {
+          cleanup();
+          resolve('skip');
+        }
+      }, INPUT_TIMEOUT_MS);
+    }
+
+    // ── Draw ──────────────────────────────────────────────────────────────
     function draw() {
       const lines: string[] = [];
-      const contentWidth = 46;
 
-      // Top border (46 ═ chars)
-      lines.push(`  ╔${'═'.repeat(contentWidth)}╗`);
-      lines.push(`  ║${' '.repeat(contentWidth)}║`);
-
-      // Title line
+      // Title
       const title =
-        phase === 'menu' ? `${BOLD}${YELLOW}Update Available!${RESET}` : `${BOLD}${CYAN}Updating Clew...${RESET}`;
-      lines.push(`  ║${centerLine(title, contentWidth)}║`);
+        phase === 'menu'
+          ? `${ANSI_BOLD}${ANSI_YELLOW}Update Available!${ANSI_RESET}`
+          : phase === 'error'
+            ? `${ANSI_BOLD}${ANSI_YELLOW}Update Failed${ANSI_RESET}`
+            : `${ANSI_BOLD}${ANSI_CYAN}Updating Clew...${ANSI_RESET}`;
+      lines.push(`  ${title}`);
 
       // Version line
-      const versionLine = `${DIM}v${currentVersion}${RESET} ${DIM}→${RESET} ${GREEN}v${latestVersion}${RESET}`;
-      lines.push(`  ║${centerLine(versionLine, contentWidth)}║`);
-
-      lines.push(`  ║${' '.repeat(contentWidth)}║`);
+      const versionLine = `${ANSI_DIM}v${currentVersion}${ANSI_RESET} ${ANSI_DIM}→${ANSI_RESET} ${ANSI_GREEN}v${latestVersion}${ANSI_RESET}`;
+      lines.push(`  ${versionLine}`);
+      lines.push('');
 
       if (phase === 'menu') {
         const options = ['Update now', 'Use current version', 'Exit'];
         for (let i = 0; i < options.length; i++) {
-          const prefix = i === selectedIndex ? `${CYAN}>${RESET}` : ' ';
-          const style = i === selectedIndex ? `${BOLD}${options[i]}${RESET}` : `${options[i]}`;
-          lines.push(`  ║${padLineLeft(`${prefix} ${style}`, contentWidth, 6)}║`);
+          const prefix = i === selectedIndex ? `${ANSI_CYAN}>${ANSI_RESET}` : ' ';
+          const style = i === selectedIndex ? `${ANSI_BOLD}${options[i]}${ANSI_RESET}` : `${options[i]}`;
+          lines.push(`  ${prefix} ${style}`);
         }
-        lines.push(`  ║${' '.repeat(contentWidth)}║`);
-        lines.push(`  ║${centerLine(`${DIM}↑↓ navigate · enter confirm · q quit${RESET}`, contentWidth)}║`);
+        lines.push('');
+        lines.push(`  ${ANSI_DIM}↑↓ navigate · enter confirm · q quit${ANSI_RESET}`);
       } else {
-        lines.push(`  ║${centerLine(`${DIM}npm install -g ${MACRO.PACKAGE_URL}${RESET}`, contentWidth)}║`);
-        lines.push(`  ║${' '.repeat(contentWidth)}║`);
-        lines.push(`  ║${centerLine(renderBar(barPercent), contentWidth)}║`);
-        lines.push(`  ║${' '.repeat(contentWidth)}║`);
+        // Show live npm output
+        const displayLines = formatOutputLines(installOutput);
+        for (const line of displayLines) {
+          lines.push(`  ${ANSI_DIM}${line}${ANSI_RESET}`);
+        }
+        lines.push('');
 
-        if (barPercent >= 100) {
-          lines.push(`  ║${centerLine(`${GREEN}✓ Update complete!${RESET}`, contentWidth)}║`);
-        } else {
-          lines.push(`  ║${centerLine(`${DIM}Please wait...${RESET}`, contentWidth)}║`);
+        // Progress bar
+        lines.push(`  ${renderBar(barPercent)}`);
+
+        if (phase === 'done') {
+          lines.push('');
+          lines.push(`  ${ANSI_GREEN}✓ Update complete! Run "clew" to use v${latestVersion}${ANSI_RESET}`);
+        } else if (phase === 'error') {
+          lines.push('');
+          lines.push(`  ${ANSI_YELLOW}✗ Install failed${ANSI_RESET}`);
+          if (installError) {
+            // Show a compact error message (first line or truncated)
+            const errMsg = installError.split('\n')[0].slice(0, 60);
+            lines.push(`  ${ANSI_DIM}${errMsg}${ANSI_RESET}`);
+          }
+          lines.push('');
+          lines.push(`  ${ANSI_DIM}Tip: run "npm install -g ${MACRO.PACKAGE_URL}" manually${ANSI_RESET}`);
         }
       }
 
-      lines.push(`  ║${' '.repeat(contentWidth)}║`);
-      lines.push(`  ╚${'═'.repeat(contentWidth)}╝`);
-
-      process.stdout.write(CLEAR_SCREEN);
+      process.stdout.write(ANSI_CLEAR_SCREEN);
       process.stdout.write(lines.join('\n'));
       process.stdout.write('\n');
     }
 
-    // Keypress handler
+    // ── Keypress ─────────────────────────────────────────────────────────
     function onKeypress(_str: string, key?: { name?: string; ctrl?: boolean }) {
-      if (!key) return;
-      if (phase === 'installing') return;
+      if (!key || !inputActive) return;
+      if (phase !== 'menu') return;
 
       if (key.name === 'up' || key.name === 'k') {
         selectedIndex = (selectedIndex - 1 + 3) % 3;
+        if (autoTimeout) {
+          clearTimeout(autoTimeout);
+          startInputTimeout();
+        }
         draw();
       } else if (key.name === 'down' || key.name === 'j') {
         selectedIndex = (selectedIndex + 1) % 3;
+        if (autoTimeout) {
+          clearTimeout(autoTimeout);
+          startInputTimeout();
+        }
         draw();
       } else if (key.name === 'return' || key.name === 'enter') {
+        if (autoTimeout) clearTimeout(autoTimeout);
         if (selectedIndex === 0) {
-          // Update
-          phase = 'installing';
-          barPercent = 3;
-          draw();
-
-          // Animate fake progress 0→90% while install runs
-          installTimer = setInterval(() => {
-            barPercent = Math.min(barPercent + Math.random() * 7, 90);
-            draw();
-          }, 350);
-
-          installGlobalPackage(latestVersion)
-            .then(status => {
-              if (installTimer) clearInterval(installTimer);
-              barPercent = 100;
-              draw();
-              setTimeout(() => {
-                cleanup();
-                resolve(status === 'success' ? 'update' : 'skip');
-              }, 1200);
-            })
-            .catch(() => {
-              if (installTimer) clearInterval(installTimer);
-              barPercent = 100;
-              draw();
-              setTimeout(() => {
-                cleanup();
-                resolve('skip');
-              }, 1200);
-            });
+          startInstall();
         } else if (selectedIndex === 1) {
           cleanup();
           resolve('skip');
@@ -206,12 +195,86 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
           resolve('exit');
         }
       } else if (key.name === 'q' || (key.name === 'c' && key.ctrl)) {
+        if (autoTimeout) clearTimeout(autoTimeout);
         cleanup();
         resolve('exit');
       }
     }
 
+    // ── Install with real npm progress ───────────────────────────────
+    function startInstall() {
+      phase = 'installing';
+      barPercent = 0;
+      installOutput = [];
+      draw();
+
+      const pm = isRunningWithBun() ? 'bun' : 'npm';
+      const args = ['install', '-g', MACRO.PACKAGE_URL];
+      const child = spawn(pm, args, {
+        cwd: homedir(),
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: process.platform === 'win32',
+      });
+
+      let stderr = '';
+
+      child.stdout?.on('data', (chunk: Buffer) => {
+        const text = chunk.toString();
+        installOutput = installOutput.concat(text.split('\n').filter(Boolean));
+        // Fake progress ramping based on output volume
+        barPercent = Math.min(Math.round((installOutput.length / 15) * 90), 90);
+        if (barPercent < 5) barPercent = 5;
+        draw();
+      });
+
+      child.stderr?.on('data', (chunk: Buffer) => {
+        const text = chunk.toString();
+        stderr += text;
+        installOutput = installOutput.concat(text.split('\n').filter(Boolean));
+        draw();
+      });
+
+      child.on('close', code => {
+        const success = code === 0;
+        barPercent = success ? 100 : 0;
+        if (!success) {
+          installError = stderr || 'npm install failed';
+        }
+        phase = success ? 'done' : 'error';
+        draw();
+
+        setTimeout(
+          () => {
+            cleanup();
+            // If success: return 'update' (triggers re-launch in main.tsx)
+            // If failure: return 'skip' to continue with current version
+            resolve(success ? 'update' : 'skip');
+          },
+          success ? 2000 : 3000,
+        );
+      });
+
+      child.on('error', err => {
+        installError = err.message;
+        phase = 'error';
+        barPercent = 0;
+        draw();
+        setTimeout(() => {
+          cleanup();
+          resolve('skip');
+        }, 3000);
+      });
+    }
+
+    // ── Bootstrap ────────────────────────────────────────────────────
+    if (!setupInput()) {
+      // Fallback: no TTY — just log and skip
+      resolve('skip');
+      return;
+    }
+
     process.stdin.on('keypress', onKeypress);
+    startInputTimeout();
     draw();
   });
 }

@@ -38,6 +38,17 @@ export const BRIDGE_SPINNER_FRAMES = ['\u00b7|\u00b7', '\u00b7/\u00b7', '\u00b7\
 export const BRIDGE_READY_INDICATOR = '\u00b7\u2714\ufe0e\u00b7';
 export const BRIDGE_FAILED_INDICATOR = '\u00d7';
 
+// ANSI escape codes for terminal styling
+export const ANSI_RESET = '\x1b[0m';
+export const ANSI_BOLD = '\x1b[1m';
+export const ANSI_DIM = '\x1b[2m';
+export const ANSI_CYAN = '\x1b[36m';
+export const ANSI_GREEN = '\x1b[32m';
+export const ANSI_YELLOW = '\x1b[33m';
+export const ANSI_HIDE_CURSOR = '\x1b[?25l';
+export const ANSI_SHOW_CURSOR = '\x1b[?25h';
+export const ANSI_CLEAR_SCREEN = '\x1b[2J\x1b[1;1H';
+
 // Update progress bar characters
 export const LOADING_BAR_FILLED = '\u2588'; // █
 export const LOADING_BAR_BODY = '\u2592'; // ▒
