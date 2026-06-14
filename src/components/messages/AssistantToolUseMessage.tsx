@@ -98,22 +98,24 @@ export function AssistantToolUseMessage({
 
   if (isTransparentWrapper) {
     if (isQueued || isResolved) return null;
+    const progressMessage = renderToolUseProgressMessage(
+      tool,
+      tools,
+      lookups,
+      param.id,
+      progressMessagesForMessage,
+      { verbose, inProgressToolCallCount, isTranscriptMode },
+      terminalSize,
+    );
+    if (progressMessage === null) return null;
     return (
       <Box flexDirection="column" width="100%" backgroundColor={bg}>
-        {renderToolUseProgressMessage(
-          tool,
-          tools,
-          lookups,
-          param.id,
-          progressMessagesForMessage,
-          { verbose, inProgressToolCallCount, isTranscriptMode },
-          terminalSize,
-        )}
+        {progressMessage}
       </Box>
     );
   }
 
-  if (userFacingToolName === '') {
+  if (userFacingToolName.trim() === '') {
     return null;
   }
 
@@ -248,6 +250,7 @@ function renderToolUseProgressMessage(
   const toolProgressMessages = progressMessagesForMessage.filter(
     (msg): msg is ProgressMessage<ToolProgressData> => msg.data.type !== 'hook_progress',
   );
+  const hasHookProgressMessages = progressMessagesForMessage.some(msg => msg.data.type === 'hook_progress');
   try {
     const toolMessages =
       tool.renderToolUseProgressMessage?.(toolProgressMessages, {
@@ -257,6 +260,9 @@ function renderToolUseProgressMessage(
         inProgressToolCallCount: inProgressToolCallCount ?? 1,
         isTranscriptMode,
       }) ?? null;
+    if (toolMessages === null && !hasHookProgressMessages) {
+      return null;
+    }
     return (
       <>
         <SentryErrorBoundary>

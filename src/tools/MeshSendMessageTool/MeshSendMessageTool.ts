@@ -110,17 +110,73 @@ export const MeshSendMessageTool = buildTool({
       return React.createElement(
         MessageResponse,
         null,
-        React.createElement(Text, { color: 'ansi:red' }, `Failed: ${output.error}`),
+        React.createElement(
+          Box,
+          { flexDirection: 'row', gap: 1 },
+          React.createElement(Text, { color: '#a32d2d' }, '●'),
+          React.createElement(Text, { color: '#a32d2d', bold: true }, output.meshHostname ?? 'peer'),
+          React.createElement(
+            Text,
+            { color: '#a32d2d', dimColor: true, italic: true },
+            truncateText(output.error ?? 'unknown error', 120),
+          ),
+        ),
       );
     }
-    const chunkStr = output.chunksSent ? ` (${output.chunksSent} chunks)` : '';
-    const responseStr = output.response
-      ? ` | Response from ${output.response.fromName}: "${truncateText(output.response.text, 80)}"`
-      : '';
+
+    const meta = [
+      output.chunksSent ? `${output.chunksSent} chunks` : undefined,
+      output.totalChars ? `${output.totalChars} chars` : undefined,
+      output.timedOut ? 'no response' : undefined,
+    ].filter(Boolean);
+
+    const responsePreview = output.response
+      ? truncateText(output.response.text, 80)
+      : undefined;
+
     return React.createElement(
       MessageResponse,
       null,
-      React.createElement(Text, { dimColor: true }, `Sent to ${output.meshHostname}${chunkStr}${responseStr}`),
+      React.createElement(
+        Box,
+        { flexDirection: 'column', width: '100%' },
+
+        React.createElement(
+          Box,
+          { flexDirection: 'row', gap: 1 },
+          React.createElement(Text, { color: '#1d9e75' }, '●'),
+          React.createElement(Text, { bold: true, color: 'white' }, output.meshHostname ?? 'peer'),
+          React.createElement(Text, { color: 'gray' }, '←'),
+          React.createElement(
+            Text,
+            { color: '#6199cc' },
+            truncateText(output.messageText ?? '', 60),
+          ),
+          React.createElement(Text, { color: '#1d9e75' }, 'sent'),
+        ),
+
+        meta.length > 0
+          ? React.createElement(
+              Box,
+              { flexDirection: 'row', gap: 2, paddingLeft: 2 },
+              ...meta.map(s => React.createElement(Text, { key: s, color: 'gray', dimColor: true }, s)),
+            )
+          : null,
+
+        responsePreview
+          ? React.createElement(
+              Box,
+              { paddingLeft: 2 },
+              React.createElement(Text, { color: 'gray', dimColor: true }, output.response!.fromName),
+              React.createElement(Text, { color: 'gray' }, ' '),
+              React.createElement(
+                Text,
+                { color: 'gray', dimColor: true, italic: true, wrap: 'truncate-end' },
+                responsePreview,
+              ),
+            )
+          : null,
+      ),
     );
   },
   async validateInput(input: any): Promise<ValidationResult> {

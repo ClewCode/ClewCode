@@ -447,7 +447,7 @@ export function FullscreenLayout({
           <Box flexDirection="column" flexShrink={0} width="100%" maxHeight="50%">
             <SuggestionsOverlay />
             <DialogOverlay />
-            <Box flexDirection="column" width="100%" flexGrow={1} overflowY="hidden">
+            <Box flexDirection="column" width="100%" flexGrow={1}>
               {bottom}
             </Box>
           </Box>

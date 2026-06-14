@@ -61,7 +61,8 @@ export function AssistantTextMessage({
   onOpenRateLimitOptions,
 }: Props): React.ReactNode {
   const isSelected = useContext(MessageActionsSelectedContext);
-  if (isEmptyMessageText(text)) {
+  const visibleText = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+  if (isEmptyMessageText(visibleText)) {
     return null;
   }
 

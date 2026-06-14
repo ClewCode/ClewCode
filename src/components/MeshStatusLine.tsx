@@ -7,6 +7,8 @@ import { getGlobalMeshStore } from '../mesh/MeshStore.js';
 import { summarizePeerMesh } from '../mesh/meshHealth.js';
 import type { MeshInfo } from '../mesh/types.js';
 
+import { logForDebugging } from '../utils/debug.js';
+
 export function MeshStatusLine(): React.ReactNode {
   const [peers, setPeers] = useState<MeshInfo[]>([]);
   const [sharing, setSharing] = useState(false);
@@ -19,8 +21,11 @@ export function MeshStatusLine(): React.ReactNode {
     const server = getGlobalMeshServer();
 
     const update = () => {
-      setPeers(store.getPeers());
-      setSharing(discovery.isSharing);
+      const storePeers = store.getPeers();
+      const isSharing = discovery.isSharing;
+      logForDebugging(`[MeshStatusLine] Update: peers=${storePeers.length}, sharing=${isSharing}, storeConnections=${store.getConnections().length}`);
+      setPeers(storePeers);
+      setSharing(isSharing);
       setMyName(server.extraInfo.displayName || discovery.hostname);
       setMyRole(server.extraInfo.role);
     };
@@ -28,6 +33,8 @@ export function MeshStatusLine(): React.ReactNode {
     const iv = setInterval(update, 5000);
     return () => clearInterval(iv);
   }, []);
+
+  logForDebugging(`[MeshStatusLine] Render: peers=${peers.length}, sharing=${sharing}`);
 
   if (peers.length === 0 && !sharing) return null;
 
