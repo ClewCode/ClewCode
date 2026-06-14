@@ -306,10 +306,11 @@ async function releaseLock(): Promise<void> {
 }
 
 async function getInstallationPrefix(): Promise<string | null> {
-  // Run from home directory to avoid reading project-level .npmrc/.bunfig.toml
-  const isBun = env.isRunningWithBun();
+  // Use the same package manager detection as installGlobalPackage
+  // to ensure we check permissions against the correct installation path
+  const packageManager = detectGlobalPackageManager();
   let prefixResult = null;
-  if (isBun) {
+  if (packageManager === 'bun') {
     prefixResult = await execFileNoThrowWithCwd('bun', ['pm', 'bin', '-g'], {
       cwd: homedir(),
     });
@@ -580,16 +581,38 @@ export async function getVersionHistory(limit: number): Promise<string[]> {
 function detectGlobalPackageManager(): 'npm' | 'bun' {
   let invokedPath = process.argv[1] || '';
   let execPath = process.execPath || process.argv[0] || '';
+  let argv0 = process.argv[0] || '';
 
   // Normalize backslashes to forward slashes on Windows
   if (getPlatform() === 'windows') {
     invokedPath = invokedPath.split(win32.sep).join(posix.sep);
     execPath = execPath.split(win32.sep).join(posix.sep);
+    argv0 = argv0.split(win32.sep).join(posix.sep);
   }
 
-  const pathsToCheck = [invokedPath, execPath];
+  const pathsToCheck = [invokedPath, execPath, argv0];
 
   if (getPlatform() === 'windows') {
+    // bun global: .bun/bin/ is bun's primary bin link location on Windows
+    // ponytail: global lock, per-path detection if mixed installs matter
+    const userProfile = process.env.USERPROFILE;
+    if (userProfile) {
+      const normalizedUserPath = userProfile.split(win32.sep).join(posix.sep);
+      if (pathsToCheck.some(p => p.startsWith(normalizedUserPath + '/.bun/bin/'))) {
+        return 'bun';
+      }
+      // %USERPROFILE%/node_modules/ is bun's global install dir on Windows
+      // (npm uses %APPDATA%/npm/node_modules/), but only match if no npm path detected
+      if (pathsToCheck.some(p => p.startsWith(normalizedUserPath + '/node_modules/'))) {
+        // Check if any path also matches npm's global dir — if so, npm takes priority
+        const appData = process.env.APPDATA;
+        const normalizedAppData = appData ? appData.split(win32.sep).join(posix.sep) : '';
+        const hasNpmPath = normalizedAppData && pathsToCheck.some(p => p.startsWith(normalizedAppData + '/npm/'));
+        if (!hasNpmPath) {
+          return 'bun';
+        }
+      }
+    }
     // npm global: %APPDATA%/npm/node_modules/
     const appData = process.env.APPDATA;
     if (appData) {
@@ -598,15 +621,12 @@ function detectGlobalPackageManager(): 'npm' | 'bun' {
         return 'npm';
       }
     }
-    // bun global: %USERPROFILE%/node_modules/
-    const userProfile = process.env.USERPROFILE;
-    if (userProfile) {
-      const normalizedUserPath = userProfile.split(win32.sep).join(posix.sep);
-      if (pathsToCheck.some(p => p.startsWith(normalizedUserPath + '/node_modules/'))) {
-        return 'bun';
-      }
-    }
   } else {
+    // bun global: check ~/.bun/bin (bun's primary bin link location on macOS/Linux)
+    const home = homedir();
+    if (home && pathsToCheck.some(p => p.startsWith(`${home}/.bun/`))) {
+      return 'bun';
+    }
     // macOS/Linux npm global paths
     const npmGlobalPaths = [
       '/usr/local/lib/node_modules',

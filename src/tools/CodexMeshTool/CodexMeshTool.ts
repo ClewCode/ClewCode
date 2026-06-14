@@ -19,7 +19,7 @@ import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { notifyMeshFeedback, truncateText } from '../mesh/meshFeedback.js';
 
-const DEFAULT_CODEX_PEER_MODE = 'pty' as const;
+const DEFAULT_CODEX_AGENT_MODE = 'pty' as const;
 const TERMINAL_OUTPUT_MAX_LINES = 16;
 
 const inputSchema = lazySchema(() =>
@@ -28,7 +28,7 @@ const inputSchema = lazySchema(() =>
     mode: z
       .enum(['exec', 'pty'])
       .optional()
-      .default(DEFAULT_CODEX_PEER_MODE)
+      .default(DEFAULT_CODEX_AGENT_MODE)
       .describe('Execution mode. "pty" is the default terminal-style live view; "exec" is stable one-shot capture.'),
     cwd: z.string().optional().describe('Working directory for Codex. Defaults to the current Clew cwd.'),
     model: z.string().optional().describe('Optional model override for providers that support it.'),
@@ -52,7 +52,7 @@ const outputSchema = lazySchema(() =>
 
 export type Output = z.infer<ReturnType<typeof outputSchema>>;
 
-export const CODEX_PEER_TOOL_NAME = 'codex_peer';
+export const CODEX_AGENT_TOOL_NAME = 'codex_agent';
 
 export const CodexMeshTool = buildTool({
   isConcurrencySafe() {
@@ -61,7 +61,7 @@ export const CodexMeshTool = buildTool({
   isReadOnly() {
     return false;
   },
-  name: CODEX_PEER_TOOL_NAME,
+  name: CODEX_AGENT_TOOL_NAME,
   searchHint: 'delegate task to local Codex CLI',
   maxResultSizeChars: 30_000,
   async description() {
@@ -102,13 +102,13 @@ export const CodexMeshTool = buildTool({
     return React.createElement(
       Text,
       null,
-      `codex ${input.mode ?? DEFAULT_CODEX_PEER_MODE}${input.cwd ? ` in ${input.cwd}` : ''}: `,
+      `codex ${input.mode ?? DEFAULT_CODEX_AGENT_MODE}${input.cwd ? ` in ${input.cwd}` : ''}: `,
       React.createElement(Text, { dimColor: true }, truncateText(input.prompt ?? '', 120)),
     );
   },
   renderToolUseProgressMessage(progressMessages): React.ReactNode {
     const latest = progressMessages.at(-1)?.data as ProcessMeshProgress | undefined;
-    const mode = latest?.mode ?? DEFAULT_CODEX_PEER_MODE;
+    const mode = latest?.mode ?? DEFAULT_CODEX_AGENT_MODE;
     const elapsed = latest ? `${(latest.elapsedMs / 1000).toFixed(1)}s` : '0.0s';
     const status = latest?.status ?? 'starting';
     const command = latest?.displayCommand ?? latest?.command ?? `codex ${mode}`;
@@ -167,17 +167,17 @@ export const CodexMeshTool = buildTool({
     );
   },
   getActivityDescription(input: Partial<{ prompt?: string; cwd?: string; mode?: string }>) {
-    return `Running Codex CLI (${input.mode ?? DEFAULT_CODEX_PEER_MODE}): ${truncateText(input.prompt ?? '', 80)}`;
+    return `Running Codex CLI (${input.mode ?? DEFAULT_CODEX_AGENT_MODE}): ${truncateText(input.prompt ?? '', 80)}`;
   },
   getToolUseSummary(input: Partial<{ prompt?: string; cwd?: string; mode?: string }>) {
-    return `Codex ${input.mode ?? DEFAULT_CODEX_PEER_MODE}: ${truncateText(input.prompt ?? '', 80)}`;
+    return `Codex ${input.mode ?? DEFAULT_CODEX_AGENT_MODE}: ${truncateText(input.prompt ?? '', 80)}`;
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) {
       return {
         tool_use_id: toolUseID,
         type: 'tool_result',
-        content: `[codex_peer] Failed: ${output.error}`,
+        content: `[codex_agent] Failed: ${output.error}`,
       };
     }
 
@@ -186,7 +186,7 @@ export const CodexMeshTool = buildTool({
       tool_use_id: toolUseID,
       type: 'tool_result',
       content: [
-        `[codex_peer] exit ${output.exitCode ?? output.signal ?? 'unknown'} in ${((output.durationMs ?? 0) / 1000).toFixed(1)}s`,
+        `[codex_agent] exit ${output.exitCode ?? output.signal ?? 'unknown'} in ${((output.durationMs ?? 0) / 1000).toFixed(1)}s`,
         '',
         text,
       ].join('\n'),
@@ -222,7 +222,7 @@ export const CodexMeshTool = buildTool({
       notifyMeshFeedback(`asking codex`, 'process-peer', 'low');
       const result = await provider.runTask({
         prompt: input.prompt,
-        mode: input.mode ?? DEFAULT_CODEX_PEER_MODE,
+        mode: input.mode ?? DEFAULT_CODEX_AGENT_MODE,
         cwd: input.cwd ?? getCwd(),
         model: input.model,
         timeoutMs: timeout,

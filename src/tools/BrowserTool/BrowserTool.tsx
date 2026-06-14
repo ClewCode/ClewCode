@@ -170,7 +170,7 @@ SESSION: close (saves cookies for next session)`;
   },
 
   isEnabled(): boolean {
-    return true;
+    return false;
   },
 
   mapToolResultToToolResultBlockParam(data: any, toolUseID: string): ToolResultBlockParam {
