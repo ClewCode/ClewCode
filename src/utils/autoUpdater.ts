@@ -1,7 +1,7 @@
 import { constants as fsConstants } from 'fs';
 import { access, writeFile } from 'fs/promises';
 import { homedir } from 'os';
-import { join } from 'path';
+import { join, posix, win32 } from 'path';
 import { getDynamicConfig_BLOCKS_ON_INIT } from 'src/services/analytics/growthbook.js';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -17,6 +17,7 @@ import { execFileNoThrowWithCwd } from './execFileNoThrow.js';
 import { getFsImplementation } from './fsOperations.js';
 import { gracefulShutdownSync } from './gracefulShutdown.js';
 import { logError } from './log.js';
+import { getPlatform } from './platform.js';
 import { gte, lt } from './semver.js';
 import { getInitialSettings } from './settings/settings.js';
 import { filterClaudeAliases, getShellConfigPaths, readFileLines, writeFileLines } from './shellConfig.js';
@@ -571,6 +572,61 @@ export async function getVersionHistory(limit: number): Promise<string[]> {
   }
 }
 
+/**
+ * Detect which package manager (npm or bun) manages the current global installation.
+ * Checks the invoked binary path against known global install directories rather than
+ * relying on the runtime (a bun-compiled binary may be installed via npm global).
+ */
+function detectGlobalPackageManager(): 'npm' | 'bun' {
+  let invokedPath = process.argv[1] || '';
+  let execPath = process.execPath || process.argv[0] || '';
+
+  // Normalize backslashes to forward slashes on Windows
+  if (getPlatform() === 'windows') {
+    invokedPath = invokedPath.split(win32.sep).join(posix.sep);
+    execPath = execPath.split(win32.sep).join(posix.sep);
+  }
+
+  const pathsToCheck = [invokedPath, execPath];
+
+  if (getPlatform() === 'windows') {
+    // npm global: %APPDATA%/npm/node_modules/
+    const appData = process.env.APPDATA;
+    if (appData) {
+      const normalizedAppData = appData.split(win32.sep).join(posix.sep);
+      if (pathsToCheck.some(p => p.startsWith(normalizedAppData + '/npm/'))) {
+        return 'npm';
+      }
+    }
+    // bun global: %USERPROFILE%/node_modules/
+    const userProfile = process.env.USERPROFILE;
+    if (userProfile) {
+      const normalizedUserPath = userProfile.split(win32.sep).join(posix.sep);
+      if (pathsToCheck.some(p => p.startsWith(normalizedUserPath + '/node_modules/'))) {
+        return 'bun';
+      }
+    }
+  } else {
+    // macOS/Linux npm global paths
+    const npmGlobalPaths = [
+      '/usr/local/lib/node_modules',
+      '/usr/lib/node_modules',
+      '/opt/homebrew/lib/node_modules',
+      '/opt/homebrew/bin',
+      '/usr/local/bin',
+    ];
+    if (pathsToCheck.some(p => npmGlobalPaths.some(prefix => p.startsWith(prefix)))) {
+      return 'npm';
+    }
+    if (pathsToCheck.some(p => p.includes('/npm/') || p.includes('/nvm/'))) {
+      return 'npm';
+    }
+  }
+
+  // Fallback: use runtime detection
+  return env.isRunningWithBun() ? 'bun' : 'npm';
+}
+
 export async function installGlobalPackage(specificVersion?: string | null): Promise<InstallStatus> {
   if (!(await acquireLock())) {
     logError(new AutoUpdaterError('Another process is currently installing an update'));
@@ -615,7 +671,7 @@ To fix this issue:
 
     // Run from home directory to avoid reading project-level .npmrc/.bunfig.toml
     // which could be maliciously crafted to redirect to an attacker's registry
-    const packageManager = env.isRunningWithBun() ? 'bun' : 'npm';
+    const packageManager = detectGlobalPackageManager();
     const installResult = await execFileNoThrowWithCwd(packageManager, ['install', '-g', packageSpec], {
       cwd: homedir(),
     });
