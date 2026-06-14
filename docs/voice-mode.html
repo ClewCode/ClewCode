@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Mode — Clew Code</title>
+<meta name="description" content="Voice input mode using microphone and OpenAI Whisper API.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="header"></header>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
+
+<div class="content-wrap">
+<div class="content">
+
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Voice Mode</span></div>
+
+<h1>Voice Mode</h1>
+<p class="sub">Use your voice to interact with Clew Code via microphone input and OpenAI Whisper transcription.</p>
+
+<h2 id="overview">Overview</h2>
+<p>Voice mode captures audio from your microphone, transcribes it using OpenAI's Whisper API, and feeds the transcribed text to the agent as regular input.</p>
+
+<h2 id="setup">Setup</h2>
+<h3>1. Set OpenAI API Key</h3>
+<pre><code class="language-bash">export OPENAI_API_KEY=sk-...
+</code></pre>
+
+<h3>2. Install SoX (required for recording)</h3>
+<p><strong>macOS:</strong></p>
+<pre><code class="language-bash">brew install sox
+</code></pre>
+<p><strong>Ubuntu/Debian:</strong></p>
+<pre><code class="language-bash">sudo apt-get install sox
+</code></pre>
+<p><strong>Windows:</strong><br>
+Download from <a href="https://sox.sourceforge.net">sox.sourceforge.net</a></p>
+
+<h2 id="usage">Usage</h2>
+<pre><code class="language-bash">❯ /voice              # activate voice mode
+❯ /voice status       # check voice session status
+❯ /voice off          # deactivate voice mode
+</code></pre>
+<p>Once voice mode is active, press <strong>F2</strong> to start/stop recording.</p>
+
+<h2 id="how-it-works">How It Works</h2>
+<pre><code>User presses F2
+      ↓
+VoiceRecorder.start() → Microphone → PCM audio chunks
+      ↓
+VoiceRecorder.stop() → Buffer.concat → WAV conversion
+      ↓
+VoiceWhisper.transcribe() → OpenAI Whisper API
+      ↓
+Session.handleInput(transcribedText) → Normal command flow
+</code></pre>
+
+<h2 id="files">Key Files</h2>
+<table>
+  <thead>
+    <tr><th>File</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>src/tools/voiceRecorder.ts</code></td><td>Microphone recording via node-record-lpcm16</td></tr>
+    <tr><td><code>src/tools/voiceWhisper.ts</code></td><td>OpenAI Whisper API for speech-to-text</td></tr>
+    <tr><td><code>src/tools/voiceTools.ts</code></td><td>Voice session management (start/stop/transcribe)</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

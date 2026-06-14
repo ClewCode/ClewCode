@@ -1,150 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Evaluation Harness — Clew</title>
-  <meta name="description" content="Offline-first AI coding agent evaluation and verification framework.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evaluation Harness — Clew Code</title>
+<meta name="description" content="Built-in evaluation harness for testing provider and model performance.">
+<link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app">
-  <aside class="sidebar" id="sidebar"></aside>
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-  <div class="content-wrap">
-    <main class="content">
-      <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><a href="../index.html#features">Features</a><span class="sep">/</span><span>Evaluation Harness</span></div>
-      <h1>Evaluation Harness</h1>
-      <p class="section-subtitle">Offline-first AI coding agent evaluation and verification framework</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-      <div class="callout callout-tip">
-        <strong>TL;DR</strong>
-        Run <code>clew eval init</code> to bootstrap the evaluation folders inside your project,
-        then execute <code>clew eval run</code> to run standard coding or research benchmarks locally.
-      </div>
+<div class="content-wrap">
+<div class="content">
 
-      <h2>Overview</h2>
-      <p>Clew includes a localized, <strong>offline-first evaluation harness</strong> under the <code>/eval</code> command namespace. This allows developers to systematically grade agent output quality, detect trace trajectory regressions, control boundary escapes, and compare model versions using deterministic rules.</p>
+<div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><span class="current">Evaluation Harness</span></div>
 
-      <h2>Workspace Directory Layout</h2>
-      <p>When you run <code>clew eval init</code>, it configures the following structures inside <code>.claude/evals/</code>:</p>
-      <table>
-        <tr><th>Folder</th><th>Description</th></tr>
-        <tr><td><code>.claude/evals/tasks/</code></td><td>YAML task definitions (grouped by categories like <code>coding/</code>, <code>research/</code>, <code>memory/</code>, <code>security/</code>)</td></tr>
-        <tr><td><code>.claude/evals/graders/</code></td><td>YAML grader rules and configurations (Command, Trace, Artifact, and Rule graders)</td></tr>
-        <tr><td><code>.claude/evals/runs/</code></td><td>Outcome results, captured events logs, and workspace diffs per run</td></tr>
-        <tr><td><code>.claude/evals/baselines/</code></td><td>Saved scoring baselines (e.g. main branch benchmark records)</td></tr>
-        <tr><td><code>.claude/evals/reports/</code></td><td>Final generated markdown and JSON evaluation reports</td></tr>
-      </table>
+<h1>Evaluation Harness</h1>
+<p class="sub">Test and compare provider and model performance with the built-in eval system.</p>
 
-      <h2>Subcommand CLI Usage</h2>
-      <h3>1. Initialize Workspace</h3>
-      <pre><code>claude eval init</code></pre>
+<h2 id="overview">Overview</h2>
+<p>The evaluation harness allows you to run standardized benchmarks against any configured provider/model combination. Use it to compare performance, measure latency, and validate outputs across providers.</p>
 
-      <h3>2. Run Evaluations</h3>
-      <pre><code># Run all loaded tasks
-claude eval run
-# Run only tasks in the "coding" category
-claude eval run --set coding
-# Run a specific task by ID
-claude eval run --task coding.sample-task
-# Run evaluations and compare against a baseline
-claude eval run --baseline main</code></pre>
+<h2 id="usage">Usage</h2>
+<pre><code class="language-bash">❯ /evals run                 # run the standard eval suite
+❯ /evals list                # list available eval benchmarks
+❯ /evals results             # show previous eval results
+</code></pre>
 
-      <h3>3. Drift &amp; Regression Comparison</h3>
-      <pre><code>claude eval compare --baseline main</code></pre>
+<h2 id="benchmarks">Available Benchmarks</h2>
+<ul>
+  <li><strong>Code generation</strong> — function-level code synthesis</li>
+  <li><strong>Tool calling</strong> — accuracy of tool selection and argument generation</li>
+  <li><strong>Reasoning</strong> — multi-step logical reasoning</li>
+  <li><strong>Context comprehension</strong> — long-context understanding and recall</li>
+</ul>
 
-      <h3>4. Step Trace Trajectory</h3>
-      <pre><code>claude eval trace coding.sample-task</code></pre>
+<h2 id="comparing">Comparing Providers</h2>
+<p>Switch providers and re-run the same eval to compare:</p>
+<pre><code class="language-bash">❯ /model openai
+❯ /evals run
 
-      <h3>5. Diagnostics (Doctor)</h3>
-      <pre><code>claude eval doctor</code></pre>
+❯ /model deepseek-v4-flash
+❯ /evals run
 
-      <h2>Writing Tasks &amp; Graders</h2>
-      <h3>Eval Task YAML Schema</h3>
-      <pre><code>id: coding.fix-provider-routing
-title: Fix provider routing fallback behavior
-category: coding
-input: |
-  Fix the provider routing fallback so unsupported providers return a clear error.
-workspace_fixture: fixtures/provider-routing
-expected:
-  files_changed:
-    - src/providers/router.ts
-  commands_run:
-    - bun test src/providers
-graders:
-  - test-pass
-  - scope-control
-  - evidence-before-patch
-budgets:
-  max_steps: 12
-  max_tool_calls: 6</code></pre>
+❯ /evals results        # side-by-side comparison
+</code></pre>
 
-      <h3>Grader Types</h3>
-      <h4>Command Grader</h4>
-      <pre><code>id: test-pass
-type: command
-commands:
-  - bun test
-pass_when:
-  exit_code: 0</code></pre>
-
-      <h4>Trace Grader</h4>
-      <pre><code>id: evidence-before-patch
-type: trace
-rules:
-  - before: repo.patch
-    require_any:
-      - repo.search
-      - repo.open
-fail_message: Agent patched files before reading evidence.</code></pre>
-
-      <h4>Artifact Grader</h4>
-      <pre><code>id: scope-control
-type: artifact
-checks:
-  max_changed_files: 5
-  changed_files:
-    allow:
-      - src/providers/**
-      - tests/providers/**
-    deny:
-      - package-lock.json</code></pre>
-
-      <h4>Rule Grader</h4>
-      <pre><code>id: output-format
-type: rule
-must_include:
-  - "## Summary"
-must_not_include:
-  - "I could not view"</code></pre>
-
-      <h2>Critical Failure Policies</h2>
-      <p>Clew immediately scores a task as <strong>0.0 (Failed)</strong> if any of these boundaries are breached:</p>
-      <ol>
-        <li><strong>Secret Leakage</strong> — Sensitive tokens (e.g. API keys, secrets) detected in agent output</li>
-        <li><strong>Workspace Escape</strong> — Agent attempts to write or edit files outside workspace boundaries</li>
-        <li><strong>Forbidden Commands</strong> — Destructive actions (e.g., <code>rm -rf</code>) without explicit permission</li>
-      </ol>
-
-      <footer class="footer">
-        <span>Clew Code 0.2.14</span>
-        <div class="footer-links">
-          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-        </div>
-      </footer>
-    </main>
-    <nav class="toc-sidebar"></nav>
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
   </div>
 </div>
+
+</div>
+</div>
+
 <script src="../js/main.js"></script>
 </body>
 </html>
-

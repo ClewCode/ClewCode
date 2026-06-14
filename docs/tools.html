@@ -1,171 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tools — Clew</title>
-  <meta name="description" content="Complete reference for built-in tools in Clew — file operations, shell, search, agents, MCP, and automation.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tools — Clew Code</title>
+<meta name="description" href="50+ built-in tools available in Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Tools</span></div>
-  <h1>Tools</h1>
-  <p class="section-subtitle">Clew provides <strong>76+ built-in tools</strong> (353 files across 76 directories) plus dynamically loaded MCP tools. Tools are invoked by the AI model via <code>tool_use</code> blocks and executed through the <strong>StreamingToolExecutor</strong> with permission gating. The base tool type is defined in <code>src/Tool.ts</code> (782 lines) and tools are registered in <code>src/tools.ts</code>.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <h2>How Tools Work</h2>
-  <p>Tools are defined with Zod schemas in <code>src/Tool.ts</code> via the <code>buildTool()</code> helper and registered in <code>src/tools.ts</code>. Each tool declares its input schema, output schema, concurrency safety, read-only status, and permission requirements.</p>
+<div class="content-wrap">
+<div class="content">
 
-  <pre><code>Model emits tool_use
-  Tool call normalization (toolCallParser.ts)
-  Permission check (permissions.ts)
-  PreToolUse hooks (plugins)
-  Tool execution (StreamingToolExecutor)
-  PostToolUse hooks (plugins)
-  Result returned as tool_result
-  Query loop continues</code></pre>
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Tools</span></div>
 
-  <h2>File &amp; Code Operations</h2>
-  <table>
-    <tr><th>Tool</th><th>Description</th><th>Schemas</th></tr>
-    <tr><td><code>Read</code> (FileReadTool)</td><td>Read files with line numbers, supports images, PDFs, Jupyter notebooks</td><td>Zod</td></tr>
-    <tr><td><code>Write</code> (FileWriteTool)</td><td>Create new files with full content</td><td>Zod</td></tr>
-    <tr><td><code>Edit</code> (FileEditTool)</td><td>Exact string replacement edits (surgical, diff-based)</td><td>Zod</td></tr>
-    <tr><td><code>Glob</code> (GlobTool)</td><td>Fast file pattern matching, sorted by modification time</td><td>Zod</td></tr>
-    <tr><td><code>Grep</code> (GrepTool)</td><td>Regex content search with context lines and multiline support</td><td>Zod</td></tr>
-    <tr><td><code>NotebookEdit</code> (NotebookEditTool)</td><td>Edit Jupyter notebook cells (replace, insert, delete)</td><td>Zod</td></tr>
-    <tr><td><code>JsonPath</code> (JsonPathTool)</td><td>Query, validate, format, and transform JSON data</td><td>Zod</td></tr>
-  </table>
+<h1>Tools</h1>
+<p class="sub">Clew Code ships with 50+ built-in tools for file operations, code search, shell commands, web access, browser automation, PR management, mesh networking, and more.</p>
 
-  <h2>Shell &amp; System</h2>
-  <table>
+<h2 id="file">File Tools</h2>
+<table>
+  <thead>
     <tr><th>Tool</th><th>Description</th></tr>
-    <tr><td><code>Bash</code> (BashTool)</td><td>Execute shell commands with timeout, background, sandbox support, and permission gating</td></tr>
-    <tr><td><code>PowerShell</code> (PowerShellTool)</td><td>PowerShell execution on Windows (feature-gated)</td></tr>
-    <tr><td><code>Monitor</code> (MonitorTool)</td><td>Stream stdout/stderr from background tasks in real-time</td></tr>
-    <tr><td><code>TaskOutput</code> (TaskOutputTool)</td><td>Get output from running or completed tasks</td></tr>
-    <tr><td><code>TaskStop</code> (TaskStopTool)</td><td>Stop running background tasks</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td>Read</td><td>Read files (text, images, PDFs, notebooks)</td></tr>
+    <tr><td>Write</td><td>Create or overwrite files</td></tr>
+    <tr><td>Edit</td><td>Exact string replacements in files</td></tr>
+    <tr><td>Glob</td><td>Fast file pattern matching</td></tr>
+    <tr><td>Grep</td><td>Content search with ripgrep</td></tr>
+    <tr><td>NotebookEdit</td><td>Edit Jupyter notebook cells</td></tr>
+  </tbody>
+</table>
 
-  <h2>Search &amp; Web</h2>
-  <table>
+<h2 id="shell">Shell &amp; Execution Tools</h2>
+<table>
+  <thead>
     <tr><th>Tool</th><th>Description</th></tr>
-    <tr><td><code>WebSearch</code> (WebSearchTool)</td><td>Multi-provider web search (Tavily, Brave, Serper, SearXNG, DuckDuckGo)</td></tr>
-    <tr><td><code>WebFetch</code> (WebFetchTool)</td><td>Fetch and analyze content from specific URLs</td></tr>
-    <tr><td><code>SessionSearch</code> (SessionSearchTool)</td><td>Full-text search across past session transcripts</td></tr>
-    <tr><td><code>    <tr><td><code>ToolSearch</code> (ToolSearchTool)</td><td>Keyword search for deferred/lazy-loaded tools</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td>Bash</td><td>Execute shell commands (with timeout and output cap)</td></tr>
+    <tr><td>Monitor</td><td>Stream background task output in real-time</td></tr>
+  </tbody>
+</table>
 
-  <h2>Browser &amp; Automation</h2>
-  <table>
+<h2 id="web">Web Tools</h2>
+<table>
+  <thead>
     <tr><th>Tool</th><th>Description</th></tr>
-    <tr><td><code>Browser</code> (BrowserTool)</td><td>Stealth Playwright browser — navigate, click, type, screenshot, extract, fill forms, tab management (list_tabs, close_tab, switch_tab)</td></tr>
-    <tr><td><code>ComputerUse</code> (ComputerUseTool)</td><td>Windows-only computer use automation (feature-gated: ENABLE_COMPUTER_USE)</td></tr>
-	    <tr><td><code>BrowserAgent</code> (BrowserAgentTool)</td><td>Autonomous web agent with vision (screenshot) and text (accessibility tree) modes via Playwright. Multi-step AI planning, anti-bot stealth, CAPTCHA detection, tab management.</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td>WebSearch</td><td>Web search with domain filtering</td></tr>
+    <tr><td>WebFetch</td><td>Fetch and analyze URL content</td></tr>
+    <tr><td>Browser</td><td>Stealth Playwright browser (navigate, click, fill, screenshot, etc.)</td></tr>
+  </tbody>
+</table>
 
-  <h2>Agent &amp; Task Management</h2>
-  <table>
+<h2 id="git">Git &amp; PR Tools</h2>
+<table>
+  <thead>
     <tr><th>Tool</th><th>Description</th></tr>
-    <tr><td><code>Skill</code> (SkillTool)</td><td>Invoke skills and prompt-type commands by name</td></tr>
-    <tr><td><code>AskUserQuestion</code> (AskUserQuestionTool)</td><td>Ask the user interactive questions during execution</td></tr>
-    <tr><td><code>SendMessage</code> (SendMessageTool)</td><td>Send messages between agents in coordinator mode</td></tr>
-    <tr><td><code>EnterPlanMode</code> (EnterPlanModeTool)</td><td>Enter structured plan mode for complex tasks</td></tr>
-    <tr><td><code>ExitPlanMode</code> (ExitPlanModeV2Tool)</td><td>Exit plan mode and proceed with implementation</td></tr>
-    <tr><td><code>EnterWorktree / ExitWorktree</code></td><td>Create/exit isolated git worktrees (feature-gated)</td></tr>
-    <tr><td><code>TaskCreate / TaskGet / TaskUpdate / TaskList</code></td><td>Structured task tracking (V2 todo system)</td></tr>
-    <tr><td><code>TodoWrite</code> (TodoWriteTool)</td><td>Write todo items for task tracking</td></tr>
-    <tr><td><code>Config</code> (ConfigTool)</td><td>Configuration management (ant-only)</td></tr>
-    <tr><td><code>Brief</code> (BriefTool)</td><td>Generate brief summaries</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td>PR</td><td>Full PR lifecycle (create, list, view, review, merge, status)</td></tr>
+  </tbody>
+</table>
 
-  <h2>Scheduled Tasks</h2>
-  <p>Scheduled tasks can be created from the interactive <code>/task</code> form. The form collects a name, project, schedule type, prompt, and storage mode, then creates the matching cron task through the same scheduling runtime used by <code>CronCreate</code>, <code>CronList</code>, and <code>CronDelete</code>.</p>
-
-  <table>
-    <tr><th>User action</th><th>Behavior</th></tr>
-    <tr><td><code>/task</code></td><td>Open the interactive scheduled task form</td></tr>
-    <tr><td>Select <code>Daily</code> around <code>09:00</code></td><td>Create a recurring daily task</td></tr>
-    <tr><td>Select <code>Weekdays</code> around <code>09:00</code></td><td>Create a weekday cron such as <code>0 9 * * 1-5</code></td></tr>
-    <tr><td>Select <code>In N minutes</code> with <code>10</code></td><td>Create a one-shot reminder</td></tr>
-    <tr><td>Select <code>Custom cron</code></td><td>Use a standard 5-field cron expression</td></tr>
-    <tr><td><code>/task scheduled</code></td><td>Open the same form explicitly</td></tr>
-  </table>
-
-  <ul>
-    <li><strong>Durable</strong> storage persists tasks to <code>.clew/scheduled_tasks.json</code> across sessions.</li>
-    <li><strong>Session-only</strong> storage keeps tasks in memory for the current session only.</li>
-    <li>Recurring tasks auto-expire after 30 days unless they are system-created permanent tasks.</li>
-    <li>One-shot tasks auto-delete after firing.</li>
-    <li>Natural language scheduling can still use the model-facing cron tools directly.</li>
-  </ul>
-
-  <pre><code>/task
-Name: Server status
-Schedule: Daily
-Time: 20:00
-Prompt: Check the server status
-Storage: Durable</code></pre>
-
-  <h2>MCP (Model Context Protocol)</h2>
-  <table>
+<h2 id="data">Data Tools</h2>
+<table>
+  <thead>
     <tr><th>Tool</th><th>Description</th></tr>
-    <tr><td><code>ListMcpResources</code> (ListMcpResourcesTool)</td><td>List available resources from connected MCP servers</td></tr>
-    <tr><td><code>ReadMcpResource</code> (ReadMcpResourceTool)</td><td>Read resources exposed by MCP servers</td></tr>
-    <tr><td>MCP-provided tools</td><td>Dynamically loaded tools from MCP servers (filesystem, database, APIs)</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td>JsonPath</td><td>Query, validate, format, minify JSON</td></tr>
+  </tbody>
+</table>
 
-  <h2>Feature-Gated Tools</h2>
-  <table>
-    <tr><th>Tool</th><th>Flag</th><th>Description</th></tr>
-    <tr><td><code>LSP</code> (LSPTool)</td><td><code>ENABLE_LSP_TOOL=1</code></td><td>Language Server Protocol integration</td></tr>
-    <tr><td><code>ComputerUse</code></td><td><code>ENABLE_COMPUTER_USE=1</code> (Win)</td><td>Windows GUI automation</td></tr>
-    <tr><td><code>ToolSearch</code></td><td><code>STATSIG</code> feature</td><td>Deferred/lazy-loaded tool discovery</td></tr>
-    <tr><td><code>EnterWorktree / ExitWorktree</code></td><td>Worktree mode</td><td>Git worktree isolation</td></tr>
-    <tr><td><code>TeamCreate / TeamDelete / RequestShutdown</code></td><td>Agent swarms</td><td>Multi-agent team management</td></tr>
-    <tr><td><code>SubscribePrActivity / UnsubscribePrActivity</code></td><td>Agent swarms</td><td>PR activity monitoring</td></tr>
-    <tr><td><code>CronCreate / CronDelete / CronList</code></td><td><code>AGENT_TRIGGERS</code></td><td>Scheduled task triggers</td></tr>
-    <tr><td><code>PushNotification</code></td><td><code>KAIROS</code></td><td>Push notification support</td></tr>
-  </table>
+<h2 id="mesh">Mesh Networking Tools</h2>
+<p>15 LAN coordination tools available for agent-to-agent communication:</p>
+<table>
+  <thead>
+    <tr><th>Tool</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>mesh_discover</td><td>Scan LAN for Clew instances</td></tr>
+    <tr><td>mesh_run</td><td>Execute shell command on a remote peer</td></tr>
+    <tr><td>mesh_spawn</td><td>Spawn a new local peer Clew instance</td></tr>
+    <tr><td>mesh_share</td><td>Advertise this instance as a worker</td></tr>
+    <tr><td>mesh_join</td><td>Connect to a remote peer</td></tr>
+    <tr><td>mesh_ping</td><td>Check if a peer is online</td></tr>
+    <tr><td>mesh_broadcast</td><td>Send task to all connected peers</td></tr>
+    <tr><td>mesh_send_message</td><td>Send a chat message to a peer</td></tr>
+    <tr><td>mesh_list_roles</td><td>List all peers with roles</td></tr>
+    <tr><td>mesh_list_messages</td><td>List chat history with a peer</td></tr>
+    <tr><td>mesh_set_name</td><td>Assign a custom name to a peer</td></tr>
+    <tr><td>mesh_set_role</td><td>Assign a role to a peer</td></tr>
+    <tr><td>mesh_disconnect</td><td>Remove a peer connection</td></tr>
+    <tr><td>mesh_info</td><td>Show detailed peer information</td></tr>
+    <tr><td>mesh_help</td><td>Mesh tool reference</td></tr>
+  </tbody>
+</table>
 
-  <h2>Tool Safety &amp; Permissions</h2>
-  <p>Each tool declares:</p>
-  <ul>
-    <li><strong>isEnabled()</strong> — Whether the tool is available in the current build</li>
-    <li><strong>isConcurrencySafe()</strong> — Can run in parallel with other tools</li>
-    <li><strong>isReadOnly()</strong> — Does not modify filesystem</li>
-    <li><strong>isDestructive()</strong> — Performs irreversible operations</li>
-    <li><strong>checkPermissions()</strong> — Tool-specific permission logic</li>
-    <li><strong>validateInput()</strong> — Input validation before execution</li>
-    <li><strong>maxResultSizeChars</strong> — Max result size before disk persistence</li>
-  </ul>
+<h2 id="mcp-tools">MCP Tools</h2>
+<table>
+  <thead>
+    <tr><th>Tool</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>ListMcpResourcesTool</td><td>List available MCP resources</td></tr>
+    <tr><td>ReadMcpResourceTool</td><td>Read a specific MCP resource</td></tr>
+  </tbody>
+</table>
 
-  <p>MCP tools from external servers are merged into the tool pool at runtime via <code>assembleToolPool()</code>. Tools are filtered by deny rules from the permission context.</p>
+<h2 id="process">Process Mesh Tools</h2>
+<table>
+  <thead>
+    <tr><th>Tool</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>process_mesh</td><td>Run a local process-backed AI worker (Codex exec/pty)</td></tr>
+  </tbody>
+</table>
 
-  <div class="callout callout-info">
-    <strong>CLEW_CODE_SIMPLE mode</strong>
-    Setting <code>CLEW_CODE_SIMPLE=1</code> or using <code>--bare</code> limits tools to a minimal set: <code>Bash</code>, <code>Read</code>, <code>Edit</code>.
+<h2 id="task">Task &amp; Planning Tools</h2>
+<table>
+  <thead>
+    <tr><th>Tool</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>TaskCreate</td><td>Create a structured task</td></tr>
+    <tr><td>TaskUpdate</td><td>Update task status</td></tr>
+    <tr><td>TaskList</td><td>List all tasks</td></tr>
+    <tr><td>TaskGet</td><td>Get task details</td></tr>
+    <tr><td>TaskStop</td><td>Stop a running task</td></tr>
+    <tr><td>EnterPlanMode</td><td>Enter full-access planning mode</td></tr>
+    <tr><td>ExitPlanMode</td><td>Exit planning mode with approval</td></tr>
+    <tr><td>EnterWorktree</td><td>Create and enter an isolated worktree</td></tr>
+    <tr><td>ExitWorktree</td><td>Exit and clean up a worktree</td></tr>
+  </tbody>
+</table>
+
+<h2 id="voice">Voice Tools</h2>
+<table>
+  <thead>
+    <tr><th>Tool</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Voice tools</td><td>Voice recording, transcription (Whisper), session management</td></tr>
+  </tbody>
+</table>
+
+<h2 id="skill">Skill Tools</h2>
+<table>
+  <thead>
+    <tr><th>Tool</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Skill</td><td>Execute a skill within the conversation</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
   </div>
+</div>
 
-  <footer class="footer">
-    <span>Clew Code 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
 </div>
 </div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-
-

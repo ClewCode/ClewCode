@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contributing — Clew Code</title>
+<meta name="description" content="How to contribute to Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="header"></header>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
+
+<div class="content-wrap">
+<div class="content">
+
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Contributing</span></div>
+
+<h1>Contributing</h1>
+<p class="sub">Thank you for your interest in contributing to Clew Code.</p>
+
+<h2 id="scope">Scope of Contributions</h2>
+<p>Contributions should be limited to material you have the right to submit and license.</p>
+<p><strong>Do not contribute:</strong></p>
+<ul>
+  <li>Proprietary source code</li>
+  <li>Leaked or copied code</li>
+  <li>Private documentation</li>
+  <li>Credentials, API keys, tokens, or secrets</li>
+  <li>Material copied from Anthropic's proprietary products or private services</li>
+  <li>Code that violates third-party licenses or terms</li>
+</ul>
+
+<h2 id="good-first-issues">Good First Issues</h2>
+<ul>
+  <li>Add a new provider adapter in <code>src/services/ai/</code></li>
+  <li>Write tests for untested tools</li>
+  <li>Fix docs, add examples</li>
+  <li>Build a plugin or MCP server</li>
+  <li>Improve Windows support</li>
+</ul>
+
+<h2 id="development">Development Setup</h2>
+<h3>Prerequisites</h3>
+<ul>
+  <li>Node.js >= 18.0.0</li>
+  <li>Bun >= 1.0.0</li>
+  <li>Git</li>
+</ul>
+
+<h3>Getting Started</h3>
+<pre><code class="language-bash">git clone https://github.com/ClewCode/ClewCode.git
+cd ClewCode
+bun install
+bun run build
+bun run start
+</code></pre>
+
+<h3>Development Commands</h3>
+<pre><code class="language-bash">bun run dev              # Live reload with tsx
+bun run build            # Build to dist/
+bun test                 # Run tests (Vitest)
+bun x tsc --noEmit       # Type-check
+bun run check:ci         # Full CI check (lint + test + typecheck)
+</code></pre>
+
+<h3>Code Style</h3>
+<p>This project uses <strong>Biome</strong> for formatting and linting:</p>
+<pre><code class="language-bash">bun run format           # Format code
+bun run lint             # Lint code
+bun run check            # Full check with auto-fix
+</code></pre>
+
+<h2 id="ci">CI Pipeline</h2>
+<ul>
+  <li>Pushing a <code>v*</code> tag triggers the release workflow</li>
+  <li>CI runs: typecheck → build → GitHub Release → npm publish</li>
+</ul>
+
+<h2 id="license">License</h2>
+<p>Contributor-authored modifications and original additions may be licensed under the terms described in <code>LICENSE.md</code>. Read <code>LICENSE.md</code> and <code>SECURITY.md</code> before contributing.</p>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

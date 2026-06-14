@@ -1,147 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Configuration — Clew</title>
-  <meta name="description" content="Comprehensive configuration guide for Clew — CLI flags, environment variables, settings file, and in-session commands.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuration — Clew Code</title>
+<meta name="description" href="Configure Clew Code via settings.json, environment variables, and CLI flags.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Configuration</span></div>
-  <h1>Configuration</h1>
-  <p class="section-subtitle">Clew is configured through CLI flags (Commander.js), environment variables, a JSON settings file (validated with Zod), and in-session slash commands.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <h2>CLI Flags</h2>
-  <p>Defined in <code>src/main.tsx</code> with Commander.js <code>.option()</code> and <code>.addOption()</code>:</p>
-  <table>
+<div class="content-wrap">
+<div class="content">
+
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Configuration</span></div>
+
+<h1>Configuration</h1>
+
+<h2 id="settings">settings.json</h2>
+<p>Shared settings live in <code>.claude/settings.json</code> (checked into the repo) and private settings live in <code>.claude/settings.local.json</code> (gitignored).</p>
+<pre><code class="language-json">{
+  "permission": "default",
+  "provider": "openai",
+  "model": "gpt-5.5",
+  "theme": "dark",
+  "autoUpdate": true
+}
+</code></pre>
+
+<h2 id="env">Environment Variables</h2>
+<p>Set provider API keys as environment variables:</p>
+<pre><code class="language-bash">export ANTHROPIC_API_KEY=sk-ant-...
+export OPENAI_API_KEY=sk-...
+export GOOGLE_API_KEY=...
+export DEEPSEEK_API_KEY=sk-...
+export GROQ_API_KEY=gsk_...
+export MISTRAL_API_KEY=...
+export OPENROUTER_API_KEY=...
+export OLLAMA_HOST=http://localhost:11434
+</code></pre>
+<p>The app also reads from <code>.env</code> files in the project root.</p>
+
+<h2 id="cli-flags">CLI Flags</h2>
+<table>
+  <thead>
     <tr><th>Flag</th><th>Description</th></tr>
-    <tr><td><code>-p, --print</code></td><td>Print response and exit (useful for pipes). Skips workspace trust dialog.</td></tr>
-    <tr><td><code>--bare</code></td><td>Minimal mode: skip hooks, LSP, plugins, attribution, auto-memory, keychain reads, CLEW.md discovery. Sets CLEW_CODE_SIMPLE=1.</td></tr>
-    <tr><td><code>-d, --debug [filter]</code></td><td>Enable debug mode with optional category filtering (e.g., "api,hooks" or "!1p,!file")</td></tr>
-    <tr><td><code>--debug-file &lt;path&gt;</code></td><td>Write debug logs to a file</td></tr>
-    <tr><td><code>--verbose</code></td><td>Override verbose mode setting from config</td></tr>
-    <tr><td><code>--model &lt;model&gt;</code></td><td>Model for the current session (alias or full ID)</td></tr>
-    <tr><td><code>--effort &lt;level&gt;</code></td><td>Effort level: low, medium, high, max</td></tr>
-    <tr><td><code>--agent &lt;agent&gt;</code></td><td>Agent for the current session</td></tr>
-    <tr><td><code>--permission-mode &lt;mode&gt;</code></td><td>Permission mode (default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk)</td></tr>
-    <tr><td><code>--dangerously-skip-permissions</code></td><td>Bypass all permission checks (sandbox only)</td></tr>
-    <tr><td><code>--allow-dangerously-skip-permissions</code></td><td>Enable bypass as an option without enabling by default</td></tr>
-    <tr><td><code>--allowedTools, --allowed-tools</code></td><td>Comma/space-separated tool names to allow (e.g., "Bash(git:*) Edit")</td></tr>
-    <tr><td><code>--disallowedTools, --disallowed-tools</code></td><td>Comma/space-separated tool names to deny</td></tr>
-    <tr><td><code>--tools &lt;tools...&gt;</code></td><td>Specify available tools from built-in set</td></tr>
-    <tr><td><code>--mcp-config &lt;configs...&gt;</code></td><td>Load MCP servers from JSON files or strings</td></tr>
-    <tr><td><code>--strict-mcp-config</code></td><td>Only use MCP servers from --mcp-config</td></tr>
-    <tr><td><code>--plugin-dir &lt;path&gt;</code></td><td>Load plugins from a directory (repeatable)</td></tr>
-    <tr><td><code>--settings &lt;file-or-json&gt;</code></td><td>Path to a settings JSON file or JSON string</td></tr>
-    <tr><td><code>--add-dir &lt;directories...&gt;</code></td><td>Additional directories to allow tool access</td></tr>
-    <tr><td><code>--system-prompt &lt;prompt&gt;</code></td><td>Custom system prompt</td></tr>
-    <tr><td><code>--system-prompt-file &lt;file&gt;</code></td><td>Read system prompt from a file</td></tr>
-    <tr><td><code>--append-system-prompt &lt;prompt&gt;</code></td><td>Append to default system prompt</td></tr>
-    <tr><td><code>--continue, -c</code></td><td>Continue the most recent conversation</td></tr>
-    <tr><td><code>--resume, -r [value]</code></td><td>Resume a conversation by session ID or picker</td></tr>
-    <tr><td><code>--fork-session</code></td><td>When resuming, create a new session ID</td></tr>
-    <tr><td><code>--session-id &lt;uuid&gt;</code></td><td>Use a specific session ID</td></tr>
-    <tr><td><code>--name, -n &lt;name&gt;</code></td><td>Display name for this session</td></tr>
-    <tr><td><code>--agents &lt;json&gt;</code></td><td>JSON defining custom agents</td></tr>
-    <tr><td><code>--output-format &lt;format&gt;</code></td><td>text, json, or stream-json (with --print)</td></tr>
-    <tr><td><code>--input-format &lt;format&gt;</code></td><td>text or stream-json (with --print)</td></tr>
-    <tr><td><code>--json-schema &lt;schema&gt;</code></td><td>JSON Schema for structured output validation</td></tr>
-    <tr><td><code>--thinking &lt;mode&gt;</code></td><td>Thinking mode: enabled, adaptive, disabled</td></tr>
-    <tr><td><code>--max-turns &lt;turns&gt;</code></td><td>Max agentic turns in non-interactive mode</td></tr>
-    <tr><td><code>--max-budget-usd &lt;amount&gt;</code></td><td>Max API spend (print mode only)</td></tr>
-    <tr><td><code>--fallback-model &lt;model&gt;</code></td><td>Fallback when primary model is overloaded</td></tr>
-    <tr><td><code>--betas &lt;betas...&gt;</code></td><td>Beta headers for API requests</td></tr>
-    <tr><td><code>--ide</code></td><td>Auto-connect to IDE on startup</td></tr>
-    <tr><td><code>--chrome / --no-chrome</code></td><td>Enable/disable Chrome integration</td></tr>
-    <tr><td><code>--computer</code></td><td>Enable Computer Use tool (Windows only)</td></tr>
-    <tr><td><code>--no-session-persistence</code></td><td>Disable session save to disk (print mode only)</td></tr>
-    <tr><td><code>--disable-slash-commands</code></td><td>Disable all skills</td></tr>
-    <tr><td><code>--prefill &lt;text&gt;</code></td><td>Pre-fill prompt input without submitting</td></tr>
-    <tr><td><code>--file &lt;specs...&gt;</code></td><td>Download file resources at startup</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td><code>-p, --prompt</code></td><td>One-shot mode: run a prompt and exit</td></tr>
+    <tr><td><code>--resume &lt;id&gt;</code></td><td>Resume a previous session (use <code>last</code> for most recent)</td></tr>
+    <tr><td><code>--version</code></td><td>Print version and exit</td></tr>
+  </tbody>
+</table>
 
-  <h2>Environment Variables</h2>
+<h2 id="permission">Permission Mode</h2>
+<p>Set the permission mode in settings or switch at runtime:</p>
+<pre><code class="language-bash">❯ /permissions plan    # full-access planning mode
+❯ /permissions auto    # auto-approve safe tools
+</code></pre>
+<p>See <a href="permission-model.html">Permission Model</a> for all modes.</p>
 
-  <h3>Provider API Keys</h3>
-  <p>29 providers — set one or more. See <a href="providers.html">Providers page</a> for the full list.</p>
+<h2 id="mcp">MCP Configuration</h2>
+<p>MCP servers are configured in <code>.mcp.json</code> at the project root:</p>
+<pre><code class="language-json">{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    }
+  }
+}
+</code></pre>
+<p>See <a href="mcp.html">MCP docs</a> for details.</p>
 
-  <h3>Runtime &amp; Feature Flags</h3>
-  <table>
-    <tr><th>Variable</th><th>Purpose</th></tr>
-    <tr><td><code>DEBUG</code></td><td>Debug logging with optional category filter</td></tr>
-    <tr><td><code>NO_COLOR</code> / <code>FORCE_COLOR</code></td><td>Terminal color control</td></tr>
-    <tr><td><code>BRIDGE_MODE=1</code></td><td>Enable WebSocket bridge for remote control</td></tr>
-    <tr><td><code>VOICE_MODE=1</code></td><td>Enable voice mode</td></tr>
-    <tr><td><code>KAIROS=1</code></td><td>Enable proactive/brief/assistant features</td></tr>
-    <tr><td><code>ENABLE_LSP_TOOL=1</code></td><td>Enable LSP tool integration</td></tr>
-    <tr><td><code>ENABLE_COMPUTER_USE=1</code></td><td>Enable Computer Use tool (Windows)</td></tr>
-    <tr><td><code>CLEWCODE_NO_RESPAWN</code></td><td>Disable process respawn</td></tr>
-    <tr><td><code>CODE_INDEX=1</code></td><td>Enable fuzzy code search tool</td></tr>
-    <tr><td><code>AGENT_TRIGGERS=1</code></td><td>Enable autonomous scheduled task triggers</td></tr>
-    <tr><td><code>SENTRY_DSN</code></td><td>Enable Sentry error reporting (opt-in)</td></tr>
-    <tr><td><code>TAVILY_API_KEY</code></td><td>Tavily web search (highest priority)</td></tr>
-    <tr><td><code>BRAVE_API_KEY</code></td><td>Brave web search</td></tr>
-    <tr><td><code>SERPER_API_KEY</code></td><td>Serper web search</td></tr>
-    <tr><td><code>SEARXNG_INSTANCE_URL</code></td><td>Self-hosted SearXNG URL</td></tr>
-  </table>
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
 
-  <h2>Settings File</h2>
-  <p>Config file at <code>~/.clew/settings.json</code> (TypeBox-validated). Stores:</p>
-  <ul>
-    <li>Default provider and model</li>
-    <li>Permission mode and rules</li>
-    <li>Workspace directories</li>
-    <li>Plugin and MCP server configs</li>
-    <li>Theme and UI preferences</li>
-    <li>Session persistence settings</li>
-  </ul>
-
-  <h2>Config Paths</h2>
-  <table>
-    <tr><th>Path</th><th>Content</th></tr>
-    <tr><td><code>~/.clew/settings.json</code></td><td>Main configuration (TypeBox schema)</td></tr>
-    <tr><td><code>~/.clew/credentials/</code></td><td>Stored credentials</td></tr>
-    <tr><td><code>~/.clew/sessions/</code></td><td>Session persistence</td></tr>
-    <tr><td><code>~/.clew/logs/</code></td><td>Debug and error logs</td></tr>
-    <tr><td><code>~/.clew/skills/</code></td><td>User-installed skills</td></tr>
-    <tr><td><code>.clew/skills/</code></td><td>Project-level skills</td></tr>
-  </table>
-
-  <h2>In-Session Configuration</h2>
-  <pre><code>/config      # Open config panel (aliases: settings)
-/theme       # Change the theme
-/color       # Set prompt bar color
-/keybindings # Edit keybindings
-/permissions # Manage permission rules</code></pre>
-
-  <h2>Build Configuration</h2>
-  <p>Build via <code>bun run build</code> with compile-time feature defines:</p>
-  <pre><code># In src/main.tsx:
---define.TRANSCRIPT_CLASSIFIER=true  # Enables auto permission mode
---define.CHICAGO_MCP=true            # Enables Chicago MCP features
---define.VOICE_MODE=true             # Enables voice input support</code></pre>
-
-  <footer class="footer">
-    <span>Clew Code 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
 </div>
 </div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-
-

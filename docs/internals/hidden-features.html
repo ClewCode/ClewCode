@@ -1,144 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hidden Features & Internals — Clew</title>
-  <meta name="description" content="Feature-gated commands, internal-only tools, and beta flags in Clew.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hidden Features — Clew Code</title>
+<meta name="description" content="Undocumented features and power-user tips for Clew Code.">
+<link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
 <header class="header"></header>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-<div class="app">
-  <aside class="sidebar" id="sidebar"></aside>
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-  <div class="content-wrap">
-    <main class="content">
-      <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><a href="../index.html#features">Internals</a><span class="sep">/</span><span>Hidden Features</span></div>
-      <h1>Hidden Features &amp; Internals</h1>
-      <p class="section-subtitle">Feature-gated commands, internal-only tools, and beta flags — not visible in the standard help menu.</p>
+<div class="content-wrap">
+<div class="content">
 
-      <div class="callout callout-warn">
-        <strong>Internal / Beta</strong>
-        These features may change without notice. Most require specific environment variables or build-time feature flags.
-      </div>
+<div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><span class="current">Hidden Features</span></div>
 
-      <h2>Feature-Gated Commands</h2>
-      <p>From <code>src/commands.ts</code> — enabled via environment variables:</p>
-      <table>
-        <tr><th>Command</th><th>Env Variable</th><th>Description</th></tr>
-        <tr><td><code>/bridge</code></td><td><code>BRIDGE_MODE=1</code></td><td>WebSocket remote control and collaboration</td></tr>
-        <tr><td><code>/voice</code></td><td><code>VOICE_MODE=1</code></td><td>Toggle voice mode</td></tr>
-        <tr><td><code>/brief</code></td><td><code>KAIROS=1</code></td><td>Brief command for quick context</td></tr>
-        <tr><td><code>/assistant</code></td><td><code>KAIROS=1</code></td><td>Assistant mode with proactive behavior</td></tr>
-      </table>
+<h1>Hidden Features</h1>
+<p class="sub">Power-user features and undocumented capabilities.</p>
 
-      <h2>Internal-Only Commands</h2>
-      <p>Defined in <code>INTERNAL_ONLY_COMMANDS</code> in <code>src/commands.ts</code>:</p>
-      <table>
-        <tr><th>Command</th><th>Description</th></tr>
-        <tr><td><code>/backfill-sessions</code></td><td>Backfill session data</td></tr>
-        <tr><td><code>/break-cache</code></td><td>Break internal caches</td></tr>
-        <tr><td><code>/bughunter</code></td><td>Automated bug hunting workflow</td></tr>
-        <tr><td><code>/commit-push-pr</code></td><td>Commit, push, and PR creation</td></tr>
-        <tr><td><code>/ctx-viz</code></td><td>Context visualization</td></tr>
-        <tr><td><code>/init-verifiers</code></td><td>Initialize verifiers</td></tr>
-        <tr><td><code>/issue</code></td><td>Issue management</td></tr>
-        <tr><td><code>/mock-limits</code></td><td>Mock usage limits for testing</td></tr>
-        <tr><td><code>/reset-limits</code></td><td>Reset usage limits</td></tr>
-        <tr><td><code>/ultraplan</code></td><td>Extended plan mode</td></tr>
-        <tr><td><code>/version</code></td><td>Show version</td></tr>
-        <tr><td><code>/bridge-kick</code></td><td>Bridge session management</td></tr>
-        <tr><td><code>/onboarding</code></td><td>Interactive onboarding wizard</td></tr>
-        <tr><td><code>/team-onboarding</code></td><td>Generate teammate ramp-up guide</td></tr>
-        <tr><td><code>/share</code></td><td>Share session</td></tr>
-        <tr><td><code>/summary</code></td><td>Summarize conversation</td></tr>
-        <tr><td><code>/teleport</code></td><td>Teleport session</td></tr>
-        <tr><td><code>/ant-trace</code></td><td>Anthropic-internal tracing</td></tr>
-        <tr><td><code>/perf-issue</code></td><td>Performance issue reporting</td></tr>
-        <tr><td><code>/env</code></td><td>Environment inspection</td></tr>
-        <tr><td><code>/oauth-refresh</code></td><td>OAuth token refresh</td></tr>
-        <tr><td><code>/debug-tool-call</code></td><td>Tool call debugging</td></tr>
-        <tr><td><code>/autofix-pr</code></td><td>Autofix PR workflow</td></tr>
-      </table>
+<h2 id="thinkback">Thinkback</h2>
+<p>Record and replay session interactions for debugging and analysis:</p>
+<pre><code class="language-bash">❯ /thinkback          # record a session
+❯ /thinkback-play     # replay a recorded session
+</code></pre>
 
-      <h2>Feature-Gated Tools</h2>
-      <table>
-        <tr><th>Tool</th><th>Flag / Feature</th></tr>
-        <tr><td><code>LSPTool</code></td><td><code>ENABLE_LSP_TOOL=1</code></td></tr>
-        <tr><td><code>ComputerUseTool</code></td><td><code>ENABLE_COMPUTER_USE=1</code> (Windows)</td></tr>
-        <tr><td><code>ToolSearchTool</code></td><td><code>CODE_INDEX</code> feature flag</td></tr>
-        <tr><td><code>EnterWorktreeTool / ExitWorktreeTool</code></td><td>Worktree mode enabled</td></tr>
-        <tr><td><code>PowerShellTool</code></td><td>PowerShell tool enabled in settings</td></tr>
-        <tr><td><code>CronCreateTool / CronDeleteTool / CronListTool</code></td><td><code>AGENT_TRIGGERS</code> feature</td></tr>
-        <tr><td><code>PushNotificationTool</code></td><td><code>KAIROS</code> feature</td></tr>
-        <tr><td><code>REPLTool</code></td><td><code>USER_TYPE=ant</code></td></tr>
-        <tr><td><code>ConfigTool / TungstenTool</code></td><td><code>USER_TYPE=ant</code></td></tr>
-      </table>
+<h2 id="goal">Goal Tracking</h2>
+<p>Set and track development goals across sessions:</p>
+<pre><code class="language-bash">❯ /goal set "ship v0.3 by Friday"
+❯ /goal status
+❯ /goal list
+</code></pre>
 
-      <h2>Build-Time Feature Flags</h2>
-      <p>Set via <code>--define.FLAG_NAME=true</code> in <code>package.json</code> scripts. Tree-shaken out of builds that don't pass the flag.</p>
-      <table>
-        <tr><th>Flag</th><th>Description</th></tr>
-        <tr><td><code>TRANSCRIPT_CLASSIFIER</code></td><td>Enables &quot;auto&quot; permission mode where Claude uses a transcript-based classifier to decide which tools to auto-approve. Used in dev and release builds.</td></tr>
-        <tr><td><code>CHICAGO_MCP</code></td><td>Enables <strong>Computer Use</strong> � Claude controlling mouse, keyboard, and screen via the <code>@ant/computer-use-mcp</code> protocol. Codename comes from Anthropic's Chicago office. Can also be unlocked at runtime with <code>ENABLE_COMPUTER_USE=1</code>.</td></tr>
-        <tr><td><code>VOICE_MODE</code></td><td>Enables voice input/output support. Present in all build profiles (dev, start, release).</td></tr>
-      </table>
+<h2 id="btw">BTW (By The Way)</h2>
+<p>Leave contextual notes and reminders for future sessions:</p>
+<pre><code class="language-bash">❯ /btw "remember to update the CI config"
+</code></pre>
 
-      <h2>Runtime Features (No Compile-Time Gate)</h2>
-      <p>These features are always compiled in. They are enabled and configured entirely at runtime through environment variables or slash commands � no build-time flag needed.</p>
+<h2 id="desktop-handoff">Desktop Handoff / Teleport</h2>
+<p>Move a running session between machines:</p>
+<pre><code class="language-bash">❯ /remote-setup       # prepare for handoff
+❯ /remote-env         # transfer environment
+</code></pre>
 
-      <h3>Clew Gateway (AI Provider Proxy)</h3>
-      <p>A self-hosted AI provider proxy. Run your own gateway instance (e.g. on Cloudflare Workers) and route all LLM calls through it for provider fallback, model routing, and usage tracking across multiple upstream providers.</p>
-      <table>
-        <tr><th>Env Variable</th><th>Description</th></tr>
-        <tr><td><code>CLEW_GATEWAY_URL</code></td><td>Gateway base URL (default: <code>http://localhost:8787/v1</code>)</td></tr>
-        <tr><td><code>CLEW_GATEWAY_KEY</code></td><td>Virtual API key (e.g. <code>clew_live_xxxxx</code>)</td></tr>
-        <tr><td><code>CLEW_MODEL</code></td><td>Optional default model alias (default: <code>clew-code</code>)</td></tr>
-      </table>
-      <p>Supports model listing, streaming, and returns metadata headers (<code>x-clew-provider</code>, <code>x-clew-fallback-used</code>, <code>x-clew-attempts</code>, <code>x-clew-fallback-chain</code>) for debugging. Select it like any other provider via <code>/model</code>.</p>
+<h2 id="passes">Passes</h2>
+<p>View pass/interaction history for the current session:</p>
+<pre><code class="language-bash">❯ /passes
+</code></pre>
 
-      <h3>Ultracode (Dynamic Workflows)</h3>
-      <p>A session-level mode that sets effort to <code>xhigh</code> and lets Claude autonomously decide to spawn dynamic workflows (parallel subtasks + adversarial verifiers) for complex prompts. Based on Anthropic's dynamic-workflows announcement (May 2026). The first workflow in a session shows a token-cost confirmation; subsequent ones run silently.</p>
-      <pre><code>/effort ultracode     # Enable via effort slider (interactive or direct)
-/ultracode on         # Enable ultracode mode for this session
-/ultracode off        # Disable ultracode mode
-/ultracode status     # Show current enabled/confirmed/count state
-/ultracode confirm    # Accept the first-run cost warning
-/ultracode reset      # Clear confirmation + workflow counter
-/ultracode run &lt;p&gt;    # Plan a dynamic workflow for prompt &lt;p&gt;</code></pre>
+<h2 id="recap">Recap</h2>
+<p>Generate a summary of the current session's key decisions and actions:</p>
+<pre><code class="language-bash">❯ /recap
+</code></pre>
 
-      <h2>Runtime Feature Detection</h2>
-      <p>Features are checked via <code>feature('FEATURE_NAME')</code> (compile-time) and <code>isEnvTruthy()</code> (runtime):</p>
-      <ul>
-        <li><code>PROACTIVE</code> / <code>KAIROS</code> — Proactive agent behavior</li>
-        <li><code>AGENT_TRIGGERS</code> — Scheduled and remote agent triggers</li>
-        <li><code>KAIROS_GITHUB_WEBHOOKS</code> — GitHub webhook subscriptions</li>
-        <li><code>KAIROS_PUSH_NOTIFICATION</code> — Push notification support</li>
-        <li><code>CONTEXT_COLLAPSE</code> — Context collapse inspection</li>
-        <li><code>MCP_SKILLS</code> — MCP-provided skills</li>
-        <li><code>CODE_INDEX</code> — Code indexing and search</li>
-        <li><code>COORDINATOR_MODE</code> — Multi-agent coordinator mode</li>
-      </ul>
+<h2 id="sandbox">Sandbox Toggle</h2>
+<p>Toggle sandbox mode for secure command execution:</p>
+<pre><code class="language-bash">❯ /sandbox on
+❯ /sandbox off
+</code></pre>
 
-      <footer class="footer">
-        <span>Clew Code 0.2.14 — Open Source</span>
-        <div class="footer-links">
-          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-        </div>
-      </footer>
-    </main>
-    <nav class="toc-sidebar"></nav>
+<h2 id="theme">Color Theme</h2>
+<p>Customize the terminal color theme:</p>
+<pre><code class="language-bash">❯ /theme              # interactive theme picker
+❯ /color              # set specific colors
+</code></pre>
+
+<h2 id="scroll-speed">Scroll Speed</h2>
+<p>Adjust terminal output scroll speed:</p>
+<pre><code class="language-bash">❯ /scroll-speed fast
+❯ /scroll-speed slow
+</code></pre>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
   </div>
 </div>
+
+</div>
+</div>
+
 <script src="../js/main.js"></script>
 </body>
 </html>
-
-

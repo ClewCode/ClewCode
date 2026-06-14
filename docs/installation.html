@@ -1,105 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Installation — Clew</title>
-  <meta name="description" content="Install Clew via npm, run from source, or use the prebuilt binary.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installation — Clew Code</title>
+<meta name="description" content="Install Clew Code via npm or build from source.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Installation</span></div>
-  <h1>Installation</h1>
-  <p class="section-subtitle">Clew runs on Windows, macOS, Linux, and WSL2. Runtime: Bun 1.3+.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <h2>Prerequisites</h2>
-  <ul>
-    <li><strong>Bun 1.3+</strong> — required runtime for both global installs and source builds</li>
-    <li>At least one AI provider API key</li>
-  </ul>
+<div class="content-wrap">
+<div class="content">
 
-  <h2>Via npm (global)</h2>
-  <pre><code>npm install -g clew-code
-clew
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Installation</span></div>
 
-# Verify
-clew --version</code></pre>
-  <p><strong>Important:</strong> the npm package installs the launcher only. You must install <a href="https://bun.sh">Bun</a> separately before running <code>clew</code>.</p>
+<h1>Installation</h1>
 
-  <h2>Via Bun (global)</h2>
-  <pre><code>bun install -g clew-code
-clew</code></pre>
+<h2 id="npm">Install via npm</h2>
+<pre><code class="language-bash">npm install -g clew-code
 
-  <h2>From Source</h2>
-  <pre><code>git clone https://github.com/ClewCode/ClewCode.git
+# Verify installation
+clew --version
+</code></pre>
+
+<h2 id="build">Build from Source</h2>
+<pre><code class="language-bash">git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 bun install
 bun run build
 bun run start
+</code></pre>
 
-# Development mode with watch
-bun run dev</code></pre>
+<h2 id="requirements">Requirements</h2>
+<table>
+  <thead>
+    <tr><th>Dependency</th><th>Minimum Version</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Bun</td><td>1.3+</td></tr>
+    <tr><td>Node.js</td><td>18+</td></tr>
+    <tr><td>Git</td><td>Any modern version</td></tr>
+    <tr><td>Provider API key</td><td>At least one (see <a href="providers.html">providers</a>)</td></tr>
+  </tbody>
+</table>
 
-  <p>Build output goes to <code>dist/</code>. The build uses Bun bundler with compile-time feature defines (<code>TRANSCRIPT_CLASSIFIER</code>, <code>CHICAGO_MCP</code>).</p>
+<h2 id="platform">Platform Notes</h2>
 
-  <h2>Platform-Specific Notes</h2>
+<h3>macOS</h3>
+<p>Works out of the box on both Apple Silicon and Intel Macs.</p>
 
-  <h3>Windows</h3>
-  <ul>
-    <li>Both cmd and PowerShell supported as shell targets</li>
-    <li>ripgrep bundled at <code>src/utils/vendor/ripgrep/x64-win32/rg.exe</code></li>
-    <li>WSL2 recommended for best experience</li>
-    <li>Windows argv normalization in <code>src/entry.ts</code></li>
-    <li>TTY polyfill for Ink compatibility in <code>src/main.tsx</code></li>
-  </ul>
+<h3>Linux</h3>
+<p>No special dependencies required.</p>
 
-  <h3>macOS</h3>
-  <ul>
-    <li>CLI-based usage with (clew)</li>
-    <li>Voice Wake and Talk Mode overlays</li>
-    <li>Keychain prefetch for faster OAuth startup</li>
-    <li>WebChat and debug tools available</li>
-  </ul>
+<h3>Windows</h3>
+<p>Requires Git Bash, WSL, or PowerShell. Some features (e.g., ComputerUse) are Windows-only.</p>
+<pre><code class="language-powershell">Remove-Item -Recurse -Force node_modules
+bun install
+bun run dev
+</code></pre>
 
-  <h3>Linux</h3>
-  <ul>
-    <li>Full support via terminal</li>
-    <li>Tailscale Serve/Funnel for remote gateway access</li>
-  </ul>
+<h2 id="verify">Verify Installation</h2>
+<pre><code class="language-bash">clew --version
+# Should print v0.2.21 or later
+</code></pre>
 
-  <h2>Release Channels</h2>
-  <table>
-    <tr><th>Channel</th><th>npm Tag</th><th>Description</th></tr>
-    <tr><td>stable</td><td><code>latest</code></td><td>Tagged releases (vYYYY.M.D)</td></tr>
-    <tr><td>beta</td><td><code>beta</code></td><td>Prereleases (vYYYY.M.D-beta.N)</td></tr>
-    <tr><td>dev</td><td><code>dev</code></td><td>Moving main branch</td></tr>
-  </table>
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
 
-  <h2>Verifying Installation</h2>
-  <pre><code>/doctor     # Run environment diagnostics
-/status     # Check version, model, account, API connectivity</code></pre>
-
-  <footer class="footer">
-    <span>Clew Code 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-      <a href="https://npmjs.com/package/clew-code">npm</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
 </div>
 </div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-
-

@@ -1,102 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Research & Memory — Clew</title>
-  <meta name="description" content="Deep research system and semantic memory — citation extraction, claim verification, dossier generation, cross-lingual memory search.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research &amp; Memory — Clew Code</title>
+<meta name="description" content="Persistent memory and research system in Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app">
-  <aside class="sidebar" id="sidebar"></aside>
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-  <div class="content-wrap">
-    <main class="content">
-      <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Research &amp; Memory</span></div>
-      <h1>Research &amp; Memory</h1>
-      <p class="section-subtitle">Clew provides a built-in deep research system and cross-session semantic memory — both designed to work with local files, web sources, and a persistent knowledge store.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-      <h2>Research System</h2>
-      <p>The research system lives in <code>src/research/</code> and supports deep, source-grounded research across local files, wiki content, and memory:</p>
-      <ul>
-        <li><strong>Citation extraction</strong> — Automatic extraction of citations from research sources</li>
-        <li><strong>Claim verification</strong> — Fact-check claims against multiple sources</li>
-        <li><strong>Dossier generation</strong> — Structured reports with source attribution</li>
-        <li><strong>Truth checking</strong> — Cross-reference claims for accuracy</li>
-        <li><strong>Source ranking</strong> — Prioritize authoritative sources</li>
-      </ul>
+<div class="content-wrap">
+<div class="content">
 
-      <h3>Research Commands</h3>
-      <table>
-        <tr><th>Command</th><th>Description</th></tr>
-        <tr><td><code>/research</code></td><td>Deep source-grounded research across local files, wiki, and memory</td></tr>
-      </table>
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Research &amp; Memory</span></div>
 
-      <h2>Memory System</h2>
-      <p>Clew has a <strong>two-tier memory system</strong>:</p>
+<h1>Research &amp; Memory</h1>
+<p class="sub">Clew Code learns from your sessions over time. The memory system persists knowledge, preferences, and project context across sessions.</p>
 
-      <h3>1. FTS5 Semantic Search (<code>src/memory/</code>)</h3>
-      <p>Cross-session persistent knowledge storage with SQLite FTS5 search:</p>
-      <ul>
-        <li><strong>SQLite FTS5 search</strong> — Find relevant memories using FTS5 similarity</li>
-        <li><strong>Cross-lingual</strong> — Search across languages using FTS5 indexing</li>
-        <li><strong>Token-aware chunking</strong> — 3000-token chunks with word-boundary splitting</li>
-        <li><strong>Secret redaction</strong> — Strips API keys and tokens before indexing</li>
-      </ul>
+<h2 id="auto-memory">Auto-Memory</h2>
+<p>Clew Code automatically captures lessons from edit and exec sessions, storing them in <code>.moocode/memory.md</code>. The system tracks:</p>
+<ul>
+  <li>Project conventions and patterns</li>
+  <li>User preferences and workflow choices</li>
+  <li>Frequently used commands and tools</li>
+  <li>Architectural decisions and their rationale</li>
+</ul>
 
-      <h3>2. Cross-Session Long-Term Memory (<code>src/services/longTermMemory/</code>)</h3>
-      <p>Session persistence with <strong>knowledge graph</strong> and <strong>experience system</strong>:</p>
-      <ul>
-        <li><strong>Knowledge Graph</strong> — Entities (session, decision, file, tag, model) with typed edges; multi-hop traversal via recursive CTE</li>
-        <li><strong>Experience System</strong> — XP, levels, streak bonuses, expertise profile, cold detection, correction learning</li>
-        <li><strong>Human-like consolidation</strong> — Recent=detail, old=weekly/monthly digests, patterns extracted</li>
-        <li><strong>Auto-inject</strong> — Previous session context auto-injected at session start</li>
-        <li><strong>Timeline</strong> — Chronological view with density stats</li>
-      </ul>
+<h2 id="ltm">Long-Term Memory</h2>
+<p>The long-term memory system uses SQLite (<code>~/.clew/projects/&lt;project&gt;/session-memory.db</code>) with a human-like consolidation model:</p>
 
-      <h3>Memory Commands</h3>
-      <table>
-        <tr><th>Command</th><th>Description</th></tr>
-        <tr><td><code>/memory save [summary]</code></td><td>Save current session to long-term memory + knowledge graph</td></tr>
-        <tr><td><code>/memory timeline</code></td><td>Show session history chronologically</td></tr>
-        <tr><td><code>/memory stats</code></td><td>Show memory density stats and activity chart</td></tr>
-        <tr><td><code>/memory xp</code></td><td>Show experience report, expertise profile, XP progress</td></tr>
-        <tr><td><code>/memory graph</code></td><td>Show knowledge graph stats and structure</td></tr>
-        <tr><td><code>/memory digest</code></td><td>Show consolidated weekly/monthly digests</td></tr>
-        <tr><td><code>/memory preview</code></td><td>Preview sessions ready for consolidation</td></tr>
-        <tr><td><code>/memory consolidate</code></td><td>Mark old sessions as consolidated</td></tr>
-        <tr><td><code>/memory search &lt;query&gt;</code></td><td>Search indexed memory facts using SQLite FTS5</td></tr>
-        <tr><td><code>/memory-search</code></td><td>Search memories using FTS5 (cross-lingual)</td></tr>
-      </table>
+<table>
+  <thead>
+    <tr><th>Age</th><th>Level</th><th>Detail</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>&lt; 7 days</td><td>Raw</td><td>Full session detail</td></tr>
+    <tr><td>1-4 weeks</td><td>Weekly digest</td><td>Summary + patterns</td></tr>
+    <tr><td>&gt; 1 month</td><td>Monthly digest</td><td>High-level trends</td></tr>
+    <tr><td>Ancient</td><td>Patterns only</td><td>Recurring topics preserved</td></tr>
+  </tbody>
+</table>
 
-      <h2>Architecture Files</h2>
-      <table>
-        <tr><th>Path</th><th>Role</th></tr>
-        <tr><td><code>src/research/</code></td><td>Deep research, dossier generation, truth checking, source ranking</td></tr>
-        <tr><td><code>src/memory/</code></td><td>SQLite FTS5 memory search (14 files, no embeddings)</td></tr>
-        <tr><td><code>src/services/longTermMemory/</code></td><td>Knowledge graph, experience system, consolidation, timeline, cross-session, auto-inject</td></tr>
-      </table>
+<h2 id="memory-commands">Memory Commands</h2>
+<pre><code class="language-bash">❯ /memory save            # save session summary
+❯ /memory timeline        # show chronological session history
+❯ /memory stats           # activity density chart
+❯ /memory digest          # weekly/monthly digests
+❯ /memory preview         # preview sessions ready for consolidation
+❯ /memory consolidate     # mark old sessions as consolidated
+❯ /memory search &lt;q&gt;     # search stored memory entries
+</code></pre>
 
-      <footer class="footer">
-        <span>Clew Code 0.2.14 — Open Source</span>
-        <div class="footer-links">
-          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-        </div>
-      </footer>
-    </main>
-    <nav class="toc-sidebar"></nav>
+<h2 id="research">Research System</h2>
+<p>The research system enables deep-dive investigations with persistent findings. Research results are indexed and searchable across sessions.</p>
+<pre><code class="language-bash">❯ /research start "topic"    # start a research session
+❯ /research list              # list all research topics
+❯ /research show &lt;id&gt;        # show research findings
+</code></pre>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
   </div>
 </div>
+
+</div>
+</div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-
-
-

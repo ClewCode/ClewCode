@@ -1,110 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Models — Clew</title>
-  <meta name="description" content="Model selection guide for Clew — how to pick, switch, and manage models across 29 providers.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Models — Clew Code</title>
+<meta name="description" href="Model configuration and selection in Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Models</span></div>
-  <h1>Models</h1>
-  <p class="section-subtitle">Clew supports 100+ models across 29 providers. Pick the right model for each task — from frontier reasoning to fast local inference.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <h2>Model Selection Guide</h2>
-  <table>
-    <tr><th>Workload</th><th>Recommended Models</th><th>Context</th><th>Notes</th></tr>
-    <tr><td>Complex architecture &amp; large edits</td><td>claude-opus-4-7, claude-sonnet-4-6, gpt-5.5, deepseek-v4-pro</td><td>1M tokens</td><td>Best tool calling, strong reasoning, largest context</td></tr>
-    <tr><td>Code review &amp; debugging</td><td>claude-sonnet-4-6, gpt-5.5, gemini-3.1-pro-preview</td><td>1M-2M tokens</td><td>Good instruction following, reliable output</td></tr>
-    <tr><td>Quick search &amp; summarization</td><td>claude-haiku-4-5, deepseek-v4-flash, mistral-small-4, groq/llama-3.3-70b</td><td>128K-200K</td><td>Fast, cost-effective, lower latency</td></tr>
-    <tr><td>Offline / air-gapped</td><td>ollama/llama4:70b, ollama/llama3.3</td><td>131K tokens</td><td>Fully local, no network needed</td></tr>
-    <tr><td>Cost-sensitive bulk</td><td>kilocode/kilo-auto/free, opencode-go/minimax-m2.7, groq/llama-3.1-8b</td><td>Varies</td><td>Free or minimal cost tiers available</td></tr>
-    <tr><td>Research &amp; reasoning</td><td>claude-opus-4-7, deepseek-v4-pro, gemini-3.1-pro-preview</td><td>1M-2M tokens</td><td>Deep reasoning, chain-of-thought</td></tr>
-    <tr><td>Vision / multimodal</td><td>claude-sonnet-4-6, gpt-5.5, gemini-3.1-pro-preview, deepseek-v4-flash</td><td>1M tokens</td><td>Image understanding, document analysis</td></tr>
-  </table>
+<div class="content-wrap">
+<div class="content">
 
-  <h2>Notable Models by Provider</h2>
-  <table>
-    <tr><th>Provider</th><th>Models Available</th></tr>
-    <tr><td>Anthropic</td><td>claude-opus-4-7 (1M ctx), claude-sonnet-4-6 (1M ctx, recommended), claude-haiku-4-5 (200K ctx, fast)</td></tr>
-    <tr><td>OpenAI</td><td>gpt-5.5 (1M ctx), gpt-5.4 (1M ctx), gpt-5.4-mini (fast)</td></tr>
-    <tr><td>Google</td><td>gemini-3.1-pro-preview (2M ctx), gemini-3.1-flash-lite (1M ctx, fast)</td></tr>
-    <tr><td>DeepSeek</td><td>deepseek-v4-pro (1M ctx, MoE), deepseek-v4-flash (1M ctx, fast MoE)</td></tr>
-    <tr><td>xAI</td><td>grok-4.3 (128K ctx)</td></tr>
-    <tr><td>Mistral</td><td>mistral-medium-3.5, mistral-small-4, mistral-large-3</td></tr>
-    <tr><td>Groq</td><td>llama-3.3-70b, llama-3.1-8b-instant (fast)</td></tr>
-    <tr><td>Ollama</td><td>llama4:70b (local), llama3.3 (local), qwen3.6-plus (local)</td></tr>
-    <tr><td>OpenCode</td><td>claude-opus-4-7, claude-sonnet-4-6, gpt-5.5, gemini-3.1-pro, kimi-k2.6</td></tr>
-    <tr><td>KiloCode</td><td>kilo-auto/free, kilo-auto/balanced, kilo-auto/frontier</td></tr>
-    <tr><td>Cohere</td><td>command-a-plus (128K ctx)</td></tr>
-    <tr><td>Perplexity</td><td>sonar-pro, sonar, sonar-reasoning-pro</td></tr>
-    <tr><td>Together AI</td><td>deepseek-v4, Qwen3.6, Llama-4</td></tr>
-    <tr><td>NVIDIA NIM</td><td>deepseek-v4-pro, glm-5.1, nemotron-3</td></tr>
-    <tr><td>Cerebras</td><td>qwen-3-235b (extremely fast)</td></tr>
-    <tr><td>Moonshot (Kimi)</td><td>kimi-k2.6 (128K ctx)</td></tr>
-    <tr><td>Zhipu (GLM)</td><td>glm-4.7 (128K ctx)</td></tr>
-    <tr><td>Hugging Face</td><td>llama-3.3-70b-instruct</td></tr>
-    <tr><td>Poe</td><td>claude-3-7-sonnet</td></tr>
-  </table>
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Models</span></div>
 
-  <h2>Model Switching</h2>
-  <pre><code>/model                          # Interactive picker (fetches live models from provider API when supported)
-/model list                     # List all available models from the active provider API
-/model claude-sonnet-4-7        # Switch by full ID
-/model sonnet                   # Alias-based switching
---model opus                    # CLI flag at startup</code></pre>
-  <p>For providers with a /v1/models endpoint (OpenAI, DeepSeek, NVIDIA, etc.), the picker fetches live models from the API instead of the static providers.json list.
-    The picker shows <strong>all models from every provider</strong> in named sections — not just the active provider's models. Recent models appear at top with the active provider's default. Select any model from any provider directly.</p>
-  <p>Model switching is instant — the next conversation turn uses the new model. Previous context is preserved.</p>
+<h1>Models</h1>
+<p class="sub">Select and configure AI models from any supported provider. Switch mid-session without restarting.</p>
 
-  <h2>Model Aliases</h2>
-  <p>Short aliases are resolved to full model IDs: <code>sonnet</code>, <code>opus</code>, <code>haiku</code>, <code>gpt5</code>, <code>flash</code>, etc.</p>
+<h2 id="switching">Switching Models</h2>
+<p>Use the <code>/model</code> command in the REPL:</p>
+<pre><code class="language-bash">❯ /model                 # interactive provider/model picker
+❯ /model openai          # switch to OpenAI provider
+❯ /model gpt-5.5         # set specific model
+❯ /model list            # list available models from all providers
+</code></pre>
 
-  <h2>CLI Flags for Models</h2>
-  <table>
-    <tr><th>Flag</th><th>Description</th></tr>
-    <tr><td><code>--model &lt;name&gt;</code></td><td>Set model at startup (e.g., <code>--model sonnet</code> or <code>--model claude-opus-4-7</code>)</td></tr>
-    <tr><td><code>--effort &lt;level&gt;</code></td><td>Set reasoning effort: <code>low</code>, <code>medium</code>, <code>high</code>, <code>max</code></td></tr>
-    <tr><td><code>--max-turns &lt;N&gt;</code></td><td>Limit agentic turns in non-interactive mode</td></tr>
-    <tr><td><code>--thinking &lt;mode&gt;</code></td><td>Thinking mode: <code>enabled</code>, <code>adaptive</code>, <code>disabled</code></td></tr>
-    <tr><td><code>--fallback-model &lt;model&gt;</code></td><td>Fallback when primary model is overloaded (print mode only)</td></tr>
-    <tr><td><code>--task-budget &lt;tokens&gt;</code></td><td>API-side task budget in tokens</td></tr>
-    <tr><td><code>--max-budget-usd &lt;amount&gt;</code></td><td>Maximum spend on API calls (print mode only)</td></tr>
-  </table>
+<h2 id="capabilities">Capability Tags</h2>
+<p>The <code>/model list</code> command fetches live model lists from provider APIs and displays capability tags:</p>
+<pre><code>deepseek-v4-flash      [200K ctx, tools, reason, free]
+gpt-5.5                [128K ctx, vision, tools]
+claude-sonnet-5        [200K ctx, vision, tools, reason]
+gemini-2.0-flash       [1M ctx, vision, tools, free]
+</code></pre>
+<p>Tags include context window size, vision support, tool calling, reasoning, and free tier availability.</p>
 
-  <h2>Model Capabilities</h2>
-  <p>Each model declaration in <code>providers.json</code> includes:</p>
-  <ul>
-    <li>Model ID and display label</li>
-    <li>Context window (<code>maxContext</code>) and max output tokens (<code>maxOutput</code>)</li>
-    <li>Tool calling type (<code>native</code>, <code>none</code>)</li>
-    <li>Vision support</li>
-    <li>Streaming mode (<code>full</code>, <code>partial</code>)</li>
-    <li>Reasoning support</li>
-    <li>System prompt support</li>
-    <li>Tags (for filtering): <code>fast</code>, <code>verified</code>, <code>recommended</code>, <code>latest</code>, <code>free</code>, <code>vision</code>, <code>tools</code>, <code>native</code>, <code>moe</code>, <code>local</code></li>
-  </ul>
+<h2 id="reasoning">Reasoning Effort</h2>
+<p>For models that support configurable reasoning (DeepSeek, NVIDIA, OpenRouter, etc.):</p>
+<pre><code class="language-bash">❯ /effort low
+❯ /effort medium
+❯ /effort high
+</code></pre>
 
-  <footer class="footer">
-    <span>Clew 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
+<h2 id="local">Local Models (Ollama)</h2>
+<p>Run models locally with Ollama:</p>
+<pre><code class="language-bash">❯ /model ollama/llama3.3
+❯ /model ollama/mistral
+❯ /model ollama/codellama
+</code></pre>
+<p>Set the Ollama host:</p>
+<pre><code class="language-bash">export OLLAMA_HOST=http://localhost:11434
+</code></pre>
+
+<h2 id="provider-defaults">Provider Defaults</h2>
+<p>Each provider has a default model. The first time you switch to a provider, its default model is selected automatically. Override with:</p>
+<pre><code class="language-bash">❯ /model deepseek-v4-flash
+</code></pre>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
+
 </div>
 </div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-

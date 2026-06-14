@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Changelog — Clew Code</title>
+<meta name="description" content="Release history and changelog for Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="header"></header>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
+
+<div class="content-wrap">
+<div class="content">
+
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Changelog</span></div>
+
+<h1>Changelog</h1>
+
+<h2 id="0.2.21">v0.2.21 — 2026-06-14</h2>
+<h3>Fixed</h3>
+<ul>
+  <li><strong>Detect package manager from install path</strong> — now correctly detects whether to use <code>bun</code> or <code>npm</code> based on the installation path, not the runtime.</li>
+  <li><strong>Polish UI rendering</strong> — fixed empty-state edge cases and visual glitches.</li>
+</ul>
+
+<h2 id="0.2.20">v0.2.20 — 2026-06-14</h2>
+<h3>Fixed</h3>
+<ul>
+  <li><strong>mesh-spawn</strong> — spawn <code>cmd.exe</code> directly with <code>/k</code> and set title inside command instead of using <code>start</code>.</li>
+  <li><strong>mesh-spawn cd fix</strong> — execute <code>cd</code> before running clew command to bypass cmd.exe quote stripping.</li>
+</ul>
+
+<h2 id="0.2.16">v0.2.16 — 2026-06-14</h2>
+<h3>Fixed</h3>
+<ul>
+  <li><strong>Auto-relaunch after update</strong> — <code>UpdateDialog.startInstall()</code> now spawns a detached child process immediately after install completes. No more manual restart required.</li>
+</ul>
+
+<h2 id="0.2.15">v0.2.15 — 2026-06-14</h2>
+<h3>Added</h3>
+<ul>
+  <li><strong>ACP + Mesh integration</strong> — <code>AcpMeshBoundary</code> for routing editor ACP and REST ACP through the process peer / mesh layer with <code>AbortSignal</code> and <code>onProgress</code> support.</li>
+  <li><strong>AcpRunController</strong> — lifecycle owner for ACP runs: creates run, wires <code>AbortController</code>, executes through mesh boundary, maps results to terminal state.</li>
+  <li><strong>WebSocket transport</strong> — <code>ACPWebSocketServer.ts</code> — Bun-native WebSocket server bridging remote editor connections via NDJSON stream.</li>
+  <li><strong>SSE streaming</strong> — <code>GET /runs/:id/stream</code> endpoint with 500ms polling and keepalive.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+  <li><strong>Editor ACP shapes fixed</strong> — <code>PromptResponse</code> now returns only <code>{ stopReason }</code>, <code>sessionUpdate</code> uses <code>SessionNotification</code> shape.</li>
+</ul>
+
+<h2 id="0.2.14">v0.2.14 — 2026-06-14</h2>
+<h3>Added</h3>
+<ul>
+  <li><strong>Peer task queue system</strong> — queuing commands when busy with priority levels, auto-dequeue, SSE queue events.</li>
+  <li><strong>Peer health monitoring</strong> — healthy/lagging/offline states, latency tracking.</li>
+  <li><strong>Long-term memory system</strong> — auto-extraction, session consolidation, cross-session history, timeline queries.</li>
+  <li><strong>Gemini Code Assist provider</strong> — OAuth-based provider integration.</li>
+  <li><strong>Dashboard Monitor</strong> — real-time agent and daemon monitoring with tabbed views.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+  <li><strong>peer → swarm rename</strong> — all <code>/peer</code> commands migrated to <code>/swarm</code>.</li>
+</ul>
+
+<h2 id="0.2.13">v0.2.13 — 2026-06-13</h2>
+<h3>Changed</h3>
+<ul>
+  <li>Formatting pass across codebase via Biome.</li>
+  <li>bun.lock synchronized with updated dependencies.</li>
+</ul>
+
+<h2 id="0.2.12">v0.2.12 — 2026-06-13</h2>
+<h3>Added</h3>
+<ul>
+  <li><strong>Provider consolidation</strong> — GoogleProvider and ClewGatewayProvider now extend OpenAICompatibleProvider, removing 679 lines of duplicated code.</li>
+  <li>Zod v4 migration (<code>.passthrough()</code> → <code>.loose()</code>).</li>
+  <li>PR command refactored to use <code>--json</code> + <code>JSON.parse</code>.</li>
+</ul>
+
+<h2 id="0.2.11">v0.2.11 — 2026-06-13</h2>
+<h3>Added</h3>
+<ul>
+  <li>Further swarm/peer system refinements.</li>
+  <li>Bug fixes and performance improvements.</li>
+</ul>
+
+<h2 id="0.2.7">v0.2.7 — 2026-06-11</h2>
+<h3>Added</h3>
+<ul>
+  <li><strong>process_peer PTY terminal box</strong> — terminal-style progress box with ANSI-preserving output tail.</li>
+  <li><strong><code>/mesh run codex &lt;task&gt;</code></strong> — one-shot Codex process peer from chat.</li>
+  <li><strong>Auto-update dialog</strong> — npm update notification before app starts.</li>
+  <li><strong>Rich model fetching</strong> — API models now carry context window, vision, tools, reasoning, free tags.</li>
+  <li><strong><code>/model list</code> capability tags</strong> — <code>[200K ctx, vision, tools, reason, free]</code> per model.</li>
+  <li><strong>Cost in status line</strong> — shows session cost when &gt;$0.</li>
+</ul>
+
+<h2 id="0.2.6">v0.2.6 — 2026-06-10</h2>
+<h3>Added</h3>
+<ul>
+  <li><strong>Peer HTTP heartbeat</strong> — 60s liveness checks, offline peers detected immediately.</li>
+  <li><strong><code>/agents</code> visual polish</strong> — redesigned dashboard.</li>
+  <li><strong>Auto-updater</strong> — switched from Anthropic GCS to npm registry.</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+  <li>GitHub Copilot provider and all references cleaned out.</li>
+</ul>
+
+<h2 id="0.2.5">v0.2.5 — 2026-06-10</h2>
+<h3>Added</h3>
+<ul>
+  <li><strong>Rebranded to Clew Code</strong> — docs, UI copy, and package updated.</li>
+  <li><strong>Memory search</strong> — <code>/memory search</code> for stored entries.</li>
+  <li><strong>Peer tools</strong> — 14 AI coordination tools, peer help, connection count in footer.</li>
+</ul>
+
+<h2 id="0.2.4">v0.2.4 — 2026-06-08</h2>
+<h3>Added</h3>
+<ul>
+  <li><strong>Peer-to-peer</strong> — UDP multicast discovery, file registry, 14 AI coordination tools, interactive PeerMenu.</li>
+  <li><strong>Autonomous agents</strong> — agent loop, supervisor integration, task queue, Loop Lock.</li>
+  <li><strong>Workflow Rainbow</strong> — per-character gradient highlight for "workflow" keyword.</li>
+</ul>
+
+<h2 id="0.2.3">v0.2.3 — 2026-06-07</h2>
+<h3>Added</h3>
+<ul>
+  <li><code>/effort</code> works with any provider exposing <code>reasoningEffort</code>.</li>
+  <li><code>/model</code> fetches live model list from provider APIs.</li>
+  <li>Relay server for cross-network remote control.</li>
+  <li>Bridge v2: provider-agnostic remote control.</li>
+  <li><code>/pr create/list/view/review/merge/status</code>.</li>
+  <li>Security: PowerShell rules, malformed tool call guard, 100 MB bash output cap.</li>
+</ul>
+
+<p><a href="https://github.com/ClewCode/ClewCode/blob/main/CHANGELOG.md">View full changelog on GitHub →</a></p>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

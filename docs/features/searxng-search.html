@@ -1,119 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SearXNG Search — Clew</title>
-  <meta name="description" content="Self-hosted privacy-respecting web search via Docker SearXNG.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SearXNG Search — Clew Code</title>
+<meta name="description" content="Private, self-hosted web search via SearXNG integration.">
+<link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app">
-  <aside class="sidebar" id="sidebar"></aside>
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-  <div class="content-wrap">
-    <main class="content">
-      <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><a href="../index.html#features">Features</a><span class="sep">/</span><span>SearXNG Search</span></div>
-      <h1>SearXNG Search</h1>
-      <p class="section-subtitle">Self-hosted, privacy-respecting web search via Docker</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-      <div class="callout callout-tip">
-        <strong>TL;DR</strong>
-        Run <code>cd searxng && start.bat</code> to start the search engine, then use <code>/searxng on</code> from the CLI.
-      </div>
+<div class="content-wrap">
+<div class="content">
 
-      <h2>Overview</h2>
-      <p>SearXNG is a free, privacy-respecting metasearch engine. This project provides a Docker-based setup so you can run your own instance locally, avoiding reliance on public instances (which increasingly return 403/429 due to Cloudflare/anti-bot protection).</p>
+<div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><span class="current">SearXNG Search</span></div>
 
-      <h2>Quick Start</h2>
-      <pre><code>cd searxng
-start.bat</code></pre>
-      <p>Starts SearXNG on <a href="http://localhost:18889">http://localhost:18889</a>.</p>
+<h1>SearXNG Search</h1>
+<p class="sub">Private, self-hosted web search integration using SearXNG.</p>
 
-      <h3>Slash Command</h3>
-      <table>
-        <tr><th>Command</th><th>Action</th></tr>
-        <tr><td><code>/searxng on</code></td><td>Start the Docker container</td></tr>
-        <tr><td><code>/searxng off</code></td><td>Stop the Docker container</td></tr>
-        <tr><td><code>/searxng status</code></td><td>Check if running</td></tr>
-        <tr><td><code>/searxng restart</code></td><td>Restart the container</td></tr>
-      </table>
+<h2 id="overview">Overview</h2>
+<p>Clew Code integrates with <a href="https://docs.searxng.org/">SearXNG</a>, a privacy-respecting, self-hosted metasearch engine. This gives the AI access to web search results without relying on third-party search APIs.</p>
 
-      <h3>Manual Docker Commands</h3>
-      <pre><code>docker compose -f searxng/docker-compose.yml up -d
-docker compose -f searxng/docker-compose.yml down
-docker compose -f searxng/docker-compose.yml logs -f</code></pre>
+<h2 id="setup">Setup</h2>
+<ol>
+  <li>Deploy SearXNG (Docker is recommended):<pre><code class="language-bash">docker run --name searxng -d -p 8888:8080 \
+  -e BASE_URL=http://localhost:8888/ \
+  searxng/searxng</code></pre></li>
+  <li>Configure SearXNG to enable JSON API:<pre><code class="language-yaml"># /etc/searxng/settings.yml
+search:
+  formats:
+    - html
+    - json</code></pre></li>
+  <li>Set the SearXNG URL in Clew Code:<pre><code class="language-bash">export SEARXNG_URL=http://localhost:8888</code></pre></li>
+</ol>
 
-      <h2>Files</h2>
-      <table>
-        <tr><th>File</th><th>Purpose</th></tr>
-        <tr><td><code>searxng/docker-compose.yml</code></td><td>Container definition, port 188899 8080</td></tr>
-        <tr><td><code>searxng/.env</code></td><td>Host, port, and secret key</td></tr>
-        <tr><td><code>searxng/config/settings.yml</code></td><td>SearXNG configuration with JSON API enabled</td></tr>
-        <tr><td><code>searxng/limiter.toml</code></td><td>Rate limiter — relaxed for local network IPs</td></tr>
-        <tr><td><code>searxng/start.bat</code></td><td>Start wrapper</td></tr>
-        <tr><td><code>searxng/stop.bat</code></td><td>Stop wrapper</td></tr>
-        <tr><td><code>searxng/restart.bat</code></td><td>Restart wrapper</td></tr>
-        <tr><td><code>searxng/logs.bat</code></td><td>Log tail wrapper</td></tr>
-      </table>
+<h2 id="using">Using SearXNG</h2>
+<pre><code class="language-bash">❯ /searxng search "your query here"
+</code></pre>
+<p>The search results are automatically available to the AI as context.</p>
 
-      <h2>How It Works</h2>
-      <ol>
-        <li>SearXNG runs in Docker on <code>localhost:18889</code></li>
-        <li>The project's <code>.env</code> sets <code>SEARXNG_INSTANCE_URL=http://localhost:18889</code></li>
-        <li><code>selectBestDirectProvider()</code> in <code>WebSearchTool.ts</code> auto-detects this and prioritises SearXNG</li>
-        <li>The <code>SearXNGProvider</code> sends GET requests with <code>format=json</code> and parses results</li>
-      </ol>
+<h2 id="benefits">Benefits</h2>
+<ul>
+  <li>Complete privacy — no search data sent to third parties</li>
+  <li>Aggregates results from multiple engines (Google, Bing, DuckDuckGo, etc.)</li>
+  <li>Self-hosted and fully可控</li>
+  <li>Works offline or on air-gapped networks</li>
+</ul>
 
-      <h2>Engines Enabled</h2>
-      <ul>
-        <li><strong>DuckDuckGo</strong> — primary general search (no API key needed)</li>
-        <li><strong>Google</strong> — general search</li>
-        <li><strong>Wikipedia</strong> — infobox and article results</li>
-        <li><strong>StackOverflow</strong> — technical Q&amp;A</li>
-        <li><strong>GitHub</strong> — repository search</li>
-        <li><strong>Wikidata</strong> — structured data infoboxes</li>
-      </ul>
-
-      <h2>Provider Selection Priority</h2>
-      <ol>
-        <li><strong>Tavily</strong> — requires <code>TAVILY_API_KEY</code></li>
-        <li><strong>Brave</strong> — requires <code>BRAVE_API_KEY</code></li>
-        <li><strong>Serper</strong> — requires <code>SERPER_API_KEY</code></li>
-        <li><strong>SearXNG</strong> — only if <code>SEARXNG_INSTANCE_URL</code> is explicitly set</li>
-        <li><strong>DuckDuckGo</strong> — always available, free, no API key</li>
-      </ol>
-
-      <h2>Troubleshooting</h2>
-      <h3>Container won't start</h3>
-      <pre><code>docker compose -f searxng/docker-compose.yml logs</code></pre>
-      <h3>No results returned</h3>
-      <p>Check that engines are not failing by visiting <a href="http://localhost:18889">http://localhost:18889</a> and performing a search in the web UI.</p>
-      <h3>Port conflict</h3>
-      <p>Change <code>SEARXNG_PORT</code> in <code>searxng/.env</code> and update <code>SEARXNG_INSTANCE_URL</code> in <code>.env</code> to match.</p>
-
-      <h2>Updating</h2>
-      <pre><code>cd searxng
-docker compose pull
-docker compose up -d</code></pre>
-
-      <footer class="footer">
-        <span>Clew Code 0.2.14</span>
-        <div class="footer-links">
-          <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-          <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-        </div>
-      </footer>
-    </main>
-    <nav class="toc-sidebar"></nav>
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
   </div>
 </div>
+
+</div>
+</div>
+
 <script src="../js/main.js"></script>
 </body>
 </html>
-

@@ -1,102 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plugins — Clew</title>
-  <meta name="description" content="Extend Clew with plugins — commands, agents, skills, hooks, MCP servers, and marketplace support.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plugins — Clew Code</title>
+<meta name="description" href="Plugin system, marketplace, and hooks in Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Plugins</span></div>
-  <h1>Plugins</h1>
-  <p class="section-subtitle">Plugins extend Clew with custom commands, agents, skills, execution hooks, MCP servers, and LSP integrations. Plugin management is handled by <code>src/services/plugins/</code> and <code>src/utils/plugins/</code>.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <h2>What Plugins Can Provide</h2>
-  <table>
-    <tr><th>Extension</th><th>Description</th></tr>
-    <tr><td>Slash Commands</td><td>Custom <code>/command</code> implementations registered via plugin manifest</td></tr>
-    <tr><td>Agents</td><td>Specialized agent configurations with custom prompts and tool access</td></tr>
-    <tr><td>Skills</td><td>Reusable task instructions from plugin skill directories</td></tr>
-    <tr><td>Execution Hooks</td><td>Pre/post hooks at tool, bash, prompt, and edit stages</td></tr>
-    <tr><td>MCP Servers</td><td>Model Context Protocol server definitions bundled with the plugin</td></tr>
-    <tr><td>LSP Servers</td><td>Language Server Protocol integration</td></tr>
-  </table>
+<div class="content-wrap">
+<div class="content">
 
-  <h2>Hook System</h2>
-  <table>
-    <tr><th>Hook Point</th><th>When It Fires</th></tr>
-    <tr><td><code>PreToolUse</code></td><td>Before a tool executes — validation, input modification, logging</td></tr>
-    <tr><td><code>PostToolUse</code></td><td>After a tool completes — result transformation, audit</td></tr>
-    <tr><td><code>PreBash</code></td><td>Before shell command execution — sanitization, env injection</td></tr>
-    <tr><td><code>PostPrompt</code></td><td>After prompt construction — context augmentation</td></tr>
-    <tr><td><code>PreAcceptEdit</code></td><td>Before accepting an edit — validation, policy enforcement</td></tr>
-  </table>
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Plugins</span></div>
 
-  <h2>Plugin Management</h2>
-  <pre><code>/plugin                          # List installed plugins
-/plugin-details                  # Show detailed plugin information
-/reload-plugins                  # Activate pending plugin changes
-clew plugin validate /path       # Validate a plugin manifest (CLI)</code></pre>
+<h1>Plugins</h1>
+<p class="sub">Extend Clew Code without touching source code. Plugins can add tools, hook into lifecycle events, and integrate with external systems.</p>
 
-  <p>Plugins are loaded from these locations:</p>
-  <ul>
-    <li><strong>Bundled</strong> — Shipped with Clew</li>
-    <li><strong>User</strong> — Installed by the user (via marketplace or manual)</li>
-    <li><strong>Plugin dir</strong> — Custom directories via <code>--plugin-dir &lt;path&gt;</code> (repeatable)</li>
-  </ul>
+<h2 id="overview">Overview</h2>
+<p>Plugins are self-contained packages with a manifest file that declare hooks, tools, and configurations. They are hot-reloadable — no restart needed.</p>
 
-  <p>The <code>PluginInstallationManager</code> (<code>src/services/plugins/PluginInstallationManager.ts</code>) handles automatic installation, marketplace reconciliation, and plugin refresh. Use <code>/reload-plugins</code> after installing or updating plugins.</p>
+<h2 id="lifecycle">Lifecycle Hooks</h2>
+<p>Plugins can hook into every stage of the agent lifecycle:</p>
+<table>
+  <thead>
+    <tr><th>Hook</th><th>Trigger</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>PreToolUse</code></td><td>Before a tool is executed</td></tr>
+    <tr><td><code>PostToolUse</code></td><td>After a tool completes</td></tr>
+    <tr><td><code>PreBash</code></td><td>Before a bash command runs</td></tr>
+    <tr><td><code>PostPrompt</code></td><td>After a prompt is processed</td></tr>
+    <tr><td><code>PreAcceptEdit</code></td><td>Before a file edit is applied</td></tr>
+  </tbody>
+</table>
 
-  <h2>Built-in Plugins</h2>
-  <table>
-    <tr><th>Plugin</th><th>Description</th></tr>
-    <tr><td><code>commit-commands</code></td><td>Git workflow — commit, push, PR creation, branch cleanup (<code>clean_gone</code>)</td></tr>
-    <tr><td><code>commit-push-pr</code></td><td>Commit, push, and open a PR in one step</td></tr>
-    <tr><td><code>code-review</code></td><td>Automated PR code review</td></tr>
-    <tr><td><code>feature-dev</code></td><td>Guided feature development with codebase understanding</td></tr>
-    <tr><td><code>frontend-design</code></td><td>Production-grade UI/UX generation</td></tr>
-    <tr><td><code>verify</code></td><td>Typecheck, lint, build, and test pipeline</td></tr>
-    <tr><td><code>precommit</code></td><td>Pre-commit review with full verification</td></tr>
-    <tr><td><code>commit</code></td><td>Conventional git commit message generation</td></tr>
-    <tr><td><code>simplify</code></td><td>Code quality and reuse review</td></tr>
-    <tr><td><code>debug</code></td><td>Debugging assistance and diagnosis</td></tr>
-    <tr><td><code>web-search</code></td><td>Multi-provider web search</td></tr>
-    <tr><td><code>scrapling</code></td><td>Web scraping with Scrapling framework</td></tr>
-    <tr><td><code>skillify</code></td><td>Create reusable skills from workflows</td></tr>
-    <tr><td><code>remember</code></td><td>Save user preferences</td></tr>
-  </table>
+<h2 id="commands">Plugin Commands</h2>
+<table>
+  <thead>
+    <tr><th>Command</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>/plugin install &lt;name&gt;</code></td><td>Install a plugin from the marketplace</td></tr>
+    <tr><td><code>/plugin list</code></td><td>List installed plugins</td></tr>
+    <tr><td><code>/plugin remove &lt;name&gt;</code></td><td>Remove a plugin</td></tr>
+    <tr><td><code>/plugin marketplace</code></td><td>Browse the plugin marketplace</td></tr>
+    <tr><td><code>/hooks</code></td><td>View active hooks</td></tr>
+  </tbody>
+</table>
 
-  <h2>Plugin Structure</h2>
-  <pre><code>my-plugin/
-  manifest.json         # Plugin metadata and capability declarations
-  commands/             # Custom slash commands
-  skills/               # Reusable task instructions
-  agents/               # Agent configurations
-  hooks/                # Hook implementations</code></pre>
+<h2 id="plugin-manifest">Plugin Manifest</h2>
+<p>Plugins declare themselves via a manifest:</p>
+<pre><code class="language-json">{
+  "name": "my-plugin",
+  "version": "1.0.0",
+  "hooks": {
+    "PreToolUse": "./pre-tool.js",
+    "PostToolUse": "./post-tool.js"
+  },
+  "tools": [
+    {
+      "name": "my_custom_tool",
+      "description": "A custom tool",
+      "schema": { ... }
+    }
+  ]
+}
+</code></pre>
 
-  <h2>Marketplace</h2>
-  <p>Plugins can be distributed through marketplaces. The <code>marketplaceManager</code> (<code>src/utils/plugins/marketplaceManager.ts</code>) handles marketplace source discovery, cache management, and plugin installation from remote sources.</p>
+<h2 id="marketplace">Plugin Marketplace</h2>
+<p>Discover and install community plugins via the built-in marketplace browser. Use <code>/plugin marketplace</code> to explore available plugins.</p>
 
-  <footer class="footer">
-    <span>Clew Code 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
+
 </div>
 </div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-

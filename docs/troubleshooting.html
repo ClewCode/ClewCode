@@ -1,106 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Troubleshooting — Clew</title>
-  <meta name="description" content="Common issues and solutions for Clew — provider keys, build errors, MCP, plugins, and runtime problems.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Troubleshooting — Clew Code</title>
+<meta name="description" href="Common issues and solutions for Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Troubleshooting</span></div>
-  <h1>Troubleshooting</h1>
-  <p class="section-subtitle">Start with <code>/doctor</code> — it checks runtime version, provider credentials, config integrity, plugin/MCP status, and Sentry telemetry.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <h2>Startup Issues</h2>
-  <h3>"command not found: clew"</h3>
-  <p>npm global install path may not be in <code>PATH</code>. Use <code>npx clew-code</code> or <code>bun x clew-code</code> as alternatives.</p>
+<div class="content-wrap">
+<div class="content">
 
-  <h3>"Bun not found"</h3>
-  <p>Clew requires <a href="https://bun.sh">Bun 1.3+</a> as the runtime for the npm package.</p>
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Troubleshooting</span></div>
 
-  <h2>Provider Issues</h2>
+<h1>Troubleshooting</h1>
 
-  <h3>"No API key configured"</h3>
-  <p>Set at least one provider API key as an environment variable. See <a href="providers.html">Providers</a> for the full list.</p>
-  <pre><code>export ANTHROPIC_API_KEY=sk-ant-...
-export DEEPSEEK_API_KEY=sk-...</code></pre>
-  <p>Run <code>/doctor</code> to verify configured providers.</p>
+<h2 id="no-provider">No Provider Configured</h2>
+<p>If Clew doesn't start, set at least one provider API key in your environment:</p>
+<pre><code class="language-bash">export ANTHROPIC_API_KEY=sk-ant-...
+clew
+</code></pre>
+<p>Or use the <code>/model</code> command inside the REPL to switch providers.</p>
 
-  <h3>"Rate limited" or "Quota exceeded"</h3>
-  <p>Set a fallback model via CLI: <code>--fallback-model &lt;model&gt;</code>. Or use <code>/model</code> to switch to a different provider. For rate limit options during a session, use <code>/rate-limit-options</code>.</p>
+<h2 id="build-errors">Build Errors on Windows</h2>
+<pre><code class="language-powershell">Remove-Item -Recurse -Force node_modules
+bun install
+bun run dev
+</code></pre>
 
-  <h2>Build Issues</h2>
+<h2 id="mesh-connectivity">Mesh / Peer Discovery Not Working</h2>
+<ul>
+  <li>Ensure both instances are on the same LAN</li>
+  <li>Check that UDP multicast is not blocked by your firewall</li>
+  <li>Run <code>/mesh discover</code> with a longer timeout</li>
+  <li>Try sharing via file registry: <code>/mesh share</code></li>
+</ul>
 
-  <h3>TypeScript errors during build</h3>
-  <pre><code>bun run build
-# TypeScript errors may exist in uncommitted code or external modules.
-# Run targeted checks:
-bun x tsc --noEmit
-bun test <targeted-path></code></pre>
+<h2 id="mcp-connection">MCP Server Connection Failures</h2>
+<ul>
+  <li>Verify the server command exists (<code>which npx</code>, <code>which uvx</code>)</li>
+  <li>Check <code>.mcp.json</code> syntax</li>
+  <li>Run <code>/mcp list</code> to see all connected servers</li>
+  <li>For SSE servers, verify the remote URL is reachable</li>
+</ul>
 
-  <h3>Windows-specific issues</h3>
-  <ul>
-    <li>ripgrep is bundled at <code>src/utils/vendor/ripgrep/x64-win32/rg.exe</code></li>
-    <li>TTY polyfill may be needed for Ink compatibility</li>
-    <li>PowerShell and Bash may behave differently for tool execution</li>
-    <li>Windows argv normalization in <code>src/entry.ts</code></li>
-  </ul>
+<h2 id="context-limit">Context Limit Reached</h2>
+<p>Use the compact command to compress conversation history:</p>
+<pre><code class="language-bash">❯ /compact
+</code></pre>
+<p>This triggers the multi-pass context compaction system.</p>
 
-  <h2>MCP Issues</h2>
+<h2 id="permission-denied">Permission Denied Errors</h2>
+<p>Switch to a permissive mode or configure allow rules:</p>
+<pre><code class="language-bash">❯ /permissions auto      # auto-approve safe tools
+❯ /permissions plan      # full bypass for planning
+</code></pre>
+<p>See <a href="permission-model.html">Permission Model</a> for details.</p>
 
-  <h3>"MCP server connection failed"</h3>
-  <p>Verify the server command exists and paths are correct. Check JSON config syntax with <code>/mcp</code> command.</p>
+<h2 id="provider-switch">Provider Switch Issues</h2>
+<ul>
+  <li>Ensure the corresponding API key is set</li>
+  <li>Some models have tool-calling limitations</li>
+  <li>Run <code>/model list</code> to see available models with capability tags</li>
+</ul>
 
-  <h3>MCP tools not appearing</h3>
-  <p>Use <code>/mcp</code> to check server status. Tools are loaded at startup via <code>--mcp-config</code> or through <code>assembleToolPool()</code> during server connection. Verify the server implements <code>tools/list</code> correctly.</p>
+<h2 id="logs">Getting Help</h2>
+<ul>
+  <li>Run <code>/doctor</code> for system diagnostics</li>
+  <li>Run <code>/status</code> for session info</li>
+  <li>Check <code>.session/</code> for session logs</li>
+  <li><a href="https://github.com/ClewCode/ClewCode/issues">Open a GitHub issue</a></li>
+</ul>
 
-  <h2>Plugin Issues</h2>
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
 
-  <h3>Plugin not loading</h3>
-  <p>Check plugin manifest format and location. Use <code>/plugin</code> and <code>/reload-plugins</code> to refresh. For directory-based plugins, use <code>--plugin-dir &lt;path&gt;</code>.</p>
-
-  <h2>Feature Flags</h2>
-  <p>Some features require compile-time or runtime flags:</p>
-  <table>
-    <tr><th>Feature</th><th>Required Flag</th></tr>
-    <tr><td>Bridge mode</td><td><code>BRIDGE_MODE=1</code></td></tr>
-    <tr><td>Voice mode</td><td><code>VOICE_MODE=1</code></td></tr>
-    <tr><td>LSP tool</td><td><code>ENABLE_LSP_TOOL=1</code></td></tr>
-    <tr><td>Computer Use</td><td><code>ENABLE_COMPUTER_USE=1</code> (Windows)</td></tr>
-    <tr><td>Proactive features</td><td><code>KAIROS=1</code></td></tr>
-    <tr><td>Agent triggers</td><td><code>AGENT_TRIGGERS=1</code></td></tr>
-    <tr><td>Code index</td><td><code>CODE_INDEX=1</code></td></tr>
-  </table>
-
-  <h2>Getting Help</h2>
-  <ul>
-    <li><strong>In-app diagnostics:</strong> <code>/doctor</code> — comprehensive environment check</li>
-    <li><strong>Status overview:</strong> <code>/status</code> — version, model, API connectivity, tool statuses</li>
-    <li><strong>GitHub Issues:</strong> Report bugs and feature requests</li>
-    <li><strong>Debug mode:</strong> Run with <code>DEBUG=1</code> or <code>DEBUG=provider:anthropic</code> for detailed logging</li>
-  </ul>
-
-  <footer class="footer">
-    <span>Clew Code 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-      <a href="https://npmjs.com/package/clew-code">npm</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
 </div>
 </div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-

@@ -1,117 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Skills — Clew</title>
-  <meta name="description" content="Reusable task instructions and workflows in Clew — create, use, and share skills across projects.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skills — Clew Code</title>
+<meta name="description" href="The skills system in Clew Code — Claude Code compatible.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Skills</span></div>
-  <h1>Skills</h1>
-  <p class="section-subtitle">Skills are reusable prompt-type commands — markdown files that provide structured instructions to the AI model. They are loaded from bundled, user, project, and plugin directories.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <h2>Overview</h2>
-  <p>Skills are commands of type <code>prompt</code> — they expand to text that is sent to the model. Unlike plugins (which provide JavaScript code), skills are purely instructional. They bridge the gap between ad-hoc prompts and full plugin development.</p>
+<div class="content-wrap">
+<div class="content">
 
-  <h2>Skill Locations</h2>
-  <p>Skills are loaded from four sources (order: bundled user project plugin):</p>
-  <table>
-    <tr><th>Source</th><th>Path</th><th>Scope</th></tr>
-    <tr><td>Bundled</td><td>Ships with Clew</td><td>All users</td></tr>
-    <tr><td>User</td><td><code>~/.clew/skills/&lt;name&gt;/SKILL.md</code></td><td>Personal</td></tr>
-    <tr><td>Project</td><td><code>.clew/skills/&lt;name&gt;/SKILL.md</code></td><td>Team (in-repo)</td></tr>
-    <tr><td>Plugin</td><td>Inside plugin directories</td><td>Plugin users</td></tr>
-  </table>
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Skills</span></div>
 
-  <h2>Skill Structure</h2>
-  <pre><code>my-skill/
-  SKILL.md              # Skill instructions (required)
-  assets/               # Optional: scripts, references, examples</code></pre>
+<h1>Skills</h1>
+<p class="sub">Skills are reusable, invocable capabilities that extend Clew Code with domain-specific expertise. The skills system is Claude Code compatible.</p>
 
-  <p>The <code>SKILL.md</code> file uses frontmatter for metadata and markdown for instructions. Skills are registered as <code>prompt</code>-type commands and can be invoked by the model via the <code>SkillTool</code>.</p>
+<h2 id="overview">Overview</h2>
+<p>Skills are defined in <code>SKILL.md</code> files and matched by name or description. When a user or agent invokes a skill, its prompt is loaded into the conversation, providing specialized instructions and context.</p>
 
-  <h2>Managing Skills</h2>
-  <pre><code>/skill            # List available skills or show skill details
-/skills           # List available skills
-/skill-name       # Invoke a specific skill directly</code></pre>
+<h2 id="builtin">Built-in Skills</h2>
+<table>
+  <thead>
+    <tr><th>Skill</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>/verify</code></td><td>Run full verification — typecheck, lint, and tests</td></tr>
+    <tr><td><code>/precommit</code></td><td>Pre-commit review with verification and git diff summary</td></tr>
+    <tr><td><code>/commit</code></td><td>Stage, commit, and push git changes with conventional commits</td></tr>
+    <tr><td><code>/code-review</code></td><td>Review code for correctness bugs at configurable effort</td></tr>
+    <tr><td><code>/loop</code></td><td>Run a prompt or command on a recurring interval</td></tr>
+    <tr><td><code>/update-config</code></td><td>Configure Clew Code via settings.json</td></tr>
+    <tr><td><code>/scrapling</code></td><td>Web scraping using Scrapling framework</td></tr>
+  </tbody>
+</table>
 
-  <h2>Skill Frontmatter</h2>
-  <p>Skills support YAML frontmatter for metadata and configuration:</p>
-  <pre><code>---
-name: my-skill
-description: Does focused text work
-allowed-tools:
-  - Read
-  - Grep
-disallowed-tools:
-  - Bash
-  - Edit
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: echo "About to run bash"
-model: claude-sonnet-4-6
-effort: high
-user-invocable: true
-context: fork
----</code></pre>
-  <p>Key frontmatter fields:</p>
-  <ul>
-    <li><code>allowed-tools</code> — Restrict which tools the model can use while this skill is active</li>
-    <li><code>disallowed-tools</code> — Explicitly block tools (e.g., <code>Bash</code>, <code>Edit</code>) for read-only skills</li>
-    <li><code>hooks</code> — Register PreToolUse, PostToolUse, or MessageDisplay hooks for the skill</li>
-    <li><code>model</code> — Override the model used when this skill runs</li>
-    <li><code>effort</code> — Set effort level (low, medium, high, xhigh, max)</li>
-    <li><code>context</code> — <code>inline</code> (default) expands into current conversation; <code>fork</code> runs as sub-agent</li>
-  </ul>
+<h2 id="creating">Creating a Skill</h2>
+<p>Create a <code>SKILL.md</code> file in your project:</p>
+<pre><code class="language-markdown"># my-skill
 
-  <h2>Creating a Skill</h2>
-  <pre><code>mkdir -p ~/.clew/skills/my-skill
-touch ~/.clew/skills/my-skill/SKILL.md
-# Edit SKILL.md with frontmatter and instructions</code></pre>
-  <p>Or use the <code>skillify</code> plugin to create a skill from an existing workflow.</p>
+Invoke with `/my-skill [args]`.
 
-  <h2>Project-Level Skills</h2>
-  <p>Place skills in <code>.clew/skills/</code> inside your repository to share with your team:</p>
-  <pre><code>.clew/
-  skills/
-    code-review/
-      SKILL.md
-    migration-workflow/
-      SKILL.md</code></pre>
-  <p>Project skills are automatically available to everyone working in the repository.</p>
+## Instructions
 
-  <h2>Dynamic Skills</h2>
-  <p>Skills can be discovered dynamically during file operations. When a skill file is created or modified, it's automatically added to the available command list without restarting. Use <code>clearCommandMemoizationCaches()</code> to refresh the skill index.</p>
+Provide detailed instructions for what this skill should do.
+Include context, constraints, and examples.
+</code></pre>
+<p>Skills are automatically discovered from the project root.</p>
 
-  <div class="callout callout-info">
-    <strong>Skills vs. Plugins</strong>
-    Skills are instruction-only (markdown), no code required. Plugins provide executable JavaScript — commands, hooks, agents, MCP servers. Use skills to standardize AI behavior; use plugins for custom tooling.
+<h2 id="skill-commands">Skill Commands</h2>
+<pre><code class="language-bash">❯ /skills           # list all available skills
+❯ /my-skill args    # invoke a specific skill with arguments
+</code></pre>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
   </div>
+</div>
 
-  <footer class="footer">
-    <span>Clew Code 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
 </div>
 </div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-

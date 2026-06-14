@@ -1,102 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Permission Model — Clew</title>
-  <meta name="description" content="Tool execution permissions in Clew — modes, rules, and security.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Permission Model — Clew Code</title>
+<meta name="description" href="Permission modes and security model in Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Permission Model</span></div>
-  <h1>Permission Model</h1>
-  <p class="section-subtitle">Clew gates tool execution through a tiered permission system with multiple modes, allow/deny rules, and tool-specific checks.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <h2>Permission Modes</h2>
-  <p>Defined in <code>src/types/permissions.ts</code>. Seven user-addressable modes:</p>
-  <table>
-    <tr><th>Mode</th><th>Behavior</th></tr>
-    <tr><td><code>default</code></td><td>Ask before sensitive tool actions (read/write/bash/network). Safe default.</td></tr>
-    <tr><td><code>ask</code></td><td>Always ask before any tool execution.</td></tr>
-    <tr><td><code>plan</code></td><td>Prefer planning mode — AI must present a plan before executing tools.</td></tr>
-    <tr><td><code>auto</code></td><td>Auto-approve low-risk actions using transcript classifier (requires <code>TRANSCRIPT_CLASSIFIER</code> feature). Prompt for risky operations.</td></tr>
-    <tr><td><code>acceptEdits</code></td><td>Auto-approve file edit operations. Useful for rapid iteration.</td></tr>
-    <tr><td><code>bypassPermissions</code></td><td>Skip all permission prompts. Use only in trusted sandboxes.</td></tr>
-    <tr><td><code>dontAsk</code></td><td>Never ask — auto-deny anything that would require permission.</td></tr>
-  </table>
+<div class="content-wrap">
+<div class="content">
 
-  <h2>Permission Rules</h2>
-  <p>Granular allow/deny rules control specific tools and their arguments:</p>
-  <pre><code>/permissions     # Open interactive permission rule manager</code></pre>
-  <p>Rules can target specific tools with pattern matching:</p>
-  <ul>
-    <li><code>Bash(git *)</code> — Allow/deny git commands specifically</li>
-    <li><code>Edit</code> — Allow/deny all file edits</li>
-    <li><code>Bash(rm *)</code> — Warn/block destructive shell commands</li>
-  </ul>
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Permission Model</span></div>
 
-  <h2>Rule Sources</h2>
-  <p>Permission rules come from multiple sources (evaluated in order, with later sources overriding earlier ones):</p>
-  <ul>
-    <li><code>userSettings</code> — From user config file</li>
-    <li><code>projectSettings</code> — From project-level settings</li>
-    <li><code>localSettings</code> — Local overrides</li>
-    <li><code>flagSettings</code> — From CLI flags (<code>--allowedTools</code>, <code>--disallowedTools</code>)</li>
-    <li><code>policySettings</code> — Managed/organization policy</li>
-  </ul>
+<h1>Permission Model</h1>
+<p class="sub">Clew Code provides 7 permission modes with granular allow/deny rules for safe AI-assisted development.</p>
 
-  <h2>Tool Permission Flow</h2>
-  <pre><code>1. Tool input validation (validateInput)
-2. Tool-specific checkPermissions()
-3. Deny rule check (permissions.ts getDenyRuleForTool)
-4. Permission mode evaluation (mode-based auto decision)
-5. Plugin hooks (PreToolUse PostToolUse)
-6. Classifier-based auto-approval (auto mode)
-7. User permission dialog (if needed)</code></pre>
+<h2 id="modes">Permission Modes</h2>
+<table>
+  <thead>
+    <tr><th>Mode</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>default</code></td><td>Ask for every tool execution. Maximum safety.</td></tr>
+    <tr><td><code>ask</code></td><td>Prompt for confirmation on each action.</td></tr>
+    <tr><td><code>plan</code></td><td>Full-access planning with bypass permissions. Read, write, edit freely during planning.</td></tr>
+    <tr><td><code>auto</code></td><td>Auto-approve safe tools (read, grep, glob). Ask for destructive operations.</td></tr>
+    <tr><td><code>acceptEdits</code></td><td>Auto-approve file edits within allowed patterns.</td></tr>
+    <tr><td><code>bypassPermissions</code></td><td>Full access — all tools approved automatically.</td></tr>
+    <tr><td><code>dontAsk</code></td><td>Execute everything without prompting. Use with caution.</td></tr>
+  </tbody>
+</table>
 
-  <h2>CLI Flags for Permissions</h2>
-  <table>
-    <tr><th>Flag</th><th>Description</th></tr>
-    <tr><td><code>--permission-mode &lt;mode&gt;</code></td><td>Set session permission mode</td></tr>
-    <tr><td><code>--dangerously-skip-permissions</code></td><td>Bypass all checks (sandbox only)</td></tr>
-    <tr><td><code>--allow-dangerously-skip-permissions</code></td><td>Enable bypass as optional mode</td></tr>
-    <tr><td><code>--allowedTools, --allowed-tools &lt;tools...&gt;</code></td><td>Allowlist specific tools with patterns</td></tr>
-    <tr><td><code>--disallowedTools, --disallowed-tools &lt;tools...&gt;</td><td>Denylist specific tools with patterns</td></tr>
-  </table>
+<h2 id="switching">Switching Modes</h2>
+<p>Use the <code>/permissions</code> command in the REPL:</p>
+<pre><code class="language-bash">❯ /permissions plan     # enter full-access plan mode
+❯ /permissions auto     # auto-approve safe operations
+❯ /permissions default  # back to asking for each action
+</code></pre>
 
-  <h2>Security Best Practices</h2>
-  <ul>
-    <li><strong>Default mode</strong> for day-to-day development</li>
-    <li><strong>Plan mode</strong> for production infrastructure or unfamiliar code</li>
-    <li><strong>Bypass modes</strong> only in disposable worktrees or Docker sandboxes</li>
-    <li>Use allow/deny rules to permit safe patterns (e.g., <code>Bash(git *)</code>) while blocking dangerous ones</li>
-    <li>Run <code>/doctor</code> to audit current permission settings</li>
-  </ul>
+<h2 id="rules">Allow/Deny Rules</h2>
+<p>Configure granular rules in <code>.claude/settings.json</code>:</p>
+<pre><code class="language-json">{
+  "allow": [
+    "bash: npm run dev",
+    "bash: git status",
+    "write: src/**"
+  ],
+  "deny": [
+    "bash: rm -rf",
+    "bash: git push --force"
+  ]
+}
+</code></pre>
+<p>Rules support glob pattern matching against tool names and arguments.</p>
 
-  <div class="callout callout-warn">
-    <strong>Use Caution</strong>
-    <code>bypassPermissions</code> mode executes all tool actions without prompting. Restrict to trusted, sandboxed environments.
+<h2 id="safety">Safety Gates</h2>
+<p>The <code>safetyGate</code> system validates:</p>
+<ul>
+  <li>Command paths — prevents execution of dangerous commands</li>
+  <li>File paths — blocks writes outside project boundaries</li>
+  <li>Destructive operations — requires explicit approval</li>
+  <li>Bash output cap — 100 MB limit to prevent runaway processes</li>
+</ul>
+
+<h2 id="plan-mode">Plan Mode</h2>
+<p>Plan mode is a special full-access mode for architectural work:</p>
+<ul>
+  <li>Read, write, and edit files without permission prompts</li>
+  <li>Plan files persist to <code>.clew/plans/</code> with progress snapshots</li>
+  <li>Exit with <code>ExitPlanMode</code> to present the plan for approval</li>
+</ul>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
   </div>
+</div>
 
-  <footer class="footer">
-    <span>Clew Code 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
 </div>
 </div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-

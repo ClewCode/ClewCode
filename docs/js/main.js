@@ -178,6 +178,7 @@
       '    <a href="' + rootPrefix + 'quick-start.html" class="sidebar-link"><span class="link-icon"></span>Quick Start</a>' +
       '    <a href="' + rootPrefix + 'installation.html" class="sidebar-link"><span class="link-icon"></span>Installation</a>' +
       '    <a href="' + rootPrefix + 'configuration.html" class="sidebar-link"><span class="link-icon"></span>Configuration</a>' +
+      '    <a href="' + rootPrefix + 'cli-reference.html" class="sidebar-link"><span class="link-icon"></span>CLI Reference</a>' +
       '    <a href="' + rootPrefix + 'troubleshooting.html" class="sidebar-link"><span class="link-icon"></span>Troubleshooting</a>' +
       '  </nav>' +
       '</div>' +
@@ -214,6 +215,7 @@
       '    <a href="' + rootPrefix + 'features/bridge-mode.html" class="sidebar-link"><span class="link-icon"></span>Bridge Mode</a>' +
       '    <a href="' + rootPrefix + 'features/evals.html" class="sidebar-link"><span class="link-icon"></span>Evaluation Harness</a>' +
       '    <a href="' + rootPrefix + 'features/sentry-setup.html" class="sidebar-link"><span class="link-icon"></span>Sentry Setup</a>' +
+      '    <a href="' + rootPrefix + 'voice-mode.html" class="sidebar-link"><span class="link-icon"></span>Voice Mode</a>' +
       '    <a href="' + rootPrefix + 'swarm.html" class="sidebar-link"><span class="link-icon"></span>Swarm System</a>' +
       '    <a href="' + rootPrefix + 'loop.html" class="sidebar-link"><span class="link-icon"></span>Agent Loop</a>' +
       '  </nav>' +
@@ -223,6 +225,14 @@
       '  <nav>' +
       '    <a href="' + rootPrefix + 'internals/hidden-features.html" class="sidebar-link"><span class="link-icon"></span>Hidden Features</a>' +
       '    <a href="' + rootPrefix + 'internals/growthbook-ab-testing.html" class="sidebar-link"><span class="link-icon"></span>A/B Testing</a>' +
+      '  </nav>' +
+      '</div>' +
+      '<div class="sidebar-section">' +
+      '  <div class="sidebar-label">Community</div>' +
+      '  <nav>' +
+      '    <a href="' + rootPrefix + 'changelog.html" class="sidebar-link"><span class="link-icon"></span>Changelog</a>' +
+      '    <a href="' + rootPrefix + 'security.html" class="sidebar-link"><span class="link-icon"></span>Security</a>' +
+      '    <a href="' + rootPrefix + 'contributing.html" class="sidebar-link"><span class="link-icon"></span>Contributing</a>' +
       '  </nav>' +
       '</div>';
   }

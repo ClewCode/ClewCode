@@ -1,265 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Commands — Clew</title>
-  <meta name="description" content="Complete reference for all slash commands in Clew — built-in commands, skills, and plugin commands.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="./assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commands — Clew Code</title>
+<meta name="description" href="All slash commands available in Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Commands</span></div>
-  <h1>Commands</h1>
-  <p class="section-subtitle">Clew ships with <strong>120+ slash commands</strong> (411 files across 120+ directories) plus dynamically loaded skills and plugin commands. Commands can be <strong>local</strong> (terminal execution), <strong>prompt</strong> (text expanded to the model), or <strong>local-jsx</strong> (Ink UI panels).</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <div class="callout callout-tip">
-    <strong>Discovery</strong>
-    Type <code>/</code> in the REPL to see all available commands in your build. Commands are registered in <code>src/commands.ts</code> and loaded from built-in, plugin, skill, bundled, and workflow sources.
-  </div>
+<div class="content-wrap">
+<div class="content">
 
-  <h2>Session &amp; Context</h2>
-  <table>
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">Commands</span></div>
+
+<h1>Commands</h1>
+<p class="sub">Clew Code provides 30+ slash commands for managing providers, sessions, mesh networking, MCP, plugins, and more.</p>
+
+<h2 id="session">Session Commands</h2>
+<table>
+  <thead>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/clear</code></td><td>Clear conversation history and free up context</td></tr>
-    <tr><td><code>/compact</code></td><td>Compress session context — splits into chunks + re-compacts recursively when context exceeds model window</td></tr>
-    <tr><td><code>/context</code></td><td>Visualize current context usage as a colored grid</td></tr>
-    <tr><td><code>/resume</code></td><td>Resume a previous conversation</td></tr>
-    <tr><td><code>/rename</code></td><td>Rename the current conversation</td></tr>
-    <tr><td><code>/rewind</code></td><td>Restore code and/or conversation to a previous point</td></tr>
-    <tr><td><code>/copy</code></td><td>Copy Clew's last response to clipboard (or /copy N for Nth-latest)</td></tr>
-    <tr><td><code>/export</code></td><td>Export the current conversation to a file or clipboard</td></tr>
-    <tr><td><code>/session</code></td><td>Show remote session URL and QR code</td></tr>
-    <tr><td><code>/branch</code></td><td>Create a branch of the current conversation at this point</td></tr>
-    <tr><td><code>/files</code></td><td>List all files currently in context</td></tr>
-  </table>
-
-  <h2>Model &amp; Provider</h2>
-  <table>
-    <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/model</code></td><td>Switch model or provider — fetches live models from provider API when available (Enter=save default, <code>s</code>=session-only)</td></tr>
-    <tr><td><code>/provider-select</code></td><td>Show or change the active AI provider and model</td></tr>
-    <tr><td><code>/taste</code></td><td>Open taste preference-learning interactive menu (learn, forget, profile, events, decay, eval, on/off)</td></tr>
-    <tr><td><code>/effort</code></td><td>Set effort level for model reasoning (low, medium, high, xhigh, max, ultracode, auto) — works with all providers that support reasoning_effort</td></tr>
-    <tr><td><code>/ultracode</code></td><td>Toggle ultracode mode — xhigh effort + auto-triggered dynamic workflows (parallel subtasks + adversarial verifiers) for complex prompts</td></tr>
-    <tr><td><code>/cost</code></td><td>Show the total cost and duration of the current session</td></tr>
-    <tr><td><code>/usage</code></td><td>Show plan usage limits</td></tr>
-    <tr><td><code>/usage-credits</code></td><td>Configure usage credits to keep working when limits are hit</td></tr>
-    <tr><td><code>/stats</code></td><td>Show your Clew usage statistics and activity</td></tr>
-    <tr><td><code>/rate-limit-options</code></td><td>Show options when rate limit is reached</td></tr>
-    <tr><td><code>/upgrade</code></td><td>Upgrade to Max for higher rate limits and more Opus</td></tr>
-  </table>
-
-  <h2>Tools &amp; Permissions</h2>
-  <table>
-    <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/tools</code></td><td>List all tools with usage stats and estimated token cost</td></tr>
-    <tr><td><code>/permissions</code></td><td>Manage allow &amp; deny tool permission rules</td></tr>
-    <tr><td><code>/plan</code></td><td>Enable plan mode or view the current session plan</td></tr>
-    <tr><td><code>/approve</code></td><td>Approve pending tool execution actions</td></tr>
-    <tr><td><code>/privacy-settings</code></td><td>View and update your privacy settings</td></tr>
-    <tr><td><code>/datadog</code></td><td>Manage individual telemetry and analytics settings (Datadog, Anthropic, Global)</td></tr>
-    <tr><td><code>/capabilities</code></td><td>Show available system capabilities (git, tmux, browser, network, shells)</td></tr>
-    <tr><td><code>/hooks</code></td><td>View hook configurations for tool events (PreToolUse, PostToolUse, MessageDisplay, SessionStart)</td></tr>
-    <tr><td><code>/sandbox-toggle</code></td><td>Toggle sandbox mode for tool execution</td></tr>
-    <tr><td><code>/guardian</code></td><td>Toggle safety guardian mode for dangerous operations</td></tr>
-    <tr><td><code>/fast</code></td><td>Toggle fast mode — skips permission prompts for low-risk operations</td></tr>
-    <tr><td><code>/passes</code></td><td>Manage session access passes and tokens</td></tr>
-  </table>
-
-  <h2>Extensions (Plugins, MCP, Skills)</h2>
-  <table>
-    <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/plugin</code></td><td>Manage plugins — list, install, remove</td></tr>
-    <tr><td><code>/plugin-details</code></td><td>Show plugin component inventory, hooks, MCP servers, and per-session token cost</td></tr>
-    <tr><td><code>/reload-plugins</code></td><td>Activate pending plugin changes in the current session</td></tr>
-    <tr><td><code>/mcp</code></td><td>Manage MCP servers (<code>list</code> shows pending approval for unapproved .mcp.json servers)</td></tr>
-    <tr><td><code>/code-review</code></td><td>Review changed code for correctness bugs (low/medium/high effort; <code>--fix</code> applies changes, <code>--comment</code> posts PR comments)</td></tr>
-    <tr><td><code>/simplify</code></td><td>Cleanup-only code review (reuse, efficiency, altitude) with auto-fix</td></tr>
-    <tr><td><code>/skill</code></td><td>List available skills or show skill details</td></tr>
-    <tr><td><code>/skills</code></td><td>List available skills</td></tr>
-    <tr><td><code>/workflow</code></td><td>List and run multi-step workflows defined in YAML/JSON</td></tr>
-    <tr><td><code>/acp</code></td><td>Agent Communication Protocol — agent-to-agent messaging and coordination</td></tr>
-  </table>
-
-  <h2>Collaboration &amp; Mesh</h2>
-  <table>
-    <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/swarm</code></td><td>Open interactive LAN swarm menu (share, discover, join, inbox)</td></tr>
-    <tr><td><code>/swarm share</code></td><td>Start advertising this Clew instance as a worker</td></tr>
-    <tr><td><code>/swarm share stop</code></td><td>Stop advertising and shut down the local swarm server</td></tr>
-    <tr><td><code>/swarm discover</code></td><td>Scan for available LAN workers</td></tr>
-    <tr><td><code>/swarm join &lt;host&gt;:&lt;port&gt;</code></td><td>Connect to a remote Clew swarm peer</td></tr>
-    <tr><td><code>/swarm todo &lt;peer&gt; &lt;task&gt;</code></td><td>Assign a task to a worker</td></tr>
-    <tr><td><code>/swarm todos</code></td><td>List received tasks</td></tr>
-    <tr><td><code>/swarm inbox</code></td><td>View pending messages and tasks</td></tr>
-    <tr><td><code>/mesh</code></td><td>Direct mesh network operations — peer discovery, status, and topology</td></tr>
-    <tr><td><code>/remote</code></td><td>Manage remote Clew sessions and connections</td></tr>
-    <tr><td><code>/remote-setup</code></td><td>Configure remote environment for teleport sessions</td></tr>
-    <tr><td><code>/teleport</code></td><td>Teleport to a remote session environment</td></tr>
-    <tr><td><code>/share</code></td><td>Share the current session with other users</td></tr>
-  </table>
-
-  <h2>Agents</h2>
-  <table>
-    <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/agent</code></td><td>Manage Clew AI Agents execution, state checkpoints, and approvals</td></tr>
-    <tr><td><code>/agents</code></td><td>Open interactive agent dashboard with grouped sessions, PR columns, dispatch autocomplete, AI summaries, and keyboard shortcuts</td></tr>
-    <tr><td><code>!bg &lt;command&gt;</code></td><td>Run a shell command as a persistent background agent task, visible in the agents dashboard with live status tracking</td></tr>
-    <tr><td><code>/tasks</code></td><td>List and manage background tasks</td></tr>
-    <tr><td><code>/daemon</code></td><td>Open an interactive 24/7 autonomous daemon control panel; subcommands still support start/stop/status/restart</td></tr>
-    <tr><td><code>/task</code></td><td>Create scheduled tasks with an interactive form; subcommands still manage the autonomous task queue</td></tr>
-    <tr><td><code>/loop</code></td><td>Run a prompt or slash command on a recurring interval (e.g. <code>/loop 5m /check-deploy</code>)</td></tr>
-    <tr><td><code>/autofix-pr</code></td><td>Fix CI errors and address review comments on a PR using Clew on the web</td></tr>
-    <tr><td><code>/recap</code></td><td>Show a summary of the current session's activity</td></tr>
-    <tr><td><code>/dashboard</code></td><td>Open interactive agent and task dashboard</td></tr>
-  </table>
-
-  <h2>System &amp; Diagnostics</h2>
-  <table>
-    <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/help</code></td><td>Show help and available commands</td></tr>
-    <tr><td><code>/status</code></td><td>Show Clew status including version, model, account, API connectivity, and tool statuses</td></tr>
-    <tr><td><code>/doctor</code></td><td>Diagnose and verify your Clew installation and settings</td></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>/status</code></td><td>Show current provider, model, session, and context info</td></tr>
+    <tr><td><code>/doctor</code></td><td>Run system diagnostics</td></tr>
+    <tr><td><code>/context</code></td><td>Show active context usage breakdown</td></tr>
+    <tr><td><code>/compact</code></td><td>Compress conversation history (multi-pass compaction)</td></tr>
+    <tr><td><code>/clear</code></td><td>Clear conversation or caches</td></tr>
     <tr><td><code>/exit</code></td><td>Exit the REPL</td></tr>
-    <tr><td><code>/version</code></td><td>Show version</td></tr>
-    <tr><td><code>/release-notes</code></td><td>View release notes</td></tr>
-    <tr><td><code>/upgrade</code></td><td>Upgrade to Max for higher rate limits</td></tr>
-  </table>
+    <tr><td><code>/help</code></td><td>List all available commands</td></tr>
+    <tr><td><code>/resume</code></td><td>Resume a previous session</td></tr>
+  </tbody>
+</table>
 
-  <h2>Configuration</h2>
-  <table>
+<h2 id="provider">Provider &amp; Model Commands</h2>
+<table>
+  <thead>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/config</code></td><td>Open config panel</td></tr>
-    <tr><td><code>/theme</code></td><td>Change the theme</td></tr>
-    <tr><td><code>/color</code></td><td>Set the prompt bar color for this session</td></tr>
-    <tr><td><code>/keybindings</code></td><td>Open or create your keybindings configuration file</td></tr>
-    <tr><td><code>/scroll-speed</code></td><td>Set mouse wheel scroll speed multiplier (1-20)</td></tr>
-    <tr><td><code>/output-style</code></td><td>Deprecated: use /config to change output style</td></tr>
-    <tr><td><code>/remote-env</code></td><td>Configure the default remote environment for teleport sessions</td></tr>
-    <tr><td><code>/setting-sources</code></td><td>Configure setting sources</td></tr>
-    <tr><td><code>/init</code></td><td>Run Setup hooks with init trigger</td></tr>
-    <tr><td><code>/env</code></td><td>View and manage environment variables</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td><code>/model</code></td><td>Switch provider or model. Use <code>/model list</code> to see available models</td></tr>
+    <tr><td><code>/effort</code></td><td>Set reasoning effort (low/medium/high) for supported providers</td></tr>
+    <tr><td><code>/fast</code></td><td>Toggle fast/turbo mode</td></tr>
+  </tbody>
+</table>
 
-  <h2>Git &amp; Code Review</h2>
-  <table>
+<h2 id="mesh">Mesh &amp; Networking Commands</h2>
+<table>
+  <thead>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/diff</code></td><td>View uncommitted changes and per-turn diffs</td></tr>
-    <tr><td><code>/commit</code></td><td>Stage and commit changes</td></tr>
-    <tr><td><code>/commit-push-pr</code></td><td>Commit, push, and create a PR</td></tr>
-    <tr><td><code>/review</code></td><td>Review code changes</td></tr>
-    <tr><td><code>/security-review</code></td><td>Run a security review</td></tr>
-    <tr><td><code>/pr-comments</code></td><td>Get comments from a GitHub pull request</td></tr>
-    <tr><td><code>/pr</code></td><td>Full GitHub PR lifecycle — create, list, view, review, merge, status</td></tr>
-    <tr><td><code>/install-github-app</code></td><td>Set up Clew GitHub Actions for a repository</td></tr>
-    <tr><td><code>/issue</code></td><td>Create and manage GitHub issues</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td><code>/mesh discover</code></td><td>Find other Clew instances on the LAN</td></tr>
+    <tr><td><code>/mesh share</code></td><td>Share this instance as a worker</td></tr>
+    <tr><td><code>/mesh run &lt;peer&gt; &lt;cmd&gt;</code></td><td>Run a command on a remote peer</td></tr>
+    <tr><td><code>/mesh send &lt;peer&gt; &lt;msg&gt;</code></td><td>Send a message to a peer</td></tr>
+    <tr><td><code>/mesh list</code></td><td>List discovered peers</td></tr>
+    <tr><td><code>/mesh info &lt;peer&gt;</code></td><td>Show peer details</td></tr>
+    <tr><td><code>/mesh help</code></td><td>Mesh command reference</td></tr>
+  </tbody>
+</table>
 
-  <h2>Research &amp; Search</h2>
-  <table>
+<h2 id="mcp">MCP Commands</h2>
+<table>
+  <thead>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/research</code></td><td>Deep source-grounded research across local files, wiki, and memory</td></tr>
-    <tr><td><code>/memory</code></td><td>Memory management &mdash; <code>save</code>, <code>timeline</code>, <code>stats</code>, <code>digest</code>, <code>graph</code>, <code>xp</code>, <code>search</code>, <code>preview</code>, <code>consolidate</code></td></tr>
-    <tr><td><code>/memory-search</code></td><td>Search memories using semantic search (cross-lingual)</td></tr>
-    <tr><td><code>/searxng</code></td><td>Start, stop, or check status of the local SearXNG Docker container</td></tr>
-    <tr><td><code>/explorer</code></td><td>Toggle file explorer sidebar</td></tr>
-    <tr><td><code>/tag</code></td><td>Manage tags for sessions, files, and memories</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td><code>/mcp list</code></td><td>List connected MCP servers and tools</td></tr>
+    <tr><td><code>/mcp add</code></td><td>Add an MCP server configuration</td></tr>
+    <tr><td><code>/mcp remove</code></td><td>Remove an MCP server</td></tr>
+  </tbody>
+</table>
 
-  <h2>Evaluation</h2>
-  <table>
+<h2 id="code">Code &amp; Review Commands</h2>
+<table>
+  <thead>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/eval</code></td><td>Evaluate AI agent performance with the verification harness</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td><code>/code-review</code></td><td>Review changed files for bugs</td></tr>
+    <tr><td><code>/simplify</code></td><td>Cleanup-focused code review</td></tr>
+    <tr><td><code>/pr</code></td><td>PR management (create/list/view/review/merge/status)</td></tr>
+    <tr><td><code>/diff</code></td><td>Show git diff</td></tr>
+  </tbody>
+</table>
 
-  <h2>Utilities</h2>
-  <table>
+<h2 id="plugin">Plugin &amp; Extension Commands</h2>
+<table>
+  <thead>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td><code>/btw</code></td><td>Ask a quick side question without interrupting the main conversation</td></tr>
-    <tr><td><code>/buddy</code></td><td>Configure your AI companion (Buddy)</td></tr>
-    <tr><td><code>/desktop</code></td><td>Continue the current session in Claude Desktop</td></tr>
-    <tr><td><code>/mobile</code></td><td>Show QR code to download the Claude mobile app</td></tr>
-    <tr><td><code>/powerup</code></td><td>Interactive lessons teaching Clew features with animated demos</td></tr>
-    <tr><td><code>/feedback</code></td><td>Submit feedback about Clew</td></tr>
-    <tr><td><code>/onboarding</code></td><td>Run the interactive onboarding wizard</td></tr>
-    <tr><td><code>/team-onboarding</code></td><td>Generate a teammate ramp-up guide from your local usage</td></tr>
-    <tr><td><code>/add-dir</code></td><td>Add a new working directory</td></tr>
-    <tr><td><code>/goal</code></td><td>Set a session goal</td></tr>
-    <tr><td><code>/heapdump</code></td><td>Dump the JS heap to ~/Desktop</td></tr>
-    <tr><td><code>/stickers</code></td><td>Order Clew stickers</td></tr>
-    <tr><td><code>/thinkback</code></td><td>Your Clew Year in Review</td></tr>
-    <tr><td><code>/vim</code></td><td>Toggle Vim keybindings in the REPL</td></tr>
-    <tr><td><code>/chrome</code></td><td>Open and manage Chrome browser integration</td></tr>
-    <tr><td><code>/login</code></td><td>Authenticate with an AI provider via OAuth or API key</td></tr>
-    <tr><td><code>/logout</code></td><td>Log out from the current provider authentication</td></tr>
-    <tr><td><code>/install</code></td><td>Run the Clew installation wizard</td></tr>
-    <tr><td><code>/install-slack-app</code></td><td>Set up the Clew Slack app integration</td></tr>
-    <tr><td><code>/insights</code></td><td>Show personalized usage insights and suggestions</td></tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr><td><code>/plugin</code></td><td>Plugin and hook management (install, list, remove)</td></tr>
+    <tr><td><code>/skills</code></td><td>List and manage skills</td></tr>
+    <tr><td><code>/hooks</code></td><td>View active hooks</td></tr>
+  </tbody>
+</table>
 
-  <h2>Feature-Gated Commands</h2>
-  <p>These commands require specific environment variables or build-time features to be enabled:</p>
-  <table>
-    <tr><th>Command</th><th>Flag</th><th>Description</th></tr>
-    <tr><td><code>/bridge</code></td><td><code>BRIDGE_MODE=1</code></td><td>Connect this terminal for remote-control sessions</td></tr>
-    <tr><td><code>/voice</code></td><td><code>VOICE_MODE=1</code></td><td>Toggle voice mode</td></tr>
-    <tr><td><code>/brief</code></td><td><code>KAIROS=1</code></td><td>Brief command</td></tr>
-    <tr><td><code>/assistant</code></td><td><code>KAIROS=1</code></td><td>Assistant mode</td></tr>
-    <tr><td><code>/ant</code></td><td><code>USER_TYPE=ant</code></td><td>Toggle ant-only beta features</td></tr>
-    <tr><td><code>/ultraplan</code></td><td>Internal</td><td>Extended plan mode</td></tr>
-    <tr><td><code>/bughunter</code></td><td>Internal</td><td>Bug hunting workflow</td></tr>
-    <tr><td><code>/ide</code></td><td>Runtime</td><td>Auto-connect to IDE on startup</td></tr>
-    <tr><td><code>/terminal-setup</code></td><td>Runtime</td><td>Configure terminal shell and environment</td></tr>
-    <tr><td><code>/extra-usage</code></td><td>Runtime</td><td>Request additional usage credits</td></tr>
-  </table>
+<h2 id="autonomous">Autonomous &amp; Agent Commands</h2>
+<table>
+  <thead>
+    <tr><th>Command</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>/loop</code></td><td>24/7 autonomous agent loop (start, stop, status)</td></tr>
+    <tr><td><code>/daemon</code></td><td>Autonomous daemon dashboard</td></tr>
+    <tr><td><code>/task</code></td><td>Manage scheduled tasks</td></tr>
+    <tr><td><code>/agent</code></td><td>Background agent dispatch and subcommands</td></tr>
+    <tr><td><code>/agents</code></td><td>Agent dashboard (TUI operational view)</td></tr>
+  </tbody>
+</table>
 
-  <h2>Interactive Autocomplete</h2>
-  <p>Clew features an inline ghost text system that predicts the next argument as you type commands:</p>
-  <ul>
-    <li>Type <code>/goal</code> followed by a space inline ghost text shows <code>[condition]</code> in dim text after the cursor</li>
-    <li>Press <kbd>Tab</kbd> or <kbd>→</kbd> (Right Arrow) to accept the ghost text and fill the placeholder</li>
-    <li>Supports progressive hints: <code>/goal fix [name] [priority]</code> reveals remaining args as you fill each one</li>
-    <li>Commands with <code>argumentHint</code> (e.g. <code>/plugin-details &lt;plugin-name&gt;</code>) show static placeholder hints</li>
-  </ul>
-  <p>For mid-input command completion, the same ghost text engine fills in partial command names:</p>
-  <ul>
-    <li>Type <code>/com</code> ghost text shows <code>mit</code> for <code>/commit</code></li>
-    <li>Press <kbd>Tab</kbd> or <kbd>→</kbd> to complete the command name</li>
-  </ul>
+<h2 id="memory">Memory Commands</h2>
+<table>
+  <thead>
+    <tr><th>Command</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>/memory save</code></td><td>Save session summary to long-term memory</td></tr>
+    <tr><td><code>/memory timeline</code></td><td>Show chronological session history</td></tr>
+    <tr><td><code>/memory stats</code></td><td>Activity density chart</td></tr>
+    <tr><td><code>/memory digest</code></td><td>Show weekly/monthly digests</td></tr>
+    <tr><td><code>/memory search</code></td><td>Search stored memory entries</td></tr>
+  </tbody>
+</table>
 
-  <h2>Command Loading</h2>
-  <p>Commands are loaded from multiple sources at startup:</p>
-  <ul>
-    <li><strong>Built-in</strong> — Core commands from <code>src/commands/</code> (always available)</li>
-    <li><strong>Bundled skills</strong> — Skills shipped with the application</li>
-    <li><strong>Built-in plugin skills</strong> — From enabled built-in plugins</li>
-    <li><strong>Skill directory</strong> — <code>~/.clew/skills/</code> and project <code>.clew/skills/</code></li>
-    <li><strong>Plugin commands</strong> — From installed plugins</li>
-    <li><strong>Plugin skills</strong> — From plugin skill directories</li>
-    <li><strong>MCP skills</strong> — From MCP servers (when <code>MCP_SKILLS</code> feature is enabled)</li>
-    <li><strong>Dynamic skills</strong> — Discovered during file operations</li>
-  </ul>
-  <p>Use <code>/reload-plugins</code> to reload plugin-provided commands without restarting. Remote-safe and bridge-safe commands have explicit allowlists in <code>src/commands.ts</code>.</p>
+<h2 id="other">Other Commands</h2>
+<table>
+  <thead>
+    <tr><th>Command</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>/remote</code></td><td>WebSocket remote control (listen, connect, token)</td></tr>
+    <tr><td><code>/bridge</code></td><td>Bridge mode configuration</td></tr>
+    <tr><td><code>/config</code></td><td>Open configuration panel</td></tr>
+    <tr><td><code>/theme</code></td><td>Switch theme</td></tr>
+    <tr><td><code>/permissions</code></td><td>Change permission mode</td></tr>
+    <tr><td><code>/export</code></td><td>Export session</td></tr>
+    <tr><td><code>/recap</code></td><td>Session recap</td></tr>
+  </tbody>
+</table>
 
-  <footer class="footer">
-    <span>Clew 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
+
 </div>
 </div>
+
 <script src="js/main.js"></script>
 </body>
 </html>
-

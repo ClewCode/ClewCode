@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLI Reference — Clew Code</title>
+<meta name="description" content="Command-line interface reference for Clew Code.">
+<link rel="icon" type="image/svg+xml" href="assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="header"></header>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
+
+<div class="content-wrap">
+<div class="content">
+
+<div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span class="current">CLI Reference</span></div>
+
+<h1>CLI Reference</h1>
+<p class="sub">Complete reference for Clew Code command-line flags and arguments.</p>
+
+<h2 id="usage">Usage</h2>
+<pre><code class="language-bash">clew [flags]
+clew [command] [flags]
+</code></pre>
+
+<h2 id="global">Global Flags</h2>
+<table>
+  <thead>
+    <tr><th>Flag</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>-p, --prompt &lt;text&gt;</code></td><td>One-shot mode: run a prompt in non-interactive mode and exit</td></tr>
+    <tr><td><code>--resume &lt;id&gt;</code></td><td>Resume a previous session by ID. Use <code>last</code> for the most recent session</td></tr>
+    <tr><td><code>--version</code></td><td>Print version and exit</td></tr>
+    <tr><td><code>--help</code></td><td>Show help message</td></tr>
+  </tbody>
+</table>
+
+<h2 id="exec">Exec Commands</h2>
+<table>
+  <thead>
+    <tr><th>Command</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>clew . &lt;prompt&gt;</code></td><td>Run prompt in current directory</td></tr>
+    <tr><td><code>clew acp serve</code></td><td>Start ACP WebSocket server (default port: 3099)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="env">Environment Variables</h2>
+<table>
+  <thead>
+    <tr><th>Variable</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic Claude API key</td></tr>
+    <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI API key</td></tr>
+    <tr><td><code>GOOGLE_API_KEY</code></td><td>Google Gemini API key</td></tr>
+    <tr><td><code>DEEPSEEK_API_KEY</code></td><td>DeepSeek API key</td></tr>
+    <tr><td><code>GROQ_API_KEY</code></td><td>Groq API key</td></tr>
+    <tr><td><code>MISTRAL_API_KEY</code></td><td>Mistral API key</td></tr>
+    <tr><td><code>OPENROUTER_API_KEY</code></td><td>OpenRouter API key</td></tr>
+    <tr><td><code>OLLAMA_HOST</code></td><td>Ollama server URL (default: http://localhost:11434)</td></tr>
+    <tr><td><code>SEARXNG_URL</code></td><td>SearXNG instance URL</td></tr>
+    <tr><td><code>SENTRY_DSN</code></td><td>Sentry DSN for error tracking</td></tr>
+    <tr><td><code>GROWTHBOOK_API_KEY</code></td><td>GrowthBook API key for feature flags</td></tr>
+  </tbody>
+</table>
+
+<h2 id="exit-codes">Exit Codes</h2>
+<table>
+  <thead>
+    <tr><th>Code</th><th>Meaning</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>0</code></td><td>Success</td></tr>
+    <tr><td><code>1</code></td><td>General error</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

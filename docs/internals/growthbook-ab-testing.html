@@ -1,92 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GrowthBook A/B Testing — Clew</title>
-  <meta name="description" content="GrowthBook A/B testing system for feature flags, experiments, and gradual rollouts in Clew.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A/B Testing — Clew Code</title>
+<meta name="description" content="Feature flags and A/B testing with GrowthBook in Clew Code.">
+<link rel="icon" type="image/svg+xml" href="../assets/clew.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
 <header class="header"></header>
-<div class="app"><aside class="sidebar" id="sidebar"></aside><div class="sidebar-overlay" id="sidebarOverlay"></div>
-<div class="content-wrap"><main class="content">
-  <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><a href="../index.html#features">Internals</a><span class="sep">/</span><span>A/B Testing</span></div>
-  <h1>GrowthBook A/B Testing</h1>
-  <p class="section-subtitle">Feature flagging and experiment management using GrowthBook for gradual rollouts, A/B tests, and targeted feature releases.</p>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside id="sidebar" class="sidebar"></aside>
 
-  <div class="callout callout-warn">
-    <strong>Internal Infrastructure</strong>
-    GrowthBook integration is used for Clew's own product development telemetry and experiment tracking. It is not a user-facing feature — this documentation is for contributors and integrators.
+<div class="content-wrap">
+<div class="content">
+
+<div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><span class="current">A/B Testing</span></div>
+
+<h1>A/B Testing with GrowthBook</h1>
+<p class="sub">Feature flags and experimentation using GrowthBook.</p>
+
+<h2 id="overview">Overview</h2>
+<p>Clew Code integrates with <a href="https://www.growthbook.io/">GrowthBook</a> for feature flag management and A/B testing. This allows gradual rollout of new features, targeted experiments, and configuration-driven behavior changes.</p>
+
+<h2 id="architecture">Architecture</h2>
+<p>GrowthBook is integrated via the <code>@growthbook/growthbook</code> SDK. Feature flags are evaluated at runtime and can control:</p>
+<ul>
+  <li>UI component visibility</li>
+  <li>Behavioral variations (e.g., different prompt templates)</li>
+  <li>Provider selection defaults</li>
+  <li>Beta feature access</li>
+  <li>Experimental tool availability</li>
+</ul>
+
+<h2 id="configuration">Configuration</h2>
+<p>Set the GrowthBook API key in your environment:</p>
+<pre><code class="language-bash">export GROWTHBOOK_API_KEY=your-api-key
+</code></pre>
+
+<p>Or configure in <code>.claude/settings.json</code>:</p>
+<pre><code class="language-json">{
+  "growthbook": {
+    "apiKey": "your-api-key",
+    "attributes": {
+      "environment": "development"
+    }
+  }
+}
+</code></pre>
+
+<h2 id="current-flags">Current Feature Flags</h2>
+<table>
+  <thead>
+    <tr><th>Flag</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>BRIDGE_MODE</code></td><td>Enable/disable Bridge v1 (CCR) functionality</td></tr>
+    <tr><td><code>tengu_ccr_bridge</code></td><td>GrowthBook-gated CCR bridge access</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  <span>Clew Code — MIT License</span>
+  <div class="footer-links">
+    <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
+    <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
   </div>
+</div>
 
-  <h2>Overview</h2>
-  <p>GrowthBook provides feature flagging and A/B testing within Clew. It enables controlled rollouts of new features, experiment tracking, and targeted feature releases based on user segments. The SDK is initialized at startup and evaluates flags locally with caching for minimal latency.</p>
-
-  <h2>Architecture</h2>
-  <ul>
-    <li><strong>Feature Flags</strong> — Boolean, string, number, and JSON flag types evaluated locally</li>
-    <li><strong>Experiments</strong> — Multi-variant A/B tests with statistical tracking and automatic analysis</li>
-    <li><strong>Forced Variations</strong> — Override flag values for testing and debugging</li>
-    <li><strong>Sticky Bucketing</strong> — Consistent user experience across sessions based on stable identifiers</li>
-    <li><strong>Local Caching</strong> — Feature definitions cached after initial fetch for offline resilience</li>
-  </ul>
-
-  <h2>Usage in Code</h2>
-  <pre><code>// Check if a feature is enabled (cached evaluation)
-const isEnabled = getFeatureValue_CACHED_MAY_BE_STALE(
-  'tengu_plum_vx3',  // Feature key
-  false              // Default value
-);
-// Use the feature value
-if (isEnabled) {
-  // New behavior path
-} else {
-  // Control behavior path
-}</code></pre>
-
-  <h2>Configuration</h2>
-  <table>
-    <tr><th>Variable</th><th>Purpose</th></tr>
-    <tr><td><code>GROWTHBOOK_API_HOST</code></td><td>GrowthBook API endpoint (self-hosted or cloud)</td></tr>
-    <tr><td><code>GROWTHBOOK_CLIENT_KEY</code></td><td>Client-side SDK key for feature flag access</td></tr>
-    <tr><td><code>GROWTHBOOK_FORCE_VARIATION</code></td><td>Force a specific variation for testing</td></tr>
-  </table>
-
-  <h2>How It Works</h2>
-  <ol>
-    <li>On startup, Clew initializes the GrowthBook SDK with the configured API host and client key</li>
-    <li>Feature definitions are fetched from the GrowthBook server and cached locally</li>
-    <li>Throughout the session, code checks feature flags using the cached evaluation function</li>
-    <li>Flag values are re-evaluated periodically or on explicit refresh</li>
-    <li>Experiment results are tracked and sent back to GrowthBook for statistical analysis</li>
-    <li>Forced variations can override normal bucket assignment for testing</li>
-  </ol>
-
-  <h2>Best Practices</h2>
-  <ul>
-    <li>Always provide a sensible default value (usually <code>false</code> for features not yet released)</li>
-    <li>Use descriptive, unique feature keys</li>
-    <li>Cache-aware design: do not rely on flag values being real-time; they are evaluated at session start</li>
-    <li>Clean up stale flags after experiments conclude</li>
-  </ul>
-
-  <footer class="footer">
-    <span>Clew Code 0.2.14 — Open Source</span>
-    <div class="footer-links">
-      <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
-      <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>
-    </div>
-  </footer>
-</main>
-<nav class="toc-sidebar"></nav>
 </div>
 </div>
+
 <script src="../js/main.js"></script>
 </body>
 </html>
-
