@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.16] — 2026-06-14
+
+### Fixed
+
+- **Auto-relaunch after update**: `UpdateDialog.startInstall()` now spawns a detached child process immediately after `bun/npm install -g` completes and exits — no more manual restart required. The new version launches automatically.
+
 ## [0.2.15] — 2026-06-14
 
 ### Added
