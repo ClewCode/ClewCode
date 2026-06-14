@@ -159,7 +159,7 @@ export const MeshSpawnTool = buildTool({
       if (platform === 'win32') {
         const clewCmd = `${process.env.APPDATA}\\npm\\clew.cmd`;
         const quotedArgs = cliArgs.map(a => a.includes(' ') ? quoteArg(a) : `"${a}"`).join(' ');
-        const winCmd = `start "Clew Mesh - ${targetName}" cmd.exe /k "${clewCmd}" ${quotedArgs}`;
+        const winCmd = `start "Clew Mesh - ${targetName}" cmd.exe /k ""${clewCmd}" ${quotedArgs}"`;
         childSpawn('cmd.exe', ['/c', winCmd], {
           cwd,
           detached: true,
