@@ -23,6 +23,13 @@ All notable changes to this project will be documented in this file.
 - Rebrand `/memory` description from "Edit Claude memory files" to "Edit Clew memory files"
 - Fix `updateConfig` Zod v4 schema shape access (`_def.shape` is object, not method)
 
+### Removed
+
+- Remove `scripts/` directory from repository (already in `.gitignore`, ~2.5K lines deleted)
+- Remove temp screenshot PNGs (`docs-index-check.png`, `docs-peer-check.png`) from root
+- Remove `package-lock.json` (using `bun.lock` exclusively)
+- Remove `index.json` cache and `scratch/` directory from root
+
 ## [Unreleased]
 
 ## [0.2.16] — 2026-06-14
