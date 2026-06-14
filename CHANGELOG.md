@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Memory store system**: New `src/context/memoryStore.ts` — persistent key-value context store with SQLite backend for agent-learned facts and preferences.
+- **Auto-memory capture**: New `src/context/autoMemory.ts` — automatically captures lessons from FileEdit/Write/Bash tool results, extracts tags and decisions, and persists to memory store, knowledge graph, and session history with XP awards.
+- **Memory UI components**: Ink TUI components for memory browsing (`MemoryList`), timeline (`MemoryTimeline`), and stats dashboard (`MemoryStats`) with activity sparklines and expertise XP bars.
+- **Semantic search**: Embedding-based search in `src/memory/search.ts` using Xenova Transformers (`all-MiniLM-L6-v2`) as a boost on top of FTS5, with graceful fallback.
+
 ### Changed
 
 - **Migrated `.claude/` → `.clew/`**: All project-level config (agents, skills, workflows, settings) moved from `.claude/` to `.clew/`. Source code strings updated across 40+ files. `.gitignore` updated to track `.clew/` instead of `.claude/`.
