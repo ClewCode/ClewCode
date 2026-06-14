@@ -418,8 +418,8 @@
 
   // ── Footer Injection ──
   function injectFooter() {
-    var contentWrap = document.querySelector('.content-wrap');
-    if (!contentWrap || contentWrap.querySelector('.footer')) return;
+    var content = document.querySelector('.content');
+    if (!content || content.querySelector('.footer')) return;
 
     var footer = document.createElement('div');
     footer.className = 'footer';
@@ -430,7 +430,7 @@
       '  <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>' +
       '  <a href="https://www.npmjs.com/package/clew-code">npm</a>' +
       '</div>';
-    contentWrap.appendChild(footer);
+    content.appendChild(footer);
   }
 
   injectFooter();
