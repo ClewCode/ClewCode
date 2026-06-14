@@ -1,4 +1,6 @@
 import { feature } from 'bun:bundle';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import chalk from 'chalk';
 import type { UUID } from 'crypto';
 import type { RefObject } from 'react';
@@ -80,6 +82,17 @@ const LogoHeader = React.memo(function LogoHeader({
 }: {
   agentDefinitions: AgentDefinitionsResult | undefined;
 }): React.ReactNode {
+  // ponytail: skip logo when profile is personal
+  const isPersonal = (() => {
+    try {
+      const home = process.env.HOME || process.env.USERPROFILE || '';
+      const sp = join(home, '.clew', 'settings.json');
+      if (!existsSync(sp)) return false;
+      return (JSON.parse(readFileSync(sp, 'utf-8')) as any).profile === 'personal';
+    } catch { return false; }
+  })();
+  if (isPersonal) return null;
+
   // LogoV2 has its own internal OffscreenFreeze (catches its useAppState
   // re-renders). This outer freeze catches agentDefinitions changes and any
   // future StatusNotices subscriptions while the header is in scrollback.

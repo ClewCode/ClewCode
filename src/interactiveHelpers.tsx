@@ -1,5 +1,6 @@
 import { feature } from 'bun:bundle';
-import { appendFileSync } from 'fs';
+import { appendFileSync, existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 import type React from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
 import { gracefulShutdown, gracefulShutdownSync } from 'src/utils/gracefulShutdown.js';
@@ -150,10 +151,8 @@ export async function showSetupScreens(
 
   // ponytail: skip onboarding when profile is personal (no welcome banner)
   try {
-    const { existsSync, readFileSync } = await import('node:fs');
-    const { homedir } = await import('node:os');
-    const { join } = await import('node:path');
-    const sp = join(homedir(), '.clew', 'settings.json');
+    const home = process.env.HOME || process.env.USERPROFILE || '';
+    const sp = join(home, '.clew', 'settings.json');
     if (existsSync(sp)) {
       const s = JSON.parse(readFileSync(sp, 'utf-8'));
       if (s.profile === 'personal') return false;
