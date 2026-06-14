@@ -33,7 +33,7 @@ const HELP = `AGENT — dispatch Clew internal background specialists from chat
   /agent trace <id>        display execution timeline
   /agent doctor            verify runtime installation
 
-  For external CLIs like Codex, use /swarm run <provider> <task>`;
+  For external CLIs like Codex, use /mesh run <provider> <task>`;
 
 function parseArgs(args: string): string[] {
   const result: string[] = [];

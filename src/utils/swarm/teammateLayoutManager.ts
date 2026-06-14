@@ -83,16 +83,16 @@ export async function createTeammatePaneInSwarmView(
  * Enables pane border status for a window (shows pane titles).
  * Delegates to the detected backend.
  */
-export async function enablePaneBorderStatus(windowTarget?: string, useSwarmSocket = false): Promise<void> {
+export async function enablePaneBorderStatus(windowTarget?: string, useMeshSocket = false): Promise<void> {
   const backend = await getBackend();
-  return backend.enablePaneBorderStatus(windowTarget, useSwarmSocket);
+  return backend.enablePaneBorderStatus(windowTarget, useMeshSocket);
 }
 
 /**
  * Sends a command to a specific pane.
  * Delegates to the detected backend.
  */
-export async function sendCommandToPane(paneId: string, command: string, useSwarmSocket = false): Promise<void> {
+export async function sendCommandToPane(paneId: string, command: string, useMeshSocket = false): Promise<void> {
   const backend = await getBackend();
-  return backend.sendCommandToPane(paneId, command, useSwarmSocket);
+  return backend.sendCommandToPane(paneId, command, useMeshSocket);
 }

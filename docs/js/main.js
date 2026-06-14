@@ -27,45 +27,59 @@
     var docsHref = isThai ? 'quick-start.th.html' : 'quick-start.html';
     var ariaLabel = isThai ? '\u0E40\u0E1B\u0E34\u0E14/\u0E1B\u0E34\u0E14\u0E40\u0E21\u0E19\u0E39' : 'Toggle navigation';
 
-    // Language dropdown
-    var langEn = isThai
+    // Language toggle
+    var langTarget = isThai
       ? currentPage.replace(/\.th\.html$/, '.html')
-      : '../README.md';
+      : currentPage.replace(/\.html$/, '.th.html');
+    var langLabel = isThai ? 'EN' : '\u0E44\u0E17\u0E22';
+    // If no .html page exists for the target, just use README
+    if (isIndex) langTarget = isThai ? 'index.html' : 'index.th.html';
 
-    var langOptionsHtml = [
-      { url: langEn,                   label: 'English', code: 'en' },
-      { url: '../readme/README.th.md', label: '\u0E44\u0E17\u0E22', code: 'th' }
-    ].map(function (lang) {
-      var sel = (lang.code === (isThai ? 'th' : 'en')) ? ' selected' : '';
-      return '<option value="' + lang.url + '"' + sel + '>' + lang.label + '</option>';
-    }).join('');
-
-    var langSelectHtml =
-      '<select class="lang-select" aria-label="Language">' +
-      '  <option value="" disabled hidden>\uD83C\uDF10</option>' +
-      langOptionsHtml +
-      '</select>';
+    // Build breadcrumbs from path
+    var crumbs = [];
+    var parts = path.replace(/\/$/, '').split('/').filter(Boolean);
+    if (parts[0] === 'docs') parts.shift(); // remove leading "docs"
+    if (parts.length > 0) {
+      var crumbPath = '';
+      for (var i = 0; i < parts.length; i++) {
+        crumbPath += (i === 0 ? '' : '/') + parts[i];
+        var isLast = i === parts.length - 1;
+        var label = parts[i].replace(/\.th\.html$/, '').replace(/\.html$/, '').replace(/-/g, ' ');
+        if (isLast) {
+          crumbs.push('<span class="current">' + label + '</span>');
+        } else {
+          crumbs.push('<a href="' + crumbPath + '">' + label + '</a>');
+          crumbs.push('<span class="sep">/</span>');
+        }
+      }
+    }
+    var breadcrumbsHtml = crumbs.length > 0
+      ? '<nav class="header-breadcrumbs">' + crumbs.join('') + '</nav>'
+      : '';
 
     header.innerHTML =
       '<div class="header-inner">' +
-      '  <a href="' + logoHref + '" class="logo"><span class="logo-mark">C</span>Clew</a>' +
+      '  <a href="' + logoHref + '" class="logo">Clew</a>' +
+      breadcrumbsHtml +
+      '  <div class="header-search">' +
+      '    <input type="text" id="headerSearchInput" placeholder="' + (isThai ? '\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23...' : 'Search docs...') + '" autocomplete="off">' +
+      '    <span class="search-icon">\u2315</span>' +
+      '    <div class="search-results" id="headerSearchResults"></div>' +
+      '  </div>' +
       '  <nav class="header-nav">' +
       '    <a href="' + logoHref + '">' + (isThai ? '\u0E2B\u0E19\u0E49\u0E32\u0E41\u0E23\u0E01' : 'Home') + '</a>' +
-      '    <a href="' + logoHref + '#features">' + (isThai ? '\u0E1F\u0E35\u0E40\u0E08\u0E2D\u0E23\u0E4C' : 'Features') + '</a>' +
-      '    <a href="' + logoHref + '#commands">' + (isThai ? '\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07' : 'Commands') + '</a>' +
       '    <a href="' + docsHref + '">' + (isThai ? '\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23' : 'Docs') + '</a>' +
       '    <a href="https://github.com/JonusNattapong/ClewCode" target="_blank">GitHub</a>' +
-      '    ' + langSelectHtml +
       '  </nav>' +
+      '  <button class="lang-toggle" id="langToggle" aria-label="Switch language">' + langLabel + '</button>' +
       '  <button class="menu-btn" id="menuToggle" aria-label="' + ariaLabel + '"><span></span><span></span><span></span></button>' +
       '</div>';
 
-    // Language change handler
-    var langSelect = header.querySelector('.lang-select');
-    if (langSelect) {
-      langSelect.addEventListener('change', function () {
-        var url = this.value;
-        if (url) window.location.href = url;
+    // Language toggle
+    var langToggle = document.getElementById('langToggle');
+    if (langToggle) {
+      langToggle.addEventListener('click', function () {
+        window.location.href = langTarget;
       });
     }
 
@@ -74,20 +88,81 @@
     navLinks.forEach(function (link) {
       var href = link.getAttribute('href');
       if (!href) return;
-      var hrefParts = href.split('#');
-      var hrefPage = hrefParts[0].split('/').pop() || 'index.html';
-      var hrefHash = hrefParts[1] ? '#' + hrefParts[1] : '';
-      if (hrefHash) {
-        if (hrefPage === currentPage && window.location.hash === hrefHash) link.classList.add('active');
-      } else if (hrefPage === currentPage && !window.location.hash) {
-        link.classList.add('active');
-      }
+      var hrefPage = href.split('/').pop().split('#')[0] || 'index.html';
+      if (hrefPage === currentPage) link.classList.add('active');
     });
-
     if (!isIndex) {
       var docsLink = header.querySelector('.header-nav a[href*="quick-start"]');
       if (docsLink) docsLink.classList.add('active');
     }
+
+    // Search functionality
+    initHeaderSearch();
+  }
+
+  function initHeaderSearch() {
+    var input = document.getElementById('headerSearchInput');
+    var results = document.getElementById('headerSearchResults');
+    if (!input || !results) return;
+
+    // Build search index from sidebar links + TOC headings
+    var searchIndex = [];
+    document.querySelectorAll('.sidebar-link').forEach(function (link) {
+      searchIndex.push({ text: link.textContent.trim(), href: link.getAttribute('href'), type: 'page' });
+    });
+    document.querySelectorAll('.content h2, .content h3').forEach(function (h) {
+      searchIndex.push({ text: h.textContent.trim(), href: '#' + h.id, type: 'section' });
+    });
+
+    input.addEventListener('input', function () {
+      var query = this.value.trim().toLowerCase();
+      results.innerHTML = '';
+      results.classList.remove('open');
+      if (query.length < 1) return;
+
+      var matches = [];
+      for (var i = 0; i < searchIndex.length; i++) {
+        var item = searchIndex[i];
+        if (item.text.toLowerCase().indexOf(query) !== -1) {
+          matches.push(item);
+        }
+      }
+
+      if (matches.length === 0) {
+        results.innerHTML = '<div class="search-empty">No results found</div>';
+        results.classList.add('open');
+        return;
+      }
+
+      for (var j = 0; j < Math.min(matches.length, 8); j++) {
+        var m = matches[j];
+        var highlighted = m.text.replace(
+          new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'),
+          '<mark>$1</mark>'
+        );
+        results.innerHTML +=
+          '<a href="' + m.href + '" class="search-result">' +
+          '<span class="search-type">' + (m.type === 'page' ? '\u{1F4C4}' : '#') + '</span> ' +
+          highlighted +
+          '</a>';
+      }
+      results.classList.add('open');
+    });
+
+    // Close on click outside
+    document.addEventListener('click', function (e) {
+      if (!input.contains(e.target) && !results.contains(e.target)) {
+        results.classList.remove('open');
+      }
+    });
+
+    // Close on Escape
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        results.classList.remove('open');
+        input.blur();
+      }
+    });
   }
 
   injectHeader();

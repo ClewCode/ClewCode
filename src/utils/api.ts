@@ -69,7 +69,7 @@ export type SystemPromptBlock = {
 };
 
 // Fields to filter from tool schemas when swarms are not enabled
-const SWARM_FIELDS_BY_TOOL: Record<string, string[]> = {
+const MESH_FIELDS_BY_TOOL: Record<string, string[]> = {
   [EXIT_PLAN_MODE_V2_TOOL_NAME]: ['launchSwarm', 'teammateCount'],
   [AGENT_TOOL_NAME]: ['name', 'team_name', 'mode'],
 };
@@ -79,7 +79,7 @@ const SWARM_FIELDS_BY_TOOL: Record<string, string[]> = {
  * Called at runtime when isAgentSwarmsEnabled() returns false.
  */
 function filterSwarmFieldsFromSchema(toolName: string, schema: Anthropic.Tool.InputSchema): Anthropic.Tool.InputSchema {
-  const fieldsToRemove = SWARM_FIELDS_BY_TOOL[toolName];
+  const fieldsToRemove = MESH_FIELDS_BY_TOOL[toolName];
   if (!fieldsToRemove || fieldsToRemove.length === 0) {
     return schema;
   }

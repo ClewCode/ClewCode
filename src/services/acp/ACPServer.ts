@@ -12,7 +12,7 @@
 import { Writable } from 'node:stream';
 import type { Agent } from '@agentclientprotocol/sdk';
 import { AgentSideConnection, ndJsonStream, PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
-import { getProcessSwarmProvider } from '../../swarm/ProcessSwarmProvider.js';
+import { getProcessMeshProvider } from '../../mesh/ProcessMeshProvider.js';
 import { logForDebugging } from '../../utils/debug.js';
 import type { ACPConfig } from './ACPConfig.js';
 import { cleanupSessions, createSession, getSession, listSessions, removeSession } from './ACPSessionManager.js';
@@ -166,7 +166,7 @@ function createAgentHandler(config: ACPConfig, connection: AgentSideConnection):
       });
 
       // Execute via Codex process peer
-      const provider = getProcessSwarmProvider('codex');
+      const provider = getProcessMeshProvider('codex');
       if (provider) {
         try {
           const result = await provider.runTask({

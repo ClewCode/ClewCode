@@ -1839,49 +1839,49 @@ async function run(): Promise<CommanderCommand> {
       } = options;
 
       // Handle peer name configuration
-      const peerNameOpt = (options as { swarmName?: string }).swarmName;
+      const peerNameOpt = (options as { meshName?: string }).meshName;
       if (peerNameOpt) {
-        const { getGlobalDiscovery } = await import('./swarm/SwarmDiscovery.js');
+        const { getGlobalDiscovery } = await import('./mesh/MeshDiscovery.js');
         getGlobalDiscovery().setLocalName(peerNameOpt);
       }
 
       // Register peer callbacks globally (for all peers to receive messages)
       (async () => {
         try {
-          const { getGlobalSwarmServer } = await import('./swarm/SwarmServer.js');
-          const { getGlobalSwarmStore } = await import('./swarm/SwarmStore.js');
-          const { getGlobalDiscovery } = await import('./swarm/SwarmDiscovery.js');
+          const { getGlobalMeshServer } = await import('./mesh/MeshServer.js');
+          const { getGlobalMeshStore } = await import('./mesh/MeshStore.js');
+          const { getGlobalDiscovery } = await import('./mesh/MeshDiscovery.js');
 
-          const server = getGlobalSwarmServer();
+          const server = getGlobalMeshServer();
 
           server.setCallbacks({
             onTodo: todo => {
-              getGlobalSwarmStore().addTodo(todo);
+              getGlobalMeshStore().addTodo(todo);
               import('./utils/messageQueueManager.js').then(({ enqueue }) => {
                 enqueue({ value: `Task from ${todo.fromName}: ${todo.message}`, mode: 'prompt', priority: 'next' });
               });
             },
             onMessage: msg => {
-              getGlobalSwarmStore().addMessage(msg);
+              getGlobalMeshStore().addMessage(msg);
               import('./utils/messageQueueManager.js').then(({ enqueue }) => {
                 enqueue({ value: `From ${msg.fromName}: ${msg.text}`, mode: 'prompt', priority: 'next' });
               });
             },
             onExec: async (command: string) => {
-              const { executeCommand } = await import('./tools/SwarmRunTool/SwarmRunTool.js');
+              const { executeCommand } = await import('./tools/MeshRunTool/MeshRunTool.js');
               return executeCommand(command, 60_000);
             },
           });
 
-          // Auto-start SwarmServer on all peers (so they can receive messages)
+          // Auto-start MeshServer on all peers (so they can receive messages)
           // unless --peer-share is used (which handles it separately)
           if (!peerShareOpt) {
             const discovery = getGlobalDiscovery();
-            const mySwarmId = discovery.swarmId;
+            const myMeshId = discovery.meshId;
             const myName = peerNameOpt || discovery.hostname;
 
-            const swarmInfo = {
-              id: mySwarmId,
+            const meshInfo = {
+              id: myMeshId,
               hostname: myName,
               ip: '127.0.0.1',
               port: 0,
@@ -1891,8 +1891,8 @@ async function run(): Promise<CommanderCommand> {
               status: 'online' as const,
             };
 
-            const port = await server.start(swarmInfo);
-            logForDebugging(`[Peer] SwarmServer auto-started on port ${port} to receive messages`);
+            const port = await server.start(meshInfo);
+            logForDebugging(`[Peer] MeshServer auto-started on port ${port} to receive messages`);
           }
         } catch (err) {
           // Silent fail if peer modules not available
@@ -1904,16 +1904,16 @@ async function run(): Promise<CommanderCommand> {
       if (peerShareOpt) {
         (async () => {
           try {
-            const { getGlobalDiscovery } = await import('./swarm/SwarmDiscovery.js');
-            const { getGlobalSwarmServer } = await import('./swarm/SwarmServer.js');
+            const { getGlobalDiscovery } = await import('./mesh/MeshDiscovery.js');
+            const { getGlobalMeshServer } = await import('./mesh/MeshServer.js');
 
             const discovery = getGlobalDiscovery();
-            const server = getGlobalSwarmServer();
-            const mySwarmId = discovery.swarmId;
+            const server = getGlobalMeshServer();
+            const myMeshId = discovery.meshId;
             const myName = peerNameOpt || discovery.hostname;
 
-            const swarmInfo = {
-              id: mySwarmId,
+            const meshInfo = {
+              id: myMeshId,
               hostname: myName,
               ip: '127.0.0.1',
               port: 0,
@@ -1923,8 +1923,8 @@ async function run(): Promise<CommanderCommand> {
               status: 'online' as const,
             };
 
-            const port = await server.start(swarmInfo);
-            swarmInfo.port = port;
+            const port = await server.start(meshInfo);
+            meshInfo.port = port;
             await discovery.startAdvertising(port, process.cwd());
             logForDebugging(`[Peer] Automatically sharing as worker peer on port ${port} with name "${myName}"`);
           } catch (err) {

@@ -6,7 +6,7 @@
  * to advertise its capabilities to other ACP-compatible agents.
  *
  * Spec: https://agentcommunicationprotocol.dev
- * SDK: acp-sdk (i-am-bee / Linux Foundation A2A)
+ * SDK: acp-sdk (i-am-bee / Linux Foundation Mesh)
  */
 
 /**

@@ -25,7 +25,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 
 ## Hacking in public
 
-Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships peer-to-peer LAN coordination, a preference-learning engine, autonomous background loops, MCP integration, and 27 provider adapters.
+Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships agent-to-agent LAN mesh coordination, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, and 27 provider adapters.
 
 > Forked from Claude Code. Rebuilt for every provider.
 
@@ -34,23 +34,25 @@ Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) 
 ## Features
 
 - **27 providers** — Anthropic, OpenAI, Google Gemini, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, GitHub Copilot, OpenCode, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, OpenCode Go. Switch mid-session.
-- **Peer-to-peer LAN mesh** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 14 AI tools let your agent coordinate autonomously.
+- **Agent-to-agent mesh** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15 mesh AI tools (discover, run, spawn, share, join, ping, broadcast, send_message, list_roles, list_messages, set_name, set_role, disconnect, info, help) let your agent coordinate autonomously via `/mesh` commands.
 
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
-- **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, peer tools, MCP tools, ProcessPeer (exec/pty).
+- **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, mesh tools (15 LAN coordination tools), MCP tools, ProcessMesh (exec/pty), plan mode with full bypass permissions, multi-pass context compaction.
 - **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
 - **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
 - **7 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk. Granular allow/deny rules with pattern matching.
 
 ---
 
-## Concepts: Agents, Subagents, and Swarm
+## Concepts: Agents, Subagents, and Mesh
 
 Clew Code uses a tiered architecture for distributed task execution:
 
-- **Agents:** Specialized AI personas running locally on your machine. You can dispatch them manually using `/agent <task>` or specific specialists via `/agent @<specialist_name> <task>`. You can view and manage all active agents with the `/agents` dashboard (operational view).
-- **Subagents:** Autonomous child agents spawned programmatically by parent agents using the `Agent` tool to break down complex problems into smaller tasks. These are managed automatically without direct user intervention.
-- **Swarm:** A local network (LAN) mesh of Clew instances coordinating with each other (formerly Peer). You can pair machines, share resources, and delegate tasks to remote worker nodes using `/swarm` commands.
+- **Agents:** Specialized AI personas running locally on your machine. Dispatch with `/agent <task>` or `/agent @<specialist_name> <task>`. View all active agents via `/agents` dashboard.
+- **Subagents:** Autonomous child agents spawned by parent agents using the `Agent` tool to break down complex problems. Managed automatically without direct user intervention.
+- **Mesh (agent-to-agent):** A LAN mesh of Clew instances coordinating with each other. Pair machines, share resources, and delegate tasks to remote worker nodes using `/mesh` commands (discover, run, spawn, share, join, etc.).
+- **Plan mode:** Full-access planning mode with bypass permissions — explore, read, write, and edit files freely. Plan files persist to `.clew/plans/long-term-plan.md` with task progress snapshot.
+- **Multi-pass compaction:** Automatic chunk-based context compression with recursive re-compaction when context exceeds the model window.
 
 ---
 
@@ -105,7 +107,7 @@ clew
 # In-session commands
 ❯ /help           # list everything
 ❯ /status         # current provider, model, context info
-❯ /swarm discover # find other Clew instances on LAN
+❯ /mesh discover # find other Clew instances on LAN
 ❯ /mcp list       # connected MCP servers
 ❯ /loop start     # background autonomous loop
 
@@ -151,7 +153,7 @@ export COPILOT_GITHUB_TOKEN=gho_...
 /bridge       Bridge mode config
 /agent        Background agent dispatch & subcommands
 /agents       TUI Agent dashboard (operational view)
-/swarm        Collaborate with Clew instances on LAN (formerly /peer)
+/mesh        Collaborate with Clew instances on LAN (formerly /peer)
 /remote       WebSocket remote control
 /loop         24/7 autonomous agent loop
 /daemon       Autonomous daemon dashboard
@@ -181,7 +183,7 @@ src/
 │   ├── autonomous/          # Agent loop + task queue + cron
 │   ├── lsp/                 # LSP integration
 │   └── Supervisor/          # Agent supervisor IPC
-├── peer/                    # PeerServer + PeerDiscovery
+├── mesh/                    # MeshServer + MeshDiscovery (agent-to-agent)
 ├── bridge/                  # WebSocket bridge + relay
 ├── components/              # Ink terminal UI components
 ├── state/                   # AppState management
@@ -242,7 +244,7 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 <summary><strong>v0.2.7 — 2026-06-11</strong></summary>
 
 - **process_peer PTY terminal box** — terminal-style progress box with ANSI-preserving output tail
-- **`/swarm run codex <task>`** — run one-shot Codex process peer from chat
+- **`/mesh run codex <task>`** — run one-shot Codex process peer from chat
 - **Auto-update dialog** — npm update notification before app starts
 - **Rich model fetching** — API models now carry context window, vision, tools, reasoning, free tags
 - **`/model list` capability tags** — `[200K ctx, vision, tools, reason, free]` per model

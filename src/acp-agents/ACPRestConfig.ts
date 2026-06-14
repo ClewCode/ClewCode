@@ -1,7 +1,7 @@
 /**
  * Configuration for the ACP (Agent Communication Protocol) REST API server.
  *
- * This server exposes REST endpoints for external ACP/A2A-compatible agents
+ * This server exposes REST endpoints for external ACP/Mesh-compatible agents
  * to discover Clew Code and execute tasks.
  */
 

@@ -7,8 +7,8 @@ import { sleep } from '../../sleep.js';
 import {
   getSwarmSocketName,
   HIDDEN_SESSION_NAME,
-  SWARM_SESSION_NAME,
-  SWARM_VIEW_WINDOW_NAME,
+  MESH_SESSION_NAME,
+  MESH_VIEW_WINDOW_NAME,
   TMUX_COMMAND,
 } from '../constants.js';
 import { getLeaderPaneId, isInsideTmux as isInsideTmuxFromDetection, isTmuxAvailable } from './detection.js';
@@ -334,7 +334,7 @@ export class TmuxBackend implements PaneBackend {
    */
   private async getCurrentWindowPaneCount(
     windowTarget?: string,
-    useSwarmSocket = false,
+    useMeshSocket = false,
     retried = false,
   ): Promise<number | null> {
     let target = windowTarget || (await this.getCurrentWindowTarget());
@@ -344,14 +344,14 @@ export class TmuxBackend implements PaneBackend {
         cachedLeaderWindowTarget = null; // Force refresh
         target = await this.getCurrentWindowTarget();
         if (target) {
-          return this.getCurrentWindowPaneCount(target, useSwarmSocket, true);
+          return this.getCurrentWindowPaneCount(target, useMeshSocket, true);
         }
       }
       return null;
     }
 
     const args = ['list-panes', '-t', target, '-F', '#{pane_id}'];
-    const result = useSwarmSocket ? await runTmuxInSwarm(args) : await runTmuxInUserSession(args);
+    const result = useMeshSocket ? await runTmuxInSwarm(args) : await runTmuxInUserSession(args);
 
     if (result.code !== 0) {
       // Window may have been deleted - try refreshing once
@@ -359,7 +359,7 @@ export class TmuxBackend implements PaneBackend {
         cachedLeaderWindowTarget = null; // Force refresh
         const newTarget = await this.getCurrentWindowTarget();
         if (newTarget && newTarget !== target) {
-          return this.getCurrentWindowPaneCount(newTarget, useSwarmSocket, true);
+          return this.getCurrentWindowPaneCount(newTarget, useMeshSocket, true);
         }
       }
       logError(
@@ -386,16 +386,16 @@ export class TmuxBackend implements PaneBackend {
     windowTarget: string;
     paneId: string;
   }> {
-    const sessionExists = await this.hasSessionInSwarm(SWARM_SESSION_NAME);
+    const sessionExists = await this.hasSessionInSwarm(MESH_SESSION_NAME);
 
     if (!sessionExists) {
       const result = await runTmuxInSwarm([
         'new-session',
         '-d',
         '-s',
-        SWARM_SESSION_NAME,
+        MESH_SESSION_NAME,
         '-n',
-        SWARM_VIEW_WINDOW_NAME,
+        MESH_VIEW_WINDOW_NAME,
         '-P',
         '-F',
         '#{pane_id}',
@@ -406,7 +406,7 @@ export class TmuxBackend implements PaneBackend {
       }
 
       const paneId = result.stdout.trim();
-      const windowTarget = `${SWARM_SESSION_NAME}:${SWARM_VIEW_WINDOW_NAME}`;
+      const windowTarget = `${MESH_SESSION_NAME}:${MESH_VIEW_WINDOW_NAME}`;
 
       logForDebugging(`[TmuxBackend] Created external swarm session with window ${windowTarget}, pane ${paneId}`);
 
@@ -414,12 +414,12 @@ export class TmuxBackend implements PaneBackend {
     }
 
     // Session exists, check if swarm-view window exists
-    const listResult = await runTmuxInSwarm(['list-windows', '-t', SWARM_SESSION_NAME, '-F', '#{window_name}']);
+    const listResult = await runTmuxInSwarm(['list-windows', '-t', MESH_SESSION_NAME, '-F', '#{window_name}']);
 
     const windows = listResult.stdout.trim().split('\n').filter(Boolean);
-    const windowTarget = `${SWARM_SESSION_NAME}:${SWARM_VIEW_WINDOW_NAME}`;
+    const windowTarget = `${MESH_SESSION_NAME}:${MESH_VIEW_WINDOW_NAME}`;
 
-    if (windows.includes(SWARM_VIEW_WINDOW_NAME)) {
+    if (windows.includes(MESH_VIEW_WINDOW_NAME)) {
       const paneResult = await runTmuxInSwarm(['list-panes', '-t', windowTarget, '-F', '#{pane_id}']);
 
       const panes = paneResult.stdout.trim().split('\n').filter(Boolean);
@@ -430,9 +430,9 @@ export class TmuxBackend implements PaneBackend {
     const createResult = await runTmuxInSwarm([
       'new-window',
       '-t',
-      SWARM_SESSION_NAME,
+      MESH_SESSION_NAME,
       '-n',
-      SWARM_VIEW_WINDOW_NAME,
+      MESH_VIEW_WINDOW_NAME,
       '-P',
       '-F',
       '#{pane_id}',

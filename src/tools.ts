@@ -82,23 +82,23 @@ import { RequestShutdownTool } from './tools/RequestShutdownTool/RequestShutdown
 import { SubscribePrActivityTool, UnsubscribePrActivityTool } from './tools/PrSubscriptionTool/PrSubscriptionTool.js';
 import { SendMessageTool } from './tools/SendMessageTool/SendMessageTool.js';
 import { AskUserQuestionTool } from './tools/AskUserQuestionTool/AskUserQuestionTool.js';
-import { SwarmDiscoverTool } from './tools/SwarmDiscoverTool/SwarmDiscoverTool.js';
-import { SwarmSendMessageTool } from './tools/SwarmSendMessageTool/SwarmSendMessageTool.js';
-import { SwarmSpawnTool } from './tools/SwarmSpawnTool/SwarmSpawnTool.js';
-import { SwarmShareTool } from './tools/SwarmShareTool/SwarmShareTool.js';
-import { SwarmInfoTool } from './tools/SwarmInfoTool/SwarmInfoTool.js';
-import { SwarmRunTool } from './tools/SwarmRunTool/SwarmRunTool.js';
-import { SwarmJoinTool } from './tools/SwarmJoinTool/SwarmJoinTool.js';
-import { SwarmSetNameTool } from './tools/SwarmSetNameTool/SwarmSetNameTool.js';
-import { SwarmSetRoleTool } from './tools/SwarmSetRoleTool/SwarmSetRoleTool.js';
-import { SwarmListRolesTool } from './tools/SwarmListRolesTool/SwarmListRolesTool.js';
-import { SwarmPingTool } from './tools/SwarmPingTool/SwarmPingTool.js';
-import { SwarmDisconnectTool } from './tools/SwarmDisconnectTool/SwarmDisconnectTool.js';
-import { SwarmBroadcastTool } from './tools/SwarmBroadcastTool/SwarmBroadcastTool.js';
-import { SwarmListMessagesTool } from './tools/SwarmListMessagesTool/SwarmListMessagesTool.js';
-import { SwarmHelpTool } from './tools/SwarmHelpTool/SwarmHelpTool.js';
-import { ProcessSwarmTool } from './tools/ProcessSwarmTool/ProcessSwarmTool.js';
-import { CodexSwarmTool } from './tools/CodexSwarmTool/CodexSwarmTool.js';
+import { MeshDiscoverTool } from './tools/MeshDiscoverTool/MeshDiscoverTool.js';
+import { MeshSendMessageTool } from './tools/MeshSendMessageTool/MeshSendMessageTool.js';
+import { MeshSpawnTool } from './tools/MeshSpawnTool/MeshSpawnTool.js';
+import { MeshShareTool } from './tools/MeshShareTool/MeshShareTool.js';
+import { MeshInfoTool } from './tools/MeshInfoTool/MeshInfoTool.js';
+import { MeshRunTool } from './tools/MeshRunTool/MeshRunTool.js';
+import { MeshJoinTool } from './tools/MeshJoinTool/MeshJoinTool.js';
+import { MeshSetNameTool } from './tools/MeshSetNameTool/MeshSetNameTool.js';
+import { MeshSetRoleTool } from './tools/MeshSetRoleTool/MeshSetRoleTool.js';
+import { MeshListRolesTool } from './tools/MeshListRolesTool/MeshListRolesTool.js';
+import { MeshPingTool } from './tools/MeshPingTool/MeshPingTool.js';
+import { MeshDisconnectTool } from './tools/MeshDisconnectTool/MeshDisconnectTool.js';
+import { MeshBroadcastTool } from './tools/MeshBroadcastTool/MeshBroadcastTool.js';
+import { MeshListMessagesTool } from './tools/MeshListMessagesTool/MeshListMessagesTool.js';
+import { MeshHelpTool } from './tools/MeshHelpTool/MeshHelpTool.js';
+import { ProcessMeshTool } from './tools/ProcessMeshTool/ProcessMeshTool.js';
+import { CodexMeshTool } from './tools/CodexMeshTool/CodexMeshTool.js';
 
 import { LSPTool } from './tools/LSPTool/LSPTool.js';
 import { ListMcpResourcesTool } from './tools/ListMcpResourcesTool/ListMcpResourcesTool.js';
@@ -224,22 +224,22 @@ export function getAllBaseTools(): Tools {
     ...(isEnvTruthy(process.env.ENABLE_LSP_TOOL) ? [LSPTool] : []),
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     SendMessageTool,
-    SwarmDiscoverTool,
-    SwarmSendMessageTool,
-    SwarmSpawnTool,
-    SwarmShareTool,
-    SwarmInfoTool,
-    SwarmRunTool,
-    SwarmJoinTool,
-    SwarmSetNameTool,
-    SwarmSetRoleTool,
-    SwarmListRolesTool,
-    SwarmPingTool,
-    SwarmDisconnectTool,
-    SwarmBroadcastTool,
-    SwarmListMessagesTool,
-    SwarmHelpTool,
-    ProcessSwarmTool,
+    MeshDiscoverTool,
+    MeshSendMessageTool,
+    MeshSpawnTool,
+    MeshShareTool,
+    MeshInfoTool,
+    MeshRunTool,
+    MeshJoinTool,
+    MeshSetNameTool,
+    MeshSetRoleTool,
+    MeshListRolesTool,
+    MeshPingTool,
+    MeshDisconnectTool,
+    MeshBroadcastTool,
+    MeshListMessagesTool,
+    MeshHelpTool,
+    ProcessMeshTool,
 
     ...(listPeersTool ? [listPeersTool] : []),
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),

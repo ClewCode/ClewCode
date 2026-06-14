@@ -1,7 +1,7 @@
 /**
  * Agent Communication Protocol (ACP) — Client for external ACP agents.
  *
- * Wraps the `acp-sdk` Client to communicate with external ACP/A2A-compatible
+ * Wraps the `acp-sdk` Client to communicate with external ACP/Mesh-compatible
  * agents. This enables Clew Code to discover and delegate tasks to other
  * agents that implement the ACP protocol.
  *

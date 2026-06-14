@@ -1,5 +1,5 @@
 /**
- * Agent Communication Protocol (i-am-bee / Linux Foundation A2A).
+ * Agent Communication Protocol (i-am-bee / Linux Foundation Mesh).
  *
  * ACP enables communication between AI agents across different frameworks.
  * This module provides both server and client capabilities:

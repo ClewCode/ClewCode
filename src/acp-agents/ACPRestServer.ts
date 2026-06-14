@@ -1,7 +1,7 @@
 /**
  * ACP (Agent Communication Protocol) REST API Server.
  *
- * Exposes REST endpoints for external ACP/A2A-compatible agents to:
+ * Exposes REST endpoints for external ACP/Mesh-compatible agents to:
  * - Discover Clew Code as an agent (GET /agents)
  * - Execute tasks (POST /runs)
  * - Check run status (GET /runs/:id)
@@ -9,7 +9,7 @@
  * - Cancel runs (DELETE /runs/:id)
  *
  * Spec: https://agentcommunicationprotocol.dev
- * SDK: acp-sdk (i-am-bee / Linux Foundation A2A)
+ * SDK: acp-sdk (i-am-bee / Linux Foundation Mesh)
  */
 
 import { createServer } from 'node:http';
@@ -18,7 +18,7 @@ import type { ACPRestConfig } from './ACPRestConfig.js';
 import { createClewCodeManifest } from './ACPAgentManifest.js';
 import { createRun, getRun, cancelRun } from './ACPRunManager.js';
 import { textToACPMessage, resultToACPMessage, acpMessagesToPrompt } from './ACPMessageConverter.js';
-import { getProcessSwarmProvider } from '../swarm/ProcessSwarmProvider.js';
+import { getProcessMeshProvider } from '../mesh/ProcessMeshProvider.js';
 import { logForDebugging } from '../utils/debug.js';
 
 let server: ReturnType<typeof createServer> | null = null;
@@ -198,7 +198,7 @@ async function handleRequest(
  */
 async function executeRunAsync(runId: string, prompt: string): Promise<void> {
   try {
-    const provider = getProcessSwarmProvider('codex');
+    const provider = getProcessMeshProvider('codex');
     if (!provider) {
       // Fallback: just complete with a message
       const { completeRun } = await import('./ACPRunManager.js');

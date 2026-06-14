@@ -47,7 +47,7 @@ import {
   hasSandboxPermissionCallback,
   processMailboxPermissionResponse,
   processSandboxPermissionResponse,
-} from './useSwarmPermissionPoller.js';
+} from './useMeshPermissionPoller.js';
 
 /**
  * Get the agent name to poll for messages.

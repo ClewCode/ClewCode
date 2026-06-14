@@ -32,7 +32,7 @@ export const THEME_COLOR_TO_HEX: Record<string, string> = {
   pink_FOR_SUBAGENTS_ONLY: '#DB2777',
 };
 
-const FREE_COLOR = '#2A2A2A';
+const FREE_COLOR = '#2Mesh2A';
 
 /**
  * Unicode block characters for fractional-width rendering.
