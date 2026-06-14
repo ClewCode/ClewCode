@@ -13,7 +13,7 @@
 
 export { createClewCodeManifest, peerInfoToManifest } from './ACPAgentManifest.js';
 export type { ACPAgentManifest } from './ACPAgentManifest.js';
-export { createRun, getRun, listRuns, completeRun, failRun, cancelRun, clearRuns } from './ACPRunManager.js';
+export { createRun, getRun, listRuns, completeRun, failRun, cancelRun, clearRuns, isTerminalStatus } from './ACPRunManager.js';
 export type { ACPRun, ACPRunStatus } from './ACPRunManager.js';
 export {
   textToACPMessage,
@@ -23,6 +23,9 @@ export {
 } from './ACPMessageConverter.js';
 export { ACPAgentClient } from './ACPAgentClient.js';
 export type { ACPAgentClientConfig } from './ACPAgentClient.js';
+export { AcpRunController } from './AcpRunController.js';
+export { runPromptThroughMesh } from './AcpMeshBoundary.js';
+export type { AcpMeshResult, AcpMeshOptions } from './AcpMeshBoundary.js';
 export { startACPRestServer, stopACPRestServer } from './ACPRestServer.js';
 export { resolveACPRestConfig } from './ACPRestConfig.js';
 export type { ACPRestConfig } from './ACPRestConfig.js';

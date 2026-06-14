@@ -22,6 +22,12 @@ export interface ACPRun {
   completedAt: number | null;
 }
 
+const TERMINAL_STATUSES: ReadonlySet<ACPRunStatus> = new Set(['completed', 'failed', 'cancelled']);
+
+export function isTerminalStatus(status: ACPRunStatus): boolean {
+  return TERMINAL_STATUSES.has(status);
+}
+
 const runs = new Map<string, ACPRun>();
 
 /**
@@ -58,10 +64,12 @@ export function listRuns(): ACPRun[] {
 
 /**
  * Update run status to completed with output.
+ * No-op if the run is already in a terminal state.
  */
 export function completeRun(id: string, output: unknown): ACPRun | undefined {
   const run = runs.get(id);
   if (!run) return undefined;
+  if (isTerminalStatus(run.status)) return undefined;
   run.status = 'completed';
   run.output = output;
   run.completedAt = Date.now();
@@ -70,10 +78,12 @@ export function completeRun(id: string, output: unknown): ACPRun | undefined {
 
 /**
  * Update run status to failed with error.
+ * No-op if the run is already in a terminal state.
  */
 export function failRun(id: string, error: string): ACPRun | undefined {
   const run = runs.get(id);
   if (!run) return undefined;
+  if (isTerminalStatus(run.status)) return undefined;
   run.status = 'failed';
   run.error = error;
   run.completedAt = Date.now();
@@ -82,10 +92,12 @@ export function failRun(id: string, error: string): ACPRun | undefined {
 
 /**
  * Cancel a run.
+ * No-op if the run is already in a terminal state.
  */
 export function cancelRun(id: string): ACPRun | undefined {
   const run = runs.get(id);
   if (!run) return undefined;
+  if (isTerminalStatus(run.status)) return undefined;
   run.status = 'cancelled';
   run.completedAt = Date.now();
   return run;

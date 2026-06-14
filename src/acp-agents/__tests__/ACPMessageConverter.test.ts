@@ -37,4 +37,14 @@ describe('ACPMessageConverter', () => {
     const msg = textToACPMessage('user', 'Hello world');
     expect(extractTextFromMessage(msg)).toBe('Hello world');
   });
+
+  it("should include content_encoding 'plain' in textToACPMessage", () => {
+    const msg = textToACPMessage('user', 'Hello');
+    expect(msg.parts[0].content_encoding).toBe('plain');
+  });
+
+  it("should include content_encoding 'plain' in resultToACPMessage", () => {
+    const msg = resultToACPMessage('Result text');
+    expect(msg.parts[0].content_encoding).toBe('plain');
+  });
 });

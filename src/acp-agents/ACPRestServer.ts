@@ -16,12 +16,14 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import type { ACPRestConfig } from './ACPRestConfig.js';
 import { createClewCodeManifest } from './ACPAgentManifest.js';
-import { createRun, getRun, cancelRun } from './ACPRunManager.js';
-import { textToACPMessage, resultToACPMessage, acpMessagesToPrompt } from './ACPMessageConverter.js';
-import { getProcessMeshProvider } from '../mesh/ProcessMeshProvider.js';
+import { createRun, getRun, isTerminalStatus } from './ACPRunManager.js';
+import type { ACPRunStatus } from './ACPRunManager.js';
+import { textToACPMessage, acpMessagesToPrompt } from './ACPMessageConverter.js';
+import { AcpRunController } from './AcpRunController.js';
 import { logForDebugging } from '../utils/debug.js';
 
 let server: ReturnType<typeof createServer> | null = null;
+const runController = new AcpRunController();
 
 /**
  * Start the ACP REST API server.
@@ -131,11 +133,11 @@ async function handleRequest(
 
       const prompt = input ? acpMessagesToPrompt(input) : '';
 
-      // Create the run
+      // Create the run entry
       createRun(runId, agent_name ?? 'clew-code', input);
 
-      // Execute in background via codex process peer
-      executeRunAsync(runId, prompt);
+      // Execute in background through AcpRunController (lifecycle owner)
+      runController.execute(runId, prompt, { timeoutMs: 120_000 });
 
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(
@@ -174,11 +176,23 @@ async function handleRequest(
       return;
     }
 
+    // GET /runs/:id/stream — SSE streaming
+    if (method === 'GET' && /^\/runs\/[^/]+\/stream$/.test(pathname) && params.id) {
+      const run = getRun(params.id);
+      if (!run) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Run not found' }));
+        return;
+      }
+      handleStreamRun(res, params.id, run.status);
+      return;
+    }
+
     // DELETE /runs/:id — cancel a run
     if (method === 'DELETE' && /^\/runs\/[^/]+$/.test(pathname) && params.id) {
-      cancelRun(params.id);
+      const cancelled = runController.cancel(params.id);
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'cancelled' }));
+      res.end(JSON.stringify({ status: cancelled ? 'cancelled' : 'not_found_or_terminal' }));
       return;
     }
 
@@ -194,40 +208,69 @@ async function handleRequest(
 }
 
 /**
- * Execute a run in the background using the codex process peer.
+ * Handle SSE streaming for GET /runs/:id/stream.
+ *
+ * Polls the run status every 500ms, sending SSE events.
+ * Sends keepalive comments every 15s to prevent proxy timeout.
+ * Closes the stream when the run reaches a terminal state.
  */
-async function executeRunAsync(runId: string, prompt: string): Promise<void> {
-  try {
-    const provider = getProcessMeshProvider('codex');
-    if (!provider) {
-      // Fallback: just complete with a message
-      const { completeRun } = await import('./ACPRunManager.js');
-      completeRun(runId, [resultToACPMessage(`No Codex provider available. Run "${prompt}"`)]);
+function handleStreamRun(res: import('node:http').ServerResponse, runId: string, initialStatus: ACPRunStatus): void {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  });
 
-      // Also update via ACPRunManager
-      const { failRun } = await import('./ACPRunManager.js');
-      failRun(runId, 'Codex provider not available. Install Codex CLI to execute tasks.');
+  // If already terminal, send one event and close
+  if (isTerminalStatus(initialStatus)) {
+    const run = getRun(runId);
+    sendSSEEvent(res, { run_id: runId, status: run?.status ?? initialStatus, output: run?.output, error: run?.error });
+    res.end();
+    return;
+  }
+
+  // Send initial running event
+  sendSSEEvent(res, { run_id: runId, status: 'running' });
+
+  let lastKeepalive = Date.now();
+  const keepaliveMsg = ':keepalive\n\n';
+  const pollInterval = setInterval(() => {
+    const now = Date.now();
+
+    // Keepalive every 15s
+    if (now - lastKeepalive >= 15_000) {
+      res.write(keepaliveMsg);
+      lastKeepalive = now;
+    }
+
+    const run = getRun(runId);
+    if (!run) {
+      sendSSEEvent(res, { run_id: runId, status: 'failed', error: 'Run not found' });
+      clearInterval(pollInterval);
+      res.end();
       return;
     }
 
-    const result = await provider.runTask({
-      prompt,
-      timeoutMs: 120_000,
-    });
+    sendSSEEvent(res, { run_id: runId, status: run.status, output: run.output, error: run.error });
 
-    const { completeRun, failRun } = await import('./ACPRunManager.js');
-    if (result.exitCode === 0 && !result.timedOut) {
-      const output = [resultToACPMessage(result.stdout || '(completed with no output)')];
-      completeRun(runId, output);
-    } else {
-      const errorMsg = result.timedOut ? 'Task timed out' : result.stderr || `Exit code ${result.exitCode}`;
-      failRun(runId, errorMsg);
+    if (isTerminalStatus(run.status)) {
+      clearInterval(pollInterval);
+      res.end();
     }
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    const { failRun } = await import('./ACPRunManager.js');
-    failRun(runId, message);
-  }
+  }, 500);
+
+  // Cleanup on client disconnect
+  res.on('close', () => {
+    clearInterval(pollInterval);
+  });
+}
+
+function sendSSEEvent(
+  res: import('node:http').ServerResponse,
+  data: Record<string, unknown>,
+): void {
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
 
 /**

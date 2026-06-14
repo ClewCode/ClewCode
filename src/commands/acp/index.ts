@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { startACPStdioServer, resolveACPConfig, ACPStatusManager, listSessions } from '../../services/acp/index.js';
+import { startACPStdioServer, startACPWebSocketServer, resolveACPConfig, ACPStatusManager, listSessions } from '../../services/acp/index.js';
 
 const acpCommand = new Command('acp')
   .description('Agent Client Protocol (ACP) — connect editors to Clew Code')
@@ -38,9 +38,9 @@ const acpCommand = new Command('acp')
         });
 
         if (config.transport === 'websocket') {
-          console.log(`Starting ACP WebSocket server on port ${config.port}...`);
-          // TODO: implement WebSocket server
-          process.exit(1);
+          console.log(`Starting ACP WebSocket server on ws://${config.host}:${config.port}...`);
+          startACPWebSocketServer(config);
+          return;
         }
 
         console.log('Starting ACP stdio server...');

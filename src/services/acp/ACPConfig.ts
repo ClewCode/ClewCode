@@ -22,6 +22,9 @@ export interface ACPConfig {
 
   /** Maximum session age in minutes before auto-close */
   sessionMaxAgeMinutes: number;
+
+  /** Mesh provider ID for executing prompts (default: 'codex') */
+  meshProviderId: string;
 }
 
 export const DEFAULT_ACP_CONFIG: ACPConfig = {
@@ -30,6 +33,7 @@ export const DEFAULT_ACP_CONFIG: ACPConfig = {
   port: 15_793,
   host: '127.0.0.1',
   sessionMaxAgeMinutes: 60,
+  meshProviderId: 'codex',
 };
 
 /**
@@ -40,6 +44,7 @@ export function resolveACPConfig(flags?: {
   acpPort?: number;
   acpTransport?: string;
   acpHost?: string;
+  acpMeshProvider?: string;
 }): ACPConfig {
   return {
     enabled: flags?.acp ?? process.env.ACP_ENABLED === 'true',
@@ -48,5 +53,6 @@ export function resolveACPConfig(flags?: {
     host: flags?.acpHost ?? process.env.ACP_HOST ?? DEFAULT_ACP_CONFIG.host,
     authToken: process.env.ACP_AUTH_TOKEN,
     sessionMaxAgeMinutes: DEFAULT_ACP_CONFIG.sessionMaxAgeMinutes,
+    meshProviderId: flags?.acpMeshProvider ?? process.env.ACP_MESH_PROVIDER ?? DEFAULT_ACP_CONFIG.meshProviderId,
   };
 }

@@ -13,10 +13,13 @@ import type { Message, MessagePart } from 'acp-sdk';
 export function textToACPMessage(role: string, text: string): Message {
   return {
     role,
+    created_at: null,
+    completed_at: null,
     parts: [
       {
         content: text,
         content_type: 'text/plain',
+        content_encoding: 'plain',
       },
     ],
   };
@@ -47,10 +50,13 @@ export function acpMessagesToPrompt(messages: Message[]): string {
 export function resultToACPMessage(text: string): Message {
   return {
     role: 'agent',
+    created_at: null,
+    completed_at: null,
     parts: [
       {
         content: text,
         content_type: 'text/plain',
+        content_encoding: 'plain',
       },
     ],
   };

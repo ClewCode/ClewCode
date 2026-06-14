@@ -12,7 +12,7 @@
 import { Writable } from 'node:stream';
 import type { Agent } from '@agentclientprotocol/sdk';
 import { AgentSideConnection, ndJsonStream, PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
-import { getProcessMeshProvider } from '../../mesh/ProcessMeshProvider.js';
+import { AcpRunController } from '../../acp-agents/AcpRunController.js';
 import { logForDebugging } from '../../utils/debug.js';
 import type { ACPConfig } from './ACPConfig.js';
 import { cleanupSessions, createSession, getSession, listSessions, removeSession } from './ACPSessionManager.js';
@@ -33,7 +33,8 @@ export function startACPStdioServer(config: ACPConfig): void {
   const { readable, writable } = ndJsonStream(output, input);
   const stream = { readable, writable };
 
-  const connection = new AgentSideConnection(conn => createAgentHandler(config, conn), stream);
+  const controller = new AcpRunController();
+  const connection = new AgentSideConnection(conn => createAgentHandler(config, conn, controller), stream);
 
   // Track status
   const statusMgr = ACPStatusManager.getInstance();
@@ -64,10 +65,14 @@ export function startACPStdioServer(config: ACPConfig): void {
 /**
  * Create an Agent handler for ACP.
  *
- * @param config - ACP configuration
- * @returns Agent implementation
+ * Uses AcpRunController as the lifecycle owner for prompt execution,
+ * which provides cancel support and consistent terminal state handling.
  */
-function createAgentHandler(config: ACPConfig, connection: AgentSideConnection): Agent {
+function createAgentHandler(
+  config: ACPConfig,
+  connection: AgentSideConnection,
+  controller: AcpRunController,
+): Agent {
   return {
     initialize: async params => {
       logForDebugging(`[ACP] Initialize: protocolVersion=${params.protocolVersion}`);
@@ -158,119 +163,34 @@ function createAgentHandler(config: ACPConfig, connection: AgentSideConnection):
       const text = extractTextFromContentBlocks(params.prompt);
       logForDebugging(`[ACP] Prompt: session=${params.sessionId}, text="${text.slice(0, 100)}..."`);
 
-      // Send initial update notification
-      void connection.sessionUpdate({
-        sessionId: params.sessionId,
-        content: [],
-        status: 'in_progress',
+      // Execute through AcpRunController (lifecycle owner)
+      const result = await controller.execute(params.sessionId, text, {
+        providerId: config.meshProviderId,
+        timeoutMs: 120_000,
       });
 
-      // Execute via Codex process peer
-      const provider = getProcessMeshProvider('codex');
-      if (provider) {
-        try {
-          const result = await provider.runTask({
-            prompt: text,
-            timeoutMs: 120_000,
-          });
+      const outputText = result.output || result.error || '(no output)';
 
-          const outputText = result.stdout?.trim() || result.stderr?.trim() || '(no output)';
-          const exitCode = result.exitCode ?? 0;
+      // Send final output via sessionUpdate (SessionNotification shape)
+      void connection.sessionUpdate({
+        sessionId: params.sessionId,
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { type: 'text', text: outputText },
+        },
+      } as any);
 
-          // Send final update
-          void connection.sessionUpdate({
-            sessionId: params.sessionId,
-            content: [
-              {
-                type: 'text',
-                text: outputText,
-              },
-            ],
-            status: 'completed',
-          });
-
-          if (exitCode !== 0) {
-            logForDebugging(`[ACP] Prompt completed with exit code ${exitCode}`);
-          }
-
-          return {
-            stopReason: 'end_turn',
-            messages: [
-              {
-                role: 'assistant',
-                parts: [
-                  {
-                    content_type: 'text/plain',
-                    content: outputText,
-                  },
-                ],
-              },
-            ],
-          };
-        } catch (err: unknown) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          logForDebugging(`[ACP] Prompt execution error: ${errMsg}`);
-
-          void connection.sessionUpdate({
-            sessionId: params.sessionId,
-            content: [
-              {
-                type: 'text',
-                text: `Error: ${errMsg}`,
-              },
-            ],
-            status: 'completed',
-          });
-
-          return {
-            stopReason: 'error',
-            error: { type: 'internal_error', message: errMsg },
-            messages: [
-              {
-                role: 'assistant',
-                parts: [
-                  {
-                    content_type: 'text/plain',
-                    content: `Error executing prompt: ${errMsg}`,
-                  },
-                ],
-              },
-            ],
-          };
-        }
+      if (!result.ok && result.error !== 'Cancelled') {
+        logForDebugging(`[ACP] Prompt error: ${result.error}`);
       }
 
-      // Fallback: no Codex provider available
-      void connection.sessionUpdate({
-        sessionId: params.sessionId,
-        content: [
-          {
-            type: 'text',
-            text: 'Codex provider not available. Install Codex CLI or use a different provider.',
-          },
-        ],
-        status: 'completed',
-      });
-
-      return {
-        stopReason: 'end_turn',
-        messages: [
-          {
-            role: 'assistant',
-            parts: [
-              {
-                content_type: 'text/plain',
-                content: 'Codex provider not available. Install Codex CLI to execute tasks.',
-              },
-            ],
-          },
-        ],
-      };
+      const stopReason = result.error === 'Cancelled' ? 'cancelled' : 'end_turn';
+      return { stopReason: stopReason as 'end_turn' | 'cancelled' };
     },
 
-    cancel: async _params => {
-      logForDebugging('[ACP] Cancel');
-      // TODO: abort current execution
+    cancel: async params => {
+      logForDebugging(`[ACP] Cancel: session=${params.sessionId}`);
+      controller.cancel(params.sessionId);
     },
 
     loadSession: async params => {

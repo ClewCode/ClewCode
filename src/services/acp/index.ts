@@ -16,3 +16,4 @@ export { createSession, getSession, listSessions, removeSession, clearSessions }
 export type { ACPSession } from './ACPSessionManager.js';
 export { ACPStatusManager } from './ACPStatusManager.js';
 export type { ACPStatus } from './ACPStatusManager.js';
+export { startACPWebSocketServer } from './ACPWebSocketServer.js';
