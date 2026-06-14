@@ -13,7 +13,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 [![Release](https://img.shields.io/github/v/release/ClewCode/ClewCode)](https://github.com/ClewCode/ClewCode/releases)
 [![npm](https://img.shields.io/npm/v/clew-code)](https://www.npmjs.com/package/clew-code)
 [![CI](https://img.shields.io/github/actions/workflow/status/ClewCode/ClewCode/release.yml?branch=main)](https://github.com/ClewCode/ClewCode/actions)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
+[![License: MIT](https://img.shields.io/badge/license-GPL3-blue.svg)](#license)
 [![Platform](https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-lightgrey.svg)](#installation)
 [![Built with Bun](https://img.shields.io/badge/built%20with-Bun-ff69b4.svg)](https://bun.sh)
 
