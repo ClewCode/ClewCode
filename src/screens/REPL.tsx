@@ -4253,10 +4253,12 @@ export function REPL({
           })?.type === 'local-jsx'
         )
       ) {
-        // Build content blocks when there are pasted attachments (images)
+        // Build content blocks when there are pasted attachments (images/videos)
         const pastedValues = Object.values(pastedContents);
         const imageContents = pastedValues.filter(c => c.type === 'image');
+        const videoContents = pastedValues.filter(c => c.type === 'video');
         const imagePasteIds = imageContents.length > 0 ? imageContents.map(c => c.id) : undefined;
+        const videoPasteIds = videoContents.length > 0 ? videoContents.map(c => c.id) : undefined;
 
         let messageContent: string | ContentBlockParam[] = input.trim();
         let remoteContent: RemoteMessageContent = input.trim();
@@ -4283,6 +4285,14 @@ export function REPL({
               };
               contentBlocks.push({ type: 'image', source });
               remoteBlocks.push({ type: 'image', source });
+            } else if (pasted.type === 'video') {
+              const source = {
+                type: 'base64' as const,
+                media_type: (pasted.mediaType ?? 'video/mp4') as any,
+                data: pasted.content,
+              };
+              contentBlocks.push({ type: 'video', source } as any);
+              remoteBlocks.push({ type: 'video', source });
             } else {
               contentBlocks.push({ type: 'text', text: pasted.content });
               remoteBlocks.push({ type: 'text', text: pasted.content });
@@ -4298,6 +4308,7 @@ export function REPL({
         const userMessage = createUserMessage({
           content: messageContent,
           imagePasteIds,
+          videoPasteIds,
         });
         setMessages(prev => [...prev, userMessage]);
 
@@ -4586,17 +4597,30 @@ export function REPL({
         setInputMode(r.mode);
       }
 
-      // Restore pasted images
-      if (Array.isArray(message.message.content) && message.message.content.some(block => block.type === 'image')) {
-        const imageBlocks: Array<ImageBlockParam> = message.message.content.filter(block => block.type === 'image');
-        if (imageBlocks.length > 0) {
+      // Restore pasted images and videos
+      if (Array.isArray(message.message.content)) {
+        const hasMedia = message.message.content.some(block => block.type === 'image' || block.type === 'video');
+        if (hasMedia) {
           const newPastedContents: Record<number, PastedContent> = {};
+          const imageBlocks = message.message.content.filter(block => block.type === 'image');
+          const videoBlocks = message.message.content.filter(block => block.type === 'video');
           imageBlocks.forEach((block, index) => {
             if (block.source.type === 'base64') {
               const id = message.imagePasteIds?.[index] ?? index + 1;
               newPastedContents[id] = {
                 id,
                 type: 'image',
+                content: block.source.data,
+                mediaType: block.source.media_type,
+              };
+            }
+          });
+          videoBlocks.forEach((block, index) => {
+            if (block.source.type === 'base64') {
+              const id = message.videoPasteIds?.[index] ?? index + 1;
+              newPastedContents[id] = {
+                id,
+                type: 'video',
                 content: block.source.data,
                 mediaType: block.source.media_type,
               };

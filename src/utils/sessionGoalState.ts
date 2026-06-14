@@ -53,6 +53,10 @@ export type GoalState = {
   blockedReason?: string;
   /** Workflow run ids that were started in service of this goal. */
   linkedWorkflowRunIds?: string[];
+  /** Goal chain: remaining goals after this one (from "then" syntax) */
+  chain?: string[];
+  /** Index in the chain (0 = current) */
+  chainIndex?: number;
 };
 
 let currentGoal: string | null = null;

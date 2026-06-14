@@ -129,6 +129,16 @@ export type BaseTextInputProps = {
   ) => void;
 
   /**
+   * Optional callback when a video is pasted
+   */
+  readonly onVideoPaste?: (
+    base64Video: string,
+    mediaType?: string,
+    filename?: string,
+    sourcePath?: string,
+  ) => void;
+
+  /**
    * Optional callback when a large text (over 800 chars) is pasted
    */
   readonly onPaste?: (text: string) => void;

@@ -3,7 +3,14 @@ import React from 'react';
 import { logError } from 'src/utils/log.js';
 import { useDebounceCallback } from 'usehooks-ts';
 import type { InputEvent, Key } from '../ink.js';
-import { getImageFromClipboard, isImageFilePath, PASTE_THRESHOLD, tryReadImageFromPath } from '../utils/imagePaste.js';
+import {
+  getImageFromClipboard,
+  isImageFilePath,
+  isVideoFilePath,
+  PASTE_THRESHOLD,
+  tryReadImageFromPath,
+  tryReadVideoFromPath,
+} from '../utils/imagePaste.js';
 import type { ImageDimensions } from '../utils/imageResizer.js';
 import { getPlatform } from '../utils/platform.js';
 
@@ -20,9 +27,15 @@ type PasteHandlerProps = {
     dimensions?: ImageDimensions,
     sourcePath?: string,
   ) => void;
+  onVideoPaste?: (
+    base64Video: string,
+    mediaType?: string,
+    filename?: string,
+    sourcePath?: string,
+  ) => void;
 };
 
-export function usePasteHandler({ onPaste, onInput, onImagePaste }: PasteHandlerProps): {
+export function usePasteHandler({ onPaste, onInput, onImagePaste, onVideoPaste }: PasteHandlerProps): {
   wrappedOnInput: (input: string, key: Key, event: InputEvent) => void;
   pasteState: {
     chunks: string[];
@@ -120,6 +133,30 @@ export function usePasteHandler({ onPaste, onInput, onImagePaste }: PasteHandler
               .flatMap(part => part.split('\n'))
               .filter(line => line.trim());
             const imagePaths = lines.filter(line => isImageFilePath(line));
+            const videoPaths = lines.filter(line => isVideoFilePath(line));
+
+            if (onVideoPaste && videoPaths.length > 0) {
+              void Promise.all(videoPaths.map(videoPath => tryReadVideoFromPath(videoPath))).then(results => {
+                const validVideos = results.filter((r): r is NonNullable<typeof r> => r !== null);
+                if (validVideos.length > 0) {
+                  for (const videoData of validVideos) {
+                    const filename = basename(videoData.path);
+                    onVideoPaste(videoData.base64, videoData.mediaType, filename, videoData.path);
+                  }
+                  const nonVideoLines = lines.filter(line => !isVideoFilePath(line));
+                  if (nonVideoLines.length > 0 && onPaste) {
+                    onPaste(nonVideoLines.join('\n'));
+                  }
+                  setIsPasting(false);
+                } else {
+                  if (onPaste) {
+                    onPaste(pastedText);
+                  }
+                  setIsPasting(false);
+                }
+              });
+              return { chunks: [], timeoutId: null };
+            }
 
             if (onImagePaste && imagePaths.length > 0) {
               const isTempScreenshot = /\/TemporaryItems\/.*screencaptureui.*\/Screenshot/i.test(pastedText);
@@ -180,7 +217,7 @@ export function usePasteHandler({ onPaste, onInput, onImagePaste }: PasteHandler
         pastePendingRef,
       );
     },
-    [checkClipboardForImage, isMacOS, onImagePaste, onPaste],
+    [checkClipboardForImage, isMacOS, onImagePaste, onPaste, onVideoPaste],
   );
 
   // Paste detection is now done via the InputEvent's keypress.isPasted flag,
@@ -214,10 +251,10 @@ export function usePasteHandler({ onPaste, onInput, onImagePaste }: PasteHandler
     // When dragging multiple images, they may come as newline-separated or
     // space-separated paths. Split on spaces preceding absolute paths:
     // - Unix: ` /` - Windows: ` C:\` etc.
-    const hasImageFilePath = input
+    const hasMediaFilePath = input
       .split(/ (?=\/|[A-Za-z]:\\)/)
       .flatMap(part => part.split('\n'))
-      .some(line => isImageFilePath(line.trim()));
+      .some(line => isImageFilePath(line.trim()) || isVideoFilePath(line.trim()));
 
     // Handle empty paste (clipboard image on any platform).
     // When the user pastes an image with Ctrl+V / Cmd+V, the terminal sends
@@ -231,7 +268,7 @@ export function usePasteHandler({ onPaste, onInput, onImagePaste }: PasteHandler
 
     // Check if we should handle as paste (from bracketed paste, large input, or continuation)
     const shouldHandleAsPaste =
-      onPaste && (input.length > PASTE_THRESHOLD || pastePendingRef.current || hasImageFilePath || isFromPaste);
+      onPaste && (input.length > PASTE_THRESHOLD || pastePendingRef.current || hasMediaFilePath || isFromPaste);
 
     if (shouldHandleAsPaste) {
       pastePendingRef.current = true;

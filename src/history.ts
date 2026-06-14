@@ -20,7 +20,7 @@ const MAX_PASTED_CONTENT_LENGTH = 1024;
  */
 type StoredPastedContent = {
   id: number;
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'video';
   content?: string; // Inline content for small pastes
   contentHash?: string; // Hash reference for large pastes stored externally
   mediaType?: string;
@@ -55,8 +55,12 @@ export function formatImageRef(id: number): string {
   return `[Image #${id}]`;
 }
 
+export function formatVideoRef(id: number): string {
+  return `[Video #${id}]`;
+}
+
 export function parseReferences(input: string): Array<{ id: number; match: string; index: number }> {
-  const referencePattern = /\[(Pasted text|Image|\.\.\.Truncated text) #(\d+)(?: \+\d+ lines)?(\.)*\]/g;
+  const referencePattern = /\[(Pasted text|Image|Video|\.\.\.Truncated text) #(\d+)(?: \+\d+ lines)?(\.)*\]/g;
   const matches = [...input.matchAll(referencePattern)];
   return matches
     .map(match => ({
@@ -350,8 +354,8 @@ async function addToPromptHistory(command: HistoryEntry | string): Promise<void>
   const storedPastedContents: Record<number, StoredPastedContent> = {};
   if (entry.pastedContents) {
     for (const [id, content] of Object.entries(entry.pastedContents)) {
-      // Filter out images (they're stored separately in image-cache)
-      if (content.type === 'image') {
+      // Filter out images and videos (they're stored separately in image-cache)
+      if (content.type === 'image' || content.type === 'video') {
         continue;
       }
 

@@ -101,6 +101,9 @@ export function getToolResultsDir(): string {
 // Preview size in bytes for the reference message
 export const PREVIEW_SIZE_BYTES = 2000;
 
+// Max lines to show in the preview before truncating
+export const PREVIEW_MAX_LINES = 200;
+
 /**
  * Get the filepath where a tool result would be persisted.
  */
@@ -178,11 +181,23 @@ export async function persistToolResult(
  * Build a message for large tool results with preview
  */
 export function buildLargeToolResultMessage(result: PersistedToolResult): string {
+  const lines = result.preview.split('\n');
+  const truncatedLines = lines.slice(0, PREVIEW_MAX_LINES);
+  const hasMoreLines = lines.length > PREVIEW_MAX_LINES;
+
   let message = `${PERSISTED_OUTPUT_TAG}\n`;
-  message += `Output too large (${formatFileSize(result.originalSize)}). Full output saved to: ${result.filepath}\n\n`;
-  message += `Preview (first ${formatFileSize(PREVIEW_SIZE_BYTES)}):\n`;
-  message += result.preview;
-  message += result.hasMore ? '\n...\n' : '\n';
+  message += `Tool output too large (${formatFileSize(result.originalSize)}).\n`;
+  message += `Showing first ${PREVIEW_MAX_LINES} lines.\n`;
+  message += `Full output saved at: ${result.filepath}\n`;
+  if (result.hasMore || hasMoreLines) {
+    message += `Use ReadArtifact("${result.filepath}") to read the full output in chunks.\n`;
+  }
+  message += '\n';
+  message += truncatedLines.join('\n');
+  if (hasMoreLines) {
+    message += `\n... (${lines.length - PREVIEW_MAX_LINES} more lines)`;
+  }
+  message += '\n';
   message += PERSISTED_OUTPUT_CLOSING_TAG;
   return message;
 }

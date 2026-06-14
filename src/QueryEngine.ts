@@ -3,6 +3,8 @@ import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs
 import { randomUUID } from 'crypto';
 import last from 'lodash-es/last.js';
 import { getSessionId, isSessionPersistenceDisabled } from 'src/bootstrap/state.js';
+import { getProfilePrompt } from './constants/profilePrompts.js';
+import { getGoalPrompt } from './utils/goalPrompt.js';
 import { selectableUserMessagesFilter } from 'src/components/MessageSelector.js';
 import type {
   PermissionMode,
@@ -260,8 +262,13 @@ export class QueryEngine {
     const memoryMechanicsPrompt =
       customPrompt !== undefined && hasAutoMemPathOverride() ? await loadMemoryPrompt() : null;
 
+    const profilePrompt = getProfilePrompt(initialAppState.profile);
+    const goalPrompt = getGoalPrompt();
+
     const systemPrompt = asSystemPrompt([
       ...(customPrompt !== undefined ? [customPrompt] : defaultSystemPrompt),
+      profilePrompt,
+      goalPrompt,
       ...(memoryMechanicsPrompt ? [memoryMechanicsPrompt] : []),
       ...(appendSystemPrompt ? [appendSystemPrompt] : []),
     ]);

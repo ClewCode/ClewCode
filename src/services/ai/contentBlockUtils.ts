@@ -94,6 +94,12 @@ export function toAnthropicContentBlock(block: ProviderContentBlock): ContentBlo
         source: block.source,
         media_type: block.media_type,
       } as ContentBlockParam;
+    case 'video':
+      return {
+        type: 'video',
+        source: block.source,
+        media_type: (block as any).media_type,
+      } as ContentBlockParam;
     case 'refusal':
       return {
         type: 'refusal',
@@ -182,10 +188,18 @@ export function fromGooglePart(part: Record<string, unknown>): ProviderContentBl
   }
   if (part.inlineData) {
     const id = part.inlineData as Record<string, unknown>;
+    const mimeType = String(id.mimeType ?? '');
+    if (mimeType.startsWith('video/')) {
+      return {
+        type: 'video',
+        source: id,
+        media_type: mimeType,
+      };
+    }
     return {
       type: 'image',
       source: id,
-      media_type: String(id.mimeType ?? ''),
+      media_type: mimeType,
     };
   }
   return null;

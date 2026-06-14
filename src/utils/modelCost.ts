@@ -1490,6 +1490,8 @@ function tokensToUSDCost(modelCosts: ModelCosts, usage: Usage): number {
  * Speed info is only needed for Opus 4.6 fast-mode pricing.
  */
 export function getModelCosts(model: string, speedInfo?: { speed?: string }): ModelCosts {
+  // ponytail: any model with "free" in its ID costs $0
+  if (model.toLowerCase().includes('free')) return { inputTokens: 0, outputTokens: 0, promptCacheWriteTokens: 0, promptCacheReadTokens: 0, webSearchRequests: 0, isFree: true };
   const shortName = getCanonicalName(model);
 
   // Check if this is an Opus 4.6 model with fast mode active.
@@ -1546,6 +1548,8 @@ function lookupProviderPricing(model: string): ModelCosts | null {
  * Check if a model is free (no cost).
  */
 export function isModelFree(model: string): boolean {
+  // ponytail: any model with "free" in its ID costs $0
+  if (model.toLowerCase().includes('free')) return true;
   const costs = lookupProviderPricing(model);
   return costs?.isFree ?? false;
 }

@@ -21,8 +21,8 @@ export interface ToolResultEvent {
 
 // ── Key pattern extraction ──
 
-const PATTERN_RE = /(use|use|fix|add|implement|refactor|change|update|remove|migrate)\s+([a-z_/.\-]+)/gi;
-const DECISION_RE = /(decided|chose|switched|migrated|renamed|extracted|consolidated)\s+([a-z_/.\-]+)/gi;
+const PATTERN_RE = /(use|use|fix|add|implement|refactor|change|update|remove|migrate)\s+([a-z_/.-]+)/gi;
+const DECISION_RE = /(decided|chose|switched|migrated|renamed|extracted|consolidated)\s+([a-z_/.-]+)/gi;
 const TAG_RE = /#([a-z0-9_-]+)/gi;
 
 function extractTags(text: string, files: string[]): string[] {

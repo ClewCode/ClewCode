@@ -10,6 +10,21 @@ import {
   blockGoal,
 } from '../../utils/sessionGoalState.js';
 import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
+import { setExecutionMode } from '../../utils/executionMode.js';
+
+const GOAL_TEMPLATES: Record<string, string> = {
+  'fix-build': 'the project builds without errors or stop after 30 turns',
+  'green-tests': 'all tests pass or stop after 50 turns',
+  refactor: 'refactor the code without breaking existing tests or stop after 40 turns',
+  'fix-lint': 'all lint errors are resolved or stop after 20 turns',
+  'fix-typecheck': 'typecheck passes with no errors or stop after 20 turns',
+};
+
+function parseGoalChain(input: string): { first: string; chain: string[] } | null {
+  const parts = input.split(/\s+then\s+/i).map(p => p.trim()).filter(Boolean);
+  if (parts.length < 2) return null;
+  return { first: parts[0]!, chain: parts.slice(1) };
+}
 
 /**
  * `/goal` command — sets a session goal that is shown in the footer status line.
@@ -276,6 +291,7 @@ export async function call(
     goalState.pausedAt = Date.now();
     goalState.lastReason = 'paused by user';
     setFullGoalState(goalState);
+    setExecutionMode('safe');
 
     context.setAppState(prev => ({
       ...prev,
@@ -314,6 +330,7 @@ export async function call(
     goalState.blockedReason = undefined;
     goalState.lastReason = undefined;
     setFullGoalState(goalState);
+    setExecutionMode('afk');
 
     context.setAppState(prev => ({
       ...prev,
@@ -394,6 +411,7 @@ export async function call(
         : prev.toolPermissionContext,
     }));
     setFullGoalState(null);
+    setExecutionMode('safe');
 
     const statsLine = `${elapsed} · ${turns} turns${tokens_ > 0 ? ` · ${tokens_.toLocaleString()} eval tokens` : ''}`;
     const restoreMsg = restoredMode ? `\n  permissions restored to '${restoredMode}'` : '';
@@ -404,10 +422,22 @@ export async function call(
   }
 
   // ── Set (set or replace) ─────────────────────────────────────────────────
-  const { condition, maxTurns, maxMinutes } = parseGoalBounds(trimmed);
+
+  // Template expansion
+  const template = GOAL_TEMPLATES[first];
+  let goalText = trimmed;
+  if (template) {
+    goalText = rest ? `${template} (${rest})` : template;
+  }
+
+  // Chain parsing
+  const chain = parseGoalChain(goalText);
+  const effectiveGoal = chain ? chain.first : goalText;
+
+  const { condition, maxTurns, maxMinutes } = parseGoalBounds(effectiveGoal);
 
   const goalState: GoalState = {
-    goal: trimmed,
+    goal: effectiveGoal,
     condition,
     maxTurns,
     maxMinutes,
@@ -419,11 +449,16 @@ export async function call(
     preGoalMode: appState.toolPermissionContext?.mode,
     paused: false,
     totalPausedMs: 0,
+    chain: chain?.chain,
+    chainIndex: 0,
   };
+
+  // Switch to AFK mode
+  setExecutionMode('afk');
 
   context.setAppState(prev => ({
     ...prev,
-    sessionGoal: trimmed,
+    sessionGoal: effectiveGoal,
     sessionGoalStartTime: Date.now(),
     sessionGoalTurnCount: 0,
     sessionGoalPaused: false,
@@ -437,11 +472,15 @@ export async function call(
   setFullGoalState(goalState);
 
   const lines: string[] = [];
-  lines.push('◎ Goal activated');
-  lines.push(`  "${trimmed}"`);
+  lines.push('◎ Goal activated [AFK]');
+  lines.push(`  "${effectiveGoal}"`);
+  if (chain) {
+    lines.push('');
+    lines.push(`  chain: ${chain.chain.map((g, i) => `${i + 2}. "${g}"`).join(' → ')}`);
+  }
   lines.push('');
 
-  if (condition !== trimmed) {
+  if (condition !== effectiveGoal) {
     lines.push(`  condition: "${condition}"`);
   }
 
@@ -453,7 +492,7 @@ export async function call(
   }
 
   const prevMode = appState.toolPermissionContext?.mode ?? 'default';
-  lines.push(`  permissions: ${prevMode} → bypassPermissions`);
+  lines.push(`  permissions: ${prevMode} → bypassPermissions  ·  mode: afk`);
   lines.push('');
   lines.push('  claude works autonomously. /goal to check, /goal pause to pause, /goal clear to stop.');
 
@@ -461,7 +500,7 @@ export async function call(
     display: 'system',
     shouldQuery: true,
     metaMessages: [
-      `Autonomous Agent Mode activated. Your active goal is: "${trimmed}"${bounds.length > 0 ? ` (${bounds.join(', ')})` : ''}. Please proceed autonomously with the tools available to achieve this goal. Permissions are automatically bypassed for execution.`,
+      `Autonomous Agent Mode activated. Your active goal is: "${effectiveGoal}"${bounds.length > 0 ? ` (${bounds.join(', ')})` : ''}${chain ? `. Chain: ${chain.chain.join(' → ')}` : ''}. Please proceed autonomously with the tools available to achieve this goal. Permissions are automatically bypassed for execution.`,
     ],
   });
   return null;

@@ -97,6 +97,7 @@ import thinkbackPlay from './commands/thinkback-play/index.js';
 import toolsCmd from './commands/tools/index.js';
 import permissions from './commands/permissions/index.js';
 import plan from './commands/plan/index.js';
+import profile from './commands/profile/index.js';
 import research from './commands/research/index.js';
 import fast from './commands/fast/index.js';
 import passes from './commands/passes/index.js';
@@ -157,6 +158,7 @@ import env from './commands/env/index.js';
 import exit from './commands/exit/index.js';
 import exportCommand from './commands/export/index.js';
 import model from './commands/model/index.js';
+import modeCmd from './commands/mode/index.js';
 import outputStyle from './commands/output-style/index.js';
 import skill from './commands/skill/index.js';
 import powerup from './commands/powerup/index.js';
@@ -278,6 +280,7 @@ const COMMANDS = memoize((): Command[] => [
   memorySearch,
   mobile,
   model,
+  modeCmd,
   outputStyle,
   onboarding,
   swarmCmd,
@@ -333,6 +336,7 @@ const COMMANDS = memoize((): Command[] => [
   toolsCmd,
   permissions,
   plan,
+  profile,
   research,
   remoteCmd,
   guardianCmd,

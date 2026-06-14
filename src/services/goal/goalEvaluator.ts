@@ -35,6 +35,69 @@ export type GoalEvaluationResult = {
 };
 
 /**
+ * Heuristic pre-check: cheap checks that avoid LLM call for obvious outcomes.
+ * Returns null if inconclusive (fall through to LLM evaluator).
+ */
+function heuristicCheck(
+  condition: string,
+  messages: Message[],
+): { met: boolean; reason: string } | null {
+  const cond = condition.toLowerCase();
+
+  // Find last Bash tool result
+  let lastBashExit: number | undefined;
+  let lastBashStdout = '';
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.type === 'assistant' && (msg.message as any)?.content) {
+      for (const block of (msg.message as any).content) {
+        if (block.type === 'tool_result' && block.tool_use_id) {
+          const content = typeof block.content === 'string' ? block.content : '';
+          if (block.is_error) continue;
+          lastBashStdout = content;
+          // Check stderr for exit code
+          const exitMatch = content.match(/exit code: (\d+)/i);
+          if (exitMatch) lastBashExit = parseInt(exitMatch[1]!, 10);
+          if (lastBashExit === undefined) lastBashExit = 0; // default ok
+        }
+      }
+    }
+  }
+
+  // Build/test success
+  if (/build|compile/i.test(cond)) {
+    if (lastBashExit === 0) return { met: true, reason: 'Build succeeded (exit 0)' };
+    if (lastBashExit !== undefined) return { met: false, reason: `Build failed (exit ${lastBashExit})` };
+  }
+
+  // Test pass
+  if (/tests?\s+(pass|green|succeed|all)/i.test(cond)) {
+    if (lastBashStdout.includes('0 failing') || lastBashStdout.includes('tests passed')) {
+      return { met: true, reason: 'All tests passing' };
+    }
+    if (lastBashStdout.includes('failing') || lastBashExit !== 0) {
+      return { met: false, reason: 'Tests failing' };
+    }
+  }
+
+  // Lint pass
+  if (/lint/i.test(cond)) {
+    if (lastBashStdout.includes('0 errors') || lastBashStdout.includes('no lint errors')) {
+      return { met: true, reason: 'No lint errors' };
+    }
+  }
+
+  // Typecheck pass
+  if (/typecheck|type.check|tsc/i.test(cond)) {
+    if (lastBashExit === 0 && !lastBashStdout.includes('error TS')) {
+      return { met: true, reason: 'Typecheck passed' };
+    }
+  }
+
+  return null; // inconclusive — use LLM
+}
+
+/**
  * Parse a goal condition for turn/time bound clauses.
  * Supports patterns like:
  *   "or stop after 20 turns"
@@ -172,6 +235,19 @@ export async function evaluateGoal(
         model,
       };
     }
+  }
+
+  // ponytail: heuristic pre-check — skip LLM call for obvious outcomes
+  const heuristics = heuristicCheck(goalCondition, messages);
+  if (heuristics) {
+    return {
+      met: heuristics.met,
+      reason: heuristics.reason,
+      inputTokens: 0,
+      outputTokens: 0,
+      durationMs: Date.now() - evalStart,
+      model,
+    };
   }
 
   const transcript = buildTranscript(messages);

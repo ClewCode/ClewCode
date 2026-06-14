@@ -1,4 +1,4 @@
-var __addDisposableResource = (this && this.__addDisposableResource) || function (env, value, async) {
+var __addDisposableResource = (this && this.__addDisposableResource) || ((env, value, async) => {
     if (value !== null && value !== void 0) {
         if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
         var dispose, inner;
@@ -19,9 +19,8 @@ var __addDisposableResource = (this && this.__addDisposableResource) || function
         env.stack.push({ async: true });
     }
     return value;
-};
-var __disposeResources = (this && this.__disposeResources) || (function (SuppressedError) {
-    return function (env) {
+});
+var __disposeResources = (this && this.__disposeResources) || ((SuppressedError) => (env) => {
         function fail(e) {
             env.error = env.hasError ? new SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
             env.hasError = true;
@@ -33,7 +32,7 @@ var __disposeResources = (this && this.__disposeResources) || (function (Suppres
                     if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
                     if (r.dispose) {
                         var result = r.dispose.call(r.value);
-                        if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+                        if (r.async) return s |= 2, Promise.resolve(result).then(next, (e) => { fail(e); return next(); });
                     }
                     else s |= 1;
                 }
@@ -45,11 +44,10 @@ var __disposeResources = (this && this.__disposeResources) || (function (Suppres
             if (env.hasError) throw env.error;
         }
         return next();
-    };
-})(typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    })(typeof SuppressedError === "function" ? SuppressedError : ((error, suppressed, message) => {
     var e = new Error(message);
     return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-});
+}));
 import { feature } from 'bun:bundle';
 import { closeSync, writeFileSync as fsWriteFileSync, fsyncSync, openSync } from 'fs';
 // biome-ignore lint: This file IS the cloneDeep wrapper - it must import the original

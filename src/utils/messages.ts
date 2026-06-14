@@ -460,6 +460,7 @@ export function createUserMessage({
   uuid,
   timestamp,
   imagePasteIds,
+  videoPasteIds,
   sourceToolAssistantUUID,
   permissionMode,
   origin,
@@ -478,6 +479,7 @@ export function createUserMessage({
   uuid?: UUID | string;
   timestamp?: string;
   imagePasteIds?: number[];
+  videoPasteIds?: number[];
   // For tool_result messages: the UUID of the assistant message containing the matching tool_use
   sourceToolAssistantUUID?: UUID;
   // Permission mode when message was sent (for rewind restoration)
@@ -506,6 +508,7 @@ export function createUserMessage({
     toolUseResult,
     mcpMeta,
     imagePasteIds,
+    videoPasteIds,
     sourceToolAssistantUUID,
     permissionMode,
     origin,

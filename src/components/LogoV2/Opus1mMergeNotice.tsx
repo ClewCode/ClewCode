@@ -1,4 +1,4 @@
-import * as React from 'react'
+import type * as React from 'react'
 import { useEffect, useState } from 'react'
 import { UP_ARROW } from '../../constants/figures.js'
 import { Box, Text } from '../../ink.js'

@@ -311,10 +311,12 @@ async function processUserInputBase(
     throw new Error(`Mode: ${mode} requires a string input.`);
   }
 
-  // Extract and convert image content to content blocks early
+  // Extract and convert image/video content to content blocks early
   // Keep track of IDs in order for message storage
   const imageContents = pastedContents ? Object.values(pastedContents).filter(isValidImagePaste) : [];
+  const videoContents = pastedContents ? Object.values(pastedContents).filter(c => c.type === 'video' && c.content.length > 0) : [];
   const imagePasteIds = imageContents.map(img => img.id);
+  const videoPasteIds = videoContents.map(v => v.id);
 
   // Store images to disk so Claude can reference the path in context
   // (for manipulation with CLI tools, uploading to PRs, etc.)
@@ -365,6 +367,16 @@ async function processUserInputBase(
     imageContentBlocks.push(resized.block);
   }
   queryCheckpoint('query_pasted_image_processing_end');
+
+  // Build video content blocks (no resizing needed, send as-is)
+  const videoContentBlocks: ContentBlockParam[] = videoContents.map(v => ({
+    type: 'video' as const,
+    source: {
+      type: 'base64' as const,
+      media_type: (v.mediaType || 'video/mp4') as any,
+      data: v.content,
+    },
+  })) as any[];
 
   // Bridge-safe slash command override: mobile/web clients set bridgeOrigin
   // with skipSlashCommands still true (defense-in-depth against exit words and
@@ -643,7 +655,9 @@ async function processUserInputBase(
     processTextPrompt(
       normalizedInput,
       imageContentBlocks,
+      videoContentBlocks,
       imagePasteIds,
+      videoPasteIds,
       attachmentMessages,
       uuid,
       permissionMode,

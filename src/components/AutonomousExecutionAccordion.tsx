@@ -169,6 +169,23 @@ function GoalProgressSection({
     };
   }
 
+  // Achievement banner
+  if (goalState?.achieved) {
+    return (
+      <Box flexDirection="column">
+        <Text color="success">✓ Goal achieved!</Text>
+        <Text dimColor>
+          {goalState.goal}
+        </Text>
+        {goalState.chain && goalState.chain.length > 0 ? (
+          <Text bold>Next: {goalState.chain[0]}</Text>
+        ) : (
+          <Text dimColor>Use /goal clear to dismiss</Text>
+        )}
+      </Box>
+    );
+  }
+
   return (
     <Box flexDirection="column">
       {/* Turn progress bar */}
@@ -207,6 +224,13 @@ function GoalProgressSection({
             {Math.round(timeProgress.elapsed)}/{timeProgress.max}m
           </Text>
         </Box>
+      ) : null}
+
+      {/* Chain progress */}
+      {goalState?.chain && goalState.chain.length > 0 ? (
+        <Text dimColor>
+          {'  '}🔗 Chain: {goalState.chain.map((g, i) => `${i + 2}. ${truncateToWidth(g, 30)}`).join(' → ')}
+        </Text>
       ) : null}
 
       {/* Evaluator feedback */}

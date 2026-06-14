@@ -50,6 +50,14 @@ export const PermissionsSchema = lazySchema(() =>
         )
         .optional()
         .describe('Default permission mode when Clew Code needs access'),
+      profile: z
+        .enum(['coding', 'personal'])
+        .optional()
+        .describe('Active profile: "coding" for implementation, "personal" for command center + delegation'),
+      personalPersonaName: z
+        .string()
+        .optional()
+        .describe('Display name for the personal profile (shown in footer when personal is active)'),
       disableBypassPermissionsMode: z
         .enum(['disable'])
         .optional()

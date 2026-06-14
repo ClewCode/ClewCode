@@ -128,6 +128,10 @@ export function PromptInputFooterLeftSide({
   historyFailedMatch,
   onOpenTasksDialog,
 }: Props): React.ReactNode {
+  // ponytail: hooks must be top-level (React rules of hooks), computed early
+  const currentProfile = useAppState(s => s.profile);
+  const settingsSnapshot = useAppState(s => s.settings);
+
   if (exitMessage.show) {
     return (
       <Text dimColor key="exit-message">
@@ -140,6 +144,16 @@ export function PromptInputFooterLeftSide({
       <Text dimColor key="pasting-message">
         Pasting text…
       </Text>
+    );
+  }
+
+  // Personal profile: show persona name only, no statusline or hints
+  if (currentProfile === 'personal') {
+    const personaName = (settingsSnapshot as Record<string, unknown>).personalPersonaName as string | undefined;
+    return (
+      <Box justifyContent="flex-start" gap={1}>
+        <Text bold>{personaName || 'Clew Personal'}</Text>
+      </Box>
     );
   }
 
@@ -354,9 +368,17 @@ function ModeIndicator({
     ? Object.values(tasks).filter(t => t.type === 'in_process_teammate' && t.status === 'running').length
     : 0;
 
+  // Short profile label displayed before task/teammate indicators
+  const currentProfile = useAppState(s => s.profile);
+  const profileLabel = currentProfile === 'personal' ? 'P' : '';
+
   // Build parts array - exclude BackgroundTaskStatus when we have teammate pills
   // (teammate pills get their own row)
   const parts = [
+    // Profile indicator (dimColor, only shown when personal)
+    ...(profileLabel
+      ? [<Text key="profile" dimColor>{profileLabel}</Text>]
+      : []),
     // Running teammates badge
     ...(runningTeammateCount > 0
       ? [<Text key="teammates" dimColor>{runningTeammateCount}Tm</Text>]
