@@ -82,7 +82,7 @@ const LogoHeader = React.memo(function LogoHeader({
 }: {
   agentDefinitions: AgentDefinitionsResult | undefined;
 }): React.ReactNode {
-  // ponytail: skip logo when profile is personal
+  // ponytail: minimal header when profile is personal (no Clawd art)
   const isPersonal = (() => {
     try {
       const home = process.env.HOME || process.env.USERPROFILE || '';
@@ -91,7 +91,15 @@ const LogoHeader = React.memo(function LogoHeader({
       return (JSON.parse(readFileSync(sp, 'utf-8')) as any).profile === 'personal';
     } catch { return false; }
   })();
-  if (isPersonal) return null;
+  if (isPersonal) {
+    return (
+      <OffscreenFreeze>
+        <Box flexDirection="column" gap={1}>
+          <Text dimColor>Clew Personal — /help for commands</Text>
+        </Box>
+      </OffscreenFreeze>
+    );
+  }
 
   // LogoV2 has its own internal OffscreenFreeze (catches its useAppState
   // re-renders). This outer freeze catches agentDefinitions changes and any
