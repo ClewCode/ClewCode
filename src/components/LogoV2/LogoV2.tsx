@@ -317,8 +317,9 @@ export function LogoV2() {
   }
   const layoutMode = getLayoutMode(columns);
   const userTheme = resolveThemeSetting(getGlobalConfig().theme);
-  const borderTitle = ` ${color('claude', userTheme)('Clew Code')} ${color('inactive', userTheme)(`v${version}`)} `;
-  const compactBorderTitle = color('claude', userTheme)(' Clew Code ');
+  const isPersonal = (getInitialSettings() as any).profile === 'personal';
+  const borderTitle = ` ${color('claude', userTheme)(isPersonal ? 'Clew Personal' : 'Clew Code')} ${isPersonal ? '' : color('inactive', userTheme)(`v${version}`)} `;
+  const compactBorderTitle = color('claude', userTheme)(isPersonal ? ' Clew Personal ' : ' Clew Code ');
   if (layoutMode === 'compact') {
     let welcomeMessage = formatWelcomeMessage(username);
     if (stringWidth(welcomeMessage) > columns - 4) {
@@ -420,7 +421,7 @@ export function LogoV2() {
             {t12}
             {t13}
             <Text dimColor={true}>{billingType}</Text>
-            <Text dimColor={true}>{agentName ? `@${agentName} · ${truncatedCwd}` : truncatedCwd}</Text>
+            {!isPersonal && <Text dimColor={true}>{agentName ? `@${agentName} · ${truncatedCwd}` : truncatedCwd}</Text>}
           </Box>
         </OffscreenFreeze>
         {t14}
@@ -493,7 +494,7 @@ export function LogoV2() {
   }
   let t21;
   if ($[51] !== cwdLine) {
-    t21 = <Text dimColor={true}>{cwdLine}</Text>;
+    t21 = isPersonal ? null : <Text dimColor={true}>{cwdLine}</Text>;
     $[51] = cwdLine;
     $[52] = t21;
   } else {
