@@ -9,7 +9,6 @@ import React from 'react';
 import { WelcomeV2 } from '../../components/LogoV2/WelcomeV2.js';
 import { useManagePlugins } from '../../hooks/useManagePlugins.js';
 import type { Root } from '../../ink.js';
-import { getGlobalConfig } from '../../utils/config.js';
 import { Box, Text } from '../../ink.js';
 import { KeybindingSetup } from '../../keybindings/KeybindingProviderSetup.js';
 import { logEvent } from '../../services/analytics/index.js';

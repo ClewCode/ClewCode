@@ -12,7 +12,8 @@ import { ProviderManager } from '../services/ai/ProviderManager.js';
 import type { ProviderId } from '../services/ai/providers/ProviderInterface.js';
 import { isAnthropicAuthEnabled } from '../utils/auth.js';
 import { normalizeApiKeyForConfig } from '../utils/authPortable.js';
-import { getCustomApiKeyStatus, getGlobalConfig } from '../utils/config.js';
+import { getCustomApiKeyStatus } from '../utils/config.js';
+import { getSettingsForSource } from '../utils/settings/settings.js';
 import { env } from '../utils/env.js';
 import { isRunningOnHomespace } from '../utils/envUtils.js';
 import { PreflightStep } from '../utils/preflightChecks.js';
@@ -183,7 +184,7 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
   const [skipOAuth, setSkipOAuth] = useState(false);
   const [oauthEnabled] = useState(() => isAnthropicAuthEnabled());
   const [theme, setTheme] = useTheme();
-  const isPersonal = (getGlobalConfig() as any).profile === 'personal';
+  const isPersonal = getSettingsForSource('userSettings')?.profile === 'personal';
 
   useEffect(() => {
     logEvent('tengu_began_setup', {
