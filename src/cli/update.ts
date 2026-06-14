@@ -341,7 +341,7 @@ export async function update() {
       process.stderr.write(`Current version: ${MACRO.VERSION}, target: ${latestVersion}\n`);
       if (useLocalUpdate) {
         process.stderr.write('Try manually updating with:\n');
-        process.stderr.write(`  cd ~/.claude/local && npm update ${MACRO.PACKAGE_URL}\n`);
+        process.stderr.write(`  cd ~/.clew/local && npm update ${MACRO.PACKAGE_URL}\n`);
       } else {
         process.stderr.write('Try running with sudo or fix npm permissions\n');
         process.stderr.write('Or consider using native installation with: clew install\n');
@@ -353,7 +353,7 @@ export async function update() {
       process.stderr.write(`Current version: ${MACRO.VERSION}, target: ${latestVersion}\n`);
       if (useLocalUpdate) {
         process.stderr.write('Try manually updating with:\n');
-        process.stderr.write(`  cd ~/.claude/local && npm update ${MACRO.PACKAGE_URL}\n`);
+        process.stderr.write(`  cd ~/.clew/local && npm update ${MACRO.PACKAGE_URL}\n`);
       } else {
         process.stderr.write('Or consider using native installation with: clew install\n');
       }

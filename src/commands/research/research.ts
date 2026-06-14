@@ -95,7 +95,7 @@ export const call: LocalCommandCall = async (args, _context) => {
   switch (subcommand) {
     case 'init': {
       await initWorkspace(cwd);
-      return { type: 'text', value: 'Research workspace initialized under `.claude/`' };
+      return { type: 'text', value: 'Research workspace initialized under `.clew/`' };
     }
 
     case 'plan': {

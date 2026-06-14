@@ -1,0 +1,32 @@
+name: coding-task
+description: Plan, implement, test, and review a coding task.
+entry: planner
+agents:
+  planner:
+    next:
+      - coder
+      - researcher
+  coder:
+    next:
+      - tester
+      - reviewer
+  tester:
+    next:
+      - reviewer
+      - coder
+  reviewer:
+    next:
+      - coder
+budgets:
+  maxSteps: 50
+  maxToolCalls: 160
+approval:
+  required_for:
+    - shell.network
+    - shell.destructive
+    - git.commit
+    - git.push
+verification:
+  required:
+    - typecheck_or_explain
+    - relevant_tests_or_explain

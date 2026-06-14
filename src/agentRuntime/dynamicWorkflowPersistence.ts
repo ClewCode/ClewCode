@@ -19,7 +19,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { DynamicSubtask, DynamicWorkflow } from './dynamicWorkflow.js';
 
-const RUNTIME_DIR = '.claude/runs';
+const RUNTIME_DIR = '.clew/runs';
 
 export type DynamicRunStatus = 'planning' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
 

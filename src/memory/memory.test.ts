@@ -256,7 +256,7 @@ describe('Claude Memory System (PLAN E)', () => {
       {
         id: 'chunk-1',
         title: 'Project Memory',
-        sourcePath: '.claude/memory/MEMORY.md',
+        sourcePath: '.clew/memory/MEMORY.md',
         sourceType: 'project',
         excerpt: 'We use Bun Offline-first architecture.',
         score: 0.95,

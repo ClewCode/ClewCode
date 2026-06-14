@@ -36,7 +36,7 @@ export function getHooksSources(): string[] {
 
   const localSettings = getSettingsForSource('localSettings');
   if (hasHooks(localSettings)) {
-    sources.push('.claude/settings.local.json');
+    sources.push('.clew/settings.local.json');
   }
 
   return sources;
@@ -64,7 +64,7 @@ export function getBashPermissionSources(): string[] {
 
   const localRules = getPermissionRulesForSource('localSettings');
   if (hasBashPermission(localRules)) {
-    sources.push('.claude/settings.local.json');
+    sources.push('.clew/settings.local.json');
   }
 
   return sources;
@@ -123,7 +123,7 @@ export function getOtelHeadersHelperSources(): string[] {
 
   const localSettings = getSettingsForSource('localSettings');
   if (hasOtelHeadersHelper(localSettings)) {
-    sources.push('.claude/settings.local.json');
+    sources.push('.clew/settings.local.json');
   }
 
   return sources;
@@ -150,7 +150,7 @@ export function getApiKeyHelperSources(): string[] {
 
   const localSettings = getSettingsForSource('localSettings');
   if (hasApiKeyHelper(localSettings)) {
-    sources.push('.claude/settings.local.json');
+    sources.push('.clew/settings.local.json');
   }
 
   return sources;
@@ -177,7 +177,7 @@ export function getAwsCommandsSources(): string[] {
 
   const localSettings = getSettingsForSource('localSettings');
   if (hasAwsCommands(localSettings)) {
-    sources.push('.claude/settings.local.json');
+    sources.push('.clew/settings.local.json');
   }
 
   return sources;
@@ -204,7 +204,7 @@ export function getGcpCommandsSources(): string[] {
 
   const localSettings = getSettingsForSource('localSettings');
   if (hasGcpCommands(localSettings)) {
-    sources.push('.claude/settings.local.json');
+    sources.push('.clew/settings.local.json');
   }
 
   return sources;
@@ -235,7 +235,7 @@ export function getDangerousEnvVarsSources(): string[] {
 
   const localSettings = getSettingsForSource('localSettings');
   if (hasDangerousEnvVars(localSettings)) {
-    sources.push('.claude/settings.local.json');
+    sources.push('.clew/settings.local.json');
   }
 
   return sources;

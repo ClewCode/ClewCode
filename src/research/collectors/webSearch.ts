@@ -54,7 +54,7 @@ export async function collectWebSearch(_cwd: string, query: string, runDir: stri
     const res = allResults[idx]!;
     const sourceId = `src_web_${(idx + 1).toString().padStart(3, '0')}`;
     const filename = `${sourceId}.md`;
-    const relativePath = join('.claude', 'research', 'runs', runDirName, 'sources', filename);
+    const relativePath = join('.clew', 'research', 'runs', runDirName, 'sources', filename);
 
     const markdown = res.excerpt || '';
     const mdContent = [

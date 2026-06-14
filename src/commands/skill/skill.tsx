@@ -21,7 +21,7 @@ export async function call(
     const skills = await listProjectSkills(cwd);
 
     if (skills.length === 0) {
-      const message = `No skills found in .claude/skills/`;
+      const message = `No skills found in .clew/skills/`;
       onDone(message);
       return (
         <MessageResponse>

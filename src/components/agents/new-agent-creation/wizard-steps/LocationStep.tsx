@@ -14,11 +14,11 @@ export function LocationStep(): ReactNode {
 
   const locationOptions = [
     {
-      label: 'Project (.claude/agents/)',
+      label: 'Project (.clew/agents/)',
       value: 'projectSettings' as SettingSource,
     },
     {
-      label: 'Personal (~/.claude/agents/)',
+      label: 'Personal (~/.clew/agents/)',
       value: 'userSettings' as SettingSource,
     },
   ];

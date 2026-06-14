@@ -140,7 +140,7 @@ const lessons: Lesson[] = [
           <Text>• Hooks run automatically on events (PreToolUse, PostToolUse)</Text>
         </Box>
         <Box marginTop={1}>
-          <Text>• Create skills in .claude/skills/ directory</Text>
+          <Text>• Create skills in .clew/skills/ directory</Text>
         </Box>
       </Box>
     ),

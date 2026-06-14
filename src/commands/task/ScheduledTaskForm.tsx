@@ -350,7 +350,7 @@ export function ScheduledTaskForm({ onDone }: { onDone: LocalJSXCommandOnDone })
             <Text color={focus === 'durable' ? 'suggestion' : undefined}>{durable ? 'Durable' : 'Session-only'}</Text>
             <Text dimColor>
               {'  '}
-              {durable ? 'saved to .claude/scheduled_tasks.json' : 'kept in memory until this session exits'}
+              {durable ? 'saved to .clew/scheduled_tasks.json' : 'kept in memory until this session exits'}
             </Text>
           </Box>
           {!durableAvailable && <Text color="warning"> Durable scheduled tasks are disabled by the runtime gate.</Text>}

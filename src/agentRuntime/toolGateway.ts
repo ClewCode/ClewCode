@@ -191,7 +191,7 @@ export class ToolGateway {
     const list = await fs.readdir(dir, { withFileTypes: true });
     for (const file of list) {
       // Ignore git, node_modules, and claude runs
-      if (['.git', 'node_modules', '.claude', DOT_CLEW, 'dist'].includes(file.name)) continue;
+      if (['.git', 'node_modules', DOT_CLEW, 'dist'].includes(file.name)) continue;
 
       const res = path.resolve(dir, file.name);
       if (file.isDirectory()) {

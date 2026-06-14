@@ -223,7 +223,7 @@ export function AutoUpdater({
           ✗ Auto-update failed · Try <Text bold>claude doctor</Text> or{' '}
           <Text bold>
             {hasLocalInstall
-              ? `cd ~/.claude/local && npm update ${MACRO.PACKAGE_URL}`
+              ? `cd ~/.clew/local && npm update ${MACRO.PACKAGE_URL}`
               : `npm i -g ${MACRO.PACKAGE_URL}`}
           </Text>
         </Text>

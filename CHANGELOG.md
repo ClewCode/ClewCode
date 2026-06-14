@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **Migrated `.claude/` → `.clew/`**: All project-level config (agents, skills, workflows, settings) moved from `.claude/` to `.clew/`. Source code strings updated across 40+ files. `.gitignore` updated to track `.clew/` instead of `.claude/`.
+
 ## [0.2.16] — 2026-06-14
 
 ### Fixed

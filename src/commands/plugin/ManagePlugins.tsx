@@ -1167,7 +1167,7 @@ export function ManagePlugins({
         case 'uninstall': {
           if (isBuiltin) break; // guarded above; narrows pluginScope
           if (!isInstallableScope(pluginScope)) break;
-          // If the plugin is enabled in .claude/settings.json (shared with the
+          // If the plugin is enabled in .clew/settings.json (shared with the
           // team), divert to a confirmation dialog that offers to disable in
           // settings.local.json instead. Check the settings file directly —
           // `pluginScope` (from installed_plugins.json) can be 'user' even when
@@ -1690,7 +1690,7 @@ export function ManagePlugins({
         }
         clearAllCaches();
         setResult(
-          `✓ Disabled ${selectedPlugin.plugin.name} in .claude/settings.local.json. Run /reload-plugins to apply.`,
+          `✓ Disabled ${selectedPlugin.plugin.name} in .clew/settings.local.json. Run /reload-plugins to apply.`,
         );
         if (onManageComplete) void onManageComplete();
         setParentViewState({
@@ -1965,16 +1965,16 @@ export function ManagePlugins({
     );
   }
 
-  // Confirm-project-uninstall: warn about shared .claude/settings.json,
+  // Confirm-project-uninstall: warn about shared .clew/settings.json,
   // offer to disable in settings.local.json instead.
   if (viewState === 'confirm-project-uninstall' && selectedPlugin) {
     return (
       <Box flexDirection="column">
         <Text bold color="warning">
-          {selectedPlugin.plugin.name} is enabled in .claude/settings.json (shared with your team)
+          {selectedPlugin.plugin.name} is enabled in .clew/settings.json (shared with your team)
         </Text>
         <Box marginTop={1} flexDirection="column">
-          <Text>Disable it just for you in .claude/settings.local.json?</Text>
+          <Text>Disable it just for you in .clew/settings.local.json?</Text>
           <Text dimColor>This has the same effect as uninstalling, without affecting other contributors.</Text>
         </Box>
         {processError && (

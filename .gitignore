@@ -48,10 +48,11 @@ desktop.ini
 *.sublime-workspace
 
 # Claude Code / Research Tools
-.claude/*
-!.claude/skills/
-!.claude/settings.json
-.clew/
+.clew/*
+!.clew/skills/
+!.clew/agents/
+!.clew/workflows/
+!.clew/settings.json
 .codegraph/
 .codex/
 .agents/
