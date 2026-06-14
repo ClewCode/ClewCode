@@ -188,7 +188,7 @@ export function NativeAutoUpdater({
         showSuccessMessage &&
         updateSemver && (
           <Text color="success" wrap="truncate">
-            ✓ Update installed · Restart to update
+            ✓ Update installed · restarting...
           </Text>
         )
       )}

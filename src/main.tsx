@@ -3244,19 +3244,8 @@ async function run(): Promise<CommanderCommand> {
               latestVersion: result.latestVersion,
             });
             if (choice === 'update') {
-              // Spawn a new process (auto relaunch) before exiting
-              try {
-                const { spawn } = await import('node:child_process');
-                const child = spawn(process.execPath, process.argv.slice(1), {
-                  stdio: 'inherit',
-                  detached: false,
-                });
-                child.unref();
-              } catch {
-                // relaunch spawn failed — user just re-runs manually
-              }
-              gracefulShutdownSync(0);
-              return;
+              // Dialog already spawned the replacement child — just exit
+              process.exit(0);
             }
             if (choice === 'exit') {
               gracefulShutdownSync(0);

@@ -239,19 +239,37 @@ export async function showUpdateDialog({ currentVersion, latestVersion }: Props)
         barPercent = success ? 100 : 0;
         if (!success) {
           installError = stderr || 'npm install failed';
+          phase = 'error';
+          draw();
+          setTimeout(() => {
+            cleanup();
+            resolve('skip');
+          }, 3000);
+          return;
         }
-        phase = success ? 'done' : 'error';
+
+        // Install succeeded — auto-relaunch immediately
+        phase = 'done';
+        barPercent = 100;
         draw();
 
-        setTimeout(
-          () => {
-            cleanup();
-            // If success: return 'update' (triggers re-launch in main.tsx)
-            // If failure: return 'skip' to continue with current version
-            resolve(success ? 'update' : 'skip');
-          },
-          success ? 2000 : 3000,
-        );
+        // Brief pause so the user sees the completion message
+        setTimeout(() => {
+          cleanup();
+
+          // Spawn new child before exiting so user lands on the new version
+          try {
+            const child = spawn(process.execPath, process.argv.slice(1), {
+              stdio: 'inherit',
+              detached: true,
+            });
+            child.unref();
+          } catch {
+            // relaunch spawn failed — user just re-runs manually
+          }
+
+          resolve('update');
+        }, 800);
       });
 
       child.on('error', err => {
