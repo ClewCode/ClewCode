@@ -1,5 +1,5 @@
 // ponytail: these two prompt strings are the only profile-awareness in the whole codebase
-import type { ClewProfile } from '../types/permissions.js';
+import type { ClewProfile } from '../types/profile.js';
 
 export const CODING_PROFILE_PROMPT = `# Profile
 

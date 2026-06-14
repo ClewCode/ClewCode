@@ -2,10 +2,12 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import type { LocalJSXCommandCall } from '../../types/command.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
-import type { ClewProfile } from '../../types/permissions.js';
-import { CLEW_PROFILES } from '../../types/permissions.js';
 import { updateSettingsForSource } from '../../utils/settings/settings.js';
 import type { PermissionMode } from '../../utils/permissions/PermissionMode.js';
+
+// ponytail: inline — Bun transpiler drops exports after a certain point in permissions.ts
+type ClewProfile = 'coding' | 'personal';
+const CLEW_PROFILES: readonly ClewProfile[] = ['coding', 'personal'];
 
 const PROFILE_LABELS: Record<ClewProfile, string> = {
   coding: 'Coding',
