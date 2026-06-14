@@ -9,30 +9,6 @@
 import { feature } from 'bun:bundle';
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs';
 
-// ============================================================================
-// Execution Modes (user-facing presets over PermissionMode)
-// ============================================================================
-
-export const EXECUTION_MODES = ['safe', 'yolo', 'afk', 'review-only', 'browser-safe'] as const;
-export type ExecutionMode = (typeof EXECUTION_MODES)[number];
-
-export const EXECUTION_MODE_LABELS: Record<ExecutionMode, string> = {
-  safe: 'Safe',
-  yolo: 'YOLO',
-  afk: 'AFK',
-  'review-only': 'Review',
-  'browser-safe': 'Browser',
-};
-
-// ponytail: maps to existing permission modes, no new infrastructure
-export const EXECUTION_MODE_TO_PERMISSION: Record<ExecutionMode, PermissionMode> = {
-  safe: 'ask',
-  yolo: 'acceptEdits',
-  afk: 'auto',
-  'review-only': 'default',
-  'browser-safe': 'acceptEdits',
-};
-
 export const EXTERNAL_PERMISSION_MODES = [
   'acceptEdits',
   'ask',

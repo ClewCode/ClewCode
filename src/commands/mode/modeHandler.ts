@@ -4,9 +4,9 @@ import {
   EXECUTION_MODE_LABELS,
   EXECUTION_MODE_TO_PERMISSION,
   type ExecutionMode,
-} from '../../types/permissions.js';
+  setExecutionMode,
+} from '../../utils/executionMode.js';
 import { transitionPermissionMode } from '../../utils/permissions/permissionSetup.js';
-import { setExecutionMode } from '../../utils/executionMode.js';
 
 export const call: LocalCommandCall = async (args, context) => {
   const input = args?.trim().toLowerCase() || '';
