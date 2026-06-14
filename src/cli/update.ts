@@ -320,6 +320,21 @@ export async function update() {
     case 'success':
       writeToStdout(chalk.green(`Successfully updated from ${MACRO.VERSION} to version ${latestVersion}`) + '\n');
       await regenerateCompletionCache();
+
+      // Auto-relaunch into the new version
+      try {
+        const { spawn } = await import('node:child_process');
+        writeToStdout('Restarting...\n');
+        const child = spawn(process.execPath, process.argv.slice(1), {
+          stdio: 'inherit',
+          detached: true,
+        });
+        child.unref();
+        process.exit(0);
+      } catch {
+        writeToStdout('Please restart clew to use the new version.\n');
+        process.exit(0);
+      }
       break;
     case 'no_permissions':
       process.stderr.write('Error: Insufficient permissions to install update\n');

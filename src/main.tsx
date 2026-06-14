@@ -3233,24 +3233,16 @@ async function run(): Promise<CommanderCommand> {
       if (!isNonInteractiveSession) {
         try {
           const { checkForUpdate } = await import('./utils/updateCheck.js');
-          const { showUpdateDialog } = await import('./components/UpdateDialog.js');
           const result = await checkForUpdate();
           if (result.hasUpdate && result.latestVersion) {
             const { stopCapturingEarlyInput } = await import('./utils/earlyInput.js');
             stopCapturingEarlyInput();
 
-            const choice = await showUpdateDialog({
-              currentVersion: result.currentVersion,
-              latestVersion: result.latestVersion,
-            });
-            if (choice === 'update') {
-              // Dialog already spawned the replacement child — just exit
-              process.exit(0);
-            }
-            if (choice === 'exit') {
-              gracefulShutdownSync(0);
-              return;
-            }
+            // biome-ignore lint/suspicious/noConsole: intentional user message
+            console.log(
+              `\n${chalk.yellow('New version available!')} ${chalk.dim('v' + result.currentVersion)} → ${chalk.green('v' + result.latestVersion)}\n` +
+              `${chalk.dim('Run')} ${chalk.bold('clew update')} ${chalk.dim('to upgrade')}\n`,
+            );
           }
         } catch (err) {
           logForDebugging(`Update check failed (will continue): ${err}`);
