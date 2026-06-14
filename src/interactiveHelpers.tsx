@@ -1,6 +1,5 @@
 import { feature } from 'bun:bundle';
-import { appendFileSync, existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { appendFileSync } from 'fs';
 import type React from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
 import { gracefulShutdown, gracefulShutdownSync } from 'src/utils/gracefulShutdown.js';
@@ -148,17 +147,6 @@ export async function showSetupScreens(
   const config = getGlobalConfig();
   const { isAuthorized } = await import('./utils/auth.js');
   let onboardingShown = false;
-
-  // ponytail: skip onboarding when profile is personal (no welcome banner)
-  try {
-    const home = process.env.HOME || process.env.USERPROFILE || '';
-    const sp = join(home, '.clew', 'settings.json');
-    if (existsSync(sp)) {
-      const s = JSON.parse(readFileSync(sp, 'utf-8'));
-      if (s.profile === 'personal') return false;
-    }
-  } catch {}
-
   if (!config.theme || !config.hasCompletedOnboarding || !isAuthorized()) {
     onboardingShown = true;
     const { Onboarding } = await import('./components/Onboarding.js');
