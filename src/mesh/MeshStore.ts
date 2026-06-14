@@ -68,7 +68,7 @@ export class MeshStore {
     this.connections.set(peer.id, { ...peer });
     this.swarmTags.set(peer.id, this.swarmTags.get(peer.id) ?? {});
     this.callbacks.onPeerAdded?.(peer);
-    logForDebugging(`[MeshStore] New connection: ${peer.hostname} (${peer.ip}:${swarm.port})`);
+    logForDebugging(`[MeshStore] New connection: ${peer.hostname} (${peer.ip}:${peer.port})`);
   }
 
   /**
@@ -89,8 +89,13 @@ export class MeshStore {
     } else {
       this.peers.set(peer.id, { ...peer });
       this.callbacks.onPeerAdded?.(peer);
-      logForDebugging(`[MeshStore] New peer: ${peer.hostname} (${peer.ip}:${swarm.port})`);
+      logForDebugging(`[MeshStore] New peer: ${peer.hostname} (${peer.ip}:${peer.port})`);
     }
+  }
+
+  /** Alias for addPeer — used by tool layer. */
+  addMesh(peer: MeshInfo): void {
+    this.addPeer(peer);
   }
 
   /**
@@ -112,6 +117,11 @@ export class MeshStore {
     return Array.from(all.values());
   }
 
+  /** Alias for getPeers — used by tool layer. */
+  getMeshs(): MeshInfo[] {
+    return this.getPeers();
+  }
+
   /** Get only explicitly joined connections. */
   getConnections(): MeshInfo[] {
     return Array.from(this.connections.values());
@@ -129,9 +139,14 @@ export class MeshStore {
    */
   getPeerByPort(port: number): MeshInfo | undefined {
     for (const peer of this.allPeers()) {
-      if (swarm.port === port) return peer;
+      if (peer.port === port) return peer;
     }
     return undefined;
+  }
+
+  /** Alias for getPeerByPort — used by tool layer. */
+  getMeshByPort(port: number): MeshInfo | undefined {
+    return this.getPeerByPort(port);
   }
 
   /** Iterate all peers (discovered + connected) */
@@ -159,10 +174,15 @@ export class MeshStore {
     }
     // Also search by ip:port format
     for (const peer of this.allPeers()) {
-      const addr = `${peer.ip}:${swarm.port}`;
+      const addr = `${peer.ip}:${peer.port}`;
       if (addr === q || addr.startsWith(q)) return peer;
     }
     return undefined;
+  }
+
+  /** Alias for findPeer — used by tool layer. */
+  findMesh(query: string): MeshInfo | undefined {
+    return this.findPeer(query);
   }
 
   /**
@@ -361,6 +381,11 @@ export class MeshStore {
     this.swarmTags.set(meshId, tags);
   }
 
+  /** Alias for setPeerName — used by tool layer. */
+  setMeshName(meshId: string, name: string): void {
+    this.setPeerName(meshId, name);
+  }
+
   /** Set a role for a peer. */
   setPeerRole(meshId: string, role: string): void {
     const tags = this.swarmTags.get(meshId) ?? {};
@@ -368,14 +393,29 @@ export class MeshStore {
     this.swarmTags.set(meshId, tags);
   }
 
+  /** Alias for setPeerRole — used by tool layer. */
+  setMeshRole(meshId: string, role: string): void {
+    this.setPeerRole(meshId, role);
+  }
+
   /** Get tags for a peer. */
   getPeerTags(meshId: string): SwarmTags | undefined {
     return this.swarmTags.get(meshId);
   }
 
+  /** Alias for getPeerTags — used by tool layer. */
+  getMeshTags(meshId: string): SwarmTags | undefined {
+    return this.getPeerTags(meshId);
+  }
+
   /** Get all peer tags. */
   getAllPeerTags(): Array<{ meshId: string; tags: SwarmTags }> {
     return Array.from(this.swarmTags.entries()).map(([meshId, tags]) => ({ meshId, tags }));
+  }
+
+  /** Alias for getAllPeerTags — used by tool layer. */
+  getAllMeshTags(): Array<{ meshId: string; tags: SwarmTags }> {
+    return this.getAllPeerTags();
   }
 
   /** Resolve display name — custom name or fallback to hostname */
@@ -406,7 +446,7 @@ export class MeshStore {
    */
   private async pingPeerInfo(id: string, peer: MeshInfo): Promise<void> {
     try {
-      const url = `http://${peer.ip || '127.0.0.1'}:${swarm.port}/mesh-info`;
+      const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/mesh-info`;
       const startedAt = performance.now();
       const res = await fetch(url, { signal: AbortSignal.timeout(MESH_PING_TIMEOUT) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -419,14 +459,14 @@ export class MeshStore {
       peer.sessionId = info.sessionId || peer.sessionId;
       peer.isBusy = info.isBusy === true;
       peer.queueDepth = typeof info.queueDepth === 'number' ? info.queueDepth : 0;
-      logForDebugging(`[MeshStore] Liveness ok: ${peer.hostname}:${swarm.port}`);
+      logForDebugging(`[MeshStore] Liveness ok: ${peer.hostname}:${peer.port}`);
     } catch (err) {
       // Peer is unreachable — mark offline
       peer.lastConnectionError = err instanceof Error ? err.message : String(err);
       if (peer.status !== 'offline') {
         peer.status = 'offline';
         this.callbacks.onPeerLost?.(id);
-        logForDebugging(`[MeshStore] Liveness fail: ${peer.hostname}:${swarm.port} — marked offline`);
+        logForDebugging(`[MeshStore] Liveness fail: ${peer.hostname}:${peer.port} — marked offline`);
       }
     }
   }

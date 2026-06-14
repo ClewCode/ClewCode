@@ -126,7 +126,7 @@ export const MeshInfoTool = buildTool({
           displayName: store.getMeshTags(peer.id)?.displayName,
           role: store.getMeshTags(peer.id)?.role,
           ip: peer.ip,
-          port: mesh.port,
+          port: peer.port,
           cwd: peer.cwd,
           shell: peer.shell,
           platform: peer.platform,

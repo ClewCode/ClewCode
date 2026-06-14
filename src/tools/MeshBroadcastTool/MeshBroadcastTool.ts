@@ -98,7 +98,7 @@ export const MeshBroadcastTool = buildTool({
 
     for (const peer of peers) {
       try {
-        const infoUrl = `http://${peer.ip || '127.0.0.1'}:${mesh.port}/mesh-info`;
+        const infoUrl = `http://${peer.ip || '127.0.0.1'}:${peer.port}/mesh-info`;
         const infoRes = await fetch(infoUrl, { signal: AbortSignal.timeout(3000) });
         if (infoRes.ok) {
           const info = await infoRes.json();
@@ -142,7 +142,7 @@ export const MeshBroadcastTool = buildTool({
       }
 
       try {
-        const url = `http://${ps.peer.ip || '127.0.0.1'}:${ps.mesh.port}/mesh-todo`;
+        const url = `http://${ps.peer.ip || '127.0.0.1'}:${ps.peer.port}/mesh-todo`;
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

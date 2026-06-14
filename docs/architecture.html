@@ -29,7 +29,7 @@
   <p>Entry point at <code>src/main.tsx</code> — parses CLI flags (<code>--model</code>, <code>--print</code>, <code>--permission-mode</code>, <code>--mcp-config</code>, etc.), loads config, initializes providers and telemetry, then launches the REPL or print-mode query. Slash commands are registered in <code>src/commands.ts</code> and implemented under <code>src/commands/</code>. Commands are categorized as <code>local</code> (runs in-terminal), <code>prompt</code> (skills that expand to text), or <code>local-jsx</code> (Ink UI panels).</p>
 
   <h3>3. AI Provider &amp; Adapter Layer</h3>
-  <p><strong>ProviderManager</strong> (<code>src/services/ai/ProviderManager.ts</code>) resolves API keys, selects models, and manages provider config. Provider metadata is declared in <code>src/services/ai/providers.json</code> — currently <strong>28 providers</strong> (10 dedicated classes + 18 OpenAI-compatible) with model listings, capabilities, base URLs, and env key mappings. Non-Anthropic providers are wrapped by the <strong>AnthropicAdapter</strong> or <strong>GoogleAdapter</strong>, which normalize content blocks (<code>contentBlockUtils.ts</code>), tool calls (<code>toolCallParser.ts</code>), errors (<code>errorNormalizer.ts</code>), and usage (<code>usageNormalizer.ts</code>) to a uniform format.</p>
+  <p><strong>ProviderManager</strong> (<code>src/services/ai/ProviderManager.ts</code>) resolves API keys, selects models, and manages provider config. Provider metadata is declared in <code>src/services/ai/providers.json</code> — currently <strong>29 providers</strong> (10 dedicated classes + 18 OpenAI-compatible) with model listings, capabilities, base URLs, and env key mappings. Non-Anthropic providers are wrapped by the <strong>AnthropicAdapter</strong> or <strong>GoogleAdapter</strong>, which normalize content blocks (<code>contentBlockUtils.ts</code>), tool calls (<code>toolCallParser.ts</code>), errors (<code>errorNormalizer.ts</code>), and usage (<code>usageNormalizer.ts</code>) to a uniform format.</p>
 
   <h3>4. Tool Execution &amp; Query Loop</h3>
   <p>Tools use Zod schemas and are executed by the <strong>StreamingToolExecutor</strong> (<code>src/services/tools/StreamingToolExecutor.ts</code>). Permission gating via hooks in <code>src/utils/permissions/permissions.ts</code>. The query loop in <code>src/query.ts</code> + <code>src/QueryEngine.ts</code> orchestrates message building, context management, streaming, and tool call cycling. MCP tools (<code>src/services/mcp/</code>) are discovered at runtime and merged into the tool pool.</p>
@@ -44,7 +44,7 @@
   |    Streaming response handling
   |
   + Provider Manager Adapter AI Model API
-  |    28 providers via providers.json
+  |    29 providers via providers.json
   |    AnthropicAdapter / GoogleAdapter normalization
   |
   + Tool Executor (StreamingToolExecutor)
@@ -72,7 +72,7 @@
   <p><code>src/bridge/bridgeMain.ts</code> — WebSocket remote control and collaboration. Gated behind <code>BRIDGE_MODE=1</code>. Remote clients can send commands and receive responses.</p>
 
   <h3>Session System</h3>
-  <p><code>src/services/SessionLifecycle/</code> � cross-session context persistence. <code>src/services/SessionMemory/</code> � persistent knowledge with cross-lingual semantic search and auto-memory capture.</p>
+  <p><code>src/services/SessionLifecycle/</code> — cross-session context persistence. <code>src/services/SessionMemory/</code> — persistent knowledge with cross-lingual semantic search and auto-memory capture.</p>
 
   <h3>GrowthBook Feature Flags</h3>
   <p><code>src/services/analytics/growthbook.js</code> — A/B testing and feature flag platform. Initialized at startup, evaluates flags locally with caching.</p>
@@ -87,7 +87,7 @@
   <p><code>src/coordinator/</code> — supports multi-agent collaboration. <strong>coordinatorMode</strong> delegates tasks to sub-agents, and <strong>workerAgent</strong> provides standalone workers for delegated subtasks.</p>
 
   <h3>Memory</h3>
-  <p><code>src/memory/</code> — local embedding-free memory with SQLite FTS5 full-text search. Token-aware chunking (3000 tokens), truth priority scoring, secret redaction, and auto-ingest from <code>.claude/memory/</code>. See <a href="research-memory.html">Memory</a> for detailed usage.</p>
+  <p><code>src/memory/</code> — local embedding-free memory with SQLite FTS5 full-text search. Token-aware chunking (3000 tokens), truth priority scoring, secret redaction, and auto-ingest from <code>.clew/memory/</code>. See <a href="research-memory.html">Memory</a> for detailed usage.</p>
 
   <h3>Voice Mode</h3>
   <p><code>src/voice/</code> — compile-time gated voice input support (<code>VOICE_MODE=1</code>). Provides speech-to-text and voice command processing for hands-free operation.</p>
@@ -105,7 +105,7 @@
     <tr><td><code>src/tools.ts</code></td><td>Tool registry (40+ built-in tools)</td></tr>
     <tr><td><code>src/Tool.ts</code></td><td>Base tool types, schemas, buildTool() helper</td></tr>
     <tr><td><code>src/services/ai/ProviderManager.ts</code></td><td>Provider selection, API key resolution</td></tr>
-    <tr><td><code>src/services/ai/providers.json</code></td><td>Declarative provider config (28 providers)</td></tr>
+    <tr><td><code>src/services/ai/providers.json</code></td><td>Declarative provider config (29 providers)</td></tr>
     <tr><td><code>src/services/ai/adapter/</code></td><td>AnthropicAdapter, GoogleAdapter</td></tr>
     <tr><td><code>src/services/tools/StreamingToolExecutor.ts</code></td><td>Streaming tool execution</td></tr>
     <tr><td><code>src/utils/permissions/permissions.ts</code></td><td>Permission evaluation logic</td></tr>
@@ -130,7 +130,7 @@
   <p>Built with Bun bundler — <code>bun run build</code> outputs a single binary to <code>dist/</code>. TypeScript with strict mode and ESM/NodeNext module resolution. External dependencies include Electron, chromium-bidi, AWS SDK, Google Auth, and platform-specific native modules. Lint/format via Biome 2.4.</p>
 
   <footer class="footer">
-    <span>Clew Code 0.2.13 — Open Source</span>
+    <span>Clew Code 0.2.14 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

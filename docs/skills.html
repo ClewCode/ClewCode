@@ -27,8 +27,8 @@
   <table>
     <tr><th>Source</th><th>Path</th><th>Scope</th></tr>
     <tr><td>Bundled</td><td>Ships with Clew</td><td>All users</td></tr>
-    <tr><td>User</td><td><code>~/.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>Personal</td></tr>
-    <tr><td>Project</td><td><code>.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>Team (in-repo)</td></tr>
+    <tr><td>User</td><td><code>~/.clew/skills/&lt;name&gt;/SKILL.md</code></td><td>Personal</td></tr>
+    <tr><td>Project</td><td><code>.clew/skills/&lt;name&gt;/SKILL.md</code></td><td>Team (in-repo)</td></tr>
     <tr><td>Plugin</td><td>Inside plugin directories</td><td>Plugin users</td></tr>
   </table>
 
@@ -77,14 +77,14 @@ context: fork
   </ul>
 
   <h2>Creating a Skill</h2>
-  <pre><code>mkdir -p ~/.claude/skills/my-skill
-touch ~/.claude/skills/my-skill/SKILL.md
+  <pre><code>mkdir -p ~/.clew/skills/my-skill
+touch ~/.clew/skills/my-skill/SKILL.md
 # Edit SKILL.md with frontmatter and instructions</code></pre>
   <p>Or use the <code>skillify</code> plugin to create a skill from an existing workflow.</p>
 
   <h2>Project-Level Skills</h2>
-  <p>Place skills in <code>.claude/skills/</code> inside your repository to share with your team:</p>
-  <pre><code>.claude/
+  <p>Place skills in <code>.clew/skills/</code> inside your repository to share with your team:</p>
+  <pre><code>.clew/
   skills/
     code-review/
       SKILL.md
@@ -101,7 +101,7 @@ touch ~/.claude/skills/my-skill/SKILL.md
   </div>
 
   <footer class="footer">
-    <span>Clew Code 0.2.13 — Open Source</span>
+    <span>Clew Code 0.2.14 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

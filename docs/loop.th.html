@@ -127,7 +127,7 @@ Dead-letter preserves: title, description, lastError, errorLog, retryCount</code
     │                              │────────────────────────►│</code></pre>
       <ul>
         <li><strong>Crash isolation</strong> — worker crash ไม่ทำให้ loop crash — supervisor แยก process คนละตัว</li>
-        <li><strong>Output capture</strong> — supervisor เก็บ stdout/stderr ของ worker ไว้ใน <code>~/.claude/daemon/jobs/{sessionId}/output.log</code></li>
+        <li><strong>Output capture</strong> — supervisor เก็บ stdout/stderr ของ worker ไว้ใน <code>~/.clew/daemon/jobs/{sessionId}/output.log</code></li>
         <li><strong>Health monitoring</strong> — loop เช็คผ่าน supervisor แทนที่จะ monitor PID โดยตรง (PID reuse problem)</li>
       </ul>
 
@@ -143,7 +143,7 @@ Dead-letter preserves: title, description, lastError, errorLog, retryCount</code
       <h3>Task Log Persistence</h3>
       <p>ทุก task มี log ของตัวเอง:</p>
       <ul>
-        <li><strong>Per-task log</strong> — <code>~/.claude/daemon/logs/{taskId}.log</code> — 500 บรรทัดสุดท้ายของ worker output</li>
+        <li><strong>Per-task log</strong> — <code>~/.clew/daemon/logs/{taskId}.log</code> — 500 บรรทัดสุดท้ายของ worker output</li>
         <li><strong>Error extraction</strong> — ตอน task fail, loop จะ extract non-noise lines (20 บรรทัดสุดท้าย) เก็บเป็น <code>errorLog[]</code> ใน queue entry</li>
         <li><strong>Worker exit code</strong> — บันทึกว่า worker จบด้วย exit code 0 (success) หรือ 1 (failure)</li>
       </ul>

@@ -100,7 +100,7 @@ Dead-letter preserves: title, description, lastError, errorLog, retryCount</code
       <p>Workers are spawned through a <strong>Supervisor process</strong> (child_process) for crash isolation:</p>
       <ul>
         <li><strong>Crash isolation</strong> — worker crash doesn't crash the loop</li>
-        <li><strong>Output capture</strong> — stdout/stderr saved to <code>~/.claude/daemon/jobs/{sessionId}/output.log</code></li>
+        <li><strong>Output capture</strong> — stdout/stderr saved to <code>~/.clew/daemon/jobs/{sessionId}/output.log</code></li>
         <li><strong>Health via IPC</strong> — loop checks status through supervisor, not raw PID (avoids PID reuse bugs)</li>
       </ul>
 

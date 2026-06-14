@@ -1839,7 +1839,7 @@ async function run(): Promise<CommanderCommand> {
       } = options;
 
       // Handle peer name configuration
-      const peerNameOpt = (options as { meshName?: string }).meshName;
+      const peerNameOpt = (options as { peerName?: string }).peerName;
       if (peerNameOpt) {
         const { getGlobalDiscovery } = await import('./mesh/MeshDiscovery.js');
         getGlobalDiscovery().setLocalName(peerNameOpt);

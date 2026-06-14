@@ -124,7 +124,7 @@
       <h3>Discovery แบบสองชั้น (Two-Layer Discovery)</h3>
       <p>ทำไมไม่ใช้แค่ UDP multicast หรือแค่ file-based อย่างเดียว?</p>
       <ul>
-        <li><strong>File-based</strong> — ทำงานบนเครื่องเดียวกันได้ทันที โดยไม่ต้องใช้ network เลย แค่อ่าน/เขียนไฟล์ JSON ใน <code>~/.claude/peers/</code> ซึ่งเร็วกว่าและไม่ต้องกังวลเรื่อง firewall</li>
+        <li><strong>File-based</strong> — ทำงานบนเครื่องเดียวกันได้ทันที โดยไม่ต้องใช้ network เลย แค่อ่าน/เขียนไฟล์ JSON ใน <code>~/.clew/peers/</code> ซึ่งเร็วกว่าและไม่ต้องกังวลเรื่อง firewall</li>
         <li><strong>UDP Multicast</strong> — ข้ามเครื่องได้ผ่าน LAN ใช้ multicast group <code>239.255.37.37:42069</code> ไม่ต้องรู้ IP ปลายทางล่วงหน้า</li>
         <li><strong>ทำไมต้องทั้งสอง?</strong> — แต่ละวิธีมีข้อจำกัด: file-based ข้ามเครื่องไม่ได้, UDP multicast อาจถูกบล็อคด้วย network policy การใช้ทั้งสองวิธีทำให้ discovery ทำงานได้ในทุกสภาพแวดล้อม โดยไม่ต้องให้ผู้ใช้ configure อะไรเลย</li>
       </ul>
@@ -178,7 +178,7 @@
       <h3>PeerDiscovery <code>src/peer/PeerDiscovery.ts</code></h3>
       <p>กลไกค้นหา 2 วิธีทำงานร่วมกัน:</p>
       <ul>
-        <li><strong>File-based</strong> — แต่ละ instance เขียนไฟล์ <code>~/.claude/peers/{pid}.json</code> เก็บข้อมูล hostname, IP, port, shell, cwd instances อื่นอ่านไฟล์เพื่อค้นหา peer ในเครื่องเดียวกัน</li>
+        <li><strong>File-based</strong> — แต่ละ instance เขียนไฟล์ <code>~/.clew/peers/{pid}.json</code> เก็บข้อมูล hostname, IP, port, shell, cwd instances อื่นอ่านไฟล์เพื่อค้นหา peer ในเครื่องเดียวกัน</li>
         <li><strong>UDP Multicast</strong> — ส่ง heartbeat beacon ไปที่ <code>239.255.37.37:42069</code> ทุก 30 วินาที ตอบกลับ <code>clew-peer-query</code> ด้วย <code>clew-peer-info</code> ใช้ข้ามเครื่อง</li>
         <li><strong>Stale eviction</strong> — Peer ที่ไม่เห็น 90 วินาที (<code>PEER_STALE_TIMEOUT</code>) จะถูกลบอัตโนมัติ</li>
       </ul>
@@ -264,7 +264,7 @@ Stale after:  90 วินาที</code></pre>
       </table>
 
       <footer class="footer">
-        <span>Clew Code 0.2.13 — Open Source</span>
+        <span>Clew Code 0.2.14 — Open Source</span>
         <div class="footer-links">
           <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
           <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

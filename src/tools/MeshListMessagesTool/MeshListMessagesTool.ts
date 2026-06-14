@@ -234,7 +234,7 @@ export const MeshListMessagesTool = buildTool({
       if (!peer && !isNaN(portNum)) peer = store.getMeshByPort(portNum);
       if (!peer) return false;
 
-      const url = `http://${peer.ip || '127.0.0.1'}:${mesh.port}/mesh-info`;
+      const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/mesh-info`;
       const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
       return response.ok;
     } catch {

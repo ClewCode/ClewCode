@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clew — ผู้ช่วยเขียนโค้ด AI หลายผู้ให้บริการ</title>
-  <meta name="description" content="ผู้ช่วยเขียนโค้ดบนเทอร์มินัล รองรับผู้ให้บริการ AI 15+ ราย, คำสั่ง 80+ รายการ, ระบบปลั๊กอินที่ขยายได้">
+  <meta name="description" content="ผู้ช่วยเขียนโค้ดบนเทอร์มินัล รองรับผู้ให้บริการ AI 29+ ราย, คำสั่ง 120+ รายการ, ระบบปลั๊กอินที่ขยายได้">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -33,7 +33,7 @@
       <section class="hero">
         <div class="hero-badge">
           <span class="dot"></span>
-          0.2.13 — CLI AI หลายผู้ให้บริการ
+          0.2.14 — CLI AI หลายผู้ให้บริการ
         </div>
         <h1>
           เขียนโค้ดด้วย<br>
@@ -76,15 +76,15 @@
       <!-- ─── Stats ─── -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-number">27</div>
+          <div class="stat-number">29</div>
           <div class="stat-label">ผู้ให้บริการ AI</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number">80+</div>
+          <div class="stat-number">120+</div>
           <div class="stat-label">คำสั่ง Slash</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number">50+</div>
+          <div class="stat-number">76+</div>
           <div class="stat-label">เครื่องมือในตัว</div>
         </div>
         <div class="stat-card">
@@ -107,7 +107,7 @@
           <span class="feature-tag">/provider</span>
         </div>
         <div class="feature-card">
-          <h3>เครื่องมือในตัว 65+ รายการ</h3>
+          <h3>เครื่องมือในตัว 76+ รายการ</h3>
           <p>Read, Edit, Write, Glob, Grep, Bash, Web Search, Research, MCP, LSP, Agent, Task, Monitor และ Workflow</p>
           <span class="feature-tag">/tools</span>
         </div>
@@ -186,7 +186,7 @@
 
       <!-- ─── Slash Commands ─── -->
       <h2 class="section-title" id="commands">คำสั่ง Slash</h2>
-      <p class="section-subtitle">80+ คำสั่งสำหรับควบคุมทุกด้านของเวิร์กโฟลว์ของคุณ</p>
+      <p class="section-subtitle">120+ คำสั่งสำหรับควบคุมทุกด้านของเวิร์กโฟลว์ของคุณ</p>
 
       <table>
         <thead>
@@ -254,14 +254,14 @@
       </table>
 
       <!-- ─── Changelog ─── -->
-      <h2 class="section-title" id="updates">อัปเดต 0.2.13</h2>
+      <h2 class="section-title" id="updates">อัปเดตล่าสุด 0.2.14</h2>
       <ul>
-        <li><strong>ระบบ Taste</strong> — ระบบเรียนรู้ความชอบในเครื่อง เมนู <code>/taste</code> แบบโต้ตอบ แถบสถานะ, โหลดค่าตั้งค่าใหม่ทันที</li>
-        <li><strong>ตัวเลือกโมเดลแบ่งตามผู้ให้บริการ</strong> — <code>/model</code> ตอนนี้แสดงโมเดลทั้งหมดจากทุกผู้ให้บริการ</li>
-        <li><strong>บันทึกผู้ให้บริการอัตโนมัติ</strong> — ผู้ให้บริการและโมเดลล่าสุดบันทึกใน <code>provider.json</code></li>
-        <li><strong>เพิ่มความปลอดภัย</strong> — กฎ PowerShell, การป้องกัน tool call ผิดรูปแบบ, Guardian ตรวจสอบอัตโนมัติ</li>
-        <li><strong>Bridge v2</strong> — ควบคุมระยะไกลผ่าน WebSocket, relay client, REPL bridging</li>
-        <li><strong>คำสั่ง PR</strong> — <code>/pr create</code>, <code>list</code>, <code>view</code>, <code>review</code>, <code>merge</code>, <code>status</code></li>
+        <li><strong>29 ผู้ให้บริการ</strong> — เพิ่ม Clew Gateway, Custom, xAI, KiloCode และอื่นๆ</li>
+        <li><strong>Ultracode Mode</strong> — โหมด xhigh effort พร้อม parallel subtasks และ adversarial verifiers สำหรับ prompts ซับซ้อน</li>
+        <li><strong>Process Mesh</strong> — เวิร์กเกอร์แบบกระจายพร้อมโหมด PTY/exec, การประสานงานหลายเอเจนต์</li>
+        <li><strong>Agent Communication Protocol</strong> — การส่งข้อความระหว่างเอเจนต์ผ่าน ACP</li>
+        <li><strong>ระบบ Taste</strong> — ระบบเรียนรู้ความชอบในเครื่อง เมนู <code>/taste</code> แบบโต้ตอบ</li>
+        <li><strong>คำสั่งใหม่</strong> — <code>/workflow</code>, <code>/mesh</code>, <code>/remote</code>, <code>/teleport</code>, <code>/vim</code>, <code>/chrome</code>, <code>/pr</code>, <code>/issue</code>, <code>/acp</code>, <code>/dashboard</code></li>
       </ul>
 
       <div style="margin-top:var(--space-lg)">
@@ -270,7 +270,7 @@
 
       <!-- ─── Footer ─── -->
       <footer class="footer">
-        <span>Clew 0.2.13 — โอเพนซอร์ส</span>
+        <span>Clew 0.2.14 — โอเพนซอร์ส</span>
         <div class="footer-links">
           <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
           <a href="https://github.com/ClewCode/ClewCode/issues">ปัญหา</a>

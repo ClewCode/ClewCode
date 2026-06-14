@@ -17,7 +17,12 @@
 <div class="content-wrap"><main class="content">
   <div class="breadcrumbs"><a href="index.th.html">หน้าแรก</a><span class="sep">/</span><span>คำสั่ง</span></div>
   <h1>คำสั่ง</h1>
-  <p class="section-subtitle">Clew มาพร้อมคำสั่ง slash ในตัว 80+ รายการ พร้อมสกิลที่โหลดแบบไดนามิกและคำสั่งปลั๊กอิน</p>
+  <p class="section-subtitle">Clew มาพร้อม <strong>120+ คำสั่ง slash</strong> (411 ไฟล์ใน 120+ ไดเรกทอรี) พร้อมสกิลที่โหลดแบบไดนามิกและคำสั่งปลั๊กอิน คำสั่งมี 3 ประเภท: <strong>local</strong> (ทำงานในเทอร์มินัล), <strong>prompt</strong> (ขยายข้อความให้โมเดล), หรือ <strong>local-jsx</strong> (แผง UI ด้วย Ink)</p>
+
+  <div class="callout callout-tip">
+    <strong>การค้นหา</strong>
+    พิมพ์ <code>/</code> ใน REPL เพื่อดูคำสั่งทั้งหมดในบิลด์ของคุณ คำสั่งลงทะเบียนใน <code>src/commands.ts</code> และโหลดจากแหล่งในตัว, ปลั๊กอิน, สกิล, แบบรวม, และเวิร์กโฟลว์
+  </div>
 
   <h2>เซสชันและบริบท</h2>
   <table>
@@ -28,50 +33,79 @@
     <tr><td><code>/resume</code></td><td>กลับมาการสนทนาก่อนหน้า</td></tr>
     <tr><td><code>/rename</code></td><td>เปลี่ยนชื่อการสนทนาปัจจุบัน</td></tr>
     <tr><td><code>/rewind</code></td><td>คืนค่าโค้ดและ/หรือการสนทนาไปยังจุดก่อนหน้า</td></tr>
+    <tr><td><code>/copy</code></td><td>คัดลอกคำตอบล่าสุดของ Clew ไปยังคลิปบอร์ด (หรือ /copy N สำหรับคำตอบที่ N จากล่าสุด)</td></tr>
+    <tr><td><code>/export</code></td><td>ส่งออกการสนทนาปัจจุบันเป็นไฟล์หรือคลิปบอร์ด</td></tr>
     <tr><td><code>/session</code></td><td>แสดง URL เซสชันระยะไกลและ QR code</td></tr>
+    <tr><td><code>/branch</code></td><td>สร้างสาขาของการสนทนาปัจจุบัน ณ จุดนี้</td></tr>
+    <tr><td><code>/files</code></td><td>แสดงไฟล์ที่เปิดและแก้ไขในเซสชันปัจจุบัน</td></tr>
+    <tr><td><code>/history</code></td><td>แสดงประวัติเซสชัน</td></tr>
+    <tr><td><code>/context-size</code></td><td>แสดงขนาดบริบทหน้าต่างปัจจุบัน</td></tr>
   </table>
 
   <h2>โมเดลและผู้ให้บริการ</h2>
   <table>
     <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
-    <tr><td><code>/model</code></td><td>สลับโมเดลหรือผู้ให้บริการ — ดึงโมเดลสดจาก API ผู้ให้บริการ</td></tr>
-    <tr><td><code>/taste</code></td><td>เปิดเมนูการเรียนรู้ความชอบแบบโต้ตอบ</td></tr>
-    <tr><td><code>/effort</code></td><td>ตั้งค่าระดับความพยายามสำหรับการใช้เหตุผล (low, medium, high, max)</td></tr>
+    <tr><td><code>/model</code></td><td>สลับโมเดลหรือผู้ให้บริการ — ดึงโมเดลสดจาก API ผู้ให้บริการ (Enter=บันทึกเริ่มต้น, s=เฉพาะเซสชันนี้)</td></tr>
+    <tr><td><code>/provider-select</code></td><td>แสดงหรือเปลี่ยนผู้ให้บริการ AI และโมเดลที่ใช้งาน</td></tr>
+    <tr><td><code>/taste</code></td><td>เปิดเมนูการเรียนรู้ความชอบแบบโต้ตอบ (learn, forget, profile, events, decay, eval, on/off)</td></tr>
+    <tr><td><code>/effort</code></td><td>ตั้งค่าระดับความพยายามสำหรับการใช้เหตุผล (low, medium, high, xhigh, max, ultracode, auto) — ใช้กับผู้ให้บริการที่รองรับ reasoning_effort</td></tr>
+    <tr><td><code>/ultracode</code></td><td>เปิด/ปิดโหมด ultracode — xhigh effort + เวิร์กโฟลว์ไดนามิกอัตโนมัติ (parallel subtasks + adversarial verifiers) สำหรับ prompts ซับซ้อน</td></tr>
     <tr><td><code>/cost</code></td><td>แสดงค่าใช้จ่ายและระยะเวลาทั้งหมดของเซสชันปัจจุบัน</td></tr>
     <tr><td><code>/usage</code></td><td>แสดงขีดจำกัดการใช้งานแผน</td></tr>
+    <tr><td><code>/usage-credits</code></td><td>ตั้งค่าเครดิตการใช้งานเพื่อทำงานต่อเมื่อถึงขีดจำกัด</td></tr>
     <tr><td><code>/stats</code></td><td>แสดงสถิติการใช้งาน Clew</td></tr>
+    <tr><td><code>/settings</code></td><td>เปิดแผงตั้งค่าโปรไฟล์ — เลือกกลุ่มตั้งค่าจากรายการ</td></tr>
   </table>
 
   <h2>เครื่องมือและสิทธิ์</h2>
   <table>
     <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
-    <tr><td><code>/tools</code></td><td>แสดงเครื่องมือทั้งหมดพร้อมสถิติและค่าใช้จ่ายโทเค็น</td></tr>
+    <tr><td><code>/tools</code></td><td>แสดงเครื่องมือทั้งหมดพร้อมสถิติและค่าใช้จ่ายโทเค็นโดยประมาณ</td></tr>
     <tr><td><code>/permissions</code></td><td>จัดการกฎสิทธิ์อนุญาตและปฏิเสธเครื่องมือ</td></tr>
     <tr><td><code>/plan</code></td><td>เปิดโหมดวางแผนหรือดูแผนเซสชันปัจจุบัน</td></tr>
-    <tr><td><code>/capabilities</code></td><td>แสดงความสามารถของระบบที่มี (git, tmux, browser, shells)</td></tr>
+    <tr><td><code>/approve</code></td><td>อนุมัติการดำเนินการเครื่องมือที่รออยู่</td></tr>
+    <tr><td><code>/privacy-settings</code></td><td>ดูและอัปเดตการตั้งค่าความเป็นส่วนตัว</td></tr>
+    <tr><td><code>/datadog</code></td><td>จัดการการตั้งค่า telemetry และ analytics (Datadog, Anthropic, Global)</td></tr>
+    <tr><td><code>/capabilities</code></td><td>แสดงความสามารถของระบบ (git, tmux, browser, network, shells)</td></tr>
+    <tr><td><code>/hooks</code></td><td>ดูการตั้งค่า hooks สำหรับเหตุการณ์เครื่องมือ (PreToolUse, PostToolUse, MessageDisplay, SessionStart)</td></tr>
+    <tr><td><code>/sandbox-toggle</code></td><td>เปิด/ปิดโหมดแซนด์บ็อกซ์สำหรับการทำงานของเครื่องมือ</td></tr>
+    <tr><td><code>/guardian</code></td><td>เปิด/ปิดโหมดผู้พิทักษ์ความปลอดภัยสำหรับการดำเนินการที่อันตราย</td></tr>
+    <tr><td><code>/fast</code></td><td>เปิด/ปิดโหมดเร็ว — ข้ามคำขออนุญาตสำหรับการดำเนินการความเสี่ยงต่ำ</td></tr>
+    <tr><td><code>/passes</code></td><td>จัดการบัตรผ่านและโทเค็นการเข้าถึงเซสชัน</td></tr>
   </table>
 
   <h2>ส่วนขยาย (ปลั๊กอิน, MCP, สกิล)</h2>
   <table>
     <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
-    <tr><td><code>/plugin</code></td><td>จัดการปลั๊กอิน — list, install, remove</td></tr>
-    <tr><td><code>/mcp</code></td><td>จัดการเซิร์ฟเวอร์ MCP</td></tr>
+    <tr><td><code>/plugin</code></td><td>จัดการปลั๊กอิน — list, install, remove, details, update</td></tr>
+    <tr><td><code>/plugin-details</code></td><td>แสดงรายละเอียดปลั๊กอินที่ติดตั้ง</td></tr>
+    <tr><td><code>/mcp</code></td><td>จัดการเซิร์ฟเวอร์ MCP — add, remove, list, discover, status</td></tr>
+    <tr><td><code>/mcp-direct</code></td><td>ทดสอบ MCP DirectConnect กับผู้ให้บริการที่รองรับ</td></tr>
+    <tr><td><code>/reload-plugins</code></td><td>โหลดปลั๊กอินใหม่โดยไม่ต้องรีสตาร์ท</td></tr>
+    <tr><td><code>/code-review</code></td><td>รีวิวโค้ดที่เปลี่ยนแปลงหาบั๊ก (low/medium/high effort; --fix นำไปใช้, --comment โพสต์ PR)</td></tr>
+    <tr><td><code>/simplify</code></td><td>รีวิวโค้ดที่เน้นความสะอาด (reuse, efficiency, altitude) พร้อม auto-fix</td></tr>
     <tr><td><code>/skill</code></td><td>แสดงสกิลที่มีหรือรายละเอียดสกิล</td></tr>
-    <tr><td><code>/code-review</code></td><td>รีวิวโค้ดที่เปลี่ยนแปลงหาบั๊ก</td></tr>
+    <tr><td><code>/skills</code></td><td>แสดงสกิลที่มี</td></tr>
+    <tr><td><code>/workflow</code></td><td>แสดงและรันเวิร์กโฟลว์หลายขั้นตอนที่กำหนดใน YAML/JSON</td></tr>
+    <tr><td><code>/acp</code></td><td>Agent Communication Protocol — การส่งข้อความและการประสานงานระหว่างเอเจนต์</td></tr>
   </table>
 
-  
-  <h2>การทำงานร่วมกัน (Swarm)</h2>
+  <h2>การทำงานร่วมกันและ Mesh</h2>
   <table>
     <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
-    <tr><td><code>/swarm</code></td><td>เปิดเมนู LAN swarm แบบ interactive (share, discover, join, inbox)</td></tr>
-    <tr><td><code>/swarm share</code></td><td>เริ่มประกาศ instance นี้เป็น swarm node บน LAN</td></tr>
-    <tr><td><code>/swarm share stop</code></td><td>หยุดประกาศและปิด swarm server</td></tr>
-    <tr><td><code>/swarm discover</code></td><td>สแกนหา swarm workers ที่พร้อมใช้งานบน LAN</td></tr>
-    <tr><td><code>/swarm join &lt;host&gt;:&lt;port&gt;</code></td><td>เชื่อมต่อไปยัง Clew swarm peer อื่น</td></tr>
-    <tr><td><code>/swarm todo &lt;peer&gt; &lt;task&gt;</code></td><td>มอบหมายงานให้กับ swarm worker</td></tr>
-    <tr><td><code>/swarm todos</code></td><td>แสดง task ทั้งหมดที่ได้รับ</td></tr>
-    <tr><td><code>/swarm inbox</code></td><td>ดูข้อความและ task ที่รออยู่</td></tr>
+    <tr><td><code>/swarm</code></td><td>เปิดเมนู LAN swarm แบบโต้ตอบ (share, discover, join, inbox)</td></tr>
+    <tr><td><code>/swarm share</code></td><td>เริ่มประกาศ instance นี้เป็น worker</td></tr>
+    <tr><td><code>/swarm share stop</code></td><td>หยุดประกาศและปิดเซิร์ฟเวอร์ swarm ในเครื่อง</td></tr>
+    <tr><td><code>/swarm discover</code></td><td>สแกนหา worker บน LAN ที่พร้อมใช้งาน</td></tr>
+    <tr><td><code>/swarm join &lt;host&gt;:&lt;port&gt;</code></td><td>เชื่อมต่อไปยัง Clew swarm peer ระยะไกล</td></tr>
+    <tr><td><code>/swarm todo &lt;peer&gt; &lt;task&gt;</code></td><td>มอบหมายงานให้ worker</td></tr>
+    <tr><td><code>/swarm todos</code></td><td>แสดงงานที่ได้รับ</td></tr>
+    <tr><td><code>/swarm inbox</code></td><td>ดูข้อความและงานที่รออยู่</td></tr>
+    <tr><td><code>/mesh</code></td><td>ดำเนินการเครือข่าย mesh โดยตรง — การค้นหา peer, สถานะ, และโทโพโลยี</td></tr>
+    <tr><td><code>/remote</code></td><td>จัดการเซสชันและการเชื่อมต่อ Clew ระยะไกล</td></tr>
+    <tr><td><code>/remote-setup</code></td><td>ตั้งค่าสภาพแวดล้อมระยะไกลสำหรับเซสชัน teleport</td></tr>
+    <tr><td><code>/teleport</code></td><td>Teleport ไปยังสภาพแวดล้อมเซสชันระยะไกล</td></tr>
+    <tr><td><code>/share</code></td><td>แชร์เซสชันปัจจุบันกับผู้ใช้คนอื่น</td></tr>
   </table>
 
   <h2>เอเจนต์</h2>
@@ -79,18 +113,27 @@
     <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
     <tr><td><code>/agent</code></td><td>จัดการการทำงานของ Clew AI Agents</td></tr>
     <tr><td><code>/agents</code></td><td>เปิดแดชบอร์ดเอเจนต์แบบโต้ตอบ</td></tr>
-    <tr><td><code>/daemon</code></td><td>เปิดแผงควบคุม daemon อัตโนมัติ 24/7</td></tr>
-    <tr><td><code>/task</code></td><td>สร้างงานตามกำหนดการด้วยแบบฟอร์มโต้ตอบ</td></tr>
-    <tr><td><code>/loop</code></td><td>รันคำสั่งซ้ำตามช่วงเวลา</td></tr>
+    <tr><td><code>/daemon</code></td><td>เปิดแผงควบคุม daemon อัตโนมัติ 24/7 — เปิด/ปิด สถานะ ตั้งค่างาน scheduled</td></tr>
+    <tr><td><code>/task</code></td><td>สร้างงานตามกำหนดการด้วยแบบฟอร์มโต้ตอบ; คำสั่งย่อยจัดการคิวงานอัตโนมัติ</td></tr>
+    <tr><td><code>/loop</code></td><td>รันคำสั่งซ้ำตามช่วงเวลา (เช่น /loop 5m /check-deploy)</td></tr>
+    <tr><td><code>/autofix-pr</code></td><td>แก้ไขข้อผิดพลาด CI และตอบกลับความคิดเห็นรีวิวบน PR โดยใช้ Clew บนเว็บ</td></tr>
+    <tr><td><code>/recap</code></td><td>แสดงสรุปกิจกรรมของเซสชันปัจจุบัน</td></tr>
+    <tr><td><code>/dashboard</code></td><td>เปิดแดชบอร์ดเอเจนต์และงานแบบโต้ตอบ</td></tr>
   </table>
 
   <h2>ระบบและการตรวจสอบ</h2>
   <table>
     <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
     <tr><td><code>/help</code></td><td>แสดงความช่วยเหลือและคำสั่งที่มี</td></tr>
-    <tr><td><code>/status</code></td><td>แสดงสถานะ Clew รวมถึงเวอร์ชัน, โมเดล, บัญชี</td></tr>
+    <tr><td><code>/status</code></td><td>แสดงสถานะ Clew — เวอร์ชัน, โมเดล, ผู้ให้บริการ, บัญชี, ระดับ</td></tr>
     <tr><td><code>/doctor</code></td><td>ตรวจสอบการติดตั้งและการตั้งค่า Clew</td></tr>
     <tr><td><code>/exit</code></td><td>ออกจาก REPL</td></tr>
+    <tr><td><code>/quit</code></td><td>ออกจาก Clew</td></tr>
+    <tr><td><code>/restart</code></td><td>รีสตาร์ท Clew</td></tr>
+    <tr><td><code>/update</code></td><td>ตรวจสอบและติดตั้งอัปเดต Clew</td></tr>
+    <tr><td><code>/version</code></td><td>แสดงเวอร์ชัน Clew</td></tr>
+    <tr><td><code>/info</code></td><td>แสดงข้อมูลระบบ — OS, RAM, Node.js</td></tr>
+    <tr><td><code>/env</code></td><td>ดูและจัดการตัวแปรสภาพแวดล้อม</td></tr>
   </table>
 
   <h2>การตั้งค่า</h2>
@@ -98,38 +141,120 @@
     <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
     <tr><td><code>/config</code></td><td>เปิดแผงตั้งค่า</td></tr>
     <tr><td><code>/theme</code></td><td>เปลี่ยนธีม</td></tr>
-    <tr><td><code>/color</code></td><td>ตั้งค่าสีแถบ prompt</td></tr>
+    <tr><td><code>/color</code></td><td>ตั้งค่าสีแถบ prompt สำหรับเซสชันนี้</td></tr>
     <tr><td><code>/keybindings</code></td><td>เปิดหรือสร้างไฟล์ตั้งค่าคีย์ลัด</td></tr>
+    <tr><td><code>/scroll-speed</code></td><td>ตั้งค่าตัวคูณความเร็วเลื่อนเมาส์ (1-20)</td></tr>
+    <tr><td><code>/output-style</code></td><td>เลิกใช้แล้ว: ใช้ /config เพื่อเปลี่ยนสไตล์เอาต์พุต</td></tr>
+    <tr><td><code>/remote-env</code></td><td>ตั้งค่าสภาพแวดล้อมระยะไกลเริ่มต้นสำหรับเซสชัน teleport</td></tr>
+    <tr><td><code>/setting-sources</code></td><td>ตั้งค่าแหล่งที่มาของการตั้งค่า</td></tr>
+    <tr><td><code>/init</code></td><td>รัน Setup hooks ด้วยทริกเกอร์ init</td></tr>
   </table>
 
   <h2>Git และรีวิวโค้ด</h2>
   <table>
     <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
-    <tr><td><code>/diff</code></td><td>ดูการเปลี่ยนแปลงที่ยังไม่ได้ commit</td></tr>
-    <tr><td><code>/commit</code></td><td>stage และ commit การเปลี่ยนแปลง</td></tr>
+    <tr><td><code>/diff</code></td><td>ดูการเปลี่ยนแปลงที่ยังไม่ได้ commit และ diffs รายรอบ</td></tr>
+    <tr><td><code>/commit</code></td><td>Stage และ commit การเปลี่ยนแปลง</td></tr>
+    <tr><td><code>/commit-push-pr</code></td><td>Commit, push, และสร้าง PR</td></tr>
     <tr><td><code>/review</code></td><td>รีวิวการเปลี่ยนแปลงโค้ด</td></tr>
+    <tr><td><code>/security-review</code></td><td>รันการตรวจสอบความปลอดภัย</td></tr>
+    <tr><td><code>/pr-comments</code></td><td>รับความคิดเห็นจาก Pull Request ของ GitHub</td></tr>
+    <tr><td><code>/pr</code></td><td>วงจรชีวิต GitHub PR แบบครบวงจร — สร้าง, แสดง, รีวิว, รวม, สถานะ</td></tr>
+    <tr><td><code>/install-github-app</code></td><td>ติดตั้ง Clew GitHub Actions สำหรับ repository</td></tr>
+    <tr><td><code>/issue</code></td><td>สร้างและจัดการ GitHub Issues</td></tr>
   </table>
 
   <h2>การวิจัยและค้นหา</h2>
   <table>
     <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
     <tr><td><code>/research</code></td><td>วิจัยเชิงลึกจากแหล่งที่มาในไฟล์ท้องถิ่น, wiki, และหน่วยความจำ</td></tr>
-    <tr><td><code>/memory</code></td><td>แก้ไขไฟล์หน่วยความจำ Claude</td></tr>
+    <tr><td><code>/memory</code></td><td>จัดการหน่วยความจำ — save, timeline, stats, digest, graph, xp, search, preview, consolidate</td></tr>
     <tr><td><code>/memory-search</code></td><td>ค้นหาหน่วยความจำด้วยการค้นหาเชิงความหมาย (ข้ามภาษา)</td></tr>
+    <tr><td><code>/searxng</code></td><td>เริ่ม, หยุด, หรือตรวจสอบสถานะ SearXNG Docker container ในเครื่อง</td></tr>
+    <tr><td><code>/explorer</code></td><td>เปิด/ปิดแถบด้านข้างไฟล์ explorer</td></tr>
+    <tr><td><code>/tag</code></td><td>จัดการแท็กสำหรับเซสชัน, ไฟล์, และหน่วยความจำ</td></tr>
   </table>
+
+  <h2>การประเมินผล</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/eval</code></td><td>แสดงผลลัพธ์การประเมินและสถานะ — ความครอบคลุม, ประสิทธิภาพ, ต้นทุน</td></tr>
+    <tr><td><code>/eval-run</code></td><td>รันชุดประเมินผล — เรียกใช้ suite และรวบรวมผลลัพธ์</td></tr>
+    <tr><td><code>/eval-compare</code></td><td>เปรียบเทียบผลลัพธ์การประเมิน — วิเคราะห์ประสิทธิภาพระหว่างรัน</td></tr>
+    <tr><td><code>/eval-new</code></td><td>สร้างการประเมินใหม่ตามเกณฑ์ที่กำหนด</td></tr>
+  </table>
+
+  <h2>ยูทิลิตี้</h2>
+  <table>
+    <tr><th>คำสั่ง</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/btw</code></td><td>ถามคำถามสั้นๆ โดยไม่ขัดจังหวะการสนทนาหลัก</td></tr>
+    <tr><td><code>/buddy</code></td><td>ตั้งค่า AI companion (Buddy)</td></tr>
+    <tr><td><code>/desktop</code></td><td>ต่อเซสชันปัจจุบันใน Claude Desktop</td></tr>
+    <tr><td><code>/mobile</code></td><td>แสดง QR code สำหรับดาวน์โหลดแอป Claude มือถือ</td></tr>
+    <tr><td><code>/powerup</code></td><td>บทเรียนโต้ตอบที่สอนฟีเจอร์ Clew พร้อมเดโมแบบเคลื่อนไหว</td></tr>
+    <tr><td><code>/feedback</code></td><td>ส่งความคิดเห็นเกี่ยวกับ Clew</td></tr>
+    <tr><td><code>/onboarding</code></td><td>รันวิซาร์ดการเริ่มต้นใช้งานแบบโต้ตอบ</td></tr>
+    <tr><td><code>/team-onboarding</code></td><td>สร้างคู่มือเริ่มต้นสำหรับเพื่อนร่วมทีมจากการใช้งานของคุณ</td></tr>
+    <tr><td><code>/add-dir</code></td><td>เพิ่มไดเรกทอรีทำงานใหม่</td></tr>
+    <tr><td><code>/goal</code></td><td>ตั้งเป้าหมายเซสชัน</td></tr>
+    <tr><td><code>/heapdump</code></td><td>บันทึก JS heap ไปยัง ~/Desktop</td></tr>
+    <tr><td><code>/stickers</code></td><td>สั่งซื้อสติกเกอร์ Clew</td></tr>
+    <tr><td><code>/thinkback</code></td><td>ภาพรวมปีของคุณกับ Clew</td></tr>
+    <tr><td><code>/vim</code></td><td>เปิด/ปิดการผูกคีย์ Vim ใน REPL</td></tr>
+    <tr><td><code>/chrome</code></td><td>เปิดและจัดการการรวมเบราว์เซอร์ Chrome</td></tr>
+    <tr><td><code>/login</code></td><td>ยืนยันตัวตนกับผู้ให้บริการ AI ผ่าน OAuth หรือ API key</td></tr>
+    <tr><td><code>/logout</code></td><td>ออกจากระบบการยืนยันตัวตนผู้ให้บริการปัจจุบัน</td></tr>
+    <tr><td><code>/install</code></td><td>รันวิซาร์ดการติดตั้ง Clew</td></tr>
+    <tr><td><code>/install-slack-app</code></td><td>ติดตั้งแอป Clew Slack</td></tr>
+    <tr><td><code>/insights</code></td><td>แสดงข้อมูลเชิงลึกและคำแนะนำการใช้งานเฉพาะบุคคล</td></tr>
+  </table>
+
+  <h2>คำสั่งที่ต้องเปิดใช้งานคุณสมบัติ</h2>
+  <p>คำสั่งเหล่านี้ต้องการตัวแปรสภาพแวดล้อมหรือคุณสมบัติเวลาสร้างที่เฉพาะเจาะจง:</p>
+  <table>
+    <tr><th>คำสั่ง</th><th>แฟล็ก</th><th>คำอธิบาย</th></tr>
+    <tr><td><code>/bridge</code></td><td><code>BRIDGE_MODE=1</code></td><td>เชื่อมต่อเทอร์มินัลนี้สำหรับเซสชันควบคุมระยะไกล</td></tr>
+    <tr><td><code>/voice</code></td><td><code>VOICE_MODE=1</code></td><td>เปิด/ปิดโหมดเสียง</td></tr>
+    <tr><td><code>/brief</code></td><td><code>KAIROS=1</code></td><td>คำสั่งสรุป</td></tr>
+    <tr><td><code>/assistant</code></td><td><code>KAIROS=1</code></td><td>โหมดผู้ช่วย</td></tr>
+    <tr><td><code>/ant</code></td><td><code>USER_TYPE=ant</code></td><td>เปิด/ปิดฟีเจอร์เบต้าสำหรับ Ant</td></tr>
+    <tr><td><code>/ultraplan</code></td><td>ภายใน</td><td>โหมดวางแผนแบบขยาย</td></tr>
+    <tr><td><code>/bughunter</code></td><td>ภายใน</td><td>เวิร์กโฟลว์ล่าบั๊ก</td></tr>
+    <tr><td><code>/ide</code></td><td>ขณะรัน</td><td>เชื่อมต่อ IDE โดยอัตโนมัติเมื่อเริ่มต้น</td></tr>
+    <tr><td><code>/terminal-setup</code></td><td>ขณะรัน</td><td>ตั้งค่า shell และสภาพแวดล้อมเทอร์มินัล</td></tr>
+    <tr><td><code>/extra-usage</code></td><td>ขณะรัน</td><td>ขอเครดิตการใช้งานเพิ่มเติม</td></tr>
+  </table>
+
+  <h2>การเติมคำอัตโนมัติแบบโต้ตอบ</h2>
+  <p>Clew มีระบบข้อความ ghost ในตัวที่ทำนายอาร์กิวเมนต์ถัดไปขณะพิมพ์คำสั่ง:</p>
+  <ul>
+    <li>พิมพ์ <code>/goal</code> ตามด้วยช่องว่าง ข้อความ ghost จะแสดง <code>[condition]</code> เป็นตัวอักษรสลัวหลังเคอร์เซอร์</li>
+    <li>กด <kbd>Tab</kbd> หรือ <kbd>→</kbd> (ลูกศรขวา) เพื่อยอมรับข้อความ ghost และเติม placeholder</li>
+    <li>รองรับคำแนะนำแบบต่อเนื่อง: <code>/goal fix [name] [priority]</code> เผยอาร์กิวเมนต์ที่เหลือเมื่อคุณเติมทีละอัน</li>
+    <li>คำสั่งที่มี <code>argumentHint</code> (เช่น <code>/plugin-details &lt;plugin-name&gt;</code>) แสดงคำแนะนำ placeholder แบบคงที่</li>
+  </ul>
+  <p>สำหรับการเติมคำสั่งกลางการพิมพ์ ระบบข้อความ ghost เดียวกันเติมชื่อคำสั่งบางส่วน:</p>
+  <ul>
+    <li>พิมพ์ <code>/com</code> ข้อความ ghost แสดง <code>mit</code> สำหรับ <code>/commit</code></li>
+    <li>กด <kbd>Tab</kbd> หรือ <kbd>→</kbd> เพื่อเติมชื่อคำสั่ง</li>
+  </ul>
 
   <h2>การโหลดคำสั่ง</h2>
   <p>คำสั่งถูกโหลดจากหลายแหล่งเมื่อเริ่มต้น:</p>
   <ul>
     <li><strong>ในตัว</strong> — คำสั่งหลักจาก <code>src/commands/</code> (พร้อมใช้เสมอ)</li>
     <li><strong>สกิลที่มาพร้อม</strong> — สกิลที่มาพร้อมกับแอปพลิเคชัน</li>
-    <li><strong>ไดเรกทอรีสกิล</strong> — <code>~/.claude/skills/</code> และ <code>.claude/skills/</code></li>
+    <li><strong>สกิลปลั๊กอินในตัว</strong> — จากปลั๊กอินในตัวที่เปิดใช้งาน</li>
+    <li><strong>ไดเรกทอรีสกิล</strong> — <code>~/.clew/skills/</code> และ <code>.clew/skills/</code> ของโปรเจกต์</li>
     <li><strong>คำสั่งปลั๊กอิน</strong> — จากปลั๊กอินที่ติดตั้ง</li>
-    <li><strong>MCP skills</strong> — จากเซิร์ฟเวอร์ MCP</li>
+    <li><strong>สกิลปลั๊กอิน</strong> — จากไดเรกทอรีสกิลของปลั๊กอิน</li>
+    <li><strong>MCP skills</strong> — จากเซิร์ฟเวอร์ MCP (เมื่อเปิดใช้งาน <code>MCP_SKILLS</code>)</li>
+    <li><strong>สกิลไดนามิก</strong> — ถูกค้นพบระหว่างการดำเนินการไฟล์</li>
   </ul>
+  <p>ใช้ <code>/reload-plugins</code> เพื่อโหลดคำสั่งจากปลั๊กอินใหม่โดยไม่ต้องรีสตาร์ท คำสั่งที่ปลอดภัยสำหรับ remote และ bridge มี allowlists ใน <code>src/commands.ts</code>.</p>
 
   <footer class="footer">
-    <span>Clew v0.2.7 — โอเพนซอร์ส</span>
+    <span>Clew 0.2.14 — โอเพนซอร์ส</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://github.com/ClewCode/ClewCode/issues">ปัญหา</a>
@@ -142,4 +267,3 @@
 <script src="js/main.js"></script>
 </body>
 </html>
-

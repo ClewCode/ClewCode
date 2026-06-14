@@ -100,7 +100,7 @@ export const MeshShareTool = buildTool({
           server.broadcastEvent('mesh_online', {
             id: peer.id,
             hostname: peer.hostname,
-            port: mesh.port,
+            port: peer.port,
           });
         },
         onMeshRemoved: meshId => {

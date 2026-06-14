@@ -41,7 +41,12 @@ const outputSchema = lazySchema(() =>
 export type Output = z.infer<ReturnType<typeof outputSchema>>;
 
 function quoteArg(value: string): string {
-  return `"${value.replace(/"/g, '\\"')}"`;
+  const escaped = value.replace(/"/g, isWin32() ? '""' : '\\"');
+  return `"${escaped}"`;
+}
+
+function isWin32(): boolean {
+  return process.platform === 'win32';
 }
 
 function buildMeshSpawnCommand(args: string[]): string {
@@ -152,7 +157,8 @@ export const MeshSpawnTool = buildTool({
       ]);
 
       if (platform === 'win32') {
-        childSpawn('cmd.exe', ['/c', `start "Clew Mesh - ${targetName}" cmd.exe /k ${cmd}`], {
+        const winCmd = `start "Clew Mesh - ${targetName}" cmd.exe /k clew.cmd ${cliArgs.map(a => a.includes(' ') ? quoteArg(a) : a).join(' ')}`;
+        childSpawn('cmd.exe', ['/c', winCmd], {
           cwd,
           detached: true,
           stdio: 'ignore',
@@ -206,9 +212,9 @@ export const MeshSpawnTool = buildTool({
 
             const peer =
               peers.find(p => p.hostname === targetName || p.id === targetName) ?? store.findMesh(targetName);
-            if (!peer || mesh.port === 0) continue;
+            if (!peer || peer.port === 0) continue;
 
-            const res = await fetch(`http://${peer.ip || '127.0.0.1'}:${mesh.port}/mesh-info`, {
+            const res = await fetch(`http://${peer.ip || '127.0.0.1'}:${peer.port}/mesh-info`, {
               signal: AbortSignal.timeout(2000),
             });
             if (!res.ok) continue;
@@ -228,7 +234,7 @@ export const MeshSpawnTool = buildTool({
             const meshId = info.id ?? peer.id;
             const meshHost = info.hostname ?? peer.hostname;
             const meshIp = info.ip ?? peer.ip ?? '127.0.0.1';
-            const meshPort = info.port ?? mesh.port;
+            const meshPort = info.port ?? peer.port;
 
             store.addConnection({
               id: meshId,

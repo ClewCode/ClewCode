@@ -78,6 +78,7 @@ import { cacheImagePath, storeImage } from '../../../utils/imageStore.js';
 type ResponseValue =
   | 'yes-bypass-permissions'
   | 'yes-accept-edits'
+  | 'yes-bypass-permissions-keep-context'
   | 'yes-accept-edits-keep-context'
   | 'yes-default-keep-context'
   | 'yes-resume-auto-mode'
@@ -395,7 +396,7 @@ export function ExitPlanModePermissionRequest({
     // Keep-context options skip this block and go through the normal flow below
     const isResumeAutoOption = feature('TRANSCRIPT_CLASSIFIER') ? value === 'yes-resume-auto-mode' : false;
     const isKeepContextOption =
-      value === 'yes-accept-edits-keep-context' || value === 'yes-default-keep-context' || isResumeAutoOption;
+      value === 'yes-bypass-permissions-keep-context' || value === 'yes-accept-edits-keep-context' || value === 'yes-default-keep-context' || isResumeAutoOption;
     if (value !== 'no') {
       autoNameSessionFromPlan(currentPlan, setAppState, !isKeepContextOption);
     }
@@ -495,9 +496,8 @@ export function ExitPlanModePermissionRequest({
     // Without this fallback the function would return without resolving the
     // dialog, leaving the query loop blocked and safety state corrupted.
     const keepContextModes: Record<string, PermissionMode> = {
-      'yes-accept-edits-keep-context': toolPermissionContext.isBypassPermissionsModeAvailable
-        ? 'bypassPermissions'
-        : 'acceptEdits',
+      'yes-bypass-permissions-keep-context': 'bypassPermissions',
+      'yes-accept-edits-keep-context': 'acceptEdits',
       'yes-default-keep-context': 'default',
       ...(feature('TRANSCRIPT_CLASSIFIER')
         ? {
@@ -826,12 +826,14 @@ export function buildPlanApprovalOptions({
         label: `Yes, clear context${usedLabel} and use auto mode`,
         value: 'yes-auto-clear-context',
       });
-    } else if (isBypassPermissionsModeAvailable) {
+    }
+    if (isBypassPermissionsModeAvailable) {
       options.push({
         label: `Yes, clear context${usedLabel} and bypass permissions`,
         value: 'yes-bypass-permissions',
       });
-    } else {
+    }
+    if (!isAutoModeAvailable || !feature('TRANSCRIPT_CLASSIFIER')) {
       options.push({
         label: `Yes, clear context${usedLabel} and auto-accept edits`,
         value: 'yes-accept-edits',
@@ -839,23 +841,22 @@ export function buildPlanApprovalOptions({
     }
   }
 
-  // Slot 2: keep-context with elevated mode (same priority: auto > bypass > edits).
   if (feature('TRANSCRIPT_CLASSIFIER') && isAutoModeAvailable) {
     options.push({
       label: 'Yes, and use auto mode',
       value: 'yes-resume-auto-mode',
     });
-  } else if (isBypassPermissionsModeAvailable) {
+  }
+  if (isBypassPermissionsModeAvailable) {
     options.push({
       label: 'Yes, and bypass permissions',
-      value: 'yes-accept-edits-keep-context',
-    });
-  } else {
-    options.push({
-      label: 'Yes, auto-accept edits',
-      value: 'yes-accept-edits-keep-context',
+      value: 'yes-bypass-permissions-keep-context',
     });
   }
+  options.push({
+    label: 'Yes, auto-accept edits',
+    value: 'yes-accept-edits-keep-context',
+  });
 
   options.push({
     label: 'Yes, manually approve edits',

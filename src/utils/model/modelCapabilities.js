@@ -1,0 +1,129 @@
+import { readFileSync } from 'fs';
+import { mkdir, writeFile } from 'fs/promises';
+import isEqual from 'lodash-es/isEqual.js';
+import memoize from 'lodash-es/memoize.js';
+import { join } from 'path';
+import { z } from 'zod/v4';
+import { OAUTH_BETA_HEADER } from '../../constants/oauth.js';
+import { getProviderRegistryEntry } from '../../services/ai/providerRegistry.js';
+import { getAnthropicClient } from '../../services/api/client.js';
+import { isClaudeAISubscriber } from '../auth.js';
+import { logForDebugging } from '../debug.js';
+import { getClaudeConfigHomeDir } from '../envUtils.js';
+import { safeParseJSON } from '../json.js';
+import { lazySchema } from '../lazySchema.js';
+import { isEssentialTrafficOnly } from '../privacyLevel.js';
+import { jsonStringify } from '../slowOperations.js';
+import { getActiveProviderId, getAPIProvider, isFirstPartyAnthropicBaseUrl } from './providers.js';
+// .strip() — don't persist internal-only fields (mycro_deployments etc.) to disk
+const ModelCapabilitySchema = lazySchema(() => z
+    .object({
+    id: z.string(),
+    max_input_tokens: z.number().optional(),
+    max_tokens: z.number().optional(),
+})
+    .strip());
+const CacheFileSchema = lazySchema(() => z.object({
+    models: z.array(ModelCapabilitySchema()),
+    timestamp: z.number(),
+}));
+function getCacheDir() {
+    return join(getClaudeConfigHomeDir(), 'cache');
+}
+function getCachePath() {
+    return join(getCacheDir(), 'model-capabilities.json');
+}
+function isModelCapabilitiesEligible() {
+    if (process.env.USER_TYPE !== 'ant')
+        return false;
+    if (getAPIProvider() !== 'firstParty')
+        return false;
+    if (!isFirstPartyAnthropicBaseUrl())
+        return false;
+    return true;
+}
+// Longest-id-first so substring match prefers most specific; secondary key for stable isEqual
+function sortForMatching(models) {
+    return [...models].sort((a, b) => b.id.length - a.id.length || a.id.localeCompare(b.id));
+}
+// Keyed on cache path so tests that set CLAUDE_CONFIG_DIR get a fresh read
+const loadCache = memoize((path) => {
+    try {
+        // eslint-disable-next-line custom-rules/no-sync-fs -- memoized; called from sync getContextWindowForModel
+        const raw = readFileSync(path, 'utf-8');
+        const parsed = CacheFileSchema().safeParse(safeParseJSON(raw, false));
+        return parsed.success ? parsed.data.models : null;
+    }
+    catch {
+        return null;
+    }
+}, path => path);
+export function getModelCapability(model) {
+    // Anthropic first-party path: use cached capabilities from API
+    if (isModelCapabilitiesEligible()) {
+        const cached = loadCache(getCachePath());
+        if (cached && cached.length > 0) {
+            const m = model.toLowerCase();
+            const exact = cached.find(c => c.id.toLowerCase() === m);
+            if (exact)
+                return exact;
+            return cached.find(c => m.includes(c.id.toLowerCase()));
+        }
+    }
+    // Non-Anthropic providers: look up capabilities from providers.json
+    const providerId = getActiveProviderId();
+    if (providerId !== 'anthropic') {
+        const entry = getProviderRegistryEntry(providerId);
+        if (entry) {
+            const modelLower = model.toLowerCase();
+            // Try exact match first, then substring match
+            const modelInfo = entry.models.find(m => m.id.toLowerCase() === modelLower) ??
+                entry.models.find(m => modelLower.includes(m.id.toLowerCase()) || m.id.toLowerCase().includes(modelLower));
+            if (modelInfo?.capabilities) {
+                const caps = modelInfo.capabilities;
+                if (caps.maxContext && caps.maxContext !== 'varies') {
+                    return {
+                        id: modelInfo.id,
+                        max_input_tokens: caps.maxContext,
+                        max_tokens: typeof caps.maxOutput === 'number' ? caps.maxOutput : undefined,
+                    };
+                }
+            }
+        }
+    }
+    return undefined;
+}
+export async function refreshModelCapabilities() {
+    if (!isModelCapabilitiesEligible())
+        return;
+    if (isEssentialTrafficOnly())
+        return;
+    try {
+        const anthropic = await getAnthropicClient({ maxRetries: 1 });
+        const betas = isClaudeAISubscriber() ? [OAUTH_BETA_HEADER] : undefined;
+        const parsed = [];
+        for await (const entry of anthropic.models.list({ betas })) {
+            const result = ModelCapabilitySchema().safeParse(entry);
+            if (result.success)
+                parsed.push(result.data);
+        }
+        if (parsed.length === 0)
+            return;
+        const path = getCachePath();
+        const models = sortForMatching(parsed);
+        if (isEqual(loadCache(path), models)) {
+            logForDebugging('[modelCapabilities] cache unchanged, skipping write');
+            return;
+        }
+        await mkdir(getCacheDir(), { recursive: true });
+        await writeFile(path, jsonStringify({ models, timestamp: Date.now() }), {
+            encoding: 'utf-8',
+            mode: 0o600,
+        });
+        loadCache.cache.delete(path);
+        logForDebugging(`[modelCapabilities] cached ${models.length} models`);
+    }
+    catch (error) {
+        logForDebugging(`[modelCapabilities] fetch failed: ${error instanceof Error ? error.message : 'unknown'}`);
+    }
+}

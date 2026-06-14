@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Clew � AI Coding Assistant</title>
-<meta name="description" content="Terminal-based AI coding assistant with 28+ providers, P2P swarm, MCP support, and plugin system.">
+<title>Clew — AI Coding Assistant</title>
+<meta name="description" content="Terminal-based AI coding assistant with 29+ providers, P2P swarm, MCP support, and plugin system.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -30,7 +30,7 @@
 <div class="page">
 
   <section class="hero">
-    <div class="badge"><span class="dot"></span>v0.2.14 � Multi-Provider AI CLI</div>
+    <div class="badge"><span class="dot"></span>0.2.14 — Multi-Provider AI CLI</div>
     <h1>Code with <span class="hl">any model</span></h1>
     <p>Terminal-based AI coding assistant with multi-provider routing, P2P swarm, and extensible tool system.</p>
     <div class="hero-actions">
@@ -41,67 +41,73 @@
   </section>
 
   <div class="stats">
-    <div class="stat"><div class="stat-num">28</div><div class="stat-lbl">AI Providers</div></div>
+    <div class="stat"><div class="stat-num">29</div><div class="stat-lbl">AI Providers</div></div>
     <div class="stat"><div class="stat-num">120+</div><div class="stat-lbl">Commands</div></div>
-    <div class="stat"><div class="stat-num">78+</div><div class="stat-lbl">Built-in Tools</div></div>
+    <div class="stat"><div class="stat-num">76+</div><div class="stat-lbl">Built-in Tools</div></div>
     <div class="stat"><div class="stat-num">100%</div><div class="stat-lbl">Open Source</div></div>
-  </div>
-
-  <div class="term">
-    <div class="term-bar">
-      <span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span>
-      <span class="term-title">clew � ~/project</span>
-    </div>
-    <div class="term-body">$ clew
-<span class="d">╭──────────────────────────────────╮</span>
-<span class="d">│</span> Clew � model: <span class="h">deepseek-v4-flash</span>  <span class="d">│</span>
-<span class="d">│</span> provider: DeepSeek � ctx: <span class="h">78%</span> <span class="d">│</span>
-<span class="d">╰──────────────────────────────────╯</span>
-<span class="p">></span> find all unused exports in src/
-<span class="d">Searching 3 files... Found 2 unused exports.</span></div>
   </div>
 
   <h2>Features</h2>
   <div class="grid">
     <div class="card">
       <h3>Multi-Provider AI</h3>
-      <p>28 providers � Anthropic, OpenAI, Google, DeepSeek, Groq, Mistral, and more. Switch at runtime with <code>/model</code>.</p>
+      <p>29 providers — Anthropic, OpenAI, Google, DeepSeek, Groq, Mistral, and more. Switch at runtime with <code>/model</code>.</p>
       <span class="tag">/model</span> <span class="tag">/provider</span>
     </div>
     <div class="card">
-      <h3>P2P Swarm</h3>
-      <p>LAN-based multi-agent coordination. Discover peers, share workers, assign tasks across machines.</p>
-      <span class="tag">/swarm</span> <span class="tag">peer_*</span>
+      <h3>P2P Swarm &amp; Mesh</h3>
+      <p>LAN-based multi-agent coordination. Discover peers, share workers, assign tasks across machines. Mesh networking with remote control.</p>
+      <span class="tag">/swarm</span> <span class="tag">/mesh</span>
     </div>
     <div class="card">
       <h3>MCP &amp; Plugins</h3>
-      <p>Full MCP support (stdio + SSE), hot-reloadable plugins with hooks, and a plugin marketplace.</p>
+      <p>Full MCP support (stdio + SSE + DirectConnect), hot-reloadable plugins with hooks, and a plugin marketplace.</p>
       <span class="tag">/mcp</span> <span class="tag">/plugin</span>
     </div>
     <div class="card">
-      <h3>78+ Built-in Tools</h3>
-      <p>File ops, shell, web search, browser automation, agent delegation, git/PR workflows � permission-gated.</p>
+      <h3>76+ Built-in Tools</h3>
+      <p>File ops, shell, web search, browser automation, agent delegation, git/PR workflows, process mesh — permission-gated.</p>
       <span class="tag">Read/Write/Edit</span> <span class="tag">Bash</span>
     </div>
     <div class="card">
       <h3>Memory &amp; Research</h3>
-      <p>Auto-memory with semantic search. Deep research across files, wiki, and web.</p>
+      <p>Auto-memory with semantic search. Deep research across files, wiki, and web. XP system with knowledge graph.</p>
       <span class="tag">/memory</span> <span class="tag">/research</span>
     </div>
     <div class="card">
       <h3>Voice &amp; Automation</h3>
-      <p>Voice mode with Whisper, 24/7 daemon agent, scheduled tasks, and recurring loops.</p>
+      <p>Voice mode with Whisper, 24/7 daemon agent, scheduled tasks, recurring loops, and bridge for remote control.</p>
       <span class="tag">/voice</span> <span class="tag">/daemon</span>
     </div>
     <div class="card">
+      <h3>Ultracode &amp; Reasoning</h3>
+      <p>Ultracode mode with xhigh effort, parallel subtasks, and adversarial verifiers. Configurable reasoning effort per provider.</p>
+      <span class="tag">/ultracode</span> <span class="tag">/effort</span>
+    </div>
+    <div class="card">
       <h3>OAuth &amp; Permissions</h3>
-      <p>Granular permissions with allow/deny rules, sandbox mode. OAuth for Anthropic, Google, OpenAI.</p>
+      <p>Granular permissions with allow/deny rules, 7 permission modes, sandbox mode. OAuth for Anthropic, Google, OpenAI.</p>
       <span class="tag">/permissions</span> <span class="tag">/login</span>
     </div>
     <div class="card">
-      <h3>Plan &amp; Review</h3>
-      <p>Plan mode for complex tasks. AI code review. Full GitHub PR lifecycle.</p>
+      <h3>Plan, Review &amp; PR</h3>
+      <p>Plan mode for complex tasks. AI code review with auto-fix. Full GitHub PR lifecycle — create, review, merge, comment.</p>
       <span class="tag">/plan</span> <span class="tag">/review</span>
+    </div>
+    <div class="card">
+      <h3>Process Mesh &amp; Agents</h3>
+      <p>Distributed process-backed workers with PTY/exec modes. Subagents, background tasks, and multi-agent coordination.</p>
+      <span class="tag">/agent</span> <span class="tag">ProcessMesh</span>
+    </div>
+    <div class="card">
+      <h3>Taste &amp; Preference Learning</h3>
+      <p>Adaptive preference learning engine — learns your coding style, tool preferences, and workflow patterns over time.</p>
+      <span class="tag">/taste</span> <span class="tag">/buddy</span>
+    </div>
+    <div class="card">
+      <h3>Skills &amp; Workflows</h3>
+      <p>Reusable skill instructions, dynamic workflows in YAML/JSON, SearXNG local search, and multi-source research.</p>
+      <span class="tag">/skill</span> <span class="tag">/workflow</span>
     </div>
   </div>
 
@@ -109,7 +115,7 @@
   <div class="grid">
     <div class="card">
       <h3>Provider Freedom</h3>
-      <p>Use any AI provider � switch between them mid-session. No vendor lock-in. Consistent tool calling across all providers.</p>
+      <p>Use any AI provider — switch between them mid-session. No vendor lock-in. Consistent tool calling across all providers.</p>
     </div>
     <div class="card">
       <h3>Team-Ready</h3>
@@ -122,7 +128,7 @@
   </div>
 
   <footer class="footer">
-    <span>&copy; 2026 Clew Code � MIT</span>
+    <span>Clew Code — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://npmjs.com/package/clew-code">npm</a>

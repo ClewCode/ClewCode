@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Providers — Clew</title>
-  <meta name="description" content="Complete AI provider reference for Clew — 27 supported providers with configuration and capabilities.">
+  <meta name="description" content="Complete AI provider reference for Clew — 29 supported providers with configuration and capabilities.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 <div class="content-wrap"><main class="content">
   <div class="breadcrumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Providers</span></div>
   <h1>Providers</h1>
-  <p class="section-subtitle">Clew supports <strong>28 AI providers</strong> with a unified adapter layer. Set your API keys as environment variables and switch between providers at runtime with <code>/model</code>.</p>
+  <p class="section-subtitle">Clew supports <strong>29 AI providers</strong> with a unified adapter layer. Set your API keys as environment variables and switch between providers at runtime with <code>/model</code>.</p>
 
   <p>Provider configuration is declared in <code>src/services/ai/providers.json</code>. The <strong>ProviderManager</strong> resolves API keys, selects models, and manages provider config. Non-Anthropic providers are normalized via the <strong>AnthropicAdapter</strong> or <strong>GoogleAdapter</strong>.</p>
 
@@ -25,6 +25,7 @@
   <table>
     <tr><th>Provider</th><th>Env Key</th><th>Default Model</th><th>Notes</th></tr>
     <tr><td>Clew Gateway</td><td><code>CLEW_GATEWAY_KEY</code></td><td>clew-code</td><td>Self-hosted AI proxy for provider fallback, model routing, and usage tracking across upstream providers. Set base URL with <code>CLEW_GATEWAY_URL</code>.</td></tr>
+    <tr><td>Custom (OpenAI-Compatible)</td><td><code>CUSTOM_API_KEY</code></td><td>—</td><td>Generic OpenAI-compatible provider. Set base URL with <code>CUSTOM_API_BASE_URL</code>.</td></tr>
     <tr><td>Anthropic</td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-sonnet-4-7</td><td>Native Claude support with full tool calling and reasoning. Context: 1M tokens.</td></tr>
     <tr><td>OpenAI</td><td><code>OPENAI_API_KEY</code></td><td>gpt-5.5</td><td>GPT-5.5, GPT-5.5 Pro, GPT-5.4 Mini. Context: 1M+ tokens.</td></tr>
     <tr><td>Google</td><td><code>GOOGLE_API_KEY</code></td><td>gemini-3.1-pro-preview</td><td>Gemini 3.1 Pro Preview &amp; Flash Lite. Context: up to 2M tokens. Uses GoogleAdapter.</td></tr>
@@ -102,7 +103,7 @@ clew
 DEBUG=provider:anthropic clew</code></pre>
 
   <footer class="footer">
-    <span>Clew Code 0.2.13 — Open Source</span>
+    <span>Clew Code 0.2.14 — Open Source</span>
     <div class="footer-links">
       <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
       <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

@@ -44,13 +44,50 @@ Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) 
 
 ---
 
-## Concepts: Agents, Subagents, and Mesh
+## Concepts: Agents, Subagents, Mesh, and ACP
 
-Clew Code uses a tiered architecture for distributed task execution:
+Clew Code has several execution layers. They are related, but they do different jobs:
 
-- **Agents:** Specialized AI personas running locally on your machine. Dispatch with `/agent <task>` or `/agent @<specialist_name> <task>`. View all active agents via `/agents` dashboard.
-- **Subagents:** Autonomous child agents spawned by parent agents using the `Agent` tool to break down complex problems. Managed automatically without direct user intervention.
-- **Mesh (agent-to-agent):** A LAN mesh of Clew instances coordinating with each other. Pair machines, share resources, and delegate tasks to remote worker nodes using `/mesh` commands (discover, run, spawn, share, join, etc.).
+- **Agent:** An AI worker with a prompt, model, tools, and permissions. The main chat session is an agent. Custom agents live in `.claude/agents/*.md`, and built-ins include `Explore`, `Plan`, and `general-purpose`.
+- **Subagent:** A short-lived child agent launched by another agent through the `Agent` tool. Use subagents for independent work such as codebase exploration, test triage, or review. The built-in `Explore` agent is read-only and is the right choice for parallel "go inspect this area" tasks.
+- **Teammate / Swarm:** A longer-lived agent team member with an identity, mailbox, task coordination, and optional pane/tmux or in-process execution. Use this when agents need to keep working together across multiple turns, not for isolated one-shot exploration.
+- **LAN Mesh:** A network of Clew instances on the same machine or LAN. `/mesh` discovers peers, sends messages, assigns tasks, and runs commands on other Clew nodes.
+- **Process Mesh:** A local process-backed worker layer. It delegates a prompt to an external CLI/provider such as Codex using `exec` or `pty`, then returns stdout, stderr, exit code, timeout state, and progress.
+- **ACP:** An external protocol boundary. Editors, IDEs, REST clients, or other agents can send work into Clew through ACP. ACP should normalize the external request and route execution through Clew's internal layers instead of hardcoding a provider in every ACP entry point.
+
+Typical flows:
+
+```text
+User
+  -> main Clew agent
+      -> Agent tool
+          -> short-lived subagent, e.g. Explore
+```
+
+```text
+External editor / external agent
+  -> ACP
+      -> shared ACP-to-mesh boundary
+          -> Process Mesh provider, e.g. codex
+              -> external CLI process
+```
+
+```text
+Clew instance A
+  -> LAN Mesh
+      -> Clew instance B
+          -> local agent, daemon task, or process worker
+```
+
+Use the layers by intent:
+
+- Need a quick independent read-only investigation? Use an `Explore` subagent.
+- Need long-running coordination between named workers? Use teammates/swarm.
+- Need another Clew instance on the LAN? Use `/mesh`.
+- Need an external editor or agent to call into Clew? Use ACP.
+- Need Clew to run a local external worker such as Codex? Use Process Mesh.
+
+Other runtime concepts:
 - **Plan mode:** Full-access planning mode with bypass permissions — explore, read, write, and edit files freely. Plan files persist to `.clew/plans/long-term-plan.md` with task progress snapshot.
 - **Multi-pass compaction:** Automatic chunk-based context compression with recursive re-compaction when context exceeds the model window.
 

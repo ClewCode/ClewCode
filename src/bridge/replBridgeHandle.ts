@@ -34,3 +34,7 @@ export function getSelfBridgeCompatId(): string | undefined {
   const h = getReplBridgeHandle();
   return h ? toCompatSessionId(h.bridgeSessionId) : undefined;
 }
+
+export function isReplBridgeActive(): boolean {
+  return getReplBridgeHandle() !== null;
+}

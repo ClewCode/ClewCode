@@ -134,7 +134,7 @@
       <h3>PeerDiscovery <code>src/peer/PeerDiscovery.ts</code></h3>
       <p>Two discovery mechanisms work together:</p>
       <ul>
-        <li><strong>File-based</strong> — Each instance writes <code>~/.claude/peers/{pid}.json</code> with hostname, IP, port, shell, cwd. Other instances scan this directory to discover local swarm nodes.</li>
+        <li><strong>File-based</strong> — Each instance writes <code>~/.clew/peers/{pid}.json</code> with hostname, IP, port, shell, cwd. Other instances scan this directory to discover local swarm nodes.</li>
         <li><strong>UDP Multicast</strong> — Broadcasts heartbeat beacons to <code>239.255.37.37:42069</code> every 30 seconds. Responds to <code>clew-peer-query</code> with <code>clew-peer-info</code>. Cross-machine only.</li>
         <li><strong>Stale eviction</strong> — Peers unseen for 90 seconds (<code>PEER_STALE_TIMEOUT</code>) are automatically removed.</li>
       </ul>
@@ -220,7 +220,7 @@ Stale after:  90 seconds</code></pre>
       </table>
 
       <footer class="footer">
-        <span>Clew Code v0.2.7 — Open Source</span>
+        <span>Clew Code 0.2.14 — Open Source</span>
         <div class="footer-links">
           <a href="https://github.com/ClewCode/ClewCode">GitHub</a>
           <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>

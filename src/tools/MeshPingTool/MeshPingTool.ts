@@ -119,7 +119,7 @@ export const MeshPingTool = buildTool({
       }
 
       try {
-        const url = `http://${peer.ip || '127.0.0.1'}:${mesh.port}/mesh-info`;
+        const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/mesh-info`;
         const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
         if (!response.ok) {
           return { ok: false, error: `HTTP ${response.status}` };

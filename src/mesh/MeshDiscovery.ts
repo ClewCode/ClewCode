@@ -407,6 +407,10 @@ export class MeshDiscovery {
     logForDebugging('[MeshDiscovery] Stopped');
   }
 
+  async discoverMeshs(timeout = 3000): Promise<MeshInfo[]> {
+    return this.discoverPeers(timeout);
+  }
+
   async discoverPeers(timeout = 3000): Promise<MeshInfo[]> {
     try {
       // 1. Scan peer files (same machine)

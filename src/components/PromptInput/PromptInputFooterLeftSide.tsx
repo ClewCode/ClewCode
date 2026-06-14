@@ -301,7 +301,7 @@ function ModeIndicator({
       const title = permissionModeTitle(newMode);
       addNotification({
         key: `mode-banner-${newMode}-${Date.now()}`,
-        text: `${symbol} Switched to ${title}`,
+        text: `${symbol} ${title}`,
         color: getModeColor(newMode),
         priority: 'low',
         timeoutMs: 4000,

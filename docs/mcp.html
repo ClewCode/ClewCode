@@ -150,7 +150,7 @@
       <ul>
         <li><strong>OAuth 2.0</strong> — redirect-based flow for remote MCP servers. Opens a local HTTP port to receive the callback.</li>
         <li><strong>Bearer token</strong> — static API token in the <code>Authorization</code> header</li>
-        <li><strong>XAA token</strong> — Claude-specific auth provider token, handled in <code>src/services/mcp/xaa.ts</code></li>
+        <li><strong>XAA token</strong> — Auth provider token, handled in <code>src/services/mcp/xaa.ts</code></li>
         <li><strong>Credential vault</strong> — stored credentials injected via <code>credential_item_ids</code></li>
       </ul>
 
@@ -226,7 +226,7 @@
         <tr><td><code>src/services/mcp/normalization.ts</code></td><td>Tool name normalization between MCP and internal formats</td></tr>
         <tr><td><code>src/services/mcp/envExpansion.ts</code></td><td>Environment variable expansion in server config</td></tr>
         <tr><td><code>src/services/mcp/officialRegistry.ts</code></td><td>Official MCP server registry lookup</td></tr>
-        <tr><td><code>src/services/mcp/xaa.ts</code></td><td>XAA auth token integration for Claude-specific servers</td></tr>
+        <tr><td><code>src/services/mcp/xaa.ts</code></td><td>XAA auth token integration for MCP servers</td></tr>
         <tr><td><code>src/tools.ts</code></td><td>Tool registry — assembleToolPool merges MCP tools</td></tr>
       </table>
 

@@ -147,8 +147,8 @@ export const MeshRunTool = buildTool({
 
     try {
       const timeout = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
-      notifyMeshFeedback(`running on ${peer.hostname}:${mesh.port}`, 'mesh-run', 'low');
-      const url = `http://${peer.ip || '127.0.0.1'}:${mesh.port}/mesh-exec`;
+      notifyMeshFeedback(`running on ${peer.hostname}:${peer.port}`, 'mesh-run', 'low');
+      const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/mesh-exec`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

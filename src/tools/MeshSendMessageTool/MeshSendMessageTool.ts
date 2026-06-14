@@ -235,7 +235,7 @@ export const MeshSendMessageTool = buildTool({
     };
 
     const sendTimestamp = Date.now();
-    const url = `http://${peer.ip || '127.0.0.1'}:${mesh.port}/mesh-msg`;
+    const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/mesh-msg`;
 
     // Helper to POST a single message (or chunk) to the mesh node
     const postMessage = async (
