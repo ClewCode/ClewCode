@@ -3229,26 +3229,6 @@ async function run(): Promise<CommanderCommand> {
       let getFpsMetrics!: () => FpsMetrics | undefined;
       let stats!: StatsStore;
 
-      // Check for updates before starting the Ink app
-      if (!isNonInteractiveSession) {
-        try {
-          const { checkForUpdate } = await import('./utils/updateCheck.js');
-          const result = await checkForUpdate();
-          if (result.hasUpdate && result.latestVersion) {
-            const { stopCapturingEarlyInput } = await import('./utils/earlyInput.js');
-            stopCapturingEarlyInput();
-
-            // biome-ignore lint/suspicious/noConsole: intentional user message
-            console.log(
-              `\n${chalk.yellow('New version available!')} ${chalk.dim('v' + result.currentVersion)} → ${chalk.green('v' + result.latestVersion)}\n` +
-              `${chalk.dim('Run')} ${chalk.bold('clew update')} ${chalk.dim('to upgrade')}\n`,
-            );
-          }
-        } catch (err) {
-          logForDebugging(`Update check failed (will continue): ${err}`);
-        }
-      }
-
       // Show setup screens after commands are loaded
       if (!isNonInteractiveSession) {
         const ctx = getRenderContext(false);
