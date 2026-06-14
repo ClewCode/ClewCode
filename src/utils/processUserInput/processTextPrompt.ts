@@ -12,7 +12,9 @@ import { matchesKeepGoingKeyword, matchesNegativeKeyword } from '../userPromptKe
 export function processTextPrompt(
   input: string | Array<ContentBlockParam>,
   imageContentBlocks: ContentBlockParam[],
+  videoContentBlocks: ContentBlockParam[],
   imagePasteIds: number[],
+  videoPasteIds: number[],
   attachmentMessages: AttachmentMessage[],
   uuid?: string,
   permissionMode?: PermissionMode,
@@ -50,15 +52,16 @@ export function processTextPrompt(
     is_keep_going: isKeepGoing,
   });
 
-  // If we have pasted images, create a message with image content
-  if (imageContentBlocks.length > 0) {
-    // Build content: text first, then images below
+  // If we have pasted images/videos, create a message with media content
+  if (imageContentBlocks.length > 0 || videoContentBlocks.length > 0) {
+    // Build content: text first, then images/videos below
     const textContent =
       typeof input === 'string' ? (input.trim() ? [{ type: 'text' as const, text: input }] : []) : input;
     const userMessage = createUserMessage({
-      content: [...textContent, ...imageContentBlocks],
+      content: [...textContent, ...imageContentBlocks, ...videoContentBlocks],
       uuid: uuid,
       imagePasteIds: imagePasteIds.length > 0 ? imagePasteIds : undefined,
+      videoPasteIds: videoPasteIds.length > 0 ? videoPasteIds : undefined,
       permissionMode,
       isMeta: isMeta || undefined,
     });

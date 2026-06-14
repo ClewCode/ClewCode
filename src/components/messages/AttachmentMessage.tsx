@@ -274,6 +274,7 @@ export function AttachmentMessage({ attachment, addMargin, verbose, isTranscript
     case 'queued_command': {
       const text = typeof attachment.prompt === 'string' ? attachment.prompt : getContentText(attachment.prompt) || '';
       const hasImages = attachment.imagePasteIds && attachment.imagePasteIds.length > 0;
+      const hasVideos = attachment.videoPasteIds && attachment.videoPasteIds.length > 0;
       return (
         <Box flexDirection="column">
           <UserTextMessage
@@ -283,6 +284,11 @@ export function AttachmentMessage({ attachment, addMargin, verbose, isTranscript
             isTranscriptMode={isTranscriptMode}
           />
           {hasImages && attachment.imagePasteIds?.map(id => <UserImageMessage key={id} imageId={id} />)}
+          {hasVideos && attachment.videoPasteIds?.map(id => (
+            <Line key={id}>
+              <Text>[Video #{id}]</Text>
+            </Line>
+          ))}
         </Box>
       );
     }

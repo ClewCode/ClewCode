@@ -1,4 +1,5 @@
-import React, { type PropsWithChildren, type Ref } from 'react';
+import type React from 'react';
+import type { PropsWithChildren, Ref } from 'react';
 import Box from '../../ink/components/Box.js';
 import type { DOMElement } from '../../ink/dom.js';
 import type { ClickEvent } from '../../ink/events/click-event.js';

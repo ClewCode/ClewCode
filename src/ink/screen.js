@@ -261,7 +261,7 @@ function hasVisibleSpaceEffect(styles) {
  */
 // const enum is inlined at compile time - no runtime object, no property access
 export var CellWidth;
-(function (CellWidth) {
+((CellWidth) => {
     // Not a wide character, cell width 1
     CellWidth[CellWidth["Narrow"] = 0] = "Narrow";
     // Wide character, cell width 2. This cell contains the actual character.

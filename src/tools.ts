@@ -99,10 +99,14 @@ import { MeshListMessagesTool } from './tools/MeshListMessagesTool/MeshListMessa
 import { MeshHelpTool } from './tools/MeshHelpTool/MeshHelpTool.js';
 import { ProcessMeshTool } from './tools/ProcessMeshTool/ProcessMeshTool.js';
 import { CodexMeshTool } from './tools/CodexMeshTool/CodexMeshTool.js';
+import { GenerateImageTool } from './tools/GenerateImageTool/GenerateImageTool.js';
+import { GenerateVideoTool } from './tools/GenerateVideoTool/GenerateVideoTool.js';
+import { GoalTool } from './tools/GoalTool/GoalTool.js';
 
 import { LSPTool } from './tools/LSPTool/LSPTool.js';
 import { ListMcpResourcesTool } from './tools/ListMcpResourcesTool/ListMcpResourcesTool.js';
 import { ReadMcpResourceTool } from './tools/ReadMcpResourceTool/ReadMcpResourceTool.js';
+import { ReadArtifactTool } from './tools/ReadArtifactTool/ReadArtifactTool.js';
 import { ToolSearchTool } from './tools/ToolSearchTool/ToolSearchTool.js';
 import { EnterPlanModeTool } from './tools/EnterPlanModeTool/EnterPlanModeTool.js';
 import { EnterWorktreeTool } from './tools/EnterWorktreeTool/EnterWorktreeTool.js';
@@ -218,6 +222,9 @@ export function getAllBaseTools(): Tools {
     ...(process.env.USER_TYPE === 'ant' ? [TungstenTool] : []),
     ...(suggestBackgroundPRTool ? [suggestBackgroundPRTool] : []),
     ...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
+    ...(GenerateImageTool.isEnabled() ? [GenerateImageTool] : []),
+    ...(GenerateVideoTool.isEnabled() ? [GenerateVideoTool] : []),
+    GoalTool,
     ...(overflowTestTool ? [overflowTestTool] : []),
     ...(ctxInspectTool ? [ctxInspectTool] : []),
     ...(terminalCaptureTool ? [terminalCaptureTool] : []),
@@ -260,6 +267,7 @@ export function getAllBaseTools(): Tools {
     ...(process.env.NODE_ENV === 'test' ? [TestingPermissionTool] : []),
     ListMcpResourcesTool,
     ReadMcpResourceTool,
+    ReadArtifactTool,
     ...(isToolSearchEnabledOptimistic() ? [ToolSearchTool] : []),
     ...(getComputerUseTool() ? [getComputerUseTool()] : []),
     SessionSearchTool,

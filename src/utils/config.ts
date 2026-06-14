@@ -50,12 +50,12 @@ let insideGetConfig = false;
 // Image dimension info for coordinate mapping (only set when image was resized)
 export type PastedContent = {
   id: number; // Sequential numeric ID
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'video';
   content: string;
-  mediaType?: string; // e.g., 'image/png', 'image/jpeg'
-  filename?: string; // Display name for images in attachment slot
+  mediaType?: string; // e.g., 'image/png', 'image/jpeg', 'video/mp4'
+  filename?: string; // Display name for images/videos in attachment slot
   dimensions?: ImageDimensions;
-  sourcePath?: string; // Original file path for images dragged onto the terminal
+  sourcePath?: string; // Original file path for images/videos dragged onto the terminal
 };
 
 export interface SerializedStructuredHistoryEntry {

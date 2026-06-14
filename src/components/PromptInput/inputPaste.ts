@@ -13,7 +13,7 @@ type TruncatedMessage = {
  * Pattern matching pasted text / image / truncated text references.
  * These must never be split across truncation boundaries.
  */
-const REF_PATTERN = /\[(?:Pasted text|Image|\.\.\.Truncated text) #\d+(?: \+\d+ lines)?\.{0,3}\]/g;
+const REF_PATTERN = /\[(?:Pasted text|Image|Video|\.\.\.Truncated text) #\d+(?: \+\d+ lines)?\.{0,3}\]/g;
 
 /**
  * Find a safe split point near `position` that doesn't cut through

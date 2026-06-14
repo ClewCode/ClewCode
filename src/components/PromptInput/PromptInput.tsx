@@ -24,7 +24,7 @@ import { type Command, hasCommand } from '../../commands.js';
 import { useIsModalOverlayActive } from '../../context/overlayContext.js';
 import { useSetPromptOverlayDialog } from '../../context/promptOverlayContext.js';
 import { formatTotalCost } from '../../cost-tracker.js';
-import { formatImageRef, formatPastedTextRef, getPastedTextRefNumLines, parseReferences } from '../../history.js';
+import { formatImageRef, formatPastedTextRef, formatVideoRef, getPastedTextRefNumLines, parseReferences } from '../../history.js';
 import type { VerificationStatus } from '../../hooks/useApiKeyVerification.js';
 import { type HistoryMode, useArrowKeyHistory } from '../../hooks/useArrowKeyHistory.js';
 import { useDoublePress } from '../../hooks/useDoublePress.js';
@@ -1498,20 +1498,45 @@ function PromptInput({
     insertTextAtCursor(prefix + formatImageRef(pasteId));
     pendingSpaceAfterPillRef.current = true;
   }
+  function onVideoPaste(
+    video: string,
+    mediaType?: string,
+    filename?: string,
+    sourcePath?: string,
+  ) {
+    logEvent('tengu_paste_video', {});
+    onModeChange('prompt');
+    const pasteId = nextPasteIdRef.current++;
+    const newContent: PastedContent = {
+      id: pasteId,
+      type: 'video',
+      content: video,
+      mediaType: mediaType || 'video/mp4',
+      filename: filename || 'Pasted video',
+      sourcePath,
+    };
+    setPastedContents(prev => ({
+      ...prev,
+      [pasteId]: newContent,
+    }));
+    const prefix = pendingSpaceAfterPillRef.current ? ' ' : '';
+    insertTextAtCursor(prefix + formatVideoRef(pasteId));
+    pendingSpaceAfterPillRef.current = true;
+  }
 
-  // Prune images whose [Image #N] placeholder is no longer in the input text.
+  // Prune images and videos whose [Image #N] / [Video #N] placeholder is no longer in the input text.
   // Covers pill backspace, Ctrl+U, char-by-char deletion — any edit that drops
   // the ref. onImagePaste batches setPastedContents + insertTextAtCursor in the
   // same event, so this effect sees the placeholder already present.
   useEffect(() => {
     const referencedIds = new Set(parseReferences(input).map(r => r.id));
     setPastedContents(prev => {
-      const orphaned = Object.values(prev).filter(c => c.type === 'image' && !referencedIds.has(c.id));
+      const orphaned = Object.values(prev).filter(c => (c.type === 'image' || c.type === 'video') && !referencedIds.has(c.id));
       if (orphaned.length === 0) return prev;
       const next = {
         ...prev,
       };
-      for (const img of orphaned) delete next[img.id];
+      for (const media of orphaned) delete next[media.id];
       return next;
     });
   }, [input, setPastedContents]);
@@ -2699,6 +2724,7 @@ function PromptInput({
         key,
       }),
     onImagePaste,
+    onVideoPaste,
     columns: textInputColumns,
     maxVisibleLines,
     disableCursorMovementForUpDownKeys: suggestions.length > 0 || !!footerItemSelected,

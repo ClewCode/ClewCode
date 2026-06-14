@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **Bounded tool output + ReadArtifact tool**: Large tool outputs are truncated to 200 lines with the full output saved to disk. A `ReadArtifact(file_path, offset, limit)` tool allows the agent to read persisted outputs in line-based chunks, preventing context overflow from large logs.
+- **Profile system** (`/profile`): Users can switch between `coding` (default — file editing, validation, implementation) and `personal` (command center — planning, task splitting, delegation to coding workers). Active profile is shown in the footer. Profile is persisted across sessions. Each profile remembers its last permission mode and restores it on switch (personal defaults to `ask`). Profile-specific prompts are injected into the system prompt to guide LLM behavior.
+- **Video input support**: Users can now paste video files (mp4, mov, webm, etc.) into the REPL and send them to video-capable models (Gemini 3.1/2.5, GPT-5.5/5.4). Video blocks are converted to `image_url` base64 data URIs for OpenAI-compatible APIs. Includes paste handler detection, orphaned cleanup, history restore, and UI label rendering.
+- **Image & Video generation tools**: Two new AI-callable tools — `GenerateImage` (DALL-E 3 / Imagen 3 / OpenRouter) and `GenerateVideo` (Runway Gen-4). Models can generate images and videos via tool use. Auto-discover image models from provider APIs. Auto-enabled when the respective API keys are configured (`OPENAI_API_KEY`, `GOOGLE_API_KEY`, `RUNWAY_API_KEY`).
+- **Execution modes** (`/mode`): Five user-facing execution modes — `safe` (ask before edits), `yolo` (auto-approve normal tools), `afk` (auto-run + summarize), `review-only` (read only, no edits), `browser-safe` (browser allowed, no destructive bash). Footer shows current mode badge. Maps to existing permission modes underneath.
+- **Goal system improvements**: `/goal` now integrates with AFK mode (auto-switch). Heuristic pre-check saves LLM evaluation cost (build exit code, test output, lint results). Goal templates (`/goal fix-build`, `green-tests`, `refactor`, `fix-lint`, `fix-typecheck`). Goal chains with `then` syntax (`/goal "lint passes" then "tests pass"`). Evaluator sees tool results directly.
+
 ## [0.2.22] — 2026-06-15
 
 ### Added

@@ -129,9 +129,13 @@ function PromptInputFooter({
     return () => clearInterval(timer);
   }, [sessionGoal]);
 
+  // Personal profile: hide statusline and hints, show persona name only
+  const currentProfile = useAppState(s => s.profile);
+  const isPersonalProfile = currentProfile === 'personal';
+
   // Hide `? for shortcuts` if the user has a custom status line, or during ctrl-r
-  const suppressHint = suppressHintFromProps || statusLineShouldDisplay(settings) || isSearching;
-  const showStatusLine = mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings);
+  const suppressHint = suppressHintFromProps || statusLineShouldDisplay(settings) || isSearching || isPersonalProfile;
+  const showStatusLine = mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings) && !isPersonalProfile;
   const goalActiveText = sessionGoal
     ? `${sessionGoalPaused ? '⏸' : '◎'} /goal ${sessionGoalPaused ? 'paused' : 'active'} (${formatDuration(
         goalNow - (sessionGoalStartTime ?? goalNow) - (sessionGoalTotalPausedMs ?? 0),

@@ -126,7 +126,7 @@ export function rewriteWindowsNullRedirect(command: string): string {
  * Characters that are special in Git Bash / MSYS2 paths and need escaping.
  * These are Windows console special chars that Git Bash interprets differently.
  */
-const GIT_BASH_SPECIAL_CHARS = /[!@#$%^&*()\[\]{}|;:'",.<>?~`=+\\ ]/g;
+const GIT_BASH_SPECIAL_CHARS = /[!@#$%^&*()[\]{}|;:'",.<>?~`=+\\ ]/g;
 
 /**
  * Escape a Windows path for use in Git Bash commands.

@@ -301,6 +301,7 @@ export async function getImagePathFromClipboard(): Promise<string | null> {
  * /preview variant → broken thumbnail.
  */
 export const IMAGE_EXTENSION_REGEX = /\.(png|jpe?g|gif|webp)$/i;
+export const VIDEO_EXTENSION_REGEX = /\.(mp4|mov|avi|webm|mkv|flv|wmv|m4v|mpeg|mpg|3gp)$/i;
 
 /**
  * Remove outer single or double quotes from a string
@@ -432,5 +433,97 @@ export async function tryReadImageFromPath(text: string): Promise<(ImageWithDime
     base64: base64Image,
     mediaType,
     dimensions: resized.dimensions,
+  };
+}
+
+/**
+ * Check if a given text represents a video file path
+ * @param text Text to check
+ * @returns Boolean indicating if text is a video path
+ */
+export function isVideoFilePath(text: string): boolean {
+  const cleaned = removeOuterQuotes(text.trim());
+  const unescaped = stripBackslashEscapes(cleaned);
+  return VIDEO_EXTENSION_REGEX.test(unescaped);
+}
+
+/**
+ * Clean and normalize a text string that might be a video file path
+ * @param text Text to process
+ * @returns Cleaned text with quotes removed, whitespace trimmed, and shell escapes removed, or null if not a video path
+ */
+export function asVideoFilePath(text: string): string | null {
+  const cleaned = removeOuterQuotes(text.trim());
+  const unescaped = stripBackslashEscapes(cleaned);
+
+  if (VIDEO_EXTENSION_REGEX.test(unescaped)) {
+    return unescaped;
+  }
+
+  return null;
+}
+
+/**
+ * Try to find and read a video file
+ * @param text Pasted text that might be a video filename or path
+ * @returns Object containing the video path and base64 data, or null if not found
+ */
+export async function tryReadVideoFromPath(
+  text: string,
+): Promise<{ path: string; base64: string; mediaType: string } | null> {
+  // Strip terminal added spaces or quotes to dragged in paths
+  const cleanedPath = asVideoFilePath(text);
+
+  if (!cleanedPath) {
+    return null;
+  }
+
+  const videoPath = cleanedPath;
+  let videoBuffer;
+
+  try {
+    if (isAbsolute(videoPath)) {
+      videoBuffer = getFsImplementation().readFileBytesSync(videoPath);
+    } else {
+      // VSCode Terminal just grabs the text content which is the filename
+      const clipboardPath = await getImagePathFromClipboard();
+      if (clipboardPath && videoPath === basename(clipboardPath)) {
+        videoBuffer = getFsImplementation().readFileBytesSync(clipboardPath);
+      }
+    }
+  } catch (e) {
+    logError(e as Error);
+    return null;
+  }
+  if (!videoBuffer) {
+    return null;
+  }
+  if (videoBuffer.length === 0) {
+    logForDebugging(`Video file is empty: ${videoPath}`, { level: 'warn' });
+    return null;
+  }
+
+  // Map extension to MIME type
+  const ext = extname(videoPath).slice(1).toLowerCase() || 'mp4';
+  const mimeTypeMap: Record<string, string> = {
+    mp4: 'video/mp4',
+    mov: 'video/quicktime',
+    avi: 'video/x-msvideo',
+    webm: 'video/webm',
+    mkv: 'video/x-matroska',
+    flv: 'video/x-flv',
+    wmv: 'video/x-ms-wmv',
+    m4v: 'video/mp4',
+    mpeg: 'video/mpeg',
+    mpg: 'video/mpeg',
+    '3gp': 'video/3gpp',
+  };
+  const mediaType = mimeTypeMap[ext] || 'video/mp4';
+  const base64Video = videoBuffer.toString('base64');
+
+  return {
+    path: videoPath,
+    base64: base64Video,
+    mediaType,
   };
 }

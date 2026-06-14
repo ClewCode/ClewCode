@@ -44,6 +44,14 @@ import type { DiagnosticFile } from '../services/diagnosticTracking.js';
 import { diagnosticTracker } from '../services/diagnosticTracking.js';
 import type { AttachmentMessage, Message, MessageOrigin } from 'src/types/message.js';
 import { type QueuedCommand, getImagePasteIds, isValidImagePaste } from 'src/types/textInputTypes.js';
+
+function getVideoPasteIds(pastedContents: Record<number, PastedContent> | undefined): number[] | undefined {
+  if (!pastedContents) return undefined;
+  const ids = Object.values(pastedContents)
+    .filter(c => c.type === 'video' && c.content.length > 0)
+    .map(c => c.id);
+  return ids.length > 0 ? ids : undefined;
+}
 import { randomUUID, type UUID } from 'crypto';
 import { getSettings_DEPRECATED } from './settings/settings.js';
 import { getSnippetForTwoFileDiff } from 'src/tools/FileEditTool/utils.js';
@@ -474,6 +482,7 @@ export type Attachment =
       prompt: string | Array<ContentBlockParam>;
       source_uuid?: UUID;
       imagePasteIds?: number[];
+      videoPasteIds?: number[];
       /** Original queue mode — 'prompt' for user messages, 'task-notification' for system events */
       commandMode?: string;
       /** Provenance carried from QueuedCommand so mid-turn drains preserve it */
@@ -910,6 +919,7 @@ export async function getQueuedCommandAttachments(queuedCommands: QueuedCommand[
         prompt,
         source_uuid: _.uuid,
         imagePasteIds: getImagePasteIds(_.pastedContents),
+        videoPasteIds: getVideoPasteIds(_.pastedContents),
         commandMode: _.mode,
         origin: _.origin,
         isMeta: _.isMeta,

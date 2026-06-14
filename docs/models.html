@@ -57,6 +57,18 @@ gemini-2.0-flash       [1M ctx, vision, tools, free]
 <pre><code class="language-bash">export OLLAMA_HOST=http://localhost:11434
 </code></pre>
 
+<h2 id="image-gen">Image Generation Models</h2>
+<p><code>GenerateImage</code> auto-discovers image-capable models from provider APIs on first use:</p>
+<table>
+  <thead><tr><th>Provider</th><th>Models Discovered</th><th>API Key</th></tr></thead>
+  <tbody>
+    <tr><td>OpenAI</td><td><code>dall-e-3</code>, future DALL-E versions</td><td><code>OPENAI_API_KEY</code></td></tr>
+    <tr><td>OpenRouter</td><td><code>gemini-3.1-flash-image-preview</code>, <code>flux.2-pro</code>, <code>recraft-v3</code>, etc.</td><td><code>OPENROUTER_API_KEY</code></td></tr>
+    <tr><td>Google</td><td><code>imagen-3.0-generate-002</code>, future Imagen versions</td><td><code>GOOGLE_API_KEY</code></td></tr>
+  </tbody>
+</table>
+<p>To override auto-discovery, add <code>"capabilities": { "imageGen": { "defaultModel": "...", "apiType": "..." } }</code> to the provider in <code>providers.json</code>.</p>
+
 <h2 id="provider-defaults">Provider Defaults</h2>
 <p>Each provider has a default model. The first time you switch to a provider, its default model is selected automatically. Override with:</p>
 <pre><code class="language-bash">❯ /model deepseek-v4-flash
