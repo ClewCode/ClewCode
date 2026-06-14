@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.2.22] — 2026-06-15
 
 ### Added
 
@@ -16,6 +16,14 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **Migrated `.claude/` → `.clew/`**: All project-level config (agents, skills, workflows, settings) moved from `.claude/` to `.clew/`. Source code strings updated across 40+ files. `.gitignore` updated to track `.clew/` instead of `.claude/`.
+
+### Fixed
+
+- Remove ⏵⏵ mode-change notification banner on permission switch
+- Rebrand `/memory` description from "Edit Claude memory files" to "Edit Clew memory files"
+- Fix `updateConfig` Zod v4 schema shape access (`_def.shape` is object, not method)
+
+## [Unreleased]
 
 ## [0.2.16] — 2026-06-14
 
