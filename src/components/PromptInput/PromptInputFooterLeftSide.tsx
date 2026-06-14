@@ -130,7 +130,6 @@ export function PromptInputFooterLeftSide({
 }: Props): React.ReactNode {
   // ponytail: hooks must be top-level (React rules of hooks), computed early
   const currentProfile = useAppState(s => s.profile);
-  const settingsSnapshot = useAppState(s => s.settings);
 
   if (exitMessage.show) {
     return (
@@ -147,14 +146,9 @@ export function PromptInputFooterLeftSide({
     );
   }
 
-  // Personal profile: show persona name only, no statusline or hints
+  // Personal profile: hide statusline and hints (persona shown on right by PromptInputFooter)
   if (currentProfile === 'personal') {
-    const personaName = (settingsSnapshot as Record<string, unknown>).personalPersonaName as string | undefined;
-    return (
-      <Box justifyContent="flex-start" gap={1}>
-        <Text bold>{personaName || 'Clew Personal'}</Text>
-      </Box>
-    );
+    return null;
   }
 
   const showVim = isVimModeEnabled() && vimMode === 'INSERT' && !isSearching;
