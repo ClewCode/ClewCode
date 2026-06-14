@@ -13,7 +13,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import type { VimMode, PromptInputMode } from '../../types/textInputTypes.js';
 import type { ToolPermissionContext } from '../../Tool.js';
 import { isVimModeEnabled } from './utils.js';
-import { useNotifications } from 'src/context/notifications.js';
 import { useShortcutDisplay } from '../../keybindings/useShortcutDisplay.js';
 import {
   isDefaultMode,
@@ -288,28 +287,7 @@ function ModeIndicator({
   }, [toolPermissionContext, setAppState]);
   const [modeHover, setModeHover] = useState(false);
 
-  // Mode change banner notification — fires when the permission mode changes
-  // to a non-default mode so the user gets a prominent visual cue, not just
-  // the small footer pill.
-  const { addNotification } = useNotifications();
-  const prevModeRef = useRef(toolPermissionContext?.mode);
-  useEffect(() => {
-    const newMode = toolPermissionContext?.mode;
-    const oldMode = prevModeRef.current;
-    if (newMode && oldMode && newMode !== oldMode && !isDefaultMode(newMode)) {
-      const symbol = permissionModeSymbol(newMode);
-      const title = permissionModeTitle(newMode);
-      addNotification({
-        key: `mode-banner-${newMode}-${Date.now()}`,
-        text: `${symbol} ${title}`,
-        color: getModeColor(newMode),
-        priority: 'low',
-        timeoutMs: 4000,
-      });
-    }
-    prevModeRef.current = newMode;
-  }, [toolPermissionContext?.mode, addNotification]);
-
+  
   if (mode === 'bash') {
     return <Text color="bashBorder">! for bash mode</Text>;
   }

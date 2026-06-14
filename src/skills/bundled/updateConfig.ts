@@ -18,8 +18,10 @@ function generateSettingsSchema(): string {
     const schema = SettingsSchema();
     const descriptions: Record<string, string> = {};
     // Extract descriptions from each key
-    for (const key of Object.keys(schema._def?.shape?.() ?? {})) {
-      const field = schema._def?.shape?.()?.[key];
+    // In Zod v4, _def.shape is a plain object (not a method like in v3)
+    const shape = schema._def?.shape ?? {};
+    for (const key of Object.keys(shape)) {
+      const field = shape[key];
       if (field) {
         const desc = field._def?.description ?? field.description;
         descriptions[key] = desc ?? '(see settings types)';
