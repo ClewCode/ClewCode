@@ -12,7 +12,7 @@ import { ProviderManager } from '../services/ai/ProviderManager.js';
 import type { ProviderId } from '../services/ai/providers/ProviderInterface.js';
 import { isAnthropicAuthEnabled } from '../utils/auth.js';
 import { normalizeApiKeyForConfig } from '../utils/authPortable.js';
-import { getCustomApiKeyStatus } from '../utils/config.js';
+import { getCustomApiKeyStatus, getGlobalConfig } from '../utils/config.js';
 import { env } from '../utils/env.js';
 import { isRunningOnHomespace } from '../utils/envUtils.js';
 import { PreflightStep } from '../utils/preflightChecks.js';
@@ -183,6 +183,7 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
   const [skipOAuth, setSkipOAuth] = useState(false);
   const [oauthEnabled] = useState(() => isAnthropicAuthEnabled());
   const [theme, setTheme] = useTheme();
+  const isPersonal = (getGlobalConfig() as any).profile === 'personal';
 
   useEffect(() => {
     logEvent('tengu_began_setup', {
@@ -436,7 +437,7 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
 
   return (
     <Box flexDirection="column">
-      <WelcomeV2 />
+      {!isPersonal && <WelcomeV2 />}
       <Box flexDirection="column" marginTop={1}>
         {/* Step progress indicator */}
         {showProgress && (
