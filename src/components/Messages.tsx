@@ -6,6 +6,7 @@ import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { every } from 'src/utils/set.js';
 import { getIsRemoteMode } from '../bootstrap/state.js';
+import { useAppState } from '../state/AppState.js';
 import type { Command } from '../commands.js';
 import { BLACK_CIRCLE } from '../constants/figures.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
@@ -80,13 +81,14 @@ const LogoHeader = React.memo(function LogoHeader({
 }: {
   agentDefinitions: AgentDefinitionsResult | undefined;
 }): React.ReactNode {
+  const profile = useAppState(s => s.profile);
   // LogoV2 has its own internal OffscreenFreeze (catches its useAppState
   // re-renders). This outer freeze catches agentDefinitions changes and any
   // future StatusNotices subscriptions while the header is in scrollback.
   return (
     <OffscreenFreeze>
       <Box flexDirection="column" gap={1}>
-        <LogoV2 />
+        <LogoV2 isPersonal={profile === 'personal'} />
         <React.Suspense fallback={null}>
           <StatusNotices agentDefinitions={agentDefinitions} />
         </React.Suspense>

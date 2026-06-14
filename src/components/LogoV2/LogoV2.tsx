@@ -8,7 +8,6 @@ import { getGlobalConfig, saveGlobalConfig } from 'src/utils/config.js';
 import { getDebugLogPath, isDebugMode, isDebugToStdErr } from 'src/utils/debug.js';
 import { isEnvTruthy } from 'src/utils/envUtils.js';
 import { getInitialSettings } from 'src/utils/settings/settings.js';
-import { useAppState } from '../../state/AppState.js';
 import { getStartupPerfLogPath, isDetailedProfilingEnabled } from 'src/utils/startupProfiler.js';
 import { resolveThemeSetting } from 'src/utils/systemTheme.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
@@ -72,7 +71,8 @@ import {
 } from './OverageCreditUpsell.js';
 
 const LEFT_PANEL_MAX_WIDTH = 50;
-export function LogoV2() {
+export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean }) {
+  const isPersonal = propIsPersonal ?? (getInitialSettings() as any).profile === 'personal';
   const $ = _c(94);
   const activities = getRecentActivitySync();
   const username = getGlobalConfig().oauthAccount?.displayName ?? '';
@@ -318,8 +318,6 @@ export function LogoV2() {
   }
   const layoutMode = getLayoutMode(columns);
   const userTheme = resolveThemeSetting(getGlobalConfig().theme);
-  const profile = useAppState(s => s.profile);
-  const isPersonal = profile === 'personal';
   const borderTitle = ` ${color('claude', userTheme)(isPersonal ? 'Clew Personal' : 'Clew Code')} ${isPersonal ? '' : color('inactive', userTheme)(`v${version}`)} `;
   const compactBorderTitle = color('claude', userTheme)(isPersonal ? ' Clew Personal ' : ' Clew Code ');
   if (layoutMode === 'compact') {
