@@ -48,6 +48,7 @@ import skills from './commands/skills/index.js';
 import status from './commands/status/index.js';
 import tasks from './commands/tasks/index.js';
 import teamOnboarding from './commands/team-onboarding/index.js';
+import teamDashboard from './commands/team/index.js';
 import teleport from './commands/teleport/index.js';
 import providerSelect from './commands/provider-select/index.js';
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -316,6 +317,7 @@ const COMMANDS = memoize((): Command[] => [
   usage,
   usageReport,
   teamOnboarding,
+  teamDashboard,
   workflow,
   ...(webCmd ? [webCmd] : []),
   ...(forkCmd ? [forkCmd] : []),

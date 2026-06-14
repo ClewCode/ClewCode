@@ -369,9 +369,20 @@ function ModeIndicator({
       </Box>
     ) : null;
 
+  const hasAnyInProcessTeammates = Object.values(tasks).some(
+    t => t.type === 'in_process_teammate' && t.status === 'running',
+  );
+  const runningTeammateCount = hasAnyInProcessTeammates
+    ? Object.values(tasks).filter(t => t.type === 'in_process_teammate' && t.status === 'running').length
+    : 0;
+
   // Build parts array - exclude BackgroundTaskStatus when we have teammate pills
   // (teammate pills get their own row)
   const parts = [
+    // Running teammates badge
+    ...(runningTeammateCount > 0
+      ? [<Text key="teammates" dimColor>{runningTeammateCount}Tm</Text>]
+      : []),
     // Remote session indicator
     ...(remoteSessionUrl
       ? [
@@ -393,10 +404,7 @@ function ModeIndicator({
       : []),
   ];
 
-  // Check if any in-process teammates exist (for hint text cycling)
-  const hasAnyInProcessTeammates = Object.values(tasks).some(
-    t => t.type === 'in_process_teammate' && t.status === 'running',
-  );
+  // Check if any agent tasks exist (for hint text cycling)
   const hasRunningAgentTasks = Object.values(tasks).some(t => t.type === 'local_agent' && t.status === 'running');
 
   // Get hint parts separately for potential second-line rendering

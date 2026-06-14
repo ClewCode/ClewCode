@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Team dashboard**: New `/team` slash command opens real-time dashboard of all in-process teammates with status, activity, tool/token counts, and drill-down detail view.
+- **Teammate badge**: Footer bar now shows live count of running teammates (e.g. `2Tm`).
 - **Memory store system**: New `src/context/memoryStore.ts` — persistent key-value context store with SQLite backend for agent-learned facts and preferences.
 - **Auto-memory capture**: New `src/context/autoMemory.ts` — automatically captures lessons from FileEdit/Write/Bash tool results, extracts tags and decisions, and persists to memory store, knowledge graph, and session history with XP awards.
 - **Memory UI components**: Ink TUI components for memory browsing (`MemoryList`), timeline (`MemoryTimeline`), and stats dashboard (`MemoryStats`) with activity sparklines and expertise XP bars.
