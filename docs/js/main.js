@@ -415,4 +415,23 @@
   }
 
   buildTOC();
+
+  // ── Footer Injection ──
+  function injectFooter() {
+    var contentWrap = document.querySelector('.content-wrap');
+    if (!contentWrap || contentWrap.querySelector('.footer')) return;
+
+    var footer = document.createElement('div');
+    footer.className = 'footer';
+    footer.innerHTML =
+      '<span>Clew Code \u2014 GPL-3.0</span>' +
+      '<div class="footer-links">' +
+      '  <a href="https://github.com/ClewCode/ClewCode">GitHub</a>' +
+      '  <a href="https://github.com/ClewCode/ClewCode/issues">Issues</a>' +
+      '  <a href="https://www.npmjs.com/package/clew-code">npm</a>' +
+      '</div>';
+    contentWrap.appendChild(footer);
+  }
+
+  injectFooter();
 })();
