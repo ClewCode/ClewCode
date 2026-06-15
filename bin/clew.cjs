@@ -59,7 +59,10 @@ function printBunInstallHelp() {
   console.error('Clew requires Bun at runtime.');
   console.error('This npm package installs the launcher, but the CLI itself runs with Bun.');
   console.error('');
-  console.error('Install Bun, then run `clew` again:');
+  console.error('Install Bun (requires unzip), then run `clew` again:');
+  if (process.platform !== 'win32') {
+    console.error('  sudo apt-get install -y unzip  # Debian/Ubuntu only');
+  }
   console.error(`  ${installCommand}`);
 }
 
