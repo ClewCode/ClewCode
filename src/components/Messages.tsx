@@ -78,15 +78,16 @@ import type { JumpHandle } from './VirtualMessageList.js';
 // subscribe to useAppState/useSettings for their own updates.
 const LogoHeader = React.memo(function LogoHeader({
   agentDefinitions,
+  profile,
 }: {
   agentDefinitions: AgentDefinitionsResult | undefined;
+  profile: 'coding' | 'personal';
 }): React.ReactNode {
-  const profile = useAppState(s => s.profile);
   // LogoV2 has its own internal OffscreenFreeze (catches its useAppState
   // re-renders). This outer freeze catches agentDefinitions changes and any
   // future StatusNotices subscriptions while the header is in scrollback.
   return (
-    <OffscreenFreeze>
+    <OffscreenFreeze freezeKey={profile}>
       <Box flexDirection="column" gap={1}>
         <LogoV2 isPersonal={profile === 'personal'} />
         <React.Suspense fallback={null}>
@@ -248,6 +249,7 @@ type Props = {
   streamingToolUses: StreamingToolUse[];
   showAllInTranscript?: boolean;
   agentDefinitions?: AgentDefinitionsResult;
+  profile?: 'coding' | 'personal';
   onOpenRateLimitOptions?: () => void;
   /** Hide the logo/header - used for subagent zoom view */
   hideLogo?: boolean;
@@ -383,6 +385,7 @@ const MessagesImpl = ({
   streamingToolUses,
   showAllInTranscript = false,
   agentDefinitions,
+  profile = 'coding',
   onOpenRateLimitOptions,
   hideLogo = false,
   isLoading,
@@ -853,7 +856,9 @@ const MessagesImpl = ({
   return (
     <>
       {/* Logo */}
-      {!hideLogo && !(renderRange && renderRange[0] > 0) && <LogoHeader agentDefinitions={agentDefinitions} />}
+      {!hideLogo && !(renderRange && renderRange[0] > 0) && (
+        <LogoHeader agentDefinitions={agentDefinitions} profile={profile} />
+      )}
 
       {/* Truncation indicator */}
       {hasTruncatedMessages && hiddenMessageCount > 0 && (

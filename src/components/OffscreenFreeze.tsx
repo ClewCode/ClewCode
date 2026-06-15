@@ -6,6 +6,7 @@ import { InVirtualListContext } from './messageActions.js';
 
 type Props = {
   children: React.ReactNode;
+  freezeKey?: unknown;
 };
 
 /**
@@ -22,7 +23,7 @@ type Props = {
  * The cache is one slot deep: the first re-render after scrolling back into view
  * picks up the live children. Content still updates normally while visible.
  */
-export function OffscreenFreeze({ children }: Props): React.ReactNode {
+export function OffscreenFreeze({ children, freezeKey }: Props): React.ReactNode {
   // React Compiler: reading cached.current in the return is the entire
   // freeze mechanism — memoizing this component would defeat it. Opt out.
   'use no memo';
@@ -30,6 +31,11 @@ export function OffscreenFreeze({ children }: Props): React.ReactNode {
   const inVirtualList = useContext(InVirtualListContext);
   const [ref, { isVisible }] = useTerminalViewport();
   const cached = useRef(children);
+  const cachedFreezeKey = useRef(freezeKey);
+  if (cachedFreezeKey.current !== freezeKey) {
+    cachedFreezeKey.current = freezeKey;
+    cached.current = children;
+  }
   // H26: When children type changes mid-session (e.g., tool result reclassified
   // as collapsed group), update cache immediately regardless of visibility to
   // prevent React reconciliation crash from stale element type refs.

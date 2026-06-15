@@ -251,11 +251,14 @@ function PromptInputFooter({
               <Box overflowX="hidden" flexShrink={1}>
                 {footerLeftSide}
               </Box>
-              {goalActiveText ? (
-                <Text color="ide" wrap="truncate">
-                  {goalActiveText}
-                </Text>
-              ) : null}
+              <Box flexDirection="row" flexShrink={0} gap={1}>
+                {isPersonalProfile ? <Text bold>{personalPersonaName}</Text> : null}
+                {goalActiveText ? (
+                  <Text color="ide" wrap="truncate">
+                    {goalActiveText}
+                  </Text>
+                ) : null}
+              </Box>
             </Box>
           )}
         </Box>

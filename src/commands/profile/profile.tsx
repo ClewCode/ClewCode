@@ -7,7 +7,7 @@ import type { PermissionMode } from '../../utils/permissions/PermissionMode.js';
 type ClewProfile = 'coding' | 'personal';
 const CLEW_PROFILES: readonly ClewProfile[] = ['coding', 'personal'];
 
-const PROFILE_LABELS: Record<ClewProfile, string> = { coding: 'Coding', personal: 'Personal' };
+const PROFILE_LABELS: Record<ClewProfile, string> = { coding: 'Clew Code', personal: 'Clew Personal' };
 const PROFILE_DESCRIPTIONS: Record<ClewProfile, string> = {
   coding: 'implement software changes — inspect repo, edit files, run validation',
   personal: 'command center — plan, split tasks, delegate code work, summarize results',
@@ -35,7 +35,7 @@ function ProfileCommand({ onDone, context, args }: Props): React.ReactNode {
         toolPermissionContext: { ...prev.toolPermissionContext, mode: restoredMode },
       }));
       updateSettingsForSource('userSettings', { profile: next });
-      onDone(`Switched to ${PROFILE_LABELS[next]} profile.`);
+      onDone(`Switched to ${PROFILE_LABELS[next]}.`);
     } else if (trimmed) {
       onDone(`Unknown profile: ${trimmed}. Available: ${CLEW_PROFILES.join(', ')}`);
     } else {
@@ -47,7 +47,7 @@ function ProfileCommand({ onDone, context, args }: Props): React.ReactNode {
     <Box flexDirection="column">
       {trimmed === 'coding' || trimmed === 'personal' ? (
         <>
-          <Text>Switched to <Text bold>{PROFILE_LABELS[trimmed as ClewProfile]}</Text> profile.</Text>
+          <Text>Switched to <Text bold>{PROFILE_LABELS[trimmed as ClewProfile]}</Text>.</Text>
           <Text dimColor>{PROFILE_DESCRIPTIONS[trimmed as ClewProfile]}</Text>
         </>
       ) : trimmed ? (

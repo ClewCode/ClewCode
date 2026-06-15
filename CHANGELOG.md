@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Personal profile UI now redraws the frozen header as `Clew Personal`, hides the workspace path in condensed mode, and keeps the persona visible in the prompt footer.
+
 ### Added
 
 - **Bounded tool output + ReadArtifact tool**: Large tool outputs are truncated to 200 lines with the full output saved to disk. A `ReadArtifact(file_path, offset, limit)` tool allows the agent to read persisted outputs in line-based chunks, preventing context overflow from large logs.

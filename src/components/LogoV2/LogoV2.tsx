@@ -73,7 +73,7 @@ import {
 const LEFT_PANEL_MAX_WIDTH = 50;
 export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean }) {
   const isPersonal = propIsPersonal ?? (getInitialSettings() as any).profile === 'personal';
-  const $ = _c(94);
+  const $ = _c(95);
   const activities = getRecentActivitySync();
   const username = getGlobalConfig().oauthAccount?.displayName ?? '';
   const { columns } = useTerminalSize();
@@ -205,8 +205,8 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
     let t15;
     let t16;
     let t17;
-    if ($[15] === Symbol.for('react.memo_cache_sentinel')) {
-      t11 = <CondensedLogo />;
+    if ($[15] !== isPersonal) {
+      t11 = <CondensedLogo isPersonal={isPersonal} />;
       t12 = <VoiceModeNotice />;
       t13 = <Opus1mMergeNotice />;
       t14 = ChannelsNoticeModule && <ChannelsNoticeModule.ChannelsNotice />;
@@ -227,7 +227,8 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
           </Text>
         </Box>
       );
-      $[15] = t11;
+      $[15] = isPersonal;
+      $[94] = t11;
       $[16] = t12;
       $[17] = t13;
       $[18] = t14;
@@ -235,7 +236,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
       $[20] = t16;
       $[21] = t17;
     } else {
-      t11 = $[15];
+      t11 = $[94];
       t12 = $[16];
       t13 = $[17];
       t14 = $[18];
@@ -406,7 +407,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
     }
     return (
       <>
-        <OffscreenFreeze>
+        <OffscreenFreeze freezeKey={isPersonal}>
           <Box
             flexDirection="column"
             borderStyle="round"
