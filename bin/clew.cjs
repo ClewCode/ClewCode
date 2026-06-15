@@ -55,23 +55,59 @@ function printBunInstallHelp() {
     process.platform === 'win32'
       ? 'powershell -c "irm bun.sh/install.ps1 | iex"'
       : 'curl -fsSL https://bun.sh/install | bash';
-
   console.error('Clew requires Bun at runtime.');
-  console.error('This npm package installs the launcher, but the CLI itself runs with Bun.');
-  console.error('');
-  console.error('Install Bun (requires unzip), then run `clew` again:');
-  if (process.platform !== 'win32') {
-    console.error('  sudo apt-get install -y unzip  # Debian/Ubuntu only');
-  }
+  console.error('Install Bun, then run `clew` again:');
   console.error(`  ${installCommand}`);
 }
 
+function installBunSync() {
+  console.error('Clew requires Bun at runtime. Installing Bun automatically...');
+  console.error('');
+
+  try {
+    if (process.platform === 'linux') {
+      // Try apt first for unzip, then install bun
+      spawnSync('sudo', ['apt-get', 'install', '-y', 'unzip'], { stdio: 'inherit', shell: false });
+      const result = spawnSync('bash', ['-c', 'curl -fsSL https://bun.sh/install | bash'], {
+        stdio: 'inherit',
+        shell: false,
+      });
+      return result.status === 0;
+    }
+    if (process.platform === 'darwin') {
+      const result = spawnSync('bash', ['-c', 'curl -fsSL https://bun.sh/install | bash'], {
+        stdio: 'inherit',
+        shell: false,
+      });
+      return result.status === 0;
+    }
+    if (process.platform === 'win32') {
+      const result = spawnSync('powershell', ['-c', 'irm bun.sh/install.ps1 | iex'], {
+        stdio: 'inherit',
+        shell: false,
+      });
+      return result.status === 0;
+    }
+  } catch {
+    // fall through to help text
+  }
+  return false;
+}
+
 const mainJs = path.join(__dirname, '..', 'dist', 'main.js');
-const bunCommand = resolveBunCommand();
+let bunCommand = resolveBunCommand();
 
 if (!bunCommand) {
-  printBunInstallHelp();
-  process.exit(1);
+  if (!installBunSync()) {
+    printBunInstallHelp();
+    process.exit(1);
+  }
+  // Re-resolve after install
+  bunCommand = resolveBunCommand();
+  if (!bunCommand) {
+    console.error('Bun installed but still not found. Try restarting your shell.');
+    process.exit(1);
+  }
 }
 
 try {
