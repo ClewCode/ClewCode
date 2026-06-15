@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PermissionResult } from 'src/utils/permissions/PermissionResult.js';
 import { z } from 'zod/v4';
 import { buildTool } from '../../Tool.js';
+import providersConfig from '../../services/ai/providers.json' with { type: 'json' };
 import { getGenerateImagePrompt, GENERATE_IMAGE_TOOL_NAME } from './prompt.js';
 import { getToolUseSummary, renderToolUseMessage, renderToolResultMessage } from './UI.js';
 
@@ -49,8 +50,7 @@ const IMAGE_GEN_DISCOVERY: Record<string, (baseUrl: string, apiKey: string) => P
 async function discoverProvider(): Promise<{ name: string; config: ImageGenConfig; apiKey: string } | null> {
   if (_discoveredProvider !== undefined) return _discoveredProvider;
 
-  const raw = readFileSync(join(import.meta.dirname, '../../services/ai/providers.json'), 'utf-8');
-  const providers = JSON.parse(raw) as Record<string, ProviderEntry>;
+  const providers = providersConfig as Record<string, ProviderEntry>;
 
   for (const [name, p] of Object.entries(providers)) {
     const envKey = p.envKey;
@@ -119,8 +119,7 @@ export const GenerateImageTool = buildTool({
   },
   isEnabled() {
     const IMAGE_PROVIDERS = ['openai', 'google', 'openrouter'];
-    const raw = readFileSync(join(import.meta.dirname, '../../services/ai/providers.json'), 'utf-8');
-    const providers = JSON.parse(raw) as Record<string, ProviderEntry>;
+    const providers = providersConfig as Record<string, ProviderEntry>;
     return IMAGE_PROVIDERS.some(id => {
       const p = providers[id];
       return p?.envKey && process.env[p.envKey] && IMAGE_GEN_DISCOVERY[id];
