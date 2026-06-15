@@ -129,7 +129,11 @@ export function stripImagesFromMessages(messages: Message[]): Message[] {
         hasMediaBlock = true;
         return [{ type: 'text' as const, text: '[document]' }];
       }
-      // Also strip images/documents nested inside tool_result content arrays
+      if (block.type === 'video') {
+        hasMediaBlock = true;
+        return [{ type: 'text' as const, text: '[video]' }];
+      }
+      // Also strip images/documents/videos nested inside tool_result content arrays
       if (block.type === 'tool_result' && Array.isArray(block.content)) {
         let toolHasMedia = false;
         const newToolContent = block.content.map(item => {
@@ -140,6 +144,10 @@ export function stripImagesFromMessages(messages: Message[]): Message[] {
           if (item.type === 'document') {
             toolHasMedia = true;
             return { type: 'text' as const, text: '[document]' };
+          }
+          if (item.type === 'video') {
+            toolHasMedia = true;
+            return { type: 'text' as const, text: '[video]' };
           }
           return item;
         });

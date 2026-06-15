@@ -194,6 +194,13 @@ export function StreamingMarkdown({ children }: StreamingProps): React.ReactNode
 
   // stablePrefix is memoized inside <Markdown> via useMemo([children, ...])
   // so it never re-parses as the unstable suffix grows
+
+  // ponytail: fallback to raw text when markdown is empty so the streaming
+  // indicator shows visible content (e.g., leading whitespace/newlines)
+  if (!stablePrefix && !unstableSuffix && children) {
+    return <Markdown>{children}</Markdown>;
+  }
+
   return (
     <Box flexDirection="column" gap={1}>
       {stablePrefix && <Markdown>{stablePrefix}</Markdown>}

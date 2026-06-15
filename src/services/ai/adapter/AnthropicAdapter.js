@@ -147,11 +147,19 @@ export function getAdapter(providerId) {
     return adapterRegistry.get(providerId);
 }
 // ── Generic OpenAI-compatible adapter (the default) ──────────────────────────
-function normalizeOpenAIToolInputSchema(inputSchema) {
+export function normalizeOpenAIToolInputSchema(inputSchema) {
     if (!inputSchema || typeof inputSchema !== 'object') {
         return { type: 'object', properties: {}, additionalProperties: true };
     }
     const schema = { ...inputSchema };
+    // zod's z.union / z.discriminatedUnion produce root shapes (e.g.
+    // FileReadTool, PRTool) where `type` may be missing — ensure it's
+    // always "object" at the root for provider compatibility.
+    // (Moonshot-specific strip handled in convertToOpenAI.)
+    if (Array.isArray(schema.anyOf) || Array.isArray(schema.oneOf)) {
+        schema.type = 'object';
+        return schema;
+    }
     if (schema.type !== 'object') {
         schema.type = 'object';
     }
@@ -431,6 +439,17 @@ class OpenAICompatibleAdapter {
                 },
             }))
             : undefined;
+        // Moonshot/Kimi strictly rejects { type: "object", anyOf/oneOf: [...] }
+        // — type must live in the branches, not the parent. Strip root type
+        // from union schemas here (adapter-specific, not in the shared normalize).
+        if (this.providerId === 'moonshot' && tools) {
+            for (const tool of tools) {
+                const p = tool.function.parameters;
+                if ((Array.isArray(p.anyOf) || Array.isArray(p.oneOf)) && p.type === 'object') {
+                    delete p.type;
+                }
+            }
+        }
         return {
             model: params.model,
             messages,
@@ -628,6 +647,15 @@ class OpenAICompatibleAdapter {
         // Close last block
         if (activeIndex !== null)
             yield { type: 'content_block_stop', index: activeIndex };
+        // Detect empty streams: some providers (e.g. minimax-m3) return a clean
+        // stream with no content blocks (0 tokens, no finish_reason issue).
+        // Surface as a structured error instead of letting an empty assistant
+        // message render as a bare ▶.
+        if (activeIndex === null && !hasStartedThinkingBlock) {
+            const err = new Error(`[${this.label}] Model returned an empty response (no content blocks emitted)`);
+            err._providerError = { category: 'empty_response', status: 200 };
+            throw err;
+        }
         if (!sentMessageDelta) {
             // Map OpenAI cached_tokens to Anthropic cache format
             const cachedTokens = streamUsage?.prompt_tokens_details?.cached_tokens;

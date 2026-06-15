@@ -518,8 +518,7 @@ export async function verifyApiKey(apiKey: string, isNonInteractiveSession: bool
           }) as Promise<any>,
         async (anthropic: any) => {
           const messages: MessageParam[] = [{ role: 'user', content: 'test' }];
-          // biome-ignore lint/plugin: API key verification is intentionally a minimal direct call
-          console.error(
+          logForDebugging(
             `[verifyApiKey] anthropic type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, has messages: ${anthropic?.beta?.messages !== undefined}`,
           );
           await anthropic.beta.messages.create({
@@ -821,8 +820,7 @@ export async function* executeNonStreamingRequest(
       const adjustedParams = adjustParamsForNonStreaming(retryParams, MAX_NON_STREAMING_TOKENS);
 
       try {
-        // biome-ignore lint/plugin: non-streaming API call
-        console.error(
+        logForDebugging(
           `[executeNonStreamingRequest] anthropic type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, beta type: ${typeof anthropic?.beta}, has messages: ${anthropic?.beta?.messages !== undefined}`,
         );
         const nsAgentHeaders = buildAgentHeaders(clientOptions.agentId, clientOptions.parentAgentId);
@@ -1999,8 +1997,7 @@ async function* queryModel(
         // Use raw stream instead of BetaMessageStream to avoid O(n²) partial JSON parsing
         // BetaMessageStream calls partialParse() on every input_json_delta, which we don't need
         // since we handle tool input accumulation ourselves
-        // biome-ignore lint/plugin: main conversation loop handles attribution separately
-        console.error(
+        logForDebugging(
           `[streaming] anthropic type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, has messages: ${anthropic?.beta?.messages !== undefined}`,
         );
         const agentHeaders: Record<string, string> = {};

@@ -4,10 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+
+- **`/mode` slash command**: Removed in favor of the existing `shift+tab` keyboard shortcut for mode switching. The command was duplicating functionality already covered by the shortcut. (ponytail: deletion over addition)
+
 ### Fixed
 
+- **Empty response retry for reasoning models**: `OpenAICompatibleAdapter.streamMessage` now catches `empty_response` errors and retries once without `reasoning_effort`. Some models (e.g. minimax-m3 via OpenAI-compatible proxy) return empty content when `reasoning_effort` is sent; the auto-retry bypasses this without per-model configuration. (ponytail: generic fix, no per-model config needed)
 - Personal profile UI now redraws the frozen header as `Clew Personal`, hides the workspace path in condensed mode, and keeps the persona visible in the prompt footer.
 - **GenerateImageTool ENOENT crash**: Replaced runtime `readFileSync` of `providers.json` with build-time JSON import, fixing `ENOENT: no such file or directory` when the bundled CLI resolves `import.meta.dirname` to `dist/` instead of `src/tools/GenerateImageTool/`.
+- Assistant text now strips leading blank lines before Markdown render, so empty-looking `⏵` rows no longer appear ahead of the actual response text.
+- API client debug messages now use the debug logger instead of `console.error`, preventing Ink from rendering internal stream diagnostics as blank assistant turns.
+- **Moonshot/Kimi 400 on tool schemas**: `normalizeOpenAIToolInputSchema` no longer forces `type: "object"` at the root when the schema carries `anyOf`/`oneOf` (e.g. `z.union` / `z.discriminatedUnion` at the tool root). Fixes `tools.function.parameters is not a valid moonshot flavored json schema: when using anyOf, type should be defined in anyOf items instead of the parent schema` for `FileReadTool`, `PRTool`, `SendMessageTool`, etc.
+- **Compaction crash on models without vision**: `stripImagesFromMessages` now also strips `video` content blocks (both top-level and nested in `tool_result`), fixing `model does not accept image or video input` errors on models like GLM-5.1 during `/compact`.
+- **DeepSeek 400 on tool schemas with `anyOf`/`oneOf`**: Reverted the Moonshot/Kimi workaround from `normalizeOpenAIToolInputSchema` that dropped `type: "object"` for all providers with union schemas — this broke DeepSeek which requires it. Moonshot-specific type stripping is now done in the adapter's `convertToOpenAI` where provider-specific logic belongs.
+- **Empty assistant response shows blank ▶**: `AssistantTextMessage` now shows `Model returned an empty response` (dimmed) instead of returning null and leaving a bare `▶` indicator when the model sends back no content. Also detects empty streams in the OpenAI-compatible adapter (`wrapStream`) and throws a structured `empty_response` error so users see a clear failure instead of a silent empty turn.
 
 ### Added
 

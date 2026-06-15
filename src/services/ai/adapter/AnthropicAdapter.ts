@@ -255,11 +255,19 @@ export function getAdapter(providerId: string): ((client: any, providerId: strin
 
 // ── Generic OpenAI-compatible adapter (the default) ──────────────────────────
 
-function normalizeOpenAIToolInputSchema(inputSchema: unknown): Record<string, unknown> {
+export function normalizeOpenAIToolInputSchema(inputSchema: unknown): Record<string, unknown> {
   if (!inputSchema || typeof inputSchema !== 'object') {
     return { type: 'object', properties: {}, additionalProperties: true };
   }
   const schema = { ...(inputSchema as Record<string, unknown>) } as Record<string, unknown>;
+  // zod's z.union / z.discriminatedUnion produce root shapes (e.g.
+  // FileReadTool, PRTool) where `type` may be missing — ensure it's
+  // always "object" at the root for provider compatibility.
+  // (Moonshot-specific strip handled in convertToOpenAI.)
+  if (Array.isArray(schema.anyOf) || Array.isArray(schema.oneOf)) {
+    schema.type = 'object';
+    return schema;
+  }
   if (schema.type !== 'object') {
     schema.type = 'object';
   }
@@ -350,11 +358,29 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     options?: { signal?: AbortSignal },
   ): AsyncGenerator<unknown, void, undefined> {
     const openAIParams = this.convertToOpenAI(params);
-    const stream = await this.client.chat.completions.create(
-      { ...openAIParams, stream: true, stream_options: { include_usage: true } },
-      { signal: options?.signal },
-    );
-    yield* withStreamWatchdog(this.wrapStream(stream), this.streamTimeoutMs, this.label);
+    const hadReasoning = !!openAIParams.reasoning_effort;
+
+    const createStream = (withReasoning: boolean) => {
+      const apiParams = { ...openAIParams, stream: true, stream_options: { include_usage: true } };
+      if (!withReasoning) delete apiParams.reasoning_effort;
+      return this.client.chat.completions.create(apiParams, { signal: options?.signal });
+    };
+
+    // First attempt — may include reasoning_effort
+    const firstStream = await createStream(true);
+    try {
+      yield* withStreamWatchdog(this.wrapStream(firstStream), this.streamTimeoutMs, this.label);
+    } catch (err: any) {
+      // ponytail: some models (e.g. minimax-m3 via OpenAI-compatible proxy) return
+      // empty content when reasoning_effort is sent. Retry once without it before
+      // surfacing the error to the user.
+      if (hadReasoning && err?._providerError?.category === 'empty_response') {
+        const retryStream = await createStream(false);
+        yield* withStreamWatchdog(this.wrapStream(retryStream), this.streamTimeoutMs, this.label);
+      } else {
+        throw err;
+      }
+    }
   }
 
   normalizeError(error: unknown): Error {
@@ -561,6 +587,17 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
           },
         }))
       : undefined;
+    // Moonshot/Kimi strictly rejects { type: "object", anyOf/oneOf: [...] }
+    // — type must live in the branches, not the parent. Strip root type
+    // from union schemas here (adapter-specific, not in the shared normalize).
+    if (this.providerId === 'moonshot' && tools) {
+      for (const tool of tools) {
+        const p = tool.function.parameters;
+        if ((Array.isArray(p.anyOf) || Array.isArray(p.oneOf)) && p.type === 'object') {
+          delete p.type;
+        }
+      }
+    }
 
     return {
       model: params.model,
@@ -768,6 +805,15 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
 
     // Close last block
     if (activeIndex !== null) yield { type: 'content_block_stop', index: activeIndex };
+    // Detect empty streams: some providers (e.g. minimax-m3) return a clean
+    // stream with no content blocks (0 tokens, no finish_reason issue).
+    // Surface as a structured error instead of letting an empty assistant
+    // message render as a bare ▶.
+    if (activeIndex === null && !hasStartedThinkingBlock) {
+      const err = new Error(`[${this.label}] Model returned an empty response (no content blocks emitted)`);
+      (err as any)._providerError = { category: 'empty_response', status: 200 };
+      throw err;
+    }
 
     if (!sentMessageDelta) {
       // Map OpenAI cached_tokens to Anthropic cache format

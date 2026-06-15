@@ -190,7 +190,7 @@ export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOv
         ...(isDebugToStdErr() && { logger: createStderrLogger() }),
     };
     const client = new Anthropic(clientConfig);
-    console.error(`[createAnthropicClient] Created Anthropic client, has beta: ${'beta' in client}, beta type: ${typeof client.beta}, has messages: ${client.beta ? 'messages' in client.beta : false}`);
+    logForDebugging(`[createAnthropicClient] Created Anthropic client, has beta: ${'beta' in client}, beta type: ${typeof client.beta}, has messages: ${client.beta ? 'messages' in client.beta : false}`);
     return client;
 }
 function createStderrLogger() {

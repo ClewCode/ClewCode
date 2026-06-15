@@ -40,6 +40,10 @@ type Props = {
   onOpenRateLimitOptions?: () => void;
 };
 
+export function stripLeadingBlankLines(text: string): string {
+  return text.replace(/^(?:[ \t]*\r?\n)+/, '');
+}
+
 function InvalidApiKeyMessage(): React.ReactNode {
   const isKeychainLocked = isMacOsKeychainLocked();
 
@@ -61,10 +65,22 @@ export function AssistantTextMessage({
   onOpenRateLimitOptions,
 }: Props): React.ReactNode {
   const isSelected = useContext(MessageActionsSelectedContext);
-  const visibleText = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+  // Defensive null guard — some providers return null/undefined for content
+  // when the model streams no text (e.g. a tool-only turn with empty reasoning).
+  const visibleText = typeof text === 'string' ? text.replace(/[\u200B-\u200D\uFEFF]/g, '') : '';
   if (isEmptyMessageText(visibleText)) {
-    return null;
+    return (
+      <Box marginTop={addMargin ? 1 : 0} flexDirection="row" alignItems="flex-start">
+        {shouldShowDot && (
+          <NoSelect fromLeftEdge minWidth={2}>
+            <Text color={isSelected ? 'suggestion' : 'text'}>{BLACK_CIRCLE}</Text>
+          </NoSelect>
+        )}
+        <Text dimColor>Model returned an empty response</Text>
+      </Box>
+    );
   }
+  const renderText = stripLeadingBlankLines(visibleText);
 
   // Handle all rate limit error messages from getRateLimitErrorMessage
   // Use the exported function to avoid fragile string coupling
@@ -187,7 +203,7 @@ export function AssistantTextMessage({
               </NoSelect>
             )}
             <Box flexDirection="column">
-              <Markdown>{text}</Markdown>
+              <Markdown>{renderText}</Markdown>
             </Box>
           </Box>
         </Box>
