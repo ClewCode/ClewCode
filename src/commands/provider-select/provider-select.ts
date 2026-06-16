@@ -155,18 +155,8 @@ function applyProviderSelectionToSession(
     providerManager.setSessionApiKeys(config.apiKeys);
   }
 
-  // Auto-persist provider + model to provider.json so the last-used
-  // combination becomes the default on next startup.
-  // Only skip when --global was explicitly passed (it already saves).
-  if (!isGlobal) {
-    const current = providerManager.getSelectedProviderConfig();
-    providerManager.saveSelectedProviderConfig({
-      ...current,
-      provider: (config.provider ?? current.provider) as any,
-      model: config.model ?? current.model,
-    });
-  }
-
+  // Session-only: don't persist provider/model to provider.json.
+  // Only --global (handled in runProviderCommand) writes the config file.
   // Always persist the model to settings so it survives across sessions.
   setAppState(prev => ({
     ...prev,

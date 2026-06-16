@@ -21,8 +21,7 @@ import { isFullscreenEnvEnabled } from '../../utils/fullscreen.js';
 import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
-import { ACPStatusLine } from '../ACPStatusLine.js';
-import { MeshStatusLine } from '../MeshStatusLine.js';
+import { PeerStatusLine } from '../PeerStatusLine.js';
 import { getLastAssistantMessageId, StatusLine, statusLineShouldDisplay } from '../StatusLine.js';
 
 import { Notifications } from './Notifications.js';
@@ -270,8 +269,7 @@ function PromptInputFooter({
       {'external' === 'ant' && <CoordinatorTaskPanel />}
       <DynamicWorkflowStatusLine />
 
-      <ACPStatusLine />
-      <MeshStatusLine />
+      <PeerStatusLine />
     </>
   );
 }

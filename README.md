@@ -50,7 +50,7 @@ Clew Code is a reverse-engineered reimplementation of [Claude Code](https://gith
 
 ---
 
-## Concepts: Agents, Subagents, Mesh, and ACP
+## Concepts: Agents, Subagents, and Mesh
 
 Clew Code has several execution layers. They are related, but they do different jobs:
 
@@ -59,7 +59,6 @@ Clew Code has several execution layers. They are related, but they do different 
 - **Teammate / Swarm:** A longer-lived agent team member with an identity, mailbox, task coordination, and optional pane/tmux or in-process execution. Use this when agents need to keep working together across multiple turns, not for isolated one-shot exploration.
 - **LAN Mesh:** A network of Clew instances on the same machine or LAN. `/mesh` discovers peers, sends messages, assigns tasks, and runs commands on other Clew nodes.
 - **Process Mesh:** A local process-backed worker layer. It delegates a prompt to an external CLI/provider such as Codex using `exec` or `pty`, then returns stdout, stderr, exit code, timeout state, and progress.
-- **ACP:** An external protocol boundary. Editors, IDEs, REST clients, or other agents can send work into Clew through ACP. ACP should normalize the external request and route execution through Clew's internal layers instead of hardcoding a provider in every ACP entry point.
 
 Typical flows:
 
@@ -68,14 +67,6 @@ User
   -> main Clew agent
       -> Agent tool
           -> short-lived subagent, e.g. Explore
-```
-
-```text
-External editor / external agent
-  -> ACP
-      -> shared ACP-to-mesh boundary
-          -> Process Mesh provider, e.g. codex
-              -> external CLI process
 ```
 
 ```text
@@ -90,7 +81,6 @@ Use the layers by intent:
 - Need a quick independent read-only investigation? Use an `Explore` subagent.
 - Need long-running coordination between named workers? Use teammates/swarm.
 - Need another Clew instance on the LAN? Use `/mesh`.
-- Need an external editor or agent to call into Clew? Use ACP.
 - Need Clew to run a local external worker such as Codex? Use Process Mesh.
 
 Other runtime concepts:
@@ -99,6 +89,27 @@ Other runtime concepts:
 - **Goal verification:** When the agent declares a task done, an independent LLM call reviews the conversation against the goal text and reports specific gaps if unsatisfied (attached as `goalGap` in result metadata).
 - **Max Mode:** Generates N parallel candidate responses per turn via forked agents, then selects the best one via LLM judge with heuristic fallback. Toggle with `/maxmode`.
 - **Checkpoints:** Structured snapshots at 20%/45%/70% progress milestones. Includes a `notes.md` scratchpad for the main agent's findings. Used for layered multi-cycle rebuild during compaction.
+
+---
+
+## Profiles: Coding vs Personal
+
+Clew Code has two profiles you switch between with `/profile`:
+
+- **Coding profile** (`/profile coding`) — default. Directly implement software changes: inspect repo, edit files, run validation.
+- **Personal profile** (`/profile personal`) — command center mode. Plan, split tasks, **delegate** code work to a Codex worker via `process_mesh`, then review and summarize results.
+
+### How personal delegation works
+
+```
+You → personal profile → understand requirement → plan approach
+     → /delegate skill → process_mesh → Codex worker
+     → worker implements → report back → you review
+```
+
+In personal profile, you never edit files directly — the `delegate` skill spawns a Codex worker with a structured task prompt (goal, scope, constraints, validation criteria) and reports what was done, what passed/failed, and what's blocked. Use personal profile when you want to orchestrate rather than implement.
+
+Profile and last-used permission mode are saved between sessions.
 
 ---
 

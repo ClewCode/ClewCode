@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **Suppress blank assistant messages**: Filtered out assistant messages containing only system reminders so they do not render as empty `▶` bullet points in the terminal UI.
+- **Fix provider/model session bleed**: `/providers set` without `--global` no longer writes to `provider.json`, preventing provider/model changes in one session from affecting other sessions. Only `--global` persists the selection. (`src/commands/provider-select/provider-select.ts`)
+
 ## [0.2.28] — 2026-06-16
 
 ### Added
@@ -89,26 +96,6 @@ All notable changes to this project will be documented in this file.
 
 ## [0.2.15] — 2026-06-14
 
-### Added
-
-- **ACP + Mesh integration**: `AcpMeshBoundary` (`src/acp-agents/AcpMeshBoundary.ts`) — shared execution boundary routing both editor ACP and REST ACP through the process peer / mesh layer with `AbortSignal` and `onProgress` support.
-- **AcpRunController** (`src/acp-agents/AcpRunController.ts`) — lifecycle owner for ACP runs: creates run, wires `AbortController`, executes through mesh boundary, maps results to terminal state via `ACPRunManager`.
-- **Terminal state guards**: `ACPRunManager` now prevents overwriting completed/failed/cancelled runs. `isTerminalStatus()` helper exported.
-- **Cancel path**: Editor `session/cancel` and REST `DELETE /runs/:id` both route through `AcpRunController.cancel()` → `AbortController.abort()` → boundary returns `'Cancelled'`.
-- **WebSocket transport**: `ACPWebSocketServer.ts` — Bun-native WebSocket server bridging remote editor connections to `AgentSideConnection` via NDJSON stream. `clew acp serve --port 3099` now starts WebSocket server.
-- **SSE streaming**: `GET /runs/:id/stream` endpoint with 500ms polling, keepalive comments every 15s, auto-close on terminal state.
-- **ACPMessageConverter fixes**: Added missing `content_encoding: 'plain'` and `created_at`/`completed_at` fields to match `acp-sdk` `Message`/`MessagePart` types.
-
-### Changed
-
-- **Editor ACP shapes fixed**: `PromptResponse` now returns only `{ stopReason }` (removed invalid `messages`/`error`). `sessionUpdate` uses `SessionNotification` shape with `agent_message_chunk` discriminated union.
-- **REST ACP**: Replaced inline execution with `AcpRunController`. Fixed bug where missing provider called both `completeRun` AND `failRun`.
-- **`acp-agents/index.ts`**: Exports `AcpRunController`, `runPromptThroughMesh`, `isTerminalStatus`, and their types.
-
-### Fixed
-
-- ACP REST fallback no longer produces both completed and failed states.
-- `content_encoding: 'plain'` now present on all ACP MessagePart outputs.
 
 ## [0.2.14] — 2026-06-14
 
@@ -180,37 +167,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- **Agent Client Protocol (ACP) fully functional**: `@agentclientprotocol/sdk@0.25.0` — Clew Code now runs as a full ACP agent that editors like Zed can connect to.
-  - `clew acp` (or `clew acp serve`) starts the ACP server — defaults to stdio mode for editor subprocess integration
-  - `clew acp --port 15793` starts in WebSocket mode for remote connections
-  - `clew --acp` CLI flag as backward-compatible alias
-  - `session/prompt` executes prompts through the Codex process peer, sends `session/update` streaming notifications, and returns results with proper `stopReason`
-  - `/acp start`, `/acp status`, `/acp sessions`, `/acp config` commands for managing the ACP server
-  - `ACPStatusLine` component shows server status in footer with active session count
-  - `ACPStatusManager` singleton tracks server state with signal-based subscriptions
-  - Handles `initialize`, `authenticate`, `session/new`, `session/load`, `session/prompt`, `session/cancel`, `session/list`, `session/delete`, `session/close`, `session/set_mode`, `session/set_config_option`, `logout`
-  - New module `src/services/acp/`: `ACPServer.ts`, `ACPSessionManager.ts`, `ACPConfig.ts`
-  - 5 unit tests for session management
-
-- **Agent Communication Protocol (i-am-bee ACP) REST API server**: `acp-sdk@1.0.3` — Clew Code can now be used as an ACP/A2A-compatible agent via HTTP.
-  - `clew --acp-rest [--acp-rest-port 8000]` starts the REST API server
-  - `GET /agents` — agent discovery (returns clew-code manifest)
-  - `POST /runs` — create and execute a task (runs via Codex process peer, returns `run_id` for polling)
-  - `GET /runs/:id` — check run status and output
-  - `DELETE /runs/:id` — cancel a running task
-  - `GET /ping` — health check endpoint
-  - CORS headers for cross-origin access
-  - New files: `ACPRestServer.ts`, `ACPRestConfig.ts`
-
-- **ACP agent client for external agents**: `ACPAgentClient` wraps the `acp-sdk` Client to discover and delegate tasks to external ACP/A2A-compatible agents.
-  - `discoverAgents()`, `getAgent()`, `runAgentSync()`, `runAgentAsync()`, `runAgentStream()`, `getRunStatus()`, `cancelRun()`
-  - New module `src/acp-agents/`: `ACPAgentManifest.ts`, `ACPRunManager.ts`, `ACPMessageConverter.ts`, `ACPAgentClient.ts`, `ACPRestServer.ts`, `ACPRestConfig.ts`
-  - 10 unit tests for run management and message conversion
-
 ### Fixed
 
 - **`reasoning_effort` 400 error on unsupported models**: `getOpenAIReasoningEffort()` now checks both provider-level (`reasoningEffort` capability) and model-level (`reasoning` capability) before sending `reasoning_effort` to OpenAI-compatible APIs. If the model is not in the registry, `reasoning_effort` is skipped conservatively — preventing 400 errors on models like `codestral-latest`, `deepseek-v4-flash-free`, and `stepfun/step-3.7-flash:free`.
-
 
 - **Update dialog not showing when npm is unavailable**: The auto-update system (`getLatestVersion()`, `getNpmDistTags()`) now has a 3-tier fallback strategy — tries `npm view` first, then `bun x npm` when running on Bun, and finally fetches directly from the npm registry HTTP API. This ensures the interactive update dialog appears even when users don't have `npm` installed. The silent `catch` in `main.tsx` was also replaced with a `logForDebugging` call so update failures are no longer swallowed without trace.
 

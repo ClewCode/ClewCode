@@ -8,7 +8,7 @@ import { clearCommandsCache } from '../../commands.js';
 import { getSessionStartDate } from '../../constants/common.js';
 import { getGitStatus, getSystemContext, getUserContext, setSystemPromptInjection } from '../../context.js';
 import { clearFileSuggestionCaches } from '../../hooks/fileSuggestions.js';
-import { clearAllPendingCallbacks } from '../../hooks/useMeshPermissionPoller.js';
+import { clearAllPendingCallbacks } from '../../hooks/usePeerPermissionPoller.js';
 import { clearAllDumpState } from '../../services/api/dumpPrompts.js';
 import { resetPromptCacheBreakDetection } from '../../services/api/promptCacheBreakDetection.js';
 import { clearAllSessions } from '../../services/api/sessionIngress.js';

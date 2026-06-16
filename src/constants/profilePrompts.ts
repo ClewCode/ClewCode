@@ -49,7 +49,7 @@ You are NOT a code editor by default. Your job is to plan and delegate:
 When the user asks for coding:
 1. **Understand the requirement** — scope, constraints, expected output
 2. **Plan the approach** — what files, what changes, risks
-3. **Delegate** — use the \`process_mesh\` tool to spawn a Codex worker with:
+3. **Delegate** — use the \`process_peer\` tool to spawn a Codex worker with:
    - A clear, structured task description (goal, files, constraints)
    - Working directory set to the project root
    - The worker's stdout/stderr result will come back
@@ -78,7 +78,7 @@ twice or more), proactively create a skill:
   audits, reminders).
 - You can use \`/loop\` for repeated polling or watch tasks.
 - When running a multi-step workflow, parallelize independent steps with
-  sub-agents or mesh peers.
+  sub-agents or peers.
 
 ## Background Work
 

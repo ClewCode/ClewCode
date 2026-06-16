@@ -4288,16 +4288,40 @@ export function getMessagesAfterCompactBoundary<T extends Message | NormalizedMe
 }
 
 export function shouldShowUserMessage(message: NormalizedMessage, isTranscriptMode: boolean): boolean {
-  if (message.type !== 'user') return true;
-  if (message.isMeta) {
-    // Channel messages stay isMeta (for snip-tag/turn-boundary/brief-mode
-    // semantics) but render in the default transcript — the keyboard user
-    // should see what arrived. The <channel> tag in UserTextMessage handles
-    // the actual rendering.
-    if ((feature('KAIROS') || feature('KAIROS_CHANNELS')) && message.origin?.kind === 'channel') return true;
-    return false;
+  if (message.type === 'user') {
+    if (message.isMeta) {
+      // Channel messages stay isMeta (for snip-tag/turn-boundary/brief-mode
+      // semantics) but render in the default transcript — the keyboard user
+      // should see what arrived. The <channel> tag in UserTextMessage handles
+      // the actual rendering.
+      if ((feature('KAIROS') || feature('KAIROS_CHANNELS')) && message.origin?.kind === 'channel') return true;
+      return false;
+    }
+    if (message.isVisibleInTranscriptOnly && !isTranscriptMode) return false;
+    return true;
   }
-  if (message.isVisibleInTranscriptOnly && !isTranscriptMode) return false;
+
+  if (message.type === 'assistant') {
+    const msg = message.message as { content?: unknown[] } | undefined;
+    if (msg && Array.isArray(msg.content)) {
+      const hasVisibleContent = msg.content.some((block) => {
+        if (!block || typeof block !== 'object') return false;
+        const b = block as { type?: string; text?: string };
+        if (b.type === 'tool_use') return true;
+        if (b.type === 'text') {
+          if (typeof b.text !== 'string') return false;
+          const cleaned = b.text.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim();
+          return cleaned !== '';
+        }
+        if (b.type === 'thinking' || b.type === 'redacted_thinking') {
+          return true;
+        }
+        return false;
+      });
+      if (!hasVisibleContent) return false;
+    }
+  }
+
   return true;
 }
 

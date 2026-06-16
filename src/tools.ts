@@ -78,23 +78,23 @@ import { RequestShutdownTool } from './tools/RequestShutdownTool/RequestShutdown
 import { SubscribePrActivityTool, UnsubscribePrActivityTool } from './tools/PrSubscriptionTool/PrSubscriptionTool.js';
 import { SendMessageTool } from './tools/SendMessageTool/SendMessageTool.js';
 import { AskUserQuestionTool } from './tools/AskUserQuestionTool/AskUserQuestionTool.js';
-import { MeshDiscoverTool } from './tools/MeshDiscoverTool/MeshDiscoverTool.js';
-import { MeshSendMessageTool } from './tools/MeshSendMessageTool/MeshSendMessageTool.js';
-import { MeshSpawnTool } from './tools/MeshSpawnTool/MeshSpawnTool.js';
-import { MeshShareTool } from './tools/MeshShareTool/MeshShareTool.js';
-import { MeshInfoTool } from './tools/MeshInfoTool/MeshInfoTool.js';
-import { MeshRunTool } from './tools/MeshRunTool/MeshRunTool.js';
-import { MeshJoinTool } from './tools/MeshJoinTool/MeshJoinTool.js';
-import { MeshSetNameTool } from './tools/MeshSetNameTool/MeshSetNameTool.js';
-import { MeshSetRoleTool } from './tools/MeshSetRoleTool/MeshSetRoleTool.js';
-import { MeshListRolesTool } from './tools/MeshListRolesTool/MeshListRolesTool.js';
-import { MeshPingTool } from './tools/MeshPingTool/MeshPingTool.js';
-import { MeshDisconnectTool } from './tools/MeshDisconnectTool/MeshDisconnectTool.js';
-import { MeshBroadcastTool } from './tools/MeshBroadcastTool/MeshBroadcastTool.js';
-import { MeshListMessagesTool } from './tools/MeshListMessagesTool/MeshListMessagesTool.js';
-import { MeshHelpTool } from './tools/MeshHelpTool/MeshHelpTool.js';
-import { ProcessMeshTool } from './tools/ProcessMeshTool/ProcessMeshTool.js';
-import { CodexMeshTool } from './tools/CodexMeshTool/CodexMeshTool.js';
+import { PeerDiscoverTool } from './tools/PeerDiscoverTool/PeerDiscoverTool.js';
+import { PeerSendMessageTool } from './tools/PeerSendMessageTool/PeerSendMessageTool.js';
+import { PeerSpawnTool } from './tools/PeerSpawnTool/PeerSpawnTool.js';
+import { PeerShareTool } from './tools/PeerShareTool/PeerShareTool.js';
+import { PeerInfoTool } from './tools/PeerInfoTool/PeerInfoTool.js';
+import { PeerRunTool } from './tools/PeerRunTool/PeerRunTool.js';
+import { PeerJoinTool } from './tools/PeerJoinTool/PeerJoinTool.js';
+import { PeerSetNameTool } from './tools/PeerSetNameTool/PeerSetNameTool.js';
+import { PeerSetRoleTool } from './tools/PeerSetRoleTool/PeerSetRoleTool.js';
+import { PeerListRolesTool } from './tools/PeerListRolesTool/PeerListRolesTool.js';
+import { PeerPingTool } from './tools/PeerPingTool/PeerPingTool.js';
+import { PeerDisconnectTool } from './tools/PeerDisconnectTool/PeerDisconnectTool.js';
+import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.js';
+import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
+import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
+import { ProcessPeerTool } from './tools/ProcessPeerTool/ProcessPeerTool.js';
+import { CodexPeerTool } from './tools/CodexPeerTool/CodexPeerTool.js';
 import { GenerateImageTool } from './tools/GenerateImageTool/GenerateImageTool.js';
 import { GenerateVideoTool } from './tools/GenerateVideoTool/GenerateVideoTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
@@ -223,22 +223,22 @@ const sleepTool = getSleepTool();
     ...(isEnvTruthy(process.env.ENABLE_LSP_TOOL) ? [LSPTool] : []),
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     SendMessageTool,
-    MeshDiscoverTool,
-    MeshSendMessageTool,
-    MeshSpawnTool,
-    MeshShareTool,
-    MeshInfoTool,
-    MeshRunTool,
-    MeshJoinTool,
-    MeshSetNameTool,
-    MeshSetRoleTool,
-    MeshListRolesTool,
-    MeshPingTool,
-    MeshDisconnectTool,
-    MeshBroadcastTool,
-    MeshListMessagesTool,
-    MeshHelpTool,
-    ProcessMeshTool,
+    PeerDiscoverTool,
+    PeerSendMessageTool,
+    PeerSpawnTool,
+    PeerShareTool,
+    PeerInfoTool,
+    PeerRunTool,
+    PeerJoinTool,
+    PeerSetNameTool,
+    PeerSetRoleTool,
+    PeerListRolesTool,
+    PeerPingTool,
+    PeerDisconnectTool,
+    PeerBroadcastTool,
+    PeerListMessagesTool,
+    PeerHelpTool,
+    ProcessPeerTool,
 
     ...(listPeersTool ? [listPeersTool] : []),
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),

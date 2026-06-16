@@ -93,7 +93,7 @@ const SEARCH_TOOLS = new Set([
   'search_pubmed_key_words',
   'search_pubmed_advanced',
   'pubmed_search',
-  'pubmed_mesh_lookup',
+  'pubmed_peer_lookup',
   // Firecrawl
   'firecrawl_search',
   // Exa
