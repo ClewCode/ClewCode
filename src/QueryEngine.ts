@@ -5,6 +5,14 @@ import last from 'lodash-es/last.js';
 import { getSessionId, isSessionPersistenceDisabled } from 'src/bootstrap/state.js';
 import { getProfilePrompt } from './constants/profilePrompts.js';
 import { getGoalPrompt } from './utils/goalPrompt.js';
+import {
+  getCurrentCycle,
+  hasCheckpoint,
+  readNotes,
+  type TaskCheckpoint,
+  writeCheckpoint,
+} from './services/checkpoint/checkpointWriter.js';
+import { promoteCheckpoints } from './services/checkpoint/checkpointPromoter.js';
 import { selectableUserMessagesFilter } from 'src/components/MessageSelector.js';
 import type {
   PermissionMode,
@@ -265,10 +273,19 @@ export class QueryEngine {
     const profilePrompt = getProfilePrompt(initialAppState.profile);
     const goalPrompt = getGoalPrompt();
 
+    // When a goal is active, tell the model about the notes scratchpad.
+    // This is the main agent's only persistent write channel — notes are
+    // read at checkpoint time and routed into structured state fields.
+    const hasActiveGoal = initialAppState.goalState?.goal;
+    const notesPrompt = hasActiveGoal
+      ? asSystemPrompt([`## Notes Scratchpad\n\nWhen working on long tasks, you can save findings, questions, and things to remember using the Write tool on the notes.md file in the checkpoint directory. Notes are automatically collected at checkpoints to preserve context across session rebuilds. You do not need to manage notes manually — just write down anything worth remembering between turns.`])
+      : null;
+
     const systemPrompt = asSystemPrompt([
       ...(customPrompt !== undefined ? [customPrompt] : defaultSystemPrompt),
       profilePrompt,
       goalPrompt,
+      ...(notesPrompt ? [notesPrompt] : []),
       ...(memoryMechanicsPrompt ? [memoryMechanicsPrompt] : []),
       ...(appendSystemPrompt ? [appendSystemPrompt] : []),
     ]);
@@ -658,6 +675,30 @@ export class QueryEngine {
       } as unknown as SDKMessage;
     }
 
+    // Max Mode: if enabled, run parallel candidates and inject best-of-n context
+    if (typeof prompt === 'string') {
+      const { getMaxModeConfig: getMaxCfg } = await import('./services/maxMode/candidateRunner.js');
+      if (getMaxCfg().enabled) {
+        try {
+          const { runMaxMode } = await import('./services/maxMode/candidateRunner.js');
+          const { createCacheSafeParams } = await import('./utils/forkedAgent.js');
+          const { createUserMessage: cUM } = await import('./utils/messages.js');
+          const cacheSafeParams = createCacheSafeParams(processUserInputContext);
+          const maxModeResult = await runMaxMode(prompt, messages, wrappedCanUseTool, cacheSafeParams);
+          if (maxModeResult?.response) {
+            // Inject winning candidate as system context — main model builds on it
+            messages.unshift(cUM({
+              content: `[Best-of-N candidate #${maxModeResult.candidateIndex} context]\n${maxModeResult.response}`,
+              isMeta: true,
+            }));
+          }
+        } catch (e) {
+          // Max mode failure is non-fatal — fall through to normal query
+          console.warn('[max-mode] candidate run failed:', e);
+        }
+      }
+    }
+
     for await (const message of query({
       messages,
       systemPrompt,
@@ -732,6 +773,75 @@ export class QueryEngine {
 
       if (message.type === 'user') {
         turnCount++;
+
+        // Checkpoint trigger: when a goal is active, write structured checkpoints at 20%, 45%, 70% of turn budget
+        const goalState = getFullGoalState();
+        if (goalState?.goal && goalState.maxTurns && turnCount > 1) {
+          const progressPercent = Math.floor((turnCount / goalState.maxTurns) * 100);
+          for (const threshold of [20, 45, 70]) {
+            if (progressPercent >= threshold && !(await hasCheckpoint(threshold))) {
+              // Extract decisions and commands from recent messages
+              const recentMessages = this.mutableMessages.slice(-20);
+              const decisions: string[] = [];
+              const commandsRun: string[] = [];
+              const filesModified: string[] = [];
+              for (const msg of recentMessages) {
+                if (msg.type === 'assistant' && 'message' in msg) {
+                  const content = msg.message.content;
+                  if (Array.isArray(content)) {
+                    for (const block of content) {
+                      if (block.type === 'text') {
+                        // Extract decision-like statements
+                        const text = (block as { type: 'text'; text: string }).text;
+                        if (text.includes('I\'ll') || text.includes('Let me') || text.includes('plan')) {
+                          decisions.push(text.slice(0, 200));
+                        }
+                      }
+                      if (block.type === 'tool_use') {
+                        const toolBlock = block as { type: 'tool_use'; name: string; input: Record<string, unknown> };
+                        if (toolBlock.name === 'Bash') {
+                          const cmd = toolBlock.input.command;
+                          if (typeof cmd === 'string') commandsRun.push(cmd.slice(0, 200));
+                        }
+                        if (toolBlock.name === 'Write' || toolBlock.name === 'Edit') {
+                          const fp = toolBlock.input.file_path;
+                          if (typeof fp === 'string') filesModified.push(fp);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+
+              const [cycle, notes] = await Promise.all([
+                getCurrentCycle(),
+                readNotes(),
+              ]);
+              const checkpoint: TaskCheckpoint = {
+                id: `checkpoint-${threshold}-${Date.now()}`,
+                timestamp: Date.now(),
+                progressPercent: threshold,
+                goalText: goalState.goal,
+                turnCount,
+                elapsedMs: goalState.setAt ? Date.now() - goalState.setAt : 0,
+                filesModified: [...new Set(filesModified)].slice(-20),
+                commandsRun: commandsRun.slice(-10),
+                decisions: decisions.slice(-5),
+                currentBlockers: [],
+                nextSteps: [],
+                summary: '',
+                cycle,
+                notes,
+              };
+              writeCheckpoint(checkpoint).catch(() => {});
+              // Promote to MEMORY.md at 70% checkpoint (project memory layer)
+              if (threshold === 70) {
+                promoteCheckpoints(goalState.goal).catch(() => {});
+              }
+              break; // Only write one checkpoint per turn
+            }
+          }
+        }
       }
 
       switch (message.type) {
@@ -1050,6 +1160,31 @@ export class QueryEngine {
       isApiError = Boolean(result.isApiErrorMessage);
     }
 
+    // Goal Verifier: when goal is active and agent terminates, verify completion.
+    // If goal not met, attach gap to result metadata (caller can re-prompt).
+    let goalGap: string | undefined;
+    if (!isApiError && result.type === 'assistant') {
+      try {
+        const goalState = getFullGoalState();
+        if (goalState?.goal && !goalState.paused) {
+          const { verifyGoalCompletion } = await import('./services/goal/goalVerifier.js');
+          const { createCacheSafeParams } = await import('./utils/forkedAgent.js');
+          const verification = await verifyGoalCompletion(
+            goalState.goal,
+            this.mutableMessages,
+            wrappedCanUseTool,
+            createCacheSafeParams(processUserInputContext),
+          );
+          if (!verification.isComplete && verification.gap) {
+            goalGap = verification.gap;
+            console.warn(`[goal-verifier] goal not complete: ${goalGap}`);
+          }
+        }
+      } catch {
+        // Verifier failure is non-fatal
+      }
+    }
+
     yield {
       type: 'result',
       subtype: 'success',
@@ -1058,9 +1193,8 @@ export class QueryEngine {
       duration_api_ms: getTotalAPIDuration(),
       num_turns: turnCount,
       result: textResult,
+      ...(goalGap ? { goalGap } : {}),
       stop_reason: lastStopReason,
-      session_id: getSessionId(),
-      total_cost_usd: getTotalCost(),
       usage: this.totalUsage,
       modelUsage: getModelUsage(),
       permission_denials: this.permissionDenials,

@@ -42,7 +42,6 @@ import { useNotifications } from '../context/notifications.js';
 import { sendNotification } from '../services/notifier.js';
 import { startPreventSleep, stopPreventSleep } from '../services/preventSleep.js';
 import { useTerminalNotification } from '../ink/useTerminalNotification.js';
-import { hasCursorUpViewportYankBug } from '../ink/terminal.js';
 import {
   createFileStateCacheWithSizeLimit,
   mergeFileStateCaches,
@@ -1780,7 +1779,7 @@ export function REPL({
   // so displayedMessages switches from deferredMessages to messages atomically.
   const [streamingText, setStreamingText] = useState<string | null>(null);
   const reducedMotion = useAppState(s => s.settings.prefersReducedMotion) ?? false;
-  const showStreamingText = !reducedMotion && !hasCursorUpViewportYankBug();
+  const showStreamingText = !reducedMotion;
   const onStreamingText = useCallback(
     (f: (current: string | null) => string | null) => {
       if (!showStreamingText) return;
@@ -1789,12 +1788,10 @@ export function REPL({
     [showStreamingText],
   );
 
-  // Hide the in-progress source line so text streams line-by-line, not
-  // char-by-char. lastIndexOf returns -1 when no newline, giving '' → null.
+  // Show all streaming text including the current in-progress line.
   // Guard on showStreamingText so toggling reducedMotion mid-stream
   // immediately hides the streaming preview.
-  const visibleStreamingText =
-    streamingText && showStreamingText ? streamingText.substring(0, streamingText.lastIndexOf('\n') + 1) || null : null;
+  const visibleStreamingText = streamingText && showStreamingText ? streamingText : null;
 
   const [lastQueryCompletionTime, setLastQueryCompletionTime] = useState(0);
   const [spinnerMessage, setSpinnerMessage] = useState<string | null>(null);

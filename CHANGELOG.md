@@ -4,12 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Personal profile overhaul**: Rewrote `PERSONAL_PROFILE_PROMPT` with delegation, memory-driven learning, proactive skill creation, scheduling, and autonomy instructions. Personal profile now acts as a personal AI control center. (`src/constants/profilePrompts.ts`)
+
+- **`/delegate` bundled skill**: New personal profile skill for delegating coding work to a Codex worker via `process_mesh`. Creates structured tasks with goal, scope, constraints, and validation. Aliases: `/code`, `/worker`. (`src/skills/bundled/personalDelegate.ts`)
+
+- **Personal profile documentation**: New `docs/personal-profile.html` page covering delegation workflow, memory-driven learning, skill creation, scheduling, and coding vs personal profile comparison. Updated `docs/commands.html` with `/profile` command reference.
+
+- **Streaming text display**: Removed Windows viewport yank bug gate that prevented real-time streaming text on Windows. Streaming text now shows full content character-by-character instead of line-by-line. (`src/screens/REPL.tsx`)
+
+- **Cross-provider model context lookup**: `toProviderModelInfo()` now searches all provider registries for model context window info when the current provider doesn't have the model in its registry. Fixes missing `maxContext`/`maxOutput` for models like `deepseek-v4-flash-free` on OpenCode. (`src/services/ai/providerModels.ts`)
+
+- **RTK (Rust Token Killer) integration**: BashTool now auto-detects `rtk` and wraps shell commands to compress output before it enters the context window. Reduces token consumption by 60-90% on common dev commands. (`src/utils/Shell.ts`)
+
 ### Removed
+
+- **`/commit-push-pr` command, `PRTool`, `SuggestBackgroundPRTool`**: All git/PR tooling consolidated to `BashTool` for `git`/`gh` commands. Deleted `src/commands/commit-push-pr.ts`, `src/tools/PRTool/`, `src/tools/SuggestBackgroundPRTool/`. (ponytail: BashTool covers all git/PR operations, no need for wrappers)
 
 - **`/mode` slash command**: Removed in favor of the existing `shift+tab` keyboard shortcut for mode switching. The command was duplicating functionality already covered by the shortcut. (ponytail: deletion over addition)
 
 ### Fixed
 
+- **`clew update` showing wrong version / not updating**: Added missing `MACRO.VERSION`, `MACRO.PACKAGE_URL`, `MACRO.FEEDBACK_CHANNEL`, and `MACRO.ISSUES_EXPLAINER` compile-time defines to `dev`, `start`, and `build` scripts in `package.json`. These Bun `--define` constants were not being injected, causing the updater to compare against `undefined` and never detect or install the correct version.
 - **Empty response retry for reasoning models**: `OpenAICompatibleAdapter.streamMessage` now catches `empty_response` errors and retries once without `reasoning_effort`. Some models (e.g. minimax-m3 via OpenAI-compatible proxy) return empty content when `reasoning_effort` is sent; the auto-retry bypasses this without per-model configuration. (ponytail: generic fix, no per-model config needed)
 - Personal profile UI now redraws the frozen header as `Clew Personal`, hides the workspace path in condensed mode, and keeps the persona visible in the prompt footer.
 - **GenerateImageTool ENOENT crash**: Replaced runtime `readFileSync` of `providers.json` with build-time JSON import, fixing `ENOENT: no such file or directory` when the bundled CLI resolves `import.meta.dirname` to `dist/` instead of `src/tools/GenerateImageTool/`.
@@ -28,6 +45,11 @@ All notable changes to this project will be documented in this file.
 - **Image & Video generation tools**: Two new AI-callable tools — `GenerateImage` (DALL-E 3 / Imagen 3 / OpenRouter) and `GenerateVideo` (Runway Gen-4). Models can generate images and videos via tool use. Auto-discover image models from provider APIs. Auto-enabled when the respective API keys are configured (`OPENAI_API_KEY`, `GOOGLE_API_KEY`, `RUNWAY_API_KEY`).
 - **Execution modes** (`/mode`): Five user-facing execution modes — `safe` (ask before edits), `yolo` (auto-approve normal tools), `afk` (auto-run + summarize), `review-only` (read only, no edits), `browser-safe` (browser allowed, no destructive bash). Footer shows current mode badge. Maps to existing permission modes underneath.
 - **Goal system improvements**: `/goal` now integrates with AFK mode (auto-switch). Heuristic pre-check saves LLM evaluation cost (build exit code, test output, lint results). Goal templates (`/goal fix-build`, `green-tests`, `refactor`, `fix-lint`, `fix-typecheck`). Goal chains with `then` syntax (`/goal "lint passes" then "tests pass"`). Evaluator sees tool results directly.
+- **Structured checkpoint system**: New `src/services/checkpoint/checkpointWriter.ts` — captures structured task state at 20%, 45%, and 70% progress milestones. Checkpoints record files modified, commands run, decisions made, blockers, and next steps. Integrated with QueryEngine turn counting and GoalState tracking.
+- **Session rebuild from checkpoints**: Enhanced `src/services/compact/compact.ts` — when autoCompact runs, it first checks for existing checkpoints and rebuilds context from the latest checkpoint + delta messages. Falls back to LLM summarization if no checkpoints exist. Preserves more detail than pure summarization.
+- **Automated Dream process**: New `src/services/longTermMemory/dream.ts` — 7-day memory consolidation cycle. Groups sessions from the past week, merges duplicate insights, deduplicates topic_index entries, creates weekly digests with patterns, and prunes low-value records. Runs automatically on session start.
+- **Automated Distill process**: New `src/services/longTermMemory/distill.ts` — 30-day pattern extraction cycle. Analyzes weekly digests, identifies recurring patterns (file types, tool usage, problem categories), creates experience records, and generates reusable skill suggestions. Keeps 12 months of experiences.
+- **Max Mode (parallel candidates)**: New `src/services/maxMode/candidateRunner.ts` — generates N parallel candidates (default 3) for each turn using forked agents. Selects best candidate based on tool usage, response completeness, and token efficiency. `/maxmode` command to enable/disable and configure candidate count.
 
 ## [0.2.22] — 2026-06-15
 

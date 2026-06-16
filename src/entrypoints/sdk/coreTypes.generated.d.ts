@@ -100,6 +100,7 @@ export type SDKResultMessage = {
   uuid: string;
   session_id: string;
   stop_reason?: string;
+  goalGap?: string; // populated by Goal Verifier when goal is not met
   usage?: ModelUsage;
   model?: string;
 };

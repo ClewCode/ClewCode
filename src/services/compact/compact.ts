@@ -84,6 +84,7 @@ import { roughTokenCountEstimation, roughTokenCountEstimationForMessages } from 
 import { groupMessagesByApiRound } from './grouping.js';
 import { selectPostCompactMessagesToKeep } from './postCompactTail.js';
 import { getCompactPrompt, getCompactUserSummaryMessage, getPartialCompactPrompt } from './prompt.js';
+import { getLatestCheckpoint, type TaskCheckpoint } from '../checkpoint/checkpointWriter.js';
 
 export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5;
 export const POST_COMPACT_TOKEN_BUDGET = 50_000;
@@ -633,6 +634,68 @@ export function mergeHookInstructions(
 }
 
 /**
+ * Build a context prompt from a structured checkpoint.
+ * Uses layered structure: goal → checkpoint state → notes → next steps.
+ * Each layer has an implicit token budget (no hard truncation — compact
+ * itself will trim if the full prompt exceeds the context window).
+ */
+export function buildCheckpointContextPrompt(checkpoint: TaskCheckpoint): string {
+  const layers: string[] = [
+    `## Session State (Cycle ${checkpoint.cycle})`,
+    '',
+    `Goal: ${checkpoint.goalText}`,
+    `Progress: ${checkpoint.progressPercent}% · Turns: ${checkpoint.turnCount} · Elapsed: ${Math.round(checkpoint.elapsedMs / 60_000)} min`,
+  ];
+
+  // Layer 1: Completed work & decisions
+  if (checkpoint.decisions.length > 0) {
+    layers.push('', '## Key Decisions', ...checkpoint.decisions.map(d => `- ${d}`));
+  }
+  if (checkpoint.filesModified.length > 0) {
+    layers.push('', `## Files Modified\n${checkpoint.filesModified.join(', ')}`);
+  }
+  if (checkpoint.commandsRun.length > 0) {
+    layers.push('', '## Commands Executed', ...checkpoint.commandsRun.map(c => `- ${c}`));
+  }
+
+  // Layer 2: Notes from scratchpad (accumulated findings)
+  if (checkpoint.notes) {
+    layers.push('', '## Accumulated Notes', checkpoint.notes);
+  }
+
+  // Layer 3: Summary of completed phase
+  if (checkpoint.summary) {
+    layers.push('', '## Phase Summary', checkpoint.summary);
+  }
+
+  // Layer 4: Current blockers & next steps
+  if (checkpoint.currentBlockers.length > 0) {
+    layers.push('', '## Current Blockers', ...checkpoint.currentBlockers.map(b => `- ${b}`));
+  }
+  if (checkpoint.nextSteps.length > 0) {
+    layers.push('', '## Next Steps', ...checkpoint.nextSteps.map(s => `- ${s}`));
+  }
+
+  // ponytail: layered prompt ~4-6 sections, ~65K total ceiling. Section-level
+  // truncation (cap each layer independently) when measurement shows a layer
+  // consistently dominates the budget.
+
+  return layers.join('\n');
+}
+
+/**
+ * Attempt to rebuild context from the latest checkpoint.
+ * Returns a layered context prompt, or null if no checkpoint exists.
+ * Supports multi-cycle: each rebuild includes the cycle number so the
+ * model understands it's in a continued session window.
+ */
+export async function tryRebuildFromCheckpoint(): Promise<string | null> {
+  const checkpoint = await getLatestCheckpoint();
+  if (!checkpoint) return null;
+  return buildCheckpointContextPrompt(checkpoint);
+}
+
+/**
  * Creates a compact version of a conversation by summarizing older messages
  * and preserving recent conversation history.
  */
@@ -684,8 +747,15 @@ export async function compactConversation(
     const promptCacheSharingEnabled = getFeatureValue_CACHED_MAY_BE_STALE('tengu_compact_cache_prefix', true);
 
     const compactPrompt = getCompactPrompt(customInstructions);
+
+    // Try to rebuild context from checkpoints for richer summarization
+    const checkpointContext = await tryRebuildFromCheckpoint();
+    const enrichedPrompt = checkpointContext
+      ? `${compactPrompt}\n\n${checkpointContext}`
+      : compactPrompt;
+
     const summaryRequest = createUserMessage({
-      content: compactPrompt,
+      content: enrichedPrompt,
     });
 
     let messagesToSummarize = messages;

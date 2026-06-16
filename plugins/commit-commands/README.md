@@ -1,6 +1,6 @@
 # Commit Commands Plugin
 
-Streamline your git workflow with simple commands for committing, pushing, and creating pull requests.
+Streamline your git workflow with simple commands for committing and cleaning up branches.
 
 ## Overview
 
@@ -43,49 +43,6 @@ Creates a git commit with an automatically generated commit message based on sta
 - Follows conventional commit practices
 - Avoids committing files with secrets (.env, credentials.json)
 - Includes Clew Code attribution in commit message
-
-### `/commit-push-pr`
-
-Complete workflow command that commits, pushes, and creates a pull request in one step.
-
-**What it does:**
-1. Creates a new branch (if currently on main)
-2. Stages and commits changes with an appropriate message
-3. Pushes the branch to origin
-4. Creates a pull request using `gh pr create`
-5. Provides the PR URL
-
-**Usage:**
-```bash
-/commit-push-pr
-```
-
-**Example workflow:**
-```bash
-# Make your changes
-# Then run:
-/commit-push-pr
-
-# Claude will:
-# - Create a feature branch (if needed)
-# - Commit your changes
-# - Push to remote
-# - Open a PR with summary and test plan
-# - Give you the PR URL to review
-```
-
-**Features:**
-- Analyzes all commits in the branch (not just the latest)
-- Creates comprehensive PR descriptions with:
-  - Summary of changes (1-3 bullet points)
-  - Test plan checklist
-  - Clew Code attribution
-- Handles branch creation automatically
-- Uses GitHub CLI (`gh`) for PR creation
-
-**Requirements:**
-- GitHub CLI (`gh`) must be installed and authenticated
-- Repository must have a remote named `origin`
 
 ### `/clean_gone`
 
@@ -132,12 +89,6 @@ This plugin is included in the Clew Code repository. The commands are automatica
 ## Best Practices
 
 ### Using `/commit`
-- Review the staged changes before committing
-- Let Claude analyze your changes and match your repo's commit style
-- Trust the automated message, but verify it's accurate
-- Use for routine commits during development
-
-### Using `/commit-push-pr`
 - Use when you're ready to create a PR
 - Ensure all your changes are complete and tested
 - Claude will analyze the full branch history for the PR description
@@ -154,23 +105,6 @@ This plugin is included in the Clew Code repository. The commands are automatica
 
 ### Quick commit workflow:
 ```bash
-# Write code
-/commit
-# Continue development
-```
-
-### Feature branch workflow:
-```bash
-# Develop feature across multiple commits
-/commit  # First commit
-# More changes
-/commit  # Second commit
-# Ready to create PR
-/commit-push-pr
-```
-
-### Maintenance workflow:
-```bash
 # After several PRs are merged
 /clean_gone
 # Clean workspace ready for next feature
@@ -179,7 +113,6 @@ This plugin is included in the Clew Code repository. The commands are automatica
 ## Requirements
 
 - Git must be installed and configured
-- For `/commit-push-pr`: GitHub CLI (`gh`) must be installed and authenticated
 - Repository must be a git repository with a remote
 
 ## Troubleshooting
@@ -192,15 +125,6 @@ This plugin is included in the Clew Code repository. The commands are automatica
 - Ensure you have unstaged or staged changes
 - Run `git status` to verify changes exist
 
-### `/commit-push-pr` fails to create PR
-
-**Issue**: `gh pr create` command fails
-
-**Solution**:
-- Install GitHub CLI: `brew install gh` (macOS) or see [GitHub CLI installation](https://cli.github.com/)
-- Authenticate: `gh auth login`
-- Ensure repository has a GitHub remote
-
 ### `/clean_gone` doesn't find branches
 
 **Issue**: No branches marked as [gone]
@@ -211,7 +135,6 @@ This plugin is included in the Clew Code repository. The commands are automatica
 
 ## Tips
 
-- **Combine with other tools**: Use `/commit` during development, then `/commit-push-pr` when ready
 - **Let Claude draft messages**: The commit message analysis learns from your repo's style
 - **Regular cleanup**: Run `/clean_gone` weekly to maintain a clean branch list
 - **Review before pushing**: Always review the commit message and changes before pushing
