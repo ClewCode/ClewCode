@@ -62,7 +62,7 @@ research-dossiers/
 .claude-code-provider.json
 .CLAUDE.md
 CLAUDE.md
-
+.AGENTS.md 
 # Testing
 coverage/
 .nyc_output

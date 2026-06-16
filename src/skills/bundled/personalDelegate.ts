@@ -12,8 +12,8 @@ Your job is to delegate this work to a coding worker, NOT to do it yourself.
 - Identify risks (destructive changes, credentials, deployment)
 - Plan the approach
 
-### 2. Delegate via process_mesh
-Use the \`process_mesh\` tool with these settings:
+### 2. Delegate via process_peer
+Use the \`process_peer\` tool with these settings:
 - \`provider\`: "codex"
 - \`mode\`: "exec" (for self-contained tasks) or "pty" (for interactive)
 - \`cwd\`: the project root directory
@@ -45,7 +45,7 @@ export function registerPersonalDelegateSkill(): void {
   registerBundledSkill({
     name: 'delegate',
     description:
-      'Delegate coding work to a Codex worker via process_mesh. Use when you need coding done in personal profile — creates a structured task, spawns a worker, and reports results.',
+      'Delegate coding work to a Codex worker via process_peer. Use when you need coding done in personal profile — creates a structured task, spawns a worker, and reports results.',
     aliases: ['code', 'worker'],
     whenToUse:
       'Personal profile: any coding task should be delegated instead of done directly.',

@@ -16,9 +16,9 @@
 import { existsSync, readFileSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { getGlobalDiscovery } from '../../mesh/MeshDiscovery.js';
-import { getGlobalMeshServer } from '../../mesh/MeshServer.js';
-import { getGlobalMeshStore } from '../../mesh/MeshStore.js';
+import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
+import { getGlobalPeerServer } from '../../peer/PeerServer.js';
+import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { createCronScheduler } from '../../utils/cronScheduler.js';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
@@ -409,11 +409,11 @@ export async function startLoop(): Promise<void> {
   // Start Peer sharing
   try {
     const discovery = getGlobalDiscovery();
-    const server = getGlobalMeshServer();
-    const myMeshId = discovery.meshId;
+    const server = getGlobalPeerServer();
+    const myPeerId = discovery.peerId;
 
-    const meshInfo = {
-      id: myMeshId,
+    const peerInfo = {
+      id: myPeerId,
       hostname: discovery.hostname,
       ip: '127.0.0.1',
       port: 0,
@@ -441,8 +441,8 @@ export async function startLoop(): Promise<void> {
       },
     });
 
-    const port = await server.start(meshInfo);
-    meshInfo.port = port;
+    const port = await server.start(peerInfo);
+    peerInfo.port = port;
     await discovery.startAdvertising(port, process.cwd());
     isPeerSharingActive = true;
     console.log(`[Autonomous] Background peer sharing active on port ${port} as hostname "${discovery.hostname}"`);
@@ -513,7 +513,7 @@ export async function stopLoop(): Promise<void> {
     console.log('[Autonomous] Stopping background peer sharing...');
     try {
       getGlobalDiscovery().stopAdvertising();
-      getGlobalMeshServer().stop();
+      getGlobalPeerServer().stop();
     } catch {
       // best effort
     }

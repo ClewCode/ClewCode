@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Clew Code — Multi-Provider AI Coding Agent</title>
-<meta name="description" content="The open-source AI coding agent with 27 providers, LAN mesh coordination, autonomous agent loop, MCP integration, and 50+ built-in tools.">
+<meta name="description" content="The open-source AI coding agent with 27 providers, LAN peer coordination, autonomous agent loop, MCP integration, and 50+ built-in tools.">
 <link rel="icon" type="image/svg+xml" href="assets/clew.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -47,7 +47,7 @@
       …
 <span class="p">❯</span> /model deepseek-v4-flash
 
-<span class="p">❯</span> /mesh discover
+<span class="p">❯</span> /peer discover
 <span class="d">│  Found 2 peers on LAN</span>
 
 <span class="p">❯</span> write a web scraper in Go<span class="term-cursor"></span></div>
@@ -56,7 +56,7 @@
 <div class="stats">
   <div class="stat"><div class="stat-num">27</div><div class="stat-lbl">Providers</div></div>
   <div class="stat"><div class="stat-num">50+</div><div class="stat-lbl">Built-in Tools</div></div>
-  <div class="stat"><div class="stat-num">15</div><div class="stat-lbl">Mesh Tools</div></div>
+  <div class="stat"><div class="stat-num">15</div><div class="stat-lbl">Peer Tools</div></div>
   <div class="stat"><div class="stat-num">7</div><div class="stat-lbl">Permission Modes</div></div>
 </div>
 
@@ -67,7 +67,7 @@
     <p>Anthropic, OpenAI, Google Gemini, DeepSeek, Groq, Mistral, Ollama, OpenRouter, and 19 more. Switch mid-session with <code>/model</code>.</p>
   </div>
   <div class="card">
-    <h3><span class="card-icon">🌐</span>LAN Mesh</h3>
+    <h3><span class="card-icon">🌐</span>LAN Peer</h3>
     <p>Discover peers, assign tasks, execute remote commands, and coordinate across machines via UDP multicast or file registry.</p>
     <span class="tag">15 tools</span>
   </div>
@@ -85,7 +85,7 @@
   </div>
   <div class="card">
     <h3><span class="card-icon">⚡</span>3 Execution Layers</h3>
-    <p>Subagents (one-shot), Swarm/Teammates (long-running), Process Mesh (Codex via exec/pty).</p>
+    <p>Subagents (one-shot), Swarm/Teammates (long-running), Process Peer (Codex via exec/pty).</p>
   </div>
   <div class="card">
     <h3><span class="card-icon">🧩</span>Skills &amp; Plugins</h3>
@@ -130,7 +130,7 @@ clew
 # Inside the REPL:
 # /model openai      # pick a provider
 # /help              # list all commands
-# /mesh discover     # find peers on LAN</code></pre>
+# /peer discover     # find peers on LAN</code></pre>
 </div>
 
 <h2 id="concepts">Core Concepts</h2>
@@ -149,18 +149,14 @@ clew
     <p>A longer-lived agent team member with identity, mailbox, task coordination, and optional pane/tmux execution.</p>
   </div>
   <div class="card">
-    <h3><span class="card-icon">🌐</span>LAN Mesh</h3>
-    <p>A network of Clew instances on the same machine or LAN. <code>/mesh</code> discovers peers, sends messages, and assigns tasks.</p>
+    <h3><span class="card-icon">🌐</span>LAN Peer</h3>
+    <p>A network of Clew instances on the same machine or LAN. <code>/peer</code> discovers peers, sends messages, and assigns tasks.</p>
   </div>
   <div class="card">
-    <h3><span class="card-icon">⚙️</span>Process Mesh</h3>
+    <h3><span class="card-icon">⚙️</span>Process Peer</h3>
     <p>Local process-backed worker. Delegates prompts to external CLIs like Codex using exec or pty modes.</p>
   </div>
-  <div class="card">
-    <h3><span class="card-icon">📡</span>ACP</h3>
-    <p>Agent Client Protocol — an external boundary for editors, IDEs, REST clients, or other agents to send work into Clew.</p>
   </div>
-</div>
 </div>
 </div>
 

@@ -79,7 +79,7 @@ import {
   sendSandboxPermissionRequestViaMailbox,
   sendSandboxPermissionResponseViaMailbox,
 } from '../utils/swarm/permissionSync.js';
-import { registerSandboxPermissionCallback } from '../hooks/useMeshPermissionPoller.js';
+import { registerSandboxPermissionCallback } from '../hooks/usePeerPermissionPoller.js';
 import { getTeamName, getAgentName } from '../utils/teammate.js';
 import { WorkerPendingPermission } from '../components/permissions/WorkerPendingPermission.js';
 import {
@@ -100,7 +100,7 @@ import {
 } from '../utils/swarm/leaderPermissionBridge.js';
 import { endInteractionSpan } from '../utils/telemetry/sessionTracing.js';
 import { useLogMessages } from '../hooks/useLogMessages.js';
-import { useMeshAutoInject } from '../hooks/useMeshAutoInject.js';
+import { usePeerAutoInject } from '../hooks/usePeerAutoInject.js';
 import { useReplBridge } from '../hooks/useReplBridge.js';
 import { useRemoteBridge } from '../hooks/useRemoteBridge.js';
 import {
@@ -154,7 +154,7 @@ import { useShortcutDisplay } from '../keybindings/useShortcutDisplay.js';
 import { getShortcutDisplay } from '../keybindings/shortcutFormat.js';
 import { CancelRequestHandler } from '../hooks/useCancelRequest.js';
 import { useBackgroundTaskNavigation } from '../hooks/useBackgroundTaskNavigation.js';
-import { useMeshInitialization } from '../hooks/useMeshInitialization.js';
+import { usePeerInitialization } from '../hooks/usePeerInitialization.js';
 import { useTeammateViewAutoExit } from '../hooks/useTeammateViewAutoExit.js';
 import { errorMessage } from '../utils/errors.js';
 import { isHumanTurn } from '../utils/messagePredicates.js';
@@ -973,8 +973,8 @@ export function REPL({
 
   // Wire up swarm tool feedback notifications
   useEffect(() => {
-    import('../tools/mesh/meshFeedback.js').then(({ setMeshFeedbackHandler }) => {
-      setMeshFeedbackHandler((message, key = 'swarm-feedback', priority = 'medium') => {
+    import('../tools/peer/peerFeedback.js').then(({ setPeerFeedbackHandler }) => {
+      setPeerFeedbackHandler((message, key = 'swarm-feedback', priority = 'medium') => {
         addNotification({
           key,
           text: `peer: ${message}`,
@@ -984,8 +984,8 @@ export function REPL({
       });
     });
     return () => {
-      import('../tools/mesh/meshFeedback.js').then(({ setMeshFeedbackHandler }) => {
-        setMeshFeedbackHandler(null);
+      import('../tools/peer/peerFeedback.js').then(({ setPeerFeedbackHandler }) => {
+        setPeerFeedbackHandler(null);
       });
     };
   }, [addNotification]);
@@ -1061,7 +1061,7 @@ export function REPL({
 
   // Initialize swarm features: teammate hooks and context
   // Handles both fresh spawns and resumed teammate sessions
-  useMeshInitialization(setAppState, initialMessages, {
+  usePeerInitialization(setAppState, initialMessages, {
     enabled: !isRemoteSession,
   });
 
@@ -1520,7 +1520,7 @@ export function REPL({
   }, []);
   // Wire peer events → agent conversation as system_reminder messages.
   // Eliminates polling-based swarm_list_messages tool.
-  useMeshAutoInject(setMessages);
+  usePeerAutoInject(setMessages);
   // Capture the baseline message count alongside the placeholder text so
   // the render can hide it once displayedMessages grows past the baseline.
   const setUserInputOnProcessing = useCallback((input: string | undefined) => {

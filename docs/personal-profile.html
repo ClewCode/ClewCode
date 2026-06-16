@@ -31,7 +31,7 @@
 <h2 id="capabilities">Key Capabilities</h2>
 
 <h3>Delegation</h3>
-<p>In personal profile, coding work is <strong>delegated</strong> — not done directly. Use the built-in <code>/delegate</code> skill (aliases: <code>/code</code>, <code>/worker</code>) to spawn a Codex worker via <code>process_mesh</code> with a structured task description.</p>
+<p>In personal profile, coding work is <strong>delegated</strong> — not done directly. Use the built-in <code>/delegate</code> skill (aliases: <code>/code</code>, <code>/worker</code>) to spawn a Codex worker via <code>process_peer</code> with a structured task description.</p>
 <p>The delegate handles the implementation; you review the results and report back to the user.</p>
 
 <h3>Memory-Driven Learning</h3>
@@ -65,7 +65,7 @@
   <li><strong>User asks for something</strong> (code, research, planning, automation)</li>
   <li><strong>Personal profile classifies the request</strong> — coding or non-coding?</li>
   <li><strong>Non-coding</strong> — handle directly (plan, research, answer, configure)</li>
-  <li><strong>Coding</strong> — use <code>process_mesh</code> to delegate to a Codex worker with a clear task brief</li>
+  <li><strong>Coding</strong> — use <code>process_peer</code> to delegate to a Codex worker with a clear task brief</li>
   <li><strong>Review results</strong> — summarize what the worker did, what passed, what failed</li>
   <li><strong>Learn</strong> — if the process was repeatable, create a skill</li>
   <li><strong>Remember</strong> — save any preferences or decisions to memory</li>
@@ -76,7 +76,7 @@
 <ul>
   <li>Understand the requirement and plan the approach</li>
   <li>Create a structured task with goal, scope, files, constraints</li>
-  <li>Spawn a Codex worker via <code>process_mesh</code> with appropriate timeout</li>
+  <li>Spawn a Codex worker via <code>process_peer</code> with appropriate timeout</li>
   <li>Report results back: changes, pass/fail, blockers, next steps</li>
 </ul>
 

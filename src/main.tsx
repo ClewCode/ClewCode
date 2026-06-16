@@ -1841,47 +1841,47 @@ async function run(): Promise<CommanderCommand> {
       // Handle peer name configuration
       const peerNameOpt = (options as { peerName?: string }).peerName;
       if (peerNameOpt) {
-        const { getGlobalDiscovery } = await import('./mesh/MeshDiscovery.js');
+        const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
         getGlobalDiscovery().setLocalName(peerNameOpt);
       }
 
       // Register peer callbacks globally (for all peers to receive messages)
       (async () => {
         try {
-          const { getGlobalMeshServer } = await import('./mesh/MeshServer.js');
-          const { getGlobalMeshStore } = await import('./mesh/MeshStore.js');
-          const { getGlobalDiscovery } = await import('./mesh/MeshDiscovery.js');
+          const { getGlobalPeerServer } = await import('./peer/PeerServer.js');
+          const { getGlobalPeerStore } = await import('./peer/PeerStore.js');
+          const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
 
-          const server = getGlobalMeshServer();
+          const server = getGlobalPeerServer();
 
           server.setCallbacks({
             onTodo: todo => {
-              getGlobalMeshStore().addTodo(todo);
+              getGlobalPeerStore().addTodo(todo);
               import('./utils/messageQueueManager.js').then(({ enqueue }) => {
                 enqueue({ value: `Task from ${todo.fromName}: ${todo.message}`, mode: 'prompt', priority: 'next' });
               });
             },
             onMessage: msg => {
-              getGlobalMeshStore().addMessage(msg);
+              getGlobalPeerStore().addMessage(msg);
               import('./utils/messageQueueManager.js').then(({ enqueue }) => {
                 enqueue({ value: `From ${msg.fromName}: ${msg.text}`, mode: 'prompt', priority: 'next' });
               });
             },
             onExec: async (command: string) => {
-              const { executeCommand } = await import('./tools/MeshRunTool/MeshRunTool.js');
+              const { executeCommand } = await import('./tools/PeerRunTool/PeerRunTool.js');
               return executeCommand(command, 60_000);
             },
           });
 
-          // Auto-start MeshServer on all peers (so they can receive messages)
+          // Auto-start PeerServer on all peers (so they can receive messages)
           // unless --peer-share is used (which handles it separately)
           if (!peerShareOpt) {
             const discovery = getGlobalDiscovery();
-            const myMeshId = discovery.meshId;
+            const myPeerId = discovery.peerId;
             const myName = peerNameOpt || discovery.hostname;
 
-            const meshInfo = {
-              id: myMeshId,
+            const peerInfo = {
+              id: myPeerId,
               hostname: myName,
               ip: '127.0.0.1',
               port: 0,
@@ -1891,8 +1891,8 @@ async function run(): Promise<CommanderCommand> {
               status: 'online' as const,
             };
 
-            const port = await server.start(meshInfo);
-            logForDebugging(`[Peer] MeshServer auto-started on port ${port} to receive messages`);
+            const port = await server.start(peerInfo);
+            logForDebugging(`[Peer] PeerServer auto-started on port ${port} to receive messages`);
           }
         } catch (err) {
           // Silent fail if peer modules not available
@@ -1904,16 +1904,16 @@ async function run(): Promise<CommanderCommand> {
       if (peerShareOpt) {
         (async () => {
           try {
-            const { getGlobalDiscovery } = await import('./mesh/MeshDiscovery.js');
-            const { getGlobalMeshServer } = await import('./mesh/MeshServer.js');
+            const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
+            const { getGlobalPeerServer } = await import('./peer/PeerServer.js');
 
             const discovery = getGlobalDiscovery();
-            const server = getGlobalMeshServer();
-            const myMeshId = discovery.meshId;
+            const server = getGlobalPeerServer();
+            const myPeerId = discovery.peerId;
             const myName = peerNameOpt || discovery.hostname;
 
-            const meshInfo = {
-              id: myMeshId,
+            const peerInfo = {
+              id: myPeerId,
               hostname: myName,
               ip: '127.0.0.1',
               port: 0,
@@ -1923,8 +1923,8 @@ async function run(): Promise<CommanderCommand> {
               status: 'online' as const,
             };
 
-            const port = await server.start(meshInfo);
-            meshInfo.port = port;
+            const port = await server.start(peerInfo);
+            peerInfo.port = port;
             await discovery.startAdvertising(port, process.cwd());
             logForDebugging(`[Peer] Automatically sharing as worker peer on port ${port} with name "${myName}"`);
           } catch (err) {
@@ -5121,9 +5121,6 @@ async function run(): Promise<CommanderCommand> {
   );
   // --model already added earlier (line 1016), skip duplicate
   // program.option('--model <model>', 'Override the default model for the selected provider');
-  program.option('--acp', 'Start in ACP server mode (Agent Client Protocol) — for editor integration');
-  program.option('--acp-rest', 'Start the ACP REST API server (Agent Communication Protocol / i-am-bee)');
-  program.option('--acp-rest-port <port>', 'ACP REST API port (default: 8000)');
   if (canUserConfigureAdvisor()) {
     program.addOption(
       new Option(
@@ -5281,32 +5278,6 @@ async function run(): Promise<CommanderCommand> {
         debug,
         verbose,
       });
-    });
-
-  // clew acp — Agent Client Protocol server (editor integration)
-  const acpCmd = program
-    .command('acp')
-    .description('Start the ACP server (Agent Client Protocol) — for editor integration')
-    .configureHelp(createSortedHelpConfig());
-  acpCmd
-    .command('serve', { isDefault: true })
-    .description('Start the ACP server in stdio mode (default) or WebSocket mode with --port')
-    .option('--port <port>', 'WebSocket port for remote connections (default: stdio mode)')
-    .option('--host <host>', 'Host to bind WebSocket server to (default: 127.0.0.1)')
-    .action(async (options: { port?: string; host?: string }) => {
-      const { startACPStdioServer, resolveACPConfig } = await import('./services/acp/index.js');
-      const config = resolveACPConfig({
-        acp: true,
-        acpTransport: options.port ? 'websocket' : 'stdio',
-        acpPort: options.port ? Number(options.port) : undefined,
-        acpHost: options.host,
-      });
-
-      // biome-ignore lint/suspicious/noConsole: intentional startup message
-      console.log(
-        `ACP server starting in ${config.transport} mode${config.transport === 'websocket' ? ` on ${config.host}:${config.port}` : ''}`,
-      );
-      startACPStdioServer(config);
     });
 
   // Register the mcp add subcommand (extracted for testability)
@@ -6280,22 +6251,6 @@ Examples:
   }
 
   profileCheckpoint('run_before_parse');
-
-  // ACP (Agent Client Protocol) — start as ACP server for editor integration
-  if (process.argv.includes('--acp')) {
-    const { startACPStdioServer, resolveACPConfig } = await import('./services/acp/index.js');
-    startACPStdioServer(resolveACPConfig({ acp: true }));
-    return program;
-  }
-
-  // ACP REST API (Agent Communication Protocol / i-am-bee)
-  if (process.argv.includes('--acp-rest')) {
-    const { startACPRestServer, resolveACPRestConfig } = await import('./acp-agents/index.js');
-    const portIdx = process.argv.indexOf('--acp-rest-port');
-    const port = portIdx >= 0 ? Number(process.argv[portIdx + 1]) : undefined;
-    await startACPRestServer(resolveACPRestConfig({ acpRest: true, acpRestPort: port }));
-    // Keep running after starting the REST server
-  }
 
   await program.parseAsync(process.argv);
   profileCheckpoint('run_after_parse');

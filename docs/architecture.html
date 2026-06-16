@@ -49,7 +49,7 @@ Session Logger
 │   ├── autonomous/          # Agent loop + task queue + cron
 │   ├── lsp/                 # LSP integration
 │   └── Supervisor/          # Agent supervisor IPC
-├── mesh/                    # MeshServer + MeshDiscovery
+├── peer/                    # PeerServer + PeerDiscovery
 ├── bridge/                  # WebSocket bridge + relay
 ├── components/              # Ink terminal UI components
 ├── state/                   # AppState management
@@ -67,9 +67,8 @@ Session Logger
     <tr><td>Agent</td><td>Session-long</td><td>Main chat, custom agents in <code>.clew/agents/*.md</code></td></tr>
     <tr><td>Subagent</td><td>One-shot</td><td>Explore codebase, test triage, review</td></tr>
     <tr><td>Teammate/Swarm</td><td>Multi-turn</td><td>Coordinated long-running agent teams</td></tr>
-    <tr><td>LAN Mesh</td><td>Persistent</td><td>Cross-machine coordination via <code>/mesh</code></td></tr>
-    <tr><td>Process Mesh</td><td>One-shot</td><td>External CLI workers (Codex exec/pty)</td></tr>
-    <tr><td>ACP</td><td>External</td><td>Editor/IDE/agent → Clew protocol boundary</td></tr>
+    <tr><td>LAN Peer</td><td>Persistent</td><td>Cross-machine coordination via <code>/peer</code></td></tr>
+    <tr><td>Process Peer</td><td>One-shot</td><td>External CLI workers (Codex exec/pty)</td></tr>
   </tbody>
 </table>
 

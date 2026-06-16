@@ -7,8 +7,8 @@ import { sleep } from '../../sleep.js';
 import {
   getSwarmSocketName,
   HIDDEN_SESSION_NAME,
-  MESH_SESSION_NAME,
-  MESH_VIEW_WINDOW_NAME,
+  PEER_SESSION_NAME,
+  PEER_VIEW_WINDOW_NAME,
   TMUX_COMMAND,
 } from '../constants.js';
 import { getLeaderPaneId, isInsideTmux as isInsideTmuxFromDetection, isTmuxAvailable } from './detection.js';
@@ -386,16 +386,16 @@ export class TmuxBackend implements PaneBackend {
     windowTarget: string;
     paneId: string;
   }> {
-    const sessionExists = await this.hasSessionInSwarm(MESH_SESSION_NAME);
+    const sessionExists = await this.hasSessionInSwarm(PEER_SESSION_NAME);
 
     if (!sessionExists) {
       const result = await runTmuxInSwarm([
         'new-session',
         '-d',
         '-s',
-        MESH_SESSION_NAME,
+        PEER_SESSION_NAME,
         '-n',
-        MESH_VIEW_WINDOW_NAME,
+        PEER_VIEW_WINDOW_NAME,
         '-P',
         '-F',
         '#{pane_id}',
@@ -406,7 +406,7 @@ export class TmuxBackend implements PaneBackend {
       }
 
       const paneId = result.stdout.trim();
-      const windowTarget = `${MESH_SESSION_NAME}:${MESH_VIEW_WINDOW_NAME}`;
+      const windowTarget = `${PEER_SESSION_NAME}:${PEER_VIEW_WINDOW_NAME}`;
 
       logForDebugging(`[TmuxBackend] Created external swarm session with window ${windowTarget}, pane ${paneId}`);
 
@@ -414,12 +414,12 @@ export class TmuxBackend implements PaneBackend {
     }
 
     // Session exists, check if swarm-view window exists
-    const listResult = await runTmuxInSwarm(['list-windows', '-t', MESH_SESSION_NAME, '-F', '#{window_name}']);
+    const listResult = await runTmuxInSwarm(['list-windows', '-t', PEER_SESSION_NAME, '-F', '#{window_name}']);
 
     const windows = listResult.stdout.trim().split('\n').filter(Boolean);
-    const windowTarget = `${MESH_SESSION_NAME}:${MESH_VIEW_WINDOW_NAME}`;
+    const windowTarget = `${PEER_SESSION_NAME}:${PEER_VIEW_WINDOW_NAME}`;
 
-    if (windows.includes(MESH_VIEW_WINDOW_NAME)) {
+    if (windows.includes(PEER_VIEW_WINDOW_NAME)) {
       const paneResult = await runTmuxInSwarm(['list-panes', '-t', windowTarget, '-F', '#{pane_id}']);
 
       const panes = paneResult.stdout.trim().split('\n').filter(Boolean);
@@ -430,9 +430,9 @@ export class TmuxBackend implements PaneBackend {
     const createResult = await runTmuxInSwarm([
       'new-window',
       '-t',
-      MESH_SESSION_NAME,
+      PEER_SESSION_NAME,
       '-n',
-      MESH_VIEW_WINDOW_NAME,
+      PEER_VIEW_WINDOW_NAME,
       '-P',
       '-F',
       '#{pane_id}',

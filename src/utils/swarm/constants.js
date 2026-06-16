@@ -1,6 +1,6 @@
 export const TEAM_LEAD_NAME = 'team-lead';
-export const MESH_SESSION_NAME = 'claude-swarm';
-export const MESH_VIEW_WINDOW_NAME = 'swarm-view';
+export const PEER_SESSION_NAME = 'claude-swarm';
+export const PEER_VIEW_WINDOW_NAME = 'swarm-view';
 export const TMUX_COMMAND = 'tmux';
 export const HIDDEN_SESSION_NAME = 'claude-hidden';
 /**

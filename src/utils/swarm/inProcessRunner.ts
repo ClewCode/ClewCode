@@ -18,7 +18,7 @@ import {
   processMailboxPermissionResponse,
   registerPermissionCallback,
   unregisterPermissionCallback,
-} from '../../hooks/useMeshPermissionPoller.js';
+} from '../../hooks/usePeerPermissionPoller.js';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,

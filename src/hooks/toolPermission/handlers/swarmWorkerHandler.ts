@@ -11,7 +11,7 @@ import {
   isSwarmWorker,
   sendPermissionRequestViaMailbox,
 } from '../../../utils/swarm/permissionSync.js';
-import { registerPermissionCallback } from '../../useMeshPermissionPoller.js';
+import { registerPermissionCallback } from '../../usePeerPermissionPoller.js';
 import type { PermissionContext } from '../PermissionContext.js';
 import { createResolveOnce } from '../PermissionContext.js';
 

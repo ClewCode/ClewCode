@@ -16,7 +16,7 @@ export function speechPageHtml(lang = 'th-TH'): string {
   }
   .card {
     background: #19191f;
-    border: 1px solid #2mesh35;
+    border: 1px solid #2d3436;
     border-radius: 16px;
     padding: 40px 48px 32px;
     width: 100%; max-width: 460px;
@@ -39,7 +39,7 @@ export function speechPageHtml(lang = 'th-TH'): string {
     position: absolute;
     width: 80px; height: 80px;
     border-radius: 50%;
-    border: 2px solid #2mesh35;
+    border: 2px solid #2d3436;
     transition: all 0.3s ease;
   }
   .logo-ring.active {
@@ -95,7 +95,7 @@ export function speechPageHtml(lang = 'th-TH'): string {
   .result-box {
     width: 100%;
     background: #0f0f13;
-    border: 1px solid #2mesh35;
+    border: 1px solid #2d3436;
     border-radius: 10px;
     padding: 14px 18px;
     min-height: 52px;
@@ -122,9 +122,9 @@ export function speechPageHtml(lang = 'th-TH'): string {
     background: #7c5cfc; color: #fff;
   }
   .btn-primary:hover { background: #6a4ae8; }
-  .btn-primary:disabled { background: #2mesh35; color: #555; cursor: default; }
+  .btn-primary:disabled { background: #2d3436; color: #555; cursor: default; }
   .btn-secondary {
-    background: #2mesh35; color: #999;
+    background: #2d3436; color: #999;
   }
   .btn-secondary:hover { background: #35354a; color: #ccc; }
 
@@ -137,7 +137,7 @@ export function speechPageHtml(lang = 'th-TH'): string {
   }
   .lang-wrap select {
     background: #0f0f13; color: #aaa;
-    border: 1px solid #2mesh35; border-radius: 6px;
+    border: 1px solid #2d3436; border-radius: 6px;
     padding: 6px 12px; font-size: 13px;
     font-family: inherit;
   }

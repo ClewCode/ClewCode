@@ -35,7 +35,7 @@ import breakCache from './commands/break-cache/index.js';
 import mcp from './commands/mcp/index.js';
 import mobile from './commands/mobile/index.js';
 import onboarding from './commands/onboarding/index.js';
-import swarmCmd from './commands/mesh/index.js';
+import swarmCmd from './commands/peer/index.js';
 import pr_comments from './commands/pr_comments/index.js';
 import releaseNotes from './commands/release-notes/index.js';
 import rename from './commands/rename/index.js';
