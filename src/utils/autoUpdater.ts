@@ -306,19 +306,11 @@ async function releaseLock(): Promise<void> {
 }
 
 async function getInstallationPrefix(): Promise<string | null> {
-  // Use the same package manager detection as installGlobalPackage
-  // to ensure we check permissions against the correct installation path
-  const packageManager = detectGlobalPackageManager();
-  let prefixResult = null;
-  if (packageManager === 'bun') {
-    prefixResult = await execFileNoThrowWithCwd('bun', ['pm', 'bin', '-g'], {
-      cwd: homedir(),
-    });
-  } else {
-    prefixResult = await execFileNoThrowWithCwd('npm', ['-g', 'config', 'get', 'prefix'], { cwd: homedir() });
-  }
+  const prefixResult = await execFileNoThrowWithCwd('npm', ['-g', 'config', 'get', 'prefix'], {
+    cwd: homedir(),
+  });
   if (prefixResult.code !== 0) {
-    logError(new Error(`Failed to check ${isBun ? 'bun' : 'npm'} permissions`));
+    logError(new Error('Failed to check npm permissions'));
     return null;
   }
   return prefixResult.stdout.trim();
@@ -691,8 +683,7 @@ To fix this issue:
 
     // Run from home directory to avoid reading project-level .npmrc/.bunfig.toml
     // which could be maliciously crafted to redirect to an attacker's registry
-    const packageManager = detectGlobalPackageManager();
-    const installResult = await execFileNoThrowWithCwd(packageManager, ['install', '-g', packageSpec], {
+    const installResult = await execFileNoThrowWithCwd('npm', ['install', '-g', packageSpec], {
       cwd: homedir(),
     });
     if (installResult.code !== 0) {
