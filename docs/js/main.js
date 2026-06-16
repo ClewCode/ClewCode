@@ -190,6 +190,7 @@
       '    <a href="' + rootPrefix + 'commands.html" class="sidebar-link"><span class="link-icon"></span>Commands</a>' +
       '    <a href="' + rootPrefix + 'tools.html" class="sidebar-link"><span class="link-icon"></span>Tools</a>' +
       '    <a href="' + rootPrefix + 'permission-model.html" class="sidebar-link"><span class="link-icon"></span>Permission Model</a>' +
+      '    <a href="' + rootPrefix + 'personal-profile.html" class="sidebar-link"><span class="link-icon"></span>Personal Profile</a>' +
       '  </nav>' +
       '</div>' +
       '<div class="sidebar-section">' +

@@ -1,5 +1,5 @@
 import { ProviderManager } from './ProviderManager.js';
-import { getProviderRegistryEntry, type ProviderModelInfo } from './providerRegistry.js';
+import { getProviderRegistryEntry, PROVIDER_IDS, type ProviderModelInfo } from './providerRegistry.js';
 import type { ProviderId } from './providers/ProviderInterface.js';
 
 type RemoteModelPayload = {
@@ -107,14 +107,49 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
     registryModel?.capabilities?.maxContext !== undefined && registryModel.capabilities.maxContext !== 'varies'
       ? registryModel.capabilities.maxContext
       : undefined;
-  const maxContext = (typeof apiMaxContext === 'number' ? apiMaxContext : registryMaxContext) ?? 'varies';
+  // If not found in current provider's registry, search across all providers
+  // by model id. This catches providers (e.g. OpenCode) whose registry lists
+  // only a subset of available models, while others like deepseek have the
+  // same model with context window info.
+  const crossProviderMaxContext =
+    registryMaxContext ??
+    (() => {
+      const lowerId = id.toLowerCase();
+      for (const pid of PROVIDER_IDS) {
+        if (pid === provider) continue;
+        const entry = getProviderRegistryEntry(pid);
+        const m = entry.models.find(
+          mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()),
+        );
+        if (m?.capabilities?.maxContext && typeof m.capabilities.maxContext === 'number' && m.capabilities.maxContext !== 'varies')
+          return m.capabilities.maxContext;
+      }
+      return undefined;
+    })();
+  const maxContext = (typeof apiMaxContext === 'number' ? apiMaxContext : crossProviderMaxContext) ?? 'varies';
 
   const apiMaxOutput = model.max_output_tokens;
   const registryMaxOutput =
     registryModel?.capabilities?.maxOutput !== undefined && registryModel.capabilities.maxOutput !== 'varies'
       ? registryModel.capabilities.maxOutput
       : undefined;
-  const maxOutput = (typeof apiMaxOutput === 'number' ? apiMaxOutput : registryMaxOutput) ?? 'varies';
+  // Cross-provider fallback for maxOutput (same model may exist in other providers)
+  const crossProviderMaxOutput =
+    registryMaxOutput ??
+    (() => {
+      const lowerId = id.toLowerCase();
+      for (const pid of PROVIDER_IDS) {
+        if (pid === provider) continue;
+        const entry = getProviderRegistryEntry(pid);
+        const m = entry.models.find(
+          mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()),
+        );
+        if (m?.capabilities?.maxOutput && typeof m.capabilities.maxOutput === 'number' && m.capabilities.maxOutput !== 'varies')
+          return m.capabilities.maxOutput;
+      }
+      return undefined;
+    })();
+  const maxOutput = (typeof apiMaxOutput === 'number' ? apiMaxOutput : crossProviderMaxOutput) ?? 'varies';
 
   const toolCalling = modelSupportsToolCalling(provider, id, model);
 

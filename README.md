@@ -25,19 +25,25 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 
 ## Hacking in public
 
-Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships agent-to-agent LAN mesh coordination, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, and 27 provider adapters.
+Clew Code is a reverse-engineered reimplementation of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships agent-to-agent LAN mesh coordination, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation, and 27+ provider adapters.
 
-> Forked from Claude Code. Rebuilt for every provider.
+> Reverse-engineered from Claude Code. Rebuilt for every provider.
 
 ---
 
 ## Features
 
-- **27 providers** — Anthropic, OpenAI, Google Gemini, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, GitHub Copilot, OpenCode, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, OpenCode Go. Switch mid-session.
+- **27+ providers** — Anthropic, OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, OpenCode Go. Switch mid-session.
 - **Agent-to-agent mesh** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15 mesh AI tools (discover, run, spawn, share, join, ping, broadcast, send_message, list_roles, list_messages, set_name, set_role, disconnect, info, help) let your agent coordinate autonomously via `/mesh` commands.
 
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
-- **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, mesh tools (15 LAN coordination tools), MCP tools, ProcessMesh (exec/pty), plan mode with full bypass permissions, multi-pass context compaction.
+- **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, ReadArtifact, mesh tools (15 LAN coordination tools), MCP tools, ProcessMesh (exec/pty), plan mode with full bypass permissions, multi-pass context compaction.
+- **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Auto-integrates with AFK mode and the autonomous loop.
+- **Goal Verifier** — When the agent attempts to terminate, an independent LLM verifier reviews the conversation against the goal text. If unsatisfied, the gap is reported as metadata for automatic re-prompting.
+- **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
+- **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps).
+- **Project memory promotion** — at the 70% checkpoint, stable information (active files, persistent decisions, notes) is promoted to `MEMORY.md` for cross-session persistence.
+- **Automated memory consolidation** — Dream process (7-day cycle) merges duplicate insights and creates weekly digests. Distill process (30-day cycle) extracts reusable patterns and generates skill suggestions.
 - **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
 - **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
 - **7 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk. Granular allow/deny rules with pattern matching.
@@ -48,7 +54,7 @@ Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) 
 
 Clew Code has several execution layers. They are related, but they do different jobs:
 
-- **Agent:** An AI worker with a prompt, model, tools, and permissions. The main chat session is an agent. Custom agents live in `.claude/agents/*.md`, and built-ins include `Explore`, `Plan`, and `general-purpose`.
+- **Agent:** An AI worker with a prompt, model, tools, and permissions. The main chat session is an agent. Custom agents live in `.clew/agents/*.md`, and built-ins include `Explore`, `Plan`, and `general-purpose`.
 - **Subagent:** A short-lived child agent launched by another agent through the `Agent` tool. Use subagents for independent work such as codebase exploration, test triage, or review. The built-in `Explore` agent is read-only and is the right choice for parallel "go inspect this area" tasks.
 - **Teammate / Swarm:** A longer-lived agent team member with an identity, mailbox, task coordination, and optional pane/tmux or in-process execution. Use this when agents need to keep working together across multiple turns, not for isolated one-shot exploration.
 - **LAN Mesh:** A network of Clew instances on the same machine or LAN. `/mesh` discovers peers, sends messages, assigns tasks, and runs commands on other Clew nodes.
@@ -90,6 +96,9 @@ Use the layers by intent:
 Other runtime concepts:
 - **Plan mode:** Full-access planning mode with bypass permissions — explore, read, write, and edit files freely. Plan files persist to `.clew/plans/long-term-plan.md` with task progress snapshot.
 - **Multi-pass compaction:** Automatic chunk-based context compression with recursive re-compaction when context exceeds the model window.
+- **Goal verification:** When the agent declares a task done, an independent LLM call reviews the conversation against the goal text and reports specific gaps if unsatisfied (attached as `goalGap` in result metadata).
+- **Max Mode:** Generates N parallel candidate responses per turn via forked agents, then selects the best one via LLM judge with heuristic fallback. Toggle with `/maxmode`.
+- **Checkpoints:** Structured snapshots at 20%/45%/70% progress milestones. Includes a `notes.md` scratchpad for the main agent's findings. Used for layered multi-cycle rebuild during compaction.
 
 ---
 
@@ -144,7 +153,9 @@ clew
 # In-session commands
 ❯ /help           # list everything
 ❯ /status         # current provider, model, context info
-❯ /mesh discover # find other Clew instances on LAN
+❯ /goal "tests pass"  # track task completion
+❯ /maxmode on     # parallel candidate generation
+❯ /mesh discover  # find other Clew instances on LAN
 ❯ /mcp list       # connected MCP servers
 ❯ /loop start     # background autonomous loop
 
@@ -167,7 +178,7 @@ export DEEPSEEK_API_KEY=...
 export GROQ_API_KEY=...
 export OPENROUTER_API_KEY=...
 export OLLAMA_HOST=http://localhost:11434
-export COPILOT_GITHUB_TOKEN=gho_...
+export GEMINI_API_KEY=...
 ```
 
 ---
@@ -175,14 +186,17 @@ export COPILOT_GITHUB_TOKEN=gho_...
 ## Commands
 
 <details>
-<summary><strong>17 slash commands</strong></summary>
+<summary><strong>22 slash commands</strong></summary>
 
 ```
 /model        Switch provider or model
 /status       Provider, session, context info
 /doctor       Diagnostics
+/profile      Switch between coding and personal profiles
 /context      Active context usage
 /compact      Compress conversation history
+/goal         Track and verify task completion
+/maxmode      Toggle parallel candidate generation
 /mcp          MCP server management
 /code-review  Review changed files for bugs
 /simplify     Cleanup-focused review
@@ -190,11 +204,13 @@ export COPILOT_GITHUB_TOKEN=gho_...
 /bridge       Bridge mode config
 /agent        Background agent dispatch & subcommands
 /agents       TUI Agent dashboard (operational view)
-/mesh        Collaborate with Clew instances on LAN (formerly /peer)
+/mesh         Collaborate with Clew instances on LAN
 /remote       WebSocket remote control
 /loop         24/7 autonomous agent loop
 /daemon       Autonomous daemon dashboard
 /task         Scheduled tasks
+/memory       Long-term memory search and management
+/tasks        Curated task list management
 ```
 
 </details>
@@ -214,13 +230,18 @@ src/
 ├── commands/                # Slash command implementations
 ├── tools/                   # 50+ built-in tools
 ├── services/
-│   ├── ai/                  # Provider manager + 27 providers
+│   ├── ai/                  # Provider manager + 27+ providers
 │   ├── mcp/                 # MCP client + auth + transports
 │   ├── plugins/             # Plugin hooks + marketplace
 │   ├── autonomous/          # Agent loop + task queue + cron
+│   ├── checkpoint/          # Structured progress checkpoints
+│   ├── goal/                # Goal evaluation and verification
+│   ├── longTermMemory/      # Dream (7d) + Distill (30d) consolidation
+│   ├── maxMode/             # Candidate runner + evaluator
 │   ├── lsp/                 # LSP integration
 │   └── Supervisor/          # Agent supervisor IPC
 ├── mesh/                    # MeshServer + MeshDiscovery (agent-to-agent)
+├── memory/                  # Long-term memory (SQLite, FTS5)
 ├── bridge/                  # WebSocket bridge + relay
 ├── components/              # Ink terminal UI components
 ├── state/                   # AppState management
@@ -278,15 +299,19 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 ## Changelog
 
 <details>
-<summary><strong>v0.2.7 — 2026-06-11</strong></summary>
+<summary><strong>v0.2.22 — 2026-06-15</strong></summary>
 
-- **process_peer PTY terminal box** — terminal-style progress box with ANSI-preserving output tail
-- **`/mesh run codex <task>`** — run one-shot Codex process peer from chat
-- **Auto-update dialog** — npm update notification before app starts
-- **Rich model fetching** — API models now carry context window, vision, tools, reasoning, free tags
-- **`/model list` capability tags** — `[200K ctx, vision, tools, reason, free]` per model
-- **GlimmerMessage gradient** — per-character color interpolation with fade effect
-- **Cost in status line** — shows session cost when >$0
+- **Max Mode** — parallel candidate generation (default 3 per turn), `/maxmode` command
+- **Goal system** — `/goal` with heuristic pre-checks, goal chains (`then`), AFK integration
+- **Structured checkpoints** — progress snapshots at 20%/45%/70%, session rebuild from checkpoints
+- **Dream process** — 7-day automated memory consolidation cycle
+- **Distill process** — 30-day pattern extraction and reusable skill generation
+- **Video input** — paste mp4/mov/webm to video-capable models (Gemini, GPT-5.x)
+- **Image & Video generation** — `GenerateImage` (DALL-E 3, Imagen 3) and `GenerateVideo` (Runway Gen-4)
+- **Profile system** — `/profile` switches between `coding` and `personal` profiles
+- **Execution modes** — `/mode` with `safe`, `yolo`, `afk`, `review-only`, `browser-safe`
+- **ReadArtifact tool** — read truncated large outputs in chunks
+- **Bounded tool output** — 200-line cap with disk persistence for large results
 
 </details>
 

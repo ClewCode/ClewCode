@@ -135,7 +135,7 @@ function QuickCommandsContent() {
             <Text bold>/init</Text>
             <Text dimColor wrap="wrap">
               <Newline />
-              Create or update a CLAUDE.md file with instructions for Clew Code to follow
+              Create or update a AGENT.md file with instructions for Clew Code to follow
             </Text>
           </OrderedList.Item>
           <OrderedList.Item>

@@ -13,10 +13,6 @@ import { BriefTool } from './tools/BriefTool/BriefTool.js';
 // Lazy loading for feature-gated or potentially absent tools
 /* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 const getREPLTool = () => (process.env.USER_TYPE === 'ant' ? require('./tools/REPLTool/REPLTool.js').REPLTool : null);
-const getSuggestBackgroundPRTool = () =>
-  process.env.USER_TYPE === 'ant'
-    ? require('./tools/SuggestBackgroundPRTool/SuggestBackgroundPRTool.js').SuggestBackgroundPRTool
-    : null;
 const getSleepTool = () =>
   feature('PROACTIVE') || feature('KAIROS') ? require('./tools/SleepTool/SleepTool.js').SleepTool : null;
 const getCronTools = () => [
@@ -117,7 +113,6 @@ import { TaskGetTool } from './tools/TaskGetTool/TaskGetTool.js';
 import { TaskUpdateTool } from './tools/TaskUpdateTool/TaskUpdateTool.js';
 import { TaskListTool } from './tools/TaskListTool/TaskListTool.js';
 import { SessionSearchTool } from './tools/SessionSearchTool/SessionSearchTool.js';
-import { PrTool } from './tools/PRTool/PRTool.js';
 import { BrowserTool } from './tools/BrowserTool/BrowserTool.js';
 import uniqBy from 'lodash-es/uniqBy.js';
 import { isToolSearchEnabledOptimistic } from './utils/toolSearch.js';
@@ -180,8 +175,7 @@ export function getToolsForDefaultPreset(): string[] {
 
 export function getAllBaseTools(): Tools {
   const replTool = getREPLTool();
-  const suggestBackgroundPRTool = getSuggestBackgroundPRTool();
-  const sleepTool = getSleepTool();
+const sleepTool = getSleepTool();
   const cronTools = getCronTools();
   const remoteTriggerTool = getRemoteTriggerTool();
   const monitorTool = getMonitorTool();
@@ -210,7 +204,6 @@ export function getAllBaseTools(): Tools {
     WebSearchTool,
     WebFetchTool,
     BrowserTool,
-    PrTool,
     // BrowserAgentTool — disabled until ready
     // MultiSearchTool, // Using official WebSearch instead
     JsonPathTool,
@@ -220,8 +213,7 @@ export function getAllBaseTools(): Tools {
     EnterPlanModeTool,
     ...(process.env.USER_TYPE === 'ant' ? [ConfigTool] : []),
     ...(process.env.USER_TYPE === 'ant' ? [TungstenTool] : []),
-    ...(suggestBackgroundPRTool ? [suggestBackgroundPRTool] : []),
-    ...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
+...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
     ...(GenerateImageTool.isEnabled() ? [GenerateImageTool] : []),
     ...(GenerateVideoTool.isEnabled() ? [GenerateVideoTool] : []),
     GoalTool,

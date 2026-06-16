@@ -57,6 +57,8 @@ export type GoalState = {
   chain?: string[];
   /** Index in the chain (0 = current) */
   chainIndex?: number;
+  /** Checkpoint thresholds written for this goal (e.g. [20, 45, 70]) */
+  checkpointsWritten?: number[];
 };
 
 let currentGoal: string | null = null;
