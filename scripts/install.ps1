@@ -29,6 +29,9 @@ if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
 
 # ── Install clew-code ───────────────────────────────────────────────────────
 Write-Info 'Installing clew-code via bun...'
-& bun install -g clew-code
+# --ignore-scripts skips sharp (from @xenova/transformers) install script,
+# which fails on Node.js <14 or missing build tools. clew imports sharp
+# dynamically — it's only needed for image/ComputerUse features.
+& bun install -g clew-code --ignore-scripts
 
 Write-Host "`nDone! Run clew to start." -ForegroundColor Green
