@@ -25,7 +25,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 
 ## Hacking in public
 
-Clew Code is a reverse-engineered reimplementation of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships agent-to-agent LAN mesh coordination, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation, and 27+ provider adapters.
+Clew Code is a reverse-engineered reimplementation of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships agent-to-agent LAN peer coordination, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation, and 27+ provider adapters.
 
 > Reverse-engineered from Claude Code. Rebuilt for every provider.
 
@@ -34,10 +34,10 @@ Clew Code is a reverse-engineered reimplementation of [Claude Code](https://gith
 ## Features
 
 - **27+ providers** — Anthropic, OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, OpenCode Go. Switch mid-session.
-- **Agent-to-agent mesh** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15 mesh AI tools (discover, run, spawn, share, join, ping, broadcast, send_message, list_roles, list_messages, set_name, set_role, disconnect, info, help) let your agent coordinate autonomously via `/mesh` commands.
+- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15 peer AI tools let your agent coordinate autonomously via `/peer` commands.
 
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
-- **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, ReadArtifact, mesh tools (15 LAN coordination tools), MCP tools, ProcessMesh (exec/pty), plan mode with full bypass permissions, multi-pass context compaction.
+- **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, ReadArtifact, peer tools (15 LAN coordination tools), MCP tools, ProcessPeer (exec/pty), plan mode with full bypass permissions, multi-pass context compaction.
 - **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Auto-integrates with AFK mode and the autonomous loop.
 - **Goal Verifier** — When the agent attempts to terminate, an independent LLM verifier reviews the conversation against the goal text. If unsatisfied, the gap is reported as metadata for automatic re-prompting.
 - **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
@@ -50,15 +50,15 @@ Clew Code is a reverse-engineered reimplementation of [Claude Code](https://gith
 
 ---
 
-## Concepts: Agents, Subagents, and Mesh
+## Concepts: Agents, Subagents, and Peers
 
 Clew Code has several execution layers. They are related, but they do different jobs:
 
 - **Agent:** An AI worker with a prompt, model, tools, and permissions. The main chat session is an agent. Custom agents live in `.clew/agents/*.md`, and built-ins include `Explore`, `Plan`, and `general-purpose`.
 - **Subagent:** A short-lived child agent launched by another agent through the `Agent` tool. Use subagents for independent work such as codebase exploration, test triage, or review. The built-in `Explore` agent is read-only and is the right choice for parallel "go inspect this area" tasks.
 - **Teammate / Swarm:** A longer-lived agent team member with an identity, mailbox, task coordination, and optional pane/tmux or in-process execution. Use this when agents need to keep working together across multiple turns, not for isolated one-shot exploration.
-- **LAN Mesh:** A network of Clew instances on the same machine or LAN. `/mesh` discovers peers, sends messages, assigns tasks, and runs commands on other Clew nodes.
-- **Process Mesh:** A local process-backed worker layer. It delegates a prompt to an external CLI/provider such as Codex using `exec` or `pty`, then returns stdout, stderr, exit code, timeout state, and progress.
+- **LAN Peer:** A network of Clew instances on the same machine or LAN. `/peer` discovers peers, sends messages, assigns tasks, and runs commands on other Clew nodes.
+- **Process Peer:** A local process-backed worker layer. It delegates a prompt to an external CLI/provider such as Codex using `exec` or `pty`, then returns stdout, stderr, exit code, timeout state, and progress.
 
 Typical flows:
 
@@ -71,7 +71,7 @@ User
 
 ```text
 Clew instance A
-  -> LAN Mesh
+  -> LAN Peer
       -> Clew instance B
           -> local agent, daemon task, or process worker
 ```
@@ -80,8 +80,8 @@ Use the layers by intent:
 
 - Need a quick independent read-only investigation? Use an `Explore` subagent.
 - Need long-running coordination between named workers? Use teammates/swarm.
-- Need another Clew instance on the LAN? Use `/mesh`.
-- Need Clew to run a local external worker such as Codex? Use Process Mesh.
+- Need another Clew instance on the LAN? Use `/peer`.
+- Need Clew to run a local external worker such as Codex? Use Process Peer.
 
 Other runtime concepts:
 - **Plan mode:** Full-access planning mode with bypass permissions — explore, read, write, and edit files freely. Plan files persist to `.clew/plans/long-term-plan.md` with task progress snapshot.
@@ -97,13 +97,13 @@ Other runtime concepts:
 Clew Code has two profiles you switch between with `/profile`:
 
 - **Coding profile** (`/profile coding`) — default. Directly implement software changes: inspect repo, edit files, run validation.
-- **Personal profile** (`/profile personal`) — command center mode. Plan, split tasks, **delegate** code work to a Codex worker via `process_mesh`, then review and summarize results.
+- **Personal profile** (`/profile personal`) — command center mode. Plan, split tasks, **delegate** code work to a Codex worker via `process_peer`, then review and summarize results.
 
 ### How personal delegation works
 
 ```
 You → personal profile → understand requirement → plan approach
-     → /delegate skill → process_mesh → Codex worker
+     → /delegate skill → ProcessPeer → Codex worker
      → worker implements → report back → you review
 ```
 
@@ -166,7 +166,7 @@ clew
 ❯ /status         # current provider, model, context info
 ❯ /goal "tests pass"  # track task completion
 ❯ /maxmode on     # parallel candidate generation
-❯ /mesh discover  # find other Clew instances on LAN
+❯ /peer discover  # find other Clew instances on LAN
 ❯ /mcp list       # connected MCP servers
 ❯ /loop start     # background autonomous loop
 
@@ -215,7 +215,7 @@ export GEMINI_API_KEY=...
 /bridge       Bridge mode config
 /agent        Background agent dispatch & subcommands
 /agents       TUI Agent dashboard (operational view)
-/mesh         Collaborate with Clew instances on LAN
+/peer         Collaborate with Clew instances on LAN
 /remote       WebSocket remote control
 /loop         24/7 autonomous agent loop
 /daemon       Autonomous daemon dashboard
@@ -251,7 +251,7 @@ src/
 │   ├── maxMode/             # Candidate runner + evaluator
 │   ├── lsp/                 # LSP integration
 │   └── Supervisor/          # Agent supervisor IPC
-├── mesh/                    # MeshServer + MeshDiscovery (agent-to-agent)
+├── peer/                    # PeerServer + PeerDiscovery (agent-to-agent)
 ├── memory/                  # Long-term memory (SQLite, FTS5)
 ├── bridge/                  # WebSocket bridge + relay
 ├── components/              # Ink terminal UI components
