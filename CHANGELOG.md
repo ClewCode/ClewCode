@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.32] — 2026-06-17
+
+### Fixed
+- Version now baked at build time via `prebuild-version.mjs` instead of reading `package.json` at runtime. Fixes `clew update` showing stale version for npm-global installs.
+
+### Changed
+- Removed stale `--define.MACRO.*` flags from package.json scripts (VERSION, PACKAGE_URL, FEEDBACK_CHANNEL, ISSUES_EXPLAINER). These values are now supplied by `src/generated/version.ts`, auto-generated before build/dev.
+
 ## [0.2.31] — 2026-06-17
 
 ### Changed

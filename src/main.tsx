@@ -29,20 +29,17 @@ try {
     };
   }
   if (typeof process.stdin.setRawMode !== 'function') {
-    process.stdin.setRawMode = (mode: boolean) => {};
+    process.stdin.setRawMode = (_mode: boolean) => {};
   }
-} catch (e) {}
+} catch (_e) {}
 
-// Define MACRO for build (normally replaced by macro processor)
-import { readFileSync } from 'fs';
+import { BUILD_VERSION, PACKAGE_URL, FEEDBACK_CHANNEL, ISSUES_EXPLAINER } from './generated/version.js';
 
-const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
-  version: string;
-  name: string;
-};
 const MACRO = {
-  VERSION: pkg.version,
-  PACKAGE_URL: pkg.name,
+  VERSION: BUILD_VERSION,
+  PACKAGE_URL,
+  FEEDBACK_CHANNEL,
+  ISSUES_EXPLAINER,
 };
 globalThis.MACRO = MACRO;
 
@@ -83,7 +80,6 @@ import { readFileSync } from 'fs';
 import mapValues from 'lodash-es/mapValues.js';
 import pickBy from 'lodash-es/pickBy.js';
 import uniqBy from 'lodash-es/uniqBy.js';
-import React from 'react';
 import { getOauthConfig } from './constants/oauth.js';
 import { getRemoteSessionUrl } from './constants/product.js';
 import { getSystemContext, getUserContext } from './context.js';
@@ -126,7 +122,6 @@ function isRemoteSettingsAvailable(): boolean {
   return getRemoteManagedSettingsSyncFromCache() !== null;
 }
 
-import { isCoordinatorMode } from './coordinator/coordinatorMode.js';
 import { PROVIDER_CONFIG_PATH } from './services/ai/ProviderManager.js';
 import type { ToolInputJSONSchema } from './Tool.js';
 import {
@@ -199,7 +194,7 @@ const assistantModule = feature('KAIROS')
   : null;
 const kairosGate = feature('KAIROS') ? (require('./assistant/gate.js') as typeof import('./assistant/gate.js')) : null;
 
-import { join, relative, resolve } from 'path';
+import { relative, resolve } from 'path';
 import { isAnalyticsDisabled } from 'src/services/analytics/config.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from 'src/services/analytics/growthbook.js';
 import {
@@ -619,7 +614,7 @@ if ('external' !== 'ant' && isBeingDebugged()) {
 function isNode18OrHigher(): boolean {
   const nodeVersion = process.version;
   const major = parseInt(nodeVersion.replace('v', '').split('.')[0], 10);
-  return !isNaN(major) && major >= 18;
+  return !Number.isNaN(major) && major >= 18;
 }
 
 if (!isNode18OrHigher()) {
@@ -1506,7 +1501,7 @@ async function run(): Promise<CommanderCommand> {
         'Maximum dollar amount to spend on API calls (only works with --print)',
       ).argParser(value => {
         const amount = Number(value);
-        if (isNaN(amount) || amount <= 0) {
+        if (Number.isNaN(amount) || amount <= 0) {
           throw new Error('--max-budget-usd must be a positive number greater than 0');
         }
         return amount;
@@ -1516,7 +1511,7 @@ async function run(): Promise<CommanderCommand> {
       new Option('--task-budget <tokens>', 'API-side task budget in tokens (output_config.task_budget)')
         .argParser(value => {
           const tokens = Number(value);
-          if (isNaN(tokens) || tokens <= 0 || !Number.isInteger(tokens)) {
+          if (Number.isNaN(tokens) || tokens <= 0 || !Number.isInteger(tokens)) {
             throw new Error('--task-budget must be a positive integer');
           }
           return tokens;
@@ -1894,7 +1889,7 @@ async function run(): Promise<CommanderCommand> {
             const port = await server.start(peerInfo);
             logForDebugging(`[Peer] PeerServer auto-started on port ${port} to receive messages`);
           }
-        } catch (err) {
+        } catch (_err) {
           // Silent fail if peer modules not available
         }
       })();
@@ -2376,7 +2371,7 @@ async function run(): Promise<CommanderCommand> {
           }
         }
         if (allErrors.length > 0) {
-          const formattedErrors = allErrors.map(err => `${err.path ? err.path + ': ' : ''}${err.message}`).join('\n');
+          const formattedErrors = allErrors.map(err => `${err.path ? `${err.path}: ` : ''}${err.message}`).join('\n');
           logForDebugging(`--mcp-config validation failed (${allErrors.length} errors): ${formattedErrors}`, {
             level: 'error',
           });
@@ -3662,13 +3657,13 @@ async function run(): Promise<CommanderCommand> {
         // Validate org restriction for non-interactive sessions
         const orgValidation = await validateForceLoginOrg();
         if (!orgValidation.valid) {
-          process.stderr.write(orgValidation.message + '\n');
+          process.stderr.write(`${orgValidation.message}\n`);
           process.exit(1);
         }
 
         const methodValidation = await validateForceLoginMethod();
         if (!methodValidation.valid) {
-          process.stderr.write(methodValidation.message + '\n');
+          process.stderr.write(`${methodValidation.message}\n`);
           process.exit(1);
         }
 
@@ -3948,7 +3943,7 @@ async function run(): Promise<CommanderCommand> {
       logEvent('tengu_startup_manual_model_config', {
         cli_flag: options.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         env_var: process.env.ANTHROPIC_MODEL as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-        settings_file: (getInitialSettings() || {}).model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+        settings_file: getInitialSettings()?.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         subscriptionType: getSubscriptionType() as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         agent: agentSetting as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       });
@@ -3991,7 +3986,7 @@ async function run(): Promise<CommanderCommand> {
         });
       }
       const goalState = await restoreSessionGoal();
-      const hasActiveGoal = goalState && goalState.goal && !goalState.achieved;
+      const hasActiveGoal = goalState?.goal && !goalState.achieved;
 
       const effectiveToolPermissionContext = {
         ...toolPermissionContext,
@@ -4822,7 +4817,7 @@ async function run(): Promise<CommanderCommand> {
               messages = result.messages;
             } catch (error) {
               if (error instanceof TeleportOperationError) {
-                process.stderr.write(error.formattedMessage + '\n');
+                process.stderr.write(`${error.formattedMessage}\n`);
               } else {
                 logError(error);
                 process.stderr.write(chalk.red(`Error: ${errorMessage(error)}\n`));
