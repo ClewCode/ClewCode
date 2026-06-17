@@ -3691,7 +3691,19 @@ export function createCanUseToolWithPermissionPrompt(permissionPromptTool: Permi
     // TypeScript narrowing: after the abort check, raceResult must be ToolResult
     const result = raceResult as Awaited<typeof toolCallPromise>;
 
-    const permissionToolResultBlockParam = permissionPromptTool.mapToolResultToToolResultBlockParam(result.data, '1');
+    const permissionToolResultBlockParam =
+      typeof permissionPromptTool.mapToolResultToToolResultBlockParam === 'function'
+        ? permissionPromptTool.mapToolResultToToolResultBlockParam(result.data, '1')
+        : {
+            tool_use_id: '1',
+            type: 'tool_result' as const,
+            content: [
+              {
+                type: 'text' as const,
+                text: jsonStringify(result.data),
+              },
+            ],
+          };
     if (
       !permissionToolResultBlockParam.content ||
       !Array.isArray(permissionToolResultBlockParam.content) ||

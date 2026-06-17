@@ -91,8 +91,8 @@ peer_share start → peer_discover → peer_info / peer_ping
 
 2. peer_discover
    - peer_discover() — สแกนครั้งเดียว
-   - peer_discover({ wait: true, minMeshs: 1 }) — รอจนเจอ peer
-   - peer_discover({ wait: true, minMeshs: 3, waitTimeout: 60 }) — รอ 3 ตัว
+   - peer_discover({ wait: true, minPeers: 1 }) — รอจนเจอ peer
+   - peer_discover({ wait: true, minPeers: 3, waitTimeout: 60 }) — รอ 3 ตัว
 
 3. peer_info
    - peer_info({ worker: "hostname" })
@@ -206,7 +206,7 @@ peer_set_name / peer_set_role / peer_list_roles
 
 ดู peers:
   peer_list_roles()                          # ดูทั้งหมด
-  peer_list_roles({ wait: true, minMeshs: 2 }) # รอจนครบ 2 ตัว
+  peer_list_roles({ wait: true, minPeers: 2 }) # รอจนครบ 2 ตัว
 
 ข้อดี: เวลา peer_send_message ส่งหา peer อื่น มันจะส่ง role และ port
 ไปด้วยในข้อความ (senderRole, senderPort) ทำให้อีกฝั่งรู้ทันทีว่า
@@ -283,3 +283,4 @@ export const PeerHelpTool = buildTool({
     };
   },
 });
+

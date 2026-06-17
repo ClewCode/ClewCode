@@ -23,14 +23,14 @@ const inputSchema = lazySchema(() =>
       .optional()
       .default(false)
       .describe(
-        'If true, keep discovering every few seconds until `minMeshs` peers are found. Use instead of looping.',
+        'If true, keep discovering every few seconds until `minPeers` peers are found. Use instead of looping.',
       ),
     waitTimeout: z
       .number()
       .optional()
       .default(30)
       .describe('Total max seconds to wait when `wait` is true (default: 30, max: 120).'),
-    minMeshs: z
+    minPeers: z
       .number()
       .optional()
       .default(1)
@@ -92,11 +92,11 @@ export const PeerDiscoverTool = buildTool({
     return outputSchema();
   },
   userFacingName() {
-    return 'MeshDiscover';
+    return 'PeerDiscover';
   },
   renderToolUseMessage(input) {
     const timeoutStr = input.timeout !== undefined ? `timeout: ${input.timeout}s` : 'default timeout';
-    const waitStr = input.wait ? `, wait: true (minMeshs: ${input.minMeshs ?? 1})` : '';
+    const waitStr = input.wait ? `, wait: true (minPeers: ${input.minPeers ?? 1})` : '';
     return `${timeoutStr}${waitStr}`;
   },
   renderToolResultMessage(output) {
@@ -133,11 +133,11 @@ export const PeerDiscoverTool = buildTool({
       content: `${prefix}:\n${output.workers.map(formatPeerDetails).join('\n')}`,
     };
   },
-  async call(input: { timeout?: number; wait?: boolean; waitTimeout?: number; minMeshs?: number }) {
+  async call(input: { timeout?: number; wait?: boolean; waitTimeout?: number; minPeers?: number }) {
     const discovery = getGlobalDiscovery();
     const store = getGlobalPeerStore();
     const scanTimeout = Math.min(Math.max(1, input.timeout ?? 3), 10) * 1000;
-    const minMeshs = input.minMeshs ?? 1;
+    const minPeers = input.minPeers ?? 1;
     const waitTimeoutMs = Math.min(Math.max(1, input.waitTimeout ?? 30), 120) * 1000;
 
     notifyPeerFeedback(
@@ -158,19 +158,19 @@ export const PeerDiscoverTool = buildTool({
     let timedOut = false;
 
     // If `wait` is true and not enough peers, keep trying
-    if (input.wait && count < minMeshs) {
+    if (input.wait && count < minPeers) {
       waited = true;
       const deadline = Date.now() + waitTimeoutMs;
       const retryInterval = 2000;
 
-      while (Date.now() < deadline && count < minMeshs) {
+      while (Date.now() < deadline && count < minPeers) {
         const remaining = deadline - Date.now();
         if (remaining <= 0) break;
         await new Promise(resolve => setTimeout(resolve, Math.min(retryInterval, remaining)));
         count = await doDiscover();
       }
 
-      if (count < minMeshs) timedOut = true;
+      if (count < minPeers) timedOut = true;
     }
 
     const peers = store.getMeshs();

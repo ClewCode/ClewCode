@@ -9,7 +9,7 @@ export const DESCRIPTION =
   'Use peer_discover first to find available peers and their hostnames/ports.\n\n' +
   '**Important for spawned peers**: When sending a task to a peer node spawned via `peer_spawn`, ' +
   'always include your own name and port in the message so the peer node knows where to reply. ' +
-  'Example: "I am {your_mesh_name} (port {your_port}). Task: ... Reply back to me."';
+  'Example: "I am {your_peer_name} (port {your_port}). Task: ... Reply back to me."';
 
 export const PROMPT =
   'This tool sends a chat message to a peer node Clew Code instance on the LAN. ' +

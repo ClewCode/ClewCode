@@ -99,7 +99,7 @@ export const PeerSendMessageTool = buildTool({
     return getCwd();
   },
   userFacingName() {
-    return 'MeshSendMessage';
+    return 'PeerSendMessage';
   },
   renderToolUseMessage(input) {
     const preview = input.message ? ` "${truncateText(input.message, 60)}"` : '';

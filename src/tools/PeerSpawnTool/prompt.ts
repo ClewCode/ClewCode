@@ -7,15 +7,15 @@ export const DESCRIPTION =
   '**IMPORTANT**: After spawning, when you send a task via `peer_send_message`, ' +
   'include your own name and port in the message so the peer node knows where to reply. ' +
   'Example: "I am {your_name} on port {your_port}. Do X and reply back to me."\n\n' +
-  "See the spawned peer node's default prompt in `DEFAULT_MESH_PROMPT` for the reply protocol.";
+  "See the spawned peer node's default prompt in `DEFAULT_PEER_PROMPT` for the reply protocol.";
 
 export const PROMPT =
   'Spawns a new local peer terminal window running Clew Code. The spawned peer will share automatically. ' +
   'Use peer_discover after spawning to find and join the peer.\n\n' +
   '**Sender identity**: After spawning, use `peer_send_message` to assign tasks. ' +
   'Always include your name + port in the message so the peer node can reply. ' +
-  'Example: "I am {your_mesh_name} (port {your_port}). Task: ... Send the result back to me."\n\n' +
+  'Example: "I am {your_peer_name} (port {your_port}). Task: ... Send the result back to me."\n\n' +
   "**Reply flow**: The spawned peer node's default prompt instructs it to:\n" +
   '1. `peer_share status` to confirm sharing and learn its own port\n' +
   '2. When it receives a task message with sender info, do the task\n' +
-  '3. Reply via `peer_send_message({ peer: "<sender_mesh_name>", message: "result" })`';
+  '3. Reply via `peer_send_message({ peer: "<sender_peer_name>", message: "result" })`';

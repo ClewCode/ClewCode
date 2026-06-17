@@ -21,7 +21,7 @@ const inputSchema = lazySchema(() =>
       .optional()
       .default(30)
       .describe('Max seconds to wait when `wait` is true (default: 30, max: 120).'),
-    minMeshs: z
+    minPeers: z
       .number()
       .optional()
       .default(1)
@@ -98,9 +98,9 @@ export const PeerListRolesTool = buildTool({
       content: `${prefix}:\n${output.workers.map(formatPeerDetails).join('\n')}`,
     };
   },
-  async call(input: { wait?: boolean; timeout?: number; minMeshs?: number }) {
+  async call(input: { wait?: boolean; timeout?: number; minPeers?: number }) {
     const store = getGlobalPeerStore();
-    const minMeshs = input.minMeshs ?? 1;
+    const minPeers = input.minPeers ?? 1;
     const timeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
 
     notifyPeerFeedback(
@@ -141,7 +141,7 @@ export const PeerListRolesTool = buildTool({
     };
 
     // Check current peers
-    if (store.getMeshs().length >= minMeshs) {
+    if (store.getMeshs().length >= minPeers) {
       return { data: buildData() };
     }
 
@@ -166,7 +166,7 @@ export const PeerListRolesTool = buildTool({
           /* best-effort */
         }
 
-        if (store.getMeshs().length >= minMeshs) break;
+        if (store.getMeshs().length >= minPeers) break;
         await new Promise(resolve => setTimeout(resolve, Math.min(retryInterval, remaining)));
       }
 
@@ -179,7 +179,7 @@ export const PeerListRolesTool = buildTool({
         /* best-effort */
       }
 
-      if (store.getMeshs().length < minMeshs) {
+      if (store.getMeshs().length < minPeers) {
         timedOut = true;
       }
     }

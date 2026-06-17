@@ -4,11 +4,11 @@ export const DESCRIPTION =
   'List all discovered peer nodes with their display names and roles. ' +
   'Shows hostname, custom name (if set via peer_set_name), and role (if set via peer_set_role). ' +
   'Supports waiting: set `wait: true` to wait for peers to appear. ' +
-  'Use `minMeshs` to wait for a minimum number of peers.';
+  'Use `minPeers` to wait for a minimum number of peers.';
 
 export const PROMPT =
   'Lists all discovered peer nodes and their assigned metadata (display name, role). ' +
   'Use peer_set_name to assign custom names and peer_set_role to assign roles to workers. ' +
-  'Use `wait: true` with `timeout` and `minMeshs` to wait for peers to appear on the network, ' +
+  'Use `wait: true` with `timeout` and `minPeers` to wait for peers to appear on the network, ' +
   'instead of polling in a loop.\n\n' +
   'This helps keep track of which worker does what.';

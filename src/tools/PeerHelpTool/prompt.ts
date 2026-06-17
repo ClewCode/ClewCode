@@ -16,8 +16,8 @@ const FLOW_DISCOVERY = `## Peer Discovery Flow
    - จำ port ของตัวเองไว้ (เช่น :59428) ถ้าจะให้คนอื่นส่งหา
 
 2. **\`peer_discover\`** — สแกนหา peers ใน LAN
-   - \`peer_discover({ wait: true, minMeshs: 1 })\` รอจนเจอ peer แทนการเรียกซ้ำ
-   - \`peer_discover({ wait: true, minMeshs: 3, waitTimeout: 60 })\` รอจนครบ 3 ตัว
+   - \`peer_discover({ wait: true, minPeers: 1 })\` รอจนเจอ peer แทนการเรียกซ้ำ
+   - \`peer_discover({ wait: true, minPeers: 3, waitTimeout: 60 })\` รอจนครบ 3 ตัว
 
 3. **\`peer_info\`** — ดูรายละเอียด peer
    - \`peer_info({ worker: "hostname" })\`
@@ -119,7 +119,7 @@ const FLOW_ROLES = `## Peer Management Flow
 \`\`\`
 peer_set_name({ worker: "hostname", name: "builder-1" })
 peer_set_role({ worker: "hostname", role: "builder" })
-peer_list_roles({ wait: true, minMeshs: 2 })
+peer_list_roles({ wait: true, minPeers: 2 })
 \`\`\`
 
 ใช้ \`peer_list_roles\` แทน \`peer_discover\` เมื่อต้องการดู tags + roles`;

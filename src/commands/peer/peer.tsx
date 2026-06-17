@@ -65,7 +65,7 @@ function getFlagValue(tokens: string[], flag: string): string | undefined {
   return undefined;
 }
 
-function spawnMeshTerminal(options: { name?: string; prompt?: string; model?: string; agent?: string }): void {
+function spawnPeerTerminal(options: { name?: string; prompt?: string; model?: string; agent?: string }): void {
   const mainScript = process.argv[1]!;
   const args = [
     ...(process.argv[1].endsWith('.tsx') || process.argv[1].endsWith('.ts') ? ['run', mainScript] : [mainScript]),
@@ -220,12 +220,12 @@ async function fetchWithRetry(
   }
 }
 
-async function sendMessage(swarmQuery: string, text: string, onDone: (msg: string) => void): Promise<void> {
+async function sendMessage(peerQuery: string, text: string, onDone: (msg: string) => void): Promise<void> {
   try {
     const store = getGlobalPeerStore();
-    const peer = store.findPeer(swarmQuery);
+    const peer = store.findPeer(peerQuery);
     if (!peer) {
-      onDone(chalk.red(`✗ Peer "${swarmQuery}" not found. Run /peer discover first.`));
+      onDone(chalk.red(`✗ Peer "${peerQuery}" not found. Run /peer discover first.`));
       return;
     }
 
@@ -249,16 +249,16 @@ async function sendMessage(swarmQuery: string, text: string, onDone: (msg: strin
 
     onDone(chalk.green(`✓ Message sent to ${peer.hostname}`));
   } catch {
-    onDone(chalk.red(`✗ Could not reach ${peer?.hostname ?? swarmQuery} after several tries`));
+    onDone(chalk.red(`✗ Could not reach ${peer?.hostname ?? peerQuery} after several tries`));
   }
 }
 
-async function sendTask(swarmQuery: string, text: string, onDone: (msg: string) => void): Promise<void> {
+async function sendTask(peerQuery: string, text: string, onDone: (msg: string) => void): Promise<void> {
   try {
     const store = getGlobalPeerStore();
-    const peer = store.findPeer(swarmQuery);
+    const peer = store.findPeer(peerQuery);
     if (!peer) {
-      onDone(chalk.red(`✗ Worker "${swarmQuery}" not found. Run /peer discover first.`));
+      onDone(chalk.red(`✗ Worker "${peerQuery}" not found. Run /peer discover first.`));
       return;
     }
 
@@ -282,11 +282,11 @@ async function sendTask(swarmQuery: string, text: string, onDone: (msg: string) 
 
     onDone(chalk.green(`✓ Task sent to ${peer.hostname}`));
   } catch {
-    onDone(chalk.red(`✗ Could not reach ${peer?.hostname ?? swarmQuery} after several tries`));
+    onDone(chalk.red(`✗ Could not reach ${peer?.hostname ?? peerQuery} after several tries`));
   }
 }
 
-type ProcessMeshRunArgs = {
+type ProcessPeerRunArgs = {
   providerId: string;
   prompt: string;
   cwd?: string;
@@ -294,7 +294,7 @@ type ProcessMeshRunArgs = {
   timeoutMs?: number;
 };
 
-function parseProcessMeshRunArgs(rest: string): ProcessMeshRunArgs | { error: string } {
+function parseProcessPeerRunArgs(rest: string): ProcessPeerRunArgs | { error: string } {
   const tokens = parseArgs(rest);
   const providerId = tokens.shift();
   if (!providerId) {
@@ -337,7 +337,7 @@ function parseProcessMeshRunArgs(rest: string): ProcessMeshRunArgs | { error: st
 }
 
 async function runProcessPeer(rest: string, onDone: (msg: string) => void): Promise<void> {
-  const parsed = parseProcessMeshRunArgs(rest);
+  const parsed = parseProcessPeerRunArgs(rest);
   if ('error' in parsed) {
     onDone(chalk.yellow(parsed.error));
     return;
@@ -509,9 +509,9 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
       onDone(chalk.yellow('Usage: /peer send <peer> <message>'), { display: 'system' });
       return;
     }
-    const swarmQuery = rest.slice(0, spaceIdx);
+    const peerQuery = rest.slice(0, spaceIdx);
     const message = rest.slice(spaceIdx + 1);
-    await sendMessage(swarmQuery, message, msg => onDone(msg, { display: 'system' }));
+    await sendMessage(peerQuery, message, msg => onDone(msg, { display: 'system' }));
     return;
   }
 
@@ -531,9 +531,9 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
       onDone(chalk.yellow('Usage: /peer todo <worker> <task description>'), { display: 'system' });
       return;
     }
-    const swarmQuery = rest.slice(0, spaceIdx);
+    const peerQuery = rest.slice(0, spaceIdx);
     const task = rest.slice(spaceIdx + 1);
-    await sendTask(swarmQuery, task, msg => onDone(msg, { display: 'system' }));
+    await sendTask(peerQuery, task, msg => onDone(msg, { display: 'system' }));
     return;
   }
 
@@ -588,7 +588,7 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
       getFlagValue(tokens, '-a');
 
     try {
-      spawnMeshTerminal({ name, prompt, model, agent });
+      spawnPeerTerminal({ name, prompt, model, agent });
       onDone(chalk.dim(`Spawning new peer shell${name ? ` "${name}"` : ''}...`), { display: 'system' });
     } catch (err) {
       onDone(chalk.red(`Failed to spawn peer: ${errorMessage(err)}`), { display: 'system' });

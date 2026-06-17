@@ -43,7 +43,7 @@ Use your built-in tools to complete this task:
 • Shell/exec tools — to run commands, build, test
 • Web/search tools — to look up external info if needed
 • \`--help\` on any command — to discover available flags and subcommands
-Do NOT try to call Clew Code peer tools (mesh_*) — you are a standalone peer.
+Do NOT try to call Clew Code peer tools (peer_*) — you are a standalone peer.
 
 ═══════════════════════════════════════════
  WORKFLOW

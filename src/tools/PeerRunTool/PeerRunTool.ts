@@ -92,7 +92,7 @@ export const PeerRunTool = buildTool({
     return getCwd();
   },
   userFacingName() {
-    return 'MeshRun';
+    return 'PeerRun';
   },
   renderToolUseMessage(input) {
     return `on ${input.worker}: $ ${input.command}`;

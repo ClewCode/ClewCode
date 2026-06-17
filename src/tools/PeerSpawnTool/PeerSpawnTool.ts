@@ -42,7 +42,7 @@ function isWin32(): boolean {
   return process.platform === 'win32';
 }
 
-function buildMeshSpawnCommand(args: string[]): string {
+function buildPeerSpawnCommand(args: string[]): string {
   const mainScript = process.argv[1] ?? '';
   const cliArgs = [
     ...(mainScript
@@ -103,19 +103,19 @@ export const PeerSpawnTool = buildTool({
       const platform = process.platform;
 
       // Default peer behavior: share → receive task → reply back to sender
-      const DEFAULT_MESH_PROMPT =
+      const DEFAULT_PEER_PROMPT =
         'You are a spawned peer. You are already sharing via --peer-share.\n' +
         '\n' +
         '=== FLOW WHEN RECEIVING A TASK ===\n' +
         '1. SHARE — Run `peer_share status` to confirm sharing and learn your port.\n' +
         '   Your port is how the sender will reach you.\n' +
         '2. RECEIVE — A task message arrives from a sender. It should include:\n' +
-        '   - Sender\'s mesh name (e.g. "I am {name}")\n' +
+       '   - Sender\'s peer name (e.g. "I am {name}")\n' +
         '   - Sender\'s port (e.g. "on port {port}")\n' +
         '   - The task description\n' +
         '3. DO — Complete the task using your tools.\n' +
         '4. REPLY — Send the result back via:\n' +
-        '   `peer_send_message({ peer: "<sender_mesh_name>", message: "<result>" })`\n' +
+       '   `peer_send_message({ peer: "<sender_peer_name>", message: "<result>" })`\n' +
         '   Do NOT use waitResponse — just send the result.\n' +
         '\n' +
         '=== RULES ===\n' +
@@ -129,15 +129,15 @@ export const PeerSpawnTool = buildTool({
         'MCP tools (tinyfish, firecrawl) return richer results with full page content, ' +
         'while built-in tools may fall back to limited providers.';
 
-      const effectivePrompt = input.prompt ? `${input.prompt}\n\n${DEFAULT_MESH_PROMPT}` : DEFAULT_MESH_PROMPT;
+      const effectivePrompt = input.prompt ? `${input.prompt}\n\n${DEFAULT_PEER_PROMPT}` : DEFAULT_PEER_PROMPT;
 
       // Use same model as the main session
       const spawnModel = input.model || getMainLoopModel();
       const cliArgs = ['--peer-share', '--peer-name', targetName, '--name', targetName, '--model', spawnModel];
       const promptArg = effectivePrompt.replace(/\s*\r?\n\s*/g, ' ').trim();
       if (promptArg) cliArgs.push('--system-prompt', promptArg);
-      const cmd = buildMeshSpawnCommand(cliArgs);
-      const commandPreview = buildMeshSpawnCommand([
+      const cmd = buildPeerSpawnCommand(cliArgs);
+      const commandPreview = buildPeerSpawnCommand([
         '--peer-share',
         '--peer-name',
         targetName,
