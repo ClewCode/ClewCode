@@ -1,19 +1,18 @@
 /**
- * Distill Process — extract reusable patterns from monthly digests (30-day cycle).
+ * Distill Process — extract reusable patterns from MemoryDB (30-day cycle).
  *
  * Runs every 30 days on first session of the day:
- * 1. Analyzes weekly digests for the month
- * 2. Identifies recurring patterns (file types, tool usage, problem categories)
- * 3. Creates "experience" records with higher XP weight
+ * 1. Queries MemoryDB for recent memories and timeline events
+ * 2. Identifies recurring patterns (types, themes, frequency)
+ * 3. Creates "experience" records with consolidated knowledge
  * 4. Generates reusable skill suggestions
- *
- * Builds on existing consolidation and experience infrastructure.
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { pathExists } from '../../utils/file.js';
+import { MemoryDB } from '../../memory/database.js';
 
 const DISTILL_STATE_FILE = 'distill-state.json';
 const DISTILL_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -25,7 +24,7 @@ interface DistillState {
 }
 
 interface Pattern {
-  type: 'file' | 'tool' | 'category';
+  type: 'file' | 'tool' | 'category' | 'memory_type';
   value: string;
   frequency: number;
   example: string;
@@ -88,32 +87,61 @@ async function saveExperiences(projectRoot: string, experiences: Experience[]): 
 }
 
 /**
- * Extract patterns from a set of session digests.
+ * Extract patterns from MemoryDB memories.
  */
-function extractPatterns(digests: { summary: string; patterns: string[] }[]): Pattern[] {
-  const patternCounts = new Map<string, { count: number; example: string }>();
+function extractPatterns(memories: { type: string; content: string; importance: number; key: string }[]): Pattern[] {
+  const typeCounts = new Map<string, number>();
+  const themeCounts = new Map<string, { count: number; example: string }>();
 
-  for (const digest of digests) {
-    for (const pattern of digest.patterns) {
-      const existing = patternCounts.get(pattern);
+  for (const mem of memories) {
+    // Count by memory type
+    typeCounts.set(mem.type, (typeCounts.get(mem.type) ?? 0) + 1);
+
+    // Extract theme words (nouns/keywords from content)
+    const words = mem.content
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 4 && !['the', 'this', 'that', 'with', 'from', 'have', 'been', 'were'].includes(w));
+
+    const themes = new Set(words.slice(0, 5));
+    for (const theme of themes) {
+      const existing = themeCounts.get(theme);
       if (existing) {
         existing.count++;
       } else {
-        patternCounts.set(pattern, { count: 1, example: digest.summary.slice(0, 100) });
+        themeCounts.set(theme, { count: 1, example: mem.content.slice(0, 80) });
       }
     }
   }
 
-  return Array.from(patternCounts.entries())
-    .filter(([, data]) => data.count >= 2) // Appears in at least 2 digests
-    .map(([value, data]) => ({
-      type: 'category' as const,
-      value,
-      frequency: data.count,
-      example: data.example,
-    }))
-    .sort((a, b) => b.frequency - a.frequency)
-    .slice(0, 10);
+  const patterns: Pattern[] = [];
+
+  // Patterns from memory types
+  for (const [type, count] of typeCounts) {
+    if (count >= 2) {
+      patterns.push({
+        type: 'memory_type',
+        value: `${type} memories`,
+        frequency: count,
+        example: `${count} memories of type '${type}' recorded this period`,
+      });
+    }
+  }
+
+  // Patterns from recurring themes
+  for (const [theme, data] of themeCounts) {
+    if (data.count >= 2) {
+      patterns.push({
+        type: 'category' as const,
+        value: `Theme: ${theme}`,
+        frequency: data.count,
+        example: data.example,
+      });
+    }
+  }
+
+  return patterns.sort((a, b) => b.frequency - a.frequency).slice(0, 10);
 }
 
 /**
@@ -122,24 +150,42 @@ function extractPatterns(digests: { summary: string; patterns: string[] }[]): Pa
 function generateSkillSuggestions(patterns: Pattern[]): string[] {
   const suggestions: string[] = [];
 
-  // Pattern: frequently modified files → suggest checking for related patterns
-  const frequentFiles = patterns.filter(p => p.value.includes('Frequently modified'));
-  if (frequentFiles.length >= 2) {
-    suggestions.push('Consider grouping related file modifications into atomic commits');
+  const memoryTypes = patterns.filter(p => p.type === 'memory_type');
+  if (memoryTypes.length >= 2) {
+    suggestions.push('Multiple memory types in use — consider reviewing memory organization');
   }
 
-  // Pattern: repeated tool usage → suggest automation
-  const toolPatterns = patterns.filter(p => p.value.includes('tool'));
-  if (toolPatterns.length >= 3) {
-    suggestions.push('Frequent tool patterns detected — consider creating a custom skill');
+  const themes = patterns.filter(p => p.type === 'category');
+  if (themes.length >= 3) {
+    suggestions.push('Recurring themes detected — consider documenting common workflows');
   }
 
-  // Pattern: recurring problem categories → suggest documentation
   if (patterns.length >= 5) {
-    suggestions.push('Multiple recurring patterns — consider documenting common workflows');
+    suggestions.push('High pattern density — consider creating custom skills for frequent tasks');
   }
 
   return suggestions;
+}
+
+/**
+ * Query MemoryDB for recent memory activity.
+ */
+function queryMemoryDBRecent(months: number): { type: string; content: string; importance: number; key: string }[] {
+  if (!MemoryDB.isInitialized()) return [];
+
+  try {
+    const db = MemoryDB.getInstance();
+    const cutoff = Date.now() - months * 30 * 24 * 60 * 60 * 1000;
+
+    const stmt = db.prepare(`
+      SELECT type, content, importance, key FROM memories
+      WHERE created_at >= ? OR last_accessed_at >= ?
+      ORDER BY importance DESC LIMIT 200
+    `);
+    return stmt.all(cutoff, cutoff) as { type: string; content: string; importance: number; key: string }[];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -155,12 +201,12 @@ export async function autoDistill(projectRoot: string): Promise<boolean> {
     return false;
   }
 
-  // Load recent digests (past month)
-  const digests = await loadRecentDigests(projectRoot);
-  if (digests.length === 0) return false;
+  // Query MemoryDB for recent memories
+  const memories = queryMemoryDBRecent(1);
+  if (memories.length < 3) return false; // Not enough data
 
   // Extract patterns
-  const patterns = extractPatterns(digests);
+  const patterns = extractPatterns(memories);
   if (patterns.length === 0) return false;
 
   // Generate skill suggestions
@@ -192,34 +238,6 @@ export async function autoDistill(projectRoot: string): Promise<boolean> {
   await saveDistillState(projectRoot, newState);
 
   return true;
-}
-
-/**
- * Load digests from the past month.
- */
-async function loadRecentDigests(projectRoot: string): Promise<{ summary: string; patterns: string[] }[]> {
-  // Simplified: load from digests directory if it exists
-  // In a full implementation, this would query the SQLite database
-  const dir = join(getClaudeConfigHomeDir(), 'projects', sanitize(projectRoot), 'digests');
-  if (!(await pathExists(dir))) return [];
-
-  const digests: { summary: string; patterns: string[] }[] = [];
-  const files = await import('node:fs/promises').then(fs => fs.readdir(dir));
-
-  for (const file of files) {
-    if (!file.endsWith('.json')) continue;
-    try {
-      const raw = await readFile(join(dir, file), 'utf-8');
-      const data = JSON.parse(raw);
-      if (data.summary && Array.isArray(data.patterns)) {
-        digests.push(data);
-      }
-    } catch {
-      // Skip corrupted files
-    }
-  }
-
-  return digests;
 }
 
 /**

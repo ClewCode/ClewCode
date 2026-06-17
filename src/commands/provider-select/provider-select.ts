@@ -23,9 +23,7 @@ import type { GoogleOAuthTokens } from '../../services/googleOAuth/index.js';
 import type { OpenAIOAuthTokens } from '../../services/openaiOAuth/index.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
 import type { LocalCommandResult, LocalJSXCommandCall, LocalJSXCommandOnDone } from '../../types/command.js';
-import { getOauthAccountInfo } from '../../utils/auth.js';
 import { readLocalProviderKey } from '../../utils/localProviderKeys.js';
-import { Login as AnthropicLogin } from '../login/login.js';
 
 type SerializableProviderRegistryEntry = Omit<ProviderRegistryEntry, 'provider'>;
 
@@ -34,14 +32,12 @@ type ProviderConfig = {
   model: string;
   apiKeys?: Partial<Record<(typeof PROVIDER_IDS)[number], string>>;
   providerConfig?: SerializableProviderRegistryEntry & {
-    anthropicType?: 'direct' | 'bedrock' | 'vertex' | 'foundry' | 'subscriber';
     googleType?: 'direct' | 'vertex' | 'subscriber';
     openaiType?: 'direct' | 'subscriber' | 'azure';
   };
 };
 
 const PROVIDER_KEYS = PROVIDER_IDS;
-
 type ProviderKey = (typeof PROVIDER_KEYS)[number];
 type ProviderSelectValue = ProviderKey | '__SECTION_RECENT__' | '__SECTION_PROVIDERS__';
 
@@ -399,16 +395,12 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   const [apiKeyError, setApiKeyError] = React.useState<string | null>(null);
   const [config, setConfig] = React.useState<ProviderConfig | null>(null);
   const [showChangeKey, setShowChangeKey] = React.useState(false);
-  const [anthropicType, setAnthropicType] = React.useState<
-    'direct' | 'bedrock' | 'vertex' | 'foundry' | 'subscriber' | null
-  >(null);
   const [googleType, setGoogleType] = React.useState<'direct' | 'vertex' | 'subscriber' | null>(null);
   const [openaiType, setOpenaiType] = React.useState<'direct' | 'subscriber' | 'azure' | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchCursorOffset, setSearchCursorOffset] = React.useState(0);
   const [showOpenAIOAuth, setShowOpenAIOAuth] = React.useState(false);
   const [showGoogleOAuth, setShowGoogleOAuth] = React.useState(false);
-  const [showAnthropicOAuth, setShowAnthropicOAuth] = React.useState(false);
   const [customName, setCustomName] = React.useState('');
   const [customBaseUrl, setCustomBaseUrl] = React.useState('');
   const [customModel, setCustomModel] = React.useState('');
@@ -424,9 +416,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   React.useEffect(() => {
     void loadConfig().then(loadedConfig => {
       setConfig(loadedConfig);
-      if (loadedConfig?.provider === 'anthropic' && loadedConfig.providerConfig?.anthropicType) {
-        setAnthropicType(loadedConfig.providerConfig.anthropicType);
-      }
       if (loadedConfig?.provider === 'google' && (loadedConfig.providerConfig as any)?.googleType) {
         setGoogleType((loadedConfig.providerConfig as any).googleType);
       }
@@ -539,7 +528,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
         existingConfig?.providerConfig ??
         ({
           ...getSerializableProviderInfo(provider),
-          ...(provider === 'anthropic' && anthropicType ? { anthropicType } : {}),
           ...(provider === 'google' && googleType ? { googleType } : {}),
           ...(provider === 'openai' && openaiType ? { openaiType } : {}),
           // Store the value from prompt if needed
@@ -868,50 +856,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     );
   }
 
-  // Sub-menu for Anthropic implementation type
-  if (provider === 'anthropic' && !anthropicType && !showChangeKey) {
-    return React.createElement(
-      Box,
-      { flexDirection: 'column' },
-      React.createElement(Text, { marginBottom: 1 }, `Select implementation for ${info.label}:`),
-      React.createElement(Select, {
-        options: [
-          { label: 'Direct API', value: 'direct', description: 'Use ANTHROPIC_API_KEY' },
-          {
-            label: 'Claude.ai (Subscription)',
-            value: 'subscriber',
-            description: 'Use your Claude.ai account (requires /login)',
-          },
-          { label: 'AWS Bedrock', value: 'bedrock', description: 'Use AWS credentials' },
-          { label: 'Google Vertex AI', value: 'vertex', description: 'Use GCP credentials' },
-          { label: 'Microsoft Foundry', value: 'foundry', description: 'Use Azure credentials' },
-        ],
-        visibleOptionCount: 5,
-        onChange: value => {
-          setAnthropicType(value as any);
-          if (value === 'subscriber') {
-            const hasOAuth = Boolean(getOauthAccountInfo()?.emailAddress);
-            if (!hasOAuth) {
-              setShowAnthropicOAuth(true);
-            } else {
-              // They already have OAuth, so we can just set it and prompt to save
-              setShowChangeKey(false);
-            }
-          }
-          if (value !== 'direct' && value !== 'subscriber') {
-            // Bedrock/Vertex/Foundry usually don't need a single API key in the same way
-            // or they use different env vars.
-          }
-        },
-        onCancel: () => {
-          setProvider(null);
-          setSearchQuery('');
-          setSearchCursorOffset(0);
-        },
-      }),
-    );
-  }
-
   // Sub-menu for Google implementation type
   if (provider === 'google' && !googleType && !showChangeKey && !showGoogleOAuth) {
     return React.createElement(
@@ -1017,23 +961,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     });
   }
 
-  // Anthropic OAuth flow for Subscription
-  if (provider === 'anthropic' && showAnthropicOAuth) {
-    return React.createElement(AnthropicLogin, {
-      onDone: (success: boolean, _mainLoopModel: string) => {
-        setShowAnthropicOAuth(false);
-        if (success) {
-          void saveProviderSelection();
-        } else {
-          setAnthropicType(null);
-          setProvider(null);
-          setSearchQuery('');
-          setSearchCursorOffset(0);
-        }
-      },
-    });
-  }
-
   // Show input field when: (no existing key) OR (user chose to change key)
   if ((!hasExistingKey && !info.isLocal) || (showChangeKey && !info.isLocal)) {
     return React.createElement(
@@ -1044,11 +971,7 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
         { marginBottom: 1 },
         showChangeKey
           ? `Enter new ${info.envKey} for ${info.label}`
-          : anthropicType && anthropicType !== 'direct' && anthropicType !== 'subscriber'
-            ? `API key/Token (Optional) for ${info.label} ${anthropicType} (Press Enter to skip)`
-            : anthropicType === 'subscriber'
-              ? `You are logged in via OAuth. Press Enter to use this account.`
-              : openaiType === 'subscriber'
+          : openaiType === 'subscriber'
                 ? `Enter CHATGPT_SESSION_TOKEN for ChatGPT Plus (Web)`
                 : googleType === 'vertex'
                   ? `Enter Google Cloud Project ID for Vertex AI (or press Enter to use GCLOUD_PROJECT env)`
@@ -1066,7 +989,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
         onSubmit: async value => {
           const trimmed = value.trim();
           const needsKey =
-            (!anthropicType || anthropicType === 'direct') &&
             (!googleType || googleType === 'direct') &&
             (!openaiType || openaiType === 'direct');
 
@@ -1083,7 +1005,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
           setApiKeyError(null);
           setShowChangeKey(false);
           setIsGhLogin(false);
-          setAnthropicType(null);
           setGoogleType(null);
           setOpenaiType(null);
           setSearchQuery('');

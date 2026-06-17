@@ -6,7 +6,7 @@ export default {
   name: 'peer',
   aliases: ['peer'],
   description: 'Peer: Collaborate with other Clew instances on LAN and assign tasks',
-  argumentHint: '[share|discover|list|todo|todos]',
+  argumentHint: '[share|discover|list|todo|todos|swarm|dashboard|memory sync|memory auto]',
   get immediate() {
     return shouldInferenceConfigCommandBeImmediate();
   },

@@ -19,6 +19,7 @@ import type { ToolUseContext } from '../../Tool.js';
 import { logEvent } from '../analytics/index.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
 import { isAutoMemoryEnabled, getAutoMemPath } from '../../memdir/paths.js';
+import { syncDreamToMemoryDB } from '../../memory/compacter.js';
 import { isAutoDreamEnabled } from './config.js';
 import { getProjectDir } from '../../utils/sessionStorage.js';
 import { getOriginalCwd, getKairosActive, getIsRemoteMode, getSessionId } from '../../bootstrap/state.js';
@@ -201,6 +202,31 @@ ${sessionIds.map(id => `- ${id}`).join('\n')}`;
       });
 
       completeDreamTask(taskId, setAppState);
+
+      // Log dream_completed to MemoryDB timeline
+      (async () => {
+        try {
+          const { MemoryDB } = await import('../../memory/database.js');
+          if (MemoryDB.isInitialized()) {
+            const db = MemoryDB.getInstance();
+            // Find a memory to associate the event (use first session memory)
+            const memories = db.exportMemories(1);
+            if (memories.length > 0) {
+              db.logEvent({ memoryId: memories[0]!.id, event: 'dream_completed', note: `sessions=${sessionIds.length}` });
+            }
+          }
+        } catch { /* skip */ }
+      })().catch(() => {});
+
+      // Sync Dream's file-based output into MemoryDB
+      syncDreamToMemoryDB(memoryRoot)
+        .then(count => {
+          if (count > 0) {
+            logForDebugging(`[autoDream] synced ${count} memories into MemoryDB`);
+          }
+        })
+        .catch(() => {});
+
       // Inline completion summary in the main transcript (same surface as
       // extractMemories's "Saved N memories" message).
       const dreamState = context.toolUseContext.getAppState().tasks?.[taskId];

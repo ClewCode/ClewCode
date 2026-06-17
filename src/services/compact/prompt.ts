@@ -268,10 +268,34 @@ Here's an example of how your output should be structured:
 Please provide your summary following this structure, ensuring precision and thoroughness in your response.
 `;
 
+const MEMORIES_SECTION = `
+
+
+After your </summary>, optionally include a <memories> block capturing durable facts that should be remembered across sessions. Only include facts that are likely to be useful later — skip transient logs and one-off debugging output.
+
+Supported types:
+- [decision]   — Architecture or design decisions (e.g. "use tabs for indentation")
+- [architecture] — System structure, module layout, component relationships
+- [taste]      — Coding style preferences, conventions, patterns
+- [bug]        — Bug root causes and fixes
+- [task_progress] — What was accomplished, pending items
+- [command]    — Important CLI commands or build steps
+- [note]       — Miscellaneous useful context
+
+Example:
+<memories>
+[decision] use async/await over raw promises for better readability
+[architecture] migrated to ESM module system with NodeNext resolution
+[taste] prefer tabs over spaces for indentation
+</memories>
+
+Include <memories> only when there are genuinely durable facts. It's fine to omit it entirely if the session produced nothing worth saving.`;
+
 const NO_TOOLS_TRAILER =
   '\n\nREMINDER: Do NOT call any tools. Respond with plain text only — ' +
   'an <analysis> block followed by a <summary> block. ' +
-  'Tool calls will be rejected and you will fail the task.';
+  'Tool calls will be rejected and you will fail the task.' +
+  MEMORIES_SECTION;
 
 export function getPartialCompactPrompt(
   customInstructions?: string,
@@ -302,16 +326,34 @@ export function getCompactPrompt(customInstructions?: string): string {
 }
 
 /**
+ * Side channel: the most recent raw summary response from compact.
+ * Used by autoExtractFromSession to parse <memories> without
+ * threading raw text through the entire compact pipeline.
+ */
+let lastRawCompactResponse: string | null = null;
+
+export function getLastRawCompactResponse(): string | null {
+  return lastRawCompactResponse;
+}
+
+export function setLastRawCompactResponse(raw: string | null): void {
+  lastRawCompactResponse = raw;
+}
+
+/**
  * Formats the compact summary by stripping the <analysis> drafting scratchpad
  * and replacing <summary> XML tags with readable section headers.
- * @param summary The raw summary string potentially containing <analysis> and <summary> XML tags
- * @returns The formatted summary with analysis stripped and summary tags replaced by headers
+ * Also extracts any <memories> block for durable knowledge.
+ * @param summary The raw summary string potentially containing <analysis>, <summary>, and <memories> XML tags
+ * @returns The formatted summary with analysis stripped, summary tags replaced by headers, and <memories> removed
  */
 export function formatCompactSummary(summary: string): string {
+  // Store raw for memory extraction
+  setLastRawCompactResponse(summary);
+
   let formattedSummary = summary;
 
-  // Strip analysis section — it's a drafting scratchpad that improves summary
-  // quality but has no informational value once the summary is written.
+  // Strip analysis section
   formattedSummary = formattedSummary.replace(/<analysis>[\s\S]*?<\/analysis>/, '');
 
   // Extract and format summary section
@@ -321,10 +363,27 @@ export function formatCompactSummary(summary: string): string {
     formattedSummary = formattedSummary.replace(/<summary>[\s\S]*?<\/summary>/, `Summary:\n${content.trim()}`);
   }
 
+  // Strip <memories> block
+  formattedSummary = formattedSummary.replace(/<memories>[\s\S]*?<\/memories>/, '');
+
   // Clean up extra whitespace between sections
   formattedSummary = formattedSummary.replace(/\n\n+/g, '\n\n');
 
   return formattedSummary.trim();
+}
+
+/**
+ * Parse <memories> block from raw compact response.
+ * Returns tagged lines (e.g. "[decision] use tabs") or empty array.
+ */
+export function parseCompactMemories(rawResponse: string): string[] {
+  const match = rawResponse.match(/<memories>([\s\S]*?)<\/memories>/);
+  if (!match) return [];
+  const content = match[1] || '';
+  return content
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.startsWith('['));
 }
 
 export function getCompactUserSummaryMessage(

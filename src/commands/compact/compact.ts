@@ -18,6 +18,8 @@ import { suppressCompactWarning } from '../../services/compact/compactWarningSta
 import { microcompactMessages } from '../../services/compact/microCompact.js';
 import { runPostCompactCleanup } from '../../services/compact/postCompactCleanup.js';
 import { trySessionMemoryCompaction } from '../../services/compact/sessionMemoryCompact.js';
+import { autoExtractFromSession } from '../../memory/compacter.js';
+import { getLastRawCompactResponse, parseCompactMemories } from '../../services/compact/prompt.js';
 import { setLastSummarizedMessageId } from '../../services/SessionMemory/sessionMemoryUtils.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalCommandCall } from '../../types/command.js';
@@ -66,10 +68,15 @@ export const call: LocalCommandCall = async (args, context) => {
         // Suppress warning immediately after successful compaction
         suppressCompactWarning();
 
+        // Auto-extract durable memories
+        const rawResponse1 = getLastRawCompactResponse();
+        const memories1 = rawResponse1 ? parseCompactMemories(rawResponse1) : undefined;
+        const extractResult1 = await autoExtractFromSession(memories1).catch(() => null);
+
         return {
           type: 'compact',
           compactionResult: sessionMemoryResult,
-          displayText: buildDisplayText(context),
+          displayText: buildDisplayText(context, undefined, extractResult1),
         };
       }
     }
@@ -104,10 +111,15 @@ export const call: LocalCommandCall = async (args, context) => {
     getUserContext.cache.clear?.();
     runPostCompactCleanup();
 
+    // Auto-extract durable memories
+    const rawResponse2 = getLastRawCompactResponse();
+    const memories2 = rawResponse2 ? parseCompactMemories(rawResponse2) : undefined;
+    const extractResult2 = await autoExtractFromSession(memories2).catch(() => null);
+
     return {
       type: 'compact',
       compactionResult: result,
-      displayText: buildDisplayText(context, result.userDisplayMessage),
+      displayText: buildDisplayText(context, result.userDisplayMessage, extractResult2),
     };
   } catch (error) {
     if (abortController.signal.aborted) {
@@ -210,12 +222,13 @@ async function compactViaReactive(
   }
 }
 
-function buildDisplayText(context: ToolUseContext, userDisplayMessage?: string): string {
+function buildDisplayText(context: ToolUseContext, userDisplayMessage?: string, extractResult?: import('../../memory/compacter.js').CompactResult | null): string {
   const upgradeMessage = getUpgradeMessage('tip');
   const expandShortcut = getShortcutDisplay('app:toggleTranscript', 'Global', 'ctrl+o');
   const dimmed = [
     ...(context.options.verbose ? [] : [`(${expandShortcut} to see full summary)`]),
     ...(userDisplayMessage ? [userDisplayMessage] : []),
+    ...(extractResult && (extractResult.created + extractResult.updated) > 0 ? [`${extractResult.created + extractResult.updated} memories extracted`] : []),
     ...(upgradeMessage ? [upgradeMessage] : []),
   ];
   return chalk.dim(`Compacted ${dimmed.join('\n')}`);

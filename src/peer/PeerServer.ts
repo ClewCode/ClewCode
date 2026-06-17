@@ -9,6 +9,9 @@
  * - GET /peer-queue-status → current queue state
  * - POST /peer-queue-cancel → cancel a queued task
  * - POST /peer-queue-cancel-all → cancel all queued tasks
+ * - POST /broker/send     → send a message to the broker queue
+ * - GET /broker/recv      → long-poll for messages from the broker
+ * - POST /broker/reply    → reply to a broker message
  * - WebSocket /peer-chat → real-time chat between two peers
  */
 
@@ -17,6 +20,7 @@ import type { AddressInfo } from 'node:net';
 import { logForDebugging } from '../utils/debug.js';
 import { errorMessage } from '../utils/errors.js';
 import {
+  type BrokerMessage,
   type MeshChatMessage,
   type MeshTaskPriority,
   type MeshTodo,
@@ -25,6 +29,7 @@ import {
   peerColorFromId,
   type SwarmTask,
 } from './types.js';
+import { getGlobalPeerStore } from './PeerStore.js';
 
 export type PeerServerCallbacks = {
   onMessage?: (msg: MeshChatMessage) => void;
@@ -576,6 +581,109 @@ export class PeerServer {
             const count = this.cancelAllQueuedTasks();
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true, cancelled: count }));
+            break;
+          }
+
+          // ── Memory export endpoint ────────────────────────────
+
+          case '/memory/export': {
+            // Must run synchronously — handleHttpRequest is not async.
+            // Use a top-level require-style via dynamic import cached by ESM.
+            (async () => {
+              try {
+                const { MemoryDB } = await import('../../memory/database.js');
+                if (MemoryDB.isInitialized()) {
+                  const bodyStr = Buffer.concat(body).toString();
+                  const data = bodyStr ? JSON.parse(bodyStr) : {};
+                  const limit = typeof data.limit === 'number' ? data.limit : 50;
+                  const projectPath = typeof data.projectPath === 'string' ? data.projectPath : undefined;
+                  const memories = MemoryDB.getInstance().exportMemories(limit, projectPath);
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ ok: true, count: memories.length, memories }));
+                } else {
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ ok: true, count: 0, memories: [] }));
+                }
+              } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, error: String(error) }));
+              }
+            })().catch(() => res.end('{}'));
+            break;
+          }
+
+          // ── Broker endpoints ──────────────────────────────────
+
+          case '/broker/send': {
+            const data = JSON.parse(Buffer.concat(body).toString());
+            const msg: BrokerMessage = {
+              id: `brk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              from: data.from ?? 'unknown',
+              fromName: data.fromName ?? data.from ?? 'unknown',
+              to: data.to ?? '*',
+              text: data.text ?? '',
+              replyTo: data.replyTo,
+              timestamp: Date.now(),
+              delivered: false,
+            };
+            const store = getGlobalPeerStore();
+            store.addToOutbox(msg);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: true, id: msg.id }));
+            break;
+          }
+
+          case '/broker/recv': {
+            const peersParam = (url.searchParams.get('peers') ?? '').trim();
+            const rolesParam = (url.searchParams.get('roles') ?? '').trim();
+            const replyTo = (url.searchParams.get('replyTo') ?? '').trim();
+            const timeoutSec = Math.min(Math.max(0, parseInt(url.searchParams.get('timeout') ?? '30', 10) || 30), 120);
+            const store = getGlobalPeerStore();
+
+            // Build target list from peers + roles
+            const targets: string[] = [];
+            if (peersParam) targets.push(...peersParam.split(',').map(s => s.trim()).filter(Boolean));
+            if (rolesParam) targets.push(...rolesParam.split(',').map(s => s.trim()).filter(Boolean));
+
+            // If waiting for a reply
+            if (replyTo) {
+              store.waitForReply(replyTo, timeoutSec * 1000).then(reply => {
+                if (reply) {
+                  reply.delivered = true;
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ messages: [reply] }));
+                } else {
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ messages: [] }));
+                }
+              });
+              return;
+            }
+
+            // Long-poll for new messages
+            store.waitForBrokerMessages(targets, timeoutSec * 1000).then(msgs => {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ messages: msgs }));
+            });
+            return;
+          }
+
+          case '/broker/reply': {
+            const data = JSON.parse(Buffer.concat(body).toString());
+            const replyMsg: BrokerMessage = {
+              id: `brk_reply_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              from: data.from ?? 'unknown',
+              fromName: data.fromName ?? data.from ?? 'unknown',
+              to: data.to ?? '*',
+              text: data.text ?? '',
+              replyTo: data.replyTo,
+              timestamp: Date.now(),
+              delivered: false,
+            };
+            const store = getGlobalPeerStore();
+            store.addToOutbox(replyMsg);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: true, id: replyMsg.id }));
             break;
           }
 

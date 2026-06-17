@@ -1,4 +1,3 @@
-import { AnthropicProvider } from './providers/AnthropicProvider.js';
 import { ClewGatewayProvider } from './providers/ClewGatewayProvider.js';
 import { CodeAssistProvider } from './providers/CodeAssistProvider.js';
 import { CohereProvider } from './providers/CohereProvider.js';
@@ -12,8 +11,6 @@ import providersConfig from './providers.json';
 
 function createProvider(key, entry) {
   switch (key) {
-    case 'anthropic':
-      return new AnthropicProvider();
     case 'openai':
       return new OpenAIProvider();
     case 'google':
@@ -42,7 +39,7 @@ function createProvider(key, entry) {
 export const PROVIDER_REGISTRY = Object.fromEntries(
   Object.entries(providersConfig).map(([key, config]) => [key, { ...config, provider: createProvider(key, config) }]),
 );
-export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY);
+export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY).filter(id => id !== 'clew-gateway');
 export const DEFAULT_PROVIDER = 'openai';
 export function getProviderRegistryEntry(provider) {
   return PROVIDER_REGISTRY[provider];
@@ -72,7 +69,6 @@ export function createProviderInstance(provider) {
  * - `"none"`: No prompt caching support.
  */
 const PROMPT_CACHING_MAP = {
-  anthropic: 'explicit',
   openai: 'automatic',
   openrouter: 'automatic',
   deepseek: 'automatic',

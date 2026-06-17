@@ -23,6 +23,12 @@ import type { PeerInfo } from '../../peer/types.js';
 import { errorMessage } from '../../utils/errors.js';
 import { formatPeerList } from './PeerList.js';
 import PeerMenu from './PeerMenu.js';
+import { SwarmResult, type SwarmPeerResult } from './swarmResult.js';
+import { formatPeerTaskDashboard, formatPeerTaskSummary } from '../../peer/peerDashboard.js';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { existsSync } from 'node:fs';
+import { getProjectRoot } from '../../bootstrap/state.js';
 
 let myPeerId = '';
 
@@ -136,11 +142,29 @@ async function startSharing(onDone: (msg: string) => void): Promise<void> {
         import('../../utils/messageQueueManager.js').then(({ enqueue }) => {
           enqueue({ value: `Task from ${todo.fromName}: ${todo.message}`, mode: 'prompt', priority: 'next' });
         });
+        // Also inject the dashboard so AI sees full context
+        import('../../peer/peerDashboard.js').then(({ formatPeerTaskSummary }) => {
+          const summary = formatPeerTaskSummary();
+          if (summary) {
+            import('../../utils/messageQueueManager.js').then(({ enqueue }) => {
+              enqueue({ value: summary, mode: 'prompt', priority: 'later', isMeta: true });
+            });
+          }
+        });
       },
       onMessage: msg => {
         getGlobalPeerStore().addMessage(msg);
         import('../../utils/messageQueueManager.js').then(({ enqueue }) => {
           enqueue({ value: `From ${msg.fromName}: ${msg.text}`, mode: 'prompt', priority: 'next' });
+        });
+        // Also inject the dashboard so AI sees full context
+        import('../../peer/peerDashboard.js').then(({ formatPeerTaskSummary }) => {
+          const summary = formatPeerTaskSummary();
+          if (summary) {
+            import('../../utils/messageQueueManager.js').then(({ enqueue }) => {
+              enqueue({ value: summary, mode: 'prompt', priority: 'later', isMeta: true });
+            });
+          }
         });
       },
       onExec: async (command: string) => {
@@ -401,6 +425,394 @@ function markTodoDone(id: string, onDone: (msg: string) => void): void {
   }
 }
 
+// ── Swarm execution ────────────────────────────────────────
+
+type SwarmOptions = {
+  command: string;
+  timeoutMs: number;
+  filter?: string;
+  dryRun: boolean;
+};
+
+async function doSwarm(
+  options: SwarmOptions,
+  onDone: (msg: string, opts?: any) => void,
+): Promise<SwarmPeerResult[]> {
+  const store = getGlobalPeerStore();
+  const peers = store.getConnections().filter(p => p.status === 'online' && p.port > 0);
+
+  // Apply filter
+  let filtered = peers;
+  if (options.filter) {
+    const f = options.filter.toLowerCase();
+    filtered = peers.filter(p => {
+      const tags = store.getPeerTags(p.id);
+      const name = p.hostname.toLowerCase();
+      const role = (tags?.role ?? '').toLowerCase();
+      return name.includes(f) || role.includes(f);
+    });
+  }
+
+  if (filtered.length === 0) {
+    const msg = peers.length === 0
+      ? 'No connected peers. Use /peer discover and /peer join first.'
+      : `No peers match filter "${options.filter}".`;
+    onDone(msg, { display: 'system' });
+    return [];
+  }
+
+  // Dry run
+  if (options.dryRun) {
+    const lines = ['[Dry Run] Target peers:', ''];
+    for (const peer of filtered) {
+      const tags = store.getPeerTags(peer.id);
+      const role = tags?.role ? ` [${tags.role}]` : '';
+      lines.push(`  ${peer.hostname}${role} (${peer.ip}:${peer.port})`);
+    }
+    lines.push('', `Would send: ${options.command}`);
+    onDone(lines.join('\n'), { display: 'system' });
+    return [];
+  }
+
+  const startedAt = performance.now();
+  const results: SwarmPeerResult[] = [];
+
+  // Fire requests to all peers in parallel
+  const requests = filtered.map(async (peer) => {
+    const peerStartedAt = performance.now();
+    try {
+      const url = `http://${peer.ip}:${peer.port}/peer-exec`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          command: options.command,
+          from: myPeerId || getMyName(),
+          fromName: getMyName(),
+          priority: 'normal',
+        }),
+        signal: AbortSignal.timeout(options.timeoutMs),
+      });
+
+      const durationMs = performance.now() - peerStartedAt;
+      const data = await response.json();
+
+      if (data.queued) {
+        // Peer is busy, task was queued
+        results.push({
+          peerId: peer.id,
+          hostname: peer.hostname,
+          status: 'failed',
+          durationMs,
+          error: `queued (position ${data.queuePosition}) — use /peer todo for queued tasks`,
+        });
+      } else if (data.result) {
+        results.push({
+          peerId: peer.id,
+          hostname: peer.hostname,
+          status: data.result.exitCode === 0 ? 'success' : 'failed',
+          durationMs,
+          stdout: data.result.stdout,
+          stderr: data.result.stderr,
+          error: data.result.exitCode !== 0 ? `exit code ${data.result.exitCode}` : undefined,
+        });
+      } else if (data.running) {
+        // Task is still running (shouldn't happen with synchronous exec)
+        results.push({
+          peerId: peer.id,
+          hostname: peer.hostname,
+          status: 'failed',
+          durationMs,
+          error: 'Task still running after response',
+        });
+      } else {
+        results.push({
+          peerId: peer.id,
+          hostname: peer.hostname,
+          status: 'failed',
+          durationMs,
+          error: data.error || `HTTP ${response.status}`,
+        });
+      }
+    } catch (err: any) {
+      const durationMs = performance.now() - peerStartedAt;
+      const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
+      results.push({
+        peerId: peer.id,
+        hostname: peer.hostname,
+        status: isTimeout ? 'timeout' : 'failed',
+        durationMs,
+        error: isTimeout ? `timed out after ${options.timeoutMs / 1000}s` : errorMessage(err),
+      });
+    }
+  });
+
+  await Promise.allSettled(requests);
+  return results;
+}
+
+async function runSwarm(rest: string, onDone: (msg: string, opts?: any) => void): Promise<void> {
+  const tokens = parseArgs(rest);
+  if (tokens.length === 0) {
+    onDone(
+      [
+        'Usage: /peer swarm [options] <command>',
+        '',
+        'Send a command to all connected peers in parallel.',
+        '',
+        'Options:',
+        '  -t, --timeout <seconds>  Per-peer timeout (default: 60)',
+        '  -f, --filter <pattern>   Only peers whose hostname/role matches',
+        '  --dry-run                 List target peers without executing',
+        '',
+        'Examples:',
+        '  /peer swarm clew -p "summarize the latest changes"',
+        '  /peer swarm git status',
+        '  /peer swarm -f worker npm test',
+        '  /peer swarm --dry-run clew -p "hello"',
+      ].join('\n'),
+      { display: 'system' },
+    );
+    return;
+  }
+
+  // Parse flags
+  let timeoutMs = 60_000;
+  let filter: string | undefined;
+  let dryRun = false;
+  let commandTokens = [...tokens];
+
+  const timeoutIdx = commandTokens.indexOf('--timeout');
+  if (timeoutIdx !== -1) {
+    const val = commandTokens[timeoutIdx + 1];
+    if (val) {
+      timeoutMs = Math.max(1, parseInt(val, 10) || 60) * 1000;
+      commandTokens.splice(timeoutIdx, 2);
+    } else {
+      commandTokens.splice(timeoutIdx, 1);
+    }
+  }
+  const tIdx = commandTokens.indexOf('-t');
+  if (tIdx !== -1) {
+    const val = commandTokens[tIdx + 1];
+    if (val) {
+      timeoutMs = Math.max(1, parseInt(val, 10) || 60) * 1000;
+      commandTokens.splice(tIdx, 2);
+    } else {
+      commandTokens.splice(tIdx, 1);
+    }
+  }
+
+  const filterIdx = commandTokens.indexOf('--filter');
+  if (filterIdx !== -1) {
+    filter = commandTokens[filterIdx + 1];
+    if (filter) commandTokens.splice(filterIdx, 2);
+    else commandTokens.splice(filterIdx, 1);
+  }
+  const fIdx = commandTokens.indexOf('-f');
+  if (fIdx !== -1) {
+    filter = commandTokens[fIdx + 1];
+    if (filter) commandTokens.splice(fIdx, 2);
+    else commandTokens.splice(fIdx, 1);
+  }
+
+  const dryIdx = commandTokens.indexOf('--dry-run');
+  if (dryIdx !== -1) {
+    dryRun = true;
+    commandTokens.splice(dryIdx, 1);
+  }
+
+  const command = commandTokens.join(' ');
+  if (!command) {
+    onDone(chalk.yellow('Missing command. Usage: /peer swarm <command>'), { display: 'system' });
+    return;
+  }
+
+  const store = getGlobalPeerStore();
+  const peers = store.getConnections().filter(p => p.status === 'online' && p.port > 0);
+  if (peers.length === 0) {
+    onDone(chalk.dim('No connected peers. Use /peer discover and /peer join first.'), { display: 'system' });
+    return;
+  }
+
+  const results = await doSwarm({ command, timeoutMs, filter, dryRun }, onDone);
+  if (results.length === 0 || dryRun) return;
+
+  const actualDuration = results.reduce((max, r) => Math.max(max, r.durationMs), 0);
+
+  return React.createElement(SwarmResult, { results, totalDurationMs: actualDuration, command });
+}
+
+// ── Memory Sync ────────────────────────────────────────────
+
+async function runMemorySync(onDone: (msg: string) => void): Promise<void> {
+  const store = getGlobalPeerStore();
+  const peers = store.getPeers().filter(p => p.port && p.ip);
+
+  if (peers.length === 0) {
+    onDone(chalk.yellow('No connected peers. Use /peer discover and /peer join first.'));
+    return;
+  }
+
+  const { MemoryDB } = await import('../../memory/database.js');
+  if (!MemoryDB.isInitialized()) {
+    onDone(chalk.yellow('MemoryDB not initialized. Run /memory init first.'));
+    return;
+  }
+  const db = MemoryDB.getInstance();
+
+  const startedAt = performance.now();
+  let totalImported = 0;
+  const results: string[] = [];
+
+  const requests = peers.map(async (peer) => {
+    try {
+      const url = `http://${peer.ip}:${peer.port}/memory/export`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 50 }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) {
+        results.push(`  ${chalk.red('✗')} ${peer.hostname} — HTTP ${response.status}`);
+        return;
+      }
+
+      const data = await response.json() as { ok: boolean; count: number; memories: Array<{ key: string; projectPath: string; type: string; content: string; importance: number; confidence: number }> };
+      if (!data.ok || !data.memories?.length) {
+        results.push(`  ${chalk.dim('−')} ${peer.hostname} — no memories`);
+        return;
+      }
+
+      let imported = 0;
+      for (const mem of data.memories) {
+        if (!mem.key) continue; // Skip memories without keys
+        const upsertResult = db.upsertMemory({
+          key: `peer.${mem.key}`,
+          projectPath: mem.projectPath,
+          type: mem.type as any,
+          content: mem.content,
+          importance: mem.importance,
+          confidence: mem.confidence,
+        });
+        if (upsertResult.action !== 'unchanged') imported++;
+      }
+      totalImported += imported;
+      results.push(`  ${chalk.green('✓')} ${peer.hostname} — ${imported} memories imported`);
+    } catch (err: any) {
+      const msg = err?.name === 'TimeoutError' || err?.name === 'AbortError'
+        ? 'timed out'
+        : err?.message ?? String(err);
+      results.push(`  ${chalk.red('✗')} ${peer.hostname} — ${msg}`);
+    }
+  });
+
+  await Promise.allSettled(requests);
+  const duration = ((performance.now() - startedAt) / 1000).toFixed(1);
+
+  const lines = [
+    chalk.bold(`Memory Sync (${duration}s)`),
+    ...results,
+    '',
+    totalImported > 0
+      ? chalk.green(`Imported ${totalImported} memories from ${peers.length} peer(s)`)
+      : chalk.dim('No new memories imported'),
+  ];
+  onDone(lines.join('\n'));
+}
+
+// ── Memory Auto-Sync State ─────────────────────────────────
+
+const PEER_MEMORY_STATE_FILE = '.clew/peer-memory-sync.json';
+
+type PeerMemorySyncState = {
+  enabled: boolean;
+  intervalMin: number;
+  cronTaskId?: string;
+};
+
+async function readPeerMemoryState(): Promise<PeerMemorySyncState> {
+  const path = join(getProjectRoot(), PEER_MEMORY_STATE_FILE);
+  if (!existsSync(path)) return { enabled: false, intervalMin: 60 };
+  try {
+    const raw = await readFile(path, 'utf-8');
+    return JSON.parse(raw) as PeerMemorySyncState;
+  } catch {
+    return { enabled: false, intervalMin: 60 };
+  }
+}
+
+async function writePeerMemoryState(state: PeerMemorySyncState): Promise<void> {
+  const path = join(getProjectRoot(), PEER_MEMORY_STATE_FILE);
+  await mkdir(join(path, '..'), { recursive: true });
+  await writeFile(path, JSON.stringify(state, null, 2), 'utf-8');
+}
+
+async function runMemoryAuto(args: string, onDone: (msg: string) => void): Promise<void> {
+  const state = await readPeerMemoryState();
+
+  // /peer memory auto → show status
+  if (!args) {
+    const status = state.enabled ? chalk.green('ON') : chalk.dim('OFF');
+    onDone([
+      chalk.bold('Auto Memory Sync'),
+      `  Status: ${status}`,
+      `  Interval: ${state.intervalMin} min`,
+      '',
+      '  /peer memory auto on [minutes]    Enable (default 60 min interval)',
+      '  /peer memory auto off             Disable',
+    ].join('\n'));
+    return;
+  }
+
+  // /peer memory auto off
+  if (args === 'off') {
+    if (state.cronTaskId) {
+      const { removeCronTasks } = await import('../../utils/cronTasks.js');
+      await removeCronTasks([state.cronTaskId]);
+    }
+    await writePeerMemoryState({ ...state, enabled: false, cronTaskId: undefined });
+    onDone(chalk.dim('Auto memory sync disabled.'));
+    return;
+  }
+
+  // /peer memory auto on [interval]
+  if (args === 'on' || args.startsWith('on ')) {
+    const intervalMin = parseInt(args.slice(2).trim(), 10) || 60;
+    const clampedInterval = Math.max(15, Math.min(1440, intervalMin));
+    const cronExpr = `*/${clampedInterval} * * * *`;
+
+    // Cancel existing task if any
+    if (state.cronTaskId) {
+      const { removeCronTasks } = await import('../../utils/cronTasks.js');
+      await removeCronTasks([state.cronTaskId]);
+    }
+
+    // Schedule new recurring cron task
+    const { addCronTask } = await import('../../utils/cronTasks.js');
+    const taskId = await addCronTask(
+      cronExpr,
+      '/peer memory sync',
+      true,  // recurring
+      true,  // durable
+    );
+
+    await writePeerMemoryState({
+      enabled: true,
+      intervalMin: clampedInterval,
+      cronTaskId: taskId,
+    });
+
+    // Run an initial sync immediately
+    onDone(chalk.green(`Auto memory sync enabled (every ${clampedInterval} min). Syncing now...`), { display: 'system' });
+    await runMemorySync(msg => onDone(msg, { display: 'system' }));
+    return;
+  }
+
+  onDone(chalk.yellow('Usage: /peer memory auto [on|off]'));
+}
+
 // ── Command entry ──────────────────────────────────────────
 
 export const call: import('../../types/command.js').LocalJSXCommandCall = async (onDone, _context, args) => {
@@ -542,8 +954,41 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     return;
   }
 
+  if (args === 'dashboard' || args === 'dash') {
+    const dash = formatPeerTaskDashboard();
+    if (!dash) {
+      onDone(chalk.dim('No peer activity. Share or join peers first with /peer share or /peer join.'), { display: 'system' });
+      return;
+    }
+    const summary = formatPeerTaskSummary();
+    onDone([dash, '', chalk.dim(summary)].join('\n'), { display: 'system' });
+    return;
+  }
+
+  if (args === 'memory') {
+    onDone(chalk.dim('Usage: /peer memory sync | auto [on|off]'), { display: 'system' });
+    return;
+  }
+
+  if (args === 'memory sync') {
+    await runMemorySync(msg => onDone(msg, { display: 'system' }));
+    return;
+  }
+
+  if (args.startsWith('memory auto')) {
+    const rest = args.slice(11).trim();
+    await runMemoryAuto(rest, msg => onDone(msg, { display: 'system' }));
+    return;
+  }
+
   if (args.startsWith('run ')) {
     await runProcessPeer(args.slice(4).trim(), msg => onDone(msg, { display: 'system' }));
+    return;
+  }
+
+  if (args.startsWith('swarm') || args.startsWith('swarm ')) {
+    const rest = args.slice(5).trim();
+    await runSwarm(rest, (msg, opts) => onDone(msg, { ...opts, display: 'system' }));
     return;
   }
 
@@ -608,7 +1053,15 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
         '  /peer todo <peer> <task> Assign a task to a Clew peer',
         '  /peer todos              Show received tasks',
         '  /peer todo done <id>     Mark task done',
+        '  /peer memory sync         Import memories from all connected peers into MemoryDB',
+        '  /peer memory auto [on|off] Toggle periodic memory sync via cron (default 60 min interval)',
+        '                           👉 /peer memory auto on 30  (every 30 min)',
+        '  /peer swarm <command>    Run command on ALL connected peers in parallel',
+        '                           Options: -t, --timeout <sec> (default 60)',
+        '                                    -f, --filter <pattern>',
+        '                                    --dry-run',
         '  /peer inbox              View pending messages',
+        '  /peer dashboard           Show peer task dashboard with todos and results',
         '  /peer health              Show LAN peer health, latency, and queue load',
         '  /peer spawn [options]    Spawn a new peer shell terminal window',
         '                           Options: -n, --name <name> (peer display name)',

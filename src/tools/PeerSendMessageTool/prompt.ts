@@ -25,4 +25,9 @@ export const PROMPT =
   '**Sender identity in task messages**: When sending a task to a spawned peer, always include ' +
   'your own peer name and port number in the message text. ' +
   'Example: "I am {your_name} (port {your_port}). Do X and send the result back to me." ' +
-  'This lets the peer node know where to reply.';
+  'This lets the peer node know where to reply.\n\n' +
+  '**Broker mode** (`useBroker: true`): Sends via the broker queue at POST /broker/send. ' +
+  'The message is stored in the target peer\'s broker and the receiver polls for it. ' +
+  'For waitResponse, polls /broker/recv?replyTo= for the reply. ' +
+  'Use broker mode when the receiver may be temporarily offline or when you want ' +
+  'message durability via the broker queue.';

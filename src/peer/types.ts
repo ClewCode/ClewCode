@@ -72,6 +72,18 @@ export interface MeshChatMessage {
 /** Priority level for queued tasks */
 export type MeshTaskPriority = 'low' | 'normal' | 'high';
 
+/** A message stored in the broker queue */
+export interface BrokerMessage {
+  id: string;
+  from: string;
+  fromName: string;
+  to: string;
+  text: string;
+  replyTo?: string;
+  timestamp: number;
+  delivered: boolean;
+}
+
 /** Status of a queued or running task */
 export type MeshTaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 

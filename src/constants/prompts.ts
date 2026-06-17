@@ -46,6 +46,9 @@ import { SLEEP_TOOL_NAME } from '../tools/SleepTool/prompt.js';
 import { TICK_TAG } from './xml.js';
 import { logForDebugging } from '../utils/debug.js';
 import { loadMemoryPrompt } from '../memdir/memdir.js';
+import { ensureMemorySystem } from '../memory/autoInit.js';
+import { MemoryDB } from '../memory/database.js';
+import { budgetedInject } from '../memory/budgetInjector.js';
 import { getSessionGoalSync } from '../utils/sessionGoalState.js';
 import { isUndercover } from '../utils/undercover.js';
 import { isMcpInstructionsDeltaEnabled } from '../utils/mcpInstructionsDelta.js';
@@ -114,6 +117,21 @@ function getAntModelOverrideSection(): string | null {
   if (process.env.USER_TYPE !== 'ant') return null;
   if (isUndercover()) return null;
   return getAntModelOverrideConfig()?.defaultSystemPromptSuffix || null;
+}
+
+/**
+ * Load budgeted memories from MemoryDB for auto-injection into system prompt.
+ * Lazily initializes the memory system if needed.
+ */
+async function loadBudgetedMemory(): Promise<string | null> {
+  try {
+    await ensureMemorySystem();
+    if (!MemoryDB.isInitialized()) return null;
+    const injected = await budgetedInject(1500, true);
+    return injected || null;
+  } catch {
+    return null;
+  }
 }
 
 function getLanguageSection(languagePreference: string | undefined): string | null {
@@ -436,6 +454,7 @@ export async function getSystemPrompt(
   const dynamicSections = [
     systemPromptSection('session_guidance', () => getSessionSpecificGuidanceSection(enabledTools, skillToolCommands)),
     systemPromptSection('memory', () => loadMemoryPrompt()),
+    systemPromptSection('budgeted_memory', () => loadBudgetedMemory()),
     systemPromptSection('session_goal', () => loadGoalPrompt()),
     systemPromptSection('ant_model_override', () => getAntModelOverrideSection()),
     systemPromptSection('env_info_simple', () => computeSimpleEnvInfo(model, additionalWorkingDirectories)),

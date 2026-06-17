@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Peer memory sync**: `/peer memory sync` imports memories from all connected peers into local MemoryDB via new `/memory/export` HTTP endpoint. Each peer returns top-50 memories ordered by importance; upsert ensures idempotent cross-machine deduplication.
+- **Peer memory auto‑sync**: `/peer memory auto on [minutes]` schedules periodic memory sync via cron system (default 60 min, min 15, max 1440). `/peer memory auto off` cancels the cron task. Runs an initial sync immediately on enable.
+- **Memory system dashboard**: `/memory dashboard` shows a unified view of profile, MemoryDB stats, Dream, Distill, Peer auto-sync state, and recent timeline events.
+- **Legacy migration**: `migrateFromSessionDB()` reads old `session-memory.db` (sessions, digests, topics) and upserts into MemoryDB with deterministic keys. Auto-runs during `/memory init`. `queryTimeline()` now reads from MemoryDB as primary source, falls back to legacy DB.
+- **Removed redundant files**: Deleted `autoExtract.ts`, `consolidator.ts`, `index.ts`, `prompts.ts` from `src/services/longTermMemory/`.
+- **Redirected longTermMemory to MemoryDB**: `dream.ts`, `graph.ts`, `experience.ts`, `consolidate.ts`, `crossSession.ts` all now read/write to MemoryDB instead of their own SQLite DB or JSON files. Exports stay the same — zero breakage for callers like `/memory graph`, `/memory xp`, `/memory timeline`, `/memory dashboard`.
+- **autoDream logs to MemoryDB**: `dream_completed` event written to `memory_timeline` after each Dream run, so dashboard can show dream status without reading old state files.
+
+### Changed
+- **Hidden `clew-gateway` provider**: Filtered out from `PROVIDER_IDS` so it no longer appears in `/providers` or `/model` selectors.
+- **Removed Anthropic provider**: Since clew-gateway + cline providers cover Anthropic models, the standalone `anthropic` entry (models, UI sub-menus, OAuth login, provider class) has been removed from the provider system. Use Claude Code directly for Anthropic-first workflows.
+- **`/model` now fetches from API for all providers**: `supportsModelFetching()` expanded from a 14-provider whitelist to all providers (except google-assist). Every provider tries its `/models` endpoint first; if unavailable, falls back to static models in `providers.json`.
+- **`/peer swarm`**: New command that sends a shell command to ALL connected peers in parallel via `/peer-exec`, collects and displays aggregated results. Supports `--timeout`, `--filter`, and `--dry-run` flags.
+- **`peer_swarm` tool**: New AI-callable tool that runs a shell command on all connected peers in parallel and returns aggregated results. Analogous to `peer_broadcast` but for `/peer-exec` instead of `/peer-todo`.
+- **In-process message broker**: New endpoints on PeerServer — `POST /broker/send`, `GET /broker/recv` (long-poll), `POST /broker/reply`. Messages are queued in PeerStore with delivery tracking, correlation IDs, and waiter resolution. No new process needed — runs inside existing `/peer share` server.
+- **Peer task dashboard**: New `formatPeerTaskDashboard()` utility, `/peer dashboard` command, and `peer_dashboard` AI tool. Shows connected peers, their assigned tasks (with status), and result summaries in a collapsed format — giving the AI full visibility into peer work as a "checklist person".
+- **MemoryDB — SQLite-backed memory store**: New `src/memory/database.ts` + `src/memory/schema.ts` implementing MiMo-inspired memory system with `memories` table (importance, confidence, access_count, type) and `memory_timeline` table (event lifecycle tracking). Supports budgeted querying by importance × recency ranking, auto-eviction, and timeline event logging.
+- **Memory hierarchy**: New `src/memory/hierarchy.ts` for managing `.clew/memory/` directory with MEMORY.md, DECISIONS.md, TASTE.md, task directories. Auto-initializes on first use.
+- **Budgeted injection**: New `src/memory/budgetInjector.ts` for importance-ranked memory injection into system prompt. Loads file hierarchy + SQLite memories, ranks by importance × confidence × recency, and fits into configurable token budget.
+- **`/memory scan`**: New subcommand that scans the repo, detects stack/language/package-manager/entrypoints/provider-architecture, and bootstraps seed memories into MemoryDB + MEMORY.md/DECISIONS.md/TASTE.md.
+- **`/memory rebuild`**: New subcommand to reconstruct context from memories using budgeted injection. Shows per-memory detail (key, type, importance, score, tokens), budget usage, and skipped memories with reasons.
+- **`/memory scan` idempotent**: Scanner uses deterministic keys (`scan.*`) with upsert. Output shows created/updated/unchanged counts. Content-hash change detection skips unchanged entries.
+- **`/memory recall`**: New subcommand that recalls memories ranked by combined score (importance×0.3 + confidence×0.15 + recency×0.2 + access_count×0.1). Bumps access_count on recall. Supports `--verbose` for score breakdown.
+- **`/memory feedback`**: New subcommand supporting 7 signals (accepted, rejected, corrected, preferred, disliked, important, wrong). Updates importance/confidence deltas, writes `preferred` signals to TASTE.md, and records all events in memory_timeline.
+- **MemoryDB hardening**: Added upsertMemory (INSERT OR REPLACE by key), findByKey, deleteMemoryByKey, recallMemories with scoring, and content-hash change detection.
+- **recall relevance scoring**: Added lexical relevance computation (0..1) between query and memory content/key/type. New score formula: relevance×0.45 + importance×0.20 + recency×0.15 + access×0.10 + confidence×0.10. `--verbose` shows all 5 components.
+- **feedback aliases**: Added signal aliases (`correct`→corrected, `incorrect`→wrong, `like`→preferred, `dislike`→disliked). Only canonical signals stored in memory_timeline.
+- **In-compact memory extraction**: Compact prompt now asks LLM to output `<memories>` block with structured facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`, etc.). `parseCompactMemories()` extracts them, `autoExtractFromSession()` saves to MemoryDB + markdown files. Works for both manual `/compact` and auto-compact. Shows `N memories extracted` in status line.
+- **Dream → MemoryDB**: After Dream consolidation runs, `syncDreamToMemoryDB()` reads updated markdown files and upserts tagged lines into MemoryDB (SQLite). Bridges Dream's file-based consolidation with structured memory store.
+- **Distill → MemoryDB**: Rewrote `autoDistill()` to query MemoryDB for recent memories instead of file-based digests. Extracts patterns from memory types and content themes; generates skill suggestions from MemoryDB data.
+- **Fix GoalTool crash**: Added missing `mapToolResultToToolResultBlockParam` method to GoalTool (required by `Tool` interface but never defined). Fixes runtime `$.mapToolResultToToolResultBlockParam is not a function` error when Goal tool was called.
+- **Hide auto-compact %**: Removed `N% until auto-compact` display from TokenWarning component — only shown when context is actually low.
+- **Memory types**: Added `task_progress`, `command`, `note` to MEMORY_TYPES schema.
+- **Memory tests**: 8 new tests covering upsert idempotency, content-hash change detection, recall ranking by relevance, access_count increment, feedback effects (important, preferred→TASTE.md, wrong→confidence), signal alias resolution, and budgeted query limits.
+- **Auto memory lifecycle**: `ensureMemorySystem()` auto-inits DB + auto-scans on first access. Budgeted memories auto-injected into system prompt every turn via `loadBudgetedMemory()`. `memory_feedback` AI tool lets the agent give feedback directly without human typing.
+
 ## [0.2.33] — 2026-06-17
 
 ### Fixed
