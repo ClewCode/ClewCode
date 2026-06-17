@@ -46,7 +46,7 @@ Clew Code is a reverse-engineered reimplementation of [Claude Code](https://gith
 - **Automated memory consolidation** — Dream process (7-day cycle) merges duplicate insights and creates weekly digests. Distill process (30-day cycle) extracts reusable patterns and generates skill suggestions.
 - **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
 - **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
-- **7 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk. Granular allow/deny rules with pattern matching.
+- **8 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, guardian. Granular allow/deny rules with pattern matching.
 
 ---
 
@@ -168,7 +168,7 @@ clew
 ❯ /maxmode on     # parallel candidate generation
 ❯ /peer discover  # find other Clew instances on LAN
 ❯ /mcp list       # connected MCP servers
-❯ /loop start     # background autonomous loop
+❯ /daemon        # background autonomous loop
 
 # One-shot mode (pipe-friendly)
 clew -p "summarize CHANGELOG.md"
@@ -197,7 +197,7 @@ export GEMINI_API_KEY=...
 ## Commands
 
 <details>
-<summary><strong>22 slash commands</strong></summary>
+<summary><strong>21 slash commands</strong></summary>
 
 ```
 /model        Switch provider or model
@@ -217,7 +217,6 @@ export GEMINI_API_KEY=...
 /agents       TUI Agent dashboard (operational view)
 /peer         Collaborate with Clew instances on LAN
 /remote       WebSocket remote control
-/loop         24/7 autonomous agent loop
 /daemon       Autonomous daemon dashboard
 /task         Scheduled tasks
 /memory       Long-term memory search and management
