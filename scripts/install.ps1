@@ -34,4 +34,7 @@ Write-Info 'Installing clew-code via bun...'
 # dynamically — it's only needed for image/ComputerUse features.
 & bun install -g clew-code --ignore-scripts
 
-Write-Host "`nDone! Run clew to start." -ForegroundColor Green
+Write-Host "`nDone! Opening a new terminal with clew ready..." -ForegroundColor Green
+
+# ── Open new terminal with clew ready ──────────────────────────────────────
+Start-Process pwsh -ArgumentList "-NoExit", "clew"

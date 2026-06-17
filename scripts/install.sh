@@ -46,4 +46,20 @@ info "Installing clew-code via bun..."
 # dynamically — it's only needed for image/ComputerUse features.
 bun install -g clew-code --ignore-scripts
 
-printf "\n${BOLD}Done!${NC} Run ${BOLD}clew${NC} to start.\n"
+printf "\n${BOLD}Done!${NC} Opening a new terminal with ${BOLD}clew${NC} ready...\n"
+
+# ── Open new terminal with clew ready ─────────────────────────────────────
+case "$OS" in
+  Darwin)
+    osascript -e 'tell application "Terminal" to do script "clew"' &>/dev/null || true
+    ;;
+  Linux)
+    # Try common terminal emulators
+    for term in x-terminal-emulator gnome-terminal xterm konsole; do
+      if command -v "$term" &>/dev/null; then
+        ($term &) 2>/dev/null || true
+        break
+      fi
+    done
+    ;;
+esac

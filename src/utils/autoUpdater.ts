@@ -547,7 +547,7 @@ export async function getVersionHistory(limit: number): Promise<string[]> {
 
   try {
     const allVersions = jsonParse(result.stdout.trim()) as string[];
-    const currentVersion = MACRO.VERSION;
+    const _currentVersion = MACRO.VERSION;
 
     // Filter out versions that would cause rollback to pre-2.0 versions
     // This prevents users from accidentally downgrading to unsupported legacy versions
@@ -590,16 +590,16 @@ function detectGlobalPackageManager(): 'npm' | 'bun' {
     const userProfile = process.env.USERPROFILE;
     if (userProfile) {
       const normalizedUserPath = userProfile.split(win32.sep).join(posix.sep);
-      if (pathsToCheck.some(p => p.startsWith(normalizedUserPath + '/.bun/bin/'))) {
+      if (pathsToCheck.some(p => p.startsWith(`${normalizedUserPath}/.bun/bin/`))) {
         return 'bun';
       }
       // %USERPROFILE%/node_modules/ is bun's global install dir on Windows
       // (npm uses %APPDATA%/npm/node_modules/), but only match if no npm path detected
-      if (pathsToCheck.some(p => p.startsWith(normalizedUserPath + '/node_modules/'))) {
+      if (pathsToCheck.some(p => p.startsWith(`${normalizedUserPath}/node_modules/`))) {
         // Check if any path also matches npm's global dir — if so, npm takes priority
         const appData = process.env.APPDATA;
         const normalizedAppData = appData ? appData.split(win32.sep).join(posix.sep) : '';
-        const hasNpmPath = normalizedAppData && pathsToCheck.some(p => p.startsWith(normalizedAppData + '/npm/'));
+        const hasNpmPath = normalizedAppData && pathsToCheck.some(p => p.startsWith(`${normalizedAppData}/npm/`));
         if (!hasNpmPath) {
           return 'bun';
         }
@@ -609,7 +609,7 @@ function detectGlobalPackageManager(): 'npm' | 'bun' {
     const appData = process.env.APPDATA;
     if (appData) {
       const normalizedAppData = appData.split(win32.sep).join(posix.sep);
-      if (pathsToCheck.some(p => p.startsWith(normalizedAppData + '/npm/'))) {
+      if (pathsToCheck.some(p => p.startsWith(`${normalizedAppData}/npm/`))) {
         return 'npm';
       }
     }
@@ -681,9 +681,15 @@ To fix this issue:
     // Use specific version if provided, otherwise use latest
     const packageSpec = specificVersion ? `${MACRO.PACKAGE_URL}@${specificVersion}` : MACRO.PACKAGE_URL;
 
+    // Use the same package manager that installed clew (bun or npm)
+    // so the update goes to the correct global directory.
+    const pm = detectGlobalPackageManager();
+    const pmCmd = pm === 'bun' ? 'bun' : 'npm';
+    const pmArgs = ['install', '-g', packageSpec];
+
     // Run from home directory to avoid reading project-level .npmrc/.bunfig.toml
     // which could be maliciously crafted to redirect to an attacker's registry
-    const installResult = await execFileNoThrowWithCwd('npm', ['install', '-g', packageSpec], {
+    const installResult = await execFileNoThrowWithCwd(pmCmd, pmArgs, {
       cwd: homedir(),
     });
     if (installResult.code !== 0) {

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.31] — 2026-06-17
+
+### Changed
+
+- **Install scripts auto-open terminal**: After installation, `install.sh` and `install.ps1` now open a new terminal window with `clew` ready to run — no need to manually open a new shell. (`scripts/install.sh`, `scripts/install.ps1`)
+- **README install section**: Added one-liner install instructions (`curl | bash` and `irm | iex`) with the install scripts. (`README.md`)
+
 ### Fixed
 
 - **Suppress blank assistant messages**: Filtered out assistant messages containing only system reminders so they do not render as empty `▶` bullet points in the terminal UI.
@@ -11,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - **Remove sharp from optionalDependencies**: Sharp's install script fails on Windows without build tools. All sharp imports are dynamic with fallbacks — removed from package.json so `npm install -g clew-code` works everywhere. Install sharp separately for image processing features. (`package.json`, `src/tools/FileReadTool/imageProcessor.ts`)
 - **Install scripts**: New `scripts/install.sh` (Unix) and `scripts/install.ps1` (Windows) that auto-install bun then run `bun install -g clew-code`. No manual setup needed. (`scripts/install.sh`, `scripts/install.ps1`)
 - **Node 12 compatibility**: Use `||` instead of `??` in `bin/clew.cjs` to support Node.js 12 (npm's global shim runs the entry point with Node before spawning bun). (`bin/clew.cjs`)
+- **`clew update` uses wrong package manager**: When clew was installed via `bun install -g`, running `clew update` still ran `npm install -g` — installing the new version in npm's global dir while the shell still found the bun-installed old version. Now uses the same package manager that installed it (`bun` vs `npm`). (`src/utils/autoUpdater.ts`)
 
 ## [0.2.28] — 2026-06-16
 

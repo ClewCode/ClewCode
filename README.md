@@ -115,6 +115,22 @@ Profile and last-used permission mode are saved between sessions.
 
 ## Install
 
+### One-liner (recommended)
+
+Installs Bun automatically if missing, then installs clew-code and opens a new terminal ready to go.
+
+macOS / Linux:
+```bash
+curl -fsSL https://raw.githubusercontent.com/ClewCode/ClewCode/main/scripts/install.sh | bash
+```
+
+Windows (PowerShell as Admin):
+```powershell
+irm https://raw.githubusercontent.com/ClewCode/ClewCode/main/scripts/install.ps1 | iex
+```
+
+### With npm (requires Bun or Node.js already installed)
+
 ```bash
 npm install -g clew-code
 ```
@@ -127,7 +143,7 @@ clew
 
 Requires [Bun](https://bun.sh) 1.3+, Node.js 18+, Git, and one provider API key.
 
-**Build from source:**
+### Build from source
 
 ```bash
 git clone https://github.com/ClewCode/ClewCode.git
