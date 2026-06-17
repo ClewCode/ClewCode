@@ -204,7 +204,7 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
   }
 
   const connCount = peers.length;
-  const peers = summarizePeers(peers);
+  const peerSummary = summarizePeers(peers);
 
   return (
     <Pane color="claude">
@@ -222,8 +222,8 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
           </Text>
           {connCount > 0 && (
             <Text dimColor>
-              Peer health: {peers.healthy} healthy, {peers.lagging} lagging, {peers.offline} offline
-              {peers.avgLatencyMs !== undefined ? `, avg ${Math.round(peers.avgLatencyMs)}ms` : ''}
+              Peer health: {peerSummary.healthy} healthy, {peerSummary.lagging} lagging, {peerSummary.offline} offline
+              {peerSummary.avgLatencyMs !== undefined ? `, avg ${Math.round(peerSummary.avgLatencyMs)}ms` : ''}
             </Text>
           )}
         </Box>
