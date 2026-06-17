@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
 
 - **Personal profile overhaul**: Rewrote `PERSONAL_PROFILE_PROMPT` with delegation, memory-driven learning, proactive skill creation, scheduling, and autonomy instructions. Personal profile now acts as a personal AI control center. (`src/constants/profilePrompts.ts`)
 
-- **`/delegate` bundled skill**: New personal profile skill for delegating coding work to a Codex worker via `process_mesh`. Creates structured tasks with goal, scope, constraints, and validation. Aliases: `/code`, `/worker`. (`src/skills/bundled/personalDelegate.ts`)
+- **`/delegate` bundled skill**: New personal profile skill for delegating coding work to a Codex worker via `process_peer`. Creates structured tasks with goal, scope, constraints, and validation. Aliases: `/code`, `/worker`. (`src/skills/bundled/personalDelegate.ts`)
 
 - **Personal profile documentation**: New `docs/personal-profile.html` page covering delegation workflow, memory-driven learning, skill creation, scheduling, and coding vs personal profile comparison. Updated `docs/commands.html` with `/profile` command reference.
 
@@ -102,7 +102,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Peer task queue system**: `PeerServer` now supports queuing commands when busy (`/peer-exec`). Tasks are queued with priority levels (`low`/`normal`/`high`), auto-dequeued when the server is free, and exposed via `/peer-queue-status`, `/peer-queue-cancel`, `/peer-queue-cancel-all` endpoints with SSE queue events.
-- **Peer health monitoring**: `peerHealth.ts` with `getPeerHealth()` (healthy/lagging/offline), `formatPeerLatency()`, and `summarizePeerMesh()`. PeerStore tracks liveness ping latency (`latencyMs`), busy/queue state, and connection errors.
+- **Peer health monitoring**: `peerHealth.ts` with `getPeerHealth()` (healthy/lagging/offline), `formatPeerLatency()`, and `summarizePeers()`. PeerStore tracks liveness ping latency (`latencyMs`), busy/queue state, and connection errors.
 - **Long-term memory system**: New module `src/services/longTermMemory/` with auto-extraction (`autoExtract.ts`), session consolidation (`consolidate.ts`, `consolidator.ts`), cross-session history (`crossSession.ts`), timeline querying (`timeline.ts`), and `prompts.ts` — all exported via `index.ts`.
 - **Session memory consolidation**: `src/services/SessionMemory/consolidation.ts` parses notes sections, de-duplicates redundant content, and compacts session memory into structured summaries.
 - **Gemini Code Assist provider**: `CodeAssistProvider.ts` — OAuth-based Google Code Assist provider with token caching and project ID detection, registered as `google-assist` in `CLI_PROVIDER_DEFAULTS`.
@@ -118,7 +118,7 @@ All notable changes to this project will be documented in this file.
 - **peer → swarm rename**: All `src/commands/peer/` → `src/commands/swarm/` and docs (`peer.html` → `swarm.html`, `peer.th.html` → `swarm.th.html`). Import references updated across `commands.ts`, components, and tools.
 - **PeerStore fields**: Extended `PeerInfo` with `isBusy`, `queueDepth`, `latencyMs`, `lastConnectionError`. On liveness pings, latency is measured via `performance.now()`.
 - **`/agents` command registered**: New `agentsCmd` imported and added to the command registry.
-- **Docs regenerated**: All HTML docs rebuilt to reflect swarm rename and latest features.
+- **Docs regenerated**: HTML docs rebuilt to reflect peer terminology and latest features.
 
 ### Fixed
 
@@ -465,3 +465,4 @@ All notable changes to this project will be documented in this file.
 ---
 
 ## [0.1.3] - 2026-06-03
+

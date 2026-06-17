@@ -560,7 +560,7 @@ Use it carefully for:
 
 * Process-backed AI worker tasks
 * External command execution
-* Mesh-controlled automation
+* Peer-controlled automation
 
 Do not use it for simple local logic that can be handled directly inside the current process.
 
