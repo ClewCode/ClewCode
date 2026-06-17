@@ -13,7 +13,13 @@
  * 2. dynamicTeamContext (tmux teammates via CLI args)
  */
 // Re-export in-process teammate utilities from teammateContext.ts
-export { createTeammateContext, getTeammateContext, isInProcessTeammate, runWithTeammateContext, } from './teammateContext.js';
+export {
+  createTeammateContext,
+  getTeammateContext,
+  isInProcessTeammate,
+  runWithTeammateContext,
+} from './teammateContext.js';
+
 import { isEnvTruthy } from './envUtils.js';
 import { getTeammateContext } from './teammateContext.js';
 /**
@@ -22,10 +28,9 @@ import { getTeammateContext } from './teammateContext.js';
  * Priority: AsyncLocalStorage (in-process) > dynamicTeamContext (tmux teammates).
  */
 export function getParentSessionId() {
-    const inProcessCtx = getTeammateContext();
-    if (inProcessCtx)
-        return inProcessCtx.parentSessionId;
-    return dynamicTeamContext?.parentSessionId;
+  const inProcessCtx = getTeammateContext();
+  if (inProcessCtx) return inProcessCtx.parentSessionId;
+  return dynamicTeamContext?.parentSessionId;
 }
 /**
  * Dynamic team context for runtime team joining.
@@ -36,19 +41,19 @@ let dynamicTeamContext = null;
  * Set the dynamic team context (called when joining a team at runtime)
  */
 export function setDynamicTeamContext(context) {
-    dynamicTeamContext = context;
+  dynamicTeamContext = context;
 }
 /**
  * Clear the dynamic team context (called when leaving a team)
  */
 export function clearDynamicTeamContext() {
-    dynamicTeamContext = null;
+  dynamicTeamContext = null;
 }
 /**
  * Get the current dynamic team context (for inspection/debugging)
  */
 export function getDynamicTeamContext() {
-    return dynamicTeamContext;
+  return dynamicTeamContext;
 }
 /**
  * Returns the agent ID if this session is running as a teammate in a swarm,
@@ -56,20 +61,18 @@ export function getDynamicTeamContext() {
  * Priority: AsyncLocalStorage (in-process) > dynamicTeamContext (tmux via CLI args).
  */
 export function getAgentId() {
-    const inProcessCtx = getTeammateContext();
-    if (inProcessCtx)
-        return inProcessCtx.agentId;
-    return dynamicTeamContext?.agentId;
+  const inProcessCtx = getTeammateContext();
+  if (inProcessCtx) return inProcessCtx.agentId;
+  return dynamicTeamContext?.agentId;
 }
 /**
  * Returns the agent name if this session is running as a teammate in a swarm.
  * Priority: AsyncLocalStorage (in-process) > dynamicTeamContext (tmux via CLI args).
  */
 export function getAgentName() {
-    const inProcessCtx = getTeammateContext();
-    if (inProcessCtx)
-        return inProcessCtx.agentName;
-    return dynamicTeamContext?.agentName;
+  const inProcessCtx = getTeammateContext();
+  if (inProcessCtx) return inProcessCtx.agentName;
+  return dynamicTeamContext?.agentName;
 }
 /**
  * Returns the team name if this session is part of a team.
@@ -79,12 +82,10 @@ export function getAgentName() {
  * @param teamContext - Optional team context from AppState (for leaders)
  */
 export function getTeamName(teamContext) {
-    const inProcessCtx = getTeammateContext();
-    if (inProcessCtx)
-        return inProcessCtx.teamName;
-    if (dynamicTeamContext?.teamName)
-        return dynamicTeamContext.teamName;
-    return teamContext?.teamName;
+  const inProcessCtx = getTeammateContext();
+  if (inProcessCtx) return inProcessCtx.teamName;
+  if (dynamicTeamContext?.teamName) return dynamicTeamContext.teamName;
+  return teamContext?.teamName;
 }
 /**
  * Returns true if this session is running as a teammate in a swarm.
@@ -92,12 +93,11 @@ export function getTeamName(teamContext) {
  * For tmux teammates, requires BOTH an agent ID AND a team name.
  */
 export function isTeammate() {
-    // In-process teammates run within the same process
-    const inProcessCtx = getTeammateContext();
-    if (inProcessCtx)
-        return true;
-    // Tmux teammates require both agent ID and team name
-    return !!(dynamicTeamContext?.agentId && dynamicTeamContext?.teamName);
+  // In-process teammates run within the same process
+  const inProcessCtx = getTeammateContext();
+  if (inProcessCtx) return true;
+  // Tmux teammates require both agent ID and team name
+  return !!(dynamicTeamContext?.agentId && dynamicTeamContext?.teamName);
 }
 /**
  * Returns the teammate's assigned color,
@@ -105,10 +105,9 @@ export function isTeammate() {
  * Priority: AsyncLocalStorage (in-process) > dynamicTeamContext (tmux teammates).
  */
 export function getTeammateColor() {
-    const inProcessCtx = getTeammateContext();
-    if (inProcessCtx)
-        return inProcessCtx.color;
-    return dynamicTeamContext?.color;
+  const inProcessCtx = getTeammateContext();
+  if (inProcessCtx) return inProcessCtx.color;
+  return dynamicTeamContext?.color;
 }
 /**
  * Returns true if this teammate session requires plan mode before implementation.
@@ -116,13 +115,12 @@ export function getTeammateColor() {
  * Priority: AsyncLocalStorage > dynamicTeamContext > env var.
  */
 export function isPlanModeRequired() {
-    const inProcessCtx = getTeammateContext();
-    if (inProcessCtx)
-        return inProcessCtx.planModeRequired;
-    if (dynamicTeamContext !== null) {
-        return dynamicTeamContext.planModeRequired;
-    }
-    return isEnvTruthy(process.env.CLAUDE_CODE_PLAN_MODE_REQUIRED);
+  const inProcessCtx = getTeammateContext();
+  if (inProcessCtx) return inProcessCtx.planModeRequired;
+  if (dynamicTeamContext !== null) {
+    return dynamicTeamContext.planModeRequired;
+  }
+  return isEnvTruthy(process.env.CLAUDE_CODE_PLAN_MODE_REQUIRED);
 }
 /**
  * Check if this session is a team lead.
@@ -138,22 +136,22 @@ export function isPlanModeRequired() {
  * @returns true if this session is the team lead
  */
 export function isTeamLead(teamContext) {
-    if (!teamContext?.leadAgentId) {
-        return false;
-    }
-    // Use getAgentId() for AsyncLocalStorage support (in-process teammates)
-    const myAgentId = getAgentId();
-    const leadAgentId = teamContext.leadAgentId;
-    // If my agent ID matches the lead agent ID, I'm the lead
-    if (myAgentId === leadAgentId) {
-        return true;
-    }
-    // Backwards compat: if no agent ID is set and we have a team context,
-    // this is the original session that created the team (the lead)
-    if (!myAgentId) {
-        return true;
-    }
+  if (!teamContext?.leadAgentId) {
     return false;
+  }
+  // Use getAgentId() for AsyncLocalStorage support (in-process teammates)
+  const myAgentId = getAgentId();
+  const leadAgentId = teamContext.leadAgentId;
+  // If my agent ID matches the lead agent ID, I'm the lead
+  if (myAgentId === leadAgentId) {
+    return true;
+  }
+  // Backwards compat: if no agent ID is set and we have a team context,
+  // this is the original session that created the team (the lead)
+  if (!myAgentId) {
+    return true;
+  }
+  return false;
 }
 /**
  * Checks if there are any active in-process teammates running.
@@ -161,13 +159,13 @@ export function isTeamLead(teamContext) {
  * before exiting.
  */
 export function hasActiveInProcessTeammates(appState) {
-    // Check for running in-process teammate tasks
-    for (const task of Object.values(appState.tasks)) {
-        if (task.type === 'in_process_teammate' && task.status === 'running') {
-            return true;
-        }
+  // Check for running in-process teammate tasks
+  for (const task of Object.values(appState.tasks)) {
+    if (task.type === 'in_process_teammate' && task.status === 'running') {
+      return true;
     }
-    return false;
+  }
+  return false;
 }
 /**
  * Checks if there are in-process teammates still actively working on tasks.
@@ -175,12 +173,12 @@ export function hasActiveInProcessTeammates(appState) {
  * Used to determine if we should wait before sending shutdown prompts.
  */
 export function hasWorkingInProcessTeammates(appState) {
-    for (const task of Object.values(appState.tasks)) {
-        if (task.type === 'in_process_teammate' && task.status === 'running' && !task.isIdle) {
-            return true;
-        }
+  for (const task of Object.values(appState.tasks)) {
+    if (task.type === 'in_process_teammate' && task.status === 'running' && !task.isIdle) {
+      return true;
     }
-    return false;
+  }
+  return false;
 }
 /**
  * Returns a promise that resolves when all working in-process teammates become idle.
@@ -188,46 +186,45 @@ export function hasWorkingInProcessTeammates(appState) {
  * Returns immediately if no teammates are working.
  */
 export function waitForTeammatesToBecomeIdle(setAppState, appState) {
-    const workingTaskIds = [];
-    for (const [taskId, task] of Object.entries(appState.tasks)) {
-        if (task.type === 'in_process_teammate' && task.status === 'running' && !task.isIdle) {
-            workingTaskIds.push(taskId);
+  const workingTaskIds = [];
+  for (const [taskId, task] of Object.entries(appState.tasks)) {
+    if (task.type === 'in_process_teammate' && task.status === 'running' && !task.isIdle) {
+      workingTaskIds.push(taskId);
+    }
+  }
+  if (workingTaskIds.length === 0) {
+    return Promise.resolve();
+  }
+  // Create a promise that resolves when all working teammates become idle
+  return new Promise(resolve => {
+    let remaining = workingTaskIds.length;
+    const onIdle = () => {
+      remaining--;
+      if (remaining === 0) {
+        // biome-ignore lint/nursery/noFloatingPromises: resolve is a callback, not a Promise
+        resolve();
+      }
+    };
+    // Register callback on each working teammate
+    // Check current isIdle state to handle race where teammate became idle
+    // between our initial snapshot and this callback registration
+    setAppState(prev => {
+      const newTasks = { ...prev.tasks };
+      for (const taskId of workingTaskIds) {
+        const task = newTasks[taskId];
+        if (task && task.type === 'in_process_teammate') {
+          // If task is already idle, call onIdle immediately
+          if (task.isIdle) {
+            onIdle();
+          } else {
+            newTasks[taskId] = {
+              ...task,
+              onIdleCallbacks: [...(task.onIdleCallbacks ?? []), onIdle],
+            };
+          }
         }
-    }
-    if (workingTaskIds.length === 0) {
-        return Promise.resolve();
-    }
-    // Create a promise that resolves when all working teammates become idle
-    return new Promise(resolve => {
-        let remaining = workingTaskIds.length;
-        const onIdle = () => {
-            remaining--;
-            if (remaining === 0) {
-                // biome-ignore lint/nursery/noFloatingPromises: resolve is a callback, not a Promise
-                resolve();
-            }
-        };
-        // Register callback on each working teammate
-        // Check current isIdle state to handle race where teammate became idle
-        // between our initial snapshot and this callback registration
-        setAppState(prev => {
-            const newTasks = { ...prev.tasks };
-            for (const taskId of workingTaskIds) {
-                const task = newTasks[taskId];
-                if (task && task.type === 'in_process_teammate') {
-                    // If task is already idle, call onIdle immediately
-                    if (task.isIdle) {
-                        onIdle();
-                    }
-                    else {
-                        newTasks[taskId] = {
-                            ...task,
-                            onIdleCallbacks: [...(task.onIdleCallbacks ?? []), onIdle],
-                        };
-                    }
-                }
-            }
-            return { ...prev, tasks: newTasks };
-        });
+      }
+      return { ...prev, tasks: newTasks };
     });
+  });
 }

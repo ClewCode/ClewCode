@@ -29,7 +29,7 @@ import {
 } from './bootstrap/state.js';
 import type { ModelUsage } from './entrypoints/agentSdkTypes.js';
 import { ProviderManager } from './services/ai/ProviderManager.js';
-import { fromAnthropicUsage, type ProviderUsage } from './services/ai/usageTypes.js';
+import type { ProviderUsage } from './services/ai/usageTypes.js';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -212,7 +212,7 @@ function formatModelUsage(): string {
       `${formatNumber(usage.cacheCreationInputTokens)} cache write` +
       (usage.webSearchRequests > 0 ? `, ${formatNumber(usage.webSearchRequests)} web search` : '') +
       ` (${formatCost(usage.costUSD)})`;
-    result += `\n` + `${shortName}:`.padStart(21) + usageString;
+    result += `\n${`${shortName}:`.padStart(21)}${usageString}`;
   }
   return result;
 }

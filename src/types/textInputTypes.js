@@ -6,15 +6,15 @@
  * ID list stay in sync.
  */
 export function isValidImagePaste(c) {
-    return c.type === 'image' && c.content.length > 0;
+  return c.type === 'image' && c.content.length > 0;
 }
 /** Extract image paste IDs from a QueuedCommand's pastedContents. */
 export function getImagePasteIds(pastedContents) {
-    if (!pastedContents) {
-        return undefined;
-    }
-    const ids = Object.values(pastedContents)
-        .filter(isValidImagePaste)
-        .map(c => c.id);
-    return ids.length > 0 ? ids : undefined;
+  if (!pastedContents) {
+    return undefined;
+  }
+  const ids = Object.values(pastedContents)
+    .filter(isValidImagePaste)
+    .map(c => c.id);
+  return ids.length > 0 ? ids : undefined;
 }

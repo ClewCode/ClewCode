@@ -1,5 +1,4 @@
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.js';
-import React from 'react';
 import type { LocalJSXCommandCall, LocalJSXCommandOnDone } from '../../types/command.js';
 import { detectCurrentRepositoryWithHost } from '../../utils/detectRepository.js';
 import { execFileNoThrow } from '../../utils/execFileNoThrow.js';

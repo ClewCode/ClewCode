@@ -3,6 +3,6 @@
  * Used to defer Zod schema construction from module init time to first access.
  */
 export function lazySchema(factory) {
-    let cached;
-    return () => (cached ??= factory());
+  let cached;
+  return () => (cached ??= factory());
 }

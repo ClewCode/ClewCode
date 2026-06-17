@@ -63,7 +63,7 @@ export const PeerDisconnectTool = buildTool({
     let peer = store.findPeer(input.peer);
 
     const portNum = parseInt(input.peer, 10);
-    if (!peer && !isNaN(portNum)) peer = store.getPeerByPort(portNum);
+    if (!peer && !Number.isNaN(portNum)) peer = store.getPeerByPort(portNum);
 
     if (!peer) {
       return { data: { success: false, error: `Peer "${input.peer}" not found` } };

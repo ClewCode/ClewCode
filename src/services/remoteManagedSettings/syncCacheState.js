@@ -26,64 +26,62 @@ import { readFileSync } from '../../utils/fileRead.js';
 import { stripBOM } from '../../utils/jsonRead.js';
 import { resetSettingsCache } from '../../utils/settings/settingsCache.js';
 import { jsonParse } from '../../utils/slowOperations.js';
+
 const SETTINGS_FILENAME = 'remote-settings.json';
 let sessionCache = null;
 let eligible;
 export function setSessionCache(value) {
-    sessionCache = value;
+  sessionCache = value;
 }
 export function resetSyncCache() {
-    sessionCache = null;
-    eligible = undefined;
+  sessionCache = null;
+  eligible = undefined;
 }
 export function setEligibility(v) {
-    eligible = v;
-    return v;
+  eligible = v;
+  return v;
 }
 export function getSettingsPath() {
-    return join(getClaudeConfigHomeDir(), SETTINGS_FILENAME);
+  return join(getClaudeConfigHomeDir(), SETTINGS_FILENAME);
 }
 // sync IO — settings pipeline is sync. fileRead and jsonRead are leaves;
 // file.ts and json.ts both sit in the settings SCC.
 function loadSettings() {
-    try {
-        const content = readFileSync(getSettingsPath());
-        const data = jsonParse(stripBOM(content));
-        if (!data || typeof data !== 'object' || Array.isArray(data)) {
-            return null;
-        }
-        return data;
+  try {
+    const content = readFileSync(getSettingsPath());
+    const data = jsonParse(stripBOM(content));
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return null;
     }
-    catch {
-        return null;
-    }
+    return data;
+  } catch {
+    return null;
+  }
 }
 export function getRemoteManagedSettingsSyncFromCache() {
-    if (eligible !== true)
-        return null;
-    if (sessionCache)
-        return sessionCache;
-    const cachedSettings = loadSettings();
-    if (cachedSettings) {
-        sessionCache = cachedSettings;
-        // Remote settings just became available for the first time. Any merged
-        // getSettings_DEPRECATED() result cached before this moment is missing
-        // the policySettings layer (the `eligible !== true` guard above returned
-        // null). Flush so the next merged read re-merges with this layer visible.
-        //
-        // Fires at most once: subsequent calls hit `if (sessionCache)` above.
-        // When called from loadSettingsFromDisk() (settings.ts:546), the merged
-        // cache is still null (setSessionSettingsCache runs at :732 after
-        // loadSettingsFromDisk returns) — no-op. The async-fetch arm (index.ts
-        // setSessionCache + notifyChange) already handles its own reset.
-        //
-        // gh-23085: isBridgeEnabled() at main.tsx Commander-definition time
-        // (before preAction → init() → isRemoteManagedSettingsEligible()) reached
-        // getSettings_DEPRECATED() at auth.ts:115. The try/catch in bridgeEnabled
-        // swallowed the later getGlobalConfig() throw, but the merged settings
-        // cache was already poisoned. See managedSettingsHeadless.int.test.ts.
-        resetSettingsCache();
-        return cachedSettings;
-    }
-    return null;
+  if (eligible !== true) return null;
+  if (sessionCache) return sessionCache;
+  const cachedSettings = loadSettings();
+  if (cachedSettings) {
+    sessionCache = cachedSettings;
+    // Remote settings just became available for the first time. Any merged
+    // getSettings_DEPRECATED() result cached before this moment is missing
+    // the policySettings layer (the `eligible !== true` guard above returned
+    // null). Flush so the next merged read re-merges with this layer visible.
+    //
+    // Fires at most once: subsequent calls hit `if (sessionCache)` above.
+    // When called from loadSettingsFromDisk() (settings.ts:546), the merged
+    // cache is still null (setSessionSettingsCache runs at :732 after
+    // loadSettingsFromDisk returns) — no-op. The async-fetch arm (index.ts
+    // setSessionCache + notifyChange) already handles its own reset.
+    //
+    // gh-23085: isBridgeEnabled() at main.tsx Commander-definition time
+    // (before preAction → init() → isRemoteManagedSettingsEligible()) reached
+    // getSettings_DEPRECATED() at auth.ts:115. The try/catch in bridgeEnabled
+    // swallowed the later getGlobalConfig() throw, but the merged settings
+    // cache was already poisoned. See managedSettingsHeadless.int.test.ts.
+    resetSettingsCache();
+    return cachedSettings;
+  }
+  return null;
 }

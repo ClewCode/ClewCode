@@ -3,7 +3,6 @@
  * Shown when pressing '?' in agent view.
  */
 
-import * as React from 'react';
 import { Box, Text } from '../../ink.js';
 import { Dialog } from '../design-system/Dialog.js';
 

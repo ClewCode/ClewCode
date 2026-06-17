@@ -1,6 +1,6 @@
+import { TeamDashboardDialog } from '../../components/teams/TeamDashboardDialog.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { Command, LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
-import { TeamDashboardDialog } from '../../components/teams/TeamDashboardDialog.js';
 
 const team: Command = {
   type: 'local-jsx',
@@ -16,13 +16,9 @@ const team: Command = {
     Promise.resolve({
       async call(
         onDone: LocalJSXCommandOnDone,
-        context: ToolUseContext & LocalJSXCommandContext,
+        _context: ToolUseContext & LocalJSXCommandContext,
       ): Promise<React.ReactNode> {
-        return (
-          <TeamDashboardDialog
-            onDone={() => onDone('', { display: 'system' })}
-          />
-        );
+        return <TeamDashboardDialog onDone={() => onDone('', { display: 'system' })} />;
       },
     }),
 };

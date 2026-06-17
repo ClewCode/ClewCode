@@ -8,7 +8,7 @@ import { asSystemPrompt } from '../../utils/systemPromptType.js';
 import { type DeepDiveResult, filterDeepDiveResults, performDeepDive } from './deepDive.js';
 import { type DossierData, generateDossierData, saveDossier } from './dossierGenerator.js';
 import { type SearchProviderResult, searchWithProviders } from './searchProviders.js';
-import { calculateSourceScore, generateRankingReport, rankSources, type SourceScore } from './smartSourceRanking.js';
+import { calculateSourceScore, generateRankingReport, rankSources } from './smartSourceRanking.js';
 import {
   assessSourceCredibility,
   detectConflicts,
@@ -637,7 +637,7 @@ Please perform deep research for the query.
     }
 
     const followUpText = result.followUpQuestions
-      ? `\n\nFollow-up questions:\n${result.followUpQuestions.map((q: string) => '- ' + q).join('\n')}`
+      ? `\n\nFollow-up questions:\n${result.followUpQuestions.map((q: string) => `- ${q}`).join('\n')}`
       : '';
 
     return {

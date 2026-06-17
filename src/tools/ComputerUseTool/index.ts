@@ -18,12 +18,11 @@
 
 import type { ProviderId } from '../../services/ai/providers/ProviderInterface.js';
 import { logForDebugging } from '../../utils/debug.js';
-import { handleComputerAction } from './handler.js';
 import { buildDisplayConfig } from './scaling.js';
 import { getScreenDimensions } from './screenshot.js';
 import type { ComputerUseToolConfig } from './toolDefinition.js';
 import { getComputerUseToolConfig, isComputerUseCapable } from './toolDefinition.js';
-import type { ComputerToolInput, ComputerToolResultBlock, ComputerUseMode, DisplayConfig } from './types.js';
+import type { ComputerUseMode, DisplayConfig } from './types.js';
 
 // ── Public Types ─────────────────────────────────────────────────────────────
 

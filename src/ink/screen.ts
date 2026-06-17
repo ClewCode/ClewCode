@@ -593,7 +593,7 @@ export function visibleCellAtIndex(
   charPool: CharPool,
   hyperlinkPool: HyperlinkPool,
   index: number,
-  lastRenderedStyleId: number,
+  _lastRenderedStyleId: number,
 ): Cell | undefined {
   const ci = index << 1;
   const charId = cells[ci]!;
@@ -1041,7 +1041,7 @@ export function diff(prev: Screen, next: Screen): [point: Point, removed: Cell |
   return output;
 }
 
-type DiffCallback = (x: number, y: number, removed: Cell | undefined, added: Cell | undefined) => boolean | void;
+type DiffCallback = (x: number, y: number, removed: Cell | undefined, added: Cell | undefined) => boolean | undefined;
 
 /**
  * Like diff(), but calls a callback for each change instead of building an array.

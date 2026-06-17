@@ -12,7 +12,7 @@
  * - Debounced file watcher prevents self-trigger loops
  */
 
-import { existsSync, readFileSync, watch, writeFileSync } from 'fs';
+import { existsSync, readFileSync, watch } from 'fs';
 import { appendFile, mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
@@ -512,7 +512,7 @@ function DEFAULT_BACKOFF_MS(retryCount: number, factor: number): number {
  */
 export async function requeueDeadLetter(id: string): Promise<boolean> {
   const task = queue.tasks[id];
-  if (!task || task.status !== 'dead_letter') return false;
+  if (task?.status !== 'dead_letter') return false;
   task.status = 'pending';
   task.retryCount = 0;
   task.retryAfter = undefined;
@@ -588,7 +588,7 @@ function sanitizeForXml(input: string): string {
   // Prevent XML CDATA closing injection
   s = s.replace(/]]>/g, ']] >');
   // Limit length
-  if (s.length > 4000) s = s.slice(0, 4000) + '...';
+  if (s.length > 4000) s = `${s.slice(0, 4000)}...`;
   return s;
 }
 

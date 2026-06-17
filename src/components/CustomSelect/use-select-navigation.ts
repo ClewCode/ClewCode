@@ -576,7 +576,7 @@ export function useSelectNavigation<T>({
     }
     // Fall back to first selectable option if focused value doesn't exist
     return nextEnabledOption(undefined, state.optionMap.first)?.value;
-  }, [state.focusedValue, options]);
+  }, [state.focusedValue, options, state.optionMap.first]);
 
   const isInInput = useMemo(() => {
     const focusedOption = options.find(opt => opt.value === validatedFocusedValue);

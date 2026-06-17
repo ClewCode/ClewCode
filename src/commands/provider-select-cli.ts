@@ -232,7 +232,9 @@ async function promptForApiKey(provider: string): Promise<string> {
   }
 
   const config = loadConfig();
-  const hasExistingKey = Boolean(config?.apiKeys?.[provider] || process.env[p.envKey] || readLocalProviderKey(provider));
+  const hasExistingKey = Boolean(
+    config?.apiKeys?.[provider] || process.env[p.envKey] || readLocalProviderKey(provider),
+  );
 
   const readline = createInterface({
     input: process.stdin,
@@ -326,7 +328,9 @@ async function selectProvider() {
 
   const apiKey = await promptForApiKey(provider);
   const currentConfig = loadConfig();
-  const hasExistingKey = Boolean(currentConfig?.apiKeys?.[provider] || process.env[PROVIDERS[provider]!.envKey] || readLocalProviderKey(provider));
+  const hasExistingKey = Boolean(
+    currentConfig?.apiKeys?.[provider] || process.env[PROVIDERS[provider]!.envKey] || readLocalProviderKey(provider),
+  );
 
   if (!PROVIDERS[provider]!.isLocal && !apiKey && !hasExistingKey) {
     console.log(`❌ No API key provided for ${PROVIDERS[provider]!.envKey}. Aborting.`);

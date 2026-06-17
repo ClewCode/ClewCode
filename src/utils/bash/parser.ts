@@ -148,7 +148,7 @@ function findCommandNode(node: Node, parent: Node | null): Node | null {
 }
 
 function extractEnvVars(commandNode: Node | null): string[] {
-  if (!commandNode || commandNode.type !== 'command') return [];
+  if (commandNode?.type !== 'command') return [];
 
   const envVars: string[] = [];
   for (const child of commandNode.children) {

@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Box } from '../../../../ink.js';
 import { useKeybinding } from '../../../../keybindings/useKeybinding.js';
 import { isAutoMemoryEnabled } from '../../../../memdir/paths.js';
@@ -58,7 +58,7 @@ export function MemoryStep(): ReactNode {
             memory,
             getSystemPrompt:
               isAutoMemoryEnabled() && memory && agentType
-                ? () => wizardData.systemPrompt! + '\n\n' + loadAgentMemoryPrompt(agentType, memory)
+                ? () => `${wizardData.systemPrompt!}\n\n${loadAgentMemoryPrompt(agentType, memory)}`
                 : () => wizardData.systemPrompt!,
           }
         : undefined,

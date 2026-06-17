@@ -92,7 +92,6 @@ function Box({
     <ink-box
       ref={ref}
       tabIndex={tabIndex}
-      autoFocus={autoFocus}
       onClick={onClick}
       onFocus={onFocus}
       onFocusCapture={onFocusCapture}

@@ -48,7 +48,7 @@ export function AlternateScreen({ children, mouseTracking = true }: Props): Reac
     const ink = instances.get(process.stdout);
     if (!writeRaw) return;
 
-    writeRaw(ENTER_ALT_SCREEN + '\x1b[2J\x1b[H' + (mouseTracking ? ENABLE_MOUSE_TRACKING : ''));
+    writeRaw(`${ENTER_ALT_SCREEN}\x1b[2J\x1b[H${mouseTracking ? ENABLE_MOUSE_TRACKING : ''}`);
     ink?.setAltScreenActive(true, mouseTracking);
 
     return () => {

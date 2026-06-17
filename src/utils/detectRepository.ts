@@ -67,7 +67,7 @@ export async function detectCurrentRepositoryWithHost(): Promise<ParsedRepositor
  */
 export function getCachedRepository(): string | null {
   const parsed = repositoryWithHostCache.get(getCwd());
-  if (!parsed || parsed.host !== 'github.com') return null;
+  if (parsed?.host !== 'github.com') return null;
   return `${parsed.owner}/${parsed.name}`;
 }
 

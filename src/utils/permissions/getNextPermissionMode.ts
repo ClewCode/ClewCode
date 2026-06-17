@@ -1,8 +1,6 @@
-import { feature } from 'bun:bundle';
 import type { ToolPermissionContext } from '../../Tool.js';
-import { logForDebugging } from '../debug.js';
 import type { PermissionMode } from './PermissionMode.js';
-import { getAutoModeUnavailableReason, isAutoModeGateEnabled, transitionPermissionMode } from './permissionSetup.js';
+import { transitionPermissionMode } from './permissionSetup.js';
 
 // Checks both the cached isAutoModeAvailable (set at startup by
 // verifyAutoModeGateAccess) and the live isAutoModeGateEnabled() — these can
@@ -10,7 +8,7 @@ import { getAutoModeUnavailableReason, isAutoModeGateEnabled, transitionPermissi
 // live check prevents transitionPermissionMode from throwing
 // (permissionSetup.ts:~559), which would silently crash the shift+tab handler
 // and leave the user stuck at the current mode.
-function canCycleToAuto(ctx: ToolPermissionContext): boolean {
+function canCycleToAuto(_ctx: ToolPermissionContext): boolean {
   return true;
 }
 

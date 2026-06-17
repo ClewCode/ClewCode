@@ -12,7 +12,7 @@ import {
   stopCommand,
 } from './sessionManager.js';
 
-export async function psHandler(args: string[]): Promise<void> {
+export async function psHandler(_args: string[]): Promise<void> {
   await listSessionsCommand();
 }
 
@@ -79,7 +79,7 @@ export async function handleBgFlag(args: string[]): Promise<void> {
 
   prompt = nonFlagArgs.join(' ') || undefined;
 
-  const id = await createBgSession(prompt ?? '(interactive)', agent, model, permissionMode, {
+  const _id = await createBgSession(prompt ?? '(interactive)', agent, model, permissionMode, {
     name,
     fallbackModel,
     allowDangerouslySkipPermissions,

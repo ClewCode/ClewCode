@@ -45,7 +45,7 @@ export async function fetchProviderModels(provider: ProviderId): Promise<Provide
         return cacheAndReturn(provider, models);
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // Fall back to registry models below.
   }
 
@@ -118,10 +118,12 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
       for (const pid of PROVIDER_IDS) {
         if (pid === provider) continue;
         const entry = getProviderRegistryEntry(pid);
-        const m = entry.models.find(
-          mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()),
-        );
-        if (m?.capabilities?.maxContext && typeof m.capabilities.maxContext === 'number' && m.capabilities.maxContext !== 'varies')
+        const m = entry.models.find(mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()));
+        if (
+          m?.capabilities?.maxContext &&
+          typeof m.capabilities.maxContext === 'number' &&
+          m.capabilities.maxContext !== 'varies'
+        )
           return m.capabilities.maxContext;
       }
       return undefined;
@@ -141,10 +143,12 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
       for (const pid of PROVIDER_IDS) {
         if (pid === provider) continue;
         const entry = getProviderRegistryEntry(pid);
-        const m = entry.models.find(
-          mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()),
-        );
-        if (m?.capabilities?.maxOutput && typeof m.capabilities.maxOutput === 'number' && m.capabilities.maxOutput !== 'varies')
+        const m = entry.models.find(mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()));
+        if (
+          m?.capabilities?.maxOutput &&
+          typeof m.capabilities.maxOutput === 'number' &&
+          m.capabilities.maxOutput !== 'varies'
+        )
           return m.capabilities.maxOutput;
       }
       return undefined;

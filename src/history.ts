@@ -64,7 +64,7 @@ export function parseReferences(input: string): Array<{ id: number; match: strin
   const matches = [...input.matchAll(referencePattern)];
   return matches
     .map(match => ({
-      id: parseInt(match[2] || '0'),
+      id: parseInt(match[2] || '0', 10),
       match: match[0],
       index: match.index ?? 0,
     }))
@@ -299,7 +299,7 @@ async function immediateFlushHistory(): Promise<void> {
       },
     });
 
-    const jsonLines = pendingEntries.map(entry => jsonStringify(entry) + '\n');
+    const jsonLines = pendingEntries.map(entry => `${jsonStringify(entry)}\n`);
     pendingEntries = [];
 
     await appendFile(historyPath, jsonLines.join(''), { mode: 0o600 });

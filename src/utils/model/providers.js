@@ -4,13 +4,13 @@ import { ProviderManager } from '../../services/ai/ProviderManager.js';
  * returns 'firstParty' as the safest default (matches legacy behavior).
  */
 export function getAPIProvider() {
-    return ProviderManager.getInstance().getAnthropicProviderType();
+  return ProviderManager.getInstance().getAnthropicProviderType();
 }
 export function getAPIProviderForStatsig() {
-    return getAPIProvider();
+  return getAPIProvider();
 }
 export function isFirstPartyAnthropicBaseUrl() {
-    return ProviderManager.getInstance().isFirstPartyAnthropicBaseUrl();
+  return ProviderManager.getInstance().isFirstPartyAnthropicBaseUrl();
 }
 /**
  * Returns the active provider ID (anthropic, openai, google, deepseek, etc.).
@@ -22,7 +22,7 @@ export function isFirstPartyAnthropicBaseUrl() {
  *   if (provider === 'openai')   { ... OpenAI-specific logic ... }
  */
 export function getActiveProviderId() {
-    return ProviderManager.getInstance().getActiveProviderName();
+  return ProviderManager.getInstance().getActiveProviderName();
 }
 /**
  * Returns true if the active provider is Anthropic (any deployment type:
@@ -30,6 +30,6 @@ export function getActiveProviderId() {
  * features (beta headers, thinking blocks, web_search_20250305, etc.).
  */
 export function isAnthropicProvider() {
-    const provider = getActiveProviderId();
-    return provider === 'anthropic';
+  const provider = getActiveProviderId();
+  return provider === 'anthropic';
 }

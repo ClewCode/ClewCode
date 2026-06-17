@@ -405,11 +405,11 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
     } else {
       goToNextStep();
     }
-  }, [currentStepIndex, steps.length, oauthEnabled, onDone]);
+  }, [currentStepIndex, steps.length, onDone, goToNextStep]);
 
   const handleTerminalSetupSkip = useCallback(() => {
     goToNextStep();
-  }, [currentStepIndex, steps.length, oauthEnabled, onDone]);
+  }, [goToNextStep]);
 
   useKeybindings(
     {

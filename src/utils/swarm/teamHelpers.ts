@@ -431,7 +431,7 @@ async function destroyWorktree(worktreePath: string): Promise<void> {
     const gitFileContent = (await readFile(gitFilePath, 'utf-8')).trim();
     // The .git file contains something like: gitdir: /path/to/repo/.git/worktrees/worktree-name
     const match = gitFileContent.match(/^gitdir:\s*(.+)$/);
-    if (match && match[1]) {
+    if (match?.[1]) {
       // Extract the main repo .git directory (go up from .git/worktrees/name to .git)
       const worktreeGitDir = match[1];
       // Go up 2 levels from .git/worktrees/name to get to .git, then get parent for repo root

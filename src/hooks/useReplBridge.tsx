@@ -733,7 +733,17 @@ export function useReplBridge(
         lastWrittenIndexRef.current = 0;
       };
     }
-  }, [replBridgeEnabled, replBridgeOutboundOnly, setAppState, setMessages, addNotification]);
+  }, [
+    replBridgeEnabled,
+    replBridgeOutboundOnly,
+    setAppState,
+    setMessages,
+    addNotification,
+    messages,
+    store.getState,
+    replBridgeInitialName,
+    abortControllerRef.current?.abort,
+  ]);
 
   // Write new messages as they appear.
   // Also re-runs when replBridgeConnected changes (bridge finishes init),

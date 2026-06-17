@@ -4,7 +4,7 @@
  */
 
 import { logForDebugging } from '../debug.js';
-import type { CursorPosition, PlatformAdapter } from './platform/index.js';
+import type { PlatformAdapter } from './platform/index.js';
 import { getPlatformAdapter } from './platform/index.js';
 
 /**

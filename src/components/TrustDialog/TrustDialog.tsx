@@ -65,7 +65,7 @@ export function TrustDialog({ onDone, commands }: Props): React.ReactNode {
         command.type === 'prompt' &&
         command.loadedFrom === 'commands_DEPRECATED' &&
         (command.source === 'projectSettings' || command.source === 'localSettings') &&
-        command.allowedTools?.some((tool: string) => tool === BASH_TOOL_NAME || tool.startsWith(BASH_TOOL_NAME + '(')),
+        command.allowedTools?.some((tool: string) => tool === BASH_TOOL_NAME || tool.startsWith(`${BASH_TOOL_NAME}(`)),
     ) ?? false;
 
   const hasSkillsBash =
@@ -74,7 +74,7 @@ export function TrustDialog({ onDone, commands }: Props): React.ReactNode {
         command.type === 'prompt' &&
         (command.loadedFrom === 'skills' || command.loadedFrom === 'plugin') &&
         (command.source === 'projectSettings' || command.source === 'localSettings' || command.source === 'plugin') &&
-        command.allowedTools?.some((tool: string) => tool === BASH_TOOL_NAME || tool.startsWith(BASH_TOOL_NAME + '(')),
+        command.allowedTools?.some((tool: string) => tool === BASH_TOOL_NAME || tool.startsWith(`${BASH_TOOL_NAME}(`)),
     ) ?? false;
 
   const hasAnyBashExecution = bashSettingSources.length > 0 || hasSlashCommandBash || hasSkillsBash;

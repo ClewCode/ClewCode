@@ -60,7 +60,7 @@ import {
 const skillPrefetch = feature('EXPERIMENTAL_SKILL_SEARCH')
   ? (require('./services/skillSearch/prefetch.js') as typeof import('./services/skillSearch/prefetch.js'))
   : null;
-const jobClassifier = feature('TEMPLATES')
+const _jobClassifier = feature('TEMPLATES')
   ? (require('./jobs/classifier.js') as typeof import('./jobs/classifier.js'))
   : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
@@ -1189,8 +1189,7 @@ async function* queryLoop(
         const { getFullGoalState } = await import('./utils/sessionGoalState.js');
         const goalState = getFullGoalState();
         if (
-          goalState &&
-          goalState.goal &&
+          goalState?.goal &&
           !goalState.achieved &&
           goalState.lastReason &&
           !toolUseContext.agentId &&

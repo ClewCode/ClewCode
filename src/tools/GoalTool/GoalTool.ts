@@ -1,13 +1,18 @@
 import type { PermissionResult } from 'src/utils/permissions/PermissionResult.js';
 import { z } from 'zod/v4';
+import { parseGoalBounds } from '../../services/goal/goalEvaluator.js';
 import { buildTool } from '../../Tool.js';
 import { setExecutionMode } from '../../utils/executionMode.js';
-import { parseGoalBounds } from '../../services/goal/goalEvaluator.js';
 import { type GoalState, getFullGoalState, setFullGoalState } from '../../utils/sessionGoalState.js';
 
 const inputSchema = z.strictObject({
-  action: z.enum(['set', 'update', 'complete', 'clear']).describe('Action: set a new goal, update condition, mark complete, or clear'),
-  goal: z.string().optional().describe('Goal condition (for set/update). Use "then" for chains: "fix build" then "tests pass"'),
+  action: z
+    .enum(['set', 'update', 'complete', 'clear'])
+    .describe('Action: set a new goal, update condition, mark complete, or clear'),
+  goal: z
+    .string()
+    .optional()
+    .describe('Goal condition (for set/update). Use "then" for chains: "fix build" then "tests pass"'),
   reason: z.string().optional().describe('Brief reason for completion or update'),
 });
 
@@ -19,7 +24,10 @@ const outputSchema = z.object({
 });
 
 function parseGoalChain(input: string): { first: string; chain: string[] } | null {
-  const parts = input.split(/\s+then\s+/i).map(p => p.trim()).filter(Boolean);
+  const parts = input
+    .split(/\s+then\s+/i)
+    .map(p => p.trim())
+    .filter(Boolean);
   if (parts.length < 2) return null;
   return { first: parts[0]!, chain: parts.slice(1) };
 }
@@ -30,8 +38,12 @@ export const GoalTool = buildTool({
   name: GOAL_TOOL_NAME,
   searchHint: 'set track goal progress autonomous',
   maxResultSizeChars: 2000,
-  get inputSchema() { return inputSchema; },
-  get outputSchema() { return outputSchema; },
+  get inputSchema() {
+    return inputSchema;
+  },
+  get outputSchema() {
+    return outputSchema;
+  },
   isEnabled: () => true,
   isConcurrencySafe: () => true,
   isReadOnly: () => false,

@@ -54,7 +54,7 @@ export const getWslVersion = memoize((): string | undefined => {
 
     // First check for explicit WSL version markers (e.g., "WSL2", "WSL3", etc.)
     const wslVersionMatch = procVersion.match(/WSL(\d+)/i);
-    if (wslVersionMatch && wslVersionMatch[1]) {
+    if (wslVersionMatch?.[1]) {
       return wslVersionMatch[1];
     }
 
@@ -91,7 +91,7 @@ export const getLinuxDistroInfo = memoize(async (): Promise<LinuxDistroInfo | un
     const content = await readFile('/etc/os-release', 'utf8');
     for (const line of content.split('\n')) {
       const match = line.match(/^(ID|VERSION_ID)=(.*)$/);
-      if (match && match[1] && match[2]) {
+      if (match?.[1] && match[2]) {
         const value = match[2].replace(/^"|"$/g, '');
         if (match[1] === 'ID') {
           result.linuxDistroId = value;

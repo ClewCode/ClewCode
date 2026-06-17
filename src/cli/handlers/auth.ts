@@ -144,7 +144,7 @@ export async function authLogin({
 
       const orgResult = await validateForceLoginOrg();
       if (!orgResult.valid) {
-        process.stderr.write(orgResult.message + '\n');
+        process.stderr.write(`${orgResult.message}\n`);
         process.exit(1);
       }
 
@@ -163,7 +163,7 @@ export async function authLogin({
     } catch (err) {
       logError(err);
       const sslHint = getSSLErrorHint(err);
-      process.stderr.write(`Login failed: ${errorMessage(err)}\n${sslHint ? sslHint + '\n' : ''}`);
+      process.stderr.write(`Login failed: ${errorMessage(err)}\n${sslHint ? `${sslHint}\n` : ''}`);
       process.exit(1);
     }
   }
@@ -199,7 +199,7 @@ export async function authLogin({
 
     const orgResult = await validateForceLoginOrg();
     if (!orgResult.valid) {
-      process.stderr.write(orgResult.message + '\n');
+      process.stderr.write(`${orgResult.message}\n`);
       process.exit(1);
     }
 
@@ -210,7 +210,7 @@ export async function authLogin({
   } catch (err) {
     logError(err);
     const sslHint = getSSLErrorHint(err);
-    process.stderr.write(`Login failed: ${errorMessage(err)}\n${sslHint ? sslHint + '\n' : ''}`);
+    process.stderr.write(`Login failed: ${errorMessage(err)}\n${sslHint ? `${sslHint}\n` : ''}`);
     process.exit(1);
   } finally {
     oauthService.cleanup();
@@ -282,7 +282,7 @@ export async function authStatus(opts: { json?: boolean; text?: boolean }): Prom
       output.subscriptionType = subscriptionType ?? null;
     }
 
-    process.stdout.write(jsonStringify(output, null, 2) + '\n');
+    process.stdout.write(`${jsonStringify(output, null, 2)}\n`);
   }
   process.exit(loggedIn ? 0 : 1);
 }

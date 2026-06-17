@@ -8,7 +8,7 @@ import { CURSOR_HOME, csi, ERASE_SCREEN, ERASE_SCROLLBACK } from './termio/csi.j
 // HVP (Horizontal Vertical Position) - legacy Windows cursor home
 const CURSOR_HOME_WINDOWS = csi(0, 'f');
 
-import { getWindowsConsoleType, hasConPty, isLegacyConsole, supportsAnsiEscapeSequences } from '../utils/windowsTerminal.js';
+import { getWindowsConsoleType, hasConPty } from '../utils/windowsTerminal.js';
 
 function isModernWindowsTerminal(): boolean {
   // Use shared detection logic for consistency

@@ -58,7 +58,9 @@ export const PeerInfoTool = buildTool({
   },
   name: PEER_INFO_TOOL_NAME,
   searchHint: 'get peer info',
-  isTransparentWrapper() { return true; },
+  isTransparentWrapper() {
+    return true;
+  },
   maxResultSizeChars: 2_000,
   async description() {
     return DESCRIPTION;

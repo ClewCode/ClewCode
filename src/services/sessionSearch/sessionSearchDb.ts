@@ -14,7 +14,6 @@ import { readdirSync, readFileSync, statSync } from 'fs';
 import { basename, join } from 'path';
 import { getOriginalCwd } from '../../bootstrap/state.js';
 import { logForDebugging } from '../../utils/debug.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { logError } from '../../utils/log.js';
 import { getProjectDir } from '../../utils/sessionStorage.js';
 
@@ -388,7 +387,7 @@ export function searchSessions(
   maxResults: number = MAX_RESULTS,
   signal?: AbortSignal,
 ): SessionSearchResult[] {
-  if (!query || !query.trim()) return [];
+  if (!query?.trim()) return [];
 
   // Ensure we index any new sessions before searching
   indexNewSessions();

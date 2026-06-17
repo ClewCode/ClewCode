@@ -1,20 +1,19 @@
 import { getCwd } from './cwd.js';
 import { logForDebugging } from './debug.js';
 import { getRemoteUrl } from './git.js';
+
 const repositoryWithHostCache = new Map();
 export function clearRepositoryCaches() {
-    repositoryWithHostCache.clear();
+  repositoryWithHostCache.clear();
 }
 export async function detectCurrentRepository() {
-    const result = await detectCurrentRepositoryWithHost();
-    if (!result)
-        return null;
-    // Only return results for github.com to avoid breaking downstream consumers
-    // that assume the result is a github.com repository.
-    // Use detectCurrentRepositoryWithHost() for GHE support.
-    if (result.host !== 'github.com')
-        return null;
-    return `${result.owner}/${result.name}`;
+  const result = await detectCurrentRepositoryWithHost();
+  if (!result) return null;
+  // Only return results for github.com to avoid breaking downstream consumers
+  // that assume the result is a github.com repository.
+  // Use detectCurrentRepositoryWithHost() for GHE support.
+  if (result.host !== 'github.com') return null;
+  return `${result.owner}/${result.name}`;
 }
 /**
  * Like detectCurrentRepository, but also returns the host (e.g. "github.com"
@@ -22,28 +21,29 @@ export async function detectCurrentRepository() {
  * GitHub host should use this variant.
  */
 export async function detectCurrentRepositoryWithHost() {
-    const cwd = getCwd();
-    if (repositoryWithHostCache.has(cwd)) {
-        return repositoryWithHostCache.get(cwd) ?? null;
+  const cwd = getCwd();
+  if (repositoryWithHostCache.has(cwd)) {
+    return repositoryWithHostCache.get(cwd) ?? null;
+  }
+  try {
+    const remoteUrl = await getRemoteUrl();
+    logForDebugging(`Git remote URL: ${remoteUrl}`);
+    if (!remoteUrl) {
+      logForDebugging('No git remote URL found');
+      repositoryWithHostCache.set(cwd, null);
+      return null;
     }
-    try {
-        const remoteUrl = await getRemoteUrl();
-        logForDebugging(`Git remote URL: ${remoteUrl}`);
-        if (!remoteUrl) {
-            logForDebugging('No git remote URL found');
-            repositoryWithHostCache.set(cwd, null);
-            return null;
-        }
-        const parsed = parseGitRemote(remoteUrl);
-        logForDebugging(`Parsed repository: ${parsed ? `${parsed.host}/${parsed.owner}/${parsed.name}` : null} from URL: ${remoteUrl}`);
-        repositoryWithHostCache.set(cwd, parsed);
-        return parsed;
-    }
-    catch (error) {
-        logForDebugging(`Error detecting repository: ${error}`);
-        repositoryWithHostCache.set(cwd, null);
-        return null;
-    }
+    const parsed = parseGitRemote(remoteUrl);
+    logForDebugging(
+      `Parsed repository: ${parsed ? `${parsed.host}/${parsed.owner}/${parsed.name}` : null} from URL: ${remoteUrl}`,
+    );
+    repositoryWithHostCache.set(cwd, parsed);
+    return parsed;
+  } catch (error) {
+    logForDebugging(`Error detecting repository: ${error}`);
+    repositoryWithHostCache.set(cwd, null);
+    return null;
+  }
 }
 /**
  * Synchronously returns the cached github.com repository for the current cwd
@@ -53,10 +53,9 @@ export async function detectCurrentRepositoryWithHost() {
  * Callers construct github.com URLs, so GHE hosts are filtered out here.
  */
 export function getCachedRepository() {
-    const parsed = repositoryWithHostCache.get(getCwd());
-    if (!parsed || parsed.host !== 'github.com')
-        return null;
-    return `${parsed.owner}/${parsed.name}`;
+  const parsed = repositoryWithHostCache.get(getCwd());
+  if (parsed?.host !== 'github.com') return null;
+  return `${parsed.owner}/${parsed.name}`;
 }
 /**
  * Parses a git remote URL into host, owner, and name components.
@@ -72,36 +71,34 @@ export function getCachedRepository() {
  * Note: repo names can contain dots (e.g., cc.kurs.web)
  */
 export function parseGitRemote(input) {
-    const trimmed = input.trim();
-    // SSH format: git@host:owner/repo.git
-    const sshMatch = trimmed.match(/^git@([^:]+):([^/]+)\/([^/]+?)(?:\.git)?$/);
-    if (sshMatch?.[1] && sshMatch[2] && sshMatch[3]) {
-        if (!looksLikeRealHostname(sshMatch[1]))
-            return null;
-        return {
-            host: sshMatch[1],
-            owner: sshMatch[2],
-            name: sshMatch[3],
-        };
-    }
-    // URL format: https://host/owner/repo.git, ssh://git@host/owner/repo, git://host/owner/repo
-    const urlMatch = trimmed.match(/^(https?|ssh|git):\/\/(?:[^@]+@)?([^/:]+(?::\d+)?)\/([^/]+)\/([^/]+?)(?:\.git)?$/);
-    if (urlMatch?.[1] && urlMatch[2] && urlMatch[3] && urlMatch[4]) {
-        const protocol = urlMatch[1];
-        const hostWithPort = urlMatch[2];
-        const hostWithoutPort = hostWithPort.split(':')[0] ?? '';
-        if (!looksLikeRealHostname(hostWithoutPort))
-            return null;
-        // Only preserve port for HTTPS — SSH/git ports are not usable for constructing
-        // web URLs (e.g. ssh://git@ghe.corp.com:2222 → port 2222 is SSH, not HTTPS).
-        const host = protocol === 'https' || protocol === 'http' ? hostWithPort : hostWithoutPort;
-        return {
-            host,
-            owner: urlMatch[3],
-            name: urlMatch[4],
-        };
-    }
-    return null;
+  const trimmed = input.trim();
+  // SSH format: git@host:owner/repo.git
+  const sshMatch = trimmed.match(/^git@([^:]+):([^/]+)\/([^/]+?)(?:\.git)?$/);
+  if (sshMatch?.[1] && sshMatch[2] && sshMatch[3]) {
+    if (!looksLikeRealHostname(sshMatch[1])) return null;
+    return {
+      host: sshMatch[1],
+      owner: sshMatch[2],
+      name: sshMatch[3],
+    };
+  }
+  // URL format: https://host/owner/repo.git, ssh://git@host/owner/repo, git://host/owner/repo
+  const urlMatch = trimmed.match(/^(https?|ssh|git):\/\/(?:[^@]+@)?([^/:]+(?::\d+)?)\/([^/]+)\/([^/]+?)(?:\.git)?$/);
+  if (urlMatch?.[1] && urlMatch[2] && urlMatch[3] && urlMatch[4]) {
+    const protocol = urlMatch[1];
+    const hostWithPort = urlMatch[2];
+    const hostWithoutPort = hostWithPort.split(':')[0] ?? '';
+    if (!looksLikeRealHostname(hostWithoutPort)) return null;
+    // Only preserve port for HTTPS — SSH/git ports are not usable for constructing
+    // web URLs (e.g. ssh://git@ghe.corp.com:2222 → port 2222 is SSH, not HTTPS).
+    const host = protocol === 'https' || protocol === 'http' ? hostWithPort : hostWithoutPort;
+    return {
+      host,
+      owner: urlMatch[3],
+      name: urlMatch[4],
+    };
+  }
+  return null;
 }
 /**
  * Parses a git remote URL or "owner/repo" string and returns "owner/repo".
@@ -110,28 +107,27 @@ export function parseGitRemote(input) {
  * Also accepts plain "owner/repo" strings for backward compatibility.
  */
 export function parseGitHubRepository(input) {
-    const trimmed = input.trim();
-    // Try parsing as a full remote URL first.
-    // Only return results for github.com hosts — existing callers (VS Code extension,
-    // bridge) assume this function is GitHub.com-specific. Use parseGitRemote() directly
-    // for GHE support.
-    const parsed = parseGitRemote(trimmed);
-    if (parsed) {
-        if (parsed.host !== 'github.com')
-            return null;
-        return `${parsed.owner}/${parsed.name}`;
+  const trimmed = input.trim();
+  // Try parsing as a full remote URL first.
+  // Only return results for github.com hosts — existing callers (VS Code extension,
+  // bridge) assume this function is GitHub.com-specific. Use parseGitRemote() directly
+  // for GHE support.
+  const parsed = parseGitRemote(trimmed);
+  if (parsed) {
+    if (parsed.host !== 'github.com') return null;
+    return `${parsed.owner}/${parsed.name}`;
+  }
+  // If no URL pattern matched, check if it's already in owner/repo format
+  if (!trimmed.includes('://') && !trimmed.includes('@') && trimmed.includes('/')) {
+    const parts = trimmed.split('/');
+    if (parts.length === 2 && parts[0] && parts[1]) {
+      // Remove .git extension if present
+      const repo = parts[1].replace(/\.git$/, '');
+      return `${parts[0]}/${repo}`;
     }
-    // If no URL pattern matched, check if it's already in owner/repo format
-    if (!trimmed.includes('://') && !trimmed.includes('@') && trimmed.includes('/')) {
-        const parts = trimmed.split('/');
-        if (parts.length === 2 && parts[0] && parts[1]) {
-            // Remove .git extension if present
-            const repo = parts[1].replace(/\.git$/, '');
-            return `${parts[0]}/${repo}`;
-        }
-    }
-    logForDebugging(`Could not parse repository from: ${trimmed}`);
-    return null;
+  }
+  logForDebugging(`Could not parse repository from: ${trimmed}`);
+  return null;
 }
 /**
  * Checks whether a hostname looks like a real domain name rather than an
@@ -141,13 +137,11 @@ export function parseGitHubRepository(input) {
  * never contain hyphens or digits.
  */
 function looksLikeRealHostname(host) {
-    if (!host.includes('.'))
-        return false;
-    const lastSegment = host.split('.').pop();
-    if (!lastSegment)
-        return false;
-    // Real TLDs are purely alphabetic (e.g., "com", "org", "io").
-    // SSH aliases like "github.com-work" have a last segment "com-work" which
-    // contains a hyphen.
-    return /^[a-zA-Z]+$/.test(lastSegment);
+  if (!host.includes('.')) return false;
+  const lastSegment = host.split('.').pop();
+  if (!lastSegment) return false;
+  // Real TLDs are purely alphabetic (e.g., "com", "org", "io").
+  // SSH aliases like "github.com-work" have a last segment "com-work" which
+  // contains a hyphen.
+  return /^[a-zA-Z]+$/.test(lastSegment);
 }

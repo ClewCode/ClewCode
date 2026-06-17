@@ -113,7 +113,7 @@ export function useIdeSelection(mcpClients: MCPServerConnection[], onSelect: (se
         const selectionData = notification.params;
 
         // Process selection data - validate it has required properties
-        if (selectionData.selection && selectionData.selection.start && selectionData.selection.end) {
+        if (selectionData.selection?.start && selectionData.selection.end) {
           // Handle selection changes
           selectionChangeHandler(selectionData as SelectionData);
         } else if (selectionData.text !== undefined) {

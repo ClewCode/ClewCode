@@ -2,7 +2,7 @@ import { exec } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { RunStore } from './runStore.js';
-import type { AgentAction, AgentDefinition, ApprovalRequest } from './types.js';
+import type { AgentDefinition } from './types.js';
 
 const SENSITIVE_COMMAND_SUBSTRINGS = [
   'rm ',
@@ -33,7 +33,7 @@ export class ToolGateway {
     this.workspaceRoot = workspaceRoot;
   }
 
-  async authorize(runId: string, agent: AgentDefinition, toolName: string, input: unknown): Promise<ToolDecision> {
+  async authorize(_runId: string, agent: AgentDefinition, toolName: string, input: unknown): Promise<ToolDecision> {
     // 1. Verify agent is allowed to use this tool
     if (!agent.tools.includes(toolName)) {
       return {
@@ -163,7 +163,7 @@ export class ToolGateway {
   private summarizeOutput(out: Record<string, unknown>): string {
     const str = JSON.stringify(out);
     if (str.length <= 150) return str;
-    return str.slice(0, 150) + '... (truncated)';
+    return `${str.slice(0, 150)}... (truncated)`;
   }
 
   // Gateway Tool Implementations
@@ -257,9 +257,9 @@ export class ToolGateway {
   }
 
   private async executeShellRun(command: string, timeoutMs?: number): Promise<Record<string, unknown>> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       const timeout = timeoutMs || 60000;
-      const child = exec(command, { cwd: this.workspaceRoot, timeout }, (error, stdout, stderr) => {
+      const _child = exec(command, { cwd: this.workspaceRoot, timeout }, (error, stdout, stderr) => {
         resolve({
           exitCode: error ? error.code || 1 : 0,
           stdout: stdout.trim(),

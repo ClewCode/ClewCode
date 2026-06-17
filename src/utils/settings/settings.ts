@@ -10,10 +10,10 @@ import {
 } from '../../bootstrap/state.js';
 import { getRemoteManagedSettingsSyncFromCache } from '../../services/remoteManagedSettings/syncCacheState.js';
 import { uniq } from '../array.js';
+import { DOT_CLEW } from '../clewPaths.js';
 import { logForDebugging } from '../debug.js';
 import { logForDiagnosticsNoPII } from '../diagLogs.js';
 import { getClaudeConfigHomeDir, isEnvTruthy } from '../envUtils.js';
-import { DOT_CLEW } from '../clewPaths.js';
 import { getErrnoCode, isENOENT } from '../errors.js';
 import { writeFileSyncAndFlush_DEPRECATED } from '../file.js';
 import { readFileSync } from '../fileRead.js';
@@ -434,7 +434,7 @@ export function updateSettingsForSource(
     // Mark this as an internal write before writing the file
     markInternalWrite(filePath);
 
-    writeFileSyncAndFlush_DEPRECATED(filePath, jsonStringify(updatedSettings, null, 2) + '\n');
+    writeFileSyncAndFlush_DEPRECATED(filePath, `${jsonStringify(updatedSettings, null, 2)}\n`);
 
     // Invalidate the session cache since settings have been updated
     resetSettingsCache();

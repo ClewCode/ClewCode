@@ -1231,7 +1231,7 @@ export async function cleanupOldVersions(): Promise<void> {
     // Identify protected versions
     const currentBinaryPath = process.execPath;
     const protectedVersions = new Set<string>();
-    if (currentBinaryPath && currentBinaryPath.includes(dirs.versions)) {
+    if (currentBinaryPath?.includes(dirs.versions)) {
       protectedVersions.add(resolve(currentBinaryPath));
     }
 

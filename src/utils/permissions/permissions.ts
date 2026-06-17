@@ -6,9 +6,6 @@ import type { Tool, ToolPermissionContext, ToolUseContext } from '../../Tool.js'
 import { AGENT_TOOL_NAME } from '../../tools/AgentTool/constants.js';
 import { shouldUseSandbox } from '../../tools/BashTool/shouldUseSandbox.js';
 import { BASH_TOOL_NAME } from '../../tools/BashTool/toolName.js';
-import { FILE_EDIT_TOOL_NAME } from '../../tools/FileEditTool/constants.js';
-import { FILE_WRITE_TOOL_NAME } from '../../tools/FileWriteTool/prompt.js';
-import { NOTEBOOK_EDIT_TOOL_NAME } from '../../tools/NotebookEditTool/constants.js';
 import { POWERSHELL_TOOL_NAME } from '../../tools/PowerShellTool/toolName.js';
 import { REPL_TOOL_NAME } from '../../tools/REPLTool/constants.js';
 import type { AssistantMessage } from '../../types/message.js';
@@ -18,7 +15,6 @@ import { AbortError, toError } from '../errors.js';
 import { logError } from '../log.js';
 import { SandboxManager } from '../sandbox/sandbox-adapter.js';
 import { getSettingSourceDisplayNameLowercase, SETTING_SOURCES } from '../settings/constants.js';
-import { getSettings_DEPRECATED } from '../settings/settings.js';
 import { plural } from '../stringUtils.js';
 import { permissionModeTitle } from './PermissionMode.js';
 import type {
@@ -67,12 +63,7 @@ import { sanitizeToolNameForAnalytics } from '../../services/analytics/metadata.
 import { clearClassifierChecking, setClassifierChecking } from '../classifierApprovals.js';
 import { isInProtectedNamespace } from '../envUtils.js';
 import { executePermissionRequestHooks } from '../hooks.js';
-import {
-  AUTO_REJECT_MESSAGE,
-  buildClassifierUnavailableMessage,
-  buildYoloRejectionMessage,
-  DONT_ASK_REJECT_MESSAGE,
-} from '../messages.js';
+import { AUTO_REJECT_MESSAGE, buildClassifierUnavailableMessage, buildYoloRejectionMessage } from '../messages.js';
 import { calculateCostFromTokens } from '../modelCost.js';
 /* eslint-enable @typescript-eslint/no-require-imports */
 import { jsonStringify } from '../slowOperations.js';

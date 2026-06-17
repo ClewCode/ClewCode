@@ -1,10 +1,10 @@
 import { createScreen } from './screen.js';
 export function emptyFrame(rows, columns, stylePool, charPool, hyperlinkPool) {
-    return {
-        screen: createScreen(0, 0, stylePool, charPool, hyperlinkPool),
-        viewport: { width: columns, height: rows },
-        cursor: { x: 0, y: 0, visible: true },
-    };
+  return {
+    screen: createScreen(0, 0, stylePool, charPool, hyperlinkPool),
+    viewport: { width: columns, height: rows },
+    cursor: { x: 0, y: 0, visible: true },
+  };
 }
 /**
  * Determines whether the screen should be cleared based on the current and previous frame.
@@ -16,14 +16,15 @@ export function emptyFrame(rows, columns, stylePool, charPool, hyperlinkPool) {
  * 3. Previous frame screen height exceeded available terminal rows → 'offscreen'
  */
 export function shouldClearScreen(prevFrame, frame) {
-    const didResize = frame.viewport.height !== prevFrame.viewport.height || frame.viewport.width !== prevFrame.viewport.width;
-    if (didResize) {
-        return 'resize';
-    }
-    const currentFrameOverflows = frame.screen.height >= frame.viewport.height;
-    const previousFrameOverflowed = prevFrame.screen.height >= prevFrame.viewport.height;
-    if (currentFrameOverflows || previousFrameOverflowed) {
-        return 'offscreen';
-    }
-    return undefined;
+  const didResize =
+    frame.viewport.height !== prevFrame.viewport.height || frame.viewport.width !== prevFrame.viewport.width;
+  if (didResize) {
+    return 'resize';
+  }
+  const currentFrameOverflows = frame.screen.height >= frame.viewport.height;
+  const previousFrameOverflowed = prevFrame.screen.height >= prevFrame.viewport.height;
+  if (currentFrameOverflows || previousFrameOverflowed) {
+    return 'offscreen';
+  }
+  return undefined;
 }

@@ -22,7 +22,7 @@ export function parsePDFPageRange(pages: string): { firstPage: number; lastPage:
   // "N-" open-ended range
   if (trimmed.endsWith('-')) {
     const first = parseInt(trimmed.slice(0, -1), 10);
-    if (isNaN(first) || first < 1) {
+    if (Number.isNaN(first) || first < 1) {
       return null;
     }
     return { firstPage: first, lastPage: Infinity };
@@ -32,7 +32,7 @@ export function parsePDFPageRange(pages: string): { firstPage: number; lastPage:
   if (dashIndex === -1) {
     // Single page: "5"
     const page = parseInt(trimmed, 10);
-    if (isNaN(page) || page < 1) {
+    if (Number.isNaN(page) || page < 1) {
       return null;
     }
     return { firstPage: page, lastPage: page };
@@ -41,7 +41,7 @@ export function parsePDFPageRange(pages: string): { firstPage: number; lastPage:
   // Range: "1-10"
   const first = parseInt(trimmed.slice(0, dashIndex), 10);
   const last = parseInt(trimmed.slice(dashIndex + 1), 10);
-  if (isNaN(first) || isNaN(last) || first < 1 || last < 1 || last < first) {
+  if (Number.isNaN(first) || Number.isNaN(last) || first < 1 || last < 1 || last < first) {
     return null;
   }
   return { firstPage: first, lastPage: last };

@@ -276,7 +276,7 @@ export function ConsoleOAuthFlow({
         ssl_error: sslHint !== null,
       });
     }
-  }, [oauthService, setShowPastePrompt, loginWithClaudeAi, mode, orgUUID]);
+  }, [oauthService, loginWithClaudeAi, mode, orgUUID, terminal]);
 
   const pendingOAuthStartRef = useRef(false);
 

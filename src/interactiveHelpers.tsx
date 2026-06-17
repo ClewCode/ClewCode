@@ -382,12 +382,12 @@ export function getRenderContext(exitOnCtrlC: boolean): {
           // single syscalls; cpu is cumulative — bench side computes delta.
           const line =
             // eslint-disable-next-line custom-rules/no-direct-json-operations -- tiny object, hot bench path
-            JSON.stringify({
+            `${JSON.stringify({
               total: event.durationMs,
               ...event.phases,
               rss: process.memoryUsage.rss(),
               cpu: process.cpuUsage(),
-            }) + '\n';
+            })}\n`;
           // eslint-disable-next-line custom-rules/no-sync-fs -- bench-only, sync so no frames dropped on exit
           appendFileSync(frameTimingLogPath, line);
         }

@@ -1,19 +1,4 @@
-/**
- * Core plugin operations (install, uninstall, enable, disable, update)
- *
- * This module provides pure library functions that can be used by both:
- * - CLI commands (`claude plugin install/uninstall/enable/disable/update`)
- * - Interactive UI (ManagePlugins.tsx)
- *
- * Functions in this module:
- * - Do NOT call process.exit()
- * - Do NOT write to console
- * - Return result objects indicating success/failure with messages
- * - Can throw errors for unexpected failures
- */
-
-import { readlink, symlink } from 'fs/promises';
-import { dirname, join, relative } from 'path';
+import { dirname, join } from 'path';
 import { getOriginalCwd } from '../../bootstrap/state.js';
 import { isBuiltinPluginId } from '../../plugins/builtinPlugins.js';
 import type { LoadedPlugin, PluginManifest } from '../../types/plugin.js';
@@ -25,7 +10,6 @@ import {
   findReverseDependents,
   formatDisableChainHint,
   formatReverseDependentsSuffix,
-  getEnabledPluginIdsForScope,
   resolveDependencyClosure,
 } from '../../utils/plugins/dependencyResolver.js';
 import {

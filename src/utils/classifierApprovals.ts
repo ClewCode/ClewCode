@@ -31,7 +31,7 @@ export function getClassifierApproval(toolUseID: string): string | undefined {
     return undefined;
   }
   const approval = CLASSIFIER_APPROVALS.get(toolUseID);
-  if (!approval || approval.classifier !== 'bash') return undefined;
+  if (approval?.classifier !== 'bash') return undefined;
   return approval.matchedRule;
 }
 
@@ -47,7 +47,7 @@ export function getYoloClassifierApproval(toolUseID: string): string | undefined
     return undefined;
   }
   const approval = CLASSIFIER_APPROVALS.get(toolUseID);
-  if (!approval || approval.classifier !== 'auto-mode') return undefined;
+  if (approval?.classifier !== 'auto-mode') return undefined;
   return approval.reason;
 }
 

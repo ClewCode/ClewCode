@@ -10,7 +10,6 @@
 
 import { execSync } from 'child_process';
 import { getPlatform } from './platform.js';
-import { logForDebugging } from './debug.js';
 
 // Cache the detected codepage
 let cachedOutputCp: number | null = null;
@@ -115,34 +114,34 @@ export function resetCodepageCache(): void {
 export function cpToEncoding(cp: number): string {
   // Common Windows codepages
   const cpMap: Record<number, string> = {
-    437: 'cp437',       // US English OEM
-    850: 'cp850',       // Western European OEM
-    852: 'cp852',       // Central European OEM
-    855: 'cp855',       // Cyrillic OEM
-    857: 'cp857',       // Turkish OEM
-    860: 'cp860',       // Portuguese OEM
-    861: 'cp861',       // Icelandic OEM
-    862: 'cp862',       // Hebrew OEM
-    863: 'cp863',       // Canadian French OEM
-    864: 'cp864',       // Arabic OEM
-    865: 'cp865',       // Nordic OEM
-    866: 'cp866',       // Cyrillic OEM (Russian)
-    869: 'cp869',       // Greek OEM
-    874: 'cp874',       // Thai
-    932: 'shiftjis',    // Japanese
-    936: 'gbk',         // Simplified Chinese
-    949: 'euc-kr',      // Korean
-    950: 'big5',        // Traditional Chinese
-    1250: 'win1250',    // Central European ANSI
-    1251: 'win1251',    // Cyrillic ANSI
-    1252: 'win1252',    // Western European ANSI
-    1253: 'win1253',    // Greek ANSI
-    1254: 'win1254',    // Turkish ANSI
-    1255: 'win1255',    // Hebrew ANSI
-    1256: 'win1256',    // Arabic ANSI
-    1257: 'win1257',    // Baltic ANSI
-    1258: 'win1258',    // Vietnamese ANSI
-    65001: 'utf8',      // UTF-8
+    437: 'cp437', // US English OEM
+    850: 'cp850', // Western European OEM
+    852: 'cp852', // Central European OEM
+    855: 'cp855', // Cyrillic OEM
+    857: 'cp857', // Turkish OEM
+    860: 'cp860', // Portuguese OEM
+    861: 'cp861', // Icelandic OEM
+    862: 'cp862', // Hebrew OEM
+    863: 'cp863', // Canadian French OEM
+    864: 'cp864', // Arabic OEM
+    865: 'cp865', // Nordic OEM
+    866: 'cp866', // Cyrillic OEM (Russian)
+    869: 'cp869', // Greek OEM
+    874: 'cp874', // Thai
+    932: 'shiftjis', // Japanese
+    936: 'gbk', // Simplified Chinese
+    949: 'euc-kr', // Korean
+    950: 'big5', // Traditional Chinese
+    1250: 'win1250', // Central European ANSI
+    1251: 'win1251', // Cyrillic ANSI
+    1252: 'win1252', // Western European ANSI
+    1253: 'win1253', // Greek ANSI
+    1254: 'win1254', // Turkish ANSI
+    1255: 'win1255', // Hebrew ANSI
+    1256: 'win1256', // Arabic ANSI
+    1257: 'win1257', // Baltic ANSI
+    1258: 'win1258', // Vietnamese ANSI
+    65001: 'utf8', // UTF-8
   };
 
   return cpMap[cp] ?? `cp${cp}`;
@@ -157,10 +156,7 @@ export function cpToEncoding(cp: number): string {
  * @param sourceCp - Source codepage (defaults to console output cp)
  * @returns UTF-8 decoded string
  */
-export async function decodeWindowsOutput(
-  buffer: Buffer,
-  sourceCp?: number,
-): Promise<string> {
+export async function decodeWindowsOutput(buffer: Buffer, sourceCp?: number): Promise<string> {
   const cp = sourceCp ?? getConsoleOutputCp();
 
   // If the console is already UTF-8, no conversion needed

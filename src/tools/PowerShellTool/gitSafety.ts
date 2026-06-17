@@ -27,13 +27,13 @@ function resolveCwdReentry(normalized: string): string {
   // Iteratively strip `../<cwd-basename>/` pairs (handles `../../p/p/hooks`
   // when cwd has repeated basename segments is unlikely, but one-level is
   // the common attack).
-  const prefix = '../' + cwdBase + '/';
+  const prefix = `../${cwdBase}/`;
   let s = normalized;
   while (s.startsWith(prefix)) {
     s = s.slice(prefix.length);
   }
   // Also handle exact `../<cwd-basename>` (no trailing slash)
-  if (s === '../' + cwdBase) return '.';
+  if (s === `../${cwdBase}`) return '.';
   return s;
 }
 
@@ -126,7 +126,7 @@ function matchesGitInternalPrefix(n: string): boolean {
   if (n.startsWith('.git/') || /^git~\d+($|\/)/.test(n)) return true;
   for (const p of GIT_INTERNAL_PREFIXES) {
     if (p === 'head') continue;
-    if (n === p || n.startsWith(p + '/')) return true;
+    if (n === p || n.startsWith(`${p}/`)) return true;
   }
   return false;
 }

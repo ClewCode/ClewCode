@@ -24,7 +24,7 @@ const LOG_FILE =
 function log(message: string, ...args: unknown[]): void {
   if (LOG_FILE) {
     const timestamp = new Date().toISOString();
-    const formattedArgs = args.length > 0 ? ' ' + jsonStringify(args) : '';
+    const formattedArgs = args.length > 0 ? ` ${jsonStringify(args)}` : '';
     const logLine = `[${timestamp}] [Claude Chrome Native Host] ${message}${formattedArgs}\n`;
     // Fire-and-forget: logging is best-effort and callers (including event
     // handlers) don't await
@@ -133,7 +133,7 @@ class ChromeNativeHost {
             continue;
           }
           const pid = parseInt(file.replace('.sock', ''), 10);
-          if (isNaN(pid)) {
+          if (Number.isNaN(pid)) {
             continue;
           }
           try {

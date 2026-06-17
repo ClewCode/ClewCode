@@ -44,7 +44,7 @@ function parseAutoPercentage(value: string): number | null {
   const percentStr = value.slice(5);
   const percent = parseInt(percentStr, 10);
 
-  if (isNaN(percent)) {
+  if (Number.isNaN(percent)) {
     logForDebugging(`Invalid ENABLE_TOOL_SEARCH value "${value}": expected auto:N where N is a number.`);
     return null;
   }
@@ -422,12 +422,12 @@ export async function isToolSearchEnabled(
       );
 
       if (enabled) {
-        logForDebugging(`Auto tool search enabled: ${debugDescription}` + (source ? ` [source: ${source}]` : ''));
+        logForDebugging(`Auto tool search enabled: ${debugDescription}${source ? ` [source: ${source}]` : ''}`);
         logModeDecision(true, mode, 'auto_above_threshold', metrics);
         return true;
       }
 
-      logForDebugging(`Auto tool search disabled: ${debugDescription}` + (source ? ` [source: ${source}]` : ''));
+      logForDebugging(`Auto tool search disabled: ${debugDescription}${source ? ` [source: ${source}]` : ''}`);
       logModeDecision(false, mode, 'auto_below_threshold', metrics);
       return false;
     }

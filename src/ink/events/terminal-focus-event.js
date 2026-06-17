@@ -7,9 +7,9 @@ import { Event } from './event.js';
  * - CSI O (\x1b[O) when the terminal loses focus
  */
 export class TerminalFocusEvent extends Event {
-    type;
-    constructor(type) {
-        super();
-        this.type = type;
-    }
+  type;
+  constructor(type) {
+    super();
+    this.type = type;
+  }
 }

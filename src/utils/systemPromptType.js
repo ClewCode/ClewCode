@@ -5,5 +5,5 @@
  * from anywhere without risking circular initialization issues.
  */
 export function asSystemPrompt(value) {
-    return value;
+  return value;
 }

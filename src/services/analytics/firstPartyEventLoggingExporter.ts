@@ -160,7 +160,7 @@ export class FirstPartyEventLoggingExporter implements LogRecordExporter {
         // Ensure storage directory exists
         await mkdir(getStorageDir(), { recursive: true });
         // Write as JSON lines (one event per line)
-        const content = events.map(e => jsonStringify(e)).join('\n') + '\n';
+        const content = `${events.map(e => jsonStringify(e)).join('\n')}\n`;
         await writeFile(filePath, content, 'utf8');
       }
     } catch (error) {
@@ -174,7 +174,7 @@ export class FirstPartyEventLoggingExporter implements LogRecordExporter {
       // Ensure storage directory exists
       await mkdir(getStorageDir(), { recursive: true });
       // Append as JSON lines (one event per line) - atomic on most filesystems
-      const content = events.map(e => jsonStringify(e)).join('\n') + '\n';
+      const content = `${events.map(e => jsonStringify(e)).join('\n')}\n`;
       await appendFile(filePath, content, 'utf8');
     } catch (error) {
       logError(error);

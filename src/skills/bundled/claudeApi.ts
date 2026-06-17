@@ -119,7 +119,7 @@ function buildPrompt(lang: DetectedLanguage | null, args: string, content: Skill
     const filePaths = getFilesForLanguage(lang, content);
     const readingGuide = INLINE_READING_GUIDE.replace(/\{lang\}/g, lang);
     parts.push(readingGuide);
-    parts.push('---\n\n## Included Documentation\n\n' + buildInlineReference(filePaths, content));
+    parts.push(`---\n\n## Included Documentation\n\n${buildInlineReference(filePaths, content)}`);
   } else {
     // No language detected — include all docs and let the model ask
     parts.push(INLINE_READING_GUIDE.replace(/\{lang\}/g, 'unknown'));
@@ -127,7 +127,7 @@ function buildPrompt(lang: DetectedLanguage | null, args: string, content: Skill
       'No project language was auto-detected. Ask the user which language they are using, then refer to the matching docs below.',
     );
     parts.push(
-      '---\n\n## Included Documentation\n\n' + buildInlineReference(Object.keys(content.SKILL_FILES), content),
+      `---\n\n## Included Documentation\n\n${buildInlineReference(Object.keys(content.SKILL_FILES), content)}`,
     );
   }
 

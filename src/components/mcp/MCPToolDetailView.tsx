@@ -89,31 +89,29 @@ export function MCPToolDetailView({ tool, server, onBack }: Props): React.ReactN
           </Box>
         )}
 
-        {tool.inputJSONSchema &&
-          tool.inputJSONSchema.properties &&
-          Object.keys(tool.inputJSONSchema.properties).length > 0 && (
-            <Box flexDirection="column" marginTop={1}>
-              <Text bold>Parameters:</Text>
-              <Box marginLeft={2} flexDirection="column">
-                {Object.entries(tool.inputJSONSchema.properties).map(([key, value]) => {
-                  const required = tool.inputJSONSchema?.required as string[] | undefined;
-                  const isRequired = required?.includes(key);
-                  return (
-                    <Text key={key}>
-                      • {key}
-                      {isRequired && <Text dimColor> (required)</Text>}:{' '}
-                      <Text dimColor>
-                        {typeof value === 'object' && value && 'type' in value ? String(value.type) : 'unknown'}
-                      </Text>
-                      {typeof value === 'object' && value && 'description' in value && (
-                        <Text dimColor> - {String(value.description)}</Text>
-                      )}
+        {tool.inputJSONSchema?.properties && Object.keys(tool.inputJSONSchema.properties).length > 0 && (
+          <Box flexDirection="column" marginTop={1}>
+            <Text bold>Parameters:</Text>
+            <Box marginLeft={2} flexDirection="column">
+              {Object.entries(tool.inputJSONSchema.properties).map(([key, value]) => {
+                const required = tool.inputJSONSchema?.required as string[] | undefined;
+                const isRequired = required?.includes(key);
+                return (
+                  <Text key={key}>
+                    • {key}
+                    {isRequired && <Text dimColor> (required)</Text>}:{' '}
+                    <Text dimColor>
+                      {typeof value === 'object' && value && 'type' in value ? String(value.type) : 'unknown'}
                     </Text>
-                  );
-                })}
-              </Box>
+                    {typeof value === 'object' && value && 'description' in value && (
+                      <Text dimColor> - {String(value.description)}</Text>
+                    )}
+                  </Text>
+                );
+              })}
             </Box>
-          )}
+          </Box>
+        )}
       </Box>
     </Dialog>
   );

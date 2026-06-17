@@ -1,4 +1,4 @@
-import { jsx as _jsx } from "react/jsx-runtime";
+import { jsx as _jsx } from 'react/jsx-runtime';
 /**
  * Bypass the <Ansi> → React tree → Yoga → squash → re-serialize roundtrip for
  * content that is already terminal-ready.
@@ -15,8 +15,8 @@ import { jsx as _jsx } from "react/jsx-runtime";
  * which already splits on '\n' and parses ANSI into the screen buffer.
  */
 export function RawAnsi({ lines, width }) {
-    if (lines.length === 0) {
-        return null;
-    }
-    return _jsx("ink-raw-ansi", { rawText: lines.join('\n'), rawWidth: width, rawHeight: lines.length });
+  if (lines.length === 0) {
+    return null;
+  }
+  return _jsx('ink-raw-ansi', { rawText: lines.join('\n'), rawWidth: width, rawHeight: lines.length });
 }

@@ -4,78 +4,74 @@ import { getClaudeConfigHomeDir } from '../envUtils.js';
 import { getErrnoCode } from '../errors.js';
 import { getFsImplementation } from '../fsOperations.js';
 import { jsonParse, jsonStringify, writeFileSync_DEPRECATED } from '../slowOperations.js';
+
 function getStoragePath() {
-    const storageDir = getClaudeConfigHomeDir();
-    const storageFileName = '.credentials.json';
-    return { storageDir, storagePath: join(storageDir, storageFileName) };
+  const storageDir = getClaudeConfigHomeDir();
+  const storageFileName = '.credentials.json';
+  return { storageDir, storagePath: join(storageDir, storageFileName) };
 }
 export const plainTextStorage = {
-    name: 'plaintext',
-    read() {
-        // sync IO: called from sync context (SecureStorage interface)
-        const { storagePath } = getStoragePath();
-        try {
-            const data = getFsImplementation().readFileSync(storagePath, {
-                encoding: 'utf8',
-            });
-            return jsonParse(data);
+  name: 'plaintext',
+  read() {
+    // sync IO: called from sync context (SecureStorage interface)
+    const { storagePath } = getStoragePath();
+    try {
+      const data = getFsImplementation().readFileSync(storagePath, {
+        encoding: 'utf8',
+      });
+      return jsonParse(data);
+    } catch {
+      return null;
+    }
+  },
+  async readAsync() {
+    const { storagePath } = getStoragePath();
+    try {
+      const data = await getFsImplementation().readFile(storagePath, {
+        encoding: 'utf8',
+      });
+      return jsonParse(data);
+    } catch {
+      return null;
+    }
+  },
+  update(data) {
+    // sync IO: called from sync context (SecureStorage interface)
+    try {
+      const { storageDir, storagePath } = getStoragePath();
+      try {
+        getFsImplementation().mkdirSync(storageDir);
+      } catch (e) {
+        const code = getErrnoCode(e);
+        if (code !== 'EEXIST') {
+          throw e;
         }
-        catch {
-            return null;
-        }
-    },
-    async readAsync() {
-        const { storagePath } = getStoragePath();
-        try {
-            const data = await getFsImplementation().readFile(storagePath, {
-                encoding: 'utf8',
-            });
-            return jsonParse(data);
-        }
-        catch {
-            return null;
-        }
-    },
-    update(data) {
-        // sync IO: called from sync context (SecureStorage interface)
-        try {
-            const { storageDir, storagePath } = getStoragePath();
-            try {
-                getFsImplementation().mkdirSync(storageDir);
-            }
-            catch (e) {
-                const code = getErrnoCode(e);
-                if (code !== 'EEXIST') {
-                    throw e;
-                }
-            }
-            writeFileSync_DEPRECATED(storagePath, jsonStringify(data), {
-                encoding: 'utf8',
-                flush: false,
-            });
-            chmodSync(storagePath, 0o600);
-            return {
-                success: true,
-                warning: 'Warning: Storing credentials in plaintext.',
-            };
-        }
-        catch {
-            return { success: false };
-        }
-    },
-    delete() {
-        // sync IO: called from sync context (SecureStorage interface)
-        const { storagePath } = getStoragePath();
-        try {
-            getFsImplementation().unlinkSync(storagePath);
-            return true;
-        }
-        catch (e) {
-            const code = getErrnoCode(e);
-            if (code === 'ENOENT') {
-                return true;
-            }
-            return false;
-        }
-    },
+      }
+      writeFileSync_DEPRECATED(storagePath, jsonStringify(data), {
+        encoding: 'utf8',
+        flush: false,
+      });
+      chmodSync(storagePath, 0o600);
+      return {
+        success: true,
+        warning: 'Warning: Storing credentials in plaintext.',
+      };
+    } catch {
+      return { success: false };
+    }
+  },
+  delete() {
+    // sync IO: called from sync context (SecureStorage interface)
+    const { storagePath } = getStoragePath();
+    try {
+      getFsImplementation().unlinkSync(storagePath);
+      return true;
+    } catch (e) {
+      const code = getErrnoCode(e);
+      if (code === 'ENOENT') {
+        return true;
+      }
+      return false;
+    }
+  },
 };

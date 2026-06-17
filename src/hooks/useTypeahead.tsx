@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNotifications } from 'src/context/notifications.js';
 import { Text } from 'src/ink.js';
@@ -209,9 +208,9 @@ export function applyShellSuggestion(
   // Prepare the replacement text based on completion type
   let replacementText: string;
   if (completionType === 'variable') {
-    replacementText = '$' + suggestion.displayText + ' ';
+    replacementText = `$${suggestion.displayText} `;
   } else if (completionType === 'command') {
-    replacementText = suggestion.displayText + ' ';
+    replacementText = `${suggestion.displayText} `;
   } else {
     replacementText = suggestion.displayText;
   }
@@ -232,7 +231,7 @@ function applyTriggerSuggestion(
   if (!m || m.index === undefined) return;
   const prefixStart = m.index + (m[1]?.length ?? 0);
   const before = input.slice(0, prefixStart);
-  const newInput = before + suggestion.displayText + ' ' + input.slice(cursorOffset);
+  const newInput = `${before + suggestion.displayText} ${input.slice(cursorOffset)}`;
   onInputChange(newInput);
   setCursorOffset(before.length + suggestion.displayText.length + 1);
 }
@@ -282,7 +281,7 @@ export function applyDirectorySuggestion(
   const after = input.slice(tokenStartPos + tokenLength);
   // Always add @ prefix - if token already has it, we're replacing
   // the whole token (including @) with @suggestion.id
-  const replacement = '@' + suggestionId + suffix;
+  const replacement = `@${suggestionId}${suffix}`;
   const newInput = before + replacement + after;
   return {
     newInput,
@@ -571,7 +570,7 @@ export function useTypeahead({
       setSuggestionType(combinedItems.length > 0 ? 'file' : 'none');
       setMaxColumnWidth(undefined); // No fixed width for file suggestions
     },
-    [mcpResources, setSuggestionsState, setSuggestionType, setMaxColumnWidth, agents],
+    [mcpResources, setSuggestionsState, agents, connectedServers],
   );
 
   // Pre-warm the file index on mount so the first @-mention doesn't block.
@@ -620,7 +619,7 @@ export function useTypeahead({
       setMaxColumnWidth(undefined);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- store is a stable context ref
-    [setSuggestionsState],
+    [setSuggestionsState, store.getState],
   );
 
   // First keystroke after # needs the MCP round-trip; subsequent keystrokes
@@ -932,7 +931,7 @@ export function useTypeahead({
       if (hasAtSymbol && mode !== 'bash') {
         // Get the @ token (including the @ symbol)
         const completionToken = extractCompletionToken(value, effectiveCursorOffset, true);
-        if (completionToken && completionToken.token.startsWith('@')) {
+        if (completionToken?.token.startsWith('@')) {
           const searchToken = extractSearchToken(completionToken);
 
           // If the token after @ is path-like, use path completion instead of fuzzy search
@@ -1052,7 +1051,7 @@ export function useTypeahead({
         // Replace the partial command with the full command + space
         const before = input.slice(0, midInputCommand.startPos);
         const after = input.slice(midInputCommand.startPos + midInputCommand.token.length);
-        const newInput = before + '/' + effectiveGhostText.fullCommand + ' ' + after;
+        const newInput = `${before}/${effectiveGhostText.fullCommand} ${after}`;
         const newCursorOffset = midInputCommand.startPos + 1 + effectiveGhostText.fullCommand.length + 1;
         onInputChange(newInput);
         setCursorOffset(newCursorOffset);
@@ -1329,6 +1328,7 @@ export function useTypeahead({
     debouncedFetchFileSuggestions,
     debouncedFetchSlackChannels,
     effectiveGhostText,
+    connectedServers,
   ]);
 
   // Handle enter key press - apply and execute suggestions

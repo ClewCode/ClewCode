@@ -151,7 +151,7 @@ export function NativeAutoUpdater({
     // identity (which would re-trigger the initial-check useEffect below).
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // biome-ignore lint/correctness/useExhaustiveDependencies: isUpdating read via ref
-  }, [onAutoUpdaterResult, channel]);
+  }, [onAutoUpdaterResult, channel, onChangeIsUpdating]);
 
   // Initial check
   useEffect(() => {

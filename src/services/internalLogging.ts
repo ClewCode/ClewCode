@@ -47,7 +47,7 @@ export const getContainerId = memoize(async (): Promise<string | null> => {
 
     for (const line of lines) {
       const match = line.match(containerIdPattern);
-      if (match && match[1]) {
+      if (match?.[1]) {
         return match[1];
       }
     }

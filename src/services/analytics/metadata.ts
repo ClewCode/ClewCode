@@ -280,7 +280,7 @@ export function extractToolInputForTelemetry(input: unknown): string | undefined
   const truncated = truncateToolInputValue(input);
   let json = jsonStringify(truncated);
   if (json.length > TOOL_INPUT_MAX_JSON_CHARS) {
-    json = json.slice(0, TOOL_INPUT_MAX_JSON_CHARS) + '…[truncated]';
+    json = `${json.slice(0, TOOL_INPUT_MAX_JSON_CHARS)}…[truncated]`;
   }
   return json;
 }
@@ -385,7 +385,7 @@ export function getFileExtensionsFromBashCommand(
       const ext = getFileExtensionForAnalytics(arg);
       if (ext && !seen.has(ext)) {
         seen.add(ext);
-        result = result ? result + ',' + ext : ext;
+        result = result ? `${result},${ext}` : ext;
       }
     }
   }

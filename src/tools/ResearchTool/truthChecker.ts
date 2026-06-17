@@ -1,5 +1,3 @@
-import { logError } from '../../utils/log.js';
-
 export interface SourceCredibility {
   domain: string;
   score: number; // 0-100
@@ -104,25 +102,25 @@ export function assessSourceCredibility(url: string): SourceCredibility {
     const indicators: string[] = [];
 
     // Check official documentation and authoritative sources
-    if (OFFICIAL_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))) {
+    if (OFFICIAL_DOMAINS.some(d => domain === d || domain.endsWith(`.${d}`))) {
       score = 95;
       type = 'official';
       indicators.push('Official documentation or authoritative source');
     }
     // Check academic sources
-    else if (ACADEMIC_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))) {
+    else if (ACADEMIC_DOMAINS.some(d => domain === d || domain.endsWith(`.${d}`))) {
       score = 90;
       type = 'academic';
       indicators.push('Academic or research publication');
     }
     // Check news sources
-    else if (NEWS_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))) {
+    else if (NEWS_DOMAINS.some(d => domain === d || domain.endsWith(`.${d}`))) {
       score = 75;
       type = 'news';
       indicators.push('Established news organization');
     }
     // Check community sources
-    else if (COMMUNITY_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))) {
+    else if (COMMUNITY_DOMAINS.some(d => domain === d || domain.endsWith(`.${d}`))) {
       score = 65;
       type = 'community';
       indicators.push('Community-driven platform');

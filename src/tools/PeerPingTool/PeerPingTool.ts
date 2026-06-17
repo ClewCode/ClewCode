@@ -52,7 +52,9 @@ export const PeerPingTool = buildTool({
   },
   name: PEER_PING_TOOL_NAME,
   searchHint: 'ping a peer node to check if online',
-  isTransparentWrapper() { return true; },
+  isTransparentWrapper() {
+    return true;
+  },
   maxResultSizeChars: 2_000,
   async description() {
     return DESCRIPTION;
@@ -105,14 +107,14 @@ export const PeerPingTool = buildTool({
     const attemptPing = async (): Promise<{ ok: boolean; result?: any; error?: string }> => {
       let peer = store.findPeer(input.peer);
       const portNum = parseInt(input.peer, 10);
-      if (!peer && !isNaN(portNum)) peer = store.getPeerByPort(portNum);
+      if (!peer && !Number.isNaN(portNum)) peer = store.getPeerByPort(portNum);
 
       if (!peer) {
         const discovery = getGlobalDiscovery();
         const peers = await discovery.discoverPeers(3000);
         for (const p of peers) store.addPeer(p);
         peer = store.findPeer(input.peer);
-        if (!peer && !isNaN(portNum)) peer = store.getPeerByPort(portNum);
+        if (!peer && !Number.isNaN(portNum)) peer = store.getPeerByPort(portNum);
       }
 
       if (!peer) {

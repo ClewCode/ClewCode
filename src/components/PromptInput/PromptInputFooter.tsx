@@ -11,7 +11,6 @@ import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { Box, Text } from '../../ink.js';
 import type { MCPServerConnection } from '../../services/mcp/types.js';
 import { useAppState } from '../../state/AppState.js';
-import { useAppStateStore } from '../../state/AppStateStore.js';
 import type { ToolPermissionContext } from '../../Tool.js';
 import type { Message } from '../../types/message.js';
 import type { PromptInputMode, VimMode } from '../../types/textInputTypes.js';
@@ -133,11 +132,13 @@ function PromptInputFooter({
   const currentProfile = useAppState(s => s.profile);
   const isPersonalProfile = currentProfile === 'personal';
   const settingsSnapshot = useAppState(s => s.settings);
-  const personalPersonaName = (settingsSnapshot as Record<string, unknown>).personalPersonaName as string | undefined || 'Clew Personal';
+  const personalPersonaName =
+    ((settingsSnapshot as Record<string, unknown>).personalPersonaName as string | undefined) || 'Clew Personal';
 
   // Hide `? for shortcuts` if the user has a custom status line, or during ctrl-r
   const suppressHint = suppressHintFromProps || statusLineShouldDisplay(settings) || isSearching || isPersonalProfile;
-  const showStatusLine = mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings) && !isPersonalProfile;
+  const showStatusLine =
+    mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings) && !isPersonalProfile;
   const goalActiveText = sessionGoal
     ? `${sessionGoalPaused ? '⏸' : '◎'} /goal ${sessionGoalPaused ? 'paused' : 'active'} (${formatDuration(
         goalNow - (sessionGoalStartTime ?? goalNow) - (sessionGoalTotalPausedMs ?? 0),
@@ -211,9 +212,7 @@ function PromptInputFooter({
                 {footerLeftSide}
               </Box>
               <Box flexDirection="row" flexShrink={0} gap={1}>
-                {currentProfile === 'personal' ? (
-                  <Text bold>{personalPersonaName}</Text>
-                ) : null}
+                {currentProfile === 'personal' ? <Text bold>{personalPersonaName}</Text> : null}
                 {goalActiveText ? (
                   <Text color="ide" wrap="truncate">
                     {goalActiveText}

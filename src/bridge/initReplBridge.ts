@@ -503,5 +503,5 @@ function deriveTitle(raw: string): string | undefined {
   // Collapse newlines/tabs — titles are single-line in the claude.ai list.
   const flat = firstSentence.replace(/\s+/g, ' ').trim();
   if (!flat) return undefined;
-  return flat.length > TITLE_MAX_LEN ? flat.slice(0, TITLE_MAX_LEN - 1) + '\u2026' : flat;
+  return flat.length > TITLE_MAX_LEN ? `${flat.slice(0, TITLE_MAX_LEN - 1)}\u2026` : flat;
 }

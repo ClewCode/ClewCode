@@ -23,7 +23,7 @@ export class RemoteBridge {
   }
 
   /** Handle an incoming message from the remote */
-  async handleMessage(sessionId: string, message: RemoteMessage): Promise<void> {
+  async handleMessage(_sessionId: string, message: RemoteMessage): Promise<void> {
     switch (message.type) {
       case 'user': {
         const text = typeof message.message === 'string' ? message.message : '';

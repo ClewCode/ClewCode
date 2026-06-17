@@ -31,7 +31,7 @@ export function usePromptInputPlaceholder({ input, submitCount, viewingAgentName
     if (viewingAgentName) {
       const displayName =
         viewingAgentName.length > MAX_TEAMMATE_NAME_LENGTH
-          ? viewingAgentName.slice(0, MAX_TEAMMATE_NAME_LENGTH - 3) + '...'
+          ? `${viewingAgentName.slice(0, MAX_TEAMMATE_NAME_LENGTH - 3)}...`
           : viewingAgentName;
       return `Message @${displayName}…`;
     }

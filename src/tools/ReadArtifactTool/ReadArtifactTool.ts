@@ -1,11 +1,11 @@
 // ReadArtifact — read large persisted tool outputs in line-based chunks
-import { z } from 'zod/v4';
+
 import { readFile } from 'fs/promises';
-import { resolve, isAbsolute } from 'path';
-import { buildTool } from '../../Tool.js';
+import { isAbsolute, resolve } from 'path';
+import { z } from 'zod/v4';
 import type { Tool } from '../../Tool.js';
+import { buildTool } from '../../Tool.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { getToolResultsDir } from '../../utils/toolResultStorage.js';
 
 export const READ_ARTIFACT_TOOL_NAME = 'ReadArtifact';
 

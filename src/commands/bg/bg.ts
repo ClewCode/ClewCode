@@ -6,7 +6,7 @@ import type { LocalCommandCall } from '../../types/command.js';
 import { getCurrentSessionTitle } from '../../utils/sessionStorage.js';
 import { buildEffectiveSystemPrompt } from '../../utils/systemPrompt.js';
 
-export const call: LocalCommandCall = async (args, context) => {
+export const call: LocalCommandCall = async (_args, context) => {
   const { messages } = context;
 
   if (messages.length === 0) {

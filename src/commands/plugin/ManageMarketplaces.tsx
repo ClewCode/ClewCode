@@ -171,7 +171,7 @@ export function ManageMarketplaces({
     void loadMarketplaces();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
-  }, [targetMarketplace, action, error]);
+  }, [targetMarketplace, action, error, setError, applyChanges]);
 
   // Check if there are any pending changes
   const hasPendingChanges = () => {

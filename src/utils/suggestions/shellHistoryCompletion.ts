@@ -34,7 +34,7 @@ async function getShellHistoryCommands(): Promise<string[]> {
   try {
     // Read history entries and filter for bash commands
     for await (const entry of getHistory()) {
-      if (entry.display && entry.display.startsWith('!')) {
+      if (entry.display?.startsWith('!')) {
         // Remove the '!' prefix to get the actual command
         const command = entry.display.slice(1).trim();
         if (command && !seen.has(command)) {

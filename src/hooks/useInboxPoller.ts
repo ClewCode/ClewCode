@@ -106,7 +106,7 @@ export function useInboxPoller({ enabled, isLoading, focusedInputDialog, onSubmi
   const onSubmitTeammateMessage = onSubmitMessage;
   const store = useAppStateStore();
   const setAppState = useSetAppState();
-  const inboxMessageCount = useAppState(s => s.inbox.messages.length);
+  const _inboxMessageCount = useAppState(s => s.inbox.messages.length);
   const terminal = useTerminalNotification();
 
   const poll = useCallback(async () => {
@@ -801,7 +801,7 @@ export function useInboxPoller({ enabled, isLoading, focusedInputDialog, onSubmi
     } else {
       logForDebugging(`[InboxPoller] Submission rejected, keeping messages queued`);
     }
-  }, [enabled, isLoading, focusedInputDialog, onSubmitTeammateMessage, setAppState, inboxMessageCount, store]);
+  }, [enabled, isLoading, focusedInputDialog, onSubmitTeammateMessage, setAppState, store]);
 
   // Poll if running as a teammate or as a team lead
   const shouldPoll = enabled && !!getAgentNameToPoll(store.getState());

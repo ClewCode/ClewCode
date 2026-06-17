@@ -39,7 +39,7 @@ export async function fetchAndStoreClaudeCodeFirstTokenDate(): Promise<void> {
     // Validate the date if it's not null
     if (firstTokenDate !== null) {
       const dateTime = new Date(firstTokenDate).getTime();
-      if (isNaN(dateTime)) {
+      if (Number.isNaN(dateTime)) {
         logError(new Error(`Received invalid first_token_date from API: ${firstTokenDate}`));
         // Don't save invalid dates
         return;

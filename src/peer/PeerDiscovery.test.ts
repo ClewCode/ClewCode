@@ -1,5 +1,5 @@
-import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
-import { PeerDiscovery, getGlobalDiscovery } from './PeerDiscovery.js';
+import { afterEach, describe, expect, test } from 'bun:test';
+import { getGlobalDiscovery, PeerDiscovery } from './PeerDiscovery.js';
 
 describe('PeerDiscovery', () => {
   let discovery;
@@ -15,8 +15,12 @@ describe('PeerDiscovery', () => {
   });
 
   test('constructor accepts callbacks', () => {
-    let c = false;
-    discovery = new PeerDiscovery({ onPeerDiscovered: () => { c = true; } });
+    let _c = false;
+    discovery = new PeerDiscovery({
+      onPeerDiscovered: () => {
+        _c = true;
+      },
+    });
     expect(discovery).toBeDefined();
   });
 

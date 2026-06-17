@@ -50,7 +50,7 @@ export function WorkspaceTab({
       }
 
       const directory = additionalDirectories.find(d => d.path === selectedValue);
-      if (directory && directory.isDeletable) {
+      if (directory?.isDeletable) {
         onRequestRemoveDirectory(directory.path);
       }
     },

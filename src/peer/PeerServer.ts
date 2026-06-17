@@ -18,12 +18,12 @@ import { logForDebugging } from '../utils/debug.js';
 import { errorMessage } from '../utils/errors.js';
 import {
   type MeshChatMessage,
-  type PeerColor,
-  type PeerInfo,
-  type SwarmTask,
   type MeshTaskPriority,
   type MeshTodo,
+  type PeerColor,
+  type PeerInfo,
   peerColorFromId,
+  type SwarmTask,
 } from './types.js';
 
 export type PeerServerCallbacks = {
@@ -594,7 +594,7 @@ export class PeerServer {
   /**
    * Handle WebSocket upgrade for chat.
    */
-  private handleWebSocketUpgrade(req: IncomingMessage, socket: any, head: Buffer): void {
+  private handleWebSocketUpgrade(_req: IncomingMessage, socket: any, _head: Buffer): void {
     // Simple WebSocket upgrade without external library
     // For v1, chat will use HTTP POST /peer-msg (simpler, no WS needed)
     // WebSocket support can be added in a future iteration

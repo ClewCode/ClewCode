@@ -33,6 +33,7 @@ import { roughTokenCountEstimationForMessages } from '../services/tokenEstimatio
 import type { Message } from '../types/message.js';
 import type { StatusLineCommandInput } from '../types/statusLine.js';
 import type { VimMode } from '../types/textInputTypes.js';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { checkHasTrustDialogAccepted, getGlobalConfig } from '../utils/config.js';
 import { calculateContextPercentages, getContextWindowForModel } from '../utils/context.js';
 import { getCwd } from '../utils/cwd.js';
@@ -48,7 +49,6 @@ import { getCurrentSessionTitle } from '../utils/sessionStorage.js';
 import { doesMostRecentAssistantMessageExceed200k, getCurrentUsage } from '../utils/tokens.js';
 import { getCurrentWorktreeSession } from '../utils/worktree.js';
 import { isVimModeEnabled } from './PromptInput/utils.js';
-import { DOT_CLEW } from '../utils/clewPaths.js';
 export function statusLineShouldDisplay(settings: ReadonlySettings): boolean {
   if (feature('KAIROS') && getKairosActive()) return false;
   if (getGlobalConfig().statusLineEnabled === false) return false;
@@ -192,11 +192,11 @@ function claudeSubtle(text: string): string {
   return chalk.hex(CLAUDE_THEME.subtle)(text);
 }
 
-function claudeAccent(text: string): string {
+function _claudeAccent(text: string): string {
   return chalk.hex(CLAUDE_THEME.accent)(text);
 }
 
-function claudeSuccess(text: string): string {
+function _claudeSuccess(text: string): string {
   return chalk.hex(CLAUDE_THEME.success)(text);
 }
 
@@ -295,7 +295,7 @@ function formatCompactDuration(ms: number): string {
   return `${seconds}s`;
 }
 
-function formatActivityDuration(item: { startedAt?: number; endedAt?: number }): string {
+function _formatActivityDuration(item: { startedAt?: number; endedAt?: number }): string {
   if (!item.startedAt || !item.endedAt || item.endedAt < item.startedAt) return '';
   return claudeSubtle(` (${formatCompactDuration(item.endedAt - item.startedAt)})`);
 }
@@ -325,7 +325,7 @@ function _countClaudeFiles(cwd: string): number {
 
 /** Extract tool activity and agent state from all messages.
  *  Mirrors claude-hud's transcript.ts processEntry logic. */
-function extractActivity(messages: Message[]): {
+function _extractActivity(messages: Message[]): {
   tools: ToolActivity[];
   agents: AgentActivity[];
   todos: TodoState | null;
@@ -455,7 +455,7 @@ function extractActivity(messages: Message[]): {
   return { tools, agents, todos };
 }
 
-function truncate(str: string, maxLen: number = 40): string {
+function _truncate(str: string, maxLen: number = 40): string {
   if (str.length <= maxLen) return str;
   return `${str.slice(0, maxLen - 3)}...`;
 }

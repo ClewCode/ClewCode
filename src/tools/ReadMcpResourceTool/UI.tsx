@@ -25,7 +25,7 @@ export function renderToolResultMessage(
     verbose: boolean;
   },
 ): React.ReactNode {
-  if (!output || !output.contents || output.contents.length === 0) {
+  if (!output?.contents || output.contents.length === 0) {
     return (
       <Box justifyContent="space-between" overflowX="hidden" width="100%">
         <MessageResponse height={1}>

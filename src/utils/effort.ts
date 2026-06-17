@@ -116,7 +116,7 @@ export function parseEffortValue(value: unknown): EffortValue | undefined {
     return str;
   }
   const numericValue = parseInt(str, 10);
-  if (!isNaN(numericValue) && isValidNumericEffort(numericValue)) {
+  if (!Number.isNaN(numericValue) && isValidNumericEffort(numericValue)) {
     return numericValue;
   }
   return undefined;

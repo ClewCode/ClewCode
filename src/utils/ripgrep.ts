@@ -281,7 +281,7 @@ async function ripGrepFileCount(args: string[], target: string, abortSignal: Abo
           retryChild.stdout?.on('data', (chunk: Buffer) => {
             lines += countCharInString(chunk, '\n');
           });
-          retryChild.on('close', code => {
+          retryChild.on('close', _code => {
             resolve(lines);
           });
           retryChild.on('error', reject);

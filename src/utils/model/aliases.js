@@ -1,6 +1,6 @@
 export const MODEL_ALIASES = ['sonnet', 'opus', 'haiku', 'best', 'sonnet[1m]', 'opus[1m]', 'opusplan'];
 export function isModelAlias(modelInput) {
-    return MODEL_ALIASES.includes(modelInput);
+  return MODEL_ALIASES.includes(modelInput);
 }
 /**
  * Bare model family aliases that act as wildcards in the availableModels allowlist.
@@ -9,5 +9,5 @@ export function isModelAlias(modelInput) {
  */
 export const MODEL_FAMILY_ALIASES = ['sonnet', 'opus', 'haiku'];
 export function isModelFamilyAlias(model) {
-    return MODEL_FAMILY_ALIASES.includes(model);
+  return MODEL_FAMILY_ALIASES.includes(model);
 }

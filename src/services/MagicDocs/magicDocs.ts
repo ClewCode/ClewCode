@@ -45,7 +45,7 @@ export function clearTrackedMagicDocs(): void {
  */
 export function detectMagicDocHeader(content: string): { title: string; instructions?: string } | null {
   const match = content.match(MAGIC_DOC_HEADER_PATTERN);
-  if (!match || !match[1]) {
+  if (!match?.[1]) {
     return null;
   }
 
@@ -57,10 +57,10 @@ export function detectMagicDocHeader(content: string): { title: string; instruct
   // Match: newline, optional blank line, then content line
   const nextLineMatch = afterHeader.match(/^\s*\n(?:\s*\n)?(.+?)(?:\n|$)/);
 
-  if (nextLineMatch && nextLineMatch[1]) {
+  if (nextLineMatch?.[1]) {
     const nextLine = nextLineMatch[1];
     const italicsMatch = nextLine.match(ITALICS_PATTERN);
-    if (italicsMatch && italicsMatch[1]) {
+    if (italicsMatch?.[1]) {
       const instructions = italicsMatch[1].trim();
       return {
         title,

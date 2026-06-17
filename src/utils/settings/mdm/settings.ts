@@ -198,7 +198,7 @@ export function parseRegQueryStdout(stdout: string, valueName = 'Settings'): str
   const re = new RegExp(`^\\s+${escaped}\\s+REG_(?:EXPAND_)?SZ\\s+(.*)$`, 'i');
   for (const line of lines) {
     const match = line.match(re);
-    if (match && match[1]) {
+    if (match?.[1]) {
       return match[1].trimEnd();
     }
   }

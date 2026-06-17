@@ -391,16 +391,8 @@ export function MessageSelector({
           Rewind
         </Text>
 
-        {error && (
-          <>
-            <Text color="error">Error: {error}</Text>
-          </>
-        )}
-        {!hasMessagesToSelect && (
-          <>
-            <Text>Nothing to rewind to yet.</Text>
-          </>
-        )}
+        {error && <Text color="error">Error: {error}</Text>}
+        {!hasMessagesToSelect && <Text>Nothing to rewind to yet.</Text>}
         {!error && messageToRestore && hasMessagesToSelect && (
           <>
             <Text>
@@ -464,7 +456,7 @@ export function MessageSelector({
 
                   const metadataLoaded = optionIndex in fileHistoryMetadata;
                   const metadata = fileHistoryMetadata[optionIndex];
-                  const numFilesChanged = metadata?.filesChanged && metadata.filesChanged.length;
+                  const numFilesChanged = metadata?.filesChanged?.length;
 
                   return (
                     <Box
@@ -495,20 +487,18 @@ export function MessageSelector({
                         {isFileHistoryEnabled && metadataLoaded && (
                           <Box height={1} flexDirection="row">
                             {metadata ? (
-                              <>
-                                <Text dimColor={!isSelected} color="inactive">
-                                  {numFilesChanged ? (
-                                    <>
-                                      {numFilesChanged === 1 && metadata.filesChanged![0]
-                                        ? `${path.basename(metadata.filesChanged![0])} `
-                                        : `${numFilesChanged} files changed `}
-                                      <DiffStatsText diffStats={metadata} />
-                                    </>
-                                  ) : (
-                                    <>No code changes</>
-                                  )}
-                                </Text>
-                              </>
+                              <Text dimColor={!isSelected} color="inactive">
+                                {numFilesChanged ? (
+                                  <>
+                                    {numFilesChanged === 1 && metadata.filesChanged![0]
+                                      ? `${path.basename(metadata.filesChanged![0])} `
+                                      : `${numFilesChanged} files changed `}
+                                    <DiffStatsText diffStats={metadata} />
+                                  </>
+                                ) : (
+                                  <>No code changes</>
+                                )}
+                              </Text>
                             ) : (
                               <Text dimColor color="warning">
                                 {figures.warning} No code restore
@@ -584,7 +574,7 @@ function RestoreCodeConfirmation({
   if (diffStatsForRestore === undefined) {
     return undefined;
   }
-  if (!diffStatsForRestore.filesChanged || !diffStatsForRestore.filesChanged[0]) {
+  if (!diffStatsForRestore.filesChanged?.[0]) {
     return <Text dimColor>The code has not changed (nothing will be restored).</Text>;
   }
 
@@ -603,16 +593,14 @@ function RestoreCodeConfirmation({
   }
 
   return (
-    <>
-      <Text dimColor>
-        The code will be restored <DiffStatsText diffStats={diffStatsForRestore} /> in {fileLabel}.
-      </Text>
-    </>
+    <Text dimColor>
+      The code will be restored <DiffStatsText diffStats={diffStatsForRestore} /> in {fileLabel}.
+    </Text>
   );
 }
 
 function DiffStatsText({ diffStats }: { diffStats: DiffStats | undefined }): React.ReactNode {
-  if (!diffStats || !diffStats.filesChanged) {
+  if (!diffStats?.filesChanged) {
     return undefined;
   }
   return (
@@ -754,7 +742,7 @@ function computeDiffStatsBetweenMessages(
     }
 
     const result = msg.toolUseResult as FileEditOutput | FileWriteToolOutput;
-    if (!result || !result.filePath || !result.structuredPatch) {
+    if (!result?.filePath || !result.structuredPatch) {
       continue;
     }
 

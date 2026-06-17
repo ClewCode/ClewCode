@@ -187,7 +187,7 @@ export function clearIdpClientSecret(idpIssuer: string): void {
 // auth servers, and Keycloak realms. Trailing-slash base + relative path is
 // the fix. Exported because auth.ts needs the same discovery.
 export async function discoverOidc(idpIssuer: string): Promise<OpenIdProviderDiscoveryMetadata> {
-  const base = idpIssuer.endsWith('/') ? idpIssuer : idpIssuer + '/';
+  const base = idpIssuer.endsWith('/') ? idpIssuer : `${idpIssuer}/`;
   const url = new URL('.well-known/openid-configuration', base);
   // eslint-disable-next-line eslint-plugin-n/no-unsupported-features/node-builtins
   const res = await fetch(url, {

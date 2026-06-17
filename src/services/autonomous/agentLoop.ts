@@ -18,7 +18,6 @@ import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
-import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { createCronScheduler } from '../../utils/cronScheduler.js';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
@@ -29,15 +28,12 @@ import {
   closeWatcher as closeQueueWatcher,
   expireLeases,
   getNextTask,
-  getTaskLogDir,
   leaseTask,
   loadQueue,
   markTaskCompleted,
   markTaskFailed,
-  readTaskLog,
   releaseLease,
   retryTask,
-  saveQueue,
   type TaskQueueEntry,
   updateTask,
   watchQueue,

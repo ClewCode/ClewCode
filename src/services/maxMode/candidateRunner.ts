@@ -107,10 +107,10 @@ export async function runMaxMode(
   }
 
   // Select best candidate — LLM judge if >1 candidate, with heuristic fallback
-  const bestCandidate = successfulResults.length > 1
-    ? (await judgeCandidates(prompt, successfulResults, cacheSafeParams))
-        ?? selectBestCandidate(successfulResults)
-    : successfulResults[0]!;
+  const bestCandidate =
+    successfulResults.length > 1
+      ? ((await judgeCandidates(prompt, successfulResults, cacheSafeParams)) ?? selectBestCandidate(successfulResults))
+      : successfulResults[0]!;
 
   const totalDuration = Date.now() - startTime;
   console.log(
@@ -200,9 +200,7 @@ async function judgeCandidates(
   results: CandidateResult[],
   cacheSafeParams: CacheSafeParams,
 ): Promise<CandidateResult | null> {
-  const candidatesText = results
-    .map((r, i) => `--- Candidate ${i} ---\n${r.response.slice(0, 8000)}`)
-    .join('\n\n');
+  const candidatesText = results.map((r, i) => `--- Candidate ${i} ---\n${r.response.slice(0, 8000)}`).join('\n\n');
 
   const judgeMessage = createUserMessage({
     content: `## User Request\n${prompt}\n\n## Candidates\n${candidatesText}\n\n## Evaluation\n${JUDGE_PROMPT}`,
@@ -222,9 +220,7 @@ async function judgeCandidates(
       maxTurns: 1,
     });
 
-    const lastAssistant = result.messages.findLast(
-      (m): m is AssistantMessage => m.type === 'assistant',
-    );
+    const lastAssistant = result.messages.findLast((m): m is AssistantMessage => m.type === 'assistant');
     if (!lastAssistant) return null;
 
     const text = extractTextFromAssistant(lastAssistant);

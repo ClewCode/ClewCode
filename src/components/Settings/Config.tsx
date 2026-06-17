@@ -1276,11 +1276,9 @@ export function Config({
     showSubmenu,
     changes,
     globalConfig,
-    mainLoopModel,
     currentOutputStyle,
     currentLanguage,
     settingsData?.autoUpdatesChannel,
-    isFastModeEnabled() ? (settingsData as Record<string, unknown> | undefined)?.fastMode : undefined,
     onClose,
   ]);
 
@@ -1395,7 +1393,7 @@ export function Config({
   // Only active when not in search mode and no submenu is open.
   const toggleSetting = useCallback(() => {
     const setting = filteredSettingsItems[selectedIndex];
-    if (!setting || !setting.onChange) {
+    if (!setting?.onChange) {
       return;
     }
 
@@ -1496,6 +1494,7 @@ export function Config({
     selectedIndex,
     settingsData?.autoUpdatesChannel,
     setTabsHidden,
+    context.messages.some,
   ]);
 
   const moveSelection = (delta: -1 | 1): void => {

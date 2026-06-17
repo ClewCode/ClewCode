@@ -214,7 +214,7 @@ export function killInProcessTeammate(taskId: string, setAppState: SetAppStateFn
 
   setAppState((prev: AppState) => {
     const task = prev.tasks[taskId];
-    if (!task || task.type !== 'in_process_teammate') {
+    if (task?.type !== 'in_process_teammate') {
       return prev;
     }
 
@@ -244,7 +244,7 @@ export function killInProcessTeammate(taskId: string, setAppState: SetAppStateFn
 
     // Remove from teamContext.teammates using the agentId
     let updatedTeamContext = prev.teamContext;
-    if (prev.teamContext && prev.teamContext.teammates && agentId) {
+    if (prev.teamContext?.teammates && agentId) {
       const { [agentId]: _, ...remainingTeammates } = prev.teamContext.teammates;
       updatedTeamContext = {
         ...prev.teamContext,

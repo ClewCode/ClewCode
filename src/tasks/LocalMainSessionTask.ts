@@ -246,7 +246,7 @@ export function foregroundMainSessionTask(taskId: string, setAppState: SetAppSta
 
   setAppState(prev => {
     const task = prev.tasks[taskId];
-    if (!task || task.type !== 'local_agent') {
+    if (task?.type !== 'local_agent') {
       return prev;
     }
 
@@ -390,7 +390,7 @@ export function startBackgroundSession({
 
         setAppState(prev => {
           const task = prev.tasks[taskId];
-          if (!task || task.type !== 'local_agent') return prev;
+          if (task?.type !== 'local_agent') return prev;
           const prevProgress = task.progress;
           if (
             prevProgress?.tokenCount === tokenCount &&

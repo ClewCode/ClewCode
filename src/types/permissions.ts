@@ -6,7 +6,6 @@
  * to avoid circular dependencies.
  */
 
-import { feature } from 'bun:bundle';
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs';
 
 export const EXTERNAL_PERMISSION_MODES = [

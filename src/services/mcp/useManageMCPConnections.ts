@@ -45,7 +45,7 @@ import {
 import type { AppState } from 'src/state/AppState.js';
 import type { PluginError } from 'src/types/plugin.js';
 import { logForDebugging } from 'src/utils/debug.js';
-import { getAllowedChannels, setAllowedChannels } from '../../bootstrap/state.js';
+import { getAllowedChannels } from '../../bootstrap/state.js';
 import { useNotifications } from '../../context/notifications.js';
 import { useAppState, useAppStateStore, useSetAppState } from '../../state/AppState.js';
 import { errorMessage } from '../../utils/errors.js';
@@ -656,7 +656,7 @@ export function useManageMCPConnections(
           break;
       }
     },
-    [updateServer],
+    [updateServer, setAppState, addNotification],
   );
 
   // Initialize all servers to pending state if they don't exist in appState.
@@ -665,7 +665,7 @@ export function useManageMCPConnections(
   // that no longer appear in configs — prevents ghost tools from disabled plugins.
   // Skip claude.ai dedup here to avoid blocking on the network fetch; the connect
   // useEffect below runs immediately after and dedups before connecting.
-  const sessionId = getSessionId();
+  const _sessionId = getSessionId();
   useEffect(() => {
     async function initializeServersAsPending() {
       const { servers: existingConfigs, errors: mcpErrors } = isStrictMcpConfig
@@ -732,7 +732,7 @@ export function useManageMCPConnections(
     void initializeServersAsPending().catch(error => {
       logMCPError('useManageMCPConnections', `Failed to initialize servers as pending: ${errorMessage(error)}`);
     });
-  }, [isStrictMcpConfig, dynamicMcpConfig, setAppState, sessionId, _pluginReconnectKey]);
+  }, [isStrictMcpConfig, dynamicMcpConfig, setAppState]);
 
   // Load MCP configs and connect to servers
   // Two-phase loading: Clew Code configs first (fast), then claude.ai configs (may be slow)
@@ -866,15 +866,7 @@ export function useManageMCPConnections(
     return () => {
       cancelled = true;
     };
-  }, [
-    isStrictMcpConfig,
-    dynamicMcpConfig,
-    onConnectionAttempt,
-    setAppState,
-    _authVersion,
-    sessionId,
-    _pluginReconnectKey,
-  ]);
+  }, [isStrictMcpConfig, dynamicMcpConfig, onConnectionAttempt, setAppState]);
 
   // Cleanup all timers on unmount
   useEffect(() => {

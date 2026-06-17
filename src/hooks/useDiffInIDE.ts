@@ -117,7 +117,7 @@ export function useDiffInIDE({ onChange, toolUseContext, filePath, edits, editMo
       isUnmounted.current = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [showDiff]);
 
   return {
     closeTabInIDE() {
@@ -231,7 +231,7 @@ async function showDiffInIDE(
       edits,
     });
 
-    if (!ideClient || ideClient.type !== 'connected') {
+    if (ideClient?.type !== 'connected') {
       throw new Error('IDE client not available');
     }
     let ideOldPath = oldFilePath;
@@ -298,7 +298,7 @@ async function showDiffInIDE(
 
 async function closeTabInIDE(tabName: string, ideClient?: MCPServerConnection | undefined): Promise<void> {
   try {
-    if (!ideClient || ideClient.type !== 'connected') {
+    if (ideClient?.type !== 'connected') {
       throw new Error('IDE client not available');
     }
 

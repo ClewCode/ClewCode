@@ -101,7 +101,7 @@ export function isGeneratedFile(filePath: string): boolean {
   // Check for compound extensions like .min.js
   const parts = fileName.split('.');
   if (parts.length > 2) {
-    const compoundExt = '.' + parts.slice(-2).join('.');
+    const compoundExt = `.${parts.slice(-2).join('.')}`;
     if (EXCLUDED_EXTENSIONS.has(compoundExt)) {
       return true;
     }

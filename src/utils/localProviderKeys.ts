@@ -20,17 +20,13 @@ export function readLocalProviderKey(provider: string): string | undefined {
       case 'google':
       case 'gemini':
       case 'google-assist': {
-        const data: Record<string, unknown> = JSON.parse(
-          readFileSync(GEMINI_OAUTH_PATH, 'utf8'),
-        );
+        const data: Record<string, unknown> = JSON.parse(readFileSync(GEMINI_OAUTH_PATH, 'utf8'));
         const token = data.access_token;
         return typeof token === 'string' && token.length > 0 ? token : undefined;
       }
       case 'openai':
       case 'codex': {
-        const data: Record<string, unknown> = JSON.parse(
-          readFileSync(CODEX_AUTH_PATH, 'utf8'),
-        );
+        const data: Record<string, unknown> = JSON.parse(readFileSync(CODEX_AUTH_PATH, 'utf8'));
         const tokens = data.tokens as Record<string, unknown> | undefined;
         const token = tokens?.access_token;
         return typeof token === 'string' && token.length > 0 ? token : undefined;

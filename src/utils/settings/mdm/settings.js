@@ -27,8 +27,13 @@ import { profileCheckpoint } from '../../startupProfiler.js';
 import { getManagedFilePath, getManagedSettingsDropInDir } from '../managedPath.js';
 import { SettingsSchema } from '../types.js';
 import { filterInvalidPermissionRules, formatZodError } from '../validation.js';
-import { WINDOWS_REGISTRY_KEY_PATH_HKCU, WINDOWS_REGISTRY_KEY_PATH_HKLM, WINDOWS_REGISTRY_VALUE_NAME, } from './constants.js';
+import {
+  WINDOWS_REGISTRY_KEY_PATH_HKCU,
+  WINDOWS_REGISTRY_KEY_PATH_HKLM,
+  WINDOWS_REGISTRY_VALUE_NAME,
+} from './constants.js';
 import { fireRawRead, getMdmRawReadPromise } from './rawRead.js';
+
 const EMPTY_RESULT = Object.freeze({ settings: {}, errors: [] });
 let mdmCache = null;
 let hkcuCache = null;
@@ -41,44 +46,42 @@ let mdmLoadPromise = null;
  * startup so the subprocess runs in parallel with module loading.
  */
 export function startMdmSettingsLoad() {
-    if (mdmLoadPromise)
-        return;
-    mdmLoadPromise = (async () => {
-        profileCheckpoint('mdm_load_start');
-        const startTime = Date.now();
-        // Use the startup raw read if cli.tsx fired it, otherwise fire a fresh one.
-        // Both paths produce the same RawReadResult; consumeRawReadResult parses it.
-        const rawPromise = getMdmRawReadPromise() ?? fireRawRead();
-        const { mdm, hkcu } = consumeRawReadResult(await rawPromise);
-        mdmCache = mdm;
-        hkcuCache = hkcu;
-        profileCheckpoint('mdm_load_end');
-        const duration = Date.now() - startTime;
-        logForDebugging(`MDM settings load completed in ${duration}ms`);
-        if (Object.keys(mdm.settings).length > 0) {
-            logForDebugging(`MDM settings found: ${Object.keys(mdm.settings).join(', ')}`);
-            try {
-                logForDiagnosticsNoPII('info', 'mdm_settings_loaded', {
-                    duration_ms: duration,
-                    key_count: Object.keys(mdm.settings).length,
-                    error_count: mdm.errors.length,
-                });
-            }
-            catch {
-                // Diagnostic logging is best-effort
-            }
-        }
-    })();
+  if (mdmLoadPromise) return;
+  mdmLoadPromise = (async () => {
+    profileCheckpoint('mdm_load_start');
+    const startTime = Date.now();
+    // Use the startup raw read if cli.tsx fired it, otherwise fire a fresh one.
+    // Both paths produce the same RawReadResult; consumeRawReadResult parses it.
+    const rawPromise = getMdmRawReadPromise() ?? fireRawRead();
+    const { mdm, hkcu } = consumeRawReadResult(await rawPromise);
+    mdmCache = mdm;
+    hkcuCache = hkcu;
+    profileCheckpoint('mdm_load_end');
+    const duration = Date.now() - startTime;
+    logForDebugging(`MDM settings load completed in ${duration}ms`);
+    if (Object.keys(mdm.settings).length > 0) {
+      logForDebugging(`MDM settings found: ${Object.keys(mdm.settings).join(', ')}`);
+      try {
+        logForDiagnosticsNoPII('info', 'mdm_settings_loaded', {
+          duration_ms: duration,
+          key_count: Object.keys(mdm.settings).length,
+          error_count: mdm.errors.length,
+        });
+      } catch {
+        // Diagnostic logging is best-effort
+      }
+    }
+  })();
 }
 /**
  * Await the in-flight MDM load. Call this before the first settings read.
  * If startMdmSettingsLoad() was called early enough, this resolves immediately.
  */
 export async function ensureMdmSettingsLoaded() {
-    if (!mdmLoadPromise) {
-        startMdmSettingsLoad();
-    }
-    await mdmLoadPromise;
+  if (!mdmLoadPromise) {
+    startMdmSettingsLoad();
+  }
+  await mdmLoadPromise;
 }
 // ---------------------------------------------------------------------------
 // Sync cache readers — used by the settings pipeline (loadSettingsFromDisk)
@@ -93,14 +96,14 @@ export async function ensureMdmSettingsLoaded() {
  * Does NOT include HKCU (user-writable) — use getHkcuSettings() for that.
  */
 export function getMdmSettings() {
-    return mdmCache ?? EMPTY_RESULT;
+  return mdmCache ?? EMPTY_RESULT;
 }
 /**
  * Read HKCU registry settings (user-writable, lowest policy priority).
  * Only relevant on Windows — returns empty on other platforms.
  */
 export function getHkcuSettings() {
-    return hkcuCache ?? EMPTY_RESULT;
+  return hkcuCache ?? EMPTY_RESULT;
 }
 // ---------------------------------------------------------------------------
 // Cache management
@@ -109,16 +112,16 @@ export function getHkcuSettings() {
  * Clear the MDM and HKCU settings caches, forcing a fresh read on next load.
  */
 export function clearMdmSettingsCache() {
-    mdmCache = null;
-    hkcuCache = null;
-    mdmLoadPromise = null;
+  mdmCache = null;
+  hkcuCache = null;
+  mdmLoadPromise = null;
 }
 /**
  * Update the session caches directly. Used by the change detector poll.
  */
 export function setMdmSettingsCache(mdm, hkcu) {
-    mdmCache = mdm;
-    hkcuCache = hkcu;
+  mdmCache = mdm;
+  hkcuCache = hkcu;
 }
 // ---------------------------------------------------------------------------
 // Refresh — fires a fresh raw read, parses, returns results.
@@ -129,8 +132,8 @@ export function setMdmSettingsCache(mdm, hkcu) {
  * Does NOT update the cache — caller decides whether to apply.
  */
 export async function refreshMdmSettings() {
-    const raw = await fireRawRead();
-    return consumeRawReadResult(raw);
+  const raw = await fireRawRead();
+  return consumeRawReadResult(raw);
 }
 // ---------------------------------------------------------------------------
 // Parsing — converts raw subprocess output to validated MdmResult
@@ -141,17 +144,17 @@ export async function refreshMdmSettings() {
  * doesn't cause the entire MDM settings to be rejected.
  */
 export function parseCommandOutputAsSettings(stdout, sourcePath) {
-    const data = safeParseJSON(stdout, false);
-    if (!data || typeof data !== 'object') {
-        return { settings: {}, errors: [] };
-    }
-    const ruleWarnings = filterInvalidPermissionRules(data, sourcePath);
-    const parseResult = SettingsSchema().safeParse(data);
-    if (!parseResult.success) {
-        const errors = formatZodError(parseResult.error, sourcePath);
-        return { settings: {}, errors: [...ruleWarnings, ...errors] };
-    }
-    return { settings: parseResult.data, errors: ruleWarnings };
+  const data = safeParseJSON(stdout, false);
+  if (!data || typeof data !== 'object') {
+    return { settings: {}, errors: [] };
+  }
+  const ruleWarnings = filterInvalidPermissionRules(data, sourcePath);
+  const parseResult = SettingsSchema().safeParse(data);
+  if (!parseResult.success) {
+    const errors = formatZodError(parseResult.error, sourcePath);
+    return { settings: {}, errors: [...ruleWarnings, ...errors] };
+  }
+  return { settings: parseResult.data, errors: ruleWarnings };
 }
 /**
  * Parse reg query stdout to extract a registry string value.
@@ -161,53 +164,59 @@ export function parseCommandOutputAsSettings(stdout, sourcePath) {
  *     Settings    REG_SZ    {"json":"value"}
  */
 export function parseRegQueryStdout(stdout, valueName = 'Settings') {
-    const lines = stdout.split(/\r?\n/);
-    const escaped = valueName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp(`^\\s+${escaped}\\s+REG_(?:EXPAND_)?SZ\\s+(.*)$`, 'i');
-    for (const line of lines) {
-        const match = line.match(re);
-        if (match && match[1]) {
-            return match[1].trimEnd();
-        }
+  const lines = stdout.split(/\r?\n/);
+  const escaped = valueName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`^\\s+${escaped}\\s+REG_(?:EXPAND_)?SZ\\s+(.*)$`, 'i');
+  for (const line of lines) {
+    const match = line.match(re);
+    if (match?.[1]) {
+      return match[1].trimEnd();
     }
-    return null;
+  }
+  return null;
 }
 /**
  * Convert raw subprocess output into parsed MDM and HKCU results,
  * applying the first-source-wins policy.
  */
 function consumeRawReadResult(raw) {
-    // macOS: plist result (first source wins — already filtered in mdmRawRead)
-    if (raw.plistStdouts && raw.plistStdouts.length > 0) {
-        const { stdout, label } = raw.plistStdouts[0];
-        const result = parseCommandOutputAsSettings(stdout, label);
-        if (Object.keys(result.settings).length > 0) {
-            return { mdm: result, hkcu: EMPTY_RESULT };
-        }
+  // macOS: plist result (first source wins — already filtered in mdmRawRead)
+  if (raw.plistStdouts && raw.plistStdouts.length > 0) {
+    const { stdout, label } = raw.plistStdouts[0];
+    const result = parseCommandOutputAsSettings(stdout, label);
+    if (Object.keys(result.settings).length > 0) {
+      return { mdm: result, hkcu: EMPTY_RESULT };
     }
-    // Windows: HKLM result
-    if (raw.hklmStdout) {
-        const jsonString = parseRegQueryStdout(raw.hklmStdout);
-        if (jsonString) {
-            const result = parseCommandOutputAsSettings(jsonString, `Registry: ${WINDOWS_REGISTRY_KEY_PATH_HKLM}\\${WINDOWS_REGISTRY_VALUE_NAME}`);
-            if (Object.keys(result.settings).length > 0) {
-                return { mdm: result, hkcu: EMPTY_RESULT };
-            }
-        }
+  }
+  // Windows: HKLM result
+  if (raw.hklmStdout) {
+    const jsonString = parseRegQueryStdout(raw.hklmStdout);
+    if (jsonString) {
+      const result = parseCommandOutputAsSettings(
+        jsonString,
+        `Registry: ${WINDOWS_REGISTRY_KEY_PATH_HKLM}\\${WINDOWS_REGISTRY_VALUE_NAME}`,
+      );
+      if (Object.keys(result.settings).length > 0) {
+        return { mdm: result, hkcu: EMPTY_RESULT };
+      }
     }
-    // No admin MDM — check managed-settings.json before using HKCU
-    if (hasManagedSettingsFile()) {
-        return { mdm: EMPTY_RESULT, hkcu: EMPTY_RESULT };
-    }
-    // Fall through to HKCU (already read in parallel)
-    if (raw.hkcuStdout) {
-        const jsonString = parseRegQueryStdout(raw.hkcuStdout);
-        if (jsonString) {
-            const result = parseCommandOutputAsSettings(jsonString, `Registry: ${WINDOWS_REGISTRY_KEY_PATH_HKCU}\\${WINDOWS_REGISTRY_VALUE_NAME}`);
-            return { mdm: EMPTY_RESULT, hkcu: result };
-        }
-    }
+  }
+  // No admin MDM — check managed-settings.json before using HKCU
+  if (hasManagedSettingsFile()) {
     return { mdm: EMPTY_RESULT, hkcu: EMPTY_RESULT };
+  }
+  // Fall through to HKCU (already read in parallel)
+  if (raw.hkcuStdout) {
+    const jsonString = parseRegQueryStdout(raw.hkcuStdout);
+    if (jsonString) {
+      const result = parseCommandOutputAsSettings(
+        jsonString,
+        `Registry: ${WINDOWS_REGISTRY_KEY_PATH_HKCU}\\${WINDOWS_REGISTRY_VALUE_NAME}`,
+      );
+      return { mdm: EMPTY_RESULT, hkcu: result };
+    }
+  }
+  return { mdm: EMPTY_RESULT, hkcu: EMPTY_RESULT };
 }
 /**
  * Check if file-based managed settings (managed-settings.json or any
@@ -215,38 +224,35 @@ function consumeRawReadResult(raw) {
  * used to skip HKCU when a higher-priority file-based source exists.
  */
 function hasManagedSettingsFile() {
-    try {
-        const filePath = join(getManagedFilePath(), 'managed-settings.json');
-        const content = readFileSync(filePath);
+  try {
+    const filePath = join(getManagedFilePath(), 'managed-settings.json');
+    const content = readFileSync(filePath);
+    const data = safeParseJSON(content, false);
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+      return true;
+    }
+  } catch {
+    // fall through to drop-in check
+  }
+  try {
+    const dropInDir = getManagedSettingsDropInDir();
+    const entries = getFsImplementation().readdirSync(dropInDir);
+    for (const d of entries) {
+      if (!(d.isFile() || d.isSymbolicLink()) || !d.name.endsWith('.json') || d.name.startsWith('.')) {
+        continue;
+      }
+      try {
+        const content = readFileSync(join(dropInDir, d.name));
         const data = safeParseJSON(content, false);
         if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-            return true;
+          return true;
         }
+      } catch {
+        // skip unreadable/malformed file
+      }
     }
-    catch {
-        // fall through to drop-in check
-    }
-    try {
-        const dropInDir = getManagedSettingsDropInDir();
-        const entries = getFsImplementation().readdirSync(dropInDir);
-        for (const d of entries) {
-            if (!(d.isFile() || d.isSymbolicLink()) || !d.name.endsWith('.json') || d.name.startsWith('.')) {
-                continue;
-            }
-            try {
-                const content = readFileSync(join(dropInDir, d.name));
-                const data = safeParseJSON(content, false);
-                if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-                    return true;
-                }
-            }
-            catch {
-                // skip unreadable/malformed file
-            }
-        }
-    }
-    catch {
-        // drop-in dir doesn't exist
-    }
-    return false;
+  } catch {
+    // drop-in dir doesn't exist
+  }
+  return false;
 }

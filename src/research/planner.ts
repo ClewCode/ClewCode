@@ -137,8 +137,6 @@ export function createResearchPlan(query: string, mode: ResearchMode): ResearchP
       );
       risks.push('Hidden code paths may be missed', 'Zero-day threats not covered');
       break;
-
-    case 'quick':
     default:
       subQuestions.push(
         `What is the quick definition and context for: "${query}"?`,

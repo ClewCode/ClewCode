@@ -31,7 +31,7 @@ import { jsonStringify } from '../../utils/slowOperations.js';
  * don't apply until restart.
  */
 export function isChannelPermissionRelayEnabled() {
-    return true;
+  return true;
 }
 /**
  * Reply format spec for channel servers to implement:
@@ -54,47 +54,47 @@ const ID_ALPHABET = 'abcdefghijkmnopqrstuvwxyz';
 // tier. If a generated ID contains any of these, re-hash with a salt.
 // prettier-ignore
 const ID_AVOID_SUBSTRINGS = [
-    'fuck',
-    'shit',
-    'cunt',
-    'cock',
-    'dick',
-    'twat',
-    'piss',
-    'crap',
-    'bitch',
-    'whore',
-    'ass',
-    'tit',
-    'cum',
-    'fag',
-    'dyke',
-    'nig',
-    'kike',
-    'rape',
-    'nazi',
-    'damn',
-    'poo',
-    'pee',
-    'wank',
-    'anus',
+  'fuck',
+  'shit',
+  'cunt',
+  'cock',
+  'dick',
+  'twat',
+  'piss',
+  'crap',
+  'bitch',
+  'whore',
+  'ass',
+  'tit',
+  'cum',
+  'fag',
+  'dyke',
+  'nig',
+  'kike',
+  'rape',
+  'nazi',
+  'damn',
+  'poo',
+  'pee',
+  'wank',
+  'anus',
 ];
 function hashToId(input) {
-    // FNV-1a → uint32, then base-25 encode. Not crypto, just a stable
-    // short letters-only ID. 32 bits / log2(25) ≈ 6.9 letters of entropy;
-    // taking 5 wastes a little, plenty for this.
-    let h = 0x811c9dc5;
-    for (let i = 0; i < input.length; i++) {
-        h ^= input.charCodeAt(i);
-        h = Math.imul(h, 0x01000193);
-    }
-    h = h >>> 0;
-    let s = '';
-    for (let i = 0; i < 5; i++) {
-        s += ID_ALPHABET[h % 25];
-        h = Math.floor(h / 25);
-    }
-    return s;
+  // FNV-1a → uint32, then base-25 encode. Not crypto, just a stable
+  // short letters-only ID. 32 bits / log2(25) ≈ 6.9 letters of entropy;
+  // taking 5 wastes a little, plenty for this.
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  h = h >>> 0;
+  let s = '';
+  for (let i = 0; i < 5; i++) {
+    s += ID_ALPHABET[h % 25];
+    h = Math.floor(h / 25);
+  }
+  return s;
 }
 /**
  * Short ID from a toolUseID. 5 letters from a 25-char alphabet (a-z minus
@@ -107,17 +107,17 @@ function hashToId(input) {
  * toolUseIDs are `toolu_` + base64-ish; we hash rather than slice.
  */
 export function shortRequestId(toolUseID) {
-    // 7 length-3 × 3 positions × 25² + 15 length-4 × 2 × 25 + 2 length-5
-    // ≈ 13,877 blocked IDs out of 9.8M — roughly 1 in 700 hits the blocklist.
-    // Cap at 10 retries; (1/700)^10 is negligible.
-    let candidate = hashToId(toolUseID);
-    for (let salt = 0; salt < 10; salt++) {
-        if (!ID_AVOID_SUBSTRINGS.some(bad => candidate.includes(bad))) {
-            return candidate;
-        }
-        candidate = hashToId(`${toolUseID}:${salt}`);
+  // 7 length-3 × 3 positions × 25² + 15 length-4 × 2 × 25 + 2 length-5
+  // ≈ 13,877 blocked IDs out of 9.8M — roughly 1 in 700 hits the blocklist.
+  // Cap at 10 retries; (1/700)^10 is negligible.
+  let candidate = hashToId(toolUseID);
+  for (let salt = 0; salt < 10; salt++) {
+    if (!ID_AVOID_SUBSTRINGS.some(bad => candidate.includes(bad))) {
+      return candidate;
     }
-    return candidate;
+    candidate = hashToId(`${toolUseID}:${salt}`);
+  }
+  return candidate;
 }
 /**
  * Truncate tool input to a phone-sized JSON preview. 200 chars is
@@ -126,13 +126,12 @@ export function shortRequestId(toolUseID) {
  * flood your texts. Server decides whether/how to show it.
  */
 export function truncateForPreview(input) {
-    try {
-        const s = jsonStringify(input);
-        return s.length > 200 ? s.slice(0, 200) + '…' : s;
-    }
-    catch {
-        return '(unserializable)';
-    }
+  try {
+    const s = jsonStringify(input);
+    return s.length > 200 ? `${s.slice(0, 200)}…` : s;
+  } catch {
+    return '(unserializable)';
+  }
 }
 /**
  * Filter MCP clients down to those that can relay permission prompts.
@@ -143,10 +142,13 @@ export function truncateForPreview(input) {
  * surprised"). Centralized here so a future fourth condition lands once.
  */
 export function filterPermissionRelayClients(clients, isInAllowlist) {
-    return clients.filter((c) => c.type === 'connected' &&
-        isInAllowlist(c.name) &&
-        c.capabilities?.experimental?.['claude/channel'] !== undefined &&
-        c.capabilities?.experimental?.['claude/channel/permission'] !== undefined);
+  return clients.filter(
+    c =>
+      c.type === 'connected' &&
+      isInAllowlist(c.name) &&
+      c.capabilities?.experimental?.['claude/channel'] !== undefined &&
+      c.capabilities?.experimental?.['claude/channel/permission'] !== undefined,
+  );
 }
 /**
  * Factory for the callbacks object. The pending Map is closed over — NOT
@@ -162,30 +164,29 @@ export function filterPermissionRelayClients(clients, isInAllowlist) {
  * general channel can't accidentally approve anything.
  */
 export function createChannelPermissionCallbacks() {
-    const pending = new Map();
-    return {
-        onResponse(requestId, handler) {
-            // Lowercase here too — resolve() already does; asymmetry means a
-            // future caller passing a mixed-case ID would silently never match.
-            // shortRequestId always emits lowercase so this is a noop today,
-            // but the symmetry makes the contract explicit.
-            const key = requestId.toLowerCase();
-            pending.set(key, handler);
-            return () => {
-                pending.delete(key);
-            };
-        },
-        resolve(requestId, behavior, fromServer) {
-            const key = requestId.toLowerCase();
-            const resolver = pending.get(key);
-            if (!resolver)
-                return false;
-            // Delete BEFORE calling — if resolver throws or re-enters, the
-            // entry is already gone. Also handles duplicate events (second
-            // emission falls through — server bug or network dup, ignore).
-            pending.delete(key);
-            resolver({ behavior, fromServer });
-            return true;
-        },
-    };
+  const pending = new Map();
+  return {
+    onResponse(requestId, handler) {
+      // Lowercase here too — resolve() already does; asymmetry means a
+      // future caller passing a mixed-case ID would silently never match.
+      // shortRequestId always emits lowercase so this is a noop today,
+      // but the symmetry makes the contract explicit.
+      const key = requestId.toLowerCase();
+      pending.set(key, handler);
+      return () => {
+        pending.delete(key);
+      };
+    },
+    resolve(requestId, behavior, fromServer) {
+      const key = requestId.toLowerCase();
+      const resolver = pending.get(key);
+      if (!resolver) return false;
+      // Delete BEFORE calling — if resolver throws or re-enters, the
+      // entry is already gone. Also handles duplicate events (second
+      // emission falls through — server bug or network dup, ignore).
+      pending.delete(key);
+      resolver({ behavior, fromServer });
+      return true;
+    },
+  };
 }

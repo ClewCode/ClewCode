@@ -1,29 +1,30 @@
 import { useContext, useEffect, useRef } from 'react';
 import { CLEAR_TAB_STATUS, supportsTabStatus, tabStatus, wrapForMultiplexer } from '../termio/osc.js';
 import { TerminalWriteContext } from '../useTerminalNotification.js';
+
 const rgb = (r, g, b) => ({
-    type: 'rgb',
-    r,
-    g,
-    b,
+  type: 'rgb',
+  r,
+  g,
+  b,
 });
 // Per the OSC 21337 usage guide's suggested mapping.
 const TAB_STATUS_PRESETS = {
-    idle: {
-        indicator: rgb(0, 215, 95),
-        status: 'Idle',
-        statusColor: rgb(136, 136, 136),
-    },
-    busy: {
-        indicator: rgb(255, 149, 0),
-        status: 'Working…',
-        statusColor: rgb(255, 149, 0),
-    },
-    waiting: {
-        indicator: rgb(95, 135, 255),
-        status: 'Waiting',
-        statusColor: rgb(95, 135, 255),
-    },
+  idle: {
+    indicator: rgb(0, 215, 95),
+    status: 'Idle',
+    statusColor: rgb(136, 136, 136),
+  },
+  busy: {
+    indicator: rgb(255, 149, 0),
+    status: 'Working…',
+    statusColor: rgb(255, 149, 0),
+  },
+  waiting: {
+    indicator: rgb(95, 135, 255),
+    status: 'Waiting',
+    statusColor: rgb(95, 135, 255),
+  },
 };
 /**
  * Declaratively set the tab-status indicator (OSC 21337).
@@ -37,21 +38,20 @@ const TAB_STATUS_PRESETS = {
  * a stale dot. Process-exit cleanup is handled by ink.tsx's unmount path.
  */
 export function useTabStatus(kind) {
-    const writeRaw = useContext(TerminalWriteContext);
-    const prevKindRef = useRef(null);
-    useEffect(() => {
-        // When kind transitions from non-null to null (e.g. user toggles off
-        // showStatusInTerminalTab mid-session), clear the stale dot.
-        if (kind === null) {
-            if (prevKindRef.current !== null && writeRaw && supportsTabStatus()) {
-                writeRaw(wrapForMultiplexer(CLEAR_TAB_STATUS));
-            }
-            prevKindRef.current = null;
-            return;
-        }
-        prevKindRef.current = kind;
-        if (!writeRaw || !supportsTabStatus())
-            return;
-        writeRaw(wrapForMultiplexer(tabStatus(TAB_STATUS_PRESETS[kind])));
-    }, [kind, writeRaw]);
+  const writeRaw = useContext(TerminalWriteContext);
+  const prevKindRef = useRef(null);
+  useEffect(() => {
+    // When kind transitions from non-null to null (e.g. user toggles off
+    // showStatusInTerminalTab mid-session), clear the stale dot.
+    if (kind === null) {
+      if (prevKindRef.current !== null && writeRaw && supportsTabStatus()) {
+        writeRaw(wrapForMultiplexer(CLEAR_TAB_STATUS));
+      }
+      prevKindRef.current = null;
+      return;
+    }
+    prevKindRef.current = kind;
+    if (!writeRaw || !supportsTabStatus()) return;
+    writeRaw(wrapForMultiplexer(tabStatus(TAB_STATUS_PRESETS[kind])));
+  }, [kind, writeRaw]);
 }

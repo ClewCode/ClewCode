@@ -1,6 +1,5 @@
 import type * as React from 'react';
-import { useEffect, useState } from 'react';
-import { c as _c } from 'react/compiler-runtime';
+import { useState } from 'react';
 import { readScrollSpeedBase } from '../../components/ScrollKeybindingHandler.js';
 import { Box, Text, useInput } from '../../ink.js';
 import type { ToolUseContext } from '../../Tool.js';

@@ -1,6 +1,6 @@
 {
   "name": "clew-code",
-  "version": "0.2.32",
+  "version": "0.2.33",
   "description": "ClewCode — multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
   "type": "module",
@@ -29,7 +29,7 @@
     "dev": "bun run prebuild-version && bun --watch run --define.TRANSCRIPT_CLASSIFIER=true --define.CHICAGO_MCP=true --define.VOICE_MODE=true src/main.tsx",
     "start": "bun run prebuild-version && bun run --define.VOICE_MODE=true src/main.tsx",
     "dev:channels": "bun run prebuild-version && bun run --define.VOICE_MODE=true src/main.tsx -- --dangerously-load-development-channels server:clew-orc",
-    "build": "bun run prebuild-version && NODE_ENV=production bun build --production --define.TRANSCRIPT_CLASSIFIER=true --define.CHICAGO_MCP=true --define.VOICE_MODE=true src/main.tsx --outdir ./dist --target bun --external electron --external 'chromium-bidi*' --external '@ant/claude-for-chrome-mcp' --external '@anthropic-ai/bedrock-sdk' --external '@anthropic-ai/foundry-sdk' --external '@anthropic-ai/vertex-sdk' --external '@anthropic-ai/mcpb' --external '@aws-sdk/client-bedrock-runtime' --external 'google-auth-library' --external 'sharp' --external 'asciichart' --external 'audio-capture-napi' --external 'modifiers-napi' --external '@xenova/transformers' --external 'onnxruntime-node' --external playwright --external 'playwright-core' --external 'node-pty'",
+    "build": "bun run prebuild-version && NODE_ENV=production bun build --production --define.TRANSCRIPT_CLASSIFIER=true --define.CHICAGO_MCP=true --define.VOICE_MODE=true src/main.tsx --outdir ./dist --target bun --external electron --external 'chromium-bidi*' --external '@ant/claude-for-chrome-mcp' --external '@anthropic-ai/bedrock-sdk' --external '@anthropic-ai/foundry-sdk' --external '@anthropic-ai/vertex-sdk' --external '@anthropic-ai/mcpb' --external '@aws-sdk/client-bedrock-runtime' --external 'google-auth-library' --external 'sharp' --external 'asciichart' --external 'audio-capture-napi' --external 'modifiers-napi' --external '@xenova/transformers' --external 'onnxruntime-node' --external playwright --external 'playwright-core' --external 'node-pty' && mkdir -p dist/generated && cp src/generated/version.json dist/generated/",
     "prepublishOnly": "bun run build",
     "test": "bun test",
     "lint": "biome lint --write src/",

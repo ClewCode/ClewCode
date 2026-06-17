@@ -1,5 +1,3 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { AgentRegistry } from './agentRegistry.js';
 import { ReportBuilder } from './reportBuilder.js';
 import { RunStore } from './runStore.js';
@@ -29,7 +27,7 @@ export class MockLLMAdapter implements LLMAdapter {
     this.actionIndex[agentName] = 0;
   }
 
-  async nextAction(agent: AgentDefinition, contextText: string, history: RuntimeEvent[]): Promise<AgentAction> {
+  async nextAction(agent: AgentDefinition, _contextText: string, _history: RuntimeEvent[]): Promise<AgentAction> {
     const name = agent.name;
     const actions = this.presetActions[name] || [];
     const index = this.actionIndex[name] || 0;
@@ -220,7 +218,7 @@ export class Orchestrator {
 
     if (options?.resumeFromToolCall) {
       try {
-        const output = await this.toolGateway.execute(
+        const _output = await this.toolGateway.execute(
           runId,
           state.activeAgent,
           options.resumeFromToolCall,
@@ -314,7 +312,7 @@ export class Orchestrator {
           // allow
           await this.runStore.appendEvent(runId, 'tool.allowed', {}, state.activeAgent, action.tool);
           try {
-            const out = await this.toolGateway.execute(runId, state.activeAgent, action.tool, action.input);
+            const _out = await this.toolGateway.execute(runId, state.activeAgent, action.tool, action.input);
             state.step++;
             if (action.tool === 'repo.patch') {
               const patchedPath = (action.input as { path: string })?.path;
@@ -323,7 +321,7 @@ export class Orchestrator {
               }
             }
             await this.runStore.saveState(runId, state);
-          } catch (err) {
+          } catch (_err) {
             state.step++;
             await this.runStore.saveState(runId, state);
           }
@@ -399,7 +397,7 @@ export class Orchestrator {
     run: AgentRun,
     state: AgentState,
     agent: AgentDefinition,
-    workflow: WorkflowDefinition,
+    _workflow: WorkflowDefinition,
   ): Promise<string> {
     const budgetRemaining = {
       steps: run.budget.maxSteps - state.step,

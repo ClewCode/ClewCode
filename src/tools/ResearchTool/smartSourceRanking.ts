@@ -119,7 +119,7 @@ export function calculateSourceScore(url: string, title: string, excerpt: string
     };
 
     // Check premium domains (highest priority)
-    if (PREMIUM_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))) {
+    if (PREMIUM_DOMAINS.some(d => domain === d || domain.endsWith(`.${d}`))) {
       score = 95;
       reasons.push('Premium source (GitHub, MDN, official docs, etc.)');
       metadata.hasOfficialKeywords = true;
@@ -309,7 +309,7 @@ function isNewsDomain(domain: string): boolean {
     'foxnews.com',
     'usatoday.com',
   ];
-  return newsDomains.some(d => domain === d || domain.endsWith('.' + d));
+  return newsDomains.some(d => domain === d || domain.endsWith(`.${d}`));
 }
 
 /**
@@ -327,7 +327,7 @@ function isCommunityDomain(domain: string): boolean {
     'twitter.com',
     'x.com',
   ];
-  return communityDomains.some(d => domain === d || domain.endsWith('.' + d));
+  return communityDomains.some(d => domain === d || domain.endsWith(`.${d}`));
 }
 
 /**
@@ -335,7 +335,7 @@ function isCommunityDomain(domain: string): boolean {
  */
 function isBlogDomain(domain: string): boolean {
   const blogDomains = ['blogspot.com', 'wordpress.com', 'ghost.io', 'substack.com', 'tumblr.com', 'typepad.com'];
-  return blogDomains.some(d => domain === d || domain.endsWith('.' + d));
+  return blogDomains.some(d => domain === d || domain.endsWith(`.${d}`));
 }
 
 /**

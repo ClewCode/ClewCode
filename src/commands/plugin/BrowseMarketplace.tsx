@@ -177,7 +177,7 @@ export function BrowseMarketplace({
         const errorResult = formatMarketplaceLoadingErrors(failures, successCount);
         if (errorResult) {
           if (errorResult.type === 'warning') {
-            setWarning(errorResult.message + '. Showing available marketplaces.');
+            setWarning(`${errorResult.message}. Showing available marketplaces.`);
           } else {
             throw new Error(errorResult.message);
           }
@@ -361,8 +361,7 @@ export function BrowseMarketplace({
     // Handle installation results
     if (failureCount === 0) {
       // All succeeded
-      const message =
-        `✓ Installed ${successCount_0} ${plural(successCount_0, 'plugin')}. ` + `Run /reload-plugins to activate.`;
+      const message = `✓ Installed ${successCount_0} ${plural(successCount_0, 'plugin')}. Run /reload-plugins to activate.`;
       setResult(message);
     } else if (successCount_0 === 0) {
       // All failed - show error with reasons
@@ -762,26 +761,23 @@ export function BrowseMarketplace({
             !selectedPlugin.entry.agents &&
             !selectedPlugin.entry.hooks &&
             !selectedPlugin.entry.mcpServers &&
-            !selectedPlugin.entry.lspServers && (
-              <>
-                {typeof selectedPlugin.entry.source === 'object' &&
-                'source' in selectedPlugin.entry.source &&
-                (selectedPlugin.entry.source.source === 'github' ||
-                  selectedPlugin.entry.source.source === 'url' ||
-                  selectedPlugin.entry.source.source === 'npm' ||
-                  selectedPlugin.entry.source.source === 'pip') ? (
-                  <Text dimColor>· Component summary not available for remote plugin</Text>
-                ) : (
-                  // TODO: Actually scan local plugin directories to show real components
-                  // This would require accessing the filesystem to check for:
-                  // - commands/ directory and list files
-                  // - agents/ directory and list files
-                  // - hooks/ directory and list files
-                  // - .mcp.json or mcp-servers.json files
-                  <Text dimColor>· Components will be discovered at installation</Text>
-                )}
-              </>
-            )}
+            !selectedPlugin.entry.lspServers &&
+            (typeof selectedPlugin.entry.source === 'object' &&
+            'source' in selectedPlugin.entry.source &&
+            (selectedPlugin.entry.source.source === 'github' ||
+              selectedPlugin.entry.source.source === 'url' ||
+              selectedPlugin.entry.source.source === 'npm' ||
+              selectedPlugin.entry.source.source === 'pip') ? (
+              <Text dimColor>· Component summary not available for remote plugin</Text>
+            ) : (
+              // TODO: Actually scan local plugin directories to show real components
+              // This would require accessing the filesystem to check for:
+              // - commands/ directory and list files
+              // - agents/ directory and list files
+              // - hooks/ directory and list files
+              // - .mcp.json or mcp-servers.json files
+              <Text dimColor>· Components will be discovered at installation</Text>
+            ))}
         </Box>
 
         <PluginTrustWarning />

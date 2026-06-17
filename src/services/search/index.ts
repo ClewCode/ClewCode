@@ -4,7 +4,7 @@ import { DuckDuckGoProvider } from './providers/duckduckgo.js';
 import { SearXNGProvider } from './providers/searxng.js';
 import { SerperProvider } from './providers/serper.js';
 import { TavilyProvider } from './providers/tavily.js';
-import type { SearchOptions, SearchProvider, SearchProviderConfig, SearchResponse } from './types.js';
+import type { SearchOptions, SearchProvider, SearchResponse } from './types.js';
 
 const providers: Record<string, SearchProvider> = {
   tavily: new TavilyProvider(),

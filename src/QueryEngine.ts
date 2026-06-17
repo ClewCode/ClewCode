@@ -3,16 +3,6 @@ import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs
 import { randomUUID } from 'crypto';
 import last from 'lodash-es/last.js';
 import { getSessionId, isSessionPersistenceDisabled } from 'src/bootstrap/state.js';
-import { getProfilePrompt } from './constants/profilePrompts.js';
-import { getGoalPrompt } from './utils/goalPrompt.js';
-import {
-  getCurrentCycle,
-  hasCheckpoint,
-  readNotes,
-  type TaskCheckpoint,
-  writeCheckpoint,
-} from './services/checkpoint/checkpointWriter.js';
-import { promoteCheckpoints } from './services/checkpoint/checkpointPromoter.js';
 import { selectableUserMessagesFilter } from 'src/components/MessageSelector.js';
 import type {
   PermissionMode,
@@ -28,6 +18,7 @@ import { EMPTY_USAGE } from 'src/services/api/logging.js';
 import stripAnsi from 'strip-ansi';
 import type { Command } from './commands.js';
 import { getSlashCommandToolSkills } from './commands.js';
+import { getProfilePrompt } from './constants/profilePrompts.js';
 import { LOCAL_COMMAND_STDERR_TAG, LOCAL_COMMAND_STDOUT_TAG } from './constants/xml.js';
 import { getModelUsage, getTotalAPIDuration, getTotalCost } from './cost-tracker.js';
 import type { CanUseToolFn } from './hooks/useCanUseTool.js';
@@ -35,8 +26,15 @@ import { loadMemoryPrompt } from './memdir/memdir.js';
 import { hasAutoMemPathOverride } from './memdir/paths.js';
 import { query } from './query.js';
 import { categorizeRetryableAPIError } from './services/api/errors.js';
+import { promoteCheckpoints } from './services/checkpoint/checkpointPromoter.js';
+import {
+  getCurrentCycle,
+  hasCheckpoint,
+  readNotes,
+  type TaskCheckpoint,
+  writeCheckpoint,
+} from './services/checkpoint/checkpointWriter.js';
 import type { MCPServerConnection } from './services/mcp/types.js';
-
 import type { AppState } from './state/AppState.js';
 import { type Tools, type ToolUseContext, toolMatchesName } from './Tool.js';
 import type { AgentDefinition } from './tools/AgentTool/loadAgentsDir.js';
@@ -51,6 +49,7 @@ import { isBareMode, isEnvTruthy } from './utils/envUtils.js';
 import { getFastModeState } from './utils/fastMode.js';
 import { type FileHistoryState, fileHistoryEnabled, fileHistoryMakeSnapshot } from './utils/fileHistory.js';
 import { cloneFileStateCache, type FileStateCache } from './utils/fileStateCache.js';
+import { getGoalPrompt } from './utils/goalPrompt.js';
 import { headlessProfilerCheckpoint } from './utils/headlessProfiler.js';
 import { registerStructuredOutputEnforcement } from './utils/hooks/hookHelpers.js';
 import { getInMemoryErrors } from './utils/log.js';
@@ -278,7 +277,9 @@ export class QueryEngine {
     // read at checkpoint time and routed into structured state fields.
     const hasActiveGoal = initialAppState.goalState?.goal;
     const notesPrompt = hasActiveGoal
-      ? asSystemPrompt([`## Notes Scratchpad\n\nWhen working on long tasks, you can save findings, questions, and things to remember using the Write tool on the notes.md file in the checkpoint directory. Notes are automatically collected at checkpoints to preserve context across session rebuilds. You do not need to manage notes manually — just write down anything worth remembering between turns.`])
+      ? asSystemPrompt([
+          `## Notes Scratchpad\n\nWhen working on long tasks, you can save findings, questions, and things to remember using the Write tool on the notes.md file in the checkpoint directory. Notes are automatically collected at checkpoints to preserve context across session rebuilds. You do not need to manage notes manually — just write down anything worth remembering between turns.`,
+        ])
       : null;
 
     const systemPrompt = asSystemPrompt([
@@ -687,10 +688,12 @@ export class QueryEngine {
           const maxModeResult = await runMaxMode(prompt, messages, wrappedCanUseTool, cacheSafeParams);
           if (maxModeResult?.response) {
             // Inject winning candidate as system context — main model builds on it
-            messages.unshift(cUM({
-              content: `[Best-of-N candidate #${maxModeResult.candidateIndex} context]\n${maxModeResult.response}`,
-              isMeta: true,
-            }));
+            messages.unshift(
+              cUM({
+                content: `[Best-of-N candidate #${maxModeResult.candidateIndex} context]\n${maxModeResult.response}`,
+                isMeta: true,
+              }),
+            );
           }
         } catch (e) {
           // Max mode failure is non-fatal — fall through to normal query
@@ -793,7 +796,7 @@ export class QueryEngine {
                       if (block.type === 'text') {
                         // Extract decision-like statements
                         const text = (block as { type: 'text'; text: string }).text;
-                        if (text.includes('I\'ll') || text.includes('Let me') || text.includes('plan')) {
+                        if (text.includes("I'll") || text.includes('Let me') || text.includes('plan')) {
                           decisions.push(text.slice(0, 200));
                         }
                       }
@@ -813,10 +816,7 @@ export class QueryEngine {
                 }
               }
 
-              const [cycle, notes] = await Promise.all([
-                getCurrentCycle(),
-                readNotes(),
-              ]);
+              const [cycle, notes] = await Promise.all([getCurrentCycle(), readNotes()]);
               const checkpoint: TaskCheckpoint = {
                 id: `checkpoint-${threshold}-${Date.now()}`,
                 timestamp: Date.now(),

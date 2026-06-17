@@ -39,7 +39,7 @@ export async function promoteCheckpoints(goalText: string): Promise<void> {
     const header = `\n## Session — ${timestamp}\n\n`;
     const body = entries.map(e => `- ${e}`).join('\n');
 
-    await appendFile(entrypoint, header + body + '\n', 'utf-8');
+    await appendFile(entrypoint, `${header + body}\n`, 'utf-8');
   } catch {
     // Promotion failure is non-fatal
   }

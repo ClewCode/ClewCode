@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Select } from '../../components/CustomSelect/select.js';
 import { Box, Text } from '../../ink.js';
 import type { LocalJSXCommandCall } from '../../types/command.js';

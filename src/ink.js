@@ -1,25 +1,26 @@
 import { createElement } from 'react';
 import { ThemeProvider } from './components/design-system/ThemeProvider.js';
 import inkRender, { createRoot as inkCreateRoot } from './ink/root.js';
+
 // Wrap all CC render calls with ThemeProvider so ThemedBox/ThemedText work
 // without every call site having to mount it. Ink itself is theme-agnostic.
 function withTheme(node) {
-    return createElement(ThemeProvider, null, node);
+  return createElement(ThemeProvider, null, node);
 }
 export async function render(node, options) {
-    return inkRender(withTheme(node), options);
+  return inkRender(withTheme(node), options);
 }
 export async function createRoot(options) {
-    const root = await inkCreateRoot(options);
-    return {
-        ...root,
-        render: node => root.render(withTheme(node)),
-    };
+  const root = await inkCreateRoot(options);
+  return {
+    ...root,
+    render: node => root.render(withTheme(node)),
+  };
 }
 export { color } from './components/design-system/color.js';
 export { default as Box } from './components/design-system/ThemedBox.js';
 export { default as Text } from './components/design-system/ThemedText.js';
-export { ThemeProvider, usePreviewTheme, useTheme, useThemeSetting, } from './components/design-system/ThemeProvider.js';
+export { ThemeProvider, usePreviewTheme, useTheme, useThemeSetting } from './components/design-system/ThemeProvider.js';
 export { Ansi } from './ink/Ansi.js';
 export { default as BaseBox } from './ink/components/Box.js';
 export { default as Button } from './ink/components/Button.js';

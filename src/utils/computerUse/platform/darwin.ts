@@ -3,10 +3,9 @@
  * Clipboard uses pbcopy/pbpaste (same as the original executor).
  */
 
-import { mkdtemp, unlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { logForDebugging } from '../../debug.js';
 import { execFileNoThrow } from '../../execFileNoThrow.js';
 import { sleep } from '../../sleep.js';
 import type {

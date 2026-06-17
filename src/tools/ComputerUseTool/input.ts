@@ -319,7 +319,7 @@ export async function pressKey(keyCombo: string): Promise<void> {
   const vkCodes = parts.map(k => getVK(k));
 
   // Build PowerShell script: press all keys down, then release in reverse
-  let script = WIN32_TYPES + '\n';
+  let script = `${WIN32_TYPES}\n`;
 
   // Press down
   for (const vk of vkCodes) {
@@ -343,7 +343,7 @@ export async function holdKey(keyCombo: string, durationMs: number): Promise<voi
   const parts = keyCombo.split('+').map(k => k.trim().toLowerCase());
   const vkCodes = parts.map(k => getVK(k));
 
-  let script = WIN32_TYPES + '\n';
+  let script = `${WIN32_TYPES}\n`;
 
   // Press down
   for (const vk of vkCodes) {

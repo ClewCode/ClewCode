@@ -1,14 +1,14 @@
-import { mkdir, readFile, writeFile } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { getAutoMemPath } from '../../memdir/paths.js';
-import { getMemoryWorkspaceStatus } from '../../memory/workspace.js';
 import { proposeMemory } from '../../memory/pending.js';
+import { getMemoryWorkspaceStatus } from '../../memory/workspace.js';
+import { logForDebugging } from '../../utils/debug.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
+import { logError } from '../../utils/log.js';
+import { getDefaultSonnetModel } from '../../utils/model/model.js';
 import { getSessionMemoryPath } from '../../utils/permissions/filesystem.js';
 import { sideQuery } from '../../utils/sideQuery.js';
-import { getDefaultSonnetModel } from '../../utils/model/model.js';
-import { logError } from '../../utils/log.js';
-import { logForDebugging } from '../../utils/debug.js';
 
 // Keep track of the last consolidated content hash or text to avoid redundant runs
 let lastConsolidatedContent = '';
@@ -62,7 +62,7 @@ export async function consolidateSessionMemory(): Promise<void> {
   let summaryContent = '';
   try {
     summaryContent = await fs.readFile(sessionMemoryPath, { encoding: 'utf-8' });
-  } catch (err) {
+  } catch (_err) {
     // Session memory file doesn't exist or is not readable yet, skip
     return;
   }
@@ -175,7 +175,7 @@ Extract the new long-term facts/observations that should be added.`;
     });
 
     const textBlock = result.content.find(block => block.type === 'text');
-    if (!textBlock || textBlock.type !== 'text') {
+    if (textBlock?.type !== 'text') {
       return;
     }
 
@@ -191,7 +191,7 @@ Extract the new long-term facts/observations that should be added.`;
 
     // 4. Save to User Persistent Auto-Memory
     await mkdir(autoMemPath, { recursive: true });
-    
+
     // Group and format observations
     let userFacts = '';
     let projectFacts = '';
@@ -208,7 +208,7 @@ Extract the new long-term facts/observations that should be added.`;
 
     // Build the updated markdown content
     let updatedContent = existingMemoryContent || '# Consolidated Session Learnings\n\n';
-    
+
     if (userFacts) {
       if (!updatedContent.includes('## User Preferences')) {
         updatedContent += '\n## User Preferences\n';
@@ -234,7 +234,7 @@ Extract the new long-term facts/observations that should be added.`;
       updatedContent += agentFacts;
     }
 
-    await writeFile(sessionLearningsPath, updatedContent.trim() + '\n', 'utf-8');
+    await writeFile(sessionLearningsPath, `${updatedContent.trim()}\n`, 'utf-8');
     logForDebugging(`[Memory Consolidation] Saved observations directly to user Auto-Memory: ${sessionLearningsPath}`);
 
     // 5. Propose to Workspace Memory (if initialized)

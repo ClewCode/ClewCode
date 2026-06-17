@@ -20,14 +20,12 @@ import { createUserMessage } from '../../utils/messages.js';
  * orchestration role and has its own delegation model.
  */
 export function isForkSubagentEnabled() {
-    if (feature('FORK_SUBAGENT')) {
-        if (isCoordinatorMode())
-            return false;
-        if (getIsNonInteractiveSession())
-            return false;
-        return true;
-    }
-    return false;
+  if (feature('FORK_SUBAGENT')) {
+    if (isCoordinatorMode()) return false;
+    if (getIsNonInteractiveSession()) return false;
+    return true;
+  }
+  return false;
 }
 /** Synthetic agent type name used for analytics when the fork path fires. */
 export const FORK_SUBAGENT_TYPE = 'fork';
@@ -48,15 +46,16 @@ export const FORK_SUBAGENT_TYPE = 'fork';
  * bust the prompt cache; threading the rendered bytes is byte-exact.
  */
 export const FORK_AGENT = {
-    agentType: FORK_SUBAGENT_TYPE,
-    whenToUse: 'Implicit fork — inherits full conversation context. Not selectable via subagent_type; triggered by omitting subagent_type when the fork experiment is active.',
-    tools: ['*'],
-    maxTurns: 200,
-    model: 'inherit',
-    permissionMode: 'bubble',
-    source: 'built-in',
-    baseDir: 'built-in',
-    getSystemPrompt: () => '',
+  agentType: FORK_SUBAGENT_TYPE,
+  whenToUse:
+    'Implicit fork — inherits full conversation context. Not selectable via subagent_type; triggered by omitting subagent_type when the fork experiment is active.',
+  tools: ['*'],
+  maxTurns: 200,
+  model: 'inherit',
+  permissionMode: 'bubble',
+  source: 'built-in',
+  baseDir: 'built-in',
+  getSystemPrompt: () => '',
 };
 /**
  * Guard against recursive forking. Fork children keep the Agent tool in their
@@ -64,14 +63,12 @@ export const FORK_AGENT = {
  * at call time by detecting the fork boilerplate tag in conversation history.
  */
 export function isInForkChild(messages) {
-    return messages.some(m => {
-        if (m.type !== 'user')
-            return false;
-        const content = m.message.content;
-        if (!Array.isArray(content))
-            return false;
-        return content.some(block => block.type === 'text' && block.text.includes(`<${FORK_BOILERPLATE_TAG}>`));
-    });
+  return messages.some(m => {
+    if (m.type !== 'user') return false;
+    const content = m.message.content;
+    if (!Array.isArray(content)) return false;
+    return content.some(block => block.type === 'text' && block.text.includes(`<${FORK_BOILERPLATE_TAG}>`));
+  });
 }
 /** Placeholder text used for all tool_result blocks in the fork prefix.
  * Must be identical across all fork children for prompt cache sharing. */
@@ -89,57 +86,57 @@ const FORK_PLACEHOLDER_RESULT = 'Fork started — processing in background';
  * Only the final text block differs per child, maximizing cache hits.
  */
 export function buildForkedMessages(directive, assistantMessage) {
-    // Clone the assistant message to avoid mutating the original, keeping all
-    // content blocks (thinking, text, and every tool_use)
-    const fullAssistantMessage = {
-        ...assistantMessage,
-        uuid: randomUUID(),
-        message: {
-            ...assistantMessage.message,
-            content: [...assistantMessage.message.content],
-        },
-    };
-    // Collect all tool_use blocks from the assistant message
-    const toolUseBlocks = assistantMessage.message.content.filter((block) => block.type === 'tool_use');
-    if (toolUseBlocks.length === 0) {
-        logForDebugging(`No tool_use blocks found in assistant message for fork directive: ${directive.slice(0, 50)}...`, {
-            level: 'error',
-        });
-        return [
-            createUserMessage({
-                content: [{ type: 'text', text: buildChildMessage(directive) }],
-            }),
-        ];
-    }
-    // Build tool_result blocks for every tool_use, all with identical placeholder text
-    const toolResultBlocks = toolUseBlocks.map(block => ({
-        type: 'tool_result',
-        tool_use_id: block.id,
-        content: [
-            {
-                type: 'text',
-                text: FORK_PLACEHOLDER_RESULT,
-            },
-        ],
-    }));
-    // Build a single user message: all placeholder tool_results + the per-child directive
-    // TODO(smoosh): this text sibling creates a [tool_result, text] pattern on the wire
-    // (renders as </function_results>\n\nHuman:<text>). One-off per-child construction,
-    // not a repeated teacher, so low-priority. If we ever care, use smooshIntoToolResult
-    // from src/utils/messages.ts to fold the directive into the last tool_result.content.
-    const toolResultMessage = createUserMessage({
-        content: [
-            ...toolResultBlocks,
-            {
-                type: 'text',
-                text: buildChildMessage(directive),
-            },
-        ],
+  // Clone the assistant message to avoid mutating the original, keeping all
+  // content blocks (thinking, text, and every tool_use)
+  const fullAssistantMessage = {
+    ...assistantMessage,
+    uuid: randomUUID(),
+    message: {
+      ...assistantMessage.message,
+      content: [...assistantMessage.message.content],
+    },
+  };
+  // Collect all tool_use blocks from the assistant message
+  const toolUseBlocks = assistantMessage.message.content.filter(block => block.type === 'tool_use');
+  if (toolUseBlocks.length === 0) {
+    logForDebugging(`No tool_use blocks found in assistant message for fork directive: ${directive.slice(0, 50)}...`, {
+      level: 'error',
     });
-    return [fullAssistantMessage, toolResultMessage];
+    return [
+      createUserMessage({
+        content: [{ type: 'text', text: buildChildMessage(directive) }],
+      }),
+    ];
+  }
+  // Build tool_result blocks for every tool_use, all with identical placeholder text
+  const toolResultBlocks = toolUseBlocks.map(block => ({
+    type: 'tool_result',
+    tool_use_id: block.id,
+    content: [
+      {
+        type: 'text',
+        text: FORK_PLACEHOLDER_RESULT,
+      },
+    ],
+  }));
+  // Build a single user message: all placeholder tool_results + the per-child directive
+  // TODO(smoosh): this text sibling creates a [tool_result, text] pattern on the wire
+  // (renders as </function_results>\n\nHuman:<text>). One-off per-child construction,
+  // not a repeated teacher, so low-priority. If we ever care, use smooshIntoToolResult
+  // from src/utils/messages.ts to fold the directive into the last tool_result.content.
+  const toolResultMessage = createUserMessage({
+    content: [
+      ...toolResultBlocks,
+      {
+        type: 'text',
+        text: buildChildMessage(directive),
+      },
+    ],
+  });
+  return [fullAssistantMessage, toolResultMessage];
 }
 export function buildChildMessage(directive) {
-    return `<${FORK_BOILERPLATE_TAG}>
+  return `<${FORK_BOILERPLATE_TAG}>
 STOP. READ THIS FIRST.
 
 You are a forked worker process. You are NOT the main agent.
@@ -172,5 +169,5 @@ ${FORK_DIRECTIVE_PREFIX}${directive}`;
  * potentially stale files, and that its changes are isolated.
  */
 export function buildWorktreeNotice(parentCwd, worktreeCwd) {
-    return `You've inherited the conversation context above from a parent agent working in ${parentCwd}. You are operating in an isolated git worktree at ${worktreeCwd} — same repository, same relative file structure, separate working copy. Paths in the inherited context refer to the parent's working directory; translate them to your worktree root. Re-read files before editing if the parent may have modified them since they appear in the context. Your changes stay in this worktree and will not affect the parent's files.`;
+  return `You've inherited the conversation context above from a parent agent working in ${parentCwd}. You are operating in an isolated git worktree at ${worktreeCwd} — same repository, same relative file structure, separate working copy. Paths in the inherited context refer to the parent's working directory; translate them to your worktree root. Re-read files before editing if the parent may have modified them since they appear in the context. Your changes stay in this worktree and will not affect the parent's files.`;
 }

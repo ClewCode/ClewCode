@@ -180,7 +180,7 @@ async function loadAgentFromFile(
       getSystemPrompt: () => {
         if (isAutoMemoryEnabled() && memory) {
           const memoryPrompt = loadAgentMemoryPrompt(agentType, memory);
-          return systemPrompt + '\n\n' + memoryPrompt;
+          return `${systemPrompt}\n\n${memoryPrompt}`;
         }
         return systemPrompt;
       },

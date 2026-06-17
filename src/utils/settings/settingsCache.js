@@ -1,9 +1,9 @@
 let sessionSettingsCache = null;
 export function getSessionSettingsCache() {
-    return sessionSettingsCache;
+  return sessionSettingsCache;
 }
 export function setSessionSettingsCache(value) {
-    sessionSettingsCache = value;
+  sessionSettingsCache = value;
 }
 /**
  * Per-source cache for getSettingsForSource. Invalidated alongside the
@@ -12,23 +12,23 @@ export function setSessionSettingsCache(value) {
  */
 const perSourceCache = new Map();
 export function getCachedSettingsForSource(source) {
-    // undefined = cache miss; null = cached "no settings for this source"
-    return perSourceCache.has(source) ? perSourceCache.get(source) : undefined;
+  // undefined = cache miss; null = cached "no settings for this source"
+  return perSourceCache.has(source) ? perSourceCache.get(source) : undefined;
 }
 export function setCachedSettingsForSource(source, value) {
-    perSourceCache.set(source, value);
+  perSourceCache.set(source, value);
 }
 const parseFileCache = new Map();
 export function getCachedParsedFile(path) {
-    return parseFileCache.get(path);
+  return parseFileCache.get(path);
 }
 export function setCachedParsedFile(path, value) {
-    parseFileCache.set(path, value);
+  parseFileCache.set(path, value);
 }
 export function resetSettingsCache() {
-    sessionSettingsCache = null;
-    perSourceCache.clear();
-    parseFileCache.clear();
+  sessionSettingsCache = null;
+  perSourceCache.clear();
+  parseFileCache.clear();
 }
 /**
  * Plugin settings base layer for the settings cascade.
@@ -37,11 +37,11 @@ export function resetSettingsCache() {
  */
 let pluginSettingsBase;
 export function getPluginSettingsBase() {
-    return pluginSettingsBase;
+  return pluginSettingsBase;
 }
 export function setPluginSettingsBase(settings) {
-    pluginSettingsBase = settings;
+  pluginSettingsBase = settings;
 }
 export function clearPluginSettingsBase() {
-    pluginSettingsBase = undefined;
+  pluginSettingsBase = undefined;
 }

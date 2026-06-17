@@ -130,9 +130,7 @@ export const PeerSendMessageTool = buildTool({
       output.timedOut ? 'no response' : undefined,
     ].filter(Boolean);
 
-    const responsePreview = output.response
-      ? truncateText(output.response.text, 80)
-      : undefined;
+    const responsePreview = output.response ? truncateText(output.response.text, 80) : undefined;
 
     return React.createElement(
       MessageResponse,
@@ -147,11 +145,7 @@ export const PeerSendMessageTool = buildTool({
           React.createElement(Text, { color: '#1d9e75' }, '●'),
           React.createElement(Text, { bold: true, color: 'white' }, output.peerHostname ?? 'peer'),
           React.createElement(Text, { color: 'gray' }, '←'),
-          React.createElement(
-            Text,
-            { color: '#6199cc' },
-            truncateText(output.messageText ?? '', 60),
-          ),
+          React.createElement(Text, { color: '#6199cc' }, truncateText(output.messageText ?? '', 60)),
           React.createElement(Text, { color: '#1d9e75' }, 'sent'),
         ),
 
@@ -246,7 +240,7 @@ export const PeerSendMessageTool = buildTool({
     let peer: PeerInfo | undefined;
 
     const portNum = parseInt(input.peer, 10);
-    if (!isNaN(portNum)) {
+    if (!Number.isNaN(portNum)) {
       peer = store.getPeerByPort(portNum);
     }
 
@@ -258,7 +252,7 @@ export const PeerSendMessageTool = buildTool({
       const peers = await discovery.discoverPeers(3000);
       for (const p of peers) store.addPeer(p);
       peer = store.findPeer(input.peer);
-      if (!peer && !isNaN(portNum)) peer = store.getPeerByPort(portNum);
+      if (!peer && !Number.isNaN(portNum)) peer = store.getPeerByPort(portNum);
     }
 
     if (!peer) {

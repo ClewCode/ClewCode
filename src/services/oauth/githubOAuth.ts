@@ -1,7 +1,6 @@
 // GitHub Device Flow OAuth for Copilot authentication
 // Based on GitHub's OAuth Device Flow: https://docs.github.com/en/developers/apps/authorizing-oauth-apps#device-flow
 import { logEvent } from '../analytics/index.js';
-import { AuthCodeListener } from './auth-code-listener.js';
 
 const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code';
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';

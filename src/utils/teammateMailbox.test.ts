@@ -14,8 +14,6 @@ import {
   isModeSetRequest,
   isPermissionRequest,
   isPermissionResponse,
-  isPlanApprovalRequest,
-  isPlanApprovalResponse,
   isShutdownRequest,
   isStructuredProtocolMessage,
   markMessageAsReadByIndex,

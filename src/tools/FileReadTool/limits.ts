@@ -25,7 +25,7 @@ function getEnvMaxTokens(): number | undefined {
   const override = process.env.CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS;
   if (override) {
     const parsed = parseInt(override, 10);
-    if (!isNaN(parsed) && parsed > 0) {
+    if (!Number.isNaN(parsed) && parsed > 0) {
       return parsed;
     }
   }

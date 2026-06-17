@@ -15,34 +15,32 @@ import { jsonStringify } from './slowOperations.js';
  */
 // sync IO: called from sync context
 export function logForDiagnosticsNoPII(level, event, data) {
-    const logFile = getDiagnosticLogFile();
-    if (!logFile) {
-        return;
-    }
-    const entry = {
-        timestamp: new Date().toISOString(),
-        level,
-        event,
-        data: data ?? {},
-    };
-    const fs = getFsImplementation();
-    const line = jsonStringify(entry) + '\n';
+  const logFile = getDiagnosticLogFile();
+  if (!logFile) {
+    return;
+  }
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level,
+    event,
+    data: data ?? {},
+  };
+  const fs = getFsImplementation();
+  const line = `${jsonStringify(entry)}\n`;
+  try {
+    fs.appendFileSync(logFile, line);
+  } catch {
+    // If append fails, try creating the directory first
     try {
-        fs.appendFileSync(logFile, line);
+      fs.mkdirSync(dirname(logFile));
+      fs.appendFileSync(logFile, line);
+    } catch {
+      // Silently fail if logging is not possible
     }
-    catch {
-        // If append fails, try creating the directory first
-        try {
-            fs.mkdirSync(dirname(logFile));
-            fs.appendFileSync(logFile, line);
-        }
-        catch {
-            // Silently fail if logging is not possible
-        }
-    }
+  }
 }
 function getDiagnosticLogFile() {
-    return process.env.CLAUDE_CODE_DIAGNOSTICS_FILE;
+  return process.env.CLAUDE_CODE_DIAGNOSTICS_FILE;
 }
 /**
  * Wraps an async function with diagnostic timing logs.
@@ -54,21 +52,20 @@ function getDiagnosticLogFile() {
  * @returns       The result of the wrapped function
  */
 export async function withDiagnosticsTiming(event, fn, getData) {
-    const startTime = Date.now();
-    logForDiagnosticsNoPII('info', `${event}_started`);
-    try {
-        const result = await fn();
-        const additionalData = getData ? getData(result) : {};
-        logForDiagnosticsNoPII('info', `${event}_completed`, {
-            duration_ms: Date.now() - startTime,
-            ...additionalData,
-        });
-        return result;
-    }
-    catch (error) {
-        logForDiagnosticsNoPII('error', `${event}_failed`, {
-            duration_ms: Date.now() - startTime,
-        });
-        throw error;
-    }
+  const startTime = Date.now();
+  logForDiagnosticsNoPII('info', `${event}_started`);
+  try {
+    const result = await fn();
+    const additionalData = getData ? getData(result) : {};
+    logForDiagnosticsNoPII('info', `${event}_completed`, {
+      duration_ms: Date.now() - startTime,
+      ...additionalData,
+    });
+    return result;
+  } catch (error) {
+    logForDiagnosticsNoPII('error', `${event}_failed`, {
+      duration_ms: Date.now() - startTime,
+    });
+    throw error;
+  }
 }

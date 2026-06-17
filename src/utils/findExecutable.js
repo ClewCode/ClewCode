@@ -8,6 +8,6 @@ import { whichSync } from './which.js';
  * `args` is always the pass-through of the input args.
  */
 export function findExecutable(exe, args) {
-    const resolved = whichSync(exe);
-    return { cmd: resolved ?? exe, args };
+  const resolved = whichSync(exe);
+  return { cmd: resolved ?? exe, args };
 }

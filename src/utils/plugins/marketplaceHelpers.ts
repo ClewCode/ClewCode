@@ -331,13 +331,13 @@ export function getHostPatternsFromAllowlist(): string[] {
 function extractGitHubRepoFromGitUrl(url: string): string | null {
   // SSH format: git@github.com:owner/repo.git
   const sshMatch = url.match(/^git@github\.com:([^/]+\/[^/]+?)(?:\.git)?$/);
-  if (sshMatch && sshMatch[1]) {
+  if (sshMatch?.[1]) {
     return sshMatch[1];
   }
 
   // HTTPS format: https://github.com/owner/repo.git or https://github.com/owner/repo
   const httpsMatch = url.match(/^https?:\/\/github\.com\/([^/]+\/[^/]+?)(?:\.git)?$/);
-  if (httpsMatch && httpsMatch[1]) {
+  if (httpsMatch?.[1]) {
     return httpsMatch[1];
   }
 

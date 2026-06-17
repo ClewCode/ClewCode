@@ -52,7 +52,7 @@ const SKILL_NAME = 'thinkback';
  */
 async function getThinkbackSkillDir(): Promise<string | null> {
   const { enabled } = await loadAllPlugins();
-  const thinkbackPlugin = enabled.find(p => p.name === 'thinkback' || (p.source && p.source.includes(getPluginId())));
+  const thinkbackPlugin = enabled.find(p => p.name === 'thinkback' || p.source?.includes(getPluginId()));
 
   if (!thinkbackPlugin) {
     return null;

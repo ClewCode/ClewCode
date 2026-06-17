@@ -66,8 +66,8 @@ export const GLOBAL_CLAUDE_FOLDER_PERMISSION_PATTERN = `~/${DOT_CLAUDE}/**`;
 // ── Helpers ────────────────────────────────────────────────
 /** Build a path under .clew/ (or .claude/ for legacy) */
 export function clewPath(...segments) {
-    return [DOT_CLEW, ...segments].join('/');
+  return [DOT_CLEW, ...segments].join('/');
 }
 export function claudePath(...segments) {
-    return [DOT_CLAUDE, ...segments].join('/');
+  return [DOT_CLAUDE, ...segments].join('/');
 }

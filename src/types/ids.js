@@ -7,14 +7,14 @@
  * Use sparingly - prefer getSessionId() when possible.
  */
 export function asSessionId(id) {
-    return id;
+  return id;
 }
 /**
  * Cast a raw string to AgentId.
  * Use sparingly - prefer createAgentId() when possible.
  */
 export function asAgentId(id) {
-    return id;
+  return id;
 }
 const AGENT_ID_PATTERN = /^a(?:.+-)?[0-9a-f]{16}$/;
 /**
@@ -23,5 +23,5 @@ const AGENT_ID_PATTERN = /^a(?:.+-)?[0-9a-f]{16}$/;
  * Returns null if the string doesn't match (e.g. teammate names, team-addressing).
  */
 export function toAgentId(s) {
-    return AGENT_ID_PATTERN.test(s) ? s : null;
+  return AGENT_ID_PATTERN.test(s) ? s : null;
 }

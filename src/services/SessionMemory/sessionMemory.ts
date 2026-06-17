@@ -25,6 +25,7 @@ import { asSystemPrompt } from '../../utils/systemPromptType.js';
 import { getTokenUsage, tokenCountWithEstimation } from '../../utils/tokens.js';
 import { logEvent } from '../analytics/index.js';
 import { isAutoCompactEnabled } from '../compact/autoCompact.js';
+import { consolidateSessionMemory } from './consolidation.js';
 import { buildSessionMemoryUpdatePrompt, loadSessionMemoryTemplate } from './prompts.js';
 import {
   DEFAULT_SESSION_MEMORY_CONFIG,
@@ -41,7 +42,6 @@ import {
   setLastSummarizedMessageId,
   setSessionMemoryConfig,
 } from './sessionMemoryUtils.js';
-import { consolidateSessionMemory } from './consolidation.js';
 
 // ============================================================================
 // Feature Gate and Config (Cached - Non-blocking)

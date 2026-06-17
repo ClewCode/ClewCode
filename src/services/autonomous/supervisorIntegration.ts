@@ -53,7 +53,7 @@ export async function isAutonomousEnabled(): Promise<boolean> {
 export async function isAutonomousAgentActive(): Promise<boolean> {
   try {
     const status = await loadStatus();
-    if (status && status.running) {
+    if (status?.running) {
       const now = Date.now();
       const age = now - status.lastHeartbeat;
       // Heartbeat is updated every 60s in the loop. Allow up to 120s (2 min) before considering it stale.

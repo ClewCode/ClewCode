@@ -33,7 +33,7 @@ function buildNestedTree(errors: ValidationError[]): TreeNode {
         const numericPart = parseInt(part, 10);
 
         // If this is a numeric index and it's the last part where we have the invalid value
-        if (!isNaN(numericPart) && i === pathParts.length - 1) {
+        if (!Number.isNaN(numericPart) && i === pathParts.length - 1) {
           // Format the value for display
           let displayValue: string;
           if (typeof error.invalidValue === 'string') {

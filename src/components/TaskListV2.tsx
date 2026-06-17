@@ -24,7 +24,7 @@ const RECENT_COMPLETED_TTL_MS = 30_000;
 function byIdAsc(a: Task, b: Task): number {
   const aNum = parseInt(a.id, 10);
   const bNum = parseInt(b.id, 10);
-  if (!isNaN(aNum) && !isNaN(bNum)) {
+  if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
     return aNum - bNum;
   }
   return a.id.localeCompare(b.id);
@@ -83,7 +83,7 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
       forceUpdate,
     );
     return () => clearTimeout(timer);
-  }, [tasks]);
+  }, []);
 
   if (!isTodoV2Enabled()) {
     return null;

@@ -11,24 +11,24 @@ import { logForDebugging } from '../../utils/debug.js';
 import { isProcessRunning } from '../../utils/genericProcessUtils.js';
 import { listCandidates } from '../../utils/listSessionsImpl.js';
 import { getProjectDir } from '../../utils/sessionStorage.js';
+
 const LOCK_FILE = '.consolidate-lock';
 // Stale past this even if the PID is live (PID reuse guard).
 const HOLDER_STALE_MS = 60 * 60 * 1000;
 function lockPath() {
-    return join(getAutoMemPath(), LOCK_FILE);
+  return join(getAutoMemPath(), LOCK_FILE);
 }
 /**
  * mtime of the lock file = lastConsolidatedAt. 0 if absent.
  * Per-turn cost: one stat.
  */
 export async function readLastConsolidatedAt() {
-    try {
-        const s = await stat(lockPath());
-        return s.mtimeMs;
-    }
-    catch {
-        return 0;
-    }
+  try {
+    const s = await stat(lockPath());
+    return s.mtimeMs;
+  } catch {
+    return 0;
+  }
 }
 /**
  * Acquire: write PID → mtime = now. Returns the pre-acquire mtime
@@ -39,39 +39,38 @@ export async function readLastConsolidatedAt() {
  *   Crash   → mtime stuck, dead PID → next process reclaims.
  */
 export async function tryAcquireConsolidationLock() {
-    const path = lockPath();
-    let mtimeMs;
-    let holderPid;
-    try {
-        const [s, raw] = await Promise.all([stat(path), readFile(path, 'utf8')]);
-        mtimeMs = s.mtimeMs;
-        const parsed = parseInt(raw.trim(), 10);
-        holderPid = Number.isFinite(parsed) ? parsed : undefined;
+  const path = lockPath();
+  let mtimeMs;
+  let holderPid;
+  try {
+    const [s, raw] = await Promise.all([stat(path), readFile(path, 'utf8')]);
+    mtimeMs = s.mtimeMs;
+    const parsed = parseInt(raw.trim(), 10);
+    holderPid = Number.isFinite(parsed) ? parsed : undefined;
+  } catch {
+    // ENOENT — no prior lock.
+  }
+  if (mtimeMs !== undefined && Date.now() - mtimeMs < HOLDER_STALE_MS) {
+    if (holderPid !== undefined && isProcessRunning(holderPid)) {
+      logForDebugging(
+        `[autoDream] lock held by live PID ${holderPid} (mtime ${Math.round((Date.now() - mtimeMs) / 1000)}s ago)`,
+      );
+      return null;
     }
-    catch {
-        // ENOENT — no prior lock.
-    }
-    if (mtimeMs !== undefined && Date.now() - mtimeMs < HOLDER_STALE_MS) {
-        if (holderPid !== undefined && isProcessRunning(holderPid)) {
-            logForDebugging(`[autoDream] lock held by live PID ${holderPid} (mtime ${Math.round((Date.now() - mtimeMs) / 1000)}s ago)`);
-            return null;
-        }
-        // Dead PID or unparseable body — reclaim.
-    }
-    // Memory dir may not exist yet.
-    await mkdir(getAutoMemPath(), { recursive: true });
-    await writeFile(path, String(process.pid));
-    // Two reclaimers both write → last wins the PID. Loser bails on re-read.
-    let verify;
-    try {
-        verify = await readFile(path, 'utf8');
-    }
-    catch {
-        return null;
-    }
-    if (parseInt(verify.trim(), 10) !== process.pid)
-        return null;
-    return mtimeMs ?? 0;
+    // Dead PID or unparseable body — reclaim.
+  }
+  // Memory dir may not exist yet.
+  await mkdir(getAutoMemPath(), { recursive: true });
+  await writeFile(path, String(process.pid));
+  // Two reclaimers both write → last wins the PID. Loser bails on re-read.
+  let verify;
+  try {
+    verify = await readFile(path, 'utf8');
+  } catch {
+    return null;
+  }
+  if (parseInt(verify.trim(), 10) !== process.pid) return null;
+  return mtimeMs ?? 0;
 }
 /**
  * Rewind mtime to pre-acquire after a failed fork. Clears the PID body —
@@ -79,19 +78,18 @@ export async function tryAcquireConsolidationLock() {
  * priorMtime 0 → unlink (restore no-file).
  */
 export async function rollbackConsolidationLock(priorMtime) {
-    const path = lockPath();
-    try {
-        if (priorMtime === 0) {
-            await unlink(path);
-            return;
-        }
-        await writeFile(path, '');
-        const t = priorMtime / 1000; // utimes wants seconds
-        await utimes(path, t, t);
+  const path = lockPath();
+  try {
+    if (priorMtime === 0) {
+      await unlink(path);
+      return;
     }
-    catch (e) {
-        logForDebugging(`[autoDream] rollback failed: ${e.message} — next trigger delayed to minHours`);
-    }
+    await writeFile(path, '');
+    const t = priorMtime / 1000; // utimes wants seconds
+    await utimes(path, t, t);
+  } catch (e) {
+    logForDebugging(`[autoDream] rollback failed: ${e.message} — next trigger delayed to minHours`);
+  }
 }
 /**
  * Session IDs with mtime after sinceMs. listCandidates handles UUID
@@ -102,21 +100,20 @@ export async function rollbackConsolidationLock(priorMtime) {
  * a skip-gate, so undercounting worktree sessions is safe.
  */
 export async function listSessionsTouchedSince(sinceMs) {
-    const dir = getProjectDir(getOriginalCwd());
-    const candidates = await listCandidates(dir, true);
-    return candidates.filter(c => c.mtime > sinceMs).map(c => c.sessionId);
+  const dir = getProjectDir(getOriginalCwd());
+  const candidates = await listCandidates(dir, true);
+  return candidates.filter(c => c.mtime > sinceMs).map(c => c.sessionId);
 }
 /**
  * Stamp from manual /dream. Optimistic — fires at prompt-build time,
  * no post-skill completion hook. Best-effort.
  */
 export async function recordConsolidation() {
-    try {
-        // Memory dir may not exist yet (manual /dream before any auto-trigger).
-        await mkdir(getAutoMemPath(), { recursive: true });
-        await writeFile(lockPath(), String(process.pid));
-    }
-    catch (e) {
-        logForDebugging(`[autoDream] recordConsolidation write failed: ${e.message}`);
-    }
+  try {
+    // Memory dir may not exist yet (manual /dream before any auto-trigger).
+    await mkdir(getAutoMemPath(), { recursive: true });
+    await writeFile(lockPath(), String(process.pid));
+  } catch (e) {
+    logForDebugging(`[autoDream] recordConsolidation write failed: ${e.message}`);
+  }
 }

@@ -97,7 +97,7 @@ export function executeLineOp(op: Operator, count: number, ctx: OperatorContext)
   let content = text.slice(lineStart, lineEnd);
   // Ensure linewise content ends with newline for paste detection
   if (!content.endsWith('\n')) {
-    content = content + '\n';
+    content = `${content}\n`;
   }
   ctx.setRegister(content, true);
 
@@ -417,7 +417,7 @@ function applyOperator(op: Operator, from: number, to: number, ctx: OperatorCont
   let content = ctx.text.slice(from, to);
   // Ensure linewise content ends with newline for paste detection
   if (linewise && !content.endsWith('\n')) {
-    content = content + '\n';
+    content = `${content}\n`;
   }
   ctx.setRegister(content, linewise);
 

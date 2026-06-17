@@ -12,19 +12,18 @@ export const pendingClears = new WeakMap();
  */
 let absoluteNodeRemoved = false;
 export function addPendingClear(parent, rect, isAbsolute) {
-    const existing = pendingClears.get(parent);
-    if (existing) {
-        existing.push(rect);
-    }
-    else {
-        pendingClears.set(parent, [rect]);
-    }
-    if (isAbsolute) {
-        absoluteNodeRemoved = true;
-    }
+  const existing = pendingClears.get(parent);
+  if (existing) {
+    existing.push(rect);
+  } else {
+    pendingClears.set(parent, [rect]);
+  }
+  if (isAbsolute) {
+    absoluteNodeRemoved = true;
+  }
 }
 export function consumeAbsoluteRemovedFlag() {
-    const had = absoluteNodeRemoved;
-    absoluteNodeRemoved = false;
-    return had;
+  const had = absoluteNodeRemoved;
+  absoluteNodeRemoved = false;
+  return had;
 }

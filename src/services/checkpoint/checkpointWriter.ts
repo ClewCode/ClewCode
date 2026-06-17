@@ -56,10 +56,7 @@ function getCheckpointIndexPath(): string {
 }
 
 /** Determine which threshold (if any) was just crossed */
-export function getNextCheckpointThreshold(
-  turnCount: number,
-  maxTurns: number | undefined,
-): number | null {
+export function getNextCheckpointThreshold(turnCount: number, maxTurns: number | undefined): number | null {
   if (!maxTurns || maxTurns <= 0) return null;
   const progressPercent = (turnCount / maxTurns) * 100;
   for (const threshold of CHECKPOINT_THRESHOLDS) {
@@ -78,24 +75,22 @@ export async function hasCheckpoint(progressPercent: number): Promise<boolean> {
 }
 
 /** Write a checkpoint to disk */
-export async function writeCheckpoint(
-  checkpoint: TaskCheckpoint,
-): Promise<void> {
+export async function writeCheckpoint(checkpoint: TaskCheckpoint): Promise<void> {
   const dir = getCheckpointsDir();
   await mkdir(dir, { recursive: true });
 
   // Write checkpoint file
-  await writeFile(
-    getCheckpointFilePath(checkpoint.id),
-    JSON.stringify(checkpoint, null, 2),
-    'utf-8',
-  );
+  await writeFile(getCheckpointFilePath(checkpoint.id), JSON.stringify(checkpoint, null, 2), 'utf-8');
 
   // Update index
   const index = await loadCheckpointIndex();
   const existing = index.findIndex(c => c.id === checkpoint.id);
   if (existing >= 0) {
-    index[existing] = { id: checkpoint.id, progressPercent: checkpoint.progressPercent, timestamp: checkpoint.timestamp };
+    index[existing] = {
+      id: checkpoint.id,
+      progressPercent: checkpoint.progressPercent,
+      timestamp: checkpoint.timestamp,
+    };
   } else {
     index.push({ id: checkpoint.id, progressPercent: checkpoint.progressPercent, timestamp: checkpoint.timestamp });
   }

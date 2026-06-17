@@ -6,7 +6,7 @@ export function getPlanModeV2AgentCount(): number {
   // Environment variable override takes precedence
   if (process.env.CLAUDE_CODE_PLAN_V2_AGENT_COUNT) {
     const count = parseInt(process.env.CLAUDE_CODE_PLAN_V2_AGENT_COUNT, 10);
-    if (!isNaN(count) && count > 0 && count <= 10) {
+    if (!Number.isNaN(count) && count > 0 && count <= 10) {
       return count;
     }
   }
@@ -28,7 +28,7 @@ export function getPlanModeV2AgentCount(): number {
 export function getPlanModeV2ExploreAgentCount(): number {
   if (process.env.CLAUDE_CODE_PLAN_V2_EXPLORE_AGENT_COUNT) {
     const count = parseInt(process.env.CLAUDE_CODE_PLAN_V2_EXPLORE_AGENT_COUNT, 10);
-    if (!isNaN(count) && count > 0 && count <= 10) {
+    if (!Number.isNaN(count) && count > 0 && count <= 10) {
       return count;
     }
   }

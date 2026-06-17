@@ -38,7 +38,7 @@ export function SystemAPIErrorMessage({
   return (
     <MessageResponse>
       <Box flexDirection="column">
-        <Text color="error">{truncated ? formatted.slice(0, MAX_API_ERROR_CHARS) + '…' : formatted}</Text>
+        <Text color="error">{truncated ? `${formatted.slice(0, MAX_API_ERROR_CHARS)}…` : formatted}</Text>
         {truncated && <CtrlOToExpand />}
         <Text dimColor>
           Retrying in {retryInSecondsLive} {retryInSecondsLive === 1 ? 'second' : 'seconds'}… (attempt {retryAttempt}/

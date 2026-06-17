@@ -107,7 +107,7 @@ export function ResumeTask({ onSelect, onCancel, isEmbedded = false }: Props): R
   const handleErrorComplete = useCallback(() => {
     setHasCompletedTeleportErrorFlow(true);
     void loadSessions();
-  }, [setHasCompletedTeleportErrorFlow, loadSessions]);
+  }, [loadSessions]);
 
   // Show error dialog if needed
   if (!hasCompletedTeleportErrorFlow) {

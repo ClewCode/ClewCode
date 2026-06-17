@@ -237,7 +237,7 @@ export const ConfigTool = buildTool({
         return {
           data: {
             success: false,
-            error: 'No audio recording tool found.' + (deps.installCommand ? ` Run: ${deps.installCommand}` : ''),
+            error: `No audio recording tool found.${deps.installCommand ? ` Run: ${deps.installCommand}` : ''}`,
           },
         };
       }

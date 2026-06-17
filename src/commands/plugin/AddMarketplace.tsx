@@ -119,7 +119,7 @@ export function AddMarketplace({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
-  }, []); // Only run once on mount
+  }, [result, inputValue, handleAdd, error]); // Only run once on mount
 
   return (
     <Box flexDirection="column">

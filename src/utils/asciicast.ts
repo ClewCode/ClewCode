@@ -153,7 +153,7 @@ export function installAsciicastRecorder(): void {
     // Directory may already exist
   }
   // eslint-disable-next-line custom-rules/no-sync-fs -- one-time init before Ink mounts
-  getFsImplementation().appendFileSync(filePath, header + '\n', { mode: 0o600 });
+  getFsImplementation().appendFileSync(filePath, `${header}\n`, { mode: 0o600 });
 
   let pendingWrite: Promise<void> = Promise.resolve();
 
@@ -185,7 +185,7 @@ export function installAsciicastRecorder(): void {
     // Record the output event
     const elapsed = (performance.now() - startTime) / 1000;
     const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf-8');
-    writer.write(jsonStringify([elapsed, 'o', text]) + '\n');
+    writer.write(`${jsonStringify([elapsed, 'o', text])}\n`);
 
     // Pass through to the real stdout
     if (typeof encodingOrCb === 'function') {
@@ -198,7 +198,7 @@ export function installAsciicastRecorder(): void {
   function onResize(): void {
     const elapsed = (performance.now() - startTime) / 1000;
     const { cols: newCols, rows: newRows } = getTerminalSize();
-    writer.write(jsonStringify([elapsed, 'r', `${newCols}x${newRows}`]) + '\n');
+    writer.write(`${jsonStringify([elapsed, 'r', `${newCols}x${newRows}`])}\n`);
   }
   process.stdout.on('resize', onResize);
 

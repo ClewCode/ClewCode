@@ -38,7 +38,7 @@ export function AgentViewPeekPanel({
     return activities
       .slice(-5)
       .map(
-        (act: any, i: number) =>
+        (act: any, _i: number) =>
           act.activityDescription ?? `${act.toolName} ${JSON.stringify(act.input)?.slice(0, 40)}`,
       );
   }, [task.progress]);

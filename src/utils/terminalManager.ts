@@ -1,6 +1,5 @@
-import { type ChildProcessWithoutNullStreams, spawn, spawn as spawnChild } from 'child_process';
+import { type ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { EventEmitter } from 'events';
-import { Writable } from 'stream';
 
 export type SessionOptions = {
   shell?: string;
@@ -25,7 +24,7 @@ export type ExecResult = {
 };
 
 const COMPLETION_MARKER = '__TERMINAL_COMPLETE__';
-const COMPLETION_REGEX = /__TERMINAL_COMPLETE__:(\d+):([^:]+):/;
+const _COMPLETION_REGEX = /__TERMINAL_COMPLETE__:(\d+):([^:]+):/;
 
 function generateMarker(exitCode: number, cwd: string): string {
   return `${COMPLETION_MARKER}${exitCode}:${cwd}:${Date.now()}`;
@@ -37,7 +36,6 @@ export class InteractiveSession extends EventEmitter {
   cwd: string;
   shell: string;
   buffer: string = '';
-  private resolved: boolean = false;
 
   constructor(id: string, options: SessionOptions = {}) {
     super();
@@ -68,7 +66,7 @@ export class InteractiveSession extends EventEmitter {
   }
 
   writeln(data: string): void {
-    this.write(data + '\n');
+    this.write(`${data}\n`);
   }
 
   private handleData(data: string): void {
@@ -168,7 +166,7 @@ class TerminalManager {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       let matched = false;
       let matchedOutput = '';
       let timer: NodeJS.Timeout;

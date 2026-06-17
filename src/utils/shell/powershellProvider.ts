@@ -76,8 +76,7 @@ export function createPowerShellProvider(shellPath: string): ShellProvider {
       // Encoding setup: force UTF-8 for both input and output to prevent
       // codepage-related character corruption. This is especially important
       // on Windows with non-English locales or special characters in paths.
-      const encodingPreamble =
-        '$OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8;';
+      const encodingPreamble = '$OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8;';
       const cwdTracking = `\n; $_ec = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } elseif ($?) { 0 } else { 1 }\n; (Get-Location).Path | Out-File -FilePath '${escapedCwdFilePath}' -Encoding utf8 -NoNewline\n; exit $_ec`;
       const psCommand = encodingPreamble + command + cwdTracking;
 

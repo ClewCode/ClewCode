@@ -142,7 +142,7 @@ async function selectRelevantMemories(
     });
 
     const textBlock = result.content.find(block => block.type === 'text');
-    if (!textBlock || textBlock.type !== 'text') {
+    if (textBlock?.type !== 'text') {
       return [];
     }
 

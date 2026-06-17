@@ -1,10 +1,8 @@
 import chalk from 'chalk';
 import figures from 'figures';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import type * as React from 'react';
 import { color, Text } from '../ink.js';
-import { PROVIDER_CONFIG_PATH, ProviderManager } from '../services/ai/ProviderManager.js';
+import { ProviderManager } from '../services/ai/ProviderManager.js';
 import { PROVIDER_REGISTRY } from '../services/ai/providerRegistry.js';
 import type { MCPServerConnection } from '../services/mcp/types.js';
 import { getAccountInformation, isClaudeAISubscriber } from './auth.js';
@@ -15,7 +13,6 @@ import { getDisplayPath } from './file.js';
 import { formatNumber } from './format.js';
 import { getIdeClientName, type IDEExtensionInstallationStatus, isJetBrainsIde, toIDEDisplayName } from './ide.js';
 import { getClaudeAiUserDefaultModelDescription, getRuntimeMainLoopModel, modelDisplayString } from './model/model.js';
-import { getAPIProvider } from './model/providers.js';
 import { getMTLSConfig } from './mtls.js';
 import { checkInstall } from './nativeInstaller/index.js';
 import { getProxyUrl } from './proxy.js';
@@ -269,7 +266,7 @@ export function buildAccountProperties(): Property[] {
 
 export function buildAPIProviderProperties(): Property[] {
   const providerManager = ProviderManager.getInstance();
-  const providerConfig = providerManager.getSelectedProviderConfig();
+  const _providerConfig = providerManager.getSelectedProviderConfig();
   const apiProvider = providerManager.getAnthropicProviderType();
   const activeProvider = providerManager.getActiveProviderName();
   const properties: Property[] = [];

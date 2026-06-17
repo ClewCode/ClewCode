@@ -41,7 +41,7 @@ export async function* runPostToolUseHooks<Input extends AnyObject, Output>(
   toolResponse: Output,
   requestId: string | undefined,
   mcpServerType: McpServerType,
-  mcpServerBaseUrl: string | undefined,
+  _mcpServerBaseUrl: string | undefined,
 ): AsyncGenerator<PostToolUseHooksResult<Output>> {
   const postToolStartTime = Date.now();
   try {
@@ -186,7 +186,7 @@ export async function* runPostToolUseFailureHooks<Input extends AnyObject>(
   isInterrupt: boolean | undefined,
   requestId: string | undefined,
   mcpServerType: McpServerType,
-  mcpServerBaseUrl: string | undefined,
+  _mcpServerBaseUrl: string | undefined,
 ): AsyncGenerator<MessageUpdateLazy<AttachmentMessage | ProgressMessage<HookProgress>>> {
   const postToolStartTime = Date.now();
   try {
@@ -383,7 +383,7 @@ export async function* runPreToolUseHooks(
   messageId: string,
   requestId: string | undefined,
   mcpServerType: McpServerType,
-  mcpServerBaseUrl: string | undefined,
+  _mcpServerBaseUrl: string | undefined,
 ): AsyncGenerator<
   | {
       type: 'message';

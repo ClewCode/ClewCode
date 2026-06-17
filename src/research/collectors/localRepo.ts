@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'fs/promises';
+import { readdir } from 'fs/promises';
 import { join } from 'path';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import type { ResearchSource } from '../types.js';
@@ -35,7 +35,7 @@ export async function collectLocalRepo(cwd: string, query: string): Promise<Rese
           // Read first 2000 chars for keyword check
           const fileHandle = await getFsImplementation().readFileBytes(fullPath, 2000);
           content = fileHandle.toString('utf-8');
-        } catch (err) {
+        } catch (_err) {
           continue;
         }
 
@@ -55,7 +55,7 @@ export async function collectLocalRepo(cwd: string, query: string): Promise<Rese
         }
 
         if (score > 0) {
-          const relativePath = fullPath.replace(cwd + '/', '');
+          const relativePath = fullPath.replace(`${cwd}/`, '');
           results.push({
             id: `source:repo:${relativePath.replace(/\//g, ':')}`,
             type: 'local_repo',
@@ -63,7 +63,7 @@ export async function collectLocalRepo(cwd: string, query: string): Promise<Rese
             path: relativePath,
             retrievedAt: new Date().toISOString(),
             trust: 'high',
-            excerpt: content.slice(0, 500) + '...',
+            excerpt: `${content.slice(0, 500)}...`,
           });
         }
       }
@@ -73,7 +73,7 @@ export async function collectLocalRepo(cwd: string, query: string): Promise<Rese
   for (const dir of searchDirs) {
     try {
       await scan(dir);
-    } catch (err) {
+    } catch (_err) {
       // Ignore
     }
   }

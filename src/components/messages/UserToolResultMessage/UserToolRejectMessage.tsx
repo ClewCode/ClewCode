@@ -29,7 +29,7 @@ export function UserToolRejectMessage({
   const { columns } = useTerminalSize();
   const [theme] = useTheme();
 
-  if (!tool || !tool.renderToolUseRejectedMessage) {
+  if (!tool?.renderToolUseRejectedMessage) {
     return <FallbackToolUseRejectedMessage />;
   }
 

@@ -1140,7 +1140,7 @@ export async function performMCPOAuthFlow(
           : {}),
       });
     } else {
-      throw new Error('Unexpected auth result: ' + result);
+      throw new Error(`Unexpected auth result: ${result}`);
     }
   } catch (error) {
     logMCPDebug(serverName, `Error during auth completion: ${error}`);
@@ -1493,9 +1493,7 @@ export class ClaudeAuthProvider implements OAuthClientProvider {
     // token doesn't have the requested scope, omit refresh_token below so the
     // SDK skips refresh and falls through to the PKCE flow.
     const currentScopes = tokenData.scope?.split(' ') ?? [];
-    const needsStepUp =
-      this._pendingStepUpScope !== undefined &&
-      this._pendingStepUpScope.split(' ').some(s => !currentScopes.includes(s));
+    const needsStepUp = this._pendingStepUpScope?.split(' ').some(s => !currentScopes.includes(s));
     if (needsStepUp) {
       logMCPDebug(this.serverName, `Step-up pending (${this._pendingStepUpScope}), omitting refresh_token`);
     }

@@ -119,7 +119,7 @@ export const FAST_MODE_MODEL_DISPLAY = 'Opus 4.7';
 const FAST_MODE_OPUS_4_6_OVERRIDE = isEnvTruthy(process.env.CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE);
 
 export function getFastModeModel(): string {
-  return 'opus' + (isOpus1mMergeEnabled() ? '[1m]' : '');
+  return `opus${isOpus1mMergeEnabled() ? '[1m]' : ''}`;
 }
 
 export function getInitialFastModeSetting(model: ModelSetting): boolean {

@@ -40,7 +40,6 @@ import {
   type ConfigScope,
   type McpHTTPServerConfig,
   type McpJsonConfig,
-  McpJsonConfigSchema,
   type McpServerConfig,
   McpServerConfigSchema,
   type McpSSEServerConfig,
@@ -1262,7 +1261,7 @@ export function parseMcpConfig(params: {
       for (const issue of entryResult.error.issues) {
         errors.push({
           ...(filePath && { file: filePath }),
-          path: `mcpServers.${name}${issue.path.length > 0 ? '.' + issue.path.join('.') : ''}`,
+          path: `mcpServers.${name}${issue.path.length > 0 ? `.${issue.path.join('.')}` : ''}`,
           message:
             issue.message === 'Required'
               ? `Does not adhere to MCP server configuration schema: Missing required field '${issue.path.at(-1) ?? '(root)'}'`

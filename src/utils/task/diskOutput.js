@@ -6,6 +6,7 @@ import { getErrnoCode } from '../errors.js';
 import { readFileRange, tailFile } from '../fsOperations.js';
 import { logError } from '../log.js';
 import { getProjectTempDir } from '../permissions/filesystem.js';
+
 // SECURITY: O_NOFOLLOW prevents following symlinks when opening task output files.
 // Without this, an attacker in the sandbox could create symlinks in the tasks directory
 // pointing to arbitrary files, causing Clew Code on the host to write to those files.
@@ -37,26 +38,26 @@ export const MAX_TASK_OUTPUT_BYTES_DISPLAY = '5GB';
  */
 let _taskOutputDir;
 export function getTaskOutputDir() {
-    if (_taskOutputDir === undefined) {
-        _taskOutputDir = join(getProjectTempDir(), getSessionId(), 'tasks');
-    }
-    return _taskOutputDir;
+  if (_taskOutputDir === undefined) {
+    _taskOutputDir = join(getProjectTempDir(), getSessionId(), 'tasks');
+  }
+  return _taskOutputDir;
 }
 /** Test helper — clears the memoized dir. */
 export function _resetTaskOutputDirForTest() {
-    _taskOutputDir = undefined;
+  _taskOutputDir = undefined;
 }
 /**
  * Ensure the task output directory exists
  */
 async function ensureOutputDir() {
-    await mkdir(getTaskOutputDir(), { recursive: true });
+  await mkdir(getTaskOutputDir(), { recursive: true });
 }
 /**
  * Get the output file path for a task
  */
 export function getTaskOutputPath(taskId) {
-    return join(getTaskOutputDir(), `${taskId}.output`);
+  return join(getTaskOutputDir(), `${taskId}.output`);
 }
 // Tracks fire-and-forget promises (initTaskOutput, initTaskOutputAsSymlink,
 // evictTaskOutput, #drain) so tests can drain before teardown. Prevents the
@@ -66,9 +67,9 @@ export function getTaskOutputPath(taskId) {
 // circuit the drain and leave other ops racing the rmSync.
 const _pendingOps = new Set();
 function track(p) {
-    _pendingOps.add(p);
-    void p.finally(() => _pendingOps.delete(p)).catch(() => { });
-    return p;
+  _pendingOps.add(p);
+  void p.finally(() => _pendingOps.delete(p)).catch(() => {});
+  return p;
 }
 /**
  * Encapsulates async disk writes for a single task's output.
@@ -79,123 +80,122 @@ function track(p) {
  * where every reaction captures its data until the whole chain resolves.
  */
 export class DiskTaskOutput {
-    #path;
-    #fileHandle = null;
-    #queue = [];
-    #bytesWritten = 0;
-    #capped = false;
-    #flushPromise = null;
-    #flushResolve = null;
-    constructor(taskId) {
-        this.#path = getTaskOutputPath(taskId);
+  #path;
+  #fileHandle = null;
+  #queue = [];
+  #bytesWritten = 0;
+  #capped = false;
+  #flushPromise = null;
+  #flushResolve = null;
+  constructor(taskId) {
+    this.#path = getTaskOutputPath(taskId);
+  }
+  append(content) {
+    if (this.#capped) {
+      return;
     }
-    append(content) {
-        if (this.#capped) {
-            return;
-        }
-        // content.length (UTF-16 code units) undercounts UTF-8 bytes by at most ~3×.
-        // Acceptable for a coarse disk-fill guard — avoids re-scanning every chunk.
-        this.#bytesWritten += content.length;
-        if (this.#bytesWritten > MAX_TASK_OUTPUT_BYTES) {
-            this.#capped = true;
-            this.#queue.push(`\n[output truncated: exceeded ${MAX_TASK_OUTPUT_BYTES_DISPLAY} disk cap]\n`);
-        }
-        else {
-            this.#queue.push(content);
-        }
-        if (!this.#flushPromise) {
-            this.#flushPromise = new Promise(resolve => {
-                this.#flushResolve = resolve;
-            });
-            void track(this.#drain());
-        }
+    // content.length (UTF-16 code units) undercounts UTF-8 bytes by at most ~3×.
+    // Acceptable for a coarse disk-fill guard — avoids re-scanning every chunk.
+    this.#bytesWritten += content.length;
+    if (this.#bytesWritten > MAX_TASK_OUTPUT_BYTES) {
+      this.#capped = true;
+      this.#queue.push(`\n[output truncated: exceeded ${MAX_TASK_OUTPUT_BYTES_DISPLAY} disk cap]\n`);
+    } else {
+      this.#queue.push(content);
     }
-    flush() {
-        return this.#flushPromise ?? Promise.resolve();
+    if (!this.#flushPromise) {
+      this.#flushPromise = new Promise(resolve => {
+        this.#flushResolve = resolve;
+      });
+      void track(this.#drain());
     }
-    cancel() {
-        this.#queue.length = 0;
-    }
-    async #drainAllChunks() {
+  }
+  flush() {
+    return this.#flushPromise ?? Promise.resolve();
+  }
+  cancel() {
+    this.#queue.length = 0;
+  }
+  async #drainAllChunks() {
+    while (true) {
+      try {
+        if (!this.#fileHandle) {
+          await ensureOutputDir();
+          this.#fileHandle = await open(
+            this.#path,
+            process.platform === 'win32'
+              ? 'a'
+              : fsConstants.O_WRONLY | fsConstants.O_APPEND | fsConstants.O_CREAT | O_NOFOLLOW,
+          );
+        }
         while (true) {
-            try {
-                if (!this.#fileHandle) {
-                    await ensureOutputDir();
-                    this.#fileHandle = await open(this.#path, process.platform === 'win32'
-                        ? 'a'
-                        : fsConstants.O_WRONLY | fsConstants.O_APPEND | fsConstants.O_CREAT | O_NOFOLLOW);
-                }
-                while (true) {
-                    await this.#writeAllChunks();
-                    if (this.#queue.length === 0) {
-                        break;
-                    }
-                }
-            }
-            finally {
-                if (this.#fileHandle) {
-                    const fileHandle = this.#fileHandle;
-                    this.#fileHandle = null;
-                    await fileHandle.close();
-                }
-            }
-            // you could have another .append() while we're waiting for the file to close, so we check the queue again before fully exiting
-            if (this.#queue.length) {
-                continue;
-            }
+          await this.#writeAllChunks();
+          if (this.#queue.length === 0) {
             break;
+          }
         }
-    }
-    #writeAllChunks() {
-        // This code is extremely precise.
-        // You **must not** add an await here!! That will cause memory to balloon as the queue grows.
-        // It's okay to add an `await` to the caller of this method (e.g. #drainAllChunks) because that won't cause Buffer[] to be kept alive in memory.
-        return this.#fileHandle.appendFile(
-        // This variable needs to get GC'd ASAP.
-        this.#queueToBuffers());
-    }
-    /** Keep this in a separate method so that GC doesn't keep it alive for any longer than it should. */
-    #queueToBuffers() {
-        // Use .splice to in-place mutate the array, informing the GC it can free it.
-        const queue = this.#queue.splice(0, this.#queue.length);
-        let totalLength = 0;
-        for (const str of queue) {
-            totalLength += Buffer.byteLength(str, 'utf8');
+      } finally {
+        if (this.#fileHandle) {
+          const fileHandle = this.#fileHandle;
+          this.#fileHandle = null;
+          await fileHandle.close();
         }
-        const buffer = Buffer.allocUnsafe(totalLength);
-        let offset = 0;
-        for (const str of queue) {
-            offset += buffer.write(str, offset, 'utf8');
-        }
-        return buffer;
+      }
+      // you could have another .append() while we're waiting for the file to close, so we check the queue again before fully exiting
+      if (this.#queue.length) {
+        continue;
+      }
+      break;
     }
-    async #drain() {
+  }
+  #writeAllChunks() {
+    // This code is extremely precise.
+    // You **must not** add an await here!! That will cause memory to balloon as the queue grows.
+    // It's okay to add an `await` to the caller of this method (e.g. #drainAllChunks) because that won't cause Buffer[] to be kept alive in memory.
+    return this.#fileHandle.appendFile(
+      // This variable needs to get GC'd ASAP.
+      this.#queueToBuffers(),
+    );
+  }
+  /** Keep this in a separate method so that GC doesn't keep it alive for any longer than it should. */
+  #queueToBuffers() {
+    // Use .splice to in-place mutate the array, informing the GC it can free it.
+    const queue = this.#queue.splice(0, this.#queue.length);
+    let totalLength = 0;
+    for (const str of queue) {
+      totalLength += Buffer.byteLength(str, 'utf8');
+    }
+    const buffer = Buffer.allocUnsafe(totalLength);
+    let offset = 0;
+    for (const str of queue) {
+      offset += buffer.write(str, offset, 'utf8');
+    }
+    return buffer;
+  }
+  async #drain() {
+    try {
+      await this.#drainAllChunks();
+    } catch (e) {
+      // Transient fs errors (EMFILE on busy CI, EPERM on Windows pending-
+      // delete) previously rode up through `void this.#drain()` as an
+      // unhandled rejection while the flush promise resolved anyway — callers
+      // saw an empty file with no error. Retry once for the transient case
+      // (queue is intact if open() failed), then log and give up.
+      logError(e);
+      if (this.#queue.length > 0) {
         try {
-            await this.#drainAllChunks();
+          await this.#drainAllChunks();
+        } catch (e2) {
+          logError(e2);
         }
-        catch (e) {
-            // Transient fs errors (EMFILE on busy CI, EPERM on Windows pending-
-            // delete) previously rode up through `void this.#drain()` as an
-            // unhandled rejection while the flush promise resolved anyway — callers
-            // saw an empty file with no error. Retry once for the transient case
-            // (queue is intact if open() failed), then log and give up.
-            logError(e);
-            if (this.#queue.length > 0) {
-                try {
-                    await this.#drainAllChunks();
-                }
-                catch (e2) {
-                    logError(e2);
-                }
-            }
-        }
-        finally {
-            const resolve = this.#flushResolve;
-            this.#flushPromise = null;
-            this.#flushResolve = null;
-            resolve();
-        }
+      }
+    } finally {
+      const resolve = this.#flushResolve;
+      this.#flushPromise = null;
+      this.#flushResolve = null;
+      resolve();
     }
+  }
 }
 const outputs = new Map();
 /**
@@ -209,38 +209,38 @@ const outputs = new Map();
  * Call this in afterEach BEFORE rmSync to avoid async-ENOENT-after-teardown.
  */
 export async function _clearOutputsForTest() {
-    for (const output of outputs.values()) {
-        output.cancel();
-    }
-    while (_pendingOps.size > 0) {
-        await Promise.allSettled([..._pendingOps]);
-    }
-    outputs.clear();
+  for (const output of outputs.values()) {
+    output.cancel();
+  }
+  while (_pendingOps.size > 0) {
+    await Promise.allSettled([..._pendingOps]);
+  }
+  outputs.clear();
 }
 function getOrCreateOutput(taskId) {
-    let output = outputs.get(taskId);
-    if (!output) {
-        output = new DiskTaskOutput(taskId);
-        outputs.set(taskId, output);
-    }
-    return output;
+  let output = outputs.get(taskId);
+  if (!output) {
+    output = new DiskTaskOutput(taskId);
+    outputs.set(taskId, output);
+  }
+  return output;
 }
 /**
  * Append output to a task's disk file asynchronously.
  * Creates the file if it doesn't exist.
  */
 export function appendTaskOutput(taskId, content) {
-    getOrCreateOutput(taskId).append(content);
+  getOrCreateOutput(taskId).append(content);
 }
 /**
  * Wait for all pending writes for a task to complete.
  * Useful before reading output to ensure all data is flushed.
  */
 export async function flushTaskOutput(taskId) {
-    const output = outputs.get(taskId);
-    if (output) {
-        await output.flush();
-    }
+  const output = outputs.get(taskId);
+  if (output) {
+    await output.flush();
+  }
 }
 /**
  * Evict a task's DiskTaskOutput from the in-memory map after flushing.
@@ -248,134 +248,137 @@ export async function flushTaskOutput(taskId) {
  * Call this when a task completes and its output has been consumed.
  */
 export function evictTaskOutput(taskId) {
-    return track((async () => {
-        const output = outputs.get(taskId);
-        if (output) {
-            await output.flush();
-            outputs.delete(taskId);
-        }
-    })());
+  return track(
+    (async () => {
+      const output = outputs.get(taskId);
+      if (output) {
+        await output.flush();
+        outputs.delete(taskId);
+      }
+    })(),
+  );
 }
 /**
  * Get delta (new content) since last read.
  * Reads only from the byte offset, up to maxBytes — never loads the full file.
  */
 export async function getTaskOutputDelta(taskId, fromOffset, maxBytes = DEFAULT_MAX_READ_BYTES) {
-    try {
-        const result = await readFileRange(getTaskOutputPath(taskId), fromOffset, maxBytes);
-        if (!result) {
-            return { content: '', newOffset: fromOffset };
-        }
-        return {
-            content: result.content,
-            newOffset: fromOffset + result.bytesRead,
-        };
+  try {
+    const result = await readFileRange(getTaskOutputPath(taskId), fromOffset, maxBytes);
+    if (!result) {
+      return { content: '', newOffset: fromOffset };
     }
-    catch (e) {
-        const code = getErrnoCode(e);
-        if (code === 'ENOENT') {
-            return { content: '', newOffset: fromOffset };
-        }
-        logError(e);
-        return { content: '', newOffset: fromOffset };
+    return {
+      content: result.content,
+      newOffset: fromOffset + result.bytesRead,
+    };
+  } catch (e) {
+    const code = getErrnoCode(e);
+    if (code === 'ENOENT') {
+      return { content: '', newOffset: fromOffset };
     }
+    logError(e);
+    return { content: '', newOffset: fromOffset };
+  }
 }
 /**
  * Get output for a task, reading the tail of the file.
  * Caps at maxBytes to avoid loading multi-GB files into memory.
  */
 export async function getTaskOutput(taskId, maxBytes = DEFAULT_MAX_READ_BYTES) {
-    try {
-        const { content, bytesTotal, bytesRead } = await tailFile(getTaskOutputPath(taskId), maxBytes);
-        if (bytesTotal > bytesRead) {
-            return `[${Math.round((bytesTotal - bytesRead) / 1024)}KB of earlier output omitted]\n${content}`;
-        }
-        return content;
+  try {
+    const { content, bytesTotal, bytesRead } = await tailFile(getTaskOutputPath(taskId), maxBytes);
+    if (bytesTotal > bytesRead) {
+      return `[${Math.round((bytesTotal - bytesRead) / 1024)}KB of earlier output omitted]\n${content}`;
     }
-    catch (e) {
-        const code = getErrnoCode(e);
-        if (code === 'ENOENT') {
-            return '';
-        }
-        logError(e);
-        return '';
+    return content;
+  } catch (e) {
+    const code = getErrnoCode(e);
+    if (code === 'ENOENT') {
+      return '';
     }
+    logError(e);
+    return '';
+  }
 }
 /**
  * Get the current size (offset) of a task's output file.
  */
 export async function getTaskOutputSize(taskId) {
-    try {
-        return (await stat(getTaskOutputPath(taskId))).size;
+  try {
+    return (await stat(getTaskOutputPath(taskId))).size;
+  } catch (e) {
+    const code = getErrnoCode(e);
+    if (code === 'ENOENT') {
+      return 0;
     }
-    catch (e) {
-        const code = getErrnoCode(e);
-        if (code === 'ENOENT') {
-            return 0;
-        }
-        logError(e);
-        return 0;
-    }
+    logError(e);
+    return 0;
+  }
 }
 /**
  * Clean up a task's output file and write queue.
  */
 export async function cleanupTaskOutput(taskId) {
-    const output = outputs.get(taskId);
-    if (output) {
-        output.cancel();
-        outputs.delete(taskId);
+  const output = outputs.get(taskId);
+  if (output) {
+    output.cancel();
+    outputs.delete(taskId);
+  }
+  try {
+    await unlink(getTaskOutputPath(taskId));
+  } catch (e) {
+    const code = getErrnoCode(e);
+    if (code === 'ENOENT') {
+      return;
     }
-    try {
-        await unlink(getTaskOutputPath(taskId));
-    }
-    catch (e) {
-        const code = getErrnoCode(e);
-        if (code === 'ENOENT') {
-            return;
-        }
-        logError(e);
-    }
+    logError(e);
+  }
 }
 /**
  * Initialize output file for a new task.
  * Creates an empty file to ensure the path exists.
  */
 export function initTaskOutput(taskId) {
-    return track((async () => {
-        await ensureOutputDir();
-        const outputPath = getTaskOutputPath(taskId);
-        // SECURITY: O_NOFOLLOW prevents symlink-following attacks from the sandbox.
-        // O_EXCL ensures we create a new file and fail if something already exists at this path.
-        // On Windows, use string flags — numeric O_EXCL can produce EINVAL through libuv.
-        const fh = await open(outputPath, process.platform === 'win32'
-            ? 'wx'
-            : fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL | O_NOFOLLOW);
-        await fh.close();
-        return outputPath;
-    })());
+  return track(
+    (async () => {
+      await ensureOutputDir();
+      const outputPath = getTaskOutputPath(taskId);
+      // SECURITY: O_NOFOLLOW prevents symlink-following attacks from the sandbox.
+      // O_EXCL ensures we create a new file and fail if something already exists at this path.
+      // On Windows, use string flags — numeric O_EXCL can produce EINVAL through libuv.
+      const fh = await open(
+        outputPath,
+        process.platform === 'win32'
+          ? 'wx'
+          : fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL | O_NOFOLLOW,
+      );
+      await fh.close();
+      return outputPath;
+    })(),
+  );
 }
 /**
  * Initialize output file as a symlink to another file (e.g., agent transcript).
  * Tries to create the symlink first; if a file already exists, removes it and retries.
  */
 export function initTaskOutputAsSymlink(taskId, targetPath) {
-    return track((async () => {
+  return track(
+    (async () => {
+      try {
+        await ensureOutputDir();
+        const outputPath = getTaskOutputPath(taskId);
         try {
-            await ensureOutputDir();
-            const outputPath = getTaskOutputPath(taskId);
-            try {
-                await symlink(targetPath, outputPath);
-            }
-            catch {
-                await unlink(outputPath);
-                await symlink(targetPath, outputPath);
-            }
-            return outputPath;
+          await symlink(targetPath, outputPath);
+        } catch {
+          await unlink(outputPath);
+          await symlink(targetPath, outputPath);
         }
-        catch (error) {
-            logError(error);
-            return initTaskOutput(taskId);
-        }
-    })());
+        return outputPath;
+      } catch (error) {
+        logError(error);
+        return initTaskOutput(taskId);
+      }
+    })(),
+  );
 }

@@ -49,5 +49,5 @@ export function useQueueProcessor({
     // guard above returns early. handlePromptSubmit's finally releases the
     // reservation via cancelReservation() (no-op if onQuery already ran end()).
     processQueueIfReady({ executeInput: executeQueuedInput });
-  }, [queueSnapshot, isQueryActive, executeQueuedInput, hasActiveLocalJsxUI, queryGuard]);
+  }, [queueSnapshot, isQueryActive, executeQueuedInput, hasActiveLocalJsxUI]);
 }

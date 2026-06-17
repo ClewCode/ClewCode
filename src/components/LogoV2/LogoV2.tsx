@@ -1,6 +1,4 @@
 import { feature } from 'bun:bundle';
-// biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
-import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { c as _c } from 'react/compiler-runtime';
 import { getDumpPromptsPath } from 'src/services/api/dumpPrompts.js';
@@ -62,7 +60,6 @@ import { useMainLoopModel } from '../../hooks/useMainLoopModel.js';
 import { useAppState } from '../../state/AppState.js';
 import { getEffortSuffix } from '../../utils/effort.js';
 import { renderModelSetting } from '../../utils/model/model.js';
-import { plural } from '../../utils/stringUtils.js';
 import { incrementGuestPassesSeenCount, useShowGuestPassesUpsell } from './GuestPassesUpsell.js';
 import {
   createOverageCreditFeed,

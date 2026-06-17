@@ -63,7 +63,7 @@ export function getDumpPromptsPath(agentIdOrSessionId?: string): string {
 function appendToFile(filePath: string, entries: string[]): void {
   if (entries.length === 0) return;
   fs.mkdir(dirname(filePath), { recursive: true })
-    .then(() => fs.appendFile(filePath, entries.join('\n') + '\n'))
+    .then(() => fs.appendFile(filePath, `${entries.join('\n')}\n`))
     .catch(() => {});
 }
 
@@ -189,7 +189,7 @@ export function createDumpPromptsFetch(agentIdOrSessionId: string): ClientOption
             data = await cloned.json();
           }
 
-          await fs.appendFile(filePath, jsonStringify({ type: 'response', timestamp, data }) + '\n');
+          await fs.appendFile(filePath, `${jsonStringify({ type: 'response', timestamp, data })}\n`);
         } catch {
           // Best effort
         }

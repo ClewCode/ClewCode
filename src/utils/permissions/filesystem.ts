@@ -29,7 +29,7 @@ import { getSettingsFilePathForSource, getSettingsRootPathForSource } from '../s
 import { containsVulnerableUncPath } from '../shell/readOnlyCommandValidation.js';
 import { getToolResultsDir } from '../toolResultStorage.js';
 import { windowsPathToPosixPath } from '../windowsPaths.js';
-import type { PermissionDecision, PermissionResult } from './PermissionResult.js';
+import type { PermissionResult } from './PermissionResult.js';
 import type { PermissionRule, PermissionRuleSource } from './PermissionRule.js';
 import { createReadRuleSuggestion } from './PermissionUpdate.js';
 import type { PermissionUpdate } from './PermissionUpdateSchema.js';
@@ -123,7 +123,7 @@ export function getClaudeSkillScope(filePath: string): { skillName: string; patt
         // produce '/.claude/skills/*/**' which matches ALL skills. Return null
         // to fall through to generateSuggestions() instead.
         if (/[*?[\]]/.test(skillName)) return null;
-        return { skillName, pattern: prefix + skillName + '/**' };
+        return { skillName, pattern: `${prefix + skillName}/**` };
       }
     }
   }
@@ -919,7 +919,7 @@ export function matchingRuleForInput(
       const originalPattern = igResult.rule.pattern;
 
       // Check if this was a /** pattern we simplified
-      const withWildcard = originalPattern + '/**';
+      const withWildcard = `${originalPattern}/**`;
       if (patternMap.has(withWildcard)) {
         return patternMap.get(withWildcard) ?? null;
       }

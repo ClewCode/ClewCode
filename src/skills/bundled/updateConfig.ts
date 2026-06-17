@@ -471,7 +471,7 @@ export function registerUpdateConfigSkill(): void {
     async getPromptForCommand(args) {
       if (args.startsWith('[hooks-only]')) {
         const req = args.slice('[hooks-only]'.length).trim();
-        let prompt = HOOKS_DOCS + '\n\n' + HOOK_VERIFICATION_FLOW;
+        let prompt = `${HOOKS_DOCS}\n\n${HOOK_VERIFICATION_FLOW}`;
         if (req) {
           prompt += `\n\n## Task\n\n${req}`;
         }

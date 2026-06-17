@@ -7,11 +7,12 @@
  * simplified text output.
  */
 
-import { isLegacyConsole, supportsAnsiEscapeSequences } from '../utils/windowsTerminal.js';
+import { isLegacyConsole } from '../utils/windowsTerminal.js';
 
 // Regex matching common ANSI escape sequences
 // Matches: colors (SGR), cursor movement, erase, scroll, DEC sequences, OSC sequences
-const ANSI_ESCAPE_REGEX = /\u001B\[[\d;]*[a-zA-Z]|\u001B\][\d;]*[^\u0007\u001B]*(\u0007|\u001B\\)|\u001B[PX^_].*?\u001B\\/g;
+const ANSI_ESCAPE_REGEX =
+  /\u001B\[[\d;]*[a-zA-Z]|\u001B\][\d;]*[^\u0007\u001B]*(\u0007|\u001B\\)|\u001B[PX^_].*?\u001B\\/g;
 
 // SGR (Select Graphic Rendition) sequences that set text styles — these are
 // SAFE to preserve on most terminals. Matches \e[<params>m sequences.

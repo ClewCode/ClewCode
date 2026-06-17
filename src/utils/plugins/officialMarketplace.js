@@ -10,8 +10,8 @@
  * Used when auto-installing the marketplace on startup.
  */
 export const OFFICIAL_MARKETPLACE_SOURCE = {
-    source: 'github',
-    repo: 'anthropics/claude-plugins-official',
+  source: 'github',
+  repo: 'anthropics/claude-plugins-official',
 };
 /**
  * Display name for the official marketplace.

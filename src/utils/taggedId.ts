@@ -37,7 +37,7 @@ function uuidToBigInt(uuid: string): bigint {
   if (hex.length !== 32) {
     throw new Error(`Invalid UUID hex length: ${hex.length}`);
   }
-  return BigInt('0x' + hex);
+  return BigInt(`0x${hex}`);
 }
 
 /**

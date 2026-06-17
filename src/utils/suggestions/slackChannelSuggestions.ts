@@ -26,7 +26,7 @@ function findSlackClient(clients: MCPServerConnection[]): MCPServerConnection | 
 
 async function fetchChannels(clients: MCPServerConnection[], query: string): Promise<string[]> {
   const slackClient = findSlackClient(clients);
-  if (!slackClient || slackClient.type !== 'connected') {
+  if (slackClient?.type !== 'connected') {
     return [];
   }
 

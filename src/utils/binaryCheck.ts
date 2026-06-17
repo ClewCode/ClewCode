@@ -13,7 +13,7 @@ const binaryCache = new Map<string, boolean>();
  */
 export async function isBinaryInstalled(command: string): Promise<boolean> {
   // Edge case: empty or whitespace-only command
-  if (!command || !command.trim()) {
+  if (!command?.trim()) {
     logForDebugging('[binaryCheck] Empty command provided, returning false');
     return false;
   }

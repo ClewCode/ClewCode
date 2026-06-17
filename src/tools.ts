@@ -64,7 +64,6 @@ const getWorkflowTool = () => {
 import { TaskOutputTool } from './tools/TaskOutputTool/TaskOutputTool.js';
 import { WebSearchTool } from './tools/WebSearchTool/WebSearchTool.js';
 import { WebFetchTool } from './tools/WebFetchTool/WebFetchTool.js';
-import { MultiSearchTool } from './tools/MultiSearchTool/MultiSearchTool.js';
 import { JsonPathTool } from './tools/JsonPathTool/JsonPathTool.js';
 import { TodoWriteTool } from './tools/TodoWriteTool/TodoWriteTool.js';
 import { ExitPlanModeV2Tool } from './tools/ExitPlanModeTool/ExitPlanModeV2Tool.js';
@@ -94,7 +93,6 @@ import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.j
 import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { ProcessPeerTool } from './tools/ProcessPeerTool/ProcessPeerTool.js';
-import { CodexPeerTool } from './tools/CodexPeerTool/CodexPeerTool.js';
 import { GenerateImageTool } from './tools/GenerateImageTool/GenerateImageTool.js';
 import { GenerateVideoTool } from './tools/GenerateVideoTool/GenerateVideoTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
@@ -128,7 +126,7 @@ export {
 } from './constants/tools.js';
 import { feature } from 'bun:bundle';
 
-const CODE_INDEX_FEATURE = 'CODE_INDEX';
+const _CODE_INDEX_FEATURE = 'CODE_INDEX';
 
 import type { ToolPermissionContext } from './Tool.js';
 import { getDenyRuleForTool } from './utils/permissions/permissions.js';
@@ -175,7 +173,7 @@ export function getToolsForDefaultPreset(): string[] {
 
 export function getAllBaseTools(): Tools {
   const replTool = getREPLTool();
-const sleepTool = getSleepTool();
+  const sleepTool = getSleepTool();
   const cronTools = getCronTools();
   const remoteTriggerTool = getRemoteTriggerTool();
   const monitorTool = getMonitorTool();
@@ -213,7 +211,7 @@ const sleepTool = getSleepTool();
     EnterPlanModeTool,
     ...(process.env.USER_TYPE === 'ant' ? [ConfigTool] : []),
     ...(process.env.USER_TYPE === 'ant' ? [TungstenTool] : []),
-...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
+    ...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
     ...(GenerateImageTool.isEnabled() ? [GenerateImageTool] : []),
     ...(GenerateVideoTool.isEnabled() ? [GenerateVideoTool] : []),
     GoalTool,

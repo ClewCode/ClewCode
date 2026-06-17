@@ -10,12 +10,13 @@
  */
 import { dirname, join } from 'path';
 import { getSessionId } from 'src/bootstrap/state.js';
-import { logEvent, } from '../services/analytics/index.js';
+import { logEvent } from '../services/analytics/index.js';
 import { logForDebugging } from './debug.js';
 import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { getFsImplementation } from './fsOperations.js';
 import { formatMs, formatTimelineLine, getPerformance } from './profilerBase.js';
 import { writeFileSync_DEPRECATED } from './slowOperations.js';
+
 // Module-level state - decided once at module load
 // eslint-disable-next-line custom-rules/no-process-env-top-level
 const DETAILED_PROFILING = isEnvTruthy(process.env.CLAUDE_CODE_PROFILE_STARTUP);
@@ -37,113 +38,109 @@ const SHOULD_PROFILE = DETAILED_PROFILING || STATSIG_LOGGING_SAMPLED;
 const memorySnapshots = [];
 // Phase definitions for Statsig logging: [startCheckpoint, endCheckpoint]
 const PHASE_DEFINITIONS = {
-    import_time: ['cli_entry', 'main_tsx_imports_loaded'],
-    init_time: ['init_function_start', 'init_function_end'],
-    settings_time: ['eagerLoadSettings_start', 'eagerLoadSettings_end'],
-    total_time: ['cli_entry', 'main_after_run'],
+  import_time: ['cli_entry', 'main_tsx_imports_loaded'],
+  init_time: ['init_function_start', 'init_function_end'],
+  settings_time: ['eagerLoadSettings_start', 'eagerLoadSettings_end'],
+  total_time: ['cli_entry', 'main_after_run'],
 };
 // Record initial checkpoint if profiling is enabled
 if (SHOULD_PROFILE) {
-    // eslint-disable-next-line custom-rules/no-top-level-side-effects
-    profileCheckpoint('profiler_initialized');
+  // eslint-disable-next-line custom-rules/no-top-level-side-effects
+  profileCheckpoint('profiler_initialized');
 }
 /**
  * Record a checkpoint with the given name
  */
 export function profileCheckpoint(name) {
-    if (!SHOULD_PROFILE)
-        return;
-    const perf = getPerformance();
-    perf.mark(name);
-    // Only capture memory when detailed profiling enabled (env var)
-    if (DETAILED_PROFILING) {
-        memorySnapshots.push(process.memoryUsage());
-    }
+  if (!SHOULD_PROFILE) return;
+  const perf = getPerformance();
+  perf.mark(name);
+  // Only capture memory when detailed profiling enabled (env var)
+  if (DETAILED_PROFILING) {
+    memorySnapshots.push(process.memoryUsage());
+  }
 }
 /**
  * Get a formatted report of all checkpoints
  * Only available when DETAILED_PROFILING is enabled
  */
 function getReport() {
-    if (!DETAILED_PROFILING) {
-        return 'Startup profiling not enabled';
-    }
-    const perf = getPerformance();
-    const marks = perf.getEntriesByType('mark');
-    if (marks.length === 0) {
-        return 'No profiling checkpoints recorded';
-    }
-    const lines = [];
-    lines.push('='.repeat(80));
-    lines.push('STARTUP PROFILING REPORT');
-    lines.push('='.repeat(80));
-    lines.push('');
-    let prevTime = 0;
-    for (const [i, mark] of marks.entries()) {
-        lines.push(formatTimelineLine(mark.startTime, mark.startTime - prevTime, mark.name, memorySnapshots[i], 8, 7));
-        prevTime = mark.startTime;
-    }
-    const lastMark = marks[marks.length - 1];
-    lines.push('');
-    lines.push(`Total startup time: ${formatMs(lastMark?.startTime ?? 0)}ms`);
-    lines.push('='.repeat(80));
-    return lines.join('\n');
+  if (!DETAILED_PROFILING) {
+    return 'Startup profiling not enabled';
+  }
+  const perf = getPerformance();
+  const marks = perf.getEntriesByType('mark');
+  if (marks.length === 0) {
+    return 'No profiling checkpoints recorded';
+  }
+  const lines = [];
+  lines.push('='.repeat(80));
+  lines.push('STARTUP PROFILING REPORT');
+  lines.push('='.repeat(80));
+  lines.push('');
+  let prevTime = 0;
+  for (const [i, mark] of marks.entries()) {
+    lines.push(formatTimelineLine(mark.startTime, mark.startTime - prevTime, mark.name, memorySnapshots[i], 8, 7));
+    prevTime = mark.startTime;
+  }
+  const lastMark = marks[marks.length - 1];
+  lines.push('');
+  lines.push(`Total startup time: ${formatMs(lastMark?.startTime ?? 0)}ms`);
+  lines.push('='.repeat(80));
+  return lines.join('\n');
 }
 let reported = false;
 export function profileReport() {
-    if (reported)
-        return;
-    reported = true;
-    // Log to Statsig (sampled: 100% ant, 0.1% external)
-    logStartupPerf();
-    // Output detailed report if CLAUDE_CODE_PROFILE_STARTUP=1
-    if (DETAILED_PROFILING) {
-        // Write to file
-        const path = getStartupPerfLogPath();
-        const dir = dirname(path);
-        const fs = getFsImplementation();
-        fs.mkdirSync(dir);
-        writeFileSync_DEPRECATED(path, getReport(), {
-            encoding: 'utf8',
-            flush: true,
-        });
-        logForDebugging('Startup profiling report:');
-        logForDebugging(getReport());
-    }
+  if (reported) return;
+  reported = true;
+  // Log to Statsig (sampled: 100% ant, 0.1% external)
+  logStartupPerf();
+  // Output detailed report if CLAUDE_CODE_PROFILE_STARTUP=1
+  if (DETAILED_PROFILING) {
+    // Write to file
+    const path = getStartupPerfLogPath();
+    const dir = dirname(path);
+    const fs = getFsImplementation();
+    fs.mkdirSync(dir);
+    writeFileSync_DEPRECATED(path, getReport(), {
+      encoding: 'utf8',
+      flush: true,
+    });
+    logForDebugging('Startup profiling report:');
+    logForDebugging(getReport());
+  }
 }
 export function isDetailedProfilingEnabled() {
-    return DETAILED_PROFILING;
+  return DETAILED_PROFILING;
 }
 export function getStartupPerfLogPath() {
-    return join(getClaudeConfigHomeDir(), 'startup-perf', `${getSessionId()}.txt`);
+  return join(getClaudeConfigHomeDir(), 'startup-perf', `${getSessionId()}.txt`);
 }
 /**
  * Log startup performance phases to Statsig.
  * Only logs if this session was sampled at startup.
  */
 export function logStartupPerf() {
-    // Only log if we were sampled (decision made at module load)
-    if (!STATSIG_LOGGING_SAMPLED)
-        return;
-    const perf = getPerformance();
-    const marks = perf.getEntriesByType('mark');
-    if (marks.length === 0)
-        return;
-    // Build checkpoint lookup
-    const checkpointTimes = new Map();
-    for (const mark of marks) {
-        checkpointTimes.set(mark.name, mark.startTime);
+  // Only log if we were sampled (decision made at module load)
+  if (!STATSIG_LOGGING_SAMPLED) return;
+  const perf = getPerformance();
+  const marks = perf.getEntriesByType('mark');
+  if (marks.length === 0) return;
+  // Build checkpoint lookup
+  const checkpointTimes = new Map();
+  for (const mark of marks) {
+    checkpointTimes.set(mark.name, mark.startTime);
+  }
+  // Compute phase durations
+  const metadata = {};
+  for (const [phaseName, [startCheckpoint, endCheckpoint]] of Object.entries(PHASE_DEFINITIONS)) {
+    const startTime = checkpointTimes.get(startCheckpoint);
+    const endTime = checkpointTimes.get(endCheckpoint);
+    if (startTime !== undefined && endTime !== undefined) {
+      metadata[`${phaseName}_ms`] = Math.round(endTime - startTime);
     }
-    // Compute phase durations
-    const metadata = {};
-    for (const [phaseName, [startCheckpoint, endCheckpoint]] of Object.entries(PHASE_DEFINITIONS)) {
-        const startTime = checkpointTimes.get(startCheckpoint);
-        const endTime = checkpointTimes.get(endCheckpoint);
-        if (startTime !== undefined && endTime !== undefined) {
-            metadata[`${phaseName}_ms`] = Math.round(endTime - startTime);
-        }
-    }
-    // Add checkpoint count for debugging
-    metadata.checkpoint_count = marks.length;
-    logEvent('tengu_startup_perf', metadata);
+  }
+  // Add checkpoint count for debugging
+  metadata.checkpoint_count = marks.length;
+  logEvent('tengu_startup_perf', metadata);
 }

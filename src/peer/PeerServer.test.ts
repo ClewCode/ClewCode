@@ -1,12 +1,28 @@
-import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
-import { PeerServer, getGlobalPeerServer } from './PeerServer.js';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { getGlobalPeerServer, PeerServer } from './PeerServer.js';
 
-function mi(o) { return { id:'tp', hostname:'th', ip:'127.0.0.1', port:0, cwd:'/r', version:'t', lastSeen:Date.now(), status:'online', ...o }; }
+function mi(o) {
+  return {
+    id: 'tp',
+    hostname: 'th',
+    ip: '127.0.0.1',
+    port: 0,
+    cwd: '/r',
+    version: 't',
+    lastSeen: Date.now(),
+    status: 'online',
+    ...o,
+  };
+}
 
 describe('PeerServer', () => {
   let server;
-  beforeEach(() => { server = new PeerServer(); });
-  afterEach(() => { server.stop(); });
+  beforeEach(() => {
+    server = new PeerServer();
+  });
+  afterEach(() => {
+    server.stop();
+  });
 
   test('constructor creates instance', () => {
     expect(server).toBeInstanceOf(PeerServer);
@@ -36,7 +52,7 @@ describe('PeerServer', () => {
 
   test('getTodos empty, updateTodoStatus false for unknown', () => {
     expect(server.getTodos()).toEqual([]);
-    expect(server.updateTodoStatus('x','done')).toBeFalse();
+    expect(server.updateTodoStatus('x', 'done')).toBeFalse();
   });
 
   test('start returns port', async () => {
@@ -64,7 +80,7 @@ describe('PeerServer', () => {
   });
 
   test('GET /peer-info', async () => {
-    const port = await server.start(mi({ id:'info-test' }));
+    const port = await server.start(mi({ id: 'info-test' }));
     const r = await fetch(`http://127.0.0.1:${port}/peer-info`);
     expect(r.status).toBe(200);
     const d = await r.json();
@@ -74,10 +90,15 @@ describe('PeerServer', () => {
 
   test('POST /peer-msg fires callback', async () => {
     let m = null;
-    server.setCallbacks({ onMessage: msg => { m = msg; } });
+    server.setCallbacks({
+      onMessage: msg => {
+        m = msg;
+      },
+    });
     const port = await server.start(mi());
     const r = await fetch(`http://127.0.0.1:${port}/peer-msg`, {
-      method:'POST', body: JSON.stringify({ from:'p2', text:'hello' }),
+      method: 'POST',
+      body: JSON.stringify({ from: 'p2', text: 'hello' }),
     });
     expect(r.status).toBe(200);
     expect((await r.json()).ok).toBeTrue();
@@ -86,28 +107,42 @@ describe('PeerServer', () => {
 
   test('POST /peer-msg chunk info', async () => {
     let m = null;
-    server.setCallbacks({ onMessage: msg => { m = msg; } });
+    server.setCallbacks({
+      onMessage: msg => {
+        m = msg;
+      },
+    });
     const port = await server.start(mi());
     await fetch(`http://127.0.0.1:${port}/peer-msg`, {
-      method:'POST', body: JSON.stringify({ from:'p2', chunkGroup:'g1', chunkIndex:0 }),
+      method: 'POST',
+      body: JSON.stringify({ from: 'p2', chunkGroup: 'g1', chunkIndex: 0 }),
     });
     expect(m.chunkGroup).toBe('g1');
   });
 
   test('POST /peer-msg defaults', async () => {
     let m = null;
-    server.setCallbacks({ onMessage: msg => { m = msg; } });
+    server.setCallbacks({
+      onMessage: msg => {
+        m = msg;
+      },
+    });
     const port = await server.start(mi());
-    await fetch(`http://127.0.0.1:${port}/peer-msg`, { method:'POST', body: JSON.stringify({}) });
+    await fetch(`http://127.0.0.1:${port}/peer-msg`, { method: 'POST', body: JSON.stringify({}) });
     expect(m.from).toBe('unknown');
   });
 
   test('POST /peer-todo fires callback and returns ok', async () => {
     let t = null;
-    server.setCallbacks({ onTodo: todo => { t = todo; } });
+    server.setCallbacks({
+      onTodo: todo => {
+        t = todo;
+      },
+    });
     const port = await server.start(mi());
     const r = await fetch(`http://127.0.0.1:${port}/peer-todo`, {
-      method:'POST', body: JSON.stringify({ from:'p2', fromName:'P2', message:'do it' }),
+      method: 'POST',
+      body: JSON.stringify({ from: 'p2', fromName: 'P2', message: 'do it' }),
     });
     expect(r.status).toBe(200);
     const body = await r.json();
@@ -119,17 +154,24 @@ describe('PeerServer', () => {
   test('POST /peer-exec without onExec returns 501', async () => {
     const port = await server.start(mi());
     const r = await fetch(`http://127.0.0.1:${port}/peer-exec`, {
-      method:'POST', body: JSON.stringify({ command:'echo x', from:'t' }),
+      method: 'POST',
+      body: JSON.stringify({ command: 'echo x', from: 't' }),
     });
     expect(r.status).toBe(501);
   });
 
   test('POST /peer-exec with onExec runs command', async () => {
     let cmd = '';
-    server.setCallbacks({ onExec: async c => { cmd = c; return { stdout:c, stderr:'', exitCode:0 }; } });
+    server.setCallbacks({
+      onExec: async c => {
+        cmd = c;
+        return { stdout: c, stderr: '', exitCode: 0 };
+      },
+    });
     const port = await server.start(mi());
     const r = await fetch(`http://127.0.0.1:${port}/peer-exec`, {
-      method:'POST', body: JSON.stringify({ command:'echo hi', from:'t', fromName:'T' }),
+      method: 'POST',
+      body: JSON.stringify({ command: 'echo hi', from: 't', fromName: 'T' }),
     });
     expect(r.status).toBe(200);
     const body = await r.json();
@@ -149,14 +191,15 @@ describe('PeerServer', () => {
   test('POST /peer-queue-cancel returns 404 for unknown task', async () => {
     const port = await server.start(mi());
     const r = await fetch(`http://127.0.0.1:${port}/peer-queue-cancel`, {
-      method:'POST', body: JSON.stringify({ id:'nope' }),
+      method: 'POST',
+      body: JSON.stringify({ id: 'nope' }),
     });
     expect(r.status).toBe(404);
   });
 
   test('POST /peer-queue-cancel-all clears empty queue', async () => {
     const port = await server.start(mi());
-    const r = await fetch(`http://127.0.0.1:${port}/peer-queue-cancel-all`, { method:'POST' });
+    const r = await fetch(`http://127.0.0.1:${port}/peer-queue-cancel-all`, { method: 'POST' });
     expect(r.status).toBe(200);
     const body = await r.json();
     expect(body.ok).toBeTrue();
@@ -188,8 +231,8 @@ describe('PeerServer', () => {
   });
 
   test('updatePeerInfo patches stored info', async () => {
-    const port = await server.start(mi({ hostname:'old' }));
-    server.updatePeerInfo({ hostname:'new-name' });
+    const port = await server.start(mi({ hostname: 'old' }));
+    server.updatePeerInfo({ hostname: 'new-name' });
     const r = await fetch(`http://127.0.0.1:${port}/peer-info`);
     const body = await r.json();
     expect(body.hostname).toBe('new-name');
@@ -198,7 +241,8 @@ describe('PeerServer', () => {
   test('todo lifecycle — add via HTTP then update', async () => {
     const port = await server.start(mi());
     await fetch(`http://127.0.0.1:${port}/peer-todo`, {
-      method:'POST', body: JSON.stringify({ from:'t', fromName:'T', message:'task' }),
+      method: 'POST',
+      body: JSON.stringify({ from: 't', fromName: 'T', message: 'task' }),
     });
     expect(server.getTodos()).toHaveLength(1);
     const id = server.getTodos()[0]!.id;
@@ -209,15 +253,21 @@ describe('PeerServer', () => {
   test('isBusy reflects running exec', async () => {
     let resolve: (v: any) => void;
     server.setCallbacks({
-      onExec: async () => { await new Promise(r => { resolve = r; }); return { stdout:'', stderr:'', exitCode:0 }; },
+      onExec: async () => {
+        await new Promise(r => {
+          resolve = r;
+        });
+        return { stdout: '', stderr: '', exitCode: 0 };
+      },
     });
     const port = await server.start(mi());
     const p = fetch(`http://127.0.0.1:${port}/peer-exec`, {
-      method:'POST', body: JSON.stringify({ command:'slow', from:'t', fromName:'T' }),
+      method: 'POST',
+      body: JSON.stringify({ command: 'slow', from: 't', fromName: 'T' }),
     });
     await new Promise(r => setTimeout(r, 50));
     expect(server.isBusy).toBeTrue();
-    resolve!({ stdout:'', stderr:'', exitCode:0 });
+    resolve!({ stdout: '', stderr: '', exitCode: 0 });
     await p;
     await new Promise(r => setTimeout(r, 50));
     expect(server.isBusy).toBeFalse();

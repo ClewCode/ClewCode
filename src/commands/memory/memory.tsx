@@ -101,7 +101,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
   const subcommand = argv[0]?.toLowerCase();
 
   if (subcommand) {
-    const fsImpl = getFsImplementation();
+    const _fsImpl = getFsImplementation();
     const config = getDefaultConfig(cwd);
 
     switch (subcommand) {
@@ -308,7 +308,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
               '',
               density.byDay.length > 0 ? '### Activity (last 30 days)' : '',
               ...density.byDay.map(d => `  ${d.date}: ${'█'.repeat(Math.min(d.count, 20))} ${d.count}`),
-            ].filter(Boolean).join('\n'),
+            ]
+              .filter(Boolean)
+              .join('\n'),
             { display: 'system' },
           );
         } catch (err: any) {
@@ -379,8 +381,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
       case 'preview':
       case 'consolidate': {
         try {
-          const { previewConsolidation, getConsolidationCandidates } =
-            await import('../../services/longTermMemory/consolidate.js');
+          const { previewConsolidation, getConsolidationCandidates } = await import(
+            '../../services/longTermMemory/consolidate.js'
+          );
           if (subcommand === 'preview') {
             onDone(previewConsolidation(cwd), { display: 'system' });
           } else {

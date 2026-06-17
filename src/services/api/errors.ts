@@ -491,7 +491,7 @@ export function getAssistantMessageFromError(
       }
     }
 
-    const provider = getAPIProvider();
+    const _provider = getAPIProvider();
     // @[MULTI_PROVIDER] Rate limit hints for different providers.
     // Non-Anthropic providers (OpenAI, Google, etc.) need their own status pages.
     const retryHint = getProviderStatusHint();
@@ -973,7 +973,7 @@ export function getProviderRetryAfterMs(error: unknown): number | null {
     const retryAfter = error.headers?.get?.('retry-after');
     if (retryAfter) {
       const seconds = parseFloat(retryAfter);
-      if (!isNaN(seconds)) return seconds * 1000;
+      if (!Number.isNaN(seconds)) return seconds * 1000;
     }
   }
 

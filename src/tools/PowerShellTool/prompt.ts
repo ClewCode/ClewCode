@@ -117,7 +117,7 @@ Usage notes:
   - You can specify an optional timeout in milliseconds (up to ${getMaxTimeoutMs()}ms / ${getMaxTimeoutMs() / 60000} minutes). If not specified, commands will timeout after ${getDefaultTimeoutMs()}ms (${getDefaultTimeoutMs() / 60000} minutes).
   - It is very helpful if you write a clear, concise description of what this command does.
   - If the output exceeds ${getMaxOutputLength()} characters, output will be truncated before being returned to you.
-${backgroundNote ? backgroundNote + '\n' : ''}\
+${backgroundNote ? `${backgroundNote}\n` : ''}\
   - Avoid using PowerShell to run commands that have dedicated tools, unless explicitly instructed:
     - File search: Use ${GLOB_TOOL_NAME} (NOT Get-ChildItem -Recurse)
     - Content search: Use ${GREP_TOOL_NAME} (NOT Select-String)
@@ -131,7 +131,7 @@ ${backgroundNote ? backgroundNote + '\n' : ''}\
     - Use \`;\` only when you need to run commands sequentially but don't care if earlier commands fail.
     - DO NOT use newlines to separate commands (newlines are ok in quoted strings and here-strings)
   - Do NOT prefix commands with \`cd\` or \`Set-Location\` -- the working directory is already set to the correct project directory automatically.
-${sleepGuidance ? sleepGuidance + '\n' : ''}\
+${sleepGuidance ? `${sleepGuidance}\n` : ''}\
   - For git commands:
     - Prefer to create a new commit rather than amending an existing commit.
     - Before running destructive operations (e.g., git reset --hard, git push --force, git checkout --), consider whether there is a safer alternative that achieves the same goal. Only use destructive operations when they are truly the best approach.

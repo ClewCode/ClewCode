@@ -1,7 +1,6 @@
-import type { Database } from 'bun:sqlite';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import { chunkMarkdown } from './chunker.js';
-import { type ClaudeMemoryConfig, getDefaultConfig } from './config.js';
+import type { ClaudeMemoryConfig } from './config.js';
 import { getMemoryDb } from './db.js';
 import { scanDirectory } from './loader.js';
 import { redactSecrets } from './redact.js';
@@ -18,7 +17,7 @@ export interface IngestResult {
 
 export async function ingestMemoryWorkspace(cwd: string, config: ClaudeMemoryConfig): Promise<IngestResult> {
   const db = getMemoryDb(cwd);
-  const fsImpl = getFsImplementation();
+  const _fsImpl = getFsImplementation();
 
   const scannedDocs = await scanDirectory(config.memoryDir, config.rootDir, 'project', config.excludeGlobs);
 
@@ -33,7 +32,7 @@ export async function ingestMemoryWorkspace(cwd: string, config: ClaudeMemoryCon
     activeDocIds.add(docId);
 
     const existingSource = getSource(db, docId);
-    const contentHash = doc.relPath + ':' + doc.size + ':' + doc.mtimeMs; // Quick robust stat hash
+    const contentHash = `${doc.relPath}:${doc.size}:${doc.mtimeMs}`; // Quick robust stat hash
 
     const needsIndex = !existingSource || existingSource.contentHash !== contentHash;
 

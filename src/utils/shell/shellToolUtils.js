@@ -15,17 +15,16 @@ export const SHELL_TOOL_NAMES = [BASH_TOOL_NAME, POWERSHELL_TOOL_NAME];
  * consistent across all paths that invoke PowerShellTool.call().
  */
 export function isPowerShellToolEnabled() {
-    if (getPlatform() !== 'windows')
-        return false;
-    // Ant internal: default on, opt out with env=0
-    if (process.env.USER_TYPE === 'ant') {
-        return !isEnvDefinedFalsy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
-    }
-    // Bedrock/Vertex/Foundry: default on, opt out with CLAUDE_CODE_USE_POWERSHELL_TOOL=0
-    const provider = getAPIProvider();
-    if (provider === 'bedrock' || provider === 'vertex' || provider === 'foundry') {
-        return !isEnvDefinedFalsy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
-    }
-    // External: opt-in with env=1
-    return isEnvTruthy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
+  if (getPlatform() !== 'windows') return false;
+  // Ant internal: default on, opt out with env=0
+  if (process.env.USER_TYPE === 'ant') {
+    return !isEnvDefinedFalsy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
+  }
+  // Bedrock/Vertex/Foundry: default on, opt out with CLAUDE_CODE_USE_POWERSHELL_TOOL=0
+  const provider = getAPIProvider();
+  if (provider === 'bedrock' || provider === 'vertex' || provider === 'foundry') {
+    return !isEnvDefinedFalsy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
+  }
+  // External: opt-in with env=1
+  return isEnvTruthy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
 }

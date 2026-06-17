@@ -14,8 +14,8 @@
 import { Database } from 'bun:sqlite';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { getSessionId } from '../../bootstrap/state.js';
+import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 
 // ── Types ──
 
@@ -107,19 +107,25 @@ export function ensureNode(
       metadata = CASE WHEN ? <> '{}' THEN ? ELSE metadata END,
       updated_at = ?,
       access_count = access_count + 1
-  `).run(id, type, name, summary, JSON.stringify(metadata), now, now,
-    summary, summary, JSON.stringify(metadata), JSON.stringify(metadata), now);
+  `).run(
+    id,
+    type,
+    name,
+    summary,
+    JSON.stringify(metadata),
+    now,
+    now,
+    summary,
+    summary,
+    JSON.stringify(metadata),
+    JSON.stringify(metadata),
+    now,
+  );
 
   return id;
 }
 
-export function ensureEdge(
-  db: Database,
-  sourceId: string,
-  targetId: string,
-  type: EdgeType,
-  weight = 1.0,
-): void {
+export function ensureEdge(db: Database, sourceId: string, targetId: string, type: EdgeType, weight = 1.0): void {
   const now = Date.now();
   db.prepare(`
     INSERT INTO edges (source_id, target_id, type, weight, created_at)
@@ -145,8 +151,14 @@ export function recordSessionGraph(
   // Session node
   const sessionNodeId = nodeId('session', sid);
   db.prepare(`INSERT OR REPLACE INTO nodes (id, type, name, summary, metadata, created_at, updated_at)
-    VALUES (?, 'session', ?, ?, ?, ?, ?)`).run(sessionNodeId, sid, summary,
-    JSON.stringify({ model, provider }), Date.now(), Date.now());
+    VALUES (?, 'session', ?, ?, ?, ?, ?)`).run(
+    sessionNodeId,
+    sid,
+    summary,
+    JSON.stringify({ model, provider }),
+    Date.now(),
+    Date.now(),
+  );
 
   // Model + Provider nodes
   const modelId = ensureNode(db, 'model', model || 'unknown');
@@ -219,12 +231,7 @@ export function findNodes(projectRoot: string, query: GraphQuery = {}): GraphNod
  *   traverse(projectRoot, 'tag::memory', 'relates_to', 2)
  *   → tag::memory ← relates_to ← decision ← decided ← session
  */
-export function traverse(
-  projectRoot: string,
-  startNodeId: string,
-  edgeType?: EdgeType,
-  maxHops = 3,
-): GraphNode[] {
+export function traverse(projectRoot: string, startNodeId: string, edgeType?: EdgeType, maxHops = 3): GraphNode[] {
   const db = getDb(projectRoot);
 
   // Recursive CTE for graph traversal
@@ -252,7 +259,10 @@ export function traverse(
 /**
  * Get context for a session: decisions, tags, files in one query.
  */
-export function getSessionGraph(projectRoot: string, sessionId: string): {
+export function getSessionGraph(
+  projectRoot: string,
+  sessionId: string,
+): {
   decisions: GraphNode[];
   tags: GraphNode[];
   files: GraphNode[];
@@ -272,7 +282,8 @@ export function getRelatedSessions(projectRoot: string, tags: string[], limit = 
   // Find sessions that share at least 2 of the given tags
   const tagIds = tags.map(t => `'tag::${t.toLowerCase().replace(/\s+/g, '-')}'`).join(',');
   try {
-    const rows = db.prepare(`
+    const rows = db
+      .prepare(`
       SELECT n.*, COUNT(e2.target_id) as shared_tags
       FROM nodes n
       JOIN edges e1 ON e1.source_id = n.id AND e1.type = 'has_tag'
@@ -283,7 +294,8 @@ export function getRelatedSessions(projectRoot: string, tags: string[], limit = 
       HAVING shared_tags >= 2
       ORDER BY shared_tags DESC, n.updated_at DESC
       LIMIT ?
-    `).all(limit) as GraphNode[];
+    `)
+      .all(limit) as GraphNode[];
     db.close();
     return rows;
   } catch {

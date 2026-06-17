@@ -12,7 +12,7 @@ export { HOOK_EVENTS } from './sdk/coreTypes.js';
 // Re-export tool types (all marked @internal until SDK API stabilizes)
 export * from './sdk/toolTypes.js';
 export function tool(_name, _description, _inputSchema, _handler, _extras) {
-    throw new Error('not implemented');
+  throw new Error('not implemented');
 }
 /**
  * Creates an MCP server instance that can be used with the SDK transport.
@@ -21,12 +21,11 @@ export function tool(_name, _description, _inputSchema, _handler, _extras) {
  * If your SDK MCP calls will run longer than 60s, override CLAUDE_CODE_STREAM_CLOSE_TIMEOUT
  */
 export function createSdkMcpServer(_options) {
-    throw new Error('not implemented');
+  throw new Error('not implemented');
 }
-export class AbortError extends Error {
-}
+export class AbortError extends Error {}
 export function query() {
-    throw new Error('query is not implemented in the SDK');
+  throw new Error('query is not implemented in the SDK');
 }
 /**
  * V2 API - UNSTABLE
@@ -34,7 +33,7 @@ export function query() {
  * @alpha
  */
 export function unstable_v2_createSession(_options) {
-    throw new Error('unstable_v2_createSession is not implemented in the SDK');
+  throw new Error('unstable_v2_createSession is not implemented in the SDK');
 }
 /**
  * V2 API - UNSTABLE
@@ -42,7 +41,7 @@ export function unstable_v2_createSession(_options) {
  * @alpha
  */
 export function unstable_v2_resumeSession(_sessionId, _options) {
-    throw new Error('unstable_v2_resumeSession is not implemented in the SDK');
+  throw new Error('unstable_v2_resumeSession is not implemented in the SDK');
 }
 // @[MODEL LAUNCH]: Update the example model ID in this docstring.
 /**
@@ -58,7 +57,7 @@ export function unstable_v2_resumeSession(_sessionId, _options) {
  * ```
  */
 export async function unstable_v2_prompt(_message, _options) {
-    throw new Error('unstable_v2_prompt is not implemented in the SDK');
+  throw new Error('unstable_v2_prompt is not implemented in the SDK');
 }
 /**
  * Reads a session's conversation messages from its JSONL transcript file.
@@ -72,7 +71,7 @@ export async function unstable_v2_prompt(_message, _options) {
  * @returns Array of messages, or empty array if session not found
  */
 export async function getSessionMessages(_sessionId, _options) {
-    throw new Error('getSessionMessages is not implemented in the SDK');
+  throw new Error('getSessionMessages is not implemented in the SDK');
 }
 /**
  * List sessions with metadata.
@@ -94,7 +93,7 @@ export async function getSessionMessages(_sessionId, _options) {
  * ```
  */
 export async function listSessions(_options) {
-    throw new Error('listSessions is not implemented in the SDK');
+  throw new Error('listSessions is not implemented in the SDK');
 }
 /**
  * Reads metadata for a single session by ID. Unlike `listSessions`, this only
@@ -106,7 +105,7 @@ export async function listSessions(_options) {
  * @param options - `{ dir?: string }` project path; omit to search all project directories
  */
 export async function getSessionInfo(_sessionId, _options) {
-    throw new Error('getSessionInfo is not implemented in the SDK');
+  throw new Error('getSessionInfo is not implemented in the SDK');
 }
 /**
  * Rename a session. Appends a custom-title entry to the session's JSONL file.
@@ -115,7 +114,7 @@ export async function getSessionInfo(_sessionId, _options) {
  * @param options - `{ dir?: string }` project path; omit to search all projects
  */
 export async function renameSession(_sessionId, _title, _options) {
-    throw new Error('renameSession is not implemented in the SDK');
+  throw new Error('renameSession is not implemented in the SDK');
 }
 /**
  * Tag a session. Pass null to clear the tag.
@@ -124,7 +123,7 @@ export async function renameSession(_sessionId, _title, _options) {
  * @param options - `{ dir?: string }` project path; omit to search all projects
  */
 export async function tagSession(_sessionId, _tag, _options) {
-    throw new Error('tagSession is not implemented in the SDK');
+  throw new Error('tagSession is not implemented in the SDK');
 }
 /**
  * Fork a session into a new branch with fresh UUIDs.
@@ -141,7 +140,7 @@ export async function tagSession(_sessionId, _tag, _options) {
  * @returns `{ sessionId }` — UUID of the new forked session
  */
 export async function forkSession(_sessionId, _options) {
-    throw new Error('forkSession is not implemented in the SDK');
+  throw new Error('forkSession is not implemented in the SDK');
 }
 /**
  * Watch `<dir>/.claude/scheduled_tasks.json` and yield events as tasks fire.
@@ -164,7 +163,7 @@ export async function forkSession(_sessionId, _options) {
  * @internal
  */
 export function watchScheduledTasks(_opts) {
-    throw new Error('not implemented');
+  throw new Error('not implemented');
 }
 /**
  * Format missed one-shot tasks into a prompt that asks the model to confirm
@@ -172,7 +171,7 @@ export function watchScheduledTasks(_opts) {
  * @internal
  */
 export function buildMissedTaskNotification(_missed) {
-    throw new Error('not implemented');
+  throw new Error('not implemented');
 }
 /**
  * Hold a claude.ai remote-control bridge connection from a daemon process.
@@ -195,5 +194,5 @@ export function buildMissedTaskNotification(_missed) {
  * @internal
  */
 export async function connectRemoteControl(_opts) {
-    throw new Error('not implemented');
+  throw new Error('not implemented');
 }

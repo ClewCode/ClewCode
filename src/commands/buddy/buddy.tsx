@@ -4,7 +4,7 @@ import { renderSprite } from '../../buddy/sprites.js';
 import { RARITY_COLORS, RARITY_STARS } from '../../buddy/types.js';
 import { Box, Text, useInput } from '../../ink.js';
 import type { LocalJSXCommandCall, LocalJSXCommandContext } from '../../types/command.js';
-import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
+import { saveGlobalConfig } from '../../utils/config.js';
 
 interface BuddyProps {
   onDone: (result?: string, options?: { display?: 'system' | 'user' | 'skip' }) => void;
@@ -12,7 +12,7 @@ interface BuddyProps {
 }
 
 const CARD_W = 44;
-const INNER_W = CARD_W - 4; // minus border(2) + padding(2)
+const _INNER_W = CARD_W - 4; // minus border(2) + padding(2)
 const BAR_FULL = 10;
 
 function statBar(value: number): string {

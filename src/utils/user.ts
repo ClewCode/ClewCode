@@ -83,7 +83,7 @@ export const getCoreUserData = memoize((includeAnalyticsMetadata?: boolean): Cor
     rateLimitTier = getRateLimitTier() ?? undefined;
     if (subscriptionType && config.claudeCodeFirstTokenDate) {
       const configFirstTokenTime = new Date(config.claudeCodeFirstTokenDate).getTime();
-      if (!isNaN(configFirstTokenTime)) {
+      if (!Number.isNaN(configFirstTokenTime)) {
         firstTokenTime = configFirstTokenTime;
       }
     }

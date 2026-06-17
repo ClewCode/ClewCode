@@ -126,7 +126,7 @@ export async function resolveInboundAttachments(attachments: InboundAttachment[]
   if (ok.length === 0) return '';
   // Quoted form — extractAtMentionedFiles truncates unquoted @refs at the
   // first space, which breaks any home dir with spaces (/Users/John Smith/).
-  return ok.map(p => `@"${p}"`).join(' ') + ' ';
+  return `${ok.map(p => `@"${p}"`).join(' ')} `;
 }
 
 /**

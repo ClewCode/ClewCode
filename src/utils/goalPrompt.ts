@@ -10,12 +10,7 @@ export function getGoalPrompt(): string {
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
 
-  const lines: string[] = [
-    '',
-    '## Active Goal',
-    '',
-    `Goal: "${goal.goal}"`,
-  ];
+  const lines: string[] = ['', '## Active Goal', '', `Goal: "${goal.goal}"`];
 
   if (goal.condition && goal.condition !== goal.goal) {
     lines.push(`Condition: ${goal.condition}`);

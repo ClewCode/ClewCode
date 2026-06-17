@@ -22,6 +22,7 @@
  */
 import { AsyncLocalStorage } from 'async_hooks';
 import { isAgentSwarmsEnabled } from './agentSwarmsEnabled.js';
+
 const agentContextStorage = new AsyncLocalStorage();
 /**
  * Get the current agent context, if any.
@@ -29,29 +30,29 @@ const agentContextStorage = new AsyncLocalStorage();
  * Use type guards isSubagentContext() or isTeammateAgentContext() to narrow the type.
  */
 export function getAgentContext() {
-    return agentContextStorage.getStore();
+  return agentContextStorage.getStore();
 }
 /**
  * Run an async function with the given agent context.
  * All async operations within the function will have access to this context.
  */
 export function runWithAgentContext(context, fn) {
-    return agentContextStorage.run(context, fn);
+  return agentContextStorage.run(context, fn);
 }
 /**
  * Type guard to check if context is a SubagentContext.
  */
 export function isSubagentContext(context) {
-    return context?.agentType === 'subagent';
+  return context?.agentType === 'subagent';
 }
 /**
  * Type guard to check if context is a TeammateAgentContext.
  */
 export function isTeammateAgentContext(context) {
-    if (isAgentSwarmsEnabled()) {
-        return context?.agentType === 'teammate';
-    }
-    return false;
+  if (isAgentSwarmsEnabled()) {
+    return context?.agentType === 'teammate';
+  }
+  return false;
 }
 /**
  * Get the subagent name suitable for analytics logging.
@@ -62,11 +63,11 @@ export function isTeammateAgentContext(context) {
  * and custom agents are always mapped to the literal "user-defined".
  */
 export function getSubagentLogName() {
-    const context = getAgentContext();
-    if (!isSubagentContext(context) || !context.subagentName) {
-        return undefined;
-    }
-    return (context.isBuiltIn ? context.subagentName : 'user-defined');
+  const context = getAgentContext();
+  if (!isSubagentContext(context) || !context.subagentName) {
+    return undefined;
+  }
+  return context.isBuiltIn ? context.subagentName : 'user-defined';
 }
 /**
  * Get the invoking request_id for the current agent context — once per
@@ -79,13 +80,13 @@ export function getSubagentLogName() {
  * marks a spawn/resume boundary.
  */
 export function consumeInvokingRequestId() {
-    const context = getAgentContext();
-    if (!context?.invokingRequestId || context.invocationEmitted) {
-        return undefined;
-    }
-    context.invocationEmitted = true;
-    return {
-        invokingRequestId: context.invokingRequestId,
-        invocationKind: context.invocationKind,
-    };
+  const context = getAgentContext();
+  if (!context?.invokingRequestId || context.invocationEmitted) {
+    return undefined;
+  }
+  context.invocationEmitted = true;
+  return {
+    invokingRequestId: context.invokingRequestId,
+    invocationKind: context.invocationKind,
+  };
 }

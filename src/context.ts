@@ -4,7 +4,6 @@ import { getAdditionalDirectoriesForClaudeMd, setCachedClaudeMdContent } from '.
 import { getLocalISODate } from './constants/common.js';
 import { detectCapabilities, formatCapabilitiesAsContext } from './utils/capabilities.js';
 import { filterInjectedMemoryFiles, getClaudeMds, getMemoryFiles } from './utils/claudemd.js';
-import { getCwd } from './utils/cwd.js';
 import { logForDiagnosticsNoPII } from './utils/diagLogs.js';
 import { isBareMode, isEnvTruthy } from './utils/envUtils.js';
 import { execFileNoThrow } from './utils/execFileNoThrow.js';

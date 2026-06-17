@@ -35,12 +35,7 @@ import type { ThinkingConfig } from '../../utils/thinking.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
 import { checkMockRateLimitError, isMockRateLimitError } from '../rateLimitMocking.js';
-import {
-  classifyProviderError,
-  getProviderRetryAfterMs,
-  type ProviderErrorInfo,
-  REPEATED_529_ERROR_MESSAGE,
-} from './errors.js';
+import { classifyProviderError, REPEATED_529_ERROR_MESSAGE } from './errors.js';
 import { extractConnectionErrorDetails } from './errorUtils.js';
 
 const abortError = () => new APIUserAbortError();
@@ -445,7 +440,7 @@ function getRetryAfter(error: unknown): string | null {
 export function getRetryDelay(attempt: number, retryAfterHeader?: string | null, maxDelayMs = 32000): number {
   if (retryAfterHeader) {
     const seconds = parseInt(retryAfterHeader, 10);
-    if (!isNaN(seconds)) {
+    if (!Number.isNaN(seconds)) {
       return seconds * 1000;
     }
   }
@@ -474,7 +469,7 @@ export function parseMaxTokensContextOverflowError(error: APIError):
   const regex = /input length and `max_tokens` exceed context limit: (\d+) \+ (\d+) > (\d+)/;
   const match = error.message.match(regex);
 
-  if (!match || match.length !== 4) {
+  if (match?.length !== 4) {
     return undefined;
   }
 
@@ -486,7 +481,7 @@ export function parseMaxTokensContextOverflowError(error: APIError):
   const maxTokens = parseInt(match[2], 10);
   const contextLimit = parseInt(match[3], 10);
 
-  if (isNaN(inputTokens) || isNaN(maxTokens) || isNaN(contextLimit)) {
+  if (Number.isNaN(inputTokens) || Number.isNaN(maxTokens) || Number.isNaN(contextLimit)) {
     return undefined;
   }
 
@@ -721,7 +716,7 @@ function getRetryAfterMs(error: APIError): number | null {
   const retryAfter = getRetryAfter(error);
   if (retryAfter) {
     const seconds = parseInt(retryAfter, 10);
-    if (!isNaN(seconds)) {
+    if (!Number.isNaN(seconds)) {
       return seconds * 1000;
     }
   }

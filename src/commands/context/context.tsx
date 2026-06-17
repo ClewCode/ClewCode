@@ -1,4 +1,3 @@
-import type * as React from 'react';
 import { ContextStats } from '../../components/ContextStats.js';
 import { Box } from '../../ink.js';
 import type { LocalJSXCommandCall } from '../../types/command.js';

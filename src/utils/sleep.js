@@ -12,40 +12,44 @@
  * error class (e.g. `APIUserAbortError`).
  */
 export function sleep(ms, signal, opts) {
-    return new Promise((resolve, reject) => {
-        // Check aborted state BEFORE setting up the timer. If we defined
-        // onAbort first and called it synchronously here, it would reference
-        // `timer` while still in the Temporal Dead Zone.
-        if (signal?.aborted) {
-            if (opts?.throwOnAbort || opts?.abortError) {
-                void reject(opts.abortError?.() ?? new Error('aborted'));
-            }
-            else {
-                void resolve();
-            }
-            return;
-        }
-        const timer = setTimeout((signal, onAbort, resolve) => {
-            signal?.removeEventListener('abort', onAbort);
-            void resolve();
-        }, ms, signal, onAbort, resolve);
-        function onAbort() {
-            clearTimeout(timer);
-            if (opts?.throwOnAbort || opts?.abortError) {
-                void reject(opts.abortError?.() ?? new Error('aborted'));
-            }
-            else {
-                void resolve();
-            }
-        }
-        signal?.addEventListener('abort', onAbort, { once: true });
-        if (opts?.unref) {
-            timer.unref();
-        }
-    });
+  return new Promise((resolve, reject) => {
+    // Check aborted state BEFORE setting up the timer. If we defined
+    // onAbort first and called it synchronously here, it would reference
+    // `timer` while still in the Temporal Dead Zone.
+    if (signal?.aborted) {
+      if (opts?.throwOnAbort || opts?.abortError) {
+        void reject(opts.abortError?.() ?? new Error('aborted'));
+      } else {
+        void resolve();
+      }
+      return;
+    }
+    const timer = setTimeout(
+      (signal, onAbort, resolve) => {
+        signal?.removeEventListener('abort', onAbort);
+        void resolve();
+      },
+      ms,
+      signal,
+      onAbort,
+      resolve,
+    );
+    function onAbort() {
+      clearTimeout(timer);
+      if (opts?.throwOnAbort || opts?.abortError) {
+        void reject(opts.abortError?.() ?? new Error('aborted'));
+      } else {
+        void resolve();
+      }
+    }
+    signal?.addEventListener('abort', onAbort, { once: true });
+    if (opts?.unref) {
+      timer.unref();
+    }
+  });
 }
 function rejectWithTimeout(reject, message) {
-    reject(new Error(message));
+  reject(new Error(message));
 }
 /**
  * Race a promise against a timeout. Rejects with `Error(message)` if the
@@ -58,15 +62,13 @@ function rejectWithTimeout(reject, message) {
  * returns control to the caller.
  */
 export function withTimeout(promise, ms, message) {
-    let timer;
-    const timeoutPromise = new Promise((_, reject) => {
-        // eslint-disable-next-line no-restricted-syntax -- not a sleep: REJECTS after ms (timeout guard)
-        timer = setTimeout(rejectWithTimeout, ms, reject, message);
-        if (typeof timer === 'object')
-            timer.unref?.();
-    });
-    return Promise.race([promise, timeoutPromise]).finally(() => {
-        if (timer !== undefined)
-            clearTimeout(timer);
-    });
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    // eslint-disable-next-line no-restricted-syntax -- not a sleep: REJECTS after ms (timeout guard)
+    timer = setTimeout(rejectWithTimeout, ms, reject, message);
+    if (typeof timer === 'object') timer.unref?.();
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer);
+  });
 }

@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
 import { Box, Text } from 'ink';
+import type React from 'react';
+import { useEffect } from 'react';
 import type { LocalJSXCommandCall } from '../../types/command.js';
-import { updateSettingsForSource } from '../../utils/settings/settings.js';
 import type { PermissionMode } from '../../utils/permissions/PermissionMode.js';
+import { updateSettingsForSource } from '../../utils/settings/settings.js';
 
 type ClewProfile = 'coding' | 'personal';
 const CLEW_PROFILES: readonly ClewProfile[] = ['coding', 'personal'];
@@ -26,8 +27,7 @@ function ProfileCommand({ onDone, context, args }: Props): React.ReactNode {
     if (trimmed === 'coding' || trimmed === 'personal') {
       const next = trimmed as ClewProfile;
       const updatedLastModes = { ...lastModes, [profile]: currentMode as PermissionMode };
-      const restoredMode = updatedLastModes[next] ??
-        (next === 'personal' ? ('ask' as const) : currentMode);
+      const restoredMode = updatedLastModes[next] ?? (next === 'personal' ? ('ask' as const) : currentMode);
       context.setAppState((prev: any) => ({
         ...prev,
         profile: next,
@@ -41,13 +41,15 @@ function ProfileCommand({ onDone, context, args }: Props): React.ReactNode {
     } else {
       onDone(`Active profile: ${PROFILE_LABELS[profile]} — ${PROFILE_DESCRIPTIONS[profile]}`);
     }
-  }, []);
+  }, [profile, currentMode, trimmed, onDone, lastModes, context.setAppState]);
 
   return (
     <Box flexDirection="column">
       {trimmed === 'coding' || trimmed === 'personal' ? (
         <>
-          <Text>Switched to <Text bold>{PROFILE_LABELS[trimmed as ClewProfile]}</Text>.</Text>
+          <Text>
+            Switched to <Text bold>{PROFILE_LABELS[trimmed as ClewProfile]}</Text>.
+          </Text>
           <Text dimColor>{PROFILE_DESCRIPTIONS[trimmed as ClewProfile]}</Text>
         </>
       ) : trimmed ? (
@@ -57,7 +59,9 @@ function ProfileCommand({ onDone, context, args }: Props): React.ReactNode {
         </>
       ) : (
         <>
-          <Text>Active profile: <Text bold>{PROFILE_LABELS[profile]}</Text></Text>
+          <Text>
+            Active profile: <Text bold>{PROFILE_LABELS[profile]}</Text>
+          </Text>
           <Text dimColor>{PROFILE_DESCRIPTIONS[profile]}</Text>
           <Text dimColor>Switch with /profile coding or /profile personal</Text>
         </>

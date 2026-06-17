@@ -218,7 +218,7 @@ function inputToString(input: Buffer | string): string {
       // 0xC0-0xC1 (overlong UTF-8 leads) and 0xF5-0xFF (beyond Unicode)
       // are definitively Alt-encoded: subtract 128 and prepend ESC.
       input[0] = byte - 128;
-      return '\x1b' + String(input);
+      return `\x1b${String(input)}`;
     }
     // Multi-byte buffer or ASCII: decode as UTF-8
     return String(input);
@@ -292,7 +292,7 @@ export function parseMultipleKeypresses(
         // range would match typed input like `[MAX]` batched into one read
         // and silently drop it as a phantom click. Click/drag orphans leak
         // as visible garbage instead; deletable garbage beats silent loss.
-        const resynthesized = '\x1b' + token.value;
+        const resynthesized = `\x1b${token.value}`;
         const mouse = parseMouseEvent(resynthesized);
         keys.push(mouse ?? parseKeypress(resynthesized));
       } else {

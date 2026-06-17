@@ -8,8 +8,8 @@
  */
 import { OpenAICompatibleProvider } from './OpenAICompatibleProvider.js';
 export class CohereProvider extends OpenAICompatibleProvider {
-    chatPath = '/chat';
-    constructor() {
-        super('cohere', 'Cohere', 'COHERE_API_KEY', 'https://api.cohere.com/v2', true);
-    }
+  chatPath = '/chat';
+  constructor() {
+    super('cohere', 'Cohere', 'COHERE_API_KEY', 'https://api.cohere.com/v2', true);
+  }
 }

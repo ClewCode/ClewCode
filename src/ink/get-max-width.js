@@ -1,4 +1,5 @@
 import { LayoutEdge } from './layout/node.js';
+
 /**
  * Returns the yoga node's content width (computed width minus padding and
  * border).
@@ -13,11 +14,13 @@ import { LayoutEdge } from './layout/node.js';
  * use this for wrapping should clamp to actual available screen space so
  * the rendered line count stays consistent with the layout height.
  */
-const getMaxWidth = (yogaNode) => {
-    return (yogaNode.getComputedWidth() -
-        yogaNode.getComputedPadding(LayoutEdge.Left) -
-        yogaNode.getComputedPadding(LayoutEdge.Right) -
-        yogaNode.getComputedBorder(LayoutEdge.Left) -
-        yogaNode.getComputedBorder(LayoutEdge.Right));
+const getMaxWidth = yogaNode => {
+  return (
+    yogaNode.getComputedWidth() -
+    yogaNode.getComputedPadding(LayoutEdge.Left) -
+    yogaNode.getComputedPadding(LayoutEdge.Right) -
+    yogaNode.getComputedBorder(LayoutEdge.Left) -
+    yogaNode.getComputedBorder(LayoutEdge.Right)
+  );
 };
 export default getMaxWidth;

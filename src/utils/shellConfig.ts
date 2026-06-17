@@ -56,7 +56,7 @@ export function filterClaudeAliases(lines: string[]): {
         match = line.match(/alias\s+claude\s*=\s*([^#\n]+)/);
       }
 
-      if (match && match[1]) {
+      if (match?.[1]) {
         const target = match[1].trim();
         // Only remove if it points to the installer location
         // The installer always creates aliases with the full expanded path
@@ -115,7 +115,7 @@ export async function findClaudeAlias(options?: ShellConfigOptions): Promise<str
       if (CLAUDE_ALIAS_REGEX.test(line)) {
         // Extract the alias target
         const match = line.match(/alias\s+claude=["']?([^"'\s]+)/);
-        if (match && match[1]) {
+        if (match?.[1]) {
           return match[1];
         }
       }

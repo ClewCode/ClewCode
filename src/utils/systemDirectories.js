@@ -8,44 +8,43 @@ import { getPlatform } from './platform.js';
  * @param options Optional overrides for testing (env, homedir, platform)
  */
 export function getSystemDirectories(options) {
-    const platform = options?.platform ?? getPlatform();
-    const homeDir = options?.homedir ?? homedir();
-    const env = options?.env ?? process.env;
-    // Default paths used by most platforms
-    const defaults = {
+  const platform = options?.platform ?? getPlatform();
+  const homeDir = options?.homedir ?? homedir();
+  const env = options?.env ?? process.env;
+  // Default paths used by most platforms
+  const defaults = {
+    HOME: homeDir,
+    DESKTOP: join(homeDir, 'Desktop'),
+    DOCUMENTS: join(homeDir, 'Documents'),
+    DOWNLOADS: join(homeDir, 'Downloads'),
+  };
+  switch (platform) {
+    case 'windows': {
+      // Windows: Use USERPROFILE if available (handles localized folder names)
+      const userProfile = env.USERPROFILE || homeDir;
+      return {
         HOME: homeDir,
-        DESKTOP: join(homeDir, 'Desktop'),
-        DOCUMENTS: join(homeDir, 'Documents'),
-        DOWNLOADS: join(homeDir, 'Downloads'),
-    };
-    switch (platform) {
-        case 'windows': {
-            // Windows: Use USERPROFILE if available (handles localized folder names)
-            const userProfile = env.USERPROFILE || homeDir;
-            return {
-                HOME: homeDir,
-                DESKTOP: join(userProfile, 'Desktop'),
-                DOCUMENTS: join(userProfile, 'Documents'),
-                DOWNLOADS: join(userProfile, 'Downloads'),
-            };
-        }
-        case 'linux':
-        case 'wsl': {
-            // Linux/WSL: Check XDG Base Directory specification first
-            return {
-                HOME: homeDir,
-                DESKTOP: env.XDG_DESKTOP_DIR || defaults.DESKTOP,
-                DOCUMENTS: env.XDG_DOCUMENTS_DIR || defaults.DOCUMENTS,
-                DOWNLOADS: env.XDG_DOWNLOAD_DIR || defaults.DOWNLOADS,
-            };
-        }
-        case 'macos':
-        default: {
-            // macOS and unknown platforms use standard paths
-            if (platform === 'unknown') {
-                logForDebugging(`Unknown platform detected, using default paths`);
-            }
-            return defaults;
-        }
+        DESKTOP: join(userProfile, 'Desktop'),
+        DOCUMENTS: join(userProfile, 'Documents'),
+        DOWNLOADS: join(userProfile, 'Downloads'),
+      };
     }
+    case 'linux':
+    case 'wsl': {
+      // Linux/WSL: Check XDG Base Directory specification first
+      return {
+        HOME: homeDir,
+        DESKTOP: env.XDG_DESKTOP_DIR || defaults.DESKTOP,
+        DOCUMENTS: env.XDG_DOCUMENTS_DIR || defaults.DOCUMENTS,
+        DOWNLOADS: env.XDG_DOWNLOAD_DIR || defaults.DOWNLOADS,
+      };
+    }
+    default: {
+      // macOS and unknown platforms use standard paths
+      if (platform === 'unknown') {
+        logForDebugging(`Unknown platform detected, using default paths`);
+      }
+      return defaults;
+    }
+  }
 }

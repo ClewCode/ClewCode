@@ -146,13 +146,13 @@ const renderBorder = (x: number, y: number, node: DOMNode, output: Output): void
 
     verticalBorderHeight = Math.max(0, verticalBorderHeight);
 
-    let leftBorder = (applyColor(box.left, leftBorderColor) + '\n').repeat(verticalBorderHeight);
+    let leftBorder = `${applyColor(box.left, leftBorderColor)}\n`.repeat(verticalBorderHeight);
 
     if (dimLeftBorderColor) {
       leftBorder = chalk.dim(leftBorder);
     }
 
-    let rightBorder = (applyColor(box.right, rightBorderColor) + '\n').repeat(verticalBorderHeight);
+    let rightBorder = `${applyColor(box.right, rightBorderColor)}\n`.repeat(verticalBorderHeight);
 
     if (dimRightBorderColor) {
       rightBorder = chalk.dim(rightBorder);

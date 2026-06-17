@@ -132,7 +132,7 @@ export const MultiSearchTool = buildTool({
     }
     return { result: true };
   },
-  async call({ query, provider: providerArg, providers: providersArg, num = 10, parallel = true }, context) {
+  async call({ query, provider: providerArg, providers: providersArg, num = 10, parallel = true }, _context) {
     // Determine which providers to use
     let providersToUse: string[] = [];
 

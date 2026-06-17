@@ -1,3 +1,1 @@
-export class TungstenLiveMonitor {
-  constructor() {}
-}
+export class TungstenLiveMonitor {}

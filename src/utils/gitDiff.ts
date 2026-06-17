@@ -260,7 +260,7 @@ export function parseGitDiff(stdout: string): Map<string, StructuredPatchHunk[]>
         // the parent. This keeps the entire parent string (~MBs) alive as long as
         // any line is retained. Using '' + line forces a new flat string allocation,
         // unlike slice(0) which V8 may optimize to return the same reference.
-        currentHunk.lines.push('' + line);
+        currentHunk.lines.push(`${line}`);
         lineCount++;
       }
     }

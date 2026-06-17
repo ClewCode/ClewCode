@@ -346,9 +346,7 @@ export class PeerDiscovery {
         sock.bind(PEER_DISCOVERY_PORT, '0.0.0.0', () => {
           try {
             sock.addMembership(PEER_MULTICAST_GROUP);
-            logForDebugging(
-              `[PeerDiscovery] UDP multicast enabled on ${PEER_MULTICAST_GROUP}:${PEER_DISCOVERY_PORT}`,
-            );
+            logForDebugging(`[PeerDiscovery] UDP multicast enabled on ${PEER_MULTICAST_GROUP}:${PEER_DISCOVERY_PORT}`);
             resolve();
           } catch (membershipErr) {
             logForDebugging(`[PeerDiscovery] Failed to join multicast group: ${errorMessage(membershipErr)}`);
@@ -407,7 +405,9 @@ export class PeerDiscovery {
       // Cleanup timer
       this.cleanupTimer = setInterval(() => this.cleanupStalePeers(), PEER_HEARTBEAT_INTERVAL);
 
-      logForDebugging(`[PeerDiscovery] Advertising (pid=${this.pid}, port=${myPort}, LAN=${process.env.CLEW_MESH_LAN === '1' ? 'enabled' : 'disabled'})`);
+      logForDebugging(
+        `[PeerDiscovery] Advertising (pid=${this.pid}, port=${myPort}, LAN=${process.env.CLEW_MESH_LAN === '1' ? 'enabled' : 'disabled'})`,
+      );
     } catch (err) {
       logForDebugging(`[PeerDiscovery] Failed to start: ${errorMessage(err)}`);
     }

@@ -53,7 +53,7 @@ async function fetchPage(
       validateStatus: () => true,
     })
     .catch(() => null);
-  if (!resp || resp.status !== 200) {
+  if (resp?.status !== 200) {
     logForDebugging(`[${label}] HTTP ${resp?.status ?? 'error'}`);
     return null;
   }

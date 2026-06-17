@@ -46,7 +46,7 @@ function getFlagValue(tokens: string[], flag: string): string | undefined {
   return undefined;
 }
 
-function hasFlag(tokens: string[], flag: string): boolean {
+function _hasFlag(tokens: string[], flag: string): boolean {
   return tokens.includes(flag);
 }
 

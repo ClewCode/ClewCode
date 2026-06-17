@@ -78,7 +78,7 @@ export async function createRunStore(cwd: string, query: string, mode: any): Pro
 }
 
 export async function appendSourceToRun(runDir: string, source: ResearchSource): Promise<void> {
-  const line = JSON.stringify(source) + '\n';
+  const line = `${JSON.stringify(source)}\n`;
   await appendFile(join(runDir, 'sources.jsonl'), line, 'utf-8');
 
   // Increment sourceCount in run.json
@@ -88,13 +88,13 @@ export async function appendSourceToRun(runDir: string, source: ResearchSource):
     const run: ResearchRun = JSON.parse(content);
     run.sourceCount += 1;
     await writeFile(runJsonPath, JSON.stringify(run, null, 2), 'utf-8');
-  } catch (err) {
+  } catch (_err) {
     // Ignore issues if run.json cannot be read/updated
   }
 }
 
 export async function appendClaimToRun(runDir: string, claim: ResearchClaim): Promise<void> {
-  const line = JSON.stringify(claim) + '\n';
+  const line = `${JSON.stringify(claim)}\n`;
   await appendFile(join(runDir, 'claims.jsonl'), line, 'utf-8');
 
   // Update claimCount in run.json
@@ -107,7 +107,7 @@ export async function appendClaimToRun(runDir: string, claim: ResearchClaim): Pr
       run.unsupportedClaimCount += 1;
     }
     await writeFile(runJsonPath, JSON.stringify(run, null, 2), 'utf-8');
-  } catch (err) {
+  } catch (_err) {
     // Ignore issues
   }
 }
@@ -160,7 +160,7 @@ export async function completeRunStore(
     run.savedToWiki = savedToWiki;
     run.savedToMemoryPending = savedToMemoryPending;
     await writeFile(runJsonPath, JSON.stringify(run, null, 2), 'utf-8');
-  } catch (err) {
+  } catch (_err) {
     // Ignore issues
   }
 }
@@ -191,7 +191,7 @@ export async function getLatestRun(cwd: string): Promise<{ run: ResearchRun; run
     const content = await readFile(runJsonPath, 'utf-8');
     const run: ResearchRun = JSON.parse(content);
     return { run, runDir };
-  } catch (err) {
+  } catch (_err) {
     return null;
   }
 }
@@ -212,7 +212,7 @@ export async function listAllRuns(cwd: string): Promise<ResearchRun[]> {
       try {
         const content = await readFile(runJsonPath, 'utf-8');
         runs.push(JSON.parse(content));
-      } catch (err) {
+      } catch (_err) {
         // Ignore unparseable runs
       }
     }

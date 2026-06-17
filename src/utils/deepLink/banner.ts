@@ -110,6 +110,6 @@ async function mtimeOrUndefined(p: string): Promise<Date | undefined> {
 function tildify(p: string): string {
   const home = homedir();
   if (p === home) return '~';
-  if (p.startsWith(home + sep)) return '~' + p.slice(home.length);
+  if (p.startsWith(home + sep)) return `~${p.slice(home.length)}`;
   return p;
 }

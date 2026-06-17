@@ -1,11 +1,11 @@
 import type { Database } from 'bun:sqlite';
 import { getMemoryDb } from './db.js';
-import { getSource, searchChunksFTS } from './store.js';
+import { searchChunksFTS } from './store.js';
 import type { MemorySearchResult } from './types.js';
 
 // ── Embedding cache (in-memory LRU) ──
 const embeddingCache = new Map<string, number[]>();
-const EMBEDDING_DIM = 384; // all-MiniLM-L6-v2 dimension
+const _EMBEDDING_DIM = 384; // all-MiniLM-L6-v2 dimension
 
 /**
  * Attempt to compute a query embedding using a local pipeline.
@@ -32,7 +32,9 @@ async function computeEmbedding(text: string): Promise<number[] | null> {
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0, magA = 0, magB = 0;
+  let dot = 0,
+    magA = 0,
+    magB = 0;
   for (let i = 0; i < a.length; i++) {
     dot += a[i] * b[i];
     magA += a[i] * a[i];
@@ -70,13 +72,17 @@ export async function searchMemories(cwd: string, query: string, limit: number =
   if (queryEmb) {
     ensureEmbeddingTable(db);
     chunkEmbeddings = new Map();
-    const embRows = db.query('SELECT chunk_id, embedding FROM chunk_embeddings').all() as
-      Array<{ chunk_id: string; embedding: Uint8Array }>;
+    const embRows = db.query('SELECT chunk_id, embedding FROM chunk_embeddings').all() as Array<{
+      chunk_id: string;
+      embedding: Uint8Array;
+    }>;
     for (const r of embRows) {
       try {
         const arr = Array.from(new Float32Array(r.embedding.buffer));
         chunkEmbeddings.set(r.chunk_id, arr);
-      } catch { /* skip corrupted */ }
+      } catch {
+        /* skip corrupted */
+      }
     }
   }
 

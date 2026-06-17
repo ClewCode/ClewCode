@@ -62,7 +62,7 @@ type Props = {
  * Display keybinding warnings to the user via notifications.
  * Shows a brief message pointing to /doctor for details.
  */
-function useKeybindingWarnings(warnings: KeybindingWarning[], isReload: boolean): void {
+function useKeybindingWarnings(warnings: KeybindingWarning[], _isReload: boolean): void {
   const { addNotification, removeNotification } = useNotifications();
 
   useEffect(() => {
@@ -94,7 +94,7 @@ function useKeybindingWarnings(warnings: KeybindingWarning[], isReload: boolean)
       // Keep visible for 60 seconds like settings errors
       timeoutMs: 60000,
     });
-  }, [warnings, isReload, addNotification, removeNotification]);
+  }, [warnings, addNotification, removeNotification]);
 }
 
 export function KeybindingSetup({ children }: Props): React.ReactNode {

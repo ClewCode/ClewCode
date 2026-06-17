@@ -2,10 +2,10 @@ import chalk from 'chalk';
 import { readFile, writeFile } from 'fs/promises';
 import * as React from 'react';
 import { type OptionWithDescription, Select } from '../../components/CustomSelect/select.js';
+import { Dialog } from '../../components/design-system/Dialog.js';
 import { GoogleOAuthFlow } from '../../components/GoogleOAuthFlow.js';
 import { OpenAIOAuthFlow } from '../../components/OpenAIOAuthFlow.js';
 import TextInput from '../../components/TextInput.js';
-import { Dialog } from '../../components/design-system/Dialog.js';
 import { Box, Text } from '../../ink.js';
 import {
   getEffectiveProviderConfigPath,

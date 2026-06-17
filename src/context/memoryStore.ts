@@ -9,8 +9,8 @@
 import { Database } from 'bun:sqlite';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getOriginalCwd } from '../bootstrap/state.js';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 
 interface ContextEntry {
   key: string;
@@ -84,9 +84,18 @@ export function storeContext(
       updated_at = ?,
       access_count = access_count + 1
   `).run(
-    key, value, opts.type ?? 'note', JSON.stringify(opts.tags ?? []), opts.confidence ?? 0.5,
-    now, now,
-    value, opts.type ?? '', JSON.stringify(opts.tags ?? []), opts.confidence ?? 0.5, now,
+    key,
+    value,
+    opts.type ?? 'note',
+    JSON.stringify(opts.tags ?? []),
+    opts.confidence ?? 0.5,
+    now,
+    now,
+    value,
+    opts.type ?? '',
+    JSON.stringify(opts.tags ?? []),
+    opts.confidence ?? 0.5,
+    now,
   );
 }
 
@@ -97,8 +106,7 @@ export function queryContext(key: string): ContextEntry | null {
   if (!row) return null;
 
   // Bump access count
-  db.prepare('UPDATE context SET access_count = access_count + 1, updated_at = ? WHERE key = ?')
-    .run(Date.now(), key);
+  db.prepare('UPDATE context SET access_count = access_count + 1, updated_at = ? WHERE key = ?').run(Date.now(), key);
 
   return row;
 }
@@ -107,11 +115,13 @@ export function queryContext(key: string): ContextEntry | null {
 export function searchContext(query: string, limit = 10): ContextEntry[] {
   const db = getDb();
   const like = `%${query.toLowerCase()}%`;
-  const rows = db.prepare(`
+  const rows = db
+    .prepare(`
     SELECT * FROM context
     WHERE LOWER(key) LIKE ? OR LOWER(value) LIKE ? OR LOWER(tags) LIKE ?
     ORDER BY updated_at DESC LIMIT ?
-  `).all(like, like, like, limit) as ContextEntry[];
+  `)
+    .all(like, like, like, limit) as ContextEntry[];
 
   return rows;
 }
@@ -138,7 +148,10 @@ export function deleteContext(key: string): void {
 export function getContextStats(): { total: number; byType: Record<string, number> } {
   const db = getDb();
   const total = (db.prepare('SELECT COUNT(*) as c FROM context').get() as { c: number }).c;
-  const typeRows = db.prepare('SELECT type, COUNT(*) as c FROM context GROUP BY type').all() as { type: string; c: number }[];
+  const typeRows = db.prepare('SELECT type, COUNT(*) as c FROM context GROUP BY type').all() as {
+    type: string;
+    c: number;
+  }[];
   const byType: Record<string, number> = {};
   for (const r of typeRows) byType[r.type] = r.c;
   return { total, byType };

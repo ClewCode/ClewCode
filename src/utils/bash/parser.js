@@ -2,6 +2,7 @@ import { feature } from 'bun:bundle';
 import { logEvent } from '../../services/analytics/index.js';
 import { logForDebugging } from '../debug.js';
 import { ensureParserInitialized, getParserModule } from './bashParser.js';
+
 const MAX_COMMAND_LENGTH = 10000;
 const DECLARATION_COMMANDS = new Set(['export', 'declare', 'typeset', 'readonly', 'local', 'unset', 'unsetenv']);
 const ARGUMENT_TYPES = new Set(['word', 'string', 'raw_string', 'number']);
@@ -9,47 +10,42 @@ const SUBSTITUTION_TYPES = new Set(['command_substitution', 'process_substitutio
 const COMMAND_TYPES = new Set(['command', 'declaration_command']);
 let logged = false;
 function logLoadOnce(success) {
-    if (logged)
-        return;
-    logged = true;
-    logForDebugging(success ? 'tree-sitter: native module loaded' : 'tree-sitter: unavailable');
-    logEvent('tengu_tree_sitter_load', { success });
+  if (logged) return;
+  logged = true;
+  logForDebugging(success ? 'tree-sitter: native module loaded' : 'tree-sitter: unavailable');
+  logEvent('tengu_tree_sitter_load', { success });
 }
 /**
  * Awaits WASM init (Parser.init + Language.load). Must be called before
  * parseCommand/parseCommandRaw for the parser to be available. Idempotent.
  */
 export async function ensureInitialized() {
-    if (feature('TREE_SITTER_BASH') || feature('TREE_SITTER_BASH_SHADOW')) {
-        await ensureParserInitialized();
-    }
+  if (feature('TREE_SITTER_BASH') || feature('TREE_SITTER_BASH_SHADOW')) {
+    await ensureParserInitialized();
+  }
 }
 export async function parseCommand(command) {
-    if (!command || command.length > MAX_COMMAND_LENGTH)
-        return null;
-    // Gate: ant-only until pentest. External builds fall back to legacy
-    // regex/shell-quote path. Guarding the whole body inside the positive
-    // branch lets Bun DCE the NAPI import AND keeps telemetry honest — we
-    // only fire tengu_tree_sitter_load when a load was genuinely attempted.
-    if (feature('TREE_SITTER_BASH')) {
-        await ensureParserInitialized();
-        const mod = getParserModule();
-        logLoadOnce(mod !== null);
-        if (!mod)
-            return null;
-        try {
-            const rootNode = mod.parse(command);
-            if (!rootNode)
-                return null;
-            const commandNode = findCommandNode(rootNode, null);
-            const envVars = extractEnvVars(commandNode);
-            return { rootNode, envVars, commandNode, originalCommand: command };
-        }
-        catch {
-            return null;
-        }
+  if (!command || command.length > MAX_COMMAND_LENGTH) return null;
+  // Gate: ant-only until pentest. External builds fall back to legacy
+  // regex/shell-quote path. Guarding the whole body inside the positive
+  // branch lets Bun DCE the NAPI import AND keeps telemetry honest — we
+  // only fire tengu_tree_sitter_load when a load was genuinely attempted.
+  if (feature('TREE_SITTER_BASH')) {
+    await ensureParserInitialized();
+    const mod = getParserModule();
+    logLoadOnce(mod !== null);
+    if (!mod) return null;
+    try {
+      const rootNode = mod.parse(command);
+      if (!rootNode) return null;
+      const commandNode = findCommandNode(rootNode, null);
+      const envVars = extractEnvVars(commandNode);
+      return { rootNode, envVars, commandNode, originalCommand: command };
+    } catch {
+      return null;
     }
-    return null;
+  }
+  return null;
 }
 /**
  * SECURITY: Sentinel for "parser was loaded and attempted, but aborted"
@@ -69,111 +65,101 @@ export const PARSE_ABORTED = Symbol('parse-aborted');
  *   - PARSE_ABORTED: module loaded but parse failed (timeout/panic)
  */
 export async function parseCommandRaw(command) {
-    if (!command || command.length > MAX_COMMAND_LENGTH)
-        return null;
-    if (feature('TREE_SITTER_BASH') || feature('TREE_SITTER_BASH_SHADOW')) {
-        await ensureParserInitialized();
-        const mod = getParserModule();
-        logLoadOnce(mod !== null);
-        if (!mod)
-            return null;
-        try {
-            const result = mod.parse(command);
-            // SECURITY: Module loaded; null here = timeout/node-budget abort in
-            // bashParser.ts (PARSE_TIMEOUT_MS=50, MAX_NODES=50_000).
-            // Previously collapsed into `return null` → parse-unavailable → legacy
-            // path, which lacks EVAL_LIKE_BUILTINS — `trap`, `enable`, `hash` leaked.
-            if (result === null) {
-                logEvent('tengu_tree_sitter_parse_abort', {
-                    cmdLength: command.length,
-                    panic: false,
-                });
-                return PARSE_ABORTED;
-            }
-            return result;
-        }
-        catch {
-            logEvent('tengu_tree_sitter_parse_abort', {
-                cmdLength: command.length,
-                panic: true,
-            });
-            return PARSE_ABORTED;
-        }
+  if (!command || command.length > MAX_COMMAND_LENGTH) return null;
+  if (feature('TREE_SITTER_BASH') || feature('TREE_SITTER_BASH_SHADOW')) {
+    await ensureParserInitialized();
+    const mod = getParserModule();
+    logLoadOnce(mod !== null);
+    if (!mod) return null;
+    try {
+      const result = mod.parse(command);
+      // SECURITY: Module loaded; null here = timeout/node-budget abort in
+      // bashParser.ts (PARSE_TIMEOUT_MS=50, MAX_NODES=50_000).
+      // Previously collapsed into `return null` → parse-unavailable → legacy
+      // path, which lacks EVAL_LIKE_BUILTINS — `trap`, `enable`, `hash` leaked.
+      if (result === null) {
+        logEvent('tengu_tree_sitter_parse_abort', {
+          cmdLength: command.length,
+          panic: false,
+        });
+        return PARSE_ABORTED;
+      }
+      return result;
+    } catch {
+      logEvent('tengu_tree_sitter_parse_abort', {
+        cmdLength: command.length,
+        panic: true,
+      });
+      return PARSE_ABORTED;
     }
-    return null;
+  }
+  return null;
 }
 function findCommandNode(node, parent) {
-    const { type, children } = node;
-    if (COMMAND_TYPES.has(type))
-        return node;
-    // Variable assignment followed by command
-    if (type === 'variable_assignment' && parent) {
-        return parent.children.find(c => COMMAND_TYPES.has(c.type) && c.startIndex > node.startIndex) ?? null;
-    }
-    // Pipeline: recurse into first child (which may be a redirected_statement)
-    if (type === 'pipeline') {
-        for (const child of children) {
-            const result = findCommandNode(child, node);
-            if (result)
-                return result;
-        }
-        return null;
-    }
-    // Redirected statement: find the command inside
-    if (type === 'redirected_statement') {
-        return children.find(c => COMMAND_TYPES.has(c.type)) ?? null;
-    }
-    // Recursive search
+  const { type, children } = node;
+  if (COMMAND_TYPES.has(type)) return node;
+  // Variable assignment followed by command
+  if (type === 'variable_assignment' && parent) {
+    return parent.children.find(c => COMMAND_TYPES.has(c.type) && c.startIndex > node.startIndex) ?? null;
+  }
+  // Pipeline: recurse into first child (which may be a redirected_statement)
+  if (type === 'pipeline') {
     for (const child of children) {
-        const result = findCommandNode(child, node);
-        if (result)
-            return result;
+      const result = findCommandNode(child, node);
+      if (result) return result;
     }
     return null;
+  }
+  // Redirected statement: find the command inside
+  if (type === 'redirected_statement') {
+    return children.find(c => COMMAND_TYPES.has(c.type)) ?? null;
+  }
+  // Recursive search
+  for (const child of children) {
+    const result = findCommandNode(child, node);
+    if (result) return result;
+  }
+  return null;
 }
 function extractEnvVars(commandNode) {
-    if (!commandNode || commandNode.type !== 'command')
-        return [];
-    const envVars = [];
-    for (const child of commandNode.children) {
-        if (child.type === 'variable_assignment') {
-            envVars.push(child.text);
-        }
-        else if (child.type === 'command_name' || child.type === 'word') {
-            break;
-        }
+  if (commandNode?.type !== 'command') return [];
+  const envVars = [];
+  for (const child of commandNode.children) {
+    if (child.type === 'variable_assignment') {
+      envVars.push(child.text);
+    } else if (child.type === 'command_name' || child.type === 'word') {
+      break;
     }
-    return envVars;
+  }
+  return envVars;
 }
 export function extractCommandArguments(commandNode) {
-    // Declaration commands
-    if (commandNode.type === 'declaration_command') {
-        const firstChild = commandNode.children[0];
-        return firstChild && DECLARATION_COMMANDS.has(firstChild.text) ? [firstChild.text] : [];
+  // Declaration commands
+  if (commandNode.type === 'declaration_command') {
+    const firstChild = commandNode.children[0];
+    return firstChild && DECLARATION_COMMANDS.has(firstChild.text) ? [firstChild.text] : [];
+  }
+  const args = [];
+  let foundCommandName = false;
+  for (const child of commandNode.children) {
+    if (child.type === 'variable_assignment') continue;
+    // Command name
+    if (child.type === 'command_name' || (!foundCommandName && child.type === 'word')) {
+      foundCommandName = true;
+      args.push(child.text);
+      continue;
     }
-    const args = [];
-    let foundCommandName = false;
-    for (const child of commandNode.children) {
-        if (child.type === 'variable_assignment')
-            continue;
-        // Command name
-        if (child.type === 'command_name' || (!foundCommandName && child.type === 'word')) {
-            foundCommandName = true;
-            args.push(child.text);
-            continue;
-        }
-        // Arguments
-        if (ARGUMENT_TYPES.has(child.type)) {
-            args.push(stripQuotes(child.text));
-        }
-        else if (SUBSTITUTION_TYPES.has(child.type)) {
-            break;
-        }
+    // Arguments
+    if (ARGUMENT_TYPES.has(child.type)) {
+      args.push(stripQuotes(child.text));
+    } else if (SUBSTITUTION_TYPES.has(child.type)) {
+      break;
     }
-    return args;
+  }
+  return args;
 }
 function stripQuotes(text) {
-    return text.length >= 2 && ((text[0] === '"' && text.at(-1) === '"') || (text[0] === "'" && text.at(-1) === "'"))
-        ? text.slice(1, -1)
-        : text;
+  return text.length >= 2 && ((text[0] === '"' && text.at(-1) === '"') || (text[0] === "'" && text.at(-1) === "'"))
+    ? text.slice(1, -1)
+    : text;
 }

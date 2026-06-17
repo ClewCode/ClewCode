@@ -6,6 +6,7 @@
  */
 import memoize from 'lodash-es/memoize.js';
 import { which } from '../which.js';
+
 /**
  * Check if a command is available in PATH.
  *
@@ -17,12 +18,11 @@ import { which } from '../which.js';
  * @returns True if the command exists and is executable
  */
 async function isCommandAvailable(command) {
-    try {
-        return !!(await which(command));
-    }
-    catch {
-        return false;
-    }
+  try {
+    return !!(await which(command));
+  } catch {
+    return false;
+  }
 }
 /**
  * Check if git is available on the system.
@@ -38,7 +38,7 @@ async function isCommandAvailable(command) {
  * @returns True if git is installed and executable
  */
 export const checkGitAvailable = memoize(async () => {
-    return isCommandAvailable('git');
+  return isCommandAvailable('git');
 });
 /**
  * Force the memoized git-availability check to return false for the rest of
@@ -54,12 +54,12 @@ export const checkGitAvailable = memoize(async () => {
  * lodash memoize uses a no-arg cache key of undefined.
  */
 export function markGitUnavailable() {
-    checkGitAvailable.cache?.set?.(undefined, Promise.resolve(false));
+  checkGitAvailable.cache?.set?.(undefined, Promise.resolve(false));
 }
 /**
  * Clear the git availability cache.
  * Used for testing purposes.
  */
 export function clearGitAvailabilityCache() {
-    checkGitAvailable.cache?.clear?.();
+  checkGitAvailable.cache?.clear?.();
 }

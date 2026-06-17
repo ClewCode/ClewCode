@@ -13,7 +13,7 @@
 import type { CanUseToolFn } from '../../hooks/useCanUseTool.js';
 import type { Message } from '../../types/message.js';
 import { type CacheSafeParams, runForkedAgent } from '../../utils/forkedAgent.js';
-import { createUserMessage, getLastAssistantMessage, getAssistantMessageText } from '../../utils/messages.js';
+import { createUserMessage, getAssistantMessageText, getLastAssistantMessage } from '../../utils/messages.js';
 
 export type VerificationResult = {
   isComplete: boolean;
@@ -41,8 +41,8 @@ Output format (use exactly these markers):
  */
 export async function verifyGoalCompletion(
   goalText: string,
-  messages: Message[],
-  canUseTool: CanUseToolFn,
+  _messages: Message[],
+  _canUseTool: CanUseToolFn,
   cacheSafeParams: CacheSafeParams,
 ): Promise<VerificationResult> {
   try {

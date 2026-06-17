@@ -26,153 +26,145 @@ export const ESCALATED_MAX_TOKENS = 64_000;
  * Used by C4E admins to disable 1M context for HIPAA compliance.
  */
 export function is1mContextDisabled() {
-    return isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_1M_CONTEXT);
+  return isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_1M_CONTEXT);
 }
 export function has1mContext(model) {
-    if (is1mContextDisabled()) {
-        return false;
-    }
-    return /\[1m\]/i.test(model);
+  if (is1mContextDisabled()) {
+    return false;
+  }
+  return /\[1m\]/i.test(model);
 }
 // @[MODEL LAUNCH]: Update this pattern if the new model supports 1M context
 export function modelSupports1M(model) {
-    if (is1mContextDisabled()) {
-        return false;
-    }
-    const canonical = getCanonicalName(model);
-    return canonical.includes('claude-sonnet-4') || canonical.includes('claude-opus-4-7');
+  if (is1mContextDisabled()) {
+    return false;
+  }
+  const canonical = getCanonicalName(model);
+  return canonical.includes('claude-sonnet-4') || canonical.includes('claude-opus-4-7');
 }
 export function getContextWindowForModel(model, betas) {
-    // Allow override via environment variable (ant-only)
-    // This takes precedence over all other context window resolution, including 1M detection,
-    // so users can cap the effective context window for local decisions (auto-compact, etc.)
-    // while still using a 1M-capable endpoint.
-    if (process.env.USER_TYPE === 'ant' && process.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS) {
-        const override = parseInt(process.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS, 10);
-        if (!isNaN(override) && override > 0) {
-            return override;
-        }
+  // Allow override via environment variable (ant-only)
+  // This takes precedence over all other context window resolution, including 1M detection,
+  // so users can cap the effective context window for local decisions (auto-compact, etc.)
+  // while still using a 1M-capable endpoint.
+  if (process.env.USER_TYPE === 'ant' && process.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS) {
+    const override = parseInt(process.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS, 10);
+    if (!Number.isNaN(override) && override > 0) {
+      return override;
     }
-    // [1m] suffix — explicit client-side opt-in, respected over all detection
-    if (has1mContext(model)) {
-        return 1_000_000;
+  }
+  // [1m] suffix — explicit client-side opt-in, respected over all detection
+  if (has1mContext(model)) {
+    return 1_000_000;
+  }
+  const cap = getModelCapability(model);
+  if (cap?.max_input_tokens && cap.max_input_tokens >= 100_000) {
+    if (cap.max_input_tokens > MODEL_CONTEXT_WINDOW_DEFAULT && is1mContextDisabled()) {
+      return MODEL_CONTEXT_WINDOW_DEFAULT;
     }
-    const cap = getModelCapability(model);
-    if (cap?.max_input_tokens && cap.max_input_tokens >= 100_000) {
-        if (cap.max_input_tokens > MODEL_CONTEXT_WINDOW_DEFAULT && is1mContextDisabled()) {
-            return MODEL_CONTEXT_WINDOW_DEFAULT;
-        }
-        return cap.max_input_tokens;
+    return cap.max_input_tokens;
+  }
+  if (betas?.includes(CONTEXT_1M_BETA_HEADER) && modelSupports1M(model)) {
+    return 1_000_000;
+  }
+  if (getSonnet1mExpTreatmentEnabled(model)) {
+    return 1_000_000;
+  }
+  if (process.env.USER_TYPE === 'ant') {
+    const antModel = resolveAntModel(model);
+    if (antModel?.contextWindow) {
+      return antModel.contextWindow;
     }
-    if (betas?.includes(CONTEXT_1M_BETA_HEADER) && modelSupports1M(model)) {
-        return 1_000_000;
-    }
-    if (getSonnet1mExpTreatmentEnabled(model)) {
-        return 1_000_000;
-    }
-    if (process.env.USER_TYPE === 'ant') {
-        const antModel = resolveAntModel(model);
-        if (antModel?.contextWindow) {
-            return antModel.contextWindow;
-        }
-    }
-    // Look up from provider registry (supports all providers: OpenRouter, OpenAI, Google, etc.)
-    const contextFromRegistry = getContextWindowFromRegistry(model);
-    if (contextFromRegistry !== null) {
-        return contextFromRegistry;
-    }
-    return MODEL_CONTEXT_WINDOW_DEFAULT;
+  }
+  // Look up from provider registry (supports all providers: OpenRouter, OpenAI, Google, etc.)
+  const contextFromRegistry = getContextWindowFromRegistry(model);
+  if (contextFromRegistry !== null) {
+    return contextFromRegistry;
+  }
+  return MODEL_CONTEXT_WINDOW_DEFAULT;
 }
 export function getSonnet1mExpTreatmentEnabled(model) {
-    if (is1mContextDisabled()) {
-        return false;
-    }
-    // Only applies to sonnet 4.6 without an explicit [1m] suffix
-    if (has1mContext(model)) {
-        return false;
-    }
-    if (!getCanonicalName(model).includes('sonnet-4-6')) {
-        return false;
-    }
-    return getGlobalConfig().clientDataCache?.['coral_reef_sonnet'] === 'true';
+  if (is1mContextDisabled()) {
+    return false;
+  }
+  // Only applies to sonnet 4.6 without an explicit [1m] suffix
+  if (has1mContext(model)) {
+    return false;
+  }
+  if (!getCanonicalName(model).includes('sonnet-4-6')) {
+    return false;
+  }
+  return getGlobalConfig().clientDataCache?.['coral_reef_sonnet'] === 'true';
 }
 /**
  * Calculate context window usage percentage from token usage data.
  * Returns used and remaining percentages, or null values if no usage data.
  */
 export function calculateContextPercentages(currentUsage, contextWindowSize) {
-    if (!currentUsage) {
-        return { used: null, remaining: null };
-    }
-    const totalInputTokens = currentUsage.input_tokens + currentUsage.cache_creation_input_tokens + currentUsage.cache_read_input_tokens;
-    const usedPercentage = Math.round((totalInputTokens / contextWindowSize) * 100);
-    const clampedUsed = Math.min(100, Math.max(0, usedPercentage));
-    return {
-        used: clampedUsed,
-        remaining: 100 - clampedUsed,
-    };
+  if (!currentUsage) {
+    return { used: null, remaining: null };
+  }
+  const totalInputTokens =
+    currentUsage.input_tokens + currentUsage.cache_creation_input_tokens + currentUsage.cache_read_input_tokens;
+  const usedPercentage = Math.round((totalInputTokens / contextWindowSize) * 100);
+  const clampedUsed = Math.min(100, Math.max(0, usedPercentage));
+  return {
+    used: clampedUsed,
+    remaining: 100 - clampedUsed,
+  };
 }
 /**
  * Returns the model's default and upper limit for max output tokens.
  */
 export function getModelMaxOutputTokens(model) {
-    let defaultTokens;
-    let upperLimit;
-    if (process.env.USER_TYPE === 'ant') {
-        const antModel = resolveAntModel(model.toLowerCase());
-        if (antModel) {
-            defaultTokens = antModel.defaultMaxTokens ?? MAX_OUTPUT_TOKENS_DEFAULT;
-            upperLimit = antModel.upperMaxTokensLimit ?? MAX_OUTPUT_TOKENS_UPPER_LIMIT;
-            return { default: defaultTokens, upperLimit };
-        }
+  let defaultTokens;
+  let upperLimit;
+  if (process.env.USER_TYPE === 'ant') {
+    const antModel = resolveAntModel(model.toLowerCase());
+    if (antModel) {
+      defaultTokens = antModel.defaultMaxTokens ?? MAX_OUTPUT_TOKENS_DEFAULT;
+      upperLimit = antModel.upperMaxTokensLimit ?? MAX_OUTPUT_TOKENS_UPPER_LIMIT;
+      return { default: defaultTokens, upperLimit };
     }
-    const m = getCanonicalName(model);
-    if (m.includes('opus-4-6')) {
-        defaultTokens = 64_000;
-        upperLimit = 128_000;
-    }
-    else if (m.includes('sonnet-4-6')) {
-        defaultTokens = 32_000;
-        upperLimit = 128_000;
-    }
-    else if (m.includes('opus-4-5') || m.includes('sonnet-4') || m.includes('haiku-4')) {
-        defaultTokens = 32_000;
-        upperLimit = 64_000;
-    }
-    else if (m.includes('opus-4-1') || m.includes('opus-4')) {
-        defaultTokens = 32_000;
-        upperLimit = 32_000;
-    }
-    else if (m.includes('claude-3-opus')) {
-        defaultTokens = 4_096;
-        upperLimit = 4_096;
-    }
-    else if (m.includes('claude-3-sonnet')) {
-        defaultTokens = 8_192;
-        upperLimit = 8_192;
-    }
-    else if (m.includes('claude-3-haiku')) {
-        defaultTokens = 4_096;
-        upperLimit = 4_096;
-    }
-    else if (m.includes('3-5-sonnet') || m.includes('3-5-haiku')) {
-        defaultTokens = 8_192;
-        upperLimit = 8_192;
-    }
-    else if (m.includes('3-7-sonnet')) {
-        defaultTokens = 32_000;
-        upperLimit = 64_000;
-    }
-    else {
-        defaultTokens = MAX_OUTPUT_TOKENS_DEFAULT;
-        upperLimit = MAX_OUTPUT_TOKENS_UPPER_LIMIT;
-    }
-    const cap = getModelCapability(model);
-    if (cap?.max_tokens && cap.max_tokens >= 4_096) {
-        upperLimit = cap.max_tokens;
-        defaultTokens = Math.min(defaultTokens, upperLimit);
-    }
-    return { default: defaultTokens, upperLimit };
+  }
+  const m = getCanonicalName(model);
+  if (m.includes('opus-4-6')) {
+    defaultTokens = 64_000;
+    upperLimit = 128_000;
+  } else if (m.includes('sonnet-4-6')) {
+    defaultTokens = 32_000;
+    upperLimit = 128_000;
+  } else if (m.includes('opus-4-5') || m.includes('sonnet-4') || m.includes('haiku-4')) {
+    defaultTokens = 32_000;
+    upperLimit = 64_000;
+  } else if (m.includes('opus-4-1') || m.includes('opus-4')) {
+    defaultTokens = 32_000;
+    upperLimit = 32_000;
+  } else if (m.includes('claude-3-opus')) {
+    defaultTokens = 4_096;
+    upperLimit = 4_096;
+  } else if (m.includes('claude-3-sonnet')) {
+    defaultTokens = 8_192;
+    upperLimit = 8_192;
+  } else if (m.includes('claude-3-haiku')) {
+    defaultTokens = 4_096;
+    upperLimit = 4_096;
+  } else if (m.includes('3-5-sonnet') || m.includes('3-5-haiku')) {
+    defaultTokens = 8_192;
+    upperLimit = 8_192;
+  } else if (m.includes('3-7-sonnet')) {
+    defaultTokens = 32_000;
+    upperLimit = 64_000;
+  } else {
+    defaultTokens = MAX_OUTPUT_TOKENS_DEFAULT;
+    upperLimit = MAX_OUTPUT_TOKENS_UPPER_LIMIT;
+  }
+  const cap = getModelCapability(model);
+  if (cap?.max_tokens && cap.max_tokens >= 4_096) {
+    upperLimit = cap.max_tokens;
+    defaultTokens = Math.min(defaultTokens, upperLimit);
+  }
+  return { default: defaultTokens, upperLimit };
 }
 /**
  * Returns the max thinking budget tokens for a given model. The max
@@ -182,7 +174,7 @@ export function getModelMaxOutputTokens(model) {
  * strict thinking token budget.
  */
 export function getMaxThinkingTokensForModel(model) {
-    return getModelMaxOutputTokens(model).upperLimit - 1;
+  return getModelMaxOutputTokens(model).upperLimit - 1;
 }
 /**
  * Look up context window size from provider registry.
@@ -190,69 +182,65 @@ export function getMaxThinkingTokensForModel(model) {
  * Returns null if not found, allowing fallback to default.
  */
 function getContextWindowFromRegistry(model) {
-    const canonical = getCanonicalName(model);
-    // Map provider ID to registry lookup
-    const providerIdMap = {
-        openrouter: 'openrouter',
-        openai: 'openai',
-        deepseek: 'deepseek',
-        opencode: 'opencode',
-        'opencode-go': 'opencode-go',
-        google: 'google',
-        anthropic: 'anthropic',
-        kilocode: 'kilocode',
-        ollama: 'ollama',
-        chatgpt: 'chatgpt',
-        cline: 'cline',
-        groq: 'groq',
-        xai: 'xai',
-        mistral: 'mistral',
-    };
-    // Try each provider to find matching model
-    for (const [_providerKey, providerId] of Object.entries(providerIdMap)) {
-        try {
-            const entry = getProviderRegistryEntry(providerId);
-            if (!entry)
-                continue;
-            const modelInfo = entry.models.find(m => canonical.includes(m.id) || m.id.includes(canonical));
-            if (modelInfo?.capabilities.maxContext) {
-                const maxCtx = modelInfo.capabilities.maxContext;
-                if (typeof maxCtx === 'number') {
-                    return maxCtx;
-                }
-            }
+  const canonical = getCanonicalName(model);
+  // Map provider ID to registry lookup
+  const providerIdMap = {
+    openrouter: 'openrouter',
+    openai: 'openai',
+    deepseek: 'deepseek',
+    opencode: 'opencode',
+    'opencode-go': 'opencode-go',
+    google: 'google',
+    anthropic: 'anthropic',
+    kilocode: 'kilocode',
+    ollama: 'ollama',
+    chatgpt: 'chatgpt',
+    cline: 'cline',
+    groq: 'groq',
+    xai: 'xai',
+    mistral: 'mistral',
+  };
+  // Try each provider to find matching model
+  for (const [_providerKey, providerId] of Object.entries(providerIdMap)) {
+    try {
+      const entry = getProviderRegistryEntry(providerId);
+      if (!entry) continue;
+      const modelInfo = entry.models.find(m => canonical.includes(m.id) || m.id.includes(canonical));
+      if (modelInfo?.capabilities.maxContext) {
+        const maxCtx = modelInfo.capabilities.maxContext;
+        if (typeof maxCtx === 'number') {
+          return maxCtx;
         }
-        catch {
-            // Provider not available, skip
-        }
+      }
+    } catch {
+      // Provider not available, skip
     }
-    // Also check all providers for exact match (for models like "deepseek-v4-pro")
-    const allProviders = [
-        'openrouter',
-        'openai',
-        'deepseek',
-        'opencode',
-        'opencode-go',
-        'google',
-        'anthropic',
-        'kilocode',
-        'ollama',
-        'cline',
-        'groq',
-        'xai',
-        'mistral',
-    ];
-    for (const providerId of allProviders) {
-        try {
-            const entry = getProviderRegistryEntry(providerId);
-            if (!entry)
-                continue;
-            const modelInfo = entry.models.find(m => m.id === model || m.id.endsWith(model));
-            if (modelInfo?.capabilities.maxContext && typeof modelInfo.capabilities.maxContext === 'number') {
-                return modelInfo.capabilities.maxContext;
-            }
-        }
-        catch { }
-    }
-    return null;
+  }
+  // Also check all providers for exact match (for models like "deepseek-v4-pro")
+  const allProviders = [
+    'openrouter',
+    'openai',
+    'deepseek',
+    'opencode',
+    'opencode-go',
+    'google',
+    'anthropic',
+    'kilocode',
+    'ollama',
+    'cline',
+    'groq',
+    'xai',
+    'mistral',
+  ];
+  for (const providerId of allProviders) {
+    try {
+      const entry = getProviderRegistryEntry(providerId);
+      if (!entry) continue;
+      const modelInfo = entry.models.find(m => m.id === model || m.id.endsWith(model));
+      if (modelInfo?.capabilities.maxContext && typeof modelInfo.capabilities.maxContext === 'number') {
+        return modelInfo.capabilities.maxContext;
+      }
+    } catch {}
+  }
+  return null;
 }

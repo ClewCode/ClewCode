@@ -70,7 +70,7 @@ export function AppStateProvider({ children, initialState, onChangeAppState }: P
       }));
     }
     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
-  }, []);
+  }, [store.getState, store.setState]);
 
   // Bootstrap dynamic-workflow (ultracode) globals on mount.
   // This wires __appState, __ultracodePlannerLlm, etc. into globalThis
@@ -86,7 +86,7 @@ export function AppStateProvider({ children, initialState, onChangeAppState }: P
       // bootstrap is best-effort; the app must work without it.
     }
     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
-  }, []);
+  }, [store]);
 
   // Listen for external settings changes and sync to AppState.
   // This ensures file watcher changes propagate through the app --

@@ -65,7 +65,7 @@ export function TeleportError({
 
   const handleLoginWithClaudeAI = useCallback(() => {
     setIsLoggingIn(true);
-  }, [setIsLoggingIn]);
+  }, []);
 
   const handleLoginDialogSelect = useCallback(
     (value: string) => {

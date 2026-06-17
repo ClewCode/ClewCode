@@ -168,7 +168,7 @@ export function setFullGoalState(state: GoalState | null): void {
   // no args can show its final stats after clear. Only remember goals
   // that actually got somewhere (achieved or actively used), not
   // bare null initializations.
-  if (currentGoalState && currentGoalState.goal && state === null) {
+  if (currentGoalState?.goal && state === null) {
     lastAchieved = { ...currentGoalState, endedAt: currentGoalState.endedAt ?? Date.now() };
   }
   currentGoal = state?.goal ?? null;

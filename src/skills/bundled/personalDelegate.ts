@@ -47,8 +47,7 @@ export function registerPersonalDelegateSkill(): void {
     description:
       'Delegate coding work to a Codex worker via process_peer. Use when you need coding done in personal profile — creates a structured task, spawns a worker, and reports results.',
     aliases: ['code', 'worker'],
-    whenToUse:
-      'Personal profile: any coding task should be delegated instead of done directly.',
+    whenToUse: 'Personal profile: any coding task should be delegated instead of done directly.',
     userInvocable: true,
     async getPromptForCommand(args) {
       let prompt = SKILL_PROMPT;

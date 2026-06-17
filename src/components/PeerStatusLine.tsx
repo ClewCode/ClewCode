@@ -23,7 +23,9 @@ export function PeerStatusLine(): React.ReactNode {
     const update = () => {
       const storePeers = store.getPeers();
       const isSharing = discovery.isSharing;
-      logForDebugging(`[PeerStatusLine] Update: peers=${storePeers.length}, sharing=${isSharing}, storeConnections=${store.getConnections().length}`);
+      logForDebugging(
+        `[PeerStatusLine] Update: peers=${storePeers.length}, sharing=${isSharing}, storeConnections=${store.getConnections().length}`,
+      );
       setPeers(storePeers);
       setSharing(isSharing);
       setMyName(server.extraInfo.displayName || discovery.hostname);

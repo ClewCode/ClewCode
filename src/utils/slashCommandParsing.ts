@@ -44,7 +44,7 @@ export function parseSlashCommand(input: string): ParsedSlashCommand | null {
 
   // Check for MCP commands (second word is '(MCP)')
   if (words.length > 1 && words[1] === '(MCP)') {
-    commandName = commandName + ' (MCP)';
+    commandName = `${commandName} (MCP)`;
     isMcp = true;
     argsStartIndex = 2;
   }

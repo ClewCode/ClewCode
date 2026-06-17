@@ -5,15 +5,15 @@ import { getTheme } from '../../utils/theme.js';
  * values before delegating to the ink renderer's colorize.
  */
 export function color(c, theme, type = 'foreground') {
-    return text => {
-        if (!c) {
-            return text;
-        }
-        // Raw color values bypass theme lookup
-        if (c.startsWith('rgb(') || c.startsWith('#') || c.startsWith('ansi256(') || c.startsWith('ansi:')) {
-            return colorize(text, c, type);
-        }
-        // Theme key lookup
-        return colorize(text, getTheme(theme)[c], type);
-    };
+  return text => {
+    if (!c) {
+      return text;
+    }
+    // Raw color values bypass theme lookup
+    if (c.startsWith('rgb(') || c.startsWith('#') || c.startsWith('ansi256(') || c.startsWith('ansi:')) {
+      return colorize(text, c, type);
+    }
+    // Theme key lookup
+    return colorize(text, getTheme(theme)[c], type);
+  };
 }

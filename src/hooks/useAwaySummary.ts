@@ -4,7 +4,7 @@ import { getTerminalFocusState, subscribeTerminalFocus } from '../ink/terminal-f
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
 import { generateAwaySummary } from '../services/awaySummary.js';
 import type { Message } from '../types/message.js';
-import { isEnvDefinedFalsy, isEnvTruthy } from '../utils/envUtils.js';
+import { isEnvDefinedFalsy } from '../utils/envUtils.js';
 import { createAwaySummaryMessage } from '../utils/messages.js';
 import { getAPIProvider } from '../utils/model/providers.js';
 import { isTelemetryDisabled } from '../utils/privacyLevel.js';

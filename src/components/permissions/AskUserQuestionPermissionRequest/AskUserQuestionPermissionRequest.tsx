@@ -409,49 +409,45 @@ Questions asked and answers provided:\n${questionsWithAnswers}`;
 
   if (currentQuestion) {
     return (
-      <>
-        <QuestionView
-          question={currentQuestion}
-          questions={questions}
-          currentQuestionIndex={currentQuestionIndex}
-          answers={answers}
-          questionStates={questionStates}
-          hideSubmitTab={hideSubmitTab}
-          minContentHeight={globalContentHeight}
-          minContentWidth={globalContentWidth}
-          planFilePath={planFilePath}
-          onUpdateQuestionState={updateQuestionState}
-          onAnswer={handleQuestionAnswer}
-          onTextInputFocus={setTextInputMode}
-          onCancel={handleCancel}
-          onSubmit={nextQuestion}
-          onTabPrev={handleTabPrev}
-          onTabNext={handleTabNext}
-          onRespondToClaude={handleRespondToClaude}
-          onFinishPlanInterview={handleFinishPlanInterview}
-          onImagePaste={(base64, mediaType, filename, dims, path) =>
-            onImagePaste(currentQuestion.question, base64, mediaType, filename, dims, path)
-          }
-          pastedContents={pastedContentsByQuestion[currentQuestion.question] ?? {}}
-          onRemoveImage={id => onRemoveImage(currentQuestion.question, id)}
-        />
-      </>
+      <QuestionView
+        question={currentQuestion}
+        questions={questions}
+        currentQuestionIndex={currentQuestionIndex}
+        answers={answers}
+        questionStates={questionStates}
+        hideSubmitTab={hideSubmitTab}
+        minContentHeight={globalContentHeight}
+        minContentWidth={globalContentWidth}
+        planFilePath={planFilePath}
+        onUpdateQuestionState={updateQuestionState}
+        onAnswer={handleQuestionAnswer}
+        onTextInputFocus={setTextInputMode}
+        onCancel={handleCancel}
+        onSubmit={nextQuestion}
+        onTabPrev={handleTabPrev}
+        onTabNext={handleTabNext}
+        onRespondToClaude={handleRespondToClaude}
+        onFinishPlanInterview={handleFinishPlanInterview}
+        onImagePaste={(base64, mediaType, filename, dims, path) =>
+          onImagePaste(currentQuestion.question, base64, mediaType, filename, dims, path)
+        }
+        pastedContents={pastedContentsByQuestion[currentQuestion.question] ?? {}}
+        onRemoveImage={id => onRemoveImage(currentQuestion.question, id)}
+      />
     );
   }
 
   if (isInSubmitView) {
     return (
-      <>
-        <SubmitQuestionsView
-          questions={questions}
-          currentQuestionIndex={currentQuestionIndex}
-          answers={answers}
-          allQuestionsAnswered={allQuestionsAnswered}
-          permissionResult={toolUseConfirm.permissionResult}
-          minContentHeight={globalContentHeight}
-          onFinalResponse={handleFinalResponse}
-        />
-      </>
+      <SubmitQuestionsView
+        questions={questions}
+        currentQuestionIndex={currentQuestionIndex}
+        answers={answers}
+        allQuestionsAnswered={allQuestionsAnswered}
+        permissionResult={toolUseConfirm.permissionResult}
+        minContentHeight={globalContentHeight}
+        onFinalResponse={handleFinalResponse}
+      />
     );
   }
 

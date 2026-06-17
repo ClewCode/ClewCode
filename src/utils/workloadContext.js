@@ -19,7 +19,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 export const WORKLOAD_CRON = 'cron';
 const workloadStorage = new AsyncLocalStorage();
 export function getWorkload() {
-    return workloadStorage.getStore()?.workload;
+  return workloadStorage.getStore()?.workload;
 }
 /**
  * Wrap `fn` in a workload ALS context. ALWAYS establishes a new context
@@ -38,5 +38,5 @@ export function getWorkload() {
  * exactly what the caller passed — including `undefined`.
  */
 export function runWithWorkload(workload, fn) {
-    return workloadStorage.run({ workload }, fn);
+  return workloadStorage.run({ workload }, fn);
 }

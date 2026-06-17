@@ -77,7 +77,7 @@ function extractTodosFromTranscript(messages: Message[]): TodoList {
     const msg = messages[i];
     if (msg?.type !== 'assistant') continue;
     const toolUse = msg.message.content.find(block => block.type === 'tool_use' && block.name === TODO_WRITE_TOOL_NAME);
-    if (!toolUse || toolUse.type !== 'tool_use') continue;
+    if (toolUse?.type !== 'tool_use') continue;
     const input = toolUse.input;
     if (input === null || typeof input !== 'object') return [];
     const parsed = TodoListSchema().safeParse((input as Record<string, unknown>).todos);

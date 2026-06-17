@@ -1,54 +1,52 @@
 import sliceAnsi from '../utils/sliceAnsi.js';
 import { stringWidth } from './stringWidth.js';
 import { wrapAnsi } from './wrapAnsi.js';
+
 const ELLIPSIS = '…';
 // sliceAnsi may include a boundary-spanning wide char (e.g. CJK at position
 // end-1 with width 2 overshoots by 1). Retry with a tighter bound once.
 function sliceFit(text, start, end) {
-    const s = sliceAnsi(text, start, end);
-    return stringWidth(s) > end - start ? sliceAnsi(text, start, end - 1) : s;
+  const s = sliceAnsi(text, start, end);
+  return stringWidth(s) > end - start ? sliceAnsi(text, start, end - 1) : s;
 }
 function truncate(text, columns, position) {
-    if (columns < 1)
-        return '';
-    if (columns === 1)
-        return ELLIPSIS;
-    const length = stringWidth(text);
-    if (length <= columns)
-        return text;
-    if (position === 'start') {
-        return ELLIPSIS + sliceFit(text, length - columns + 1, length);
-    }
-    if (position === 'middle') {
-        const half = Math.floor(columns / 2);
-        return sliceFit(text, 0, half) + ELLIPSIS + sliceFit(text, length - (columns - half) + 1, length);
-    }
-    return sliceFit(text, 0, columns - 1) + ELLIPSIS;
+  if (columns < 1) return '';
+  if (columns === 1) return ELLIPSIS;
+  const length = stringWidth(text);
+  if (length <= columns) return text;
+  if (position === 'start') {
+    return ELLIPSIS + sliceFit(text, length - columns + 1, length);
+  }
+  if (position === 'middle') {
+    const half = Math.floor(columns / 2);
+    return sliceFit(text, 0, half) + ELLIPSIS + sliceFit(text, length - (columns - half) + 1, length);
+  }
+  return sliceFit(text, 0, columns - 1) + ELLIPSIS;
 }
 export default function wrapText(text, maxWidth, wrapType) {
-    if (wrapType === 'wrap') {
-        return wrapAnsi(text, maxWidth, {
-            trim: false,
-            hard: true,
-        });
+  if (wrapType === 'wrap') {
+    return wrapAnsi(text, maxWidth, {
+      trim: false,
+      hard: true,
+    });
+  }
+  if (wrapType === 'wrap-trim') {
+    // E16: Strip leading whitespace on continuation lines for clean wrapping
+    const wrapped = wrapAnsi(text, maxWidth, {
+      trim: true,
+      hard: true,
+    });
+    return wrapped;
+  }
+  if (wrapType.startsWith('truncate')) {
+    let position = 'end';
+    if (wrapType === 'truncate-middle') {
+      position = 'middle';
     }
-    if (wrapType === 'wrap-trim') {
-        // E16: Strip leading whitespace on continuation lines for clean wrapping
-        const wrapped = wrapAnsi(text, maxWidth, {
-            trim: true,
-            hard: true,
-        });
-        return wrapped;
+    if (wrapType === 'truncate-start') {
+      position = 'start';
     }
-    if (wrapType.startsWith('truncate')) {
-        let position = 'end';
-        if (wrapType === 'truncate-middle') {
-            position = 'middle';
-        }
-        if (wrapType === 'truncate-start') {
-            position = 'start';
-        }
-        return truncate(text, maxWidth, position);
-    }
-    return text;
+    return truncate(text, maxWidth, position);
+  }
+  return text;
 }

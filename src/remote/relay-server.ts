@@ -50,7 +50,7 @@ Bun.serve({
     return new Response('Clew Relay', { status: 200 });
   },
   websocket: {
-    open(ws) {
+    open(_ws) {
       // Wait for register message
     },
     message(ws, raw) {
@@ -112,7 +112,7 @@ Bun.serve({
             break;
           }
         }
-      } catch (e) {
+      } catch (_e) {
         ws.send(JSON.stringify({ type: 'error', message: 'Invalid message' }));
       }
     },

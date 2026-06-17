@@ -111,9 +111,7 @@ export const ProcessPeerTool = buildTool({
             React.createElement(Text, { bold: true }, `${provider} ${mode}`),
             React.createElement(Text, { color: statusColor }, `${status} | ${elapsed}`),
           ),
-          latest?.cwd
-            ? React.createElement(Text, { dimColor: true, wrap: 'truncate-end' }, latest.cwd)
-            : null,
+          latest?.cwd ? React.createElement(Text, { dimColor: true, wrap: 'truncate-end' }, latest.cwd) : null,
           React.createElement(Text, { dimColor: true, wrap: 'truncate-end' }, `$ ${command}`),
           outputLines.length > 0
             ? React.createElement(

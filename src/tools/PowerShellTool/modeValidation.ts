@@ -76,7 +76,7 @@ export function isSymlinkCreatingCommand(cmd: { name: string; args: string[] }):
     // Normalize unicode dash prefixes (–, —, ―) and forward-slash (PS 5.1
     // parameter prefix) → ASCII `-` so prefix comparison works. PS tokenizer
     // treats all four dash chars plus `/` as parameter markers. (bug #26)
-    const normalized = PS_TOKENIZER_DASH_CHARS.has(raw[0]!) || raw[0] === '/' ? '-' + raw.slice(1) : raw;
+    const normalized = PS_TOKENIZER_DASH_CHARS.has(raw[0]!) || raw[0] === '/' ? `-${raw.slice(1)}` : raw;
     const lower = normalized.toLowerCase();
     // Split colon-bound value: -it:SymbolicLink → param='-it', val='symboliclink'
     const colonIdx = lower.indexOf(':', 1);

@@ -315,7 +315,7 @@ export function createSessionSpawner(deps: SessionSpawnerDeps): SessionSpawner {
         stderrRl.on('line', line => {
           // Forward stderr to bridge's stderr in verbose mode
           if (deps.verbose) {
-            process.stderr.write(line + '\n');
+            process.stderr.write(`${line}\n`);
           }
           // Ring buffer of last N lines
           if (lastStderr.length >= MAX_STDERR_LINES) {
@@ -331,7 +331,7 @@ export function createSessionSpawner(deps: SessionSpawnerDeps): SessionSpawner {
         rl.on('line', line => {
           // Write raw NDJSON to transcript file
           if (transcriptStream) {
-            transcriptStream.write(line + '\n');
+            transcriptStream.write(`${line}\n`);
           }
 
           // Log all messages flowing from the child CLI to the bridge
@@ -339,7 +339,7 @@ export function createSessionSpawner(deps: SessionSpawnerDeps): SessionSpawner {
 
           // In verbose mode, forward raw output to stderr
           if (deps.verbose) {
-            process.stderr.write(line + '\n');
+            process.stderr.write(`${line}\n`);
           }
 
           const extracted = extractActivities(line, opts.sessionId, deps.onDebug);
@@ -458,10 +458,10 @@ export function createSessionSpawner(deps: SessionSpawnerDeps): SessionSpawner {
           // setting process.env directly, so getSessionIngressAuthToken()
           // picks up the new token on the next refreshHeaders call.
           handle.writeStdin(
-            jsonStringify({
+            `${jsonStringify({
               type: 'update_environment_variables',
               variables: { CLAUDE_CODE_SESSION_ACCESS_TOKEN: token },
-            }) + '\n',
+            })}\n`,
           );
           deps.onDebug(`[bridge:session] Sent token refresh via stdin for sessionId=${opts.sessionId}`);
         },

@@ -11,7 +11,11 @@ import { DESCRIPTION, PEER_SHARE_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
   z.object({
-    action: z.enum(['start', 'stop', 'status']).optional().default('status').describe('"start" to share, "stop" to stop, "status" to check'),
+    action: z
+      .enum(['start', 'stop', 'status'])
+      .optional()
+      .default('status')
+      .describe('"start" to share, "stop" to stop, "status" to check'),
   }),
 );
 

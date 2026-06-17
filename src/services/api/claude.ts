@@ -21,10 +21,7 @@ import type {
 import type { TextBlockParam } from '@anthropic-ai/sdk/resources/index.mjs';
 import type { Stream } from '@anthropic-ai/sdk/streaming.mjs';
 import { randomUUID } from 'crypto';
-import { readFileSync } from 'fs';
-import { readFile } from 'fs/promises';
 import { jsonrepair } from 'jsonrepair';
-import { join } from 'path';
 import { getAPIProvider, isFirstPartyAnthropicBaseUrl } from 'src/utils/model/providers.js';
 import { getAttributionHeader, getCLISyspromptPrefix } from '../../constants/system.js';
 import {
@@ -44,16 +41,8 @@ import type {
   SystemAPIErrorMessage,
   UserMessage,
 } from '../../types/message.js';
-import {
-  type CacheScope,
-  logAPIPrefix,
-  type SystemPromptBlock,
-  splitSysPromptPrefix,
-  toolToAPISchema,
-} from '../../utils/api.js';
-import { getOauthAccountInfo } from '../../utils/auth.js';
+import { type CacheScope, logAPIPrefix, splitSysPromptPrefix, toolToAPISchema } from '../../utils/api.js';
 import { getBedrockExtraBodyParamsBetas, getMergedBetas, getModelBetas } from '../../utils/betas.js';
-import { getOrCreateUserID } from '../../utils/config.js';
 import {
   CAPPED_DEFAULT_MAX_TOKENS,
   getModelMaxOutputTokens,
@@ -102,7 +91,6 @@ import {
   getLastApiCompletionTimestamp,
   getPromptCache1hAllowlist,
   getPromptCache1hEligible,
-  getSessionId,
   getThinkingClearLatched,
   setAfkModeHeaderLatched,
   setCacheEditingHeaderLatched,
@@ -126,7 +114,6 @@ import {
 import type { QuerySource } from 'src/constants/querySource.js';
 import type { Notification } from 'src/context/notifications.js';
 import { addToTotalSessionCost } from 'src/cost-tracker.js';
-import { fromOpenAIUsage } from 'src/services/ai/usageTypes.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from 'src/services/analytics/growthbook.js';
 import type { AgentId } from 'src/types/ids.js';
 import {
@@ -160,7 +147,7 @@ import {
 import { returnValue } from 'src/utils/generators.js';
 import { headlessProfilerCheckpoint } from 'src/utils/headlessProfiler.js';
 import { isMcpInstructionsDeltaEnabled } from 'src/utils/mcpInstructionsDelta.js';
-import { calculateUSDCost, calculateUSDCostFromProviderUsage } from 'src/utils/modelCost.js';
+import { calculateUSDCost } from 'src/utils/modelCost.js';
 import { endQueryProfile, queryCheckpoint } from 'src/utils/queryProfiler.js';
 import { modelSupportsAdaptiveThinking, modelSupportsThinking, type ThinkingConfig } from 'src/utils/thinking.js';
 import { extractDiscoveredToolNames, isDeferredToolsDeltaEnabled, isToolSearchEnabled } from 'src/utils/toolSearch.js';
@@ -180,14 +167,8 @@ import {
   type LLMRequestNewContext,
   startLLMRequestSpan,
 } from '../../utils/telemetry/sessionTracing.js';
-import { PROVIDER_CONFIG_PATH, ProviderManager } from '../ai/ProviderManager.js';
-import {
-  DEFAULT_PROVIDER,
-  getProviderRegistryEntry,
-  PROVIDER_REGISTRY,
-  type ProviderId,
-  shouldUseExplicitPromptCaching,
-} from '../ai/providerRegistry.js';
+import { ProviderManager } from '../ai/ProviderManager.js';
+import { type ProviderId, shouldUseExplicitPromptCaching } from '../ai/providerRegistry.js';
 import { parseToolCalls } from '../ai/toolCallParser.js';
 /* eslint-enable @typescript-eslint/no-require-imports */
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
@@ -264,7 +245,7 @@ function filterParamsForProvider(params: Record<string, unknown>, provider: Prov
   return filtered;
 }
 
-function getOpenAICompatibleChatCompletionsUrl(baseUrl: string): string {
+function _getOpenAICompatibleChatCompletionsUrl(baseUrl: string): string {
   const normalized = baseUrl.replace(/\/$/, '');
   return normalized.endsWith('/chat/completions') ? normalized : `${normalized}/chat/completions`;
 }
@@ -1085,7 +1066,7 @@ function extractOpenAIUsage(response: any): Usage | undefined {
   };
 }
 
-function createAssistantMessageFromOpenAIResponse(
+function _createAssistantMessageFromOpenAIResponse(
   response: any,
   tools: BetaToolUnion[],
   model: string,

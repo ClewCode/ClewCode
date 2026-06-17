@@ -24,7 +24,6 @@
  */
 
 import { jsonStringify } from '../../utils/slowOperations.js';
-import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
 
 /**
  * GrowthBook runtime gate — separate from the channels gate (tengu_harbor)
@@ -153,7 +152,7 @@ export function shortRequestId(toolUseID: string): string {
 export function truncateForPreview(input: unknown): string {
   try {
     const s = jsonStringify(input);
-    return s.length > 200 ? s.slice(0, 200) + '…' : s;
+    return s.length > 200 ? `${s.slice(0, 200)}…` : s;
   } catch {
     return '(unserializable)';
   }

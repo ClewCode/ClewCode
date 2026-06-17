@@ -15,14 +15,14 @@ import { normalizeNameForMCP } from './normalization.js';
  * names typically don't contain double underscores.
  */
 export function mcpInfoFromString(toolString) {
-    const parts = toolString.split('__');
-    const [mcpPart, serverName, ...toolNameParts] = parts;
-    if (mcpPart !== 'mcp' || !serverName) {
-        return null;
-    }
-    // Join all parts after server name to preserve double underscores in tool names
-    const toolName = toolNameParts.length > 0 ? toolNameParts.join('__') : undefined;
-    return { serverName, toolName };
+  const parts = toolString.split('__');
+  const [mcpPart, serverName, ...toolNameParts] = parts;
+  if (mcpPart !== 'mcp' || !serverName) {
+    return null;
+  }
+  // Join all parts after server name to preserve double underscores in tool names
+  const toolName = toolNameParts.length > 0 ? toolNameParts.join('__') : undefined;
+  return { serverName, toolName };
 }
 /**
  * Generates the MCP tool/command name prefix for a given server
@@ -30,7 +30,7 @@ export function mcpInfoFromString(toolString) {
  * @returns The prefix string
  */
 export function getMcpPrefix(serverName) {
-    return `mcp__${normalizeNameForMCP(serverName)}__`;
+  return `mcp__${normalizeNameForMCP(serverName)}__`;
 }
 /**
  * Builds a fully qualified MCP tool name from server and tool names.
@@ -40,7 +40,7 @@ export function getMcpPrefix(serverName) {
  * @returns The fully qualified name, e.g., "mcp__server__tool"
  */
 export function buildMcpToolName(serverName, toolName) {
-    return `${getMcpPrefix(serverName)}${normalizeNameForMCP(toolName)}`;
+  return `${getMcpPrefix(serverName)}${normalizeNameForMCP(toolName)}`;
 }
 /**
  * Returns the name to use for permission rule matching.
@@ -49,7 +49,7 @@ export function buildMcpToolName(serverName, toolName) {
  * replacements that share the same display name. Falls back to `tool.name`.
  */
 export function getToolNameForPermissionCheck(tool) {
-    return tool.mcpInfo ? buildMcpToolName(tool.mcpInfo.serverName, tool.mcpInfo.toolName) : tool.name;
+  return tool.mcpInfo ? buildMcpToolName(tool.mcpInfo.serverName, tool.mcpInfo.toolName) : tool.name;
 }
 /*
  * Extracts the display name from an MCP tool/command name
@@ -58,8 +58,8 @@ export function getToolNameForPermissionCheck(tool) {
  * @returns The display name without the MCP prefix
  */
 export function getMcpDisplayName(fullName, serverName) {
-    const prefix = `mcp__${normalizeNameForMCP(serverName)}__`;
-    return fullName.replace(prefix, '');
+  const prefix = `mcp__${normalizeNameForMCP(serverName)}__`;
+  return fullName.replace(prefix, '');
 }
 /**
  * Extracts just the tool/command display name from a userFacingName
@@ -67,17 +67,17 @@ export function getMcpDisplayName(fullName, serverName) {
  * @returns The display name without server prefix and (MCP) suffix
  */
 export function extractMcpToolDisplayName(userFacingName) {
-    // This is really ugly but our current Tool type doesn't make it easy to have different display names for different purposes.
-    // First, remove the (MCP) suffix if present
-    let withoutSuffix = userFacingName.replace(/\s*\(MCP\)\s*$/, '');
-    // Trim the result
-    withoutSuffix = withoutSuffix.trim();
-    // Then, remove the server prefix (everything before " - ")
-    const dashIndex = withoutSuffix.indexOf(' - ');
-    if (dashIndex !== -1) {
-        const displayName = withoutSuffix.substring(dashIndex + 3).trim();
-        return displayName;
-    }
-    // If no dash found, return the string without (MCP)
-    return withoutSuffix;
+  // This is really ugly but our current Tool type doesn't make it easy to have different display names for different purposes.
+  // First, remove the (MCP) suffix if present
+  let withoutSuffix = userFacingName.replace(/\s*\(MCP\)\s*$/, '');
+  // Trim the result
+  withoutSuffix = withoutSuffix.trim();
+  // Then, remove the server prefix (everything before " - ")
+  const dashIndex = withoutSuffix.indexOf(' - ');
+  if (dashIndex !== -1) {
+    const displayName = withoutSuffix.substring(dashIndex + 3).trim();
+    return displayName;
+  }
+  // If no dash found, return the string without (MCP)
+  return withoutSuffix;
 }

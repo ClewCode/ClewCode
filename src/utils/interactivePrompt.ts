@@ -1,5 +1,4 @@
 import * as pty from 'node-pty';
-import type { Writable } from 'stream';
 
 export type InteractivePromptHandler = {
   write: (input: string) => void;
@@ -74,8 +73,8 @@ export async function spawnInteractiveCommand(
     rows = 24,
   } = options;
 
-  return new Promise((resolve, reject) => {
-    let dataBuffer = '';
+  return new Promise((resolve, _reject) => {
+    let _dataBuffer = '';
     let resolved = false;
 
     const shell = pty.spawn(command, args, {
@@ -98,7 +97,7 @@ export async function spawnInteractiveCommand(
 
       onData: (callback: (data: string) => void) => {
         shell.onData(data => {
-          dataBuffer += data;
+          _dataBuffer += data;
           callback(data);
         });
       },
@@ -114,7 +113,7 @@ export async function spawnInteractiveCommand(
     };
 
     shell.onData(data => {
-      dataBuffer += data;
+      _dataBuffer += data;
 
       if (isPasswordPrompt(data)) {
         return;
@@ -124,11 +123,11 @@ export async function spawnInteractiveCommand(
       if (answer !== null && onPromptDetected) {
         onPromptDetected(data).then(userAnswer => {
           if (userAnswer) {
-            shell.write(userAnswer + '\r');
+            shell.write(`${userAnswer}\r`);
           }
         });
       } else if (answer !== null) {
-        shell.write(answer + '\r');
+        shell.write(`${answer}\r`);
       }
     });
 
@@ -176,7 +175,7 @@ export async function runInteractiveCommand(
       if (options.autoAnswer !== false) {
         const answer = detectAndAnswer(data);
         if (answer !== null) {
-          shell.write(answer + '\r');
+          shell.write(`${answer}\r`);
         }
       }
     });

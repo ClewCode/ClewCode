@@ -11,8 +11,8 @@
  */
 
 import { env, pipeline } from '@xenova/transformers';
-import { readFile, stat, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
+import { readFile, writeFile } from 'fs/promises';
+import { join } from 'path';
 import { getClaudeConfigHomeDir } from '../utils/envUtils.js';
 import { type MemoryHeader, scanMemoryFiles } from './memoryScan.js';
 import { getAutoMemPath } from './paths.js';
@@ -115,7 +115,7 @@ interface EmbeddingCache {
  * Caches embeddings to avoid recomputing on every search.
  */
 async function getOrCreateEmbedding(header: MemoryHeader, content: string): Promise<number[]> {
-  const embedPath = header.filePath + '.embedding.json';
+  const embedPath = `${header.filePath}.embedding.json`;
 
   try {
     const embedContent = await readFile(embedPath, 'utf-8');

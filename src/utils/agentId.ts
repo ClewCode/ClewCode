@@ -84,7 +84,7 @@ export function parseRequestId(requestId: string): { requestType: string; timest
   const timestampStr = prefix.slice(lastDashIndex + 1);
   const timestamp = parseInt(timestampStr, 10);
 
-  if (isNaN(timestamp)) {
+  if (Number.isNaN(timestamp)) {
     return null;
   }
 

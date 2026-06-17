@@ -162,7 +162,7 @@ export async function writeCronTasks(tasks: CronTask[], dir?: string): Promise<v
   const body: CronFile = {
     tasks: tasks.map(({ durable: _durable, ...rest }) => rest),
   };
-  await writeFile(getCronFilePath(root), jsonStringify(body, null, 2) + '\n', 'utf-8');
+  await writeFile(getCronFilePath(root), `${jsonStringify(body, null, 2)}\n`, 'utf-8');
 }
 
 /**

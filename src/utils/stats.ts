@@ -386,7 +386,7 @@ async function processSessionFiles(sessionFiles: string[], options: ProcessOptio
       // have entries missing the timestamp field (e.g. partial/remote writes).
       // new Date(undefined) produces an Invalid Date, and toDateString() would
       // throw RangeError: Invalid Date on .toISOString().
-      if (isNaN(firstTimestamp.getTime()) || isNaN(lastTimestamp.getTime())) {
+      if (Number.isNaN(firstTimestamp.getTime()) || Number.isNaN(lastTimestamp.getTime())) {
         logForDebugging(`Skipping session with invalid timestamp: ${sessionFile}`);
         continue;
       }
@@ -957,7 +957,9 @@ function processedStatsToClaudeCodeStats(stats: ProcessedStats): ClaudeCodeStats
   const peakActivityHour =
     hourEntries.length > 0
       ? parseInt(
-          hourEntries.reduce((max, [hour, count]) => (count > parseInt(max[1].toString()) ? [hour, count] : max))[0],
+          hourEntries.reduce((max, [hour, count]) =>
+            count > parseInt(max[1].toString(), 10) ? [hour, count] : max,
+          )[0],
           10,
         )
       : null;

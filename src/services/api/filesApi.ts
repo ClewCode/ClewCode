@@ -180,7 +180,7 @@ export function buildDownloadPath(basePath: string, sessionId: string, relativeP
   }
 
   const uploadsBase = path.join(basePath, sessionId, 'uploads');
-  const redundantPrefixes = [path.join(basePath, sessionId, 'uploads') + path.sep, path.sep + 'uploads' + path.sep];
+  const redundantPrefixes = [path.join(basePath, sessionId, 'uploads') + path.sep, `${path.sep}uploads${path.sep}`];
   const matchedPrefix = redundantPrefixes.find(p => normalized.startsWith(p));
   const cleanPath = matchedPrefix ? normalized.slice(matchedPrefix.length) : normalized;
   return path.join(uploadsBase, cleanPath);
@@ -405,9 +405,7 @@ export async function uploadFile(
   bodyParts.push(Buffer.from('\r\n'));
 
   // Purpose part
-  bodyParts.push(
-    Buffer.from(`--${boundary}\r\n` + `Content-Disposition: form-data; name="purpose"\r\n\r\n` + `user_data\r\n`),
-  );
+  bodyParts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="purpose"\r\n\r\nuser_data\r\n`));
 
   // End boundary
   bodyParts.push(Buffer.from(`--${boundary}--\r\n`));

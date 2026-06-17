@@ -14,27 +14,27 @@ const ENCODED_LENGTH = 22;
  * Encode a 128-bit unsigned integer as a fixed-length base58 string.
  */
 function base58Encode(n) {
-    const base = BigInt(BASE_58_CHARS.length);
-    const result = new Array(ENCODED_LENGTH).fill(BASE_58_CHARS[0]);
-    let i = ENCODED_LENGTH - 1;
-    let value = n;
-    while (value > 0n) {
-        const rem = Number(value % base);
-        result[i] = BASE_58_CHARS[rem];
-        value = value / base;
-        i--;
-    }
-    return result.join('');
+  const base = BigInt(BASE_58_CHARS.length);
+  const result = new Array(ENCODED_LENGTH).fill(BASE_58_CHARS[0]);
+  let i = ENCODED_LENGTH - 1;
+  let value = n;
+  while (value > 0n) {
+    const rem = Number(value % base);
+    result[i] = BASE_58_CHARS[rem];
+    value = value / base;
+    i--;
+  }
+  return result.join('');
 }
 /**
  * Parse a UUID string (with or without hyphens) into a 128-bit bigint.
  */
 function uuidToBigInt(uuid) {
-    const hex = uuid.replace(/-/g, '');
-    if (hex.length !== 32) {
-        throw new Error(`Invalid UUID hex length: ${hex.length}`);
-    }
-    return BigInt('0x' + hex);
+  const hex = uuid.replace(/-/g, '');
+  if (hex.length !== 32) {
+    throw new Error(`Invalid UUID hex length: ${hex.length}`);
+  }
+  return BigInt(`0x${hex}`);
 }
 /**
  * Convert an account UUID to a tagged ID in the API's format.
@@ -44,6 +44,6 @@ function uuidToBigInt(uuid) {
  * @returns Tagged ID string like "user_01PaGUP2rbg1XDh7Z9W1CEpd"
  */
 export function toTaggedId(tag, uuid) {
-    const n = uuidToBigInt(uuid);
-    return `${tag}_${VERSION}${base58Encode(n)}`;
+  const n = uuidToBigInt(uuid);
+  return `${tag}_${VERSION}${base58Encode(n)}`;
 }

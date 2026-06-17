@@ -396,7 +396,10 @@ export function ExitPlanModePermissionRequest({
     // Keep-context options skip this block and go through the normal flow below
     const isResumeAutoOption = feature('TRANSCRIPT_CLASSIFIER') ? value === 'yes-resume-auto-mode' : false;
     const isKeepContextOption =
-      value === 'yes-bypass-permissions-keep-context' || value === 'yes-accept-edits-keep-context' || value === 'yes-default-keep-context' || isResumeAutoOption;
+      value === 'yes-bypass-permissions-keep-context' ||
+      value === 'yes-accept-edits-keep-context' ||
+      value === 'yes-default-keep-context' ||
+      isResumeAutoOption;
     if (value !== 'no') {
       autoNameSessionFromPlan(currentPlan, setAppState, !isKeepContextOption);
     }
@@ -649,7 +652,18 @@ export function ExitPlanModePermissionRequest({
     return () => setStickyFooter(null);
     // onImagePaste/onRemoveImage are stable (useCallback/useRef-backed above)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [useStickyFooter, setStickyFooter, options, pastedContents, editorName, isV2, planFilePath, showSaveMessage]);
+  }, [
+    useStickyFooter,
+    setStickyFooter,
+    options,
+    pastedContents,
+    editorName,
+    isV2,
+    planFilePath,
+    showSaveMessage,
+    onRemoveImage,
+    onImagePaste,
+  ]);
 
   // Simplified UI for empty plans
   if (isEmpty) {

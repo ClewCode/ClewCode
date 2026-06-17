@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, beforeAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BrowserSession } from '../BrowserSession.js';
 
 describe('BrowserSession', () => {

@@ -187,8 +187,7 @@ export function validateSettingsFileContent(content: string):
 
     // Format the validation error in a helpful way
     const errors = formatZodError(result.error, 'settings');
-    const errorMessage =
-      'Settings validation failed:\n' + errors.map(err => `- ${err.path}: ${err.message}`).join('\n');
+    const errorMessage = `Settings validation failed:\n${errors.map(err => `- ${err.path}: ${err.message}`).join('\n')}`;
 
     return {
       isValid: false,

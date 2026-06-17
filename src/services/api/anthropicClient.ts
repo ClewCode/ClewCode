@@ -34,7 +34,7 @@ export async function createAnthropicClient({
 }): Promise<Anthropic> {
   const containerId = process.env.CLAUDE_CODE_CONTAINER_ID;
   const remoteSessionId = process.env.CLAUDE_CODE_REMOTE_SESSION_ID;
-  const clientApp = process.env.CLAUDE_AGENT_SDK_CLIENT_APP;
+  const _clientApp = process.env.CLAUDE_AGENT_SDK_CLIENT_APP;
   const customHeaders = getCustomHeaders();
   const defaultHeaders: { [key: string]: string } = {
     'x-app': 'cli',

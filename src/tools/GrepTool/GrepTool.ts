@@ -513,7 +513,7 @@ export const GrepTool = buildTool({
         if (colonIndex > 0) {
           const countStr = line.substring(colonIndex + 1);
           const count = parseInt(countStr, 10);
-          if (!isNaN(count)) {
+          if (!Number.isNaN(count)) {
             totalMatches += count;
             fileCount += 1;
           }

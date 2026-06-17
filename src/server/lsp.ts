@@ -1,6 +1,3 @@
-import { existsSync, readFileSync, statSync } from 'fs';
-import { extname } from 'path';
-
 /**
  * LSP types per JSON-RPC 2.0
  */
@@ -93,7 +90,7 @@ export class LuluLSPServer {
     try {
       const message = JSON.parse(payload) as LSPRequest | LSPNotification;
       this.handleMessage(message);
-    } catch (e) {
+    } catch (_e) {
       this.sendError(-32700, 'Parse error');
     }
   }
@@ -193,7 +190,7 @@ export class LuluLSPServer {
     this.documentVersions.delete(params.textDocument.uri);
   }
 
-  private handleDidSave(notification: LSPNotification): void {
+  private handleDidSave(_notification: LSPNotification): void {
     // Could trigger AI analysis on save
   }
 
@@ -204,7 +201,7 @@ export class LuluLSPServer {
   }
 
   private sendDiagnostics(uri: string): void {
-    const content = this.documents.get(uri) || '';
+    const _content = this.documents.get(uri) || '';
     const diagnostics: { range: Range; message: string; severity: number }[] = [];
 
     // Simple AI-style diagnostics placeholder
@@ -314,7 +311,7 @@ export class LuluLSPServer {
   }
 
   private handleExecuteCommand(request: LSPRequest): void {
-    const params = request.params as { command: string; arguments?: unknown[] };
+    const _params = request.params as { command: string; arguments?: unknown[] };
     // TODO: Integrate with Lulu agent system via IPC
     this.sendResponse(request.id, null);
   }

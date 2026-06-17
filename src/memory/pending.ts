@@ -1,6 +1,6 @@
 import { readFile, unlink, writeFile } from 'fs/promises';
 import { basename, join } from 'path';
-import { DOT_CLEW, MEMORY_DIR } from '../utils/clewPaths.js';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import { getMemoryDb } from './db.js';
 import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.js';
@@ -21,7 +21,7 @@ export async function proposeMemory(
   observation: string,
   target: 'user' | 'project' | 'feedback' | 'agent' = 'project',
 ): Promise<string> {
-  const fsImpl = getFsImplementation();
+  const _fsImpl = getFsImplementation();
   const pendingDir = join(cwd, DOT_CLEW, 'memory', 'pending');
 
   const date = new Date().toISOString().slice(0, 10);
@@ -172,7 +172,7 @@ export async function forgetMemory(cwd: string, memoryId: string): Promise<void>
   const sources = getAllSources(db);
   const matched = sources.find(s => s.id === memoryId || s.uri.includes(memoryId));
 
-  if (matched && matched.sourcePath && fsImpl.existsSync(matched.sourcePath)) {
+  if (matched?.sourcePath && fsImpl.existsSync(matched.sourcePath)) {
     await unlink(matched.sourcePath);
   }
 

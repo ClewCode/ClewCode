@@ -36,10 +36,12 @@ export function getConsolidationCandidates(projectRoot: string): {
   if (!db) return [];
 
   const cutoff = Date.now() - 7 * 86_400_000;
-  const rows = db.prepare(`
+  const rows = db
+    .prepare(`
     SELECT * FROM sessions WHERE consolidated = 0 AND end_time < ?
     ORDER BY end_time ASC
-  `).all(cutoff) as RawSession[];
+  `)
+    .all(cutoff) as RawSession[];
 
   db.close();
 
@@ -65,7 +67,7 @@ export function getConsolidationCandidates(projectRoot: string): {
  */
 export function saveConsolidatedDigest(
   projectRoot: string,
-  period: string,       // ISO week or month
+  period: string, // ISO week or month
   type: 'weekly' | 'monthly',
   summary: string,
   patterns: string[],
@@ -78,8 +80,9 @@ export function saveConsolidatedDigest(
   const existing = db.prepare('SELECT * FROM digests WHERE period = ? AND type = ?').get(period, type);
   if (existing) {
     // Update existing digest with new summary
-    db.prepare('UPDATE digests SET summary = ?, patterns = ?, session_count = ?, created_at = ? WHERE period = ? AND type = ?')
-      .run(summary, JSON.stringify(patterns), sessionIds.length, Date.now(), period, type);
+    db.prepare(
+      'UPDATE digests SET summary = ?, patterns = ?, session_count = ?, created_at = ? WHERE period = ? AND type = ?',
+    ).run(summary, JSON.stringify(patterns), sessionIds.length, Date.now(), period, type);
   } else {
     db.prepare(`
       INSERT INTO digests (period, type, summary, key_decisions, patterns, session_count, created_at)
@@ -135,8 +138,8 @@ function sanitize(p: string): string {
 function getISOWeek(d: Date): string {
   const tmp = new Date(d.getTime());
   tmp.setHours(0, 0, 0, 0);
-  tmp.setDate(tmp.getDate() + 3 - (tmp.getDay() + 6) % 7);
+  tmp.setDate(tmp.getDate() + 3 - ((tmp.getDay() + 6) % 7));
   const week1 = new Date(tmp.getFullYear(), 0, 4);
-  const week = 1 + Math.round(((tmp.getTime() - week1.getTime()) / 86_400_000 - 3 + (week1.getDay() + 6) % 7) / 7);
+  const week = 1 + Math.round(((tmp.getTime() - week1.getTime()) / 86_400_000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
   return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
 }

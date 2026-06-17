@@ -296,7 +296,7 @@ export async function* runToolUse(
   if (!tool) {
     const fallbackTool = findToolByName(getAllBaseTools(), toolName);
     // Only use fallback if the tool was found via alias (deprecated name)
-    if (fallbackTool && fallbackTool.aliases?.includes(toolName)) {
+    if (fallbackTool?.aliases?.includes(toolName)) {
       tool = fallbackTool;
     }
   }
@@ -1381,7 +1381,7 @@ async function checkPermissionsAndCallTool(
           offset: undefined,
           limit: undefined,
         });
-      } catch (e) {
+      } catch (_e) {
         // Ignore if file doesn't exist or can't be read
       }
     }
@@ -1431,7 +1431,7 @@ async function checkPermissionsAndCallTool(
         }
         const existingClient = prevState.mcp.clients[existingClientIndex];
         // Only update if client was connected (don't overwrite other states)
-        if (!existingClient || existingClient.type !== 'connected') {
+        if (existingClient?.type !== 'connected') {
           return prevState;
         }
         const updatedClients = [...prevState.mcp.clients];

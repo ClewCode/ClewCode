@@ -9,54 +9,54 @@ import { jsonParse } from '../slowOperations.js';
  * closures out of the startup heap for sessions that never touch .dxt/.mcpb.
  */
 export async function validateManifest(manifestJson) {
-    const { McpbManifestSchema } = await import('@anthropic-ai/mcpb');
-    const parseResult = McpbManifestSchema.safeParse(manifestJson);
-    if (!parseResult.success) {
-        const errors = parseResult.error.flatten();
-        const errorMessages = [
-            ...Object.entries(errors.fieldErrors).map(([field, errs]) => `${field}: ${errs?.join(', ')}`),
-            ...(errors.formErrors || []),
-        ]
-            .filter(Boolean)
-            .join('; ');
-        throw new Error(`Invalid manifest: ${errorMessages}`);
-    }
-    return parseResult.data;
+  const { McpbManifestSchema } = await import('@anthropic-ai/mcpb');
+  const parseResult = McpbManifestSchema.safeParse(manifestJson);
+  if (!parseResult.success) {
+    const errors = parseResult.error.flatten();
+    const errorMessages = [
+      ...Object.entries(errors.fieldErrors).map(([field, errs]) => `${field}: ${errs?.join(', ')}`),
+      ...(errors.formErrors || []),
+    ]
+      .filter(Boolean)
+      .join('; ');
+    throw new Error(`Invalid manifest: ${errorMessages}`);
+  }
+  return parseResult.data;
 }
 /**
  * Parses and validates a DXT manifest from raw text data.
  */
 export async function parseAndValidateManifestFromText(manifestText) {
-    let manifestJson;
-    try {
-        manifestJson = jsonParse(manifestText);
-    }
-    catch (error) {
-        throw new Error(`Invalid JSON in manifest.json: ${errorMessage(error)}`);
-    }
-    return validateManifest(manifestJson);
+  let manifestJson;
+  try {
+    manifestJson = jsonParse(manifestText);
+  } catch (error) {
+    throw new Error(`Invalid JSON in manifest.json: ${errorMessage(error)}`);
+  }
+  return validateManifest(manifestJson);
 }
 /**
  * Parses and validates a DXT manifest from raw binary data.
  */
 export async function parseAndValidateManifestFromBytes(manifestData) {
-    const manifestText = new TextDecoder().decode(manifestData);
-    return parseAndValidateManifestFromText(manifestText);
+  const manifestText = new TextDecoder().decode(manifestData);
+  return parseAndValidateManifestFromText(manifestText);
 }
 /**
  * Generates an extension ID from author name and extension name.
  * Uses the same algorithm as the directory backend for consistency.
  */
 export function generateExtensionId(manifest, prefix) {
-    const sanitize = (str) => str
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-_.]/g, '')
-        .replace(/-+/g, '-')
-        .replace(/^-+|-+$/g, '');
-    const authorName = manifest.author.name;
-    const extensionName = manifest.name;
-    const sanitizedAuthor = sanitize(authorName);
-    const sanitizedName = sanitize(extensionName);
-    return prefix ? `${prefix}.${sanitizedAuthor}.${sanitizedName}` : `${sanitizedAuthor}.${sanitizedName}`;
+  const sanitize = str =>
+    str
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-_.]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  const authorName = manifest.author.name;
+  const extensionName = manifest.name;
+  const sanitizedAuthor = sanitize(authorName);
+  const sanitizedName = sanitize(extensionName);
+  return prefix ? `${prefix}.${sanitizedAuthor}.${sanitizedName}` : `${sanitizedAuthor}.${sanitizedName}`;
 }

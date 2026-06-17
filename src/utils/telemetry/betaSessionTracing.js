@@ -31,6 +31,7 @@ import { sanitizeToolNameForAnalytics } from '../../services/analytics/metadata.
 import { isEnvTruthy } from '../envUtils.js';
 import { jsonParse, jsonStringify } from '../slowOperations.js';
 import { logOTelEvent } from './events.js';
+
 /**
  * Track hashes we've already logged this session (system prompts, tools, etc).
  *
@@ -54,8 +55,8 @@ const lastReportedMessageHash = new Map();
  * Old hashes are irrelevant once messages have been replaced.
  */
 export function clearBetaTracingState() {
-    seenHashes.clear();
-    lastReportedMessageHash.clear();
+  seenHashes.clear();
+  lastReportedMessageHash.clear();
 }
 const MAX_CONTENT_SIZE = 60 * 1024; // 60KB (Honeycomb limit is 64KB, staying safe)
 /**
@@ -65,48 +66,49 @@ const MAX_CONTENT_SIZE = 60 * 1024; // 60KB (Honeycomb limit is 64KB, staying sa
  *   allowlisted via the tengu_trace_lantern GrowthBook gate
  */
 export function isBetaTracingEnabled() {
-    const baseEnabled = isEnvTruthy(process.env.ENABLE_BETA_TRACING_DETAILED) && Boolean(process.env.BETA_TRACING_ENDPOINT);
-    if (!baseEnabled) {
-        return false;
-    }
-    // For external users, enable in SDK/headless mode OR when org is allowlisted.
-    // Gate reads from disk cache, so first run after allowlisting returns false;
-    // works from second run onward (same behavior as enhanced_telemetry_beta).
-    if (process.env.USER_TYPE !== 'ant') {
-        return getIsNonInteractiveSession() || getFeatureValue_CACHED_MAY_BE_STALE('tengu_trace_lantern', false);
-    }
-    return true;
+  const baseEnabled =
+    isEnvTruthy(process.env.ENABLE_BETA_TRACING_DETAILED) && Boolean(process.env.BETA_TRACING_ENDPOINT);
+  if (!baseEnabled) {
+    return false;
+  }
+  // For external users, enable in SDK/headless mode OR when org is allowlisted.
+  // Gate reads from disk cache, so first run after allowlisting returns false;
+  // works from second run onward (same behavior as enhanced_telemetry_beta).
+  if (process.env.USER_TYPE !== 'ant') {
+    return getIsNonInteractiveSession() || getFeatureValue_CACHED_MAY_BE_STALE('tengu_trace_lantern', false);
+  }
+  return true;
 }
 /**
  * Truncate content to fit within Honeycomb limits.
  */
 export function truncateContent(content, maxSize = MAX_CONTENT_SIZE) {
-    if (content.length <= maxSize) {
-        return { content, truncated: false };
-    }
-    return {
-        content: content.slice(0, maxSize) + '\n\n[TRUNCATED - Content exceeds 60KB limit]',
-        truncated: true,
-    };
+  if (content.length <= maxSize) {
+    return { content, truncated: false };
+  }
+  return {
+    content: `${content.slice(0, maxSize)}\n\n[TRUNCATED - Content exceeds 60KB limit]`,
+    truncated: true,
+  };
 }
 /**
  * Generate a short hash (first 12 hex chars of SHA-256).
  */
 function shortHash(content) {
-    return createHash('sha256').update(content).digest('hex').slice(0, 12);
+  return createHash('sha256').update(content).digest('hex').slice(0, 12);
 }
 /**
  * Generate a hash for a system prompt.
  */
 function hashSystemPrompt(systemPrompt) {
-    return `sp_${shortHash(systemPrompt)}`;
+  return `sp_${shortHash(systemPrompt)}`;
 }
 /**
  * Generate a hash for a message based on its content.
  */
 function hashMessage(message) {
-    const content = jsonStringify(message.message.content);
-    return `msg_${shortHash(content)}`;
+  const content = jsonStringify(message.message.content);
+  return `msg_${shortHash(content)}`;
 }
 // Regex to detect content wrapped in <system-reminder> tags
 const SYSTEM_REMINDER_REGEX = /^<system-reminder>\n?([\s\S]*?)\n?<\/system-reminder>$/;
@@ -115,247 +117,241 @@ const SYSTEM_REMINDER_REGEX = /^<system-reminder>\n?([\s\S]*?)\n?<\/system-remin
  * Returns the inner content if it is, null otherwise.
  */
 function extractSystemReminderContent(text) {
-    const match = text.trim().match(SYSTEM_REMINDER_REGEX);
-    return match && match[1] ? match[1].trim() : null;
+  const match = text.trim().match(SYSTEM_REMINDER_REGEX);
+  return match?.[1] ? match[1].trim() : null;
 }
 /**
  * Format user messages for new_context display, separating system reminders.
  * Only handles user messages (assistant messages are filtered out before this is called).
  */
 function formatMessagesForContext(messages) {
-    const contextParts = [];
-    const systemReminders = [];
-    for (const message of messages) {
-        const content = message.message.content;
-        if (typeof content === 'string') {
-            const reminderContent = extractSystemReminderContent(content);
-            if (reminderContent) {
-                systemReminders.push(reminderContent);
-            }
-            else {
-                contextParts.push(`[USER]\n${content}`);
-            }
+  const contextParts = [];
+  const systemReminders = [];
+  for (const message of messages) {
+    const content = message.message.content;
+    if (typeof content === 'string') {
+      const reminderContent = extractSystemReminderContent(content);
+      if (reminderContent) {
+        systemReminders.push(reminderContent);
+      } else {
+        contextParts.push(`[USER]\n${content}`);
+      }
+    } else if (Array.isArray(content)) {
+      for (const block of content) {
+        if (block.type === 'text') {
+          const reminderContent = extractSystemReminderContent(block.text);
+          if (reminderContent) {
+            systemReminders.push(reminderContent);
+          } else {
+            contextParts.push(`[USER]\n${block.text}`);
+          }
+        } else if (block.type === 'tool_result') {
+          const resultContent = typeof block.content === 'string' ? block.content : jsonStringify(block.content);
+          // Tool results can also contain system reminders (e.g., malware warning)
+          const reminderContent = extractSystemReminderContent(resultContent);
+          if (reminderContent) {
+            systemReminders.push(reminderContent);
+          } else {
+            contextParts.push(`[TOOL RESULT: ${block.tool_use_id}]\n${resultContent}`);
+          }
         }
-        else if (Array.isArray(content)) {
-            for (const block of content) {
-                if (block.type === 'text') {
-                    const reminderContent = extractSystemReminderContent(block.text);
-                    if (reminderContent) {
-                        systemReminders.push(reminderContent);
-                    }
-                    else {
-                        contextParts.push(`[USER]\n${block.text}`);
-                    }
-                }
-                else if (block.type === 'tool_result') {
-                    const resultContent = typeof block.content === 'string' ? block.content : jsonStringify(block.content);
-                    // Tool results can also contain system reminders (e.g., malware warning)
-                    const reminderContent = extractSystemReminderContent(resultContent);
-                    if (reminderContent) {
-                        systemReminders.push(reminderContent);
-                    }
-                    else {
-                        contextParts.push(`[TOOL RESULT: ${block.tool_use_id}]\n${resultContent}`);
-                    }
-                }
-            }
-        }
+      }
     }
-    return { contextParts, systemReminders };
+  }
+  return { contextParts, systemReminders };
 }
 /**
  * Add beta attributes to an interaction span.
  * Adds new_context with the user prompt.
  */
 export function addBetaInteractionAttributes(span, userPrompt) {
-    if (!isBetaTracingEnabled()) {
-        return;
-    }
-    const { content: truncatedPrompt, truncated } = truncateContent(`[USER PROMPT]\n${userPrompt}`);
-    span.setAttributes({
-        new_context: truncatedPrompt,
-        ...(truncated && {
-            new_context_truncated: true,
-            new_context_original_length: userPrompt.length,
-        }),
-    });
+  if (!isBetaTracingEnabled()) {
+    return;
+  }
+  const { content: truncatedPrompt, truncated } = truncateContent(`[USER PROMPT]\n${userPrompt}`);
+  span.setAttributes({
+    new_context: truncatedPrompt,
+    ...(truncated && {
+      new_context_truncated: true,
+      new_context_original_length: userPrompt.length,
+    }),
+  });
 }
 /**
  * Add beta attributes to an LLM request span.
  * Handles system prompt logging and new_context computation.
  */
 export function addBetaLLMRequestAttributes(span, newContext, messagesForAPI) {
-    if (!isBetaTracingEnabled()) {
-        return;
+  if (!isBetaTracingEnabled()) {
+    return;
+  }
+  // Add system prompt info to the span
+  if (newContext?.systemPrompt) {
+    const promptHash = hashSystemPrompt(newContext.systemPrompt);
+    const preview = newContext.systemPrompt.slice(0, 500);
+    // Always add hash, preview, and length to the span
+    span.setAttribute('system_prompt_hash', promptHash);
+    span.setAttribute('system_prompt_preview', preview);
+    span.setAttribute('system_prompt_length', newContext.systemPrompt.length);
+    // Log the full system prompt only once per unique hash this session
+    if (!seenHashes.has(promptHash)) {
+      seenHashes.add(promptHash);
+      // Truncate for the log if needed
+      const { content: truncatedPrompt, truncated } = truncateContent(newContext.systemPrompt);
+      void logOTelEvent('system_prompt', {
+        system_prompt_hash: promptHash,
+        system_prompt: truncatedPrompt,
+        system_prompt_length: String(newContext.systemPrompt.length),
+        ...(truncated && { system_prompt_truncated: 'true' }),
+      });
     }
-    // Add system prompt info to the span
-    if (newContext?.systemPrompt) {
-        const promptHash = hashSystemPrompt(newContext.systemPrompt);
-        const preview = newContext.systemPrompt.slice(0, 500);
-        // Always add hash, preview, and length to the span
-        span.setAttribute('system_prompt_hash', promptHash);
-        span.setAttribute('system_prompt_preview', preview);
-        span.setAttribute('system_prompt_length', newContext.systemPrompt.length);
-        // Log the full system prompt only once per unique hash this session
-        if (!seenHashes.has(promptHash)) {
-            seenHashes.add(promptHash);
-            // Truncate for the log if needed
-            const { content: truncatedPrompt, truncated } = truncateContent(newContext.systemPrompt);
-            void logOTelEvent('system_prompt', {
-                system_prompt_hash: promptHash,
-                system_prompt: truncatedPrompt,
-                system_prompt_length: String(newContext.systemPrompt.length),
-                ...(truncated && { system_prompt_truncated: 'true' }),
-            });
+  }
+  // Add tools info to the span
+  if (newContext?.tools) {
+    try {
+      const toolsArray = jsonParse(newContext.tools);
+      // Build array of {name, hash} for each tool
+      const toolsWithHashes = toolsArray.map(tool => {
+        const toolJson = jsonStringify(tool);
+        const toolHash = shortHash(toolJson);
+        return {
+          name: typeof tool.name === 'string' ? tool.name : 'unknown',
+          hash: toolHash,
+          json: toolJson,
+        };
+      });
+      // Set span attribute with array of name/hash pairs
+      span.setAttribute('tools', jsonStringify(toolsWithHashes.map(({ name, hash }) => ({ name, hash }))));
+      span.setAttribute('tools_count', toolsWithHashes.length);
+      // Log each tool's full description once per unique hash
+      for (const { name, hash, json } of toolsWithHashes) {
+        if (!seenHashes.has(`tool_${hash}`)) {
+          seenHashes.add(`tool_${hash}`);
+          const { content: truncatedTool, truncated } = truncateContent(json);
+          void logOTelEvent('tool', {
+            tool_name: sanitizeToolNameForAnalytics(name),
+            tool_hash: hash,
+            tool: truncatedTool,
+            ...(truncated && { tool_truncated: 'true' }),
+          });
         }
+      }
+    } catch {
+      // If parsing fails, log the raw tools string
+      span.setAttribute('tools_parse_error', true);
     }
-    // Add tools info to the span
-    if (newContext?.tools) {
-        try {
-            const toolsArray = jsonParse(newContext.tools);
-            // Build array of {name, hash} for each tool
-            const toolsWithHashes = toolsArray.map(tool => {
-                const toolJson = jsonStringify(tool);
-                const toolHash = shortHash(toolJson);
-                return {
-                    name: typeof tool.name === 'string' ? tool.name : 'unknown',
-                    hash: toolHash,
-                    json: toolJson,
-                };
-            });
-            // Set span attribute with array of name/hash pairs
-            span.setAttribute('tools', jsonStringify(toolsWithHashes.map(({ name, hash }) => ({ name, hash }))));
-            span.setAttribute('tools_count', toolsWithHashes.length);
-            // Log each tool's full description once per unique hash
-            for (const { name, hash, json } of toolsWithHashes) {
-                if (!seenHashes.has(`tool_${hash}`)) {
-                    seenHashes.add(`tool_${hash}`);
-                    const { content: truncatedTool, truncated } = truncateContent(json);
-                    void logOTelEvent('tool', {
-                        tool_name: sanitizeToolNameForAnalytics(name),
-                        tool_hash: hash,
-                        tool: truncatedTool,
-                        ...(truncated && { tool_truncated: 'true' }),
-                    });
-                }
-            }
+  }
+  // Add new_context using hash-based tracking (visible to all users)
+  if (messagesForAPI && messagesForAPI.length > 0 && newContext?.querySource) {
+    const querySource = newContext.querySource;
+    const lastHash = lastReportedMessageHash.get(querySource);
+    // Find where the last reported message is in the array
+    let startIndex = 0;
+    if (lastHash) {
+      for (let i = 0; i < messagesForAPI.length; i++) {
+        const msg = messagesForAPI[i];
+        if (msg && hashMessage(msg) === lastHash) {
+          startIndex = i + 1; // Start after the last reported message
+          break;
         }
-        catch {
-            // If parsing fails, log the raw tools string
-            span.setAttribute('tools_parse_error', true);
-        }
+      }
+      // If lastHash not found, startIndex stays 0 (send everything)
     }
-    // Add new_context using hash-based tracking (visible to all users)
-    if (messagesForAPI && messagesForAPI.length > 0 && newContext?.querySource) {
-        const querySource = newContext.querySource;
-        const lastHash = lastReportedMessageHash.get(querySource);
-        // Find where the last reported message is in the array
-        let startIndex = 0;
-        if (lastHash) {
-            for (let i = 0; i < messagesForAPI.length; i++) {
-                const msg = messagesForAPI[i];
-                if (msg && hashMessage(msg) === lastHash) {
-                    startIndex = i + 1; // Start after the last reported message
-                    break;
-                }
-            }
-            // If lastHash not found, startIndex stays 0 (send everything)
-        }
-        // Get new messages (filter out assistant messages - we only want user input/tool results)
-        const newMessages = messagesForAPI.slice(startIndex).filter((m) => m.type === 'user');
-        if (newMessages.length > 0) {
-            // Format new messages, separating system reminders from regular content
-            const { contextParts, systemReminders } = formatMessagesForContext(newMessages);
-            // Set new_context (regular user content and tool results)
-            if (contextParts.length > 0) {
-                const fullContext = contextParts.join('\n\n---\n\n');
-                const { content: truncatedContext, truncated } = truncateContent(fullContext);
-                span.setAttributes({
-                    new_context: truncatedContext,
-                    new_context_message_count: newMessages.length,
-                    ...(truncated && {
-                        new_context_truncated: true,
-                        new_context_original_length: fullContext.length,
-                    }),
-                });
-            }
-            // Set system_reminders as a separate attribute
-            if (systemReminders.length > 0) {
-                const fullReminders = systemReminders.join('\n\n---\n\n');
-                const { content: truncatedReminders, truncated: remindersTruncated } = truncateContent(fullReminders);
-                span.setAttributes({
-                    system_reminders: truncatedReminders,
-                    system_reminders_count: systemReminders.length,
-                    ...(remindersTruncated && {
-                        system_reminders_truncated: true,
-                        system_reminders_original_length: fullReminders.length,
-                    }),
-                });
-            }
-            // Update last reported hash to the last message in the array
-            const lastMessage = messagesForAPI[messagesForAPI.length - 1];
-            if (lastMessage) {
-                lastReportedMessageHash.set(querySource, hashMessage(lastMessage));
-            }
-        }
+    // Get new messages (filter out assistant messages - we only want user input/tool results)
+    const newMessages = messagesForAPI.slice(startIndex).filter(m => m.type === 'user');
+    if (newMessages.length > 0) {
+      // Format new messages, separating system reminders from regular content
+      const { contextParts, systemReminders } = formatMessagesForContext(newMessages);
+      // Set new_context (regular user content and tool results)
+      if (contextParts.length > 0) {
+        const fullContext = contextParts.join('\n\n---\n\n');
+        const { content: truncatedContext, truncated } = truncateContent(fullContext);
+        span.setAttributes({
+          new_context: truncatedContext,
+          new_context_message_count: newMessages.length,
+          ...(truncated && {
+            new_context_truncated: true,
+            new_context_original_length: fullContext.length,
+          }),
+        });
+      }
+      // Set system_reminders as a separate attribute
+      if (systemReminders.length > 0) {
+        const fullReminders = systemReminders.join('\n\n---\n\n');
+        const { content: truncatedReminders, truncated: remindersTruncated } = truncateContent(fullReminders);
+        span.setAttributes({
+          system_reminders: truncatedReminders,
+          system_reminders_count: systemReminders.length,
+          ...(remindersTruncated && {
+            system_reminders_truncated: true,
+            system_reminders_original_length: fullReminders.length,
+          }),
+        });
+      }
+      // Update last reported hash to the last message in the array
+      const lastMessage = messagesForAPI[messagesForAPI.length - 1];
+      if (lastMessage) {
+        lastReportedMessageHash.set(querySource, hashMessage(lastMessage));
+      }
     }
+  }
 }
 /**
  * Add beta attributes to endLLMRequestSpan.
  * Handles model_output and thinking_output truncation.
  */
 export function addBetaLLMResponseAttributes(endAttributes, metadata) {
-    if (!isBetaTracingEnabled() || !metadata) {
-        return;
+  if (!isBetaTracingEnabled() || !metadata) {
+    return;
+  }
+  // Add model_output (text content) - visible to all users
+  if (metadata.modelOutput !== undefined) {
+    const { content: modelOutput, truncated: outputTruncated } = truncateContent(metadata.modelOutput);
+    endAttributes['response.model_output'] = modelOutput;
+    if (outputTruncated) {
+      endAttributes['response.model_output_truncated'] = true;
+      endAttributes['response.model_output_original_length'] = metadata.modelOutput.length;
     }
-    // Add model_output (text content) - visible to all users
-    if (metadata.modelOutput !== undefined) {
-        const { content: modelOutput, truncated: outputTruncated } = truncateContent(metadata.modelOutput);
-        endAttributes['response.model_output'] = modelOutput;
-        if (outputTruncated) {
-            endAttributes['response.model_output_truncated'] = true;
-            endAttributes['response.model_output_original_length'] = metadata.modelOutput.length;
-        }
+  }
+  // Add thinking_output - ant-only
+  if (process.env.USER_TYPE === 'ant' && metadata.thinkingOutput !== undefined) {
+    const { content: thinkingOutput, truncated: thinkingTruncated } = truncateContent(metadata.thinkingOutput);
+    endAttributes['response.thinking_output'] = thinkingOutput;
+    if (thinkingTruncated) {
+      endAttributes['response.thinking_output_truncated'] = true;
+      endAttributes['response.thinking_output_original_length'] = metadata.thinkingOutput.length;
     }
-    // Add thinking_output - ant-only
-    if (process.env.USER_TYPE === 'ant' && metadata.thinkingOutput !== undefined) {
-        const { content: thinkingOutput, truncated: thinkingTruncated } = truncateContent(metadata.thinkingOutput);
-        endAttributes['response.thinking_output'] = thinkingOutput;
-        if (thinkingTruncated) {
-            endAttributes['response.thinking_output_truncated'] = true;
-            endAttributes['response.thinking_output_original_length'] = metadata.thinkingOutput.length;
-        }
-    }
+  }
 }
 /**
  * Add beta attributes to startToolSpan.
  * Adds tool_input with the serialized tool input.
  */
 export function addBetaToolInputAttributes(span, toolName, toolInput) {
-    if (!isBetaTracingEnabled()) {
-        return;
-    }
-    const { content: truncatedInput, truncated } = truncateContent(`[TOOL INPUT: ${toolName}]\n${toolInput}`);
-    span.setAttributes({
-        tool_input: truncatedInput,
-        ...(truncated && {
-            tool_input_truncated: true,
-            tool_input_original_length: toolInput.length,
-        }),
-    });
+  if (!isBetaTracingEnabled()) {
+    return;
+  }
+  const { content: truncatedInput, truncated } = truncateContent(`[TOOL INPUT: ${toolName}]\n${toolInput}`);
+  span.setAttributes({
+    tool_input: truncatedInput,
+    ...(truncated && {
+      tool_input_truncated: true,
+      tool_input_original_length: toolInput.length,
+    }),
+  });
 }
 /**
  * Add beta attributes to endToolSpan.
  * Adds new_context with the tool result.
  */
 export function addBetaToolResultAttributes(endAttributes, toolName, toolResult) {
-    if (!isBetaTracingEnabled()) {
-        return;
-    }
-    const { content: truncatedResult, truncated } = truncateContent(`[TOOL RESULT: ${toolName}]\n${toolResult}`);
-    endAttributes['new_context'] = truncatedResult;
-    if (truncated) {
-        endAttributes['new_context_truncated'] = true;
-        endAttributes['new_context_original_length'] = toolResult.length;
-    }
+  if (!isBetaTracingEnabled()) {
+    return;
+  }
+  const { content: truncatedResult, truncated } = truncateContent(`[TOOL RESULT: ${toolName}]\n${toolResult}`);
+  endAttributes['new_context'] = truncatedResult;
+  if (truncated) {
+    endAttributes['new_context_truncated'] = true;
+    endAttributes['new_context_original_length'] = toolResult.length;
+  }
 }

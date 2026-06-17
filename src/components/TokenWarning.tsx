@@ -9,7 +9,6 @@ import {
   isAutoCompactEnabled,
 } from '../services/compact/autoCompact.js';
 import { useCompactWarningSuppression } from '../services/compact/compactWarningHook.js';
-import { formatTokens } from '../utils/format.js';
 import { getUpgradeMessage } from '../utils/model/contextWindowUpgradeCheck.js';
 
 type Props = {

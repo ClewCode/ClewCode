@@ -80,8 +80,7 @@ export function BaseTextInput({
   // 2. We have a command typed (value is not empty)
   // 3. The command doesn't have arguments yet (no text after the space)
   // 4. We're actually typing a command (the value starts with /)
-  const commandWithoutArgs =
-    (props.value && props.value.trim().indexOf(' ') === -1) || (props.value && props.value.endsWith(' '));
+  const commandWithoutArgs = (props.value && props.value.trim().indexOf(' ') === -1) || props.value?.endsWith(' ');
 
   const showArgumentHint = Boolean(
     props.argumentHint && props.value && commandWithoutArgs && props.value.startsWith('/'),

@@ -39,7 +39,7 @@ import { getAdditionalDirectoriesForClaudeMd, getOriginalCwd } from '../bootstra
 import { truncateEntrypointContent } from '../memdir/memdir.js';
 import { getAutoMemEntrypoint, isAutoMemoryEnabled } from '../memdir/paths.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
-import { DOT_CLEW, DOT_CLAUDE } from '../utils/clewPaths.js';
+import { DOT_CLAUDE, DOT_CLEW } from '../utils/clewPaths.js';
 import { getCurrentProjectConfig, getManagedClaudeRulesDir, getMemoryPath, getUserClaudeRulesDir } from './config.js';
 import { logForDebugging } from './debug.js';
 import { logForDiagnosticsNoPII } from './diagLogs.js';
@@ -616,7 +616,7 @@ export async function processMemoryFile(
     type,
     resolvedPath,
   );
-  if (!memoryFile || !memoryFile.content.trim()) {
+  if (!memoryFile?.content.trim()) {
     return [];
   }
 

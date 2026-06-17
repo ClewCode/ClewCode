@@ -49,9 +49,9 @@ const inputSchema = lazySchema(() =>
   z.preprocess(
     (val: any) => {
       // Handle cases where the model wraps parameters in a key
-      if (val && val.computer && typeof val.computer === 'object') return val.computer;
-      if (val && val.parameters && typeof val.parameters === 'object') return val.parameters;
-      if (val && val.input && typeof val.input === 'object') return val.input;
+      if (val?.computer && typeof val.computer === 'object') return val.computer;
+      if (val?.parameters && typeof val.parameters === 'object') return val.parameters;
+      if (val?.input && typeof val.input === 'object') return val.input;
       return val;
     },
     z
@@ -236,7 +236,7 @@ Tips:
     };
   },
 
-  renderToolUseMessage(input: Partial<Input>, options: { theme: string; verbose: boolean }): React.ReactNode {
+  renderToolUseMessage(input: Partial<Input>, _options: { theme: string; verbose: boolean }): React.ReactNode {
     if (!input.action) return React.createElement(Text, null, '🖥️ Computer Use');
     const parts = [`🖥️ ${input.action}`];
     if (input.coordinate) parts.push(`at (${input.coordinate.join(', ')})`);

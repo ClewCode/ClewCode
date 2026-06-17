@@ -169,7 +169,7 @@ export const JsonPathTool = buildTool({
   renderToolUseMessage() {
     return null;
   },
-  async call({ json, action, query, indent, schema, required }, context) {
+  async call({ json, action, query, indent, schema, required }, _context) {
     try {
       let parsedJson = json;
 

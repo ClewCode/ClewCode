@@ -46,7 +46,7 @@ export interface ParallelSearchResult {
 /**
  * Build ripgrep args for a single search task.
  */
-function buildArgs(task: SearchTask, cwd: string): string[] {
+function buildArgs(task: SearchTask, _cwd: string): string[] {
   const args: string[] = ['--hidden'];
 
   // Exclude VCS directories

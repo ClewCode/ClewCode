@@ -1,5 +1,5 @@
-import { readdir, readFile } from 'fs/promises';
-import { basename, join } from 'path';
+import { readdir } from 'fs/promises';
+import { join } from 'path';
 import type { Command } from '../types/command.js';
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { logForDebugging } from '../utils/debug.js';
@@ -80,7 +80,7 @@ export async function loadProjectSkills(cwd: string): Promise<Command[]> {
 
     logForDebugging(`Loaded ${skills.length} skills from ${skillsDir}`);
     return skills;
-  } catch (error) {
+  } catch (_error) {
     // Skills directory doesn't exist or is inaccessible
     logForDebugging(`Skills directory not found: ${skillsDir}`);
     return [];

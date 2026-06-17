@@ -52,7 +52,7 @@ export function truncatePathMiddle(path: string, maxLength: number): string {
 
   // Truncate directory and combine
   const truncatedDir = truncateToWidthNoEllipsis(directory, availableForDir);
-  return truncatedDir + '…' + filename;
+  return `${truncatedDir}…${filename}`;
 }
 
 /**
@@ -71,7 +71,7 @@ export function truncateToWidth(text: string, maxWidth: number): string {
     result += segment;
     width += segWidth;
   }
-  return result + '…';
+  return `${result}…`;
 }
 
 /**

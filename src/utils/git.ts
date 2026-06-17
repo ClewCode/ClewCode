@@ -275,13 +275,13 @@ export function normalizeGitRemoteUrl(url: string): string | null {
 
   // Handle SSH format: git@host:owner/repo.git
   const sshMatch = trimmed.match(/^git@([^:]+):(.+?)(?:\.git)?$/);
-  if (sshMatch && sshMatch[1] && sshMatch[2]) {
+  if (sshMatch?.[1] && sshMatch[2]) {
     return `${sshMatch[1]}/${sshMatch[2]}`.toLowerCase();
   }
 
   // Handle HTTPS/SSH URL format: https://host/owner/repo.git or ssh://git@host/owner/repo
   const urlMatch = trimmed.match(/^(?:https?|ssh):\/\/(?:[^@]+@)?([^/]+)\/(.+?)(?:\.git)?$/);
-  if (urlMatch && urlMatch[1] && urlMatch[2]) {
+  if (urlMatch?.[1] && urlMatch[2]) {
     const host = urlMatch[1];
     const path = urlMatch[2];
 
@@ -544,7 +544,7 @@ export async function findRemoteBase(): Promise<string | null> {
   if (remoteCode === 0) {
     // Parse the default branch from remote show output
     const match = remoteRefs.match(/HEAD branch: (\S+)/);
-    if (match && match[1]) {
+    if (match?.[1]) {
       return `origin/${match[1]}`;
     }
   }

@@ -1,9 +1,10 @@
 import { EXIT_PLAN_MODE_TOOL_NAME } from '../ExitPlanModeTool/constants.js';
 export const ASK_USER_QUESTION_TOOL_NAME = 'AskUserQuestion';
 export const ASK_USER_QUESTION_TOOL_CHIP_WIDTH = 12;
-export const DESCRIPTION = 'Asks the user multiple choice questions to gather information, clarify ambiguity, understand preferences, make decisions or offer them choices.';
+export const DESCRIPTION =
+  'Asks the user multiple choice questions to gather information, clarify ambiguity, understand preferences, make decisions or offer them choices.';
 export const PREVIEW_FEATURE_PROMPT = {
-    markdown: `
+  markdown: `
 Preview feature:
 Use the optional \`preview\` field on options when presenting concrete artifacts that users need to visually compare:
 - ASCII mockups of UI layouts or components
@@ -13,7 +14,7 @@ Use the optional \`preview\` field on options when presenting concrete artifacts
 
 Preview content is rendered as markdown in a monospace box. Multi-line text with newlines is supported. When any option has a preview, the UI switches to a side-by-side layout with a vertical option list on the left and preview on the right. Do not use previews for simple preference questions where labels and descriptions suffice. Note: previews are only supported for single-select questions (not multiSelect).
 `,
-    html: `
+  html: `
 Preview feature:
 Use the optional \`preview\` field on options when presenting concrete artifacts that users need to visually compare:
 - HTML mockups of UI layouts or components

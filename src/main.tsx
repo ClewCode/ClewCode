@@ -33,13 +33,14 @@ try {
   }
 } catch (_e) {}
 
-import { BUILD_VERSION, PACKAGE_URL, FEEDBACK_CHANNEL, ISSUES_EXPLAINER } from './generated/version.js';
-
+const macroPkg = JSON.parse(
+  readFileSync(new URL('./generated/version.json', import.meta.url), 'utf8'),
+) as { BUILD_VERSION: string; PACKAGE_URL: string; FEEDBACK_CHANNEL: string; ISSUES_EXPLAINER: string };
 globalThis.MACRO = {
-  VERSION: BUILD_VERSION,
-  PACKAGE_URL,
-  FEEDBACK_CHANNEL,
-  ISSUES_EXPLAINER,
+  VERSION: macroPkg.BUILD_VERSION,
+  PACKAGE_URL: macroPkg.PACKAGE_URL,
+  FEEDBACK_CHANNEL: macroPkg.FEEDBACK_CHANNEL,
+  ISSUES_EXPLAINER: macroPkg.ISSUES_EXPLAINER,
 };
 
 if (startupArgs.length === 1 && ['--version', '-v', '-V'].includes(startupArgs[0] ?? '')) {

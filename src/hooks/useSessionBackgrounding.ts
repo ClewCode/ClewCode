@@ -86,7 +86,7 @@ export function useSessionBackgrounding({
       return;
     }
 
-    if (!foregroundedTask || foregroundedTask.type !== 'local_agent') {
+    if (foregroundedTask?.type !== 'local_agent') {
       setAppState(prev => ({ ...prev, foregroundedTaskId: undefined }));
       resetLoadingState();
       lastSyncedMessagesLengthRef.current = 0;

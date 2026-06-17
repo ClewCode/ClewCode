@@ -7,7 +7,7 @@ export const DESCRIPTION =
   'Shows the correct flow, which tool to use when, common mistakes, and best practices. ' +
   'Use this when unsure how to use peer tools or when a peer node workflow fails.';
 
-const FLOW_DISCOVERY = `## Peer Discovery Flow
+const _FLOW_DISCOVERY = `## Peer Discovery Flow
 \`peer_share start\` → \`peer_discover\` → \`peer_info\` / \`peer_ping\`
 
 1. **\`peer_share start\`** — เปิด share ก่อน ไม่งั้นคนอื่นหาเราไม่เจอ
@@ -27,7 +27,7 @@ const FLOW_DISCOVERY = `## Peer Discovery Flow
    - \`peer_ping({ peer: "hostname" })\`
    - \`peer_ping({ peer: "hostname", wait: true, timeout: 45 })\` รอจนกว่าจะ online`;
 
-const FLOW_MESSAGING = `## Peer Messaging Flow
+const _FLOW_MESSAGING = `## Peer Messaging Flow
 \`peer_send_message\` → \`peer_list_messages\`
 
 1. **\`peer_send_message\`** — ส่งข้อความถึง peer
@@ -38,7 +38,7 @@ const FLOW_MESSAGING = `## Peer Messaging Flow
    - คืนข้อความที่ reassemble แล้ว (chunks ถูกรวมให้อัตโนมัติ)
    - \`peer_list_messages({ after: 1717000000000 })\` — เฉพาะข้อความใหม่`;
 
-const FLOW_REQUEST_RESPONSE = `## Request-Response Flow (แนะนำ)
+const _FLOW_REQUEST_RESPONSE = `## Request-Response Flow (แนะนำ)
 \`peer_send_message({ ..., waitResponse: true })\`
 
 Flow ที่ถูกต้องที่สุดสำหรับถาม-ตอบ:
@@ -57,7 +57,7 @@ peer_send_message({
 ✅ หรือให้ peer ตอบกลับมาเอง: new peer messages arrive as <system-reminder>
 ใน conversation โดยอัตโนมัติ — ไม่ต้อง poll เลย`;
 
-const FLOW_CHUNKING = `## Large Content Flow (Chunking)
+const _FLOW_CHUNKING = `## Large Content Flow (Chunking)
 \`peer_send_message({ ..., chunk: true })\`
 
 เมื่อต้องส่ง content ยาวๆ (research report, code, docs):
@@ -94,13 +94,13 @@ peer_send_message({
 → ส่ง chunks ทั้งหมดก่อน แล้วค่อยรอ response
 \`\`\``;
 
-const FLOW_WAITING = `## Receiving Messages (Event-Driven — No Polling Needed!)
+const _FLOW_WAITING = `## Receiving Messages (Event-Driven — No Polling Needed!)
 New messages from peers arrive automatically as <system-reminder> in your conversation.
 You DO NOT need to poll or wait — just read incoming messages in the conversation stream.
 
 \`peer_list_messages\` is only for looking up message HISTORY, not for checking new messages.`;
 
-const FLOW_BROADCAST = `## Broadcast Flow
+const _FLOW_BROADCAST = `## Broadcast Flow
 \`peer_broadcast({ task })\`
 
 ส่งงานให้ทุก peers พร้อมกัน:
@@ -113,7 +113,7 @@ peer_broadcast({ task: "ค้นหา WC3 patch notes ล่าสุด" })
 ฝั่งรับต้องใช้ \`peer_list_messages\` ไม่ได้ ต้องรอให้ peer
 แจ้งผลกลับมาผ่าน \`peer_send_message\``;
 
-const FLOW_ROLES = `## Peer Management Flow
+const _FLOW_ROLES = `## Peer Management Flow
 \`peer_set_name\` / \`peer_set_role\` / \`peer_list_roles\`
 
 \`\`\`
@@ -124,7 +124,7 @@ peer_list_roles({ wait: true, minPeers: 2 })
 
 ใช้ \`peer_list_roles\` แทน \`peer_discover\` เมื่อต้องการดู tags + roles`;
 
-const COMMON_MISTAKES = `## Common Mistakes & How to Avoid
+const _COMMON_MISTAKES = `## Common Mistakes & How to Avoid
 
 1. **❌ ส่งข้อความโดยยังไม่ discover peer**
    → ✅ เรียก \`peer_discover()\` ก่อน หรือใช้ \`peer_join\`
@@ -144,14 +144,14 @@ const COMMON_MISTAKES = `## Common Mistakes & How to Avoid
    → ✅ ข้อความใหม่เข้า <system-reminder> อัตโนมัติ
    → ✅ หรือใช้ \`waitResponse: true\` ใน \`peer_send_message\` เดียว`;
 
-const COMMON_MISTAKES_REST = `
+const _COMMON_MISTAKES_REST = `
 6. **❌ ใช้ \`peer_send_message\` ส่งงาน (ควรเป็น broadcast)**
    → ✅ ใช้ \`peer_broadcast\` สำหรับส่งงานให้ทุกคน
 
 7. **❌ ไม่รู้ว่า peer ตัวเองคือ port อะไร**
    → ✅ \`peer_share status\` หรือ \`peer_share start\` ดู port`;
 
-const FLOW_COMPLETE = `# ════════════════════════════════════════
+const _FLOW_COMPLETE = `# ════════════════════════════════════════
 # PEER-TO-PEER COMPLETE FLOW GUIDE
 # ════════════════════════════════════════
 

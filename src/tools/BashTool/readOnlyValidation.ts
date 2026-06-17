@@ -1353,10 +1353,7 @@ export function isCommandSafeViaFlagParsing(command: string): boolean {
   if (!commandConfig.regex && (tokens[0] === 'rg' || tokens[0] === 'grep') && /[\n\r]/.test(command)) {
     return false;
   }
-  if (
-    commandConfig.additionalCommandIsDangerousCallback &&
-    commandConfig.additionalCommandIsDangerousCallback(command, tokens.slice(commandTokens))
-  ) {
+  if (commandConfig.additionalCommandIsDangerousCallback?.(command, tokens.slice(commandTokens))) {
     return false;
   }
 

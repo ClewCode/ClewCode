@@ -20,186 +20,180 @@ import { parseOSC } from './osc.js';
 import { applySGR } from './sgr.js';
 import { createTokenizer } from './tokenize.js';
 import { defaultStyle } from './types.js';
+
 // =============================================================================
 // Grapheme Utilities
 // =============================================================================
 function graphemeWidth(grapheme) {
-    // Use stringWidth for accurate width calculation including Thai/Lao scripts
-    // that were previously miscalculated by the hardcoded eastAsianWidth ranges.
-    const width = stringWidth(grapheme);
-    return width >= 2 ? 2 : 1;
+  // Use stringWidth for accurate width calculation including Thai/Lao scripts
+  // that were previously miscalculated by the hardcoded eastAsianWidth ranges.
+  const width = stringWidth(grapheme);
+  return width >= 2 ? 2 : 1;
 }
 function* segmentGraphemes(str) {
-    for (const { segment } of getGraphemeSegmenter().segment(str)) {
-        yield { value: segment, width: graphemeWidth(segment) };
-    }
+  for (const { segment } of getGraphemeSegmenter().segment(str)) {
+    yield { value: segment, width: graphemeWidth(segment) };
+  }
 }
 // =============================================================================
 // Sequence Parsing
 // =============================================================================
 function parseCSIParams(paramStr) {
-    if (paramStr === '')
-        return [];
-    return paramStr.split(/[;:]/).map(s => (s === '' ? 0 : parseInt(s, 10)));
+  if (paramStr === '') return [];
+  return paramStr.split(/[;:]/).map(s => (s === '' ? 0 : parseInt(s, 10)));
 }
 /** Parse a raw CSI sequence (e.g., "\x1b[31m") into an action */
 function parseCSI(rawSequence) {
-    const inner = rawSequence.slice(2);
-    if (inner.length === 0)
-        return null;
-    const finalByte = inner.charCodeAt(inner.length - 1);
-    const beforeFinal = inner.slice(0, -1);
-    let privateMode = '';
-    let paramStr = beforeFinal;
-    let intermediate = '';
-    if (beforeFinal.length > 0 && '?>='.includes(beforeFinal[0])) {
-        privateMode = beforeFinal[0];
-        paramStr = beforeFinal.slice(1);
+  const inner = rawSequence.slice(2);
+  if (inner.length === 0) return null;
+  const finalByte = inner.charCodeAt(inner.length - 1);
+  const beforeFinal = inner.slice(0, -1);
+  let privateMode = '';
+  let paramStr = beforeFinal;
+  let intermediate = '';
+  if (beforeFinal.length > 0 && '?>='.includes(beforeFinal[0])) {
+    privateMode = beforeFinal[0];
+    paramStr = beforeFinal.slice(1);
+  }
+  const intermediateMatch = paramStr.match(/([^0-9;:]+)$/);
+  if (intermediateMatch) {
+    intermediate = intermediateMatch[1];
+    paramStr = paramStr.slice(0, -intermediate.length);
+  }
+  const params = parseCSIParams(paramStr);
+  const p0 = params[0] ?? 1;
+  const p1 = params[1] ?? 1;
+  // SGR (Select Graphic Rendition)
+  if (finalByte === CSI.SGR && privateMode === '') {
+    return { type: 'sgr', params: paramStr };
+  }
+  // Cursor movement
+  if (finalByte === CSI.CUU) {
+    return {
+      type: 'cursor',
+      action: { type: 'move', direction: 'up', count: p0 },
+    };
+  }
+  if (finalByte === CSI.CUD) {
+    return {
+      type: 'cursor',
+      action: { type: 'move', direction: 'down', count: p0 },
+    };
+  }
+  if (finalByte === CSI.CUF) {
+    return {
+      type: 'cursor',
+      action: { type: 'move', direction: 'forward', count: p0 },
+    };
+  }
+  if (finalByte === CSI.CUB) {
+    return {
+      type: 'cursor',
+      action: { type: 'move', direction: 'back', count: p0 },
+    };
+  }
+  if (finalByte === CSI.CNL) {
+    return { type: 'cursor', action: { type: 'nextLine', count: p0 } };
+  }
+  if (finalByte === CSI.CPL) {
+    return { type: 'cursor', action: { type: 'prevLine', count: p0 } };
+  }
+  if (finalByte === CSI.CHA) {
+    return { type: 'cursor', action: { type: 'column', col: p0 } };
+  }
+  if (finalByte === CSI.CUP || finalByte === CSI.HVP) {
+    return { type: 'cursor', action: { type: 'position', row: p0, col: p1 } };
+  }
+  if (finalByte === CSI.VPA) {
+    return { type: 'cursor', action: { type: 'row', row: p0 } };
+  }
+  // Erase
+  if (finalByte === CSI.ED) {
+    const region = ERASE_DISPLAY[params[0] ?? 0] ?? 'toEnd';
+    return { type: 'erase', action: { type: 'display', region } };
+  }
+  if (finalByte === CSI.EL) {
+    const region = ERASE_LINE_REGION[params[0] ?? 0] ?? 'toEnd';
+    return { type: 'erase', action: { type: 'line', region } };
+  }
+  if (finalByte === CSI.ECH) {
+    return { type: 'erase', action: { type: 'chars', count: p0 } };
+  }
+  // Scroll
+  if (finalByte === CSI.SU) {
+    return { type: 'scroll', action: { type: 'up', count: p0 } };
+  }
+  if (finalByte === CSI.SD) {
+    return { type: 'scroll', action: { type: 'down', count: p0 } };
+  }
+  if (finalByte === CSI.DECSTBM) {
+    return {
+      type: 'scroll',
+      action: { type: 'setRegion', top: p0, bottom: p1 },
+    };
+  }
+  // Cursor save/restore
+  if (finalByte === CSI.SCOSC) {
+    return { type: 'cursor', action: { type: 'save' } };
+  }
+  if (finalByte === CSI.SCORC) {
+    return { type: 'cursor', action: { type: 'restore' } };
+  }
+  // Cursor style
+  if (finalByte === CSI.DECSCUSR && intermediate === ' ') {
+    const styleInfo = CURSOR_STYLES[p0] ?? CURSOR_STYLES[0];
+    return { type: 'cursor', action: { type: 'style', ...styleInfo } };
+  }
+  // Private modes
+  if (privateMode === '?' && (finalByte === CSI.SM || finalByte === CSI.RM)) {
+    const enabled = finalByte === CSI.SM;
+    if (p0 === DEC.CURSOR_VISIBLE) {
+      return {
+        type: 'cursor',
+        action: enabled ? { type: 'show' } : { type: 'hide' },
+      };
     }
-    const intermediateMatch = paramStr.match(/([^0-9;:]+)$/);
-    if (intermediateMatch) {
-        intermediate = intermediateMatch[1];
-        paramStr = paramStr.slice(0, -intermediate.length);
+    if (p0 === DEC.ALT_SCREEN_CLEAR || p0 === DEC.ALT_SCREEN) {
+      return { type: 'mode', action: { type: 'alternateScreen', enabled } };
     }
-    const params = parseCSIParams(paramStr);
-    const p0 = params[0] ?? 1;
-    const p1 = params[1] ?? 1;
-    // SGR (Select Graphic Rendition)
-    if (finalByte === CSI.SGR && privateMode === '') {
-        return { type: 'sgr', params: paramStr };
+    if (p0 === DEC.BRACKETED_PASTE) {
+      return { type: 'mode', action: { type: 'bracketedPaste', enabled } };
     }
-    // Cursor movement
-    if (finalByte === CSI.CUU) {
-        return {
-            type: 'cursor',
-            action: { type: 'move', direction: 'up', count: p0 },
-        };
+    if (p0 === DEC.MOUSE_NORMAL) {
+      return {
+        type: 'mode',
+        action: { type: 'mouseTracking', mode: enabled ? 'normal' : 'off' },
+      };
     }
-    if (finalByte === CSI.CUD) {
-        return {
-            type: 'cursor',
-            action: { type: 'move', direction: 'down', count: p0 },
-        };
+    if (p0 === DEC.MOUSE_BUTTON) {
+      return {
+        type: 'mode',
+        action: { type: 'mouseTracking', mode: enabled ? 'button' : 'off' },
+      };
     }
-    if (finalByte === CSI.CUF) {
-        return {
-            type: 'cursor',
-            action: { type: 'move', direction: 'forward', count: p0 },
-        };
+    if (p0 === DEC.MOUSE_ANY) {
+      return {
+        type: 'mode',
+        action: { type: 'mouseTracking', mode: enabled ? 'any' : 'off' },
+      };
     }
-    if (finalByte === CSI.CUB) {
-        return {
-            type: 'cursor',
-            action: { type: 'move', direction: 'back', count: p0 },
-        };
+    if (p0 === DEC.FOCUS_EVENTS) {
+      return { type: 'mode', action: { type: 'focusEvents', enabled } };
     }
-    if (finalByte === CSI.CNL) {
-        return { type: 'cursor', action: { type: 'nextLine', count: p0 } };
-    }
-    if (finalByte === CSI.CPL) {
-        return { type: 'cursor', action: { type: 'prevLine', count: p0 } };
-    }
-    if (finalByte === CSI.CHA) {
-        return { type: 'cursor', action: { type: 'column', col: p0 } };
-    }
-    if (finalByte === CSI.CUP || finalByte === CSI.HVP) {
-        return { type: 'cursor', action: { type: 'position', row: p0, col: p1 } };
-    }
-    if (finalByte === CSI.VPA) {
-        return { type: 'cursor', action: { type: 'row', row: p0 } };
-    }
-    // Erase
-    if (finalByte === CSI.ED) {
-        const region = ERASE_DISPLAY[params[0] ?? 0] ?? 'toEnd';
-        return { type: 'erase', action: { type: 'display', region } };
-    }
-    if (finalByte === CSI.EL) {
-        const region = ERASE_LINE_REGION[params[0] ?? 0] ?? 'toEnd';
-        return { type: 'erase', action: { type: 'line', region } };
-    }
-    if (finalByte === CSI.ECH) {
-        return { type: 'erase', action: { type: 'chars', count: p0 } };
-    }
-    // Scroll
-    if (finalByte === CSI.SU) {
-        return { type: 'scroll', action: { type: 'up', count: p0 } };
-    }
-    if (finalByte === CSI.SD) {
-        return { type: 'scroll', action: { type: 'down', count: p0 } };
-    }
-    if (finalByte === CSI.DECSTBM) {
-        return {
-            type: 'scroll',
-            action: { type: 'setRegion', top: p0, bottom: p1 },
-        };
-    }
-    // Cursor save/restore
-    if (finalByte === CSI.SCOSC) {
-        return { type: 'cursor', action: { type: 'save' } };
-    }
-    if (finalByte === CSI.SCORC) {
-        return { type: 'cursor', action: { type: 'restore' } };
-    }
-    // Cursor style
-    if (finalByte === CSI.DECSCUSR && intermediate === ' ') {
-        const styleInfo = CURSOR_STYLES[p0] ?? CURSOR_STYLES[0];
-        return { type: 'cursor', action: { type: 'style', ...styleInfo } };
-    }
-    // Private modes
-    if (privateMode === '?' && (finalByte === CSI.SM || finalByte === CSI.RM)) {
-        const enabled = finalByte === CSI.SM;
-        if (p0 === DEC.CURSOR_VISIBLE) {
-            return {
-                type: 'cursor',
-                action: enabled ? { type: 'show' } : { type: 'hide' },
-            };
-        }
-        if (p0 === DEC.ALT_SCREEN_CLEAR || p0 === DEC.ALT_SCREEN) {
-            return { type: 'mode', action: { type: 'alternateScreen', enabled } };
-        }
-        if (p0 === DEC.BRACKETED_PASTE) {
-            return { type: 'mode', action: { type: 'bracketedPaste', enabled } };
-        }
-        if (p0 === DEC.MOUSE_NORMAL) {
-            return {
-                type: 'mode',
-                action: { type: 'mouseTracking', mode: enabled ? 'normal' : 'off' },
-            };
-        }
-        if (p0 === DEC.MOUSE_BUTTON) {
-            return {
-                type: 'mode',
-                action: { type: 'mouseTracking', mode: enabled ? 'button' : 'off' },
-            };
-        }
-        if (p0 === DEC.MOUSE_ANY) {
-            return {
-                type: 'mode',
-                action: { type: 'mouseTracking', mode: enabled ? 'any' : 'off' },
-            };
-        }
-        if (p0 === DEC.FOCUS_EVENTS) {
-            return { type: 'mode', action: { type: 'focusEvents', enabled } };
-        }
-    }
-    return { type: 'unknown', sequence: rawSequence };
+  }
+  return { type: 'unknown', sequence: rawSequence };
 }
 /**
  * Identify the type of escape sequence from its raw form.
  */
 function identifySequence(seq) {
-    if (seq.length < 2)
-        return 'unknown';
-    if (seq.charCodeAt(0) !== C0.ESC)
-        return 'unknown';
-    const second = seq.charCodeAt(1);
-    if (second === 0x5b)
-        return 'csi'; // [
-    if (second === 0x5d)
-        return 'osc'; // ]
-    if (second === 0x4f)
-        return 'ss3'; // O
-    return 'esc';
+  if (seq.length < 2) return 'unknown';
+  if (seq.charCodeAt(0) !== C0.ESC) return 'unknown';
+  const second = seq.charCodeAt(1);
+  if (second === 0x5b) return 'csi'; // [
+  if (second === 0x5d) return 'osc'; // ]
+  if (second === 0x4f) return 'ss3'; // O
+  return 'esc';
 }
 // =============================================================================
 // Main Parser
@@ -215,111 +209,107 @@ function identifySequence(seq) {
  * ```
  */
 export class Parser {
-    tokenizer = createTokenizer();
-    style = defaultStyle();
-    inLink = false;
-    linkUrl;
-    reset() {
-        this.tokenizer.reset();
-        this.style = defaultStyle();
-        this.inLink = false;
-        this.linkUrl = undefined;
+  tokenizer = createTokenizer();
+  style = defaultStyle();
+  inLink = false;
+  linkUrl;
+  reset() {
+    this.tokenizer.reset();
+    this.style = defaultStyle();
+    this.inLink = false;
+    this.linkUrl = undefined;
+  }
+  /** Feed input and get resulting actions */
+  feed(input) {
+    const tokens = this.tokenizer.feed(input);
+    const actions = [];
+    for (const token of tokens) {
+      const tokenActions = this.processToken(token);
+      actions.push(...tokenActions);
     }
-    /** Feed input and get resulting actions */
-    feed(input) {
-        const tokens = this.tokenizer.feed(input);
-        const actions = [];
-        for (const token of tokens) {
-            const tokenActions = this.processToken(token);
-            actions.push(...tokenActions);
-        }
-        return actions;
+    return actions;
+  }
+  processToken(token) {
+    switch (token.type) {
+      case 'text':
+        return this.processText(token.value);
+      case 'sequence':
+        return this.processSequence(token.value);
     }
-    processToken(token) {
-        switch (token.type) {
-            case 'text':
-                return this.processText(token.value);
-            case 'sequence':
-                return this.processSequence(token.value);
-        }
-    }
-    processText(text) {
-        // Handle BEL characters embedded in text
-        const actions = [];
-        let current = '';
-        for (const char of text) {
-            if (char.charCodeAt(0) === C0.BEL) {
-                if (current) {
-                    const graphemes = [...segmentGraphemes(current)];
-                    if (graphemes.length > 0) {
-                        actions.push({ type: 'text', graphemes, style: { ...this.style } });
-                    }
-                    current = '';
-                }
-                actions.push({ type: 'bell' });
-            }
-            else {
-                current += char;
-            }
-        }
+  }
+  processText(text) {
+    // Handle BEL characters embedded in text
+    const actions = [];
+    let current = '';
+    for (const char of text) {
+      if (char.charCodeAt(0) === C0.BEL) {
         if (current) {
-            const graphemes = [...segmentGraphemes(current)];
-            if (graphemes.length > 0) {
-                actions.push({ type: 'text', graphemes, style: { ...this.style } });
-            }
+          const graphemes = [...segmentGraphemes(current)];
+          if (graphemes.length > 0) {
+            actions.push({ type: 'text', graphemes, style: { ...this.style } });
+          }
+          current = '';
         }
-        return actions;
+        actions.push({ type: 'bell' });
+      } else {
+        current += char;
+      }
     }
-    processSequence(seq) {
-        const seqType = identifySequence(seq);
-        switch (seqType) {
-            case 'csi': {
-                const action = parseCSI(seq);
-                if (!action)
-                    return [];
-                if (action.type === 'sgr') {
-                    this.style = applySGR(action.params, this.style);
-                    return [];
-                }
-                return [action];
-            }
-            case 'osc': {
-                // Extract OSC content (between ESC ] and terminator)
-                let content = seq.slice(2);
-                // Remove terminator (BEL or ESC \)
-                if (content.endsWith('\x07')) {
-                    content = content.slice(0, -1);
-                }
-                else if (content.endsWith('\x1b\\')) {
-                    content = content.slice(0, -2);
-                }
-                const action = parseOSC(content);
-                if (action) {
-                    if (action.type === 'link') {
-                        if (action.action.type === 'start') {
-                            this.inLink = true;
-                            this.linkUrl = action.action.url;
-                        }
-                        else {
-                            this.inLink = false;
-                            this.linkUrl = undefined;
-                        }
-                    }
-                    return [action];
-                }
-                return [];
-            }
-            case 'esc': {
-                const escContent = seq.slice(1);
-                const action = parseEsc(escContent);
-                return action ? [action] : [];
-            }
-            case 'ss3':
-                // SS3 sequences are typically cursor keys in application mode
-                // For output parsing, treat as unknown
-                return [{ type: 'unknown', sequence: seq }];
-            default:
-                return [{ type: 'unknown', sequence: seq }];
+    if (current) {
+      const graphemes = [...segmentGraphemes(current)];
+      if (graphemes.length > 0) {
+        actions.push({ type: 'text', graphemes, style: { ...this.style } });
+      }
+    }
+    return actions;
+  }
+  processSequence(seq) {
+    const seqType = identifySequence(seq);
+    switch (seqType) {
+      case 'csi': {
+        const action = parseCSI(seq);
+        if (!action) return [];
+        if (action.type === 'sgr') {
+          this.style = applySGR(action.params, this.style);
+          return [];
         }
+        return [action];
+      }
+      case 'osc': {
+        // Extract OSC content (between ESC ] and terminator)
+        let content = seq.slice(2);
+        // Remove terminator (BEL or ESC \)
+        if (content.endsWith('\x07')) {
+          content = content.slice(0, -1);
+        } else if (content.endsWith('\x1b\\')) {
+          content = content.slice(0, -2);
+        }
+        const action = parseOSC(content);
+        if (action) {
+          if (action.type === 'link') {
+            if (action.action.type === 'start') {
+              this.inLink = true;
+              this.linkUrl = action.action.url;
+            } else {
+              this.inLink = false;
+              this.linkUrl = undefined;
+            }
+          }
+          return [action];
+        }
+        return [];
+      }
+      case 'esc': {
+        const escContent = seq.slice(1);
+        const action = parseEsc(escContent);
+        return action ? [action] : [];
+      }
+      case 'ss3':
+        // SS3 sequences are typically cursor keys in application mode
+        // For output parsing, treat as unknown
+        return [{ type: 'unknown', sequence: seq }];
+      default:
+        return [{ type: 'unknown', sequence: seq }];
     }
+  }
 }

@@ -9,12 +9,12 @@
 import { getPlatform } from './platform.js';
 
 export type WindowsConsoleType =
-  | 'windows-terminal'   // Windows Terminal (ConPTY, full VT support)
-  | 'vscode-terminal'    // VS Code integrated terminal on Windows
-  | 'conhost'            // Legacy conhost.exe (cmd/powershell, limited VT)
-  | 'mintty'             // Git Bash / MSYS2 / Cygwin mintty
-  | 'conemu'             // ConEmu
-  | 'wsl-terminal'       // WSL in Windows Terminal
+  | 'windows-terminal' // Windows Terminal (ConPTY, full VT support)
+  | 'vscode-terminal' // VS Code integrated terminal on Windows
+  | 'conhost' // Legacy conhost.exe (cmd/powershell, limited VT)
+  | 'mintty' // Git Bash / MSYS2 / Cygwin mintty
+  | 'conemu' // ConEmu
+  | 'wsl-terminal' // WSL in Windows Terminal
   | 'unknown';
 
 let consoleType: WindowsConsoleType | undefined;
@@ -82,12 +82,7 @@ export function resetWindowsConsoleType(): void {
  */
 export function hasConPty(): boolean {
   const ct = getWindowsConsoleType();
-  return (
-    ct === 'windows-terminal' ||
-    ct === 'vscode-terminal' ||
-    ct === 'conemu' ||
-    ct === 'wsl-terminal'
-  );
+  return ct === 'windows-terminal' || ct === 'vscode-terminal' || ct === 'conemu' || ct === 'wsl-terminal';
 }
 
 /**
@@ -138,8 +133,5 @@ export function supportsProgressReporting(): boolean {
  * Detect if running inside Git Bash (MSYS2/MINGW).
  */
 export function isGitBash(): boolean {
-  return (
-    getPlatform() === 'windows' &&
-    (!!process.env.MSYSTEM || getWindowsConsoleType() === 'mintty')
-  );
+  return getPlatform() === 'windows' && (!!process.env.MSYSTEM || getWindowsConsoleType() === 'mintty');
 }

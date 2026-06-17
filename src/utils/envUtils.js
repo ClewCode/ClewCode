@@ -5,7 +5,7 @@ import { join } from 'path';
  * Read an env var with CLEW_* primary and CLAUDE_* legacy fallback.
  */
 export function getEnvWithAlias(primary, legacy) {
-    return process.env[primary] ?? process.env[legacy];
+  return process.env[primary] ?? process.env[legacy];
 }
 /**
  * Primary config home: ~/.clew (or CLEW_CONFIG_DIR / CLAUDE_CONFIG_DIR fallback).
@@ -13,46 +13,44 @@ export function getEnvWithAlias(primary, legacy) {
  * ~170 callers across the codebase. Named `getClaudeConfigHomeDir` for backward
  * compatibility — it returns the Clew home, not the old Claude home.
  */
-export const getClaudeConfigHomeDir = memoize(() => {
+export const getClaudeConfigHomeDir = memoize(
+  () => {
     const clewDir = getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR');
     if (clewDir) {
-        return clewDir.normalize('NFC');
+      return clewDir.normalize('NFC');
     }
     return join(homedir(), '.clew').normalize('NFC');
-}, () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR') ?? '.clew');
+  },
+  () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR') ?? '.clew',
+);
 /** Alias for the same function. */
 export const getClewConfigHomeDir = getClaudeConfigHomeDir;
 export function getTeamsDir() {
-    return join(getClaudeConfigHomeDir(), 'teams');
+  return join(getClaudeConfigHomeDir(), 'teams');
 }
 /**
  * Check if NODE_OPTIONS contains a specific flag.
  * Splits on whitespace and checks for exact match to avoid false positives.
  */
 export function hasNodeOption(flag) {
-    const nodeOptions = process.env.NODE_OPTIONS;
-    if (!nodeOptions) {
-        return false;
-    }
-    return nodeOptions.split(/\s+/).includes(flag);
+  const nodeOptions = process.env.NODE_OPTIONS;
+  if (!nodeOptions) {
+    return false;
+  }
+  return nodeOptions.split(/\s+/).includes(flag);
 }
 export function isEnvTruthy(envVar) {
-    if (!envVar)
-        return false;
-    if (typeof envVar === 'boolean')
-        return envVar;
-    const normalizedValue = envVar.toLowerCase().trim();
-    return ['1', 'true', 'yes', 'on'].includes(normalizedValue);
+  if (!envVar) return false;
+  if (typeof envVar === 'boolean') return envVar;
+  const normalizedValue = envVar.toLowerCase().trim();
+  return ['1', 'true', 'yes', 'on'].includes(normalizedValue);
 }
 export function isEnvDefinedFalsy(envVar) {
-    if (envVar === undefined)
-        return false;
-    if (typeof envVar === 'boolean')
-        return !envVar;
-    if (!envVar)
-        return false;
-    const normalizedValue = envVar.toLowerCase().trim();
-    return ['0', 'false', 'no', 'off'].includes(normalizedValue);
+  if (envVar === undefined) return false;
+  if (typeof envVar === 'boolean') return !envVar;
+  if (!envVar) return false;
+  const normalizedValue = envVar.toLowerCase().trim();
+  return ['0', 'false', 'no', 'off'].includes(normalizedValue);
 }
 /**
  * --bare / CLAUDE_CODE_SIMPLE / CLEW_CODE_SIMPLE — skip hooks, LSP, plugin sync,
@@ -66,7 +64,7 @@ export function isEnvDefinedFalsy(envVar) {
  * — notably startKeychainPrefetch() at main.tsx top-level.
  */
 export function isBareMode() {
-    return isEnvTruthy(getEnvWithAlias('CLEW_CODE_SIMPLE', 'CLAUDE_CODE_SIMPLE')) || process.argv.includes('--bare');
+  return isEnvTruthy(getEnvWithAlias('CLEW_CODE_SIMPLE', 'CLAUDE_CODE_SIMPLE')) || process.argv.includes('--bare');
 }
 /**
  * Parses an array of environment variable strings into a key-value object
@@ -74,44 +72,48 @@ export function isBareMode() {
  * @returns Object with key-value pairs
  */
 export function parseEnvVars(rawEnvArgs) {
-    const parsedEnv = {};
-    // Parse individual env vars
-    if (rawEnvArgs) {
-        for (const envStr of rawEnvArgs) {
-            const [key, ...valueParts] = envStr.split('=');
-            if (!key || valueParts.length === 0) {
-                throw new Error(`Invalid environment variable format: ${envStr}, environment variables should be added as: -e KEY1=value1 -e KEY2=value2`);
-            }
-            parsedEnv[key] = valueParts.join('=');
-        }
+  const parsedEnv = {};
+  // Parse individual env vars
+  if (rawEnvArgs) {
+    for (const envStr of rawEnvArgs) {
+      const [key, ...valueParts] = envStr.split('=');
+      if (!key || valueParts.length === 0) {
+        throw new Error(
+          `Invalid environment variable format: ${envStr}, environment variables should be added as: -e KEY1=value1 -e KEY2=value2`,
+        );
+      }
+      parsedEnv[key] = valueParts.join('=');
     }
-    return parsedEnv;
+  }
+  return parsedEnv;
 }
 /**
  * Get the AWS region with fallback to default
  * Matches the Anthropic Bedrock SDK's region behavior
  */
 export function getAWSRegion() {
-    return process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
+  return process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
 }
 /**
  * Get the default Vertex AI region
  */
 export function getDefaultVertexRegion() {
-    return process.env.CLOUD_ML_REGION || 'us-east5';
+  return process.env.CLOUD_ML_REGION || 'us-east5';
 }
 /**
  * Check if bash commands should maintain project working directory (reset to original after each command)
  * @returns true if CLEW_BASH_MAINTAIN_PROJECT_WORKING_DIR or CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR is set
  */
 export function shouldMaintainProjectWorkingDir() {
-    return isEnvTruthy(getEnvWithAlias('CLEW_BASH_MAINTAIN_PROJECT_WORKING_DIR', 'CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR'));
+  return isEnvTruthy(
+    getEnvWithAlias('CLEW_BASH_MAINTAIN_PROJECT_WORKING_DIR', 'CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR'),
+  );
 }
 /**
  * Check if running on Homespace (ant-internal cloud environment)
  */
 export function isRunningOnHomespace() {
-    return process.env.USER_TYPE === 'ant' && isEnvTruthy(process.env.COO_RUNNING_ON_HOMESPACE);
+  return process.env.USER_TYPE === 'ant' && isEnvTruthy(process.env.COO_RUNNING_ON_HOMESPACE);
 }
 /**
  * Conservative check for whether Clew Code is running inside a protected
@@ -125,14 +127,14 @@ export function isRunningOnHomespace() {
  * Used for telemetry to measure auto-mode usage in sensitive environments.
  */
 export function isInProtectedNamespace() {
-    // USER_TYPE is build-time --define'd; in external builds this block is
-    // DCE'd so the require() and namespace allowlist never appear in the bundle.
-    if (process.env.USER_TYPE === 'ant') {
-        /* eslint-disable @typescript-eslint/no-require-imports */
-        return require('./protectedNamespace.js').checkProtectedNamespace();
-        /* eslint-enable @typescript-eslint/no-require-imports */
-    }
-    return false;
+  // USER_TYPE is build-time --define'd; in external builds this block is
+  // DCE'd so the require() and namespace allowlist never appear in the bundle.
+  if (process.env.USER_TYPE === 'ant') {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    return require('./protectedNamespace.js').checkProtectedNamespace();
+    /* eslint-enable @typescript-eslint/no-require-imports */
+  }
+  return false;
 }
 // @[MODEL LAUNCH]: Add a Vertex region override env var for the new model.
 /**
@@ -141,26 +143,26 @@ export function isInProtectedNamespace() {
  * (e.g., 'claude-opus-4-1' before 'claude-opus-4').
  */
 const VERTEX_REGION_OVERRIDES = [
-    ['claude-haiku-4-5', 'VERTEX_REGION_CLAUDE_HAIKU_4_5'],
-    ['claude-3-5-haiku', 'VERTEX_REGION_CLAUDE_3_5_HAIKU'],
-    ['claude-3-5-sonnet', 'VERTEX_REGION_CLAUDE_3_5_SONNET'],
-    ['claude-3-7-sonnet', 'VERTEX_REGION_CLAUDE_3_7_SONNET'],
-    ['claude-opus-4-1', 'VERTEX_REGION_CLAUDE_4_1_OPUS'],
-    ['claude-opus-4', 'VERTEX_REGION_CLAUDE_4_0_OPUS'],
-    ['claude-sonnet-4-6', 'VERTEX_REGION_CLAUDE_4_6_SONNET'],
-    ['claude-sonnet-4-5', 'VERTEX_REGION_CLAUDE_4_5_SONNET'],
-    ['claude-sonnet-4', 'VERTEX_REGION_CLAUDE_4_0_SONNET'],
+  ['claude-haiku-4-5', 'VERTEX_REGION_CLAUDE_HAIKU_4_5'],
+  ['claude-3-5-haiku', 'VERTEX_REGION_CLAUDE_3_5_HAIKU'],
+  ['claude-3-5-sonnet', 'VERTEX_REGION_CLAUDE_3_5_SONNET'],
+  ['claude-3-7-sonnet', 'VERTEX_REGION_CLAUDE_3_7_SONNET'],
+  ['claude-opus-4-1', 'VERTEX_REGION_CLAUDE_4_1_OPUS'],
+  ['claude-opus-4', 'VERTEX_REGION_CLAUDE_4_0_OPUS'],
+  ['claude-sonnet-4-6', 'VERTEX_REGION_CLAUDE_4_6_SONNET'],
+  ['claude-sonnet-4-5', 'VERTEX_REGION_CLAUDE_4_5_SONNET'],
+  ['claude-sonnet-4', 'VERTEX_REGION_CLAUDE_4_0_SONNET'],
 ];
 /**
  * Get the Vertex AI region for a specific model.
  * Different models may be available in different regions.
  */
 export function getVertexRegionForModel(model) {
-    if (model) {
-        const match = VERTEX_REGION_OVERRIDES.find(([prefix]) => model.startsWith(prefix));
-        if (match) {
-            return process.env[match[1]] || getDefaultVertexRegion();
-        }
+  if (model) {
+    const match = VERTEX_REGION_OVERRIDES.find(([prefix]) => model.startsWith(prefix));
+    if (match) {
+      return process.env[match[1]] || getDefaultVertexRegion();
     }
-    return getDefaultVertexRegion();
+  }
+  return getDefaultVertexRegion();
 }

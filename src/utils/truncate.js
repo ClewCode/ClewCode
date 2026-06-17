@@ -12,38 +12,38 @@ import { getGraphemeSegmenter } from './intl.js';
  * @returns The truncated path, or original if it fits within maxLength
  */
 export function truncatePathMiddle(path, maxLength) {
-    // No truncation needed
-    if (stringWidth(path) <= maxLength) {
-        return path;
-    }
-    // Handle edge case of very small or non-positive maxLength
-    if (maxLength <= 0) {
-        return '…';
-    }
-    // Need at least room for "…" + something meaningful
-    if (maxLength < 5) {
-        return truncateToWidth(path, maxLength);
-    }
-    // Find the filename (last path segment)
-    const lastSlash = path.lastIndexOf('/');
-    // Include the leading slash in filename for display
-    const filename = lastSlash >= 0 ? path.slice(lastSlash) : path;
-    const directory = lastSlash >= 0 ? path.slice(0, lastSlash) : '';
-    const filenameWidth = stringWidth(filename);
-    // If filename alone is too long, truncate from start
-    if (filenameWidth >= maxLength - 1) {
-        return truncateStartToWidth(path, maxLength);
-    }
-    // Calculate space available for directory prefix
-    // Result format: directory + "…" + filename
-    const availableForDir = maxLength - 1 - filenameWidth; // -1 for ellipsis
-    if (availableForDir <= 0) {
-        // No room for directory, just show filename (truncated if needed)
-        return truncateStartToWidth(filename, maxLength);
-    }
-    // Truncate directory and combine
-    const truncatedDir = truncateToWidthNoEllipsis(directory, availableForDir);
-    return truncatedDir + '…' + filename;
+  // No truncation needed
+  if (stringWidth(path) <= maxLength) {
+    return path;
+  }
+  // Handle edge case of very small or non-positive maxLength
+  if (maxLength <= 0) {
+    return '…';
+  }
+  // Need at least room for "…" + something meaningful
+  if (maxLength < 5) {
+    return truncateToWidth(path, maxLength);
+  }
+  // Find the filename (last path segment)
+  const lastSlash = path.lastIndexOf('/');
+  // Include the leading slash in filename for display
+  const filename = lastSlash >= 0 ? path.slice(lastSlash) : path;
+  const directory = lastSlash >= 0 ? path.slice(0, lastSlash) : '';
+  const filenameWidth = stringWidth(filename);
+  // If filename alone is too long, truncate from start
+  if (filenameWidth >= maxLength - 1) {
+    return truncateStartToWidth(path, maxLength);
+  }
+  // Calculate space available for directory prefix
+  // Result format: directory + "…" + filename
+  const availableForDir = maxLength - 1 - filenameWidth; // -1 for ellipsis
+  if (availableForDir <= 0) {
+    // No room for directory, just show filename (truncated if needed)
+    return truncateStartToWidth(filename, maxLength);
+  }
+  // Truncate directory and combine
+  const truncatedDir = truncateToWidthNoEllipsis(directory, availableForDir);
+  return `${truncatedDir}…${filename}`;
 }
 /**
  * Truncates a string to fit within a maximum display width, measured in terminal columns.
@@ -51,20 +51,17 @@ export function truncatePathMiddle(path, maxLength) {
  * Appends '…' when truncation occurs.
  */
 export function truncateToWidth(text, maxWidth) {
-    if (stringWidth(text) <= maxWidth)
-        return text;
-    if (maxWidth <= 1)
-        return '…';
-    let width = 0;
-    let result = '';
-    for (const { segment } of getGraphemeSegmenter().segment(text)) {
-        const segWidth = stringWidth(segment);
-        if (width + segWidth > maxWidth - 1)
-            break;
-        result += segment;
-        width += segWidth;
-    }
-    return result + '…';
+  if (stringWidth(text) <= maxWidth) return text;
+  if (maxWidth <= 1) return '…';
+  let width = 0;
+  let result = '';
+  for (const { segment } of getGraphemeSegmenter().segment(text)) {
+    const segWidth = stringWidth(segment);
+    if (width + segWidth > maxWidth - 1) break;
+    result += segment;
+    width += segWidth;
+  }
+  return `${result}…`;
 }
 /**
  * Truncates from the start of a string, keeping the tail end.
@@ -72,25 +69,24 @@ export function truncateToWidth(text, maxWidth) {
  * Width-aware and grapheme-safe.
  */
 export function truncateStartToWidth(text, maxWidth) {
-    if (stringWidth(text) <= maxWidth)
-        return text;
-    if (maxWidth <= 1)
-        return '…';
-    const segments = [...getGraphemeSegmenter().segment(text)];
-    let width = 0;
-    let startIdx = segments.length;
-    for (let i = segments.length - 1; i >= 0; i--) {
-        const segWidth = stringWidth(segments[i].segment);
-        if (width + segWidth > maxWidth - 1)
-            break; // -1 for '…'
-        width += segWidth;
-        startIdx = i;
-    }
-    return ('…' +
-        segments
-            .slice(startIdx)
-            .map(s => s.segment)
-            .join(''));
+  if (stringWidth(text) <= maxWidth) return text;
+  if (maxWidth <= 1) return '…';
+  const segments = [...getGraphemeSegmenter().segment(text)];
+  let width = 0;
+  let startIdx = segments.length;
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const segWidth = stringWidth(segments[i].segment);
+    if (width + segWidth > maxWidth - 1) break; // -1 for '…'
+    width += segWidth;
+    startIdx = i;
+  }
+  return (
+    '…' +
+    segments
+      .slice(startIdx)
+      .map(s => s.segment)
+      .join('')
+  );
 }
 /**
  * Truncates a string to fit within a maximum display width, without appending an ellipsis.
@@ -98,20 +94,17 @@ export function truncateStartToWidth(text, maxWidth) {
  * Width-aware and grapheme-safe.
  */
 export function truncateToWidthNoEllipsis(text, maxWidth) {
-    if (stringWidth(text) <= maxWidth)
-        return text;
-    if (maxWidth <= 0)
-        return '';
-    let width = 0;
-    let result = '';
-    for (const { segment } of getGraphemeSegmenter().segment(text)) {
-        const segWidth = stringWidth(segment);
-        if (width + segWidth > maxWidth)
-            break;
-        result += segment;
-        width += segWidth;
-    }
-    return result;
+  if (stringWidth(text) <= maxWidth) return text;
+  if (maxWidth <= 0) return '';
+  let width = 0;
+  let result = '';
+  for (const { segment } of getGraphemeSegmenter().segment(text)) {
+    const segWidth = stringWidth(segment);
+    if (width + segWidth > maxWidth) break;
+    result += segment;
+    width += segWidth;
+  }
+  return result;
 }
 /**
  * Truncates a string to fit within a maximum display width (terminal columns),
@@ -123,42 +116,39 @@ export function truncateToWidthNoEllipsis(text, maxWidth) {
  * @returns The truncated string with ellipsis if needed
  */
 export function truncate(str, maxWidth, singleLine = false) {
-    let result = str;
-    // If singleLine is true, truncate at first newline
-    if (singleLine) {
-        const firstNewline = str.indexOf('\n');
-        if (firstNewline !== -1) {
-            result = str.substring(0, firstNewline);
-            // Ensure total width including ellipsis doesn't exceed maxWidth
-            if (stringWidth(result) + 1 > maxWidth) {
-                return truncateToWidth(result, maxWidth);
-            }
-            return `${result}…`;
-        }
+  let result = str;
+  // If singleLine is true, truncate at first newline
+  if (singleLine) {
+    const firstNewline = str.indexOf('\n');
+    if (firstNewline !== -1) {
+      result = str.substring(0, firstNewline);
+      // Ensure total width including ellipsis doesn't exceed maxWidth
+      if (stringWidth(result) + 1 > maxWidth) {
+        return truncateToWidth(result, maxWidth);
+      }
+      return `${result}…`;
     }
-    if (stringWidth(result) <= maxWidth) {
-        return result;
-    }
-    return truncateToWidth(result, maxWidth);
+  }
+  if (stringWidth(result) <= maxWidth) {
+    return result;
+  }
+  return truncateToWidth(result, maxWidth);
 }
 export function wrapText(text, width) {
-    const lines = [];
-    let currentLine = '';
-    let currentWidth = 0;
-    for (const { segment } of getGraphemeSegmenter().segment(text)) {
-        const segWidth = stringWidth(segment);
-        if (currentWidth + segWidth <= width) {
-            currentLine += segment;
-            currentWidth += segWidth;
-        }
-        else {
-            if (currentLine)
-                lines.push(currentLine);
-            currentLine = segment;
-            currentWidth = segWidth;
-        }
+  const lines = [];
+  let currentLine = '';
+  let currentWidth = 0;
+  for (const { segment } of getGraphemeSegmenter().segment(text)) {
+    const segWidth = stringWidth(segment);
+    if (currentWidth + segWidth <= width) {
+      currentLine += segment;
+      currentWidth += segWidth;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = segment;
+      currentWidth = segWidth;
     }
-    if (currentLine)
-        lines.push(currentLine);
-    return lines;
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines;
 }

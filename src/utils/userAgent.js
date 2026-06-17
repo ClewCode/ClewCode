@@ -5,5 +5,5 @@
  * import without pulling in auth.ts and its transitive dependency tree.
  */
 export function getClaudeCodeUserAgent() {
-    return `claude-code/${MACRO.VERSION}`;
+  return `claude-code/${MACRO.VERSION}`;
 }

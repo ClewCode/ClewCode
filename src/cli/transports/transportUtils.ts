@@ -29,7 +29,7 @@ export function getTransportForUrl(
     } else if (sseUrl.protocol === 'ws:') {
       sseUrl.protocol = 'http:';
     }
-    sseUrl.pathname = sseUrl.pathname.replace(/\/$/, '') + '/worker/events/stream';
+    sseUrl.pathname = `${sseUrl.pathname.replace(/\/$/, '')}/worker/events/stream`;
     return new SSETransport(sseUrl, headers, sessionId, refreshHeaders);
   }
 

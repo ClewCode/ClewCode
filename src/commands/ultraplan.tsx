@@ -157,7 +157,7 @@ function startDetachedPoll(
         // dialog for a killed session.
         setAppState(prev => {
           const task = prev.tasks?.[taskId];
-          if (!task || task.status !== 'running') return prev;
+          if (task?.status !== 'running') return prev;
           return {
             ...prev,
             ultraplanPendingChoice: {

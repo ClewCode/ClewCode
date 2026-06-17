@@ -43,5 +43,5 @@ export function generateKeybindingsTemplate(): string {
     bindings,
   };
 
-  return jsonStringify(config, null, 2) + '\n';
+  return `${jsonStringify(config, null, 2)}\n`;
 }

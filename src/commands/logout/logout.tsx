@@ -25,7 +25,7 @@ export async function performLogout({ clearOnboarding = false }): Promise<void> 
     const pm = ProviderManager.getInstance();
     const provider = pm.getActiveProviderName();
     const cfg = pm.getSelectedProviderConfig(true);
-    if (cfg.apiKeys && cfg.apiKeys[provider]) {
+    if (cfg.apiKeys?.[provider]) {
       delete cfg.apiKeys[provider];
       pm.saveSelectedProviderConfig(cfg);
     }

@@ -10,8 +10,8 @@
  * Builds on existing consolidation and experience infrastructure.
  */
 
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { pathExists } from '../../utils/file.js';
 
@@ -90,9 +90,7 @@ async function saveExperiences(projectRoot: string, experiences: Experience[]): 
 /**
  * Extract patterns from a set of session digests.
  */
-function extractPatterns(
-  digests: { summary: string; patterns: string[] }[],
-): Pattern[] {
+function extractPatterns(digests: { summary: string; patterns: string[] }[]): Pattern[] {
   const patternCounts = new Map<string, { count: number; example: string }>();
 
   for (const digest of digests) {
@@ -199,9 +197,7 @@ export async function autoDistill(projectRoot: string): Promise<boolean> {
 /**
  * Load digests from the past month.
  */
-async function loadRecentDigests(
-  projectRoot: string,
-): Promise<{ summary: string; patterns: string[] }[]> {
+async function loadRecentDigests(projectRoot: string): Promise<{ summary: string; patterns: string[] }[]> {
   // Simplified: load from digests directory if it exists
   // In a full implementation, this would query the SQLite database
   const dir = join(getClaudeConfigHomeDir(), 'projects', sanitize(projectRoot), 'digests');

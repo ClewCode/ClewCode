@@ -99,7 +99,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
           updateWizardData({ authMethod: 'apikey' });
           goNext();
         }
-      }, [provider]);
+      }, [provider, updateWizardData, goNext]);
 
       if (provider === 'ollama' || (provider !== 'anthropic' && provider !== 'openai')) {
         return null;
@@ -209,7 +209,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
       const pm = ProviderManager.getInstance();
       const activeModel = pm.getModelForProvider();
 
-      const handleModelSelect = (model: string | null, _effort: any, options?: { persistAsDefault?: boolean }) => {
+      const handleModelSelect = (model: string | null, _effort: any, _options?: { persistAsDefault?: boolean }) => {
         if (model) {
           setAppState(prev => ({
             ...prev,
@@ -273,7 +273,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
     },
   ];
 
-  const handleComplete = (data: OnboardingData) => {
+  const handleComplete = (_data: OnboardingData) => {
     completeOnboarding();
     onDone('Onboarding completed successfully! You are all set to code with Antigravity.', { display: 'system' });
   };

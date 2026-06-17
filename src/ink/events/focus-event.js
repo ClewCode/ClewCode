@@ -8,9 +8,9 @@ import { TerminalEvent } from './terminal-event.js';
  * so parent components can observe descendant focus changes.
  */
 export class FocusEvent extends TerminalEvent {
-    relatedTarget;
-    constructor(type, relatedTarget = null) {
-        super(type, { bubbles: true, cancelable: false });
-        this.relatedTarget = relatedTarget;
-    }
+  relatedTarget;
+  constructor(type, relatedTarget = null) {
+    super(type, { bubbles: true, cancelable: false });
+    this.relatedTarget = relatedTarget;
+  }
 }

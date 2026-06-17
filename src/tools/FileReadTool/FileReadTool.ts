@@ -1165,12 +1165,12 @@ async function readSingleFile(
   file_path: string,
   offset: number,
   limit: number | undefined,
-  pages: string | undefined,
+  _pages: string | undefined,
   maxSizeBytes: number,
   maxTokens: number,
   readFileState: ToolUseContext['readFileState'],
   context: ToolUseContext,
-  messageId: string | undefined,
+  _messageId: string | undefined,
 ): Promise<{
   content: string;
   numLines: number;

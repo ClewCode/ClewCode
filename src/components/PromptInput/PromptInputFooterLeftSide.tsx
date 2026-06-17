@@ -270,7 +270,7 @@ function ModeIndicator({
         return { ...prev, voiceFooterHintSeenCount: newCount };
       });
     }
-  }, [voiceEnabled, voiceHintUnderCap]);
+  }, [voiceEnabled, voiceHintUnderCap, voiceHintIncrementedRef?.current, voiceHintIncrementedRef]);
   const isKillAgentsConfirmShowing = useAppState(s => s.notifications.current?.key === 'kill-agents-confirm');
 
   // Derive team info from teamContext (no filesystem I/O needed)
@@ -295,7 +295,6 @@ function ModeIndicator({
   }, [toolPermissionContext, setAppState]);
   const [modeHover, setModeHover] = useState(false);
 
-  
   if (mode === 'bash') {
     return <Text color="bashBorder">! for bash mode</Text>;
   }
@@ -371,11 +370,19 @@ function ModeIndicator({
   const parts = [
     // Profile indicator (dimColor, only shown when personal)
     ...(profileLabel
-      ? [<Text key="profile" dimColor>{profileLabel}</Text>]
+      ? [
+          <Text key="profile" dimColor>
+            {profileLabel}
+          </Text>,
+        ]
       : []),
     // Running teammates badge
     ...(runningTeammateCount > 0
-      ? [<Text key="teammates" dimColor>{runningTeammateCount}Tm</Text>]
+      ? [
+          <Text key="teammates" dimColor>
+            {runningTeammateCount}Tm
+          </Text>,
+        ]
       : []),
     // Remote session indicator
     ...(remoteSessionUrl

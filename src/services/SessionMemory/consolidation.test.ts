@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test';
-import { mkdir, rm, writeFile, readFile } from 'fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { parseNotesSections, consolidateSessionMemory } from './consolidation.js';
-import * as sideQueryModule from '../../utils/sideQuery.js';
 import * as pathsModule from '../../memdir/paths.js';
-import * as fsPermsModule from '../../utils/permissions/filesystem.js';
-import { initMemoryWorkspace, getMemoryWorkspaceStatus } from '../../memory/workspace.js';
-import { getFsImplementation } from '../../utils/fsOperations.js';
 import { closeMemoryDb } from '../../memory/db.js';
 import { listPending } from '../../memory/pending.js';
+import { getMemoryWorkspaceStatus, initMemoryWorkspace } from '../../memory/workspace.js';
+import { getFsImplementation } from '../../utils/fsOperations.js';
+import * as fsPermsModule from '../../utils/permissions/filesystem.js';
+import * as sideQueryModule from '../../utils/sideQuery.js';
+import { consolidateSessionMemory, parseNotesSections } from './consolidation.js';
 
 const tempCwd = join(process.cwd(), 'test/temp-test-consolidation');
 const tempAutoMemDir = join(tempCwd, 'auto-mem-dir');
@@ -106,7 +106,7 @@ _Errors encountered_
     } as any);
 
     // Initialize local workspace memory under tempCwd
-    const config = await initMemoryWorkspace(tempCwd);
+    const _config = await initMemoryWorkspace(tempCwd);
     expect(getMemoryWorkspaceStatus(tempCwd).initialized).toBe(true);
 
     // Run consolidation
@@ -122,7 +122,7 @@ _Errors encountered_
       const sessionLearningsPath = join(tempAutoMemDir, 'session_learnings.md');
       const fsImpl = getFsImplementation();
       expect(fsImpl.existsSync(sessionLearningsPath)).toBe(true);
-      
+
       const fileContent = await readFile(sessionLearningsPath, 'utf-8');
       expect(fileContent).toContain('## User Preferences');
       expect(fileContent).toContain('The user prefers Vanilla CSS over Tailwind.');

@@ -12,10 +12,10 @@
  * have passed since last consolidation.
  */
 
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { pathExists } from '../../utils/file.js';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { getConsolidationCandidates, saveConsolidatedDigest } from './consolidate.js';
 
 const DREAM_STATE_FILE = 'dream-state.json';
@@ -77,10 +77,18 @@ export async function autoDream(projectRoot: string): Promise<boolean> {
     // Build a summary from session data
     const summaries = sessions.map(s => s.summary).filter(Boolean);
     const allDecisions = sessions.flatMap(s => {
-      try { return JSON.parse(s.key_decisions) as string[]; } catch { return []; }
+      try {
+        return JSON.parse(s.key_decisions) as string[];
+      } catch {
+        return [];
+      }
     });
     const allFiles = sessions.flatMap(s => {
-      try { return JSON.parse(s.active_files) as string[]; } catch { return []; }
+      try {
+        return JSON.parse(s.active_files) as string[];
+      } catch {
+        return [];
+      }
     });
 
     const consolidatedSummary = [

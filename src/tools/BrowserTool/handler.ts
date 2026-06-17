@@ -2,8 +2,8 @@
  * Browser Tool — Full Stealth Handler with Extended Controls
  */
 
-import type { BrowserActionInput, BrowserResult } from './types.js';
 import { getBrowserSession } from './BrowserSession.js';
+import type { BrowserActionInput, BrowserResult } from './types.js';
 
 const DEFAULT_ACTION_TIMEOUT_MS = 3_000;
 const DEFAULT_NAVIGATION_TIMEOUT_MS = 10_000;
@@ -408,7 +408,7 @@ export async function handleBrowserAction(input: BrowserActionInput): Promise<Br
           newPage = await session.switchTab(targetIndex);
         } else {
           // Legacy: rotate to next tab
-          const current = session.getActivePage();
+          const _current = session.getActivePage();
           const currentIndex = pages.findIndex(t => t.active);
           const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % pages.length : 0;
           newPage = await session.switchTab(nextIndex);
@@ -423,9 +423,7 @@ export async function handleBrowserAction(input: BrowserActionInput): Promise<Br
 
       case 'close_tab': {
         try {
-          const closedPage = await session.closeTab(
-            typeof input.index === 'number' ? input.index : -1,
-          );
+          const closedPage = await session.closeTab(typeof input.index === 'number' ? input.index : -1);
           return successResult(closedPage);
         } catch (e: any) {
           return { ok: false, url: '', title: '', error: e.message };
@@ -438,7 +436,7 @@ export async function handleBrowserAction(input: BrowserActionInput): Promise<Br
         return {
           ok: true,
           url: active?.url() || '',
-          title: await active?.title().catch(() => '') || '',
+          title: (await active?.title().catch(() => '')) || '',
           tabs,
         };
       }
@@ -570,4 +568,3 @@ export async function handleBrowserAction(input: BrowserActionInput): Promise<Br
     return { ok: false, url: page.url(), title: '', error: error.message };
   }
 }
-

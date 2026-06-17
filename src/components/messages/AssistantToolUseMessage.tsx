@@ -178,7 +178,7 @@ export function AssistantToolUseMessage({
               </Box>
             )}
           {/* Render tool-specific tags (timeout, model, resume ID, etc.) */}
-          {input.success && tool.renderToolUseTag && tool.renderToolUseTag(input.data)}
+          {input.success && tool.renderToolUseTag?.(input.data)}
         </Box>
         {!isResolved &&
           !isQueued &&

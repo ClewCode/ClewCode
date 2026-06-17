@@ -174,7 +174,7 @@ export function extractFirstPromptFromHead(head: string): string {
         if (SKIP_FIRST_PROMPT_PATTERN.test(result)) continue;
 
         if (result.length > 200) {
-          result = result.slice(0, 200).trim() + '\u2026';
+          result = `${result.slice(0, 200).trim()}\u2026`;
         }
         return result;
       }
@@ -353,7 +353,7 @@ export async function findProjectDir(projectPath: string): Promise<string | unde
     const projectsDir = getProjectsDir();
     try {
       const dirents = await readdir(projectsDir, { withFileTypes: true });
-      const match = dirents.find(d => d.isDirectory() && d.name.startsWith(prefix + '-'));
+      const match = dirents.find(d => d.isDirectory() && d.name.startsWith(`${prefix}-`));
       return match ? join(projectsDir, match.name) : undefined;
     } catch {
       return undefined;

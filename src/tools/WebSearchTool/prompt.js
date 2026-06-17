@@ -1,8 +1,8 @@
 import { getLocalMonthYear } from 'src/constants/common.js';
 export const WEB_SEARCH_TOOL_NAME = 'WebSearch';
 export function getWebSearchPrompt() {
-    const currentMonthYear = getLocalMonthYear();
-    return `
+  const currentMonthYear = getLocalMonthYear();
+  return `
 - Allows Claude to search the web and use the results to inform responses
 - Provides up-to-date information for current events and recent data
 - Returns search result information formatted as search result blocks, including links as markdown hyperlinks

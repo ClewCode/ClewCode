@@ -694,7 +694,7 @@ function validateGitCommit(context: ValidationContext): PermissionResult {
 
     // Security hardening: block messages starting with dash
     // This catches potential obfuscation patterns like git commit -m "---"
-    if (messageContent && messageContent.startsWith('-')) {
+    if (messageContent?.startsWith('-')) {
       logEvent('tengu_bash_security_check_triggered', {
         checkId: BASH_SECURITY_CHECK_IDS.OBFUSCATED_FLAGS,
         subId: 5,

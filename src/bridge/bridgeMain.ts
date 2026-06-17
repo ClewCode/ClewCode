@@ -1471,7 +1471,7 @@ function parseSpawnValue(raw: string | undefined): SpawnMode | string {
 
 function parseCapacityValue(raw: string | undefined): number | string {
   const n = raw === undefined ? NaN : parseInt(raw, 10);
-  if (isNaN(n) || n < 1) {
+  if (Number.isNaN(n) || n < 1) {
     return `--capacity requires a positive integer (got: ${raw ?? '<missing>'})`;
   }
   return n;

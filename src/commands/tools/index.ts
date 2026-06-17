@@ -1,5 +1,4 @@
 import type { Command } from '../../commands.js';
-import { getAllToolUsage } from '../../utils/toolUsageTracker.js';
 
 const tools: Command = {
   type: 'local-jsx',

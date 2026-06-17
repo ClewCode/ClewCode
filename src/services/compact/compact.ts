@@ -79,12 +79,12 @@ import { getMaxOutputTokensForModel, queryModelWithStreaming } from '../api/clau
 import { getPromptTooLongTokenGap, PROMPT_TOO_LONG_ERROR_MESSAGE, startsWithApiErrorPrefix } from '../api/errors.js';
 import { notifyCompaction } from '../api/promptCacheBreakDetection.js';
 import { getRetryDelay } from '../api/withRetry.js';
+import { getLatestCheckpoint, type TaskCheckpoint } from '../checkpoint/checkpointWriter.js';
 import { logPermissionContextForAnts } from '../internalLogging.js';
 import { roughTokenCountEstimation, roughTokenCountEstimationForMessages } from '../tokenEstimation.js';
 import { groupMessagesByApiRound } from './grouping.js';
 import { selectPostCompactMessagesToKeep } from './postCompactTail.js';
 import { getCompactPrompt, getCompactUserSummaryMessage, getPartialCompactPrompt } from './prompt.js';
-import { getLatestCheckpoint, type TaskCheckpoint } from '../checkpoint/checkpointWriter.js';
 
 export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5;
 export const POST_COMPACT_TOKEN_BUDGET = 50_000;
@@ -273,10 +273,7 @@ export function calculateSafeChunkTokens(model: string): number {
  * Uses API-round groups (via groupMessagesByApiRound) as the atomic unit — groups
  * are never split, preserving conversation coherence.
  */
-export function splitIntoCompactChunks(
-  messages: Message[],
-  maxTokensPerChunk: number,
-): Message[][] {
+export function splitIntoCompactChunks(messages: Message[], maxTokensPerChunk: number): Message[][] {
   const groups = groupMessagesByApiRound(messages);
   const chunks: Message[][] = [];
   let current: Message[] = [];
@@ -323,9 +320,7 @@ async function compactSingleChunk(
         ),
         context.options.tools,
       ),
-      systemPrompt: asSystemPrompt([
-        'You are a helpful AI assistant tasked with summarizing conversations.',
-      ]),
+      systemPrompt: asSystemPrompt(['You are a helpful AI assistant tasked with summarizing conversations.']),
       thinkingConfig: { type: 'disabled' as const },
       tools,
       signal: context.abortController.signal,
@@ -449,12 +444,7 @@ async function multiPassCompact(
     prevTokens = totalTokens;
 
     // Compact the summaries into a single re-compacted summary
-    const reSummary = await compactSingleChunk(
-      [combinedUserMessage],
-      context,
-      customInstructions,
-      pass,
-    );
+    const reSummary = await compactSingleChunk([combinedUserMessage], context, customInstructions, pass);
     if (!reSummary) break;
 
     combinedSummary = reSummary;
@@ -468,11 +458,7 @@ async function multiPassCompact(
   // Assemble CompactionResult
   const preCompactTokenCount = tokenCountWithEstimation(messages);
 
-  const boundaryMarker = createCompactBoundaryMessage(
-    'manual',
-    preCompactTokenCount ?? 0,
-    messages.at(-1)?.uuid,
-  );
+  const boundaryMarker = createCompactBoundaryMessage('manual', preCompactTokenCount ?? 0, messages.at(-1)?.uuid);
 
   const preCompactDiscovered = extractDiscoveredToolNames(messages);
   if (preCompactDiscovered.size > 0) {
@@ -485,7 +471,12 @@ async function multiPassCompact(
   context.loadedNestedMemoryPaths?.clear();
 
   const [fileAttachments, asyncAgentAttachments] = await Promise.all([
-    createPostCompactFileAttachments(preCompactReadFileState, context, POST_COMPACT_MAX_FILES_TO_RESTORE, messagesToKeep),
+    createPostCompactFileAttachments(
+      preCompactReadFileState,
+      context,
+      POST_COMPACT_MAX_FILES_TO_RESTORE,
+      messagesToKeep,
+    ),
     createAsyncAgentAttachmentsIfNeeded(context),
   ]);
 
@@ -508,7 +499,10 @@ async function multiPassCompact(
     postCompactFileAttachments.push(createAttachmentMessage(att));
   }
   for (const att of getMcpInstructionsDeltaAttachment(
-    context.options.mcpClients, context.options.tools, context.options.mainLoopModel, [],
+    context.options.mcpClients,
+    context.options.tools,
+    context.options.mainLoopModel,
+    [],
   )) {
     postCompactFileAttachments.push(createAttachmentMessage(att));
   }
@@ -750,9 +744,7 @@ export async function compactConversation(
 
     // Try to rebuild context from checkpoints for richer summarization
     const checkpointContext = await tryRebuildFromCheckpoint();
-    const enrichedPrompt = checkpointContext
-      ? `${compactPrompt}\n\n${checkpointContext}`
-      : compactPrompt;
+    const enrichedPrompt = checkpointContext ? `${compactPrompt}\n\n${checkpointContext}` : compactPrompt;
 
     const summaryRequest = createUserMessage({
       content: enrichedPrompt,

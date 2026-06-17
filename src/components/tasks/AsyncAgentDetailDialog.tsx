@@ -62,7 +62,7 @@ export function AsyncAgentDetailDialog({ agent, onDone, onKillAgent, onBack }: P
   // Extract plan from prompt - if present, we show the plan instead of the prompt
   const planContent = extractTag(agent.prompt, 'plan');
 
-  const displayPrompt = agent.prompt.length > 300 ? agent.prompt.substring(0, 297) + '…' : agent.prompt;
+  const displayPrompt = agent.prompt.length > 300 ? `${agent.prompt.substring(0, 297)}…` : agent.prompt;
 
   // Get tokens and tool uses (from result if completed, otherwise from progress)
   const tokenCount = agent.result?.totalTokens ?? agent.progress?.tokenCount;

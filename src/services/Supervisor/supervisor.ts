@@ -17,7 +17,7 @@
 
 import { type ChildProcess, spawn } from 'child_process';
 import { randomBytes, randomUUID } from 'crypto';
-import { access, mkdir, readFile, stat, unlink, writeFile } from 'fs/promises';
+import { mkdir, readFile, stat, unlink, writeFile } from 'fs/promises';
 import { createServer, type Socket } from 'net';
 import { join } from 'path';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
@@ -552,7 +552,7 @@ function checkIdleExit(): void {
 // ─── IPC Server ───────────────────────────────────────────────
 
 function sendResponse(socket: Socket, response: IPCResponse): void {
-  socket.write(JSON.stringify(response) + '\n');
+  socket.write(`${JSON.stringify(response)}\n`);
 }
 
 function handleRequest(socket: Socket, request: IPCRequest): void {
@@ -672,7 +672,7 @@ async function start(): Promise<void> {
   await cleanupPipeFile();
 
   // Check if we can resume any existing sessions (recover after upgrade)
-  for (const [id, entry] of Object.entries(roster.sessions)) {
+  for (const [_id, entry] of Object.entries(roster.sessions)) {
     if (entry.status === 'running') {
       // Mark as stopped since this is a fresh supervisor
       entry.status = 'stopped';
@@ -710,10 +710,10 @@ async function start(): Promise<void> {
   // the new binary (breaking IPC) or the old path may be deleted (ENOENT).
   // Check inode/mtime every 5 minutes and exit gracefully if changed.
   const BINARY_CHECK_INTERVAL_MS = 5 * 60 * 1000;
-  let binaryUpgradeCheck: ReturnType<typeof setInterval> | undefined;
+  let _binaryUpgradeCheck: ReturnType<typeof setInterval> | undefined;
   try {
     const initialStat = await stat(process.execPath);
-    binaryUpgradeCheck = setInterval(async () => {
+    _binaryUpgradeCheck = setInterval(async () => {
       try {
         const currentStat = await stat(process.execPath);
         const changed = currentStat.ino !== initialStat.ino || currentStat.mtimeMs !== initialStat.mtimeMs;
@@ -766,7 +766,7 @@ async function start(): Promise<void> {
     shuttingDown = true;
     // Stop autonomous agent first
     stopAutonomousAgent().catch(() => {});
-    for (const [id, child] of childProcesses) {
+    for (const [_id, child] of childProcesses) {
       if (!child.killed) {
         child.kill('SIGTERM');
       }
@@ -791,7 +791,7 @@ async function isAlreadyRunning(): Promise<boolean> {
     const pidPath = join(DAEMON_DIR, 'supervisor.pid');
     const pidStr = await readFile(pidPath, 'utf-8');
     const pid = parseInt(pidStr.trim(), 10);
-    if (isNaN(pid)) return false;
+    if (Number.isNaN(pid)) return false;
 
     // Check if process is still running
     try {

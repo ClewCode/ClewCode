@@ -78,7 +78,7 @@ export function parseDispatchSyntax(input: string): {
   // @agent or @repo mentions
   const agentMatch = trimmed.match(/^@(\S+)/);
   let agentName: string | undefined;
-  let repoName: string | undefined;
+  let _repoName: string | undefined;
   if (agentMatch) {
     const name = agentMatch[1]!;
     // Remove @mention from prompt

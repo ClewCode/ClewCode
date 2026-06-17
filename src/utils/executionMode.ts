@@ -1,6 +1,7 @@
 // ponytail: module-level singleton — set by /mode, read by footer + tool permission gate
-import { getNextPermissionMode } from './permissions/getNextPermissionMode.js';
+
 import type { ToolPermissionContext } from '../Tool.js';
+import { getNextPermissionMode } from './permissions/getNextPermissionMode.js';
 import type { PermissionMode } from './permissions/PermissionMode.js';
 
 // Types (moved from permissions.ts due to Bun transpiler bug)

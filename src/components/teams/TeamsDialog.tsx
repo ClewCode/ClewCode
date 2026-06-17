@@ -27,13 +27,7 @@ import { IT2_COMMAND, isInsideTmuxSync } from '../../utils/swarm/backends/detect
 import { ensureBackendsRegistered, getBackendByType, getCachedBackend } from '../../utils/swarm/backends/registry.js';
 import type { PaneBackendType } from '../../utils/swarm/backends/types.js';
 import { getSwarmSocketName, TMUX_COMMAND } from '../../utils/swarm/constants.js';
-import {
-  addHiddenPaneId,
-  removeHiddenPaneId,
-  removeMemberFromTeam,
-  setMemberMode,
-  setMultipleMemberModes,
-} from '../../utils/swarm/teamHelpers.js';
+import { removeMemberFromTeam, setMemberMode, setMultipleMemberModes } from '../../utils/swarm/teamHelpers.js';
 import { listTasks, type Task, unassignTeammateTasks } from '../../utils/tasks.js';
 import { getTeammateStatuses, type TeammateStatus, type TeamSummary } from '../../utils/teamDiscovery.js';
 import {
@@ -70,7 +64,7 @@ export function TeamsDialog({ initialTeams, onDone }: Props): React.ReactNode {
     teamName: firstTeamName,
   });
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [_refreshKey, setRefreshKey] = useState(0);
 
   // initialTeams is now always provided from PromptInput (derived from teamContext)
   // No filesystem I/O needed here
@@ -79,7 +73,7 @@ export function TeamsDialog({ initialTeams, onDone }: Props): React.ReactNode {
     return getTeammateStatuses(dialogLevel.teamName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
-  }, [dialogLevel.teamName, refreshKey]);
+  }, [dialogLevel.teamName]);
 
   // Periodically refresh to pick up mode changes from teammates
   useInterval(() => {
@@ -341,7 +335,7 @@ function TeammateListItem({ teammate, isSelected }: TeammateListItemProps): Reac
 
   return (
     <Text color={isSelected ? 'suggestion' : undefined} dimColor={shouldDim}>
-      {isSelected ? figures.pointer + ' ' : '  '}
+      {isSelected ? `${figures.pointer} ` : '  '}
       {teammate.isHidden && <Text dimColor>[hidden] </Text>}
       {isIdle && <Text dimColor>[idle] </Text>}
       {modeSymbol && <Text color={modeColor}>{modeSymbol} </Text>}@{teammate.name}
@@ -541,13 +535,13 @@ async function toggleTeammateVisibility(teammate: TeammateStatus, teamName: stri
  * Hide a teammate pane using the backend abstraction.
  * Only available for ant users (gated for dead code elimination in external builds)
  */
-async function hideTeammate(teammate: TeammateStatus, teamName: string): Promise<void> {}
+async function hideTeammate(_teammate: TeammateStatus, _teamName: string): Promise<void> {}
 
 /**
  * Show a previously hidden teammate pane using the backend abstraction.
  * Only available for ant users (gated for dead code elimination in external builds)
  */
-async function showTeammate(teammate: TeammateStatus, teamName: string): Promise<void> {}
+async function showTeammate(_teammate: TeammateStatus, _teamName: string): Promise<void> {}
 
 /**
  * Send a mode change message to a single teammate

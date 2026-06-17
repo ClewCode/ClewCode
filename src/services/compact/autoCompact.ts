@@ -37,7 +37,7 @@ export function getEffectiveContextWindowSize(model: string): number {
   const autoCompactWindow = process.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW;
   if (autoCompactWindow) {
     const parsed = parseInt(autoCompactWindow, 10);
-    if (!isNaN(parsed) && parsed > 0) {
+    if (!Number.isNaN(parsed) && parsed > 0) {
       contextWindow = Math.min(contextWindow, parsed);
     }
   }
@@ -75,7 +75,7 @@ export function getAutoCompactThreshold(model: string): number {
   const envPercent = process.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE;
   if (envPercent) {
     const parsed = parseFloat(envPercent);
-    if (!isNaN(parsed) && parsed > 0 && parsed <= 100) {
+    if (!Number.isNaN(parsed) && parsed > 0 && parsed <= 100) {
       const percentageThreshold = Math.floor(effectiveContextWindow * (parsed / 100));
       return Math.min(percentageThreshold, autocompactThreshold);
     }
@@ -113,7 +113,7 @@ export function calculateTokenWarningState(
   // Allow override for testing
   const blockingLimitOverride = process.env.CLAUDE_CODE_BLOCKING_LIMIT_OVERRIDE;
   const parsedOverride = blockingLimitOverride ? parseInt(blockingLimitOverride, 10) : NaN;
-  const blockingLimit = !isNaN(parsedOverride) && parsedOverride > 0 ? parsedOverride : defaultBlockingLimit;
+  const blockingLimit = !Number.isNaN(parsedOverride) && parsedOverride > 0 ? parsedOverride : defaultBlockingLimit;
 
   const isAtBlockingLimit = tokenUsage >= blockingLimit;
 

@@ -184,7 +184,7 @@ export function formatToken(
           const checkbox = listItem.checked ? chalk.green('☑') : chalk.dim('☐');
           return `${checkbox} ${innerContent}${reset}${EOL}`;
         }
-        return `${orderedListNumber === null ? '-' : getListNumber(listDepth, orderedListNumber) + '.'} ${innerContent}${reset}${EOL}`;
+        return `${orderedListNumber === null ? '-' : `${getListNumber(listDepth, orderedListNumber)}.`} ${innerContent}${reset}${EOL}`;
       }
       return linkifyIssueReferences(decodeHtmlEntities(token.text));
     case 'table': {
@@ -212,7 +212,7 @@ export function formatToken(
         const displayText = getDisplayText(header.tokens);
         const width = columnWidths[index]!;
         const align = tableToken.align?.[index];
-        tableOutput += padAligned(content, stringWidth(displayText), width, align) + ' | ';
+        tableOutput += `${padAligned(content, stringWidth(displayText), width, align)} | `;
       });
       tableOutput = tableOutput.trimEnd() + EOL;
 
@@ -221,7 +221,7 @@ export function formatToken(
       columnWidths.forEach(width => {
         // Always use dashes, don't show alignment colons in the output
         const separator = '-'.repeat(width + 2); // +2 for spaces on each side
-        tableOutput += separator + '|';
+        tableOutput += `${separator}|`;
       });
       tableOutput += EOL;
 
@@ -233,7 +233,7 @@ export function formatToken(
           const displayText = getDisplayText(cell.tokens);
           const width = columnWidths[index]!;
           const align = tableToken.align?.[index];
-          tableOutput += padAligned(content, stringWidth(displayText), width, align) + ' | ';
+          tableOutput += `${padAligned(content, stringWidth(displayText), width, align)} | `;
         });
         tableOutput = tableOutput.trimEnd() + EOL;
       });
@@ -339,7 +339,7 @@ export function padAligned(
 ): string {
   const padding = Math.max(0, targetWidth - displayWidth);
   // If content contains ANSI, append a reset before padding to prevent style leakage
-  const safeContent = content.includes('\x1b') ? content + '\x1b[0m' : content;
+  const safeContent = content.includes('\x1b') ? `${content}\x1b[0m` : content;
 
   if (align === 'center') {
     const leftPad = Math.floor(padding / 2);

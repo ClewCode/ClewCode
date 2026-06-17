@@ -27,12 +27,7 @@ type PasteHandlerProps = {
     dimensions?: ImageDimensions,
     sourcePath?: string,
   ) => void;
-  onVideoPaste?: (
-    base64Video: string,
-    mediaType?: string,
-    filename?: string,
-    sourcePath?: string,
-  ) => void;
+  onVideoPaste?: (base64Video: string, mediaType?: string, filename?: string, sourcePath?: string) => void;
 };
 
 export function usePasteHandler({ onPaste, onInput, onImagePaste, onVideoPaste }: PasteHandlerProps): {

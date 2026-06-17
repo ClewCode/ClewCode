@@ -9,17 +9,16 @@
  * @since 0.2.8
  */
 
-import { readFile } from 'fs/promises';
-import { stat } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 import * as path from 'path';
 import { z } from 'zod/v4';
-import { buildTool, type ToolDef } from '../../Tool.js';
-import { getProviderModelInfo, getProviderRegistryEntry } from '../../services/ai/providerRegistry.js';
 import { ProviderManager } from '../../services/ai/ProviderManager.js';
-import { MAX_OUTPUT_SIZE } from '../../utils/file.js';
-import { expandPath } from '../../utils/path.js';
-import { lazySchema } from '../../utils/lazySchema.js';
+import { getProviderModelInfo, getProviderRegistryEntry } from '../../services/ai/providerRegistry.js';
 import type { ToolResult } from '../../Tool.js';
+import { buildTool } from '../../Tool.js';
+import { MAX_OUTPUT_SIZE } from '../../utils/file.js';
+import { lazySchema } from '../../utils/lazySchema.js';
+import { expandPath } from '../../utils/path.js';
 
 export const READ_MEDIA_FILE_TOOL_NAME = 'ReadMediaFile';
 
@@ -150,7 +149,7 @@ export const ReadMediaFileTool = buildTool({
 
     const resolvedPath = file_path.startsWith('~') ? expandPath(file_path) : path.resolve(file_path);
     const fileStat = await stat(resolvedPath).catch(() => null);
-    if (!fileStat || !fileStat.isFile()) {
+    if (!fileStat?.isFile()) {
       return { data: { type: 'text', file: { content: `File not found: ${file_path}` } }, isError: true };
     }
 

@@ -180,7 +180,7 @@ export async function createV2ReplTransport(opts: {
   // Derive SSE stream URL. Same logic as transportUtils.ts:26-33 but
   // starting from an http(s) base instead of a --sdk-url that might be ws://.
   const sseUrl = new URL(sessionUrl);
-  sseUrl.pathname = sseUrl.pathname.replace(/\/$/, '') + '/worker/events/stream';
+  sseUrl.pathname = `${sseUrl.pathname.replace(/\/$/, '')}/worker/events/stream`;
 
   const sse = new SSETransport(sseUrl, {}, sessionId, undefined, initialSequenceNum, getAuthHeaders);
   let onCloseCb: ((closeCode?: number) => void) | undefined;

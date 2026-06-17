@@ -9,24 +9,24 @@ export const CSI_PREFIX = ESC + String.fromCharCode(ESC_TYPE.CSI);
  * CSI parameter byte ranges
  */
 export const CSI_RANGE = {
-    PARAM_START: 0x30,
-    PARAM_END: 0x3f,
-    INTERMEDIATE_START: 0x20,
-    INTERMEDIATE_END: 0x2f,
-    FINAL_START: 0x40,
-    FINAL_END: 0x7e,
+  PARAM_START: 0x30,
+  PARAM_END: 0x3f,
+  INTERMEDIATE_START: 0x20,
+  INTERMEDIATE_END: 0x2f,
+  FINAL_START: 0x40,
+  FINAL_END: 0x7e,
 };
 /** Check if a byte is a CSI parameter byte */
 export function isCSIParam(byte) {
-    return byte >= CSI_RANGE.PARAM_START && byte <= CSI_RANGE.PARAM_END;
+  return byte >= CSI_RANGE.PARAM_START && byte <= CSI_RANGE.PARAM_END;
 }
 /** Check if a byte is a CSI intermediate byte */
 export function isCSIIntermediate(byte) {
-    return byte >= CSI_RANGE.INTERMEDIATE_START && byte <= CSI_RANGE.INTERMEDIATE_END;
+  return byte >= CSI_RANGE.INTERMEDIATE_START && byte <= CSI_RANGE.INTERMEDIATE_END;
 }
 /** Check if a byte is a CSI final byte (@ through ~) */
 export function isCSIFinal(byte) {
-    return byte >= CSI_RANGE.FINAL_START && byte <= CSI_RANGE.FINAL_END;
+  return byte >= CSI_RANGE.FINAL_START && byte <= CSI_RANGE.FINAL_END;
 }
 /**
  * Generate a CSI sequence: ESC [ p1;p2;...;pN final
@@ -34,54 +34,52 @@ export function isCSIFinal(byte) {
  * Multiple args: last is final byte, rest are params joined by ;
  */
 export function csi(...args) {
-    if (args.length === 0)
-        return CSI_PREFIX;
-    if (args.length === 1)
-        return `${CSI_PREFIX}${args[0]}`;
-    const params = args.slice(0, -1);
-    const final = args[args.length - 1];
-    return `${CSI_PREFIX}${params.join(SEP)}${final}`;
+  if (args.length === 0) return CSI_PREFIX;
+  if (args.length === 1) return `${CSI_PREFIX}${args[0]}`;
+  const params = args.slice(0, -1);
+  const final = args[args.length - 1];
+  return `${CSI_PREFIX}${params.join(SEP)}${final}`;
 }
 /**
  * CSI final bytes - the command identifier
  */
 export const CSI = {
-    // Cursor movement
-    CUU: 0x41, // A - Cursor Up
-    CUD: 0x42, // B - Cursor Down
-    CUF: 0x43, // C - Cursor Forward
-    CUB: 0x44, // D - Cursor Back
-    CNL: 0x45, // E - Cursor Next Line
-    CPL: 0x46, // F - Cursor Previous Line
-    CHA: 0x47, // G - Cursor Horizontal Absolute
-    CUP: 0x48, // H - Cursor Position
-    CHT: 0x49, // I - Cursor Horizontal Tab
-    VPA: 0x64, // d - Vertical Position Absolute
-    HVP: 0x66, // f - Horizontal Vertical Position
-    // Erase
-    ED: 0x4a, // J - Erase in Display
-    EL: 0x4b, // K - Erase in Line
-    ECH: 0x58, // X - Erase Character
-    // Insert/Delete
-    IL: 0x4c, // L - Insert Lines
-    DL: 0x4d, // M - Delete Lines
-    ICH: 0x40, // @ - Insert Characters
-    DCH: 0x50, // P - Delete Characters
-    // Scroll
-    SU: 0x53, // S - Scroll Up
-    SD: 0x54, // T - Scroll Down
-    // Modes
-    SM: 0x68, // h - Set Mode
-    RM: 0x6c, // l - Reset Mode
-    // SGR
-    SGR: 0x6d, // m - Select Graphic Rendition
-    // Other
-    DSR: 0x6e, // n - Device Status Report
-    DECSCUSR: 0x71, // q - Set Cursor Style (with space intermediate)
-    DECSTBM: 0x72, // r - Set Top and Bottom Margins
-    SCOSC: 0x73, // s - Save Cursor Position
-    SCORC: 0x75, // u - Restore Cursor Position
-    CBT: 0x5a, // Z - Cursor Backward Tabulation
+  // Cursor movement
+  CUU: 0x41, // A - Cursor Up
+  CUD: 0x42, // B - Cursor Down
+  CUF: 0x43, // C - Cursor Forward
+  CUB: 0x44, // D - Cursor Back
+  CNL: 0x45, // E - Cursor Next Line
+  CPL: 0x46, // F - Cursor Previous Line
+  CHA: 0x47, // G - Cursor Horizontal Absolute
+  CUP: 0x48, // H - Cursor Position
+  CHT: 0x49, // I - Cursor Horizontal Tab
+  VPA: 0x64, // d - Vertical Position Absolute
+  HVP: 0x66, // f - Horizontal Vertical Position
+  // Erase
+  ED: 0x4a, // J - Erase in Display
+  EL: 0x4b, // K - Erase in Line
+  ECH: 0x58, // X - Erase Character
+  // Insert/Delete
+  IL: 0x4c, // L - Insert Lines
+  DL: 0x4d, // M - Delete Lines
+  ICH: 0x40, // @ - Insert Characters
+  DCH: 0x50, // P - Delete Characters
+  // Scroll
+  SU: 0x53, // S - Scroll Up
+  SD: 0x54, // T - Scroll Down
+  // Modes
+  SM: 0x68, // h - Set Mode
+  RM: 0x6c, // l - Reset Mode
+  // SGR
+  SGR: 0x6d, // m - Select Graphic Rendition
+  // Other
+  DSR: 0x6e, // n - Device Status Report
+  DECSCUSR: 0x71, // q - Set Cursor Style (with space intermediate)
+  DECSTBM: 0x72, // r - Set Top and Bottom Margins
+  SCOSC: 0x73, // s - Save Cursor Position
+  SCORC: 0x75, // u - Restore Cursor Position
+  CBT: 0x5a, // Z - Cursor Backward Tabulation
 };
 /**
  * Erase in Display regions (ED command parameter)
@@ -92,40 +90,40 @@ export const ERASE_DISPLAY = ['toEnd', 'toStart', 'all', 'scrollback'];
  */
 export const ERASE_LINE_REGION = ['toEnd', 'toStart', 'all'];
 export const CURSOR_STYLES = [
-    { style: 'block', blinking: true }, // 0 - default
-    { style: 'block', blinking: true }, // 1
-    { style: 'block', blinking: false }, // 2
-    { style: 'underline', blinking: true }, // 3
-    { style: 'underline', blinking: false }, // 4
-    { style: 'bar', blinking: true }, // 5
-    { style: 'bar', blinking: false }, // 6
+  { style: 'block', blinking: true }, // 0 - default
+  { style: 'block', blinking: true }, // 1
+  { style: 'block', blinking: false }, // 2
+  { style: 'underline', blinking: true }, // 3
+  { style: 'underline', blinking: false }, // 4
+  { style: 'bar', blinking: true }, // 5
+  { style: 'bar', blinking: false }, // 6
 ];
 // Cursor movement generators
 /** Move cursor up n lines (CSI n A) */
 export function cursorUp(n = 1) {
-    return n === 0 ? '' : csi(n, 'A');
+  return n === 0 ? '' : csi(n, 'A');
 }
 /** Move cursor down n lines (CSI n B) */
 export function cursorDown(n = 1) {
-    return n === 0 ? '' : csi(n, 'B');
+  return n === 0 ? '' : csi(n, 'B');
 }
 /** Move cursor forward n columns (CSI n C) */
 export function cursorForward(n = 1) {
-    return n === 0 ? '' : csi(n, 'C');
+  return n === 0 ? '' : csi(n, 'C');
 }
 /** Move cursor back n columns (CSI n D) */
 export function cursorBack(n = 1) {
-    return n === 0 ? '' : csi(n, 'D');
+  return n === 0 ? '' : csi(n, 'D');
 }
 /** Move cursor to column n (1-indexed) (CSI n G) */
 export function cursorTo(col) {
-    return csi(col, 'G');
+  return csi(col, 'G');
 }
 /** Move cursor to column 1 (CSI G) */
 export const CURSOR_LEFT = csi('G');
 /** Move cursor to row, col (1-indexed) (CSI row ; col H) */
 export function cursorPosition(row, col) {
-    return csi(row, col, 'H');
+  return csi(row, col, 'H');
 }
 /** Move cursor to home position (CSI H) */
 export const CURSOR_HOME = csi('H');
@@ -135,22 +133,20 @@ export const CURSOR_HOME = csi('H');
  * Positive y = down, negative y = up
  */
 export function cursorMove(x, y) {
-    let result = '';
-    // Horizontal first (matches ansi-escapes behavior)
-    if (x < 0) {
-        result += cursorBack(-x);
-    }
-    else if (x > 0) {
-        result += cursorForward(x);
-    }
-    // Then vertical
-    if (y < 0) {
-        result += cursorUp(-y);
-    }
-    else if (y > 0) {
-        result += cursorDown(y);
-    }
-    return result;
+  let result = '';
+  // Horizontal first (matches ansi-escapes behavior)
+  if (x < 0) {
+    result += cursorBack(-x);
+  } else if (x > 0) {
+    result += cursorForward(x);
+  }
+  // Then vertical
+  if (y < 0) {
+    result += cursorUp(-y);
+  } else if (y > 0) {
+    result += cursorDown(y);
+  }
+  return result;
 }
 // Save/restore cursor position
 /** Save cursor position (CSI s) */
@@ -160,29 +156,29 @@ export const CURSOR_RESTORE = csi('u');
 // Erase generators
 /** Erase from cursor to end of line (CSI K) */
 export function eraseToEndOfLine() {
-    return csi('K');
+  return csi('K');
 }
 /** Erase from cursor to start of line (CSI 1 K) */
 export function eraseToStartOfLine() {
-    return csi(1, 'K');
+  return csi(1, 'K');
 }
 /** Erase entire line (CSI 2 K) */
 export function eraseLine() {
-    return csi(2, 'K');
+  return csi(2, 'K');
 }
 /** Erase entire line - constant form */
 export const ERASE_LINE = csi(2, 'K');
 /** Erase from cursor to end of screen (CSI J) */
 export function eraseToEndOfScreen() {
-    return csi('J');
+  return csi('J');
 }
 /** Erase from cursor to start of screen (CSI 1 J) */
 export function eraseToStartOfScreen() {
-    return csi(1, 'J');
+  return csi(1, 'J');
 }
 /** Erase entire screen (CSI 2 J) */
 export function eraseScreen() {
-    return csi(2, 'J');
+  return csi(2, 'J');
 }
 /** Erase entire screen - constant form */
 export const ERASE_SCREEN = csi(2, 'J');
@@ -193,30 +189,29 @@ export const ERASE_SCROLLBACK = csi(3, 'J');
  * This erases each line and moves up, ending at column 1
  */
 export function eraseLines(n) {
-    if (n <= 0)
-        return '';
-    let result = '';
-    for (let i = 0; i < n; i++) {
-        result += ERASE_LINE;
-        if (i < n - 1) {
-            result += cursorUp(1);
-        }
+  if (n <= 0) return '';
+  let result = '';
+  for (let i = 0; i < n; i++) {
+    result += ERASE_LINE;
+    if (i < n - 1) {
+      result += cursorUp(1);
     }
-    result += CURSOR_LEFT;
-    return result;
+  }
+  result += CURSOR_LEFT;
+  return result;
 }
 // Scroll
 /** Scroll up n lines (CSI n S) */
 export function scrollUp(n = 1) {
-    return n === 0 ? '' : csi(n, 'S');
+  return n === 0 ? '' : csi(n, 'S');
 }
 /** Scroll down n lines (CSI n T) */
 export function scrollDown(n = 1) {
-    return n === 0 ? '' : csi(n, 'T');
+  return n === 0 ? '' : csi(n, 'T');
 }
 /** Set scroll region (DECSTBM, CSI top;bottom r). 1-indexed, inclusive. */
 export function setScrollRegion(top, bottom) {
-    return csi(top, bottom, 'r');
+  return csi(top, bottom, 'r');
 }
 /** Reset scroll region to full screen (DECSTBM, CSI r). Homes the cursor. */
 export const RESET_SCROLL_REGION = csi('r');

@@ -634,7 +634,7 @@ export async function runHeadless(
     // so we require the target to be a user message
     const targetMessage = initialMessages.find(m => m.uuid === options.rewindFiles);
 
-    if (!targetMessage || targetMessage.type !== 'user') {
+    if (targetMessage?.type !== 'user') {
       process.stderr.write(
         `Error: --rewind-files requires a user message UUID, but ${options.rewindFiles} is not a user message in this session\n`,
       );
@@ -792,25 +792,25 @@ export async function runHeadless(
 
   switch (options.outputFormat) {
     case 'json':
-      if (!lastMessage || lastMessage.type !== 'result') {
+      if (lastMessage?.type !== 'result') {
         throw new Error('No messages returned');
       }
       if (options.verbose) {
-        writeToStdout(jsonStringify(messages) + '\n');
+        writeToStdout(`${jsonStringify(messages)}\n`);
         break;
       }
-      writeToStdout(jsonStringify(lastMessage) + '\n');
+      writeToStdout(`${jsonStringify(lastMessage)}\n`);
       break;
     case 'stream-json':
       // already logged above
       break;
     default:
-      if (!lastMessage || lastMessage.type !== 'result') {
+      if (lastMessage?.type !== 'result') {
         throw new Error('No messages returned');
       }
       switch (lastMessage.subtype) {
         case 'success':
-          writeToStdout(lastMessage.result.endsWith('\n') ? lastMessage.result : lastMessage.result + '\n');
+          writeToStdout(lastMessage.result.endsWith('\n') ? lastMessage.result : `${lastMessage.result}\n`);
           break;
         case 'error_during_execution':
           writeToStdout(`Execution error`);
@@ -4093,7 +4093,7 @@ function handleChannelEnable(
   // Only a 'connected' client has .capabilities and .client to register the
   // handler on. The pool spread at the call site matches mcp_status.
   const connection = connectionPool.find(c => c.name === serverName && c.type === 'connected');
-  if (!connection || connection.type !== 'connected') {
+  if (connection?.type !== 'connected') {
     return respondError(`server ${serverName} is not connected`);
   }
 
@@ -4234,9 +4234,9 @@ function emitLoadError(message: string, outputFormat: string | undefined): void 
       uuid: randomUUID(),
       errors: [message],
     };
-    process.stdout.write(jsonStringify(errorResult) + '\n');
+    process.stdout.write(`${jsonStringify(errorResult)}\n`);
   } else {
-    process.stderr.write(message + '\n');
+    process.stderr.write(`${message}\n`);
   }
 }
 
@@ -4287,7 +4287,7 @@ async function loadInitialMessages(
         if (coordinatorModeModule) {
           const warning = coordinatorModeModule.matchSessionMode(result.mode);
           if (warning) {
-            process.stderr.write(warning + '\n');
+            process.stderr.write(`${warning}\n`);
             // Refresh agent definitions to reflect the mode switch
             const { getAgentDefinitionsWithOverrides, getActiveAgentsFromList } =
               // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -4449,7 +4449,7 @@ async function loadInitialMessages(
       if (coordinatorModeModule) {
         const warning = coordinatorModeModule.matchSessionMode(result.mode);
         if (warning) {
-          process.stderr.write(warning + '\n');
+          process.stderr.write(`${warning}\n`);
           // Refresh agent definitions to reflect the mode switch
           const { getAgentDefinitionsWithOverrides, getActiveAgentsFromList } =
             // eslint-disable-next-line @typescript-eslint/no-require-imports

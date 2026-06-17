@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 
@@ -37,7 +37,7 @@ export async function saveReportToWiki(
       if (userStartIdx !== -1 && userEndIdx !== -1 && userEndIdx > userStartIdx) {
         userNotes = existingContent.slice(userStartIdx + userBlockStart.length, userEndIdx).trim();
       }
-    } catch (err) {
+    } catch (_err) {
       // Keep default user notes if reading fails
     }
   }

@@ -272,7 +272,7 @@ export const PeerHelpTool = buildTool({
     return {
       tool_use_id: toolUseID,
       type: 'tool_result',
-      content: output.content.slice(0, 500) + '\n\n(See full output for complete guide)',
+      content: `${output.content.slice(0, 500)}\n\n(See full output for complete guide)`,
     };
   },
   async call(input: { topic?: string }) {
@@ -283,4 +283,3 @@ export const PeerHelpTool = buildTool({
     };
   },
 });
-

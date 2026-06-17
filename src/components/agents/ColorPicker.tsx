@@ -21,12 +21,7 @@ type Props = {
 };
 
 export function ColorPicker({ agentName, currentColor = 'automatic', onConfirm }: Props): React.ReactNode {
-  const [selectedIndex, setSelectedIndex] = useState(
-    Math.max(
-      0,
-      COLOR_OPTIONS.findIndex(opt => opt === currentColor),
-    ),
-  );
+  const [selectedIndex, setSelectedIndex] = useState(Math.max(0, COLOR_OPTIONS.indexOf(currentColor)));
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'up') {

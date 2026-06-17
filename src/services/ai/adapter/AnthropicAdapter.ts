@@ -14,7 +14,6 @@
  */
 
 import type { BetaMessage, BetaMessageStreamParams } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs';
-import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/index.mjs';
 import type { ProviderContentBlock } from '../../../types/common.js';
 import { getProviderModelInfo, getProviderRegistryEntry } from '../providerRegistry.js';
 
@@ -863,7 +862,6 @@ registerAdapter('__default__', (client: any, providerId: string) => new OpenAICo
  * falling back to the generic OpenAI-compatible adapter.
  */
 export class AnthropicAdapter {
-  private client: any;
   private providerId: string;
   private adapter: ProviderAdapter;
 

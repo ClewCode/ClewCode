@@ -63,8 +63,6 @@ export const call: LocalCommandCall = async args => {
       await new Promise(r => setTimeout(r, 3000));
       return { type: 'text', value: getStatus() };
     }
-
-    case 'status':
     default: {
       return { type: 'text', value: getStatus() };
     }

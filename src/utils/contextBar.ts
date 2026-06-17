@@ -149,7 +149,7 @@ export function estimateContextBreakdown(
       typeof msg.agentType === 'string' ||
       typeof msg.agentName === 'string' ||
       (typeof msg.content === 'string' && msg.content.includes('[Agent]')) ||
-      (msg.parent_tool_use_id ? true : false);
+      !!msg.parent_tool_use_id;
 
     // Sum character length to approximate tokens
     let charCount = 0;

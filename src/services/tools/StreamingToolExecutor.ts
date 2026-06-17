@@ -228,7 +228,7 @@ export class StreamingToolExecutor {
     const input = tool.block.input as Record<string, unknown> | undefined;
     const summary = input?.command ?? input?.file_path ?? input?.pattern ?? '';
     if (typeof summary === 'string' && summary.length > 0) {
-      const truncated = summary.length > 40 ? summary.slice(0, 40) + '\u2026' : summary;
+      const truncated = summary.length > 40 ? `${summary.slice(0, 40)}\u2026` : summary;
       return `${tool.block.name}(${truncated})`;
     }
     return tool.block.name;

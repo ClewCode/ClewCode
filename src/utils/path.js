@@ -29,48 +29,47 @@ import { posixPathToWindowsPath } from './windowsPaths.js';
  * expandPath('/absolute/path') // '/absolute/path'
  */
 export function expandPath(path, baseDir) {
-    // Set default baseDir to getCwd() if not provided
-    const actualBaseDir = baseDir ?? getCwd() ?? getFsImplementation().cwd();
-    // Input validation
-    if (typeof path !== 'string') {
-        throw new TypeError(`Path must be a string, received ${typeof path}`);
+  // Set default baseDir to getCwd() if not provided
+  const actualBaseDir = baseDir ?? getCwd() ?? getFsImplementation().cwd();
+  // Input validation
+  if (typeof path !== 'string') {
+    throw new TypeError(`Path must be a string, received ${typeof path}`);
+  }
+  if (typeof actualBaseDir !== 'string') {
+    throw new TypeError(`Base directory must be a string, received ${typeof actualBaseDir}`);
+  }
+  // Security: Check for null bytes
+  if (path.includes('\0') || actualBaseDir.includes('\0')) {
+    throw new Error('Path contains null bytes');
+  }
+  // Handle empty or whitespace-only paths
+  const trimmedPath = path.trim();
+  if (!trimmedPath) {
+    return normalize(actualBaseDir).normalize('NFC');
+  }
+  // Handle home directory notation
+  if (trimmedPath === '~') {
+    return homedir().normalize('NFC');
+  }
+  if (trimmedPath.startsWith('~/')) {
+    return join(homedir(), trimmedPath.slice(2)).normalize('NFC');
+  }
+  // On Windows, convert POSIX-style paths (e.g., /c/Users/...) to Windows format
+  let processedPath = trimmedPath;
+  if (getPlatform() === 'windows' && trimmedPath.match(/^\/[a-z]\//i)) {
+    try {
+      processedPath = posixPathToWindowsPath(trimmedPath);
+    } catch {
+      // If conversion fails, use original path
+      processedPath = trimmedPath;
     }
-    if (typeof actualBaseDir !== 'string') {
-        throw new TypeError(`Base directory must be a string, received ${typeof actualBaseDir}`);
-    }
-    // Security: Check for null bytes
-    if (path.includes('\0') || actualBaseDir.includes('\0')) {
-        throw new Error('Path contains null bytes');
-    }
-    // Handle empty or whitespace-only paths
-    const trimmedPath = path.trim();
-    if (!trimmedPath) {
-        return normalize(actualBaseDir).normalize('NFC');
-    }
-    // Handle home directory notation
-    if (trimmedPath === '~') {
-        return homedir().normalize('NFC');
-    }
-    if (trimmedPath.startsWith('~/')) {
-        return join(homedir(), trimmedPath.slice(2)).normalize('NFC');
-    }
-    // On Windows, convert POSIX-style paths (e.g., /c/Users/...) to Windows format
-    let processedPath = trimmedPath;
-    if (getPlatform() === 'windows' && trimmedPath.match(/^\/[a-z]\//i)) {
-        try {
-            processedPath = posixPathToWindowsPath(trimmedPath);
-        }
-        catch {
-            // If conversion fails, use original path
-            processedPath = trimmedPath;
-        }
-    }
-    // Handle absolute paths
-    if (isAbsolute(processedPath)) {
-        return normalize(processedPath).normalize('NFC');
-    }
-    // Handle relative paths
-    return resolve(actualBaseDir, processedPath).normalize('NFC');
+  }
+  // Handle absolute paths
+  if (isAbsolute(processedPath)) {
+    return normalize(processedPath).normalize('NFC');
+  }
+  // Handle relative paths
+  return resolve(actualBaseDir, processedPath).normalize('NFC');
 }
 /**
  * Converts an absolute path to a relative path from cwd, to save tokens in
@@ -81,9 +80,9 @@ export function expandPath(path, baseDir) {
  * @returns Relative path if under cwd, otherwise the original absolute path
  */
 export function toRelativePath(absolutePath) {
-    const relativePath = relative(getCwd(), absolutePath);
-    // If the relative path would go outside cwd (starts with ..), keep absolute
-    return relativePath.startsWith('..') ? absolutePath : relativePath;
+  const relativePath = relative(getCwd(), absolutePath);
+  // If the relative path would go outside cwd (starts with ..), keep absolute
+  return relativePath.startsWith('..') ? absolutePath : relativePath;
 }
 /**
  * Gets the directory path for a given file or directory path.
@@ -94,22 +93,21 @@ export function toRelativePath(absolutePath) {
  * @returns The directory path
  */
 export function getDirectoryForPath(path) {
-    const absolutePath = expandPath(path);
-    // SECURITY: Skip filesystem operations for UNC paths to prevent NTLM credential leaks.
-    if (absolutePath.startsWith('\\\\') || absolutePath.startsWith('//')) {
-        return dirname(absolutePath);
-    }
-    try {
-        const stats = getFsImplementation().statSync(absolutePath);
-        if (stats.isDirectory()) {
-            return absolutePath;
-        }
-    }
-    catch {
-        // Path doesn't exist or can't be accessed
-    }
-    // If it's not a directory or doesn't exist, return the parent directory
+  const absolutePath = expandPath(path);
+  // SECURITY: Skip filesystem operations for UNC paths to prevent NTLM credential leaks.
+  if (absolutePath.startsWith('\\\\') || absolutePath.startsWith('//')) {
     return dirname(absolutePath);
+  }
+  try {
+    const stats = getFsImplementation().statSync(absolutePath);
+    if (stats.isDirectory()) {
+      return absolutePath;
+    }
+  } catch {
+    // Path doesn't exist or can't be accessed
+  }
+  // If it's not a directory or doesn't exist, return the parent directory
+  return dirname(absolutePath);
 }
 /**
  * Checks if a path contains directory traversal patterns that navigate to parent directories.
@@ -118,7 +116,7 @@ export function getDirectoryForPath(path) {
  * @returns true if the path contains traversal (e.g., '../', '..\', or ends with '..')
  */
 export function containsPathTraversal(path) {
-    return /(?:^|[\\/])\.\.(?:[\\/]|$)/.test(path);
+  return /(?:^|[\\/])\.\.(?:[\\/]|$)/.test(path);
 }
 // Re-export from the shared zero-dep source.
 export { sanitizePath } from './sessionStoragePortable.js';
@@ -132,9 +130,9 @@ export { sanitizePath } from './sessionStoragePortable.js';
  * @returns The normalized path with consistent forward slashes
  */
 export function normalizePathForConfigKey(path) {
-    // First use Node's normalize to resolve . and .. segments
-    const normalized = normalize(path);
-    // Then convert all backslashes to forward slashes for consistent JSON keys
-    // This is safe because forward slashes work in Windows paths for most operations
-    return normalized.replace(/\\/g, '/');
+  // First use Node's normalize to resolve . and .. segments
+  const normalized = normalize(path);
+  // Then convert all backslashes to forward slashes for consistent JSON keys
+  // This is safe because forward slashes work in Windows paths for most operations
+  return normalized.replace(/\\/g, '/');
 }

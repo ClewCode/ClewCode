@@ -6,9 +6,9 @@
  * non-Bun branch so native Bun builds never load the ~270KB yaml parser.
  */
 export function parseYaml(input) {
-    if (typeof Bun !== 'undefined') {
-        return Bun.YAML.parse(input);
-    }
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('yaml').parse(input);
+  if (typeof Bun !== 'undefined') {
+    return Bun.YAML.parse(input);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return require('yaml').parse(input);
 }

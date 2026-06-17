@@ -137,7 +137,7 @@ function ComputerUseAppListPanel({ request, onDone }: ComputerUseApprovalProps):
   const ALL_FLAG_KEYS: FlagKey[] = ['clipboardRead', 'clipboardWrite', 'systemKeyCombos'];
   const requestedFlagKeys = useMemo(
     (): FlagKey[] => ALL_FLAG_KEYS.filter(k => request.requestedFlags[k]),
-    [request.requestedFlags],
+    [request.requestedFlags, ALL_FLAG_KEYS.filter],
   );
 
   const options = useMemo<OptionWithDescription<AppListOption>[]>(

@@ -165,7 +165,7 @@ export function toolResultSearchText(r: unknown): string {
   // Known shapes first (common tools).
   if (typeof o.stdout === 'string') {
     const err = typeof o.stderr === 'string' ? o.stderr : '';
-    return o.stdout + (err ? '\n' + err : '');
+    return o.stdout + (err ? `\n${err}` : '');
   }
   if (o.file && typeof o.file === 'object' && typeof (o.file as { content?: unknown }).content === 'string') {
     return (o.file as { content: string }).content;

@@ -1,11 +1,8 @@
 import type React from 'react';
-import type { Output } from './GenerateVideoTool.js';
 import { Box, Text } from '../../ink.js';
+import type { Output } from './GenerateVideoTool.js';
 
-export function renderToolUseMessage(
-  { prompt }: Partial<Output>,
-  _opts: { verbose: boolean },
-): React.ReactNode {
+export function renderToolUseMessage({ prompt }: Partial<Output>, _opts: { verbose: boolean }): React.ReactNode {
   if (!prompt) return null;
   return `"${prompt.slice(0, 100)}${prompt.length > 100 ? '...' : ''}"`;
 }
@@ -17,11 +14,7 @@ export function renderToolUseProgressMessage(): React.ReactNode {
 export function renderToolResultMessage(output: Output): React.ReactNode {
   return (
     <Box flexDirection="column">
-      {output.localPath ? (
-        <Text>Saved to: {output.localPath}</Text>
-      ) : (
-        <Text>URL: {output.url}</Text>
-      )}
+      {output.localPath ? <Text>Saved to: {output.localPath}</Text> : <Text>URL: {output.url}</Text>}
       {output.status && <Text dimColor>Status: {output.status}</Text>}
     </Box>
   );

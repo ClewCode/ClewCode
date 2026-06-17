@@ -122,7 +122,7 @@ export function createSyncState(): SyncState {
  * so local-vs-server comparison works by direct string equality.
  */
 export function hashContent(content: string): string {
-  return 'sha256:' + createHash('sha256').update(content, 'utf8').digest('hex');
+  return `sha256:${createHash('sha256').update(content, 'utf8').digest('hex')}`;
 }
 
 /**
@@ -302,7 +302,7 @@ async function fetchTeamMemoryHashes(state: SyncState, repoSlug: string): Promis
       return { success: false, error: auth.error, errorType: 'auth' };
     }
 
-    const endpoint = getTeamMemorySyncEndpoint(repoSlug) + '&view=hashes';
+    const endpoint = `${getTeamMemorySyncEndpoint(repoSlug)}&view=hashes`;
     const response = await axios.get(endpoint, {
       headers: auth.headers,
       timeout: TEAM_MEMORY_SYNC_TIMEOUT_MS,

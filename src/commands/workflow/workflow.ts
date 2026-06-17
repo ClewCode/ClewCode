@@ -92,7 +92,7 @@ async function listRuns(workspaceRoot: string): Promise<LocalCommandResult> {
   if (runs.length === 0) {
     return {
       type: 'text',
-      value: '◈ workflow · no persisted dynamic runs in ' + shorten(workspaceRoot),
+      value: `◈ workflow · no persisted dynamic runs in ${shorten(workspaceRoot)}`,
     };
   }
   const linkedIds = readLinkedWorkflowIds();
@@ -100,7 +100,7 @@ async function listRuns(workspaceRoot: string): Promise<LocalCommandResult> {
   const goalTag = goal ? ` (goal: ${truncate(goal, 36)})` : '';
   const lines: string[] = [`◈ workflow · ${runs.length} run${runs.length === 1 ? '' : 's'}${goalTag}:`];
   for (const run of runs) {
-    lines.push('  ' + formatRunSummary(run, linkedIds.has(run.workflowId)));
+    lines.push(`  ${formatRunSummary(run, linkedIds.has(run.workflowId))}`);
   }
   lines.push('');
   lines.push('Resume with `/workflow resume <id>`, cancel with `/workflow cancel <id>`.');
@@ -191,7 +191,7 @@ function formatRunSummary(state: DynamicRunState, linkedToActiveGoal: boolean = 
     state.status === 'completed' ? '✓' : state.status === 'failed' ? '✗' : state.status === 'cancelled' ? '⊘' : '…';
   const id = state.workflowId;
   const completed = state.completedSubtaskIds.length;
-  const total = state.results.length + state.completedSubtaskIds.length === 0 ? '?' : String(completed);
+  const _total = state.results.length + state.completedSubtaskIds.length === 0 ? '?' : String(completed);
   const goalBadge = linkedToActiveGoal ? '  ⊕' : '';
   return `${tag} ${id}  [${state.status}]  ${state.startedAt}  ${completed} done${goalBadge}`;
 }
@@ -224,10 +224,10 @@ function isTerminalStatus(s: DynamicRunStatus): boolean {
 
 function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
-  return s.slice(0, max) + '…';
+  return `${s.slice(0, max)}…`;
 }
 
 function shorten(path: string): string {
   if (path.length <= 60) return path;
-  return '…' + path.slice(-57);
+  return `…${path.slice(-57)}`;
 }

@@ -1,5 +1,3 @@
-import React from 'react';
-import { Text } from '../../../ink.js';
 import { FallbackPermissionRequest } from '../FallbackPermissionRequest.js';
 import type { PermissionRequestProps } from '../PermissionRequest.js';
 

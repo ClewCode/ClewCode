@@ -340,7 +340,7 @@ export function isDangerousRemovalPath(resolvedPath: string): boolean {
   // /private/var, /private/var/log, /private/etc/passwd, etc. without
   // maintaining an explicit list of macOS system directory names.
   if (normalizedPath.startsWith(MACOS_PRIVATE_PREFIX)) {
-    const stripped = '/' + normalizedPath.slice(MACOS_PRIVATE_PREFIX.length);
+    const stripped = `/${normalizedPath.slice(MACOS_PRIVATE_PREFIX.length)}`;
     if (isDangerousRemovalPath(stripped)) {
       return true;
     }

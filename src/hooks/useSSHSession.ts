@@ -168,7 +168,7 @@ export function useSSHSession({
         // Surface remote stderr if it looks like an error (pre-connect always,
         // post-connect only on nonzero exit — normal --verbose noise otherwise).
         if (stderr && (!connected || exitCode !== 0)) {
-          msg += `\nRemote stderr (exit ${exitCode ?? 'signal ' + session.proc.signalCode}):\n${stderr}`;
+          msg += `\nRemote stderr (exit ${exitCode ?? `signal ${session.proc.signalCode}`}):\n${stderr}`;
         }
         void gracefulShutdown(1, 'other', { finalMessage: msg });
       },

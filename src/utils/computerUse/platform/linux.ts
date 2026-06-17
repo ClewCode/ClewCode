@@ -3,7 +3,7 @@
  * xdotool for mouse/keyboard, xclip for clipboard.
  */
 
-import { mkdtemp, unlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileNoThrow } from '../../execFileNoThrow.js';

@@ -2,14 +2,28 @@ import { styledCharsFromTokens, tokenize } from '@alcalzone/ansi-tokenize';
 import emojiRegex from 'emoji-regex';
 import { logForDebugging } from '../utils/debug.js';
 import { getGraphemeSegmenter } from '../utils/intl.js';
+
 const EMOJI_REGEX = emojiRegex();
+
 import { eastAsianWidth } from 'get-east-asian-width';
 import sliceAnsi from '../utils/sliceAnsi.js';
 import { reorderBidi } from './bidi.js';
 import { unionRect } from './layout/geometry.js';
-import { blitRegion, CellWidth, cellAt, extractHyperlinkFromStyles, filterOutHyperlinkStyles, markNoSelectRegion, OSC8_PREFIX, resetScreen, setCellAt, shiftRows, } from './screen.js';
+import {
+  blitRegion,
+  CellWidth,
+  cellAt,
+  extractHyperlinkFromStyles,
+  filterOutHyperlinkStyles,
+  markNoSelectRegion,
+  OSC8_PREFIX,
+  resetScreen,
+  setCellAt,
+  shiftRows,
+} from './screen.js';
 import { stringWidth } from './stringWidth.js';
 import { widestLine } from './widest-line.js';
+
 /**
  * Intersect two clips. `undefined` on an axis means unbounded; the other
  * clip's bound wins. If both are bounded, take the tighter constraint
@@ -17,360 +31,348 @@ import { widestLine } from './widest-line.js';
  * (x1 >= x2 or y1 >= y2), writes clipped by it will be dropped.
  */
 function intersectClip(parent, child) {
-    if (!parent)
-        return child;
-    return {
-        x1: maxDefined(parent.x1, child.x1),
-        x2: minDefined(parent.x2, child.x2),
-        y1: maxDefined(parent.y1, child.y1),
-        y2: minDefined(parent.y2, child.y2),
-    };
+  if (!parent) return child;
+  return {
+    x1: maxDefined(parent.x1, child.x1),
+    x2: minDefined(parent.x2, child.x2),
+    y1: maxDefined(parent.y1, child.y1),
+    y2: minDefined(parent.y2, child.y2),
+  };
 }
 function maxDefined(a, b) {
-    if (a === undefined)
-        return b;
-    if (b === undefined)
-        return a;
-    return Math.max(a, b);
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  return Math.max(a, b);
 }
 function minDefined(a, b) {
-    if (a === undefined)
-        return b;
-    if (b === undefined)
-        return a;
-    return Math.min(a, b);
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  return Math.min(a, b);
 }
 export default class Output {
-    width;
-    height;
-    stylePool;
-    screen;
-    operations = [];
-    charCache = new Map();
-    constructor(options) {
-        const { width, height, stylePool, screen } = options;
-        this.width = width;
-        this.height = height;
-        this.stylePool = stylePool;
-        this.screen = screen;
-        resetScreen(screen, width, height);
+  width;
+  height;
+  stylePool;
+  screen;
+  operations = [];
+  charCache = new Map();
+  constructor(options) {
+    const { width, height, stylePool, screen } = options;
+    this.width = width;
+    this.height = height;
+    this.stylePool = stylePool;
+    this.screen = screen;
+    resetScreen(screen, width, height);
+  }
+  /**
+   * Reuse this Output for a new frame. Zeroes the screen buffer, clears
+   * the operation list (backing storage is retained), and caps charCache
+   * growth. Preserving charCache across frames is the main win — most
+   * lines don't change between renders, so tokenize + grapheme clustering
+   * becomes a cache hit.
+   */
+  reset(width, height, screen) {
+    this.width = width;
+    this.height = height;
+    this.screen = screen;
+    this.operations.length = 0;
+    resetScreen(screen, width, height);
+    if (this.charCache.size > 16384) this.charCache.clear();
+  }
+  /**
+   * Copy cells from a source screen region (blit = block image transfer).
+   */
+  blit(src, x, y, width, height) {
+    this.operations.push({ type: 'blit', src, x, y, width, height });
+  }
+  /**
+   * Shift full-width rows within [top, bottom] by n. n > 0 = up. Mirrors
+   * what DECSTBM + SU/SD does to the terminal. Paired with blit() to reuse
+   * prevScreen content during pure scroll, avoiding full child re-render.
+   */
+  shift(top, bottom, n) {
+    this.operations.push({ type: 'shift', top, bottom, n });
+  }
+  /**
+   * Clear a region by writing empty cells. Used when a node shrinks to
+   * ensure stale content from the previous frame is removed.
+   */
+  clear(region, fromAbsolute) {
+    this.operations.push({ type: 'clear', region, fromAbsolute });
+  }
+  /**
+   * Mark a region as non-selectable (excluded from fullscreen text
+   * selection copy + highlight). Used by <NoSelect> to fence off
+   * gutters (line numbers, diff sigils). Applied AFTER blit/write so
+   * the mark wins regardless of what's blitted into the region.
+   */
+  noSelect(region) {
+    this.operations.push({ type: 'noSelect', region });
+  }
+  write(x, y, text, softWrap) {
+    if (!text) {
+      return;
     }
-    /**
-     * Reuse this Output for a new frame. Zeroes the screen buffer, clears
-     * the operation list (backing storage is retained), and caps charCache
-     * growth. Preserving charCache across frames is the main win — most
-     * lines don't change between renders, so tokenize + grapheme clustering
-     * becomes a cache hit.
-     */
-    reset(width, height, screen) {
-        this.width = width;
-        this.height = height;
-        this.screen = screen;
-        this.operations.length = 0;
-        resetScreen(screen, width, height);
-        if (this.charCache.size > 16384)
-            this.charCache.clear();
+    this.operations.push({
+      type: 'write',
+      x,
+      y,
+      text,
+      softWrap,
+    });
+  }
+  clip(clip) {
+    this.operations.push({
+      type: 'clip',
+      clip,
+    });
+  }
+  unclip() {
+    this.operations.push({
+      type: 'unclip',
+    });
+  }
+  get() {
+    const screen = this.screen;
+    const screenWidth = this.width;
+    const screenHeight = this.height;
+    // Track blit vs write cell counts for debugging
+    let blitCells = 0;
+    let writeCells = 0;
+    // Pass 1: expand damage to cover clear regions. The buffer is freshly
+    // zeroed by resetScreen, so this pass only marks damage so diff()
+    // checks these regions against the previous frame.
+    //
+    // Also collect clears from absolute-positioned nodes. An absolute
+    // node overlays normal-flow siblings; when it shrinks, its clear is
+    // pushed AFTER those siblings' clean-subtree blits (DOM order). The
+    // blit copies the absolute node's own stale paint from prevScreen,
+    // and since clear is damage-only, the ghost survives diff. Normal-
+    // flow clears don't need this — a normal-flow node's old position
+    // can't have been painted on top of a sibling's current position.
+    const absoluteClears = [];
+    for (const operation of this.operations) {
+      if (operation.type !== 'clear') continue;
+      const { x, y, width, height } = operation.region;
+      const startX = Math.max(0, x);
+      const startY = Math.max(0, y);
+      const maxX = Math.min(x + width, screenWidth);
+      const maxY = Math.min(y + height, screenHeight);
+      if (startX >= maxX || startY >= maxY) continue;
+      const rect = {
+        x: startX,
+        y: startY,
+        width: maxX - startX,
+        height: maxY - startY,
+      };
+      screen.damage = screen.damage ? unionRect(screen.damage, rect) : rect;
+      if (operation.fromAbsolute) absoluteClears.push(rect);
     }
-    /**
-     * Copy cells from a source screen region (blit = block image transfer).
-     */
-    blit(src, x, y, width, height) {
-        this.operations.push({ type: 'blit', src, x, y, width, height });
-    }
-    /**
-     * Shift full-width rows within [top, bottom] by n. n > 0 = up. Mirrors
-     * what DECSTBM + SU/SD does to the terminal. Paired with blit() to reuse
-     * prevScreen content during pure scroll, avoiding full child re-render.
-     */
-    shift(top, bottom, n) {
-        this.operations.push({ type: 'shift', top, bottom, n });
-    }
-    /**
-     * Clear a region by writing empty cells. Used when a node shrinks to
-     * ensure stale content from the previous frame is removed.
-     */
-    clear(region, fromAbsolute) {
-        this.operations.push({ type: 'clear', region, fromAbsolute });
-    }
-    /**
-     * Mark a region as non-selectable (excluded from fullscreen text
-     * selection copy + highlight). Used by <NoSelect> to fence off
-     * gutters (line numbers, diff sigils). Applied AFTER blit/write so
-     * the mark wins regardless of what's blitted into the region.
-     */
-    noSelect(region) {
-        this.operations.push({ type: 'noSelect', region });
-    }
-    write(x, y, text, softWrap) {
-        if (!text) {
-            return;
-        }
-        this.operations.push({
-            type: 'write',
-            x,
-            y,
-            text,
-            softWrap,
-        });
-    }
-    clip(clip) {
-        this.operations.push({
-            type: 'clip',
-            clip,
-        });
-    }
-    unclip() {
-        this.operations.push({
-            type: 'unclip',
-        });
-    }
-    get() {
-        const screen = this.screen;
-        const screenWidth = this.width;
-        const screenHeight = this.height;
-        // Track blit vs write cell counts for debugging
-        let blitCells = 0;
-        let writeCells = 0;
-        // Pass 1: expand damage to cover clear regions. The buffer is freshly
-        // zeroed by resetScreen, so this pass only marks damage so diff()
-        // checks these regions against the previous frame.
-        //
-        // Also collect clears from absolute-positioned nodes. An absolute
-        // node overlays normal-flow siblings; when it shrinks, its clear is
-        // pushed AFTER those siblings' clean-subtree blits (DOM order). The
-        // blit copies the absolute node's own stale paint from prevScreen,
-        // and since clear is damage-only, the ghost survives diff. Normal-
-        // flow clears don't need this — a normal-flow node's old position
-        // can't have been painted on top of a sibling's current position.
-        const absoluteClears = [];
-        for (const operation of this.operations) {
-            if (operation.type !== 'clear')
-                continue;
-            const { x, y, width, height } = operation.region;
-            const startX = Math.max(0, x);
-            const startY = Math.max(0, y);
-            const maxX = Math.min(x + width, screenWidth);
-            const maxY = Math.min(y + height, screenHeight);
-            if (startX >= maxX || startY >= maxY)
-                continue;
-            const rect = {
-                x: startX,
-                y: startY,
-                width: maxX - startX,
-                height: maxY - startY,
-            };
-            screen.damage = screen.damage ? unionRect(screen.damage, rect) : rect;
-            if (operation.fromAbsolute)
-                absoluteClears.push(rect);
-        }
-        const clips = [];
-        for (const operation of this.operations) {
-            switch (operation.type) {
-                case 'clear':
-                    // handled in pass 1
-                    continue;
-                case 'clip':
-                    // Intersect with the parent clip (if any) so nested
-                    // overflow:hidden boxes can't write outside their ancestor's
-                    // clip region. Without this, a message with overflow:hidden at
-                    // the bottom of a scrollbox pushes its OWN clip (based on its
-                    // layout bounds, already translated by -scrollTop) which can
-                    // extend below the scrollbox viewport — writes escape into
-                    // the sibling bottom section's rows.
-                    clips.push(intersectClip(clips.at(-1), operation.clip));
-                    continue;
-                case 'unclip':
-                    clips.pop();
-                    continue;
-                case 'blit': {
-                    // Bulk-copy cells from source screen region using TypedArray.set().
-                    // Tracking damage ensures diff() checks blitted cells for stale content
-                    // when a parent blits an area that previously contained child content.
-                    const { src, x: regionX, y: regionY, width: regionWidth, height: regionHeight } = operation;
-                    // Intersect with active clip — a child's clean-blit passes its full
-                    // cached rect, but the parent ScrollBox may have shrunk (pill mount).
-                    // Without this, the blit writes past the ScrollBox's new bottom edge
-                    // into the pill's row.
-                    const clip = clips.at(-1);
-                    const startX = Math.max(regionX, clip?.x1 ?? 0);
-                    const startY = Math.max(regionY, clip?.y1 ?? 0);
-                    const maxY = Math.min(regionY + regionHeight, screenHeight, src.height, clip?.y2 ?? Infinity);
-                    const maxX = Math.min(regionX + regionWidth, screenWidth, src.width, clip?.x2 ?? Infinity);
-                    if (startX >= maxX || startY >= maxY)
-                        continue;
-                    // Skip rows covered by an absolute-positioned node's clear.
-                    // Absolute nodes overlay normal-flow siblings, so prevScreen in
-                    // that region holds the absolute node's stale paint — blitting
-                    // it back would ghost. See absoluteClears collection above.
-                    if (absoluteClears.length === 0) {
-                        blitRegion(screen, src, startX, startY, maxX, maxY);
-                        blitCells += (maxY - startY) * (maxX - startX);
-                        continue;
-                    }
-                    // When absolute overlays are present, we must skip blitting cells
-                    // covered by their clear regions. prevScreen in those regions holds
-                    // the overlay's stale paint, which would ghost if blitted back.
-                    for (let row = startY; row < maxY; row++) {
-                        let colStart = startX;
-                        while (colStart < maxX) {
-                            // Find the first clear rect that covers this column in this row
-                            const clear = absoluteClears.find(r => row >= r.y && row < r.y + r.height && colStart >= r.x && colStart < r.x + r.width);
-                            if (clear) {
-                                // Skip the portion covered by the clear rect
-                                colStart = Math.min(maxX, clear.x + clear.width);
-                            }
-                            else {
-                                // Find the next clear rect in this row to determine how far we can blit
-                                let nextClearStart = maxX;
-                                for (const r of absoluteClears) {
-                                    if (row >= r.y && row < r.y + r.height && r.x > colStart && r.x < nextClearStart) {
-                                        nextClearStart = r.x;
-                                    }
-                                }
-                                const blitWidth = nextClearStart - colStart;
-                                blitRegion(screen, src, colStart, row, colStart + blitWidth, row + 1);
-                                blitCells += blitWidth;
-                                colStart = nextClearStart;
-                            }
-                        }
-                    }
-                    continue;
+    const clips = [];
+    for (const operation of this.operations) {
+      switch (operation.type) {
+        case 'clear':
+          // handled in pass 1
+          continue;
+        case 'clip':
+          // Intersect with the parent clip (if any) so nested
+          // overflow:hidden boxes can't write outside their ancestor's
+          // clip region. Without this, a message with overflow:hidden at
+          // the bottom of a scrollbox pushes its OWN clip (based on its
+          // layout bounds, already translated by -scrollTop) which can
+          // extend below the scrollbox viewport — writes escape into
+          // the sibling bottom section's rows.
+          clips.push(intersectClip(clips.at(-1), operation.clip));
+          continue;
+        case 'unclip':
+          clips.pop();
+          continue;
+        case 'blit': {
+          // Bulk-copy cells from source screen region using TypedArray.set().
+          // Tracking damage ensures diff() checks blitted cells for stale content
+          // when a parent blits an area that previously contained child content.
+          const { src, x: regionX, y: regionY, width: regionWidth, height: regionHeight } = operation;
+          // Intersect with active clip — a child's clean-blit passes its full
+          // cached rect, but the parent ScrollBox may have shrunk (pill mount).
+          // Without this, the blit writes past the ScrollBox's new bottom edge
+          // into the pill's row.
+          const clip = clips.at(-1);
+          const startX = Math.max(regionX, clip?.x1 ?? 0);
+          const startY = Math.max(regionY, clip?.y1 ?? 0);
+          const maxY = Math.min(regionY + regionHeight, screenHeight, src.height, clip?.y2 ?? Infinity);
+          const maxX = Math.min(regionX + regionWidth, screenWidth, src.width, clip?.x2 ?? Infinity);
+          if (startX >= maxX || startY >= maxY) continue;
+          // Skip rows covered by an absolute-positioned node's clear.
+          // Absolute nodes overlay normal-flow siblings, so prevScreen in
+          // that region holds the absolute node's stale paint — blitting
+          // it back would ghost. See absoluteClears collection above.
+          if (absoluteClears.length === 0) {
+            blitRegion(screen, src, startX, startY, maxX, maxY);
+            blitCells += (maxY - startY) * (maxX - startX);
+            continue;
+          }
+          // When absolute overlays are present, we must skip blitting cells
+          // covered by their clear regions. prevScreen in those regions holds
+          // the overlay's stale paint, which would ghost if blitted back.
+          for (let row = startY; row < maxY; row++) {
+            let colStart = startX;
+            while (colStart < maxX) {
+              // Find the first clear rect that covers this column in this row
+              const clear = absoluteClears.find(
+                r => row >= r.y && row < r.y + r.height && colStart >= r.x && colStart < r.x + r.width,
+              );
+              if (clear) {
+                // Skip the portion covered by the clear rect
+                colStart = Math.min(maxX, clear.x + clear.width);
+              } else {
+                // Find the next clear rect in this row to determine how far we can blit
+                let nextClearStart = maxX;
+                for (const r of absoluteClears) {
+                  if (row >= r.y && row < r.y + r.height && r.x > colStart && r.x < nextClearStart) {
+                    nextClearStart = r.x;
+                  }
                 }
-                case 'shift': {
-                    shiftRows(screen, operation.top, operation.bottom, operation.n);
-                    continue;
-                }
-                case 'write': {
-                    const { text, softWrap } = operation;
-                    let { x, y } = operation;
-                    let lines = text.split('\n');
-                    let swFrom = 0;
-                    let prevContentEnd = 0;
-                    const clip = clips.at(-1);
-                    if (clip) {
-                        const clipHorizontally = typeof clip?.x1 === 'number' && typeof clip?.x2 === 'number';
-                        const clipVertically = typeof clip?.y1 === 'number' && typeof clip?.y2 === 'number';
-                        // If text is positioned outside of clipping area altogether,
-                        // skip to the next operation to avoid unnecessary calculations
-                        if (clipHorizontally) {
-                            const width = widestLine(text);
-                            if (x + width <= clip.x1 || x >= clip.x2) {
-                                continue;
-                            }
-                        }
-                        if (clipVertically) {
-                            const height = lines.length;
-                            if (y + height <= clip.y1 || y >= clip.y2) {
-                                continue;
-                            }
-                        }
-                        if (clipHorizontally) {
-                            lines = lines.map(line => {
-                                const from = x < clip.x1 ? clip.x1 - x : 0;
-                                const width = stringWidth(line);
-                                const to = x + width > clip.x2 ? clip.x2 - x : width;
-                                let sliced = sliceAnsi(line, from, to);
-                                // Wide chars (CJK, emoji) occupy 2 cells. When `to` lands
-                                // on the first cell of a wide char, sliceAnsi includes the
-                                // entire glyph and the result overflows clip.x2 by one cell,
-                                // writing a SpacerTail into the adjacent sibling. Re-slice
-                                // one cell earlier; wide chars are exactly 2 cells, so a
-                                // single retry always fits.
-                                if (stringWidth(sliced) > to - from) {
-                                    sliced = sliceAnsi(line, from, to - 1);
-                                }
-                                return sliced;
-                            });
-                            if (x < clip.x1) {
-                                x = clip.x1;
-                            }
-                        }
-                        if (clipVertically) {
-                            const from = y < clip.y1 ? clip.y1 - y : 0;
-                            const height = lines.length;
-                            const to = y + height > clip.y2 ? clip.y2 - y : height;
-                            // If the first visible line is a soft-wrap continuation, we
-                            // need the clipped previous line's content end so
-                            // screen.softWrap[lineY] correctly records the join point
-                            // even though that line's cells were never written.
-                            if (softWrap && from > 0 && softWrap[from] === true) {
-                                prevContentEnd = x + stringWidth(lines[from - 1]);
-                            }
-                            lines = lines.slice(from, to);
-                            swFrom = from;
-                            if (y < clip.y1) {
-                                y = clip.y1;
-                            }
-                        }
-                    }
-                    const swBits = screen.softWrap;
-                    let offsetY = 0;
-                    for (const line of lines) {
-                        const lineY = y + offsetY;
-                        // Line can be outside screen if `text` is taller than screen height
-                        if (lineY >= screenHeight) {
-                            break;
-                        }
-                        const contentEnd = writeLineToScreen(screen, line, x, lineY, screenWidth, this.stylePool, this.charCache);
-                        writeCells += contentEnd - x;
-                        // H27: Extend damage to full row width so prev content beyond the
-                        // new text (e.g., shrunken table borders, stale overlay edges) is
-                        // checked by diff and cleared from the terminal scrollback.
-                        if (contentEnd < screenWidth) {
-                            const d = screen.damage;
-                            if (d) {
-                                d.width = Math.max(d.width, screenWidth - d.x);
-                            }
-                            else {
-                                screen.damage = { x, y: lineY, width: screenWidth - x, height: 1 };
-                            }
-                        }
-                        // See Screen.softWrap docstring for the encoding. contentEnd
-                        // from writeLineToScreen is tab-expansion-aware, unlike
-                        // x+stringWidth(line) which treats tabs as width 0.
-                        if (softWrap) {
-                            const isSW = softWrap[swFrom + offsetY] === true;
-                            swBits[lineY] = isSW ? prevContentEnd : 0;
-                            prevContentEnd = contentEnd;
-                        }
-                        offsetY++;
-                    }
-                    continue;
-                }
+                const blitWidth = nextClearStart - colStart;
+                blitRegion(screen, src, colStart, row, colStart + blitWidth, row + 1);
+                blitCells += blitWidth;
+                colStart = nextClearStart;
+              }
             }
+          }
+          continue;
         }
-        // noSelect ops go LAST so they win over blits (which copy noSelect
-        // from prevScreen) and writes (which don't touch noSelect). This way
-        // a <NoSelect> box correctly fences its region even when the parent
-        // blits, and moving a <NoSelect> between frames correctly clears the
-        // old region (resetScreen already zeroed the bitmap).
-        for (const operation of this.operations) {
-            if (operation.type === 'noSelect') {
-                const { x, y, width, height } = operation.region;
-                markNoSelectRegion(screen, x, y, width, height);
+        case 'shift': {
+          shiftRows(screen, operation.top, operation.bottom, operation.n);
+          continue;
+        }
+        case 'write': {
+          const { text, softWrap } = operation;
+          let { x, y } = operation;
+          let lines = text.split('\n');
+          let swFrom = 0;
+          let prevContentEnd = 0;
+          const clip = clips.at(-1);
+          if (clip) {
+            const clipHorizontally = typeof clip?.x1 === 'number' && typeof clip?.x2 === 'number';
+            const clipVertically = typeof clip?.y1 === 'number' && typeof clip?.y2 === 'number';
+            // If text is positioned outside of clipping area altogether,
+            // skip to the next operation to avoid unnecessary calculations
+            if (clipHorizontally) {
+              const width = widestLine(text);
+              if (x + width <= clip.x1 || x >= clip.x2) {
+                continue;
+              }
             }
+            if (clipVertically) {
+              const height = lines.length;
+              if (y + height <= clip.y1 || y >= clip.y2) {
+                continue;
+              }
+            }
+            if (clipHorizontally) {
+              lines = lines.map(line => {
+                const from = x < clip.x1 ? clip.x1 - x : 0;
+                const width = stringWidth(line);
+                const to = x + width > clip.x2 ? clip.x2 - x : width;
+                let sliced = sliceAnsi(line, from, to);
+                // Wide chars (CJK, emoji) occupy 2 cells. When `to` lands
+                // on the first cell of a wide char, sliceAnsi includes the
+                // entire glyph and the result overflows clip.x2 by one cell,
+                // writing a SpacerTail into the adjacent sibling. Re-slice
+                // one cell earlier; wide chars are exactly 2 cells, so a
+                // single retry always fits.
+                if (stringWidth(sliced) > to - from) {
+                  sliced = sliceAnsi(line, from, to - 1);
+                }
+                return sliced;
+              });
+              if (x < clip.x1) {
+                x = clip.x1;
+              }
+            }
+            if (clipVertically) {
+              const from = y < clip.y1 ? clip.y1 - y : 0;
+              const height = lines.length;
+              const to = y + height > clip.y2 ? clip.y2 - y : height;
+              // If the first visible line is a soft-wrap continuation, we
+              // need the clipped previous line's content end so
+              // screen.softWrap[lineY] correctly records the join point
+              // even though that line's cells were never written.
+              if (softWrap && from > 0 && softWrap[from] === true) {
+                prevContentEnd = x + stringWidth(lines[from - 1]);
+              }
+              lines = lines.slice(from, to);
+              swFrom = from;
+              if (y < clip.y1) {
+                y = clip.y1;
+              }
+            }
+          }
+          const swBits = screen.softWrap;
+          let offsetY = 0;
+          for (const line of lines) {
+            const lineY = y + offsetY;
+            // Line can be outside screen if `text` is taller than screen height
+            if (lineY >= screenHeight) {
+              break;
+            }
+            const contentEnd = writeLineToScreen(screen, line, x, lineY, screenWidth, this.stylePool, this.charCache);
+            writeCells += contentEnd - x;
+            // H27: Extend damage to full row width so prev content beyond the
+            // new text (e.g., shrunken table borders, stale overlay edges) is
+            // checked by diff and cleared from the terminal scrollback.
+            if (contentEnd < screenWidth) {
+              const d = screen.damage;
+              if (d) {
+                d.width = Math.max(d.width, screenWidth - d.x);
+              } else {
+                screen.damage = { x, y: lineY, width: screenWidth - x, height: 1 };
+              }
+            }
+            // See Screen.softWrap docstring for the encoding. contentEnd
+            // from writeLineToScreen is tab-expansion-aware, unlike
+            // x+stringWidth(line) which treats tabs as width 0.
+            if (softWrap) {
+              const isSW = softWrap[swFrom + offsetY] === true;
+              swBits[lineY] = isSW ? prevContentEnd : 0;
+              prevContentEnd = contentEnd;
+            }
+            offsetY++;
+          }
+          continue;
         }
-        // Log blit/write ratio for debugging - high write count suggests blitting isn't working
-        const totalCells = blitCells + writeCells;
-        if (totalCells > 1000 && writeCells > blitCells) {
-            logForDebugging(`High write ratio: blit=${blitCells}, write=${writeCells} (${((writeCells / totalCells) * 100).toFixed(1)}% writes), screen=${screenHeight}x${screenWidth}`);
-        }
-        return screen;
+      }
     }
+    // noSelect ops go LAST so they win over blits (which copy noSelect
+    // from prevScreen) and writes (which don't touch noSelect). This way
+    // a <NoSelect> box correctly fences its region even when the parent
+    // blits, and moving a <NoSelect> between frames correctly clears the
+    // old region (resetScreen already zeroed the bitmap).
+    for (const operation of this.operations) {
+      if (operation.type === 'noSelect') {
+        const { x, y, width, height } = operation.region;
+        markNoSelectRegion(screen, x, y, width, height);
+      }
+    }
+    // Log blit/write ratio for debugging - high write count suggests blitting isn't working
+    const totalCells = blitCells + writeCells;
+    if (totalCells > 1000 && writeCells > blitCells) {
+      logForDebugging(
+        `High write ratio: blit=${blitCells}, write=${writeCells} (${((writeCells / totalCells) * 100).toFixed(1)}% writes), screen=${screenHeight}x${screenWidth}`,
+      );
+    }
+    return screen;
+  }
 }
 function stylesEqual(a, b) {
-    if (a === b)
-        return true; // Reference equality fast path
-    const len = a.length;
-    if (len !== b.length)
-        return false;
-    if (len === 0)
-        return true; // Both empty
-    for (let i = 0; i < len; i++) {
-        if (a[i].code !== b[i].code)
-            return false;
-    }
-    return true;
+  if (a === b) return true; // Reference equality fast path
+  const len = a.length;
+  if (len !== b.length) return false;
+  if (len === 0) return true; // Both empty
+  for (let i = 0; i < len; i++) {
+    if (a[i].code !== b[i].code) return false;
+  }
+  return true;
 }
 /**
  * Convert a string with ANSI codes into styled characters with proper grapheme
@@ -381,82 +383,82 @@ function stylesEqual(a, b) {
  * 80-char line with 3 style runs does 3 intern calls instead of 80.
  */
 function styledCharsWithGraphemeClustering(chars, stylePool) {
-    const charCount = chars.length;
-    if (charCount === 0)
-        return [];
-    const result = [];
-    const bufferChars = [];
-    let bufferStyles = chars[0].styles;
-    for (let i = 0; i < charCount; i++) {
-        const char = chars[i];
-        const styles = char.styles;
-        // Different styles means we need to flush and start new buffer
-        if (bufferChars.length > 0 && !stylesEqual(styles, bufferStyles)) {
-            flushBuffer(bufferChars.join(''), bufferStyles, stylePool, result);
-            bufferChars.length = 0;
-        }
-        bufferChars.push(char.value);
-        bufferStyles = styles;
+  const charCount = chars.length;
+  if (charCount === 0) return [];
+  const result = [];
+  const bufferChars = [];
+  let bufferStyles = chars[0].styles;
+  for (let i = 0; i < charCount; i++) {
+    const char = chars[i];
+    const styles = char.styles;
+    // Different styles means we need to flush and start new buffer
+    if (bufferChars.length > 0 && !stylesEqual(styles, bufferStyles)) {
+      flushBuffer(bufferChars.join(''), bufferStyles, stylePool, result);
+      bufferChars.length = 0;
     }
-    // Final flush
-    if (bufferChars.length > 0) {
-        flushBuffer(bufferChars.join(''), bufferStyles, stylePool, result);
-    }
-    return result;
+    bufferChars.push(char.value);
+    bufferStyles = styles;
+  }
+  // Final flush
+  if (bufferChars.length > 0) {
+    flushBuffer(bufferChars.join(''), bufferStyles, stylePool, result);
+  }
+  return result;
 }
 function flushBuffer(buffer, styles, stylePool, out) {
-    // Compute styleId + hyperlink ONCE for the whole style run.
-    // Every grapheme in this buffer shares the same styles.
+  // Compute styleId + hyperlink ONCE for the whole style run.
+  // Every grapheme in this buffer shares the same styles.
+  //
+  // Extract and track hyperlinks separately, filter from styles.
+  // Always check for OSC 8 codes to filter, not just when a URL is
+  // extracted. The tokenizer treats OSC 8 close codes (empty URL) as
+  // active styles, so they must be filtered even when no hyperlink
+  // URL is present.
+  const hyperlink = extractHyperlinkFromStyles(styles) ?? undefined;
+  const hasOsc8Styles =
+    hyperlink !== undefined || styles.some(s => s.code.length >= OSC8_PREFIX.length && s.code.startsWith(OSC8_PREFIX));
+  const filteredStyles = hasOsc8Styles ? filterOutHyperlinkStyles(styles) : styles;
+  const styleId = stylePool.intern(filteredStyles);
+  for (const { segment: grapheme } of getGraphemeSegmenter().segment(buffer)) {
+    const width = stringWidth(grapheme);
+    // Intl.Segmenter can group multiple narrow characters into one grapheme
+    // when the second character is a special precomposed form like Thai SARA AM
+    // (U+0E33, which canonically decomposes to U+0E4D + U+0E32). This groups
+    // "กำ" (ก+ำ) into a single grapheme with width 2, which the render loop
+    // then treats as a CJK-wide character — writing a SpacerTail at offset+1
+    // silently drops the second visual column.
     //
-    // Extract and track hyperlinks separately, filter from styles.
-    // Always check for OSC 8 codes to filter, not just when a URL is
-    // extracted. The tokenizer treats OSC 8 close codes (empty URL) as
-    // active styles, so they must be filtered even when no hyperlink
-    // URL is present.
-    const hyperlink = extractHyperlinkFromStyles(styles) ?? undefined;
-    const hasOsc8Styles = hyperlink !== undefined || styles.some(s => s.code.length >= OSC8_PREFIX.length && s.code.startsWith(OSC8_PREFIX));
-    const filteredStyles = hasOsc8Styles ? filterOutHyperlinkStyles(styles) : styles;
-    const styleId = stylePool.intern(filteredStyles);
-    for (const { segment: grapheme } of getGraphemeSegmenter().segment(buffer)) {
-        const width = stringWidth(grapheme);
-        // Intl.Segmenter can group multiple narrow characters into one grapheme
-        // when the second character is a special precomposed form like Thai SARA AM
-        // (U+0E33, which canonically decomposes to U+0E4D + U+0E32). This groups
-        // "กำ" (ก+ำ) into a single grapheme with width 2, which the render loop
-        // then treats as a CJK-wide character — writing a SpacerTail at offset+1
-        // silently drops the second visual column.
-        //
-        // Check whether any codepoint in the grapheme is genuinely wide (EA width
-        // >= 2, e.g. CJK ideographs) or the grapheme is an emoji sequence (flag
-        // pairs, ZWJ composites). If neither, it's a segmenter false positive —
-        // emit each char as its own cell.
-        if (width >= 2) {
-            const chars = [...grapheme];
-            const hasTrueWide = chars.some(ch => {
-                const cp = ch.codePointAt(0);
-                return cp !== undefined && eastAsianWidth(cp, { ambiguousAsWide: false }) >= 2;
-            });
-            EMOJI_REGEX.lastIndex = 0;
-            const isEmoji = EMOJI_REGEX.test(grapheme);
-            if (!hasTrueWide && !isEmoji) {
-                for (const char of chars) {
-                    out.push({
-                        value: char,
-                        width: stringWidth(char),
-                        styleId,
-                        hyperlink,
-                    });
-                }
-                continue;
-            }
-        }
-        out.push({
-            value: grapheme,
-            width,
+    // Check whether any codepoint in the grapheme is genuinely wide (EA width
+    // >= 2, e.g. CJK ideographs) or the grapheme is an emoji sequence (flag
+    // pairs, ZWJ composites). If neither, it's a segmenter false positive —
+    // emit each char as its own cell.
+    if (width >= 2) {
+      const chars = [...grapheme];
+      const hasTrueWide = chars.some(ch => {
+        const cp = ch.codePointAt(0);
+        return cp !== undefined && eastAsianWidth(cp, { ambiguousAsWide: false }) >= 2;
+      });
+      EMOJI_REGEX.lastIndex = 0;
+      const isEmoji = EMOJI_REGEX.test(grapheme);
+      if (!hasTrueWide && !isEmoji) {
+        for (const char of chars) {
+          out.push({
+            value: char,
+            width: stringWidth(char),
             styleId,
             hyperlink,
-        });
+          });
+        }
+        continue;
+      }
     }
+    out.push({
+      value: grapheme,
+      width,
+      styleId,
+      hyperlink,
+    });
+  }
 }
 /**
  * Write a single line's characters into the screen buffer.
@@ -470,152 +472,149 @@ function flushBuffer(buffer, styles, stylePool, out) {
  * line via stringWidth(). Caller computes the debug cell-count as end-x.
  */
 function writeLineToScreen(screen, line, x, y, screenWidth, stylePool, charCache) {
-    let characters = charCache.get(line);
-    if (!characters) {
-        characters = reorderBidi(styledCharsWithGraphemeClustering(styledCharsFromTokens(tokenize(line)), stylePool));
-        charCache.set(line, characters);
+  let characters = charCache.get(line);
+  if (!characters) {
+    characters = reorderBidi(styledCharsWithGraphemeClustering(styledCharsFromTokens(tokenize(line)), stylePool));
+    charCache.set(line, characters);
+  }
+  let offsetX = x;
+  for (let charIdx = 0; charIdx < characters.length; charIdx++) {
+    const character = characters[charIdx];
+    const codePoint = character.value.codePointAt(0);
+    // Handle C0 control characters (0x00-0x1F) that cause cursor movement
+    // mismatches. stringWidth treats these as width 0, but terminals may
+    // move the cursor differently.
+    if (codePoint !== undefined && codePoint <= 0x1f) {
+      // Tab (0x09): expand to spaces to reach next tab stop
+      if (codePoint === 0x09) {
+        const tabWidth = 8;
+        const spacesToNextStop = tabWidth - (offsetX % tabWidth);
+        for (let i = 0; i < spacesToNextStop && offsetX < screenWidth; i++) {
+          setCellAt(screen, offsetX, y, {
+            char: ' ',
+            styleId: stylePool.none,
+            width: CellWidth.Narrow,
+            hyperlink: undefined,
+          });
+          offsetX++;
+        }
+      }
+      // ESC (0x1B): skip incomplete escape sequences that ansi-tokenize
+      // didn't recognize. ansi-tokenize only parses SGR sequences (ESC[...m)
+      // and OSC 8 hyperlinks (ESC]8;;url BEL). Other sequences like cursor
+      // movement, screen clearing, or terminal title become individual char
+      // tokens that we need to skip here.
+      else if (codePoint === 0x1b) {
+        const nextChar = characters[charIdx + 1]?.value;
+        const nextCode = nextChar?.codePointAt(0);
+        if (nextChar === '(' || nextChar === ')' || nextChar === '*' || nextChar === '+') {
+          // Charset selection: ESC ( X, ESC ) X, etc.
+          // Skip the intermediate char and the charset designator
+          charIdx += 2;
+        } else if (nextChar === '[') {
+          // CSI sequence: ESC [ ... final-byte
+          // Final byte is in range 0x40-0x7E (@, A-Z, [\]^_`, a-z, {|}~)
+          // Examples: ESC[2J (clear), ESC[?25l (cursor hide), ESC[H (home)
+          charIdx++; // skip the [
+          while (charIdx < characters.length - 1) {
+            charIdx++;
+            const c = characters[charIdx]?.value.codePointAt(0);
+            // Final byte terminates the sequence
+            if (c !== undefined && c >= 0x40 && c <= 0x7e) {
+              break;
+            }
+          }
+        } else if (nextChar === ']' || nextChar === 'P' || nextChar === '_' || nextChar === '^' || nextChar === 'X') {
+          // String-based sequences terminated by BEL (0x07) or ST (ESC \):
+          // - OSC: ESC ] ... (Operating System Command)
+          // - DCS: ESC P ... (Device Control String)
+          // - APC: ESC _ ... (Application Program Command)
+          // - PM:  ESC ^ ... (Privacy Message)
+          // - SOS: ESC X ... (Start of String)
+          charIdx++; // skip the introducer char
+          while (charIdx < characters.length - 1) {
+            charIdx++;
+            const c = characters[charIdx]?.value;
+            // BEL (0x07) terminates the sequence
+            if (c === '\x07') {
+              break;
+            }
+            // ST (String Terminator) is ESC \
+            // When we see ESC, check if next char is backslash
+            if (c === '\x1b') {
+              const nextC = characters[charIdx + 1]?.value;
+              if (nextC === '\\') {
+                charIdx++; // skip the backslash too
+                break;
+              }
+            }
+          }
+        } else if (nextCode !== undefined && nextCode >= 0x30 && nextCode <= 0x7e) {
+          // Single-character escape sequences: ESC followed by 0x30-0x7E
+          // (excluding the multi-char introducers already handled above)
+          // - Fp range (0x30-0x3F): ESC 7 (save cursor), ESC 8 (restore)
+          // - Fe range (0x40-0x5F): ESC D (index), ESC M (reverse index)
+          // - Fs range (0x60-0x7E): ESC c (reset)
+          charIdx++; // skip the command char
+        }
+      }
+      // Carriage return (0x0D): would move cursor to column 0, skip it
+      // Backspace (0x08): would move cursor left, skip it
+      // Bell (0x07), vertical tab (0x0B), form feed (0x0C): skip
+      // All other control chars (0x00-0x06, 0x0E-0x1F): skip
+      // Note: newline (0x0A) is already handled by line splitting
+      continue;
     }
-    let offsetX = x;
-    for (let charIdx = 0; charIdx < characters.length; charIdx++) {
-        const character = characters[charIdx];
-        const codePoint = character.value.codePointAt(0);
-        // Handle C0 control characters (0x00-0x1F) that cause cursor movement
-        // mismatches. stringWidth treats these as width 0, but terminals may
-        // move the cursor differently.
-        if (codePoint !== undefined && codePoint <= 0x1f) {
-            // Tab (0x09): expand to spaces to reach next tab stop
-            if (codePoint === 0x09) {
-                const tabWidth = 8;
-                const spacesToNextStop = tabWidth - (offsetX % tabWidth);
-                for (let i = 0; i < spacesToNextStop && offsetX < screenWidth; i++) {
-                    setCellAt(screen, offsetX, y, {
-                        char: ' ',
-                        styleId: stylePool.none,
-                        width: CellWidth.Narrow,
-                        hyperlink: undefined,
-                    });
-                    offsetX++;
-                }
-            }
-            // ESC (0x1B): skip incomplete escape sequences that ansi-tokenize
-            // didn't recognize. ansi-tokenize only parses SGR sequences (ESC[...m)
-            // and OSC 8 hyperlinks (ESC]8;;url BEL). Other sequences like cursor
-            // movement, screen clearing, or terminal title become individual char
-            // tokens that we need to skip here.
-            else if (codePoint === 0x1b) {
-                const nextChar = characters[charIdx + 1]?.value;
-                const nextCode = nextChar?.codePointAt(0);
-                if (nextChar === '(' || nextChar === ')' || nextChar === '*' || nextChar === '+') {
-                    // Charset selection: ESC ( X, ESC ) X, etc.
-                    // Skip the intermediate char and the charset designator
-                    charIdx += 2;
-                }
-                else if (nextChar === '[') {
-                    // CSI sequence: ESC [ ... final-byte
-                    // Final byte is in range 0x40-0x7E (@, A-Z, [\]^_`, a-z, {|}~)
-                    // Examples: ESC[2J (clear), ESC[?25l (cursor hide), ESC[H (home)
-                    charIdx++; // skip the [
-                    while (charIdx < characters.length - 1) {
-                        charIdx++;
-                        const c = characters[charIdx]?.value.codePointAt(0);
-                        // Final byte terminates the sequence
-                        if (c !== undefined && c >= 0x40 && c <= 0x7e) {
-                            break;
-                        }
-                    }
-                }
-                else if (nextChar === ']' || nextChar === 'P' || nextChar === '_' || nextChar === '^' || nextChar === 'X') {
-                    // String-based sequences terminated by BEL (0x07) or ST (ESC \):
-                    // - OSC: ESC ] ... (Operating System Command)
-                    // - DCS: ESC P ... (Device Control String)
-                    // - APC: ESC _ ... (Application Program Command)
-                    // - PM:  ESC ^ ... (Privacy Message)
-                    // - SOS: ESC X ... (Start of String)
-                    charIdx++; // skip the introducer char
-                    while (charIdx < characters.length - 1) {
-                        charIdx++;
-                        const c = characters[charIdx]?.value;
-                        // BEL (0x07) terminates the sequence
-                        if (c === '\x07') {
-                            break;
-                        }
-                        // ST (String Terminator) is ESC \
-                        // When we see ESC, check if next char is backslash
-                        if (c === '\x1b') {
-                            const nextC = characters[charIdx + 1]?.value;
-                            if (nextC === '\\') {
-                                charIdx++; // skip the backslash too
-                                break;
-                            }
-                        }
-                    }
-                }
-                else if (nextCode !== undefined && nextCode >= 0x30 && nextCode <= 0x7e) {
-                    // Single-character escape sequences: ESC followed by 0x30-0x7E
-                    // (excluding the multi-char introducers already handled above)
-                    // - Fp range (0x30-0x3F): ESC 7 (save cursor), ESC 8 (restore)
-                    // - Fe range (0x40-0x5F): ESC D (index), ESC M (reverse index)
-                    // - Fs range (0x60-0x7E): ESC c (reset)
-                    charIdx++; // skip the command char
-                }
-            }
-            // Carriage return (0x0D): would move cursor to column 0, skip it
-            // Backspace (0x08): would move cursor left, skip it
-            // Bell (0x07), vertical tab (0x0B), form feed (0x0C): skip
-            // All other control chars (0x00-0x06, 0x0E-0x1F): skip
-            // Note: newline (0x0A) is already handled by line splitting
-            continue;
-        }
-        const charWidth = character.width;
-        // Zero-width combining marks (Thai vowels, Indic matras, diacritics,
-        // ZWNJ, ZWS, etc.) don't advance the cursor, but they MUST be written
-        // to the terminal. Appending them to the previous cell lets the
-        // terminal render the combined glyph (e.g., ก +  ิ = ก ิ).
-        // Skipping them entirely (the old behavior) silently dropped all Thai
-        // above/below vowels, tone marks, and similar combining characters.
-        if (charWidth === 0) {
-            // Find the nearest previous cell that isn't a spacer, then append
-            // the combining mark to its character value so the terminal sees
-            // the full cluster (base + mark).
-            for (let searchX = offsetX - 1; searchX >= 0; searchX--) {
-                const prev = cellAt(screen, searchX, y);
-                if (prev && prev.width !== CellWidth.SpacerHead && prev.width !== CellWidth.SpacerTail) {
-                    setCellAt(screen, searchX, y, {
-                        char: prev.char + character.value,
-                        styleId: character.styleId,
-                        width: prev.width,
-                        hyperlink: character.hyperlink ?? prev.hyperlink,
-                    });
-                    break;
-                }
-            }
-            // Do not advance offsetX — combining mark shares the base cell.
-            continue;
-        }
-        const isWideCharacter = charWidth >= 2;
-        // Wide char at last column can't fit — terminal would wrap it to
-        // the next line, desyncing our cursor model. Place a SpacerHead
-        // to mark the blank column, matching terminal behavior.
-        if (isWideCharacter && offsetX + 2 > screenWidth) {
-            setCellAt(screen, offsetX, y, {
-                char: ' ',
-                styleId: stylePool.none,
-                width: CellWidth.SpacerHead,
-                hyperlink: undefined,
-            });
-            offsetX++;
-            continue;
-        }
-        // styleId + hyperlink were precomputed during clustering (once per
-        // style run, cached via charCache). Hot loop is now just property
-        // reads — no intern, no extract, no filter per frame.
-        setCellAt(screen, offsetX, y, {
-            char: character.value,
+    const charWidth = character.width;
+    // Zero-width combining marks (Thai vowels, Indic matras, diacritics,
+    // ZWNJ, ZWS, etc.) don't advance the cursor, but they MUST be written
+    // to the terminal. Appending them to the previous cell lets the
+    // terminal render the combined glyph (e.g., ก +  ิ = ก ิ).
+    // Skipping them entirely (the old behavior) silently dropped all Thai
+    // above/below vowels, tone marks, and similar combining characters.
+    if (charWidth === 0) {
+      // Find the nearest previous cell that isn't a spacer, then append
+      // the combining mark to its character value so the terminal sees
+      // the full cluster (base + mark).
+      for (let searchX = offsetX - 1; searchX >= 0; searchX--) {
+        const prev = cellAt(screen, searchX, y);
+        if (prev && prev.width !== CellWidth.SpacerHead && prev.width !== CellWidth.SpacerTail) {
+          setCellAt(screen, searchX, y, {
+            char: prev.char + character.value,
             styleId: character.styleId,
-            width: isWideCharacter ? CellWidth.Wide : CellWidth.Narrow,
-            hyperlink: character.hyperlink,
-        });
-        offsetX += isWideCharacter ? 2 : 1;
+            width: prev.width,
+            hyperlink: character.hyperlink ?? prev.hyperlink,
+          });
+          break;
+        }
+      }
+      // Do not advance offsetX — combining mark shares the base cell.
+      continue;
     }
-    return offsetX;
+    const isWideCharacter = charWidth >= 2;
+    // Wide char at last column can't fit — terminal would wrap it to
+    // the next line, desyncing our cursor model. Place a SpacerHead
+    // to mark the blank column, matching terminal behavior.
+    if (isWideCharacter && offsetX + 2 > screenWidth) {
+      setCellAt(screen, offsetX, y, {
+        char: ' ',
+        styleId: stylePool.none,
+        width: CellWidth.SpacerHead,
+        hyperlink: undefined,
+      });
+      offsetX++;
+      continue;
+    }
+    // styleId + hyperlink were precomputed during clustering (once per
+    // style run, cached via charCache). Hot loop is now just property
+    // reads — no intern, no extract, no filter per frame.
+    setCellAt(screen, offsetX, y, {
+      char: character.value,
+      styleId: character.styleId,
+      width: isWideCharacter ? CellWidth.Wide : CellWidth.Narrow,
+      hyperlink: character.hyperlink,
+    });
+    offsetX += isWideCharacter ? 2 : 1;
+  }
+  return offsetX;
 }

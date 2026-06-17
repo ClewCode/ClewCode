@@ -539,8 +539,6 @@ class Project {
   private FLUSH_INTERVAL_MS = 100;
   private readonly MAX_CHUNK_BYTES = 100 * 1024 * 1024;
 
-  constructor() {}
-
   /** @internal Reset flush/queue state for testing. */
   _resetFlushState(): void {
     this.pendingWriteCount = 0;
@@ -625,7 +623,7 @@ class Project {
       const resolvers: Array<() => void> = [];
 
       for (const { entry, resolve } of batch) {
-        const line = jsonStringify(entry) + '\n';
+        const line = `${jsonStringify(entry)}\n`;
 
         if (content.length + line.length >= this.MAX_CHUNK_BYTES) {
           // Flush chunk and resolve its entries before starting a new one
@@ -1039,7 +1037,7 @@ class Project {
         const text = getFirstMeaningfulUserMessageTextContent(messages);
         if (text) {
           const flat = text.replace(/\n/g, ' ').trim();
-          this.currentSessionLastPrompt = flat.length > 200 ? flat.slice(0, 200).trim() + '…' : flat;
+          this.currentSessionLastPrompt = flat.length > 200 ? `${flat.slice(0, 200).trim()}…` : flat;
         }
       }
     });
@@ -1522,7 +1520,7 @@ export async function hydrateRemoteSession(sessionId: string, ingressUrl: string
 
     // Replace local logs with remote logs. writeFile truncates, so no
     // unlink is needed; an empty remoteLogs array produces an empty file.
-    const content = remoteLogs.map(e => jsonStringify(e) + '\n').join('');
+    const content = remoteLogs.map(e => `${jsonStringify(e)}\n`).join('');
     await writeFile(sessionFile, content, { encoding: 'utf8', mode: 0o600 });
 
     logForDebugging(`Hydrated ${remoteLogs.length} entries from remote`);
@@ -1572,7 +1570,7 @@ export async function hydrateFromCCRv2InternalEvents(sessionId: string): Promise
 
     // Write foreground transcript
     const sessionFile = getTranscriptPathForSession(sessionId);
-    const fgContent = events.map(e => jsonStringify(e.payload) + '\n').join('');
+    const fgContent = events.map(e => `${jsonStringify(e.payload)}\n`).join('');
     await writeFile(sessionFile, fgContent, { encoding: 'utf8', mode: 0o600 });
 
     logForDebugging(`Hydrated ${events.length} foreground entries from CCR v2 internal events`);
@@ -1601,7 +1599,7 @@ export async function hydrateFromCCRv2InternalEvents(sessionId: string): Promise
         for (const [agentId, entries] of byAgent) {
           const agentFile = getAgentTranscriptPath(asAgentId(agentId));
           await mkdir(dirname(agentFile), { recursive: true, mode: 0o700 });
-          const agentContent = entries.map(p => jsonStringify(p) + '\n').join('');
+          const agentContent = entries.map(p => `${jsonStringify(p)}\n`).join('');
           await writeFile(agentFile, agentContent, {
             encoding: 'utf8',
             mode: 0o600,
@@ -1637,7 +1635,7 @@ function extractFirstPrompt(transcript: TranscriptMessage[]): string {
     // Store a reasonably long version for display-time truncation
     // The actual truncation will be applied at display time based on terminal width
     if (result.length > 200) {
-      result = result.slice(0, 200).trim() + '…';
+      result = `${result.slice(0, 200).trim()}…`;
     }
 
     return result;
@@ -2425,7 +2423,7 @@ export async function fetchLogs(limit?: number): Promise<LogOption[]> {
 /* eslint-disable custom-rules/no-sync-fs -- sync callers (exit cleanup, materialize) */
 function appendEntryToFile(fullPath: string, entry: Record<string, unknown>): void {
   const fs = getFsImplementation();
-  const line = jsonStringify(entry) + '\n';
+  const line = `${jsonStringify(entry)}\n`;
   try {
     fs.appendFileSync(fullPath, line, { mode: 0o600 });
   } catch {
@@ -3943,7 +3941,7 @@ async function getStatOnlyLogsForWorktrees(worktreePaths: string[], limit?: numb
     if (seenDirs.has(dirName)) continue;
 
     for (const { path: wtPath, prefix } of indexed) {
-      if (dirName === prefix || dirName.startsWith(prefix + '-')) {
+      if (dirName === prefix || dirName.startsWith(`${prefix}-`)) {
         seenDirs.add(dirName);
         allLogs.push(...(await getSessionFilesLite(join(projectsDir, dirent.name), undefined, wtPath)));
         break;
@@ -4595,7 +4593,7 @@ function extractFirstPromptFromChunk(chunk: string): string {
           continue;
         }
         if (result.length > 200) {
-          result = result.slice(0, 200).trim() + '…';
+          result = `${result.slice(0, 200).trim()}…`;
         }
         return result;
       }

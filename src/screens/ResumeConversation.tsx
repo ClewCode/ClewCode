@@ -53,7 +53,7 @@ import { REPL } from './REPL.js';
 
 function parsePrIdentifier(value: string): number | null {
   const directNumber = parseInt(value, 10);
-  if (!isNaN(directNumber) && directNumber > 0) {
+  if (!Number.isNaN(directNumber) && directNumber > 0) {
     return directNumber;
   }
   const urlMatch = value.match(/github\.com\/[^/]+\/[^/]+\/pull\/(\d+)/);

@@ -1,16 +1,15 @@
 import { parseGoalBounds } from '../../services/goal/goalEvaluator.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
+import { setExecutionMode } from '../../utils/executionMode.js';
 import {
   type GoalState,
   getFullGoalState,
   getLastAchieved,
   linkWorkflowToActiveGoal,
   setFullGoalState,
-  blockGoal,
 } from '../../utils/sessionGoalState.js';
 import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
-import { setExecutionMode } from '../../utils/executionMode.js';
 
 const GOAL_TEMPLATES: Record<string, string> = {
   'fix-build': 'the project builds without errors or stop after 30 turns',
@@ -21,7 +20,10 @@ const GOAL_TEMPLATES: Record<string, string> = {
 };
 
 function parseGoalChain(input: string): { first: string; chain: string[] } | null {
-  const parts = input.split(/\s+then\s+/i).map(p => p.trim()).filter(Boolean);
+  const parts = input
+    .split(/\s+then\s+/i)
+    .map(p => p.trim())
+    .filter(Boolean);
   if (parts.length < 2) return null;
   return { first: parts[0]!, chain: parts.slice(1) };
 }
@@ -53,7 +55,7 @@ function parseGoalChain(input: string): { first: string; chain: string[] } | nul
  */
 
 const CLEAR_VERBS = new Set(['clear', 'stop', 'off', 'reset', 'none', 'cancel']);
-const UNBLOCK_VERBS = new Set(['unblock', 'resume', 'continue']);
+const _UNBLOCK_VERBS = new Set(['unblock', 'resume', 'continue']);
 
 const WARN_THRESHOLD = 0.8;
 

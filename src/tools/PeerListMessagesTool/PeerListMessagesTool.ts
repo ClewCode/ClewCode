@@ -170,7 +170,7 @@ export const PeerListMessagesTool = buildTool({
         const remaining = deadline - Date.now();
         const waitMs = Math.min(cycleTimeoutMs, remaining);
 
-        const raw = input.from
+        const _raw = input.from
           ? await store.waitForMessageFrom(after, waitMs, input.from)
           : await store.waitForNewMessage(after, waitMs);
 
@@ -231,7 +231,7 @@ export const PeerListMessagesTool = buildTool({
     try {
       let peer = store.findPeer(query);
       const portNum = parseInt(query, 10);
-      if (!peer && !isNaN(portNum)) peer = store.getPeerByPort(portNum);
+      if (!peer && !Number.isNaN(portNum)) peer = store.getPeerByPort(portNum);
       if (!peer) return false;
 
       const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-info`;

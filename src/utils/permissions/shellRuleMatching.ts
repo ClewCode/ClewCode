@@ -132,13 +132,13 @@ export function matchWildcardPattern(pattern: string, command: string, caseInsen
   // wildcard optional would incorrectly match 'npm run' (no trailing arg).
   const unescapedStarCount = (processed.match(/\*/g) || []).length;
   if (regexPattern.endsWith(' .*') && unescapedStarCount === 1) {
-    regexPattern = regexPattern.slice(0, -3) + '( .*)?';
+    regexPattern = `${regexPattern.slice(0, -3)}( .*)?`;
   }
 
   // Create regex that matches the entire string.
   // The 's' (dotAll) flag makes '.' match newlines, so wildcards match
   // commands containing embedded newlines (e.g. heredoc content after splitCommand_DEPRECATED).
-  const flags = 's' + (caseInsensitive ? 'i' : '');
+  const flags = `s${caseInsensitive ? 'i' : ''}`;
   const regex = new RegExp(`^${regexPattern}$`, flags);
 
   return regex.test(command);

@@ -915,9 +915,9 @@ function generateTokenChart(
     format: (x: number) => {
       let label: string;
       if (x >= 1_000_000) {
-        label = (x / 1_000_000).toFixed(1) + 'M';
+        label = `${(x / 1_000_000).toFixed(1)}M`;
       } else if (x >= 1_000) {
-        label = (x / 1_000).toFixed(0) + 'k';
+        label = `${(x / 1_000).toFixed(0)}k`;
       } else {
         label = x.toFixed(0);
       }
@@ -1026,14 +1026,14 @@ function renderOverviewToAnsi(stats: ClaudeCodeStats): string[] {
 
   const row = (l1: string, v1: string, l2: string, v2: string): string => {
     // Build column 1: label + value
-    const label1 = (l1 + ':').padEnd(COL1_LABEL_WIDTH);
+    const label1 = `${l1}:`.padEnd(COL1_LABEL_WIDTH);
     const col1PlainLen = label1.length + v1.length;
 
     // Calculate spaces needed between col1 value and col2 label
     const spaceBetween = Math.max(2, COL2_START - col1PlainLen);
 
     // Build column 2: label + value
-    const label2 = (l2 + ':').padEnd(COL2_LABEL_WIDTH);
+    const label2 = `${l2}:`.padEnd(COL2_LABEL_WIDTH);
 
     // Assemble with colors applied to values only
     return label1 + h(v1) + ' '.repeat(spaceBetween) + label2 + h(v2);
@@ -1188,7 +1188,7 @@ function renderModelsToAnsi(stats: ClaudeCodeStats): string[] {
         ? ((providerTokens / (totalProviderTokens || totalTokens)) * 100).toFixed(1)
         : '0.0';
     lines.push(
-      `${figures.bullet} ${chalk.bold(formatProviderLabel(group.provider))} ${chalk.gray(`(${providerPercentage}%)`)} ${chalk.dim(formatNumber(providerTokens) + ' tokens')}`,
+      `${figures.bullet} ${chalk.bold(formatProviderLabel(group.provider))} ${chalk.gray(`(${providerPercentage}%)`)} ${chalk.dim(`${formatNumber(providerTokens)} tokens`)}`,
     );
     for (const [model, usage] of group.models) {
       const modelTokens = usage.inputTokens + usage.outputTokens;

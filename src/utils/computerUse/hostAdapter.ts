@@ -3,7 +3,7 @@
  * Wraps the PlatformAdapter for use by the MCP server and tool dispatcher.
  */
 
-import type { DisplayGeometry, PlatformAdapter, ScreenshotResult } from './platform/index.js';
+import type { PlatformAdapter } from './platform/index.js';
 
 // ============================================================================
 // Types (replacing @ant/computer-use-mcp/types)
@@ -127,7 +127,7 @@ export function getComputerUseHostAdapter(): ComputerUseHostAdapter {
 
 export function buildComputerUseTools(coordinateMode: CoordinateMode): CuToolDefinition[] {
   const coordNote = coordinateMode === 'normalized' ? ' (0-1 range)' : ' (pixels)';
-  const coordDesc =
+  const _coordDesc =
     coordinateMode === 'normalized'
       ? 'Use 0-1 range where (0,0) is top-left and (1,1) is bottom-right of the display.'
       : 'Use pixel coordinates where (0,0) is top-left of the display.';

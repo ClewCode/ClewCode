@@ -16,7 +16,12 @@ const inputSchema = lazySchema(() =>
   z.object({
     goal: z.string().describe('The goal for the autonomous agent to achieve on the web'),
     maxSteps: z.number().optional().describe('Maximum number of steps to take (default: 15)'),
-    mode: z.enum(['vision', 'text']).optional().describe('Agent mode: vision (screenshot-based) or text (accessibility tree-based, works with non-vision models). Default: vision'),
+    mode: z
+      .enum(['vision', 'text'])
+      .optional()
+      .describe(
+        'Agent mode: vision (screenshot-based) or text (accessibility tree-based, works with non-vision models). Default: vision',
+      ),
   }),
 );
 

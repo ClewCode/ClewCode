@@ -118,7 +118,7 @@ export async function getPDFPageCount(filePath: string): Promise<number | null> 
     return null;
   }
   const count = parseInt(match[1]!, 10);
-  return isNaN(count) ? null : count;
+  return Number.isNaN(count) ? null : count;
 }
 
 export type PDFExtractPagesResult = {

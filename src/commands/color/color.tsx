@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { getSessionId } from '../../bootstrap/state.js';
 import { Select } from '../../components/CustomSelect/index.js';
 import { Dialog } from '../../components/design-system/Dialog.js';
-import { Divider } from '../../components/design-system/Divider.js';
 import { Tab, Tabs } from '../../components/design-system/Tabs.js';
 import { Clawd } from '../../components/LogoV2/Clawd.js';
 import { Box, Text, useInput } from '../../ink.js';
@@ -104,7 +103,7 @@ function ColorPanel({
   const [sectionIdx, setSectionIdx] = useState(0); // 0=body, 1=eyes, 2=horns
 
   useInput(
-    (input, key) => {
+    (_input, key) => {
       if (selectedTab !== 'mascot') return;
 
       // Shift+Up/Down: switch between sections

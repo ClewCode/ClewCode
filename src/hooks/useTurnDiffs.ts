@@ -70,7 +70,7 @@ function getUserPromptPreview(message: Message): string {
   const text = typeof content === 'string' ? content : '';
   // Truncate to ~30 chars
   if (text.length <= 30) return text;
-  return text.slice(0, 29) + '…';
+  return `${text.slice(0, 29)}…`;
 }
 
 function computeTurnStats(turn: TurnDiff): void {
@@ -116,7 +116,7 @@ export function useTurnDiffs(messages: Message[]): TurnDiff[] {
     // Process only new messages
     for (let i = c.lastProcessedIndex; i < messages.length; i++) {
       const message = messages[i];
-      if (!message || message.type !== 'user') continue;
+      if (message?.type !== 'user') continue;
 
       // Check if this is a user prompt (not a tool result)
       const isToolResult =
@@ -167,7 +167,7 @@ export function useTurnDiffs(messages: Message[]): TurnDiff[] {
               oldLines: 0,
               newStart: 1,
               newLines: lines.length,
-              lines: lines.map(l => '+' + l),
+              lines: lines.map(l => `+${l}`),
             };
             fileEntry.hunks.push(syntheticHunk);
             fileEntry.linesAdded += lines.length;

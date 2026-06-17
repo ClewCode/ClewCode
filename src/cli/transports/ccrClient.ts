@@ -430,7 +430,7 @@ export class CCRClient {
       const rawEpoch = process.env.CLAUDE_CODE_WORKER_EPOCH;
       epoch = rawEpoch ? parseInt(rawEpoch, 10) : NaN;
     }
-    if (isNaN(epoch)) {
+    if (Number.isNaN(epoch)) {
       throw new CCRInitError('missing_epoch');
     }
     this.workerEpoch = epoch;
@@ -584,7 +584,7 @@ export class CCRClient {
       if (response.status === 429) {
         const raw = response.headers?.['retry-after'];
         const seconds = typeof raw === 'string' ? parseInt(raw, 10) : NaN;
-        if (!isNaN(seconds) && seconds >= 0) {
+        if (!Number.isNaN(seconds) && seconds >= 0) {
           return { ok: false, retryAfterMs: seconds * 1000 };
         }
       }

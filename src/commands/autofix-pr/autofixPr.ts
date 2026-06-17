@@ -84,7 +84,7 @@ export async function launchAutofixPr(args: string, context: ToolUseContext): Pr
 
   // Detect current repository
   const repo = await detectCurrentRepositoryWithHost();
-  if (!repo || repo.host !== 'github.com') {
+  if (repo?.host !== 'github.com') {
     return [
       {
         type: 'text',

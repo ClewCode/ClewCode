@@ -66,7 +66,7 @@ function SelectMethod({ onSelect, onCancel }: { onSelect: (method: LoginMethod) 
 }
 
 function WaitingForLogin({ url, method }: { url: string; method: LoginMethod }) {
-  const [urlCopied, setUrlCopied] = useState(false);
+  const [urlCopied, _setUrlCopied] = useState(false);
 
   return (
     <Box flexDirection="column">
@@ -175,7 +175,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 export function OpenAIOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
-  const terminal = useTerminalNotification();
+  const _terminal = useTerminalNotification();
   const [oauthStatus, setOAuthStatus] = useState<OAuthStatus>({ state: 'select_method' });
   const [oauthService] = useState(() => new OpenAIOAuthService());
 

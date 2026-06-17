@@ -106,7 +106,7 @@ export function AntPicker({ onDone }: AntPickerProps): React.ReactNode {
 
 export async function call(
   onDone: LocalJSXCommandOnDone,
-  context: LocalJSXCommandContext,
+  _context: LocalJSXCommandContext,
   args?: string,
 ): Promise<React.ReactNode | null> {
   const trimmed = args?.trim();

@@ -1,4 +1,4 @@
-import { jsx as _jsx } from "react/jsx-runtime";
+import { jsx as _jsx } from 'react/jsx-runtime';
 import Box from './Box.js';
 /**
  * Marks its contents as non-selectable in fullscreen text selection.
@@ -19,5 +19,5 @@ import Box from './Box.js';
  * terminal's native selection is used instead.
  */
 export function NoSelect({ children, fromLeftEdge, ...boxProps }) {
-    return (_jsx(Box, { ...boxProps, noSelect: fromLeftEdge ? 'from-left-edge' : true, children: children }));
+  return _jsx(Box, { ...boxProps, noSelect: fromLeftEdge ? 'from-left-edge' : true, children: children });
 }

@@ -13,13 +13,14 @@
  * dynamicTeamContext, then env vars.
  */
 import { AsyncLocalStorage } from 'async_hooks';
+
 const teammateContextStorage = new AsyncLocalStorage();
 /**
  * Get the current in-process teammate context, if running as one.
  * Returns undefined if not running within an in-process teammate context.
  */
 export function getTeammateContext() {
-    return teammateContextStorage.getStore();
+  return teammateContextStorage.getStore();
 }
 /**
  * Run a function with teammate context set.
@@ -30,14 +31,14 @@ export function getTeammateContext() {
  * @returns The return value of fn
  */
 export function runWithTeammateContext(context, fn) {
-    return teammateContextStorage.run(context, fn);
+  return teammateContextStorage.run(context, fn);
 }
 /**
  * Check if current execution is within an in-process teammate.
  * This is faster than getTeammateContext() !== undefined for simple checks.
  */
 export function isInProcessTeammate() {
-    return teammateContextStorage.getStore() !== undefined;
+  return teammateContextStorage.getStore() !== undefined;
 }
 /**
  * Create a TeammateContext from spawn configuration.
@@ -49,8 +50,8 @@ export function isInProcessTeammate() {
  * @returns A complete TeammateContext with isInProcess: true
  */
 export function createTeammateContext(config) {
-    return {
-        ...config,
-        isInProcess: true,
-    };
+  return {
+    ...config,
+    isInProcess: true,
+  };
 }

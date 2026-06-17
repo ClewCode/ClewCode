@@ -7,10 +7,10 @@
  */
 
 import { getOriginalCwd } from '../bootstrap/state.js';
-import { recordSessionGraph } from '../services/longTermMemory/graph.js';
-import { storeContext } from './memoryStore.js';
 import { saveSessionSummary } from '../services/longTermMemory/crossSession.js';
 import { awardNodeXP } from '../services/longTermMemory/experience.js';
+import { recordSessionGraph } from '../services/longTermMemory/graph.js';
+import { storeContext } from './memoryStore.js';
 
 export interface ToolResultEvent {
   toolName: string;
@@ -21,7 +21,7 @@ export interface ToolResultEvent {
 
 // ── Key pattern extraction ──
 
-const PATTERN_RE = /(use|use|fix|add|implement|refactor|change|update|remove|migrate)\s+([a-z_/.-]+)/gi;
+const _PATTERN_RE = /(use|use|fix|add|implement|refactor|change|update|remove|migrate)\s+([a-z_/.-]+)/gi;
 const DECISION_RE = /(decided|chose|switched|migrated|renamed|extracted|consolidated)\s+([a-z_/.-]+)/gi;
 const TAG_RE = /#([a-z0-9_-]+)/gi;
 

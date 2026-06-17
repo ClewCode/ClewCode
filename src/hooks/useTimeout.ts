@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export function useTimeout(delay: number, resetTrigger?: number): boolean {
+export function useTimeout(delay: number, _resetTrigger?: number): boolean {
   const [isElapsed, setIsElapsed] = useState(false);
 
   useEffect(() => {
@@ -8,7 +8,7 @@ export function useTimeout(delay: number, resetTrigger?: number): boolean {
     const timer = setTimeout(setIsElapsed, delay, true);
 
     return () => clearTimeout(timer);
-  }, [delay, resetTrigger]);
+  }, [delay]);
 
   return isElapsed;
 }

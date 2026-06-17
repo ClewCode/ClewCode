@@ -10,15 +10,14 @@
  * 4. Archives memories with age > 90 days and < 2 accesses
  */
 
-import { writeFile, mkdir, rename, unlink } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
-import { join, basename } from 'node:path';
+import { mkdir, readdir, rename, unlink, writeFile } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
-import { readdir } from 'node:fs/promises';
 
 const ARCHIVE_AGE_DAYS = 90;
-const MIN_ACCESS_FOR_KEEP = 2;
+const _MIN_ACCESS_FOR_KEEP = 2;
 const SIMILARITY_WORDS_MIN = 3; // Min shared keywords to be considered "similar"
 
 function sanitizePath(p: string): string {
@@ -85,7 +84,11 @@ export async function consolidateMemories(projectRoot: string): Promise<string> 
 
     // Remove originals
     for (const f of group) {
-      try { await unlink(f.path); } catch { /* skip */ }
+      try {
+        await unlink(f.path);
+      } catch {
+        /* skip */
+      }
     }
     mergesDone++;
   }
@@ -123,9 +126,13 @@ async function scanAllMemories(memDir: string): Promise<MemoryFile[]> {
             keywords,
             size: content.length,
           });
-        } catch { /* skip unreadable */ }
+        } catch {
+          /* skip unreadable */
+        }
       }
-    } catch { /* skip inaccessible */ }
+    } catch {
+      /* skip inaccessible */
+    }
   }
 
   return results;
@@ -160,7 +167,8 @@ function mergeSimilar(files: MemoryFile[]): MemoryFile[][] {
 }
 
 function extractKeywords(text: string): string[] {
-  const words = text.toLowerCase()
+  const words = text
+    .toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
     .split(/\s+/)
     .filter(w => w.length > 4)

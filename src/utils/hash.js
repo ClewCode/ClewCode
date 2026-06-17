@@ -5,23 +5,23 @@
  * output (e.g. cache directory names that must survive runtime upgrades).
  */
 export function djb2Hash(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
-    }
-    return hash;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return hash;
 }
 /**
  * Hash arbitrary content for change detection. Bun.hash is ~100x faster than
  * sha256 and collision-resistant enough for diff detection (not crypto-safe).
  */
 export function hashContent(content) {
-    if (typeof Bun !== 'undefined') {
-        return Bun.hash(content).toString();
-    }
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(content).digest('hex');
+  if (typeof Bun !== 'undefined') {
+    return Bun.hash(content).toString();
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const crypto = require('crypto');
+  return crypto.createHash('sha256').update(content).digest('hex');
 }
 /**
  * Hash two strings without allocating a concatenated temp string. Bun path
@@ -30,10 +30,10 @@ export function hashContent(content) {
  * ("ts","code") vs ("tsc","ode") so no separator is needed under Bun.
  */
 export function hashPair(a, b) {
-    if (typeof Bun !== 'undefined') {
-        return Bun.hash(b, Bun.hash(a)).toString();
-    }
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(a).update('\0').update(b).digest('hex');
+  if (typeof Bun !== 'undefined') {
+    return Bun.hash(b, Bun.hash(a)).toString();
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const crypto = require('crypto');
+  return crypto.createHash('sha256').update(a).update('\0').update(b).digest('hex');
 }

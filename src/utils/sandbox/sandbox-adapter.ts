@@ -49,11 +49,11 @@ import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import { FILE_EDIT_TOOL_NAME } from 'src/tools/FileEditTool/constants.js';
 import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
 import { WEB_FETCH_TOOL_NAME } from 'src/tools/WebFetchTool/prompt.js';
+import { DOT_CLEW } from '../clewPaths.js';
 import { errorMessage } from '../errors.js';
 import { getClaudeTempDir } from '../permissions/filesystem.js';
 import type { PermissionRuleValue } from '../permissions/PermissionRule.js';
 import { ripgrepCommand } from '../ripgrep.js';
-import { DOT_CLEW } from '../clewPaths.js';
 
 // Local copies to avoid circular dependency
 // (permissions.ts imports SandboxManager, bashPermissions.ts imports permissions.ts)

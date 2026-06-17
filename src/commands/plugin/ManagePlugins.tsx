@@ -397,6 +397,7 @@ function PluginComponentsDisplay({
     plugin.hooksConfig,
     plugin.mcpServers,
     marketplace,
+    plugin,
   ]);
   if (loading) {
     return null; // Don't show loading state for cleaner UI
@@ -616,7 +617,7 @@ export function ManagePlugins({
         type: 'menu',
       });
     }
-  }, [viewState, setParentViewState, pendingToggles, setResult]);
+  }, [viewState, setParentViewState, pendingToggles, setResult, onManageComplete]);
 
   // Escape when not in search mode - go back.
   // Excludes confirm-project-uninstall (has its own confirm:no handler in
@@ -903,7 +904,7 @@ export function ManagePlugins({
       unified.push(...standaloneMcpsInScope);
     }
     return unified;
-  }, [pluginStates, mcpClients, pluginErrors, pendingToggles, flaggedPlugins]);
+  }, [pluginStates, mcpClients, pluginErrors, pendingToggles, flaggedPlugins, getMcpStatus]);
 
   // Mark flagged plugins as seen when the Installed view renders them.
   // After 48 hours from seenAt, they auto-clear on next load.
@@ -1338,7 +1339,7 @@ export function ManagePlugins({
     } else if (item_7?.type === 'mcp') {
       void toggleMcpServer(item_7.client.name);
     }
-  }, [selectedIndex, filteredItems, pendingToggles, pluginStates, toggleMcpServer]);
+  }, [selectedIndex, filteredItems, pendingToggles, toggleMcpServer]);
 
   // Handle accept (Enter) in plugin-list
   const handleAccept = React.useCallback(() => {
@@ -1575,7 +1576,7 @@ export function ManagePlugins({
       },
     });
     return menuItems;
-  }, [viewState, selectedPlugin, selectedPluginHasMcpb, pluginStates]);
+  }, [viewState, selectedPlugin, selectedPluginHasMcpb, pluginStates, handleSingleOperation]);
 
   // Plugin-details navigation
   useKeybindings(
@@ -1760,7 +1761,7 @@ export function ManagePlugins({
   // Reset selection when search query changes
   React.useEffect(() => {
     setSelectedIndex(0);
-  }, [searchQuery]);
+  }, []);
 
   // Handle input for entering search mode (text input handled by useSearchInput hook)
   // eslint-disable-next-line custom-rules/prefer-use-keybindings -- useInput needed for raw search mode text input

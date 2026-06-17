@@ -14,7 +14,7 @@ import { getAIProviderClient } from '../../services/api/client.js';
 import type { Message } from '../../types/message.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { toError } from '../../utils/errors.js';
-import { getSmallFastModel, renderModelName } from '../../utils/model/model.js';
+import { getSmallFastModel } from '../../utils/model/model.js';
 import { ProviderManager } from '../ai/ProviderManager.js';
 import { logEvent } from '../analytics/index.js';
 
@@ -38,10 +38,7 @@ export type GoalEvaluationResult = {
  * Heuristic pre-check: cheap checks that avoid LLM call for obvious outcomes.
  * Returns null if inconclusive (fall through to LLM evaluator).
  */
-function heuristicCheck(
-  condition: string,
-  messages: Message[],
-): { met: boolean; reason: string } | null {
+function heuristicCheck(condition: string, messages: Message[]): { met: boolean; reason: string } | null {
   const cond = condition.toLowerCase();
 
   // Find last Bash tool result
@@ -166,7 +163,7 @@ function buildTranscript(messages: Message[]): string {
           if (block.type === 'tool_result') {
             const content = typeof block.content === 'string' ? block.content : JSON.stringify(block.content);
             // Truncate very long tool results
-            const truncated = content.length > 2000 ? content.slice(0, 2000) + '\n...(truncated)' : content;
+            const truncated = content.length > 2000 ? `${content.slice(0, 2000)}\n...(truncated)` : content;
             lines.push(`<tool_result>\n${truncated}\n</tool_result>`);
           }
         }

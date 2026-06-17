@@ -9,7 +9,6 @@
 
 import { logForDebugging } from '../../utils/debug.js';
 import { execFileNoThrow } from '../../utils/execFileNoThrow.js';
-import { getScaledDimensions } from './scaling.js';
 
 // ── Screenshot ───────────────────────────────────────────────────────────────
 

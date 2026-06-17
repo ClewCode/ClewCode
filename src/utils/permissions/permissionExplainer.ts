@@ -113,7 +113,7 @@ function extractConversationContext(messages: Message[], maxChars = 1000): strin
 
     if (textBlocks && totalChars < maxChars) {
       const remaining = maxChars - totalChars;
-      const truncated = textBlocks.length > remaining ? textBlocks.slice(0, remaining) + '...' : textBlocks;
+      const truncated = textBlocks.length > remaining ? `${textBlocks.slice(0, remaining)}...` : textBlocks;
       contextParts.unshift(truncated);
       totalChars += truncated.length;
     }

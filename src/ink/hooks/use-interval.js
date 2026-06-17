@@ -10,22 +10,21 @@ import { ClockContext } from '../components/ClockContext.js';
  * frame index) from the shared clock.
  */
 export function useAnimationTimer(intervalMs) {
-    const clock = useContext(ClockContext);
-    const [time, setTime] = useState(() => clock?.now() ?? 0);
-    useEffect(() => {
-        if (!clock)
-            return;
-        let lastUpdate = clock.now();
-        const onChange = () => {
-            const now = clock.now();
-            if (now - lastUpdate >= intervalMs) {
-                lastUpdate = now;
-                setTime(now);
-            }
-        };
-        return clock.subscribe(onChange, false);
-    }, [clock, intervalMs]);
-    return time;
+  const clock = useContext(ClockContext);
+  const [time, setTime] = useState(() => clock?.now() ?? 0);
+  useEffect(() => {
+    if (!clock) return;
+    let lastUpdate = clock.now();
+    const onChange = () => {
+      const now = clock.now();
+      if (now - lastUpdate >= intervalMs) {
+        lastUpdate = now;
+        setTime(now);
+      }
+    };
+    return clock.subscribe(onChange, false);
+  }, [clock, intervalMs]);
+  return time;
 }
 /**
  * Interval hook backed by the shared Clock.
@@ -35,20 +34,19 @@ export function useAnimationTimer(intervalMs) {
  * one wake-up. Pass `null` for intervalMs to pause.
  */
 export function useInterval(callback, intervalMs) {
-    const callbackRef = useRef(callback);
-    callbackRef.current = callback;
-    const clock = useContext(ClockContext);
-    useEffect(() => {
-        if (!clock || intervalMs === null)
-            return;
-        let lastUpdate = clock.now();
-        const onChange = () => {
-            const now = clock.now();
-            if (now - lastUpdate >= intervalMs) {
-                lastUpdate = now;
-                callbackRef.current();
-            }
-        };
-        return clock.subscribe(onChange, false);
-    }, [clock, intervalMs]);
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+  const clock = useContext(ClockContext);
+  useEffect(() => {
+    if (!clock || intervalMs === null) return;
+    let lastUpdate = clock.now();
+    const onChange = () => {
+      const now = clock.now();
+      if (now - lastUpdate >= intervalMs) {
+        lastUpdate = now;
+        callbackRef.current();
+      }
+    };
+    return clock.subscribe(onChange, false);
+  }, [clock, intervalMs]);
 }

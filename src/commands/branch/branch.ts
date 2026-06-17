@@ -190,7 +190,7 @@ async function createFork(customTitle?: string): Promise<{
   }
 
   // Write the fork session file
-  await writeFile(forkSessionPath, lines.join('\n') + '\n', {
+  await writeFile(forkSessionPath, `${lines.join('\n')}\n`, {
     encoding: 'utf8',
     mode: 0o600,
   });

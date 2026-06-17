@@ -1,6 +1,6 @@
-import { type SpawnOptionsWithoutStdio, spawn } from 'child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { type SpawnOptionsWithoutStdio, spawn } from 'child_process';
 import * as pty from 'node-pty';
 
 export type ProcessPeerTask = {

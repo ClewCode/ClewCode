@@ -49,9 +49,6 @@ export class FileIndex {
   private charBits: Int32Array = new Int32Array(0);
   private pathLens: Uint16Array = new Uint16Array(0);
   private topLevelCache: SearchResult[] | null = null;
-  // During async build, tracks how many paths have bitmap/lowerPath filled.
-  // search() uses this to search the ready prefix while build continues.
-  private readyCount = 0;
 
   /**
    * Load paths from an array of strings.

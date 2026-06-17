@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useState } from 'react';
 import { c as _c } from 'react/compiler-runtime';
 import { Text } from '../../ink.js';
@@ -31,7 +30,7 @@ const MAX_IMPRESSIONS = 3;
  */
 export function isEligibleForOverageCreditGrant(): boolean {
   const info = getCachedOverageCreditGrant();
-  if (!info || !info.available || info.granted) return false;
+  if (!info?.available || info.granted) return false;
   return formatGrantAmount(info) !== null;
 }
 export function shouldShowOverageCreditUpsell(): boolean {

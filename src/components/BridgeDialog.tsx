@@ -112,7 +112,7 @@ export function BridgeDialog({ onDone }: Props): React.ReactNode {
   const contextParts: string[] = [];
   if (repoName) contextParts.push(repoName);
   if (branchName) contextParts.push(branchName);
-  const contextSuffix = contextParts.length > 0 ? ' \u00b7 ' + contextParts.join(' \u00b7 ') : '';
+  const contextSuffix = contextParts.length > 0 ? ` \u00b7 ${contextParts.join(' \u00b7 ')}` : '';
 
   // Footer text matches standalone bridge
   const footerText = error

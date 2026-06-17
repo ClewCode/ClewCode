@@ -118,7 +118,7 @@ export function DiscoverPlugins({
   // Reset selection when search query changes
   useEffect(() => {
     setSelectedIndex(0);
-  }, [searchQuery]);
+  }, []);
 
   // Details view state
   const [detailsMenuIndex, setDetailsMenuIndex] = useState(0);
@@ -211,7 +211,7 @@ export function DiscoverPlugins({
         const errorResult = formatMarketplaceLoadingErrors(failures, successCount);
         if (errorResult) {
           if (errorResult.type === 'warning') {
-            setWarning(errorResult.message + '. Showing available plugins.');
+            setWarning(`${errorResult.message}. Showing available plugins.`);
           } else {
             throw new Error(errorResult.message);
           }
@@ -281,8 +281,7 @@ export function DiscoverPlugins({
 
     // Handle installation results
     if (failureCount === 0) {
-      const message =
-        `✓ Installed ${successCount} ${plural(successCount, 'plugin')}. ` + `Run /reload-plugins to activate.`;
+      const message = `✓ Installed ${successCount} ${plural(successCount, 'plugin')}. Run /reload-plugins to activate.`;
       setResult(message);
     } else if (successCount === 0) {
       setError(`Failed to install: ${formatFailureDetails(newFailedPlugins, true)}`);
@@ -832,7 +831,6 @@ function EmptyStateMessage({ reason }: { reason: EmptyMarketplaceReason | null }
           <Text dimColor>Check for new plugins later or add more marketplaces.</Text>
         </>
       );
-    case 'no-marketplaces-configured':
     default:
       return (
         <>

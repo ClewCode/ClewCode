@@ -4,10 +4,9 @@
  * Handles permission checks before dispatching.
  */
 
-import * as React from 'react';
 import type { Tool, ToolUseContext } from '../../Tool.js';
 import { logForDebugging } from '../debug.js';
-import { registerEscKey, unregisterEscKey } from './abortKey.js';
+import { registerEscKey } from './abortKey.js';
 import { handleToolCall } from './mcpServer.js';
 import { getComputerUseMCPRenderingOverrides } from './toolRendering.js';
 
@@ -35,7 +34,7 @@ let escRegistered = false;
  * Check if computer use is permitted for the given action.
  * The first tool call grants all permissions (user-consented by enabling CU).
  */
-async function ensurePermission(context: ToolUseContext, toolName: string): Promise<boolean> {
+async function ensurePermission(context: ToolUseContext, _toolName: string): Promise<boolean> {
   // Register Escape key on first tool call
   if (!escRegistered) {
     escRegistered = registerEscKey(() => {

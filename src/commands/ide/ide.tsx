@@ -56,7 +56,7 @@ function IDEScreen({
       } else if (value === 'None' && shouldShowDisableAutoConnectDialog()) {
         setShowDisableAutoConnectDialog(true);
       } else {
-        onSelect(availableIDEs.find(ide => ide.port === parseInt(value)));
+        onSelect(availableIDEs.find(ide => ide.port === parseInt(value, 10)));
       }
     },
     [availableIDEs, onSelect],
@@ -185,7 +185,7 @@ function IDEOpenSelection({ availableIDEs, onSelectIDE, onDone }: IDEOpenSelecti
 
   const handleSelectIDE = useCallback(
     (value: string) => {
-      const selectedIDE = availableIDEs.find(ide => ide.port === parseInt(value));
+      const selectedIDE = availableIDEs.find(ide => ide.port === parseInt(value, 10));
       onSelectIDE(selectedIDE);
     },
     [availableIDEs, onSelectIDE],
@@ -529,7 +529,7 @@ export function formatWorkspaceFolders(folders: string[], maxLength: number = 10
     if (folder.length <= maxLengthPerPath) {
       return folder;
     }
-    return '…' + folder.slice(-(maxLengthPerPath - 1));
+    return `…${folder.slice(-(maxLengthPerPath - 1))}`;
   });
 
   let result = formattedFolders.join(', ');

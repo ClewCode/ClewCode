@@ -8,8 +8,8 @@
  * - Periodic: every N messages during long sessions
  */
 
-import { writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
@@ -52,10 +52,7 @@ function sanitizePath(p: string): string {
  * Each memory becomes a markdown file with frontmatter.
  * Returns the number of memories saved.
  */
-export async function saveExtractedMemories(
-  projectRoot: string,
-  result: ExtractionResult,
-): Promise<number> {
+export async function saveExtractedMemories(projectRoot: string, result: ExtractionResult): Promise<number> {
   const memDir = getMemoryDir(projectRoot);
   if (!existsSync(memDir)) {
     await mkdir(memDir, { recursive: true });
@@ -81,7 +78,7 @@ export async function saveExtractedMemories(
     if (existsSync(filePath)) {
       // Append to existing instead of overwriting
       const existing = await readFileContent(filePath);
-      const updated = existing + `\n\n---\n*Updated ${new Date().toISOString()}*\n\n${mem.content}`;
+      const updated = `${existing}\n\n---\n*Updated ${new Date().toISOString()}*\n\n${mem.content}`;
       await writeFile(filePath, updated, 'utf8');
     } else {
       const frontmatter = [
@@ -125,7 +122,7 @@ export async function getMemoryStats(projectRoot: string): Promise<{
     return { total: 0, byType: {}, totalSize: 0 };
   }
 
-  const fs = getFsImplementation();
+  const _fs = getFsImplementation();
   const types = ['user', 'feedback', 'project', 'reference'];
   const byType: Record<string, number> = {};
   let total = 0;

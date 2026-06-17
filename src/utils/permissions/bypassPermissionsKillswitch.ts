@@ -56,7 +56,7 @@ export function useKickOffCheckAndDisableBypassPermissionsIfNeeded(): void {
     if (getIsRemoteMode()) return;
     void checkAndDisableBypassPermissionsIfNeeded(toolPermissionContext, setAppState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setAppState, toolPermissionContext]);
 }
 
 let autoModeCheckRan = false;
@@ -109,8 +109,8 @@ export function resetAutoModeGateCheck(): void {
 }
 
 export function useKickOffCheckAndDisableAutoModeIfNeeded(): void {
-  const mainLoopModel = useAppState(s => s.mainLoopModel);
-  const mainLoopModelForSession = useAppState(s => s.mainLoopModelForSession);
+  const _mainLoopModel = useAppState(s => s.mainLoopModel);
+  const _mainLoopModelForSession = useAppState(s => s.mainLoopModelForSession);
   const fastMode = useAppState(s => s.fastMode);
   const setAppState = useSetAppState();
   const store = useAppStateStore();
@@ -131,5 +131,5 @@ export function useKickOffCheckAndDisableAutoModeIfNeeded(): void {
     }
     void checkAndDisableAutoModeIfNeeded(store.getState().toolPermissionContext, setAppState, fastMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainLoopModel, mainLoopModelForSession, fastMode]);
+  }, [fastMode, store.getState, setAppState]);
 }

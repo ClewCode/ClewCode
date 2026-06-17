@@ -16,7 +16,7 @@ function validateFlagsAgainstAllowlist(flags: string[], allowedFlags: string[]):
     if (flag.startsWith('-') && !flag.startsWith('--') && flag.length > 2) {
       // Check each character in combined flag
       for (let i = 1; i < flag.length; i++) {
-        const singleFlag = '-' + flag[i];
+        const singleFlag = `-${flag[i]}`;
         if (!allowedFlags.includes(singleFlag)) {
           return false;
         }

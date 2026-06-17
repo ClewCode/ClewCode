@@ -174,9 +174,7 @@ function GoalProgressSection({
     return (
       <Box flexDirection="column">
         <Text color="success">✓ Goal achieved!</Text>
-        <Text dimColor>
-          {goalState.goal}
-        </Text>
+        <Text dimColor>{goalState.goal}</Text>
         {goalState.chain && goalState.chain.length > 0 ? (
           <Text bold>Next: {goalState.chain[0]}</Text>
         ) : (

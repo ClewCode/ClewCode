@@ -1,12 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import type {
-  ProviderClient,
-  ProviderId,
-  ProviderInitOptions,
-  ProviderInterface,
-} from './ProviderInterface.js';
+import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 // --- OAuth constants ---
 const OAUTH_CLIENT_ID = process.env.CODE_ASSIST_CLIENT_ID || '';
@@ -22,9 +17,7 @@ let cachedProjectId: string | null = null;
 
 // --- Helpers ---
 
-function readOAuthCreds():
-  | { access_token: string; refresh_token: string; expiry_date: number }
-  | undefined {
+function readOAuthCreds(): { access_token: string; refresh_token: string; expiry_date: number } | undefined {
   try {
     const raw = readFileSync(GEMINI_OAUTH_PATH, 'utf8');
     const d = JSON.parse(raw) as {
@@ -87,9 +80,7 @@ async function getValidToken(): Promise<string> {
 
   const creds = readOAuthCreds();
   if (!creds) {
-    throw new Error(
-      'No Gemini OAuth credentials found. Login with Gemini CLI first (~/.gemini/oauth_creds.json)',
-    );
+    throw new Error('No Gemini OAuth credentials found. Login with Gemini CLI first (~/.gemini/oauth_creds.json)');
   }
 
   const { accessToken, expiresIn } = await refreshAccessToken(creds.refresh_token);
@@ -103,17 +94,14 @@ async function getValidToken(): Promise<string> {
 async function discoverProjectId(accessToken: string): Promise<string> {
   if (cachedProjectId) return cachedProjectId;
 
-  const response = await fetch(
-    `${CODE_ASSIST_ENDPOINT}/${CODE_ASSIST_API_VERSION}:loadCodeAssist`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: '{}',
+  const response = await fetch(`${CODE_ASSIST_ENDPOINT}/${CODE_ASSIST_API_VERSION}:loadCodeAssist`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
     },
-  );
+    body: '{}',
+  });
 
   if (!response.ok) {
     const text = await response.text();
@@ -142,7 +130,7 @@ function toCodeAssistMessages(messages: Array<{ role: string; content: string }>
 
   for (const msg of messages) {
     if (msg.role === 'system') {
-      systemInstruction = (systemInstruction ? systemInstruction + '\n' : '') + msg.content;
+      systemInstruction = (systemInstruction ? `${systemInstruction}\n` : '') + msg.content;
     } else if (msg.role === 'assistant' || msg.role === 'user') {
       contents.push({
         role: msg.role,
@@ -209,7 +197,7 @@ export class CodeAssistProvider implements ProviderInterface {
     return 'GEMINI_API_KEY'; // Fallback env var, but OAuth is primary
   }
 
-  async createClient(options: ProviderInitOptions): Promise<ProviderClient> {
+  async createClient(_options: ProviderInitOptions): Promise<ProviderClient> {
     return {
       chat: {
         completions: {
@@ -237,7 +225,11 @@ export class CodeAssistProvider implements ProviderInterface {
               contents,
               ...(params.max_tokens ? { generationConfig: { maxOutputTokens: params.max_tokens } } : {}),
               ...(params.temperature !== undefined
-                ? { generationConfig: { ...(params.temperature !== undefined ? { temperature: params.temperature } : {}) } }
+                ? {
+                    generationConfig: {
+                      ...(params.temperature !== undefined ? { temperature: params.temperature } : {}),
+                    },
+                  }
                 : {}),
             };
 
@@ -285,9 +277,7 @@ export class CodeAssistProvider implements ProviderInterface {
                 });
                 if (!retryResponse.ok) {
                   const retryText = await retryResponse.text();
-                  throw new Error(
-                    `Code Assist API error (${retryResponse.status}): ${retryText}`,
-                  );
+                  throw new Error(`Code Assist API error (${retryResponse.status}): ${retryText}`);
                 }
                 if (isStreaming) {
                   return handleSSEStream(retryResponse);
@@ -310,7 +300,7 @@ export class CodeAssistProvider implements ProviderInterface {
     };
   }
 
-  async listModels(options: ProviderInitOptions): Promise<Array<{ id: string; label: string }>> {
+  async listModels(_options: ProviderInitOptions): Promise<Array<{ id: string; label: string }>> {
     // Code Assist supports the same models as the standard Gemini API
     return [
       { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
@@ -343,7 +333,7 @@ async function* handleSSEStream(response: Response): AsyncGenerator<unknown, voi
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith('data: ')) continue;
+      if (!trimmed?.startsWith('data: ')) continue;
       const jsonStr = trimmed.slice(6);
       if (jsonStr === '[DONE]') return;
 

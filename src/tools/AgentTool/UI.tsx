@@ -357,7 +357,7 @@ export function renderToolResultMessage(
   const { agentId, totalDurationMs, totalToolUseCount, totalTokens, usage, content, prompt } = data;
   const result = [
     totalToolUseCount === 1 ? '1 tool use' : `${totalToolUseCount} tool uses`,
-    formatNumber(totalTokens) + ' tokens',
+    `${formatNumber(totalTokens)} tokens`,
     formatDuration(totalDurationMs),
   ];
 

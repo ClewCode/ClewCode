@@ -84,7 +84,7 @@ export function treeify(obj: TreeNode, options: TreeifyOptions = {}): string {
       const coloredTreeChar = colorize(treeChar, treeCharColors.treeChar);
       const coloredKey = key.trim() === '' ? '' : colorize(key, treeCharColors.key);
 
-      let line = nodePrefix + coloredTreeChar + (coloredKey ? ' ' + coloredKey : '');
+      let line = nodePrefix + coloredTreeChar + (coloredKey ? ` ${coloredKey}` : '');
 
       // Check if we should add a colon (not for empty/whitespace keys)
       const shouldAddColon = key.trim() !== '';
@@ -98,11 +98,11 @@ export function treeify(obj: TreeNode, options: TreeifyOptions = {}): string {
         // Calculate the continuation prefix for nested items
         const continuationChar = isLastKey ? DEFAULT_TREE_CHARS.empty : DEFAULT_TREE_CHARS.line;
         const coloredContinuation = colorize(continuationChar, treeCharColors.treeChar);
-        const nextPrefix = nodePrefix + coloredContinuation + ' ';
+        const nextPrefix = `${nodePrefix + coloredContinuation} `;
         growBranch(value, nextPrefix, isLastKey, depth + 1);
       } else if (Array.isArray(value)) {
         // Handle arrays
-        lines.push(line + (shouldAddColon ? ': ' : line ? ' ' : '') + '[Array(' + value.length + ')]');
+        lines.push(`${line + (shouldAddColon ? ': ' : line ? ' ' : '')}[Array(${value.length})]`);
       } else if (showValues) {
         // Add value if showValues is true
         const valueStr = typeof value === 'function' ? '[Function]' : String(value);
@@ -126,7 +126,7 @@ export function treeify(obj: TreeNode, options: TreeifyOptions = {}): string {
     const firstKey = keys[0];
     const coloredTreeChar = colorize(DEFAULT_TREE_CHARS.lastBranch, treeCharColors.treeChar);
     const coloredValue = colorize(obj[firstKey] as string, treeCharColors.value);
-    return coloredTreeChar + ' ' + coloredValue;
+    return `${coloredTreeChar} ${coloredValue}`;
   }
 
   growBranch(obj, '', true);

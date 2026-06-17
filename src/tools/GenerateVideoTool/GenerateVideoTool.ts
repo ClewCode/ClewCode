@@ -3,8 +3,13 @@ import { join } from 'node:path';
 import type { PermissionResult } from 'src/utils/permissions/PermissionResult.js';
 import { z } from 'zod/v4';
 import { buildTool } from '../../Tool.js';
-import { getGenerateVideoPrompt, GENERATE_VIDEO_TOOL_NAME } from './prompt.js';
-import { getToolUseSummary, renderToolUseMessage, renderToolUseProgressMessage, renderToolResultMessage } from './UI.js';
+import { GENERATE_VIDEO_TOOL_NAME, getGenerateVideoPrompt } from './prompt.js';
+import {
+  getToolUseSummary,
+  renderToolResultMessage,
+  renderToolUseMessage,
+  renderToolUseProgressMessage,
+} from './UI.js';
 
 const inputSchema = z.strictObject({
   prompt: z.string().min(1).describe('A detailed description of the video to generate, in English'),

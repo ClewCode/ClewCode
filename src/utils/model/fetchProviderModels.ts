@@ -64,7 +64,7 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
     // For providers without a fixed modelsUrl (e.g. custom), derive from baseUrl
     const baseUrl = providerManager.getBaseUrlForProvider(activeProvider);
     if (baseUrl) {
-      modelsUrl = baseUrl.replace(/\/+$/, '') + '/models';
+      modelsUrl = `${baseUrl.replace(/\/+$/, '')}/models`;
     }
   }
 

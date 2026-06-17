@@ -61,7 +61,7 @@ export function scanMessagesForPR(task: LocalAgentTaskState): PRInfo | null {
       const prNumberStr = match[1] ?? match[4];
       if (prUrl && prNumberStr) {
         const prNumber = parseInt(prNumberStr, 10);
-        if (!isNaN(prNumber)) {
+        if (!Number.isNaN(prNumber)) {
           return {
             url: prUrl,
             number: prNumber,
@@ -82,7 +82,7 @@ export function scanMessagesForPR(task: LocalAgentTaskState): PRInfo | null {
       if (match?.[1]) {
         const prUrl = match[0];
         const prNumber = parseInt(match[1], 10);
-        if (!isNaN(prNumber) && prUrl.includes('pull')) {
+        if (!Number.isNaN(prNumber) && prUrl.includes('pull')) {
           return {
             url: prUrl,
             number: prNumber,

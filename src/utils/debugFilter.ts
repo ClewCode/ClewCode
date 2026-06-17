@@ -65,20 +65,20 @@ export function extractDebugCategories(message: string): string[] {
 
   // Pattern 3: MCP server "servername" - Check this first to avoid false positives
   const mcpMatch = message.match(/^MCP server ["']([^"']+)["']/);
-  if (mcpMatch && mcpMatch[1]) {
+  if (mcpMatch?.[1]) {
     categories.push('mcp');
     categories.push(mcpMatch[1].toLowerCase());
   } else {
     // Pattern 1: "category: message" (simple prefix) - only if not MCP pattern
     const prefixMatch = message.match(/^([^:[]+):/);
-    if (prefixMatch && prefixMatch[1]) {
+    if (prefixMatch?.[1]) {
       categories.push(prefixMatch[1].trim().toLowerCase());
     }
   }
 
   // Pattern 2: [CATEGORY] at the start
   const bracketMatch = message.match(/^\[([^\]]+)]/);
-  if (bracketMatch && bracketMatch[1]) {
+  if (bracketMatch?.[1]) {
     categories.push(bracketMatch[1].trim().toLowerCase());
   }
 
@@ -91,7 +91,7 @@ export function extractDebugCategories(message: string): string[] {
   // Pattern 5: Look for secondary categories after the first pattern
   // e.g., "AutoUpdaterWrapper: Installation type: development"
   const secondaryMatch = message.match(/:\s*([^:]+?)(?:\s+(?:type|mode|status|event))?:/);
-  if (secondaryMatch && secondaryMatch[1]) {
+  if (secondaryMatch?.[1]) {
     const secondary = secondaryMatch[1].trim().toLowerCase();
     // Only add if it's a reasonable category name (not too long, no spaces)
     if (secondary.length < 30 && !secondary.includes(' ')) {

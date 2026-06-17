@@ -262,17 +262,17 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
       regenerateQr(connectUrl);
 
       if (verbose) {
-        write(chalk.dim(`Remote Control`) + ` v${MACRO.VERSION}\n`);
+        write(`${chalk.dim(`Remote Control`)} v${MACRO.VERSION}\n`);
       }
       if (verbose) {
         if (config.spawnMode !== 'single-session') {
-          write(chalk.dim(`Spawn mode: `) + `${config.spawnMode}\n`);
-          write(chalk.dim(`Max concurrent sessions: `) + `${config.maxSessions}\n`);
+          write(`${chalk.dim(`Spawn mode: `)}${config.spawnMode}\n`);
+          write(`${chalk.dim(`Max concurrent sessions: `)}${config.maxSessions}\n`);
         }
-        write(chalk.dim(`Environment ID: `) + `${environmentId}\n`);
+        write(`${chalk.dim(`Environment ID: `)}${environmentId}\n`);
       }
       if (config.sandbox) {
-        write(chalk.dim(`Sandbox: `) + `${chalk.green('Enabled')}\n`);
+        write(`${chalk.dim(`Sandbox: `)}${chalk.green('Enabled')}\n`);
       }
       write('\n');
 
@@ -284,7 +284,7 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
       if (verbose) {
         const short = truncatePrompt(prompt, 80);
         printLog(
-          chalk.dim(`[${timestamp()}]`) + ` Session started: ${chalk.white(`"${short}"`)} (${chalk.dim(sessionId)})\n`,
+          `${chalk.dim(`[${timestamp()}]`)} Session started: ${chalk.white(`"${short}"`)} (${chalk.dim(sessionId)})\n`,
         );
       }
     },
@@ -297,26 +297,26 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
     },
 
     logSessionFailed(sessionId: string, error: string): void {
-      printLog(chalk.dim(`[${timestamp()}]`) + ` Session ${chalk.red('failed')}: ${error} ${chalk.dim(sessionId)}\n`);
+      printLog(`${chalk.dim(`[${timestamp()}]`)} Session ${chalk.red('failed')}: ${error} ${chalk.dim(sessionId)}\n`);
     },
 
     logStatus(message: string): void {
-      printLog(chalk.dim(`[${timestamp()}]`) + ` ${message}\n`);
+      printLog(`${chalk.dim(`[${timestamp()}]`)} ${message}\n`);
     },
 
     logVerbose(message: string): void {
       if (verbose) {
-        printLog(chalk.dim(`[${timestamp()}] ${message}`) + '\n');
+        printLog(`${chalk.dim(`[${timestamp()}] ${message}`)}\n`);
       }
     },
 
     logError(message: string): void {
-      printLog(chalk.red(`[${timestamp()}] Error: ${message}`) + '\n');
+      printLog(`${chalk.red(`[${timestamp()}] Error: ${message}`)}\n`);
     },
 
     logReconnected(disconnectedMs: number): void {
       printLog(
-        chalk.dim(`[${timestamp()}]`) + ` ${chalk.green('Reconnected')} after ${formatDuration(disconnectedMs)}\n`,
+        `${chalk.dim(`[${timestamp()}]`)} ${chalk.green('Reconnected')} after ${formatDuration(disconnectedMs)}\n`,
       );
     },
 

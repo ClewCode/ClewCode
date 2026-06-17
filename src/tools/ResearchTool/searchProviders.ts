@@ -319,7 +319,7 @@ export async function searchWithProviders(
               title: r.title,
               url: r.url,
               content: r.content || '',
-              excerpt: (r.content || '').substring(0, 200) + '...',
+              excerpt: `${(r.content || '').substring(0, 200)}...`,
             })),
             answer: tavilyResult.answer,
             responseTime: tavilyResult.response_time,

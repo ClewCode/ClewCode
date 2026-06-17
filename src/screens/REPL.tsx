@@ -231,7 +231,6 @@ import {
   createSystemMessage,
   createCommandInputMessage,
   formatCommandInputTags,
-  sliceMessagesByUserLimit,
   limitMessagesToLastNExchanges,
 } from '../utils/messages.js';
 import { generateSessionTitle } from '../utils/sessionTitle.js';
@@ -275,7 +274,7 @@ import { resolveAgentTools } from '../tools/AgentTool/agentToolUtils.js';
 import { resumeAgentBackground } from '../tools/AgentTool/resumeAgent.js';
 import { useMainLoopModel } from '../hooks/useMainLoopModel.js';
 import { useAppState, useSetAppState, useAppStateStore } from '../state/AppState.js';
-import type { ContentBlockParam, ImageBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs';
+import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs';
 import type { ProcessUserInputContext } from '../utils/processUserInput/processUserInput.js';
 import type { PastedContent } from '../utils/config.js';
 import { copyPlanForFork, copyPlanForResume, getPlanSlug, setPlanSlug } from '../utils/plans.js';
@@ -633,7 +632,7 @@ function TranscriptSearchBar({
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // mount-only: bar opens once per /
+  }, [jumpRef.current?.warmSearchIndex]); // mount-only: bar opens once per /
   // Gate the query effect on warm completion. setHighlight stays instant
   // (screen-space overlay, no indexing). setSearchQuery (the scan) waits.
   const warmDone = indexStatus !== 'building';
@@ -642,7 +641,7 @@ function TranscriptSearchBar({
     jumpRef.current?.setSearchQuery(query);
     setHighlight(query);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, warmDone]);
+  }, [query, warmDone, setHighlight, jumpRef.current?.setSearchQuery]);
   const off = cursorOffset;
   const cursorChar = off < query.length ? query[off] : ' ';
   return (
@@ -909,10 +908,7 @@ export function REPL({
   const isBriefOnly = useAppState(s => s.isBriefOnly);
   const currentProfile = useAppState(s => s.profile);
 
-  const localTools = useMemo(
-    () => getTools(toolPermissionContext),
-    [toolPermissionContext, proactiveActive, isBriefOnly],
-  );
+  const localTools = useMemo(() => getTools(toolPermissionContext), [toolPermissionContext]);
 
   useKickOffCheckAndDisableBypassPermissionsIfNeeded();
   useKickOffCheckAndDisableAutoModeIfNeeded();
@@ -921,12 +917,9 @@ export function REPL({
     initialDynamicMcpConfig,
   );
 
-  const onChangeDynamicMcpConfig = useCallback(
-    (config: Record<string, ScopedMcpServerConfig>) => {
-      setDynamicMcpConfig(config);
-    },
-    [setDynamicMcpConfig],
-  );
+  const onChangeDynamicMcpConfig = useCallback((config: Record<string, ScopedMcpServerConfig>) => {
+    setDynamicMcpConfig(config);
+  }, []);
 
   const [screen, setScreen] = useState<Screen>('prompt');
   const [isLoopActive, setIsLoopActive] = useState(false);
@@ -1267,7 +1260,7 @@ export function REPL({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [addNotification]);
 
   // Warning for deprecated CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE
   useEffect(() => {
@@ -1475,7 +1468,7 @@ export function REPL({
   useEffect(() => {
     registerLeaderToolUseConfirmQueue(setToolUseConfirmQueue);
     return () => unregisterLeaderToolUseConfirmQueue();
-  }, [setToolUseConfirmQueue]);
+  }, []);
 
   const [messages, rawSetMessages] = useState<MessageType[]>(initialMessages ?? []);
   const messagesRef = useRef(messages);
@@ -1549,7 +1542,7 @@ export function REPL({
   const unseenDivider = useMemo(
     () => computeUnseenDivider(messages, dividerIndex),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- length change covers appends; useUnseenDivider's count-drop guard clears dividerIndex on replace/rewind
-    [dividerIndex, messages.length],
+    [dividerIndex, messages.length, messages],
   );
   // Re-pin scroll to bottom and clear the unseen-messages baseline. Called
   // on any user-driven return-to-live action (submit, type-into-empty,
@@ -1558,7 +1551,7 @@ export function REPL({
     scrollRef.current?.scrollToBottom();
     onRepin();
     setCursor(null);
-  }, [onRepin, setCursor]);
+  }, [onRepin]);
   // Backstop for the submit-handler repin at onSubmit. If a buffered stdin
   // event (wheel/drag) races between handler-fire and state-commit, the
   // handler's scrollToBottom can be undone. This effect fires on the render
@@ -1571,7 +1564,7 @@ export function REPL({
     if (lastMsgIsHuman) {
       repinScroll();
     }
-  }, [lastMsgIsHuman, lastMsg, repinScroll]);
+  }, [lastMsgIsHuman, repinScroll]);
   // Assistant-chat: lazy-load remote history on scroll-up. No-op unless
   // KAIROS build + config.viewerOnly. feature() is build-time constant so
   // the branch is dead-code-eliminated in non-KAIROS builds (same pattern
@@ -1667,7 +1660,7 @@ export function REPL({
       setInputValueRaw(value);
       setIsPromptInputActive(value.trim().length > 0);
     },
-    [setIsPromptInputActive, repinScroll, trySuggestBgPRIntercept],
+    [repinScroll],
   );
 
   // Schedule a timeout to stop suppressing dialogs after the user stops typing.
@@ -1689,14 +1682,11 @@ export function REPL({
   >();
 
   // Callback to filter commands based on CCR's available slash commands
-  const handleRemoteInit = useCallback(
-    (remoteSlashCommands: string[]) => {
-      const remoteCommandSet = new Set(remoteSlashCommands);
-      // Keep commands that CCR lists OR that are in the local-safe set
-      setLocalCommands(prev => prev.filter(cmd => remoteCommandSet.has(cmd.name) || REMOTE_SAFE_COMMANDS.has(cmd)));
-    },
-    [setLocalCommands],
-  );
+  const handleRemoteInit = useCallback((remoteSlashCommands: string[]) => {
+    const remoteCommandSet = new Set(remoteSlashCommands);
+    // Keep commands that CCR lists OR that are in the local-safe set
+    setLocalCommands(prev => prev.filter(cmd => remoteCommandSet.has(cmd.name) || REMOTE_SAFE_COMMANDS.has(cmd)));
+  }, []);
 
   const [inProgressToolUseIDs, setInProgressToolUseIDs] = useState<Set<string>>(new Set());
   const hasInterruptibleToolInProgressRef = useRef(false);
@@ -1904,7 +1894,14 @@ export function REPL({
     // turn's commands — clear after each turn to avoid accumulating
     // Promise chains for unconsumed checks (denied/aborted paths).
     clearSpeculativeChecks();
-  }, [pickNewSpinnerTip]);
+  }, [
+    pickNewSpinnerTip, // isLoading is now derived from queryGuard — no setter call needed.
+    // queryGuard.end() (onQuery finally) or cancelReservation() (executeUserInput
+    // finally) have already transitioned the guard to idle by the time this runs.
+    // External loading (remote/backgrounding) is reset separately by those hooks.
+    setIsExternalLoading,
+    setUserInputOnProcessing,
+  ]);
 
   // Session backgrounding — hook is below, after getToolUseContext
 
@@ -2103,6 +2100,16 @@ export function REPL({
     })),
   );
 
+  // Helper to restore read file state from messages (used for resume flows)
+  // This allows Claude to edit files that were read in previous sessions
+  const restoreReadFileState = useCallback((messages: MessageType[], cwd: string) => {
+    const extracted = extractReadFilesFromMessages(messages, cwd, READ_FILE_STATE_CACHE_SIZE);
+    readFileState.current = mergeFileStateCaches(readFileState.current, extracted);
+    for (const tool of extractBashToolsFromMessages(messages)) {
+      bashTools.current.add(tool);
+    }
+  }, []);
+
   const resume = useCallback(
     async (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint, limit?: number) => {
       const resumeStart = performance.now();
@@ -2224,7 +2231,7 @@ export function REPL({
 
         // Restore session goal state for resumed session
         const goalState = await restoreSessionGoal();
-        const hasActiveGoal = goalState && goalState.goal && !goalState.achieved;
+        const hasActiveGoal = goalState?.goal && !goalState.achieved;
 
         setAppState(prev => {
           const nextPermissionMode = hasActiveGoal
@@ -2345,7 +2352,7 @@ export function REPL({
             const rawText = msg.message?.content ? getContentText(msg.message.content) : null;
             if (!rawText) return null;
             const singleLineText = rawText.replace(/\s+/g, ' ').trim();
-            const truncated = singleLineText.length > 80 ? singleLineText.slice(0, 80) + '...' : singleLineText;
+            const truncated = singleLineText.length > 80 ? `${singleLineText.slice(0, 80)}...` : singleLineText;
             return `  ${speaker}: "${truncated}"`;
           })
           .filter((line): line is string => line !== null);
@@ -2384,7 +2391,22 @@ export function REPL({
         throw error;
       }
     },
-    [resetLoadingState, setAppState],
+    [
+      resetLoadingState,
+      setAppState, // Restore read file state from the message history
+      restoreReadFileState,
+      mainThreadAgentDefinition?.agentType,
+      contentReplacementStateRef.current, // Clear input to ensure no residual state
+      setInputValue, // Clear any active tool JSX
+      setToolJSX,
+      agentDefinitions,
+      contentReplacementStateRef,
+      store.getState, // Reset messages to the provided initial messages
+      // Use a callback to ensure we're not dependent on stale state
+      setMessages,
+      mainLoopModel,
+      initialMainThreadAgentDefinition,
+    ],
   );
 
   // Lazy init: useRef(createX()) would call createX on every render and
@@ -2406,16 +2428,6 @@ export function REPL({
   // the next discovery cycle re-injects it. Cleared in clearConversation.
   const loadedNestedMemoryPathsRef = useRef(new Set<string>());
 
-  // Helper to restore read file state from messages (used for resume flows)
-  // This allows Claude to edit files that were read in previous sessions
-  const restoreReadFileState = useCallback((messages: MessageType[], cwd: string) => {
-    const extracted = extractReadFilesFromMessages(messages, cwd, READ_FILE_STATE_CACHE_SIZE);
-    readFileState.current = mergeFileStateCaches(readFileState.current, extracted);
-    for (const tool of extractBashToolsFromMessages(messages)) {
-      bashTools.current.add(tool);
-    }
-  }, []);
-
   // Extract read file state from initialMessages on mount
   // This handles CLI flag resume (--resume-session) and ResumeConversation screen
   // where messages are passed as props rather than through the resume callback
@@ -2430,7 +2442,7 @@ export function REPL({
     }
     // Only run on mount - initialMessages shouldn't change during component lifetime
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialMessages?.length ?? 0, setAppState, initialMessages, restoreReadFileState, store.getState]);
 
   const { status: apiKeyStatus, reverify } = useApiKeyVerification();
 
@@ -2658,7 +2670,7 @@ export function REPL({
         return newContents;
       });
     }
-  }, [setInputValue, setInputMode, inputValue, setPastedContents]);
+  }, [setInputValue, inputValue]);
 
   // CancelRequestHandler props - rendered inside KeybindingSetup
   const cancelRequestProps = {
@@ -2690,7 +2702,7 @@ export function REPL({
         setShowCostDialog(true);
       }
     }
-  }, [messages, showCostDialog, haveShownCostDialog]);
+  }, [showCostDialog, haveShownCostDialog]);
 
   const sandboxAskCallback: SandboxAskCallback = useCallback(
     async (hostPattern: NetworkHostPattern) => {
@@ -2873,7 +2885,7 @@ export function REPL({
         });
       }, setToolUseConfirmQueue);
     },
-    [setAppState, setToolUseConfirmQueue],
+    [setAppState],
   );
 
   // Register the leader's setToolPermissionContext for in-process teammates
@@ -2896,7 +2908,7 @@ export function REPL({
   const getToolUseContext = useCallback(
     (
       messages: MessageType[],
-      newMessages: MessageType[],
+      _newMessages: MessageType[],
       abortController: AbortController,
       mainLoopModel: string,
     ): ProcessUserInputContext => {
@@ -3051,7 +3063,11 @@ export function REPL({
       disabled,
       customSystemPrompt,
       appendSystemPrompt,
-      setConversationId,
+      terminal,
+      thinkingConfig,
+      setToolJSX,
+      setResponseLength,
+      contentReplacementStateRef.current,
     ],
   );
 
@@ -3168,6 +3184,7 @@ export function REPL({
     appendSystemPrompt,
     canUseTool,
     setAppState,
+    terminalTitle,
   ]);
 
   const { handleBackgroundSession } = useSessionBackgrounding({
@@ -3273,7 +3290,7 @@ export function REPL({
         onStreamingText,
       );
     },
-    [setMessages, setResponseLength, setStreamMode, setStreamingToolUses, setStreamingThinking, onStreamingText],
+    [setMessages, setResponseLength, onStreamingText],
   );
 
   const onQueryImpl = useCallback(
@@ -3544,7 +3561,20 @@ export function REPL({
       mainThreadAgentDefinition,
       onQueryEvent,
       sessionTitle,
-      titleDisabled,
+      titleDisabled, // Apply slash-command-scoped allowedTools (from skill frontmatter) to the
+      // store once per turn. This also covers the reset: the next non-skill turn
+      // passes [] and clears it. Must run before the !shouldQuery gate: forked
+      // commands (executeForkedSlashCommand) return shouldQuery=false, and
+      // createGetAppStateWithAllowedTools in forkedAgent.ts reads this field, so
+      // stale skill tools would otherwise leak into forked agent permissions.
+      // Previously this write was hidden inside getToolUseContext's getAppState
+      // (~85 calls/turn); hoisting it here makes getAppState a pure read and stops
+      // ephemeral contexts (permission dialog, BackgroundTasksDialog) from
+      // accidentally clearing it mid-turn.
+      store.setState,
+      setMessages,
+      store.getState,
+      agentTitle,
     ],
   );
 
@@ -3774,141 +3804,21 @@ export function REPL({
         }
       }
     },
-    [onQueryImpl, setAppState, resetLoadingState, queryGuard, mrOnBeforeQuery, mrOnTurnComplete, addNotification],
+    [
+      onQueryImpl,
+      setAppState,
+      resetLoadingState,
+      queryGuard,
+      mrOnBeforeQuery,
+      mrOnTurnComplete,
+      addNotification,
+      setMessages,
+      store.getState, // isLoading is derived from queryGuard — tryStart() above already
+      // transitioned dispatching→running, so no setter call needed here.
+      resetTimingRefs,
+      proactiveActive,
+    ],
   );
-
-  // Handle initial message (from CLI args or plan mode exit with context clear)
-  // This effect runs when isLoading becomes false and there's a pending message
-  const initialMessageRef = useRef(false);
-  useEffect(() => {
-    const pending = initialMessage;
-    if (!pending || isLoading || initialMessageRef.current) return;
-
-    // Mark as processing to prevent re-entry
-    initialMessageRef.current = true;
-
-    async function processInitialMessage(initialMsg: NonNullable<typeof pending>) {
-      // Clear context if requested (plan mode exit)
-      if (initialMsg.clearContext) {
-        // Preserve the plan slug before clearing context, so the new session
-        // can access the same plan file after regenerateSessionId()
-        const oldPlanSlug = initialMsg.message.planContent ? getPlanSlug() : undefined;
-
-        const { clearConversation } = await import('../commands/clear/conversation.js');
-        await clearConversation({
-          setMessages,
-          readFileState: readFileState.current,
-          discoveredSkillNames: discoveredSkillNamesRef.current,
-          loadedNestedMemoryPaths: loadedNestedMemoryPathsRef.current,
-          getAppState: () => store.getState(),
-          setAppState,
-          setConversationId,
-        });
-        haikuTitleAttemptedRef.current = false;
-        setHaikuTitle(undefined);
-        bashTools.current.clear();
-        bashToolsProcessedIdx.current = 0;
-
-        // Restore the plan slug for the new session so getPlan() finds the file
-        if (oldPlanSlug) {
-          setPlanSlug(getSessionId(), oldPlanSlug);
-        }
-      }
-
-      // Atomically: clear initial message, set permission mode and rules, and store plan for verification
-      const shouldStorePlanForVerification =
-        initialMsg.message.planContent && 'external' === 'ant' && isEnvTruthy(undefined);
-
-      setAppState(prev => {
-        // Build and apply permission updates (mode + allowedPrompts rules)
-        let updatedToolPermissionContext = initialMsg.mode
-          ? applyPermissionUpdates(
-              prev.toolPermissionContext,
-              buildPermissionUpdates(initialMsg.mode, initialMsg.allowedPrompts),
-            )
-          : prev.toolPermissionContext;
-        // For auto, override the mode (buildPermissionUpdates maps
-        // it to 'default' via toExternalPermissionMode) and strip dangerous rules
-        if (feature('TRANSCRIPT_CLASSIFIER') && initialMsg.mode === 'auto') {
-          updatedToolPermissionContext = stripDangerousPermissionsForAutoMode({
-            ...updatedToolPermissionContext,
-            mode: 'auto',
-            prePlanMode: undefined,
-          });
-        }
-
-        return {
-          ...prev,
-          initialMessage: null,
-          toolPermissionContext: updatedToolPermissionContext,
-          ...(shouldStorePlanForVerification && {
-            pendingPlanVerification: {
-              plan: initialMsg.message.planContent!,
-              verificationStarted: false,
-              verificationCompleted: false,
-            },
-          }),
-        };
-      });
-
-      // Create file history snapshot for code rewind
-      if (fileHistoryEnabled()) {
-        void fileHistoryMakeSnapshot((updater: (prev: FileHistoryState) => FileHistoryState) => {
-          setAppState(prev => ({
-            ...prev,
-            fileHistory: updater(prev.fileHistory),
-          }));
-        }, initialMsg.message.uuid);
-      }
-
-      // Ensure SessionStart hook context is available before the first API
-      // call. onSubmit calls this internally but the onQuery path below
-      // bypasses onSubmit — hoist here so both paths see hook messages.
-      await awaitPendingHooks();
-
-      // Route all initial prompts through onSubmit to ensure UserPromptSubmit hooks fire
-      // TODO: Simplify by always routing through onSubmit once it supports
-      // ContentBlockParam arrays (images) as input
-      const content = initialMsg.message.message.content;
-
-      // Route all string content through onSubmit to ensure hooks fire
-      // For complex content (images, etc.), fall back to direct onQuery
-      // Plan messages bypass onSubmit to preserve planContent metadata for rendering
-      if (typeof content === 'string' && !initialMsg.message.planContent) {
-        // Route through onSubmit for proper processing including UserPromptSubmit hooks
-        void onSubmit(content, {
-          setCursorOffset: () => {},
-          clearBuffer: () => {},
-          resetHistory: () => {},
-        });
-      } else {
-        // Plan messages or complex content (images, etc.) - send directly to model
-        // Plan messages use onQuery to preserve planContent metadata for rendering
-        // TODO: Once onSubmit supports ContentBlockParam arrays, remove this branch
-        const newAbortController = createAbortController();
-        setAbortController(newAbortController);
-
-        void onQuery(
-          [initialMsg.message],
-          newAbortController,
-          true, // shouldQuery
-          [], // additionalAllowedTools
-          mainLoopModel,
-        );
-      }
-
-      // Reset ref after a delay to allow new initial messages
-      setTimeout(
-        ref => {
-          ref.current = false;
-        },
-        100,
-        initialMessageRef,
-      );
-    }
-
-    void processInitialMessage(pending);
-  }, [initialMessage, isLoading, setMessages, setAppState, onQuery, mainLoopModel, tools]);
 
   const onSubmit = useCallback(
     async (
@@ -4374,10 +4284,6 @@ export function REPL({
       inputMode,
       commands,
       setInputValue,
-      setInputMode,
-      setPastedContents,
-      setSubmitCount,
-      setIDESelection,
       setToolJSX,
       getToolUseContext,
       // messages is read via messagesRef.current inside the callback to
@@ -4391,20 +4297,167 @@ export function REPL({
       pastedContents,
       ideSelection,
       setUserInputOnProcessing,
-      setAbortController,
       addNotification,
       onQuery,
       stashedPrompt,
-      setStashedPrompt,
       setAppState,
       onBeforeQuery,
       canUseTool,
-      remoteSession,
       setMessages,
       awaitPendingHooks,
-      repinScroll,
+      repinScroll, // showSpinner includes userInputOnProcessing, so the spinner appears
+      // on this render. Reset timing refs now (before queryGuard.reserve()
+      // would) so elapsed time doesn't read as Date.now() - 0. The
+      // isQueryActive transition above does the same reset — idempotent.
+      resetTimingRefs,
+      activeRemote.sendMessage,
+      activeRemote.isRemoteMode,
+      abortController,
     ],
   );
+
+  // Handle initial message (from CLI args or plan mode exit with context clear)
+  // This effect runs when isLoading becomes false and there's a pending message
+  const initialMessageRef = useRef(false);
+  useEffect(() => {
+    const pending = initialMessage;
+    if (!pending || isLoading || initialMessageRef.current) return;
+
+    // Mark as processing to prevent re-entry
+    initialMessageRef.current = true;
+
+    async function processInitialMessage(initialMsg: NonNullable<typeof pending>) {
+      // Clear context if requested (plan mode exit)
+      if (initialMsg.clearContext) {
+        // Preserve the plan slug before clearing context, so the new session
+        // can access the same plan file after regenerateSessionId()
+        const oldPlanSlug = initialMsg.message.planContent ? getPlanSlug() : undefined;
+
+        const { clearConversation } = await import('../commands/clear/conversation.js');
+        await clearConversation({
+          setMessages,
+          readFileState: readFileState.current,
+          discoveredSkillNames: discoveredSkillNamesRef.current,
+          loadedNestedMemoryPaths: loadedNestedMemoryPathsRef.current,
+          getAppState: () => store.getState(),
+          setAppState,
+          setConversationId,
+        });
+        haikuTitleAttemptedRef.current = false;
+        setHaikuTitle(undefined);
+        bashTools.current.clear();
+        bashToolsProcessedIdx.current = 0;
+
+        // Restore the plan slug for the new session so getPlan() finds the file
+        if (oldPlanSlug) {
+          setPlanSlug(getSessionId(), oldPlanSlug);
+        }
+      }
+
+      // Atomically: clear initial message, set permission mode and rules, and store plan for verification
+      const shouldStorePlanForVerification =
+        initialMsg.message.planContent && 'external' === 'ant' && isEnvTruthy(undefined);
+
+      setAppState(prev => {
+        // Build and apply permission updates (mode + allowedPrompts rules)
+        let updatedToolPermissionContext = initialMsg.mode
+          ? applyPermissionUpdates(
+              prev.toolPermissionContext,
+              buildPermissionUpdates(initialMsg.mode, initialMsg.allowedPrompts),
+            )
+          : prev.toolPermissionContext;
+        // For auto, override the mode (buildPermissionUpdates maps
+        // it to 'default' via toExternalPermissionMode) and strip dangerous rules
+        if (feature('TRANSCRIPT_CLASSIFIER') && initialMsg.mode === 'auto') {
+          updatedToolPermissionContext = stripDangerousPermissionsForAutoMode({
+            ...updatedToolPermissionContext,
+            mode: 'auto',
+            prePlanMode: undefined,
+          });
+        }
+
+        return {
+          ...prev,
+          initialMessage: null,
+          toolPermissionContext: updatedToolPermissionContext,
+          ...(shouldStorePlanForVerification && {
+            pendingPlanVerification: {
+              plan: initialMsg.message.planContent!,
+              verificationStarted: false,
+              verificationCompleted: false,
+            },
+          }),
+        };
+      });
+
+      // Create file history snapshot for code rewind
+      if (fileHistoryEnabled()) {
+        void fileHistoryMakeSnapshot((updater: (prev: FileHistoryState) => FileHistoryState) => {
+          setAppState(prev => ({
+            ...prev,
+            fileHistory: updater(prev.fileHistory),
+          }));
+        }, initialMsg.message.uuid);
+      }
+
+      // Ensure SessionStart hook context is available before the first API
+      // call. onSubmit calls this internally but the onQuery path below
+      // bypasses onSubmit — hoist here so both paths see hook messages.
+      await awaitPendingHooks();
+
+      // Route all initial prompts through onSubmit to ensure UserPromptSubmit hooks fire
+      // TODO: Simplify by always routing through onSubmit once it supports
+      // ContentBlockParam arrays (images) as input
+      const content = initialMsg.message.message.content;
+
+      // Route all string content through onSubmit to ensure hooks fire
+      // For complex content (images, etc.), fall back to direct onQuery
+      // Plan messages bypass onSubmit to preserve planContent metadata for rendering
+      if (typeof content === 'string' && !initialMsg.message.planContent) {
+        // Route through onSubmit for proper processing including UserPromptSubmit hooks
+        void onSubmit(content, {
+          setCursorOffset: () => {},
+          clearBuffer: () => {},
+          resetHistory: () => {},
+        });
+      } else {
+        // Plan messages or complex content (images, etc.) - send directly to model
+        // Plan messages use onQuery to preserve planContent metadata for rendering
+        // TODO: Once onSubmit supports ContentBlockParam arrays, remove this branch
+        const newAbortController = createAbortController();
+        setAbortController(newAbortController);
+
+        void onQuery(
+          [initialMsg.message],
+          newAbortController,
+          true, // shouldQuery
+          [], // additionalAllowedTools
+          mainLoopModel,
+        );
+      }
+
+      // Reset ref after a delay to allow new initial messages
+      setTimeout(
+        ref => {
+          ref.current = false;
+        },
+        100,
+        initialMessageRef,
+      );
+    }
+
+    void processInitialMessage(pending);
+  }, [
+    initialMessage,
+    isLoading,
+    setMessages,
+    setAppState,
+    onQuery,
+    mainLoopModel,
+    store.getState,
+    awaitPendingHooks,
+    onSubmit,
+  ]);
 
   // Callback for when user submits input while viewing a teammate's transcript
   const onAgentSubmit = useCallback(
@@ -4801,11 +4854,11 @@ export function REPL({
       ideSelection,
       setUserInputOnProcessing,
       canUseTool,
-      setAbortController,
       onQuery,
       addNotification,
       setAppState,
       onBeforeQuery,
+      setMessages,
     ],
   );
 
@@ -4822,7 +4875,7 @@ export function REPL({
   useEffect(() => {
     activityManager.recordUserActivity();
     updateLastInteractionTime(true);
-  }, [inputValue, submitCount]);
+  }, []);
 
   useEffect(() => {
     if (submitCount === 1) {
@@ -4974,7 +5027,7 @@ export function REPL({
       void onQuery([userMessage], newAbortController, true, [], mainLoopModel);
       return true;
     },
-    [onQuery, mainLoopModel, store],
+    [onQuery, mainLoopModel, queryGuard.isActive],
   );
 
   // Voice input integration (VOICE_MODE builds only)
@@ -5058,7 +5111,7 @@ export function REPL({
     };
     // TODO: fix this
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onInit]);
 
   // Listen for suspend/resume events
   const { internal_eventEmitter } = useStdin();
@@ -5950,7 +6003,7 @@ export function REPL({
                 )}
                 {focusedInputDialog === 'elicitation' && (
                   <ElicitationDialog
-                    key={elicitation.queue[0]!.serverName + ':' + String(elicitation.queue[0]!.requestId)}
+                    key={`${elicitation.queue[0]!.serverName}:${String(elicitation.queue[0]!.requestId)}`}
                     event={elicitation.queue[0]!}
                     onResponse={(action, content) => {
                       const currentRequest = elicitation.queue[0];

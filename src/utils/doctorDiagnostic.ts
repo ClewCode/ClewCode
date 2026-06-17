@@ -132,7 +132,7 @@ export async function getCurrentInstallationType(): Promise<InstallationType> {
     if (userProfile) {
       const normalizedUserPath = userProfile.split(win32.sep).join(posix.sep);
       // Check for bun-style global install: C:/Users/<user>/node_modules/<package>
-      if (invokedPath.startsWith(normalizedUserPath + '/node_modules/')) {
+      if (invokedPath.startsWith(`${normalizedUserPath}/node_modules/`)) {
         return 'npm-global';
       }
     }
@@ -140,7 +140,7 @@ export async function getCurrentInstallationType(): Promise<InstallationType> {
     const appData = process.env.APPDATA;
     if (appData) {
       const normalizedAppData = appData.split(win32.sep).join(posix.sep);
-      if (invokedPath.startsWith(normalizedAppData + '/npm/node_modules/')) {
+      if (invokedPath.startsWith(`${normalizedAppData}/npm/node_modules/`)) {
         return 'npm-global';
       }
     }

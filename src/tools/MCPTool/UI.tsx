@@ -49,7 +49,7 @@ export function renderToolUseMessage(
     .map(([key, value]) => {
       let rendered = jsonStringify(value);
       if (feature('MCP_RICH_OUTPUT') && !verbose && rendered.length > MAX_INPUT_VALUE_CHARS) {
-        rendered = rendered.slice(0, MAX_INPUT_VALUE_CHARS).trimEnd() + '…';
+        rendered = `${rendered.slice(0, MAX_INPUT_VALUE_CHARS).trimEnd()}…`;
       }
       return `${key}: ${rendered}`;
     })

@@ -579,7 +579,7 @@ function formatResult(
       const locations = rawResults.map(toLocation);
 
       // Log and filter out locations with undefined uris
-      const invalidLocations = locations.filter(loc => !loc || !loc.uri);
+      const invalidLocations = locations.filter(loc => !loc?.uri);
       if (invalidLocations.length > 0) {
         logError(
           new Error(
@@ -589,7 +589,7 @@ function formatResult(
         );
       }
 
-      const validLocations = locations.filter(loc => loc && loc.uri);
+      const validLocations = locations.filter(loc => loc?.uri);
       return {
         formatted: formatGoToDefinitionResult(
           result as Location | Location[] | LocationLink | LocationLink[] | null,
@@ -603,7 +603,7 @@ function formatResult(
       const locations = (result as Location[]) || [];
 
       // Log and filter out locations with undefined uris
-      const invalidLocations = locations.filter(loc => !loc || !loc.uri);
+      const invalidLocations = locations.filter(loc => !loc?.uri);
       if (invalidLocations.length > 0) {
         logError(
           new Error(
@@ -613,7 +613,7 @@ function formatResult(
         );
       }
 
-      const validLocations = locations.filter(loc => loc && loc.uri);
+      const validLocations = locations.filter(loc => loc?.uri);
       return {
         formatted: formatFindReferencesResult(result as Location[] | null, cwd),
         resultCount: validLocations.length,
@@ -644,7 +644,7 @@ function formatResult(
       const symbols = (result as SymbolInformation[]) || [];
 
       // Log and filter out symbols with undefined location.uri
-      const invalidSymbols = symbols.filter(sym => !sym || !sym.location || !sym.location.uri);
+      const invalidSymbols = symbols.filter(sym => !sym?.location?.uri);
       if (invalidSymbols.length > 0) {
         logError(
           new Error(
@@ -654,7 +654,7 @@ function formatResult(
         );
       }
 
-      const validSymbols = symbols.filter(sym => sym && sym.location && sym.location.uri);
+      const validSymbols = symbols.filter(sym => sym?.location?.uri);
       const locations = validSymbols.map(s => s.location);
       return {
         formatted: formatWorkspaceSymbolResult(result as SymbolInformation[] | null, cwd),
@@ -670,7 +670,7 @@ function formatResult(
       const locations = rawResults.map(toLocation);
 
       // Log and filter out locations with undefined uris
-      const invalidLocations = locations.filter(loc => !loc || !loc.uri);
+      const invalidLocations = locations.filter(loc => !loc?.uri);
       if (invalidLocations.length > 0) {
         logError(
           new Error(
@@ -680,7 +680,7 @@ function formatResult(
         );
       }
 
-      const validLocations = locations.filter(loc => loc && loc.uri);
+      const validLocations = locations.filter(loc => loc?.uri);
       return {
         // Reuse goToDefinition formatter since the result format is identical
         formatted: formatGoToDefinitionResult(

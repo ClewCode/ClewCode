@@ -13,7 +13,7 @@
  */
 const timestamps = new Map();
 export function markInternalWrite(path) {
-    timestamps.set(path, Date.now());
+  timestamps.set(path, Date.now());
 }
 /**
  * True if `path` was marked within `windowMs`. Consumes the mark on match —
@@ -21,13 +21,13 @@ export function markInternalWrite(path) {
  * the next (real, external) change to the same file.
  */
 export function consumeInternalWrite(path, windowMs) {
-    const ts = timestamps.get(path);
-    if (ts !== undefined && Date.now() - ts < windowMs) {
-        timestamps.delete(path);
-        return true;
-    }
-    return false;
+  const ts = timestamps.get(path);
+  if (ts !== undefined && Date.now() - ts < windowMs) {
+    timestamps.delete(path);
+    return true;
+  }
+  return false;
 }
 export function clearInternalWrites() {
-    timestamps.clear();
+  timestamps.clear();
 }

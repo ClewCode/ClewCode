@@ -22,7 +22,7 @@ import { tryParseShellCommand } from './bash/shellQuote.js';
  * - "foo 'hello world' baz" => ["foo", "hello world", "baz"]
  */
 export function parseArguments(args: string): string[] {
-  if (!args || !args.trim()) {
+  if (!args?.trim()) {
     return [];
   }
 
@@ -128,7 +128,7 @@ export function substituteArguments(
   // If no placeholders were found and appendIfNoPlaceholder is true, append
   // But only if args is non-empty (empty string means command invoked with no args)
   if (content === originalContent && appendIfNoPlaceholder && args) {
-    content = content + `\n\nARGUMENTS: ${args}`;
+    content = `${content}\n\nARGUMENTS: ${args}`;
   }
 
   return content;

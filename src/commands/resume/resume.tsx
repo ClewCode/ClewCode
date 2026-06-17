@@ -221,7 +221,7 @@ function ResumeWithLimit({
   onDone: (result?: string, options?: { display?: CommandResultDisplay }) => void;
   onResume: (sessionId: UUID, log: LogOption, entrypoint: ResumeEntrypoint, limit?: number) => Promise<void>;
 }): React.ReactNode {
-  const [loading, setLoading] = React.useState(true);
+  const [_loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -259,7 +259,7 @@ function ResumeWithLimit({
     return () => {
       cancelled = true;
     };
-  }, [limit, onDone, onResume]);
+  }, [limit, onResume]);
 
   if (error) {
     return (
@@ -305,7 +305,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
 
   // Check if arg is a number — resume last session with message limit
   const numArg = parseInt(arg, 10);
-  if (!isNaN(numArg) && numArg > 0 && String(numArg) === arg) {
+  if (!Number.isNaN(numArg) && numArg > 0 && String(numArg) === arg) {
     return <ResumeWithLimit limit={numArg} onDone={onDone} onResume={onResume} />;
   }
 

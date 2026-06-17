@@ -452,7 +452,7 @@ function updateTaskState(
 ): void {
   setAppState(prev => {
     const task = prev.tasks[taskId];
-    if (!task || task.type !== 'in_process_teammate') {
+    if (task?.type !== 'in_process_teammate') {
       return prev;
     }
     const updated = updater(task);
@@ -625,7 +625,7 @@ async function waitForNextPromptOrShutdown(
       // Pop the message from the queue
       setAppState(prev => {
         const prevTask = prev.tasks[taskId];
-        if (!prevTask || prevTask.type !== 'in_process_teammate') {
+        if (prevTask?.type !== 'in_process_teammate') {
           return prev;
         }
         return {

@@ -113,7 +113,7 @@ export function generateHeatmap(dailyActivity: DailyActivity[], options: Heatmap
     const monthLabels = uniqueMonths.map(month => monthNames[month]!.padEnd(labelWidth)).join('');
 
     // 4 spaces for day label column prefix
-    lines.push('    ' + monthLabels);
+    lines.push(`    ${monthLabels}`);
   }
 
   // Day labels
@@ -123,15 +123,13 @@ export function generateHeatmap(dailyActivity: DailyActivity[], options: Heatmap
   for (let day = 0; day < 7; day++) {
     // Only show labels for Mon, Wed, Fri
     const label = [1, 3, 5].includes(day) ? dayLabels[day]!.padEnd(3) : '   ';
-    const row = label + ' ' + grid[day]!.join('');
+    const row = `${label} ${grid[day]!.join('')}`;
     lines.push(row);
   }
 
   // Legend
   lines.push('');
-  lines.push(
-    '    Less ' + [claudePurple('░'), claudePurple('▒'), claudePurple('▓'), claudePurple('█')].join(' ') + ' More',
-  );
+  lines.push(`    Less ${[claudePurple('░'), claudePurple('▒'), claudePurple('▓'), claudePurple('█')].join(' ')} More`);
 
   return lines.join('\n');
 }

@@ -9,7 +9,7 @@ export const HIDDEN_SESSION_NAME = 'claude-hidden';
  * Includes PID to ensure multiple Claude instances don't conflict.
  */
 export function getSwarmSocketName() {
-    return `claude-swarm-${process.pid}`;
+  return `claude-swarm-${process.pid}`;
 }
 /**
  * Environment variable to override the command used to spawn teammate instances.

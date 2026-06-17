@@ -134,7 +134,7 @@ export function findMidInputSlashCommand(input: string, cursorOffset: number): M
   }
 
   return {
-    token: '/' + fullCommand,
+    token: `/${fullCommand}`,
     startPos: slashPos,
     partialCommand: fullCommand,
   };
@@ -157,7 +157,7 @@ export function getBestCommandMatch(
   }
 
   // Use existing suggestion logic
-  const suggestions = generateCommandSuggestions('/' + partialCommand, commands);
+  const suggestions = generateCommandSuggestions(`/${partialCommand}`, commands);
   if (suggestions.length === 0) {
     return null;
   }
@@ -492,7 +492,7 @@ export function applyCommandSuggestion(
     if (midInputCommand) {
       const before = input.slice(0, midInputCommand.startPos);
       const after = input.slice(midInputCommand.startPos + midInputCommand.token.length);
-      const replacement = '/' + commandName + ' ';
+      const replacement = `/${commandName} `;
       const newInput = before + replacement + after;
       onInputChange(newInput);
       setCursorOffset(before.length + replacement.length);

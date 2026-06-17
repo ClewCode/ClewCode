@@ -284,11 +284,12 @@ export function AttachmentMessage({ attachment, addMargin, verbose, isTranscript
             isTranscriptMode={isTranscriptMode}
           />
           {hasImages && attachment.imagePasteIds?.map(id => <UserImageMessage key={id} imageId={id} />)}
-          {hasVideos && attachment.videoPasteIds?.map(id => (
-            <Line key={id}>
-              <Text>[Video #{id}]</Text>
-            </Line>
-          ))}
+          {hasVideos &&
+            attachment.videoPasteIds?.map(id => (
+              <Line key={id}>
+                <Text>[Video #{id}]</Text>
+              </Line>
+            ))}
         </Box>
       );
     }

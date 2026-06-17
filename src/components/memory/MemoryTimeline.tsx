@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { getOriginalCwd } from '../../bootstrap/state.js';
 import { Box, Text } from '../../ink.js';
 import { useKeybinding } from '../../keybindings/useKeybinding.js';
-import { getSessionHistory, getDigests } from '../../services/longTermMemory/crossSession.js';
-import { getOriginalCwd } from '../../bootstrap/state.js';
+import { getDigests, getSessionHistory } from '../../services/longTermMemory/crossSession.js';
 
 interface Props {
   onClose: () => void;
@@ -54,7 +54,7 @@ export function MemoryTimeline({ onClose }: Props) {
 
   useKeybinding('escape', onClose);
 
-  const toggleExpand = (idx: number) => {
+  const _toggleExpand = (idx: number) => {
     setExpanded(expanded === idx ? null : idx);
   };
 
@@ -62,7 +62,7 @@ export function MemoryTimeline({ onClose }: Props) {
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1}>
         <Text bold>Memory Timeline</Text>
-        <Text dimColor>  ({rows.length} entries)</Text>
+        <Text dimColor> ({rows.length} entries)</Text>
       </Box>
 
       <Box flexDirection="column" minHeight={10}>
@@ -72,15 +72,15 @@ export function MemoryTimeline({ onClose }: Props) {
           rows.map((row, i) => (
             <Box key={`${row.date}-${i}`} flexDirection="column">
               <Box>
-                <Text color={row.type === 'digest' ? 'magenta' : 'cyan'}>
-                  {row.type === 'digest' ? '◆' : '·'}
-                </Text>
+                <Text color={row.type === 'digest' ? 'magenta' : 'cyan'}>{row.type === 'digest' ? '◆' : '·'}</Text>
                 <Text dimColor> {row.date}</Text>
-                <Text>  {row.label}</Text>
+                <Text> {row.label}</Text>
               </Box>
               {expanded === i && row.detail && (
                 <Box marginLeft={3} marginTop={1} marginBottom={1}>
-                  <Text dimColor wrap="wrap">{row.detail}</Text>
+                  <Text dimColor wrap="wrap">
+                    {row.detail}
+                  </Text>
                 </Box>
               )}
             </Box>

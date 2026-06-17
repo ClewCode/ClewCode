@@ -28,7 +28,7 @@ export async function collectLocalMemory(cwd: string, query: string): Promise<Re
         const matches = words.filter(word => lowerContent.includes(word));
 
         if (matches.length > 0) {
-          const relativePath = fullPath.replace(cwd + '/', '');
+          const relativePath = fullPath.replace(`${cwd}/`, '');
           results.push({
             id: `source:memory:${entry.name.replace('.md', '')}`,
             type: 'local_memory',
@@ -36,7 +36,7 @@ export async function collectLocalMemory(cwd: string, query: string): Promise<Re
             path: relativePath,
             retrievedAt: new Date().toISOString(),
             trust: 'high',
-            excerpt: content.slice(0, 500) + '...',
+            excerpt: `${content.slice(0, 500)}...`,
           });
         }
       }
@@ -45,7 +45,7 @@ export async function collectLocalMemory(cwd: string, query: string): Promise<Re
 
   try {
     await scan(memoryDir);
-  } catch (err) {
+  } catch (_err) {
     // Ignore scan issues
   }
 

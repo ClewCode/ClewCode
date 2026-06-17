@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import { logError } from '../../utils/log.js';
 import type { DeepDiveResult } from './deepDive.js';
-import { SourceCredibility, type TruthCheckResult } from './truthChecker.js';
+import type { TruthCheckResult } from './truthChecker.js';
 
 export interface DossierData {
   query: string;

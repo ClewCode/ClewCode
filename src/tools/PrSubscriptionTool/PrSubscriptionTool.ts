@@ -4,7 +4,6 @@ import { buildTool, type ToolDef } from '../../Tool.js';
 import { isAgentSwarmsEnabled } from '../../utils/agentSwarmsEnabled.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { execFileNoThrow } from '../../utils/execFileNoThrow.js';
-import { gitExe } from '../../utils/git.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
 import { SUBSCRIBE_PR_ACTIVITY_TOOL_NAME, UNSUBSCRIBE_PR_ACTIVITY_TOOL_NAME } from './constants.js';

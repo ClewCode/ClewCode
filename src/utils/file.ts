@@ -138,7 +138,7 @@ export function getDisplayPath(filePath: string): string {
   // Use tilde notation for files in home directory
   const homeDir = homedir();
   if (filePath.startsWith(homeDir + sep)) {
-    return '~' + filePath.slice(homeDir.length);
+    return `~${filePath.slice(homeDir.length)}`;
   }
 
   // Otherwise return the absolute path

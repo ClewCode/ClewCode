@@ -32,7 +32,9 @@ import { createPowerShellProvider } from './shell/powershellProvider.js';
 // ponytail: RTK (Rust Token Killer) wraps shell commands to compress output
 // before it hits the context window, saving 60-90% tokens on common dev commands.
 import { whichSync } from './which.js';
+
 const rtkAvailable = whichSync('rtk') !== null;
+
 import type { ShellProvider, ShellType } from './shell/shellProvider.js';
 import { subprocessEnv } from './subprocessEnv.js';
 import { posixPathToWindowsPath } from './windowsPaths.js';

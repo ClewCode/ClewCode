@@ -112,7 +112,7 @@ export function usePrStatus(isLoading: boolean, enabled = true): PrStatusState {
         timeoutRef.current = null;
       }
     };
-  }, [isLoading, enabled]);
+  }, [enabled]);
 
   return prStatus;
 }

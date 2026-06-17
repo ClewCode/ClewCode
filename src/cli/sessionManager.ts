@@ -15,7 +15,6 @@
 import { randomBytes } from 'crypto';
 import {
   attachSession,
-  ensureSupervisor,
   getSessionLogs,
   listSessions as listIpcSessions,
   pingDaemon,

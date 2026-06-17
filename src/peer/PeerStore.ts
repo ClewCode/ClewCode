@@ -8,12 +8,12 @@
 
 import { logForDebugging } from '../utils/debug.js';
 import {
+  type MeshChatMessage,
+  type MeshTodo,
   PEER_CONNECTION_PING_INTERVAL,
   PEER_PING_TIMEOUT,
   PEER_STALE_TIMEOUT,
-  type MeshChatMessage,
   type PeerInfo,
-  type MeshTodo,
   peerColorFromId,
 } from './types.js';
 

@@ -1515,7 +1515,7 @@ async function generateSectionInsight(
   try {
     const result = await queryWithModel({
       systemPrompt: asSystemPrompt([]),
-      userPrompt: section.prompt + '\n\nDATA:\n' + dataContext,
+      userPrompt: `${section.prompt}\n\nDATA:\n${dataContext}`,
       signal: new AbortController().signal,
       options: {
         model: getInsightsModel(),

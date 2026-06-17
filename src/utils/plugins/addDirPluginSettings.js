@@ -9,6 +9,7 @@ import { join } from 'path';
 import { getAdditionalDirectoriesForClaudeMd } from '../../bootstrap/state.js';
 import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { parseSettingsFile } from '../settings/settings.js';
+
 const SETTINGS_FILES = ['settings.json', 'settings.local.json'];
 /**
  * Returns a merged record of enabledPlugins from all --add-dir directories.
@@ -21,17 +22,17 @@ const SETTINGS_FILES = ['settings.json', 'settings.local.json'];
  * on top to let user/project/local/flag/policy override.
  */
 export function getAddDirEnabledPlugins() {
-    const result = {};
-    for (const dir of getAdditionalDirectoriesForClaudeMd()) {
-        for (const file of SETTINGS_FILES) {
-            const { settings } = parseSettingsFile(join(dir, DOT_CLEW, file));
-            if (!settings?.enabledPlugins) {
-                continue;
-            }
-            Object.assign(result, settings.enabledPlugins);
-        }
+  const result = {};
+  for (const dir of getAdditionalDirectoriesForClaudeMd()) {
+    for (const file of SETTINGS_FILES) {
+      const { settings } = parseSettingsFile(join(dir, DOT_CLEW, file));
+      if (!settings?.enabledPlugins) {
+        continue;
+      }
+      Object.assign(result, settings.enabledPlugins);
     }
-    return result;
+  }
+  return result;
 }
 /**
  * Returns a merged record of extraKnownMarketplaces from all --add-dir directories.
@@ -40,15 +41,15 @@ export function getAddDirEnabledPlugins() {
  * within each dir, and callers spread standard settings on top.
  */
 export function getAddDirExtraMarketplaces() {
-    const result = {};
-    for (const dir of getAdditionalDirectoriesForClaudeMd()) {
-        for (const file of SETTINGS_FILES) {
-            const { settings } = parseSettingsFile(join(dir, DOT_CLEW, file));
-            if (!settings?.extraKnownMarketplaces) {
-                continue;
-            }
-            Object.assign(result, settings.extraKnownMarketplaces);
-        }
+  const result = {};
+  for (const dir of getAdditionalDirectoriesForClaudeMd()) {
+    for (const file of SETTINGS_FILES) {
+      const { settings } = parseSettingsFile(join(dir, DOT_CLEW, file));
+      if (!settings?.extraKnownMarketplaces) {
+        continue;
+      }
+      Object.assign(result, settings.extraKnownMarketplaces);
     }
-    return result;
+  }
+  return result;
 }

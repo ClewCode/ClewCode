@@ -349,7 +349,7 @@ function initAndLogWheelAccel(): WheelAccelState {
   const xtermJs = isXtermJs() || isSupportedJetBrainsTerminal();
   const base = readScrollSpeedBase();
   logForDebugging(
-    `wheel accel: ${xtermJs ? 'decay (xterm.js' + (isSupportedJetBrainsTerminal() ? ', jetbrains' : '') + ')' : 'window (native)'} · base=${base} · TERM_PROGRAM=${process.env.TERM_PROGRAM ?? 'unset'}`,
+    `wheel accel: ${xtermJs ? `decay (xterm.js${isSupportedJetBrainsTerminal() ? ', jetbrains' : ''})` : 'window (native)'} · base=${base} · TERM_PROGRAM=${process.env.TERM_PROGRAM ?? 'unset'}`,
   );
   return initWheelAccel(xtermJs, base);
 }

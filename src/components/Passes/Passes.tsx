@@ -63,7 +63,7 @@ export function Passes({ onDone }: Props): React.ReactNode {
       try {
         // Check eligibility first (uses cache if available)
         const eligibilityData = await getCachedOrFetchPassesEligibility();
-        if (!eligibilityData || !eligibilityData.eligible) {
+        if (!eligibilityData?.eligible) {
           setIsAvailable(false);
           setLoading(false);
           return;

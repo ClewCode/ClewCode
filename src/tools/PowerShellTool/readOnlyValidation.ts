@@ -1356,7 +1356,7 @@ export function isAllowlistedCommand(cmd: ParsedCommandElement, originalCommand:
       // For cmdlets, normalize Unicode dash to ASCII hyphen for safeFlags
       // comparison (safeFlags entries are always written with ASCII `-`).
       // Native-exe safeFlags are stored with `/` (e.g. '/FO') — don't touch.
-      let paramName = isCmdlet ? '-' + arg.slice(1) : arg;
+      let paramName = isCmdlet ? `-${arg.slice(1)}` : arg;
       const colonIndex = paramName.indexOf(':');
       if (colonIndex > 0) {
         paramName = paramName.substring(0, colonIndex);
@@ -1476,7 +1476,7 @@ function isGitSafe(args: string[]): boolean {
   let idx = 0;
   while (idx < args.length) {
     const arg = args[idx];
-    if (!arg || !arg.startsWith('-')) {
+    if (!arg?.startsWith('-')) {
       break;
     }
     // SECURITY: Attached-form short flags. `-ccore.pager=sh` splits on `=` to
@@ -1553,7 +1553,7 @@ function isGitSafe(args: string[]): boolean {
     }
   }
 
-  if (config.additionalCommandIsDangerousCallback && config.additionalCommandIsDangerousCallback('', flagArgs)) {
+  if (config.additionalCommandIsDangerousCallback?.('', flagArgs)) {
     return false;
   }
   return validateFlags(flagArgs, 0, config, { commandName: 'git' });
@@ -1606,7 +1606,7 @@ function isGhSafe(args: string[]): boolean {
       return false;
     }
   }
-  if (config.additionalCommandIsDangerousCallback && config.additionalCommandIsDangerousCallback('', flagArgs)) {
+  if (config.additionalCommandIsDangerousCallback?.('', flagArgs)) {
     return false;
   }
   return validateFlags(flagArgs, 0, config);
@@ -1652,7 +1652,7 @@ function isDockerSafe(args: string[]): boolean {
 
   const flagArgs = args.slice(1);
 
-  if (config.additionalCommandIsDangerousCallback && config.additionalCommandIsDangerousCallback('', flagArgs)) {
+  if (config.additionalCommandIsDangerousCallback?.('', flagArgs)) {
     return false;
   }
   return validateFlags(flagArgs, 0, config);

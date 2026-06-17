@@ -509,7 +509,7 @@ chars = "\\u001B\\r"`;
     if (configContent && !configContent.endsWith('\n')) {
       updatedContent += '\n';
     }
-    updatedContent += '\n' + ALACRITTY_KEYBINDING + '\n';
+    updatedContent += `\n${ALACRITTY_KEYBINDING}\n`;
 
     // Write the updated config
     await writeFile(configPath, updatedContent, {
@@ -581,7 +581,7 @@ async function installBindingsForZed(theme: ThemeName): Promise<string> {
     });
 
     // Write the updated keymap
-    await writeFile(keymapPath, jsonStringify(keymap, null, 2) + '\n', {
+    await writeFile(keymapPath, `${jsonStringify(keymap, null, 2)}\n`, {
       encoding: 'utf-8',
     });
     return `${color('success', theme)('Installed Zed Shift+Enter key binding')}${EOL}${chalk.dim(`See ${formatPathLink(keymapPath)}`)}${EOL}`;

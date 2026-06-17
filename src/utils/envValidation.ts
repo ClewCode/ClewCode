@@ -16,7 +16,7 @@ export function validateBoundedIntEnvVar(
     return { effective: defaultValue, status: 'valid' };
   }
   const parsed = parseInt(value, 10);
-  if (isNaN(parsed) || parsed <= 0) {
+  if (Number.isNaN(parsed) || parsed <= 0) {
     const result: EnvVarValidationResult = {
       effective: defaultValue,
       status: 'invalid',

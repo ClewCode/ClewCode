@@ -111,7 +111,7 @@ export function registerCodeReviewSkill(): void {
         );
       }
       if (commentMode) {
-        prompt += '\n\n' + CODE_REVIEW_COMMENT_PROMPT;
+        prompt += `\n\n${CODE_REVIEW_COMMENT_PROMPT}`;
       }
       if (args) {
         prompt += `\n\n## User Request\n\n${args}`;

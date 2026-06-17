@@ -116,7 +116,7 @@ export function setMockHeader(key: MockHeaderKey, value: string | undefined): vo
     if (key === 'reset' || key === 'overage-reset') {
       // If user provides a number, treat it as hours from now
       const hours = Number(value);
-      if (!isNaN(hours)) {
+      if (!Number.isNaN(hours)) {
         value = String(Math.floor(Date.now() / 1000) + hours * 3600);
       }
     }

@@ -223,7 +223,7 @@ export async function initSentry(): Promise<void> {
 
     sentryClient = Sentry;
     sentryInitialized = true;
-    logForDebugging('[Sentry] Initialized with DSN (masked): ' + getMaskedSentryDsn());
+    logForDebugging(`[Sentry] Initialized with DSN (masked): ${getMaskedSentryDsn()}`);
   } catch (err) {
     // Sentry failing to initialize must never crash the app
     logForDebugging(`[Sentry] Failed to initialize: ${err instanceof Error ? err.message : String(err)}`, {

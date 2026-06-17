@@ -1,5 +1,5 @@
 import { handleBrowserAction } from '../../tools/BrowserTool/handler.js';
-import type { BrowserActionInput, BrowserResult } from '../../tools/BrowserTool/types.js';
+import type { BrowserResult } from '../../tools/BrowserTool/types.js';
 import { sideQuery } from '../../utils/sideQuery.js';
 import { ProviderManager } from './ProviderManager.js';
 
@@ -91,10 +91,7 @@ export class BrowserAgent {
       throw new Error(`${plan.action} requires text`);
     }
 
-    if (
-      (plan.action === 'click' || plan.action === 'type' || plan.action === 'extract_data') &&
-      !plan.selector
-    ) {
+    if ((plan.action === 'click' || plan.action === 'type' || plan.action === 'extract_data') && !plan.selector) {
       throw new Error(`${plan.action} requires selector`);
     }
 
@@ -109,7 +106,7 @@ export class BrowserAgent {
   async runTask(task: AgentTask): Promise<string> {
     let currentStep = 0;
     const history: any[] = [];
-    let lastResult = 'Started task: ' + task.goal;
+    let lastResult = `Started task: ${task.goal}`;
     const maxSteps = BrowserAgent.clampSteps(task.maxSteps ?? this.maxSteps);
     const isTextMode = this.mode === 'text';
 
@@ -136,7 +133,9 @@ export class BrowserAgent {
             const interactive = visibleElements.map((el, index) => {
               el.setAttribute('data-cl-id', index.toString());
 
-              ${drawLabels ? `
+              ${
+                drawLabels
+                  ? `
               const rect = el.getBoundingClientRect();
               const label = document.createElement('div');
               label.textContent = index.toString();
@@ -155,7 +154,9 @@ export class BrowserAgent {
                 pointerEvents: 'none'
               });
               document.body.appendChild(label);
-              ` : ''}
+              `
+                  : ''
+              }
 
               const tag = el.tagName.toLowerCase();
               const role = el.getAttribute('role') || (tag === 'a' ? 'link' : tag === 'button' ? 'button' : tag === 'input' ? (el.type === 'submit' ? 'button' : 'textbox') : tag === 'textarea' ? 'textbox' : tag === 'select' ? 'combobox' : '');
@@ -238,7 +239,7 @@ export class BrowserAgent {
           const parsedDOM = JSON.parse(domData.content);
           if (parsedDOM.interactive?.length > 0) elementsList = parsedDOM.interactive.join('\\n');
           if (parsedDOM.text) pageText = parsedDOM.text;
-        } catch (e) {}
+        } catch (_e) {}
       }
 
       // --- CAPTCHA DETECTION ---
@@ -288,10 +289,7 @@ export class BrowserAgent {
       }
 
       // Guard unsafe URLs
-      if (
-        (plan.action === 'navigate' || plan.action === 'open_new_tab') &&
-        this.isBlockedUrl(plan.url)
-      ) {
+      if ((plan.action === 'navigate' || plan.action === 'open_new_tab') && this.isBlockedUrl(plan.url)) {
         const errMsg = `Blocked unsafe URL: ${plan.url}`;
         console.error(`[BrowserAgent] ⚠️ ${errMsg}`);
         history.push({
@@ -358,7 +356,7 @@ export class BrowserAgent {
         action:
           plan.action === 'done'
             ? 'done'
-            : `${action} ${selector ? 'on ' + selector : ''} ${x !== undefined && y !== undefined ? `at (${x},${y})` : ''} ${plan.text ? 'with text ' + plan.text : ''} ${plan.url ? 'to ' + plan.url : ''}`.trim(),
+            : `${action} ${selector ? `on ${selector}` : ''} ${x !== undefined && y !== undefined ? `at (${x},${y})` : ''} ${plan.text ? `with text ${plan.text}` : ''} ${plan.url ? `to ${plan.url}` : ''}`.trim(),
         scratchpad: plan.scratchpad || '',
         result: resultString,
       });
@@ -489,9 +487,7 @@ Rules for TEXT mode:
     const model = this.providerManager.getModelForProvider() || 'claude-3-5-sonnet-latest';
     const isTextMode = this.mode === 'text';
 
-    const systemPrompt = isTextMode
-      ? this.textModeSystemPrompt()
-      : this.visionModeSystemPrompt();
+    const systemPrompt = isTextMode ? this.textModeSystemPrompt() : this.visionModeSystemPrompt();
 
     const userMessageContent: any[] = [
       {
@@ -511,7 +507,7 @@ RAW PAGE TEXT:
 ${pageText}
 
 PREVIOUS ACTIONS:
-${history.length > 0 ? history.map((h, i) => `${i + 1}. [${h.action}] ${h.result}${h.scratchpad ? ' (Memory: ' + h.scratchpad + ')' : ''}`).join('\n') : 'None'}
+${history.length > 0 ? history.map((h, i) => `${i + 1}. [${h.action}] ${h.result}${h.scratchpad ? ` (Memory: ${h.scratchpad})` : ''}`).join('\n') : 'None'}
 ${loopWarning}
 
 Analyze the current state and provide the NEXT action in pure JSON format.
@@ -534,7 +530,7 @@ Analyze the current state and provide the NEXT action in pure JSON format.
     const response = await sideQuery({
       querySource: 'browser_agent' as any,
       model,
-      system: systemPrompt + '\nIMPORTANT: RESPONSE MUST BE A VALID JSON OBJECT.',
+      system: `${systemPrompt}\nIMPORTANT: RESPONSE MUST BE A VALID JSON OBJECT.`,
       messages: [{ role: 'user', content: userMessageContent }],
       max_tokens: 1000,
       temperature: 0,
@@ -559,9 +555,7 @@ Analyze the current state and provide the NEXT action in pure JSON format.
         action: 'done',
         status: 'failed',
         message: `Failed to parse AI response as JSON. Raw response: ${
-          response.content[0].type === 'text'
-            ? response.content[0].text.substring(0, 300)
-            : 'Non-text content'
+          response.content[0].type === 'text' ? response.content[0].text.substring(0, 300) : 'Non-text content'
         }`,
       };
     }

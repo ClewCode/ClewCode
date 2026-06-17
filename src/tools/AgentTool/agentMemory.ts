@@ -76,7 +76,7 @@ export function isAgentMemoryPath(absolutePath: string): boolean {
   // Local scope: persisted to mount when CLAUDE_CODE_REMOTE_MEMORY_DIR is set, otherwise cwd-based
   if (process.env.CLAUDE_CODE_REMOTE_MEMORY_DIR) {
     if (
-      normalizedPath.includes(sep + 'agent-memory-local' + sep) &&
+      normalizedPath.includes(`${sep}agent-memory-local${sep}`) &&
       normalizedPath.startsWith(join(process.env.CLAUDE_CODE_REMOTE_MEMORY_DIR, 'projects') + sep)
     ) {
       return true;

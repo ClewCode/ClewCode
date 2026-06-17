@@ -129,7 +129,7 @@ export function ModelPicker(t0) {
       selectedModel: ProviderManager.getInstance().getModelForProvider(activeProviderId as any),
       providerId: activeProviderId,
     };
-  }, [activeProviderId, fetchedModelsData]);
+  }, [activeProviderId]);
 
   // Fetch models from provider on mount
   useEffect(() => {
@@ -166,7 +166,7 @@ export function ModelPicker(t0) {
     };
 
     loadModels();
-  }, [setAppState, fetchedModelsData, providerInfo?.providerId]);
+  }, [setAppState, fetchedModelsData, providerInfo?.providerId, providerInfo]);
 
   // Get fetched models for current provider
   const currentFetchedModels = useMemo(() => {
@@ -436,7 +436,7 @@ export function ModelPicker(t0) {
       const handler = onSetDefault ?? onSelect;
       if (handler) {
         if (value_0 === NO_PREFERENCE) {
-          handler(activeProviderId + '/default', selectedEffort);
+          handler(`${activeProviderId}/default`, selectedEffort);
           return;
         }
         handler(formatProviderModelSetting(activeProviderId, value_0), selectedEffort);

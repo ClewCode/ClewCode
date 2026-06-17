@@ -30,14 +30,6 @@ import { getProjectRoot } from '../utils/cwd.js';
 import { isEnvTruthy } from '../utils/envUtils.js';
 import { truncateToWidth } from '../utils/format.js';
 import { isFullscreenEnvEnabled } from '../utils/fullscreen.js';
-import { getRuntimeMainLoopModel, renderModelName } from '../utils/model/model.js';
-import { cyclePermissionMode } from '../utils/permissions/getNextPermissionMode.js';
-import {
-  getModeColor,
-  isDefaultMode,
-  permissionModeSymbol,
-  permissionModeTitle,
-} from '../utils/permissions/PermissionMode.js';
 import { plural } from '../utils/stringUtils.js';
 import { isNullRenderingAttachment } from './messages/nullRenderingAttachments.js';
 import PromptInputFooterSuggestions from './PromptInput/PromptInputFooterSuggestions.js';
@@ -539,11 +531,11 @@ function IdeShellLayout({
   const [sessionsFilter, setSessionsFilter] = useState('');
   const [filesFilter, setFilesFilter] = useState('');
   const [fileTreeKey, setFileTreeKey] = useState(0);
-  const activeProvider = useAppState(s => s.mainLoopProviderForSession ?? s.mainLoopProvider);
-  const mainLoopModel = useMainLoopModel();
-  const toolPermissionContext = useAppState(s => s.toolPermissionContext);
+  const _activeProvider = useAppState(s => s.mainLoopProviderForSession ?? s.mainLoopProvider);
+  const _mainLoopModel = useMainLoopModel();
+  const _toolPermissionContext = useAppState(s => s.toolPermissionContext);
 
-  const handleSessionsSettings = useCallback(() => {
+  const _handleSessionsSettings = useCallback(() => {
     setSessionsSearchVisible(true);
   }, []);
 
@@ -709,7 +701,7 @@ function IdeSessionSidebar({
   const sessionId = getSessionId();
   const shortSession = sessionId ? sessionId.slice(0, 8) : 'local';
   const rowWidth = width - 4;
-  const setAppState = useSetAppState();
+  const _setAppState = useSetAppState();
   const actions = useContext(IdeActionContext);
 
   return (
@@ -799,7 +791,7 @@ function IdeFilesSidebar({
   const files = useMemo(
     () => readProjectTree(projectRoot),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [projectRoot, refreshKey],
+    [projectRoot],
   );
   const rowWidth = width - 4;
 

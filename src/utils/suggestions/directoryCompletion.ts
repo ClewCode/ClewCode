@@ -126,7 +126,7 @@ export async function getDirectoryCompletions(
 
   return matches.map(entry => ({
     id: entry.path,
-    displayText: entry.name + '/',
+    displayText: `${entry.name}/`,
     description: 'directory',
     metadata: { type: 'directory' as const },
   }));
@@ -225,7 +225,7 @@ export async function getPathCompletions(
     const lastSeparatorPos = Math.max(lastSlash, lastSep);
     dirPortion = partialPath.substring(0, lastSeparatorPos + 1);
   }
-  if (dirPortion.startsWith('./') || dirPortion.startsWith('.' + sep)) {
+  if (dirPortion.startsWith('./') || dirPortion.startsWith(`.${sep}`)) {
     dirPortion = dirPortion.slice(2);
   }
 
@@ -233,7 +233,7 @@ export async function getPathCompletions(
     const fullPath = dirPortion + entry.name;
     return {
       id: fullPath,
-      displayText: entry.type === 'directory' ? fullPath + '/' : fullPath,
+      displayText: entry.type === 'directory' ? `${fullPath}/` : fullPath,
       metadata: { type: entry.type },
     };
   });

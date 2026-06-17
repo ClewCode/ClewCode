@@ -6,7 +6,7 @@
  * - start|stop|restart|status: direct control of the autonomous daemon.
  */
 
-import { createElement, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import {
   getAutonomousStatus,
   startAutonomousAgent,
@@ -78,8 +78,6 @@ export async function call(
       onDone(ok ? 'Autonomous daemon restarted.' : 'Failed to restart autonomous daemon.', { display: 'system' });
       break;
     }
-
-    case 'status':
     default: {
       const status = await getAutonomousStatus();
       onDone(formatDaemonStatus(status), { display: 'system' });

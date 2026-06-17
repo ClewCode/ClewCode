@@ -25,7 +25,7 @@ export function cliError(msg?: string): never {
 
 /** Write a message to stdout (if given) and exit with code 0. */
 export function cliOk(msg?: string): never {
-  if (msg) process.stdout.write(msg + '\n');
+  if (msg) process.stdout.write(`${msg}\n`);
   process.exit(0);
   return undefined as never;
 }

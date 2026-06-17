@@ -66,7 +66,7 @@ export function renderToolUseProgressMessage(
   },
 ): React.ReactNode {
   const lastProgress = progressMessagesForMessage.at(-1);
-  if (!lastProgress || !lastProgress.data) {
+  if (!lastProgress?.data) {
     return (
       <MessageResponse height={1}>
         <Text dimColor>Running…</Text>

@@ -44,7 +44,11 @@ export function applyCoordinatorToolFilter(tools: Tools): Tools {
  * @param mode - The permission context mode.
  * @returns Merged, deduplicated, and coordinator-filtered tool array.
  */
-export function mergeAndFilterTools(initialTools: Tools, assembled: Tools, mode: ToolPermissionContext['mode']): Tools {
+export function mergeAndFilterTools(
+  initialTools: Tools,
+  assembled: Tools,
+  _mode: ToolPermissionContext['mode'],
+): Tools {
   // Merge initialTools on top - they take precedence in deduplication.
   // initialTools may include built-in tools (from getTools() in REPL.tsx) which
   // overlap with assembled tools. uniqBy handles this deduplication.

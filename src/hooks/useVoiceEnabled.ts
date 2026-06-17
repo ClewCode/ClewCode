@@ -15,9 +15,9 @@ import { hasAlternativeSttKey, hasVoiceAuth, isVoiceGrowthBookEnabled } from '..
  */
 export function useVoiceEnabled(): boolean {
   const userIntent = useAppState(s => s.settings.voiceEnabled === true);
-  const authVersion = useAppState(s => s.authVersion);
+  const _authVersion = useAppState(s => s.authVersion);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const authed = useMemo(hasVoiceAuth, [authVersion]);
+  const authed = useMemo(hasVoiceAuth, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const altStt = useMemo(hasAlternativeSttKey, []);
   return userIntent && (authed || altStt) && isVoiceGrowthBookEnabled();

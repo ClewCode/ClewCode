@@ -1,4 +1,3 @@
-import { feature } from 'bun:bundle';
 import figures from 'figures';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -151,7 +150,7 @@ export function CompanionSprite(): React.ReactNode {
     );
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tick intentionally captured at reaction-change, not tracked
-  }, [reaction, setAppState]);
+  }, [reaction, setAppState, tick]);
 
   if (!true) return null;
   const companion = getCompanion();
@@ -170,7 +169,7 @@ export function CompanionSprite(): React.ReactNode {
   // replaces the name beside the face (no room for a bubble).
   if (columns < MIN_COLS_FOR_FULL_SPRITE) {
     const quip =
-      reaction && reaction.length > NARROW_QUIP_CAP ? reaction.slice(0, NARROW_QUIP_CAP - 1) + '…' : reaction;
+      reaction && reaction.length > NARROW_QUIP_CAP ? `${reaction.slice(0, NARROW_QUIP_CAP - 1)}…` : reaction;
     const label = quip ? `"${quip}"` : focused ? ` ${companion.name} ` : companion.name;
     return (
       <Box paddingX={1} alignSelf="flex-end">

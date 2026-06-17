@@ -18,62 +18,62 @@ import { TerminalSizeContext } from '../components/TerminalSizeContext.js';
  * return <Box ref={ref}><Animation enabled={entry.isVisible}>...</Animation></Box>
  */
 export function useTerminalViewport() {
-    const terminalSize = useContext(TerminalSizeContext);
-    const elementRef = useRef(null);
-    const entryRef = useRef({ isVisible: true });
-    const setElement = useCallback((el) => {
-        elementRef.current = el;
-    }, []);
-    // Runs on every render because yoga layout values can change
-    // without React being aware. Only updates the ref — no setState
-    // to avoid cascading re-renders during the commit phase.
-    // Walks the DOM ancestor chain fresh each time to avoid holding stale
-    // references after yoga tree rebuilds.
-    useLayoutEffect(() => {
-        const element = elementRef.current;
-        if (!element?.yogaNode || !terminalSize) {
-            return;
-        }
-        const height = element.yogaNode.getComputedHeight();
-        const rows = terminalSize.rows;
-        // Walk the DOM parent chain (not yoga.getParent()) so we can detect
-        // scroll containers and subtract their scrollTop. Yoga computes layout
-        // positions without scroll offset — scrollTop is applied at render time.
-        // Without this, an element inside a ScrollBox whose yoga position exceeds
-        // terminalRows would be considered offscreen even when scrolled into view
-        // (e.g., the spinner in fullscreen mode after enough messages accumulate).
-        let absoluteTop = element.yogaNode.getComputedTop() ?? 0;
-        let parent = element.parentNode;
-        let root = element.yogaNode;
-        while (parent) {
-            if (parent.yogaNode) {
-                absoluteTop += parent.yogaNode.getComputedTop() ?? 0;
-                root = parent.yogaNode;
-            }
-            // scrollTop is only ever set on scroll containers (by ScrollBox + renderer).
-            // Non-scroll nodes have undefined scrollTop → falsy fast-path.
-            if (parent.scrollTop)
-                absoluteTop -= parent.scrollTop;
-            parent = parent.parentNode;
-        }
-        // Only the root's height matters
-        const screenHeight = root.getComputedHeight() ?? 0;
-        const bottom = absoluteTop + height;
-        // When content overflows the viewport (screenHeight > rows), the
-        // cursor-restore at frame end scrolls one extra row into scrollback.
-        // log-update.ts accounts for this with scrollbackRows = viewportY + 1.
-        // We must match, otherwise an element at the boundary is considered
-        // "visible" here (animation keeps ticking) but its row is treated as
-        // scrollback by log-update (content change → full reset → flicker).
-        const cursorRestoreScroll = screenHeight > rows ? 1 : 0;
-        const viewportY = Math.max(0, screenHeight - rows) + cursorRestoreScroll;
-        const viewportBottom = viewportY + rows;
-        // Handle NaN defensively to avoid infinite re-renders or crashes
-        const isInvalid = isNaN(absoluteTop) || isNaN(bottom) || isNaN(viewportY) || isNaN(viewportBottom);
-        const visible = isInvalid ? true : bottom > viewportY && absoluteTop < viewportBottom;
-        if (visible !== entryRef.current.isVisible) {
-            entryRef.current = { isVisible: visible };
-        }
-    });
-    return [setElement, entryRef.current];
+  const terminalSize = useContext(TerminalSizeContext);
+  const elementRef = useRef(null);
+  const entryRef = useRef({ isVisible: true });
+  const setElement = useCallback(el => {
+    elementRef.current = el;
+  }, []);
+  // Runs on every render because yoga layout values can change
+  // without React being aware. Only updates the ref — no setState
+  // to avoid cascading re-renders during the commit phase.
+  // Walks the DOM ancestor chain fresh each time to avoid holding stale
+  // references after yoga tree rebuilds.
+  useLayoutEffect(() => {
+    const element = elementRef.current;
+    if (!element?.yogaNode || !terminalSize) {
+      return;
+    }
+    const height = element.yogaNode.getComputedHeight();
+    const rows = terminalSize.rows;
+    // Walk the DOM parent chain (not yoga.getParent()) so we can detect
+    // scroll containers and subtract their scrollTop. Yoga computes layout
+    // positions without scroll offset — scrollTop is applied at render time.
+    // Without this, an element inside a ScrollBox whose yoga position exceeds
+    // terminalRows would be considered offscreen even when scrolled into view
+    // (e.g., the spinner in fullscreen mode after enough messages accumulate).
+    let absoluteTop = element.yogaNode.getComputedTop() ?? 0;
+    let parent = element.parentNode;
+    let root = element.yogaNode;
+    while (parent) {
+      if (parent.yogaNode) {
+        absoluteTop += parent.yogaNode.getComputedTop() ?? 0;
+        root = parent.yogaNode;
+      }
+      // scrollTop is only ever set on scroll containers (by ScrollBox + renderer).
+      // Non-scroll nodes have undefined scrollTop → falsy fast-path.
+      if (parent.scrollTop) absoluteTop -= parent.scrollTop;
+      parent = parent.parentNode;
+    }
+    // Only the root's height matters
+    const screenHeight = root.getComputedHeight() ?? 0;
+    const bottom = absoluteTop + height;
+    // When content overflows the viewport (screenHeight > rows), the
+    // cursor-restore at frame end scrolls one extra row into scrollback.
+    // log-update.ts accounts for this with scrollbackRows = viewportY + 1.
+    // We must match, otherwise an element at the boundary is considered
+    // "visible" here (animation keeps ticking) but its row is treated as
+    // scrollback by log-update (content change → full reset → flicker).
+    const cursorRestoreScroll = screenHeight > rows ? 1 : 0;
+    const viewportY = Math.max(0, screenHeight - rows) + cursorRestoreScroll;
+    const viewportBottom = viewportY + rows;
+    // Handle NaN defensively to avoid infinite re-renders or crashes
+    const isInvalid =
+      Number.isNaN(absoluteTop) || Number.isNaN(bottom) || Number.isNaN(viewportY) || Number.isNaN(viewportBottom);
+    const visible = isInvalid ? true : bottom > viewportY && absoluteTop < viewportBottom;
+    if (visible !== entryRef.current.isVisible) {
+      entryRef.current = { isVisible: visible };
+    }
+  });
+  return [setElement, entryRef.current];
 }

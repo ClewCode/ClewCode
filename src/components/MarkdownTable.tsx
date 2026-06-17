@@ -218,7 +218,7 @@ export function MarkdownTable({ token, highlight, forceWidth }: Props): React.Re
         const width_0 = columnWidths[colIndex_2]!;
         // Headers always centered; data uses table alignment
         const align = isHeader ? 'center' : (token.align?.[colIndex_2] ?? 'left');
-        line += ' ' + padAligned(lineText, stringWidth(lineText), width_0, align) + ' │';
+        line += ` ${padAligned(lineText, stringWidth(lineText), width_0, align)} │`;
       }
       result.push(line);
     }

@@ -13,7 +13,9 @@ export const permissionBehaviorSchema = lazySchema(() => z.enum(['allow', 'deny'
  * @param ruleContent - The optional content of the rule.
  *   Each tool may implement custom handling in `checkPermissions()`
  */
-export const permissionRuleValueSchema = lazySchema(() => z.object({
+export const permissionRuleValueSchema = lazySchema(() =>
+  z.object({
     toolName: z.string(),
     ruleContent: z.string().optional(),
-}));
+  }),
+);

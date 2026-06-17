@@ -8,12 +8,11 @@
  */
 
 import { spawn } from 'child_process';
-import { readFile } from 'fs/promises';
 import { createConnection } from 'net';
 import { join } from 'path';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 
-const DAEMON_DIR = join(getClaudeConfigHomeDir(), 'daemon');
+const _DAEMON_DIR = join(getClaudeConfigHomeDir(), 'daemon');
 
 const PIPE_NAME =
   process.platform === 'win32'
@@ -113,7 +112,7 @@ export function sendRequest(request: IPCRequest, timeoutMs = 10000): Promise<IPC
         try {
           const response = JSON.parse(line) as IPCResponse;
           resolve(response);
-        } catch (e) {
+        } catch (_e) {
           reject(new Error(`Invalid response from supervisor: ${line}`));
         }
       }
@@ -130,7 +129,7 @@ export function sendRequest(request: IPCRequest, timeoutMs = 10000): Promise<IPC
       }
     });
 
-    socket.write(JSON.stringify(request) + '\n');
+    socket.write(`${JSON.stringify(request)}\n`);
   });
 }
 

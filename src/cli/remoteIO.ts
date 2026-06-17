@@ -83,7 +83,7 @@ export class RemoteIO extends StructuredIO {
     this.transport.setOnData((data: string) => {
       this.inputStream.write(data);
       if (this.isBridge && this.isDebug) {
-        writeToStdout(data.endsWith('\n') ? data : data + '\n');
+        writeToStdout(data.endsWith('\n') ? data : `${data}\n`);
       }
     });
 
@@ -186,7 +186,7 @@ export class RemoteIO extends StructuredIO {
       const stream = this.inputStream;
       void (async () => {
         for await (const chunk of initialPrompt) {
-          stream.write(String(chunk).replace(/\n$/, '') + '\n');
+          stream.write(`${String(chunk).replace(/\n$/, '')}\n`);
         }
       })();
     }
@@ -214,7 +214,7 @@ export class RemoteIO extends StructuredIO {
     }
     if (this.isBridge) {
       if (message.type === 'control_request' || this.isDebug) {
-        writeToStdout(ndjsonSafeStringify(message) + '\n');
+        writeToStdout(`${ndjsonSafeStringify(message)}\n`);
       }
     }
   }

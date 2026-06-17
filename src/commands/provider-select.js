@@ -251,9 +251,9 @@ function selectFromList(items, display) {
   });
 
   return new Promise(resolve => {
-    readline.question('\n🔢 Select (1-' + items.length + '): ', answer => {
+    readline.question(`\n🔢 Select (1-${items.length}): `, answer => {
       readline.close();
-      const idx = parseInt(answer) - 1;
+      const idx = parseInt(answer, 10) - 1;
       if (idx >= 0 && idx < items.length) {
         resolve(items[idx]);
       } else {
@@ -279,9 +279,9 @@ async function selectProvider() {
   });
 
   const provider = await new Promise(resolve => {
-    readline.question('\n🔧 Select provider (1-' + PROVIDER_KEYS.length + '): ', answer => {
+    readline.question(`\n🔧 Select provider (1-${PROVIDER_KEYS.length}): `, answer => {
       readline.close();
-      const idx = parseInt(answer) - 1;
+      const idx = parseInt(answer, 10) - 1;
       resolve(PROVIDER_KEYS[idx] || PROVIDER_KEYS[0]);
     });
   });
@@ -339,7 +339,7 @@ program
 program.action(async options => {
   if (options.list) {
     console.log('\n📦 Available providers:\n');
-    for (const [key, info] of Object.entries(PROVIDERS)) {
+    for (const [_key, info] of Object.entries(PROVIDERS)) {
       console.log(`🌐 ${info.label}:`);
       console.log(`   Default: ${info.defaultModel}`);
       console.log(`   Base:   ${info.baseUrl}`);
@@ -368,7 +368,7 @@ program.action(async options => {
 
   if (options.modelsUrl) {
     console.log('\n📡 Models API URLs:\n');
-    for (const [key, info] of Object.entries(PROVIDERS)) {
+    for (const [_key, info] of Object.entries(PROVIDERS)) {
       console.log(`🌐 ${info.label}:`);
       console.log(`   ${info.modelsUrl}`);
       console.log();

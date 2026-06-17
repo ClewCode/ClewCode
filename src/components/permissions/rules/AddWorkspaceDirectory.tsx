@@ -131,7 +131,7 @@ export function AddWorkspaceDirectory({
   }, [directoryInput, debouncedFetchSuggestions]);
 
   const applySuggestion = useCallback((suggestion: SuggestionItem) => {
-    const newPath = suggestion.id + '/';
+    const newPath = `${suggestion.id}/`;
     setDirectoryInput(newPath);
     setError(null);
     // Suggestions will update via the useEffect
@@ -173,7 +173,7 @@ export function AddWorkspaceDirectory({
           e.preventDefault();
           const suggestion = suggestions[selectedSuggestion];
           if (suggestion) {
-            void handleSubmit(suggestion.id + '/');
+            void handleSubmit(`${suggestion.id}/`);
           }
           return;
         }

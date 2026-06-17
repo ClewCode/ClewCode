@@ -218,7 +218,7 @@ function buildDisplayText(context: ToolUseContext, userDisplayMessage?: string):
     ...(userDisplayMessage ? [userDisplayMessage] : []),
     ...(upgradeMessage ? [upgradeMessage] : []),
   ];
-  return chalk.dim('Compacted ' + dimmed.join('\n'));
+  return chalk.dim(`Compacted ${dimmed.join('\n')}`);
 }
 
 async function getCacheSharingParams(

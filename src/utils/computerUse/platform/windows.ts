@@ -1,10 +1,3 @@
-/**
- * Windows PlatformAdapter — uses PowerShell for screenshot, mouse, keyboard.
- * No native addon dependencies required.
- */
-
-import { logForDebugging } from '../../debug.js';
-import { errorMessage } from '../../errors.js';
 import { execFileNoThrow } from '../../execFileNoThrow.js';
 import { sleep } from '../../sleep.js';
 import type {

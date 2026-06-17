@@ -241,7 +241,7 @@ export async function checkForAsyncHookResponses(): Promise<
 export function removeDeliveredAsyncHooks(processIds: string[]): void {
   for (const processId of processIds) {
     const hook = pendingHooks.get(processId);
-    if (hook && hook.responseAttachmentSent) {
+    if (hook?.responseAttachmentSent) {
       logForDebugging(`Hooks: Removing delivered hook ${processId}`);
       hook.stopProgressInterval();
       pendingHooks.delete(processId);

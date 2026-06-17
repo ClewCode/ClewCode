@@ -16,26 +16,26 @@ let cachedSystemTheme;
  * updates the cache on live changes.
  */
 export function getSystemThemeName() {
-    if (cachedSystemTheme === undefined) {
-        cachedSystemTheme = detectFromColorFgBg() ?? 'dark';
-    }
-    return cachedSystemTheme;
+  if (cachedSystemTheme === undefined) {
+    cachedSystemTheme = detectFromColorFgBg() ?? 'dark';
+  }
+  return cachedSystemTheme;
 }
 /**
  * Update the cached terminal theme. Called by the watcher when the OSC 11
  * query returns so non-React call sites stay in sync.
  */
 export function setCachedSystemTheme(theme) {
-    cachedSystemTheme = theme;
+  cachedSystemTheme = theme;
 }
 /**
  * Resolve a ThemeSetting (which may be 'auto') to a concrete ThemeName.
  */
 export function resolveThemeSetting(setting) {
-    if (setting === 'auto') {
-        return getSystemThemeName();
-    }
-    return setting;
+  if (setting === 'auto') {
+    return getSystemThemeName();
+  }
+  return setting;
 }
 /**
  * Parse an OSC color response data string into a theme.
@@ -49,41 +49,40 @@ export function resolveThemeSetting(setting) {
  * Returns undefined for unrecognized formats so callers can fall back.
  */
 export function themeFromOscColor(data) {
-    const rgb = parseOscRgb(data);
-    if (!rgb)
-        return undefined;
-    // ITU-R BT.709 relative luminance. Midpoint split: > 0.5 is light.
-    const luminance = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
-    return luminance > 0.5 ? 'light' : 'dark';
+  const rgb = parseOscRgb(data);
+  if (!rgb) return undefined;
+  // ITU-R BT.709 relative luminance. Midpoint split: > 0.5 is light.
+  const luminance = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
+  return luminance > 0.5 ? 'light' : 'dark';
 }
 function parseOscRgb(data) {
-    // rgb:RRRR/GGGG/BBBB — each component is 1–4 hex digits.
-    // Some terminals append an alpha component (rgba:…/…/…/…); ignore it.
-    const rgbMatch = /^rgba?:([0-9a-f]{1,4})\/([0-9a-f]{1,4})\/([0-9a-f]{1,4})/i.exec(data);
-    if (rgbMatch) {
-        return {
-            r: hexComponent(rgbMatch[1]),
-            g: hexComponent(rgbMatch[2]),
-            b: hexComponent(rgbMatch[3]),
-        };
-    }
-    // #RRGGBB or #RRRRGGGGBBBB — split into three equal hex runs.
-    const hashMatch = /^#([0-9a-f]+)$/i.exec(data);
-    if (hashMatch && hashMatch[1].length % 3 === 0) {
-        const hex = hashMatch[1];
-        const n = hex.length / 3;
-        return {
-            r: hexComponent(hex.slice(0, n)),
-            g: hexComponent(hex.slice(n, 2 * n)),
-            b: hexComponent(hex.slice(2 * n)),
-        };
-    }
-    return undefined;
+  // rgb:RRRR/GGGG/BBBB — each component is 1–4 hex digits.
+  // Some terminals append an alpha component (rgba:…/…/…/…); ignore it.
+  const rgbMatch = /^rgba?:([0-9a-f]{1,4})\/([0-9a-f]{1,4})\/([0-9a-f]{1,4})/i.exec(data);
+  if (rgbMatch) {
+    return {
+      r: hexComponent(rgbMatch[1]),
+      g: hexComponent(rgbMatch[2]),
+      b: hexComponent(rgbMatch[3]),
+    };
+  }
+  // #RRGGBB or #RRRRGGGGBBBB — split into three equal hex runs.
+  const hashMatch = /^#([0-9a-f]+)$/i.exec(data);
+  if (hashMatch && hashMatch[1].length % 3 === 0) {
+    const hex = hashMatch[1];
+    const n = hex.length / 3;
+    return {
+      r: hexComponent(hex.slice(0, n)),
+      g: hexComponent(hex.slice(n, 2 * n)),
+      b: hexComponent(hex.slice(2 * n)),
+    };
+  }
+  return undefined;
 }
 /** Normalize a 1–4 digit hex component to [0, 1]. */
 function hexComponent(hex) {
-    const max = 16 ** hex.length - 1;
-    return parseInt(hex, 16) / max;
+  const max = 16 ** hex.length - 1;
+  return parseInt(hex, 16) / max;
 }
 /**
  * Read $COLORFGBG for a synchronous initial guess before the OSC 11
@@ -93,16 +92,13 @@ function hexComponent(hex) {
  * iTerm2 with the option enabled), so this is a best-effort hint.
  */
 function detectFromColorFgBg() {
-    const colorfgbg = process.env['COLORFGBG'];
-    if (!colorfgbg)
-        return undefined;
-    const parts = colorfgbg.split(';');
-    const bg = parts[parts.length - 1];
-    if (bg === undefined || bg === '')
-        return undefined;
-    const bgNum = Number(bg);
-    if (!Number.isInteger(bgNum) || bgNum < 0 || bgNum > 15)
-        return undefined;
-    // 0–6 and 8 are dark ANSI colors; 7 (white) and 9–15 (bright) are light.
-    return bgNum <= 6 || bgNum === 8 ? 'dark' : 'light';
+  const colorfgbg = process.env['COLORFGBG'];
+  if (!colorfgbg) return undefined;
+  const parts = colorfgbg.split(';');
+  const bg = parts[parts.length - 1];
+  if (bg === undefined || bg === '') return undefined;
+  const bgNum = Number(bg);
+  if (!Number.isInteger(bgNum) || bgNum < 0 || bgNum > 15) return undefined;
+  // 0–6 and 8 are dark ANSI colors; 7 (white) and 9–15 (bright) are light.
+  return bgNum <= 6 || bgNum === 8 ? 'dark' : 'light';
 }

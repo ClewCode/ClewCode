@@ -14,6 +14,7 @@ import type { AllowedPrompt } from '../tools/ExitPlanModeTool/ExitPlanModeV2Tool
 import type { AgentId } from '../types/ids.js';
 import type { Message, UserMessage } from '../types/message.js';
 import type { LoadedPlugin, PluginError } from '../types/plugin.js';
+import type { ClewProfile } from '../types/profile.js';
 import type { DeepImmutable } from '../types/utils.js';
 import { type AttributionState, createEmptyAttributionState } from '../utils/commitAttribution.js';
 import type { EffortValue } from '../utils/effort.js';
@@ -23,7 +24,6 @@ import type { SessionHooksState } from '../utils/hooks/sessionHooks.js';
 import type { ModelSetting } from '../utils/model/model.js';
 import type { DenialTrackingState } from '../utils/permissions/denialTracking.js';
 import type { PermissionMode } from '../utils/permissions/PermissionMode.js';
-import type { ClewProfile } from '../types/profile.js';
 import { getInitialSettings } from '../utils/settings/settings.js';
 import type { SettingsJson } from '../utils/settings/types.js';
 import { shouldEnableThinkingByDefault } from '../utils/thinking.js';
@@ -485,8 +485,9 @@ export function getDefaultAppState(): AppState {
 
   const initialSettings = getInitialSettings();
   // SettingsJson.profile may be narrowed to {} by Zod; coerce safely
-  const savedProfile: ClewProfile | undefined =
-    initialSettings?.['profile' as keyof typeof initialSettings] as ClewProfile | undefined;
+  const savedProfile: ClewProfile | undefined = initialSettings?.['profile' as keyof typeof initialSettings] as
+    | ClewProfile
+    | undefined;
 
   return {
     profile: savedProfile ?? 'coding',

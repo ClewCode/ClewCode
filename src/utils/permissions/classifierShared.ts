@@ -17,7 +17,7 @@ export function extractToolUseBlock(
   toolName: string,
 ): Extract<BetaContentBlock, { type: 'tool_use' }> | null {
   const block = content.find(b => b.type === 'tool_use' && b.name === toolName);
-  if (!block || block.type !== 'tool_use') {
+  if (block?.type !== 'tool_use') {
     return null;
   }
   return block;

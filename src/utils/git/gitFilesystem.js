@@ -19,13 +19,14 @@ import { registerCleanup } from '../cleanupRegistry.js';
 import { getCwd } from '../cwd.js';
 import { findGitRoot } from '../git.js';
 import { parseGitConfigValue } from './gitConfigParser.js';
+
 // ---------------------------------------------------------------------------
 // resolveGitDir — find the actual .git directory
 // ---------------------------------------------------------------------------
 const resolveGitDirCache = new Map();
 /** Clear cached git dir resolutions. Exported for testing only. */
 export function clearResolveGitDirCache() {
-    resolveGitDirCache.clear();
+  resolveGitDirCache.clear();
 }
 /**
  * Resolve the actual .git directory for a repo.
@@ -33,38 +34,37 @@ export function clearResolveGitDirCache() {
  * Memoized per startPath.
  */
 export async function resolveGitDir(startPath) {
-    const cwd = resolve(startPath ?? getCwd());
-    const cached = resolveGitDirCache.get(cwd);
-    if (cached !== undefined) {
-        return cached;
+  const cwd = resolve(startPath ?? getCwd());
+  const cached = resolveGitDirCache.get(cwd);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const root = findGitRoot(cwd);
+  if (!root) {
+    resolveGitDirCache.set(cwd, null);
+    return null;
+  }
+  const gitPath = join(root, '.git');
+  try {
+    const st = await stat(gitPath);
+    if (st.isFile()) {
+      // Worktree or submodule: .git is a file with `gitdir: <path>`
+      // Git strips trailing \n and \r (setup.c read_gitfile_gently).
+      const content = (await readFile(gitPath, 'utf-8')).trim();
+      if (content.startsWith('gitdir:')) {
+        const rawDir = content.slice('gitdir:'.length).trim();
+        const resolved = resolve(root, rawDir);
+        resolveGitDirCache.set(cwd, resolved);
+        return resolved;
+      }
     }
-    const root = findGitRoot(cwd);
-    if (!root) {
-        resolveGitDirCache.set(cwd, null);
-        return null;
-    }
-    const gitPath = join(root, '.git');
-    try {
-        const st = await stat(gitPath);
-        if (st.isFile()) {
-            // Worktree or submodule: .git is a file with `gitdir: <path>`
-            // Git strips trailing \n and \r (setup.c read_gitfile_gently).
-            const content = (await readFile(gitPath, 'utf-8')).trim();
-            if (content.startsWith('gitdir:')) {
-                const rawDir = content.slice('gitdir:'.length).trim();
-                const resolved = resolve(root, rawDir);
-                resolveGitDirCache.set(cwd, resolved);
-                return resolved;
-            }
-        }
-        // Regular repo: .git is a directory
-        resolveGitDirCache.set(cwd, gitPath);
-        return gitPath;
-    }
-    catch {
-        resolveGitDirCache.set(cwd, null);
-        return null;
-    }
+    // Regular repo: .git is a directory
+    resolveGitDirCache.set(cwd, gitPath);
+    return gitPath;
+  } catch {
+    resolveGitDirCache.set(cwd, null);
+    return null;
+  }
 }
 // ---------------------------------------------------------------------------
 // isSafeRefName — validate ref/branch names read from .git/
@@ -86,26 +86,26 @@ export async function resolveGitDir(startPath) {
  * tabs, quotes, backslash) and path traversal (`..`).
  */
 export function isSafeRefName(name) {
-    if (!name || name.startsWith('-') || name.startsWith('/')) {
-        return false;
-    }
-    if (name.includes('..')) {
-        return false;
-    }
-    // Reject single-dot and empty path components (`.`, `foo/./bar`, `foo//bar`,
-    // `foo/`). Git-check-ref-format rejects these, and `.` normalizes away in
-    // path joins so a tampered HEAD of `refs/heads/.` would make us watch the
-    // refs/heads directory itself instead of a branch file.
-    if (name.split('/').some(c => c === '.' || c === '')) {
-        return false;
-    }
-    // Allowlist-only: alphanumerics, /, ., _, +, -, @. Rejects all shell
-    // metacharacters, whitespace, NUL, and non-ASCII. Git's forbidden @{
-    // sequence is blocked because { is not in the allowlist.
-    if (!/^[a-zA-Z0-9/._+@-]+$/.test(name)) {
-        return false;
-    }
-    return true;
+  if (!name || name.startsWith('-') || name.startsWith('/')) {
+    return false;
+  }
+  if (name.includes('..')) {
+    return false;
+  }
+  // Reject single-dot and empty path components (`.`, `foo/./bar`, `foo//bar`,
+  // `foo/`). Git-check-ref-format rejects these, and `.` normalizes away in
+  // path joins so a tampered HEAD of `refs/heads/.` would make us watch the
+  // refs/heads directory itself instead of a branch file.
+  if (name.split('/').some(c => c === '.' || c === '')) {
+    return false;
+  }
+  // Allowlist-only: alphanumerics, /, ., _, +, -, @. Rejects all shell
+  // metacharacters, whitespace, NUL, and non-ASCII. Git's forbidden @{
+  // sequence is blocked because { is not in the allowlist.
+  if (!/^[a-zA-Z0-9/._+@-]+$/.test(name)) {
+    return false;
+  }
+  return true;
 }
 /**
  * Validate that a string is a git SHA: 40 hex chars (SHA-1) or 64 hex chars
@@ -116,7 +116,7 @@ export function isSafeRefName(name) {
  * could otherwise return arbitrary content that flows into shell contexts.
  */
 export function isValidGitSha(s) {
-    return /^[0-9a-f]{40}$/.test(s) || /^[0-9a-f]{64}$/.test(s);
+  return /^[0-9a-f]{40}$/.test(s) || /^[0-9a-f]{64}$/.test(s);
 }
 // ---------------------------------------------------------------------------
 // readGitHead — parse .git/HEAD
@@ -134,36 +134,35 @@ export function isValidGitSha(s) {
  * this by trimming after slicing past "ref:".
  */
 export async function readGitHead(gitDir) {
-    try {
-        const content = (await readFile(join(gitDir, 'HEAD'), 'utf-8')).trim();
-        if (content.startsWith('ref:')) {
-            const ref = content.slice('ref:'.length).trim();
-            if (ref.startsWith('refs/heads/')) {
-                const name = ref.slice('refs/heads/'.length);
-                // Reject path traversal and argument injection from a tampered HEAD.
-                if (!isSafeRefName(name)) {
-                    return null;
-                }
-                return { type: 'branch', name };
-            }
-            // Unusual symref (not a local branch) — resolve to SHA
-            if (!isSafeRefName(ref)) {
-                return null;
-            }
-            const sha = await resolveRef(gitDir, ref);
-            return sha ? { type: 'detached', sha } : { type: 'detached', sha: '' };
+  try {
+    const content = (await readFile(join(gitDir, 'HEAD'), 'utf-8')).trim();
+    if (content.startsWith('ref:')) {
+      const ref = content.slice('ref:'.length).trim();
+      if (ref.startsWith('refs/heads/')) {
+        const name = ref.slice('refs/heads/'.length);
+        // Reject path traversal and argument injection from a tampered HEAD.
+        if (!isSafeRefName(name)) {
+          return null;
         }
-        // Raw SHA (detached HEAD). Validate: an attacker-controlled HEAD file
-        // could contain shell metacharacters that flow into downstream shell
-        // contexts.
-        if (!isValidGitSha(content)) {
-            return null;
-        }
-        return { type: 'detached', sha: content };
-    }
-    catch {
+        return { type: 'branch', name };
+      }
+      // Unusual symref (not a local branch) — resolve to SHA
+      if (!isSafeRefName(ref)) {
         return null;
+      }
+      const sha = await resolveRef(gitDir, ref);
+      return sha ? { type: 'detached', sha } : { type: 'detached', sha: '' };
     }
+    // Raw SHA (detached HEAD). Validate: an attacker-controlled HEAD file
+    // could contain shell metacharacters that flow into downstream shell
+    // contexts.
+    if (!isValidGitSha(content)) {
+      return null;
+    }
+    return { type: 'detached', sha: content };
+  } catch {
+    return null;
+  }
 }
 // ---------------------------------------------------------------------------
 // resolveRef — resolve loose/packed refs to SHAs
@@ -183,59 +182,57 @@ export async function readGitHead(gitDir) {
  *   - Peeled:  `^<40-hex-sha>\n` (after annotated tag entries)
  */
 export async function resolveRef(gitDir, ref) {
-    const result = await resolveRefInDir(gitDir, ref);
-    if (result) {
-        return result;
-    }
-    // For worktrees: try the common gitdir where shared refs live
-    const commonDir = await getCommonDir(gitDir);
-    if (commonDir && commonDir !== gitDir) {
-        return resolveRefInDir(commonDir, ref);
-    }
-    return null;
+  const result = await resolveRefInDir(gitDir, ref);
+  if (result) {
+    return result;
+  }
+  // For worktrees: try the common gitdir where shared refs live
+  const commonDir = await getCommonDir(gitDir);
+  if (commonDir && commonDir !== gitDir) {
+    return resolveRefInDir(commonDir, ref);
+  }
+  return null;
 }
 async function resolveRefInDir(dir, ref) {
-    // Try loose ref file
-    try {
-        const content = (await readFile(join(dir, ref), 'utf-8')).trim();
-        if (content.startsWith('ref:')) {
-            const target = content.slice('ref:'.length).trim();
-            // Reject path traversal in a tampered symref chain.
-            if (!isSafeRefName(target)) {
-                return null;
-            }
-            return resolveRef(dir, target);
-        }
-        // Loose ref content should be a raw SHA. Validate: an attacker-controlled
-        // ref file could contain shell metacharacters.
-        if (!isValidGitSha(content)) {
-            return null;
-        }
-        return content;
+  // Try loose ref file
+  try {
+    const content = (await readFile(join(dir, ref), 'utf-8')).trim();
+    if (content.startsWith('ref:')) {
+      const target = content.slice('ref:'.length).trim();
+      // Reject path traversal in a tampered symref chain.
+      if (!isSafeRefName(target)) {
+        return null;
+      }
+      return resolveRef(dir, target);
     }
-    catch {
-        // Loose ref doesn't exist, try packed-refs
+    // Loose ref content should be a raw SHA. Validate: an attacker-controlled
+    // ref file could contain shell metacharacters.
+    if (!isValidGitSha(content)) {
+      return null;
     }
-    try {
-        const packed = await readFile(join(dir, 'packed-refs'), 'utf-8');
-        for (const line of packed.split('\n')) {
-            if (line.startsWith('#') || line.startsWith('^')) {
-                continue;
-            }
-            const spaceIdx = line.indexOf(' ');
-            if (spaceIdx === -1) {
-                continue;
-            }
-            if (line.slice(spaceIdx + 1) === ref) {
-                const sha = line.slice(0, spaceIdx);
-                return isValidGitSha(sha) ? sha : null;
-            }
-        }
+    return content;
+  } catch {
+    // Loose ref doesn't exist, try packed-refs
+  }
+  try {
+    const packed = await readFile(join(dir, 'packed-refs'), 'utf-8');
+    for (const line of packed.split('\n')) {
+      if (line.startsWith('#') || line.startsWith('^')) {
+        continue;
+      }
+      const spaceIdx = line.indexOf(' ');
+      if (spaceIdx === -1) {
+        continue;
+      }
+      if (line.slice(spaceIdx + 1) === ref) {
+        const sha = line.slice(0, spaceIdx);
+        return isValidGitSha(sha) ? sha : null;
+      }
     }
-    catch {
-        // No packed-refs
-    }
-    return null;
+  } catch {
+    // No packed-refs
+  }
+  return null;
 }
 /**
  * Read the `commondir` file to find the shared git directory.
@@ -243,13 +240,12 @@ async function resolveRefInDir(dir, ref) {
  * Returns null if no commondir file exists (regular repo).
  */
 export async function getCommonDir(gitDir) {
-    try {
-        const content = (await readFile(join(gitDir, 'commondir'), 'utf-8')).trim();
-        return resolve(gitDir, content);
-    }
-    catch {
-        return null;
-    }
+  try {
+    const content = (await readFile(join(gitDir, 'commondir'), 'utf-8')).trim();
+    return resolve(gitDir, content);
+  } catch {
+    return null;
+  }
 }
 /**
  * Read a raw symref file and extract the branch name after a known prefix.
@@ -257,262 +253,261 @@ export async function getCommonDir(gitDir) {
  * Checks loose file only — packed-refs doesn't store symrefs.
  */
 export async function readRawSymref(gitDir, refPath, branchPrefix) {
-    try {
-        const content = (await readFile(join(gitDir, refPath), 'utf-8')).trim();
-        if (content.startsWith('ref:')) {
-            const target = content.slice('ref:'.length).trim();
-            if (target.startsWith(branchPrefix)) {
-                const name = target.slice(branchPrefix.length);
-                // Reject path traversal and argument injection from a tampered symref.
-                if (!isSafeRefName(name)) {
-                    return null;
-                }
-                return name;
-            }
+  try {
+    const content = (await readFile(join(gitDir, refPath), 'utf-8')).trim();
+    if (content.startsWith('ref:')) {
+      const target = content.slice('ref:'.length).trim();
+      if (target.startsWith(branchPrefix)) {
+        const name = target.slice(branchPrefix.length);
+        // Reject path traversal and argument injection from a tampered symref.
+        if (!isSafeRefName(name)) {
+          return null;
         }
+        return name;
+      }
     }
-    catch {
-        // Not a loose ref
-    }
-    return null;
+  } catch {
+    // Not a loose ref
+  }
+  return null;
 }
 const WATCH_INTERVAL_MS = process.env.NODE_ENV === 'test' ? 10 : 1000;
 class GitFileWatcher {
-    gitDir = null;
-    commonDir = null;
-    initialized = false;
-    initPromise = null;
-    watchedPaths = [];
-    branchRefPath = null;
-    cache = new Map();
-    async ensureStarted() {
-        if (this.initialized) {
-            return;
-        }
-        if (this.initPromise) {
-            return this.initPromise;
-        }
-        this.initPromise = this.start();
-        return this.initPromise;
+  gitDir = null;
+  commonDir = null;
+  initialized = false;
+  initPromise = null;
+  watchedPaths = [];
+  branchRefPath = null;
+  cache = new Map();
+  async ensureStarted() {
+    if (this.initialized) {
+      return;
     }
-    async start() {
-        this.gitDir = await resolveGitDir();
-        this.initialized = true;
-        if (!this.gitDir) {
-            return;
-        }
-        // In a worktree, branch refs and the main config are shared and live in
-        // commonDir, not the per-worktree gitDir. Resolve once so we don't
-        // re-read the commondir file on every branch switch.
-        this.commonDir = await getCommonDir(this.gitDir);
-        // Watch .git/HEAD and .git/config
-        this.watchPath(join(this.gitDir, 'HEAD'), () => {
-            void this.onHeadChanged();
-        });
-        // Config (remote URLs) lives in commonDir for worktrees
-        this.watchPath(join(this.commonDir ?? this.gitDir, 'config'), () => {
-            this.invalidate();
-        });
-        // Watch the current branch's ref file for commit changes
-        await this.watchCurrentBranchRef();
-        registerCleanup(async () => {
-            this.stopWatching();
-        });
+    if (this.initPromise) {
+      return this.initPromise;
     }
-    watchPath(path, callback) {
-        this.watchedPaths.push(path);
-        watchFile(path, { interval: WATCH_INTERVAL_MS }, callback);
+    this.initPromise = this.start();
+    return this.initPromise;
+  }
+  async start() {
+    this.gitDir = await resolveGitDir();
+    this.initialized = true;
+    if (!this.gitDir) {
+      return;
     }
-    /**
-     * Watch the loose ref file for the current branch.
-     * Called on startup and whenever HEAD changes (branch switch).
-     */
-    async watchCurrentBranchRef() {
-        if (!this.gitDir) {
-            return;
-        }
-        const head = await readGitHead(this.gitDir);
-        // Branch refs live in commonDir for worktrees (gitDir for regular repos)
-        const refsDir = this.commonDir ?? this.gitDir;
-        const refPath = head?.type === 'branch' ? join(refsDir, 'refs', 'heads', head.name) : null;
-        // Already watching this ref (or already not watching anything)
-        if (refPath === this.branchRefPath) {
-            return;
-        }
-        // Stop watching old branch ref. Runs for branch→branch AND
-        // branch→detached (checkout --detach, rebase, bisect).
-        if (this.branchRefPath) {
-            unwatchFile(this.branchRefPath);
-            this.watchedPaths = this.watchedPaths.filter(p => p !== this.branchRefPath);
-        }
-        this.branchRefPath = refPath;
-        if (!refPath) {
-            return;
-        }
-        // The ref file may not exist yet (new branch before first commit).
-        // watchFile works on nonexistent files — it fires when the file appears.
-        this.watchPath(refPath, () => {
-            this.invalidate();
-        });
+    // In a worktree, branch refs and the main config are shared and live in
+    // commonDir, not the per-worktree gitDir. Resolve once so we don't
+    // re-read the commondir file on every branch switch.
+    this.commonDir = await getCommonDir(this.gitDir);
+    // Watch .git/HEAD and .git/config
+    this.watchPath(join(this.gitDir, 'HEAD'), () => {
+      void this.onHeadChanged();
+    });
+    // Config (remote URLs) lives in commonDir for worktrees
+    this.watchPath(join(this.commonDir ?? this.gitDir, 'config'), () => {
+      this.invalidate();
+    });
+    // Watch the current branch's ref file for commit changes
+    await this.watchCurrentBranchRef();
+    registerCleanup(async () => {
+      this.stopWatching();
+    });
+  }
+  watchPath(path, callback) {
+    this.watchedPaths.push(path);
+    watchFile(path, { interval: WATCH_INTERVAL_MS }, callback);
+  }
+  /**
+   * Watch the loose ref file for the current branch.
+   * Called on startup and whenever HEAD changes (branch switch).
+   */
+  async watchCurrentBranchRef() {
+    if (!this.gitDir) {
+      return;
     }
-    async onHeadChanged() {
-        // HEAD changed — could be a branch switch or detach.
-        // Defer file I/O (readGitHead, watchFile setup) until scroll settles so
-        // watchFile callbacks that land mid-scroll don't compete for the event
-        // loop. invalidate() is cheap (just marks dirty) so do it first — the
-        // cache correctly serves stale-marked values until the watcher updates.
-        this.invalidate();
-        await waitForScrollIdle();
-        await this.watchCurrentBranchRef();
+    const head = await readGitHead(this.gitDir);
+    // Branch refs live in commonDir for worktrees (gitDir for regular repos)
+    const refsDir = this.commonDir ?? this.gitDir;
+    const refPath = head?.type === 'branch' ? join(refsDir, 'refs', 'heads', head.name) : null;
+    // Already watching this ref (or already not watching anything)
+    if (refPath === this.branchRefPath) {
+      return;
     }
-    invalidate() {
-        for (const entry of this.cache.values()) {
-            entry.dirty = true;
-        }
+    // Stop watching old branch ref. Runs for branch→branch AND
+    // branch→detached (checkout --detach, rebase, bisect).
+    if (this.branchRefPath) {
+      unwatchFile(this.branchRefPath);
+      this.watchedPaths = this.watchedPaths.filter(p => p !== this.branchRefPath);
     }
-    stopWatching() {
-        for (const path of this.watchedPaths) {
-            unwatchFile(path);
-        }
-        this.watchedPaths = [];
-        this.branchRefPath = null;
+    this.branchRefPath = refPath;
+    if (!refPath) {
+      return;
     }
-    /**
-     * Get a cached value by key. On first call for a key, computes and caches it.
-     * Subsequent calls return the cached value until a watched file changes,
-     * which marks the entry dirty. The next get() re-computes from disk.
-     *
-     * Race condition handling: dirty is cleared BEFORE the async compute starts.
-     * If a file change arrives during compute, it re-sets dirty, so the next
-     * get() will re-read again rather than serving a stale value.
-     */
-    async get(key, compute) {
-        await this.ensureStarted();
-        const existing = this.cache.get(key);
-        if (existing && !existing.dirty) {
-            return existing.value;
-        }
-        // Clear dirty before compute — if the file changes again during the
-        // async read, invalidate() will re-set dirty and we'll re-read on
-        // the next get() call.
-        if (existing) {
-            existing.dirty = false;
-        }
-        const value = await compute();
-        // Only update the cached value if no new invalidation arrived during compute
-        const entry = this.cache.get(key);
-        if (entry && !entry.dirty) {
-            entry.value = value;
-        }
-        if (!entry) {
-            this.cache.set(key, { value, dirty: false, compute });
-        }
-        return value;
+    // The ref file may not exist yet (new branch before first commit).
+    // watchFile works on nonexistent files — it fires when the file appears.
+    this.watchPath(refPath, () => {
+      this.invalidate();
+    });
+  }
+  async onHeadChanged() {
+    // HEAD changed — could be a branch switch or detach.
+    // Defer file I/O (readGitHead, watchFile setup) until scroll settles so
+    // watchFile callbacks that land mid-scroll don't compete for the event
+    // loop. invalidate() is cheap (just marks dirty) so do it first — the
+    // cache correctly serves stale-marked values until the watcher updates.
+    this.invalidate();
+    await waitForScrollIdle();
+    await this.watchCurrentBranchRef();
+  }
+  invalidate() {
+    for (const entry of this.cache.values()) {
+      entry.dirty = true;
     }
-    /** Reset all state. Stops file watchers. For testing only. */
-    reset() {
-        this.stopWatching();
-        this.cache.clear();
-        this.initialized = false;
-        this.initPromise = null;
-        this.gitDir = null;
-        this.commonDir = null;
+  }
+  stopWatching() {
+    for (const path of this.watchedPaths) {
+      unwatchFile(path);
     }
+    this.watchedPaths = [];
+    this.branchRefPath = null;
+  }
+  /**
+   * Get a cached value by key. On first call for a key, computes and caches it.
+   * Subsequent calls return the cached value until a watched file changes,
+   * which marks the entry dirty. The next get() re-computes from disk.
+   *
+   * Race condition handling: dirty is cleared BEFORE the async compute starts.
+   * If a file change arrives during compute, it re-sets dirty, so the next
+   * get() will re-read again rather than serving a stale value.
+   */
+  async get(key, compute) {
+    await this.ensureStarted();
+    const existing = this.cache.get(key);
+    if (existing && !existing.dirty) {
+      return existing.value;
+    }
+    // Clear dirty before compute — if the file changes again during the
+    // async read, invalidate() will re-set dirty and we'll re-read on
+    // the next get() call.
+    if (existing) {
+      existing.dirty = false;
+    }
+    const value = await compute();
+    // Only update the cached value if no new invalidation arrived during compute
+    const entry = this.cache.get(key);
+    if (entry && !entry.dirty) {
+      entry.value = value;
+    }
+    if (!entry) {
+      this.cache.set(key, { value, dirty: false, compute });
+    }
+    return value;
+  }
+  /** Reset all state. Stops file watchers. For testing only. */
+  reset() {
+    this.stopWatching();
+    this.cache.clear();
+    this.initialized = false;
+    this.initPromise = null;
+    this.gitDir = null;
+    this.commonDir = null;
+  }
 }
 const gitWatcher = new GitFileWatcher();
 async function computeBranch() {
-    const gitDir = await resolveGitDir();
-    if (!gitDir) {
-        return 'HEAD';
-    }
-    const head = await readGitHead(gitDir);
-    if (!head) {
-        return 'HEAD';
-    }
-    return head.type === 'branch' ? head.name : 'HEAD';
+  const gitDir = await resolveGitDir();
+  if (!gitDir) {
+    return 'HEAD';
+  }
+  const head = await readGitHead(gitDir);
+  if (!head) {
+    return 'HEAD';
+  }
+  return head.type === 'branch' ? head.name : 'HEAD';
 }
 async function computeHead() {
-    const gitDir = await resolveGitDir();
-    if (!gitDir) {
-        return '';
-    }
-    const head = await readGitHead(gitDir);
-    if (!head) {
-        return '';
-    }
-    if (head.type === 'branch') {
-        return (await resolveRef(gitDir, `refs/heads/${head.name}`)) ?? '';
-    }
-    return head.sha;
+  const gitDir = await resolveGitDir();
+  if (!gitDir) {
+    return '';
+  }
+  const head = await readGitHead(gitDir);
+  if (!head) {
+    return '';
+  }
+  if (head.type === 'branch') {
+    return (await resolveRef(gitDir, `refs/heads/${head.name}`)) ?? '';
+  }
+  return head.sha;
 }
 async function computeRemoteUrl() {
-    const gitDir = await resolveGitDir();
-    if (!gitDir) {
-        return null;
-    }
-    const url = await parseGitConfigValue(gitDir, 'remote', 'origin', 'url');
-    if (url) {
-        return url;
-    }
-    // In worktrees, the config with remote URLs is in the common dir
-    const commonDir = await getCommonDir(gitDir);
-    if (commonDir && commonDir !== gitDir) {
-        return parseGitConfigValue(commonDir, 'remote', 'origin', 'url');
-    }
+  const gitDir = await resolveGitDir();
+  if (!gitDir) {
     return null;
+  }
+  const url = await parseGitConfigValue(gitDir, 'remote', 'origin', 'url');
+  if (url) {
+    return url;
+  }
+  // In worktrees, the config with remote URLs is in the common dir
+  const commonDir = await getCommonDir(gitDir);
+  if (commonDir && commonDir !== gitDir) {
+    return parseGitConfigValue(commonDir, 'remote', 'origin', 'url');
+  }
+  return null;
 }
 async function computeDefaultBranch() {
-    const gitDir = await resolveGitDir();
-    if (!gitDir) {
-        return 'main';
-    }
-    // refs/remotes/ lives in commonDir, not the per-worktree gitDir
-    const commonDir = (await getCommonDir(gitDir)) ?? gitDir;
-    const branchFromSymref = await readRawSymref(commonDir, 'refs/remotes/origin/HEAD', 'refs/remotes/origin/');
-    if (branchFromSymref) {
-        return branchFromSymref;
-    }
-    for (const candidate of ['main', 'master']) {
-        const sha = await resolveRef(commonDir, `refs/remotes/origin/${candidate}`);
-        if (sha) {
-            return candidate;
-        }
-    }
+  const gitDir = await resolveGitDir();
+  if (!gitDir) {
     return 'main';
+  }
+  // refs/remotes/ lives in commonDir, not the per-worktree gitDir
+  const commonDir = (await getCommonDir(gitDir)) ?? gitDir;
+  const branchFromSymref = await readRawSymref(commonDir, 'refs/remotes/origin/HEAD', 'refs/remotes/origin/');
+  if (branchFromSymref) {
+    return branchFromSymref;
+  }
+  for (const candidate of ['main', 'master']) {
+    const sha = await resolveRef(commonDir, `refs/remotes/origin/${candidate}`);
+    if (sha) {
+      return candidate;
+    }
+  }
+  return 'main';
 }
 export function getCachedBranch() {
-    return gitWatcher.get('branch', computeBranch);
+  return gitWatcher.get('branch', computeBranch);
 }
 export function getCachedHead() {
-    return gitWatcher.get('head', computeHead);
+  return gitWatcher.get('head', computeHead);
 }
 export function getCachedRemoteUrl() {
-    return gitWatcher.get('remoteUrl', computeRemoteUrl);
+  return gitWatcher.get('remoteUrl', computeRemoteUrl);
 }
 export function getCachedDefaultBranch() {
-    return gitWatcher.get('defaultBranch', computeDefaultBranch);
+  return gitWatcher.get('defaultBranch', computeDefaultBranch);
 }
 /** Reset the git file watcher state. For testing only. */
 export function resetGitFileWatcher() {
-    gitWatcher.reset();
+  gitWatcher.reset();
 }
 /**
  * Read the HEAD SHA for an arbitrary directory (not using the watcher).
  * Used by plugins that need the HEAD of a specific repo, not the CWD repo.
  */
 export async function getHeadForDir(cwd) {
-    const gitDir = await resolveGitDir(cwd);
-    if (!gitDir) {
-        return null;
-    }
-    const head = await readGitHead(gitDir);
-    if (!head) {
-        return null;
-    }
-    if (head.type === 'branch') {
-        return resolveRef(gitDir, `refs/heads/${head.name}`);
-    }
-    return head.sha;
+  const gitDir = await resolveGitDir(cwd);
+  if (!gitDir) {
+    return null;
+  }
+  const head = await readGitHead(gitDir);
+  if (!head) {
+    return null;
+  }
+  if (head.type === 'branch') {
+    return resolveRef(gitDir, `refs/heads/${head.name}`);
+  }
+  return head.sha;
 }
 /**
  * Read the HEAD SHA for a git worktree directory (not the main repo).
@@ -526,44 +521,43 @@ export async function getHeadForDir(cwd) {
  * malformed. Caller can treat null as "not a valid worktree".
  */
 export async function readWorktreeHeadSha(worktreePath) {
-    let gitDir;
-    try {
-        const ptr = (await readFile(join(worktreePath, '.git'), 'utf-8')).trim();
-        if (!ptr.startsWith('gitdir:')) {
-            return null;
-        }
-        gitDir = resolve(worktreePath, ptr.slice('gitdir:'.length).trim());
+  let gitDir;
+  try {
+    const ptr = (await readFile(join(worktreePath, '.git'), 'utf-8')).trim();
+    if (!ptr.startsWith('gitdir:')) {
+      return null;
     }
-    catch {
-        return null;
-    }
-    const head = await readGitHead(gitDir);
-    if (!head) {
-        return null;
-    }
-    if (head.type === 'branch') {
-        return resolveRef(gitDir, `refs/heads/${head.name}`);
-    }
-    return head.sha;
+    gitDir = resolve(worktreePath, ptr.slice('gitdir:'.length).trim());
+  } catch {
+    return null;
+  }
+  const head = await readGitHead(gitDir);
+  if (!head) {
+    return null;
+  }
+  if (head.type === 'branch') {
+    return resolveRef(gitDir, `refs/heads/${head.name}`);
+  }
+  return head.sha;
 }
 /**
  * Read the remote origin URL for an arbitrary directory via .git/config.
  */
 export async function getRemoteUrlForDir(cwd) {
-    const gitDir = await resolveGitDir(cwd);
-    if (!gitDir) {
-        return null;
-    }
-    const url = await parseGitConfigValue(gitDir, 'remote', 'origin', 'url');
-    if (url) {
-        return url;
-    }
-    // In worktrees, the config with remote URLs is in the common dir
-    const commonDir = await getCommonDir(gitDir);
-    if (commonDir && commonDir !== gitDir) {
-        return parseGitConfigValue(commonDir, 'remote', 'origin', 'url');
-    }
+  const gitDir = await resolveGitDir(cwd);
+  if (!gitDir) {
     return null;
+  }
+  const url = await parseGitConfigValue(gitDir, 'remote', 'origin', 'url');
+  if (url) {
+    return url;
+  }
+  // In worktrees, the config with remote URLs is in the common dir
+  const commonDir = await getCommonDir(gitDir);
+  if (commonDir && commonDir !== gitDir) {
+    return parseGitConfigValue(commonDir, 'remote', 'origin', 'url');
+  }
+  return null;
 }
 /**
  * Check if we're in a shallow clone by looking for <commonDir>/shallow.
@@ -571,18 +565,17 @@ export async function getRemoteUrlForDir(cwd) {
  * The shallow file lives in commonDir, not the per-worktree gitDir.
  */
 export async function isShallowClone() {
-    const gitDir = await resolveGitDir();
-    if (!gitDir) {
-        return false;
-    }
-    const commonDir = (await getCommonDir(gitDir)) ?? gitDir;
-    try {
-        await stat(join(commonDir, 'shallow'));
-        return true;
-    }
-    catch {
-        return false;
-    }
+  const gitDir = await resolveGitDir();
+  if (!gitDir) {
+    return false;
+  }
+  const commonDir = (await getCommonDir(gitDir)) ?? gitDir;
+  try {
+    await stat(join(commonDir, 'shallow'));
+    return true;
+  } catch {
+    return false;
+  }
 }
 /**
  * Count worktrees by reading <commonDir>/worktrees/ directory.
@@ -590,17 +583,16 @@ export async function isShallowClone() {
  * The main worktree is not listed there, so add 1.
  */
 export async function getWorktreeCountFromFs() {
-    try {
-        const gitDir = await resolveGitDir();
-        if (!gitDir) {
-            return 0;
-        }
-        const commonDir = (await getCommonDir(gitDir)) ?? gitDir;
-        const entries = await readdir(join(commonDir, 'worktrees'));
-        return entries.length + 1;
+  try {
+    const gitDir = await resolveGitDir();
+    if (!gitDir) {
+      return 0;
     }
-    catch {
-        // No worktrees directory means only the main worktree
-        return 1;
-    }
+    const commonDir = (await getCommonDir(gitDir)) ?? gitDir;
+    const entries = await readdir(join(commonDir, 'worktrees'));
+    return entries.length + 1;
+  } catch {
+    // No worktrees directory means only the main worktree
+    return 1;
+  }
 }

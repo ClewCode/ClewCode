@@ -35,7 +35,7 @@ import {
   createUserInterruptionMessage,
   createUserMessage,
 } from '../utils/messages.js';
-import { getFullGoalState, updateGoalState, blockGoal } from '../utils/sessionGoalState.js';
+import { getFullGoalState, updateGoalState } from '../utils/sessionGoalState.js';
 import type { SystemPrompt } from '../utils/systemPromptType.js';
 import { getTaskListId, listTasks } from '../utils/tasks.js';
 import { getAgentName, getTeamName, isTeammate } from '../utils/teammate.js';

@@ -5,13 +5,13 @@
  * - Running a Bun-compiled standalone executable
  */
 export function isRunningWithBun() {
-    // https://bun.com/guides/util/detect-bun
-    return process.versions.bun !== undefined;
+  // https://bun.com/guides/util/detect-bun
+  return process.versions.bun !== undefined;
 }
 /**
  * Detects if running as a Bun-compiled standalone executable.
  * This checks for embedded files which are present in compiled binaries.
  */
 export function isInBundledMode() {
-    return typeof Bun !== 'undefined' && Array.isArray(Bun.embeddedFiles) && Bun.embeddedFiles.length > 0;
+  return typeof Bun !== 'undefined' && Array.isArray(Bun.embeddedFiles) && Bun.embeddedFiles.length > 0;
 }

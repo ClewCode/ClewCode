@@ -10,8 +10,8 @@
 import { Database } from 'bun:sqlite';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { getSessionId } from '../../bootstrap/state.js';
+import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 
 export interface SessionRecord {
   session_id: string;
@@ -81,21 +81,27 @@ export function getPreviousSessionContext(projectRoot: string): string | null {
   const db = getDb(projectRoot);
 
   // Last raw session (< 7 days)
-  const last = db.prepare(`
+  const last = db
+    .prepare(`
     SELECT * FROM sessions WHERE consolidated = 0 ORDER BY end_time DESC LIMIT 1
-  `).get() as SessionRecord | undefined;
+  `)
+    .get() as SessionRecord | undefined;
 
   // Recent digests (last 4 weeks)
-  const digests = db.prepare(`
+  const digests = db
+    .prepare(`
     SELECT * FROM digests ORDER BY created_at DESC LIMIT 4
-  `).all() as Array<{ period: string; type: string; summary: string; patterns: string; session_count: number }>;
+  `)
+    .all() as Array<{ period: string; type: string; summary: string; patterns: string; session_count: number }>;
 
   // Recent topics
-  const topics = db.prepare(`
+  const topics = db
+    .prepare(`
     SELECT DISTINCT t.topic FROM topic_index t
     JOIN sessions s ON t.session_id = s.session_id
     WHERE s.end_time > ? ORDER BY s.end_time DESC LIMIT 8
-  `).all(Date.now() - 7 * 86_400_000) as { topic: string }[];
+  `)
+    .all(Date.now() - 7 * 86_400_000) as { topic: string }[];
 
   const total = (db.prepare('SELECT COUNT(*) as c FROM sessions').get() as { c: number }).c;
   db.close();
@@ -145,9 +151,17 @@ export function saveSessionSummary(
   db.prepare(`
     INSERT INTO sessions (session_id, start_time, end_time, model, provider, summary, key_decisions, active_files, tags, consolidated)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-  `).run(getSessionId(), now - 3600_000, now, process.env.AI_PROVIDER ?? 'unknown',
-    process.env.AI_PROVIDER ?? 'unknown', summary.slice(0, 2000),
-    JSON.stringify(keyDecisions), JSON.stringify(activeFiles), JSON.stringify(tags));
+  `).run(
+    getSessionId(),
+    now - 3600_000,
+    now,
+    process.env.AI_PROVIDER ?? 'unknown',
+    process.env.AI_PROVIDER ?? 'unknown',
+    summary.slice(0, 2000),
+    JSON.stringify(keyDecisions),
+    JSON.stringify(activeFiles),
+    JSON.stringify(tags),
+  );
 
   // Update topics
   const ins = db.prepare('INSERT OR IGNORE INTO topic_index (topic, session_id) VALUES (?, ?)');
@@ -170,10 +184,12 @@ const ONE_MONTH = 30 * 86_400_000;
 
 function consolidateIfNeeded(db: Database, now: number): void {
   // Find sessions older than 7 days that aren't consolidated
-  const oldSessions = db.prepare(`
+  const oldSessions = db
+    .prepare(`
     SELECT * FROM sessions WHERE consolidated = 0 AND end_time < ?
     ORDER BY end_time ASC
-  `).all(now - ONE_WEEK) as SessionRecord[];
+  `)
+    .all(now - ONE_WEEK) as SessionRecord[];
 
   if (!oldSessions.length) return;
 
@@ -211,8 +227,14 @@ function consolidateIfNeeded(db: Database, now: number): void {
     db.prepare(`
       INSERT OR REPLACE INTO digests (period, type, summary, key_decisions, patterns, session_count, created_at)
       VALUES (?, 'weekly', ?, ?, ?, ?, ?)
-    `).run(week, digestSummary, JSON.stringify([...new Set(allDecisions)]),
-      JSON.stringify(patterns), sessions.length, now);
+    `).run(
+      week,
+      digestSummary,
+      JSON.stringify([...new Set(allDecisions)]),
+      JSON.stringify(patterns),
+      sessions.length,
+      now,
+    );
 
     // Mark as weekly-consolidated
     for (const s of sessions) {
@@ -221,10 +243,12 @@ function consolidateIfNeeded(db: Database, now: number): void {
   }
 
   // Create monthly digests from weekly digests + remaining
-  const monthStr = `${now_dt.getFullYear()}-${String(now_dt.getMonth() + 1).padStart(2, '0')}`;
-  const prevMonthSessions = db.prepare(`
+  const _monthStr = `${now_dt.getFullYear()}-${String(now_dt.getMonth() + 1).padStart(2, '0')}`;
+  const prevMonthSessions = db
+    .prepare(`
     SELECT * FROM sessions WHERE consolidated = 1 AND end_time < ?
-  `).all(now - ONE_MONTH) as SessionRecord[];
+  `)
+    .all(now - ONE_MONTH) as SessionRecord[];
 
   if (prevMonthSessions.length > 0) {
     // Group by month
@@ -247,8 +271,13 @@ function consolidateIfNeeded(db: Database, now: number): void {
       db.prepare(`
         INSERT OR REPLACE INTO digests (period, type, summary, key_decisions, patterns, session_count, created_at)
         VALUES (?, 'monthly', ?, '[]', ?, ?, ?)
-      `).run(month, `Monthly summary: ${summaries.length} sessions. ${summaries.join('; ')}`.slice(0, 2000),
-        JSON.stringify(findPatterns(allTags, [])), sessions.length, now);
+      `).run(
+        month,
+        `Monthly summary: ${summaries.length} sessions. ${summaries.join('; ')}`.slice(0, 2000),
+        JSON.stringify(findPatterns(allTags, [])),
+        sessions.length,
+        now,
+      );
 
       // Mark as monthly-consolidated
       for (const s of sessions) {
@@ -284,7 +313,9 @@ export function getSessionHistory(projectRoot: string, limit = 20): SessionRecor
   return rows;
 }
 
-export function getDigests(projectRoot: string): Array<{ period: string; type: string; summary: string; patterns: string; session_count: number }> {
+export function getDigests(
+  projectRoot: string,
+): Array<{ period: string; type: string; summary: string; patterns: string; session_count: number }> {
   const db = getDb(projectRoot);
   const rows = db.prepare('SELECT * FROM digests ORDER BY created_at DESC LIMIT 12').all() as any[];
   db.close();

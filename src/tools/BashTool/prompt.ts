@@ -1,4 +1,3 @@
-import { feature } from 'bun:bundle';
 import { prependBullets } from '../../constants/prompts.js';
 import { getAttributionTexts } from '../../utils/attribution.js';
 import { hasEmbeddedSearchTools } from '../../utils/embeddedTools.js';
@@ -39,7 +38,7 @@ function getCommitAndPRInstructions(): string {
   // hiding are mechanical and work regardless, but the explicit "don't blow
   // your cover" instructions are the last line of defense against the model
   // volunteering an internal codename in a commit message.
-  const undercoverSection = process.env.USER_TYPE === 'ant' && isUndercover() ? getUndercoverInstructions() + '\n' : '';
+  const undercoverSection = process.env.USER_TYPE === 'ant' && isUndercover() ? `${getUndercoverInstructions()}\n` : '';
 
   if (!shouldIncludeGitInstructions()) return undercoverSection;
 

@@ -194,7 +194,7 @@ export async function launchRemoteReview(
   if (isPrNumber) {
     // PR mode: refs/pull/N/head via github.com. Orchestrator --pr N.
     const repo = await detectCurrentRepositoryWithHost();
-    if (!repo || repo.host !== 'github.com') {
+    if (repo?.host !== 'github.com') {
       logEvent('tengu_review_remote_precondition_failed', {});
       return null;
     }

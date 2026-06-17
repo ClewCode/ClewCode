@@ -19,8 +19,8 @@ import {
   switchSession,
 } from './bootstrap/state.js';
 import { getCommands } from './commands.js';
-import { initSessionMemory } from './services/SessionMemory/sessionMemory.js';
 import { autoIngestWorkspaceMemory } from './memory/workspace.js';
+import { initSessionMemory } from './services/SessionMemory/sessionMemory.js';
 import { asSessionId } from './types/ids.js';
 import { isAgentSwarmsEnabled } from './utils/agentSwarmsEnabled.js';
 import { checkAndRestoreTerminalBackup } from './utils/appleTerminalBackup.js';
@@ -66,7 +66,7 @@ export async function setup(
 
   // Check for Node.js version < 18
   const nodeVersion = process.version.match(/^v(\d+)\./)?.[1];
-  if (!nodeVersion || parseInt(nodeVersion) < 18) {
+  if (!nodeVersion || parseInt(nodeVersion, 10) < 18) {
     // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.error(chalk.bold.red('Error: Clew Code requires Node.js version 18 or higher.'));
     process.exit(1);

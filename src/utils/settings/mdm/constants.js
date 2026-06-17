@@ -33,30 +33,29 @@ export const MDM_SUBPROCESS_TIMEOUT_MS = 5000;
  * included only when appropriate.
  */
 export function getMacOSPlistPaths() {
-    let username = '';
-    try {
-        username = userInfo().username;
-    }
-    catch {
-        // ignore
-    }
-    const paths = [];
-    if (username) {
-        paths.push({
-            path: `/Library/Managed Preferences/${username}/${MACOS_PREFERENCE_DOMAIN}.plist`,
-            label: 'per-user managed preferences',
-        });
-    }
+  let username = '';
+  try {
+    username = userInfo().username;
+  } catch {
+    // ignore
+  }
+  const paths = [];
+  if (username) {
     paths.push({
-        path: `/Library/Managed Preferences/${MACOS_PREFERENCE_DOMAIN}.plist`,
-        label: 'device-level managed preferences',
+      path: `/Library/Managed Preferences/${username}/${MACOS_PREFERENCE_DOMAIN}.plist`,
+      label: 'per-user managed preferences',
     });
-    // Allow user-writable preferences for local MDM testing in ant builds only.
-    if (process.env.USER_TYPE === 'ant') {
-        paths.push({
-            path: join(homedir(), 'Library', 'Preferences', `${MACOS_PREFERENCE_DOMAIN}.plist`),
-            label: 'user preferences (ant-only)',
-        });
-    }
-    return paths;
+  }
+  paths.push({
+    path: `/Library/Managed Preferences/${MACOS_PREFERENCE_DOMAIN}.plist`,
+    label: 'device-level managed preferences',
+  });
+  // Allow user-writable preferences for local MDM testing in ant builds only.
+  if (process.env.USER_TYPE === 'ant') {
+    paths.push({
+      path: join(homedir(), 'Library', 'Preferences', `${MACOS_PREFERENCE_DOMAIN}.plist`),
+      label: 'user preferences (ant-only)',
+    });
+  }
+  return paths;
 }

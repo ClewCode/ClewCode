@@ -19,7 +19,7 @@ function formatTimestamp(date: Date): string {
 }
 export function extractFirstPrompt(messages: Message[]): string {
   const firstUserMessage = messages.find(msg => msg.type === 'user');
-  if (!firstUserMessage || firstUserMessage.type !== 'user') {
+  if (firstUserMessage?.type !== 'user') {
     return '';
   }
   const content = firstUserMessage.message?.content;
@@ -36,7 +36,7 @@ export function extractFirstPrompt(messages: Message[]): string {
   // Take first line only and limit length
   result = result.split('\n')[0] || '';
   if (result.length > 50) {
-    result = result.substring(0, 49) + '…';
+    result = `${result.substring(0, 49)}…`;
   }
   return result;
 }
@@ -64,7 +64,7 @@ export async function call(
   // If args are provided, write directly to file and skip dialog
   const filename = args.trim();
   if (filename) {
-    const finalFilename = filename.endsWith('.txt') ? filename : filename.replace(/\.[^.]+$/, '') + '.txt';
+    const finalFilename = filename.endsWith('.txt') ? filename : `${filename.replace(/\.[^.]+$/, '')}.txt`;
     const filepath = join(getCwd(), finalFilename);
     try {
       writeFileSync_DEPRECATED(filepath, content, {

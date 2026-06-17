@@ -58,7 +58,7 @@ function formatUri(uri: string): string {
   }
   // For other URIs, show the whole thing but truncated
   if (uri.length > 40) {
-    return uri.slice(0, 39) + '\u2026';
+    return `${uri.slice(0, 39)}\u2026`;
   }
   return uri;
 }

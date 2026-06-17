@@ -69,7 +69,7 @@ function getSettingsForSourceLenient_FOR_EDITING_ONLY_NOT_FOR_READING(source: Se
  * @returns Array of PermissionRule objects
  */
 function settingsJsonToRules(data: SettingsJson | null, source: PermissionRuleSource): PermissionRule[] {
-  if (!data || !data.permissions) {
+  if (!data?.permissions) {
     return [];
   }
 
@@ -141,7 +141,7 @@ export function deletePermissionRuleFromSettings(rule: PermissionRuleFromEditabl
   const settingsData = getSettingsForSource(rule.source);
 
   // If there's no settings data or permissions, nothing to do
-  if (!settingsData || !settingsData.permissions) {
+  if (!settingsData?.permissions) {
     return false;
   }
 

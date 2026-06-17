@@ -139,7 +139,7 @@ function getAnthropicEnvMetadata() {
 function getBuildAgeMinutes(): number | undefined {
   if (!MACRO.BUILD_TIME) return undefined;
   const buildTime = new Date(MACRO.BUILD_TIME).getTime();
-  if (isNaN(buildTime)) return undefined;
+  if (Number.isNaN(buildTime)) return undefined;
   return Math.floor((Date.now() - buildTime) / 60000);
 }
 
@@ -330,7 +330,7 @@ export function logAPIError({
   // Pass the span to correctly match responses to requests when beta tracing is enabled
   endLLMRequestSpan(llmSpan, {
     success: false,
-    statusCode: status ? parseInt(status) : undefined,
+    statusCode: status ? parseInt(status, 10) : undefined,
     error: errStr,
     attempt,
   });

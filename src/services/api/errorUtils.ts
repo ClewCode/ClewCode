@@ -97,7 +97,7 @@ export function getSSLErrorHint(error: unknown): string | null {
 function sanitizeMessageHTML(message: string): string {
   if (message.includes('<!DOCTYPE html') || message.includes('<html')) {
     const titleMatch = message.match(/<title>([^<]+)<\/title>/);
-    if (titleMatch && titleMatch[1]) {
+    if (titleMatch?.[1]) {
       return titleMatch[1].trim();
     }
     return '';

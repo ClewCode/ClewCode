@@ -18,7 +18,7 @@ export async function call(
   const pluginName = args?.trim();
 
   if (!pluginName) {
-    onDone('Usage: /plugin-details <plugin-name>\n\nInstalled plugins:\n' + getInstalledPluginsList(context), {
+    onDone(`Usage: /plugin-details <plugin-name>\n\nInstalled plugins:\n${getInstalledPluginsList(context)}`, {
       display: 'system',
     });
     return null;

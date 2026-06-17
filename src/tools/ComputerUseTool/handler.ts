@@ -21,10 +21,8 @@ import {
   mouseUp,
   moveMouse,
   pressKey,
-  readClipboard,
   scrollAt,
   typeText,
-  writeClipboard,
 } from './input.js';
 import { scaleToScreen } from './scaling.js';
 import { captureScreenshot } from './screenshot.js';

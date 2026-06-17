@@ -84,7 +84,8 @@ export function useTerminalViewport(): [ref: (element: DOMElement | null) => voi
     const viewportBottom = viewportY + rows;
 
     // Handle NaN defensively to avoid infinite re-renders or crashes
-    const isInvalid = isNaN(absoluteTop) || isNaN(bottom) || isNaN(viewportY) || isNaN(viewportBottom);
+    const isInvalid =
+      Number.isNaN(absoluteTop) || Number.isNaN(bottom) || Number.isNaN(viewportY) || Number.isNaN(viewportBottom);
     const visible = isInvalid ? true : bottom > viewportY && absoluteTop < viewportBottom;
 
     if (visible !== entryRef.current.isVisible) {

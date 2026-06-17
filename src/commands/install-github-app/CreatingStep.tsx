@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Text } from '../../ink.js';
 import type { Workflow } from './types.js';
 
@@ -33,32 +32,30 @@ export function CreatingStep({
       ];
 
   return (
-    <>
-      <Box flexDirection="column" borderStyle="round" paddingX={1}>
-        <Box flexDirection="column" marginBottom={1}>
-          <Text bold>Install GitHub App</Text>
-          <Text dimColor>Create GitHub Actions workflow</Text>
-        </Box>
-        {progressSteps.map((stepText, index) => {
-          let status: 'completed' | 'in-progress' | 'pending' = 'pending';
-
-          if (index < currentWorkflowInstallStep) {
-            status = 'completed';
-          } else if (index === currentWorkflowInstallStep) {
-            status = 'in-progress';
-          }
-
-          return (
-            <Box key={index}>
-              <Text color={status === 'completed' ? 'success' : status === 'in-progress' ? 'warning' : undefined}>
-                {status === 'completed' ? '✓ ' : ''}
-                {stepText}
-                {status === 'in-progress' ? '…' : ''}
-              </Text>
-            </Box>
-          );
-        })}
+    <Box flexDirection="column" borderStyle="round" paddingX={1}>
+      <Box flexDirection="column" marginBottom={1}>
+        <Text bold>Install GitHub App</Text>
+        <Text dimColor>Create GitHub Actions workflow</Text>
       </Box>
-    </>
+      {progressSteps.map((stepText, index) => {
+        let status: 'completed' | 'in-progress' | 'pending' = 'pending';
+
+        if (index < currentWorkflowInstallStep) {
+          status = 'completed';
+        } else if (index === currentWorkflowInstallStep) {
+          status = 'in-progress';
+        }
+
+        return (
+          <Box key={index}>
+            <Text color={status === 'completed' ? 'success' : status === 'in-progress' ? 'warning' : undefined}>
+              {status === 'completed' ? '✓ ' : ''}
+              {stepText}
+              {status === 'in-progress' ? '…' : ''}
+            </Text>
+          </Box>
+        );
+      })}
+    </Box>
   );
 }

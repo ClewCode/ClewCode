@@ -8,7 +8,7 @@ let _db: Database | null = null;
 export function getMemoryDb(cwd: string): Database {
   if (_db) return _db;
 
-  const fsImpl = getFsImplementation();
+  const _fsImpl = getFsImplementation();
   const indexDir = join(cwd, DOT_CLEW, 'index');
   const dbPath = join(indexDir, 'chunks.db');
 

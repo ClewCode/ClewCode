@@ -643,7 +643,7 @@ export async function acceptSpeculation(
       timestamp: new Date().toISOString(),
       timeSavedMs,
     };
-    void appendFile(getTranscriptPath(), jsonStringify(entry) + '\n', {
+    void appendFile(getTranscriptPath(), `${jsonStringify(entry)}\n`, {
       mode: 0o600,
     }).catch(() => {
       logForDebugging('[Speculation] Failed to write speculation-accept to transcript');

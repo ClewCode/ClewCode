@@ -2459,7 +2459,7 @@ export function checkSemantics(commands: SimpleCommand[]): SemanticCheckResult {
               // data-flag char appears at the END after only no-arg
               // flags like `-r`/`-s`.
               for (let j = 1; j < arg.length; j++) {
-                if (READ_DATA_FLAGS.has('-' + arg[j])) {
+                if (READ_DATA_FLAGS.has(`-${arg[j]}`)) {
                   if (j === arg.length - 1) skipNext = true;
                   break;
                 }

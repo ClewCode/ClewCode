@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.33] — 2026-06-17
+
+### Fixed
+
+- **REPL TDZ errors at startup**: Moved `restoreReadFileState` and `processInitialMessage` effect to before their dependent `const` declarations, fixing `Cannot access X before initialization` render errors. Added optional chaining for `initialMessages?.length` in dependency array. (`src/screens/REPL.tsx`)
+
 ## [0.2.32] — 2026-06-17
 
 ### Fixed

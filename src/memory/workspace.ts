@@ -2,9 +2,9 @@ import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
+import { logError } from '../utils/log.js';
 import { type ClaudeMemoryConfig, getDefaultConfig } from './config.js';
 import { ingestMemoryWorkspace } from './ingest.js';
-import { logError } from '../utils/log.js';
 
 export async function initMemoryWorkspace(cwd: string): Promise<ClaudeMemoryConfig> {
   const fsImpl = getFsImplementation();

@@ -13,7 +13,7 @@ import {
 import { FileTooLargeError, readFileInRange } from './readFileInRange.js';
 import { expandPath } from './path.js';
 import { countCharInString } from './stringUtils.js';
-import { count, uniq } from './array.js';
+import { uniq } from './array.js';
 import { getFsImplementation } from './fsOperations.js';
 import { readdir, stat } from 'fs/promises';
 import type { IDESelection } from '../hooks/useIdeSelection.js';
@@ -27,9 +27,7 @@ import { type Task, listTasks, getTaskListId, isTodoV2Enabled } from './tasks.js
 import { getPlanFilePath, getPlan } from './plans.js';
 import { getConnectedIdeName } from './ide.js';
 import {
-  filterInjectedMemoryFiles,
   getManagedAndUserConditionalRules,
-  getMemoryFiles,
   getMemoryFilesForNestedDirectory,
   getConditionalRulesForCwdLevelDirectory,
   type MemoryFileInfo,
@@ -58,8 +56,6 @@ import { getSnippetForTwoFileDiff } from 'src/tools/FileEditTool/utils.js';
 import type { ContentBlockParam, ImageBlockParam, Base64ImageSource } from '@anthropic-ai/sdk/resources/messages.mjs';
 import { maybeResizeAndDownsampleImageBlock } from './imageResizer.js';
 import type { PastedContent } from './config.js';
-import { getGlobalConfig } from './config.js';
-import { getDefaultSonnetModel, getDefaultHaikuModel, getDefaultOpusModel } from './model/model.js';
 import type { ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
 import { getSkillToolCommands, getMcpSkillCommands } from '../commands.js';
 import type { Command } from '../types/command.js';
@@ -1742,7 +1738,7 @@ async function processMcpResourceAttachments(input: string, toolUseContext: Tool
 
         // Find the MCP client
         const client = mcpClients.find(c => c.name === serverName);
-        if (!client || client.type !== 'connected') {
+        if (client?.type !== 'connected') {
           logEvent('tengu_at_mention_mcp_resource_error', {});
           return null;
         }

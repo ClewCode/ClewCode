@@ -59,7 +59,7 @@ function InstallGitHubApp(props: { onDone: (message: string) => void }): React.R
   });
   useExitOnCtrlCDWithKeybindings();
   // E15: Esc dismisses the dialog
-  useInput((input, key) => {
+  useInput((_input, key) => {
     if (key.escape) {
       props.onDone('Installation cancelled');
     }

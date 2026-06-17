@@ -15,7 +15,7 @@ export function createIdleTimeoutManager(isIdle: () => boolean): {
   // Parse CLAUDE_CODE_EXIT_AFTER_STOP_DELAY environment variable
   const exitAfterStopDelay = process.env.CLAUDE_CODE_EXIT_AFTER_STOP_DELAY;
   const delayMs = exitAfterStopDelay ? parseInt(exitAfterStopDelay, 10) : null;
-  const isValidDelay = delayMs && !isNaN(delayMs) && delayMs > 0;
+  const isValidDelay = delayMs && !Number.isNaN(delayMs) && delayMs > 0;
 
   let timer: NodeJS.Timeout | null = null;
   let lastIdleTime = 0;

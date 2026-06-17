@@ -11,7 +11,7 @@ import type { Action, Color, TabStatusAction } from './types.js';
 export const OSC_PREFIX = ESC + String.fromCharCode(ESC_TYPE.OSC);
 
 /** String Terminator (ESC \) - alternative to BEL for terminating OSC */
-export const ST = ESC + '\\';
+export const ST = `${ESC}\\`;
 
 /** Generate an OSC sequence: ESC ] p1;p2;...;pN <terminator>
  * Uses ST terminator for Kitty (avoids beeps), BEL for others */

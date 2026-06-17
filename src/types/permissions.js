@@ -8,19 +8,8 @@
 // ============================================================================
 // Permission Modes
 // ============================================================================
-export const EXTERNAL_PERMISSION_MODES = [
-    'acceptEdits',
-    'ask',
-    'bypassPermissions',
-    'default',
-    'dontAsk',
-    'plan',
-];
+export const EXTERNAL_PERMISSION_MODES = ['acceptEdits', 'ask', 'bypassPermissions', 'default', 'dontAsk', 'plan'];
 // Runtime validation set: modes that are user-addressable (settings.json
 // defaultMode, --permission-mode CLI flag, conversation recovery).
-export const INTERNAL_PERMISSION_MODES = [
-    ...EXTERNAL_PERMISSION_MODES,
-    'auto',
-    'guardian',
-];
+export const INTERNAL_PERMISSION_MODES = [...EXTERNAL_PERMISSION_MODES, 'auto', 'guardian'];
 export const PERMISSION_MODES = INTERNAL_PERMISSION_MODES;

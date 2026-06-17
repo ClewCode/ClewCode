@@ -1101,7 +1101,7 @@ function extractPathsFromCommand(cmd: ParsedCommandElement): {
     if (isPowerShellParameter(arg, argElementType)) {
       // Handle colon syntax: -Path:C:\secret
       // Normalize Unicode dash to ASCII `-` (pathParams are stored with `-`).
-      const normalized = '-' + arg.slice(1);
+      const normalized = `-${arg.slice(1)}`;
       const colonIdx = normalized.indexOf(':', 1); // skip first char (the dash)
       const paramName = colonIdx > 0 ? normalized.substring(0, colonIdx) : normalized;
       const paramLower = paramName.toLowerCase();
@@ -1263,7 +1263,7 @@ function extractPathsFromCommand(cmd: ParsedCommandElement): {
  * - 'passthrough' if no path commands were found or all paths are valid
  */
 export function checkPathConstraints(
-  input: { command: string },
+  _input: { command: string },
   parsed: ParsedPowerShellCommand,
   toolPermissionContext: ToolPermissionContext,
   compoundCommandHasCd = false,

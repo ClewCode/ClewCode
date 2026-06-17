@@ -312,7 +312,7 @@ function generateWordDiffElements(
     const lineBgColor =
       type === 'add' ? (dim ? 'diffAddedDimmed' : 'diffAdded') : dim ? 'diffRemovedDimmed' : 'diffRemoved';
     const lineNum = lineIndex === 0 ? i : undefined;
-    const lineNumStr = (lineNum !== undefined ? lineNum.toString().padStart(maxWidth) : ' '.repeat(maxWidth)) + ' ';
+    const lineNumStr = `${lineNum !== undefined ? lineNum.toString().padStart(maxWidth) : ' '.repeat(maxWidth)} `;
     // Calculate padding to fill the entire terminal width
     const usedWidth = lineNumStr.length + diffPrefixWidth + contentWidth;
     const padding = Math.max(0, width - usedWidth);
@@ -382,7 +382,7 @@ function formatDiff(
     return wrappedLines.map((line, lineIndex) => {
       const key = `${type}-${i}-${lineIndex}`;
       const lineNum = lineIndex === 0 ? i : undefined;
-      const lineNumStr = (lineNum !== undefined ? lineNum.toString().padStart(maxWidth) : ' '.repeat(maxWidth)) + ' ';
+      const lineNumStr = `${lineNum !== undefined ? lineNum.toString().padStart(maxWidth) : ' '.repeat(maxWidth)} `;
       const sigil = type === 'add' ? '+' : type === 'remove' ? '-' : ' ';
       // Calculate padding to fill the entire terminal width
       const contentWidth = lineNumStr.length + 1 + stringWidth(line); // lineNum + sigil + code

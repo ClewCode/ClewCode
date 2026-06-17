@@ -6,8 +6,6 @@
  */
 
 import type * as React from 'react';
-import { useEffect, useState } from 'react';
-import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { Box, Text } from '../ink.js';
 
 export type RemoteServerStatusProps = {

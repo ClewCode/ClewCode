@@ -1,7 +1,7 @@
 import { spawn as childSpawn } from 'node:child_process';
 import * as React from 'react';
-import { Text } from '../../ink.js';
 import { z } from 'zod/v4';
+import { Text } from '../../ink.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
@@ -11,7 +11,10 @@ import { DESCRIPTION, PEER_SPAWN_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
   z.object({
-    name: z.string().optional().describe('Display name for the peer node. If not provided, a random name is generated.'),
+    name: z
+      .string()
+      .optional()
+      .describe('Display name for the peer node. If not provided, a random name is generated.'),
     role: z.string().optional().describe('Agent role for the peer node (e.g. builder, tester, reviewer)'),
     model: z.string().optional().describe('Model for the peer node session (e.g. sonnet)'),
     prompt: z.string().optional().describe('Custom system prompt for the peer node session'),
@@ -110,12 +113,12 @@ export const PeerSpawnTool = buildTool({
         '1. SHARE — Run `peer_share status` to confirm sharing and learn your port.\n' +
         '   Your port is how the sender will reach you.\n' +
         '2. RECEIVE — A task message arrives from a sender. It should include:\n' +
-       '   - Sender\'s peer name (e.g. "I am {name}")\n' +
+        '   - Sender\'s peer name (e.g. "I am {name}")\n' +
         '   - Sender\'s port (e.g. "on port {port}")\n' +
         '   - The task description\n' +
         '3. DO — Complete the task using your tools.\n' +
         '4. REPLY — Send the result back via:\n' +
-       '   `peer_send_message({ peer: "<sender_peer_name>", message: "<result>" })`\n' +
+        '   `peer_send_message({ peer: "<sender_peer_name>", message: "<result>" })`\n' +
         '   Do NOT use waitResponse — just send the result.\n' +
         '\n' +
         '=== RULES ===\n' +
@@ -151,7 +154,7 @@ export const PeerSpawnTool = buildTool({
 
       if (platform === 'win32') {
         const clewCmd = `${process.env.APPDATA}\\npm\\clew.cmd`;
-        const quotedArgs = cliArgs.map(a => a.includes(' ') ? quoteArg(a) : `"${a}"`).join(' ');
+        const quotedArgs = cliArgs.map(a => (a.includes(' ') ? quoteArg(a) : `"${a}"`)).join(' ');
         const winCmd = `title Clew Peer - ${targetName} && cd /d "${cwd}" && "${clewCmd}" ${quotedArgs}`;
         childSpawn('cmd.exe', ['/k', winCmd], {
           cwd,

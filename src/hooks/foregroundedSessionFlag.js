@@ -8,8 +8,8 @@
  */
 let active = false;
 export function setForegroundedSessionActive(val) {
-    active = val;
+  active = val;
 }
 export function getForegroundedSessionActive() {
-    return active;
+  return active;
 }

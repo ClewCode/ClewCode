@@ -63,7 +63,7 @@ export function ShellDetailDialog({ shell, onDone, onKillShell, onBack }: Props)
       shell,
     );
     return () => clearInterval(timer);
-  }, [shell.id, shell.status]);
+  }, [shell.id, shell.status, shell]);
 
   // Handle standard close action
   const handleClose = () => onDone('Shell details dismissed', { display: 'system' });

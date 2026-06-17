@@ -1705,7 +1705,7 @@ function parseProcessSub(P: ParseState): TsNode | null {
   const start = P.L.b;
   advance(P.L);
   advance(P.L);
-  const open = mk(P, c + '(', start, P.L.b, []);
+  const open = mk(P, `${c}(`, start, P.L.b, []);
   const body = parseStatements(P, ')');
   skipBlanks(P.L);
   let close: TsNode;

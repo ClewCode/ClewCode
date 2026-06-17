@@ -82,7 +82,7 @@ function FileItem({
 }): React.ReactNode {
   const displayPath = truncateStartToWidth(file.path, maxPathWidth);
 
-  const pointer = isSelected ? figures.pointer + ' ' : '  ';
+  const pointer = isSelected ? `${figures.pointer} ` : '  ';
   const line = `${pointer}${displayPath}`;
 
   return (

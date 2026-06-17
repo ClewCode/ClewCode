@@ -123,7 +123,7 @@ export function FilePermissionDialog<T extends ToolInput = ToolInput>({
   // depends only on toolUseConfirm.input.
   const ideDiffConfig = useMemo(
     () => (ideDiffSupport ? ideDiffSupport.getConfig(parseInput(toolUseConfirm.input)) : null),
-    [ideDiffSupport, toolUseConfirm.input],
+    [ideDiffSupport, toolUseConfirm.input, parseInput],
   );
 
   // Create diff params based on whether IDE diff is available

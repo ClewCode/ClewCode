@@ -1,6 +1,6 @@
 import { ASYNC_AGENT_ALLOWED_TOOLS } from '../constants/tools.js';
 import { checkStatsigFeatureGate_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
-import { logEvent, } from '../services/analytics/index.js';
+import { logEvent } from '../services/analytics/index.js';
 import { AGENT_TOOL_NAME } from '../tools/AgentTool/constants.js';
 import { BASH_TOOL_NAME } from '../tools/BashTool/toolName.js';
 import { FILE_EDIT_TOOL_NAME } from '../tools/FileEditTool/constants.js';
@@ -11,6 +11,7 @@ import { TASK_STOP_TOOL_NAME } from '../tools/TaskStopTool/prompt.js';
 import { TEAM_CREATE_TOOL_NAME } from '../tools/TeamCreateTool/constants.js';
 import { TEAM_DELETE_TOOL_NAME } from '../tools/TeamDeleteTool/constants.js';
 import { isEnvTruthy } from '../utils/envUtils.js';
+
 // Checks the same gate as isScratchpadEnabled() in
 // utils/permissions/filesystem.ts. Duplicated here because importing
 // filesystem.ts creates a circular dependency (filesystem -> permissions
@@ -18,13 +19,13 @@ import { isEnvTruthy } from '../utils/envUtils.js';
 // getCoordinatorUserContext's scratchpadDir parameter (dependency injection
 // from QueryEngine.ts, which lives higher in the dep graph).
 function isScratchpadGateEnabled() {
-    return checkStatsigFeatureGate_CACHED_MAY_BE_STALE('tengu_scratch');
+  return checkStatsigFeatureGate_CACHED_MAY_BE_STALE('tengu_scratch');
 }
 const INTERNAL_WORKER_TOOLS = new Set([
-    TEAM_CREATE_TOOL_NAME,
-    TEAM_DELETE_TOOL_NAME,
-    SEND_MESSAGE_TOOL_NAME,
-    SYNTHETIC_OUTPUT_TOOL_NAME,
+  TEAM_CREATE_TOOL_NAME,
+  TEAM_DELETE_TOOL_NAME,
+  SEND_MESSAGE_TOOL_NAME,
+  SYNTHETIC_OUTPUT_TOOL_NAME,
 ]);
 /**
  * Pure runtime check: coordinator mode is active when the env var is set.
@@ -32,7 +33,7 @@ const INTERNAL_WORKER_TOOLS = new Set([
  * flag handler) is responsible for setting the env var.
  */
 export function isCoordinatorMode() {
-    return isEnvTruthy(process.env.CLAUDE_CODE_COORDINATOR_MODE);
+  return isEnvTruthy(process.env.CLAUDE_CODE_COORDINATOR_MODE);
 }
 /**
  * Checks if the current coordinator mode matches the session's stored mode.
@@ -41,54 +42,53 @@ export function isCoordinatorMode() {
  * the mode was switched, or undefined if no switch was needed.
  */
 export function matchSessionMode(sessionMode) {
-    // No stored mode (old session before mode tracking) — do nothing
-    if (!sessionMode) {
-        return undefined;
-    }
-    const currentIsCoordinator = isCoordinatorMode();
-    const sessionIsCoordinator = sessionMode === 'coordinator';
-    if (currentIsCoordinator === sessionIsCoordinator) {
-        return undefined;
-    }
-    // Flip the env var — isCoordinatorMode() reads it live, no caching
-    if (sessionIsCoordinator) {
-        process.env.CLAUDE_CODE_COORDINATOR_MODE = '1';
-    }
-    else {
-        delete process.env.CLAUDE_CODE_COORDINATOR_MODE;
-    }
-    logEvent('tengu_coordinator_mode_switched', {
-        to: sessionMode,
-    });
-    return sessionIsCoordinator
-        ? 'Entered coordinator mode to match resumed session.'
-        : 'Exited coordinator mode to match resumed session.';
+  // No stored mode (old session before mode tracking) — do nothing
+  if (!sessionMode) {
+    return undefined;
+  }
+  const currentIsCoordinator = isCoordinatorMode();
+  const sessionIsCoordinator = sessionMode === 'coordinator';
+  if (currentIsCoordinator === sessionIsCoordinator) {
+    return undefined;
+  }
+  // Flip the env var — isCoordinatorMode() reads it live, no caching
+  if (sessionIsCoordinator) {
+    process.env.CLAUDE_CODE_COORDINATOR_MODE = '1';
+  } else {
+    delete process.env.CLAUDE_CODE_COORDINATOR_MODE;
+  }
+  logEvent('tengu_coordinator_mode_switched', {
+    to: sessionMode,
+  });
+  return sessionIsCoordinator
+    ? 'Entered coordinator mode to match resumed session.'
+    : 'Exited coordinator mode to match resumed session.';
 }
 export function getCoordinatorUserContext(mcpClients, scratchpadDir) {
-    if (!isCoordinatorMode()) {
-        return {};
-    }
-    const workerTools = isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)
-        ? [BASH_TOOL_NAME, FILE_READ_TOOL_NAME, FILE_EDIT_TOOL_NAME].sort().join(', ')
-        : Array.from(ASYNC_AGENT_ALLOWED_TOOLS)
-            .filter(name => !INTERNAL_WORKER_TOOLS.has(name))
-            .sort()
-            .join(', ');
-    let content = `Workers spawned via the ${AGENT_TOOL_NAME} tool have access to these tools: ${workerTools}`;
-    if (mcpClients.length > 0) {
-        const serverNames = mcpClients.map(c => c.name).join(', ');
-        content += `\n\nWorkers also have access to MCP tools from connected MCP servers: ${serverNames}`;
-    }
-    if (scratchpadDir && isScratchpadGateEnabled()) {
-        content += `\n\nScratchpad directory: ${scratchpadDir}\nWorkers can read and write here without permission prompts. Use this for durable cross-worker knowledge — structure files however fits the work.`;
-    }
-    return { workerToolsContext: content };
+  if (!isCoordinatorMode()) {
+    return {};
+  }
+  const workerTools = isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)
+    ? [BASH_TOOL_NAME, FILE_READ_TOOL_NAME, FILE_EDIT_TOOL_NAME].sort().join(', ')
+    : Array.from(ASYNC_AGENT_ALLOWED_TOOLS)
+        .filter(name => !INTERNAL_WORKER_TOOLS.has(name))
+        .sort()
+        .join(', ');
+  let content = `Workers spawned via the ${AGENT_TOOL_NAME} tool have access to these tools: ${workerTools}`;
+  if (mcpClients.length > 0) {
+    const serverNames = mcpClients.map(c => c.name).join(', ');
+    content += `\n\nWorkers also have access to MCP tools from connected MCP servers: ${serverNames}`;
+  }
+  if (scratchpadDir && isScratchpadGateEnabled()) {
+    content += `\n\nScratchpad directory: ${scratchpadDir}\nWorkers can read and write here without permission prompts. Use this for durable cross-worker knowledge — structure files however fits the work.`;
+  }
+  return { workerToolsContext: content };
 }
 export function getCoordinatorSystemPrompt() {
-    const workerCapabilities = isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)
-        ? 'Workers have access to Bash, Read, and Edit tools, plus MCP tools from configured MCP servers.'
-        : 'Workers have access to standard tools, MCP tools from configured MCP servers, and project skills via the Skill tool. Delegate skill invocations (e.g. /commit, /verify) to workers.';
-    return `You are Clew Code, an AI assistant that orchestrates software engineering tasks across multiple workers.
+  const workerCapabilities = isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)
+    ? 'Workers have access to Bash, Read, and Edit tools, plus MCP tools from configured MCP servers.'
+    : 'Workers have access to standard tools, MCP tools from configured MCP servers, and project skills via the Skill tool. Delegate skill invocations (e.g. /commit, /verify) to workers.';
+  return `You are Clew Code, an AI assistant that orchestrates software engineering tasks across multiple workers.
 
 ## 1. Your Role
 

@@ -1,8 +1,7 @@
-import React from 'react';
 import { z } from 'zod/v4';
 import { Box, Text } from '../../ink.js';
 import type { Tool } from '../../Tool.js';
-import { buildTool, type ToolDef } from '../../Tool.js';
+import { buildTool } from '../../Tool.js';
 import { isLocalShellTask } from '../../tasks/LocalShellTask/guards.js';
 import type { TaskState } from '../../tasks/types.js';
 import { lazySchema } from '../../utils/lazySchema.js';
@@ -62,7 +61,7 @@ async function getNewOutput(
 }
 
 // Parse output into events
-function parseOutputToEvents(output: string, lastPosition: number): MonitorEvent[] {
+function parseOutputToEvents(output: string, _lastPosition: number): MonitorEvent[] {
   if (!output) return [];
 
   const lines = output.split('\n');

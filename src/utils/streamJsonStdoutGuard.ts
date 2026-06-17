@@ -68,7 +68,7 @@ export function installStreamJsonStdoutGuard(): void {
       const line = buffer.slice(0, newlineIdx);
       buffer = buffer.slice(newlineIdx + 1);
       if (isJsonLine(line)) {
-        wrote = originalWrite!(line + '\n');
+        wrote = originalWrite!(`${line}\n`);
       } else {
         process.stderr.write(`${STDOUT_GUARD_MARKER} ${line}\n`);
         logForDebugging(`streamJsonStdoutGuard diverted non-JSON stdout line: ${line.slice(0, 200)}`);
@@ -90,7 +90,7 @@ export function installStreamJsonStdoutGuard(): void {
     // fragment it won't parse — divert it rather than drop it silently.
     if (buffer.length > 0) {
       if (originalWrite && isJsonLine(buffer)) {
-        originalWrite(buffer + '\n');
+        originalWrite(`${buffer}\n`);
       } else {
         process.stderr.write(`${STDOUT_GUARD_MARKER} ${buffer}\n`);
       }

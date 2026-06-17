@@ -20,8 +20,8 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { logForDebugging } from '../utils/debug.js';
 import { errorMessage } from '../utils/errors.js';
-import { consumeToken, generateToken } from './tokenStore.js';
-import type { RemoteMessage, RemoteServerCallbacks, RemoteServerConfig, SessionInfo, SessionState } from './types.js';
+import { consumeToken } from './tokenStore.js';
+import type { RemoteMessage, RemoteServerCallbacks, RemoteServerConfig, SessionInfo } from './types.js';
 
 const SESSION_TIMEOUT_CHECK_MS = 10_000; // check for stale sessions every 10s
 
@@ -87,7 +87,7 @@ export class RemoteServer {
     }
 
     // Close all WebSocket clients
-    for (const [id, client] of this.wsClients) {
+    for (const [_id, client] of this.wsClients) {
       try {
         client.close();
       } catch {
@@ -248,7 +248,7 @@ export class RemoteServer {
   private async handleWebSocketUpgrade(
     req: import('node:http').IncomingMessage,
     socket: import('node:net').Socket,
-    head: Buffer,
+    _head: Buffer,
   ): Promise<void> {
     // Validate auth token on upgrade
     const url = new URL(req.url ?? '/', 'http://localhost');
@@ -264,7 +264,7 @@ export class RemoteServer {
 
     // Validate the token (don't consume — it was consumed at /v1/sessions)
     // For /ws we just check the session_id exists in our map
-    const sessionId = queryToken; // actually not — we need session_id from the URL path
+    const _sessionId = queryToken; // actually not — we need session_id from the URL path
     // Parse session_id from path: /ws?session_id=xxx&token=yyy
     const sessionIdFromUrl = url.searchParams.get('session_id');
 
@@ -283,7 +283,7 @@ export class RemoteServer {
 
     const accept = crypto
       .createHash('sha1')
-      .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', 'utf-8')
+      .update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`, 'utf-8')
       .digest('base64');
 
     socket.write(

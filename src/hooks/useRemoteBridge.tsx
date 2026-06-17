@@ -9,7 +9,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { RemoteServer } from '../remote/RemoteServer.js';
 import type { RemoteMessage } from '../remote/types.js';
 import type { Message } from '../types/message.js';
@@ -23,7 +23,7 @@ import { enqueue } from '../utils/messageQueueManager.js';
  */
 export function useRemoteBridge(
   messages: Message[],
-  setMessages: (action: React.SetStateAction<Message[]>) => void,
+  _setMessages: (action: React.SetStateAction<Message[]>) => void,
 ): void {
   const lastWrittenIndexRef = useRef(0);
   // Track the last server instance we wired up
@@ -49,7 +49,7 @@ export function useRemoteBridge(
       // doesn't have a typed "addListener" API.
       const origOnMessage = (server as any)._bridge_onMessage;
       if (!origOnMessage) {
-        (server as any)._bridge_onMessage = (sessionId: string, msg: RemoteMessage) => {
+        (server as any)._bridge_onMessage = (_sessionId: string, msg: RemoteMessage) => {
           if (msg.type === 'user' && msg.message) {
             const text =
               typeof msg.message === 'string'

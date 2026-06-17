@@ -179,7 +179,7 @@ export function AssistantTextMessage({
                 {text === API_ERROR_MESSAGE_PREFIX
                   ? `${API_ERROR_MESSAGE_PREFIX}: Please wait a moment and try again.`
                   : truncated
-                    ? text.slice(0, MAX_API_ERROR_CHARS) + '…'
+                    ? `${text.slice(0, MAX_API_ERROR_CHARS)}…`
                     : text}
               </Text>
               {truncated && <CtrlOToExpand />}

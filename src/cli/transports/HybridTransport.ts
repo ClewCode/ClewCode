@@ -255,7 +255,7 @@ function convertWsUrlToPostUrl(wsUrl: URL): string {
   let pathname = wsUrl.pathname;
   pathname = pathname.replace('/ws/', '/session/');
   if (!pathname.endsWith('/events')) {
-    pathname = pathname.endsWith('/') ? pathname + 'events' : pathname + '/events';
+    pathname = pathname.endsWith('/') ? `${pathname}events` : `${pathname}/events`;
   }
 
   return `${protocol}//${wsUrl.host}${pathname}${wsUrl.search}`;

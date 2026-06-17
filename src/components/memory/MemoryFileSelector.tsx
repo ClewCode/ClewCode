@@ -200,7 +200,7 @@ export function MemoryFileSelector({ onSelect, onCancel }: Props): React.ReactNo
   useEffect(() => {
     if (!showDreamRow) return;
     void readLastConsolidatedAt().then(setLastDreamAt);
-  }, [showDreamRow, isDreamRunning]);
+  }, [showDreamRow]);
 
   const dreamStatus = isDreamRunning
     ? 'running'

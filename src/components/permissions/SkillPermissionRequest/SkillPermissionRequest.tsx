@@ -79,7 +79,7 @@ export function SkillPermissionRequest(props: PermissionRequestProps): React.Rea
         alwaysAllowOptions.push({
           label: (
             <Text>
-              Yes, and don&apos;t ask again for <Text bold>{commandPrefix + ':*'}</Text> commands in{' '}
+              Yes, and don&apos;t ask again for <Text bold>{`${commandPrefix}:*`}</Text> commands in{' '}
               <Text bold>{originalCwd}</Text>
             </Text>
           ),

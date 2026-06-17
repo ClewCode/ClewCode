@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { getGlobalConfig } from '../../utils/config.js';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { readLocalProviderKey } from '../../utils/localProviderKeys.js';
@@ -10,7 +11,6 @@ import {
   PROVIDER_REGISTRY,
 } from './providerRegistry.js';
 import type { ProviderId, ProviderInitOptions, ProviderInterface } from './providers/ProviderInterface.js';
-import { DOT_CLEW } from '../../utils/clewPaths.js';
 
 const LEGACY_PROVIDER_CONFIG_PATH = join(
   process.env.HOME || process.env.USERPROFILE || '',

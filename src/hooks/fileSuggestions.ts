@@ -687,7 +687,7 @@ export async function generateFileSuggestions(partialPath: string, showOnEmpty =
 
     // Handle both './' and '.\'
     let normalizedPath = partialPath;
-    const currentDirPrefix = '.' + path.sep;
+    const currentDirPrefix = `.${path.sep}`;
     if (partialPath.startsWith(currentDirPrefix)) {
       normalizedPath = partialPath.substring(2);
     }

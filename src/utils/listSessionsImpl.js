@@ -9,7 +9,18 @@
 import { readdir, stat } from 'fs/promises';
 import { basename, join } from 'path';
 import { getWorktreePathsPortable } from './getWorktreePathsPortable.js';
-import { canonicalizePath, extractFirstPromptFromHead, extractJsonStringField, extractLastJsonStringField, findProjectDir, getProjectsDir, MAX_SANITIZED_LENGTH, readSessionLite, sanitizePath, validateUuid, } from './sessionStoragePortable.js';
+import {
+  canonicalizePath,
+  extractFirstPromptFromHead,
+  extractJsonStringField,
+  extractLastJsonStringField,
+  findProjectDir,
+  getProjectsDir,
+  MAX_SANITIZED_LENGTH,
+  readSessionLite,
+  sanitizePath,
+  validateUuid,
+} from './sessionStoragePortable.js';
 // ---------------------------------------------------------------------------
 // Field extraction — shared by listSessionsImpl and getSessionInfoImpl
 // ---------------------------------------------------------------------------
@@ -21,59 +32,60 @@ import { canonicalizePath, extractFirstPromptFromHead, extractJsonStringField, e
  * Exported for reuse by getSessionInfoImpl.
  */
 export function parseSessionInfoFromLite(sessionId, lite, projectPath) {
-    const { head, tail, mtime, size } = lite;
-    // Check first line for sidechain sessions
-    const firstNewline = head.indexOf('\n');
-    const firstLine = firstNewline >= 0 ? head.slice(0, firstNewline) : head;
-    if (firstLine.includes('"isSidechain":true') || firstLine.includes('"isSidechain": true')) {
-        return null;
-    }
-    // User title (customTitle) wins over AI title (aiTitle); distinct
-    // field names mean extractLastJsonStringField naturally disambiguates.
-    const customTitle = extractLastJsonStringField(tail, 'customTitle') ||
-        extractLastJsonStringField(head, 'customTitle') ||
-        extractLastJsonStringField(tail, 'aiTitle') ||
-        extractLastJsonStringField(head, 'aiTitle') ||
-        undefined;
-    const firstPrompt = extractFirstPromptFromHead(head) || undefined;
-    // First entry's ISO timestamp → epoch ms. More reliable than
-    // stat().birthtime which is unsupported on some filesystems.
-    const firstTimestamp = extractJsonStringField(head, 'timestamp');
-    let createdAt;
-    if (firstTimestamp) {
-        const parsed = Date.parse(firstTimestamp);
-        if (!Number.isNaN(parsed))
-            createdAt = parsed;
-    }
-    // last-prompt tail entry (captured by extractFirstPrompt at write
-    // time, filtered) shows what the user was most recently doing.
-    // Head scan is fallback for sessions without a last-prompt entry.
-    const summary = customTitle ||
-        extractLastJsonStringField(tail, 'lastPrompt') ||
-        extractLastJsonStringField(tail, 'summary') ||
-        firstPrompt;
-    // Skip metadata-only sessions (no title, no summary, no prompt)
-    if (!summary)
-        return null;
-    const gitBranch = extractLastJsonStringField(tail, 'gitBranch') || extractJsonStringField(head, 'gitBranch') || undefined;
-    const sessionCwd = extractJsonStringField(head, 'cwd') || projectPath || undefined;
-    // Type-scope tag extraction to the {"type":"tag"} JSONL line to avoid
-    // collision with tool_use inputs containing a `tag` parameter (git tag,
-    // Docker tags, cloud resource tags). Mirrors sessionStorage.ts:608.
-    const tagLine = tail.split('\n').findLast(l => l.startsWith('{"type":"tag"'));
-    const tag = tagLine ? extractLastJsonStringField(tagLine, 'tag') || undefined : undefined;
-    return {
-        sessionId,
-        summary,
-        lastModified: mtime,
-        fileSize: size,
-        customTitle,
-        firstPrompt,
-        gitBranch,
-        cwd: sessionCwd,
-        tag,
-        createdAt,
-    };
+  const { head, tail, mtime, size } = lite;
+  // Check first line for sidechain sessions
+  const firstNewline = head.indexOf('\n');
+  const firstLine = firstNewline >= 0 ? head.slice(0, firstNewline) : head;
+  if (firstLine.includes('"isSidechain":true') || firstLine.includes('"isSidechain": true')) {
+    return null;
+  }
+  // User title (customTitle) wins over AI title (aiTitle); distinct
+  // field names mean extractLastJsonStringField naturally disambiguates.
+  const customTitle =
+    extractLastJsonStringField(tail, 'customTitle') ||
+    extractLastJsonStringField(head, 'customTitle') ||
+    extractLastJsonStringField(tail, 'aiTitle') ||
+    extractLastJsonStringField(head, 'aiTitle') ||
+    undefined;
+  const firstPrompt = extractFirstPromptFromHead(head) || undefined;
+  // First entry's ISO timestamp → epoch ms. More reliable than
+  // stat().birthtime which is unsupported on some filesystems.
+  const firstTimestamp = extractJsonStringField(head, 'timestamp');
+  let createdAt;
+  if (firstTimestamp) {
+    const parsed = Date.parse(firstTimestamp);
+    if (!Number.isNaN(parsed)) createdAt = parsed;
+  }
+  // last-prompt tail entry (captured by extractFirstPrompt at write
+  // time, filtered) shows what the user was most recently doing.
+  // Head scan is fallback for sessions without a last-prompt entry.
+  const summary =
+    customTitle ||
+    extractLastJsonStringField(tail, 'lastPrompt') ||
+    extractLastJsonStringField(tail, 'summary') ||
+    firstPrompt;
+  // Skip metadata-only sessions (no title, no summary, no prompt)
+  if (!summary) return null;
+  const gitBranch =
+    extractLastJsonStringField(tail, 'gitBranch') || extractJsonStringField(head, 'gitBranch') || undefined;
+  const sessionCwd = extractJsonStringField(head, 'cwd') || projectPath || undefined;
+  // Type-scope tag extraction to the {"type":"tag"} JSONL line to avoid
+  // collision with tool_use inputs containing a `tag` parameter (git tag,
+  // Docker tags, cloud resource tags). Mirrors sessionStorage.ts:608.
+  const tagLine = tail.split('\n').findLast(l => l.startsWith('{"type":"tag"'));
+  const tag = tagLine ? extractLastJsonStringField(tagLine, 'tag') || undefined : undefined;
+  return {
+    sessionId,
+    summary,
+    lastModified: mtime,
+    fileSize: size,
+    customTitle,
+    firstPrompt,
+    gitBranch,
+    cwd: sessionCwd,
+    tag,
+    createdAt,
+  };
 }
 /**
  * Lists candidate session files in a directory via readdir, optionally
@@ -81,48 +93,42 @@ export function parseSessionInfoFromLite(sessionId, lite, projectPath) {
  * (caller must sort/dedup after reading file contents instead).
  */
 export async function listCandidates(projectDir, doStat, projectPath) {
-    let names;
-    try {
-        names = await readdir(projectDir);
-    }
-    catch {
-        return [];
-    }
-    const results = await Promise.all(names.map(async (name) => {
-        if (!name.endsWith('.jsonl'))
-            return null;
-        const sessionId = validateUuid(name.slice(0, -6));
-        if (!sessionId)
-            return null;
-        const filePath = join(projectDir, name);
-        if (!doStat)
-            return { sessionId, filePath, mtime: 0, projectPath };
-        try {
-            const s = await stat(filePath);
-            return { sessionId, filePath, mtime: s.mtime.getTime(), projectPath };
-        }
-        catch {
-            return null;
-        }
-    }));
-    return results.filter((c) => c !== null);
+  let names;
+  try {
+    names = await readdir(projectDir);
+  } catch {
+    return [];
+  }
+  const results = await Promise.all(
+    names.map(async name => {
+      if (!name.endsWith('.jsonl')) return null;
+      const sessionId = validateUuid(name.slice(0, -6));
+      if (!sessionId) return null;
+      const filePath = join(projectDir, name);
+      if (!doStat) return { sessionId, filePath, mtime: 0, projectPath };
+      try {
+        const s = await stat(filePath);
+        return { sessionId, filePath, mtime: s.mtime.getTime(), projectPath };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return results.filter(c => c !== null);
 }
 /**
  * Reads a candidate's file contents and extracts full SessionInfo.
  * Returns null if the session should be filtered out (sidechain, no summary).
  */
 async function readCandidate(c) {
-    const lite = await readSessionLite(c.filePath);
-    if (!lite)
-        return null;
-    const info = parseSessionInfoFromLite(c.sessionId, lite, c.projectPath);
-    if (!info)
-        return null;
-    // Prefer stat-pass mtime for sort-key consistency; fall back to
-    // lite.mtime when doStat=false (c.mtime is 0 placeholder).
-    if (c.mtime)
-        info.lastModified = c.mtime;
-    return info;
+  const lite = await readSessionLite(c.filePath);
+  if (!lite) return null;
+  const info = parseSessionInfoFromLite(c.sessionId, lite, c.projectPath);
+  if (!info) return null;
+  // Prefer stat-pass mtime for sort-key consistency; fall back to
+  // lite.mtime when doStat=false (c.mtime is 0 placeholder).
+  if (c.mtime) info.lastModified = c.mtime;
+  return info;
 }
 // ---------------------------------------------------------------------------
 // Sort + limit — batch-read candidates in sorted order until `limit`
@@ -135,41 +141,38 @@ const READ_BATCH_SIZE = 32;
  * ordering across mtime ties.
  */
 function compareDesc(a, b) {
-    if (b.mtime !== a.mtime)
-        return b.mtime - a.mtime;
-    return b.sessionId < a.sessionId ? -1 : b.sessionId > a.sessionId ? 1 : 0;
+  if (b.mtime !== a.mtime) return b.mtime - a.mtime;
+  return b.sessionId < a.sessionId ? -1 : b.sessionId > a.sessionId ? 1 : 0;
 }
 async function applySortAndLimit(candidates, limit, offset) {
-    candidates.sort(compareDesc);
-    const sessions = [];
-    // limit: 0 means "no limit" (matches getSessionMessages semantics)
-    const want = limit && limit > 0 ? limit : Infinity;
-    let skipped = 0;
-    // Dedup post-filter: since candidates are sorted mtime-desc, the first
-    // non-null read per sessionId is naturally the newest valid copy.
-    // Pre-filter dedup would drop a session entirely if its newest-mtime
-    // copy is unreadable/empty, diverging from the no-stat readAllAndSort path.
-    const seen = new Set();
-    for (let i = 0; i < candidates.length && sessions.length < want;) {
-        const batchEnd = Math.min(i + READ_BATCH_SIZE, candidates.length);
-        const batch = candidates.slice(i, batchEnd);
-        const results = await Promise.all(batch.map(readCandidate));
-        for (let j = 0; j < results.length && sessions.length < want; j++) {
-            i++;
-            const r = results[j];
-            if (!r)
-                continue;
-            if (seen.has(r.sessionId))
-                continue;
-            seen.add(r.sessionId);
-            if (skipped < offset) {
-                skipped++;
-                continue;
-            }
-            sessions.push(r);
-        }
+  candidates.sort(compareDesc);
+  const sessions = [];
+  // limit: 0 means "no limit" (matches getSessionMessages semantics)
+  const want = limit && limit > 0 ? limit : Infinity;
+  let skipped = 0;
+  // Dedup post-filter: since candidates are sorted mtime-desc, the first
+  // non-null read per sessionId is naturally the newest valid copy.
+  // Pre-filter dedup would drop a session entirely if its newest-mtime
+  // copy is unreadable/empty, diverging from the no-stat readAllAndSort path.
+  const seen = new Set();
+  for (let i = 0; i < candidates.length && sessions.length < want; ) {
+    const batchEnd = Math.min(i + READ_BATCH_SIZE, candidates.length);
+    const batch = candidates.slice(i, batchEnd);
+    const results = await Promise.all(batch.map(readCandidate));
+    for (let j = 0; j < results.length && sessions.length < want; j++) {
+      i++;
+      const r = results[j];
+      if (!r) continue;
+      if (seen.has(r.sessionId)) continue;
+      seen.add(r.sessionId);
+      if (skipped < offset) {
+        skipped++;
+        continue;
+      }
+      sessions.push(r);
     }
-    return sessions;
+  }
+  return sessions;
 }
 /**
  * Read-all path for when no limit/offset is set. Skips the stat pass
@@ -177,25 +180,26 @@ async function applySortAndLimit(candidates, limit, offset) {
  * from readSessionLite. Matches pre-refactor I/O cost (no extra stats).
  */
 async function readAllAndSort(candidates) {
-    const all = await Promise.all(candidates.map(readCandidate));
-    const byId = new Map();
-    for (const s of all) {
-        if (!s)
-            continue;
-        const existing = byId.get(s.sessionId);
-        if (!existing || s.lastModified > existing.lastModified) {
-            byId.set(s.sessionId, s);
-        }
+  const all = await Promise.all(candidates.map(readCandidate));
+  const byId = new Map();
+  for (const s of all) {
+    if (!s) continue;
+    const existing = byId.get(s.sessionId);
+    if (!existing || s.lastModified > existing.lastModified) {
+      byId.set(s.sessionId, s);
     }
-    const sessions = [...byId.values()];
-    sessions.sort((a, b) => b.lastModified !== a.lastModified
-        ? b.lastModified - a.lastModified
-        : b.sessionId < a.sessionId
-            ? -1
-            : b.sessionId > a.sessionId
-                ? 1
-                : 0);
-    return sessions;
+  }
+  const sessions = [...byId.values()];
+  sessions.sort((a, b) =>
+    b.lastModified !== a.lastModified
+      ? b.lastModified - a.lastModified
+      : b.sessionId < a.sessionId
+        ? -1
+        : b.sessionId > a.sessionId
+          ? 1
+          : 0,
+  );
+  return sessions;
 }
 // ---------------------------------------------------------------------------
 // Project directory enumeration (single-project vs all-projects)
@@ -205,94 +209,88 @@ async function readAllAndSort(candidates) {
  * (and optionally its git worktrees).
  */
 async function gatherProjectCandidates(dir, includeWorktrees, doStat) {
-    const canonicalDir = await canonicalizePath(dir);
-    let worktreePaths;
-    if (includeWorktrees) {
-        try {
-            worktreePaths = await getWorktreePathsPortable(canonicalDir);
-        }
-        catch {
-            worktreePaths = [];
-        }
-    }
-    else {
-        worktreePaths = [];
-    }
-    // No worktrees (or git not available / scanning disabled) — just scan the single project dir
-    if (worktreePaths.length <= 1) {
-        const projectDir = await findProjectDir(canonicalDir);
-        if (!projectDir)
-            return [];
-        return listCandidates(projectDir, doStat, canonicalDir);
-    }
-    // Worktree-aware scanning: find all project dirs matching any worktree
-    const projectsDir = getProjectsDir();
-    const caseInsensitive = process.platform === 'win32';
-    // Sort worktree paths by sanitized prefix length (longest first) so
-    // more specific matches take priority over shorter ones
-    const indexed = worktreePaths.map(wt => {
-        const sanitized = sanitizePath(wt);
-        return {
-            path: wt,
-            prefix: caseInsensitive ? sanitized.toLowerCase() : sanitized,
-        };
-    });
-    indexed.sort((a, b) => b.prefix.length - a.prefix.length);
-    let allDirents;
+  const canonicalDir = await canonicalizePath(dir);
+  let worktreePaths;
+  if (includeWorktrees) {
     try {
-        allDirents = await readdir(projectsDir, { withFileTypes: true });
+      worktreePaths = await getWorktreePathsPortable(canonicalDir);
+    } catch {
+      worktreePaths = [];
     }
-    catch {
-        // Fall back to single project dir
-        const projectDir = await findProjectDir(canonicalDir);
-        if (!projectDir)
-            return [];
-        return listCandidates(projectDir, doStat, canonicalDir);
+  } else {
+    worktreePaths = [];
+  }
+  // No worktrees (or git not available / scanning disabled) — just scan the single project dir
+  if (worktreePaths.length <= 1) {
+    const projectDir = await findProjectDir(canonicalDir);
+    if (!projectDir) return [];
+    return listCandidates(projectDir, doStat, canonicalDir);
+  }
+  // Worktree-aware scanning: find all project dirs matching any worktree
+  const projectsDir = getProjectsDir();
+  const caseInsensitive = process.platform === 'win32';
+  // Sort worktree paths by sanitized prefix length (longest first) so
+  // more specific matches take priority over shorter ones
+  const indexed = worktreePaths.map(wt => {
+    const sanitized = sanitizePath(wt);
+    return {
+      path: wt,
+      prefix: caseInsensitive ? sanitized.toLowerCase() : sanitized,
+    };
+  });
+  indexed.sort((a, b) => b.prefix.length - a.prefix.length);
+  let allDirents;
+  try {
+    allDirents = await readdir(projectsDir, { withFileTypes: true });
+  } catch {
+    // Fall back to single project dir
+    const projectDir = await findProjectDir(canonicalDir);
+    if (!projectDir) return [];
+    return listCandidates(projectDir, doStat, canonicalDir);
+  }
+  const all = [];
+  const seenDirs = new Set();
+  // Always include the user's actual directory (handles subdirectories
+  // like /repo/packages/my-app that won't match worktree root prefixes)
+  const canonicalProjectDir = await findProjectDir(canonicalDir);
+  if (canonicalProjectDir) {
+    const dirBase = basename(canonicalProjectDir);
+    seenDirs.add(caseInsensitive ? dirBase.toLowerCase() : dirBase);
+    all.push(...(await listCandidates(canonicalProjectDir, doStat, canonicalDir)));
+  }
+  for (const dirent of allDirents) {
+    if (!dirent.isDirectory()) continue;
+    const dirName = caseInsensitive ? dirent.name.toLowerCase() : dirent.name;
+    if (seenDirs.has(dirName)) continue;
+    for (const { path: wtPath, prefix } of indexed) {
+      // Only use startsWith for truncated paths (>MAX_SANITIZED_LENGTH) where
+      // a hash suffix follows. For short paths, require exact match to avoid
+      // /root/project matching /root/project-foo.
+      const isMatch = dirName === prefix || (prefix.length >= MAX_SANITIZED_LENGTH && dirName.startsWith(`${prefix}-`));
+      if (isMatch) {
+        seenDirs.add(dirName);
+        all.push(...(await listCandidates(join(projectsDir, dirent.name), doStat, wtPath)));
+        break;
+      }
     }
-    const all = [];
-    const seenDirs = new Set();
-    // Always include the user's actual directory (handles subdirectories
-    // like /repo/packages/my-app that won't match worktree root prefixes)
-    const canonicalProjectDir = await findProjectDir(canonicalDir);
-    if (canonicalProjectDir) {
-        const dirBase = basename(canonicalProjectDir);
-        seenDirs.add(caseInsensitive ? dirBase.toLowerCase() : dirBase);
-        all.push(...(await listCandidates(canonicalProjectDir, doStat, canonicalDir)));
-    }
-    for (const dirent of allDirents) {
-        if (!dirent.isDirectory())
-            continue;
-        const dirName = caseInsensitive ? dirent.name.toLowerCase() : dirent.name;
-        if (seenDirs.has(dirName))
-            continue;
-        for (const { path: wtPath, prefix } of indexed) {
-            // Only use startsWith for truncated paths (>MAX_SANITIZED_LENGTH) where
-            // a hash suffix follows. For short paths, require exact match to avoid
-            // /root/project matching /root/project-foo.
-            const isMatch = dirName === prefix || (prefix.length >= MAX_SANITIZED_LENGTH && dirName.startsWith(prefix + '-'));
-            if (isMatch) {
-                seenDirs.add(dirName);
-                all.push(...(await listCandidates(join(projectsDir, dirent.name), doStat, wtPath)));
-                break;
-            }
-        }
-    }
-    return all;
+  }
+  return all;
 }
 /**
  * Gathers candidate session files across all project directories.
  */
 async function gatherAllCandidates(doStat) {
-    const projectsDir = getProjectsDir();
-    let dirents;
-    try {
-        dirents = await readdir(projectsDir, { withFileTypes: true });
-    }
-    catch {
-        return [];
-    }
-    const perProject = await Promise.all(dirents.filter(d => d.isDirectory()).map(d => listCandidates(join(projectsDir, d.name), doStat)));
-    return perProject.flat();
+  const projectsDir = getProjectsDir();
+  let dirents;
+  try {
+    dirents = await readdir(projectsDir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const perProject = await Promise.all(
+    dirents.filter(d => d.isDirectory()).map(d => listCandidates(join(projectsDir, d.name), doStat)),
+  );
+  return perProject.flat();
 }
 /**
  * Lists sessions with metadata extracted from stat + head/tail reads.
@@ -309,15 +307,14 @@ async function gatherAllCandidates(doStat) {
  * as the original implementation).
  */
 export async function listSessionsImpl(options) {
-    const { dir, limit, offset, includeWorktrees } = options ?? {};
-    const off = offset ?? 0;
-    // Only stat when we need to sort before reading (won't read all anyway).
-    // limit: 0 means "no limit" (see applySortAndLimit), so treat it as unset.
-    const doStat = (limit !== undefined && limit > 0) || off > 0;
-    const candidates = dir
-        ? await gatherProjectCandidates(dir, includeWorktrees ?? true, doStat)
-        : await gatherAllCandidates(doStat);
-    if (!doStat)
-        return readAllAndSort(candidates);
-    return applySortAndLimit(candidates, limit, off);
+  const { dir, limit, offset, includeWorktrees } = options ?? {};
+  const off = offset ?? 0;
+  // Only stat when we need to sort before reading (won't read all anyway).
+  // limit: 0 means "no limit" (see applySortAndLimit), so treat it as unset.
+  const doStat = (limit !== undefined && limit > 0) || off > 0;
+  const candidates = dir
+    ? await gatherProjectCandidates(dir, includeWorktrees ?? true, doStat)
+    : await gatherAllCandidates(doStat);
+  if (!doStat) return readAllAndSort(candidates);
+  return applySortAndLimit(candidates, limit, off);
 }

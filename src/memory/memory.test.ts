@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { mkdir, rm, writeFile } from 'fs/promises';
+import { mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
@@ -8,12 +8,12 @@ import { chunkMarkdown, estimateTokenCount } from './chunker.js';
 import { closeMemoryDb, getMemoryDb } from './db.js';
 import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.js';
 import { ingestMemoryWorkspace } from './ingest.js';
-import { approveMemory, forgetMemory, listPending, proposeMemory, rejectMemory } from './pending.js';
+import { approveMemory, listPending, proposeMemory, rejectMemory } from './pending.js';
 import { redactSecrets } from './redact.js';
 import { writeRunSummary } from './runs/runWriter.js';
 import { searchMemories } from './search.js';
 import { deleteSource, getAllSources, getSource, insertChunks, searchChunksFTS, upsertSource } from './store.js';
-import type { MemoryChunk, MemoryMetadata, SourceDocument } from './types.js';
+import type { MemoryChunk, SourceDocument } from './types.js';
 import { getMemoryWorkspaceStatus, initMemoryWorkspace } from './workspace.js';
 
 const tempCwd = join(process.cwd(), 'test/temp-test-memory-workspace');

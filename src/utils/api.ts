@@ -31,7 +31,6 @@ import { buildDisplayConfig } from '../tools/ComputerUseTool/scaling.js';
 import { getScreenDimensions } from '../tools/ComputerUseTool/screenshot.js';
 import { EXIT_PLAN_MODE_V2_TOOL_NAME } from '../tools/ExitPlanModeTool/constants.js';
 import { TASK_OUTPUT_TOOL_NAME } from '../tools/TaskOutputTool/constants.js';
-import type { ToolResultBlockParam, ToolUseBlock } from '../types/common.js';
 import type { Message } from '../types/message.js';
 import { isAgentSwarmsEnabled } from './agentSwarmsEnabled.js';
 import { modelSupportsStructuredOutputs, shouldUseGlobalCacheScope } from './betas.js';
@@ -344,7 +343,7 @@ export function splitSysPromptPrefix(
   }
 
   if (useGlobalCacheFeature) {
-    const boundaryIndex = systemPrompt.findIndex(s => s === SYSTEM_PROMPT_DYNAMIC_BOUNDARY);
+    const boundaryIndex = systemPrompt.indexOf(SYSTEM_PROMPT_DYNAMIC_BOUNDARY);
     if (boundaryIndex !== -1) {
       let attributionHeader: string | undefined;
       let systemPromptPrefix: string | undefined;

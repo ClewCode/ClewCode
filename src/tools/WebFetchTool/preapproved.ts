@@ -159,7 +159,7 @@ export function isPreapprovedHost(hostname: string, pathname: string): boolean {
       // Enforce path segment boundaries: "/anthropics" must not match
       // "/anthropics-evil/malware". Only exact match or a "/" after the
       // prefix is allowed.
-      if (pathname === p || pathname.startsWith(p + '/')) return true;
+      if (pathname === p || pathname.startsWith(`${p}/`)) return true;
     }
   }
   return false;

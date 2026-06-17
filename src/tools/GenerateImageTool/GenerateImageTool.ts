@@ -2,10 +2,10 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PermissionResult } from 'src/utils/permissions/PermissionResult.js';
 import { z } from 'zod/v4';
-import { buildTool } from '../../Tool.js';
 import providersConfig from '../../services/ai/providers.json' with { type: 'json' };
-import { getGenerateImagePrompt, GENERATE_IMAGE_TOOL_NAME } from './prompt.js';
-import { getToolUseSummary, renderToolUseMessage, renderToolResultMessage } from './UI.js';
+import { buildTool } from '../../Tool.js';
+import { GENERATE_IMAGE_TOOL_NAME, getGenerateImagePrompt } from './prompt.js';
+import { getToolUseSummary, renderToolResultMessage, renderToolUseMessage } from './UI.js';
 
 type ImageGenConfig = { defaultModel: string; apiType: string };
 type ProviderEntry = {
@@ -74,7 +74,8 @@ async function discoverProvider(): Promise<{ name: string; config: ImageGenConfi
     try {
       const model = await discoverFn(baseUrl, apiKey);
       if (model) {
-        const apiType = name === 'openai' ? 'openai-image' : name === 'openrouter' ? 'openrouter-image' : 'google-image';
+        const apiType =
+          name === 'openai' ? 'openai-image' : name === 'openrouter' ? 'openrouter-image' : 'google-image';
         _discoveredProvider = { name, config: { defaultModel: model, apiType }, apiKey };
         return _discoveredProvider;
       }
@@ -231,7 +232,9 @@ export const GenerateImageTool = buildTool({
         localPath = join(dir, `image-${Date.now()}.png`);
         writeFileSync(localPath, buffer);
       }
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
 
     return { data: { url: imageUrl, localPath, prompt, provider: providerLabel } };
   },

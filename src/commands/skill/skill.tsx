@@ -4,13 +4,13 @@ import type React from 'react';
 import { getCwdState } from '../../bootstrap/state.js';
 import type { LocalJSXCommandContext } from '../../commands.js';
 import { MessageResponse } from '../../components/MessageResponse.js';
-import { Box, Text } from '../../ink.js';
+import { Text } from '../../ink.js';
 import { listProjectSkills } from '../../skills/loadProjectSkills.js';
 import type { LocalJSXCommandOnDone } from '../../types/command.js';
 
 export async function call(
   onDone: LocalJSXCommandOnDone,
-  context: LocalJSXCommandContext,
+  _context: LocalJSXCommandContext,
   args?: string,
 ): Promise<React.ReactNode> {
   const cwd = getCwdState();

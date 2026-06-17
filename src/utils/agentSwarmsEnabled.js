@@ -1,5 +1,6 @@
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
 import { isEnvTruthy } from './envUtils.js';
+
 /**
  * Check if --agent-teams flag is provided via CLI.
  * Checks process.argv directly to avoid import cycles with bootstrap/state.
@@ -7,7 +8,7 @@ import { isEnvTruthy } from './envUtils.js';
  * pass it anyway, it will work (subject to the killswitch).
  */
 function isAgentTeamsFlagSet() {
-    return process.argv.includes('--agent-teams');
+  return process.argv.includes('--agent-teams');
 }
 /**
  * Centralized runtime check for agent teams/teammate features.
@@ -20,17 +21,17 @@ function isAgentTeamsFlagSet() {
  * 2. GrowthBook gate 'tengu_amber_flint' enabled (killswitch)
  */
 export function isAgentSwarmsEnabled() {
-    // Ant: always on
-    if (process.env.USER_TYPE === 'ant') {
-        return true;
-    }
-    // External: require opt-in via env var or --agent-teams flag
-    if (!isEnvTruthy(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) && !isAgentTeamsFlagSet()) {
-        return false;
-    }
-    // Killswitch — always respected for external users
-    if (!getFeatureValue_CACHED_MAY_BE_STALE('tengu_amber_flint', true)) {
-        return false;
-    }
+  // Ant: always on
+  if (process.env.USER_TYPE === 'ant') {
     return true;
+  }
+  // External: require opt-in via env var or --agent-teams flag
+  if (!isEnvTruthy(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) && !isAgentTeamsFlagSet()) {
+    return false;
+  }
+  // Killswitch — always respected for external users
+  if (!getFeatureValue_CACHED_MAY_BE_STALE('tengu_amber_flint', true)) {
+    return false;
+  }
+  return true;
 }

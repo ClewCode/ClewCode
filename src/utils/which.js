@@ -1,5 +1,6 @@
 import { execa } from 'execa';
 import { execSync_DEPRECATED } from './execSyncWrapper.js';
+
 /**
  * Short-lived cache for missing executables to avoid repeated synchronous
  * `where.exe` / `which` spawns on every check. Only caches MISS results
@@ -12,83 +13,78 @@ import { execSync_DEPRECATED } from './execSyncWrapper.js';
 const missingCache = new Map();
 const MISSING_TTL_MS = 30_000;
 function isMissingCached(command) {
-    const expiry = missingCache.get(command);
-    if (expiry && Date.now() < expiry)
-        return true;
-    missingCache.delete(command);
-    return false;
+  const expiry = missingCache.get(command);
+  if (expiry && Date.now() < expiry) return true;
+  missingCache.delete(command);
+  return false;
 }
 function setMissingCache(command) {
-    missingCache.set(command, Date.now() + MISSING_TTL_MS);
+  missingCache.set(command, Date.now() + MISSING_TTL_MS);
 }
 async function whichNodeAsync(command) {
-    if (isMissingCached(command))
-        return null;
-    if (process.platform === 'win32') {
-        // On Windows, use where.exe and return the first result
-        const result = await execa(`where.exe ${command}`, {
-            shell: true,
-            stderr: 'ignore',
-            reject: false,
-        });
-        if (result.exitCode !== 0 || !result.stdout) {
-            setMissingCache(command);
-            return null;
-        }
-        // where.exe returns multiple paths separated by newlines, return the first
-        return result.stdout.trim().split(/\r?\n/)[0] || null;
-    }
-    // On POSIX systems (macOS, Linux, WSL), use which
-    // Cross-platform safe: Windows is handled above
-    // eslint-disable-next-line custom-rules/no-cross-platform-process-issues
-    const result = await execa(`which ${command}`, {
-        shell: true,
-        stderr: 'ignore',
-        reject: false,
+  if (isMissingCached(command)) return null;
+  if (process.platform === 'win32') {
+    // On Windows, use where.exe and return the first result
+    const result = await execa(`where.exe ${command}`, {
+      shell: true,
+      stderr: 'ignore',
+      reject: false,
     });
     if (result.exitCode !== 0 || !result.stdout) {
-        setMissingCache(command);
-        return null;
+      setMissingCache(command);
+      return null;
     }
-    return result.stdout.trim();
+    // where.exe returns multiple paths separated by newlines, return the first
+    return result.stdout.trim().split(/\r?\n/)[0] || null;
+  }
+  // On POSIX systems (macOS, Linux, WSL), use which
+  // Cross-platform safe: Windows is handled above
+  // eslint-disable-next-line custom-rules/no-cross-platform-process-issues
+  const result = await execa(`which ${command}`, {
+    shell: true,
+    stderr: 'ignore',
+    reject: false,
+  });
+  if (result.exitCode !== 0 || !result.stdout) {
+    setMissingCache(command);
+    return null;
+  }
+  return result.stdout.trim();
 }
 function whichNodeSync(command) {
-    if (isMissingCached(command))
-        return null;
-    if (process.platform === 'win32') {
-        try {
-            const result = execSync_DEPRECATED(`where.exe ${command}`, {
-                encoding: 'utf-8',
-                stdio: ['ignore', 'pipe', 'ignore'],
-            });
-            const output = result.toString().trim();
-            if (!output) {
-                setMissingCache(command);
-                return null;
-            }
-            return output.split(/\r?\n/)[0] || null;
-        }
-        catch {
-            setMissingCache(command);
-            return null;
-        }
-    }
+  if (isMissingCached(command)) return null;
+  if (process.platform === 'win32') {
     try {
-        const result = execSync_DEPRECATED(`which ${command}`, {
-            encoding: 'utf-8',
-            stdio: ['ignore', 'pipe', 'ignore'],
-        });
-        const output = result.toString().trim();
-        if (!output) {
-            setMissingCache(command);
-            return null;
-        }
-        return output || null;
-    }
-    catch {
+      const result = execSync_DEPRECATED(`where.exe ${command}`, {
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+      const output = result.toString().trim();
+      if (!output) {
         setMissingCache(command);
         return null;
+      }
+      return output.split(/\r?\n/)[0] || null;
+    } catch {
+      setMissingCache(command);
+      return null;
     }
+  }
+  try {
+    const result = execSync_DEPRECATED(`which ${command}`, {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const output = result.toString().trim();
+    if (!output) {
+      setMissingCache(command);
+      return null;
+    }
+    return output || null;
+  } catch {
+    setMissingCache(command);
+    return null;
+  }
 }
 const bunWhich = typeof Bun !== 'undefined' && typeof Bun.which === 'function' ? Bun.which : null;
 /**
@@ -104,15 +100,13 @@ const bunWhich = typeof Bun !== 'undefined' && typeof Bun.which === 'function' ?
  * @returns The full path to the command, or null if not found
  */
 export const which = bunWhich
-    ? async (command) => {
-        if (isMissingCached(command))
-            return null;
-        const result = bunWhich(command);
-        if (!result)
-            setMissingCache(command);
-        return result;
+  ? async command => {
+      if (isMissingCached(command)) return null;
+      const result = bunWhich(command);
+      if (!result) setMissingCache(command);
+      return result;
     }
-    : whichNodeAsync;
+  : whichNodeAsync;
 /**
  * Synchronous version of `which`.
  *
@@ -124,12 +118,10 @@ export const which = bunWhich
  * @returns The full path to the command, or null if not found
  */
 export const whichSync = bunWhich
-    ? (command) => {
-        if (isMissingCached(command))
-            return null;
-        const result = bunWhich(command);
-        if (!result)
-            setMissingCache(command);
-        return result;
+  ? command => {
+      if (isMissingCached(command)) return null;
+      const result = bunWhich(command);
+      if (!result) setMissingCache(command);
+      return result;
     }
-    : whichNodeSync;
+  : whichNodeSync;

@@ -122,7 +122,7 @@ function commandAsHint(command: string): string {
       .map(l => l.replace(/\s+/g, ' ').trim())
       .filter(l => l !== '')
       .join('\n');
-  return cleaned.length > MAX_HINT_CHARS ? cleaned.slice(0, MAX_HINT_CHARS - 1) + '…' : cleaned;
+  return cleaned.length > MAX_HINT_CHARS ? `${cleaned.slice(0, MAX_HINT_CHARS - 1)}…` : cleaned;
 }
 
 /**
@@ -494,7 +494,7 @@ function scanBashResultForGitOps(msg: CollapsibleMessage, group: GroupAccumulato
   const out = msg.toolUseResult as { stdout?: string; stderr?: string } | undefined;
   if (!out?.stdout && !out?.stderr) return;
   // git push writes the ref update to stderr — scan both streams.
-  const combined = (out.stdout ?? '') + '\n' + (out.stderr ?? '');
+  const combined = `${out.stdout ?? ''}\n${out.stderr ?? ''}`;
   for (const c of msg.message.content) {
     if (c.type !== 'tool_result') continue;
     const command = group.bashCommands?.get(c.tool_use_id);

@@ -201,7 +201,7 @@ async function getCommandPrefixImpl(
       (tn, nonInteractive) => {
         const message = `[${tn}Tool] Pre-flight check is taking longer than expected. Run with ANTHROPIC_LOG=debug to check for failed or slow API requests.`;
         if (nonInteractive) {
-          process.stderr.write(jsonStringify({ level: 'warn', message }) + '\n');
+          process.stderr.write(`${jsonStringify({ level: 'warn', message })}\n`);
         } else {
           // biome-ignore lint/suspicious/noConsole: intentional warning
           console.warn(chalk.yellow(`⚠️  ${message}`));

@@ -20,7 +20,7 @@ export function scrubSecrets(input: string): string {
   ];
 
   for (const pattern of patterns) {
-    scrubbed = scrubbed.replace(pattern, (match, p1, p2) => {
+    scrubbed = scrubbed.replace(pattern, (_match, p1, p2) => {
       if (p1 && typeof p2 === 'string') {
         return `${p1}[REDACTED]${p2}`;
       }
@@ -156,7 +156,7 @@ export class RunStore {
     };
 
     const sanitizedEvent = scrubSecrets(JSON.stringify(event));
-    await fs.appendFile(eventsPath, sanitizedEvent + '\n', 'utf-8');
+    await fs.appendFile(eventsPath, `${sanitizedEvent}\n`, 'utf-8');
     return JSON.parse(sanitizedEvent) as RuntimeEvent;
   }
 
@@ -211,7 +211,7 @@ export class RunStore {
   async appendApproval(runId: string, approval: ApprovalRequest): Promise<void> {
     const approvalsPath = path.join(this.getRunDir(runId), 'approvals.jsonl');
     const sanitizedApproval = scrubSecrets(JSON.stringify(approval));
-    await fs.appendFile(approvalsPath, sanitizedApproval + '\n', 'utf-8');
+    await fs.appendFile(approvalsPath, `${sanitizedApproval}\n`, 'utf-8');
   }
 
   async loadApprovals(runId: string): Promise<ApprovalRequest[]> {
@@ -237,7 +237,7 @@ export class RunStore {
     });
 
     const approvalsPath = path.join(this.getRunDir(runId), 'approvals.jsonl');
-    const lines = updated.map(app => JSON.stringify(app)).join('\n') + '\n';
+    const lines = `${updated.map(app => JSON.stringify(app)).join('\n')}\n`;
     await fs.writeFile(approvalsPath, lines, 'utf-8');
   }
 }

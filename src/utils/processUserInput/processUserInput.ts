@@ -1,4 +1,3 @@
-import { feature } from 'bun:bundle';
 import type { Base64ImageSource, ContentBlockParam, ImageBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs';
 import { randomUUID } from 'crypto';
 import type { QuerySource } from 'src/constants/querySource.js';
@@ -314,7 +313,9 @@ async function processUserInputBase(
   // Extract and convert image/video content to content blocks early
   // Keep track of IDs in order for message storage
   const imageContents = pastedContents ? Object.values(pastedContents).filter(isValidImagePaste) : [];
-  const videoContents = pastedContents ? Object.values(pastedContents).filter(c => c.type === 'video' && c.content.length > 0) : [];
+  const videoContents = pastedContents
+    ? Object.values(pastedContents).filter(c => c.type === 'video' && c.content.length > 0)
+    : [];
   const imagePasteIds = imageContents.map(img => img.id);
   const videoPasteIds = videoContents.map(v => v.id);
 
@@ -385,7 +386,7 @@ async function processUserInputBase(
   // known-but-unsafe command (local-jsx UI or terminal-only), short-circuit
   // with a helpful message rather than letting the model see raw "/config".
   let effectiveSkipSlash = skipSlashCommands;
-  if (bridgeOrigin && inputString !== null && inputString.startsWith('/')) {
+  if (bridgeOrigin && inputString?.startsWith('/')) {
     const parsed = parseSlashCommand(inputString);
     const cmd = parsed ? findCommand(parsed.commandName, context.options.commands) : undefined;
     if (cmd) {
@@ -582,7 +583,7 @@ async function processUserInputBase(
         const bgCommand = bgPrefix[1]!.trim();
         if (bgCommand) {
           const { startBgShellCommand } = await import('../../tasks/BgShellTask.js');
-          const taskId = startBgShellCommand(bgCommand, context.setAppState);
+          const _taskId = startBgShellCommand(bgCommand, context.setAppState);
           return {
             messages: [
               createUserMessage({

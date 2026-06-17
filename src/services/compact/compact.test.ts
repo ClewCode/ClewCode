@@ -90,18 +90,12 @@ function makeUser(uuid: string, text: string): Message {
 }
 
 function makeRound(userText: string, assistantText: string, offset: number): Message[] {
-  return [
-    makeUser(`u${offset}`, userText),
-    makeAssistant(`a${offset}`, `msg${offset}`, assistantText),
-  ];
+  return [makeUser(`u${offset}`, userText), makeAssistant(`a${offset}`, `msg${offset}`, assistantText)];
 }
 
 describe('splitIntoCompactChunks', () => {
   test('returns single chunk when messages fit budget', () => {
-    const messages = [
-      ...makeRound('hello', 'hi there', 1),
-      ...makeRound('how are you', 'good', 2),
-    ];
+    const messages = [...makeRound('hello', 'hi there', 1), ...makeRound('how are you', 'good', 2)];
     const chunks = splitIntoCompactChunks(messages, 100000);
     expect(chunks).toHaveLength(1);
   });
@@ -110,7 +104,7 @@ describe('splitIntoCompactChunks', () => {
     // Create many rounds with distinct content so token estimation sees real differences
     const messages: Message[] = [];
     for (let i = 0; i < 20; i++) {
-      const text = 'message content here that takes up some token space ' + 'x'.repeat(200);
+      const text = `message content here that takes up some token space ${'x'.repeat(200)}`;
       messages.push(...makeRound(`user says ${text}`, `assistant responds ${text}`, i));
     }
     // Rough token estimate: 200 chars * 20 rounds * 2 messages ≈ needs splitting
@@ -121,7 +115,7 @@ describe('splitIntoCompactChunks', () => {
   test('each chunk is non-empty and starts with a valid message', () => {
     const messages: Message[] = [];
     for (let i = 0; i < 10; i++) {
-      messages.push(...makeRound(`user input ${i} ` + 'x'.repeat(500), `assistant reply ${i} ` + 'x'.repeat(500), i));
+      messages.push(...makeRound(`user input ${i} ${'x'.repeat(500)}`, `assistant reply ${i} ${'x'.repeat(500)}`, i));
     }
     const chunks = splitIntoCompactChunks(messages, 200);
     expect(chunks.length).toBeGreaterThan(1);
@@ -134,7 +128,7 @@ describe('splitIntoCompactChunks', () => {
   test('all messages are included exactly once', () => {
     const messages: Message[] = [];
     for (let i = 0; i < 40; i++) {
-      messages.push(...makeRound(`user content ${i} ` + 'x'.repeat(50), `assistant content ${i} ` + 'x'.repeat(50), i));
+      messages.push(...makeRound(`user content ${i} ${'x'.repeat(50)}`, `assistant content ${i} ${'x'.repeat(50)}`, i));
     }
     const chunks = splitIntoCompactChunks(messages, 1000);
     const totalInChunks = chunks.reduce((sum, c) => sum + c.length, 0);

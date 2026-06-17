@@ -2,7 +2,7 @@ import { exec } from 'node:child_process';
 import * as React from 'react';
 import { z } from 'zod/v4';
 import { MessageResponse } from '../../components/MessageResponse.js';
-import { Box, Text } from '../../ink.js';
+import { Text } from '../../ink.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
@@ -48,7 +48,7 @@ export function executeCommand(
   timeoutMs: number,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise(resolve => {
-    const child = exec(
+    const _child = exec(
       command,
       {
         timeout: timeoutMs,
@@ -127,7 +127,7 @@ export const PeerRunTool = buildTool({
     let peer = store.findPeer(input.worker);
 
     const portNum = parseInt(input.worker, 10);
-    if (!peer && !isNaN(portNum)) {
+    if (!peer && !Number.isNaN(portNum)) {
       peer = store.getPeerByPort(portNum);
     }
 
@@ -136,7 +136,7 @@ export const PeerRunTool = buildTool({
       const peers = await discovery.discoverPeers(3000);
       for (const p of peers) store.addPeer(p);
       peer = store.findPeer(input.worker);
-      if (!peer && !isNaN(portNum)) peer = store.getPeerByPort(portNum);
+      if (!peer && !Number.isNaN(portNum)) peer = store.getPeerByPort(portNum);
     }
 
     if (!peer) {

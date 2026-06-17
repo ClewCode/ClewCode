@@ -47,7 +47,7 @@ function runIt2(args: string[]): Promise<{ stdout: string; stderr: string; code:
  */
 function parseSplitOutput(output: string): string {
   const match = output.match(/Created new pane:\s*(.+)/);
-  if (match && match[1]) {
+  if (match?.[1]) {
     return match[1].trim();
   }
   return '';

@@ -10,13 +10,13 @@ const cleanupFunctions = new Set();
  * @returns Unregister function that removes the cleanup handler
  */
 export function registerCleanup(cleanupFn) {
-    cleanupFunctions.add(cleanupFn);
-    return () => cleanupFunctions.delete(cleanupFn); // Return unregister function
+  cleanupFunctions.add(cleanupFn);
+  return () => cleanupFunctions.delete(cleanupFn); // Return unregister function
 }
 /**
  * Run all registered cleanup functions.
  * Used internally by gracefulShutdown.
  */
 export async function runCleanupFunctions() {
-    await Promise.all(Array.from(cleanupFunctions).map(fn => fn()));
+  await Promise.all(Array.from(cleanupFunctions).map(fn => fn()));
 }

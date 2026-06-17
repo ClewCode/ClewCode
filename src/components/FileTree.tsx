@@ -1,7 +1,5 @@
-import chalk from 'chalk';
 import chokidar from 'chokidar';
-import { basename, join, relative } from 'path';
-import * as React from 'react';
+import { join } from 'path';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Text, useInput } from '../ink.js';
 import { getCwd } from '../utils/cwd.js';
@@ -25,7 +23,7 @@ export function FileTree({ onFileSelect, width = 30, isFocused = true }: FileTre
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set([getCwd()]));
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [nodes, setNodes] = useState<FileNode[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [_refreshKey, setRefreshKey] = useState(0);
   const fs = getFsImplementation();
 
   const refresh = useCallback(() => {
@@ -83,20 +81,20 @@ export function FileTree({ onFileSelect, width = 30, isFocused = true }: FileTre
             walk(fullPath, level + 1);
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // Ignore errors (e.g. permission denied)
       }
     }
 
     walk(getCwd(), 0);
     return flatNodes;
-  }, [expandedFolders, fs, refreshKey]);
+  }, [expandedFolders, fs]);
 
   useEffect(() => {
     setNodes(buildFlatTree);
   }, [buildFlatTree]);
 
-  useInput((input, key) => {
+  useInput((_input, key) => {
     if (!isFocused) return;
 
     if (key.upArrow) {

@@ -11,13 +11,12 @@
  * - Peek panel with reply, attach/detach lifecycle
  */
 
-import * as React from 'react';
 import figures from 'figures';
+import * as React from 'react';
 import { useAgentDispatchAutocomplete } from '../../hooks/useAgentDispatchAutocomplete.js';
 import { useAgentViewSummaries } from '../../hooks/useAgentViewSummaries.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { Box, Text, useInput } from '../../ink.js';
-import { Pane } from '../design-system/Pane.js';
 import { touchSessionAttach } from '../../services/SessionLifecycle/sessionLifecycle.js';
 import { listSessions, pingDaemon } from '../../services/Supervisor/ipcClient.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
@@ -35,6 +34,7 @@ import {
 import type { TaskState } from '../../tasks/types.js';
 import { GENERAL_PURPOSE_AGENT } from '../../tools/AgentTool/built-in/generalPurposeAgent.js';
 import { createUserMessage } from '../../utils/messages.js';
+import { Pane } from '../design-system/Pane.js';
 import TextInput from '../TextInput.js';
 import { parseDispatchSyntax } from './AgentViewDispatchInput.js';
 import { AgentViewPeekPanel } from './AgentViewPeekPanel.js';
@@ -178,7 +178,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
     return () => {
       if (stopConfirmTimer) clearTimeout(stopConfirmTimer);
     };
-  }, [stopConfirmIndex]);
+  }, [stopConfirmIndex, stopConfirmTimer]);
 
   // Start summary & lifecycle polling
   useAgentViewSummaries({ tasks, setAppState });
@@ -577,7 +577,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
     const editor = process.env.EDITOR || process.env.VISUAL || (process.platform === 'win32' ? 'notepad' : 'vi');
     const { spawn } = await import('child_process');
     // Write current dispatch text to a tmp file, open in editor, read back
-    const tmpFile = (await import('os')).tmpdir() + `/claude-dispatch-${Date.now()}.txt`;
+    const tmpFile = `${(await import('os')).tmpdir()}/claude-dispatch-${Date.now()}.txt`;
     await (await import('fs/promises')).writeFile(tmpFile, dispatchText || '', 'utf-8');
     await new Promise<void>(resolve => {
       const proc = spawn(editor, [tmpFile], { stdio: 'inherit' });
@@ -615,7 +615,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
 
     // Alt+1..9 to jump to session
     if (flatList.length > 0) {
-      const altNum =
+      const _altNum =
         input.match(/^[¹²³⁴⁵⁶⁷⁸⁹]/) || (input.length === 1 && input >= '1' && input <= '9' && key.meta ? input : null);
       // Simplified: just check if input.charCodeAt(0) between 49-57 during Alt
       // Ink's useInput doesn't reliably report Alt; we handle this in keybindings instead

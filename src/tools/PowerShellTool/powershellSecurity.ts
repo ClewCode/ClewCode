@@ -80,7 +80,7 @@ function psExeHasParamAbbreviation(cmd: ParsedCommandElement, fullParam: string,
   // with normalized args; commandHasArgAbbreviation handles colon-value split.
   const normalized: ParsedCommandElement = {
     ...cmd,
-    args: cmd.args.map(a => (a.length > 0 && PS_ALT_PARAM_PREFIXES.has(a[0]!) ? '-' + a.slice(1) : a)),
+    args: cmd.args.map(a => (a.length > 0 && PS_ALT_PARAM_PREFIXES.has(a[0]!) ? `-${a.slice(1)}` : a)),
   };
   return commandHasArgAbbreviation(normalized, fullParam, minPrefix);
 }

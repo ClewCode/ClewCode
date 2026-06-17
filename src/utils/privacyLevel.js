@@ -15,35 +15,35 @@
  *   DISABLE_TELEMETRY                         →  no-telemetry
  */
 export function getPrivacyLevel() {
-    if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
-        return 'essential-traffic';
-    }
-    if (process.env.DISABLE_TELEMETRY) {
-        return 'no-telemetry';
-    }
-    return 'default';
+  if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
+    return 'essential-traffic';
+  }
+  if (process.env.DISABLE_TELEMETRY) {
+    return 'no-telemetry';
+  }
+  return 'default';
 }
 /**
  * True when all nonessential network traffic should be suppressed.
  * Equivalent to the old `process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` check.
  */
 export function isEssentialTrafficOnly() {
-    return getPrivacyLevel() === 'essential-traffic';
+  return getPrivacyLevel() === 'essential-traffic';
 }
 /**
  * True when telemetry/analytics should be suppressed.
  * True at both `no-telemetry` and `essential-traffic` levels.
  */
 export function isTelemetryDisabled() {
-    return getPrivacyLevel() !== 'default';
+  return getPrivacyLevel() !== 'default';
 }
 /**
  * Returns the env var name responsible for the current essential-traffic restriction,
  * or null if unrestricted. Used for user-facing "unset X to re-enable" messages.
  */
 export function getEssentialTrafficOnlyReason() {
-    if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
-        return 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC';
-    }
-    return null;
+  if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
+    return 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC';
+  }
+  return null;
 }

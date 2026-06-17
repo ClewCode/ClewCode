@@ -24,7 +24,13 @@ import { type Command, hasCommand } from '../../commands.js';
 import { useIsModalOverlayActive } from '../../context/overlayContext.js';
 import { useSetPromptOverlayDialog } from '../../context/promptOverlayContext.js';
 import { formatTotalCost } from '../../cost-tracker.js';
-import { formatImageRef, formatPastedTextRef, formatVideoRef, getPastedTextRefNumLines, parseReferences } from '../../history.js';
+import {
+  formatImageRef,
+  formatPastedTextRef,
+  formatVideoRef,
+  getPastedTextRefNumLines,
+  parseReferences,
+} from '../../history.js';
 import type { VerificationStatus } from '../../hooks/useApiKeyVerification.js';
 import { type HistoryMode, useArrowKeyHistory } from '../../hooks/useArrowKeyHistory.js';
 import { useDoublePress } from '../../hooks/useDoublePress.js';
@@ -121,7 +127,6 @@ import {
   findDebugTriggerPositions,
   findExplainTriggerPositions,
   findFixTriggerPositions,
-  findPrTriggerPositions,
   findUltraplanTriggerPositions,
   findUltrareviewTriggerPositions,
   findWorkflowTriggerPositions,
@@ -331,7 +336,7 @@ function PromptInput({
       cursorOffset,
       insert: (text: string) => {
         const needsSpace = cursorOffset === input.length && input.length > 0 && !/\s$/.test(input);
-        const insertText = needsSpace ? ' ' + text : text;
+        const insertText = needsSpace ? ` ${text}` : text;
         const newValue = input.slice(0, cursorOffset) + insertText + input.slice(cursorOffset);
         lastInternalInputRef.current = newValue;
         onInputChange(newValue);
@@ -358,7 +363,7 @@ function PromptInput({
   const hasTungstenSession = useAppState(s => 'external' === 'ant' && s.tungstenActiveSession !== undefined);
   const tmuxFooterVisible = 'external' === 'ant' && hasTungstenSession;
   // WebBrowser pill — visible when a browser is open
-  const bagelFooterVisible = useAppState(s => false);
+  const bagelFooterVisible = useAppState(_s => false);
   const teamContext = useAppState(s => s.teamContext);
   const queuedCommands = useCommandQueue();
   const promptSuggestionState = useAppState(s => s.promptSuggestion);
@@ -474,7 +479,7 @@ function PromptInput({
     } else if (coordinatorTaskIndex < minCoordinatorIndex) {
       setCoordinatorTaskIndex(minCoordinatorIndex);
     }
-  }, [coordinatorTaskCount, coordinatorTaskIndex, minCoordinatorIndex]);
+  }, [coordinatorTaskCount, coordinatorTaskIndex, minCoordinatorIndex, setCoordinatorTaskIndex]);
   const [isPasting, setIsPasting] = useState(false);
   const [isExternalEditorActive, setIsExternalEditorActive] = useState(false);
 
@@ -546,14 +551,7 @@ function PromptInput({
         bridgeFooterVisible && 'bridge',
         companionFooterVisible && 'companion',
       ].filter(Boolean) as FooterItem[],
-    [
-      tasksFooterVisible,
-      tmuxFooterVisible,
-      bagelFooterVisible,
-      teamsFooterVisible,
-      bridgeFooterVisible,
-      companionFooterVisible,
-    ],
+    [tasksFooterVisible, tmuxFooterVisible, bagelFooterVisible, teamsFooterVisible, bridgeFooterVisible],
   );
 
   // Effective selection: null if the selected pill stopped rendering (bridge
@@ -576,7 +574,7 @@ function PromptInput({
   }, [rawFooterSelection, footerItemSelected, setAppState]);
   const tasksSelected = footerItemSelected === 'tasks';
   const tmuxSelected = footerItemSelected === 'tmux';
-  const bagelSelected = footerItemSelected === 'bagel';
+  const _bagelSelected = footerItemSelected === 'bagel';
   const teamsSelected = footerItemSelected === 'teams';
   const bridgeSelected = footerItemSelected === 'bridge';
   function selectFooterItem(item: FooterItem | null): void {
@@ -657,11 +655,11 @@ function PromptInput({
     () => (feature('TOKEN_BUDGET') ? findTokenBudgetPositions(displayedValue) : []),
     [displayedValue],
   );
-  const knownChannelsVersion = useSyncExternalStore(subscribeKnownChannels, getKnownChannelsVersion);
+  const _knownChannelsVersion = useSyncExternalStore(subscribeKnownChannels, getKnownChannelsVersion);
   const slackChannelTriggers = useMemo(
     () => (hasSlackMcpServer(store.getState().mcp.clients) ? findSlackChannelPositions(displayedValue) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- store is a stable ref
-    [displayedValue, knownChannelsVersion],
+    [displayedValue, store.getState],
   );
 
   // Find @name mentions and highlight with team member's color
@@ -730,7 +728,7 @@ function PromptInput({
       const mid = (inside.start + inside.end) / 2;
       setCursorOffset(cursorOffset < mid ? inside.start : inside.end);
     }
-  }, [cursorOffset, imageRefPositions, setCursorOffset]);
+  }, [cursorOffset, imageRefPositions]);
   const combinedHighlights = useMemo((): TextHighlight[] => {
     const highlights: TextHighlight[] = [];
 
@@ -946,12 +944,16 @@ function PromptInput({
     slashCommandTriggers,
     tokenBudgetTriggers,
     slackChannelTriggers,
-    displayedValue,
     voiceInterimRange,
     thinkTriggers,
     ultraplanTriggers,
     ultrareviewTriggers,
     buddyTriggers,
+    workflowTriggers,
+    researchTriggers,
+    fixTriggers,
+    explainTriggers,
+    debugTriggers,
   ]);
   const { addNotification, removeNotification } = useNotifications();
 
@@ -1175,7 +1177,17 @@ function PromptInput({
       );
       trackAndSetInput(processedValue);
     },
-    [trackAndSetInput, onModeChange, input, cursorOffset, pushToBuffer, pastedContents, dismissStashHint, setAppState],
+    [
+      trackAndSetInput,
+      onModeChange,
+      input,
+      cursorOffset,
+      pushToBuffer,
+      pastedContents,
+      dismissStashHint,
+      setAppState,
+      setHelpOpen,
+    ],
   );
   const { resetHistory, onHistoryUp, onHistoryDown, dismissSearchHint, historyIndex } = useArrowKeyHistory(
     (value: string, historyMode: HistoryMode, pastedContents: Record<number, PastedContent>) => {
@@ -1418,6 +1430,8 @@ function PromptInput({
       markAccepted,
       pastedContents,
       removeNotification,
+      trackAndSetInput,
+      addNotification,
     ],
   );
   const { suggestions, selectedSuggestion, commandArgumentHint, inlineGhostText, maxColumnWidth } = useTypeahead({
@@ -1498,12 +1512,7 @@ function PromptInput({
     insertTextAtCursor(prefix + formatImageRef(pasteId));
     pendingSpaceAfterPillRef.current = true;
   }
-  function onVideoPaste(
-    video: string,
-    mediaType?: string,
-    filename?: string,
-    sourcePath?: string,
-  ) {
+  function onVideoPaste(video: string, mediaType?: string, filename?: string, sourcePath?: string) {
     logEvent('tengu_paste_video', {});
     onModeChange('prompt');
     const pasteId = nextPasteIdRef.current++;
@@ -1531,7 +1540,9 @@ function PromptInput({
   useEffect(() => {
     const referencedIds = new Set(parseReferences(input).map(r => r.id));
     setPastedContents(prev => {
-      const orphaned = Object.values(prev).filter(c => (c.type === 'image' || c.type === 'video') && !referencedIds.has(c.id));
+      const orphaned = Object.values(prev).filter(
+        c => (c.type === 'image' || c.type === 'video') && !referencedIds.has(c.id),
+      );
       if (orphaned.length === 0) return prev;
       const next = {
         ...prev,
@@ -1600,7 +1611,7 @@ function PromptInput({
   const lazySpaceInputFilter = useCallback((input: string, key: Key): string => {
     if (!pendingSpaceAfterPillRef.current) return input;
     pendingSpaceAfterPillRef.current = false;
-    if (isNonSpacePrintable(input, key)) return ' ' + input;
+    if (isNonSpacePrintable(input, key)) return ` ${input}`;
     return input;
   }, []);
   function insertTextAtCursor(text: string) {
@@ -1677,10 +1688,10 @@ function PromptInput({
   // Handler for chat:newline - insert a newline at the cursor position
   const handleNewline = useCallback(() => {
     pushToBuffer(input, cursorOffset, pastedContents);
-    const newInput = input.slice(0, cursorOffset) + '\n' + input.slice(cursorOffset);
+    const newInput = `${input.slice(0, cursorOffset)}\n${input.slice(cursorOffset)}`;
     trackAndSetInput(newInput);
     setCursorOffset(cursorOffset + 1);
-  }, [input, cursorOffset, trackAndSetInput, setCursorOffset, pushToBuffer, pastedContents]);
+  }, [input, cursorOffset, trackAndSetInput, pushToBuffer, pastedContents]);
 
   // Handler for chat:externalEditor - edit in $EDITOR
   const handleExternalEditor = useCallback(async () => {
@@ -1753,7 +1764,7 @@ function PromptInput({
     if (helpOpen) {
       setHelpOpen(false);
     }
-  }, [helpOpen]);
+  }, [helpOpen, setHelpOpen]);
 
   // Handler for chat:fastMode - toggle fast mode picker
   const handleFastModePicker = useCallback(() => {
@@ -1761,7 +1772,7 @@ function PromptInput({
     if (helpOpen) {
       setHelpOpen(false);
     }
-  }, [helpOpen]);
+  }, [helpOpen, setHelpOpen]);
 
   // Handler for chat:thinkingToggle - toggle thinking mode
   const handleThinkingToggle = useCallback(() => {
@@ -1769,7 +1780,7 @@ function PromptInput({
     if (helpOpen) {
       setHelpOpen(false);
     }
-  }, [helpOpen]);
+  }, [helpOpen, setHelpOpen]);
 
   // Handler for chat:stats - show session usage statistics
   const handleShowStats = useCallback(() => {
@@ -1805,7 +1816,7 @@ function PromptInput({
       const teammateTaskId = viewingAgentTaskId;
       setAppState(prev => {
         const task = prev.tasks[teammateTaskId];
-        if (!task || task.type !== 'in_process_teammate') {
+        if (task?.type !== 'in_process_teammate') {
           return prev;
         }
         if (task.permissionMode === nextMode) {
@@ -1951,6 +1962,7 @@ function PromptInput({
     setToolPermissionContext,
     helpOpen,
     showAutoModeOptIn,
+    setHelpOpen,
   ]);
 
   // Handler for auto mode opt-in dialog acceptance
@@ -2293,7 +2305,7 @@ function PromptInput({
           // When the selected row IS the viewed agent, 'x' types into the
           // steering input. Any other row — dismiss it.
           if (viewSelectionMode === 'viewing-agent' && task.id === viewingAgentTaskId) {
-            onChange(input.slice(0, cursorOffset) + 'x' + input.slice(cursorOffset));
+            onChange(`${input.slice(0, cursorOffset)}x${input.slice(cursorOffset)}`);
             setCursorOffset(cursorOffset + 1);
             return;
           }
@@ -2552,7 +2564,7 @@ function PromptInput({
         />
       </Box>
     );
-  }, [showModelPicker, mainLoopModel_, mainLoopModelForSession, handleModelSelect, handleModelCancel]);
+  }, [showModelPicker, mainLoopModel_, mainLoopModelForSession, handleModelSelect, handleModelCancel, isFastMode]);
   const handleFastModeSelect = useCallback(
     (result?: string) => {
       setShowFastModePicker(false);
@@ -2619,7 +2631,7 @@ function PromptInput({
         />
       </Box>
     );
-  }, [showThinkingToggle, thinkingEnabled, handleThinkingSelect, handleThinkingCancel, messages.length]);
+  }, [showThinkingToggle, thinkingEnabled, handleThinkingSelect, handleThinkingCancel, messages.some]);
 
   // Portal dialog to DialogOverlay in fullscreen so it escapes the bottom
   // slot's overflowY:hidden clip (same pattern as SuggestionsOverlay).

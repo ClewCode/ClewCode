@@ -27,14 +27,14 @@ const DATE = dateToFilename(new Date());
  * Gets the path to the errors log file.
  */
 export function getErrorsPath(): string {
-  return join(CACHE_PATHS.errors(), DATE + '.jsonl');
+  return join(CACHE_PATHS.errors(), `${DATE}.jsonl`);
 }
 
 /**
  * Gets the path to MCP logs for a server.
  */
 export function getMCPLogsPath(serverName: string): string {
-  return join(CACHE_PATHS.mcpLogs(serverName), DATE + '.jsonl');
+  return join(CACHE_PATHS.mcpLogs(serverName), `${DATE}.jsonl`);
 }
 
 type JsonlWriter = {
@@ -51,7 +51,7 @@ function createJsonlWriter(options: {
   const writer = createBufferedWriter(options);
   return {
     write(obj: object): void {
-      writer.write(jsonStringify(obj) + '\n');
+      writer.write(`${jsonStringify(obj)}\n`);
     },
     flush: writer.flush,
     dispose: writer.dispose,

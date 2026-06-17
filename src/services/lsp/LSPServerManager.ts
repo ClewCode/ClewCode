@@ -254,7 +254,7 @@ export function createLSPServerManager(): LSPServerManager {
 
   async function changeFile(filePath: string, content: string): Promise<void> {
     const server = getServerForFile(filePath);
-    if (!server || server.state !== 'running') {
+    if (server?.state !== 'running') {
       return openFile(filePath, content);
     }
 
@@ -289,7 +289,7 @@ export function createLSPServerManager(): LSPServerManager {
    */
   async function saveFile(filePath: string): Promise<void> {
     const server = getServerForFile(filePath);
-    if (!server || server.state !== 'running') return;
+    if (server?.state !== 'running') return;
 
     try {
       await server.sendNotification('textDocument/didSave', {
@@ -315,7 +315,7 @@ export function createLSPServerManager(): LSPServerManager {
    */
   async function closeFile(filePath: string): Promise<void> {
     const server = getServerForFile(filePath);
-    if (!server || server.state !== 'running') return;
+    if (server?.state !== 'running') return;
 
     const fileUri = pathToFileURL(path.resolve(filePath)).href;
 

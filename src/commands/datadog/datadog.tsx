@@ -77,6 +77,6 @@ export function DatadogSettings({ onDone }: { onDone: LocalJSXCommandOnDone }) {
   );
 }
 
-export async function call(onDone: LocalJSXCommandOnDone, context: any, args: string) {
+export async function call(onDone: LocalJSXCommandOnDone, _context: any, _args: string) {
   return <DatadogSettings onDone={onDone} />;
 }
