@@ -127,9 +127,9 @@ try {
       return;
     }
 
-    process.exit(code ?? 0);
+    process.exit(code || 0);
   });
 } catch (e) {
   console.error('Error executing Bun:', e.message || e);
-  process.exit(e.status ?? 1);
+  process.exit(e.status || 1);
 }
