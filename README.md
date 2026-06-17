@@ -12,8 +12,8 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 [![Contributors](https://img.shields.io/github/contributors/ClewCode/ClewCode.svg)](https://github.com/ClewCode/ClewCode/graphs/contributors)
 [![Release](https://img.shields.io/github/v/release/ClewCode/ClewCode)](https://github.com/ClewCode/ClewCode/releases)
 [![npm](https://img.shields.io/npm/v/clew-code)](https://www.npmjs.com/package/clew-code)
-[![CI](https://img.shields.io/github/actions/workflow/status/ClewCode/ClewCode/release.yml?branch=main)](https://github.com/ClewCode/ClewCode/actions)
-[![License: MIT](https://img.shields.io/badge/license-GPL3-blue.svg)](#license)
+[![CI](https://img.shields.io/github/actions/workflow/status/ClewCode/ClewCode/ci.yml?branch=main)](https://github.com/ClewCode/ClewCode/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](#license)
 [![Platform](https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-lightgrey.svg)](#installation)
 [![Built with Bun](https://img.shields.io/badge/built%20with-Bun-ff69b4.svg)](https://bun.sh)
 
