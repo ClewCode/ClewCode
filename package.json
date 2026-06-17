@@ -158,7 +158,5 @@
     "@types/lodash-es": "^4.17.12",
     "@types/semver": "^7.7.1"
   },
-  "optionalDependencies": {
-    "sharp": "^0.35.1"
-  }
+  "optionalDependencies": {}
 }

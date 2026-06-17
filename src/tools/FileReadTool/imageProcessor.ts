@@ -68,10 +68,14 @@ export async function getImageCreator(): Promise<SharpCreator> {
     return imageCreatorModule.default;
   }
 
-  const imported = (await import('sharp')) as unknown as MaybeDefault<SharpCreator>;
-  const sharp = unwrapDefault(imported);
-  imageCreatorModule = { default: sharp };
-  return sharp;
+  try {
+    const imported = (await import('sharp')) as unknown as MaybeDefault<SharpCreator>;
+    const sharp = unwrapDefault(imported);
+    imageCreatorModule = { default: sharp };
+    return sharp;
+  } catch {
+    throw new Error('Image creation is not available. Install sharp: npm install sharp (or bun add sharp).');
+  }
 }
 
 // Dynamic import shape varies by module interop mode — ESM yields { default: fn }, CJS yields fn directly.
