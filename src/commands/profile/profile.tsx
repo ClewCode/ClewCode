@@ -5,12 +5,11 @@ import type { LocalJSXCommandCall } from '../../types/command.js';
 import type { PermissionMode } from '../../utils/permissions/PermissionMode.js';
 import { updateSettingsForSource } from '../../utils/settings/settings.js';
 
-type ClewProfile = 'coding' | 'personal';
-const CLEW_PROFILES: readonly ClewProfile[] = ['coding', 'personal'];
+type ClewProfile = 'personal';
+const CLEW_PROFILES: readonly ClewProfile[] = ['personal'];
 
-const PROFILE_LABELS: Record<ClewProfile, string> = { coding: 'Clew Code', personal: 'Clew Personal' };
+const PROFILE_LABELS: Record<ClewProfile, string> = { personal: 'Clew Personal' };
 const PROFILE_DESCRIPTIONS: Record<ClewProfile, string> = {
-  coding: 'implement software changes — inspect repo, edit files, run validation',
   personal: 'command center — plan, split tasks, delegate code work, summarize results',
 };
 
@@ -24,20 +23,18 @@ function ProfileCommand({ onDone, context, args }: Props): React.ReactNode {
   const trimmed = args?.trim().toLowerCase();
 
   useEffect(() => {
-    if (trimmed === 'coding' || trimmed === 'personal') {
-      const next = trimmed as ClewProfile;
+    if (trimmed === 'personal') {
       const updatedLastModes = { ...lastModes, [profile]: currentMode as PermissionMode };
-      const restoredMode = updatedLastModes[next] ?? (next === 'personal' ? ('ask' as const) : currentMode);
       context.setAppState((prev: any) => ({
         ...prev,
-        profile: next,
+        profile: 'personal' as const,
         lastProfileModes: updatedLastModes,
-        toolPermissionContext: { ...prev.toolPermissionContext, mode: restoredMode },
+        toolPermissionContext: { ...prev.toolPermissionContext, mode: 'ask' },
       }));
-      updateSettingsForSource('userSettings', { profile: next });
-      onDone(`Switched to ${PROFILE_LABELS[next]}.`);
+      updateSettingsForSource('userSettings', { profile: 'personal' });
+      onDone(`Switched to ${PROFILE_LABELS.personal}.`);
     } else if (trimmed) {
-      onDone(`Unknown profile: ${trimmed}. Available: ${CLEW_PROFILES.join(', ')}`);
+      onDone(`Unknown profile: "${trimmed}".`);
     } else {
       onDone(`Active profile: ${PROFILE_LABELS[profile]} — ${PROFILE_DESCRIPTIONS[profile]}`);
     }
@@ -45,25 +42,21 @@ function ProfileCommand({ onDone, context, args }: Props): React.ReactNode {
 
   return (
     <Box flexDirection="column">
-      {trimmed === 'coding' || trimmed === 'personal' ? (
+      {trimmed === 'personal' ? (
         <>
           <Text>
-            Switched to <Text bold>{PROFILE_LABELS[trimmed as ClewProfile]}</Text>.
+            Switched to <Text bold>{PROFILE_LABELS.personal}</Text>.
           </Text>
-          <Text dimColor>{PROFILE_DESCRIPTIONS[trimmed as ClewProfile]}</Text>
+          <Text dimColor>{PROFILE_DESCRIPTIONS.personal}</Text>
         </>
       ) : trimmed ? (
-        <>
-          <Text color="red">Unknown profile: {trimmed}</Text>
-          <Text>Available profiles: {CLEW_PROFILES.join(', ')}</Text>
-        </>
+        <Text color="red">Unknown profile: "{trimmed}".</Text>
       ) : (
         <>
           <Text>
             Active profile: <Text bold>{PROFILE_LABELS[profile]}</Text>
           </Text>
           <Text dimColor>{PROFILE_DESCRIPTIONS[profile]}</Text>
-          <Text dimColor>Switch with /profile coding or /profile personal</Text>
         </>
       )}
     </Box>

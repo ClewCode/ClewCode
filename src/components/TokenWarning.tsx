@@ -120,15 +120,5 @@ export function TokenWarning({ tokenUsage, model, messages }: Props): React.Reac
     );
   }
 
-  const autocompactLabel = reactiveOnlyMode
-    ? `${100 - displayPercentLeft}% context used`
-    : `${displayPercentLeft}% until auto-compact`;
-
-  return (
-    <Box flexDirection="row" gap={1} alignItems="center">
-      <Text bold color={isAboveErrorThreshold ? 'red' : 'yellow'}>
-        {showAutoCompactWarning ? autocompactLabel : `Context low (${percentLeft}% left)`}
-      </Text>
-    </Box>
-  );
+  return null;
 }

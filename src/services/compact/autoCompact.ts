@@ -16,6 +16,8 @@ import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js'
 import { getMaxOutputTokensForModel } from '../api/claude.js';
 import { notifyCompaction } from '../api/promptCacheBreakDetection.js';
 import { setLastSummarizedMessageId } from '../SessionMemory/sessionMemoryUtils.js';
+import { autoExtractFromSession } from '../../memory/compacter.js';
+import { getLastRawCompactResponse, parseCompactMemories } from './prompt.js';
 import {
   type CompactionResult,
   compactConversation,
@@ -277,6 +279,9 @@ export async function autoCompactIfNeeded(
       notifyCompaction(querySource ?? 'compact', toolUseContext.agentId);
     }
     markPostCompaction();
+    const raw1 = getLastRawCompactResponse();
+    const mem1 = raw1 ? parseCompactMemories(raw1) : undefined;
+    autoExtractFromSession(mem1).catch(() => {});
     return {
       wasCompacted: true,
       compactionResult: sessionMemoryResult,
@@ -298,6 +303,9 @@ export async function autoCompactIfNeeded(
     // and the old message UUID will no longer exist in the new messages array
     setLastSummarizedMessageId(undefined);
     runPostCompactCleanup(querySource);
+    const raw2 = getLastRawCompactResponse();
+    const mem2 = raw2 ? parseCompactMemories(raw2) : undefined;
+    autoExtractFromSession(mem2).catch(() => {});
 
     return {
       wasCompacted: true,

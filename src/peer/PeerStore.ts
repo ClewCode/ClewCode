@@ -8,6 +8,7 @@
 
 import { logForDebugging } from '../utils/debug.js';
 import {
+  type BrokerMessage,
   type MeshChatMessage,
   type MeshTodo,
   PEER_CONNECTION_PING_INTERVAL,
@@ -46,6 +47,16 @@ export class PeerStore {
   private messageWaiters = new Map<
     string,
     { resolve: (msgs: MeshChatMessage[]) => void; after: number; from?: string }
+  >();
+
+  /** Broker: undelivered messages */
+  private outbox: BrokerMessage[] = [];
+  /** Broker: max messages in outbox before auto-eviction */
+  private readonly maxOutboxSize = 1000;
+  /** Broker: long-poll waiters keyed by waiter ID */
+  private brokerWaiters = new Map<
+    string,
+    { resolve: (msgs: BrokerMessage[]) => void; filter: (msg: BrokerMessage) => boolean }
   >();
 
   constructor(callbacks?: PeerStoreCallbacks) {
@@ -331,6 +342,125 @@ export class PeerStore {
    */
   clearMessages(): void {
     this.messages = [];
+  }
+
+  // ── Broker methods ──────────────────────────────────────────
+
+  /**
+   * Add a message to the broker outbox.
+   * Resolves any long-poll waiters whose filter matches.
+   */
+  addToOutbox(msg: BrokerMessage): void {
+    // Auto-evict oldest if at capacity
+    if (this.outbox.length >= this.maxOutboxSize) {
+      this.outbox.splice(0, this.outbox.length - this.maxOutboxSize + 1);
+    }
+    this.outbox.push(msg);
+
+    // Resolve matching waiters
+    for (const [id, waiter] of this.brokerWaiters) {
+      if (waiter.filter(msg)) {
+        waiter.resolve([msg]);
+        this.brokerWaiters.delete(id);
+      }
+    }
+  }
+
+  /**
+   * Get undelivered messages addressed to one of the given targets.
+   * Marks returned messages as delivered.
+   */
+  getUndelivered(targets: string[]): BrokerMessage[] {
+    if (targets.length === 0) return [];
+    const lowered = targets.map(t => t.toLowerCase());
+    const found: BrokerMessage[] = [];
+    for (const msg of this.outbox) {
+      if (msg.delivered) continue;
+      const to = msg.to.toLowerCase();
+      if (to === '*' || lowered.includes(to)) {
+        msg.delivered = true;
+        found.push(msg);
+      }
+    }
+    return found;
+  }
+
+  /**
+   * Check if a reply exists for a given message ID.
+   */
+  getReply(replyTo: string): BrokerMessage | undefined {
+    return this.outbox.find(m => m.replyTo === replyTo && m.delivered === false);
+  }
+
+  /**
+   * Mark a message as delivered by ID.
+   */
+  markDelivered(id: string): boolean {
+    const msg = this.outbox.find(m => m.id === id);
+    if (!msg) return false;
+    msg.delivered = true;
+    return true;
+  }
+
+  /**
+   * Wait for a reply to a specific message.
+   * Returns the reply message or undefined after timeout.
+   */
+  waitForReply(replyTo: string, timeoutMs: number): Promise<BrokerMessage | undefined> {
+    // Check if reply already exists
+    const existing = this.getReply(replyTo);
+    if (existing) return Promise.resolve(existing);
+
+    return new Promise(resolve => {
+      const id = `broker_wait_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      this.brokerWaiters.set(id, {
+        resolve: msgs => resolve(msgs[0]),
+        filter: msg => msg.replyTo === replyTo,
+      });
+
+      setTimeout(() => {
+        if (this.brokerWaiters.delete(id)) {
+          resolve(undefined);
+        }
+      }, timeoutMs);
+    });
+  }
+
+  /**
+   * Long-poll for broker messages addressed to the given targets.
+   * Returns immediately if messages are available, otherwise waits up to timeoutMs.
+   */
+  waitForBrokerMessages(targets: string[], timeoutMs: number): Promise<BrokerMessage[]> {
+    // Check immediately
+    const immediate = this.getUndelivered(targets);
+    if (immediate.length > 0) return Promise.resolve(immediate);
+
+    return new Promise(resolve => {
+      const id = `broker_poll_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const lowered = targets.map(t => t.toLowerCase());
+      this.brokerWaiters.set(id, {
+        resolve: msgs => resolve(msgs),
+        filter: (msg: BrokerMessage) => {
+          if (msg.delivered) return false;
+          const to = msg.to.toLowerCase();
+          return to === '*' || lowered.includes(to);
+        },
+      });
+
+      setTimeout(() => {
+        if (this.brokerWaiters.delete(id)) {
+          // On timeout, try to grab any messages that arrived
+          resolve(this.getUndelivered(targets));
+        }
+      }, timeoutMs);
+    });
+  }
+
+  /**
+   * Get all messages in the outbox (for debugging).
+   */
+  getOutbox(): BrokerMessage[] {
+    return [...this.outbox];
   }
 
   /**

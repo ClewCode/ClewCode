@@ -69,6 +69,15 @@ Always set a goal when the user gives you a complex task (>3 steps). This helps 
   async checkPermissions(): Promise<PermissionResult> {
     return { behavior: 'allow', updatedInput: {} };
   },
+  mapToolResultToToolResultBlockParam(content, toolUseID) {
+    const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+    return {
+      tool_use_id: toolUseID,
+      type: 'tool_result',
+      content: [{ type: 'text', text }],
+    };
+  },
+
   async call(input, _context, _canUseTool, _parentMessage) {
     const { action, goal, reason } = input;
     const existing = getFullGoalState();

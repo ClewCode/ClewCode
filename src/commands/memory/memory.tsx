@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { mkdir, writeFile } from 'fs/promises';
 import * as React from 'react';
 import type { CommandResultDisplay } from '../../commands.js';
@@ -107,7 +108,86 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
     switch (subcommand) {
       case 'init': {
         await initMemoryWorkspace(cwd);
-        onDone('🟢 Clew Memory workspace layout successfully initialized under `.clew/`', { display: 'system' });
+        try {
+          const { MemoryDB } = await import('../../memory/database.js');
+          const { initMemoryHierarchy, getMemoryDbPath } = await import('../../memory/hierarchy.js');
+          const { budgetedInject } = await import('../../memory/budgetInjector.js');
+
+          await initMemoryHierarchy();
+          if (!MemoryDB.isInitialized()) {
+            MemoryDB.init(getMemoryDbPath());
+          }
+          const stats = MemoryDB.getInstance().getStats();
+
+          // Auto-migrate legacy session data
+          let migrationNote = '';
+          try {
+            const { migrateFromSessionDB } = await import('../../memory/migrateLegacy.js');
+            const migrationResult = migrateFromSessionDB();
+            if (migrationResult.sessionsImported > 0 || migrationResult.digestsImported > 0) {
+              migrationNote = `  Legacy sessions: ${migrationResult.sessionsImported} imported · ${migrationResult.digestsImported} digests`;
+            }
+          } catch { /* migration unavailable */ }
+
+          // Auto-run rebuild as final step
+          const context = await budgetedInject(2000, true);
+          const parts: string[] = [
+            '🟢 Memory system initialized:',
+            `  Workspace: .clew/memory/`,
+            `  Database: ${getMemoryDbPath()}`,
+            `  Memories: ${stats.total} entries`,
+            `  Types: ${Object.entries(stats.byType).map(([t, c]) => `${t}: ${c}`).join(', ') || '(empty)'}`,
+            ...(migrationNote ? [migrationNote] : []),
+          ];
+          if (context) {
+            parts.push('', '=== Reconstructed Context ===', '', context, '', '=== End ===');
+          } else {
+            parts.push('', 'No memories found yet.', 'Next: run /memory scan to bootstrap project knowledge from your codebase.');
+          }
+          onDone(parts.join('\n'), { display: 'system' });
+        } catch {
+          onDone('🟢 Memory workspace layout initialized under `.clew/` (SQLite unavailable)', { display: 'system' });
+        }
+        return null;
+      }
+
+      case 'scan': {
+        try {
+          const { MemoryDB } = await import('../../memory/database.js');
+          const { initMemoryHierarchy, getMemoryDbPath } = await import('../../memory/hierarchy.js');
+          const { scanRepo } = await import('../../memory/scanner.js');
+
+          await initMemoryHierarchy();
+          if (!MemoryDB.isInitialized()) {
+            MemoryDB.init(getMemoryDbPath());
+          }
+
+          const result = await scanRepo();
+          const lines: string[] = [
+            'Memory scan complete:',
+            '',
+            'Stack:',
+            `  ${result.language} project`,
+            `  Package manager: ${result.packageManager}`,
+            `  Runtime: ${result.runtime}`,
+            result.framework !== 'none' ? `  Framework: ${result.framework}` : '',
+            result.entrypoints.length > 0 ? `  Entrypoints: ${result.entrypoints.join(', ')}` : '',
+            result.hasProviderSystem ? '  Provider routing: Yes' : '',
+            '',
+            `Seed memories: ${result.created} created · ${result.updated} updated · ${result.unchanged} unchanged`,
+            '',
+            'Files updated:',
+            '  MEMORY.md',
+            '  DECISIONS.md',
+            '  TASTE.md',
+          ];
+          if (result.warnings.length > 0) {
+            lines.push('', 'Warnings:', ...result.warnings.map(w => `  ${w}`));
+          }
+          onDone(lines.join('\n'), { display: 'system' });
+        } catch (err: any) {
+          onDone(`Error scanning repo: ${err.message}`, { display: 'system' });
+        }
         return null;
       }
 
@@ -293,6 +373,128 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
         return null;
       }
 
+      case 'rebuild': {
+        try {
+          const { MemoryDB } = await import('../../memory/database.js');
+          const { initMemoryHierarchy, getMemoryDbPath } = await import('../../memory/hierarchy.js');
+          await initMemoryHierarchy();
+          if (!MemoryDB.isInitialized()) {
+            MemoryDB.init(getMemoryDbPath());
+          }
+          const { budgetedInjectDetailed } = await import('../../memory/budgetInjector.js');
+          const result = await budgetedInjectDetailed(2000, true);
+          if (!result.text && result.injected.length === 0) {
+            onDone('No memories to rebuild from. Run /memory scan first.', { display: 'system' });
+            return null;
+          }
+          const lines: string[] = [
+            '=== Reconstructed Context ===',
+            '',
+            result.text || '(no memories injected)',
+            '',
+            '---',
+            `Budget: ${result.usedTokens}/${result.totalBudget} tokens used`,
+            '',
+          ];
+          if (result.injected.length > 0) {
+            lines.push('Injected:');
+            for (const m of result.injected) {
+              lines.push(`  ${m.key} (${m.type}, importance:${m.importance.toFixed(2)}, score:${m.score.toFixed(3)}, ${m.tokens} tok)`);
+            }
+            lines.push('');
+          }
+          if (result.skipped.length > 0) {
+            lines.push('Skipped:');
+            for (const m of result.skipped) {
+              lines.push(`  ${m.key}: ${m.reason}`);
+            }
+            lines.push('');
+          }
+          lines.push('=== End ===');
+          onDone(lines.join('\n'), { display: 'system' });
+        } catch (err: any) {
+          onDone(`Error rebuilding context: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
+      case 'recall': {
+        try {
+          const { MemoryDB } = await import('../../memory/database.js');
+          const { initMemoryHierarchy, getMemoryDbPath } = await import('../../memory/hierarchy.js');
+          await initMemoryHierarchy();
+          if (!MemoryDB.isInitialized()) {
+            MemoryDB.init(getMemoryDbPath());
+          }
+          const verbose = argv.includes('--verbose') || argv.includes('-v');
+          const limitIdx = argv.indexOf('--limit');
+          const limit = limitIdx >= 0 ? parseInt(argv[limitIdx + 1], 10) || 10 : 10;
+          // Extract query: everything between 'recall' and first flag
+          const recallIdx = argv.indexOf('recall');
+          const queryTokens = recallIdx >= 0 ? argv.slice(recallIdx + 1).filter(a => !a.startsWith('-') && a !== `--limit` && a !== `${limit}` && a !== '--verbose' && a !== '-v') : [];
+          const query = queryTokens.join(' ');
+          const memories = MemoryDB.getInstance().recallMemories({ projectPath: cwd, query: query || undefined, limit, verbose });
+          if (memories.length === 0) {
+            onDone('No memories found. Run /memory scan first.', { display: 'system' });
+            return null;
+          }
+          const lines: string[] = [`Top ${memories.length} memories:`, ''];
+          for (let i = 0; i < memories.length; i++) {
+            const m = memories[i]!;
+            const scoreStr = m.score.toFixed(3);
+            lines.push(`${i + 1}. [${scoreStr}] ${m.type}: ${m.content.length > 80 ? m.content.slice(0, 80) + '...' : m.content}`);
+            lines.push(`   key: ${m.id} · importance: ${m.importance} · confidence: ${m.confidence} · accessed: ${m.accessCount}x`);
+            if (verbose && m.scoreBreakdown) {
+              const b = m.scoreBreakdown;
+              lines.push(`   score: importance=${b.importance.toFixed(3)} + confidence=${b.confidence.toFixed(3)} + recency=${b.recency.toFixed(3)} + access=${b.access.toFixed(3)} = ${b.total.toFixed(3)}`);
+            }
+          }
+          onDone(lines.join('\n'), { display: 'system' });
+        } catch (err: any) {
+          onDone(`Error recalling memories: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
+      case 'feedback': {
+        try {
+          const { applyFeedback } = await import('../../memory/feedback.js');
+          const target = argv[1];
+          const signal = argv[2] as any;
+          const note = argv.slice(3).join(' ') || undefined;
+          if (!target || !signal) {
+            onDone(
+              'Usage: /memory feedback <memory-id|key> <accepted|rejected|corrected|preferred|disliked|important|wrong> [note]',
+              { display: 'system' },
+            );
+            return null;
+          }
+          const validSignals = ['accepted', 'rejected', 'corrected', 'preferred', 'disliked', 'important', 'wrong'];
+          if (!validSignals.includes(signal)) {
+            onDone(`Invalid signal "${signal}". Valid: ${validSignals.join(', ')}`, { display: 'system' });
+            return null;
+          }
+          const { MemoryDB } = await import('../../memory/database.js');
+          const { initMemoryHierarchy, getMemoryDbPath } = await import('../../memory/hierarchy.js');
+          await initMemoryHierarchy();
+          if (!MemoryDB.isInitialized()) {
+            MemoryDB.init(getMemoryDbPath());
+          }
+          const result = await applyFeedback(target, signal, note);
+          const lines: string[] = [
+            result.success ? 'Feedback applied.' : 'Error:',
+            `  ${result.message}`,
+          ];
+          if (result.importanceDelta !== 0) lines.push(`  importance: ${result.importanceDelta > 0 ? '+' : ''}${result.importanceDelta}`);
+          if (result.confidenceDelta !== 0) lines.push(`  confidence: ${result.confidenceDelta > 0 ? '+' : ''}${result.confidenceDelta}`);
+          if (result.wroteToTaste) lines.push('  written to TASTE.md');
+          onDone(lines.join('\n'), { display: 'system' });
+        } catch (err: any) {
+          onDone(`Error applying feedback: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
       case 'stats': {
         try {
           const { computeDensity } = await import('../../services/longTermMemory/timeline.js');
@@ -330,17 +532,6 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           onDone('Session saved to memory (flat + graph).', { display: 'system' });
         } catch (err: any) {
           onDone(`Error saving memory: ${err.message}`, { display: 'system' });
-        }
-        return null;
-      }
-
-      case 'xp':
-      case 'experience': {
-        try {
-          const { getExperienceReport } = await import('../../services/longTermMemory/experience.js');
-          onDone(getExperienceReport(cwd), { display: 'system' });
-        } catch (err: any) {
-          onDone(`Error: ${err.message}`, { display: 'system' });
         }
         return null;
       }
@@ -404,13 +595,133 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
         return null;
       }
 
+      case 'dashboard':
+      case 'dash': {
+        try {
+          const lines: string[] = [chalk.bold('🧠 Memory System Dashboard'), ''];
+
+          // ── Profile ────────────────────────────────────────────
+          try {
+            const appState = _context?.getAppState?.();
+            if (appState?.profile) {
+              const mode = appState.toolPermissionContext?.mode ?? 'default';
+              const modeIcon = mode === 'bypassPermissions' ? chalk.yellow('⚡') : chalk.dim('●');
+              lines.push(chalk.bold('  Profile'));
+              lines.push(`    Personal  ${modeIcon} ${mode}`);
+            }
+          } catch { /* profile unavailable */ }
+
+          // ── MemoryDB ─────────────────────────────────────────
+          const { MemoryDB } = await import('../../memory/database.js');
+          const { initMemoryHierarchy, getMemoryDbPath } = await import('../../memory/hierarchy.js');
+          await initMemoryHierarchy();
+          if (!MemoryDB.isInitialized()) {
+            MemoryDB.init(getMemoryDbPath());
+          }
+          const stats = MemoryDB.getInstance().getStats();
+          const total = stats.total;
+          const byType = Object.entries(stats.byType)
+            .sort((a, b) => b[1] - a[1])
+            .map(([t, c]) => `${chalk.cyan(t)} ${c}`)
+            .join(' · ');
+          // Count session memories for display
+          let sessionCount = 0;
+          try {
+            const sessionMems = db.recallMemories({ query: 'session.', limit: 1000 });
+            sessionCount = sessionMems.length;
+          } catch { /* ignore */ }
+
+          const memStatus = total > 0 ? chalk.green(`${total} memories`) : chalk.yellow('empty');
+          const sessionStr = sessionCount > 0 ? chalk.dim(` · ${sessionCount} sessions`) : '';
+          lines.push(chalk.bold('  MemoryDB'));
+          lines.push(`    ${memStatus}${sessionStr}  ${byType ? `[ ${byType} ]` : ''}`);
+
+          // ── Dream ─────────────────────────────────────────────
+          try {
+            const { getDreamStatus } = await import('../../services/longTermMemory/dream.js');
+            const dreamStatus = await getDreamStatus(cwd);
+            if (dreamStatus) {
+              const lastDream = dreamStatus.lastDreamAt ? new Date(dreamStatus.lastDreamAt).toLocaleString() : chalk.dim('never');
+              const nextDream = dreamStatus.nextDreamIn > 0
+                ? chalk.dim(`${Math.round(dreamStatus.nextDreamIn / 3600000)}h`)
+                : chalk.green('ready');
+              const pending = dreamStatus.pendingConsolidations > 0
+                ? chalk.yellow(`${dreamStatus.pendingConsolidations} pending`)
+                : chalk.dim('0 pending');
+              lines.push(chalk.bold('  Dream'));
+              lines.push(`    last ${lastDream}  ·  next ${nextDream}  ·  ${pending}  ·  runs ${dreamStatus.dreamsRun}`);
+            }
+          } catch { /* dream unavailable */ }
+
+          // ── Distill ───────────────────────────────────────────
+          try {
+            const { getDistillStatus } = await import('../../services/longTermMemory/distill.js');
+            const distillStatus = await getDistillStatus(cwd);
+            if (distillStatus) {
+              const lastDistill = distillStatus.lastDistillAt ? new Date(distillStatus.lastDistillAt).toLocaleString() : chalk.dim('never');
+              const nextDistill = distillStatus.nextDistillIn > 0
+                ? chalk.dim(`${Math.round(distillStatus.nextDistillIn / 86400000)}d`)
+                : chalk.green('ready');
+              lines.push(chalk.bold('  Distill'));
+              lines.push(`    last ${lastDistill}  ·  next ${nextDistill}  ·  ${distillStatus.experiencesCount} experiences  ·  runs ${distillStatus.distillsRun}`);
+            }
+          } catch { /* distill unavailable */ }
+
+          // ── Peer Memory Sync ──────────────────────────────────
+          try {
+            const { existsSync } = await import('node:fs');
+            const { join } = await import('node:path');
+            const { readFile } = await import('node:fs/promises');
+            const { getProjectRoot } = await import('../../bootstrap/state.js');
+            const statePath = join(getProjectRoot(), '.clew/peer-memory-sync.json');
+            if (existsSync(statePath)) {
+              const raw = await readFile(statePath, 'utf-8');
+              const peerState = JSON.parse(raw);
+              const statusIcon = peerState.enabled ? chalk.green('● ON') : chalk.dim('○ OFF');
+              lines.push(chalk.bold('  Peer Sync'));
+              if (peerState.enabled) {
+                lines.push(`    ${statusIcon}  every ${peerState.intervalMin} min  ·  cron ${peerState.cronTaskId || '—'}`);
+              } else {
+                lines.push(`    ${statusIcon}`);
+              }
+            }
+          } catch { /* peer state unavailable */ }
+
+          // ── Timeline ──────────────────────────────────────────
+          try {
+            const db = MemoryDB.getInstance();
+            const recentEvents = db.getTimeline(5);
+            if (recentEvents.length > 0) {
+              lines.push(chalk.bold('  Recent Events'));
+              for (const event of recentEvents) {
+                const date = new Date(event.createdAt).toLocaleString();
+                const eventLabel = event.event === 'created' ? chalk.green('+') : chalk.blue('~');
+                lines.push(`    ${chalk.dim('[' + date + ']')} ${eventLabel} ${event.event}${event.note ? ': ' + event.note : ''}`);
+              }
+            }
+          } catch { /* timeline unavailable */ }
+
+          lines.push('');
+          lines.push(chalk.dim('  /memory help · /memory init · /memory scan · /memory recall'));
+          onDone(lines.join('\n'), { display: 'system' });
+        } catch (err: any) {
+          onDone(`Error loading dashboard: ${err.message}`, { display: 'system' });
+        }
+        return null;
+      }
+
       default: {
         onDone(
           [
             `Unknown subcommand: "${subcommand}"`,
             '',
             'Available Subcommands:',
-            '  init                 Initialize memory directories & configurations',
+            '  dashboard            Show memory system dashboard (MemoryDB, Dream, Distill, Peer)',
+            '  init                 Initialize memory directories + SQLite MemoryDB',
+            '  scan                 Scan repo and bootstrap seed memories (idempotent)',
+            '  rebuild              Reconstruct context from memories (budgeted injection)',
+            '  recall [--verbose]   Recall memories ranked by importance/recency/access',
+            '  feedback <id|key> <signal> [note]  Accepted/rejected/corrected/preferred/disliked/important/wrong',
             '  ingest               Scan and build FTS indices over your Markdown memory files',
             '  reindex              Wipe SQLite search index and run full ingest from scratch',
             '  search <query>       Search indexed memory facts using SQLite FTS5',
@@ -426,7 +737,6 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             '  preview              Preview sessions ready for consolidation',
             '  consolidate          Mark old sessions as consolidated',
             '  graph                Show knowledge graph stats',
-            '  xp                   Show experience report and expertise profile',
           ].join('\n'),
           { display: 'system' },
         );

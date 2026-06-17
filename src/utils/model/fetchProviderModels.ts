@@ -215,33 +215,11 @@ export function supportsModelFetching(provider?: ProviderId): boolean {
   const providerManager = ProviderManager.getInstance();
   const activeProvider = provider ?? providerManager.getActiveProviderName();
 
-  // Quick check without async import
-  try {
-    // Providers that have modelsUrl and support /models endpoint
-    // Based on provider registry analysis:
-    // - anthropic, openai, gemini, openrouter, deepseek, opencode, groq, xai, mistral, kilocode, ollama have modelsUrl
-    // - cline does NOT support /models endpoint (returns 404)
-    // - google uses native SDK, no HTTP models endpoint
-    // - openai_browser, openai_headless use session tokens, no models endpoint
-    const supportedProviders: ProviderId[] = [
-      'anthropic',
-      'openai',
-      'openrouter',
-      'groq',
-      'mistral',
-      'xai',
-      'ollama',
-      'deepseek',
-      'opencode',
-      'opencode-go',
-      'kilocode',
-      'google',
-      'nvidia',
-      'custom',
-    ];
+  // google-assist uses OAuth-only (no HTTP models endpoint)
+  if (activeProvider === 'google-assist') return false;
 
-    return supportedProviders.includes(activeProvider);
-  } catch {
-    return false;
-  }
+  // All other providers try the API endpoint.
+  // If the call fails, the caller already falls back to
+  // the static model list from providers.json.
+  return true;
 }

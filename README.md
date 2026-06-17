@@ -25,7 +25,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 
 ## Hacking in public
 
-Clew Code is a reverse-engineered reimplementation of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships agent-to-agent LAN peer coordination, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation, and 27+ provider adapters.
+Clew Code is a reverse-engineered reimplementation of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships agent-to-agent LAN peer coordination, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation, and 26+ provider adapters.
 
 > Reverse-engineered from Claude Code. Rebuilt for every provider.
 
@@ -33,11 +33,11 @@ Clew Code is a reverse-engineered reimplementation of [Claude Code](https://gith
 
 ## Features
 
-- **27+ providers** — Anthropic, OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, OpenCode Go. Switch mid-session.
-- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15 peer AI tools let your agent coordinate autonomously via `/peer` commands.
+- **26+ providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, OpenCode Go. Switch mid-session. *(Anthropic provider removed — use [Claude Code](https://github.com/anthropics/claude-code) directly for Anthropic-first workflows.)*
+- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Message broker** (in-process queue) enables offline message delivery with correlation IDs.
 
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
-- **50+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, ReadArtifact, peer tools (15 LAN coordination tools), MCP tools, ProcessPeer (exec/pty), plan mode with full bypass permissions, multi-pass context compaction.
+- **55+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, ReadArtifact, peer tools (15+ LAN coordination tools including swarm + dashboard), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
 - **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Auto-integrates with AFK mode and the autonomous loop.
 - **Goal Verifier** — When the agent attempts to terminate, an independent LLM verifier reviews the conversation against the goal text. If unsatisfied, the gap is reported as metadata for automatic re-prompting.
 - **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
@@ -45,6 +45,7 @@ Clew Code is a reverse-engineered reimplementation of [Claude Code](https://gith
 - **Project memory promotion** — at the 70% checkpoint, stable information (active files, persistent decisions, notes) is promoted to `MEMORY.md` for cross-session persistence.
 - **Automated memory consolidation** — Dream process (7-day cycle) merges duplicate insights and creates weekly digests. Distill process (30-day cycle) extracts reusable patterns and generates skill suggestions.
 - **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
+- **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. Peer-to-peer memory sync across LAN. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
 - **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
 - **8 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, guardian. Granular allow/deny rules with pattern matching.
 
@@ -94,10 +95,7 @@ Other runtime concepts:
 
 ## Profiles: Coding vs Personal
 
-Clew Code has two profiles you switch between with `/profile`:
-
-- **Coding profile** (`/profile coding`) — default. Directly implement software changes: inspect repo, edit files, run validation.
-- **Personal profile** (`/profile personal`) — command center mode. Plan, split tasks, **delegate** code work to a Codex worker via `process_peer`, then review and summarize results.
+Clew Code has a **personal profile** (`/profile personal`) — command center mode. Plan, split tasks, **delegate** code work to a Codex worker via `process_peer`, then review and summarize results.
 
 ### How personal delegation works
 
@@ -183,8 +181,17 @@ clew
 ❯ /goal "tests pass"  # track task completion
 ❯ /maxmode on     # parallel candidate generation
 ❯ /peer discover  # find other Clew instances on LAN
+❯ /peer swarm clew -p "summarize CHANGELOG.md"  # run on all peers
+❯ /peer dashboard # show peer task checklist
+❯ /peer memory sync       # import memories from all peers
+❯ /peer memory auto on    # auto-sync memories every 60 min
 ❯ /mcp list       # connected MCP servers
 ❯ /daemon        # background autonomous loop
+❯ /compact        # compress context + auto-extract durable memories
+❯ /memory dashboard # unified memory system status
+❯ /memory init    # bootstrap project memory (SQLite + scan)
+❯ /memory rebuild # reconstruct context from ranked memories
+❯ /memory recall --verbose  # recall ranked memories
 
 # One-shot mode (pipe-friendly)
 clew -p "summarize CHANGELOG.md"
@@ -198,7 +205,6 @@ clew --resume last
 ## Provider setup
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
 export OPENAI_API_KEY=sk-...
 export GOOGLE_API_KEY=...
 export DEEPSEEK_API_KEY=...
@@ -216,27 +222,27 @@ export GEMINI_API_KEY=...
 <summary><strong>21 slash commands</strong></summary>
 
 ```
-/model        Switch provider or model
-/status       Provider, session, context info
-/doctor       Diagnostics
-/profile      Switch between coding and personal profiles
-/context      Active context usage
-/compact      Compress conversation history
-/goal         Track and verify task completion
-/maxmode      Toggle parallel candidate generation
-/mcp          MCP server management
-/code-review  Review changed files for bugs
-/simplify     Cleanup-focused review
-/plugin       Plugin and hook management
-/bridge       Bridge mode config
-/agent        Background agent dispatch & subcommands
-/agents       TUI Agent dashboard (operational view)
-/peer         Collaborate with Clew instances on LAN
-/remote       WebSocket remote control
-/daemon       Autonomous daemon dashboard
-/task         Scheduled tasks
-/memory       Long-term memory search and management
-/tasks        Curated task list management
+/model          Switch provider or model
+/status         Provider, session, context info
+/doctor         Diagnostics
+/profile        Personal profile mode
+/context        Active context usage
+/compact        Compress conversation history
+/goal           Track and verify task completion
+/maxmode        Toggle parallel candidate generation
+/mcp            MCP server management
+/code-review    Review changed files for bugs
+/simplify       Cleanup-focused review
+/plugin         Plugin and hook management
+/bridge         Bridge mode config
+/agent          Background agent dispatch & subcommands
+/agents         TUI Agent dashboard (operational view)
+/peer           LAN peers: share, discover, join, send, swarm, dashboard, memory sync/auto
+/remote         WebSocket remote control
+/daemon         Autonomous daemon dashboard
+/task           Scheduled tasks
+/memory         Memory system: init, scan, rebuild, recall, feedback, dashboard, search
+/tasks          Curated task list management
 ```
 
 </details>
@@ -256,7 +262,7 @@ src/
 ├── commands/                # Slash command implementations
 ├── tools/                   # 50+ built-in tools
 ├── services/
-│   ├── ai/                  # Provider manager + 27+ providers
+│   ├── ai/                  # Provider manager + 26+ providers
 │   ├── mcp/                 # MCP client + auth + transports
 │   ├── plugins/             # Plugin hooks + marketplace
 │   ├── autonomous/          # Agent loop + task queue + cron
@@ -267,7 +273,7 @@ src/
 │   ├── lsp/                 # LSP integration
 │   └── Supervisor/          # Agent supervisor IPC
 ├── peer/                    # PeerServer + PeerDiscovery (agent-to-agent)
-├── memory/                  # Long-term memory (SQLite, FTS5)
+├── memory/                  # MemoryDB + autoInit + scanner + hierarchy + feedback (MiMo-style)
 ├── bridge/                  # WebSocket bridge + relay
 ├── components/              # Ink terminal UI components
 ├── state/                   # AppState management
@@ -334,7 +340,7 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 - **Distill process** — 30-day pattern extraction and reusable skill generation
 - **Video input** — paste mp4/mov/webm to video-capable models (Gemini, GPT-5.x)
 - **Image & Video generation** — `GenerateImage` (DALL-E 3, Imagen 3) and `GenerateVideo` (Runway Gen-4)
-- **Profile system** — `/profile` switches between `coding` and `personal` profiles
+- **Profile system** — `/profile personal` sets command-center mode with plan/split/delegate workflow
 - **Execution modes** — `/mode` with `safe`, `yolo`, `afk`, `review-only`, `browser-safe`
 - **ReadArtifact tool** — read truncated large outputs in chunks
 - **Bounded tool output** — 200-line cap with disk persistence for large results

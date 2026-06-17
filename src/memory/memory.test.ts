@@ -15,6 +15,7 @@ import { searchMemories } from './search.js';
 import { deleteSource, getAllSources, getSource, insertChunks, searchChunksFTS, upsertSource } from './store.js';
 import type { MemoryChunk, SourceDocument } from './types.js';
 import { getMemoryWorkspaceStatus, initMemoryWorkspace } from './workspace.js';
+import { compactContext, classifyContext } from './compacter.js';
 
 const tempCwd = join(process.cwd(), 'test/temp-test-memory-workspace');
 
@@ -272,5 +273,230 @@ describe('Claude Memory System (PLAN E)', () => {
     expect(injected).toContain('Bun Offline-first architecture.');
     expect(injected).toContain('<user_prompt>');
     expect(injected).toContain(userPrompt);
+  });
+});
+
+// ── MiMo MemoryDB tests ────────────────────────────────────
+
+import { MemoryDB } from './database.js';
+import { resolveSignal, applyFeedback } from './feedback.js';
+import { writeMemoryFile, getMemoryDirPath, initMemoryHierarchy } from './hierarchy.js';
+import { readFile, mkdir } from 'fs/promises';
+import { join } from 'path';
+
+const memDbDir = join(tempCwd, '.clew', 'memory-test');
+
+describe('MiMo MemoryDB', () => {
+  beforeAll(async () => {
+    await mkdir(memDbDir, { recursive: true });
+    MemoryDB.reset();
+    MemoryDB.init(join(memDbDir, 'memory.db'));
+  });
+
+  afterAll(() => {
+    MemoryDB.reset();
+  });
+
+  test('upsert is idempotent (first call creates, second skips unchanged)', () => {
+    const r1 = MemoryDB.getInstance().upsertMemory({
+      key: 'test.idempotent',
+      projectPath: memDbDir,
+      type: 'architecture',
+      content: 'Test memory content',
+      importance: 0.8,
+      confidence: 0.7,
+    });
+    expect(r1.action).toBe('created');
+
+    const r2 = MemoryDB.getInstance().upsertMemory({
+      key: 'test.idempotent',
+      projectPath: memDbDir,
+      type: 'architecture',
+      content: 'Test memory content',
+      importance: 0.8,
+      confidence: 0.7,
+    });
+    expect(r2.action).toBe('unchanged');
+  });
+
+  test('content hash detects changes on upsert', () => {
+    const r1 = MemoryDB.getInstance().upsertMemory({
+      key: 'test.hash_change',
+      projectPath: memDbDir,
+      type: 'reference',
+      content: 'Original version',
+      importance: 0.5,
+      confidence: 0.5,
+    });
+    expect(r1.action).toBe('created');
+
+    const r2 = MemoryDB.getInstance().upsertMemory({
+      key: 'test.hash_change',
+      projectPath: memDbDir,
+      type: 'reference',
+      content: 'Updated version with new info',
+      importance: 0.6,
+      confidence: 0.6,
+    });
+    expect(r2.action).toBe('updated');
+  });
+
+  test('recall ranks query-relevant above unrelated high-importance', () => {
+    const db = MemoryDB.getInstance();
+    db.upsertMemory({ key: 'test.relevant', projectPath: memDbDir, type: 'architecture', content: 'TypeScript compiler configuration and tsconfig options', importance: 0.5, confidence: 0.8 });
+    db.upsertMemory({ key: 'test.unrelated', projectPath: memDbDir, type: 'reference', content: 'Database connection pooling settings for PostgreSQL', importance: 0.9, confidence: 0.9 });
+
+    const results = db.recallMemories({ projectPath: memDbDir, query: 'TypeScript compiler', limit: 5, verbose: true });
+    expect(results.length).toBeGreaterThanOrEqual(2);
+    const tsMem = results.find(m => m.content.includes('TypeScript'));
+    const dbMem = results.find(m => m.content.includes('PostgreSQL'));
+    expect(tsMem).toBeDefined();
+    expect(dbMem).toBeDefined();
+    expect(tsMem!.score).toBeGreaterThan(dbMem!.score);
+  });
+
+  test('recall increments access_count and last_accessed_at', () => {
+    const db = MemoryDB.getInstance();
+    const r = db.upsertMemory({ key: 'test.access_tracking', projectPath: memDbDir, type: 'decision', content: 'Use pnpm over npm', importance: 0.5, confidence: 0.5 });
+
+    const before = db.getMemory(r.id)!;
+    expect(before.accessCount).toBe(0);
+
+    db.recallMemories({ projectPath: memDbDir, limit: 10 });
+    const after = db.getMemory(r.id)!;
+    expect(after.accessCount).toBeGreaterThan(before.accessCount);
+  });
+
+  test('feedback important boosts importance', async () => {
+    const db = MemoryDB.getInstance();
+    const r = db.upsertMemory({ key: 'test.fb_important', projectPath: memDbDir, type: 'reference', content: 'Some reference', importance: 0.5, confidence: 0.5 });
+
+    const result = await applyFeedback(r.id, 'important');
+    expect(result.success).toBe(true);
+    expect(result.importanceDelta).toBe(0.2);
+
+    const updated = db.getMemory(r.id)!;
+    expect(updated.importance).toBeCloseTo(0.7, 1);
+  });
+
+  test('feedback preferred writes to TASTE.md', async () => {
+    const db = MemoryDB.getInstance();
+    const r = db.upsertMemory({ key: 'test.fb_taste', projectPath: memDbDir, type: 'taste', content: 'Use tabs', importance: 0.5, confidence: 0.5 });
+
+    const memDir = getMemoryDirPath();
+    await mkdir(memDir, { recursive: true }).catch(() => {});
+    await writeMemoryFile('TASTE.md', '# Coding Style & Preferences\n\n');
+    await initMemoryHierarchy();
+
+    const result = await applyFeedback(r.id, 'preferred', 'Always use tabs for indentation');
+    expect(result.success).toBe(true);
+    expect(result.wroteToTaste).toBe(true);
+
+    const tasteContent = await readFile(join(getMemoryDirPath(), 'TASTE.md'), 'utf8');
+    expect(tasteContent).toContain('Always use tabs for indentation');
+  });
+
+  test('feedback wrong decreases confidence', async () => {
+    const db = MemoryDB.getInstance();
+    const r = db.upsertMemory({ key: 'test.fb_wrong', projectPath: memDbDir, type: 'reference', content: 'Wrong info', importance: 0.5, confidence: 0.8 });
+
+    const result = await applyFeedback(r.id, 'wrong');
+    expect(result.success).toBe(true);
+    expect(result.confidenceDelta).toBe(-0.2);
+
+    const updated = db.getMemory(r.id)!;
+    expect(updated.confidence).toBeCloseTo(0.6, 1);
+  });
+
+  test('feedback signal aliases resolve correctly', () => {
+    expect(resolveSignal('correct')).toBe('corrected');
+    expect(resolveSignal('incorrect')).toBe('wrong');
+    expect(resolveSignal('like')).toBe('preferred');
+    expect(resolveSignal('dislike')).toBe('disliked');
+    expect(resolveSignal('accepted')).toBe('accepted');
+    expect(resolveSignal('rejected')).toBe('rejected');
+    expect(resolveSignal('important')).toBe('important');
+    expect(resolveSignal('wrong')).toBe('wrong');
+    expect(resolveSignal('unknown_signal')).toBeNull();
+  });
+
+  test('getBudgetedMemories respects token budget', () => {
+    const db = MemoryDB.getInstance();
+
+    for (let i = 0; i < 20; i++) {
+      db.upsertMemory({
+        key: `test.budget2_mem_${i}`,
+        projectPath: memDbDir,
+        type: 'reference',
+        content: `Memory item number ${i} with enough content to fill tokens. `.repeat(10),
+        importance: i < 5 ? 0.9 : 0.21,
+        confidence: 0.8,
+      });
+    }
+
+    // With very small budget, only high-importance (0.9) ones should return
+    const small = db.getBudgetedMemories({ projectPath: memDbDir, maxTokens: 300, minImportance: 0.3 });
+    expect(small.length).toBeGreaterThan(0);
+    expect(small.length).toBeLessThan(20);
+    for (const m of small) {
+      expect(m.importance).toBeGreaterThanOrEqual(0.3);
+    }
+  });
+
+  // ── Compacter tests ──────────────────────────────────────
+
+  test('compact creates durable memories', async () => {
+    const result = await compactContext('[decision] use async/await over raw promises [architecture] migrated to ESM');
+    expect(result.created).toBe(2);
+    expect(result.entries.every(e => e.action === 'created')).toBe(true);
+    const db = MemoryDB.getInstance();
+    expect(db.findByKey('decision.use_async_await_over_raw_promises')).not.toBeNull();
+    expect(db.findByKey('architecture.migrated_to_esm')).not.toBeNull();
+  });
+
+  test('compact is idempotent', async () => {
+    const r1 = await compactContext('[taste] prefer tabs over spaces');
+    expect(r1.created).toBe(1);
+
+    const r2 = await compactContext('[taste] prefer tabs over spaces');
+    expect(r2.created).toBe(0);
+    expect(r2.unchanged).toBe(1);
+  });
+
+  test('compact skips transient content', () => {
+    const entries = classifyContext('Running build...\nBuild succeeded in 2.3s\n[nothing important]');
+    expect(entries.length).toBe(3);
+    for (const e of entries) {
+      expect(e.type).toBe('note');
+      expect(e.confidence).toBe(0.4);
+    }
+  });
+
+  test('compact writes decisions to DECISIONS.md', async () => {
+    await compactContext('[decision] use tabs for indentation in all source files');
+    const filePath = join(getMemoryDirPath(), 'DECISIONS.md');
+    const content = await readFile(filePath, 'utf8');
+    expect(content).toContain('use tabs for indentation');
+  });
+
+  test('compact writes preferences to TASTE.md', async () => {
+    await compactContext('[taste] prefer pnpm over npm for package management');
+    const filePath = join(getMemoryDirPath(), 'TASTE.md');
+    const content = await readFile(filePath, 'utf8');
+    expect(content).toContain('prefer pnpm over npm');
+  });
+
+  test('dry-run does not write files or DB rows', async () => {
+    const beforeTotal = MemoryDB.getInstance().getStats().total;
+
+    const result = await compactContext('[architecture] imaginary architecture [note] throwaway thought', true);
+    expect(result.created).toBe(2);
+
+    const afterTotal = MemoryDB.getInstance().getStats().total;
+    expect(afterTotal).toBe(beforeTotal);
+
+    for (const entry of result.entries) {
+      expect(MemoryDB.getInstance().findByKey(entry.key)).toBeNull();
+    }
   });
 });

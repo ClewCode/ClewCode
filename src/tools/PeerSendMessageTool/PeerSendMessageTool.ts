@@ -44,6 +44,16 @@ const inputSchema = lazySchema(() =>
       .optional()
       .default(1000)
       .describe('Max characters per chunk when `chunk` is true (default: 1000).'),
+    useBroker: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        'If true, send via the broker queue instead of direct message push. ' +
+          'The message is queued in the target peer\'s broker and the receiver ' +
+          'polls for it via GET /broker/recv. Supports offline receivers. ' +
+          'When combined with waitResponse, polls for reply via /broker/recv?replyTo=<id>.',
+      ),
   }),
 );
 

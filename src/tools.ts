@@ -90,8 +90,11 @@ import { PeerListRolesTool } from './tools/PeerListRolesTool/PeerListRolesTool.j
 import { PeerPingTool } from './tools/PeerPingTool/PeerPingTool.js';
 import { PeerDisconnectTool } from './tools/PeerDisconnectTool/PeerDisconnectTool.js';
 import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.js';
+import { PeerSwarmTool } from './tools/PeerSwarmTool/PeerSwarmTool.js';
+import { PeerDashboardTool } from './tools/PeerDashboardTool/PeerDashboardTool.js';
 import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
+import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackTool.js';
 import { ProcessPeerTool } from './tools/ProcessPeerTool/ProcessPeerTool.js';
 import { GenerateImageTool } from './tools/GenerateImageTool/GenerateImageTool.js';
 import { GenerateVideoTool } from './tools/GenerateVideoTool/GenerateVideoTool.js';
@@ -234,6 +237,9 @@ export function getAllBaseTools(): Tools {
     PeerPingTool,
     PeerDisconnectTool,
     PeerBroadcastTool,
+    PeerSwarmTool,
+    PeerDashboardTool,
+    MemoryFeedbackTool,
     PeerListMessagesTool,
     PeerHelpTool,
     ProcessPeerTool,
