@@ -35,15 +35,12 @@ try {
 
 import { BUILD_VERSION, PACKAGE_URL, FEEDBACK_CHANNEL, ISSUES_EXPLAINER } from './generated/version.js';
 
-const MACRO = {
+globalThis.MACRO = {
   VERSION: BUILD_VERSION,
   PACKAGE_URL,
   FEEDBACK_CHANNEL,
   ISSUES_EXPLAINER,
 };
-globalThis.MACRO = MACRO;
-
-export { MACRO };
 
 if (startupArgs.length === 1 && ['--version', '-v', '-V'].includes(startupArgs[0] ?? '')) {
   console.log(`${globalThis.MACRO.VERSION} (Clew Code)`);
