@@ -12,7 +12,7 @@ err()   { printf "${RED}✗${NC} %s\n" "$*" >&2; }
 # ── Platform ─────────────────────────────────────────────────────────────────
 OS="$(uname -s)"
 case "$OS" in
-  Darwin|Linux) ;;
+  Darwin|Linux|MINGW*|CYGWIN*|MSYS*) ;;
   *)            err "Unsupported OS: $OS (use install.ps1 on Windows)"; exit 1 ;;
 esac
 
