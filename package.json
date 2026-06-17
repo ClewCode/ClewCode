@@ -1,6 +1,6 @@
 {
   "name": "clew-code",
-  "version": "0.2.28",
+  "version": "0.2.29",
   "description": "ClewCode — multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
   "type": "module",
@@ -12,6 +12,7 @@
     "bin/",
     "dist/",
     "docs/",
+    "scripts/",
     "README.md",
     "LICENSE.md"
   ],
@@ -42,7 +43,9 @@
     "docs:watch": "bun --watch run scripts/generate-docs.ts",
     "preload": "bun run scripts/preload.ts",
     "session": "bun run scripts/session.ts",
-    "relay": "bun run src/remote/relay-server.ts"
+    "relay": "bun run src/remote/relay-server.ts",
+    "install:unix": "bash scripts/install.sh",
+    "install:win": "powershell -ExecutionPolicy Bypass -File scripts/install.ps1"
   },
   "keywords": [
     "ai",

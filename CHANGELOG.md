@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 - **Suppress blank assistant messages**: Filtered out assistant messages containing only system reminders so they do not render as empty `▶` bullet points in the terminal UI.
 - **Fix provider/model session bleed**: `/providers set` without `--global` no longer writes to `provider.json`, preventing provider/model changes in one session from affecting other sessions. Only `--global` persists the selection. (`src/commands/provider-select/provider-select.ts`)
+- **Remove sharp from optionalDependencies**: Sharp's install script fails on Windows without build tools. All sharp imports are dynamic with fallbacks — removed from package.json so `npm install -g clew-code` works everywhere. Install sharp separately for image processing features. (`package.json`, `src/tools/FileReadTool/imageProcessor.ts`)
+- **Install scripts**: New `scripts/install.sh` (Unix) and `scripts/install.ps1` (Windows) that auto-install bun then run `bun install -g clew-code`. No manual setup needed. (`scripts/install.sh`, `scripts/install.ps1`)
 
 ## [0.2.28] — 2026-06-16
 
