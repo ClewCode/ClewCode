@@ -49,6 +49,12 @@ function sanitizeSchema(obj: JsonSchema7Type): JsonSchema7Type {
  * Sanitizes the result to remove regex features not supported by JSON Schema.
  */
 export function zodToJsonSchema(schema: ZodTypeAny): JsonSchema7Type {
+  if (!schema || !(schema as Record<string, unknown>)._zod) {
+    if (schema) {
+      console.warn(`[zodToJsonSchema] Non-Zod schema received (type: ${typeof schema}, constructor: ${(schema as any)?.constructor?.name})`);
+    }
+    return { type: 'object', properties: {} };
+  }
   const hit = cache.get(schema);
   if (hit) return hit;
   const result = sanitizeSchema(toJSONSchema(schema) as JsonSchema7Type);

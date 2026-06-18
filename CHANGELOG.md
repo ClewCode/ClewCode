@@ -4,8 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-18
+
 ### Fixed
-- **PeerStore infinite recursion hang**: Removed 7 duplicate "alias" methods (`addPeer`, `getPeerByPort`, `findPeer`, `setPeerName`, `setPeerRole`, `getPeerTags`, `getAllPeerTags`) that overrode their real implementations and called themselves recursively, causing `Maximum call stack size exceeded` and hanging the app during `peer_discover`.
+- **`schema._zod.def` crash during tool API schema conversion**: `zodToJsonSchema()` now checks for `_zod` branding before calling `toJSONSchema()`, preventing crashes when a non-Zod value is passed as a tool schema. Added warning log to identify the offending tool.
+- **`generateSettingsJSONSchema()` crash**: Wrapped `toJSONSchema()` call in `schemaOutput.ts` and `.js` with try-catch to gracefully handle Zod v4 serialization failures for complex schemas.
 
 ## [0.3.1] - 2026-06-18
 
