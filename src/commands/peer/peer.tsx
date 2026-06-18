@@ -73,14 +73,21 @@ function getFlagValue(tokens: string[], flag: string): string | undefined {
 
 function spawnPeerTerminal(options: { name?: string; prompt?: string; model?: string; agent?: string }): void {
   const mainScript = process.argv[1]!;
-  const args = [
-    ...(process.argv[1].endsWith('.tsx') || process.argv[1].endsWith('.ts') ? ['run', mainScript] : [mainScript]),
-  ];
+  const isTs = process.argv[1].endsWith('.tsx') || process.argv[1].endsWith('.ts');
+  const args: string[] = [];
+
+  if (options.prompt) {
+    // One-shot mode: run the prompt and exit when done
+    if (isTs) args.push('run', mainScript, '-p', options.prompt);
+    else args.push(mainScript, '-p', options.prompt);
+  } else {
+    // REPL mode: stay open as a worker
+    if (isTs) args.push('run', mainScript);
+    else args.push(mainScript);
+  }
+
   if (options.name) {
     args.push('--peer-name', options.name);
-  }
-  if (options.prompt) {
-    args.push('--system-prompt', options.prompt);
   }
   if (options.model) {
     args.push('--model', options.model);
