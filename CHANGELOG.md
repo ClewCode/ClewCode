@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **PeerStore infinite recursion hang**: Removed 7 duplicate "alias" methods (`addPeer`, `getPeerByPort`, `findPeer`, `setPeerName`, `setPeerRole`, `getPeerTags`, `getAllPeerTags`) that overrode their real implementations and called themselves recursively, causing `Maximum call stack size exceeded` and hanging the app during `peer_discover`.
+
+## [0.3.1] - 2026-06-18
+
+### Fixed
+- **PeerStore infinite recursion hang**: Removed 7 duplicate "alias" methods (`addPeer`, `getPeerByPort`, `findPeer`, `setPeerName`, `setPeerRole`, `getPeerTags`, `getAllPeerTags`) that overrode their real implementations and called themselves recursively, causing `Maximum call stack size exceeded` and hanging the app during `peer_discover`.
+
+## [0.3.0]
+
 ### Added
 - **Peer memory sync**: `/peer memory sync` imports memories from all connected peers into local MemoryDB via new `/memory/export` HTTP endpoint. Each peer returns top-50 memories ordered by importance; upsert ensures idempotent cross-machine deduplication.
 - **Peer memory auto‑sync**: `/peer memory auto on [minutes]` schedules periodic memory sync via cron system (default 60 min, min 15, max 1440). `/peer memory auto off` cancels the cron task. Runs an initial sync immediately on enable.

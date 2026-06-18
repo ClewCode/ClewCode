@@ -104,11 +104,6 @@ export class PeerStore {
     }
   }
 
-  /** Alias for addPeer — used by tool layer. */
-  addPeer(peer: PeerInfo): void {
-    this.addPeer(peer);
-  }
-
   /**
    * Remove a peer.
    */
@@ -155,11 +150,6 @@ export class PeerStore {
     return undefined;
   }
 
-  /** Alias for getPeerByPort — used by tool layer. */
-  getPeerByPort(port: number): PeerInfo | undefined {
-    return this.getPeerByPort(port);
-  }
-
   /** Iterate all peers (discovered + connected) */
   private *allPeers(): Generator<PeerInfo> {
     yield* this.peers.values();
@@ -189,11 +179,6 @@ export class PeerStore {
       if (addr === q || addr.startsWith(q)) return peer;
     }
     return undefined;
-  }
-
-  /** Alias for findPeer — used by tool layer. */
-  findPeer(query: string): PeerInfo | undefined {
-    return this.findPeer(query);
   }
 
   /**
@@ -511,11 +496,6 @@ export class PeerStore {
     this.swarmTags.set(peerId, tags);
   }
 
-  /** Alias for setPeerName — used by tool layer. */
-  setPeerName(peerId: string, name: string): void {
-    this.setPeerName(peerId, name);
-  }
-
   /** Set a role for a peer. */
   setPeerRole(peerId: string, role: string): void {
     const tags = this.swarmTags.get(peerId) ?? {};
@@ -523,29 +503,14 @@ export class PeerStore {
     this.swarmTags.set(peerId, tags);
   }
 
-  /** Alias for setPeerRole — used by tool layer. */
-  setPeerRole(peerId: string, role: string): void {
-    this.setPeerRole(peerId, role);
-  }
-
   /** Get tags for a peer. */
   getPeerTags(peerId: string): SwarmTags | undefined {
     return this.swarmTags.get(peerId);
   }
 
-  /** Alias for getPeerTags — used by tool layer. */
-  getPeerTags(peerId: string): SwarmTags | undefined {
-    return this.getPeerTags(peerId);
-  }
-
   /** Get all peer tags. */
   getAllPeerTags(): Array<{ peerId: string; tags: SwarmTags }> {
     return Array.from(this.swarmTags.entries()).map(([peerId, tags]) => ({ peerId, tags }));
-  }
-
-  /** Alias for getAllPeerTags — used by tool layer. */
-  getAllPeerTags(): Array<{ peerId: string; tags: SwarmTags }> {
-    return this.getAllPeerTags();
   }
 
   /** Resolve display name — custom name or fallback to hostname */
