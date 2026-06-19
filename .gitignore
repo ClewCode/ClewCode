@@ -61,10 +61,12 @@ desktop.ini
 .searxng/
 .claude-plugin/
 .obsidian/
+.obsi/
 research-dossiers/
 graphify-out/
 .provider.json
 .claude-code-provider.json
+.claude/
 .CLAUDE.md
 CLAUDE.md
 .AGENTS.md 
