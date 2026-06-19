@@ -54,7 +54,7 @@ describe('/workflow list', () => {
     const loaded = await loadDynamicRun(workdir, 'wf-cancelled');
     if (loaded) {
       await fs.writeFile(
-        path.join(workdir, '.claude', 'runs', 'wf-cancelled', 'state.json'),
+        path.join(workdir, '.clew', 'runs', 'wf-cancelled', 'state.json'),
         JSON.stringify({ ...loaded.state, status: 'cancelled' }, null, 2),
       );
     }
@@ -96,7 +96,7 @@ describe('/workflow resume', () => {
     const loaded = await loadDynamicRun(workdir, 'wf-pause');
     if (loaded) {
       await fs.writeFile(
-        path.join(workdir, '.claude', 'runs', 'wf-pause', 'state.json'),
+        path.join(workdir, '.clew', 'runs', 'wf-pause', 'state.json'),
         JSON.stringify({ ...loaded.state, status: 'paused' }, null, 2),
       );
     }
@@ -111,7 +111,7 @@ describe('/workflow resume', () => {
     const loaded = await loadDynamicRun(workdir, 'wf-done');
     if (loaded) {
       await fs.writeFile(
-        path.join(workdir, '.claude', 'runs', 'wf-done', 'state.json'),
+        path.join(workdir, '.clew', 'runs', 'wf-done', 'state.json'),
         JSON.stringify({ ...loaded.state, status: 'completed' }, null, 2),
       );
     }
@@ -153,7 +153,7 @@ describe('persistence helpers', () => {
     const older = await loadDynamicRun(workdir, 'wf-1');
     if (older) {
       await fs.writeFile(
-        path.join(workdir, '.claude', 'runs', 'wf-1', 'state.json'),
+        path.join(workdir, '.clew', 'runs', 'wf-1', 'state.json'),
         JSON.stringify({ ...older.state, startedAt: '2020-01-01T00:00:00.000Z' }, null, 2),
       );
     }
