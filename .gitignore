@@ -95,6 +95,11 @@ src/utils/vendor/ripgrep/
 # Lint / tool output
 linter_output.txt
 
+# Test & example workspaces
+test/
+tests/
+examples/
+
 # Temp
 tmp/
 temp/
