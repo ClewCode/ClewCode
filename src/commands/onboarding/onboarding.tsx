@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { ConsoleOAuthFlow } from '../../components/ConsoleOAuthFlow.js';
 import { Select } from '../../components/CustomSelect/select.js';
 import { ModelPicker } from '../../components/ModelPicker.js';
 import { OpenAIOAuthFlow } from '../../components/OpenAIOAuthFlow.js';
@@ -72,7 +71,6 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
         <WizardDialogLayout title="AI Provider" subtitle="Select your preferred AI service provider">
           <Select
             options={[
-              { label: 'Anthropic Claude (Official)', value: 'anthropic' },
               { label: 'OpenAI GPT (ChatGPT)', value: 'openai' },
               { label: 'Google Gemini', value: 'google' },
               { label: 'DeepSeek V4 (moe)', value: 'deepseek' },
@@ -90,18 +88,18 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
     // Step 3: Select Authentication Method
     function AuthMethodStep() {
       const { wizardData, updateWizardData, goNext, goBack } = useWizard<OnboardingData>();
-      const provider = wizardData.provider || 'anthropic';
+      const provider = wizardData.provider || 'openai';
 
       React.useEffect(() => {
         if (provider === 'ollama') {
           goNext();
-        } else if (provider !== 'anthropic' && provider !== 'openai') {
+        } else if (provider !== 'openai') {
           updateWizardData({ authMethod: 'apikey' });
           goNext();
         }
       }, [provider, updateWizardData, goNext]);
 
-      if (provider === 'ollama' || (provider !== 'anthropic' && provider !== 'openai')) {
+      if (provider === 'ollama' || provider !== 'openai') {
         return null;
       }
 
@@ -113,7 +111,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
       return (
         <WizardDialogLayout
           title="Authentication"
-          subtitle={`Choose login method for ${provider === 'openai' ? 'OpenAI' : 'Anthropic'}`}
+          subtitle={`Choose login method for ${provider === 'openai' ? 'OpenAI' : provider}`}
         >
           <Select
             options={[
@@ -130,7 +128,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
     // Step 4: Authentication Execution
     function AuthExecuteStep() {
       const { wizardData, goNext, goBack } = useWizard<OnboardingData>();
-      const provider = wizardData.provider || 'anthropic';
+      const provider = wizardData.provider || 'openai';
       const method = wizardData.authMethod;
       const [apiKeyInput, setApiKeyInput] = React.useState('');
       const [cursorOffset, setCursorOffset] = React.useState(0);
@@ -156,13 +154,6 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
       };
 
       if (method === 'oauth') {
-        if (provider === 'anthropic') {
-          return (
-            <WizardDialogLayout title="Anthropic Login" subtitle="Authenticate with Anthropic Console">
-              <ConsoleOAuthFlow onDone={handleOAuthDone} />
-            </WizardDialogLayout>
-          );
-        }
         if (provider === 'openai') {
           return (
             <WizardDialogLayout title="OpenAI Login" subtitle="Authenticate with OpenAI">
@@ -275,7 +266,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
 
   const handleComplete = (_data: OnboardingData) => {
     completeOnboarding();
-    onDone('Onboarding completed successfully! You are all set to code with Antigravity.', { display: 'system' });
+    onDone('Onboarding completed successfully! You are all set to code with Clew Code.', { display: 'system' });
   };
 
   return (
