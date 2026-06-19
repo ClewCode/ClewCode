@@ -12,7 +12,7 @@ import { BriefTool } from './tools/BriefTool/BriefTool.js';
 
 // Lazy loading for feature-gated or potentially absent tools
 /* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
-const getREPLTool = () => (process.env.USER_TYPE === 'ant' ? require('./tools/REPLTool/REPLTool.js').REPLTool : null);
+const getREPLTool = () => null; // Anthropic-internal, removed in Clew Code
 const getSleepTool = () =>
   feature('PROACTIVE') || feature('KAIROS') ? require('./tools/SleepTool/SleepTool.js').SleepTool : null;
 const getCronTools = () => [
@@ -70,7 +70,6 @@ import { ExitPlanModeV2Tool } from './tools/ExitPlanModeTool/ExitPlanModeV2Tool.
 import { ReadMediaFileTool } from './tools/ReadMediaFileTool/ReadMediaFileTool.js';
 import { TestingPermissionTool } from './tools/testing/TestingPermissionTool.js';
 import { GrepTool } from './tools/GrepTool/GrepTool.js';
-import { TungstenTool } from './tools/TungstenTool/TungstenTool.js';
 import { TeamCreateTool } from './tools/TeamCreateTool/TeamCreateTool.js';
 import { TeamDeleteTool } from './tools/TeamDeleteTool/TeamDeleteTool.js';
 import { RequestShutdownTool } from './tools/RequestShutdownTool/RequestShutdownTool.js';
@@ -106,7 +105,6 @@ import { ToolSearchTool } from './tools/ToolSearchTool/ToolSearchTool.js';
 import { EnterPlanModeTool } from './tools/EnterPlanModeTool/EnterPlanModeTool.js';
 import { EnterWorktreeTool } from './tools/EnterWorktreeTool/EnterWorktreeTool.js';
 import { ExitWorktreeTool } from './tools/ExitWorktreeTool/ExitWorktreeTool.js';
-import { ConfigTool } from './tools/ConfigTool/ConfigTool.js';
 import { TaskCreateTool } from './tools/TaskCreateTool/TaskCreateTool.js';
 import { TaskGetTool } from './tools/TaskGetTool/TaskGetTool.js';
 import { TaskUpdateTool } from './tools/TaskUpdateTool/TaskUpdateTool.js';
@@ -136,7 +134,7 @@ import { isEnvTruthy } from './utils/envUtils.js';
 import { isPowerShellToolEnabled } from './utils/shell/shellToolUtils.js';
 import { isAgentSwarmsEnabled } from './utils/agentSwarmsEnabled.js';
 import { isWorktreeModeEnabled } from './utils/worktreeModeEnabled.js';
-import { REPL_TOOL_NAME, REPL_ONLY_TOOLS, isReplModeEnabled } from './tools/REPLTool/constants.js';
+import { REPL_ONLY_TOOLS, REPL_TOOL_NAME, isReplModeEnabled } from './tools/REPLTool/constants.js';
 export { REPL_ONLY_TOOLS };
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -210,8 +208,7 @@ export function getAllBaseTools(): Tools {
     AskUserQuestionTool,
     SkillTool,
     EnterPlanModeTool,
-    ...(process.env.USER_TYPE === 'ant' ? [ConfigTool] : []),
-    ...(process.env.USER_TYPE === 'ant' ? [TungstenTool] : []),
+    // ConfigTool, TungstenTool — Anthropic-internal, removed in Clew Code
     ...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
     GoalTool,
     ...(overflowTestTool ? [overflowTestTool] : []),
