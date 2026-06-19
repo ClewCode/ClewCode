@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Select } from '../../components/CustomSelect/select.js';
 import { ModelPicker } from '../../components/ModelPicker.js';
-import { OpenAIOAuthFlow } from '../../components/OpenAIOAuthFlow.js';
 import TextInput from '../../components/TextInput.js';
 import { ThemePicker } from '../../components/ThemePicker.js';
 import {
@@ -10,33 +9,59 @@ import {
   WizardNavigationFooter,
   WizardProvider,
 } from '../../components/wizard/index.js';
-import { Box, Text, useTheme } from '../../ink.js';
+import { Box, Text } from '../../ink.js';
 import { completeOnboarding } from '../../interactiveHelpers.js';
 import { ProviderManager } from '../../services/ai/ProviderManager.js';
 import type { ProviderId } from '../../services/ai/providers/ProviderInterface.js';
 import { useSetAppState } from '../../state/AppState.js';
 import type { LocalJSXCommandOnDone } from '../../types/command.js';
 import type { ThemeSetting } from '../../utils/theme.js';
-import { setupTerminal } from '../terminalSetup/terminalSetup.js';
+
+const PROVIDERS: { label: string; value: string }[] = [
+  { label: 'OpenAI', value: 'openai' },
+  { label: 'Google Gemini', value: 'google' },
+  { label: 'Gemini Code Assist (OAuth)', value: 'google-assist' },
+  { label: 'DeepSeek', value: 'deepseek' },
+  { label: 'Groq', value: 'groq' },
+  { label: 'xAI (Grok)', value: 'xai' },
+  { label: 'Mistral', value: 'mistral' },
+  { label: 'Cohere', value: 'cohere' },
+  { label: 'Perplexity', value: 'perplexity' },
+  { label: 'Cerebras', value: 'cerebras' },
+  { label: 'Moonshot AI (Kimi)', value: 'moonshot' },
+  { label: 'Zhipu AI (GLM)', value: 'zhipu' },
+  { label: 'NVIDIA NIM', value: 'nvidia' },
+  { label: 'OpenRouter', value: 'openrouter' },
+  { label: 'OpenCode', value: 'opencode' },
+  { label: 'OpenCode Go', value: 'opencode-go' },
+  { label: 'KiloCode', value: 'kilocode' },
+  { label: 'Ollama (Local)', value: 'ollama' },
+  { label: 'Together AI', value: 'together' },
+  { label: 'Fireworks AI', value: 'fireworks' },
+  { label: 'Deep Infra', value: 'deepinfra' },
+  { label: 'SiliconFlow', value: 'siliconflow' },
+  { label: 'Hugging Face', value: 'huggingface' },
+  { label: 'Poe', value: 'poe' },
+  { label: 'DigitalOcean', value: 'digitalocean' },
+  { label: 'Cline', value: 'cline' },
+  { label: 'Custom (OpenAI-Compatible)', value: 'custom' },
+];
 
 type OnboardingData = {
   theme?: ThemeSetting;
   provider?: string;
-  authMethod?: 'oauth' | 'apikey';
   apiKey?: string;
   model?: string;
-  terminalSetup?: boolean;
 };
 
 export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) {
   const setAppState = useSetAppState();
-  const [currentTheme] = useTheme();
 
   const steps = [
     // Step 1: Select Theme
     function ThemeStep() {
       const handleThemeSelect = (newTheme: ThemeSetting) => {
-        completeOnboarding(); // Mark onboarding as completed to persist theme choice
+        completeOnboarding();
         onDone(`Theme set to ${newTheme}`, { display: 'system' });
       };
 
@@ -70,14 +95,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
       return (
         <WizardDialogLayout title="AI Provider" subtitle="Select your preferred AI service provider">
           <Select
-            options={[
-              { label: 'OpenAI GPT (ChatGPT)', value: 'openai' },
-              { label: 'Google Gemini', value: 'google' },
-              { label: 'DeepSeek V4 (moe)', value: 'deepseek' },
-              { label: 'OpenRouter AI', value: 'openrouter' },
-              { label: 'OpenCode AI', value: 'opencode' },
-              { label: 'Ollama (Local)', value: 'ollama' },
-            ]}
+            options={PROVIDERS}
             onChange={handleSelect}
             onCancel={() => {}}
           />
@@ -85,63 +103,19 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
       );
     },
 
-    // Step 3: Select Authentication Method
-    function AuthMethodStep() {
+    // Step 3: API Key Setup (skipped for Ollama — local-only, no key needed)
+    function ApiKeyStep() {
       const { wizardData, updateWizardData, goNext, goBack } = useWizard<OnboardingData>();
       const provider = wizardData.provider || 'openai';
-
-      React.useEffect(() => {
-        if (provider === 'ollama') {
-          goNext();
-        } else if (provider !== 'openai') {
-          updateWizardData({ authMethod: 'apikey' });
-          goNext();
-        }
-      }, [provider, updateWizardData, goNext]);
-
-      if (provider === 'ollama' || provider !== 'openai') {
-        return null;
-      }
-
-      const handleSelect = (method: 'oauth' | 'apikey') => {
-        updateWizardData({ authMethod: method });
-        goNext();
-      };
-
-      return (
-        <WizardDialogLayout
-          title="Authentication"
-          subtitle={`Choose login method for ${provider === 'openai' ? 'OpenAI' : provider}`}
-        >
-          <Select
-            options={[
-              { label: 'Browser Login (OAuth / Subscription)', value: 'oauth' },
-              { label: 'Direct API Key', value: 'apikey' },
-            ]}
-            onChange={value => handleSelect(value as 'oauth' | 'apikey')}
-            onCancel={goBack}
-          />
-        </WizardDialogLayout>
-      );
-    },
-
-    // Step 4: Authentication Execution
-    function AuthExecuteStep() {
-      const { wizardData, goNext, goBack } = useWizard<OnboardingData>();
-      const provider = wizardData.provider || 'openai';
-      const method = wizardData.authMethod;
       const [apiKeyInput, setApiKeyInput] = React.useState('');
       const [cursorOffset, setCursorOffset] = React.useState(0);
 
+      // Ollama doesn't need an API key — skip this step
       if (provider === 'ollama') {
         return null;
       }
 
-      const handleOAuthDone = () => {
-        goNext();
-      };
-
-      const handleApiKeySubmit = (value: string) => {
+      const handleSubmit = (value: string) => {
         if (value.trim()) {
           try {
             const pm = ProviderManager.getInstance();
@@ -153,16 +127,6 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
         }
       };
 
-      if (method === 'oauth') {
-        if (provider === 'openai') {
-          return (
-            <WizardDialogLayout title="OpenAI Login" subtitle="Authenticate with OpenAI">
-              <OpenAIOAuthFlow onDone={handleOAuthDone} onCancel={goBack} />
-            </WizardDialogLayout>
-          );
-        }
-      }
-
       let envVarName = 'API_KEY';
       try {
         const pm = ProviderManager.getInstance();
@@ -173,9 +137,9 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
       }
 
       return (
-        <WizardDialogLayout title="API Key Setup" subtitle={`Enter your ${envVarName} key`}>
+        <WizardDialogLayout title="API Key" subtitle={`Enter your ${envVarName}`}>
           <Box flexDirection="column" gap={1}>
-            <Text>Paste or type your key below and press Enter to save:</Text>
+            <Text>Paste or type your API key below and press Enter to save:</Text>
             <Box borderStyle="round" paddingX={1} width={60}>
               <TextInput
                 value={apiKeyInput}
@@ -183,7 +147,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
                   setApiKeyInput(value);
                   setCursorOffset(value.length);
                 }}
-                onSubmit={handleApiKeySubmit}
+                onSubmit={handleSubmit}
                 columns={56}
                 cursorOffset={cursorOffset}
                 onChangeCursorOffset={setCursorOffset}
@@ -195,7 +159,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
       );
     },
 
-    // Step 5: Select AI Model
+    // Step 4: Select AI Model
     function ModelStep() {
       const pm = ProviderManager.getInstance();
       const activeModel = pm.getModelForProvider();
@@ -215,7 +179,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
       };
 
       return (
-        <WizardDialogLayout title="AI Config" subtitle="Select your preferred AI model">
+        <WizardDialogLayout title="AI Model" subtitle="Select your preferred AI model">
           <ModelPicker
             initial={activeModel}
             onSelect={handleModelSelect}
@@ -228,45 +192,11 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
         </WizardDialogLayout>
       );
     },
-
-    // Step 6: Terminal Optimization
-    function TerminalStep() {
-      return (
-        <WizardDialogLayout
-          title="Terminal Settings"
-          subtitle="Configure recommended keybindings for optimal experience"
-        >
-          <Box flexDirection="column" gap={1}>
-            <Text>For the best code editing experience, enable terminal integration:</Text>
-            <Text dimColor>• Shift+Enter for clean newlines in prompt inputs</Text>
-            <Text dimColor>• Support for key modifiers and visual bell notifications</Text>
-
-            <Box marginTop={1}>
-              <Select
-                options={[
-                  { label: 'Yes, apply recommended terminal settings', value: 'apply' },
-                  { label: 'No, skip for now', value: 'skip' },
-                ]}
-                onChange={async value => {
-                  if (value === 'apply') {
-                    try {
-                      await setupTerminal(currentTheme);
-                    } catch {}
-                  }
-                }}
-                onCancel={() => {}}
-              />
-            </Box>
-          </Box>
-          <WizardNavigationFooter />
-        </WizardDialogLayout>
-      );
-    },
   ];
 
   const handleComplete = (_data: OnboardingData) => {
     completeOnboarding();
-    onDone('Onboarding completed successfully! You are all set to code with Clew Code.', { display: 'system' });
+    onDone('Onboarding completed! You are ready to use Clew Code.', { display: 'system' });
   };
 
   return (
