@@ -127,3 +127,8 @@ src/generated/
 # Scripts
 scripts/
 ClewCode.wiki
+
+# Assets
+assets/video/
+assets/*.gif
+assets/*.jpg
