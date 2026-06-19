@@ -6,7 +6,7 @@
  * scan new/changed files.
  *
  * Uses Bun's built-in `bun:sqlite` (no external dependency).
- * Database: ~/.claude/projects/<slug>/.session_search.db
+ * Database: ~/.clew/projects/<slug>/.session_search.db
  */
 
 import { Database } from 'bun:sqlite';

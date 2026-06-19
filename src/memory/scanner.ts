@@ -9,8 +9,8 @@
  */
 
 import { existsSync } from 'node:fs';
-import { readFile, readdir } from 'node:fs/promises';
-import { join, relative, basename } from 'node:path';
+import { readdir, readFile } from 'node:fs/promises';
+import { basename, join, relative } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
 import { MemoryDB } from './database.js';
 import { writeMemoryFile } from './hierarchy.js';
@@ -75,8 +75,16 @@ function detectLanguage(pkg: Record<string, unknown> | null): string {
     // Fallback: scan for file extensions
     return 'unknown';
   }
-  const deps = { ...(pkg.dependencies as Record<string, string> | undefined), ...(pkg.devDependencies as Record<string, string> | undefined) };
-  if (deps?.typescript || pkg.scripts && typeof pkg.scripts === 'object' && Object.keys(pkg.scripts as Record<string, string>).some(s => s.includes('tsc'))) {
+  const deps = {
+    ...(pkg.dependencies as Record<string, string> | undefined),
+    ...(pkg.devDependencies as Record<string, string> | undefined),
+  };
+  if (
+    deps?.typescript ||
+    (pkg.scripts &&
+      typeof pkg.scripts === 'object' &&
+      Object.keys(pkg.scripts as Record<string, string>).some(s => s.includes('tsc')))
+  ) {
     return 'TypeScript';
   }
   if (deps?.['@babel/core'] || deps?.eslint) return 'JavaScript';
@@ -100,7 +108,10 @@ function detectRuntime(pkg: Record<string, unknown> | null): string {
   if (engines?.bun) return 'Bun';
   if (engines?.node) return `Node.js${engines.node ? ` (${engines.node})` : ''}`;
   // Check devDependencies for runtime hints
-  const deps = { ...(pkg?.dependencies as Record<string, string> | undefined), ...(pkg?.devDependencies as Record<string, string> | undefined) } as Record<string, string> | undefined;
+  const deps = {
+    ...(pkg?.dependencies as Record<string, string> | undefined),
+    ...(pkg?.devDependencies as Record<string, string> | undefined),
+  } as Record<string, string> | undefined;
   if (deps?.bun) return 'Bun';
   return 'Node.js';
 }
@@ -176,9 +187,20 @@ export async function scanRepo(): Promise<ScanResult> {
 
   // Entrypoints
   const possibleEntrypoints = [
-    'src/main.tsx', 'src/main.ts', 'src/index.ts', 'src/index.tsx',
-    'src/index.js', 'src/app.tsx', 'src/app.ts', 'src/cli.ts', 'src/cli.tsx',
-    'main.tsx', 'main.ts', 'index.ts', 'index.tsx', 'index.js',
+    'src/main.tsx',
+    'src/main.ts',
+    'src/index.ts',
+    'src/index.tsx',
+    'src/index.js',
+    'src/app.tsx',
+    'src/app.ts',
+    'src/cli.ts',
+    'src/cli.tsx',
+    'main.tsx',
+    'main.ts',
+    'index.ts',
+    'index.tsx',
+    'index.js',
   ];
   for (const ep of possibleEntrypoints) {
     if (existsSync(join(cwd, ep))) {
@@ -211,7 +233,8 @@ export async function scanRepo(): Promise<ScanResult> {
       'project_overview',
       'architecture',
       `${result.projectName} is a ${result.language} project using ${result.runtime}. Package manager: ${result.packageManager}.${result.framework !== 'none' ? ` UI framework: ${result.framework}.` : ''}`,
-      0.9, 0.8,
+      0.9,
+      0.8,
     );
 
     // Stack summary
@@ -219,17 +242,13 @@ export async function scanRepo(): Promise<ScanResult> {
       'stack_summary',
       'reference',
       `Stack: ${result.language} / ${result.runtime} / ${result.packageManager}${result.framework !== 'none' ? ` / ${result.framework}` : ''}`,
-      0.8, 0.9,
+      0.8,
+      0.9,
     );
 
     // CLI entrypoints
     if (result.entrypoints.length > 0) {
-      seed(
-        'cli_entrypoints',
-        'architecture',
-        `CLI entrypoints: ${result.entrypoints.join(', ')}`,
-        0.7, 0.8,
-      );
+      seed('cli_entrypoints', 'architecture', `CLI entrypoints: ${result.entrypoints.join(', ')}`, 0.7, 0.8);
     }
 
     // Provider architecture
@@ -238,18 +257,25 @@ export async function scanRepo(): Promise<ScanResult> {
         'provider_architecture',
         'architecture',
         `${result.projectName} has a provider-based architecture with multiple AI model providers. Provider routing is handled through a registry/manager pattern.`,
-        0.85, 0.7,
+        0.85,
+        0.7,
       );
     }
 
     // Development commands
-    const allCommands = [...result.buildCommands, ...result.testCommands, ...result.lintCommands, ...result.devCommands];
+    const allCommands = [
+      ...result.buildCommands,
+      ...result.testCommands,
+      ...result.lintCommands,
+      ...result.devCommands,
+    ];
     if (allCommands.length > 0) {
       seed(
         'development_commands',
         'reference',
         `Development commands:\n${allCommands.map(c => `  - ${c}`).join('\n')}`,
-        0.75, 0.9,
+        0.75,
+        0.9,
       );
     }
   }
@@ -317,7 +343,9 @@ function buildDecisionsMd(result: ScanResult): string {
     result.hasProviderSystem ? `  - Provider routing architecture` : '',
     result.hasSrcDir ? '  - Source code in src/ directory' : '',
     result.hasCliEntrypoint ? '  - CLI entrypoint detected' : '',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 function buildTasteMd(result: ScanResult): string {
@@ -336,5 +364,7 @@ function buildTasteMd(result: ScanResult): string {
     '## Quality',
     result.testCommands.length > 0 ? `- Tests: ${result.testCommands[0]}` : '- Tests: not detected',
     result.lintCommands.length > 0 ? `- Lint: ${result.lintCommands[0]}` : '',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

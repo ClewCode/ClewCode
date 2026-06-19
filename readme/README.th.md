@@ -311,7 +311,6 @@ Terminal UI
 * [Permission Model](../docs/permission-model.html)
 * [Peer-to-Peer](../docs/features/peer.html)
 * [Bridge Mode](../docs/features/bridge-mode.html)
-* [SearXNG Search](../docs/features/searxng-search.html)
 * [Troubleshooting](../docs/troubleshooting.html)
 * [Evals](../docs/features/evals.html)
 

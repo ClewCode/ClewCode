@@ -67,12 +67,7 @@ export function formatPeerTaskDashboard(): string {
     } else {
       for (const todo of peerTodos) {
         const icon = todo.status === 'done' ? '☑' : todo.status === 'rejected' ? '☒' : '☐';
-        const statusLabel =
-          todo.status === 'pending'
-            ? 'pending'
-            : todo.status === 'done'
-              ? 'done'
-              : 'rejected';
+        const statusLabel = todo.status === 'pending' ? 'pending' : todo.status === 'done' ? 'done' : 'rejected';
 
         if (todo.status === 'done') doneTasks++;
         if (todo.status === 'pending') runningTasks++;
@@ -82,9 +77,8 @@ export function formatPeerTaskDashboard(): string {
         // Show result if there's a reply
         const reply = repliesByReplyTo.get(todo.id);
         if (reply) {
-          const preview = reply.text.length > RESULT_PREVIEW_LENGTH
-            ? reply.text.slice(0, RESULT_PREVIEW_LENGTH) + '...'
-            : reply.text;
+          const preview =
+            reply.text.length > RESULT_PREVIEW_LENGTH ? reply.text.slice(0, RESULT_PREVIEW_LENGTH) + '...' : reply.text;
           sections.push(`    \u21b3 result: "${preview}" (${reply.text.length} chars)`);
         }
       }

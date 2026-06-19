@@ -4,6 +4,7 @@ import { markPostCompaction } from 'src/bootstrap/state.js';
 import { getSystemPrompt } from '../../constants/prompts.js';
 import { getSystemContext, getUserContext } from '../../context.js';
 import { getShortcutDisplay } from '../../keybindings/shortcutFormat.js';
+import { autoExtractFromSession } from '../../memory/compacter.js';
 import { notifyCompaction } from '../../services/api/promptCacheBreakDetection.js';
 import {
   type CompactionResult,
@@ -17,9 +18,8 @@ import {
 import { suppressCompactWarning } from '../../services/compact/compactWarningState.js';
 import { microcompactMessages } from '../../services/compact/microCompact.js';
 import { runPostCompactCleanup } from '../../services/compact/postCompactCleanup.js';
-import { trySessionMemoryCompaction } from '../../services/compact/sessionMemoryCompact.js';
-import { autoExtractFromSession } from '../../memory/compacter.js';
 import { getLastRawCompactResponse, parseCompactMemories } from '../../services/compact/prompt.js';
+import { trySessionMemoryCompaction } from '../../services/compact/sessionMemoryCompact.js';
 import { setLastSummarizedMessageId } from '../../services/SessionMemory/sessionMemoryUtils.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalCommandCall } from '../../types/command.js';
@@ -222,13 +222,19 @@ async function compactViaReactive(
   }
 }
 
-function buildDisplayText(context: ToolUseContext, userDisplayMessage?: string, extractResult?: import('../../memory/compacter.js').CompactResult | null): string {
+function buildDisplayText(
+  context: ToolUseContext,
+  userDisplayMessage?: string,
+  extractResult?: import('../../memory/compacter.js').CompactResult | null,
+): string {
   const upgradeMessage = getUpgradeMessage('tip');
   const expandShortcut = getShortcutDisplay('app:toggleTranscript', 'Global', 'ctrl+o');
   const dimmed = [
     ...(context.options.verbose ? [] : [`(${expandShortcut} to see full summary)`]),
     ...(userDisplayMessage ? [userDisplayMessage] : []),
-    ...(extractResult && (extractResult.created + extractResult.updated) > 0 ? [`${extractResult.created + extractResult.updated} memories extracted`] : []),
+    ...(extractResult && extractResult.created + extractResult.updated > 0
+      ? [`${extractResult.created + extractResult.updated} memories extracted`]
+      : []),
     ...(upgradeMessage ? [upgradeMessage] : []),
   ];
   return chalk.dim(`Compacted ${dimmed.join('\n')}`);

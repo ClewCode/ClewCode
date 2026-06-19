@@ -4,6 +4,7 @@ import { Box, Text } from '../../ink.js';
 import { formatFileSize } from '../../utils/format.js';
 import { MessageResponse } from '../MessageResponse.js';
 import { OffscreenFreeze } from '../OffscreenFreeze.js';
+import { Spinner } from '../Spinner.js';
 import { ShellTimeDisplay } from './ShellTimeDisplay.js';
 
 type Props = {
@@ -39,7 +40,8 @@ export function ShellProgressMessage({
     return (
       <MessageResponse>
         <OffscreenFreeze>
-          <Text dimColor>Running… </Text>
+          <Spinner />
+          <Text dimColor> Running… </Text>
           <ShellTimeDisplay elapsedTimeSeconds={elapsedTimeSeconds} timeoutMs={timeoutMs} />
         </OffscreenFreeze>
       </MessageResponse>

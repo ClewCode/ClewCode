@@ -132,7 +132,6 @@ import looplockCmd from './commands/looplock/index.js';
 import dashboard from './commands/dashboard/index.js';
 import taskCmd from './commands/task/index.js';
 import scrollSpeed from './commands/scroll-speed/index.js';
-import searxng from './commands/searxng/index.js';
 import pluginDetails from './commands/plugin-details/index.js';
 import advisor from './commands/advisor.js';
 import agentCmd from './commands/agent/index.js';
@@ -302,8 +301,6 @@ const COMMANDS = memoize((): Command[] => [
   theme,
   feedback,
   scrollSpeed,
-  searxng,
-
   review,
   ultrareview,
   ultracode,

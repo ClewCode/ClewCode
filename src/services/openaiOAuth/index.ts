@@ -8,6 +8,8 @@ import { logEvent } from '../analytics/index.js';
 import { AuthCodeListener } from '../oauth/auth-code-listener.js';
 import * as crypto from '../oauth/crypto.js';
 
+export { OpenAIDeviceFlow } from './deviceFlow.js';
+
 // Try to load auth from Codex if available
 function loadCodexAuth(): OpenAIOAuthTokens | null {
   const possiblePaths = [

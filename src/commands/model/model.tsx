@@ -75,6 +75,12 @@ function ModelPickerWrapper({
       to_model: model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     });
 
+    const providerError = getProviderModelError(targetProvider, model);
+    if (providerError) {
+      onDone(providerError, { display: 'system' });
+      return;
+    }
+
     if (targetProvider && model !== null) {
       try {
         const pm = ProviderManager.getInstance();
@@ -82,13 +88,16 @@ function ModelPickerWrapper({
         const { getProviderRegistryEntry } = require('../../services/ai/providerRegistry.js');
         const registryEntry = getProviderRegistryEntry(targetProvider as any);
 
-        const updatedConfig = {
-          ...cfg,
-          provider: targetProvider,
-          model: model,
-          providerConfig: registryEntry,
-        };
-        pm.saveSelectedProviderConfig(updatedConfig as any);
+        // Only persist to config when explicitly asked (persistAsDefault)
+        if (options?.persistAsDefault) {
+          const updatedConfig = {
+            ...cfg,
+            provider: targetProvider,
+            model: model,
+            providerConfig: registryEntry,
+          };
+          pm.saveSelectedProviderConfig(updatedConfig as any);
+        }
         pm.setSessionProvider(targetProvider as any);
         pm.setSessionModel(model);
       } catch {
@@ -207,27 +216,6 @@ function SetModelAndClose({
 
   React.useEffect(() => {
     async function handleModelChange(): Promise<void> {
-      if (targetProvider && model !== null) {
-        try {
-          const pm = ProviderManager.getInstance();
-          const cfg = pm.getSelectedProviderConfig(true);
-          const { getProviderRegistryEntry } = require('../../services/ai/providerRegistry.js');
-          const registryEntry = getProviderRegistryEntry(targetProvider as any);
-
-          const updatedConfig = {
-            ...cfg,
-            provider: targetProvider,
-            model: model,
-            providerConfig: registryEntry,
-          };
-          pm.saveSelectedProviderConfig(updatedConfig as any);
-          pm.setSessionProvider(targetProvider as any);
-          pm.setSessionModel(model);
-        } catch {
-          // Non-critical configuration update error
-        }
-      }
-
       if (model && !isModelAllowed(model)) {
         onDone(`Model '${model}' is not available. Your organization restricts model selection.`, {
           display: 'system',
@@ -249,6 +237,12 @@ function SetModelAndClose({
           `Sonnet 4.6 with 1M context is not available for your account. Learn more: https://code.claude.com/docs/en/model-config#extended-context-with-1m`,
           { display: 'system' },
         );
+        return;
+      }
+
+      const providerError = getProviderModelError(targetProvider, model);
+      if (providerError) {
+        onDone(providerError, { display: 'system' });
         return;
       }
 
@@ -285,6 +279,18 @@ function SetModelAndClose({
     }
 
     function setModel(modelValue: string | null): void {
+      if (targetProvider && modelValue !== null) {
+        try {
+          const pm = ProviderManager.getInstance();
+
+          // Session-only: don't persist provider/model to shared config.
+          pm.setSessionProvider(targetProvider as any);
+          pm.setSessionModel(modelValue);
+        } catch {
+          // Non-critical configuration update error
+        }
+      }
+
       setAppState(prev => ({
         ...prev,
         mainLoopModelForSession: modelValue,
@@ -331,6 +337,20 @@ function SetModelAndClose({
   }, [model, onDone, setAppState, isFastMode, targetProvider]);
 
   return null;
+}
+
+function getProviderModelError(targetProvider: string | undefined, model: string | null): string | null {
+  if (!targetProvider || !model || targetProvider !== 'google-assist') {
+    return null;
+  }
+
+  const { getProviderRegistryEntry } = require('../../services/ai/providerRegistry.js');
+  const registryEntry = getProviderRegistryEntry(targetProvider as any);
+  if (registryEntry.models.some((entry: { id: string }) => entry.id === model)) {
+    return null;
+  }
+
+  return `Model '${model}' is not supported by Gemini Code Assist. Try '${registryEntry.defaultModel}' instead`;
 }
 
 function isKnownAlias(model: string): boolean {

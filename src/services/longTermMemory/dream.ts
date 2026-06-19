@@ -5,8 +5,8 @@
  * This file provides backward-compatible status queries from MemoryDB.
  */
 
-import { MemoryDB } from '../../memory/database.js';
 import { getOriginalCwd } from '../../bootstrap/state.js';
+import { MemoryDB } from '../../memory/database.js';
 
 function getProjectPath(): string {
   try {

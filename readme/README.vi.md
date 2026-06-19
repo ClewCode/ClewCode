@@ -298,7 +298,6 @@ Terminal UI
 * [Kiến trúc](../docs/architecture.html)
 * [Mô hình quyền](../docs/permission-model.html)
 * [Chế độ Bridge](../docs/features/bridge-mode.html)
-* [Tìm kiếm SearXNG](../docs/features/searxng-search.html)
 * [Khắc phục sự cố](../docs/troubleshooting.html)
 * [Đánh giá](../docs/features/evals.html)
 * [Taste](../docs/taste.html)

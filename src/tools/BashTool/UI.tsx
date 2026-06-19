@@ -3,6 +3,7 @@ import * as React from 'react';
 import { KeyboardShortcutHint } from '../../components/design-system/KeyboardShortcutHint.js';
 import { FallbackToolUseErrorMessage } from '../../components/FallbackToolUseErrorMessage.js';
 import { MessageResponse } from '../../components/MessageResponse.js';
+import { Spinner } from '../../components/Spinner.js';
 import { ShellProgressMessage } from '../../components/shell/ShellProgressMessage.js';
 import { Box, Text } from '../../ink.js';
 import { useKeybinding } from '../../keybindings/useKeybinding.js';
@@ -129,7 +130,8 @@ export function renderToolUseProgressMessage(
   if (!lastProgress?.data) {
     return (
       <MessageResponse height={1}>
-        <Text dimColor>Running…</Text>
+        <Spinner />
+        <Text dimColor> Running…</Text>
       </MessageResponse>
     );
   }

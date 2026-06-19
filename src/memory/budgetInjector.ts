@@ -7,9 +7,9 @@
  */
 
 import { getCwd } from '../utils/cwd.js';
-import { readMemoryFile } from './hierarchy.js';
-import { MemoryDB } from './database.js';
 import type { MemoryRecord } from './database.js';
+import { MemoryDB } from './database.js';
+import { readMemoryFile } from './hierarchy.js';
 
 const CHARS_PER_TOKEN = 4;
 const OVERHEAD_TOKENS = 20; // formatting overhead per memory
@@ -73,10 +73,7 @@ export async function budgetedInject(maxTokens = 2000, includeFileHierarchy = tr
 /**
  * Budgeted injection with full detail tracking.
  */
-export async function budgetedInjectDetailed(
-  maxTokens = 2000,
-  includeFileHierarchy = true,
-): Promise<InjectResult> {
+export async function budgetedInjectDetailed(maxTokens = 2000, includeFileHierarchy = true): Promise<InjectResult> {
   if (!MemoryDB.isInitialized()) {
     return { text: '', usedTokens: 0, totalBudget: maxTokens, injected: [], skipped: [] };
   }
@@ -98,9 +95,7 @@ export async function budgetedInjectDetailed(
       const estimated = estimateTokens(content);
       if (usedTokens + estimated > maxTokens) {
         const available = (maxTokens - usedTokens) * CHARS_PER_TOKEN;
-        const truncated = content.length > available
-          ? content.slice(0, available) + '\n... (truncated)'
-          : content;
+        const truncated = content.length > available ? content.slice(0, available) + '\n... (truncated)' : content;
         parts.push(`\n[${label}]\n${truncated}`);
         usedTokens = maxTokens;
         break;
@@ -174,7 +169,10 @@ export async function budgetedInjectDetailed(
       // All candidates below minImportance
       const allMemories = db.queryMemories({ projectPath });
       for (const m of allMemories) {
-        skipped.push({ key: findKeyForId(db, m.id) ?? m.id, reason: `importance ${m.importance.toFixed(2)} < 0.3 threshold` });
+        skipped.push({
+          key: findKeyForId(db, m.id) ?? m.id,
+          reason: `importance ${m.importance.toFixed(2)} < 0.3 threshold`,
+        });
       }
     }
   }
@@ -190,7 +188,9 @@ export async function budgetedInjectDetailed(
 
 function findKeyForId(db: MemoryDB, id: string): string | null {
   try {
-    const row = (db as any).db.prepare('SELECT key FROM memory_keys WHERE memory_id = ?').get(id) as { key: string } | null;
+    const row = (db as any).db.prepare('SELECT key FROM memory_keys WHERE memory_id = ?').get(id) as {
+      key: string;
+    } | null;
     return row?.key ?? null;
   } catch {
     return null;

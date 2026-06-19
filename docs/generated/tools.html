@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tools & Prompts (Auto-generated) — Clew</title>
-  <meta name="description" content="Auto-generated tool reference with 58 system prompts for Clew Code.">
+  <meta name="description" content="Auto-generated tool reference with 59 system prompts for Clew Code.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -43,10 +43,10 @@
   <div class="content-wrap"><main class="content">
     <div class="breadcrumbs"><a href="../index.html">Home</a><span class="sep">/</span><span>Tools & Prompts (Auto-generated)</span></div>
     <h1>Tools & Prompts (Auto-generated)</h1>
-    <p class="section-subtitle"><em>Auto-generated from source code. Last updated: 2026-06-16.</em></p>
+    <p class="section-subtitle"><em>Auto-generated from source code. Last updated: 2026-06-19.</em></p>
     
     <h2>All Tools with Prompts</h2>
-    <p>Clew provides <strong>58 tools</strong> with system prompts. These prompts are injected into the AI model's context at session start to define the tool interface.</p>
+    <p>Clew provides <strong>59 tools</strong> with system prompts. These prompts are injected into the AI model's context at session start to define the tool interface.</p>
     <div class="table-wrap"><table>
       <tr><th>Tool</th><th>Description</th></tr>
       <tr><td><code>Agent</code></td><td>Built-in tool &quot;Agent&quot;. See system prompt for details.</td></tr>
@@ -61,8 +61,6 @@
 <tr><td><code>FileEdit</code></td><td>Built-in tool &quot;FileEdit&quot;. See system prompt for details.</td></tr>
 <tr><td><code>FileRead</code></td><td>Read a file or multiple files from the local filesystem. Supports batch reading multiple files in parallel for better performance.</td></tr>
 <tr><td><code>FileWrite</code></td><td>Write a file to the local filesystem.</td></tr>
-<tr><td><code>GenerateImage</code></td><td>Built-in tool &quot;GenerateImage&quot;. See system prompt for details.</td></tr>
-<tr><td><code>GenerateVideo</code></td><td>Built-in tool &quot;GenerateVideo&quot;. See system prompt for details.</td></tr>
 <tr><td><code>Glob</code></td><td>- Fast file pattern matching tool that works with any codebase size
 - Supports glob patterns like &quot;**/*.js&quot; or &quot;src/**/*.ts&quot;
 - Returns matching file paths sorted by modification time
@@ -97,8 +95,10 @@ All operations require:
 Note: LSP servers must be configured for the file type. If no server is available, an error will be returned.</td></tr>
 <tr><td><code>MCP</code></td><td>';
 export const DESCRIPTION =</td></tr>
+<tr><td><code>MemoryFeedback</code></td><td>Apply feedback to a memory entry. Signals: accepted (confirm correct), </td></tr>
 <tr><td><code>NotebookEdit</code></td><td>Replace the contents of a specific cell in a Jupyter notebook.</td></tr>
 <tr><td><code>PeerBroadcast</code></td><td>Broadcast a task to ALL currently connected peers at once. </td></tr>
+<tr><td><code>PeerDashboard</code></td><td>Show the current peer task dashboard: connected peers, their assigned tasks, </td></tr>
 <tr><td><code>PeerDisconnect</code></td><td>Disconnect and remove a peer node from the connection list. </td></tr>
 <tr><td><code>PeerDiscover</code></td><td>Discover Clew Code workers on the local network. </td></tr>
 <tr><td><code>PeerHelp</code></td><td>Complete guide to agent-to-agent tools. </td></tr>
@@ -113,6 +113,7 @@ export const DESCRIPTION =</td></tr>
 <tr><td><code>PeerSetRole</code></td><td>Assign a role to a peer node (e.g., &quot;builder&quot;, &quot;tester&quot;, &quot;deployer&quot;). </td></tr>
 <tr><td><code>PeerShare</code></td><td>Start or stop advertising this Clew Code instance as a worker. </td></tr>
 <tr><td><code>PeerSpawn</code></td><td>Spawn a new peer terminal window on the local machine with optional custom settings </td></tr>
+<tr><td><code>PeerSwarm</code></td><td>Run a shell command on ALL currently connected peers in parallel. </td></tr>
 <tr><td><code>PowerShell</code></td><td>Built-in tool &quot;PowerShell&quot;. See system prompt for details.</td></tr>
 <tr><td><code>ProcessPeer</code></td><td>Delegate a task to a local process-backed AI worker (Codex, OpenCode, Claude Code) and return its output. </td></tr>
 <tr><td><code>PrSubscription</code></td><td>Built-in tool &quot;PrSubscription&quot;. See system prompt for details.</td></tr>
@@ -213,12 +214,20 @@ Parameters:
 export const DESCRIPTION =</div>
       </details>
 <details>
+        <summary><code>MemoryFeedback</code> — System Prompt</summary>
+        <div class="prompt-box">This tool lets you give feedback on memories. Use it to confirm correct memories,</div>
+      </details>
+<details>
         <summary><code>NotebookEdit</code> — System Prompt</summary>
         <div class="prompt-box">Completely replaces the contents of a specific cell in a Jupyter notebook (.ipynb file) with new source. Jupyter notebooks are interactive documents that combine code, text, and visualizations, commonly used for data analysis and scientific computing. The notebook_path parameter must be an absolute path, not a relative path. The cell_number is 0-indexed. Use edit_mode=insert to add a new cell at the index specified by cell_number. Use edit_mode=delete to delete the cell at the index specified by cell_number.</div>
       </details>
 <details>
         <summary><code>PeerBroadcast</code> — System Prompt</summary>
         <div class="prompt-box">This tool sends the same task to every connected peer simultaneously.</div>
+      </details>
+<details>
+        <summary><code>PeerDashboard</code> — System Prompt</summary>
+        <div class="prompt-box">This tool returns a formatted text dashboard of all connected peers and their</div>
       </details>
 <details>
         <summary><code>PeerDisconnect</code> — System Prompt</summary>
@@ -271,6 +280,10 @@ export const DESCRIPTION =</div>
 <details>
         <summary><code>PeerSpawn</code> — System Prompt</summary>
         <div class="prompt-box">Spawns a new local peer terminal window running Clew Code. The spawned peer will share automatically.</div>
+      </details>
+<details>
+        <summary><code>PeerSwarm</code> — System Prompt</summary>
+        <div class="prompt-box">This tool sends the same shell command to every connected peer simultaneously</div>
       </details>
 <details>
         <summary><code>ProcessPeer</code> — System Prompt</summary>

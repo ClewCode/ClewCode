@@ -2,6 +2,7 @@ import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getSessionId } from '../../bootstrap/state.js';
 import { getCwd } from '../../utils/cwd.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { pathExists } from '../../utils/file.js';
 
 /**
@@ -10,7 +11,7 @@ import { pathExists } from '../../utils/file.js';
  * Captures task state at three progress milestones (20%, 45%, 70%)
  * to enable session rebuild and context preservation across compactions.
  *
- * Persistence: ~/.claude/projects/<slug>/sessions/<sessionId>/checkpoints/
+ * Persistence: ~/.clew/projects/<slug>/sessions/<sessionId>/checkpoints/
  */
 
 export interface TaskCheckpoint {
@@ -37,8 +38,7 @@ function getCheckpointsDir(): string {
   const cwd = getCwd();
   const slug = Buffer.from(cwd).toString('base64url').slice(0, 32);
   return join(
-    process.env.HOME || process.env.USERPROFILE || '/tmp',
-    '.claude',
+    getClewConfigHomeDir(),
     'projects',
     slug,
     'sessions',

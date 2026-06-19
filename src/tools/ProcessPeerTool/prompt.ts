@@ -78,8 +78,8 @@ The sender only sees stdout after you finish.
 export const PROMPT =
   'Runs a local process-backed AI worker for one task and returns stdout/stderr. ' +
   'Auto-detects available AI CLIs on your PATH (Codex, OpenCode, Claude Code) — no config needed. ' +
-  'The default provider is Codex in PTY mode, which shows a live terminal-style progress panel and uses the ' +
-  'existing Codex CLI session without exposing tokens. Use `mode: "exec"` only when one-shot capture is preferred. ' +
+  'The default provider is Codex with terminal-style progress output and uses the existing Codex CLI session without exposing tokens. ' +
+  'Do not use Clew/ClewCode itself as a process worker; that self-spawns the current CLI and can create nested duplicate sessions. ' +
   'Use it for second-opinion review, debugging, focused implementation subtasks, or ' +
   'asking a coding agent to inspect a repo.\n' +
   '\n' +

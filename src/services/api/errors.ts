@@ -501,6 +501,14 @@ export function getAssistantMessageFromError(
     });
   }
 
+  const codeAssistRateLimitMessage = formatCodeAssistRateLimitMessage(error);
+  if (codeAssistRateLimitMessage) {
+    return createAssistantAPIErrorMessage({
+      content: codeAssistRateLimitMessage,
+      error: 'rate_limit',
+    });
+  }
+
   // Handle prompt too long errors (Vertex returns 413, direct API returns 400)
   // Use case-insensitive check since Vertex returns "Prompt is too long" (capitalized)
   if (error instanceof Error && error.message.toLowerCase().includes('prompt is too long')) {
@@ -794,7 +802,12 @@ export function getAssistantMessageFromError(
   // 404 Not Found — usually means the selected model doesn't exist or isn't
   // available. Guide the user to /model so they can pick a valid one.
   // For 3P users, suggest a specific fallback model they can try.
-  if (error instanceof APIError && error.status === 404) {
+  const providerErrorInfo = getProviderErrorInfo(error);
+  if (
+    (error instanceof APIError && error.status === 404) ||
+    providerErrorInfo?.status === 404 ||
+    (error as any).status === 404
+  ) {
     const switchCmd = getIsNonInteractiveSession() ? '--model' : '/model';
     const fallbackSuggestion = get3PModelFallbackSuggestion(model);
     return createAssistantAPIErrorMessage({
@@ -914,9 +927,54 @@ function get3PModelFallbackSuggestion(model: string): string | undefined {
  * Used by classifyProviderError() and withRetry() for provider-agnostic handling.
  */
 export interface ProviderErrorInfo {
-  category: 'rate_limit' | 'content_filter' | 'auth' | 'server_error' | 'network';
+  category: 'rate_limit' | 'content_filter' | 'auth' | 'server_error' | 'client_error' | 'network';
   status?: number;
   retryAfter?: string | number;
+}
+
+function parseCodeAssistError(error: unknown):
+  | {
+      status: number;
+      message?: string;
+      model?: string;
+    }
+  | undefined {
+  if (!(error instanceof Error) || !error.message.startsWith('Code Assist API error (')) {
+    return undefined;
+  }
+
+  const status = (error as any).status;
+  const parsedStatus =
+    typeof status === 'number' ? status : Number(error.message.match(/^Code Assist API error \((\d+)\):/)?.[1]);
+  if (!Number.isFinite(parsedStatus)) {
+    return undefined;
+  }
+
+  const body = typeof (error as any).body === 'string' ? (error as any).body : error.message.replace(/^.*?:\s*/, '');
+  try {
+    const parsed = JSON.parse(body);
+    return {
+      status: parsedStatus,
+      message: parsed.error?.message || parsed.message,
+      model: parsed.error?.details?.find?.((detail: any) => detail?.metadata?.model)?.metadata?.model,
+    };
+  } catch {
+    return { status: parsedStatus };
+  }
+}
+
+function formatCodeAssistRateLimitMessage(error: unknown): string | undefined {
+  const parsed = parseCodeAssistError(error);
+  if (parsed?.status !== 429) {
+    return undefined;
+  }
+
+  let detail = parsed.message;
+  if (detail && parsed.model) {
+    detail = detail.replace('on this model', `on ${parsed.model}`);
+  }
+
+  return `${API_ERROR_MESSAGE_PREFIX}: Rate limited (429)${detail ? ` · ${detail}` : ''}`;
 }
 
 /**

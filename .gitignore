@@ -54,10 +54,15 @@ desktop.ini
 !.clew/workflows/
 !.clew/settings.json
 .codegraph/
+.codegg/
 .codex/
 .agents/
+.kilo/
 .searxng/
+.claude-plugin/
+.obsidian/
 research-dossiers/
+graphify-out/
 .provider.json
 .claude-code-provider.json
 .CLAUDE.md

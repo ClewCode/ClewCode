@@ -26,7 +26,10 @@ Use the \`process_peer\` tool with these settings:
   - **Forbidden**: destructive ops, deploys, credentials
   - **Output format**: summary of what was done
 
-### 3. Create a summarize-and-report step
+### 3. Multi-turn conversations (session resume)
+If the result includes a \`sessionId\`, you can continue the conversation by calling \`process_peer\` again with \`sessionId: "<id>"\` and a follow-up \`prompt\`. This resumes the same codex session and lets you ask follow-up questions without losing context.
+
+### 4. Create a summarize-and-report step
 Send a follow-up if needed to get a summary. Then report to the user:
 - What was done
 - What passed/failed

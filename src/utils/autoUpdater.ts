@@ -7,8 +7,10 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from 'src/services/analytics/index.js';
+
 // loony: globalThis.MACRO avoids circular-dep TDZ with bun bundler
 const MACRO = globalThis.MACRO as typeof globalThis.MACRO;
+
 import { type ReleaseChannel, saveGlobalConfig } from './config.js';
 import { logForDebugging } from './debug.js';
 import { env } from './env.js';

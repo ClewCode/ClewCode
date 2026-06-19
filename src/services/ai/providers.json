@@ -94,9 +94,9 @@
     "envKey": "GOOGLE_API_KEY",
     "defaultBaseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
     "modelsUrl": "https://generativelanguage.googleapis.com/v1beta/openai/v1/models",
-    "defaultModel": "gemini-3.1-pro-preview",
+    "defaultModel": "gemini-3.5-flash",
     "defaultModelVerified": true,
-    "note": "Google Gemini via native SDK (GoogleProvider). Updated 2026-04-25.",
+    "note": "Google Gemini via native SDK (GoogleProvider). Updated 2026-06-19.",
     "capabilities": {
       "chat": true,
       "streaming": "partial",
@@ -110,6 +110,57 @@
       "imageGen": { "defaultModel": "imagen-3.0-generate-002", "apiType": "google-image" }
     },
     "models": [
+      {
+        "id": "gemini-3.5-flash",
+        "label": "Gemini 3.5 Flash",
+        "tags": [
+          "tools",
+          "vision",
+          "fast",
+          "recommended",
+          "latest"
+        ],
+        "supportedTypes": [
+          "direct",
+          "vertex"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "partial",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": true
+        }
+      },
+      {
+        "id": "gemini-3.1-pro",
+        "label": "Gemini 3.1 Pro",
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "latest"
+        ],
+        "supportedTypes": [
+          "direct",
+          "vertex"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "partial",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": true
+        }
+      },
       {
         "id": "gemini-3.1-flash-lite",
         "label": "Gemini 3.1 Flash Lite",
@@ -140,8 +191,7 @@
         "tags": [
           "tools",
           "vision",
-          "reasoning",
-          "recommended"
+          "reasoning"
         ],
         "supportedTypes": [
           "direct",
@@ -158,6 +208,101 @@
           "imageIn": true,
           "videoIn": true
         }
+      },
+      {
+        "id": "gemini-2.5-flash",
+        "label": "Gemini 2.5 Flash",
+        "tags": [
+          "tools",
+          "vision",
+          "fast"
+        ],
+        "supportedTypes": [
+          "direct",
+          "vertex"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "partial",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": true
+        }
+      },
+      {
+        "id": "gemini-2.5-pro",
+        "label": "Gemini 2.5 Pro",
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning"
+        ],
+        "supportedTypes": [
+          "direct",
+          "vertex"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "partial",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": true
+        }
+      },
+      {
+        "id": "gemini-1.5-flash",
+        "label": "Gemini 1.5 Flash",
+        "tags": [
+          "tools",
+          "vision",
+          "fast"
+        ],
+        "supportedTypes": [
+          "direct",
+          "vertex"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "partial",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": true
+        }
+      },
+      {
+        "id": "gemini-1.5-pro",
+        "label": "Gemini 1.5 Pro",
+        "tags": [
+          "tools",
+          "vision"
+        ],
+        "supportedTypes": [
+          "direct",
+          "vertex"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "partial",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": true
+        }
       }
     ]
   },
@@ -165,11 +310,11 @@
     "providerId": "google-assist",
     "label": "Gemini Code Assist (OAuth)",
     "envKey": "GEMINI_API_KEY",
-    "defaultBaseUrl": "https://cloudcode-pa.googleapis.com/v1internal",
-    "defaultModel": "gemini-2.5-flash",
+    "defaultBaseUrl": "https://daily-cloudcode-pa.googleapis.com/v1internal",
+    "defaultModel": "gemini-3.5-flash",
     "defaultModelVerified": true,
-    "isLocal": false,
-    "note": "Gemini Code Assist via OAuth — uses ~/.gemini/oauth_creds.json from Gemini CLI. Free tier via Google Code Assist API.",
+    "isLocal": true,
+    "note": "Gemini Code Assist via OAuth — uses ~/.gemini/oauth_creds.json from Gemini CLI. No API key needed.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -183,9 +328,24 @@
     },
     "models": [
       {
+        "id": "gemini-3.5-flash",
+        "label": "Gemini 3.5 Flash",
+        "tags": ["fast", "recommended", "latest"],
+        "capabilities": {
+          "toolCalling": "none",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": false,
+          "supportsSystemPrompt": false,
+          "videoIn": true
+        }
+      },
+      {
         "id": "gemini-2.5-flash",
         "label": "Gemini 2.5 Flash",
-        "tags": ["fast", "recommended"],
+        "tags": ["fast"],
         "capabilities": {
           "toolCalling": "none",
           "vision": true,
@@ -208,6 +368,21 @@
           "maxContext": 1048576,
           "maxOutput": 8192,
           "reasoning": true,
+          "supportsSystemPrompt": false,
+          "videoIn": true
+        }
+      },
+      {
+        "id": "gemini-2.0-flash",
+        "label": "Gemini 2.0 Flash",
+        "tags": ["fast"],
+        "capabilities": {
+          "toolCalling": "none",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": false,
           "supportsSystemPrompt": false,
           "videoIn": true
         }

@@ -10,9 +10,9 @@
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { MemoryDB } from '../../memory/database.js';
 import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
 import { pathExists } from '../../utils/file.js';
-import { MemoryDB } from '../../memory/database.js';
 
 const DISTILL_STATE_FILE = 'distill-state.json';
 const DISTILL_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days

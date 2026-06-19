@@ -298,7 +298,6 @@ Terminal UI
 * [アーキテクチャ](../docs/architecture.html)
 * [パーミッションモデル](../docs/permission-model.html)
 * [ブリッジモード](../docs/features/bridge-mode.html)
-* [SearXNG 検索](../docs/features/searxng-search.html)
 * [トラブルシューティング](../docs/troubleshooting.html)
 * [評価](../docs/features/evals.html)
 * [Taste](../docs/taste.html)

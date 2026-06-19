@@ -124,6 +124,22 @@ export class ProviderManager {
   }
 
   saveSelectedProviderConfig(config: ProviderConfigFile): void {
+    // CRITICAL: When session overrides are active, preserve the original
+    // on-disk provider and model. This prevents one session's change from
+    // leaking into the shared provider.json and affecting other sessions.
+    //
+    // Session overrides (setSessionProvider/setSessionModel) are the correct
+    // way to change provider/model per-session. The on-disk config should
+    // only be updated via explicit --global flag or initial onboarding.
+    if (this.sessionProvider !== null || this.sessionModel !== null) {
+      const onDisk = this.getSelectedProviderConfig(true);
+      if (this.sessionProvider !== null && onDisk.provider) {
+        config.provider = onDisk.provider;
+      }
+      if (this.sessionModel !== null && onDisk.model) {
+        config.model = onDisk.model;
+      }
+    }
     writeFileSync(this.getProviderConfigPathForSave(), JSON.stringify(config, null, 2), 'utf8');
     this.cachedConfig = config;
   }
@@ -290,11 +306,17 @@ export class ProviderManager {
   }
 
   getModelForProvider(provider?: ProviderId): string | undefined {
+    const providerName = provider ?? this.getActiveProviderName();
+    const providerEntry = getProviderRegistryEntry(providerName);
+    const isSupportedModel = (model: string | undefined) =>
+      !model || providerName !== 'google-assist' || providerEntry.models.some(entry => entry.id === model);
+
     if (!provider && this.sessionModel) {
-      return this.sessionModel;
+      return isSupportedModel(this.sessionModel) ? this.sessionModel : providerEntry.defaultModel;
     }
+
     const config = this.getSelectedProviderConfig();
-    return config.model;
+    return isSupportedModel(config.model) ? config.model : providerEntry.defaultModel;
   }
 
   async createClient(provider?: ProviderId, options: ProviderInitOptions = {}): Promise<unknown> {

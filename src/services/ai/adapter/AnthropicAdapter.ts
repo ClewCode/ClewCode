@@ -222,7 +222,7 @@ export interface ProviderAdapter {
   streamMessage(
     params: BetaMessageStreamParams,
     options?: { signal?: AbortSignal },
-  ): AsyncGenerator<unknown, void, undefined>;
+  ): AsyncGenerator<unknown, void, undefined> | Promise<AsyncGenerator<unknown, void, undefined>>;
 
   /** Convert a provider error into a standardised Error object. */
   normalizeError(error: unknown): Error;
@@ -352,10 +352,10 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     return this.convertToAnthropic(response) as BetaMessage;
   }
 
-  async *streamMessage(
+  async streamMessage(
     params: BetaMessageStreamParams,
     options?: { signal?: AbortSignal },
-  ): AsyncGenerator<unknown, void, undefined> {
+  ): Promise<AsyncGenerator<unknown, void, undefined>> {
     const openAIParams = this.convertToOpenAI(params);
     const hadReasoning = !!openAIParams.reasoning_effort;
 
@@ -367,19 +367,24 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
 
     // First attempt — may include reasoning_effort
     const firstStream = await createStream(true);
-    try {
-      yield* withStreamWatchdog(this.wrapStream(firstStream), this.streamTimeoutMs, this.label);
-    } catch (err: any) {
-      // ponytail: some models (e.g. minimax-m3 via OpenAI-compatible proxy) return
-      // empty content when reasoning_effort is sent. Retry once without it before
-      // surfacing the error to the user.
-      if (hadReasoning && err?._providerError?.category === 'empty_response') {
-        const retryStream = await createStream(false);
-        yield* withStreamWatchdog(this.wrapStream(retryStream), this.streamTimeoutMs, this.label);
-      } else {
-        throw err;
+    const self = this;
+    async function* runStream() {
+      try {
+        yield* withStreamWatchdog(self.wrapStream(firstStream), self.streamTimeoutMs, self.label);
+      } catch (err: any) {
+        // ponytail: some models (e.g. minimax-m3 via OpenAI-compatible proxy) return
+        // empty content when reasoning_effort is sent. Retry once without it before
+        // surfacing the error to the user.
+        if (hadReasoning && err?._providerError?.category === 'empty_response') {
+          const retryStream = await createStream(false);
+          yield* withStreamWatchdog(self.wrapStream(retryStream), self.streamTimeoutMs, self.label);
+        } else {
+          throw err;
+        }
       }
     }
+
+    return runStream();
   }
 
   normalizeError(error: unknown): Error {
@@ -402,6 +407,14 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       if (status === 400 && (code === 'content_filter' || code === 'content_policy_violation')) {
         const err = new Error(`[${this.label}] Content blocked by safety filter`) as any;
         err._providerError = { category: 'content_filter', status };
+        return err;
+      }
+
+      // Model not found / Not found
+      if (status === 404) {
+        const err = new Error(`[${this.label}] Not found: ${message}`) as any;
+        err._providerError = { category: 'invalid_request', status };
+        err.status = 404;
         return err;
       }
 
@@ -905,10 +918,18 @@ export class AnthropicAdapter {
   private handleStreaming(params: BetaMessageStreamParams, options?: any): any {
     return {
       withResponse: async () => {
-        const rawStream = this.adapter.streamMessage(params, options);
+        let rawStream;
+        try {
+          const res = this.adapter.streamMessage(params, options);
+          rawStream = res instanceof Promise ? await res : res;
+        } catch (err) {
+          throw this.adapter.normalizeError(err);
+        }
+        const normalizedStream = normalizeStreamErrors(rawStream, err => this.adapter.normalizeError(err));
         // Wrap with stream watchdog (J8) — auto-fail stalled streams.
         const timeoutMs = this.adapter.streamTimeoutMs ?? DEFAULT_STREAM_TIMEOUT_MS;
-        const stream = timeoutMs > 0 ? withStreamWatchdog(rawStream, timeoutMs, this.adapter.label) : rawStream;
+        const stream =
+          timeoutMs > 0 ? withStreamWatchdog(normalizedStream, timeoutMs, this.adapter.label) : normalizedStream;
         return {
           data: stream,
           response: { headers: new Headers() },
@@ -916,5 +937,16 @@ export class AnthropicAdapter {
         };
       },
     };
+  }
+}
+
+async function* normalizeStreamErrors(
+  stream: AsyncGenerator<unknown, void, undefined>,
+  normalize: (err: unknown) => Error,
+): AsyncGenerator<unknown, void, undefined> {
+  try {
+    yield* stream;
+  } catch (err) {
+    throw normalize(err);
   }
 }

@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { MessageResponse } from '../../components/MessageResponse.js';
 import { Text } from '../../ink.js';
+import { formatPeerTaskDashboard } from '../../peer/peerDashboard.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { formatPeerTaskDashboard } from '../../peer/peerDashboard.js';
 import { DESCRIPTION, PEER_DASHBOARD_TOOL_NAME, PROMPT } from './prompt.js';
 
 export const PeerDashboardTool = buildTool({
@@ -27,19 +27,18 @@ export const PeerDashboardTool = buildTool({
     return lazySchema(() => ({ type: 'object', properties: {}, required: [] }))();
   },
   get outputSchema() {
-    return lazySchema(() =>
-      ({
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          dashboard: { type: 'string' },
-          hasPeers: { type: 'boolean' },
-          peerCount: { type: 'number' },
-          taskCount: { type: 'number' },
-          doneCount: { type: 'number' },
-        },
-        required: ['success', 'dashboard'],
-      }))();
+    return lazySchema(() => ({
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        dashboard: { type: 'string' },
+        hasPeers: { type: 'boolean' },
+        peerCount: { type: 'number' },
+        taskCount: { type: 'number' },
+        doneCount: { type: 'number' },
+      },
+      required: ['success', 'dashboard'],
+    }))();
   },
   getPath() {
     return getCwd();

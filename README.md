@@ -6,7 +6,7 @@
 
 **The open-source AI coding agent — in your terminal and on your LAN.**
 
-A multi-provider AI coding CLI that codes, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle. Local-first by design.
+A multi-provider AI coding CLI that codes, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle. Local-first by design. MiMo-inspired memory system. Peer-to-peer LAN swarm. 70+ built-in tools.
 
 [![GitHub stars](https://img.shields.io/github/stars/ClewCode/ClewCode?style=social)](https://github.com/ClewCode/ClewCode/stargazers)
 [![Contributors](https://img.shields.io/github/contributors/ClewCode/ClewCode.svg)](https://github.com/ClewCode/ClewCode/graphs/contributors)
@@ -25,7 +25,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 
 ## Hacking in public
 
-Clew Code is a reverse-engineered reimplementation of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships agent-to-agent LAN peer coordination, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation, and 26+ provider adapters.
+Clew Code is a reverse-engineered reimplementation of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships a MiMo-inspired memory system (SQLite-backed, budgeted injection, cross-session persistence), agent-to-agent LAN peer coordination with swarm execution and memory sync, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation (Dream + Distill), and 28 provider adapters.
 
 > Reverse-engineered from Claude Code. Rebuilt for every provider.
 
@@ -33,19 +33,16 @@ Clew Code is a reverse-engineered reimplementation of [Claude Code](https://gith
 
 ## Features
 
-- **26+ providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, OpenCode Go. Switch mid-session. *(Anthropic provider removed — use [Claude Code](https://github.com/anthropics/claude-code) directly for Anthropic-first workflows.)*
-- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Message broker** (in-process queue) enables offline message delivery with correlation IDs.
-
+- **28 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, OpenCode Go, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, custom. Switch mid-session. *(Anthropic provider removed — use [Claude Code](https://github.com/anthropics/claude-code) directly for Anthropic-first workflows.)*
+- **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
+- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
-- **55+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), PR (create/list/view/review/merge/status), NotebookEdit, JsonPath, ReadArtifact, peer tools (15+ LAN coordination tools including swarm + dashboard), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
-- **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Auto-integrates with AFK mode and the autonomous loop.
-- **Goal Verifier** — When the agent attempts to terminate, an independent LLM verifier reviews the conversation against the goal text. If unsatisfied, the gap is reported as metadata for automatic re-prompting.
+- **70+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (15+ LAN coordination tools including swarm + dashboard), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction, GenerateImage (DALL-E 3 / Imagen 3), GenerateVideo (Runway Gen-4), ReadMediaFile (video input).
+- **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Templates for common workflows (`fix-build`, `green-tests`, `refactor`). Auto-integrates with AFK mode and the autonomous loop. Independent LLM verifier reviews completion and reports gaps.
 - **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
-- **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps).
-- **Project memory promotion** — at the 70% checkpoint, stable information (active files, persistent decisions, notes) is promoted to `MEMORY.md` for cross-session persistence.
-- **Automated memory consolidation** — Dream process (7-day cycle) merges duplicate insights and creates weekly digests. Distill process (30-day cycle) extracts reusable patterns and generates skill suggestions.
+- **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps). Project memory promotion at 70% checkpoint.
+- **Personal profile** — `/profile personal` sets command-center mode with plan/split/delegate workflow to Codex workers via ProcessPeer. Profile + last permission mode saved between sessions.
 - **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
-- **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. Peer-to-peer memory sync across LAN. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
 - **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
 - **8 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, guardian. Granular allow/deny rules with pattern matching.
 
@@ -178,7 +175,7 @@ clew
 # In-session commands
 ❯ /help           # list everything
 ❯ /status         # current provider, model, context info
-❯ /goal "tests pass"  # track task completion
+❯ /goal "tests pass"  # track task completion with verification
 ❯ /maxmode on     # parallel candidate generation
 ❯ /peer discover  # find other Clew instances on LAN
 ❯ /peer swarm clew -p "summarize CHANGELOG.md"  # run on all peers
@@ -192,6 +189,7 @@ clew
 ❯ /memory init    # bootstrap project memory (SQLite + scan)
 ❯ /memory rebuild # reconstruct context from ranked memories
 ❯ /memory recall --verbose  # recall ranked memories
+❯ /profile personal  # command-center mode with delegation
 
 # One-shot mode (pipe-friendly)
 clew -p "summarize CHANGELOG.md"
@@ -219,16 +217,16 @@ export GEMINI_API_KEY=...
 ## Commands
 
 <details>
-<summary><strong>21 slash commands</strong></summary>
+<summary><strong>30+ slash commands</strong></summary>
 
 ```
 /model          Switch provider or model
 /status         Provider, session, context info
 /doctor         Diagnostics
-/profile        Personal profile mode
+/profile        Personal profile mode (coding / personal)
 /context        Active context usage
-/compact        Compress conversation history
-/goal           Track and verify task completion
+/compact        Compress conversation history + extract memories
+/goal           Track and verify task completion (chains, templates)
 /maxmode        Toggle parallel candidate generation
 /mcp            MCP server management
 /code-review    Review changed files for bugs
@@ -243,6 +241,16 @@ export GEMINI_API_KEY=...
 /task           Scheduled tasks
 /memory         Memory system: init, scan, rebuild, recall, feedback, dashboard, search
 /tasks          Curated task list management
+/effort         Set reasoning effort (including ultracode)
+/stats          Session statistics and cost breakdown
+/guardian       Auto-review mode using secondary LLM
+/approve        Override guardian denials
+/pr             GitHub PR lifecycle
+/voice          Voice input via browser Web Speech API
+/buddy          Companion card and naming
+/team           Team dashboard for in-process teammates
+/bg             Background sessions
+/plan           Plan mode
 ```
 
 </details>
@@ -260,9 +268,9 @@ src/
 ├── query.ts / QueryEngine.ts
 ├── agentRuntime/            # Background agent orchestration
 ├── commands/                # Slash command implementations
-├── tools/                   # 50+ built-in tools
+├── tools/                   # 70+ built-in tools
 ├── services/
-│   ├── ai/                  # Provider manager + 26+ providers
+│   ├── ai/                  # Provider manager + 28 providers
 │   ├── mcp/                 # MCP client + auth + transports
 │   ├── plugins/             # Plugin hooks + marketplace
 │   ├── autonomous/          # Agent loop + task queue + cron
@@ -331,19 +339,44 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 ## Changelog
 
 <details>
-<summary><strong>v0.2.22 — 2026-06-15</strong></summary>
+<summary><strong>v0.3.2 — 2026-06-18</strong></summary>
 
-- **Max Mode** — parallel candidate generation (default 3 per turn), `/maxmode` command
-- **Goal system** — `/goal` with heuristic pre-checks, goal chains (`then`), AFK integration
-- **Structured checkpoints** — progress snapshots at 20%/45%/70%, session rebuild from checkpoints
-- **Dream process** — 7-day automated memory consolidation cycle
-- **Distill process** — 30-day pattern extraction and reusable skill generation
-- **Video input** — paste mp4/mov/webm to video-capable models (Gemini, GPT-5.x)
-- **Image & Video generation** — `GenerateImage` (DALL-E 3, Imagen 3) and `GenerateVideo` (Runway Gen-4)
-- **Profile system** — `/profile personal` sets command-center mode with plan/split/delegate workflow
-- **Execution modes** — `/mode` with `safe`, `yolo`, `afk`, `review-only`, `browser-safe`
-- **ReadArtifact tool** — read truncated large outputs in chunks
-- **Bounded tool output** — 200-line cap with disk persistence for large results
+- **Fixed `schema._zod.def` crash**: `zodToJsonSchema()` now checks for `_zod` branding before calling `toJSONSchema()`, preventing crashes when a non-Zod value is passed as a tool schema.
+- **Fixed `generateSettingsJSONSchema()` crash**: Wrapped `toJSONSchema()` with try-catch to handle Zod v4 serialization failures.
+
+</details>
+
+<details>
+<summary><strong>v0.3.1 — 2026-06-18</strong></summary>
+
+- **Fixed PeerStore infinite recursion**: Removed 7 duplicate alias methods that called themselves recursively, fixing `Maximum call stack size exceeded` during `peer_discover`.
+
+</details>
+
+<details>
+<summary><strong>v0.3.0 — 2026-06-18</strong></summary>
+
+- **Peer memory sync**: `/peer memory sync` imports memories from all connected peers. Auto-sync on cron (`/peer memory auto on`).
+- **Memory system dashboard**: `/memory dashboard` shows unified view of MemoryDB, Dream, Distill, Peer Sync, and timeline.
+- **Legacy migration**: Auto-migrates old `session-memory.db` into MemoryDB during `/memory init`.
+- **Redirected longTermMemory to MemoryDB**: Dream, graph, experience, cross-session all now read/write to MemoryDB instead of their own SQLite/JSON files.
+- **MemoryDB — SQLite-backed memory store**: `memories` table (importance, confidence, access_count, type), `memory_timeline` table (event lifecycle). Budgeted querying, auto-eviction, timeline logging.
+- **Memory hierarchy**: `.clew/memory/` directory with MEMORY.md, DECISIONS.md, TASTE.md. Auto-initializes on first use.
+- **Budgeted injection**: Importance-ranked memory injection into system prompt, fits configurable token budget.
+- **`/memory scan`**: Detects stack/language/package-manager/entrypoints, bootstraps seed memories.
+- **`/memory rebuild`**: Reconstructs context from memories via budgeted injection with per-memory detail.
+- **`/memory recall`**: Recalls memories ranked by combined score. Access count bump, `--verbose` for breakdown.
+- **`/memory feedback`**: 7 signals (accepted, rejected, corrected, preferred, disliked, important, wrong). Updates importance/confidence, writes `preferred` to TASTE.md.
+- **In-compact memory extraction**: Compact prompt asks LLM for `<memories>` block with structured facts; `parseCompactMemories()` extracts and saves to MemoryDB + markdown.
+- **Peer task dashboard**: `/peer dashboard` command + `peer_dashboard` AI tool. Shows connected peers, tasks, and result summaries.
+- **`/peer swarm`**: Sends shell command to ALL connected peers in parallel via `/peer-exec`, aggregates results. Supports `--timeout`, `--filter`, `--dry-run`.
+- **`peer_swarm` tool**: New AI-callable tool — runs shell commands on all peers in parallel.
+- **In-process message broker**: `POST /broker/send`, `GET /broker/recv` (long-poll), `POST /broker/reply`. Message queuing with correlation IDs inside existing PeerServer.
+- **`/model` fetches from API for all providers**: `supportsModelFetching()` expanded to all providers (except google-assist).
+- **Removed Anthropic provider**: clew-gateway + cline cover Anthropic models. Standalone `anthropic` entry removed.
+- **Hidden `clew-gateway` provider**: Filtered from `PROVIDER_IDS`.
+- **Auto memory lifecycle**: `ensureMemorySystem()` auto-inits DB + auto-scans on first access. Budgeted memories auto-injected every turn.
+- **Memory tests**: 8 new tests for upsert idempotency, content-hash detection, recall ranking, feedback signals, and budget limits.
 
 </details>
 

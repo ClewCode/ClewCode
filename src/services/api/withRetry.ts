@@ -35,7 +35,7 @@ import type { ThinkingConfig } from '../../utils/thinking.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
 import { checkMockRateLimitError, isMockRateLimitError } from '../rateLimitMocking.js';
-import { classifyProviderError, REPEATED_529_ERROR_MESSAGE } from './errors.js';
+import { classifyProviderError, getProviderRetryAfterMs, REPEATED_529_ERROR_MESSAGE } from './errors.js';
 import { extractConnectionErrorDetails } from './errorUtils.js';
 
 const abortError = () => new APIUserAbortError();
@@ -91,7 +91,10 @@ function isPersistentRetryEnabled(): boolean {
 }
 
 function isTransientCapacityError(error: unknown): boolean {
-  return is529Error(error) || (error instanceof APIError && error.status === 429);
+  if (is529Error(error)) return true;
+  if (error instanceof APIError && error.status === 429) return true;
+  const providerError = classifyProviderError(error);
+  return providerError.category === 'rate_limit';
 }
 
 function isStaleConnectionError(error: unknown): boolean {
@@ -317,7 +320,7 @@ export async function* withRetry<T>(
 
       // AWS/GCP errors aren't always APIError, but can be retried
       const handledCloudAuthError = handleAwsCredentialError(error) || handleGcpCredentialError(error);
-      if (!handledCloudAuthError && (!(error instanceof APIError) || !shouldRetry(error))) {
+      if (!handledCloudAuthError && !shouldRetry(error)) {
         throw new CannotRetryError(error, retryContext);
       }
 
@@ -356,8 +359,7 @@ export async function* withRetry<T>(
       }
 
       // For other errors, proceed with normal retry logic
-      // Get retry-after header if available
-      const retryAfter = getRetryAfter(error);
+      const retryAfterMs = getRetryAfterMs(error);
       let delayMs: number;
       if (persistent && error instanceof APIError && error.status === 429) {
         persistentAttempt++;
@@ -366,18 +368,21 @@ export async function* withRetry<T>(
         const resetDelay = getRateLimitResetDelayMs(error);
         delayMs =
           resetDelay ??
-          Math.min(getRetryDelay(persistentAttempt, retryAfter, PERSISTENT_MAX_BACKOFF_MS), PERSISTENT_RESET_CAP_MS);
+          Math.min(
+            retryAfterMs ?? getRetryDelay(persistentAttempt, null, PERSISTENT_MAX_BACKOFF_MS),
+            PERSISTENT_RESET_CAP_MS,
+          );
       } else if (persistent) {
         persistentAttempt++;
         // Retry-After is a server directive and bypasses maxDelayMs inside
         // getRetryDelay (intentional — honoring it is correct). Cap at the
         // 6hr reset-cap here so a pathological header can't wait unbounded.
         delayMs = Math.min(
-          getRetryDelay(persistentAttempt, retryAfter, PERSISTENT_MAX_BACKOFF_MS),
+          retryAfterMs ?? getRetryDelay(persistentAttempt, null, PERSISTENT_MAX_BACKOFF_MS),
           PERSISTENT_RESET_CAP_MS,
         );
       } else {
-        delayMs = getRetryDelay(attempt, retryAfter);
+        delayMs = retryAfterMs ?? getRetryDelay(attempt, null);
       }
 
       // In persistent mode the for-loop `attempt` is clamped at maxRetries+1;
@@ -581,13 +586,13 @@ function handleGcpCredentialError(error: unknown): boolean {
   return false;
 }
 
-function shouldRetry(error: APIError): boolean {
+function shouldRetry(error: unknown): boolean {
   // Never retry mock errors - they're from /mock-limits command for testing
   if (isMockRateLimitError(error)) {
     return false;
   }
 
-  if (error.message.toLowerCase().includes('please wait a moment and try again')) {
+  if (error instanceof Error && error.message.toLowerCase().includes('please wait a moment and try again')) {
     return true;
   }
 
@@ -599,6 +604,10 @@ function shouldRetry(error: APIError): boolean {
   if (providerError.category === 'network') return true;
   // content_filter errors are never retryable — the same content will be blocked again
   if (providerError.category === 'content_filter') return false;
+
+  if (!(error instanceof APIError)) {
+    return false;
+  }
 
   // Non-interactive (headless) mode: fail fast on non-transient 4xx errors.
   // 4xx errors are client errors that won't succeed on retry (e.g., bad request,
@@ -712,7 +721,12 @@ const DEFAULT_FAST_MODE_FALLBACK_HOLD_MS = 30 * 60 * 1000; // 30 minutes
 const SHORT_RETRY_THRESHOLD_MS = 20 * 1000; // 20 seconds
 const MIN_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 
-function getRetryAfterMs(error: APIError): number | null {
+function getRetryAfterMs(error: unknown): number | null {
+  const providerMs = getProviderRetryAfterMs(error);
+  if (providerMs !== null) {
+    return providerMs;
+  }
+
   const retryAfter = getRetryAfter(error);
   if (retryAfter) {
     const seconds = parseInt(retryAfter, 10);

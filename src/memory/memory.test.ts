@@ -5,6 +5,7 @@ import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import { injectMemoryIntoPrompt } from '../utils/injectMemoryIntoPrompt.js';
 import { chunkMarkdown, estimateTokenCount } from './chunker.js';
+import { classifyContext, compactContext } from './compacter.js';
 import { closeMemoryDb, getMemoryDb } from './db.js';
 import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.js';
 import { ingestMemoryWorkspace } from './ingest.js';
@@ -15,7 +16,6 @@ import { searchMemories } from './search.js';
 import { deleteSource, getAllSources, getSource, insertChunks, searchChunksFTS, upsertSource } from './store.js';
 import type { MemoryChunk, SourceDocument } from './types.js';
 import { getMemoryWorkspaceStatus, initMemoryWorkspace } from './workspace.js';
-import { compactContext, classifyContext } from './compacter.js';
 
 const tempCwd = join(process.cwd(), 'test/temp-test-memory-workspace');
 
@@ -278,11 +278,11 @@ describe('Claude Memory System (PLAN E)', () => {
 
 // ── MiMo MemoryDB tests ────────────────────────────────────
 
-import { MemoryDB } from './database.js';
-import { resolveSignal, applyFeedback } from './feedback.js';
-import { writeMemoryFile, getMemoryDirPath, initMemoryHierarchy } from './hierarchy.js';
-import { readFile, mkdir } from 'fs/promises';
+import { mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
+import { MemoryDB } from './database.js';
+import { applyFeedback, resolveSignal } from './feedback.js';
+import { getMemoryDirPath, initMemoryHierarchy, writeMemoryFile } from './hierarchy.js';
 
 const memDbDir = join(tempCwd, '.clew', 'memory-test');
 
@@ -343,8 +343,22 @@ describe('MiMo MemoryDB', () => {
 
   test('recall ranks query-relevant above unrelated high-importance', () => {
     const db = MemoryDB.getInstance();
-    db.upsertMemory({ key: 'test.relevant', projectPath: memDbDir, type: 'architecture', content: 'TypeScript compiler configuration and tsconfig options', importance: 0.5, confidence: 0.8 });
-    db.upsertMemory({ key: 'test.unrelated', projectPath: memDbDir, type: 'reference', content: 'Database connection pooling settings for PostgreSQL', importance: 0.9, confidence: 0.9 });
+    db.upsertMemory({
+      key: 'test.relevant',
+      projectPath: memDbDir,
+      type: 'architecture',
+      content: 'TypeScript compiler configuration and tsconfig options',
+      importance: 0.5,
+      confidence: 0.8,
+    });
+    db.upsertMemory({
+      key: 'test.unrelated',
+      projectPath: memDbDir,
+      type: 'reference',
+      content: 'Database connection pooling settings for PostgreSQL',
+      importance: 0.9,
+      confidence: 0.9,
+    });
 
     const results = db.recallMemories({ projectPath: memDbDir, query: 'TypeScript compiler', limit: 5, verbose: true });
     expect(results.length).toBeGreaterThanOrEqual(2);
@@ -357,7 +371,14 @@ describe('MiMo MemoryDB', () => {
 
   test('recall increments access_count and last_accessed_at', () => {
     const db = MemoryDB.getInstance();
-    const r = db.upsertMemory({ key: 'test.access_tracking', projectPath: memDbDir, type: 'decision', content: 'Use pnpm over npm', importance: 0.5, confidence: 0.5 });
+    const r = db.upsertMemory({
+      key: 'test.access_tracking',
+      projectPath: memDbDir,
+      type: 'decision',
+      content: 'Use pnpm over npm',
+      importance: 0.5,
+      confidence: 0.5,
+    });
 
     const before = db.getMemory(r.id)!;
     expect(before.accessCount).toBe(0);
@@ -369,7 +390,14 @@ describe('MiMo MemoryDB', () => {
 
   test('feedback important boosts importance', async () => {
     const db = MemoryDB.getInstance();
-    const r = db.upsertMemory({ key: 'test.fb_important', projectPath: memDbDir, type: 'reference', content: 'Some reference', importance: 0.5, confidence: 0.5 });
+    const r = db.upsertMemory({
+      key: 'test.fb_important',
+      projectPath: memDbDir,
+      type: 'reference',
+      content: 'Some reference',
+      importance: 0.5,
+      confidence: 0.5,
+    });
 
     const result = await applyFeedback(r.id, 'important');
     expect(result.success).toBe(true);
@@ -381,7 +409,14 @@ describe('MiMo MemoryDB', () => {
 
   test('feedback preferred writes to TASTE.md', async () => {
     const db = MemoryDB.getInstance();
-    const r = db.upsertMemory({ key: 'test.fb_taste', projectPath: memDbDir, type: 'taste', content: 'Use tabs', importance: 0.5, confidence: 0.5 });
+    const r = db.upsertMemory({
+      key: 'test.fb_taste',
+      projectPath: memDbDir,
+      type: 'taste',
+      content: 'Use tabs',
+      importance: 0.5,
+      confidence: 0.5,
+    });
 
     const memDir = getMemoryDirPath();
     await mkdir(memDir, { recursive: true }).catch(() => {});
@@ -398,7 +433,14 @@ describe('MiMo MemoryDB', () => {
 
   test('feedback wrong decreases confidence', async () => {
     const db = MemoryDB.getInstance();
-    const r = db.upsertMemory({ key: 'test.fb_wrong', projectPath: memDbDir, type: 'reference', content: 'Wrong info', importance: 0.5, confidence: 0.8 });
+    const r = db.upsertMemory({
+      key: 'test.fb_wrong',
+      projectPath: memDbDir,
+      type: 'reference',
+      content: 'Wrong info',
+      importance: 0.5,
+      confidence: 0.8,
+    });
 
     const result = await applyFeedback(r.id, 'wrong');
     expect(result.success).toBe(true);

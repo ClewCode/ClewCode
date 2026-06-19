@@ -42,5 +42,5 @@ export interface ProcessPeerProgress {
   cwd: string;
   elapsedMs: number;
   outputTail?: string;
-  status: 'starting' | 'running' | 'complete';
+  status: 'starting' | 'running' | 'complete' | 'failed';
 }

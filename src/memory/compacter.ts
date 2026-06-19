@@ -6,12 +6,12 @@
  * 2. `autoExtractFromSession()` — called externally to save session context
  */
 
-import { readFile, writeFile, appendFile, mkdir, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { appendFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
 import { MemoryDB } from './database.js';
-import { writeMemoryFile, getMemoryDirPath } from './hierarchy.js';
+import { getMemoryDirPath, writeMemoryFile } from './hierarchy.js';
 import type { MemoryType } from './schema.js';
 
 export type CompactEntry = {
@@ -130,10 +130,7 @@ function formatFileEntry(entry: CompactEntry): string {
  * @param dryRun   If true, show what would be written without writing.
  * @returns CompactResult with counts and per-entry details.
  */
-export async function compactContext(
-  context: string,
-  dryRun = false,
-): Promise<CompactResult> {
+export async function compactContext(context: string, dryRun = false): Promise<CompactResult> {
   const entries = classifyContext(context);
   const result: CompactResult = {
     created: 0,
@@ -195,11 +192,12 @@ export async function compactContext(
       if (existsSync(filePath)) {
         await appendFile(filePath, lines.join(''), 'utf8');
       } else {
-        const header = file === 'DECISIONS.md'
-          ? '# Architecture Decisions\n'
-          : file === 'TASTE.md'
-            ? '# Coding Style & Preferences\n'
-            : '# Project Memory\n';
+        const header =
+          file === 'DECISIONS.md'
+            ? '# Architecture Decisions\n'
+            : file === 'TASTE.md'
+              ? '# Coding Style & Preferences\n'
+              : '# Project Memory\n';
         await writeFile(filePath, header + lines.join(''), 'utf8');
       }
       result.filesUpdated.push(file);
@@ -250,7 +248,14 @@ export function classifyContext(context: string): CompactEntry[] {
       key,
       type: normalizedType as CompactEntry['type'],
       content: text,
-      importance: normalizedType === 'decision' || normalizedType === 'taste' ? 0.8 : normalizedType === 'architecture' ? 0.75 : normalizedType === 'bug' ? 0.7 : 0.5,
+      importance:
+        normalizedType === 'decision' || normalizedType === 'taste'
+          ? 0.8
+          : normalizedType === 'architecture'
+            ? 0.75
+            : normalizedType === 'bug'
+              ? 0.7
+              : 0.5,
       confidence: normalizedType === 'note' ? 0.4 : 0.7,
     });
   }
@@ -258,7 +263,10 @@ export function classifyContext(context: string): CompactEntry[] {
   // Untagged trailing text → note entries
   const remaining = context.slice(lastIndex).trim();
   if (remaining) {
-    for (const line of remaining.split('\n').map(l => l.trim()).filter(Boolean)) {
+    for (const line of remaining
+      .split('\n')
+      .map(l => l.trim())
+      .filter(Boolean)) {
       const key = buildKey('note', line);
       if (seen.has(key)) continue;
       seen.add(key);
@@ -319,7 +327,14 @@ export async function syncDreamToMemoryDB(memoryRoot: string): Promise<number> {
           projectPath: getCwd(),
           type: normalizedType,
           content: text,
-          importance: normalizedType === 'decision' || normalizedType === 'taste' ? 0.8 : normalizedType === 'architecture' ? 0.75 : normalizedType === 'bug' ? 0.7 : 0.5,
+          importance:
+            normalizedType === 'decision' || normalizedType === 'taste'
+              ? 0.8
+              : normalizedType === 'architecture'
+                ? 0.75
+                : normalizedType === 'bug'
+                  ? 0.7
+                  : 0.5,
           confidence: 0.7,
         });
         syncedCount++;

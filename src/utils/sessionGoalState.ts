@@ -3,6 +3,7 @@ import { join } from 'path';
 import { getSessionId } from '../bootstrap/state.js';
 import type { PermissionMode } from '../types/permissions.js';
 import { getCwd } from './cwd.js';
+import { getClewConfigHomeDir } from './envUtils.js';
 import { pathExists } from './file.js';
 
 /**
@@ -13,7 +14,7 @@ import { pathExists } from './file.js';
  *   - Synced to this module singleton for system prompt injection
  *   - Persisted to disk so it survives /clear, /compact, and session restarts
  *
- * Persistence path: ~/.claude/projects/<slug>/sessions/<sessionId>/goal.json
+ * Persistence path: ~/.clew/projects/<slug>/sessions/<sessionId>/goal.json
  */
 
 /** Full goal state persisted to disk */
@@ -79,8 +80,7 @@ function getGoalFilePath(): string {
   const cwd = getCwd();
   const slug = Buffer.from(cwd).toString('base64url').slice(0, 32);
   return join(
-    process.env.HOME || process.env.USERPROFILE || '/tmp',
-    '.claude',
+    getClewConfigHomeDir(),
     'projects',
     slug,
     'sessions',

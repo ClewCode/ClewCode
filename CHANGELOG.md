@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **OpenAI Device Code flow (RFC 8628)**: New `OpenAIDeviceFlow` service at `src/services/openaiOAuth/deviceFlow.ts` for headless/browser-free OAuth login. Added "Device Login" option to `/providers` OpenAI OAuth picker. Device flow uses Auth0's device authorization grant — no localhost callback server needed, works reliably on all platforms including Windows.
+
 ## [0.3.2] - 2026-06-18
 
 ### Fixed

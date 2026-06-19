@@ -9,7 +9,7 @@ import {
   logEvent,
 } from 'src/services/analytics/index.js';
 import { getProjectRoot } from '../bootstrap/state.js';
-import { DOT_CLEW } from '../utils/clewPaths.js';
+import { DOT_CLEW, DOT_CLAUDE } from '../utils/clewPaths.js';
 import { logForDebugging } from './debug.js';
 import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { isFsInaccessible } from './errors.js';
@@ -241,9 +241,9 @@ export function getProjectDirsUpToHome(subdir: ClaudeConfigDirectory, cwd: strin
       // .clew/subdir doesn't exist — check legacy .claude/subdir
     }
     // Legacy fallback: also check .claude/subdir
-    if (DOT_CLEW !== '.claude') {
+    if (DOT_CLEW !== DOT_CLAUDE) {
       try {
-        const legacySubdir = join(current, '.claude', subdir);
+        const legacySubdir = join(current, DOT_CLAUDE, subdir);
         statSync(legacySubdir);
         dirs.push(legacySubdir);
       } catch {

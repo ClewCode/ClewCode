@@ -127,7 +127,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             if (migrationResult.sessionsImported > 0 || migrationResult.digestsImported > 0) {
               migrationNote = `  Legacy sessions: ${migrationResult.sessionsImported} imported · ${migrationResult.digestsImported} digests`;
             }
-          } catch { /* migration unavailable */ }
+          } catch {
+            /* migration unavailable */
+          }
 
           // Auto-run rebuild as final step
           const context = await budgetedInject(2000, true);
@@ -136,13 +138,21 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             `  Workspace: .clew/memory/`,
             `  Database: ${getMemoryDbPath()}`,
             `  Memories: ${stats.total} entries`,
-            `  Types: ${Object.entries(stats.byType).map(([t, c]) => `${t}: ${c}`).join(', ') || '(empty)'}`,
+            `  Types: ${
+              Object.entries(stats.byType)
+                .map(([t, c]) => `${t}: ${c}`)
+                .join(', ') || '(empty)'
+            }`,
             ...(migrationNote ? [migrationNote] : []),
           ];
           if (context) {
             parts.push('', '=== Reconstructed Context ===', '', context, '', '=== End ===');
           } else {
-            parts.push('', 'No memories found yet.', 'Next: run /memory scan to bootstrap project knowledge from your codebase.');
+            parts.push(
+              '',
+              'No memories found yet.',
+              'Next: run /memory scan to bootstrap project knowledge from your codebase.',
+            );
           }
           onDone(parts.join('\n'), { display: 'system' });
         } catch {
@@ -399,7 +409,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           if (result.injected.length > 0) {
             lines.push('Injected:');
             for (const m of result.injected) {
-              lines.push(`  ${m.key} (${m.type}, importance:${m.importance.toFixed(2)}, score:${m.score.toFixed(3)}, ${m.tokens} tok)`);
+              lines.push(
+                `  ${m.key} (${m.type}, importance:${m.importance.toFixed(2)}, score:${m.score.toFixed(3)}, ${m.tokens} tok)`,
+              );
             }
             lines.push('');
           }
@@ -431,9 +443,21 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           const limit = limitIdx >= 0 ? parseInt(argv[limitIdx + 1], 10) || 10 : 10;
           // Extract query: everything between 'recall' and first flag
           const recallIdx = argv.indexOf('recall');
-          const queryTokens = recallIdx >= 0 ? argv.slice(recallIdx + 1).filter(a => !a.startsWith('-') && a !== `--limit` && a !== `${limit}` && a !== '--verbose' && a !== '-v') : [];
+          const queryTokens =
+            recallIdx >= 0
+              ? argv
+                  .slice(recallIdx + 1)
+                  .filter(
+                    a => !a.startsWith('-') && a !== `--limit` && a !== `${limit}` && a !== '--verbose' && a !== '-v',
+                  )
+              : [];
           const query = queryTokens.join(' ');
-          const memories = MemoryDB.getInstance().recallMemories({ projectPath: cwd, query: query || undefined, limit, verbose });
+          const memories = MemoryDB.getInstance().recallMemories({
+            projectPath: cwd,
+            query: query || undefined,
+            limit,
+            verbose,
+          });
           if (memories.length === 0) {
             onDone('No memories found. Run /memory scan first.', { display: 'system' });
             return null;
@@ -442,11 +466,17 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           for (let i = 0; i < memories.length; i++) {
             const m = memories[i]!;
             const scoreStr = m.score.toFixed(3);
-            lines.push(`${i + 1}. [${scoreStr}] ${m.type}: ${m.content.length > 80 ? m.content.slice(0, 80) + '...' : m.content}`);
-            lines.push(`   key: ${m.id} · importance: ${m.importance} · confidence: ${m.confidence} · accessed: ${m.accessCount}x`);
+            lines.push(
+              `${i + 1}. [${scoreStr}] ${m.type}: ${m.content.length > 80 ? m.content.slice(0, 80) + '...' : m.content}`,
+            );
+            lines.push(
+              `   key: ${m.id} · importance: ${m.importance} · confidence: ${m.confidence} · accessed: ${m.accessCount}x`,
+            );
             if (verbose && m.scoreBreakdown) {
               const b = m.scoreBreakdown;
-              lines.push(`   score: importance=${b.importance.toFixed(3)} + confidence=${b.confidence.toFixed(3)} + recency=${b.recency.toFixed(3)} + access=${b.access.toFixed(3)} = ${b.total.toFixed(3)}`);
+              lines.push(
+                `   score: importance=${b.importance.toFixed(3)} + confidence=${b.confidence.toFixed(3)} + recency=${b.recency.toFixed(3)} + access=${b.access.toFixed(3)} = ${b.total.toFixed(3)}`,
+              );
             }
           }
           onDone(lines.join('\n'), { display: 'system' });
@@ -481,12 +511,11 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             MemoryDB.init(getMemoryDbPath());
           }
           const result = await applyFeedback(target, signal, note);
-          const lines: string[] = [
-            result.success ? 'Feedback applied.' : 'Error:',
-            `  ${result.message}`,
-          ];
-          if (result.importanceDelta !== 0) lines.push(`  importance: ${result.importanceDelta > 0 ? '+' : ''}${result.importanceDelta}`);
-          if (result.confidenceDelta !== 0) lines.push(`  confidence: ${result.confidenceDelta > 0 ? '+' : ''}${result.confidenceDelta}`);
+          const lines: string[] = [result.success ? 'Feedback applied.' : 'Error:', `  ${result.message}`];
+          if (result.importanceDelta !== 0)
+            lines.push(`  importance: ${result.importanceDelta > 0 ? '+' : ''}${result.importanceDelta}`);
+          if (result.confidenceDelta !== 0)
+            lines.push(`  confidence: ${result.confidenceDelta > 0 ? '+' : ''}${result.confidenceDelta}`);
           if (result.wroteToTaste) lines.push('  written to TASTE.md');
           onDone(lines.join('\n'), { display: 'system' });
         } catch (err: any) {
@@ -609,7 +638,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
               lines.push(chalk.bold('  Profile'));
               lines.push(`    Personal  ${modeIcon} ${mode}`);
             }
-          } catch { /* profile unavailable */ }
+          } catch {
+            /* profile unavailable */
+          }
 
           // ── MemoryDB ─────────────────────────────────────────
           const { MemoryDB } = await import('../../memory/database.js');
@@ -629,7 +660,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           try {
             const sessionMems = db.recallMemories({ query: 'session.', limit: 1000 });
             sessionCount = sessionMems.length;
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
 
           const memStatus = total > 0 ? chalk.green(`${total} memories`) : chalk.yellow('empty');
           const sessionStr = sessionCount > 0 ? chalk.dim(` · ${sessionCount} sessions`) : '';
@@ -641,31 +674,46 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             const { getDreamStatus } = await import('../../services/longTermMemory/dream.js');
             const dreamStatus = await getDreamStatus(cwd);
             if (dreamStatus) {
-              const lastDream = dreamStatus.lastDreamAt ? new Date(dreamStatus.lastDreamAt).toLocaleString() : chalk.dim('never');
-              const nextDream = dreamStatus.nextDreamIn > 0
-                ? chalk.dim(`${Math.round(dreamStatus.nextDreamIn / 3600000)}h`)
-                : chalk.green('ready');
-              const pending = dreamStatus.pendingConsolidations > 0
-                ? chalk.yellow(`${dreamStatus.pendingConsolidations} pending`)
-                : chalk.dim('0 pending');
+              const lastDream = dreamStatus.lastDreamAt
+                ? new Date(dreamStatus.lastDreamAt).toLocaleString()
+                : chalk.dim('never');
+              const nextDream =
+                dreamStatus.nextDreamIn > 0
+                  ? chalk.dim(`${Math.round(dreamStatus.nextDreamIn / 3600000)}h`)
+                  : chalk.green('ready');
+              const pending =
+                dreamStatus.pendingConsolidations > 0
+                  ? chalk.yellow(`${dreamStatus.pendingConsolidations} pending`)
+                  : chalk.dim('0 pending');
               lines.push(chalk.bold('  Dream'));
-              lines.push(`    last ${lastDream}  ·  next ${nextDream}  ·  ${pending}  ·  runs ${dreamStatus.dreamsRun}`);
+              lines.push(
+                `    last ${lastDream}  ·  next ${nextDream}  ·  ${pending}  ·  runs ${dreamStatus.dreamsRun}`,
+              );
             }
-          } catch { /* dream unavailable */ }
+          } catch {
+            /* dream unavailable */
+          }
 
           // ── Distill ───────────────────────────────────────────
           try {
             const { getDistillStatus } = await import('../../services/longTermMemory/distill.js');
             const distillStatus = await getDistillStatus(cwd);
             if (distillStatus) {
-              const lastDistill = distillStatus.lastDistillAt ? new Date(distillStatus.lastDistillAt).toLocaleString() : chalk.dim('never');
-              const nextDistill = distillStatus.nextDistillIn > 0
-                ? chalk.dim(`${Math.round(distillStatus.nextDistillIn / 86400000)}d`)
-                : chalk.green('ready');
+              const lastDistill = distillStatus.lastDistillAt
+                ? new Date(distillStatus.lastDistillAt).toLocaleString()
+                : chalk.dim('never');
+              const nextDistill =
+                distillStatus.nextDistillIn > 0
+                  ? chalk.dim(`${Math.round(distillStatus.nextDistillIn / 86400000)}d`)
+                  : chalk.green('ready');
               lines.push(chalk.bold('  Distill'));
-              lines.push(`    last ${lastDistill}  ·  next ${nextDistill}  ·  ${distillStatus.experiencesCount} experiences  ·  runs ${distillStatus.distillsRun}`);
+              lines.push(
+                `    last ${lastDistill}  ·  next ${nextDistill}  ·  ${distillStatus.experiencesCount} experiences  ·  runs ${distillStatus.distillsRun}`,
+              );
             }
-          } catch { /* distill unavailable */ }
+          } catch {
+            /* distill unavailable */
+          }
 
           // ── Peer Memory Sync ──────────────────────────────────
           try {
@@ -680,12 +728,16 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
               const statusIcon = peerState.enabled ? chalk.green('● ON') : chalk.dim('○ OFF');
               lines.push(chalk.bold('  Peer Sync'));
               if (peerState.enabled) {
-                lines.push(`    ${statusIcon}  every ${peerState.intervalMin} min  ·  cron ${peerState.cronTaskId || '—'}`);
+                lines.push(
+                  `    ${statusIcon}  every ${peerState.intervalMin} min  ·  cron ${peerState.cronTaskId || '—'}`,
+                );
               } else {
                 lines.push(`    ${statusIcon}`);
               }
             }
-          } catch { /* peer state unavailable */ }
+          } catch {
+            /* peer state unavailable */
+          }
 
           // ── Timeline ──────────────────────────────────────────
           try {
@@ -696,10 +748,14 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
               for (const event of recentEvents) {
                 const date = new Date(event.createdAt).toLocaleString();
                 const eventLabel = event.event === 'created' ? chalk.green('+') : chalk.blue('~');
-                lines.push(`    ${chalk.dim('[' + date + ']')} ${eventLabel} ${event.event}${event.note ? ': ' + event.note : ''}`);
+                lines.push(
+                  `    ${chalk.dim('[' + date + ']')} ${eventLabel} ${event.event}${event.note ? ': ' + event.note : ''}`,
+                );
               }
             }
-          } catch { /* timeline unavailable */ }
+          } catch {
+            /* timeline unavailable */
+          }
 
           lines.push('');
           lines.push(chalk.dim('  /memory help · /memory init · /memory scan · /memory recall'));

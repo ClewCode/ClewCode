@@ -129,7 +129,7 @@ function updateStatus(partial: Partial<AutonomousStatus>): void {
 
 /**
  * Read the supervisor's captured worker output log for a session.
- * The supervisor pipes stdout+stderr to ~/.claude/daemon/jobs/{sessionId}/output.log.
+ * The supervisor pipes stdout+stderr to ~/.clew/daemon/jobs/{sessionId}/output.log.
  * Returns the last 500 lines to avoid unbounded growth.
  */
 async function getWorkerOutput(sessionId: string): Promise<string> {
@@ -293,7 +293,7 @@ async function processTask(task: TaskQueueEntry): Promise<void> {
   // ── Persist worker output to per-task log file ─────────────────
   // The supervisor captures worker stdout+stderr to a per-session log.
   // We copy the last 500 lines into the task-specific log at
-  // ~/.claude/daemon/logs/{taskId}.log for easy retrieval via /task log.
+  // ~/.clew/daemon/logs/{taskId}.log for easy retrieval via /task log.
   // Never throw here — log failures must not crash the daemon.
   try {
     const workerOutput = await getWorkerOutput(worker.sessionId);
