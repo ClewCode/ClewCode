@@ -4,10 +4,14 @@ import { join } from 'node:path';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 // --- OAuth constants ---
-const OAUTH_CLIENT_ID = process.env.CODE_ASSIST_CLIENT_ID || '';
-const OAUTH_CLIENT_SECRET = process.env.CODE_ASSIST_CLIENT_SECRET || '';
+// These credentials must come from the Gemini CLI's OAuth creds file
+// (~/.gemini/oauth_creds.json) or be set via environment variables.
+// Obtain them by installing the Gemini CLI and logging in:
+//   https://cloud.google.com/code-assist/docs/install
+const OAUTH_CLIENT_ID = process.env.CODE_ASSIST_CLIENT_ID?.trim();
+const OAUTH_CLIENT_SECRET = process.env.CODE_ASSIST_CLIENT_SECRET?.trim();
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-const CODE_ASSIST_ENDPOINT = 'https://cloudcode-pa.googleapis.com';
+const CODE_ASSIST_ENDPOINT = process.env.CODE_ASSIST_ENDPOINT?.trim() || 'https://daily-cloudcode-pa.googleapis.com';
 const CODE_ASSIST_API_VERSION = 'v1internal';
 const GEMINI_OAUTH_PATH = join(homedir(), '.gemini', 'oauth_creds.json');
 
@@ -42,7 +46,47 @@ function readOAuthCreds(): { access_token: string; refresh_token: string; expiry
   return undefined;
 }
 
+function parseResetTimeMs(body: string): number | undefined {
+  const match = body.match(/reset after\s+(\d+)(s|m|h|ms)?/i);
+  if (!match) return undefined;
+  const val = parseInt(match[1], 10);
+  if (Number.isNaN(val)) return undefined;
+  const unit = match[2]?.toLowerCase() || 's';
+  if (unit === 'm') return val * 60 * 1000;
+  if (unit === 'h') return val * 60 * 60 * 1000;
+  if (unit === 'ms') return val;
+  return val * 1000;
+}
+
+function createCodeAssistError(status: number, body: string): Error {
+  const err = new Error(`Code Assist API error (${status}): ${body}`);
+  (err as any).status = status;
+  (err as any).body = body;
+
+  let retryAfter: number | undefined;
+  if (status === 429) {
+    const parsedMs = parseResetTimeMs(body);
+    if (parsedMs !== undefined) {
+      // Clamp to at least 1000ms for 429s to prevent instant retry loops
+      retryAfter = Math.max(parsedMs, 1000);
+    }
+  }
+
+  (err as any)._providerError = {
+    category: status === 429 ? 'rate_limit' : status >= 500 ? 'server_error' : 'client_error',
+    status,
+    ...(retryAfter !== undefined ? { retryAfter } : {}),
+  };
+  return err;
+}
+
 async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
+  if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
+    throw new Error(
+      'Code Assist OAuth credentials not configured. Set CODE_ASSIST_CLIENT_ID and CODE_ASSIST_CLIENT_SECRET ' +
+        'environment variables, or install the Gemini CLI and run `gcloud auth application-default login`.',
+    );
+  }
   const params = new URLSearchParams({
     client_id: OAUTH_CLIENT_ID,
     client_secret: OAUTH_CLIENT_SECRET,
@@ -105,7 +149,9 @@ async function discoverProjectId(accessToken: string): Promise<string> {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`loadCodeAssist failed (${response.status}): ${text}`);
+    const err = new Error(`loadCodeAssist failed (${response.status}): ${text}`);
+    (err as any).status = response.status;
+    throw err;
   }
 
   const data = (await response.json()) as { cloudaicompanionProject?: string };
@@ -223,6 +269,7 @@ export class CodeAssistProvider implements ProviderInterface {
             // 4. Build request body
             const requestBody: Record<string, unknown> = {
               contents,
+              ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
               ...(params.max_tokens ? { generationConfig: { maxOutputTokens: params.max_tokens } } : {}),
               ...(params.temperature !== undefined
                 ? {
@@ -248,7 +295,8 @@ export class CodeAssistProvider implements ProviderInterface {
             };
 
             // 5. Make API request
-            const url = `${CODE_ASSIST_ENDPOINT}/${CODE_ASSIST_API_VERSION}:generateContent`;
+            const method = isStreaming ? 'streamGenerateContent?alt=sse' : 'generateContent';
+            const url = `${CODE_ASSIST_ENDPOINT}/${CODE_ASSIST_API_VERSION}:${method}`;
             const headers: Record<string, string> = {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -277,7 +325,7 @@ export class CodeAssistProvider implements ProviderInterface {
                 });
                 if (!retryResponse.ok) {
                   const retryText = await retryResponse.text();
-                  throw new Error(`Code Assist API error (${retryResponse.status}): ${retryText}`);
+                  throw createCodeAssistError(retryResponse.status, retryText);
                 }
                 if (isStreaming) {
                   return handleSSEStream(retryResponse);
@@ -285,7 +333,7 @@ export class CodeAssistProvider implements ProviderInterface {
                 const retryData = await retryResponse.json();
                 return fromCodeAssistResponse(retryData);
               }
-              throw new Error(`Code Assist API error (${response.status}): ${text}`);
+              throw createCodeAssistError(response.status, text);
             }
 
             if (isStreaming) {
@@ -301,8 +349,10 @@ export class CodeAssistProvider implements ProviderInterface {
   }
 
   async listModels(_options: ProviderInitOptions): Promise<Array<{ id: string; label: string }>> {
-    // Code Assist supports the same models as the standard Gemini API
+    // The Code Assist OAuth endpoint is not the public Gemini API; keep this list to IDs
+    // known to work through daily-cloudcode-pa.googleapis.com.
     return [
+      { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
       { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
       { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
       { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },

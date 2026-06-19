@@ -7,22 +7,34 @@ This file provides guidance to **Clew Code** agents when working with code in th
 Run all commands from the repository root using **Bun**.
 
 ```bash
-bun run dev              # Live reload via tsx, no build required
-bun run build            # Production build to dist/
-bun run start            # Run compiled build
+bun run dev              # Bun --watch live reload (with Voice, Transcript, Chicago flags)
+bun run build            # Production build to dist/ (bundles with --external deps)
+bun run start            # Run compiled build from dist/
 bun test                 # Full test suite via Vitest
 bun test --bail          # Stop on first test failure
 
 npx vitest run path/to/file.test.ts   # Run a single test file
 npx vitest run -t "test name"         # Run a single test by name
 
-bun run check:ci         # Full CI: lint:check + test --bail + typecheck + build
-bun run lint             # Biome lint with auto-fix
-bun run format           # Biome format with auto-fix
+bun run check:ci         # Biome CI check (lint + format, no autofix)
+bun run lint             # Biome lint with auto-fix (--write)
+bun run format           # Biome format with auto-fix (--write)
+bun run check            # Biome check with auto-fix (lint + format)
 bun x tsc --noEmit       # TypeScript type-check only
 bun ci                   # Lockfile integrity check
-bun run docs:generate    # Auto-generate docs from source
+bun run docs:generate    # Auto-generate HTML docs from source
 ```
+
+The `check:ci` script only runs Biome (`biome ci src/`). For a full pre-commit check that includes tests and typechecking, run all three:
+
+```bash
+bun run check:ci && bun x tsc --noEmit && bun test --bail
+```
+
+The `dev` and `build` scripts auto-run `prebuild-version.mjs` and pass important feature defines:
+- `TRANSCRIPT_CLASSIFIER=true`
+- `CHICAGO_MCP=true`
+- `VOICE_MODE=true`
 
 ## Release
 
@@ -32,17 +44,7 @@ Before tagging:
 
 1. Update the version in `package.json`.
 2. Update `CHANGELOG.md` under `## [Unreleased]`.
-3. Run:
-
-```bash
-bun run check:ci
-```
-
-Release helper:
-
-```bash
-bun run version:patch
-```
+3. Run full CI: `bun run check:ci && bun x tsc --noEmit && bun test --bail`
 
 ## Architecture
 
@@ -51,555 +53,233 @@ bun run version:patch
 `src/main.tsx` is the single CLI entrypoint.
 
 It:
+- Forces TTY behavior.
+- Parses CLI flags such as `-p`, `--resume`, `--profile`.
+- Boots the Ink/React 19 REPL through `src/replLauncher.tsx`.
+- Loads settings from `.clew/settings.json` and `.clew/settings.local.json`.
 
-* Forces TTY behavior.
-* Parses CLI flags such as `-p` and `--resume`.
-* Boots the Ink-based REPL through `src/replLauncher.tsx`.
-
-The REPL mounts UI screens from:
-
-```txt
-src/screens/
-```
-
-Slash command routing is handled by:
-
-```txt
-src/commands.ts
-```
+The REPL mounts UI screens from `src/screens/` and renders components from `src/components/`. Slash command routing is handled by `src/commands.ts`, which merges built-in commands, skills, plugins, and MCP-provided commands via a memoized loader.
 
 ### Core Query Loop
 
 `src/QueryEngine.ts` handles:
+- Message construction
+- Tool loop execution
+- Provider routing
+- Streaming responses
+- Tool call handling
 
-* Message construction
-* Tool loop execution
-* Provider routing
-* Streaming responses
-* Tool call handling
-
-`src/query.ts` is the non-streaming variant.
+`src/query.ts` is the non-streaming variant. Both use the provider system in `src/services/ai/`.
 
 ### Provider System
 
-Provider logic lives in:
+Provider logic lives in `src/services/ai/`. Key files:
 
-```txt
-src/services/ai/
+```
+src/services/ai/ProviderManager.ts    # Unified LLM call interface
+src/services/ai/providers.json        # Declarative provider definitions (26+ providers)
+src/services/ai/providerRegistry.ts   # Provider discovery and model selection
+src/services/ai/adapter/              # Per-provider request/response normalization
+src/services/ai/errorNormalizer.ts    # Cross-provider error normalization
+src/services/ai/usageNormalizer.ts    # Cross-provider usage normalization
 ```
 
-Important files:
-
-```txt
-src/services/ai/ProviderManager.ts
-src/services/ai/providers.json
-src/services/ai/providerRegistry.ts
-src/services/ai/adapter/
-src/services/ai/errorNormalizer.ts
-src/services/ai/usageNormalizer.ts
-```
-
-Responsibilities:
-
-* Unified interface for LLM calls
-* Declarative provider definitions
-* Provider discovery and model selection
-* Per-provider request/response normalization
-* Cross-provider error and usage normalization
-
-Users can switch providers mid-session with:
-
-```txt
-/model
-```
+Users switch providers mid-session with `/model` or `/provider`. The `supportsModelFetching()` system fetches live model lists from provider APIs.
 
 ### Tools
 
-Built-in tools live in:
-
-```txt
-src/tools/
-```
-
-Examples include:
-
-* Read
-* Write
-* Edit
-* Bash
-* Glob
-* Grep
-* WebSearch
-* WebFetch
-* Browser
-* PR tools
-* Peer tools
-* MCP tools
-
-Each tool should return the standard result shape:
+Each tool is a class in its own directory under `src/tools/<ToolName>/`. All tools extend `Tool` from `src/Tool.ts` and return the standard result shape:
 
 ```ts
-{
-  ok: boolean;
-  summary: string;
-  data?: unknown;
-}
+{ ok: boolean; summary: string; data?: unknown; }
 ```
 
-Register new tools in:
+Tools are registered in `src/tools.ts` via `getAllBaseTools()` which returns a `Tools` array. Some tools are feature-gated (loaded via `require()` with `bun:bundle` feature flags) or env-gated (e.g., ComputerUse is Windows-only, PowerShell is optional).
 
-```txt
-src/tools/Tool.ts
-```
+Key tool directories (70+ total):
+- Core I/O: `FileReadTool/`, `FileWriteTool/`, `FileEditTool/`, `GlobTool/`, `GrepTool/`, `BashTool/`, `JsonPathTool/`
+- Web: `WebSearchTool/`, `WebFetchTool/`, `BrowserTool/`
+- Tasks: `TaskCreateTool/`, `TaskUpdateTool/`, `TaskListTool/`, `TaskGetTool/`, `TaskOutputTool/`, `TaskStopTool/`
+- Peer (15+ LAN tools): `peer/` plus `PeerDiscoverTool/`, `PeerSendMessageTool/`, `PeerSpawnTool/`, `PeerBroadcastTool/`, `PeerSwarmTool/`, `PeerDashboardTool/`, etc.
+- MCP: `MCPTool/`, `ListMcpResourcesTool/`, `ReadMcpResourceTool/`
+- Agents: `AgentTool/`, `EnterPlanModeTool/`, `ExitPlanModeTool/`, `SkillTool/`, `ProcessPeerTool/`
+- Memory: `MemoryFeedbackTool/`
+- Media: `GenerateImageTool/`, `GenerateVideoTool/`, `ReadMediaFileTool/`
+- UI: `AskUserQuestionTool/`, `NotebookEditTool/`
+
+### Services (36+ subdirectories)
+
+`src/services/` contains the business logic layer. Key services:
+
+| Service | Purpose |
+|---|---|
+| `ai/` | Provider manager + 26+ adapters |
+| `mcp/` | MCP client, auth, stdio/SSE/DirectConnect transports |
+| `autonomous/` | Persistent task queue, lease-based concurrency (max 3), cron, backoff retry, dead-letter |
+| `goal/` | Goal evaluation, heuristic pre-checks, goal verification |
+| `checkpoint/` | Structured checkpoints at 20%/45%/70% milestones with notes scratchpad |
+| `maxMode/` | Parallel candidate generation (3 per turn), LLM judge with heuristic fallback |
+| `compact/` | Context compaction with in-compact memory extraction |
+| `longTermMemory/` | Dream (7-day) and Distill (30-day) memory consolidation |
+| `autoDream/` | Dream process scheduling and execution |
+| `extractMemories/` | Extract structured facts during compaction |
+| `lsp/` | LSP integration |
+| `plugins/` | Plugin lifecycle hooks (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit) |
+| `search/` | Web search integration |
+| `sessionSearch/` | FTS5 session transcript search |
+| `SessionLifecycle/` | Session state management |
+| `SessionMemory/` | Session-scoped memory |
+| `Supervisor/` | Agent supervisor IPC |
+| `AgentSummary/` | Agent result summarization |
+| `AgentPRStatus/` | Agent PR status tracking |
+| `teamMemorySync/` | Cross-machine memory sync |
+| `voiceInput/` | Voice transcription pipeline |
+| `remoteManagedSettings/` | Remote settings management |
+| `settingsSync/` | Settings synchronization |
+| `contextCollapse/` | Context collapse detection |
+| `googleOAuth/`, `oauth/`, `openaiOAuth/` | OAuth flows |
 
 ### Slash Commands
 
-Slash commands live in:
+Commands live in `src/commands/`. Each command exports `{ name, description, type, handler }` conforming to the `Command` type from `src/types/command.ts`. Commands can be type `'prompt'` (model-invocable, expands to text), `'local'` (produces text output), or `'local-jsx'` (renders Ink UI).
 
-```txt
-src/commands/
-```
-
-Each command should export:
-
-```ts
-{
-  command: string;
-  description: string;
-  handler: Function;
-}
-```
-
-Register commands in:
-
-```txt
-src/commands.ts
-```
-
-Important commands include:
-
-```txt
-/model
-/peer
-/mcp
-/plugin
-/memory
-/daemon
-/loop
-/remote
-/pr
-/code-review
-```
-
-### MCP Integration
-
-MCP services live in:
-
-```txt
-src/services/mcp/
-```
-
-Supported transports:
-
-* stdio for local subprocesses
-* SSE for remote servers and OAuth flows
-* DirectConnect for in-process integrations
-
-Server configuration:
-
-```txt
-.mcp.json
-```
+Registration is handled by `src/commands.ts` which merges:
+1. Built-in commands (the `COMMANDS()` memoized list)
+2. Skills from `.clew/skills/` directories
+3. Plugin commands
+4. MCP-provided skill commands
+5. Dynamic skills discovered at runtime
 
 ### Peer / P2P
 
-Peer coordination lives in:
+Peer coordination lives in `src/peer/`. Core components: `PeerServer.ts`, `PeerDiscovery.ts`.
 
-```txt
-src/peer/
-```
+Supports:
+- UDP multicast discovery across LAN
+- File-based peer registry (same-machine)
+- HTTP heartbeat (60s liveness checks)
+- In-process message broker with correlation IDs
+- 15+ AI-callable peer tools plus `/peer` slash commands
+- Swarm execution (broadcast shell commands to all peers)
+- Memory sync across peers
 
-Core components:
+### Memory System (MiMo-inspired)
 
-```txt
-src/peer/PeerServer
-src/peer/PeerDiscovery
-```
+Lives in `src/memory/`. SQLite-backed store with:
+- `memories` table with importance, confidence, access_count, type ranking
+- `memory_timeline` table for event lifecycle tracking
+- Budgeted injection into system prompt (importance × recency × confidence)
+- File hierarchy: `MEMORY.md`, `DECISIONS.md`, `TASTE.md` under `.clew/memory/`
+- Auto-init + legacy migration + scan on first use
+- `/memory` commands: init, scan, rebuild, recall, feedback, search, dashboard
 
-The peer system supports LAN coordination through:
+### Other Key Directories
 
-* UDP multicast
-* File-based peer registry
-* Peer discovery
-* Worker spawning
-* Remote task execution
-* Broadcast messaging
-* Direct peer messaging
-
-### Autonomous Loop
-
-Autonomous task execution lives in:
-
-```txt
-src/services/autonomous/
-```
-
-Features:
-
-* Persistent task queue
-* Lease-based concurrency
-* Maximum 3 workers
-* Cron scheduling
-* Exponential backoff retry
-* Dead-letter management
-
-### Plugins & Skills
-
-Plugins live in:
-
-```txt
-src/plugins/
-```
-
-Supported lifecycle hooks include:
-
-* `PreToolUse`
-* `PostToolUse`
-* `PreBash`
-* `PostPrompt`
-* `PreAcceptEdit`
-
-Skills live in:
-
-```txt
-src/skills/
-```
-
-Skills are Claude Code-compatible and are defined through `SKILL.md` files.
-
-### UI Layer
-
-The terminal UI uses Ink with React 19.
-
-Important directories:
-
-```txt
-src/components/   # Ink UI components
-src/screens/      # Main screens
-src/state/        # App state management
-src/hooks/        # React hooks for UI state
-```
-
-### Session & Memory
-
-Session logs live in:
-
-```txt
-src/session/
-```
-
-`SessionLogger` writes JSON logs to:
-
-```txt
-.session/<id>.json
-```
-
-Long-term memory lives in:
-
-```txt
-src/memory/
-```
-
-Memory features:
-
-* SQLite storage
-* Topic indexing
-* Weekly consolidation
-* Monthly consolidation
-
-Research dossier features live in:
-
-```txt
-src/research/
-```
-
-### Remote Control
-
-Remote control lives in:
-
-```txt
-src/remote/
-```
-
-The v2 bridge provides:
-
-* WebSocket server
-* One-time auth tokens
-* Optional NAT-traversal relay
-* Provider-agnostic remote control
+| Directory | Purpose |
+|---|---|
+| `src/agentRuntime/` | Background agent orchestration |
+| `src/coordinator/` | Coordinator mode agent dispatch |
+| `src/vim/` | Vim mode keybindings |
+| `src/voice/` | Voice input via Whisper |
+| `src/buddy/` | Companion system (duck) |
+| `src/tasks/` | Task management |
+| `src/bridge/` | Legacy CCR bridge (claude.ai-specific) |
+| `src/remote/` | Bridge v2: provider-agnostic WebSocket server, auth tokens, NAT relay |
+| `src/plugins/` | Plugin loader, registry, marketplace |
+| `src/skills/` | Skill loader (Claude Code-compatible SKILL.md) |
+| `src/research/` | Research dossier management |
+| `src/generated/` | Auto-generated files (version.ts) |
+| `src/server/` | HTTP server components |
+| `src/state/` | AppState management |
+| `src/hooks/` | React hooks for UI state |
+| `src/schemas/` | Zod validation schemas |
+| `src/types/` | Shared TypeScript types |
+| `src/constants/` | Constants and tool allow/deny lists |
+| `src/utils/` | General utilities |
+| `src/migrations/` | Schema and data migrations |
+| `src/ink/` | Ink terminal rendering helpers |
 
 ## Key Conventions
 
-### Runtime & Module Style
+### Runtime & Style
 
-This repository is ESM-only.
+- **ESM only** (`"type": "module"` in package.json), `NodeNext` module resolution
+- Use `node:` prefixes for Node built-ins: `import { readFile } from 'node:fs/promises'`
+- Use `.js` extensions for relative imports: `import { thing } from './thing.js'`
+- Bun for all dev commands; TypeScript with strict mode
 
-```json
-{
-  "type": "module"
-}
-```
+### Formatting (Biome)
 
-Rules:
-
-* Use `node:` prefixes for Node built-ins.
-* Use `.js` extensions for relative imports.
-* Use Bun for local development commands.
-* Prefer TypeScript source changes in `src/`.
-
-Correct:
-
-```ts
-import { readFile } from 'node:fs/promises';
-import { thing } from './thing.js';
-```
-
-Incorrect:
-
-```ts
-import { readFile } from 'fs/promises';
-import { thing } from './thing';
-```
-
-### Source vs Build Output
-
-Source code lives in:
-
-```txt
-src/
-```
-
-Do not edit:
-
-```txt
-dist/
-```
-
-`dist/` is generated build output.
-
-### Formatting
-
-This repository uses Biome.
-
-Scope:
-
-```txt
-src/**/*.ts
-src/**/*.tsx
-src/**/*.js
-```
-
-Style:
-
-* 2-space indent
-* Single quotes
-* 120 columns
-* LF endings
-
-Use:
+Scope: `src/**/*.{ts,tsx,js}`. Style: 2-space indent, single quotes, 120 columns, LF endings.
 
 ```bash
-bun run lint
-bun run format
+bun run lint      # Lint with auto-fix
+bun run format    # Format with auto-fix
 ```
 
-### Documentation
+### Source vs Build
 
-Docs live in:
+Edit `src/` only. `dist/` is generated build output. The build uses `bun build` (not tsc) and externally marks many optional deps (electron, playwright, sharp, etc.) to keep the bundle lean.
 
-```txt
-docs/
-```
+### Docs
 
-Docs are static HTML and are tracked in git.
-
-You may either:
-
-* Edit HTML files directly.
-* Run:
-
-```bash
-bun run docs:generate
-```
-
-Shared docs shell logic lives in:
-
-```txt
-docs/js/main.js
-```
-
-It injects:
-
-* Header
-* Sidebar
-* Footer
+Docs are static HTML in `docs/` tracked in git. Shared shell (header, sidebar, footer) is injected by `docs/js/main.js`. Generate with `bun run docs:generate`.
 
 ### Settings
 
-Shared project settings:
-
-```txt
-.clew/settings.json
-```
-
-Private local settings:
-
-```txt
-.clew/settings.local.json
-```
-
-Never commit private secrets, API keys, npm tokens, or credentials.
-
-Use environment variables instead.
+Shared: `.clew/settings.json`. Private/local: `.clew/settings.local.json`. Never commit secrets, API keys, tokens, or credentials. Use environment variables.
 
 ## Git Workflow
 
 ### Branch Naming
 
-Use:
-
-```txt
-type/description
-```
-
-Examples:
-
-```bash
-git checkout -b feat/add-provider-router
-git checkout -b fix/browser-tool-timeout
-git checkout -b docs/update-agent-guide
-```
+Use `type/description`: `feat/add-feature`, `fix/resolve-bug`, `docs/update-guide`.
 
 ### Commit Style
 
-Use conventional commits:
-
-```txt
-feat: add new feature
-fix: resolve bug
-chore: update tooling or dependencies
-refactor: restructure without behavior change
-docs: documentation only
-test: add or update tests
-```
-
-Examples:
-
-```bash
-git commit -m "feat: add provider usage normalizer"
-git commit -m "fix: prevent browser tool crash on invalid selector"
-git commit -m "docs: update AGENTS guide"
-```
+Use conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`.
 
 ### Before Commit
 
-Always run:
-
-```bash
-bun run check:ci
-```
-
-Also update:
-
-```txt
-CHANGELOG.md
-```
-
-Add changes at the top under:
-
-```txt
-## [Unreleased]
-```
+1. Run: `bun run check:ci && bun x tsc --noEmit && bun test --bail`
+2. Read relevant files first, understand existing patterns
+3. Modify source files in `src/`, not `dist/`
+4. Keep imports ESM-compatible
+5. Add or update tests when behavior changes
+6. Update `CHANGELOG.md` under `## [Unreleased]`
+7. Use a conventional commit message
 
 ## Important Notes
 
 ### Reverse-Engineered Architecture
 
-Clew Code is a reverse-engineered reimplementation inspired by Anthropic's Claude Code.
+Clew Code is a reverse-engineered reimplementation inspired by Anthropic's Claude Code. Some legacy subsystems may still reference claude.ai-specific behavior:
 
-Some legacy subsystems may still depend on claude.ai-specific behavior, including:
-
-```txt
-src/bridge/
-src/services/mcp/claudeai.ts
-src/services/oauth/
-src/services/claudeAiLimits.ts
+```
+src/bridge/                      # Legacy CCR bridge
+src/services/mcp/claudeai.ts     # MCP claude.ai connectors
+src/services/oauth/              # OAuth login
+src/services/claudeAiLimits.ts   # Subscription/billing
 ```
 
-Examples of legacy claude.ai-related features:
+The provider-agnostic replacement is Bridge v2 in `src/remote/`. When modifying these areas, avoid mixing provider-agnostic code with legacy claude.ai-specific logic.
 
-* Legacy CCR bridge
-* MCP claude.ai connectors
-* OAuth login
-* Subscription and billing UI
-* Claude-in-Chrome extension
+### Feature Flags
 
-The provider-agnostic replacement is Bridge v2 in:
-
-```txt
-src/remote/
-```
-
-When modifying these areas, avoid mixing provider-agnostic code with legacy claude.ai-specific logic.
+The codebase uses `bun:bundle` feature flags extensively. Check `package.json` scripts for active `--define.*` flags. Additional features are gated via `process.env` checks (e.g., `ENABLE_COMPUTER_USE`, `USER_TYPE === 'ant'`).
 
 ### process_peer Tool
 
-The `process_peer` tool runs Codex in exec/pty mode for external process-backed AI workers.
+The `process_peer` tool runs Codex in exec/pty mode for external process-backed AI workers. Use for process-backed AI worker tasks, external command execution, or peer-controlled automation. Don't use it for simple local logic.
 
-Use it carefully for:
+### Tool Registration Pattern
 
-* Process-backed AI worker tasks
-* External command execution
-* Peer-controlled automation
+Each tool is a class extending `Tool`. Add the import and instantiation to `src/tools.ts` > `getAllBaseTools()`. Feature-gated tools use lazy `require()` with `bun:bundle` feature checks.
 
-Do not use it for simple local logic that can be handled directly inside the current process.
+### Command Registration Pattern
+
+Each command in `src/commands/` exports `{ name, description, type, handler, ... }`. Add it to the `COMMANDS()` memoized function in `src/commands.ts`. Commands are merged with skills, plugins, MCP skills, and dynamic skills at load time.
 
 ## Security Rules
 
-Never commit:
-
-* Provider API keys
-* npm tokens
-* OAuth tokens
-* Session cookies
-* `.env` files
-* Private credentials
-* Local user secrets
-* Billing or subscription data
-
-Prefer:
-
-```txt
-process.env.KEY_NAME
-```
-
-over hardcoded secrets.
-
-## Agent Checklist
-
-Before making code changes:
-
-1. Read the relevant files first.
-2. Understand the existing pattern.
-3. Modify source files in `src/`, not `dist/`.
-4. Keep imports ESM-compatible.
-5. Add or update tests when behavior changes.
-6. Update docs when public behavior changes.
-7. Update `CHANGELOG.md` under `## [Unreleased]`.
-8. Run:
-
-```bash
-bun run check:ci
-```
-
-9. Use a conventional commit message.
+Never commit: provider API keys, npm tokens, OAuth tokens, session cookies, `.env` files, private credentials, local user secrets, billing/subscription data. Prefer `process.env.KEY_NAME` over hardcoded secrets.

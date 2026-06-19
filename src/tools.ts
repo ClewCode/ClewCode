@@ -96,8 +96,6 @@ import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessa
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackTool.js';
 import { ProcessPeerTool } from './tools/ProcessPeerTool/ProcessPeerTool.js';
-import { GenerateImageTool } from './tools/GenerateImageTool/GenerateImageTool.js';
-import { GenerateVideoTool } from './tools/GenerateVideoTool/GenerateVideoTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
 
 import { LSPTool } from './tools/LSPTool/LSPTool.js';
@@ -215,8 +213,6 @@ export function getAllBaseTools(): Tools {
     ...(process.env.USER_TYPE === 'ant' ? [ConfigTool] : []),
     ...(process.env.USER_TYPE === 'ant' ? [TungstenTool] : []),
     ...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
-    ...(GenerateImageTool.isEnabled() ? [GenerateImageTool] : []),
-    ...(GenerateVideoTool.isEnabled() ? [GenerateVideoTool] : []),
     GoalTool,
     ...(overflowTestTool ? [overflowTestTool] : []),
     ...(ctxInspectTool ? [ctxInspectTool] : []),

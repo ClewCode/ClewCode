@@ -42,7 +42,13 @@ const SIGNAL_DELTAS: Record<FeedbackSignal, { importance: number; confidence: nu
 
 /** Canonical signal set — only these are stored in memory_timeline. */
 const CANONICAL_SIGNALS = new Set<FeedbackSignal>([
-  'accepted', 'rejected', 'corrected', 'preferred', 'disliked', 'important', 'wrong',
+  'accepted',
+  'rejected',
+  'corrected',
+  'preferred',
+  'disliked',
+  'important',
+  'wrong',
 ]);
 
 /** Non-canonical aliases mapped to canonical signal. */
@@ -76,7 +82,13 @@ export async function applyFeedback(
   // Resolve signal alias
   const canonical = resolveSignal(signal);
   if (!canonical) {
-    return { success: false, message: `Unknown signal "${signal}"`, importanceDelta: 0, confidenceDelta: 0, wroteToTaste: false };
+    return {
+      success: false,
+      message: `Unknown signal "${signal}"`,
+      importanceDelta: 0,
+      confidenceDelta: 0,
+      wroteToTaste: false,
+    };
   }
 
   // Resolve memory ID from key if needed
@@ -85,7 +97,13 @@ export async function applyFeedback(
     memory = db.findByKey(memoryIdOrKey);
   }
   if (!memory) {
-    return { success: false, message: `Memory "${memoryIdOrKey}" not found`, importanceDelta: 0, confidenceDelta: 0, wroteToTaste: false };
+    return {
+      success: false,
+      message: `Memory "${memoryIdOrKey}" not found`,
+      importanceDelta: 0,
+      confidenceDelta: 0,
+      wroteToTaste: false,
+    };
   }
 
   const deltas = SIGNAL_DELTAS[canonical];
@@ -130,15 +148,17 @@ async function appendToTaste(preference: string): Promise<void> {
 /**
  * Apply feedback by memory key (convenience wrapper).
  */
-export async function applyFeedbackByKey(
-  key: string,
-  signal: FeedbackSignal,
-  note?: string,
-): Promise<FeedbackResult> {
+export async function applyFeedbackByKey(key: string, signal: FeedbackSignal, note?: string): Promise<FeedbackResult> {
   const db = MemoryDB.getInstance();
   const memory = db.findByKey(key);
   if (!memory) {
-    return { success: false, message: `Memory with key "${key}" not found`, importanceDelta: 0, confidenceDelta: 0, wroteToTaste: false };
+    return {
+      success: false,
+      message: `Memory with key "${key}" not found`,
+      importanceDelta: 0,
+      confidenceDelta: 0,
+      wroteToTaste: false,
+    };
   }
   return applyFeedback(memory.id, signal, note);
 }

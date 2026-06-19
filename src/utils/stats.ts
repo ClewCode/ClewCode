@@ -82,7 +82,21 @@ function extractProviderFromModel(model: string): string {
 }
 
 function extractProviderFromMessage(message: TranscriptMessage, model: string): string {
-  // First, try to extract from model name (most reliable when in "provider/model" format)
+  // First, try the actual tracked provider from message metadata (most reliable)
+  const messageProvider =
+    (message.message as any)?.provider ??
+    (message.message as any)?._provider ??
+    (message as any).provider ??
+    (message as any)._provider;
+
+  if (typeof messageProvider === 'string' && messageProvider.trim()) {
+    const normalized = normalizeProviderId(messageProvider);
+    if (normalized !== 'unknown') {
+      return normalized;
+    }
+  }
+
+  // Next, try to extract from model name (e.g., "openai/gpt-5.5" -> "openai")
   const modelProvider = extractProviderFromModel(model);
   if (modelProvider !== 'unknown') {
     return modelProvider;
@@ -94,17 +108,6 @@ function extractProviderFromMessage(message: TranscriptMessage, model: string): 
     if (sessionProvider !== 'unknown') {
       return sessionProvider;
     }
-  }
-
-  // Fall back to message metadata
-  const messageProvider =
-    (message.message as any)?.provider ??
-    (message.message as any)?._provider ??
-    (message as any).provider ??
-    (message as any)._provider;
-
-  if (typeof messageProvider === 'string' && messageProvider.trim()) {
-    return normalizeProviderId(messageProvider);
   }
 
   return 'unknown';

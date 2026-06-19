@@ -23,7 +23,9 @@ describe('buildCodexExecArgs', () => {
       '/repo',
       '--color',
       'never',
-      '-',
+      '--ignore-user-config',
+      '--json',
+      'fix the failing test',
     ]);
   });
 
@@ -34,9 +36,11 @@ describe('buildCodexExecArgs', () => {
       '/repo',
       '--color',
       'never',
+      '--ignore-user-config',
+      '--json',
       '-m',
       'gpt-5-codex',
-      '-',
+      'review this diff',
     ]);
   });
 
@@ -46,7 +50,8 @@ describe('buildCodexExecArgs', () => {
       '-C',
       '/repo',
       '--color',
-      'never',
+      'always',
+      '--ignore-user-config',
       'reply ok',
     ]);
   });

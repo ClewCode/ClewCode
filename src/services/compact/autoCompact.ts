@@ -2,6 +2,7 @@ import { feature } from 'bun:bundle';
 import { markPostCompaction } from 'src/bootstrap/state.js';
 import { getSdkBetas } from '../../bootstrap/state.js';
 import type { QuerySource } from '../../constants/querySource.js';
+import { autoExtractFromSession } from '../../memory/compacter.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { Message } from '../../types/message.js';
 import { getGlobalConfig } from '../../utils/config.js';
@@ -16,8 +17,6 @@ import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js'
 import { getMaxOutputTokensForModel } from '../api/claude.js';
 import { notifyCompaction } from '../api/promptCacheBreakDetection.js';
 import { setLastSummarizedMessageId } from '../SessionMemory/sessionMemoryUtils.js';
-import { autoExtractFromSession } from '../../memory/compacter.js';
-import { getLastRawCompactResponse, parseCompactMemories } from './prompt.js';
 import {
   type CompactionResult,
   compactConversation,
@@ -25,6 +24,7 @@ import {
   type RecompactionInfo,
 } from './compact.js';
 import { runPostCompactCleanup } from './postCompactCleanup.js';
+import { getLastRawCompactResponse, parseCompactMemories } from './prompt.js';
 import { trySessionMemoryCompaction } from './sessionMemoryCompact.js';
 
 // Reserve this many tokens for output during compaction

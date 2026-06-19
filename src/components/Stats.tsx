@@ -618,13 +618,6 @@ function ModelsTab({
   }
 
   const totalTokens = modelEntries.reduce((sum, [, usage]) => sum + usage.inputTokens + usage.outputTokens, 0);
-  const providerEntries = Object.entries(stats.providerUsage).sort(
-    ([, a], [, b]) => b.inputTokens + b.outputTokens - (a.inputTokens + a.outputTokens),
-  );
-  const totalProviderTokens = providerEntries.reduce(
-    (sum, [, usage]) => sum + usage.inputTokens + usage.outputTokens,
-    0,
-  );
 
   // Generate token usage chart - use terminal width for responsive sizing
   const chartOutput = generateTokenChart(
@@ -634,15 +627,9 @@ function ModelsTab({
     stats.modelUsage,
   );
 
-  // Get visible models, grouped by provider, and split into two columns
+  // Get visible models (paginated)
   const visibleModels = modelEntries.slice(scrollOffset, scrollOffset + VISIBLE_MODELS);
-  const visibleProviderGroups = buildProviderModelGroups(visibleModels, stats.providerUsage);
-  const midpoint = Math.ceil(visibleProviderGroups.length / 2);
-  const leftGroups = visibleProviderGroups.slice(0, midpoint);
-  const rightGroups = visibleProviderGroups.slice(midpoint);
 
-  const canScrollUp = scrollOffset > 0;
-  const canScrollDown = scrollOffset < modelEntries.length - VISIBLE_MODELS;
   const showScrollHint = modelEntries.length > VISIBLE_MODELS;
 
   return (
@@ -667,27 +654,17 @@ function ModelsTab({
       {/* Date range selector */}
       <DateRangeSelector dateRange={dateRange} isLoading={isLoading} />
 
-      {/* Model breakdown grouped by provider */}
-      <Text bold>Models by provider</Text>
+      {/* Model breakdown — flat list sorted by usage */}
+      <Text bold>Models</Text>
       <Box flexDirection="row" gap={4}>
         <Box flexDirection="column" width={36}>
-          {leftGroups.map(group => (
-            <ProviderModelGroupEntry
-              key={group.provider}
-              group={group}
-              totalProviderTokens={totalProviderTokens || totalTokens}
-              totalModelTokens={totalTokens}
-            />
+          {visibleModels.slice(0, Math.ceil(VISIBLE_MODELS / 2)).map(([model, usage]) => (
+            <ModelEntry key={model} model={model} usage={usage} totalTokens={totalTokens} />
           ))}
         </Box>
         <Box flexDirection="column" width={36}>
-          {rightGroups.map(group => (
-            <ProviderModelGroupEntry
-              key={group.provider}
-              group={group}
-              totalProviderTokens={totalProviderTokens || totalTokens}
-              totalModelTokens={totalTokens}
-            />
+          {visibleModels.slice(Math.ceil(VISIBLE_MODELS / 2)).map(([model, usage]) => (
+            <ModelEntry key={model} model={model} usage={usage} totalTokens={totalTokens} />
           ))}
         </Box>
       </Box>
@@ -696,7 +673,8 @@ function ModelsTab({
       {showScrollHint && (
         <Box marginTop={1}>
           <Text color="subtle">
-            {canScrollUp ? figures.arrowUp : ' '} {canScrollDown ? figures.arrowDown : ' '} {scrollOffset + 1}-
+            {scrollOffset > 0 ? figures.arrowUp : ' '}{' '}
+            {scrollOffset + VISIBLE_MODELS < modelEntries.length ? figures.arrowDown : ' '} {scrollOffset + 1}-
             {Math.min(scrollOffset + VISIBLE_MODELS, modelEntries.length)} of {modelEntries.length} models (↑↓ to
             scroll)
           </Text>

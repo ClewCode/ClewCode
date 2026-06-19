@@ -12,10 +12,7 @@ import { DESCRIPTION, PEER_SWARM_TOOL_NAME, PROMPT } from './prompt.js';
 const inputSchema = lazySchema(() =>
   z.object({
     command: z.string().describe('Shell command to execute on all connected peers'),
-    filter: z
-      .string()
-      .optional()
-      .describe('Optional filter: only peers whose hostname or role includes this string'),
+    filter: z.string().optional().describe('Optional filter: only peers whose hostname or role includes this string'),
     timeout: z.number().optional().default(60).describe('Per-peer timeout in seconds (default: 60, max: 300)'),
   }),
 );
@@ -159,7 +156,7 @@ export const PeerSwarmTool = buildTool({
     let failed = 0;
     let timedOut = 0;
 
-    const requests = peers.map(async (peer) => {
+    const requests = peers.map(async peer => {
       const start = performance.now();
       try {
         const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-exec`;

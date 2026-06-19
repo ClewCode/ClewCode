@@ -1,5 +1,6 @@
 import { feature } from 'bun:bundle';
 import { initAutoDream } from '../services/autoDream/autoDream.js';
+import { autoDistill } from '../services/longTermMemory/distill.js';
 import { initMagicDocs } from '../services/MagicDocs/magicDocs.js';
 import { initSkillImprovement } from './hooks/skillImprovement.js';
 
@@ -13,7 +14,7 @@ const registerProtocolModule = feature('LODESTONE')
 
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-import { getIsInteractive, getLastInteractionTime } from '../bootstrap/state.js';
+import { getIsInteractive, getLastInteractionTime, getOriginalCwd } from '../bootstrap/state.js';
 import {
   cleanupNpmCacheForAnthropicPackages,
   cleanupOldMessageFilesInBackground,
@@ -35,6 +36,7 @@ export function startBackgroundHousekeeping(): void {
     extractMemoriesModule!.initExtractMemories();
   }
   initAutoDream();
+  void autoDistill(getOriginalCwd());
   void autoUpdateMarketplacesAndPluginsInBackground();
   if (feature('LODESTONE') && getIsInteractive()) {
     void registerProtocolModule!.ensureDeepLinkProtocolRegistered();

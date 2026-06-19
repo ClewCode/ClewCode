@@ -5,7 +5,7 @@ import { Box, Link, Text } from '../ink.js';
 import { useKeybinding } from '../keybindings/useKeybinding.js';
 import { logEvent } from '../services/analytics/index.js';
 import { sendNotification } from '../services/notifier.js';
-import { OpenAIOAuthService, type OpenAIOAuthTokens } from '../services/openaiOAuth/index.js';
+import { OpenAIDeviceFlow, OpenAIOAuthService, type OpenAIOAuthTokens } from '../services/openaiOAuth/index.js';
 import { saveGlobalConfig } from '../utils/config.js';
 import { Select } from './CustomSelect/select.js';
 import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js';
@@ -17,11 +17,12 @@ type Props = {
   onCancel?(): void;
 };
 
-type LoginMethod = 'browser' | 'headless' | 'manual';
+type LoginMethod = 'browser' | 'headless' | 'manual' | 'device';
 
 type OAuthStatus =
   | { state: 'select_method' }
   | { state: 'waiting_for_login'; url: string; method: LoginMethod }
+  | { state: 'device_login'; userCode: string; verificationUri: string; verificationUriComplete?: string }
   | { state: 'enter_session_token' }
   | { state: 'exchanging_token' }
   | { state: 'success'; tokens: OpenAIOAuthTokens }
@@ -37,9 +38,14 @@ function SelectMethod({ onSelect, onCancel }: { onSelect: (method: LoginMethod) 
       <Select
         options={[
           {
-            label: 'OAuth Browser Login (Recommended)',
+            label: 'Device Login (Recommended)',
+            value: 'device',
+            description: 'Open a browser on any device and enter a code — no localhost needed',
+          },
+          {
+            label: 'OAuth Browser Login',
             value: 'browser',
-            description: 'Complete login in your browser, auto-callback',
+            description: 'Complete login in your browser, auto-callback (may not work on Windows)',
           },
           {
             label: 'Use Codex CLI login (if installed)',
@@ -52,7 +58,7 @@ function SelectMethod({ onSelect, onCancel }: { onSelect: (method: LoginMethod) 
             description: 'Paste your session token from browser cookies',
           },
         ]}
-        visibleOptionCount={3}
+        visibleOptionCount={4}
         onChange={value => onSelect(value as LoginMethod)}
         onCancel={onCancel}
       />
@@ -92,6 +98,45 @@ function WaitingForLogin({ url, method }: { url: string; method: LoginMethod }) 
           </Box>
         </>
       )}
+      <Box marginTop={1}>
+        <Spinner label="Waiting for authorization" />
+      </Box>
+    </Box>
+  );
+}
+
+function DeviceLoginCode({
+  userCode,
+  verificationUri,
+  verificationUriComplete,
+}: {
+  userCode: string;
+  verificationUri: string;
+  verificationUriComplete?: string;
+}) {
+  return (
+    <Box flexDirection="column">
+      <Text color="yellow">Device Login</Text>
+      <Box marginTop={1}>
+        <Text dimColor>Open the following URL in any browser:</Text>
+      </Box>
+      <Box marginTop={1}>
+        <Link url={verificationUriComplete || verificationUri}>{verificationUri}</Link>
+      </Box>
+      <Box marginTop={1}>
+        <Text dimColor>Then enter the code:</Text>
+      </Box>
+      <Box marginTop={1} paddingX={2}>
+        <Text bold color="green" inverse>
+          {' '}{userCode}{' '}
+        </Text>
+      </Box>
+      <Box marginTop={1}>
+        <Text dimColor>Waiting for you to complete authorization...</Text>
+      </Box>
+      <Box marginTop={1}>
+        <Text dimColor>This window will close automatically after login.</Text>
+      </Box>
       <Box marginTop={1}>
         <Spinner label="Waiting for authorization" />
       </Box>
@@ -178,6 +223,7 @@ export function OpenAIOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
   const _terminal = useTerminalNotification();
   const [oauthStatus, setOAuthStatus] = useState<OAuthStatus>({ state: 'select_method' });
   const [oauthService] = useState(() => new OpenAIOAuthService());
+  const [deviceFlow] = useState(() => new OpenAIDeviceFlow());
 
   const handleSuccess = useCallback(
     (tokens: OpenAIOAuthTokens) => {
@@ -237,6 +283,30 @@ export function OpenAIOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
         return;
       }
 
+      // Device flow — no localhost server needed
+      if (method === 'device') {
+        try {
+          const tokens = await deviceFlow.startDeviceFlow(
+            (userCode, verificationUri, verificationUriComplete) => {
+              setOAuthStatus({
+                state: 'device_login',
+                userCode,
+                verificationUri,
+                verificationUriComplete,
+              });
+            },
+          );
+          handleSuccess(tokens);
+        } catch (error) {
+          console.error('Device flow error:', error);
+          setOAuthStatus({
+            state: 'error',
+            message: `Device login failed: ${(error as Error).message}`,
+          });
+        }
+        return;
+      }
+
       // Try to use Codex CLI auth
       if (method === 'codex') {
         const codexAuth = OpenAIOAuthService.tryLoadFromCodex();
@@ -290,6 +360,7 @@ export function OpenAIOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
     'confirm:no',
     () => {
       oauthService.cleanup();
+      deviceFlow.cancel();
       onCancel?.();
     },
     {
@@ -305,6 +376,16 @@ export function OpenAIOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
 
   if (oauthStatus.state === 'waiting_for_login') {
     return <WaitingForLogin url={oauthStatus.url} method={oauthStatus.method} />;
+  }
+
+  if (oauthStatus.state === 'device_login') {
+    return (
+      <DeviceLoginCode
+        userCode={oauthStatus.userCode}
+        verificationUri={oauthStatus.verificationUri}
+        verificationUriComplete={oauthStatus.verificationUriComplete}
+      />
+    );
   }
 
   if (oauthStatus.state === 'enter_session_token') {

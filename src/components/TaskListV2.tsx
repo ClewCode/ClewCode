@@ -93,6 +93,24 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
     return null;
   }
 
+  // Ultra-compact mode for very small terminals
+  if (rows <= 12 && !isStandalone) {
+    const completedCount = count(tasks, t => t.status === 'completed');
+    const inProgressCount = count(tasks, t => t.status === 'in_progress');
+    const pendingCount = tasks.length - completedCount - inProgressCount;
+    const parts: string[] = [];
+    if (completedCount > 0) parts.push(`${completedCount}✓`);
+    if (inProgressCount > 0) parts.push(`${inProgressCount}◉`);
+    if (pendingCount > 0) parts.push(`${pendingCount}○`);
+    return (
+      <Box>
+        <Text dimColor>
+          {tasks.length} tasks: {parts.join(' ')}
+        </Text>
+      </Box>
+    );
+  }
+
   // Build a map of teammate name -> theme color
   const teammateColors: Record<string, keyof Theme> = {};
   if (isAgentSwarmsEnabled() && teamContext?.teammates) {
@@ -254,11 +272,11 @@ function getTaskIcon(status: Task['status']): {
 } {
   switch (status) {
     case 'completed':
-      return { icon: figures.squareSmallFilled, color: 'success' };
+      return { icon: '✓', color: 'success' };
     case 'in_progress':
-      return { icon: figures.squareSmallFilled, color: 'claude' };
+      return { icon: '◉', color: 'claude' };
     case 'pending':
-      return { icon: figures.squareSmall, color: undefined };
+      return { icon: '○', color: undefined };
   }
 }
 

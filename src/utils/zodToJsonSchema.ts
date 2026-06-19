@@ -51,7 +51,9 @@ function sanitizeSchema(obj: JsonSchema7Type): JsonSchema7Type {
 export function zodToJsonSchema(schema: ZodTypeAny): JsonSchema7Type {
   if (!schema || !(schema as Record<string, unknown>)._zod) {
     if (schema) {
-      console.warn(`[zodToJsonSchema] Non-Zod schema received (type: ${typeof schema}, constructor: ${(schema as any)?.constructor?.name})`);
+      console.warn(
+        `[zodToJsonSchema] Non-Zod schema received (type: ${typeof schema}, constructor: ${(schema as any)?.constructor?.name})`,
+      );
     }
     return { type: 'object', properties: {} };
   }

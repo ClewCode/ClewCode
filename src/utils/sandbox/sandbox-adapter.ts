@@ -211,8 +211,8 @@ export function convertToSandboxRuntimeConfig(settings: SettingsJson): SandboxRu
   const cwd = getCwdState();
   const originalCwd = getOriginalCwd();
   if (cwd !== originalCwd) {
-    denyWrite.push(resolve(cwd, '.claude', 'settings.json'));
-    denyWrite.push(resolve(cwd, '.claude', 'settings.local.json'));
+    denyWrite.push(resolve(cwd, DOT_CLEW, 'settings.json'));
+    denyWrite.push(resolve(cwd, DOT_CLEW, 'settings.local.json'));
   }
 
   // Block writes to .clew/skills in both original and current working directories.

@@ -2,6 +2,7 @@
  * /task command implementation.
  */
 
+import { getProjectRoot } from '../../bootstrap/state.js';
 import {
   addTask,
   getTask,
@@ -108,6 +109,7 @@ export async function call(
         description,
         priority: resolvedPriority,
         tags,
+        projectRoot: getProjectRoot(),
       });
 
       onDone(`Task added: ${id}\nTitle: ${title}\nPriority: ${resolvedPriority}`, { display: 'system' });

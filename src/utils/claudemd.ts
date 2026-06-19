@@ -788,7 +788,7 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal: boolean = fal
       })),
     );
 
-    // Process User ~/.claude/ files (legacy fallback)
+    // Process User ~/.clew/ files (primary user config dir)
     const userClaudeMd = getMemoryPath('User');
     const userAgentsMd = join(dirname(userClaudeMd), 'AGENTS.md');
     result.push(...(await processMemoryFile(userAgentsMd, 'User', processedPaths, true)));
@@ -800,7 +800,7 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal: boolean = fal
         true, // User memory can always include external files
       )),
     );
-    // Process User ~/.claude/rules/*.md files
+    // Process User ~/.clew/rules/*.md files
     const userClaudeRulesDir = getUserClaudeRulesDir();
     result.push(
       ...(await processMdRules({

@@ -298,7 +298,6 @@ Terminal UI
 * [आर्किटेक्चर](../docs/architecture.html)
 * [अनुमति मॉडल](../docs/permission-model.html)
 * [ब्रिज मोड](../docs/features/bridge-mode.html)
-* [SearXNG खोज](../docs/features/searxng-search.html)
 * [समस्या निवारण](../docs/troubleshooting.html)
 * [मूल्यांकन](../docs/features/evals.html)
 * [Taste](../docs/taste.html)

@@ -80,7 +80,8 @@ export class TaskOutput {
    */
   static startPolling(taskId: string): void {
     const instance = TaskOutput.#registry.get(taskId);
-    if (!instance?.#onProgress) {
+    // biome-ignore lint/complexity/useOptionalChain: private identifiers cannot be used in optional chains
+    if (!instance || !instance.#onProgress) {
       return;
     }
     TaskOutput.#activePolling.set(taskId, instance);

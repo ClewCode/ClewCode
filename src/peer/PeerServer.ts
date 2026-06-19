@@ -19,6 +19,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import type { AddressInfo } from 'node:net';
 import { logForDebugging } from '../utils/debug.js';
 import { errorMessage } from '../utils/errors.js';
+import { getGlobalPeerStore } from './PeerStore.js';
 import {
   type BrokerMessage,
   type MeshChatMessage,
@@ -29,7 +30,6 @@ import {
   peerColorFromId,
   type SwarmTask,
 } from './types.js';
-import { getGlobalPeerStore } from './PeerStore.js';
 
 export type PeerServerCallbacks = {
   onMessage?: (msg: MeshChatMessage) => void;
@@ -642,8 +642,20 @@ export class PeerServer {
 
             // Build target list from peers + roles
             const targets: string[] = [];
-            if (peersParam) targets.push(...peersParam.split(',').map(s => s.trim()).filter(Boolean));
-            if (rolesParam) targets.push(...rolesParam.split(',').map(s => s.trim()).filter(Boolean));
+            if (peersParam)
+              targets.push(
+                ...peersParam
+                  .split(',')
+                  .map(s => s.trim())
+                  .filter(Boolean),
+              );
+            if (rolesParam)
+              targets.push(
+                ...rolesParam
+                  .split(',')
+                  .map(s => s.trim())
+                  .filter(Boolean),
+              );
 
             // If waiting for a reply
             if (replyTo) {

@@ -33,9 +33,12 @@ try {
   }
 } catch (_e) {}
 
-const macroPkg = JSON.parse(
-  readFileSync(new URL('./generated/version.json', import.meta.url), 'utf8'),
-) as { BUILD_VERSION: string; PACKAGE_URL: string; FEEDBACK_CHANNEL: string; ISSUES_EXPLAINER: string };
+const macroPkg = JSON.parse(readFileSync(new URL('./generated/version.json', import.meta.url), 'utf8')) as {
+  BUILD_VERSION: string;
+  PACKAGE_URL: string;
+  FEEDBACK_CHANNEL: string;
+  ISSUES_EXPLAINER: string;
+};
 globalThis.MACRO = {
   VERSION: macroPkg.BUILD_VERSION,
   PACKAGE_URL: macroPkg.PACKAGE_URL,

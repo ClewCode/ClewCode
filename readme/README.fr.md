@@ -298,7 +298,6 @@ Terminal UI
 * [Architecture](../docs/architecture.html)
 * [Modèle de permission](../docs/permission-model.html)
 * [Mode Bridge](../docs/features/bridge-mode.html)
-* [Recherche SearXNG](../docs/features/searxng-search.html)
 * [Dépannage](../docs/troubleshooting.html)
 * [Évaluations](../docs/features/evals.html)
 * [Taste](../docs/taste.html)

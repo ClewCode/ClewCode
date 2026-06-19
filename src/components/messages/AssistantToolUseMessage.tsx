@@ -97,7 +97,16 @@ export function AssistantToolUseMessage({
   const isWaitingForPermission = pendingWorkerRequest?.toolUseId === param.id;
 
   if (isTransparentWrapper) {
-    if (isQueued || isResolved) return null;
+    if (isResolved) return null;
+    if (isQueued) {
+      const queuedMessage = renderToolUseQueuedMessage(tool);
+      if (queuedMessage === null) return null;
+      return (
+        <Box flexDirection="column" width="100%" backgroundColor={bg}>
+          {queuedMessage}
+        </Box>
+      );
+    }
     const progressMessage = renderToolUseProgressMessage(
       tool,
       tools,

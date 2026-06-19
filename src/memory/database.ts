@@ -7,7 +7,7 @@
  */
 
 import { Database } from 'bun:sqlite';
-import { SCHEMA_SQL, type MemoryRow, type MemoryType, type TimelineRow } from './schema.js';
+import { type MemoryRow, type MemoryType, SCHEMA_SQL, type TimelineRow } from './schema.js';
 
 export type MemoryRecord = {
   id: string;
@@ -73,7 +73,7 @@ function simpleHash(s: string): string {
   let hash = 0;
   for (let i = 0; i < s.length; i++) {
     const chr = s.charCodeAt(i);
-    hash = ((hash << 5) - hash) + chr;
+    hash = (hash << 5) - hash + chr;
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash).toString(36);
@@ -157,15 +157,7 @@ export class MemoryDB {
       INSERT INTO memories (id, project_path, type, content, importance, confidence, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    stmt.run(
-      id,
-      opts.projectPath,
-      opts.type,
-      opts.content,
-      opts.importance ?? 0.5,
-      opts.confidence ?? 0.5,
-      nowISO(),
-    );
+    stmt.run(id, opts.projectPath, opts.type, opts.content, opts.importance ?? 0.5, opts.confidence ?? 0.5, nowISO());
 
     // Log creation event
     this.logEvent({ memoryId: id, event: 'created' });
@@ -178,9 +170,7 @@ export class MemoryDB {
    */
   findByKey(key: string): MemoryRecord | null {
     const row = this.db
-      .prepare(
-        'SELECT m.* FROM memories m JOIN memory_keys k ON m.id = k.memory_id WHERE k.key = ?',
-      )
+      .prepare('SELECT m.* FROM memories m JOIN memory_keys k ON m.id = k.memory_id WHERE k.key = ?')
       .get(key) as MemoryRow | null;
     if (!row) return null;
     return toMemoryRecord(row);
@@ -205,17 +195,15 @@ export class MemoryDB {
     if (existing) {
       // Check content hash to detect changes
       const newHash = simpleHash(opts.content);
-      const oldHash = this.db
-        .prepare('SELECT content_hash FROM memory_keys WHERE key = ?')
-        .get(opts.key) as { content_hash: string } | undefined;
+      const oldHash = this.db.prepare('SELECT content_hash FROM memory_keys WHERE key = ?').get(opts.key) as
+        | { content_hash: string }
+        | undefined;
       if (oldHash && oldHash.content_hash === newHash) {
         return { id: existing.id, action: 'unchanged' };
       }
 
       this.db
-        .prepare(
-          'UPDATE memories SET content = ?, importance = ?, confidence = ? WHERE id = ?',
-        )
+        .prepare('UPDATE memories SET content = ?, importance = ?, confidence = ? WHERE id = ?')
         .run(opts.content, opts.importance ?? 0.5, opts.confidence ?? 0.5, existing.id);
       this.db.prepare('UPDATE memory_keys SET content_hash = ? WHERE key = ?').run(newHash, opts.key);
       this.logEvent({ memoryId: existing.id, event: 'corrected', note: 'content updated by scan' });
@@ -323,18 +311,14 @@ export class MemoryDB {
    * Update importance of a memory (e.g., after successful use).
    */
   updateImportance(id: string, delta: number): void {
-    this.db
-      .prepare('UPDATE memories SET importance = MIN(1.0, MAX(0.0, importance + ?)) WHERE id = ?')
-      .run(delta, id);
+    this.db.prepare('UPDATE memories SET importance = MIN(1.0, MAX(0.0, importance + ?)) WHERE id = ?').run(delta, id);
   }
 
   /**
    * Update confidence of a memory (e.g., after user correction).
    */
   updateConfidence(id: string, delta: number): void {
-    this.db
-      .prepare('UPDATE memories SET confidence = MIN(1.0, MAX(0.0, confidence + ?)) WHERE id = ?')
-      .run(delta, id);
+    this.db.prepare('UPDATE memories SET confidence = MIN(1.0, MAX(0.0, confidence + ?)) WHERE id = ?').run(delta, id);
   }
 
   /**
@@ -349,7 +333,9 @@ export class MemoryDB {
    * Delete a memory by its unique key.
    */
   deleteMemoryByKey(key: string): boolean {
-    const row = this.db.prepare('SELECT memory_id FROM memory_keys WHERE key = ?').get(key) as { memory_id: string } | null;
+    const row = this.db.prepare('SELECT memory_id FROM memory_keys WHERE key = ?').get(key) as {
+      memory_id: string;
+    } | null;
     if (!row) return false;
     return this.deleteMemory(row.memory_id);
   }
@@ -371,7 +357,7 @@ export class MemoryDB {
     }
 
     // Normalize to 0..1 with diminishing returns at high match counts
-    return Math.min(1, matches / Math.max(1, queryWords.length) * 1.2);
+    return Math.min(1, (matches / Math.max(1, queryWords.length)) * 1.2);
   }
 
   /**
@@ -401,21 +387,17 @@ export class MemoryDB {
     const now = Date.now();
     const scored = rows
       .map(row => {
-        const lastAccess = row.last_accessed_at
-          ? (now - new Date(row.last_accessed_at).getTime()) / 86400000
-          : 90;
+        const lastAccess = row.last_accessed_at ? (now - new Date(row.last_accessed_at).getTime()) / 86400000 : 90;
         const recency = Math.max(0, 1 - lastAccess / 90);
         const accessBonus = Math.min(1, row.access_count / 20);
 
-        const relevance = opts.query
-          ? this.computeRelevance(opts.query, row.content, row.memory_key, row.type)
-          : 0;
+        const relevance = opts.query ? this.computeRelevance(opts.query, row.content, row.memory_key, row.type) : 0;
 
         const relevanceScore = relevance * 0.45;
-        const importanceScore = row.importance * 0.20;
+        const importanceScore = row.importance * 0.2;
         const recencyScore = recency * 0.15;
-        const accessScore = accessBonus * 0.10;
-        const confidenceScore = row.confidence * 0.10;
+        const accessScore = accessBonus * 0.1;
+        const confidenceScore = row.confidence * 0.1;
 
         const score = relevanceScore + importanceScore + recencyScore + accessScore + confidenceScore;
 
@@ -423,7 +405,14 @@ export class MemoryDB {
           ...toMemoryRecord(row),
           score,
           scoreBreakdown: opts.verbose
-            ? { relevance: relevanceScore, importance: importanceScore, recency: recencyScore, access: accessScore, confidence: confidenceScore, total: score }
+            ? {
+                relevance: relevanceScore,
+                importance: importanceScore,
+                recency: recencyScore,
+                access: accessScore,
+                confidence: confidenceScore,
+                total: score,
+              }
             : undefined,
         };
       })

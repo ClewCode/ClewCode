@@ -167,8 +167,8 @@ function SpinnerWithVerbInner({
   const currentTodo = tasksV2?.find(task => task.status !== 'pending' && task.status !== 'completed');
   const nextTask = findNextPendingTask(tasksV2);
 
-  // Fallback verb based on actual mode instead of random fun verbs
-  const modeVerb = mode === 'thinking' ? 'Thinking' : mode === 'loading' ? 'Loading' : 'Processing';
+  // Fallback verb based on actual mode
+  const modeVerb = mode === 'thinking' ? 'Thinking' : mode === 'loading' ? 'Responding' : 'Processing';
 
   // Leader's own verb (always the leader's, regardless of who is foregrounded)
   const leaderVerb = overrideMessage ?? currentTodo?.activeForm ?? currentTodo?.subject ?? modeVerb;
@@ -291,8 +291,8 @@ function SpinnerWithVerbInner({
   // cause re-renders that refresh this in practice.
   const contextTipsActive = false;
   const tipsEnabled = settings.spinnerTipsEnabled !== false;
-  const showClearTip = tipsEnabled && elapsedSnapshot > 1_800_000;
-  const showBtwTip = tipsEnabled && elapsedSnapshot > 30_000 && !getGlobalConfig().btwUseCount;
+  const showClearTip = tipsEnabled && elapsedSnapshot > 2_400_000;
+  const showBtwTip = tipsEnabled && elapsedSnapshot > 60_000 && !getGlobalConfig().btwUseCount;
 
   const effectiveTip = contextTipsActive
     ? undefined

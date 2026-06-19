@@ -74,11 +74,10 @@ const outputSchema = lazySchema(() =>
 type OutputSchema = ReturnType<typeof outputSchema>;
 
 function selectBestProvider(): string {
-  // Priority: tavily > brave > serper > searxng (if self-hosted) > duckduckgo
+  // Priority: tavily > brave > serper > duckduckgo
   if (isProviderConfigured('tavily')) return 'tavily';
   if (isProviderConfigured('brave')) return 'brave';
   if (isProviderConfigured('serper')) return 'serper';
-  if (isProviderConfigured('searxng') && process.env.SEARXNG_INSTANCE_URL) return 'searxng';
   return 'duckduckgo';
 }
 

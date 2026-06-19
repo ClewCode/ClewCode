@@ -9,7 +9,10 @@ export type ProcessPeerTask = {
   model?: string;
   timeoutMs?: number;
   mode?: ProcessPeerMode;
+  abortSignal?: AbortSignal;
   onProgress?: (progress: ProcessPeerProgressEvent) => void;
+  /** Resume an existing codex session instead of starting fresh. */
+  sessionId?: string;
 };
 
 export type ProcessPeerMode = 'exec' | 'pty';
@@ -23,7 +26,7 @@ export type ProcessPeerProgressEvent = {
   cwd: string;
   elapsedMs: number;
   outputTail?: string;
-  status: 'starting' | 'running' | 'complete';
+  status: 'starting' | 'running' | 'complete' | 'failed';
 };
 
 export type ProcessPeerResult = {
@@ -38,6 +41,8 @@ export type ProcessPeerResult = {
   signal: NodeJS.Signals | null;
   timedOut: boolean;
   durationMs: number;
+  /** Codex session ID from thread.started JSONL event. Used to resume multi-turn conversations. */
+  sessionId?: string;
 };
 
 export type ProcessPeerProviderConfig = {
@@ -49,6 +54,12 @@ export type ProcessPeerProviderConfig = {
   buildArgs: (task: ProcessPeerTask) => string[];
   buildPtyArgs?: (task: ProcessPeerTask) => string[];
   buildStdin?: (task: ProcessPeerTask) => string | undefined;
+  /** Optional: transform raw stdout before it's used for progress display and the final result.
+   *  E.g., parse JSONL output to extract human-readable text. */
+  formatOutput?: (raw: string) => string;
+  /** Optional: extract a session/conversation ID from the raw output for multi-turn support.
+   *  E.g., parse the codex JSONL `thread.started` event for `thread_id`. */
+  extractSessionId?: (raw: string) => string | undefined;
 };
 
 export class ProcessPeerProvider {
@@ -60,6 +71,8 @@ export class ProcessPeerProvider {
   private readonly buildArgs: (task: ProcessPeerTask) => string[];
   private readonly buildPtyArgs: ((task: ProcessPeerTask) => string[]) | undefined;
   private readonly buildStdin: ((task: ProcessPeerTask) => string | undefined) | undefined;
+  private readonly formatOutput: ((raw: string) => string) | undefined;
+  private readonly extractSessionId: ((raw: string) => string | undefined) | undefined;
 
   constructor(config: ProcessPeerProviderConfig) {
     this.id = config.id;
@@ -70,6 +83,8 @@ export class ProcessPeerProvider {
     this.buildArgs = config.buildArgs;
     this.buildPtyArgs = config.buildPtyArgs;
     this.buildStdin = config.buildStdin;
+    this.formatOutput = config.formatOutput;
+    this.extractSessionId = config.extractSessionId;
   }
 
   async runTask(task: ProcessPeerTask): Promise<ProcessPeerResult> {
@@ -80,12 +95,21 @@ export class ProcessPeerProvider {
 
     const startedAt = Date.now();
     const cwd = task.cwd ?? process.cwd();
-    const mode = task.mode ?? 'exec';
+    let mode = task.mode ?? 'exec';
+    // node-pty has a known "Socket is closed" crash on Windows when the spawned
+    // process exits. Fall back to exec mode (child_process.spawn) to avoid it.
+    if (mode === 'pty' && process.platform === 'win32') {
+      mode = 'exec';
+    }
     const args =
       mode === 'pty' && this.buildPtyArgs
         ? this.buildPtyArgs({ ...task, prompt })
         : this.buildArgs({ ...task, prompt });
     const timeoutMs = task.timeoutMs ?? this.defaultTimeoutMs;
+    const abortSignal = task.abortSignal;
+    if (abortSignal?.aborted) {
+      throw new Error(`${this.label} peer task was cancelled before it started`);
+    }
     if (mode === 'pty') {
       return await this.runPtyTask({ ...task, prompt, cwd, timeoutMs, args, startedAt });
     }
@@ -97,6 +121,7 @@ export class ProcessPeerProvider {
       let stderrBytes = 0;
       let timedOut = false;
       let settled = false;
+      let abortHandler: (() => void) | undefined;
       task.onProgress?.({
         providerId: this.id,
         mode,
@@ -117,15 +142,24 @@ export class ProcessPeerProvider {
         ...spawnOptions,
         shell: shouldUseShellForCommand(this.command),
       });
-      const stdin = this.buildStdin?.({ ...task, prompt });
+      const stdin = this.buildStdin?.({ ...task, prompt, mode });
       if (stdin !== undefined) {
         child.stdin?.end(stdin);
+      } else {
+        child.stdin?.end();
       }
 
       const timer = setTimeout(() => {
         timedOut = true;
         child.kill('SIGTERM');
       }, timeoutMs);
+      const progressTimer = setInterval(() => emitProgress('running'), 500);
+      if (abortSignal) {
+        abortHandler = () => {
+          child.kill('SIGTERM');
+        };
+        abortSignal.addEventListener('abort', abortHandler, { once: true });
+      }
 
       const appendOutput = (current: string, currentBytes: number, chunk: Buffer): [string, number] => {
         if (currentBytes >= this.maxOutputBytes) return [current, currentBytes];
@@ -134,8 +168,15 @@ export class ProcessPeerProvider {
         return [current + nextChunk.toString('utf8'), currentBytes + nextChunk.byteLength];
       };
 
-      child.stdout?.on('data', chunk => {
-        [stdout, stdoutBytes] = appendOutput(stdout, stdoutBytes, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      const getDisplayOutput = (): string => {
+        const formattedStdout = this.formatOutput ? this.formatOutput(stdout) : stdout;
+        // When formatOutput is active (e.g. codex --json), stderr is just MCP/skill noise.
+        // Show only the clean formatted output for a flowing terminal experience.
+        if (this.formatOutput) return formattedStdout;
+        return [formattedStdout, stderr].filter(Boolean).join('\n');
+      };
+
+      const emitProgress = (status: ProcessPeerProgressEvent['status']): void => {
         task.onProgress?.({
           providerId: this.id,
           mode,
@@ -144,30 +185,29 @@ export class ProcessPeerProvider {
           args,
           cwd,
           elapsedMs: Date.now() - startedAt,
-          outputTail: tailPtyOutput(stdout),
-          status: 'running',
+          outputTail: tailPtyOutput(getDisplayOutput()),
+          status,
         });
+      };
+
+      child.stdout?.on('data', chunk => {
+        [stdout, stdoutBytes] = appendOutput(stdout, stdoutBytes, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        emitProgress('running');
       });
 
       child.stderr?.on('data', chunk => {
         [stderr, stderrBytes] = appendOutput(stderr, stderrBytes, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-        task.onProgress?.({
-          providerId: this.id,
-          mode,
-          command: this.command,
-          displayCommand: formatCommandForDisplay(this.command, args),
-          args,
-          cwd,
-          elapsedMs: Date.now() - startedAt,
-          outputTail: tailPtyOutput(stderr),
-          status: 'running',
-        });
+        emitProgress('running');
       });
 
       child.on('error', err => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        clearInterval(progressTimer);
+        if (abortSignal && abortHandler) {
+          abortSignal.removeEventListener('abort', abortHandler);
+        }
         reject(err);
       });
 
@@ -175,30 +215,26 @@ export class ProcessPeerProvider {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        clearInterval(progressTimer);
+        if (abortSignal && abortHandler) {
+          abortSignal.removeEventListener('abort', abortHandler);
+        }
+        const status = exitCode === 0 && !timedOut ? 'complete' : 'failed';
         resolve({
           providerId: this.id,
           mode,
           command: this.command,
           args,
           cwd,
-          stdout,
+          stdout: this.formatOutput ? this.formatOutput(stdout) : stdout,
           stderr,
+          sessionId: this.extractSessionId ? this.extractSessionId(stdout) : undefined,
           exitCode,
           signal,
           timedOut,
           durationMs: Date.now() - startedAt,
         });
-        task.onProgress?.({
-          providerId: this.id,
-          mode,
-          command: this.command,
-          displayCommand: formatCommandForDisplay(this.command, args),
-          args,
-          cwd,
-          elapsedMs: Date.now() - startedAt,
-          outputTail: tailPtyOutput(stdout || stderr),
-          status: 'complete',
-        });
+        emitProgress(status);
       });
     });
   }
@@ -210,6 +246,7 @@ export class ProcessPeerProvider {
     args,
     startedAt,
     onProgress,
+    abortSignal,
   }: ProcessPeerTask & {
     prompt: string;
     cwd: string;
@@ -223,6 +260,7 @@ export class ProcessPeerProvider {
       let timedOut = false;
       let settled = false;
       let progressTimer: NodeJS.Timeout | undefined;
+      let abortHandler: (() => void) | undefined;
 
       const appendOutput = (current: string, currentBytes: number, chunk: string): [string, number] => {
         if (currentBytes >= this.maxOutputBytes) return [current, currentBytes];
@@ -266,7 +304,7 @@ export class ProcessPeerProvider {
         return;
       }
 
-      const stdin = this.buildStdin?.({ prompt, cwd, timeoutMs, args, startedAt });
+      const stdin = this.buildStdin?.({ prompt, cwd, timeoutMs, args, startedAt, mode: 'pty' });
       if (stdin !== undefined) {
         shell.write(stdin);
         if (!stdin.endsWith('\n')) {
@@ -278,6 +316,12 @@ export class ProcessPeerProvider {
         timedOut = true;
         shell.kill();
       }, timeoutMs);
+      if (abortSignal) {
+        abortHandler = () => {
+          shell.kill();
+        };
+        abortSignal.addEventListener('abort', abortHandler, { once: true });
+      }
       progressTimer = setInterval(() => emitProgress('running'), 500);
 
       shell.onData(data => {
@@ -291,16 +335,20 @@ export class ProcessPeerProvider {
         settled = true;
         clearTimeout(timer);
         clearInterval(progressTimer);
+        if (abortSignal && abortHandler) {
+          abortSignal.removeEventListener('abort', abortHandler);
+        }
         const durationMs = Date.now() - startedAt;
-        emitProgress('complete');
+        emitProgress(exitCode === 0 && !timedOut ? 'complete' : 'failed');
         resolve({
           providerId: this.id,
           mode: 'pty',
           command: this.command,
           args,
           cwd,
-          stdout: stripAnsi(stdout),
+          stdout: this.formatOutput ? this.formatOutput(stripAnsi(stdout)) : stripAnsi(stdout),
           stderr: '',
+          sessionId: this.extractSessionId ? this.extractSessionId(stdout) : undefined,
           exitCode,
           signal: signal as NodeJS.Signals | null,
           timedOut,
@@ -312,26 +360,67 @@ export class ProcessPeerProvider {
 }
 
 export function buildCodexExecArgs(task: ProcessPeerTask): string[] {
-  const args = ['exec', '-C', task.cwd ?? process.cwd(), '--color', 'never'];
-  if (task.model) {
-    args.push('-m', task.model);
+  const base = ['exec', '-C', task.cwd ?? process.cwd(), '--color', 'never', '--ignore-user-config', '--json'];
+  if (task.model) base.push('-m', task.model);
+  if (task.sessionId) {
+    // Resume existing session: codex exec resume <id> <prompt>
+    base.push('resume', task.sessionId);
   }
-  args.push('-');
-  return args;
+  // On Windows, codex runs via cmd.exe (no .exe extension). Passing prompt via stdin
+  // gets eaten by cmd.exe. Use CLI arg instead, same as PTY mode.
+  base.push(task.prompt);
+  return base;
 }
 
 export function buildCodexPtyArgs(task: ProcessPeerTask): string[] {
-  const args = ['exec', '-C', task.cwd ?? process.cwd(), '--color', 'never'];
-  if (task.model) {
-    args.push('-m', task.model);
+  const base = ['exec', '-C', task.cwd ?? process.cwd(), '--color', 'always', '--ignore-user-config'];
+  if (task.model) base.push('-m', task.model);
+  if (task.sessionId) {
+    base.push('resume', task.sessionId);
   }
-  args.push(task.prompt);
-  return args;
+  base.push(task.prompt);
+  return base;
+}
+
+/** Extract the `thread_id` from a codex JSONL `thread.started` event. */
+export function extractCodexSessionId(raw: string): string | undefined {
+  for (const line of raw.split('\n')) {
+    if (!line.trim()) continue;
+    try {
+      const event = JSON.parse(line);
+      if (event.type === 'thread.started' && event.thread_id) {
+        return event.thread_id;
+      }
+    } catch {
+      // skip unparseable lines
+    }
+  }
+  return undefined;
+}
+
+/** Parse codex `--json` JSONL output and return only the human-readable agent messages. */
+export function formatCodexJsonlOutput(raw: string): string {
+  const messages: string[] = [];
+  const lines = raw.split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    try {
+      const event = JSON.parse(line);
+      if (event.type === 'item.completed' && event.item?.type === 'agent_message' && event.item.text) {
+        messages.push(event.item.text);
+      }
+    } catch {
+      // skip unparseable lines (e.g. stray stderr mixed in)
+    }
+  }
+  return messages.join('\n').trim() || raw;
 }
 
 function shouldUseShellForCommand(command: string): boolean {
   if (process.platform !== 'win32') return false;
-  return !/\.(exe|com)$/i.test(command);
+  // .exe, .com, .cmd, .bat are directly executable by Windows without cmd.exe wrapper.
+  // Using cmd.exe wrapper breaks stdin piping and argument passing on Windows.
+  return !/\.(exe|com|cmd|bat)$/i.test(command);
 }
 
 function getPtyCommand(command: string, args: string[]): { command: string; args: string[] } {
@@ -348,11 +437,35 @@ export function createCodexExecPeerProvider(command = process.env.CLEW_CODEX_COM
   return new ProcessPeerProvider({
     id: 'codex',
     label: 'Codex',
-    command,
+    command: resolveWindowsCommand(command),
     buildArgs: buildCodexExecArgs,
     buildPtyArgs: buildCodexPtyArgs,
-    buildStdin: task => (task.mode === 'pty' ? undefined : task.prompt),
+    // Both exec and pty pass prompt as a CLI argument to avoid stdin issues on Windows.
+    buildStdin: () => undefined,
+    formatOutput: formatCodexJsonlOutput,
+    extractSessionId: extractCodexSessionId,
   });
+}
+
+/** On Windows, resolve a bare command to its .cmd/.exe path so Node.js
+ *  can spawn it directly without a cmd.exe wrapper (which breaks pipes).
+ *  On non-Windows, returns the command as-is. */
+function resolveWindowsCommand(command: string): string {
+  if (process.platform !== 'win32') return command;
+  // Already has an executable extension, use as-is.
+  if (/\.(exe|com|cmd|bat)$/i.test(command)) return command;
+  const pathDirs = (process.env.PATH || '').split(path.delimiter);
+  for (const ext of ['.cmd', '.exe', '.bat', '.com']) {
+    for (const dir of pathDirs) {
+      try {
+        const fp = path.join(dir, command + ext);
+        if (fs.existsSync(fp)) return fp;
+      } catch {
+        // skip inaccessible directories
+      }
+    }
+  }
+  return command; // fallback to original
 }
 
 // ponytail: dynamic registry + PATH detection — data-driven, no hardcoded if/else
@@ -371,7 +484,6 @@ const KNOWN_AI_TOOLS: KnownTool[] = [
   { id: 'opencode', label: 'OpenCode', command: 'opencode' },
   { id: 'claude', label: 'Claude Code', command: 'claude' },
   { id: 'code', label: 'Claude Code', command: 'code' },
-  { id: 'clew', label: 'Clew Code', command: 'clew', args: ['-p'] },
 ];
 
 function toolExistsOnPath(tool: string): boolean {
@@ -387,12 +499,17 @@ function toolExistsOnPath(tool: string): boolean {
 }
 
 function createProviderForTool(tool: KnownTool): ProcessPeerProvider {
+  if (tool.id === 'codex') {
+    return createCodexExecPeerProvider(tool.command);
+  }
+
+  const command = resolveWindowsCommand(tool.command);
   const args = tool.args;
   // ponytail: args = pass prompt as argument; no args = pipe via stdin
   return new ProcessPeerProvider({
     id: tool.id,
     label: tool.label,
-    command: tool.command,
+    command,
     buildArgs: task => (args ? [...args, task.prompt] : []),
     buildStdin: task => (args ? undefined : task.prompt),
   });

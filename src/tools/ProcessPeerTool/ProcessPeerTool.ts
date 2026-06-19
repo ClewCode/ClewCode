@@ -1,19 +1,17 @@
 import * as React from 'react';
 import { z } from 'zod/v4';
-import { MessageResponse } from '../../components/MessageResponse.js';
-import { OffscreenFreeze } from '../../components/OffscreenFreeze.js';
-import { Box, Text } from '../../ink.js';
+import { Text } from '../../ink.js';
 import { getProcessPeerProvider, getProcessPeerProviderIds } from '../../peer/ProcessPeerProvider.js';
 import { buildTool, type ToolCallProgress } from '../../Tool.js';
-import type { ProcessMeshProgress } from '../../types/tools.js';
+import type { ProcessPeerProgress } from '../../types/tools.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
+import { normalizeProcessPeerMode, renderProcessPeerTerminal } from '../processPeerTerminal.js';
 import { DESCRIPTION, PROCESS_MESH_TOOL_NAME, PROMPT } from './prompt.js';
 
-const DEFAULT_PROCESS_MESH_MODE = 'pty' as const;
-const TERMINAL_OUTPUT_MAX_LINES = 16;
+const DEFAULT_PROCESS_MESH_MODE = (process.platform === 'win32' ? 'exec' : 'pty') as const;
 
 const inputSchema = lazySchema(() =>
   z.object({
@@ -27,10 +25,20 @@ const inputSchema = lazySchema(() =>
       .enum(['exec', 'pty'])
       .optional()
       .default(DEFAULT_PROCESS_MESH_MODE)
-      .describe('Execution mode. "pty" is the default terminal-style live view; "exec" is stable one-shot capture.'),
+      .describe(
+        process.platform === 'win32'
+          ? 'Execution mode. Windows uses "exec" with terminal-style output because node-pty is unstable there.'
+          : 'Execution mode. "pty" is the default terminal-style live view; "exec" is stable one-shot capture.',
+      ),
     cwd: z.string().optional().describe('Working directory for the peer node task. Defaults to the current Clew cwd.'),
     model: z.string().optional().describe('Optional model override for providers that support it.'),
     timeout: z.number().optional().default(600).describe('Max execution time in seconds (default: 600, max: 1800).'),
+    sessionId: z
+      .string()
+      .optional()
+      .describe(
+        'Session/conversation ID to resume (from a previous codex result). Pass it to continue a multi-turn conversation.',
+      ),
   }),
 );
 
@@ -45,6 +53,10 @@ const outputSchema = lazySchema(() =>
     timedOut: z.boolean().optional(),
     durationMs: z.number().optional(),
     error: z.string().optional(),
+    sessionId: z
+      .string()
+      .optional()
+      .describe('Session ID from the codex thread. Use it in a follow-up call to continue the conversation.'),
   }),
 );
 
@@ -56,6 +68,12 @@ export const ProcessPeerTool = buildTool({
   },
   isReadOnly() {
     return false;
+  },
+  interruptBehavior() {
+    return 'cancel';
+  },
+  isTransparentWrapper() {
+    return true;
   },
   name: PROCESS_MESH_TOOL_NAME,
   searchHint: 'delegate task to local process worker',
@@ -75,82 +93,72 @@ export const ProcessPeerTool = buildTool({
   getPath(input: { cwd?: string }) {
     return input.cwd ?? getCwd();
   },
+  async validateInput(input: { provider?: string }) {
+    const provider = input.provider?.toLowerCase();
+    if (provider === 'clew' || provider === 'clewcode') {
+      return {
+        result: false,
+        message:
+          'Clew cannot be used as a process_peer provider because it self-spawns the current CLI. Use provider "codex".',
+        errorCode: 400,
+      };
+    }
+    return { result: true };
+  },
   userFacingName() {
     return 'Local process';
   },
-  renderToolUseMessage(input: Partial<{ provider?: string; prompt?: string; cwd?: string; mode?: string }>) {
+  renderToolUseMessage(
+    input: Partial<{ provider?: string; prompt?: string; cwd?: string; mode?: string; sessionId?: string }>,
+  ) {
+    const mode = normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE);
+    const label = input.sessionId ? `resume ${mode}` : mode;
     return React.createElement(
       Text,
       null,
-      `${input.provider ?? 'codex'} ${input.mode ?? DEFAULT_PROCESS_MESH_MODE}${input.cwd ? ` in ${input.cwd}` : ''}: `,
+      `${input.provider ?? 'codex'} ${label}${input.cwd ? ` in ${input.cwd}` : ''}: `,
       React.createElement(Text, { dimColor: true }, truncateText(input.prompt ?? '', 120)),
     );
   },
   renderToolUseProgressMessage(progressMessages): React.ReactNode {
-    const latest = progressMessages.at(-1)?.data as ProcessMeshProgress | undefined;
-    const provider = latest?.provider ?? 'codex';
-    const mode = latest?.mode ?? DEFAULT_PROCESS_MESH_MODE;
-    const elapsed = latest ? `${(latest.elapsedMs / 1000).toFixed(1)}s` : '0.0s';
-    const status = latest?.status ?? 'starting';
-    const command = latest?.displayCommand ?? latest?.command ?? `${provider} ${mode}`;
-    const outputLines = latest?.outputTail ? latest.outputTail.split(/\r?\n/).slice(-TERMINAL_OUTPUT_MAX_LINES) : [];
-    const statusColor = status === 'complete' ? 'green' : status === 'running' ? 'cyan' : 'yellow';
-
-    return React.createElement(
-      MessageResponse,
-      null,
-      React.createElement(
-        OffscreenFreeze,
-        null,
-        React.createElement(
-          Box,
-          { flexDirection: 'column', paddingX: 1, width: '100%' },
-          React.createElement(
-            Box,
-            { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
-            React.createElement(Text, { bold: true }, `${provider} ${mode}`),
-            React.createElement(Text, { color: statusColor }, `${status} | ${elapsed}`),
-          ),
-          latest?.cwd ? React.createElement(Text, { dimColor: true, wrap: 'truncate-end' }, latest.cwd) : null,
-          React.createElement(Text, { dimColor: true, wrap: 'truncate-end' }, `$ ${command}`),
-          outputLines.length > 0
-            ? React.createElement(
-                Box,
-                { flexDirection: 'column', marginTop: 1 },
-                ...outputLines.map((line, index) =>
-                  React.createElement(Text, { key: `${index}:${line}`, wrap: 'truncate-end' }, line || '\u00A0'),
-                ),
-              )
-            : React.createElement(Text, { dimColor: true, marginTop: 1 }, `waiting for ${provider} output...`),
-        ),
-      ),
-    );
+    const latest = progressMessages.at(-1)?.data as ProcessPeerProgress | undefined;
+    return renderProcessPeerTerminal({
+      latest,
+      defaultProvider: 'codex',
+      defaultMode: DEFAULT_PROCESS_MESH_MODE,
+      title: 'Local process terminal',
+    });
   },
   renderToolUseQueuedMessage(): React.ReactNode {
-    return React.createElement(
-      Box,
-      { paddingLeft: 2 },
-      React.createElement(Text, { dimColor: true }, 'Queued local process terminal'),
-    );
+    return renderProcessPeerTerminal({
+      latest: undefined,
+      defaultProvider: 'codex',
+      defaultMode: DEFAULT_PROCESS_MESH_MODE,
+      title: 'Local process terminal',
+    });
   },
   getActivityDescription(input: Partial<{ provider?: string; prompt?: string; mode?: string }>) {
-    return `Running ${input.provider ?? 'local process'} (${input.mode ?? DEFAULT_PROCESS_MESH_MODE}): ${truncateText(
-      input.prompt ?? '',
-      80,
-    )}`;
+    const mode = normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE);
+    return `Running ${input.provider ?? 'local process'} (${mode}): ${truncateText(input.prompt ?? '', 80)}`;
   },
   getToolUseSummary(input: Partial<{ provider?: string; prompt?: string; mode?: string }>) {
-    return `${input.provider ?? 'local process'} ${input.mode ?? DEFAULT_PROCESS_MESH_MODE}: ${truncateText(
-      input.prompt ?? '',
-      80,
-    )}`;
+    const mode = normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE);
+    return `${input.provider ?? 'local process'} ${mode}: ${truncateText(input.prompt ?? '', 80)}`;
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
+    const sessionLine = output.sessionId ? `sessionId: ${output.sessionId}` : '';
+
     if (!output.success) {
+      const text = (output.stdout || '').trim() || output.stderr || output.error || '(empty)';
       return {
         tool_use_id: toolUseID,
         type: 'tool_result',
-        content: `[Process worker:${output.provider}] Failed: ${output.error}`,
+        content: [
+          `[Process worker:${output.provider}] Failed: ${output.exitCode ?? output.signal ?? 'unknown'}`,
+          sessionLine,
+          '',
+          text,
+        ].join('\n'),
       };
     }
 
@@ -162,6 +170,7 @@ export const ProcessPeerTool = buildTool({
         `[Process worker:${output.provider}] exit ${output.exitCode ?? output.signal ?? 'unknown'} in ${(
           (output.durationMs ?? 0) / 1000
         ).toFixed(1)}s`,
+        sessionLine,
         '',
         text,
       ].join('\n'),
@@ -175,11 +184,12 @@ export const ProcessPeerTool = buildTool({
       cwd?: string;
       model?: string;
       timeout?: number;
+      sessionId?: string;
     },
     _context,
     _canUseTool,
     _parentMessage,
-    onProgress?: ToolCallProgress<ProcessMeshProgress>,
+    onProgress?: ToolCallProgress<ProcessPeerProgress>,
   ) {
     const providerId = input.provider ?? 'codex';
     const provider = getProcessPeerProvider(providerId);
@@ -199,10 +209,12 @@ export const ProcessPeerTool = buildTool({
       notifyPeerFeedback(`asking ${provider.label}`, 'process-peer', 'low');
       const result = await provider.runTask({
         prompt: input.prompt,
-        mode: input.mode ?? DEFAULT_PROCESS_MESH_MODE,
+        mode: normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE),
         cwd: input.cwd ?? getCwd(),
         model: input.model,
+        sessionId: input.sessionId,
         timeoutMs: timeout,
+        abortSignal: _context.abortController.signal,
         onProgress: progress => {
           onProgress?.({
             toolUseID: `process-peer-${++progressSeq}`,

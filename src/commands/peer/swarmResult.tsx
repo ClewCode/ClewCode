@@ -2,7 +2,7 @@
  * SwarmResult — Ink component for displaying aggregated swarm execution results.
  */
 
-import * as React from 'react';
+import type * as React from 'react';
 import { Box, Text } from '../../ink.js';
 
 export type SwarmPeerResult = {

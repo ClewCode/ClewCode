@@ -104,9 +104,7 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderRegistryEntry> = Obje
   ]),
 ) as any;
 
-export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY).filter(
-  id => id !== 'clew-gateway',
-) as ProviderId[];
+export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY).filter(id => id !== 'clew-gateway') as ProviderId[];
 export const DEFAULT_PROVIDER: ProviderId = 'openai';
 
 export function getProviderRegistryEntry(provider: ProviderId): ProviderRegistryEntry {

@@ -298,7 +298,6 @@ Terminal UI
 * [아키텍처](../docs/architecture.html)
 * [권한 모델](../docs/permission-model.html)
 * [브릿지 모드](../docs/features/bridge-mode.html)
-* [SearXNG 검색](../docs/features/searxng-search.html)
 * [문제 해결](../docs/troubleshooting.html)
 * [평가](../docs/features/evals.html)
 * [Taste](../docs/taste.html)

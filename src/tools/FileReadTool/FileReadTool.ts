@@ -184,12 +184,12 @@ function detectSessionFileType(filePath: string): 'session_memory' | 'session_tr
   // Normalize path to use forward slashes for consistent matching across platforms
   const normalizedPath = filePath.split(win32.sep).join(posix.sep);
 
-  // Session memory files: ~/.claude/session-memory/*.md (including summary.md)
+  // Session memory files: ~/.clew/session-memory/*.md (including summary.md)
   if (normalizedPath.includes('/session-memory/') && normalizedPath.endsWith('.md')) {
     return 'session_memory';
   }
 
-  // Session JSONL transcript files: ~/.claude/projects/*/*.jsonl
+  // Session JSONL transcript files: ~/.clew/projects/*/*.jsonl
   if (normalizedPath.includes('/projects/') && normalizedPath.endsWith('.jsonl')) {
     return 'session_transcript';
   }

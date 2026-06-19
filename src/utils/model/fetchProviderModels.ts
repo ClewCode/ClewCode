@@ -88,7 +88,14 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
     };
 
     if (activeProvider === 'google') {
-      headers['x-goog-api-key'] = apiKey;
+      // Only send x-goog-api-key for API key auth, not OAuth (subscriber)
+      // Sending both Authorization: Bearer <oauth_token> and x-goog-api-key
+      // causes Google's API to reject with "multiple authentication credentials".
+      const config = providerManager.getSelectedProviderConfig();
+      const googleType = (config.providerConfig as any)?.googleType;
+      if (googleType !== 'subscriber') {
+        headers['x-goog-api-key'] = apiKey;
+      }
     }
 
     const response = await fetch(modelsUrl, {

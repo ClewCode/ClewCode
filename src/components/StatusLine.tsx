@@ -206,7 +206,7 @@ function claudePill(text: string): string {
   );
 }
 
-/** Render remaining context as six hearts. */
+/** Context visualization — currently disabled, returns empty string. */
 function renderContextHearts(_usedPercentage: number | null | undefined): string {
   return '';
 }
@@ -689,8 +689,8 @@ function StatusLineInner({
 
       // Build a richer goal label with turn count
       const icon = isPaused ? '⏸' : '◎';
-      const statusLabel = isPaused ? 'paused' : 'active';
-      const turnsStr = turns > 0 ? ` · ${turns}t` : '';
+      const statusLabel = isPaused ? 'paused' : '';
+      const turnsStr = turns > 0 ? `${turns}t` : '';
 
       // Progress indicator for bounded goals
       let progressStr = '';
@@ -703,7 +703,9 @@ function StatusLineInner({
         progressStr = ` ${bar}`;
       }
 
-      const text = `${icon} /goal ${statusLabel} (${elapsedStr}${turnsStr}${progressStr})`;
+      // Compact goal label — just icon, time, turns, and optional progress bar
+      const parts = [elapsedStr, turnsStr, progressStr].filter(Boolean);
+      const text = `${icon} /goal${statusLabel ? ` ${statusLabel}` : ''} (${parts.join(' · ')})`;
 
       if (isPaused) {
         sessionGoalDisplay = claudePill(text);

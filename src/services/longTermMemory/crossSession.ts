@@ -5,21 +5,8 @@
  * Timeline queries read from MemoryDB via timeline.ts.
  */
 
-import { MemoryDB } from '../../memory/database.js';
 import { getOriginalCwd } from '../../bootstrap/state.js';
-
-export interface SessionRecord {
-  session_id: string;
-  start_time: number;
-  end_time: number;
-  model: string;
-  provider: string;
-  summary: string;
-  key_decisions: string;
-  active_files: string;
-  tags: string;
-  consolidated: number;
-}
+import { MemoryDB } from '../../memory/database.js';
 
 function getProjectPath(): string {
   try {
@@ -38,31 +25,6 @@ export function getPreviousSessionContext(_projectRoot: string): string | null {
     return memories.map(m => `- ${m.content.slice(0, 200)}`).join('\n');
   } catch {
     return null;
-  }
-}
-
-/** Get session history for display. */
-export function getSessionHistory(_projectRoot: string, opts?: { limit?: number }): SessionRecord[] {
-  if (!MemoryDB.isInitialized()) return [];
-  try {
-    const memories = MemoryDB.getInstance().recallMemories({
-      query: 'session.',
-      limit: opts?.limit ?? 20,
-    });
-    return memories.map((m, i) => ({
-      session_id: m.key?.replace(/^session\./, '') ?? `mem_${i}`,
-      start_time: m.createdAt ? new Date(m.createdAt).getTime() - 3600000 : Date.now() - 3600000,
-      end_time: m.createdAt ? new Date(m.createdAt).getTime() : Date.now(),
-      model: 'memory',
-      provider: 'clew',
-      summary: m.content.slice(0, 200),
-      key_decisions: '[]',
-      active_files: '[]',
-      tags: '[]',
-      consolidated: 0,
-    }));
-  } catch {
-    return [];
   }
 }
 
@@ -99,5 +61,7 @@ export function saveSessionSummary(
       confidence: 0.6,
     });
     db.logEvent({ memoryId: db.findByKey(`session.${sessionId}`)!.id, event: 'session_saved' });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }

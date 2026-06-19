@@ -247,11 +247,15 @@ export class ProviderManager {
     return getProviderOptions(effectiveProvider).baseUrl;
   }
   getModelForProvider(provider) {
+    const providerName = provider ?? this.getActiveProviderName();
+    const providerEntry = getProviderRegistryEntry(providerName);
+    const isSupportedModel = model =>
+      !model || providerName !== 'google-assist' || providerEntry.models.some(entry => entry.id === model);
     if (!provider && this.sessionModel) {
-      return this.sessionModel;
+      return isSupportedModel(this.sessionModel) ? this.sessionModel : providerEntry.defaultModel;
     }
     const config = this.getSelectedProviderConfig();
-    return config.model;
+    return isSupportedModel(config.model) ? config.model : providerEntry.defaultModel;
   }
   async createClient(provider, options = {}) {
     const effectiveProvider = provider ?? this.getActiveProviderName();

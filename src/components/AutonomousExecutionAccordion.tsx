@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { useInterval } from 'usehooks-ts';
+import { getProjectRoot } from '../bootstrap/state.js';
 import { Box, Text } from '../ink.js';
 import { getAutonomousStatus } from '../services/autonomous/supervisorIntegration.js';
 import {
@@ -14,7 +14,6 @@ import { formatDuration, truncateToWidth } from '../utils/format.js';
 import { getFullGoalState } from '../utils/sessionGoalState.js';
 import { ProgressBar } from './design-system/ProgressBar.js';
 import { OffscreenFreeze } from './OffscreenFreeze.js';
-import { SpinnerGlyph } from './Spinner/SpinnerGlyph.js';
 
 type Props = {
   goal?: string;
@@ -33,18 +32,31 @@ const MAX_VISIBLE_TASKS = 8;
 const MAX_LOG_LINES = 5;
 const MAX_COLLAPSED_COMPLETED = 4;
 
+/** A task is considered stale if it has been pending for more than 1 hour */
+const STALE_THRESHOLD_MS = 60 * 60 * 1000;
+
+function isStaleTask(task: TaskQueueEntry): boolean {
+  if (task.status === 'completed' || task.status === 'in_progress') return false;
+  const start = task.startedAt ?? task.createdAt;
+  return Date.now() - start > STALE_THRESHOLD_MS;
+}
+
 function statusGlyph(task: TaskQueueEntry): { glyph: string; color: 'success' | 'warning' | 'error' | 'suggestion' } {
   switch (task.status) {
     case 'completed':
-      return { glyph: '✔', color: 'success' };
+      return { glyph: '✓', color: 'success' };
     case 'in_progress':
-      return { glyph: '▾', color: 'suggestion' };
+      return { glyph: '◉', color: 'suggestion' };
     case 'failed':
     case 'dead_letter':
     case 'cancelled':
-      return { glyph: '×', color: 'error' };
+      return { glyph: '✗', color: 'error' };
     default:
-      return { glyph: '□', color: 'warning' };
+      // Stale pending tasks get a warning indicator
+      if (isStaleTask(task)) {
+        return { glyph: '⚠', color: 'warning' };
+      }
+      return { glyph: '○', color: 'warning' };
   }
 }
 
@@ -110,20 +122,24 @@ function TaskRow({ task }: { task: TaskQueueEntry }) {
   const status = statusGlyph(task);
   const isActive = task.status === 'in_progress';
   const isCompleted = task.status === 'completed';
+  const stale = isStaleTask(task);
   const meta = isCompleted
     ? task.completedAt
       ? `done ${taskAge(task)}`
       : 'done'
-    : `${task.priority} · ${taskAge(task)}`;
+    : `${task.priority} · ${taskAge(task)}${stale ? ' (stale)' : ''}`;
 
   return (
     <Box flexDirection="column">
       <Text>
         <Text color={status.color}>{status.glyph}</Text>{' '}
-        <Text bold={isActive} dimColor={isCompleted} strikethrough={isCompleted}>
+        <Text bold={isActive} dimColor={isCompleted || stale} strikethrough={isCompleted}>
           {truncateToWidth(task.title, 72)}
         </Text>
-        <Text dimColor> · {meta}</Text>
+        <Text dimColor={!stale} color={stale ? 'warning' : undefined}>
+          {' · '}
+          {meta}
+        </Text>
       </Text>
       {isActive && task.description ? (
         <Text dimColor>
@@ -146,12 +162,10 @@ function GoalProgressSection({
   goalTurns,
   elapsed,
   isLoading,
-  frame,
 }: {
   goalTurns: number | undefined;
   elapsed: string | null;
   isLoading: boolean;
-  frame: number;
 }): React.ReactNode {
   const goalState = getFullGoalState();
   const turns = goalTurns ?? 0;
@@ -251,13 +265,13 @@ function GoalProgressSection({
           <Text color="warning">⏸ Goal paused — /goal resume to continue</Text>
         ) : (
           <>
-            {isLoading ? <SpinnerGlyph frame={frame} messageColor="warning" /> : <Text>○</Text>}
+            {isLoading ? <Text color="suggestion">◉</Text> : <Text dimColor>○</Text>}
             <Text dimColor>
               {' '}
-              {isLoading ? 'Working toward goal...' : 'Goal not yet met... continuing'}
-              {elapsed ? ` (${elapsed}` : ''}
-              {turns > 0 ? ` · ${turns} turns` : ''}
-              {elapsed ? ' · esc to interrupt)' : ''}
+              {isLoading ? 'Working toward goal' : 'Goal not yet met'}
+              {elapsed ? ` · ${elapsed}` : ''}
+              {turns > 0 ? ` · ${turns} turn${turns === 1 ? '' : 's'}` : ''}
+              {isLoading ? ' · esc to interrupt' : ' · continuing'}
             </Text>
           </>
         )}
@@ -269,9 +283,6 @@ function GoalProgressSection({
 export function AutonomousExecutionAccordion({ goal, goalStartedAt, goalTurns, isLoading }: Props): React.ReactNode {
   const [tasks, setTasks] = useState<TaskQueueEntry[]>([]);
   const [daemon, setDaemon] = useState<DaemonSnapshot | null>(null);
-  const [frame, setFrame] = useState(0);
-
-  useInterval(() => setFrame(f => f + 1), isLoading ? 80 : null);
 
   const refresh = async () => {
     await loadQueue();
@@ -297,14 +308,19 @@ export function AutonomousExecutionAccordion({ goal, goalStartedAt, goalTurns, i
     };
   }, [refresh]);
 
-  const visibleTasks = useMemo(() => getVisibleTasks(tasks), [tasks]);
+  const projectTasks = useMemo(() => {
+    const projectRoot = getProjectRoot();
+    return tasks.filter(t => t.projectRoot === projectRoot);
+  }, [tasks]);
+
+  const visibleTasks = useMemo(() => getVisibleTasks(projectTasks), [projectTasks]);
   const active = Boolean(goal) || Boolean(daemon?.running) || visibleTasks.length > 0;
   if (!active) return null;
 
-  const completedCount = tasks.filter(t => t.status === 'completed').length;
-  const activeCount = tasks.filter(t => t.status === 'in_progress').length;
-  const pendingCount = tasks.filter(t => t.status === 'pending').length;
-  const failedCount = tasks.filter(t => t.status === 'failed' || t.status === 'dead_letter').length;
+  const completedCount = projectTasks.filter(t => t.status === 'completed').length;
+  const activeCount = projectTasks.filter(t => t.status === 'in_progress').length;
+  const pendingCount = projectTasks.filter(t => t.status === 'pending').length;
+  const failedCount = projectTasks.filter(t => t.status === 'failed' || t.status === 'dead_letter').length;
   const openCount = activeCount + pendingCount + failedCount;
   const collapsedCompletedCount = visibleTasks.filter(t => t.status === 'completed').length;
   const hiddenCompletedCount = Math.max(0, completedCount - collapsedCompletedCount);
@@ -313,32 +329,53 @@ export function AutonomousExecutionAccordion({ goal, goalStartedAt, goalTurns, i
   return (
     <OffscreenFreeze>
       <Box flexDirection="column" marginTop={1}>
+        {/* ── Goal header ──────────────────────────────────────────── */}
         {goal ? (
-          <Text>
-            <Text color="suggestion">◎</Text>
-            <Text> Goal: </Text>
-            <Text bold>{truncateToWidth(goal, 96)}</Text>
-          </Text>
-        ) : null}
-        {daemon?.running || daemon?.enabled || visibleTasks.length > 0 ? (
+          <Box flexDirection="column">
+            <Text>
+              <Text color="suggestion">◎</Text>
+              <Text bold> Goal: </Text>
+              <Text>{truncateToWidth(goal, 90)}</Text>
+            </Text>
+            {projectTasks.length > 0 || daemon?.running || daemon?.enabled ? (
+              <Text dimColor>
+                {'  '}
+                {projectTasks.length} task{projectTasks.length === 1 ? '' : 's'}
+                {completedCount > 0 ? ` · ${completedCount} done` : ''}
+                {openCount > 0 ? ` · ${openCount} open` : ''}
+                {daemon?.running ? ' · daemon online' : daemon?.enabled ? ' · daemon enabled' : ''}
+              </Text>
+            ) : null}
+          </Box>
+        ) : daemon?.running || daemon?.enabled || visibleTasks.length > 0 ? (
           <Text dimColor>
-            {tasks.length} tasks ({completedCount} done, {openCount} open)
+            {projectTasks.length} task{projectTasks.length === 1 ? '' : 's'} ({completedCount} done, {openCount} open)
             {daemon?.running ? ' · daemon online' : daemon?.enabled ? ' · daemon enabled' : ''}
           </Text>
         ) : null}
+
+        {/* ── Current daemon task ──────────────────────────────────── */}
         {daemon?.currentTaskTitle && !visibleTasks.some(t => t.title === daemon.currentTaskTitle) ? (
-          <Text color="suggestion">▾ {truncateToWidth(daemon.currentTaskTitle, 90)}</Text>
+          <Text color="suggestion">◉ {truncateToWidth(daemon.currentTaskTitle, 90)}</Text>
         ) : null}
+
+        {/* ── Task list ────────────────────────────────────────────── */}
         {visibleTasks.length > 0 ? (
           <Box flexDirection="column" marginTop={1}>
             {visibleTasks.map(task => (
               <TaskRow key={task.id} task={task} />
             ))}
-            {hiddenCompletedCount > 0 ? <Text dimColor>... +{hiddenCompletedCount} completed</Text> : null}
+            {hiddenCompletedCount > 0 ? (
+              <Text dimColor>
+                {'  '}… +{hiddenCompletedCount} completed
+              </Text>
+            ) : null}
           </Box>
         ) : null}
+
+        {/* ── Goal progress / idle status ──────────────────────────── */}
         {goal ? (
-          <GoalProgressSection goalTurns={goalTurns} elapsed={elapsed} isLoading={isLoading} frame={frame} />
+          <GoalProgressSection goalTurns={goalTurns} elapsed={elapsed} isLoading={isLoading} />
         ) : visibleTasks.length === 0 ? (
           <Text dimColor>✓ No queued daemon tasks</Text>
         ) : null}

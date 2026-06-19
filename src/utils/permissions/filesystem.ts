@@ -87,11 +87,11 @@ export function getClaudeSkillScope(filePath: string): { skillName: string; patt
   const bases = [
     {
       dir: expandPath(join(getOriginalCwd(), DOT_CLEW, 'skills')),
-      prefix: '/.claude/skills/',
+      prefix: '/.clew/skills/',
     },
     {
       dir: expandPath(join(homedir(), '.clew', 'skills')),
-      prefix: '~/.claude/skills/',
+      prefix: '~/.clew/skills/',
     },
   ];
 
@@ -120,7 +120,7 @@ export function getClaudeSkillScope(filePath: string): { skillName: string; patt
         // Reject glob metacharacters. skillName is interpolated into a
         // gitignore pattern consumed by ignore().add() in matchingRuleForInput
         // at step 1.6. A directory literally named '*' (valid on POSIX) would
-        // produce '/.claude/skills/*/**' which matches ALL skills. Return null
+        // produce '/.clew/skills/*/**' which matches ALL skills. Return null
         // to fall through to generateSuggestions() instead.
         if (/[*?[\]]/.test(skillName)) return null;
         return { skillName, pattern: `${prefix + skillName}/**` };
@@ -248,7 +248,7 @@ function isSessionMemoryPath(absolutePath: string): boolean {
 
 /**
  * Check if file is within the current project's directory.
- * Path format: ~/.claude/projects/{sanitized-cwd}/...
+ * Path format: ~/.clew/projects/{sanitized-cwd}/...
  */
 function isProjectDirPath(absolutePath: string): boolean {
   const projectDir = getProjectDir(getCwd());
@@ -1416,13 +1416,13 @@ export function checkEditableInternalPath(absolutePath: string, input: { [key: s
     };
   }
 
-  // .claude/launch.json — desktop preview config (dev server command + port).
+  // .clew/launch.json — desktop preview config (dev server command + port).
   // The desktop's preview_start MCP tool instructs Claude to create/update
   // this file as part of the preview workflow. Without this carve-out the
-  // .claude/ DANGEROUS_DIRECTORIES check prompts for it, which in SDK mode
+  // .clew/ DANGEROUS_DIRECTORIES check prompts for it, which in SDK mode
   // cascades: user clicks "Always allow" → setMode:acceptEdits suggestion
   // applied → silent downgrade from auto mode. Matches the project-level
-  // .claude/ only (not ~/.claude/) since launch.json is per-project.
+  // .clew/ only (not ~/.clew/) since launch.json is per-project.
   if (
     normalizeCaseForComparison(normalizedPath) ===
     normalizeCaseForComparison(join(getOriginalCwd(), DOT_CLEW, 'launch.json'))
@@ -1462,7 +1462,7 @@ export function checkReadableInternalPath(absolutePath: string, input: { [key: s
   }
 
   // Project directory (for reading past session memories)
-  // Path format: ~/.claude/projects/{sanitized-cwd}/...
+  // Path format: ~/.clew/projects/{sanitized-cwd}/...
   if (isProjectDirPath(normalizedPath)) {
     return {
       behavior: 'allow',
@@ -1552,7 +1552,7 @@ export function checkReadableInternalPath(absolutePath: string, input: { [key: s
     };
   }
 
-  // Tasks directory (~/.claude/tasks/) for swarm task coordination
+  // Tasks directory (~/.clew/tasks/) for swarm task coordination
   const tasksDir = join(getClaudeConfigHomeDir(), 'tasks') + sep;
   if (normalizedPath === tasksDir.slice(0, -1) || normalizedPath.startsWith(tasksDir)) {
     return {
@@ -1565,7 +1565,7 @@ export function checkReadableInternalPath(absolutePath: string, input: { [key: s
     };
   }
 
-  // Teams directory (~/.claude/teams/) for swarm coordination
+  // Teams directory (~/.clew/teams/) for swarm coordination
   const teamsReadDir = join(getClaudeConfigHomeDir(), 'teams') + sep;
   if (normalizedPath === teamsReadDir.slice(0, -1) || normalizedPath.startsWith(teamsReadDir)) {
     return {

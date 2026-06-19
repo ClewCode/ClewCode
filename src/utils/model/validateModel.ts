@@ -6,6 +6,8 @@ import { sideQuery } from '../sideQuery.js';
 import { NotFoundError, APIError, APIConnectionError, AuthenticationError } from '@anthropic-ai/sdk';
 import { getModelStrings } from './modelStrings.js';
 import { ProviderManager } from '../../services/ai/ProviderManager.js';
+import { getProviderRegistryEntry } from '../../services/ai/providerRegistry.js';
+import { getProviderErrorInfo } from '../../services/api/errors.js';
 
 // Cache valid models to avoid repeated API calls
 const validModelCache = new Map<string, boolean>();
@@ -40,15 +42,29 @@ export async function validateModel(model: string): Promise<{ valid: boolean; er
     return { valid: true };
   }
 
+  const providerManager = ProviderManager.getInstance();
+  const activeProvider = providerManager.getActiveProviderName();
+  const cacheKey = `${activeProvider}:${normalizedModel}`;
+
+  if (activeProvider === 'google-assist') {
+    const registryEntry = getProviderRegistryEntry(activeProvider);
+    if (!registryEntry.models.some(entry => entry.id === normalizedModel)) {
+      return {
+        valid: false,
+        error: `Model '${normalizedModel}' is not supported by Gemini Code Assist. Try '${registryEntry.defaultModel}' instead`,
+      };
+    }
+    validModelCache.set(cacheKey, true);
+    return { valid: true };
+  }
+
   // Check cache first
-  if (validModelCache.has(normalizedModel)) {
+  if (validModelCache.has(cacheKey)) {
     return { valid: true };
   }
 
   // For non-Anthropic providers (cline, openrouter, etc.), skip API validation
   // since they use different authentication methods and API formats
-  const providerManager = ProviderManager.getInstance();
-  const activeProvider = providerManager.getActiveProviderName();
   const nonAnthropicProviders = [
     'cline',
     'openrouter',
@@ -63,11 +79,12 @@ export async function validateModel(model: string): Promise<{ valid: boolean; er
     'opencode-go',
     'ollama',
     'nvidia',
+    'google',
   ];
   if (nonAnthropicProviders.includes(activeProvider)) {
     // For non-Anthropic providers, accept any model ID that is in the allowlist
     // or matches the provider's model format (e.g., provider/model for Cline/OpenRouter)
-    validModelCache.set(normalizedModel, true);
+    validModelCache.set(cacheKey, true);
     return { valid: true };
   }
 
@@ -93,7 +110,7 @@ export async function validateModel(model: string): Promise<{ valid: boolean; er
     });
 
     // If we got here, the model is valid
-    validModelCache.set(normalizedModel, true);
+    validModelCache.set(cacheKey, true);
     return { valid: true };
   } catch (error) {
     return handleValidationError(error, normalizedModel);
@@ -101,8 +118,9 @@ export async function validateModel(model: string): Promise<{ valid: boolean; er
 }
 
 function handleValidationError(error: unknown, modelName: string): { valid: boolean; error: string } {
-  // NotFoundError (404) means the model doesn't exist
-  if (error instanceof NotFoundError) {
+  const providerErrorInfo = getProviderErrorInfo(error);
+  // NotFoundError (404) or provider error with status 404 means the model doesn't exist
+  if (error instanceof NotFoundError || providerErrorInfo?.status === 404 || (error as any).status === 404) {
     const fallback = get3PFallbackSuggestion(modelName);
     const suggestion = fallback ? `. Try '${fallback}' instead` : '';
     return {

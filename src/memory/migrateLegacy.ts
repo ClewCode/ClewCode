@@ -51,16 +51,16 @@ export function migrateFromSessionDB(): MigrationResult {
            FROM sessions ORDER BY start_time`,
         )
         .all() as Array<{
-          session_id: string;
-          start_time: number;
-          end_time: number;
-          model: string;
-          provider: string;
-          summary: string;
-          key_decisions: string;
-          active_files: string;
-          tags: string;
-        }>;
+        session_id: string;
+        start_time: number;
+        end_time: number;
+        model: string;
+        provider: string;
+        summary: string;
+        key_decisions: string;
+        active_files: string;
+        tags: string;
+      }>;
 
       for (const s of sessions) {
         if (!s.session_id) continue;
@@ -115,13 +115,13 @@ export function migrateFromSessionDB(): MigrationResult {
            FROM digests ORDER BY created_at`,
         )
         .all() as Array<{
-          period: string;
-          type: string;
-          summary: string;
-          key_decisions: string;
-          patterns: string;
-          session_count: number;
-        }>;
+        period: string;
+        type: string;
+        summary: string;
+        key_decisions: string;
+        patterns: string;
+        session_count: number;
+      }>;
 
       for (const d of digests) {
         if (!d.period) continue;
@@ -163,9 +163,10 @@ export function migrateFromSessionDB(): MigrationResult {
 
     // ── Migrate topic_index ───────────────────────────────────
     try {
-      const topics = oldDb
-        .prepare('SELECT topic, session_id FROM topic_index ORDER BY topic')
-        .all() as Array<{ topic: string; session_id: string }>;
+      const topics = oldDb.prepare('SELECT topic, session_id FROM topic_index ORDER BY topic').all() as Array<{
+        topic: string;
+        session_id: string;
+      }>;
 
       // Group by topic
       const topicMap = new Map<string, string[]>();
