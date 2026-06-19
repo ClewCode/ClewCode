@@ -17,7 +17,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 [![Platform](https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-lightgrey.svg)](#installation)
 [![Built with Bun](https://img.shields.io/badge/built%20with-Bun-ff69b4.svg)](https://bun.sh)
 
-[GitHub](https://github.com/ClewCode/ClewCode) · [Latest Release](https://github.com/ClewCode/ClewCode/releases) · [Issues](https://github.com/ClewCode/ClewCode/issues)
+[GitHub](https://github.com/ClewCode/ClewCode) · [Latest Release](https://github.com/ClewCode/ClewCode/releases) · [Wiki](https://github.com/ClewCode/ClewCode/wiki) · [Issues](https://github.com/ClewCode/ClewCode/issues)
 
 </div>
 
