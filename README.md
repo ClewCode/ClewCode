@@ -318,7 +318,7 @@ bun run dev           # Live reload
 bun run build         # Build to dist/
 bun test              # Vitest
 bun x tsc --noEmit    # Type-check
-bun run check:ci      # Full CI check (lint + test + typecheck)
+bun run check:ci      # Lint + format check (Biome CI)
 ```
 
 **Windows:**
