@@ -31,83 +31,6 @@ Clew Code is a reverse-engineered reimplementation of [Claude Code](https://gith
 
 ---
 
-## Features
-
-- **28 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, OpenCode Go, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, custom. Switch mid-session. *(Anthropic provider removed — use [Claude Code](https://github.com/anthropics/claude-code) directly for Anthropic-first workflows.)*
-- **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
-- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
-- **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
-- **70+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (15+ LAN coordination tools including swarm + dashboard), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction, GenerateImage (DALL-E 3 / Imagen 3), GenerateVideo (Runway Gen-4), ReadMediaFile (video input).
-- **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Templates for common workflows (`fix-build`, `green-tests`, `refactor`). Auto-integrates with AFK mode and the autonomous loop. Independent LLM verifier reviews completion and reports gaps.
-- **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
-- **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps). Project memory promotion at 70% checkpoint.
-- **Personal profile** — `/profile personal` sets command-center mode with plan/split/delegate workflow to Codex workers via ProcessPeer. Profile + last permission mode saved between sessions.
-- **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
-- **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
-- **8 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, guardian. Granular allow/deny rules with pattern matching.
-
----
-
-## Concepts: Agents, Subagents, and Peers
-
-Clew Code has several execution layers. They are related, but they do different jobs:
-
-- **Agent:** An AI worker with a prompt, model, tools, and permissions. The main chat session is an agent. Custom agents live in `.clew/agents/*.md`, and built-ins include `Explore`, `Plan`, and `general-purpose`.
-- **Subagent:** A short-lived child agent launched by another agent through the `Agent` tool. Use subagents for independent work such as codebase exploration, test triage, or review. The built-in `Explore` agent is read-only and is the right choice for parallel "go inspect this area" tasks.
-- **Teammate / Swarm:** A longer-lived agent team member with an identity, mailbox, task coordination, and optional pane/tmux or in-process execution. Use this when agents need to keep working together across multiple turns, not for isolated one-shot exploration.
-- **LAN Peer:** A network of Clew instances on the same machine or LAN. `/peer` discovers peers, sends messages, assigns tasks, and runs commands on other Clew nodes.
-- **Process Peer:** A local process-backed worker layer. It delegates a prompt to an external CLI/provider such as Codex using `exec` or `pty`, then returns stdout, stderr, exit code, timeout state, and progress.
-
-Typical flows:
-
-```text
-User
-  -> main Clew agent
-      -> Agent tool
-          -> short-lived subagent, e.g. Explore
-```
-
-```text
-Clew instance A
-  -> LAN Peer
-      -> Clew instance B
-          -> local agent, daemon task, or process worker
-```
-
-Use the layers by intent:
-
-- Need a quick independent read-only investigation? Use an `Explore` subagent.
-- Need long-running coordination between named workers? Use teammates/swarm.
-- Need another Clew instance on the LAN? Use `/peer`.
-- Need Clew to run a local external worker such as Codex? Use Process Peer.
-
-Other runtime concepts:
-- **Plan mode:** Full-access planning mode with bypass permissions — explore, read, write, and edit files freely. Plan files persist to `.clew/plans/long-term-plan.md` with task progress snapshot.
-- **Multi-pass compaction:** Automatic chunk-based context compression with recursive re-compaction when context exceeds the model window.
-- **Goal verification:** When the agent declares a task done, an independent LLM call reviews the conversation against the goal text and reports specific gaps if unsatisfied (attached as `goalGap` in result metadata).
-- **Max Mode:** Generates N parallel candidate responses per turn via forked agents, then selects the best one via LLM judge with heuristic fallback. Toggle with `/maxmode`.
-- **Checkpoints:** Structured snapshots at 20%/45%/70% progress milestones. Includes a `notes.md` scratchpad for the main agent's findings. Used for layered multi-cycle rebuild during compaction.
-
----
-
-## Profiles: Coding vs Personal
-
-Clew Code has a **personal profile** (`/profile personal`) — command center mode. Plan, split tasks, **delegate** code work to a Codex worker via `process_peer`, then review and summarize results.
-
-### How personal delegation works
-
-```
-You → personal profile → understand requirement → plan approach
-     → /delegate skill → ProcessPeer → Codex worker
-     → worker implements → report back → you review
-```
-
-In personal profile, you never edit files directly — the `delegate` skill spawns a Codex worker with a structured task prompt (goal, scope, constraints, validation criteria) and reports what was done, what passed/failed, and what's blocked. Use personal profile when you want to orchestrate rather than implement.
-
-Profile and last-used permission mode are saved between sessions.
-
----
-
 ## Install
 
 ### One-liner (recommended)
@@ -211,6 +134,83 @@ export OPENROUTER_API_KEY=...
 export OLLAMA_HOST=http://localhost:11434
 export GEMINI_API_KEY=...
 ```
+
+---
+
+## Features
+
+- **28 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, OpenCode Go, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, custom. Switch mid-session. *(Anthropic provider removed — use [Claude Code](https://github.com/anthropics/claude-code) directly for Anthropic-first workflows.)*
+- **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
+- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
+- **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
+- **70+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (15+ LAN coordination tools including swarm + dashboard), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction, GenerateImage (DALL-E 3 / Imagen 3), GenerateVideo (Runway Gen-4), ReadMediaFile (video input).
+- **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Templates for common workflows (`fix-build`, `green-tests`, `refactor`). Auto-integrates with AFK mode and the autonomous loop. Independent LLM verifier reviews completion and reports gaps.
+- **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
+- **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps). Project memory promotion at 70% checkpoint.
+- **Personal profile** — `/profile personal` sets command-center mode with plan/split/delegate workflow to Codex workers via ProcessPeer. Profile + last permission mode saved between sessions.
+- **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
+- **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
+- **8 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, guardian. Granular allow/deny rules with pattern matching.
+
+---
+
+## Concepts: Agents, Subagents, and Peers
+
+Clew Code has several execution layers. They are related, but they do different jobs:
+
+- **Agent:** An AI worker with a prompt, model, tools, and permissions. The main chat session is an agent. Custom agents live in `.clew/agents/*.md`, and built-ins include `Explore`, `Plan`, and `general-purpose`.
+- **Subagent:** A short-lived child agent launched by another agent through the `Agent` tool. Use subagents for independent work such as codebase exploration, test triage, or review. The built-in `Explore` agent is read-only and is the right choice for parallel "go inspect this area" tasks.
+- **Teammate / Swarm:** A longer-lived agent team member with an identity, mailbox, task coordination, and optional pane/tmux or in-process execution. Use this when agents need to keep working together across multiple turns, not for isolated one-shot exploration.
+- **LAN Peer:** A network of Clew instances on the same machine or LAN. `/peer` discovers peers, sends messages, assigns tasks, and runs commands on other Clew nodes.
+- **Process Peer:** A local process-backed worker layer. It delegates a prompt to an external CLI/provider such as Codex using `exec` or `pty`, then returns stdout, stderr, exit code, timeout state, and progress.
+
+Typical flows:
+
+```text
+User
+  -> main Clew agent
+      -> Agent tool
+          -> short-lived subagent, e.g. Explore
+```
+
+```text
+Clew instance A
+  -> LAN Peer
+      -> Clew instance B
+          -> local agent, daemon task, or process worker
+```
+
+Use the layers by intent:
+
+- Need a quick independent read-only investigation? Use an `Explore` subagent.
+- Need long-running coordination between named workers? Use teammates/swarm.
+- Need another Clew instance on the LAN? Use `/peer`.
+- Need Clew to run a local external worker such as Codex? Use Process Peer.
+
+Other runtime concepts:
+- **Plan mode:** Full-access planning mode with bypass permissions — explore, read, write, and edit files freely. Plan files persist to `.clew/plans/long-term-plan.md` with task progress snapshot.
+- **Multi-pass compaction:** Automatic chunk-based context compression with recursive re-compaction when context exceeds the model window.
+- **Goal verification:** When the agent declares a task done, an independent LLM call reviews the conversation against the goal text and reports specific gaps if unsatisfied (attached as `goalGap` in result metadata).
+- **Max Mode:** Generates N parallel candidate responses per turn via forked agents, then selects the best one via LLM judge with heuristic fallback. Toggle with `/maxmode`.
+- **Checkpoints:** Structured snapshots at 20%/45%/70% progress milestones. Includes a `notes.md` scratchpad for the main agent's findings. Used for layered multi-cycle rebuild during compaction.
+
+---
+
+## Profiles: Coding vs Personal
+
+Clew Code has a **personal profile** (`/profile personal`) — command center mode. Plan, split tasks, **delegate** code work to a Codex worker via `process_peer`, then review and summarize results.
+
+### How personal delegation works
+
+```
+You → personal profile → understand requirement → plan approach
+     → /delegate skill → ProcessPeer → Codex worker
+     → worker implements → report back → you review
+```
+
+In personal profile, you never edit files directly — the `delegate` skill spawns a Codex worker with a structured task prompt (goal, scope, constraints, validation criteria) and reports what was done, what passed/failed, and what's blocked. Use personal profile when you want to orchestrate rather than implement.
+
+Profile and last-used permission mode are saved between sessions.
 
 ---
 
