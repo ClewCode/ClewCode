@@ -22,7 +22,6 @@ bun run format           # Biome format with auto-fix (--write)
 bun run check            # Biome check with auto-fix (lint + format)
 bun x tsc --noEmit       # TypeScript type-check only
 bun ci                   # Lockfile integrity check
-bun run docs:generate    # Auto-generate HTML docs from source
 ```
 
 The `check:ci` script only runs Biome (`biome ci src/`). For a full pre-commit check that includes tests and typechecking, run all three:
@@ -220,10 +219,6 @@ bun run format    # Format with auto-fix
 ### Source vs Build
 
 Edit `src/` only. `dist/` is generated build output. The build uses `bun build` (not tsc) and externally marks many optional deps (electron, playwright, sharp, etc.) to keep the bundle lean.
-
-### Docs
-
-Docs are static HTML in `docs/` tracked in git. Shared shell (header, sidebar, footer) is injected by `docs/js/main.js`. Generate with `bun run docs:generate`.
 
 ### Settings
 

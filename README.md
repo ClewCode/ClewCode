@@ -17,7 +17,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 [![Platform](https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-lightgrey.svg)](#installation)
 [![Built with Bun](https://img.shields.io/badge/built%20with-Bun-ff69b4.svg)](https://bun.sh)
 
-[GitHub](https://github.com/ClewCode/ClewCode) · [Latest Release](https://github.com/ClewCode/ClewCode/releases) · [Docs](docs/index.html) · [Issues](https://github.com/ClewCode/ClewCode/issues)
+[GitHub](https://github.com/ClewCode/ClewCode) · [Latest Release](https://github.com/ClewCode/ClewCode/releases) · [Issues](https://github.com/ClewCode/ClewCode/issues)
 
 </div>
 
@@ -346,12 +346,6 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 <a href="https://github.com/ClewCode/ClewCode/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=ClewCode/ClewCode" alt="Contributors" />
 </a>
-
----
-
-## Documentation
-
-[Installation](docs/installation.html) · [Configuration](docs/configuration.html) · [Providers](docs/providers.html) · [Models](docs/models.html) · [Commands](docs/commands.html) · [Tools](docs/tools.html) · [MCP](docs/mcp.html) · [Plugins](docs/plugins.html) · [Skills](docs/skills.html) · [Peer-to-Peer / Swarm](docs/swarm.html) · [Agent Loop](docs/loop.html) · [Permission Model](docs/permission-model.html) · [Daemon](docs/daemon.html) · [Bridge Mode](docs/features/bridge-mode.html) · [Troubleshooting](docs/troubleshooting.html)
 
 ---
 
