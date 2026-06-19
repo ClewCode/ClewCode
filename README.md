@@ -441,5 +441,3 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 ## License
 
 [LICENSE.md](LICENSE.md) — covers only contributor-authored modifications and original additions. Does not grant rights to third-party software, models, or trademarks.
-
-Clew Code is a fork of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic). All original Claude Code code remains under its license.
