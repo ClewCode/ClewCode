@@ -6,7 +6,7 @@
 
 **The open-source AI coding agent — in your terminal and on your LAN.**
 
-A multi-provider AI coding CLI that codes, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle. Local-first by design. MiMo-inspired memory system. Peer-to-peer LAN swarm. 70+ built-in tools.
+A multi-provider AI coding CLI that codes, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle. Local-first by design. MiMo-inspired memory system. Peer-to-peer LAN swarm. 75+ built-in tools.
 
 [![GitHub stars](https://img.shields.io/github/stars/ClewCode/ClewCode?style=social)](https://github.com/ClewCode/ClewCode/stargazers)
 [![Contributors](https://img.shields.io/github/contributors/ClewCode/ClewCode.svg)](https://github.com/ClewCode/ClewCode/graphs/contributors)
@@ -25,7 +25,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 
 ## Hacking in public
 
-Clew Code is a reverse-engineered reimplementation of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships a MiMo-inspired memory system (SQLite-backed, budgeted injection, cross-session persistence), agent-to-agent LAN peer coordination with swarm execution and memory sync, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation (Dream + Distill), and 28 provider adapters.
+Clew Code is a reverse-engineered reimplementation of [Claude Code](https://github.com/anthropics/claude-code) (Anthropic), rebuilt from the ground up to be **multi-provider** — you're not locked into one API. As of this writing the project ships a MiMo-inspired memory system (SQLite-backed, budgeted injection, cross-session persistence), agent-to-agent LAN peer coordination with swarm execution and memory sync, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation (Dream + Distill), and 27 provider adapters.
 
 > Reverse-engineered from Claude Code. Rebuilt for every provider.
 
@@ -139,11 +139,11 @@ export GEMINI_API_KEY=...
 
 ## Features
 
-- **28 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, OpenCode Go, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, custom. Switch mid-session. *(Anthropic provider removed — use [Claude Code](https://github.com/anthropics/claude-code) directly for Anthropic-first workflows.)*
+- **27 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, OpenCode Go, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, custom. Switch mid-session. *(Anthropic accessible via OpenRouter — use [Claude Code](https://github.com/anthropics/claude-code) directly for Anthropic-first workflows.)*
 - **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
 - **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
-- **70+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (15+ LAN coordination tools including swarm + dashboard), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction, GenerateImage (DALL-E 3 / Imagen 3), GenerateVideo (Runway Gen-4), ReadMediaFile (video input).
+- **75+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (15+ LAN coordination tools including swarm + dashboard), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
 - **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Templates for common workflows (`fix-build`, `green-tests`, `refactor`). Auto-integrates with AFK mode and the autonomous loop. Independent LLM verifier reviews completion and reports gaps.
 - **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
 - **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps). Project memory promotion at 70% checkpoint.
@@ -217,7 +217,7 @@ Profile and last-used permission mode are saved between sessions.
 ## Commands
 
 <details>
-<summary><strong>30+ slash commands</strong></summary>
+<summary><strong>100+ slash commands</strong></summary>
 
 ```
 /model          Switch provider or model
@@ -230,7 +230,6 @@ Profile and last-used permission mode are saved between sessions.
 /maxmode        Toggle parallel candidate generation
 /mcp            MCP server management
 /code-review    Review changed files for bugs
-/simplify       Cleanup-focused review
 /plugin         Plugin and hook management
 /bridge         Bridge mode config
 /agent          Background agent dispatch & subcommands
@@ -251,6 +250,15 @@ Profile and last-used permission mode are saved between sessions.
 /team           Team dashboard for in-process teammates
 /bg             Background sessions
 /plan           Plan mode
+/vim            Vim keybindings
+/research       Research dossier management
+/workflow       Multi-step workflow automation
+/rewind         Undo last response
+/upgrade        Check for updates
+/session        Session management
+/theme          Theme switcher
+/skills         List and manage skills
+/ultracode      UltraCode reasoning mode
 ```
 
 </details>
@@ -265,20 +273,30 @@ Profile and last-used permission mode are saved between sessions.
 ```
 src/
 ├── main.tsx                 # Entry point
-├── query.ts / QueryEngine.ts
+├── QueryEngine.ts           # Core query + tool loop
+├── query.ts                 # Non-streaming query variant
 ├── agentRuntime/            # Background agent orchestration
-├── commands/                # Slash command implementations
-├── tools/                   # 70+ built-in tools
+├── commands/                # 100+ slash command implementations
+├── tools/                   # 75+ built-in tools
 ├── services/
-│   ├── ai/                  # Provider manager + 28 providers
+│   ├── ai/                  # Provider manager + 27 providers
 │   ├── mcp/                 # MCP client + auth + transports
 │   ├── plugins/             # Plugin hooks + marketplace
 │   ├── autonomous/          # Agent loop + task queue + cron
+│   ├── search/              # Web search providers (brave, duckduckgo, serper, tavily)
 │   ├── checkpoint/          # Structured progress checkpoints
 │   ├── goal/                # Goal evaluation and verification
 │   ├── longTermMemory/      # Dream (7d) + Distill (30d) consolidation
 │   ├── maxMode/             # Candidate runner + evaluator
+│   ├── compact/             # Context compression and compaction
+│   ├── autoDream/           # Dream process scheduling
+│   ├── extractMemories/     # In-compact memory extraction
+│   ├── api/                 # API utilities (errors, retry)
+│   ├── openaiOAuth/         # OpenAI OAuth device flow
 │   ├── lsp/                 # LSP integration
+│   ├── voiceInput/          # Voice transcription pipeline
+│   ├── sessionSearch/       # FTS5 session transcript search
+│   ├── analytics/           # Session analytics
 │   └── Supervisor/          # Agent supervisor IPC
 ├── peer/                    # PeerServer + PeerDiscovery (agent-to-agent)
 ├── memory/                  # MemoryDB + autoInit + scanner + hierarchy + feedback (MiMo-style)
