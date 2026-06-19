@@ -1982,6 +1982,39 @@ export function buildConversationChain(
   return recoverOrphanedParallelToolResults(messages, transcript, seen);
 }
 
+function expandCompactBoundaryHistory(
+  messages: Map<UUID, TranscriptMessage>,
+  chain: TranscriptMessage[],
+  seen = new Set<UUID>(),
+): TranscriptMessage[] {
+  const expanded: TranscriptMessage[] = [];
+
+  for (const message of chain) {
+    if (message.type === 'system' && message.subtype === 'compact_boundary') {
+      const logicalParentUuid = message.logicalParentUuid;
+      const logicalParent = logicalParentUuid ? messages.get(logicalParentUuid) : undefined;
+      if (logicalParent && !seen.has(logicalParent.uuid)) {
+        const prefix = expandCompactBoundaryHistory(messages, buildConversationChain(messages, logicalParent), seen);
+        expanded.push(...prefix);
+      }
+    }
+
+    if (!seen.has(message.uuid)) {
+      seen.add(message.uuid);
+      expanded.push(message);
+    }
+  }
+
+  return expanded;
+}
+
+export function buildResumeConversationChain(
+  messages: Map<UUID, TranscriptMessage>,
+  leafMessage: TranscriptMessage,
+): TranscriptMessage[] {
+  return expandCompactBoundaryHistory(messages, buildConversationChain(messages, leafMessage));
+}
+
 /**
  * Post-pass for buildConversationChain: recover sibling assistant blocks and
  * tool_results that the single-parent walk orphaned.
@@ -2176,7 +2209,10 @@ function buildAttributionSnapshotChain(
  * @returns LogOption containing the transcript messages
  * @throws Error if file doesn't exist or contains invalid data
  */
-export async function loadTranscriptFromFile(filePath: string): Promise<LogOption> {
+export async function loadTranscriptFromFile(
+  filePath: string,
+  opts?: { includePreCompactHistory?: boolean },
+): Promise<LogOption> {
   if (filePath.endsWith('.jsonl')) {
     const {
       messages,
@@ -2190,7 +2226,7 @@ export async function loadTranscriptFromFile(filePath: string): Promise<LogOptio
       leafUuids,
       contentReplacements,
       worktreeStates,
-    } = await loadTranscriptFile(filePath);
+    } = await loadTranscriptFile(filePath, opts);
 
     if (messages.size === 0) {
       throw new Error('No messages found in JSONL file');
@@ -2204,7 +2240,9 @@ export async function loadTranscriptFromFile(filePath: string): Promise<LogOptio
     }
 
     // Build the conversation chain backwards from leaf to root
-    const transcript = buildConversationChain(messages, leafMessage);
+    const transcript = opts?.includePreCompactHistory
+      ? buildResumeConversationChain(messages, leafMessage)
+      : buildConversationChain(messages, leafMessage);
 
     const summary = summaries.get(leafMessage.uuid);
     const customTitle = customTitles.get(leafMessage.sessionId as UUID);
@@ -2811,7 +2849,7 @@ export function isLiteLog(log: LogOption): boolean {
  * Returns a new LogOption with populated messages array.
  * If the log is already full or loading fails, returns the original log.
  */
-export async function loadFullLog(log: LogOption): Promise<LogOption> {
+export async function loadFullLog(log: LogOption, opts?: { includePreCompactHistory?: boolean }): Promise<LogOption> {
   // If already full, return as-is
   if (!isLiteLog(log)) {
     return log;
@@ -2845,7 +2883,7 @@ export async function loadFullLog(log: LogOption): Promise<LogOption> {
       pinnedDates,
       pinnedGitStatuses,
       leafUuids,
-    } = await loadTranscriptFile(sessionFile);
+    } = await loadTranscriptFile(sessionFile, opts);
 
     if (messages.size === 0) {
       return log;
@@ -2861,7 +2899,9 @@ export async function loadFullLog(log: LogOption): Promise<LogOption> {
     }
 
     // Build the conversation chain from this leaf
-    const transcript = buildConversationChain(messages, mostRecentLeaf);
+    const transcript = opts?.includePreCompactHistory
+      ? buildResumeConversationChain(messages, mostRecentLeaf)
+      : buildConversationChain(messages, mostRecentLeaf);
     // Leaf's sessionId — forked sessions copy chain[0] from the source, but
     // metadata entries (custom-title etc.) are keyed by the current session.
     const sessionId = mostRecentLeaf.sessionId as UUID | undefined;
@@ -3299,7 +3339,7 @@ function walkChainBeforeParse(buf: Buffer): Buffer {
  */
 export async function loadTranscriptFile(
   filePath: string,
-  opts?: { keepAllLeaves?: boolean },
+  opts?: { keepAllLeaves?: boolean; includePreCompactHistory?: boolean },
 ): Promise<{
   messages: Map<UUID, TranscriptMessage>;
   summaries: Map<UUID, string>;
@@ -3362,7 +3402,7 @@ export async function loadTranscriptFile(
     let buf: Buffer | null = null;
     let metadataLines: string[] | null = null;
     let hasPreservedSegment = false;
-    if (!isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_PRECOMPACT_SKIP)) {
+    if (!opts?.includePreCompactHistory && !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_PRECOMPACT_SKIP)) {
       const { size } = await stat(filePath);
       if (size > SKIP_PRECOMPACT_THRESHOLD) {
         const scan = await readTranscriptForLoad(filePath, size);
@@ -3398,6 +3438,7 @@ export async function loadTranscriptFile(
     if (
       !opts?.keepAllLeaves &&
       !hasPreservedSegment &&
+      !opts?.includePreCompactHistory &&
       !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_PRECOMPACT_SKIP) &&
       buf.length > SKIP_PRECOMPACT_THRESHOLD
     ) {

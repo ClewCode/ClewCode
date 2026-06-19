@@ -4877,7 +4877,7 @@ async function run(): Promise<CommanderCommand> {
                 let logOption;
                 try {
                   // Attempt to load as a transcript file; ENOENT falls through to session-ID handling
-                  logOption = await loadTranscriptFromFile(resolvedPath);
+                  logOption = await loadTranscriptFromFile(resolvedPath, { includePreCompactHistory: true });
                 } catch (error) {
                   if (!isENOENT(error)) throw error;
                   // ENOENT: not a file path — fall through to session-ID handling

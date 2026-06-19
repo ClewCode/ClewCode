@@ -30,7 +30,7 @@ import {
 import { copyPlanForResume } from './plans.js';
 import { processSessionStartHooks } from './sessionStart.js';
 import {
-  buildConversationChain,
+  buildResumeConversationChain,
   checkResumeConsistency,
   getLastSessionLog,
   getSessionIdFromLog,
@@ -372,7 +372,7 @@ export async function loadMessagesFromJsonlPath(path: string): Promise<{
   messages: SerializedMessage[];
   sessionId: UUID | undefined;
 }> {
-  const { messages: byUuid, leafUuids } = await loadTranscriptFile(path);
+  const { messages: byUuid, leafUuids } = await loadTranscriptFile(path, { includePreCompactHistory: true });
   let tip: (typeof byUuid extends Map<UUID, infer T> ? T : never) | null = null;
   let tipTs = 0;
   for (const m of byUuid.values()) {
@@ -384,7 +384,7 @@ export async function loadMessagesFromJsonlPath(path: string): Promise<{
     }
   }
   if (!tip) return { messages: [], sessionId: undefined };
-  const chain = buildConversationChain(byUuid, tip);
+  const chain = buildResumeConversationChain(byUuid, tip);
   return {
     messages: removeExtraFields(chain),
     // Leaf's sessionId — forked sessions copy chain[0] from the source
@@ -484,7 +484,7 @@ export async function loadConversationForResume(
     if (log) {
       // Load full messages for lite logs
       if (isLiteLog(log)) {
-        log = await loadFullLog(log);
+        log = await loadFullLog(log, { includePreCompactHistory: true });
       }
 
       // Determine sessionId first so we can pass it to copy functions
