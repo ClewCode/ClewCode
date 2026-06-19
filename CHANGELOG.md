@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - **OpenAI Device Code flow (RFC 8628)**: New `OpenAIDeviceFlow` service at `src/services/openaiOAuth/deviceFlow.ts` for headless/browser-free OAuth login. Added "Device Login" option to `/providers` OpenAI OAuth picker. Device flow uses Auth0's device authorization grant — no localhost callback server needed, works reliably on all platforms including Windows.
+- **GitHub Wiki**: Full wiki at https://github.com/ClewCode/ClewCode/wiki with 13 pages covering installation, features, commands, concepts, memory system, and peer-to-peer.
+- **Wiki link**: Added wiki badge to README header.
+
+### Changed
+- **README restructured**: Moved Install, Quick start, Provider setup above Features for better flow. Updated provider count 28→27. Removed GenerateImage/GenerateVideo from features list (tools were removed).
+- **README cleaned**: Removed all "fork of Claude Code" and "reverse-engineered" references. Fixed `check:ci` description (Biome only, not full CI). Fixed peer docs link → wiki.
+- **Onboarding wizard redesigned**: New flow: Theme → Provider (all 27) → API Key → Model → Done. Removed Auth method selector, OAuth login, terminal settings step. Removed Anthropic Claude from provider list.
+
+### Fixed
+- **Workflow test paths**: Updated `tests/commands/workflow.test.ts` to use `.clew/runs/` instead of `.claude/runs/`, fixing 4 failing tests on Windows.
+
+### Removed
+- **Dead code cleanup**: Removed unregistered commands (`extra-usage`, `tag`, `remote-setup`, `vim`), commented-out tools (`BrowserAgentTool`, `MultiSearchTool`), and Anthropic-gated tools (`ConfigTool`, `TungstenTool`, `REPLTool`). Cleaned up imports and references across tools.ts, caches.ts, and REPL.tsx. Approximately 1,900 lines removed.
+- **docs/ directory**: Deleted all static HTML docs (44 files). Documentation moved to GitHub Wiki.
+- **Sensitive files untracked**: `.claude/settings.json`, `.claude/skills/graphify/`, `.claude-plugin/marketplace.json`, `.clew/taste/` (user preference data), `.claudeignore` — removed from git tracking to prevent leaking local config.
+- **Gitignore updated**: Added `.obsi/`, `.claude/`, `.claudeignore`, `ClewCode.wiki`, `test/`, `tests/`, `examples/` to `.gitignore`.
 
 ## [0.3.2] - 2026-06-18
 
