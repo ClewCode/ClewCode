@@ -67,6 +67,7 @@ graphify-out/
 .provider.json
 .claude-code-provider.json
 .claude/
+.claudeignore
 .CLAUDE.md
 CLAUDE.md
 .AGENTS.md 
