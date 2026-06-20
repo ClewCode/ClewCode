@@ -104,6 +104,11 @@ export async function authLogin({
   console?: boolean;
   claudeai?: boolean;
 }): Promise<void> {
+  // Gateway mode: skip Anthropic OAuth and login via api.clew-code.org
+  if (process.env.CLEW_GATEWAY_URL || process.env.CLEW_GATEWAY_KEY) {
+    await gatewayLogin();
+    return;
+  }
   // Clear policy limits cache to prevent deadlocks from forceRemoteSettingsRefresh
   // with expired credentials — auth commands must always work
   const { clearPolicyLimitsCache: _clearPolicyLimits } = await import('../../services/policyLimits/index.js');
@@ -287,6 +292,62 @@ export async function authStatus(opts: { json?: boolean; text?: boolean }): Prom
   process.exit(loggedIn ? 0 : 1);
 }
 
+/**
+ * Gateway login: prompt email/password, exchange for gateway token,
+ * save locally so ClewGatewayProvider can use it.
+ */
+async function gatewayLogin(): Promise<void> {
+  const readline = await import('node:readline');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const q = (query: string): Promise<string> => new Promise(resolve => rl.question(query, resolve));
+
+  try {
+    process.stdout.write('Sign in to Clew Gateway (api.clew-code.org)\n');
+    const action = process.env.CLEW_GATEWAY_KEY ? 'already configured' : 'login';
+    process.stdout.write(`Gateway key: ${process.env.CLEW_GATEWAY_KEY ? 'Set ✓' : 'Not set'}\n`);
+
+    if (process.env.CLEW_GATEWAY_KEY) {
+      process.stdout.write('Gateway key is already configured. Run `unset CLEW_GATEWAY_KEY` to change it.\n');
+      process.exit(0);
+    }
+
+    const email = await q('Email: ');
+    const password = await q('Password: ');
+
+    const { login, signup } = await import('../../utils/gatewayAuth.js');
+
+    // Try login first; if it fails with 401, offer signup
+    let result;
+    try {
+      result = await login(email, password);
+      process.stdout.write('Login successful.\n');
+    } catch (err: any) {
+      if (err.message?.includes('Invalid credentials') || err.message?.includes('401')) {
+        const doSignup = await q('No account found. Sign up? (y/N): ');
+        if (doSignup.toLowerCase() !== 'y') {
+          process.stdout.write('Login cancelled.\n');
+          process.exit(1);
+        }
+        result = await signup(email, password);
+        process.stdout.write('Account created! Login successful.\n');
+      } else {
+        throw err;
+      }
+    }
+
+    // Save token to config
+    const { saveGatewayToken } = await import('../../utils/gatewayAuth.js');
+    await saveGatewayToken(result.token, result.user);
+    process.stdout.write(`Logged in as ${result.user.email} (${result.user.tier})\n`);
+    process.exit(0);
+  } catch (err: any) {
+    process.stderr.write(`Gateway login failed: ${err.message}\n`);
+    process.exit(1);
+  } finally {
+    rl.close();
+  }
+}
+
 export async function authLogout(): Promise<void> {
   try {
     await performLogout({ clearOnboarding: false });
@@ -294,6 +355,6 @@ export async function authLogout(): Promise<void> {
     process.stderr.write('Failed to log out.\n');
     process.exit(1);
   }
-  process.stdout.write('Successfully logged out from your Anthropic account.\n');
+  process.stdout.write('Successfully logged out.\n');
   process.exit(0);
 }
