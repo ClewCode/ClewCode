@@ -12,8 +12,8 @@ import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { env } from '../../utils/env.js';
 import { isRunningOnHomespace } from '../../utils/envUtils.js';
 
-const CHROME_EXTENSION_URL = 'https://claude.ai/chrome';
-const CHROME_PERMISSIONS_URL = 'https://clau.de/chrome/permissions';
+const CHROME_EXTENSION_URL = 'https://clew-code.org/chrome';
+const CHROME_PERMISSIONS_URL = 'https://clew-code.org/chrome/permissions';
 const CHROME_RECONNECT_URL = 'https://clau.de/chrome/reconnect';
 
 type MenuAction = 'install-extension' | 'reconnect' | 'manage-permissions' | 'toggle-default';

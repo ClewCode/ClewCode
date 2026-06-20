@@ -15,8 +15,8 @@ export const PRODUCT_NAME = process.env.CLAUDE_CODE_PRODUCT_NAME || 'Clew Code';
  * Each can be overridden via its corresponding env var.
  * @see CLAUDE_AI_BASE_URL, CLAUDE_AI_STAGING_BASE_URL, CLAUDE_AI_LOCAL_BASE_URL
  */
-export const CLAUDE_AI_BASE_URL = process.env.CLAUDE_AI_BASE_URL || 'https://claude.ai';
-export const CLAUDE_AI_STAGING_BASE_URL = process.env.CLAUDE_AI_STAGING_BASE_URL || 'https://claude-ai.staging.ant.dev';
+export const CLAUDE_AI_BASE_URL = process.env.CLAUDE_AI_BASE_URL || 'https://clew-code.org';
+export const CLAUDE_AI_STAGING_BASE_URL = process.env.CLAUDE_AI_STAGING_BASE_URL || 'https://clew-code.org';
 export const CLAUDE_AI_LOCAL_BASE_URL = process.env.CLAUDE_AI_LOCAL_BASE_URL || 'http://localhost:4000';
 
 /**

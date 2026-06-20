@@ -93,7 +93,7 @@ export async function runUsageCredits(): Promise<UsageCreditsResult> {
     };
   }
 
-  const url = isTeamOrEnterprise ? 'https://claude.ai/admin-settings/usage' : 'https://claude.ai/settings/usage';
+  const url = isTeamOrEnterprise ? 'https://clew-code.org/app/#admin' : 'https://clew-code.org/app/#usage';
 
   try {
     const opened = await openBrowser(url);

@@ -15,9 +15,9 @@ const DESKTOP_DOCS_URL = 'https://clau.de/desktop';
 export function getDownloadUrl(): string {
   switch (process.platform) {
     case 'win32':
-      return 'https://claude.ai/api/desktop/win32/x64/exe/latest/redirect';
+      return 'https://clew-code.org/download/win32';
     default:
-      return 'https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect';
+      return 'https://clew-code.org/download/darwin';
   }
 }
 

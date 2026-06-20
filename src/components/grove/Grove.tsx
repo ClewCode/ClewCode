@@ -55,7 +55,7 @@ function GracePeriodContentBody(): React.ReactNode {
             <Text bold>You can help improve Claude </Text>
             <Text>
               — Allow the use of your chats and coding sessions to train and improve Anthropic AI models. Change anytime
-              in your Privacy Settings (<Link url={'https://claude.ai/settings/data-privacy-controls'}></Link>
+              in your Privacy Settings (<Link url={'https://clew-code.org/settings/privacy'}></Link>
               ).
             </Text>
           </Text>
@@ -94,7 +94,7 @@ function PostGracePeriodContentBody(): React.ReactNode {
             Allow the use of your chats and coding sessions to train and improve Anthropic AI models. You can change
             this anytime in Privacy Settings
           </Text>
-          <Link url={'https://claude.ai/settings/data-privacy-controls'}></Link>
+          <Link url={'https://clew-code.org/settings/privacy'}></Link>
         </Box>
 
         <Box flexDirection="column">
@@ -315,7 +315,7 @@ export function PrivacySettingsDialog({
     >
       <Text>
         Review and manage your privacy settings at{' '}
-        <Link url={'https://claude.ai/settings/data-privacy-controls'}></Link>
+        <Link url={'https://clew-code.org/settings/privacy'}></Link>
       </Text>
 
       <Box>
