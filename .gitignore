@@ -132,3 +132,4 @@ ClewCode.wiki
 assets/video/
 assets/*.gif
 assets/*.jpg
+.wrangler
