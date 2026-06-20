@@ -1249,6 +1249,9 @@ export async function main() {
 
   // Parse and load settings flags early, before init()
   eagerLoadSettings();
+  // Start gateway telemetry ping (heartbeat to api.clew-code.org)
+  const { start: startGatewayTelemetry } = await import('./utils/gatewayTelemetry.js');
+  startGatewayTelemetry();
   profileCheckpoint('main_before_run');
   await run();
   profileCheckpoint('main_after_run');
