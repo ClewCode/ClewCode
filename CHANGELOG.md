@@ -5,23 +5,33 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- **OpenAI Device Code flow (RFC 8628)**: New `OpenAIDeviceFlow` service at `src/services/openaiOAuth/deviceFlow.ts` for headless/browser-free OAuth login. Added "Device Login" option to `/providers` OpenAI OAuth picker. Device flow uses Auth0's device authorization grant — no localhost callback server needed, works reliably on all platforms including Windows.
+- **Gateway authentication system**: New `src/utils/gatewayAuth.ts` module with `login()`, `signup()`, `saveGatewayToken()`, `importToken()`, `loginViaBrowser()`, `readGatewayToken()`, `isGatewayConfigured()`. Gateway token stored at `~/.clew/gateway.json` — read by `ClewGatewayProvider`. `clew auth login` now uses browser login by default with terminal fallback. Token import via `clew auth login --token`. (`src/utils/gatewayAuth.ts`, `src/cli/handlers/auth.ts`)
+- **Gateway telemetry heartbeat**: Periodic heartbeat to `api.clew-code.org` for usage tracking. (`src/commands.ts`, `src/components/StatusLine.tsx`)
+- **Marketing website**: Terminal-inspired design marketing site at `clew-code.org` with CNAME and OG meta. Moved to separate `ClewCode/clew-code.org` repo. (`0668907`, `bae38c4`)
+- **Context compaction improvements**: Background auto-compaction with configurable threshold (80% of warning level). (`src/services/compact/autoCompact.ts`)
+- **OpenAI Device Code flow (RFC 8628)**: New `OpenAIDeviceFlow` service at `src/services/openaiOAuth/deviceFlow.ts` for headless/browser-free OAuth login. Added "Device Login" option to `/providers` OpenAI OAuth picker.
 - **GitHub Wiki**: Full wiki at https://github.com/ClewCode/ClewCode/wiki with 13 pages covering installation, features, commands, concepts, memory system, and peer-to-peer.
 - **Wiki link**: Added wiki badge to README header.
 
 ### Changed
-- **README restructured**: Moved Install, Quick start, Provider setup above Features for better flow. Updated provider count 28→27. Removed GenerateImage/GenerateVideo from features list (tools were removed).
-- **README cleaned**: Removed all "fork of Claude Code" and "reverse-engineered" references. Fixed `check:ci` description (Biome only, not full CI). Fixed peer docs link → wiki.
+- **URL rebranding**: Replaced all `claude.ai` and `claude.com` URLs with `clew-code.org` across OAuth config, product links, usage, desktop, chrome, privacy, and prompts. Removed Anthropic production OAuth endpoints. (`535d2c8`, `38c0b19`, `37c48ac`)
+- **`/login` and `/logout` now gateway-native**: Commands use gateway mode by default when `isGatewayConfigured()` returns true. `/login` type changed to `'local'`, `/logout` type changed to `'local'` — both load gateway-specific modules (`gwlogin.ts`, `gwlogout.ts`). (`src/commands/login/index.ts`, `src/commands/logout/index.ts`)
+- **Interrupted prompt renamed**: "Interrupted by user" message now branded as "Clew". (`src/components/InterruptedByUser.tsx`)
+- **README restructured**: Moved Install, Quick start, Provider setup above Features for better flow. Updated provider count 28→27. Removed GenerateImage/GenerateVideo from features list.
+- **README cleaned**: Removed all "fork of Claude Code" and "reverse-engineered" references. Fixed `check:ci` description. Fixed peer docs link → wiki.
 - **Onboarding wizard redesigned**: New flow: Theme → Provider (all 27) → API Key → Model → Done. Removed Auth method selector, OAuth login, terminal settings step. Removed Anthropic Claude from provider list.
+- **AGENTS.md updated**: Added gateway mode, dashboard deployment instructions, removed commands section. (`e6ed8e8`)
 
 ### Fixed
 - **Workflow test paths**: Updated `tests/commands/workflow.test.ts` to use `.clew/runs/` instead of `.claude/runs/`, fixing 4 failing tests on Windows.
+- **Auth logout message**: Changed "Successfully logged out from your Anthropic account" to generic "Successfully logged out." for gateway compatibility.
 
 ### Removed
 - **Dead code cleanup**: Removed unregistered commands (`extra-usage`, `tag`, `remote-setup`, `vim`), commented-out tools (`BrowserAgentTool`, `MultiSearchTool`), and Anthropic-gated tools (`ConfigTool`, `TungstenTool`, `REPLTool`). Cleaned up imports and references across tools.ts, caches.ts, and REPL.tsx. Approximately 1,900 lines removed.
 - **docs/ directory**: Deleted all static HTML docs (44 files). Documentation moved to GitHub Wiki.
-- **Sensitive files untracked**: `.claude/settings.json`, `.claude/skills/graphify/`, `.claude-plugin/marketplace.json`, `.clew/taste/` (user preference data), `.claudeignore` — removed from git tracking to prevent leaking local config.
+- **Sensitive files untracked**: `.claude/settings.json`, `.claude/skills/graphify/`, `.claude-plugin/marketplace.json`, `.clew/taste/` — removed from git tracking.
 - **Gitignore updated**: Added `.obsi/`, `.claude/`, `.claudeignore`, `ClewCode.wiki`, `test/`, `tests/`, `examples/` to `.gitignore`.
+- **Unintended assets**: Removed website assets from main repo after moving website to separate repo. (`d25393d`)
 
 ## [0.3.2] - 2026-06-18
 

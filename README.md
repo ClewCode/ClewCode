@@ -6,7 +6,7 @@
 
 **The open-source AI coding agent — in your terminal and on your LAN.**
 
-A multi-provider AI coding CLI that codes, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle. Local-first by design. MiMo-inspired memory system. Peer-to-peer LAN swarm. 75+ built-in tools.
+A multi-provider AI coding CLI that codes, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle. Local-first by design. MiMo-inspired memory system. Peer-to-peer LAN swarm. Gateway authentication at `clew-code.org`. 75+ built-in tools.
 
 [![GitHub stars](https://img.shields.io/github/stars/ClewCode/ClewCode?style=social)](https://github.com/ClewCode/ClewCode/stargazers)
 [![Contributors](https://img.shields.io/github/contributors/ClewCode/ClewCode.svg)](https://github.com/ClewCode/ClewCode/graphs/contributors)
@@ -15,9 +15,10 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 [![CI](https://img.shields.io/github/actions/workflow/status/ClewCode/ClewCode/ci.yml?branch=main)](https://github.com/ClewCode/ClewCode/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](#license)
 [![Platform](https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-lightgrey.svg)](#installation)
+[![Website](https://img.shields.io/badge/web-clew--code.org-blue.svg)](https://clew-code.org)
 [![Built with Bun](https://img.shields.io/badge/built%20with-Bun-ff69b4.svg)](https://bun.sh)
 
-[GitHub](https://github.com/ClewCode/ClewCode) · [Latest Release](https://github.com/ClewCode/ClewCode/releases) · [Wiki](https://github.com/ClewCode/ClewCode/wiki) · [Issues](https://github.com/ClewCode/ClewCode/issues)
+[GitHub](https://github.com/ClewCode/ClewCode) · [Website](https://clew-code.org) · [Latest Release](https://github.com/ClewCode/ClewCode/releases) · [Wiki](https://github.com/ClewCode/ClewCode/wiki) · [Issues](https://github.com/ClewCode/ClewCode/issues)
 
 </div>
 
@@ -27,7 +28,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 
 Clew Code is a **multi-provider** AI coding agent — you're not locked into one API. As of this writing the project ships a MiMo-inspired memory system (SQLite-backed, budgeted injection, cross-session persistence), agent-to-agent LAN peer coordination with swarm execution and memory sync, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation (Dream + Distill), and 27 provider adapters.
 
-> Rebuilt for every provider.
+> Rebuilt for every provider. Gateway-native auth at [clew-code.org](https://clew-code.org).
 
 ---
 
@@ -95,6 +96,12 @@ clew
 # Or go local with Ollama
 ❯ /model ollama/llama3.3
 
+# Sign in via Clew Gateway (api.clew-code.org)
+❯ /login
+
+# Token import from web dashboard
+clew auth login --token <token>
+
 # In-session commands
 ❯ /help           # list everything
 ❯ /status         # current provider, model, context info
@@ -113,6 +120,8 @@ clew
 ❯ /memory rebuild # reconstruct context from ranked memories
 ❯ /memory recall --verbose  # recall ranked memories
 ❯ /profile personal  # command-center mode with delegation
+❯ /login             # sign in via Clew Gateway
+❯ /logout            # sign out
 
 # One-shot mode (pipe-friendly)
 clew -p "summarize CHANGELOG.md"
@@ -143,6 +152,7 @@ export GEMINI_API_KEY=...
 - **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
 - **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
+- **Gateway auth** (`/login` / `/logout`): Sign in at `api.clew-code.org` with browser or terminal login. Token import from web dashboard via `clew auth login --token`. Gateway token stored locally for `ClewGatewayProvider`.
 - **75+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (15+ LAN coordination tools including swarm + dashboard), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
 - **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Templates for common workflows (`fix-build`, `green-tests`, `refactor`). Auto-integrates with AFK mode and the autonomous loop. Independent LLM verifier reviews completion and reports gaps.
 - **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
@@ -220,6 +230,8 @@ Profile and last-used permission mode are saved between sessions.
 <summary><strong>100+ slash commands</strong></summary>
 
 ```
+/login          Sign in via Clew Gateway
+/logout         Sign out from Clew Gateway
 /model          Switch provider or model
 /status         Provider, session, context info
 /doctor         Diagnostics
@@ -350,6 +362,18 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 ---
 
 ## Changelog
+
+<details>
+<summary><strong>v0.3.3 — unreleased</strong></summary>
+
+- **Gateway auth system**: Login/signup via browser or terminal at `api.clew-code.org`. Token import from web dashboard. `/login` and `/logout` now gateway-native.
+- **URL rebranding**: All `claude.ai` and `claude.com` URLs replaced with `clew-code.org`.
+- **Marketing website**: Terminal-inspired design site at `clew-code.org`, moved to separate repo.
+- **Context compaction**: Background auto-compaction with configurable threshold.
+- **Interrupted prompt renamed**: Branded as "Clew".
+- **AGENTS.md updated**: Gateway mode, dashboard deployment, removed commands documentation.
+
+</details>
 
 <details>
 <summary><strong>v0.3.2 — 2026-06-18</strong></summary>
