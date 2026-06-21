@@ -8,7 +8,7 @@ export function InterruptedByUser(): React.ReactNode {
       {'external' === 'ant' ? (
         <Text dimColor>· [ANT-ONLY] /issue to report a model issue</Text>
       ) : (
-        <Text dimColor>· What should Claude do instead?</Text>
+        <Text dimColor>· What should Clew do instead?</Text>
       )}
     </>
   );
