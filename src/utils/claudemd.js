@@ -42,7 +42,7 @@ import { DOT_CLAUDE, DOT_CLEW } from '../utils/clewPaths.js';
 import { getCurrentProjectConfig, getManagedClaudeRulesDir, getMemoryPath, getUserClaudeRulesDir } from './config.js';
 import { logForDebugging } from './debug.js';
 import { logForDiagnosticsNoPII } from './diagLogs.js';
-import { getClewConfigHomeDir, getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { getErrnoCode } from './errors.js';
 import { normalizePathForComparison } from './file.js';
 import { cacheKeys } from './fileStateCache.js';

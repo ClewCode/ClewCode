@@ -24,7 +24,7 @@ export const getClewConfigHomeDir = memoize(
   () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR') ?? '.clew',
 );
 /** Alias for the same function. */
-export const getClewConfigHomeDir = getClewConfigHomeDir;
+export const getClaudeConfigHomeDir = getClewConfigHomeDir;
 export function getTeamsDir() {
   return join(getClewConfigHomeDir(), 'teams');
 }
