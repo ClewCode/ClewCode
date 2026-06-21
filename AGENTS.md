@@ -263,7 +263,30 @@ The provider-agnostic replacement is Bridge v2 in `src/remote/`. When modifying 
 
 The codebase uses `bun:bundle` feature flags extensively. Check `package.json` scripts for active `--define.*` flags. Additional features are gated via `process.env` checks (e.g., `ENABLE_COMPUTER_USE`, `USER_TYPE === 'ant'`).
 
-### process_peer Tool
+### Gateway Mode
+
+This project has a **Gateway Mode** that replaces Anthropic OAuth with `api.clew-code.org`:
+
+- **Key file**: `src/utils/gatewayAuth.ts` — `login()`, `signup()`, `saveGatewayToken()`, `importToken()`, `loginViaBrowser()`, `readGatewayToken()`, `isGatewayConfigured()`
+- **`isGatewayConfigured()`** returns `true` by default (unless `CLEW_DISABLE_GATEWAY` is set). This controls whether `/login` and `/logout` use gateway or Anthropic auth.
+- **`loginViaBrowser()`** starts a local HTTP server, opens browser with a login form, catches the token callback, and saves to `~/.clew/gateway.json`.
+- **`clew auth login`** now uses browser login by default, with terminal fallback.
+- **Gateway token** stored at `~/.clew/gateway.json` — read by `ClewGatewayProvider`.
+
+### Modified/Removed Commands
+
+- **`/ant`** — Removed entirely (Anthropic internal beta features, not needed).
+- **`/datadog`** — Disabled with `isEnabled: () => false` (Anthropic telemetry, not needed).
+- **`/login`** — Now uses gateway mode by default. Type `'local'` when gateway is configured, `'local-jsx'` otherwise. Loads `gwlogin.ts` module.
+- **`/logout`** — Now uses gateway mode by default. Loads `gwlogout.ts` module.
+
+### Dashboard Deployment
+
+The **web dashboard** (`clew-code.org/app/`) is deployed from **`clew-api/dashboard/index.html`** via Cloudflare Pages (connected to `ClewCode/clew-api` repo). 
+
+**IMPORTANT**: Do NOT edit `clew-code.org/app/index.html` for dashboard changes — it is the WRONG file. The actual dashboard served at `clew-code.org/app/` comes from `clew-api/dashboard/index.html`. The `clew-code.org` repo's `app/` directory is served only when Cloudflare Pages builds it, and the actual dashboard source is from the `clew-api` repo.
+
+Deploy dashboard changes by pushing to `ClewCode/clew-api` (committing `dashboard/index.html` and running `npx wrangler deploy` for the worker, or pushing to GitHub to trigger Cloudflare Pages).
 
 The `process_peer` tool runs Codex in exec/pty mode for external process-backed AI workers. Use for process-backed AI worker tasks, external command execution, or peer-controlled automation. Don't use it for simple local logic.
 
