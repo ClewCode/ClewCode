@@ -1786,6 +1786,7 @@ export function REPL({
   const [spinnerMessage, setSpinnerMessage] = useState<string | null>(null);
   const [spinnerColor, setSpinnerColor] = useState<keyof Theme | null>(null);
   const [spinnerShimmerColor, setSpinnerShimmerColor] = useState<keyof Theme | null>(null);
+  const [isCompacting, setIsCompacting] = useState(false);
   const [isMessageSelectorVisible, setIsMessageSelectorVisible] = useState(false);
   const [messageSelectorPreselect, setMessageSelectorPreselect] = useState<UserMessage | undefined>(undefined);
   const [showCostDialog, setShowCostDialog] = useState(false);
@@ -2031,7 +2032,8 @@ export function REPL({
     !onlySleepToolActive &&
     // Hide spinner when streaming text is visible (the text IS the feedback),
     // but keep it when isBriefOnly suppresses the streaming text display
-    (!visibleStreamingText || isBriefOnly);
+    (!visibleStreamingText || isBriefOnly) &&
+    !isCompacting;
 
   // Check if any permission or ask question prompt is currently visible
   // This is used to prevent the survey from opening while prompts are active
@@ -3011,6 +3013,9 @@ export function REPL({
         onCompactProgress: event => {
           switch (event.type) {
             case 'hooks_start':
+              if (event.hookType === 'pre_compact' || event.hookType === 'post_compact') {
+                setIsCompacting(true);
+              }
               setSpinnerColor('claudeBlue_FOR_SYSTEM_SPINNER');
               setSpinnerShimmerColor('claudeBlueShimmer_FOR_SYSTEM_SPINNER');
               setSpinnerMessage(
@@ -3022,9 +3027,11 @@ export function REPL({
               );
               break;
             case 'compact_start':
+              setIsCompacting(true);
               setSpinnerMessage('Compacting conversation');
               break;
             case 'compact_end':
+              setIsCompacting(false);
               setSpinnerMessage(null);
               setSpinnerColor(null);
               setSpinnerShimmerColor(null);

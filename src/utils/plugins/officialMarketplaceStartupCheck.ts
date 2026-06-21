@@ -137,9 +137,14 @@ export type OfficialMarketplaceCheckResult = {
  */
 export async function checkAndInstallOfficialMarketplace(): Promise<OfficialMarketplaceCheckResult> {
   const config = getGlobalConfig();
+  const knownMarketplaces = await loadKnownMarketplacesConfig();
+  const isInstalled = !!knownMarketplaces[OFFICIAL_MARKETPLACE_NAME];
+
+  // If global config thinks it's installed, but it's not in knownMarketplaces, force a reinstall
+  const shouldForceReinstall = config.officialMarketplaceAutoInstalled && !isInstalled;
 
   // Check if we should retry installation
-  if (!shouldRetryInstallation(config)) {
+  if (!shouldForceReinstall && !shouldRetryInstallation(config)) {
     const reason: OfficialMarketplaceSkipReason =
       config.officialMarketplaceAutoInstallFailReason ?? 'already_attempted';
     logForDebugging(`Official marketplace auto-install skipped: ${reason}`);
@@ -169,8 +174,7 @@ export async function checkAndInstallOfficialMarketplace(): Promise<OfficialMark
     }
 
     // Check if marketplace is already installed
-    const knownMarketplaces = await loadKnownMarketplacesConfig();
-    if (knownMarketplaces[OFFICIAL_MARKETPLACE_NAME]) {
+    if (isInstalled) {
       logForDebugging(`Official marketplace '${OFFICIAL_MARKETPLACE_NAME}' already installed, skipping`);
       // Mark as attempted so we don't check again
       saveGlobalConfig(current => ({

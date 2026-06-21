@@ -84,107 +84,6 @@ export function ManageMarketplaces({
   const [detailsMenuIndex, setDetailsMenuIndex] = useState(0);
   const hasAttemptedAutoAction = useRef(false);
 
-  // Load marketplaces and their installed plugins
-  useEffect(() => {
-    async function loadMarketplaces() {
-      try {
-        const config = await loadKnownMarketplacesConfig();
-        const { enabled, disabled } = await loadAllPlugins();
-        const allPlugins = [...enabled, ...disabled];
-
-        // Load marketplaces with graceful degradation
-        const { marketplaces, failures } = await loadMarketplacesWithGracefulDegradation(config);
-
-        const states: MarketplaceState[] = [];
-        for (const { name, config: entry, data: marketplace } of marketplaces) {
-          // Get all plugins installed from this marketplace
-          const installedFromMarketplace = allPlugins.filter(plugin => plugin.source.endsWith(`@${name}`));
-
-          states.push({
-            name,
-            source: getMarketplaceSourceDisplay(entry.source),
-            lastUpdated: entry.lastUpdated,
-            pluginCount: marketplace?.plugins.length,
-            installedPlugins: installedFromMarketplace,
-            pendingUpdate: false,
-            pendingRemove: false,
-            autoUpdate: isMarketplaceAutoUpdate(name, entry),
-          });
-        }
-
-        // Sort: claude-plugin-directory first, then alphabetically
-        states.sort((a, b) => {
-          if (a.name === 'claude-plugin-directory') return -1;
-          if (b.name === 'claude-plugin-directory') return 1;
-          return a.name.localeCompare(b.name);
-        });
-        setMarketplaceStates(states);
-
-        // Handle marketplace loading errors/warnings
-        const successCount = count(marketplaces, m => m.data !== null);
-        const errorResult = formatMarketplaceLoadingErrors(failures, successCount);
-        if (errorResult) {
-          if (errorResult.type === 'warning') {
-            setProcessError(errorResult.message);
-          } else {
-            throw new Error(errorResult.message);
-          }
-        }
-
-        // Auto-execute if target and action provided
-        if (targetMarketplace && !hasAttemptedAutoAction.current && !error) {
-          hasAttemptedAutoAction.current = true;
-          const targetIndex = states.findIndex(s => s.name === targetMarketplace);
-          if (targetIndex >= 0) {
-            const targetState = states[targetIndex];
-            if (action) {
-              // Mark the action as pending and execute
-              setSelectedIndex(targetIndex + 1); // +1 because "Add Marketplace" is at index 0
-              const newStates = [...states];
-              if (action === 'update') {
-                newStates[targetIndex]!.pendingUpdate = true;
-              } else if (action === 'remove') {
-                newStates[targetIndex]!.pendingRemove = true;
-              }
-              setMarketplaceStates(newStates);
-              // Apply the change immediately
-              setTimeout(applyChanges, 100, newStates);
-            } else if (targetState) {
-              // No action - just show the details view for this marketplace
-              setSelectedIndex(targetIndex + 1); // +1 because "Add Marketplace" is at index 0
-              setSelectedMarketplace(targetState);
-              setInternalView('details');
-            }
-          } else if (setError) {
-            setError(`Marketplace not found: ${targetMarketplace}`);
-          }
-        }
-      } catch (err) {
-        if (setError) {
-          setError(err instanceof Error ? err.message : 'Failed to load marketplaces');
-        }
-        setProcessError(err instanceof Error ? err.message : 'Failed to load marketplaces');
-      } finally {
-        setLoading(false);
-      }
-    }
-    void loadMarketplaces();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
-  }, [targetMarketplace, action, error, setError, applyChanges]);
-
-  // Check if there are any pending changes
-  const hasPendingChanges = () => {
-    return marketplaceStates.some(state => state.pendingUpdate || state.pendingRemove);
-  };
-
-  // Get count of pending operations
-  const getPendingCounts = () => {
-    const updateCount = count(marketplaceStates, s => s.pendingUpdate);
-    const removeCount = count(marketplaceStates, s => s.pendingRemove);
-    return { updateCount, removeCount };
-  };
-
   // Apply all pending changes
   const applyChanges = async (states?: MarketplaceState[]) => {
     const statesToProcess = states || marketplaceStates;
@@ -338,6 +237,109 @@ export function ManageMarketplaces({
       setProgressMessage(null);
     }
   };
+
+  // Load marketplaces and their installed plugins
+  useEffect(() => {
+    async function loadMarketplaces() {
+      try {
+        const config = await loadKnownMarketplacesConfig();
+        const { enabled, disabled } = await loadAllPlugins();
+        const allPlugins = [...enabled, ...disabled];
+
+        // Load marketplaces with graceful degradation
+        const { marketplaces, failures } = await loadMarketplacesWithGracefulDegradation(config);
+
+        const states: MarketplaceState[] = [];
+        for (const { name, config: entry, data: marketplace } of marketplaces) {
+          // Get all plugins installed from this marketplace
+          const installedFromMarketplace = allPlugins.filter(plugin => plugin.source.endsWith(`@${name}`));
+
+          states.push({
+            name,
+            source: getMarketplaceSourceDisplay(entry.source),
+            lastUpdated: entry.lastUpdated,
+            pluginCount: marketplace?.plugins.length,
+            installedPlugins: installedFromMarketplace,
+            pendingUpdate: false,
+            pendingRemove: false,
+            autoUpdate: isMarketplaceAutoUpdate(name, entry),
+          });
+        }
+
+        // Sort: claude-plugin-directory first, then alphabetically
+        states.sort((a, b) => {
+          if (a.name === 'claude-plugin-directory') return -1;
+          if (b.name === 'claude-plugin-directory') return 1;
+          return a.name.localeCompare(b.name);
+        });
+        setMarketplaceStates(states);
+
+        // Handle marketplace loading errors/warnings
+        const successCount = count(marketplaces, m => m.data !== null);
+        const errorResult = formatMarketplaceLoadingErrors(failures, successCount);
+        if (errorResult) {
+          if (errorResult.type === 'warning') {
+            setProcessError(errorResult.message);
+          } else {
+            throw new Error(errorResult.message);
+          }
+        }
+
+        // Auto-execute if target and action provided
+        if (targetMarketplace && !hasAttemptedAutoAction.current && !error) {
+          hasAttemptedAutoAction.current = true;
+          const targetIndex = states.findIndex(s => s.name === targetMarketplace);
+          if (targetIndex >= 0) {
+            const targetState = states[targetIndex];
+            if (action) {
+              // Mark the action as pending and execute
+              setSelectedIndex(targetIndex + 1); // +1 because "Add Marketplace" is at index 0
+              const newStates = [...states];
+              if (action === 'update') {
+                newStates[targetIndex]!.pendingUpdate = true;
+              } else if (action === 'remove') {
+                newStates[targetIndex]!.pendingRemove = true;
+              }
+              setMarketplaceStates(newStates);
+              // Apply the change immediately
+              setTimeout(applyChanges, 100, newStates);
+            } else if (targetState) {
+              // No action - just show the details view for this marketplace
+              setSelectedIndex(targetIndex + 1); // +1 because "Add Marketplace" is at index 0
+              setSelectedMarketplace(targetState);
+              setInternalView('details');
+            }
+          } else if (setError) {
+            setError(`Marketplace not found: ${targetMarketplace}`);
+          }
+        }
+      } catch (err) {
+        if (setError) {
+          setError(err instanceof Error ? err.message : 'Failed to load marketplaces');
+        }
+        setProcessError(err instanceof Error ? err.message : 'Failed to load marketplaces');
+      } finally {
+        setLoading(false);
+      }
+    }
+    void loadMarketplaces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
+  }, [targetMarketplace, action, error, setError, applyChanges]);
+
+  // Check if there are any pending changes
+  const hasPendingChanges = () => {
+    return marketplaceStates.some(state => state.pendingUpdate || state.pendingRemove);
+  };
+
+  // Get count of pending operations
+  const getPendingCounts = () => {
+    const updateCount = count(marketplaceStates, s => s.pendingUpdate);
+    const removeCount = count(marketplaceStates, s => s.pendingRemove);
+    return { updateCount, removeCount };
+  };
+
+
 
   // Handle confirming marketplace removal
   const confirmRemove = async () => {

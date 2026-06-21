@@ -29,7 +29,7 @@ import { isEnvTruthy } from '../envUtils.js';
 import { ConfigParseError, errorMessage, getErrnoCode, isENOENT, toError } from '../errors.js';
 import { execFileNoThrow, execFileNoThrowWithCwd } from '../execFileNoThrow.js';
 import { getFsImplementation } from '../fsOperations.js';
-import { gitExe } from '../git.js';
+import { gitExe, isGitHubSshLikelyConfigured } from '../git.js';
 import { logError } from '../log.js';
 import { getInitialSettings, getSettingsForSource, updateSettingsForSource } from '../settings/settings.js';
 import type { SettingsJson } from '../settings/types.js';
@@ -656,44 +656,6 @@ function enhanceGitPullErrorMessages(result: { code: number; stderr: string; err
 }
 
 /**
- * Check if SSH is likely to work for GitHub
- * This is a quick heuristic check that avoids the full clone timeout
- *
- * Uses StrictHostKeyChecking=yes (not accept-new) so an unknown github.com
- * host key fails closed rather than being silently added to known_hosts.
- * This prevents a network-level MITM from poisoning known_hosts on first
- * contact. Users who already have github.com in known_hosts see no change;
- * users who don't are routed to the HTTPS clone path.
- *
- * @returns true if SSH auth succeeds and github.com is already trusted
- */
-async function isGitHubSshLikelyConfigured(): Promise<boolean> {
-  try {
-    // Quick SSH connection test with 2 second timeout
-    // This fails fast if SSH isn't configured
-    const result = await execFileNoThrow(
-      'ssh',
-      ['-T', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=2', '-o', 'StrictHostKeyChecking=yes', 'git@github.com'],
-      {
-        timeout: 3000, // 3 second total timeout
-      },
-    );
-
-    // SSH to github.com always returns exit code 1 with "successfully authenticated"
-    // or exit code 255 with "Permission denied" - we want the former
-    const configured =
-      result.code === 1 &&
-      (result.stderr?.includes('successfully authenticated') || result.stdout?.includes('successfully authenticated'));
-    logForDebugging(`SSH config check: code=${result.code} configured=${configured}`);
-    return configured;
-  } catch (error) {
-    // Any error means SSH isn't configured properly
-    logForDebugging(`SSH configuration check failed: ${errorMessage(error)}`, {
-      level: 'warn',
-    });
-    return false;
-  }
-}
 
 /**
  * Check if a git error indicates authentication failure.

@@ -50,7 +50,7 @@ import { errorMessage, getErrnoPath, isENOENT, isFsInaccessible, toError } from 
 import { execFileNoThrow, execFileNoThrowWithCwd } from '../execFileNoThrow.js';
 import { pathExists } from '../file.js';
 import { getFsImplementation } from '../fsOperations.js';
-import { gitExe } from '../git.js';
+import { gitExe, isGitHubSshLikelyConfigured } from '../git.js';
 import { lazySchema } from '../lazySchema.js';
 import { logError } from '../log.js';
 import { getSettings_DEPRECATED } from '../settings/settings.js';
@@ -602,9 +602,11 @@ async function installFromGitHub(
   if (!/^[a-zA-Z0-9-_.]+\/[a-zA-Z0-9-_.]+$/.test(repo)) {
     throw new Error(`Invalid GitHub repository format: ${repo}. Expected format: owner/repo`);
   }
-  // Use HTTPS for CCR (no SSH keys) or when PREFER_HTTPS is set, SSH for normal CLI
+  // Use HTTPS for CCR (no SSH keys), when PREFER_HTTPS is set, or if SSH is not configured
   const preferHttps =
-    isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) || isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS);
+    isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) ||
+    isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS) ||
+    !(await isGitHubSshLikelyConfigured());
   const gitUrl = preferHttps ? `https://github.com/${repo}.git` : `git@github.com:${repo}.git`;
   return installFromGit(gitUrl, targetPath, ref, sha, skipLfs);
 }
@@ -615,10 +617,12 @@ async function installFromGitHub(
  * CLAUDE_CODE_REMOTE) or any URL that passes validateGitUrl (https, http,
  * file, git@ ssh).
  */
-function resolveGitSubdirUrl(url: string): string {
+async function resolveGitSubdirUrl(url: string): Promise<string> {
   if (/^[a-zA-Z0-9-_.]+\/[a-zA-Z0-9-_.]+$/.test(url)) {
     const preferHttps =
-      isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) || isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS);
+      isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) ||
+      isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS) ||
+      !(await isGitHubSshLikelyConfigured());
     return preferHttps ? `https://github.com/${url}.git` : `git@github.com:${url}.git`;
   }
   return validateGitUrl(url);
@@ -661,7 +665,7 @@ export async function installFromGitSubdir(
     );
   }
 
-  const gitUrl = resolveGitSubdirUrl(url);
+  const gitUrl = await resolveGitSubdirUrl(url);
   // Clone into a sibling temp dir (same filesystem → rename works, no EXDEV).
   const cloneDir = `${targetPath}.clone`;
 
