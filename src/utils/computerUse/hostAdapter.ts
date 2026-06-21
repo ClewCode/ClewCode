@@ -94,6 +94,9 @@ export function getComputerUseBackend(): ComputerUseBackend {
       cachedBackendType = 'anthropic';
       return 'anthropic';
     } catch {
+      console.warn(
+        '\n⚠️  [ComputerUse] Warning: COMPUTER_USE_BACKEND="anthropic" was requested, but @ant/computer-use-mcp or @ant/computer-use-input packages are not installed. Falling back to the "builtin" platform-native adapter.\n',
+      );
       logForDebugging('[cu-backend] anthropic backend requested but @ant packages not found, falling back to builtin', {
         level: 'warn',
       });

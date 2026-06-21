@@ -908,4 +908,3 @@ export async function isGitHubSshLikelyConfigured(): Promise<boolean> {
     return false;
   }
 }
-

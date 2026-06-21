@@ -144,8 +144,11 @@ Tips:
 
   isEnabled(): boolean {
     return (
-      (process.env.ENABLE_COMPUTER_USE === '1' && process.platform === 'win32') ||
-      (process.env.ENABLE_COMPUTER_USE === '1' && process.env.CI === 'true')
+      process.env.ENABLE_COMPUTER_USE === '1' &&
+      (process.platform === 'win32' ||
+        process.platform === 'darwin' ||
+        process.platform === 'linux' ||
+        process.env.CI === 'true')
     );
   },
 

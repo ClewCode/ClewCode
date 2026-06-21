@@ -32,7 +32,7 @@ export type CoordinatorAgentRunner = (subtask: DynamicSubtask, context: string) 
 
 /**
  * Run a dynamic workflow under the coordinator. Persists progress to
- * `.claude/runs/<id>/` so an interrupted run resumes from the last
+ * `.clew/runs/<id>/` so an interrupted run resumes from the last
  * completed wave. On resume, the host just calls this again with the
  * same workflow id and the persistence layer picks up where it left off.
  */

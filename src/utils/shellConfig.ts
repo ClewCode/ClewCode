@@ -36,7 +36,7 @@ export function getShellConfigPaths(options?: ShellConfigOptions): Record<string
 
 /**
  * Filter out installer-created claude aliases from an array of lines
- * Only removes aliases pointing to $HOME/.claude/local/claude
+ * Only removes aliases pointing to $HOME/.clew/local/clew
  * Preserves custom user aliases that point to other locations
  * Returns the filtered lines and whether our default installer alias was found
  */

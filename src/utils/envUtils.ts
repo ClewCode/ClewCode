@@ -11,11 +11,8 @@ export function getEnvWithAlias(primary: string, legacy: string): string | undef
 
 /**
  * Primary config home: ~/.clew (or CLEW_CONFIG_DIR / CLAUDE_CONFIG_DIR fallback).
- *
- * ~170 callers across the codebase. Named `getClaudeConfigHomeDir` for backward
- * compatibility — it returns the Clew home, not the old Claude home.
  */
-export const getClaudeConfigHomeDir = memoize(
+export const getClewConfigHomeDir = memoize(
   (): string => {
     const clewDir = getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR');
     if (clewDir) {
@@ -26,11 +23,11 @@ export const getClaudeConfigHomeDir = memoize(
   () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR') ?? '.clew',
 );
 
-/** Alias for the same function. */
-export const getClewConfigHomeDir = getClaudeConfigHomeDir;
+/** Legacy alias — use getClewConfigHomeDir. */
+export const getClaudeConfigHomeDir = getClewConfigHomeDir;
 
 export function getTeamsDir(): string {
-  return join(getClaudeConfigHomeDir(), 'teams');
+  return join(getClewConfigHomeDir(), 'teams');
 }
 
 /**

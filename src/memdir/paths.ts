@@ -3,7 +3,7 @@ import { homedir } from 'os';
 import { isAbsolute, join, normalize, sep } from 'path';
 import { getIsNonInteractiveSession, getProjectRoot } from '../bootstrap/state.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
-import { getClaudeConfigHomeDir, isEnvDefinedFalsy, isEnvTruthy } from '../utils/envUtils.js';
+import { getClewConfigHomeDir, isEnvDefinedFalsy, isEnvTruthy } from '../utils/envUtils.js';
 import { findCanonicalGitRoot } from '../utils/git.js';
 import { sanitizePath } from '../utils/path.js';
 import { getInitialSettings, getSettingsForSource } from '../utils/settings/settings.js';
@@ -70,7 +70,7 @@ export function getMemoryBaseDir(): string {
   if (process.env.CLAUDE_CODE_REMOTE_MEMORY_DIR) {
     return process.env.CLAUDE_CODE_REMOTE_MEMORY_DIR;
   }
-  return getClaudeConfigHomeDir();
+  return getClewConfigHomeDir();
 }
 
 const AUTO_MEM_DIRNAME = 'memory';

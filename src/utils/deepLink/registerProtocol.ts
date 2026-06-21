@@ -22,7 +22,7 @@ import {
   logEvent,
 } from 'src/services/analytics/index.js';
 import { logForDebugging } from '../debug.js';
-import { getClaudeConfigHomeDir } from '../envUtils.js';
+import { getClewConfigHomeDir } from '../envUtils.js';
 import { getErrnoCode } from '../errors.js';
 import { execFileNoThrow } from '../execFileNoThrow.js';
 import { getInitialSettings } from '../settings/settings.js';
@@ -286,7 +286,7 @@ export async function ensureDeepLinkProtocolRegistered(): Promise<void> {
   // Throttle to once per 24h so a read-only ~/.local/share/applications
   // doesn't generate a failure event on every startup. Marker lives in
   // ~/.claude (per-machine, not synced) rather than ~/.claude.json (can sync).
-  const failureMarkerPath = path.join(getClaudeConfigHomeDir(), '.deep-link-register-failed');
+  const failureMarkerPath = path.join(getClewConfigHomeDir(), '.deep-link-register-failed');
   try {
     const stat = await fs.stat(failureMarkerPath);
     if (Date.now() - stat.mtimeMs < FAILURE_BACKOFF_MS) {

@@ -52,6 +52,8 @@ export interface PlatformAdapter {
   listDisplays(): Promise<DisplayGeometry[]>;
 
   // ── Mouse ──────────────────────────────────────────────────────────────
+  mouseDown(): Promise<void>;
+  mouseUp(): Promise<void>;
 
   /** Move mouse to absolute position */
   mouseMove(x: number, y: number): Promise<void>;
@@ -79,6 +81,8 @@ export interface PlatformAdapter {
   /** Type text character by character */
   typeText(text: string): Promise<void>;
 
+  holdKey(sequence: string, durationMs: number): Promise<void>;
+
   // ── Clipboard ──────────────────────────────────────────────────────────
 
   /** Read clipboard contents */
@@ -86,6 +90,10 @@ export interface PlatformAdapter {
 
   /** Write text to clipboard */
   clipboardWrite(text: string): Promise<void>;
+
+  // ── Window Management ──────────────────────────────────────────────────
+  listWindows(): Promise<Array<{ title: string; x: number; y: number; w: number; h: number }>>;
+  focusWindow(query: string): Promise<boolean>;
 }
 
 // ============================================================================

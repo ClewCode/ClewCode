@@ -49,7 +49,7 @@ Tính năng chính:
 * **Chuyển đổi mô hình khi đang chạy** — Sử dụng `/model` để chuyển đổi mô hình hoặc nhà cung cấp trong phiên làm việc
 * **Quy trình làm việc dựa trên công cụ** — Đọc, tìm kiếm, chỉnh sửa và ghi file; thực thi lệnh shell; truy vấn LSP; chạy công cụ MCP; tích hợp tự động hóa trình duyệt
 * **Hook plugin** — Móc vào prompt, thực thi shell, gọi công cụ, hiển thị tin nhắn, bắt đầu phiên và hành động chỉnh sửa file
-* **Skill động** — Tải skill từ dự án và `.claude/skills/`
+* **Skill động** — Tải skill từ dự án và `.clew/skills/`
 * **Công cụ đánh giá mã** — Sử dụng `/code-review --fix` để kiểm tra và áp dụng thay đổi, `/simplify` để dọn dẹp mã
 * **Đánh giá tự động Guardian** — `/guardian` định tuyến yêu cầu cấp quyền đến người đánh giá LLM với bộ ngắt mạch
 * **Quản lý PR** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
@@ -187,7 +187,7 @@ Storage: Session-only
 
 Hành vi tác vụ:
 
-* Tác vụ Durable được lưu vào `.claude/scheduled_tasks.json`
+* Tác vụ Durable được lưu vào `.clew/scheduled_tasks.json`
 * Tác vụ Session-only chỉ chạy trong phiên hoạt động
 * Tác vụ định kỳ sử dụng cú pháp cron 5 trường tiêu chuẩn
 * Tác vụ một lần bị xóa sau khi chạy

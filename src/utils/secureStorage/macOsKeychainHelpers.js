@@ -16,14 +16,14 @@
 import { createHash } from 'crypto';
 import { userInfo } from 'os';
 import { getOauthConfig } from 'src/constants/oauth.js';
-import { getClaudeConfigHomeDir } from '../envUtils.js';
+import { getClewConfigHomeDir } from '../envUtils.js';
 // Suffix distinguishing the OAuth credentials keychain entry from the legacy
 // API key entry (which uses no suffix). Both share the service name base.
 // DO NOT change this value — it's part of the keychain lookup key and would
 // orphan existing stored credentials.
 export const CREDENTIALS_SERVICE_SUFFIX = '-credentials';
 export function getMacOsKeychainStorageServiceName(serviceSuffix = '') {
-  const configDir = getClaudeConfigHomeDir();
+  const configDir = getClewConfigHomeDir();
   const isDefaultDir = !process.env.CLAUDE_CONFIG_DIR;
   // Use a hash of the config dir path to create a unique but stable suffix
   // Only add suffix for non-default directories to maintain backwards compatibility

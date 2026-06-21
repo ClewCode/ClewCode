@@ -51,7 +51,7 @@ const inputSchema = lazySchema(() =>
     dossierOutputDir: z
       .string()
       .optional()
-      .describe('Output directory for the dossier (default: ~/.claude/research-dossiers)'),
+      .describe('Output directory for the dossier (default: ~/.clew/research-dossiers)'),
     enableSmartRanking: z.boolean().optional().describe('Enable smart source ranking to filter SEO spam'),
     excludeSpam: z.boolean().optional().describe('Exclude low-quality and spam sources'),
     minSourceScore: z.number().optional().describe('Minimum source credibility score (0-100)'),

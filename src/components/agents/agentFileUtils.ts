@@ -6,7 +6,7 @@ import type { AgentMemoryScope } from '../../tools/AgentTool/agentMemory.js';
 import { type AgentDefinition, isBuiltInAgent, isPluginAgent } from '../../tools/AgentTool/loadAgentsDir.js';
 import { getCwd } from '../../utils/cwd.js';
 import type { EffortValue } from '../../utils/effort.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { getErrnoCode } from '../../utils/errors.js';
 import { AGENT_PATHS } from './types.js';
 
@@ -57,7 +57,7 @@ function getAgentDirectoryPath(location: SettingSource): string {
     case 'flagSettings':
       throw new Error(`Cannot get directory path for ${location} agents`);
     case 'userSettings':
-      return join(getClaudeConfigHomeDir(), AGENT_PATHS.AGENTS_DIR);
+      return join(getClewConfigHomeDir(), AGENT_PATHS.AGENTS_DIR);
     case 'projectSettings':
       return join(getCwd(), AGENT_PATHS.FOLDER_NAME, AGENT_PATHS.AGENTS_DIR);
     case 'policySettings':

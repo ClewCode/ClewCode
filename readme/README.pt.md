@@ -49,7 +49,7 @@ Principais recursos:
 * **Alternância de modelo em tempo real** — Use `/model` para alternar modelo ou provedor durante uma sessão
 * **Fluxos de trabalho orientados a ferramentas** — Leia, pesquise, edite e escreva arquivos; execute comandos shell; consulte LSP; execute ferramentas MCP; integre automação de navegador
 * **Hooks de plugins** — Intercepte prompts, execução shell, chamadas de ferramentas, exibição de mensagens, início de sessão e ações de edição de arquivos
-* **Skills dinâmicas** — Carregue skills do projeto e de `.claude/skills/`
+* **Skills dinâmicas** — Carregue skills do projeto e de `.clew/skills/`
 * **Ferramentas de revisão de código** — Use `/code-review --fix` para verificar e aplicar alterações, `/simplify` para limpar código
 * **Revisão automática Guardian** — `/guardian` roteia solicitações de permissão para um revisor LLM com disjuntor
 * **Gerenciamento de PR** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
@@ -187,7 +187,7 @@ Storage: Session-only
 
 Comportamento das tarefas:
 
-* Tarefas duráveis são salvas em `.claude/scheduled_tasks.json`
+* Tarefas duráveis são salvas em `.clew/scheduled_tasks.json`
 * Tarefas apenas de sessão são executadas apenas durante a sessão ativa
 * Tarefas recorrentes usam sintaxe cron padrão de 5 campos
 * Tarefas únicas são removidas após a execução

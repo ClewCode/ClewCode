@@ -7,7 +7,7 @@
  */
 import { open as fsOpen, readdir, realpath, stat } from 'fs/promises';
 import { join } from 'path';
-import { getClaudeConfigHomeDir } from './envUtils.js';
+import { getClewConfigHomeDir } from './envUtils.js';
 import { getWorktreePathsPortable } from './getWorktreePathsPortable.js';
 import { djb2Hash } from './hash.js';
 /** Size of the head/tail buffer for lite metadata reads. */
@@ -259,7 +259,7 @@ export function sanitizePath(name) {
 // Project directory discovery (shared by listSessions & getSessionMessages)
 // ---------------------------------------------------------------------------
 export function getProjectsDir() {
-  return join(getClaudeConfigHomeDir(), 'projects');
+  return join(getClewConfigHomeDir(), 'projects');
 }
 export function getProjectDir(projectDir) {
   return join(getProjectsDir(), sanitizePath(projectDir));

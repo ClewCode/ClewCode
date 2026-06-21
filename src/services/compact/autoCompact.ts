@@ -62,7 +62,7 @@ export const AUTOCOMPACT_BUFFER_TOKENS = 13_000;
 export const WARNING_THRESHOLD_BUFFER_TOKENS = 20_000;
 export const ERROR_THRESHOLD_BUFFER_TOKENS = 20_000;
 export const MANUAL_COMPACT_BUFFER_TOKENS = 3_000;
-export const BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT = 0.8;
+export const BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT = 0.65;
 
 // Stop trying autocompact after this many consecutive failures.
 // BQ 2026-03-10: 1,279 sessions had 50+ consecutive failures (up to 3,272)

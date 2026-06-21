@@ -21,12 +21,9 @@ export class GoogleProvider extends OpenAICompatibleProvider {
     if (googleType === 'subscriber') {
       const apiKey = options.apiKey ?? process.env.GOOGLE_OAUTH_TOKEN;
       if (!apiKey) {
-        throw new Error(
-          'Missing Google OAuth token. Use /login or /providers set google to authenticate via OAuth.',
-        );
+        throw new Error('Missing Google OAuth token. Use /login or /providers set google to authenticate via OAuth.');
       }
-      const baseUrl =
-        options.baseUrl ?? process.env.GOOGLE_BASE_URL ?? this.defaultBaseUrl;
+      const baseUrl = options.baseUrl ?? process.env.GOOGLE_BASE_URL ?? this.defaultBaseUrl;
       return super.createClient({ ...options, apiKey, baseUrl });
     }
 

@@ -37,9 +37,9 @@ Choose the appropriate file based on scope:
 
 | File | Scope | Git | Use For |
 |------|-------|-----|---------|
-| \`~/.claude/settings.json\` | Global | N/A | Personal preferences for all projects |
-| \`.claude/settings.json\` | Project | Commit | Team-wide hooks, permissions, plugins |
-| \`.claude/settings.local.json\` | Project | Gitignore | Personal overrides for this project |
+| \`~/.clew/settings.json\` | Global | N/A | Personal preferences for all projects |
+| \`.clew/settings.json\` | Project | Commit | Team-wide hooks, permissions, plugins |
+| \`.clew/settings.local.json\` | Project | Gitignore | Personal overrides for this project |
 
 Settings load in order: user → project → local (later overrides earlier).
 
@@ -304,7 +304,7 @@ Given an event, matcher, target file, and desired behavior, follow this flow. Ea
 
    Check exit code AND side effect (file actually formatted, test actually ran). If it fails you get a real error — fix (wrong package manager? tool not installed? jq path wrong?) and retest. Once it works, wrap with \`2>/dev/null || true\` (unless the user wants a blocking check).
 
-4. **Write the JSON.** Merge into the target file (schema shape in the "Hook Structure" section above). If this creates \`.claude/settings.local.json\` for the first time, add it to .gitignore — the Write tool doesn't auto-gitignore it.
+4. **Write the JSON.** Merge into the target file (schema shape in the "Hook Structure" section above). If this creates \`.clew/settings.local.json\` for the first time, add it to .gitignore — the Write tool doesn't auto-gitignore it.
 
 5. **Validate syntax + schema in one shot:**
 

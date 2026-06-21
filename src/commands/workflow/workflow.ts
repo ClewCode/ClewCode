@@ -8,7 +8,7 @@
  *   /workflow cancel <id>     — cancel a running or paused run
  *
  * Persistence lives in `dynamicWorkflowPersistence.ts` under
- * `.claude/runs/<runId>/`. The host's coordinator (wired in via the
+ * `.clew/runs/<runId>/`. The host's coordinator (wired in via the
  * QueryEngine integration) is responsible for actually executing the
  * resume — this command only mutates run state on disk.
  */

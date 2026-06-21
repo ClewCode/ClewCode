@@ -5,8 +5,8 @@ export function getPrompt(): string {
 Remove team and task directories when the swarm work is complete.
 
 This operation:
-- Removes the team directory (\`~/.claude/teams/{team-name}/\`)
-- Removes the task directory (\`~/.claude/tasks/{team-name}/\`)
+- Removes the team directory (\`~/.clew/teams/{team-name}/\`)
+- Removes the task directory (\`~/.clew/tasks/{team-name}/\`)
 - Clears team context from the current session
 
 **IMPORTANT**: TeamDelete will fail if the team still has active members. Use RequestShutdown to gracefully ask each teammate to shut down first. Once all teammates have shut down, call TeamDelete.

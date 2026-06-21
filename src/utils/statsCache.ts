@@ -4,7 +4,7 @@ import { open } from 'fs/promises';
 import { join } from 'path';
 import type { ModelUsage } from '../entrypoints/agentSdkTypes.js';
 import { logForDebugging } from './debug.js';
-import { getClaudeConfigHomeDir } from './envUtils.js';
+import { getClewConfigHomeDir } from './envUtils.js';
 import { errorMessage } from './errors.js';
 import { getFsImplementation } from './fsOperations.js';
 import { logError } from './log.js';
@@ -78,7 +78,7 @@ export type PersistedStatsCache = {
 };
 
 export function getStatsCachePath(): string {
-  return join(getClaudeConfigHomeDir(), STATS_CACHE_FILENAME);
+  return join(getClewConfigHomeDir(), STATS_CACHE_FILENAME);
 }
 
 function getEmptyCache(): PersistedStatsCache {
@@ -258,7 +258,7 @@ export async function saveStatsCache(cache: PersistedStatsCache): Promise<void> 
 
   try {
     // Ensure the directory exists
-    const configDir = getClaudeConfigHomeDir();
+    const configDir = getClewConfigHomeDir();
     try {
       await fs.mkdir(configDir);
     } catch {

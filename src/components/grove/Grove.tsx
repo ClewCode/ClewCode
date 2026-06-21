@@ -314,8 +314,7 @@ export function PrivacySettingsDialog({
       }
     >
       <Text>
-        Review and manage your privacy settings at{' '}
-        <Link url={'https://clew-code.org/settings/privacy'}></Link>
+        Review and manage your privacy settings at <Link url={'https://clew-code.org/settings/privacy'}></Link>
       </Text>
 
       <Box>

@@ -79,14 +79,7 @@ function getGoalFilePath(): string {
   const sessionId = getSessionId();
   const cwd = getCwd();
   const slug = Buffer.from(cwd).toString('base64url').slice(0, 32);
-  return join(
-    getClewConfigHomeDir(),
-    'projects',
-    slug,
-    'sessions',
-    sessionId,
-    'goal.json',
-  );
+  return join(getClewConfigHomeDir(), 'projects', slug, 'sessions', sessionId, 'goal.json');
 }
 
 async function tryRestore(): Promise<void> {

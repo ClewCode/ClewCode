@@ -49,7 +49,7 @@ Clew 直接在终端中运行。它可以检查和编辑本地代码库，在权
 * **运行时模型切换**：使用 `/model` 在 session 中切换 provider 或 model
 * **Tool-driven workflows**：读取、搜索、编辑、写入文件；执行 shell commands；查询 LSP；运行 MCP tools；连接 browser automation
 * **Plugin hooks**：hook prompts、shell execution、tool calls、message display、session start 和 file editing actions
-* **Dynamic skills**：从内置目录和项目级 `.claude/skills/` 加载 skills
+* **Dynamic skills**：从内置目录和项目级 `.clew/skills/` 加载 skills
 * **Code review tools**：使用 `/code-review --fix` 检查变更代码并应用修复；使用 `/simplify` 做 cleanup-focused review
 * **Model picker**：选择全局或 session-only 模型默认值
 * **Plugin marketplace support**：下载 plugin sources 时支持 `skipLfs`
@@ -218,7 +218,7 @@ Storage: Session-only
 
 任务行为：
 
-* Durable tasks 保存到 `.claude/scheduled_tasks.json`
+* Durable tasks 保存到 `.clew/scheduled_tasks.json`
 * Session-only tasks 只在当前 session 中运行
 * Recurring tasks 使用 5-field cron syntax
 * One-shot tasks 运行后删除

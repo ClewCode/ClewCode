@@ -1,12 +1,12 @@
 import { chmodSync } from 'fs';
 import { join } from 'path';
-import { getClaudeConfigHomeDir } from '../envUtils.js';
+import { getClewConfigHomeDir } from '../envUtils.js';
 import { getErrnoCode } from '../errors.js';
 import { getFsImplementation } from '../fsOperations.js';
 import { jsonParse, jsonStringify, writeFileSync_DEPRECATED } from '../slowOperations.js';
 
 function getStoragePath() {
-  const storageDir = getClaudeConfigHomeDir();
+  const storageDir = getClewConfigHomeDir();
   const storageFileName = '.credentials.json';
   return { storageDir, storagePath: join(storageDir, storageFileName) };
 }

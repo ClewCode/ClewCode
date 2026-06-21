@@ -579,13 +579,61 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   // Build expanded list: providers with multiple auth methods get separate entries
   const EXPANDED_ENTRIES: ExpandedEntry[] = [
     // Google variants
-    { providerId: 'google', label: 'Google (API Key)', authType: 'direct', envKey: 'GOOGLE_API_KEY', isLocal: false, description: 'Use GOOGLE_API_KEY', value: 'google:direct' },
-    { providerId: 'google', label: 'Google OAuth (Web Login)', authType: 'subscriber', envKey: '', isLocal: true, description: 'Login via browser OAuth', value: 'google:subscriber' },
-    { providerId: 'google', label: 'Google Vertex AI', authType: 'vertex', envKey: '', isLocal: false, description: 'GCP credentials', value: 'google:vertex' },
+    {
+      providerId: 'google',
+      label: 'Google (API Key)',
+      authType: 'direct',
+      envKey: 'GOOGLE_API_KEY',
+      isLocal: false,
+      description: 'Use GOOGLE_API_KEY',
+      value: 'google:direct',
+    },
+    {
+      providerId: 'google',
+      label: 'Google OAuth (Web Login)',
+      authType: 'subscriber',
+      envKey: '',
+      isLocal: true,
+      description: 'Login via browser OAuth',
+      value: 'google:subscriber',
+    },
+    {
+      providerId: 'google',
+      label: 'Google Vertex AI',
+      authType: 'vertex',
+      envKey: '',
+      isLocal: false,
+      description: 'GCP credentials',
+      value: 'google:vertex',
+    },
     // OpenAI variants
-    { providerId: 'openai', label: 'OpenAI (API Key)', authType: 'direct', envKey: 'OPENAI_API_KEY', isLocal: false, description: 'Use OPENAI_API_KEY', value: 'openai:direct' },
-    { providerId: 'openai', label: 'ChatGPT Plus (Web)', authType: 'subscriber', envKey: '', isLocal: true, description: 'ChatGPT OAuth login', value: 'openai:subscriber' },
-    { providerId: 'openai', label: 'Azure OpenAI', authType: 'azure', envKey: 'AZURE_API_KEY', isLocal: false, description: 'Azure OpenAI endpoint', value: 'openai:azure' },
+    {
+      providerId: 'openai',
+      label: 'OpenAI (API Key)',
+      authType: 'direct',
+      envKey: 'OPENAI_API_KEY',
+      isLocal: false,
+      description: 'Use OPENAI_API_KEY',
+      value: 'openai:direct',
+    },
+    {
+      providerId: 'openai',
+      label: 'ChatGPT Plus (Web)',
+      authType: 'subscriber',
+      envKey: '',
+      isLocal: true,
+      description: 'ChatGPT OAuth login',
+      value: 'openai:subscriber',
+    },
+    {
+      providerId: 'openai',
+      label: 'Azure OpenAI',
+      authType: 'azure',
+      envKey: 'AZURE_API_KEY',
+      isLocal: false,
+      description: 'Azure OpenAI endpoint',
+      value: 'openai:azure',
+    },
   ];
   const expandedMap = new Map(EXPANDED_ENTRIES.map(e => [e.value, e]));
 
@@ -615,9 +663,8 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   }
 
   function createExpandedOption(entry: ExpandedEntry): OptionWithDescription<ProviderSelectValue> {
-    const hasKey = entry.isLocal && !entry.envKey
-      ? true
-      : Boolean(config?.apiKeys?.[entry.providerId] || process.env[entry.envKey]);
+    const hasKey =
+      entry.isLocal && !entry.envKey ? true : Boolean(config?.apiKeys?.[entry.providerId] || process.env[entry.envKey]);
     const status = hasKey
       ? entry.isLocal && !entry.envKey
         ? 'not required'
@@ -644,17 +691,12 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     const allEntries = buildAllEntries();
 
     function createEntryOption(entry: ExpandedEntry): OptionWithDescription<ProviderSelectValue> {
-      const hasKey = entry.isLocal && !entry.envKey
-        ? true
-        : Boolean(config?.apiKeys?.[entry.providerId] || process.env[entry.envKey]);
-      const status = hasKey
-        ? chalk.green('configured')
-        : entry.isLocal
-          ? 'not required'
-          : `${entry.envKey} - MISSING`;
-      const markers = [
-        entry.providerId === activeProvider ? chalk.green('current') : null,
-      ].filter(Boolean);
+      const hasKey =
+        entry.isLocal && !entry.envKey
+          ? true
+          : Boolean(config?.apiKeys?.[entry.providerId] || process.env[entry.envKey]);
+      const status = hasKey ? chalk.green('configured') : entry.isLocal ? 'not required' : `${entry.envKey} - MISSING`;
+      const markers = [entry.providerId === activeProvider ? chalk.green('current') : null].filter(Boolean);
       return {
         label: entry.label,
         value: entry.value,
@@ -674,7 +716,13 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
       : [
           ...(visibleRecent.length > 0
             ? [
-                { label: 'Recent', value: '__SECTION_RECENT__', description: '', type: 'section', disabled: true } as const,
+                {
+                  label: 'Recent',
+                  value: '__SECTION_RECENT__',
+                  description: '',
+                  type: 'section',
+                  disabled: true,
+                } as const,
                 ...visibleRecent.map(r => {
                   const info = getProviderInfo(r);
                   return {

@@ -28,7 +28,7 @@ import { dirname, join } from 'path';
 import { getSessionId } from '../../bootstrap/state.js';
 import { registerCleanup } from '../cleanupRegistry.js';
 import { logForDebugging } from '../debug.js';
-import { getClaudeConfigHomeDir, isEnvDefinedFalsy, isEnvTruthy } from '../envUtils.js';
+import { getClewConfigHomeDir, isEnvDefinedFalsy, isEnvTruthy } from '../envUtils.js';
 import { errorMessage } from '../errors.js';
 import { djb2Hash } from '../hash.js';
 import { jsonStringify } from '../slowOperations.js';
@@ -189,7 +189,7 @@ export function initializePerfettoTracing() {
     startTimeMs = Date.now();
     // Determine trace file path
     if (isEnvTruthy(envValue)) {
-      const tracesDir = join(getClaudeConfigHomeDir(), 'traces');
+      const tracesDir = join(getClewConfigHomeDir(), 'traces');
       tracePath = join(tracesDir, `trace-${getSessionId()}.json`);
     } else {
       // Use the provided path

@@ -71,7 +71,7 @@ claudecode/
 ├── docs/                     # Documentation
 ├── bin/                      # CLI entry wrappers
 ├── dist/                     # Built output
-├── .claude-plugin/           # Plugin marketplace manifest
+├── .claude-plugin/           # Plugin marketplace manifest (legacy name, kept for compatibility)
 ├── package.json
 └── README.md
 ```

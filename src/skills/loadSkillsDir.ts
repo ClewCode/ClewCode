@@ -13,7 +13,7 @@ import { parseArgumentNames, substituteArguments } from '../utils/argumentSubsti
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { logForDebugging } from '../utils/debug.js';
 import { EFFORT_LEVELS, type EffortValue, parseEffortValue } from '../utils/effort.js';
-import { getClaudeConfigHomeDir, isBareMode, isEnvTruthy } from '../utils/envUtils.js';
+import { getClewConfigHomeDir, isBareMode, isEnvTruthy } from '../utils/envUtils.js';
 import { isENOENT, isFsInaccessible } from '../utils/errors.js';
 import {
   coerceDescriptionToString,
@@ -55,7 +55,7 @@ export function getSkillsPath(source: SettingSource | 'plugin', dir: 'skills' | 
     case 'policySettings':
       return join(getManagedFilePath(), DOT_CLEW, dir);
     case 'userSettings':
-      return join(getClaudeConfigHomeDir(), dir);
+      return join(getClewConfigHomeDir(), dir);
     case 'projectSettings':
       return `${DOT_CLEW}/${dir}`;
     case 'plugin':
@@ -551,7 +551,7 @@ async function loadSkillsFromCommandsDir(cwd: string): Promise<SkillWithPath[]> 
  * @param cwd Current working directory for project directory traversal
  */
 export const getSkillDirCommands = memoize(async (cwd: string): Promise<Command[]> => {
-  const userSkillsDir = join(getClaudeConfigHomeDir(), 'skills');
+  const userSkillsDir = join(getClewConfigHomeDir(), 'skills');
   const managedSkillsDir = join(getManagedFilePath(), DOT_CLEW, 'skills');
   const projectSkillsDirs = getProjectDirsUpToHome('skills', cwd);
 

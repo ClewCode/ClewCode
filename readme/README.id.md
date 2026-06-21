@@ -49,7 +49,7 @@ Fitur utama:
 * **Pergantian model saat runtime** — Gunakan `/model` untuk mengganti model atau penyedia selama sesi
 * **Alur kerja berbasis alat** — Baca, cari, edit, dan tulis file; jalankan perintah shell; query LSP; jalankan alat MCP; integrasikan otomatisasi browser
 * **Hook plugin** — Kaitkan ke prompt, eksekusi shell, panggilan alat, tampilan pesan, mulai sesi, dan tindakan edit file
-* **Skill dinamis** — Muat skill dari proyek dan `.claude/skills/`
+* **Skill dinamis** — Muat skill dari proyek dan `.clew/skills/`
 * **Alat tinjauan kode** — Gunakan `/code-review --fix` untuk memeriksa dan menerapkan perubahan, `/simplify` untuk membersihkan kode
 * **Tinjauan otomatis Guardian** — `/guardian` merutekan permintaan izin ke peninjau LLM dengan pemutus sirkuit
 * **Manajemen PR** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
@@ -187,7 +187,7 @@ Storage: Session-only
 
 Perilaku tugas:
 
-* Tugas Durable disimpan di `.claude/scheduled_tasks.json`
+* Tugas Durable disimpan di `.clew/scheduled_tasks.json`
 * Tugas Session-only hanya berjalan selama sesi aktif
 * Tugas berulang menggunakan sintaks cron 5 bidang standar
 * Tugas satu kali dihapus setelah dijalankan

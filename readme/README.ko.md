@@ -49,7 +49,7 @@ Clew는 터미널에서 직접 실행됩니다. 로컬 코드베이스를 검사
 * **런타임 모델 전환** — 세션 중 `/model`을 사용하여 모델 또는 프로바이더 전환
 * **도구 기반 워크플로우** — 파일 읽기, 검색, 편집, 쓰기, 셸 명령 실행, LSP 쿼리, MCP 도구 실행, 브라우저 자동화 통합
 * **플러그인 훅** — 프롬프트, 셸 실행, 도구 호출, 메시지 표시, 세션 시작, 파일 편집 작업에 훅
-* **동적 스킬** — 프로젝트 내 및 `.claude/skills/`에서 스킬 로드
+* **동적 스킬** — 프로젝트 내 및 `.clew/skills/`에서 스킬 로드
 * **코드 리뷰 도구** — `/code-review --fix`로 변경된 코드 검사 및 적용, `/simplify`로 정리
 * **가디언 자동 리뷰** — `/guardian`이 권한 요청을 서킷 브레이커가 있는 LLM 리뷰어로 라우팅
 * **PR 관리** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
@@ -187,7 +187,7 @@ Storage: Session-only
 
 작업 동작:
 
-* Durable 작업은 `.claude/scheduled_tasks.json`에 저장
+* Durable 작업은 `.clew/scheduled_tasks.json`에 저장
 * Session-only 작업은 활성 세션 중에만 실행
 * 반복 작업은 표준 5필드 cron 구문 사용
 * 일회성 작업은 실행 후 제거

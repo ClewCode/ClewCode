@@ -17,7 +17,7 @@
  * 2. Optionally set CLAUDE_CODE_PERFETTO_WRITE_INTERVAL_S=<positive integer> to write the
  *    trace file periodically (default: write only on exit).
  * 3. Run Clew Code normally
- * 4. Trace file is written to ~/.claude/traces/trace-<session-id>.json
+ * 4. Trace file is written to ~/.clew/traces/trace-<session-id>.json
  *    or to the specified path
  * 5. Open in ui.perfetto.dev to visualize
  */
@@ -29,7 +29,7 @@ import { dirname, join } from 'path';
 import { getSessionId } from '../../bootstrap/state.js';
 import { registerCleanup } from '../cleanupRegistry.js';
 import { logForDebugging } from '../debug.js';
-import { getClaudeConfigHomeDir, isEnvDefinedFalsy, isEnvTruthy } from '../envUtils.js';
+import { getClewConfigHomeDir, isEnvDefinedFalsy, isEnvTruthy } from '../envUtils.js';
 import { errorMessage } from '../errors.js';
 import { djb2Hash } from '../hash.js';
 import { jsonStringify } from '../slowOperations.js';
@@ -260,7 +260,7 @@ export function initializePerfettoTracing(): void {
 
     // Determine trace file path
     if (isEnvTruthy(envValue)) {
-      const tracesDir = join(getClaudeConfigHomeDir(), 'traces');
+      const tracesDir = join(getClewConfigHomeDir(), 'traces');
       tracePath = join(tracesDir, `trace-${getSessionId()}.json`);
     } else {
       // Use the provided path

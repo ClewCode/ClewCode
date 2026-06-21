@@ -9,23 +9,9 @@
  * Built from scratch by Dek1MillionToken. No @ant/* dependencies.
  */
 
+import { getPlatformAdapter } from '../../utils/computerUse/platform/index.js';
 import { logForDebugging } from '../../utils/debug.js';
-import {
-  clickAt,
-  drag,
-  focusWindow,
-  getCursorPosition,
-  holdKey,
-  listWindows,
-  mouseDown,
-  mouseUp,
-  moveMouse,
-  pressKey,
-  scrollAt,
-  typeText,
-} from './input.js';
 import { scaleToScreen } from './scaling.js';
-import { captureScreenshot } from './screenshot.js';
 import type { ComputerToolInput, ComputerToolResultBlock, DisplayConfig } from './types.js';
 
 // ── Main Handler ─────────────────────────────────────────────────────────────
@@ -48,11 +34,13 @@ export async function handleComputerAction(
       (input.key ? ` key="${input.key}"` : ''),
   );
 
+  const adapter = getPlatformAdapter();
+
   try {
     switch (input.action) {
       // ── Screenshot ──────────────────────────────────────────────
       case 'screenshot': {
-        const result = await captureScreenshot();
+        const result = await adapter.screenshot();
         return [
           {
             type: 'image',
@@ -68,38 +56,38 @@ export async function handleComputerAction(
       // ── Mouse Click ─────────────────────────────────────────────
       case 'left_click': {
         const [x, y] = scaleCoord(input.coordinate, config);
-        await clickAt(x, y, 'left', 1);
+        await adapter.click(x, y, 'left', 1);
         return textResult(`Clicked at (${x}, ${y})`);
       }
 
       case 'right_click': {
         const [x, y] = scaleCoord(input.coordinate, config);
-        await clickAt(x, y, 'right', 1);
+        await adapter.click(x, y, 'right', 1);
         return textResult(`Right-clicked at (${x}, ${y})`);
       }
 
       case 'middle_click': {
         const [x, y] = scaleCoord(input.coordinate, config);
-        await clickAt(x, y, 'middle', 1);
+        await adapter.click(x, y, 'middle', 1);
         return textResult(`Middle-clicked at (${x}, ${y})`);
       }
 
       case 'double_click': {
         const [x, y] = scaleCoord(input.coordinate, config);
-        await clickAt(x, y, 'left', 2);
+        await adapter.click(x, y, 'left', 2);
         return textResult(`Double-clicked at (${x}, ${y})`);
       }
 
       case 'triple_click': {
         const [x, y] = scaleCoord(input.coordinate, config);
-        await clickAt(x, y, 'left', 3);
+        await adapter.click(x, y, 'left', 3);
         return textResult(`Triple-clicked at (${x}, ${y})`);
       }
 
       // ── Mouse Move ──────────────────────────────────────────────
       case 'mouse_move': {
         const [x, y] = scaleCoord(input.coordinate, config);
-        await moveMouse(x, y);
+        await adapter.mouseMove(x, y);
         return textResult(`Moved mouse to (${x}, ${y})`);
       }
 
@@ -107,18 +95,18 @@ export async function handleComputerAction(
       case 'left_mouse_down': {
         if (input.coordinate) {
           const [x, y] = scaleCoord(input.coordinate, config);
-          await moveMouse(x, y);
+          await adapter.mouseMove(x, y);
         }
-        await mouseDown();
+        await adapter.mouseDown();
         return textResult('Mouse button pressed down');
       }
 
       case 'left_mouse_up': {
         if (input.coordinate) {
           const [x, y] = scaleCoord(input.coordinate, config);
-          await moveMouse(x, y);
+          await adapter.mouseMove(x, y);
         }
-        await mouseUp();
+        await adapter.mouseUp();
         return textResult('Mouse button released');
       }
 
@@ -130,7 +118,7 @@ export async function handleComputerAction(
         }
         const from = scaleToScreen(startCoord[0]!, startCoord[1]!, config.scaleFactor);
         const to = scaleToScreen(input.coordinate[0]!, input.coordinate[1]!, config.scaleFactor);
-        await drag(from, to);
+        await adapter.drag(from, to);
         return textResult(`Dragged from (${from.x}, ${from.y}) to (${to.x}, ${to.y})`);
       }
 
@@ -139,7 +127,7 @@ export async function handleComputerAction(
         if (!input.text) {
           return textResult('Error: type action requires text');
         }
-        await typeText(input.text);
+        await adapter.typeText(input.text);
         return textResult(`Typed "${input.text.substring(0, 50)}${input.text.length > 50 ? '...' : ''}"`);
       }
 
@@ -148,7 +136,7 @@ export async function handleComputerAction(
         if (!keyCombo) {
           return textResult('Error: key action requires key');
         }
-        await pressKey(keyCombo);
+        await adapter.keyPress(keyCombo);
         return textResult(`Pressed key: ${keyCombo}`);
       }
 
@@ -158,7 +146,7 @@ export async function handleComputerAction(
         if (!heldKey) {
           return textResult('Error: hold_key action requires key');
         }
-        await holdKey(heldKey, duration);
+        await adapter.holdKey(heldKey, duration);
         return textResult(`Held key "${heldKey}" for ${input.duration ?? 1}s`);
       }
 
@@ -169,7 +157,15 @@ export async function handleComputerAction(
           : [config.screenWidth / 2, config.screenHeight / 2];
         const direction = input.scroll_direction ?? 'down';
         const amount = input.scroll_amount ?? 3;
-        await scrollAt(sx, sy, direction, amount);
+        await adapter.mouseMove(sx, sy);
+        // Map scroll directions to dy/dx
+        let dx = 0;
+        let dy = 0;
+        if (direction === 'up') dy = amount;
+        else if (direction === 'down') dy = -amount;
+        else if (direction === 'left') dx = -amount;
+        else if (direction === 'right') dx = amount;
+        await adapter.scroll(dx, dy);
         return textResult(`Scrolled ${direction} by ${amount} at (${sx}, ${sy})`);
       }
 
@@ -182,7 +178,7 @@ export async function handleComputerAction(
 
       // ── Info ────────────────────────────────────────────────────
       case 'cursor_position': {
-        const pos = await getCursorPosition();
+        const pos = await adapter.getCursorPosition();
         // Scale back to API-space
         const apiX = Math.round(pos.x / config.scaleFactor);
         const apiY = Math.round(pos.y / config.scaleFactor);
@@ -193,26 +189,42 @@ export async function handleComputerAction(
       case 'zoom': {
         // Zoom captures a region at full resolution
         const region = input.region;
-        const result = await captureScreenshot(region);
-        return [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: 'image/jpeg',
-              data: result.base64,
+        if (region && adapter.platform === 'win32') {
+          const { captureScreenshot } = require('./screenshot.js');
+          const result = await captureScreenshot(region);
+          return [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: result.base64,
+              },
             },
-          },
-        ];
+          ];
+        } else {
+          // Fallback to normal screenshot on other platforms
+          const result = await adapter.screenshot();
+          return [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: result.base64,
+              },
+            },
+          ];
+        }
       }
 
       // ── Window Management ───────────────────────────────────────
       case 'list_windows': {
-        const windows = await listWindows();
+        const windows = await adapter.listWindows();
         if (windows.length === 0) {
           return textResult('No visible windows found.');
         }
-        const winList = windows.map(w => `- "${w.title}" at (${w.x}, ${w.y}) size ${w.w}x${w.h}`).join('\n');
+        const winList = windows.map((w: any) => `- "${w.title}" at (${w.x}, ${w.y}) size ${w.w}x${w.h}`).join('\n');
         return textResult(`Visible windows:\n${winList}`);
       }
 
@@ -220,8 +232,12 @@ export async function handleComputerAction(
         if (!input.window_query) {
           return textResult('Error: focus_window requires window_query');
         }
-        await focusWindow(input.window_query);
-        return textResult(`Attempted to focus window matching: "${input.window_query}"`);
+        const focused = await adapter.focusWindow(input.window_query);
+        if (focused) {
+          return textResult(`Attempted to focus window matching: "${input.window_query}"`);
+        } else {
+          return textResult(`Failed or unsupported window focus for matching query: "${input.window_query}"`);
+        }
       }
 
       default:

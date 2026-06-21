@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { join } from 'path';
 import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { getGlobalConfig } from '../../utils/config.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { readLocalProviderKey } from '../../utils/localProviderKeys.js';
 import {
   DEFAULT_PROVIDER,
@@ -15,8 +15,8 @@ const LEGACY_PROVIDER_CONFIG_PATH = join(
   process.env.HOME || process.env.USERPROFILE || '',
   '.claude-code-provider.json',
 );
-const PREVIOUS_PROVIDER_CONFIG_PATH = join(getClaudeConfigHomeDir(), '.provider.json');
-export const PROVIDER_CONFIG_PATH = join(getClaudeConfigHomeDir(), 'provider.json');
+const PREVIOUS_PROVIDER_CONFIG_PATH = join(getClewConfigHomeDir(), '.provider.json');
+export const PROVIDER_CONFIG_PATH = join(getClewConfigHomeDir(), 'provider.json');
 export function getProjectProviderConfigPath() {
   const cwd = process.cwd();
   const projectPath = join(cwd, DOT_CLEW, 'provider.json');
@@ -32,7 +32,7 @@ function migrateLegacyConfig() {
   try {
     // 1. Migrate from absolute legacy path (~/.claude-code-provider.json)
     if (existsSync(LEGACY_PROVIDER_CONFIG_PATH) && !existsSync(PROVIDER_CONFIG_PATH)) {
-      const targetDir = getClaudeConfigHomeDir();
+      const targetDir = getClewConfigHomeDir();
       if (!existsSync(targetDir)) {
         mkdirSync(targetDir, { recursive: true });
       }

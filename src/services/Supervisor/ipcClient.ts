@@ -10,9 +10,9 @@
 import { spawn } from 'child_process';
 import { createConnection } from 'net';
 import { join } from 'path';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 
-const _DAEMON_DIR = join(getClaudeConfigHomeDir(), 'daemon');
+const _DAEMON_DIR = join(getClewConfigHomeDir(), 'daemon');
 
 const PIPE_NAME =
   process.platform === 'win32'

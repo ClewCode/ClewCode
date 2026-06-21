@@ -9,28 +9,31 @@ import { expandPath, getDirectoryForPath } from '../../../utils/path.js';
 import { normalizeCaseForComparison, pathInAllowedWorkingPath } from '../../../utils/permissions/filesystem.js';
 import type { OptionWithDescription } from '../../CustomSelect/select.js';
 /**
- * Check if a path is within the project's .claude/ folder.
- * This is used to determine whether to show the special ".claude folder" permission option.
+ * Check if a path is within the project's .clew/ folder (or legacy .claude/).
+ * This is used to determine whether to show the special ".clew folder" permission option.
  */
 export function isInClaudeFolder(filePath: string): boolean {
   const absolutePath = expandPath(filePath);
+  const clewFolderPath = expandPath(`${getOriginalCwd()}/.clew`);
   const claudeFolderPath = expandPath(`${getOriginalCwd()}/.claude`);
 
-  // Check if the path is within the project's .claude folder
+  // Check if the path is within the project's .clew or .claude folder
   const normalizedAbsolutePath = normalizeCaseForComparison(absolutePath);
+  const normalizedClewFolderPath = normalizeCaseForComparison(clewFolderPath);
   const normalizedClaudeFolderPath = normalizeCaseForComparison(claudeFolderPath);
 
-  // Path must start with the .claude folder path (and be inside it, not just the folder itself)
+  // Path must start with the folder path (and be inside it, not just the folder itself)
   return (
+    normalizedAbsolutePath.startsWith(normalizedClewFolderPath + sep.toLowerCase()) ||
+    normalizedAbsolutePath.startsWith(`${normalizedClewFolderPath}/`) ||
     normalizedAbsolutePath.startsWith(normalizedClaudeFolderPath + sep.toLowerCase()) ||
-    // Also match case where sep is / on posix systems
     normalizedAbsolutePath.startsWith(`${normalizedClaudeFolderPath}/`)
   );
 }
 
 /**
- * Check if a path is within the global ~/.claude/ folder.
- * This is used to determine whether to show the special ".claude folder" permission option
+ * Check if a path is within the global ~/.clew/ folder.
+ * This is used to determine whether to show the special ".clew folder" permission option
  * for files in the user's home directory.
  */
 export function isInGlobalClaudeFolder(filePath: string): boolean {
@@ -49,7 +52,7 @@ export type PermissionOption =
     }
   | {
       type: 'accept-session';
-      scope?: 'claude-folder' | 'global-claude-folder';
+      scope?: 'clew-folder' | 'global-clew-folder';
     }
   | {
       type: 'reject';
@@ -102,21 +105,21 @@ export function getFilePermissionOptions({
   }
   const inAllowedPath = pathInAllowedWorkingPath(filePath, toolPermissionContext);
 
-  // Check if this is a .claude/ folder path (project or global)
+  // Check if this is a .clew/ folder path (project or global)
   const inClaudeFolder = isInClaudeFolder(filePath);
   const inGlobalClaudeFolder = isInGlobalClaudeFolder(filePath);
 
-  // Option 2: For .claude/ folder, show special option instead of generic session option
+  // Option 2: For .clew/ folder, show special option instead of generic session option
   // Note: Session-level options are always shown since they only affect in-memory state,
   // not persisted settings. The allowManagedPermissionRulesOnly setting only restricts
   // persisted permission rules.
   if ((inClaudeFolder || inGlobalClaudeFolder) && operationType !== 'read') {
     options.push({
-      label: 'Yes, and allow Claude to edit its own settings for this session',
-      value: 'yes-claude-folder',
+      label: 'Yes, and allow Clew to edit its own settings for this session',
+      value: 'yes-clew-folder',
       option: {
         type: 'accept-session',
-        scope: inGlobalClaudeFolder ? 'global-claude-folder' : 'claude-folder',
+        scope: inGlobalClaudeFolder ? 'global-clew-folder' : 'clew-folder',
       },
     });
   } else {

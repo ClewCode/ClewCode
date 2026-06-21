@@ -79,7 +79,7 @@ export function getSessionModelForTranscript(): string | undefined {
 
 import { logForDebugging } from './debug.js';
 import { logForDiagnosticsNoPII } from './diagLogs.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { isFsInaccessible } from './errors.js';
 import type { FileHistorySnapshot } from './fileHistory.js';
 import { formatFileSize } from './format.js';
@@ -193,7 +193,7 @@ export function isEphemeralToolProgress(dataType: unknown): boolean {
 }
 
 export function getProjectsDir(): string {
-  return join(getClaudeConfigHomeDir(), 'projects');
+  return join(getClewConfigHomeDir(), 'projects');
 }
 
 export function getTranscriptPath(cwd?: string): string {

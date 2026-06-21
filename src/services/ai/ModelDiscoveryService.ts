@@ -15,7 +15,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { getGlobalConfig } from '../../utils/config.js';
 import { logForDebugging } from '../../utils/debug.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { toError } from '../../utils/errors.js';
 import { logError } from '../../utils/log.js';
 import providersConfig from './providers.json' with { type: 'json' };
@@ -65,7 +65,7 @@ export interface ModelCache {
 
 // ── Constants ─────────────────────────────────────────────────────────
 
-const CACHE_PATH = join(getClaudeConfigHomeDir(), 'model-cache.json');
+const CACHE_PATH = join(getClewConfigHomeDir(), 'model-cache.json');
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -246,7 +246,7 @@ export class ModelDiscoveryService {
   /** Save cache to disk */
   private saveCache(): void {
     try {
-      const dir = getClaudeConfigHomeDir();
+      const dir = getClewConfigHomeDir();
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
       writeFileSync(CACHE_PATH, JSON.stringify(this.cache, null, 2));
     } catch (err) {

@@ -92,6 +92,14 @@ export function createDarwinAdapter(): PlatformAdapter {
 
     // ── Mouse ────────────────────────────────────────────────────────────
 
+    async mouseDown(): Promise<void> {
+      await run('cliclick', ['dd:.']);
+    },
+
+    async mouseUp(): Promise<void> {
+      await run('cliclick', ['du:.']);
+    },
+
     async mouseMove(x: number, y: number): Promise<void> {
       await run('cliclick', [`m:${x},${y}`]);
     },
@@ -165,6 +173,12 @@ export function createDarwinAdapter(): PlatformAdapter {
       }
     },
 
+    async holdKey(sequence: string, durationMs: number): Promise<void> {
+      await run('cliclick', [`kd:${sequence}`]);
+      await sleep(durationMs);
+      await run('cliclick', [`ku:${sequence}`]);
+    },
+
     // ── Clipboard ────────────────────────────────────────────────────────
 
     async clipboardRead(): Promise<string> {
@@ -173,6 +187,63 @@ export function createDarwinAdapter(): PlatformAdapter {
 
     async clipboardWrite(text: string): Promise<void> {
       return writeClipboard(text);
+    },
+
+    // ── Window Management ──────────────────────────────────────────────────
+    async listWindows(): Promise<Array<{ title: string; x: number; y: number; w: number; h: number }>> {
+      const appleScript = `
+        tell application "System Events"
+          set result to ""
+          repeat with p in (every process whose background only is false)
+            repeat with w in (every window of p)
+              try
+                set pos to position of w
+                set sz to size of w
+                set result to result & (name of p) & " - " & (name of w) & ":::" & (item 1 of pos) & "," & (item 2 of pos) & "," & (item 1 of sz) & "," & (item 2 of sz) & "\\n"
+              end try
+            end repeat
+          end repeat
+          return result
+        end tell
+      `;
+      try {
+        const output = await run('osascript', ['-e', appleScript]);
+        return output
+          .split('\n')
+          .filter(Boolean)
+          .map(line => {
+            const [title, coords] = line.split(':::');
+            if (!title || !coords) return null;
+            const [x, y, w, h] = coords.split(',').map(Number);
+            return { title, x: x ?? 0, y: y ?? 0, w: w ?? 0, h: h ?? 0 };
+          })
+          .filter((w): w is { title: string; x: number; y: number; w: number; h: number } => w !== null);
+      } catch {
+        return [];
+      }
+    },
+
+    async focusWindow(query: string): Promise<boolean> {
+      const escaped = query.replace(/"/g, '\\"');
+      const appleScript = `
+        tell application "System Events"
+          repeat with p in (every process whose background only is false)
+            repeat with w in (every window of p)
+              if (name of w contains "${escaped}") or (name of p contains "${escaped}") then
+                set frontmost of p to true
+                perform action "AXRaise" of w
+                return true
+              end if
+            end repeat
+          end repeat
+        end tell
+      `;
+      try {
+        await run('osascript', ['-e', appleScript]);
+        return true;
+      } catch {
+        return false;
+      }
     },
   };
 }

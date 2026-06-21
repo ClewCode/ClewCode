@@ -84,13 +84,9 @@ export class OpenAIDeviceFlow {
   /**
    * Poll the token endpoint until the user authorizes or the code expires.
    */
-  private async pollForToken(
-    interval: number,
-    expiresIn: number,
-    signal: AbortSignal,
-  ): Promise<OpenAIOAuthTokens> {
+  private async pollForToken(interval: number, expiresIn: number, signal: AbortSignal): Promise<OpenAIOAuthTokens> {
     const maxTime = Date.now() + expiresIn * 1000;
-    const pollInterval = Math.max(interval, 1);  // at least 1s
+    const pollInterval = Math.max(interval, 1); // at least 1s
 
     while (Date.now() < maxTime) {
       if (signal.aborted) {
@@ -137,7 +133,9 @@ export class OpenAIDeviceFlow {
             case 'access_denied':
               throw new Error('Access denied by user.');
             default:
-              throw new Error(`OAuth device flow error: ${data.error}${data.error_description ? ` — ${data.error_description}` : ''}`);
+              throw new Error(
+                `OAuth device flow error: ${data.error}${data.error_description ? ` — ${data.error_description}` : ''}`,
+              );
           }
         }
       } catch (err) {

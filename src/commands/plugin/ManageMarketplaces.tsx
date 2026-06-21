@@ -339,8 +339,6 @@ export function ManageMarketplaces({
     return { updateCount, removeCount };
   };
 
-
-
   // Handle confirming marketplace removal
   const confirmRemove = async () => {
     if (!selectedMarketplace) return;

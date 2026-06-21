@@ -13,7 +13,7 @@ import { uniq } from '../array.js';
 import { DOT_CLEW } from '../clewPaths.js';
 import { logForDebugging } from '../debug.js';
 import { logForDiagnosticsNoPII } from '../diagLogs.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from '../envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from '../envUtils.js';
 import { getErrnoCode, isENOENT } from '../errors.js';
 import { writeFileSyncAndFlush_DEPRECATED } from '../file.js';
 import { readFileSync } from '../fileRead.js';
@@ -212,7 +212,7 @@ function parseSettingsFileUncached(path: string): {
 export function getSettingsRootPathForSource(source: SettingSource): string {
   switch (source) {
     case 'userSettings':
-      return resolve(getClaudeConfigHomeDir());
+      return resolve(getClewConfigHomeDir());
     case 'policySettings':
     case 'projectSettings':
     case 'localSettings': {

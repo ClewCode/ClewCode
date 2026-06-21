@@ -8,7 +8,7 @@ import type { Command } from '../commands.js';
 import { queryWithModel } from '../services/api/claude.js';
 import { AGENT_TOOL_NAME, LEGACY_AGENT_TOOL_NAME } from '../tools/AgentTool/constants.js';
 import type { LogOption } from '../types/logs.js';
-import { getClaudeConfigHomeDir } from '../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../utils/envUtils.js';
 import { toError } from '../utils/errors.js';
 import { execFileNoThrow } from '../utils/execFileNoThrow.js';
 import { logError } from '../utils/log.js';
@@ -387,11 +387,11 @@ const LABEL_MAP: Record<string, string> = {
   essential: 'Essential',
 };
 
-// Lazy getters: getClaudeConfigHomeDir() is memoized and reads process.env.
+// Lazy getters: getClewConfigHomeDir() is memoized and reads process.env.
 // Calling it at module scope would populate the memoize cache before
 // entrypoints can set CLAUDE_CONFIG_DIR, breaking all 150+ other callers.
 function getDataDir(): string {
-  return join(getClaudeConfigHomeDir(), 'usage-data');
+  return join(getClewConfigHomeDir(), 'usage-data');
 }
 function getFacetsDir(): string {
   return join(getDataDir(), 'facets');
@@ -2708,7 +2708,7 @@ export async function generateUsageReport(options?: { collectRemote?: boolean })
 
   // Optionally collect data from remote hosts first (ant-only)
   if (process.env.USER_TYPE === 'ant' && options?.collectRemote) {
-    const destDir = join(getClaudeConfigHomeDir(), 'projects');
+    const destDir = join(getClewConfigHomeDir(), 'projects');
     const { hosts, totalCopied } = await collectAllRemoteHostData(destDir);
     remoteStats = { hosts, totalCopied };
   }

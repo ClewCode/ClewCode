@@ -2,7 +2,7 @@
  * One-time token store for Bridge v2 Remote Control.
  *
  * Tokens are generated as `clew-rt-<random-hex>` and stored hashed
- * (SHA-256) in `~/.claude/remote-tokens.json`. Each token can be
+ * (SHA-256) in `~/.clew/remote-tokens.json`. Each token can be
  * consumed once — after the remote connects, the token is marked
  * as used and cannot be reused.
  */

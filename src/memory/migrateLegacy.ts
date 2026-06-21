@@ -11,7 +11,7 @@ import { Database } from 'bun:sqlite';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
-import { getClaudeConfigHomeDir } from '../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../utils/envUtils.js';
 import { MemoryDB } from './database.js';
 
 function sanitize(p: string): string {
@@ -34,7 +34,7 @@ export function migrateFromSessionDB(): MigrationResult {
   if (!MemoryDB.isInitialized()) return result;
 
   const cwd = getCwd();
-  const oldDbPath = join(getClaudeConfigHomeDir(), 'projects', sanitize(cwd), 'session-memory.db');
+  const oldDbPath = join(getClewConfigHomeDir(), 'projects', sanitize(cwd), 'session-memory.db');
   if (!existsSync(oldDbPath)) return result;
 
   let oldDb: Database | null = null;

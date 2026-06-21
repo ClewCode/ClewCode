@@ -370,11 +370,25 @@ export async function typeText(text: string): Promise<void> {
 
   // For long text, use clipboard paste (faster and more reliable)
   if (text.length > 20) {
-    await runPS(`
+    const saved = await readClipboard().catch(() => '');
+    try {
+      await writeClipboard(text);
+      if ((await readClipboard()) === text) {
+        await pressKey('ctrl+v');
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } else {
+        // Fallback: type character by character
+        const escaped = text.replace(/([+^%~{}()])/g, '{$1}');
+        await runPS(`
 Add-Type -AssemblyName System.Windows.Forms
-Set-Clipboard -Value '${text.replace(/'/g, "''")}'
-[System.Windows.Forms.SendKeys]::SendWait('^v')
+[System.Windows.Forms.SendKeys]::SendWait('${escaped.replace(/'/g, "''")}')
 `);
+      }
+    } finally {
+      if (saved) {
+        await writeClipboard(saved).catch(() => {});
+      }
+    }
     return;
   }
 

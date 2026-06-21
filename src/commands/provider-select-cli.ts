@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { createInterface } from 'readline';
-import { getClaudeConfigHomeDir } from '../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../utils/envUtils.js';
 import { readLocalProviderKey } from '../utils/localProviderKeys.js';
 
 interface ProviderInfo {
@@ -139,7 +139,7 @@ const PROVIDERS: Record<string, ProviderInfo> = {
 };
 
 const PROVIDER_KEYS = Object.keys(PROVIDERS);
-const CONFIG_PATH = join(getClaudeConfigHomeDir(), 'provider.json');
+const CONFIG_PATH = join(getClewConfigHomeDir(), 'provider.json');
 
 function loadConfig() {
   try {

@@ -33,7 +33,7 @@ export function FileTree({ onFileSelect, width = 30, isFocused = true }: FileTre
   // Real-time updates using chokidar
   useEffect(() => {
     const watcher = chokidar.watch(getCwd(), {
-      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/build/**', '**/.claude/cache/**'],
+      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/build/**', '**/.clew/cache/**'],
       persistent: true,
       ignoreInitial: true,
       depth: 3, // Watch up to 3 levels deep for responsiveness

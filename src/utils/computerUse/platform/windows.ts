@@ -10,20 +10,52 @@ import type {
 } from './adapter.js';
 import { toBase64Jpeg } from './adapter.js';
 
-// PowerShell snippet: capture screen as JPEG base64
+// PowerShell snippet: capture screen as JPEG base64 (scaled, JPEG quality 75)
 const SCREENSHOT_SCRIPT = `
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
-$bounds = [Windows.Forms.Screen]::PrimaryScreen.Bounds
-$bmp = New-Object Drawing.Bitmap $bounds.Width, $bounds.Height
-$g = [Drawing.Graphics]::FromImage($bmp)
-$g.CopyFromScreen($bounds.X, $bounds.Y, 0, 0, $bounds.Size)
-$ms = New-Object IO.MemoryStream
-$bmp.Save($ms, [Drawing.Imaging.ImageFormat]::Png)
-$ms.Close()
-$g.Dispose()
+
+$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+$sw = $screen.Width
+$sh = $screen.Height
+$sx = $screen.X
+$sy = $screen.Y
+
+# Calculate scale factor (max 1568px long edge, ~1.15MP)
+$longEdge = [Math]::Max($sw, $sh)
+$totalPx = $sw * $sh
+$leScale = 1568.0 / $longEdge
+$tpScale = [Math]::Sqrt(1150000.0 / $totalPx)
+$scale = [Math]::Min(1.0, [Math]::Min($leScale, $tpScale))
+$tw = [Math]::Round($sw * $scale)
+$th = [Math]::Round($sh * $scale)
+
+# Capture screen
+$bmp = New-Object System.Drawing.Bitmap($sw, $sh)
+$gfx = [System.Drawing.Graphics]::FromImage($bmp)
+$gfx.CopyFromScreen($sx, $sy, 0, 0, New-Object System.Drawing.Size($sw, $sh))
+$gfx.Dispose()
+
+# Resize for API
+$resized = New-Object System.Drawing.Bitmap($tw, $th)
+$gfx2 = [System.Drawing.Graphics]::FromImage($resized)
+$gfx2.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+$gfx2.DrawImage($bmp, 0, 0, $tw, $th)
+$gfx2.Dispose()
 $bmp.Dispose()
-[Convert]::ToBase64String($ms.ToArray())
+
+# Encode as JPEG (quality 75)
+$encoder = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' }
+$encoderParams = New-Object System.Drawing.Imaging.EncoderParameters(1)
+$encoderParams.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality, 75L)
+
+$ms = New-Object System.IO.MemoryStream
+$resized.Save($ms, $encoder, $encoderParams)
+$resized.Dispose()
+
+$b64 = [Convert]::ToBase64String($ms.ToArray())
+$ms.Dispose()
+Write-Output $b64
 `;
 
 // PowerShell snippet: get cursor position
@@ -196,7 +228,13 @@ export function createWindowsAdapter(): PlatformAdapter {
     async screenshot(): Promise<ScreenshotResult> {
       const base64 = await ps(SCREENSHOT_SCRIPT);
       const buffer = Buffer.from(base64.trim(), 'base64');
-      return toBase64Jpeg(buffer);
+      const sharp = (await import('sharp')).default;
+      const meta = await sharp(buffer).metadata();
+      return {
+        base64: base64.trim(),
+        width: meta.width ?? 0,
+        height: meta.height ?? 0,
+      };
     },
 
     async getDisplaySize(): Promise<DisplayGeometry> {
@@ -227,6 +265,13 @@ Add-Type -AssemblyName System.Windows.Forms
     },
 
     // ── Mouse ────────────────────────────────────────────────────────────
+    async mouseDown(): Promise<void> {
+      await ps(`${USER32_SCRIPT}\n[User32]::mouse_event([User32]::MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)`);
+    },
+
+    async mouseUp(): Promise<void> {
+      await ps(`${USER32_SCRIPT}\n[User32]::mouse_event([User32]::MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)`);
+    },
 
     async mouseMove(x: number, y: number): Promise<void> {
       await ps(mouseMoveScript(x, y));
@@ -308,6 +353,21 @@ Add-Type -AssemblyName System.Windows.Forms
       }
     },
 
+    async holdKey(sequence: string, durationMs: number): Promise<void> {
+      const parts = sequence.split('+').filter(p => p.length > 0);
+      if (parts.length === 0) return;
+      const vks = parts.map(toVk);
+      const lines = [USER32_SCRIPT];
+      for (const vk of vks) {
+        lines.push(`[User32]::keybd_event(${vk}, 0, [User32]::KEYEVENTF_KEYDOWN, 0)`);
+      }
+      lines.push(`Start-Sleep -Milliseconds ${durationMs}`);
+      for (let i = vks.length - 1; i >= 0; i--) {
+        lines.push(`[User32]::keybd_event(${vks[i]}, 0, [User32]::KEYEVENTF_KEYUP, 0)`);
+      }
+      await ps(lines.join('\n'));
+    },
+
     // ── Clipboard ────────────────────────────────────────────────────────
 
     async clipboardRead(): Promise<string> {
@@ -320,5 +380,96 @@ Add-Type -AssemblyName System.Windows.Forms
       const escaped = text.replace(/'/g, "''");
       await ps(`Set-Clipboard -Value '${escaped}'`);
     },
+
+    // ── Window Management ──────────────────────────────────────────────────
+    async listWindows(): Promise<Array<{ title: string; x: number; y: number; w: number; h: number }>> {
+      const script = `${WIN32_WINDOW_TYPES}
+$windows = New-Object System.Collections.Generic.List[Object]
+$enumProc = [Win32WindowInput+EnumWindowsProc] {
+    param($hWnd, $lParam)
+    if ([Win32WindowInput]::IsWindowVisible($hWnd)) {
+        $sb = New-Object System.Text.StringBuilder 256
+        [Win32WindowInput]::GetWindowText($hWnd, $sb, $sb.Capacity) | Out-Null
+        $title = $sb.ToString()
+        if (-not [string]::IsNullOrWhiteSpace($title)) {
+            $rect = New-Object Win32WindowInput+RECT
+            if ([Win32WindowInput]::GetWindowRect($hWnd, [ref]$rect)) {
+                $windows.Add(@{
+                    title = $title
+                    x = $rect.Left
+                    y = $rect.Top
+                    w = $rect.Right - $rect.Left
+                    h = $rect.Bottom - $rect.Top
+                })
+            }
+        }
+    }
+    return $true
+}
+[Win32WindowInput]::EnumWindows($enumProc, [IntPtr]::Zero) | Out-Null
+$windows | ConvertTo-Json -Compress
+`;
+      const result = await ps(script);
+      if (!result) return [];
+      try {
+        const parsed = JSON.parse(result);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        return [];
+      }
+    },
+
+    async focusWindow(query: string): Promise<boolean> {
+      const script = `${WIN32_WINDOW_TYPES}
+$enumProc = [Win32WindowInput+EnumWindowsProc] {
+    param($hWnd, $lParam)
+    $sb = New-Object System.Text.StringBuilder 256
+    [Win32WindowInput]::GetWindowText($hWnd, $sb, $sb.Capacity) | Out-Null
+    $title = $sb.ToString()
+    if ($title -like "*${query.replace(/\*/g, '').replace(/'/g, "''")}*") {
+        [Win32WindowInput]::ShowWindow($hWnd, 9) | Out-Null # SW_RESTORE
+        [Win32WindowInput]::SetForegroundWindow($hWnd) | Out-Null
+        return $false # Stop enumeration
+    }
+    return $true
+}
+[Win32WindowInput]::EnumWindows($enumProc, [IntPtr]::Zero) | Out-Null
+`;
+      await ps(script);
+      return true;
+    },
   };
 }
+
+const WIN32_WINDOW_TYPES = `
+if (-not ([System.Management.Automation.PSTypeName]'Win32WindowInput').Type) {
+  Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public class Win32WindowInput {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+
+    [DllImport("user32.dll")]
+    public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+
+    [DllImport("user32.dll")]
+    public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+}
+'@
+}
+`;

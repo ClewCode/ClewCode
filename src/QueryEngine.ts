@@ -657,7 +657,7 @@ export class QueryEngine {
     if (autoWorkflowOutcome.kind === 'ran') {
       // Prepend so the model treats it as a prior turn. The
       // runDynamicWorkflowAsCoordinator has already persisted the
-      // plan + results to .claude/runs/<id>/, so /workflow can list
+      // plan + results to .clew/runs/<id>/, so /workflow can list
       // or cancel it independently.
       messages.unshift(autoWorkflowOutcome.message);
     } else if (autoWorkflowOutcome.kind === 'suggested') {

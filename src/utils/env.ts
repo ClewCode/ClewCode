@@ -3,7 +3,7 @@ import { homedir } from 'os';
 import { join } from 'path';
 import { fileSuffixForOauthConfig } from '../constants/oauth.js';
 import { isRunningWithBun } from './bundledMode.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { findExecutable } from './findExecutable.js';
 import { getFsImplementation } from './fsOperations.js';
 import { which } from './which.js';
@@ -12,22 +12,16 @@ type Platform = 'win32' | 'darwin' | 'linux';
 
 // Config and data paths
 export const getGlobalClaudeFile = memoize((): string => {
-  // Legacy fallback for backwards compatibility
-  if (getFsImplementation().existsSync(join(getClaudeConfigHomeDir(), '.config.json'))) {
-    return join(getClaudeConfigHomeDir(), '.config.json');
-  }
-
-  // Check for existing legacy .claude.json
-  const legacyFilename = `.claude${fileSuffixForOauthConfig()}.json`;
-  const legacyPath = join(process.env.CLAUDE_CONFIG_DIR || homedir(), legacyFilename);
-  if (getFsImplementation().existsSync(legacyPath)) {
-    return legacyPath;
-  }
-
   // Primary: .clew.json
   const suffix = fileSuffixForOauthConfig();
   const filename = `.clew${suffix}.json`;
-  return join(getClaudeConfigHomeDir(), filename);
+  return join(getClewConfigHomeDir(), filename);
+});
+
+export const getLegacyGlobalClaudeFile = memoize((): string => {
+  const suffix = fileSuffixForOauthConfig();
+  const filename = `.claude${suffix}.json`;
+  return join(process.env.CLAUDE_CONFIG_DIR || homedir(), filename);
 });
 
 const hasInternetAccess = memoize(async (): Promise<boolean> => {
@@ -320,12 +314,13 @@ export const env = {
 
 /**
  * Returns the host platform for analytics reporting.
- * If CLAUDE_CODE_HOST_PLATFORM is set to a valid platform value, that overrides
- * the detected platform. This is useful for container/remote environments where
- * process.platform reports the container OS but the actual host platform differs.
+ * If CLEW_CODE_HOST_PLATFORM or CLAUDE_CODE_HOST_PLATFORM is set to a valid
+ * platform value, that overrides the detected platform. This is useful for
+ * container/remote environments where process.platform reports the container
+ * OS but the actual host platform differs.
  */
 export function getHostPlatformForAnalytics(): Platform {
-  const override = process.env.CLAUDE_CODE_HOST_PLATFORM;
+  const override = process.env.CLEW_CODE_HOST_PLATFORM ?? process.env.CLAUDE_CODE_HOST_PLATFORM;
   if (override === 'win32' || override === 'darwin' || override === 'linux') {
     return override;
   }

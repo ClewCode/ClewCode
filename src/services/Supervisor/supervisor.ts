@@ -20,7 +20,7 @@ import { randomBytes, randomUUID } from 'crypto';
 import { mkdir, readFile, stat, unlink, writeFile } from 'fs/promises';
 import { createServer, type Socket } from 'net';
 import { join } from 'path';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
 import {
   autoStartIfEnabled as autoStartAutonomous,
@@ -32,9 +32,9 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const DAEMON_DIR = join(getClaudeConfigHomeDir(), 'daemon');
+const DAEMON_DIR = join(getClewConfigHomeDir(), 'daemon');
 const ROSTER_PATH = join(DAEMON_DIR, 'roster.json');
-const LOG_PATH = join(getClaudeConfigHomeDir(), 'daemon.log');
+const LOG_PATH = join(getClewConfigHomeDir(), 'daemon.log');
 
 // Named pipe path (Windows) or Unix socket path
 const PIPE_NAME =
@@ -665,7 +665,7 @@ let server: ReturnType<typeof createServer>;
 async function start(): Promise<void> {
   log('=== Supervisor starting ===');
   log('PID:', process.pid);
-  log('Config dir:', getClaudeConfigHomeDir());
+  log('Config dir:', getClewConfigHomeDir());
   log('Pipe:', PIPE_NAME);
 
   await loadRoster();

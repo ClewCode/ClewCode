@@ -215,14 +215,14 @@ export const ReadMediaFileTool = buildTool({
   },
 
   async mapToolResultToToolResultBlockParam(result: any, toolUseID: string): Promise<any> {
-    if (result.data.type === 'text') {
+    if (result.type === 'text') {
       return {
         tool_use_id: toolUseID,
         type: 'tool_result',
-        content: result.data.file.content,
+        content: result.file.content,
       };
     }
-    if (result.data.type === 'image') {
+    if (result.type === 'image') {
       return {
         tool_use_id: toolUseID,
         type: 'tool_result',
@@ -231,14 +231,14 @@ export const ReadMediaFileTool = buildTool({
             type: 'image',
             source: {
               type: 'base64',
-              media_type: result.data.file.media_type,
-              data: result.data.file.base64,
+              media_type: result.file.media_type,
+              data: result.file.base64,
             },
           },
         ],
       };
     }
-    if (result.data.type === 'video') {
+    if (result.type === 'video') {
       return {
         tool_use_id: toolUseID,
         type: 'tool_result',
@@ -247,8 +247,8 @@ export const ReadMediaFileTool = buildTool({
             type: 'video',
             source: {
               type: 'base64',
-              media_type: result.data.file.media_type,
-              data: result.data.file.base64,
+              media_type: result.file.media_type,
+              data: result.file.base64,
             },
           },
         ],
@@ -257,7 +257,7 @@ export const ReadMediaFileTool = buildTool({
     return {
       tool_use_id: toolUseID,
       type: 'tool_result',
-      content: JSON.stringify(result.data),
+      content: JSON.stringify(result),
     };
   },
 
@@ -266,10 +266,8 @@ export const ReadMediaFileTool = buildTool({
   },
 
   renderToolResultMessage(result: any) {
-    if (result.data?.type === 'image')
-      return `📷 Image loaded (${(result.data.file.original_size / 1024).toFixed(0)} KB)`;
-    if (result.data?.type === 'video')
-      return `🎬 Video loaded (${(result.data.file.original_size / 1024 / 1024).toFixed(1)} MB)`;
+    if (result?.type === 'image') return `📷 Image loaded (${(result.file.original_size / 1024).toFixed(0)} KB)`;
+    if (result?.type === 'video') return `🎬 Video loaded (${(result.file.original_size / 1024 / 1024).toFixed(1)} MB)`;
     return `Media file read`;
   },
 

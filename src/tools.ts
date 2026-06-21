@@ -146,7 +146,7 @@ const getPowerShellTool = () => {
 };
 const getComputerUseTool = () => {
   if (!isEnvTruthy(process.env.ENABLE_COMPUTER_USE)) return null;
-  if (process.platform !== 'win32') return null;
+  if (process.platform !== 'win32' && process.platform !== 'darwin' && process.platform !== 'linux') return null;
   return (
     require('./tools/ComputerUseTool/ComputerUseTool.js') as typeof import('./tools/ComputerUseTool/ComputerUseTool.js')
   ).ComputerUseTool;

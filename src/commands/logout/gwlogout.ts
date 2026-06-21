@@ -11,4 +11,3 @@ export const call: LocalCommandCall = async () => {
     process.stdout.write('Not logged in.\n');
   }
 };
-

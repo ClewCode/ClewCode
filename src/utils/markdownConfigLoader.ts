@@ -9,9 +9,9 @@ import {
   logEvent,
 } from 'src/services/analytics/index.js';
 import { getProjectRoot } from '../bootstrap/state.js';
-import { DOT_CLEW, DOT_CLAUDE } from '../utils/clewPaths.js';
+import { DOT_CLAUDE, DOT_CLEW } from '../utils/clewPaths.js';
 import { logForDebugging } from './debug.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { isFsInaccessible } from './errors.js';
 import { normalizePathForComparison } from './file.js';
 import type { FrontmatterData } from './frontmatterParser.js';
@@ -280,7 +280,7 @@ export function getProjectDirsUpToHome(subdir: ClaudeConfigDirectory, cwd: strin
 export const loadMarkdownFilesForSubdir = memoize(
   async (subdir: ClaudeConfigDirectory, cwd: string): Promise<MarkdownFile[]> => {
     const searchStartTime = Date.now();
-    const userDir = join(getClaudeConfigHomeDir(), subdir);
+    const userDir = join(getClewConfigHomeDir(), subdir);
     const managedDir = join(getManagedFilePath(), DOT_CLEW, subdir);
     const projectDirs = getProjectDirsUpToHome(subdir, cwd);
 

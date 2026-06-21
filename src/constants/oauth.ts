@@ -103,7 +103,8 @@ const PROD_OAUTH_CONFIG = {
  * The URL must point to a JSON document hosted by Anthropic.
  * See: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-00
  */
-export const MCP_CLIENT_METADATA_URL = process.env.MCP_CLIENT_METADATA_URL || 'https://clew-code.org/oauth/client-metadata';
+export const MCP_CLIENT_METADATA_URL =
+  process.env.MCP_CLIENT_METADATA_URL || 'https://clew-code.org/oauth/client-metadata';
 
 // Staging OAuth configuration - only included in ant builds with staging flag
 // Uses literal check for dead code elimination

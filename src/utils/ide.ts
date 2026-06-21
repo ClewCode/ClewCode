@@ -13,7 +13,7 @@ import type { ConnectedMCPServer, MCPServerConnection } from '../services/mcp/ty
 import { DOT_CLEW } from './clewPaths.js';
 import { getGlobalConfig, saveGlobalConfig } from './config.js';
 import { env } from './env.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { execFileNoThrow, execFileNoThrowWithCwd, execSyncWithDefaults_DEPRECATED } from './execFileNoThrow.js';
 import { getFsImplementation } from './fsOperations.js';
 import { getAncestorPidsAsync } from './genericProcessUtils.js';
@@ -435,7 +435,7 @@ const getWindowsUserProfile = memoize(async (): Promise<string | undefined> => {
  * stat loop compounded startup latency.
  */
 export async function getIdeLockfilesPaths(): Promise<string[]> {
-  const paths: string[] = [join(getClaudeConfigHomeDir(), 'ide')];
+  const paths: string[] = [join(getClewConfigHomeDir(), 'ide')];
 
   if (getPlatform() !== 'wsl') {
     return paths;
