@@ -103,8 +103,8 @@ export const ReadArtifactTool: Tool<ReturnType<typeof inputSchema>, ReadArtifact
     return `read ${input.limit} lines of ${shortPath} from line ${input.offset}`;
   },
 
-  mapToolResultToToolResultBlockParam(result, toolUseID) {
-    const { file_path, offset, limit, total_lines, lines, has_more } = result.data;
+  mapToolResultToToolResultBlockParam(result: ReadArtifactOutput, toolUseID: string) {
+    const { file_path, offset, limit, total_lines, lines, has_more } = result;
     let output = lines.join('\n');
     if (has_more) {
       output += `\n... (showing lines ${offset + 1}-${offset + lines.length} of ${total_lines})`;

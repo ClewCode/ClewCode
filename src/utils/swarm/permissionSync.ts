@@ -100,7 +100,7 @@ export type PermissionResolution = {
 
 /**
  * Get the base directory for a team's permission requests
- * Path: ~/.claude/teams/{teamName}/permissions/
+ * Path: ~/.clew/teams/{teamName}/permissions/
  */
 export function getPermissionDir(teamName: string): string {
   return join(getTeamDir(teamName), 'permissions');

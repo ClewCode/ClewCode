@@ -23,7 +23,7 @@ import { AwsAuthStatusManager } from './awsAuthStatusManager.js';
 import { clearBetasCaches } from './betas.js';
 import { type AccountInfo, checkHasTrustDialogAccepted, getGlobalConfig, saveGlobalConfig } from './config.js';
 import { logAntError, logForDebugging } from './debug.js';
-import { getClaudeConfigHomeDir, isBareMode, isEnvTruthy, isRunningOnHomespace } from './envUtils.js';
+import { getClewConfigHomeDir, isBareMode, isEnvTruthy, isRunningOnHomespace } from './envUtils.js';
 import { errorMessage } from './errors.js';
 import { execSyncWithDefaults_DEPRECATED } from './execFileNoThrow.js';
 import * as lockfile from './lockfile.js';
@@ -1251,7 +1251,7 @@ let lastCredentialsMtimeMs = 0;
 // re-reads — infinite /login regress (CC-1096, GH#24317).
 async function invalidateOAuthCacheIfDiskChanged(): Promise<void> {
   try {
-    const { mtimeMs } = await stat(join(getClaudeConfigHomeDir(), '.credentials.json'));
+    const { mtimeMs } = await stat(join(getClewConfigHomeDir(), '.credentials.json'));
     if (mtimeMs !== lastCredentialsMtimeMs) {
       lastCredentialsMtimeMs = mtimeMs;
       clearOAuthTokenCache();
@@ -1396,7 +1396,7 @@ async function checkAndRefreshOAuthTokenIfNeededImpl(retryCount: number, force: 
   }
 
   // Tokens are still expired, try to acquire lock and refresh
-  const claudeDir = getClaudeConfigHomeDir();
+  const claudeDir = getClewConfigHomeDir();
   await mkdir(claudeDir, { recursive: true });
 
   let release;

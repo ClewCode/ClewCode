@@ -14,7 +14,7 @@ import { readdir, rm, stat } from 'fs/promises';
 import { delimiter, join } from 'path';
 import { getUseCoworkPlugins } from '../../bootstrap/state.js';
 import { logForDebugging } from '../debug.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from '../envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from '../envUtils.js';
 import { errorMessage, isFsInaccessible } from '../errors.js';
 import { formatFileSize } from '../format.js';
 import { expandTilde } from '../permissions/pathValidation.js';
@@ -59,7 +59,7 @@ export function getPluginsDirectory(): string {
   if (envOverride) {
     return expandTilde(envOverride);
   }
-  return join(getClaudeConfigHomeDir(), getPluginsDirectoryName());
+  return join(getClewConfigHomeDir(), getPluginsDirectoryName());
 }
 
 /**

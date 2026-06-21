@@ -5,10 +5,10 @@ import { readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 
-const getClaudeConfigHomeDir = () => {
-  return process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude');
+const getClewConfigHomeDir = () => {
+  return process.env.CLEW_CONFIG_DIR ?? process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.clew');
 };
-const CONFIG_PATH = join(getClaudeConfigHomeDir(), 'provider.json');
+const CONFIG_PATH = join(getClewConfigHomeDir(), 'provider.json');
 
 const PROVIDERS = {
   openai: {

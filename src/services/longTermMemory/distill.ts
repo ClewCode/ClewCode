@@ -11,7 +11,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { MemoryDB } from '../../memory/database.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { pathExists } from '../../utils/file.js';
 
 const DISTILL_STATE_FILE = 'distill-state.json';
@@ -39,12 +39,12 @@ interface Experience {
 }
 
 function getDistillStatePath(projectRoot: string): string {
-  const dir = join(getClaudeConfigHomeDir(), 'projects', sanitize(projectRoot));
+  const dir = join(getClewConfigHomeDir(), 'projects', sanitize(projectRoot));
   return join(dir, DISTILL_STATE_FILE);
 }
 
 function getExperiencesPath(projectRoot: string): string {
-  const dir = join(getClaudeConfigHomeDir(), 'projects', sanitize(projectRoot));
+  const dir = join(getClewConfigHomeDir(), 'projects', sanitize(projectRoot));
   return join(dir, 'experiences.json');
 }
 

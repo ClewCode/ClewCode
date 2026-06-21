@@ -10,10 +10,10 @@ export function getEnvWithAlias(primary, legacy) {
 /**
  * Primary config home: ~/.clew (or CLEW_CONFIG_DIR / CLAUDE_CONFIG_DIR fallback).
  *
- * ~170 callers across the codebase. Named `getClaudeConfigHomeDir` for backward
+ * ~170 callers across the codebase. Named `getClewConfigHomeDir` for backward
  * compatibility — it returns the Clew home, not the old Claude home.
  */
-export const getClaudeConfigHomeDir = memoize(
+export const getClewConfigHomeDir = memoize(
   () => {
     const clewDir = getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR');
     if (clewDir) {
@@ -24,9 +24,9 @@ export const getClaudeConfigHomeDir = memoize(
   () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR') ?? '.clew',
 );
 /** Alias for the same function. */
-export const getClewConfigHomeDir = getClaudeConfigHomeDir;
+export const getClewConfigHomeDir = getClewConfigHomeDir;
 export function getTeamsDir() {
-  return join(getClaudeConfigHomeDir(), 'teams');
+  return join(getClewConfigHomeDir(), 'teams');
 }
 /**
  * Check if NODE_OPTIONS contains a specific flag.

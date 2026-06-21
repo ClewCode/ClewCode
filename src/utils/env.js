@@ -3,26 +3,21 @@ import { homedir } from 'os';
 import { join } from 'path';
 import { fileSuffixForOauthConfig } from '../constants/oauth.js';
 import { isRunningWithBun } from './bundledMode.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { findExecutable } from './findExecutable.js';
 import { getFsImplementation } from './fsOperations.js';
 import { which } from './which.js';
 // Config and data paths
 export const getGlobalClaudeFile = memoize(() => {
-  // Legacy fallback for backwards compatibility
-  if (getFsImplementation().existsSync(join(getClaudeConfigHomeDir(), '.config.json'))) {
-    return join(getClaudeConfigHomeDir(), '.config.json');
-  }
-  // Check for existing legacy .claude.json
-  const legacyFilename = `.claude${fileSuffixForOauthConfig()}.json`;
-  const legacyPath = join(process.env.CLAUDE_CONFIG_DIR || homedir(), legacyFilename);
-  if (getFsImplementation().existsSync(legacyPath)) {
-    return legacyPath;
-  }
   // Primary: .clew.json
   const suffix = fileSuffixForOauthConfig();
   const filename = `.clew${suffix}.json`;
-  return join(getClaudeConfigHomeDir(), filename);
+  return join(getClewConfigHomeDir(), filename);
+});
+export const getLegacyGlobalClaudeFile = memoize(() => {
+  const suffix = fileSuffixForOauthConfig();
+  const filename = `.claude${suffix}.json`;
+  return join(process.env.CLAUDE_CONFIG_DIR || homedir(), filename);
 });
 const hasInternetAccess = memoize(async () => {
   try {

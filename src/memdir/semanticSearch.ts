@@ -13,7 +13,7 @@
 import { env, pipeline } from '@xenova/transformers';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { getClaudeConfigHomeDir } from '../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../utils/envUtils.js';
 import { type MemoryHeader, scanMemoryFiles } from './memoryScan.js';
 import { getAutoMemPath } from './paths.js';
 
@@ -23,7 +23,7 @@ env.useBrowserCache = false;
 // Cache models in ~/.claude/models to persist across sessions
 // Note: cacheDir type may vary by version, so we use type assertion
 try {
-  (env as any).cacheDir = join(getClaudeConfigHomeDir(), 'models');
+  (env as any).cacheDir = join(getClewConfigHomeDir(), 'models');
 } catch {
   // cacheDir may not be supported in all versions
 }

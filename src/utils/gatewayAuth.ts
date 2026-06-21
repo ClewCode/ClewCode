@@ -14,72 +14,76 @@ import { openBrowser } from './browser.js';
 const GATEWAY_URL = process.env.CLEW_GATEWAY_URL || 'https://api.clew-code.org/v1';
 
 export type GatewayAuthResult = {
-	token: string;
-	user: { id: string; email: string; tier: string };
+  token: string;
+  user: { id: string; email: string; tier: string };
 };
 
 /**
  * Login to the gateway with email + password.
  */
 export async function login(email: string, password: string): Promise<GatewayAuthResult> {
-	const res = await fetch(`${GATEWAY_URL}/v1/auth/login`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ email, password }),
-	});
-	const data = await res.json();
-	if (!res.ok) throw new Error(data.error || 'Gateway login failed');
-	return data;
+  const res = await fetch(`${GATEWAY_URL}/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Gateway login failed');
+  return data;
 }
 
 /**
  * Signup to the gateway.
  */
 export async function signup(email: string, password: string): Promise<GatewayAuthResult> {
-	const res = await fetch(`${GATEWAY_URL}/v1/auth/signup`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ email, password }),
-	});
-	const data = await res.json();
-	if (!res.ok) throw new Error(data.error || 'Gateway signup failed');
-	return data;
+  const res = await fetch(`${GATEWAY_URL}/v1/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Gateway signup failed');
+  return data;
 }
 
 /**
  * Save gateway credentials to config file.
  */
 export async function saveGatewayToken(token: string, user: GatewayAuthResult['user']): Promise<void> {
-	const configPath = join(homedir(), '.clew', 'gateway.json');
-	await writeFile(configPath, JSON.stringify({ token, user }, null, 2));
+  const configPath = join(homedir(), '.clew', 'gateway.json');
+  await writeFile(configPath, JSON.stringify({ token, user }, null, 2));
 }
 
 /**
  * Import a token obtained from the web dashboard.
  */
 export async function importToken(token: string): Promise<GatewayAuthResult> {
-	const res = await fetch(`${GATEWAY_URL}/auth/me`, {
-		headers: { 'Authorization': 'Bearer ' + token },
-	});
-	if (!res.ok) throw new Error('Invalid or expired token');
-	const data = await res.json();
-	const user = { id: data.user?.id || 'unknown', email: data.user?.email || 'unknown', tier: data.user?.tier || 'free' };
-	await saveGatewayToken(token, user);
-	return { token, user };
+  const res = await fetch(`${GATEWAY_URL}/auth/me`, {
+    headers: { Authorization: 'Bearer ' + token },
+  });
+  if (!res.ok) throw new Error('Invalid or expired token');
+  const data = await res.json();
+  const user = {
+    id: data.user?.id || 'unknown',
+    email: data.user?.email || 'unknown',
+    tier: data.user?.tier || 'free',
+  };
+  await saveGatewayToken(token, user);
+  return { token, user };
 }
 
 /**
  * Read saved gateway token from config file.
  */
 export async function readGatewayToken(): Promise<string | null> {
-	try {
-		const configPath = join(homedir(), '.clew', 'gateway.json');
-		const raw = await readFile(configPath, 'utf-8');
-		const { token } = JSON.parse(raw);
-		return token || null;
-	} catch {
-		return null;
-	}
+  try {
+    const configPath = join(homedir(), '.clew', 'gateway.json');
+    const raw = await readFile(configPath, 'utf-8');
+    const { token } = JSON.parse(raw);
+    return token || null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -87,7 +91,7 @@ export async function readGatewayToken(): Promise<string | null> {
  * catches the token callback.
  */
 export async function loginViaBrowser(): Promise<void> {
-	const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Clew Login</title><style>
 body{background:#0a0a0f;color:#e4e4e7;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
 .card{background:#12121a;border:1px solid #27272a;border-radius:12px;padding:2rem;width:360px;max-width:90vw}
@@ -129,49 +133,49 @@ window.location.href='/callback?token='+encodeURIComponent(d.token)+'&email='+en
 catch(err){document.getElementById('form').style.display='block';document.getElementById('loading').style.display='none';er.textContent=err.message;er.style.display='block'}}
 </script></body></html>`;
 
-	return new Promise<void>((resolve, reject) => {
-		const server = createServer(async (req, res) => {
-			const url = new URL(req.url || '/', `http://localhost`);
-			const parsedUrl = new URL(req.url || '/', `http://localhost`);
+  return new Promise<void>((resolve, reject) => {
+    const server = createServer(async (req, res) => {
+      const url = new URL(req.url || '/', `http://localhost`);
+      const parsedUrl = new URL(req.url || '/', `http://localhost`);
 
-			if (parsedUrl.pathname === '/callback') {
-				const token = parsedUrl.searchParams.get('token');
-				const email = parsedUrl.searchParams.get('email') || 'unknown';
-				const tier = parsedUrl.searchParams.get('tier') || 'free';
+      if (parsedUrl.pathname === '/callback') {
+        const token = parsedUrl.searchParams.get('token');
+        const email = parsedUrl.searchParams.get('email') || 'unknown';
+        const tier = parsedUrl.searchParams.get('tier') || 'free';
 
-				if (token) {
-					await saveGatewayToken(token, { id: 'web', email, tier });
-					res.writeHead(200, { 'Content-Type': 'text/html' });
-					res.end(`<html><body style="background:#0a0a0f;color:#e4e4e7;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;margin:0">
+        if (token) {
+          await saveGatewayToken(token, { id: 'web', email, tier });
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(`<html><body style="background:#0a0a0f;color:#e4e4e7;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;margin:0">
 <div style="text-align:center"><h1 style="color:#22c55e">&#10003;</h1><p>CLI login successful!<br><span style="color:#a1a1aa;font-size:.85rem">Logged in as ${email} (${tier})</span></p></div></body></html>`);
-					server.close();
-					process.stdout.write(`\nLogged in as ${email} (${tier})\n`);
-					resolve();
-				} else {
-					res.writeHead(400, { 'Content-Type': 'text/plain' });
-					res.end('Missing token');
-				}
-				return;
-			}
+          server.close();
+          process.stdout.write(`\nLogged in as ${email} (${tier})\n`);
+          resolve();
+        } else {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('Missing token');
+        }
+        return;
+      }
 
-			res.writeHead(200, { 'Content-Type': 'text/html' });
-			res.end(html);
-		});
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(html);
+    });
 
-		server.listen(0, '127.0.0.1', () => {
-			const port = (server.address() as any).port;
-			const url = `http://127.0.0.1:${port}`;
-			process.stdout.write('Opening browser for CLI login...\n');
-			openBrowser(url).catch(() => {
-				process.stdout.write(`Open this URL in your browser:\n${url}\n`);
-			});
-		});
-	});
+    server.listen(0, '127.0.0.1', () => {
+      const port = (server.address() as any).port;
+      const url = `http://127.0.0.1:${port}`;
+      process.stdout.write('Opening browser for CLI login...\n');
+      openBrowser(url).catch(() => {
+        process.stdout.write(`Open this URL in your browser:\n${url}\n`);
+      });
+    });
+  });
 }
 
 /**
  * Check if gateway auth is configured.
  */
 export function isGatewayConfigured(): boolean {
-	return !process.env.CLEW_DISABLE_GATEWAY;
+  return !process.env.CLEW_DISABLE_GATEWAY;
 }

@@ -49,7 +49,7 @@ Hauptfunktionen:
 * **Laufzeit-Modellwechsel** — Verwenden Sie `/model`, um während einer Sitzung das Modell oder den Anbieter zu wechseln
 * **Tool-gesteuerte Workflows** — Dateien lesen, suchen, bearbeiten und schreiben; Shell-Befehle ausführen; LSP abfragen; MCP-Tools ausführen; Browser-Automatisierung integrieren
 * **Plugin-Hooks** — Hooks für Prompts, Shell-Ausführung, Tool-Aufrufe, Nachrichtenanzeige, Sitzungsstart und Dateibearbeitungsaktionen
-* **Dynamische Skills** — Laden von Skills aus dem Projekt und `.claude/skills/`
+* **Dynamische Skills** — Laden von Skills aus dem Projekt und `.clew/skills/`
 * **Code-Review-Tools** — `/code-review --fix` zum Prüfen und Anwenden von Änderungen, `/simplify` zum Bereinigen
 * **Guardian Auto-Review** — `/guardian` leitet Berechtigungsanfragen an einen LLM-Reviewer mit Schutzschalter weiter
 * **PR-Verwaltung** — `/pr create`, `list`, `view`, `review`, `merge`, `status`
@@ -187,7 +187,7 @@ Storage: Session-only
 
 Aufgabenverhalten:
 
-* Dauerhafte Aufgaben werden in `.claude/scheduled_tasks.json` gespeichert
+* Dauerhafte Aufgaben werden in `.clew/scheduled_tasks.json` gespeichert
 * Sitzungsbezogene Aufgaben laufen nur während der aktiven Sitzung
 * Wiederkehrende Aufgaben verwenden die standardmäßige 5-Feld-Cron-Syntax
 * Einmalige Aufgaben werden nach der Ausführung entfernt

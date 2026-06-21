@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { roughTokenCountEstimation } from '../../services/tokenEstimation.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { getErrnoCode, toError } from '../../utils/errors.js';
 import { logError } from '../../utils/log.js';
 
@@ -84,7 +84,7 @@ REMEMBER: Use the Edit tool in parallel and stop. Do not continue after the edit
  * Load custom session memory template from file if it exists
  */
 export async function loadSessionMemoryTemplate(): Promise<string> {
-  const templatePath = join(getClaudeConfigHomeDir(), 'session-memory', 'config', 'template.md');
+  const templatePath = join(getClewConfigHomeDir(), 'session-memory', 'config', 'template.md');
 
   try {
     return await readFile(templatePath, { encoding: 'utf-8' });
@@ -104,7 +104,7 @@ export async function loadSessionMemoryTemplate(): Promise<string> {
  * Use {{variableName}} syntax for variable substitution (e.g., {{currentNotes}}, {{notesPath}})
  */
 export async function loadSessionMemoryPrompt(): Promise<string> {
-  const promptPath = join(getClaudeConfigHomeDir(), 'session-memory', 'config', 'prompt.md');
+  const promptPath = join(getClewConfigHomeDir(), 'session-memory', 'config', 'prompt.md');
 
   try {
     return await readFile(promptPath, { encoding: 'utf-8' });

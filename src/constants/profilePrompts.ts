@@ -65,7 +65,7 @@ When you notice a repeatable pattern (you did the same multi-step process
 twice or more), proactively create a skill:
 
 - Use \`/skillify\` or manually write a \`SKILL.md\` file in the project's
-  \`.clew/skills/\` directory (repo-specific) or \`~/.claude/skills/\`
+  \`.clew/skills/\` directory (repo-specific) or \`~/.clew/skills/\`
   (personal, cross-repo).
 - A good skill captures: goal, steps, inputs/outputs, success criteria,
   tools needed, and where to save results.

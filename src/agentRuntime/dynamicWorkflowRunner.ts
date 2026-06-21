@@ -235,7 +235,7 @@ export async function runDynamicWorkflow(params: {
 
 /**
  * Convenience: build a `PersistenceHook` that writes to disk under
- * `.claude/runs/<runId>/state.json` after every subtask. Use with
+ * `.clew/runs/<runId>/state.json` after every subtask. Use with
  * `loadDynamicRun` to resume.
  */
 export function diskPersistenceHook(workspaceRoot: string): PersistenceHook {

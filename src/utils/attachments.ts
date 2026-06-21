@@ -140,7 +140,7 @@ import { checkForLSPDiagnostics, clearAllLSPDiagnostics } from '../services/lsp/
 import { logForDebugging } from './debug.js';
 import { extractTextContent, getUserMessageText, isThinkingMessage } from './messages.js';
 import { isHumanTurn } from './messagePredicates.js';
-import { isEnvTruthy, getClaudeConfigHomeDir } from './envUtils.js';
+import { isEnvTruthy, getClewConfigHomeDir } from './envUtils.js';
 import { feature } from 'bun:bundle';
 /* eslint-disable @typescript-eslint/no-require-imports */
 const BRIEF_TOOL_NAME: string | null =
@@ -3326,7 +3326,7 @@ function getTeamContextAttachment(messages: Message[]): Attachment[] {
     return [];
   }
 
-  const configDir = getClaudeConfigHomeDir();
+  const configDir = getClewConfigHomeDir();
   const teamConfigPath = `${configDir}/teams/${teamName}/config.json`;
   const taskListPath = `${configDir}/tasks/${teamName}/`;
 

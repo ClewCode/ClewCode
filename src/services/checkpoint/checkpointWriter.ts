@@ -37,14 +37,7 @@ function getCheckpointsDir(): string {
   const sessionId = getSessionId();
   const cwd = getCwd();
   const slug = Buffer.from(cwd).toString('base64url').slice(0, 32);
-  return join(
-    getClewConfigHomeDir(),
-    'projects',
-    slug,
-    'sessions',
-    sessionId,
-    'checkpoints',
-  );
+  return join(getClewConfigHomeDir(), 'projects', slug, 'sessions', sessionId, 'checkpoints');
 }
 
 function getCheckpointFilePath(id: string): string {

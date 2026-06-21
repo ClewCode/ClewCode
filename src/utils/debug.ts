@@ -6,7 +6,7 @@ import { getSessionId } from 'src/bootstrap/state.js';
 import { type BufferedWriter, createBufferedWriter } from './bufferedWriter.js';
 import { registerCleanup } from './cleanupRegistry.js';
 import { type DebugFilter, parseDebugFilter, shouldShowDebugMessage } from './debugFilter.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { getFsImplementation } from './fsOperations.js';
 import { writeToStderr } from './process.js';
 import { jsonStringify } from './slowOperations.js';
@@ -218,7 +218,7 @@ export function getDebugLogPath(): string {
   return (
     getDebugFilePath() ??
     process.env.CLAUDE_CODE_DEBUG_LOGS_DIR ??
-    join(getClaudeConfigHomeDir(), 'debug', `${getSessionId()}.txt`)
+    join(getClewConfigHomeDir(), 'debug', `${getSessionId()}.txt`)
   );
 }
 

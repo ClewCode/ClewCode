@@ -89,6 +89,13 @@ export function createLinuxAdapter(): PlatformAdapter {
     },
 
     // ── Mouse ────────────────────────────────────────────────────────────
+    async mouseDown(): Promise<void> {
+      await run('xdotool', ['mousedown', '1']);
+    },
+
+    async mouseUp(): Promise<void> {
+      await run('xdotool', ['mouseup', '1']);
+    },
 
     async mouseMove(x: number, y: number): Promise<void> {
       await run('xdotool', ['mousemove', String(x), String(y)]);
@@ -154,6 +161,12 @@ export function createLinuxAdapter(): PlatformAdapter {
       }
     },
 
+    async holdKey(sequence: string, durationMs: number): Promise<void> {
+      await run('xdotool', ['keydown', sequence]);
+      await sleep(durationMs);
+      await run('xdotool', ['keyup', sequence]);
+    },
+
     // ── Clipboard ────────────────────────────────────────────────────────
 
     async clipboardRead(): Promise<string> {
@@ -173,6 +186,47 @@ export function createLinuxAdapter(): PlatformAdapter {
       } catch {
         // Fall back to xclip (X11)
         await run('xclip', ['-selection', 'clipboard'], text);
+      }
+    },
+
+    // ── Window Management ──────────────────────────────────────────────────
+    async listWindows(): Promise<Array<{ title: string; x: number; y: number; w: number; h: number }>> {
+      try {
+        const output = await run('wmctrl', ['-l', '-G']);
+        return output
+          .split('\n')
+          .filter(Boolean)
+          .map(line => {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length >= 7) {
+              const x = Number(parts[2]);
+              const y = Number(parts[3]);
+              const w = Number(parts[4]);
+              const h = Number(parts[5]);
+              const title = parts.slice(7).join(' ');
+              return { title, x, y, w, h };
+            }
+            return null;
+          })
+          .filter((w): w is { title: string; x: number; y: number; w: number; h: number } => w !== null);
+      } catch {
+        return [];
+      }
+    },
+
+    async focusWindow(query: string): Promise<boolean> {
+      try {
+        await run('wmctrl', ['-a', query]);
+        return true;
+      } catch {
+        try {
+          const winId = (await run('xdotool', ['search', '--name', query])).trim().split('\n')[0];
+          if (winId) {
+            await run('xdotool', ['windowactivate', winId]);
+            return true;
+          }
+        } catch {}
+        return false;
       }
     },
   };

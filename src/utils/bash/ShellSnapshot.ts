@@ -8,7 +8,7 @@ import { registerCleanup } from '../cleanupRegistry.js';
 import { getCwd } from '../cwd.js';
 import { logForDebugging } from '../debug.js';
 import { embeddedSearchToolsBinaryPath, hasEmbeddedSearchTools } from '../embeddedTools.js';
-import { getClaudeConfigHomeDir } from '../envUtils.js';
+import { getClewConfigHomeDir } from '../envUtils.js';
 import { pathExists } from '../file.js';
 import { getFsImplementation } from '../fsOperations.js';
 import { logError } from '../log.js';
@@ -407,7 +407,7 @@ export const createAndSaveSnapshot = async (binShell: string): Promise<string | 
       // Create unique snapshot path with timestamp and random ID
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 8);
-      const snapshotsDir = join(getClaudeConfigHomeDir(), 'shell-snapshots');
+      const snapshotsDir = join(getClewConfigHomeDir(), 'shell-snapshots');
       logForDebugging(`Snapshots directory: ${snapshotsDir}`);
       const shellSnapshotPath = join(snapshotsDir, `snapshot-${shellType}-${timestamp}-${randomId}.sh`);
 
@@ -447,7 +447,7 @@ export const createAndSaveSnapshot = async (binShell: string): Promise<string | 
             logForDebugging(`  - Config file: ${getConfigFile(binShell)}`);
             logForDebugging(`  - Config file exists: ${configFileExists}`);
             logForDebugging(`  - Working directory: ${getCwd()}`);
-            logForDebugging(`  - Claude home: ${getClaudeConfigHomeDir()}`);
+            logForDebugging(`  - Claude home: ${getClewConfigHomeDir()}`);
             logForDebugging(`Full snapshot script:\n${snapshotScript}`);
             if (stdout) {
               logForDebugging(`stdout output (${stdout.length} chars):\n${stdout}`);

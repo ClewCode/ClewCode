@@ -12,7 +12,7 @@ import type { ScopedMcpServerConfig } from '../../services/mcp/types.js';
 import { isInBundledMode } from '../bundledMode.js';
 import { getGlobalConfig, saveGlobalConfig } from '../config.js';
 import { logForDebugging } from '../debug.js';
-import { getClaudeConfigHomeDir, isEnvDefinedFalsy, isEnvTruthy } from '../envUtils.js';
+import { getClewConfigHomeDir, isEnvDefinedFalsy, isEnvTruthy } from '../envUtils.js';
 import { execFileNoThrowWithCwd } from '../execFileNoThrow.js';
 import { getPlatform } from '../platform.js';
 import { jsonStringify } from '../slowOperations.js';
@@ -290,7 +290,7 @@ function registerWindowsNativeHosts(manifestPath: string): void {
  */
 async function createWrapperScript(command: string): Promise<string> {
   const platform = getPlatform();
-  const chromeDir = join(getClaudeConfigHomeDir(), 'chrome');
+  const chromeDir = join(getClewConfigHomeDir(), 'chrome');
   const wrapperPath =
     platform === 'windows' ? join(chromeDir, 'chrome-native-host.bat') : join(chromeDir, 'chrome-native-host');
 

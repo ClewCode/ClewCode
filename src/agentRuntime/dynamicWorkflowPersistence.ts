@@ -1,12 +1,12 @@
 /**
  * Persistence for Dynamic Workflow runs.
  *
- * Stores workflow plans + per-subtask results under `.claude/runs/<id>/`
+ * Stores workflow plans + per-subtask results under `.clew/runs/<id>/`
  * so an interrupted run can be resumed from the last completed wave
  * instead of starting over.
  *
  * On disk layout:
- *   .claude/runs/<runId>/
+ *   .clew/runs/<runId>/
  *     workflow.json   — full DynamicWorkflow plan
  *     state.json      — status, startedAt, completedSubtaskIds, results
  *     events.log      — newline-delimited JSON runtime events

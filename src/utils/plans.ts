@@ -9,7 +9,7 @@ import { getPlanSlugCache, getSessionId } from '../bootstrap/state.js';
 import { EXIT_PLAN_MODE_V2_TOOL_NAME } from '../tools/ExitPlanModeTool/constants.js';
 import { getCwd } from './cwd.js';
 import { logForDebugging } from './debug.js';
-import { getClaudeConfigHomeDir } from './envUtils.js';
+import { getClewConfigHomeDir } from './envUtils.js';
 import { isENOENT } from './errors.js';
 import { getEnvironmentKind } from './filePersistence/outputsScanner.js';
 import { getFsImplementation } from './fsOperations.js';
@@ -124,13 +124,13 @@ export const getPlansDirectory = memoize(function getPlansDirectory(): string {
     // Validate path stays within project root to prevent path traversal
     if (!resolved.startsWith(cwd + sep) && resolved !== cwd) {
       logError(new Error(`plansDirectory must be within project root: ${settingsDir}`));
-      plansPath = join(getClaudeConfigHomeDir(), 'plans');
+      plansPath = join(getClewConfigHomeDir(), 'plans');
     } else {
       plansPath = resolved;
     }
   } else {
     // Default
-    plansPath = join(getClaudeConfigHomeDir(), 'plans');
+    plansPath = join(getClewConfigHomeDir(), 'plans');
   }
 
   // Ensure directory exists (mkdirSync with recursive: true is a no-op if it exists)

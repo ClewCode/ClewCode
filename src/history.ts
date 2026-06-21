@@ -4,7 +4,7 @@ import { getProjectRoot, getSessionId } from './bootstrap/state.js';
 import { registerCleanup } from './utils/cleanupRegistry.js';
 import type { HistoryEntry, PastedContent } from './utils/config.js';
 import { logForDebugging } from './utils/debug.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from './utils/envUtils.js';
+import { getClewConfigHomeDir, isEnvTruthy } from './utils/envUtils.js';
 import { getErrnoCode } from './utils/errors.js';
 import { readLinesReverse } from './utils/fsOperations.js';
 import { lock } from './utils/lockfile.js';
@@ -103,7 +103,7 @@ async function* makeLogEntryReader(): AsyncGenerator<LogEntry> {
   }
 
   // Read from global history file (shared across all projects)
-  const historyPath = join(getClaudeConfigHomeDir(), 'history.jsonl');
+  const historyPath = join(getClewConfigHomeDir(), 'history.jsonl');
 
   try {
     for await (const line of readLinesReverse(historyPath)) {
@@ -282,7 +282,7 @@ async function immediateFlushHistory(): Promise<void> {
 
   let release;
   try {
-    const historyPath = join(getClaudeConfigHomeDir(), 'history.jsonl');
+    const historyPath = join(getClewConfigHomeDir(), 'history.jsonl');
 
     // Ensure the file exists before acquiring lock (append mode creates if missing)
     await writeFile(historyPath, '', {

@@ -98,9 +98,9 @@ export function _resetTmuxControlModeProbeForTesting() {
   loggedTmuxCcDisable = false;
 }
 /**
- * Runtime env-var check only. Ants default to on (CLAUDE_CODE_NO_FLICKER=0
- * to opt out); external users default to off (CLAUDE_CODE_NO_FLICKER=1 to
- * opt in).
+ * Runtime env-var check only. Fullscreen defaults to on so the prompt/status
+ * footer can stay anchored to the terminal bottom. Use
+ * CLAUDE_CODE_NO_FLICKER=0 or CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 to opt out.
  */
 export function isFullscreenEnvEnabled() {
   // CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1: complete opt-out of the alt-screen
@@ -122,7 +122,7 @@ export function isFullscreenEnvEnabled() {
     }
     return false;
   }
-  return process.env.USER_TYPE === 'ant';
+  return true;
 }
 /**
  * Whether fullscreen mode should enable SGR mouse tracking (DEC 1000/1002/1006).

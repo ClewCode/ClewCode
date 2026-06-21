@@ -128,7 +128,8 @@ function DeviceLoginCode({
       </Box>
       <Box marginTop={1} paddingX={2}>
         <Text bold color="green" inverse>
-          {' '}{userCode}{' '}
+          {' '}
+          {userCode}{' '}
         </Text>
       </Box>
       <Box marginTop={1}>
@@ -286,16 +287,14 @@ export function OpenAIOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
       // Device flow — no localhost server needed
       if (method === 'device') {
         try {
-          const tokens = await deviceFlow.startDeviceFlow(
-            (userCode, verificationUri, verificationUriComplete) => {
-              setOAuthStatus({
-                state: 'device_login',
-                userCode,
-                verificationUri,
-                verificationUriComplete,
-              });
-            },
-          );
+          const tokens = await deviceFlow.startDeviceFlow((userCode, verificationUri, verificationUriComplete) => {
+            setOAuthStatus({
+              state: 'device_login',
+              userCode,
+              verificationUri,
+              verificationUriComplete,
+            });
+          });
           handleSuccess(tokens);
         } catch (error) {
           console.error('Device flow error:', error);

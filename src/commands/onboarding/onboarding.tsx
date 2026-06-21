@@ -94,11 +94,7 @@ export function OnboardingDialog({ onDone }: { onDone: LocalJSXCommandOnDone }) 
 
       return (
         <WizardDialogLayout title="AI Provider" subtitle="Select your preferred AI service provider">
-          <Select
-            options={PROVIDERS}
-            onChange={handleSelect}
-            onCancel={() => {}}
-          />
+          <Select options={PROVIDERS} onChange={handleSelect} onCancel={() => {}} />
         </WizardDialogLayout>
       );
     },

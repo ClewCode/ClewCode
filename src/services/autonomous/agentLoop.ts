@@ -19,7 +19,7 @@ import { join } from 'path';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { createCronScheduler } from '../../utils/cronScheduler.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
 import { ensureSupervisor, sendRequest } from '../Supervisor/ipcClient.js';
 import {
@@ -42,7 +42,7 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const DAEMON_DIR = join(getClaudeConfigHomeDir(), 'daemon');
+const DAEMON_DIR = join(getClewConfigHomeDir(), 'daemon');
 const STATUS_PATH = join(DAEMON_DIR, 'autonomous.json');
 const LOOP_SLEEP_MS = 15_000; // 15s between queue checks when idle
 const WORKER_POLL_MS = 5_000; // 5s between worker status checks

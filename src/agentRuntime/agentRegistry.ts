@@ -17,7 +17,7 @@ export class AgentRegistry {
 
   async init(): Promise<void> {
     await fs.mkdir(this.getAgentsDir(), { recursive: true });
-    // Write default agents to .claude/agents/ if they do not exist
+    // Write default agents to .clew/agents/ if they do not exist
     for (const [name, definition] of Object.entries(BUILTIN_AGENTS)) {
       const agentPath = path.join(this.getAgentsDir(), `${name}.md`);
       try {

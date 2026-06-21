@@ -109,14 +109,14 @@ export async function processSessionStartHooks(
         errorMessage.includes('EACCES') ||
         errorMessage.includes('EPERM')
       ) {
-        userGuidance = 'This appears to be a permissions issue. Check file permissions on ~/.claude/plugins/';
+        userGuidance = 'This appears to be a permissions issue. Check file permissions on ~/.clew/plugins/';
       } else if (
         errorMessage.includes('Invalid') ||
         errorMessage.includes('parse') ||
         errorMessage.includes('JSON') ||
         errorMessage.includes('schema')
       ) {
-        userGuidance = 'This appears to be a configuration issue. Check your plugin settings in .claude/settings.json';
+        userGuidance = 'This appears to be a configuration issue. Check your plugin settings in .clew/settings.json';
       } else {
         userGuidance = 'Please fix the plugin configuration or remove problematic plugins from your settings.';
       }
@@ -128,7 +128,7 @@ export async function processSessionStartHooks(
       );
 
       // Continue execution - plugin hooks won't be available, but project-level hooks
-      // from .claude/settings.json (loaded via captureHooksConfigSnapshot) will still work
+      // from .clew/settings.json (loaded via captureHooksConfigSnapshot) will still work
     }
   }
 

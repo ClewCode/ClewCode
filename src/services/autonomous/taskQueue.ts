@@ -15,7 +15,7 @@
 import { existsSync, readFileSync, watch } from 'fs';
 import { appendFile, mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
 import { createAgentId } from '../../utils/uuid.js';
 
@@ -77,7 +77,7 @@ export type TaskFilter = {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const DAEMON_DIR = join(getClaudeConfigHomeDir(), 'daemon');
+const DAEMON_DIR = join(getClewConfigHomeDir(), 'daemon');
 const QUEUE_PATH = join(DAEMON_DIR, 'tasks.json');
 const LOGS_DIR = join(DAEMON_DIR, 'logs');
 const DEFAULT_LEASE_MS = 5 * 60 * 1000; // 5 minutes

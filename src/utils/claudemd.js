@@ -42,7 +42,7 @@ import { DOT_CLAUDE, DOT_CLEW } from '../utils/clewPaths.js';
 import { getCurrentProjectConfig, getManagedClaudeRulesDir, getMemoryPath, getUserClaudeRulesDir } from './config.js';
 import { logForDebugging } from './debug.js';
 import { logForDiagnosticsNoPII } from './diagLogs.js';
-import { getClaudeConfigHomeDir, getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getClewConfigHomeDir, getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { getErrnoCode } from './errors.js';
 import { normalizePathForComparison } from './file.js';
 import { cacheKeys } from './fileStateCache.js';
@@ -325,7 +325,7 @@ function handleMemoryFileReadError(error, filePath) {
     // Don't log the full file path to avoid PII/security issues
     logEvent('tengu_claude_md_permission_error', {
       is_access_error: 1,
-      has_home_dir: filePath.includes(getClaudeConfigHomeDir()) ? 1 : 0,
+      has_home_dir: filePath.includes(getClewConfigHomeDir()) ? 1 : 0,
     });
   }
 }
@@ -602,7 +602,7 @@ export async function processMdRules({
     if (error instanceof Error && error.message.includes('EACCES')) {
       logEvent('tengu_claude_rules_md_permission_error', {
         is_access_error: 1,
-        has_home_dir: rulesDir.includes(getClaudeConfigHomeDir()) ? 1 : 0,
+        has_home_dir: rulesDir.includes(getClewConfigHomeDir()) ? 1 : 0,
       });
     }
     return [];

@@ -21,7 +21,7 @@
  * subsequent read hits the cached bool instead of re-running the auth chain.
  */
 import { join } from 'path';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { readFileSync } from '../../utils/fileRead.js';
 import { stripBOM } from '../../utils/jsonRead.js';
 import { resetSettingsCache } from '../../utils/settings/settingsCache.js';
@@ -42,7 +42,7 @@ export function setEligibility(v) {
   return v;
 }
 export function getSettingsPath() {
-  return join(getClaudeConfigHomeDir(), SETTINGS_FILENAME);
+  return join(getClewConfigHomeDir(), SETTINGS_FILENAME);
 }
 // sync IO — settings pipeline is sync. fileRead and jsonRead are leaves;
 // file.ts and json.ts both sit in the settings SCC.

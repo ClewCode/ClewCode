@@ -10,14 +10,14 @@ import { type ChildProcess, spawn } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
 import { type AutonomousStatus, loadStatus } from './agentLoop.js';
 import { getQueueStats, loadQueue } from './taskQueue.js';
 
 // ─── Constants ────────────────────────────────────────────────
 
-const DAEMON_DIR = join(getClaudeConfigHomeDir(), 'daemon');
+const DAEMON_DIR = join(getClewConfigHomeDir(), 'daemon');
 const AUTONOMOUS_ENABLED_PATH = join(DAEMON_DIR, 'autonomous-enabled.json');
 
 const HEALTH_CHECK_MS = 30_000; // check every 30s

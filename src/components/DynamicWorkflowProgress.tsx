@@ -5,7 +5,7 @@
  * Designed to be embedded in the background-tasks panel or shown as a
  * standalone status line below the prompt.
  *
- * Polls the latest run state from disk (`.claude/runs/<id>/state.json`)
+ * Polls the latest run state from disk (`.clew/runs/<id>/state.json`)
  * so it works even for runs started by background subagents.
  */
 
@@ -37,7 +37,7 @@ type RunSummary = {
 };
 
 /**
- * Hook that polls `.claude/runs/` for live dynamic workflow runs.
+ * Hook that polls `.clew/runs/` for live dynamic workflow runs.
  * Returns a sorted list (most recent first) of active runs.
  * Polls every 3 seconds while runs are running.
  */

@@ -3,7 +3,7 @@ import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import { dirname, join } from 'path';
 import { getSessionId } from 'src/bootstrap/state.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse, jsonStringify } from '../../utils/slowOperations.js';
 
 function hashString(str: string): string {
@@ -57,7 +57,7 @@ export function addApiRequestToCache(requestData: unknown): void {
 }
 
 export function getDumpPromptsPath(agentIdOrSessionId?: string): string {
-  return join(getClaudeConfigHomeDir(), 'dump-prompts', `${agentIdOrSessionId ?? getSessionId()}.jsonl`);
+  return join(getClewConfigHomeDir(), 'dump-prompts', `${agentIdOrSessionId ?? getSessionId()}.jsonl`);
 }
 
 function appendToFile(filePath: string, entries: string[]): void {

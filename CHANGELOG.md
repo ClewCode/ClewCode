@@ -5,15 +5,14 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- **Gateway authentication system**: New `src/utils/gatewayAuth.ts` module with `login()`, `signup()`, `saveGatewayToken()`, `importToken()`, `loginViaBrowser()`, `readGatewayToken()`, `isGatewayConfigured()`. Gateway token stored at `~/.clew/gateway.json` — read by `ClewGatewayProvider`. `clew auth login` now uses browser login by default with terminal fallback. Token import via `clew auth login --token`. (`src/utils/gatewayAuth.ts`, `src/cli/handlers/auth.ts`)
-- **Gateway telemetry heartbeat**: Periodic heartbeat to `api.clew-code.org` for usage tracking. (`src/commands.ts`, `src/components/StatusLine.tsx`)
-- **Marketing website**: Terminal-inspired design marketing site at `clew-code.org` with CNAME and OG meta. Moved to separate `ClewCode/clew-code.org` repo. (`0668907`, `bae38c4`)
-- **Context compaction improvements**: Background auto-compaction with configurable threshold (80% of warning level). (`src/services/compact/autoCompact.ts`)
-- **OpenAI Device Code flow (RFC 8628)**: New `OpenAIDeviceFlow` service at `src/services/openaiOAuth/deviceFlow.ts` for headless/browser-free OAuth login. Added "Device Login" option to `/providers` OpenAI OAuth picker.
-- **GitHub Wiki**: Full wiki at https://github.com/ClewCode/ClewCode/wiki with 13 pages covering installation, features, commands, concepts, memory system, and peer-to-peer.
-- **Wiki link**: Added wiki badge to README header.
+- **Compact Orchestrator**: Added `src/services/compact/orchestrator.ts` as a unified entry point for all compaction strategies (micro-compaction, session-memory, and auto-compaction).
+- **Cross-platform Computer Use Tool**: Unifed the computer use execution paths by routing the primary `ComputerUseTool` through the new platform-native adapter (`getPlatformAdapter()`). Added support for macOS and Linux in addition to Windows when `ENABLE_COMPUTER_USE=1` is specified.
+- **User-visible fallback warning**: Added a console warning message printed to stderr when `COMPUTER_USE_BACKEND="anthropic"` is explicitly requested but the `@ant/computer-use-mcp` or `@ant/computer-use-input` packages are missing.
 
 ### Changed
+- **Auto-compact threshold adjusted**: Changed background auto-compact min threshold percentage (`BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT`) from `0.8` to `0.65` to trigger background compaction earlier.
+- **CLAUDE → CLEW full rename**: Renamed all remaining `.claude/` → `.clew/` directory references, `getClaudeConfigHomeDir` → `getClewConfigHomeDir` (83 files), `CLAUDE_FOLDER_PERMISSION_PATTERN` → `CLEW_FOLDER_PERMISSION_PATTERN`, `CLAUDE_CODE_DOCS_MAP_URL` → `CLEW_CODE_DOCS_MAP_URL`, `CLAUDE_CODE_GUIDE_AGENT_TYPE` → `CLEW_CODE_GUIDE_AGENT_TYPE`. Updated `.npmignore`, `.gitignore`, permission scope strings, env var fallbacks, readme translations (12 languages), and comments throughout.
+- **PlatformAdapter automation extension**: Extended `PlatformAdapter` with `mouseDown`, `mouseUp`, `holdKey`, `listWindows`, and `focusWindow` methods, implementing them for Windows, macOS, and Linux, and refactoring `ComputerUseTool` Action Handler to use these adapter methods directly instead of `require('./input.js')` fallbacks.
 - **URL rebranding**: Replaced all `claude.ai` and `claude.com` URLs with `clew-code.org` across OAuth config, product links, usage, desktop, chrome, privacy, and prompts. Removed Anthropic production OAuth endpoints. (`535d2c8`, `38c0b19`, `37c48ac`)
 - **`/login` and `/logout` now gateway-native**: Commands use gateway mode by default when `isGatewayConfigured()` returns true. `/login` type changed to `'local'`, `/logout` type changed to `'local'` — both load gateway-specific modules (`gwlogin.ts`, `gwlogout.ts`). (`src/commands/login/index.ts`, `src/commands/logout/index.ts`)
 - **Interrupted prompt renamed**: "Interrupted by user" message now branded as "Clew". (`src/components/InterruptedByUser.tsx`)
@@ -21,8 +20,10 @@ All notable changes to this project will be documented in this file.
 - **README cleaned**: Removed all "fork of Claude Code" and "reverse-engineered" references. Fixed `check:ci` description. Fixed peer docs link → wiki.
 - **Onboarding wizard redesigned**: New flow: Theme → Provider (all 27) → API Key → Model → Done. Removed Auth method selector, OAuth login, terminal settings step. Removed Anthropic Claude from provider list.
 - **AGENTS.md updated**: Added gateway mode, dashboard deployment instructions, removed commands section. (`e6ed8e8`)
+- **Screenshot scaling and compression**: Unified screenshot output to JPEG quality 75 with scaling on Windows platform adapter to match the canonical tool behavior.
 
 ### Fixed
+- **Clipboard race condition in `typeText`**: Fixed race condition where text typing via clipboard paste would overwrite user clipboard without locking/restoring, and synchronized the logic across Windows platform paths.
 - **Workflow test paths**: Updated `tests/commands/workflow.test.ts` to use `.clew/runs/` instead of `.claude/runs/`, fixing 4 failing tests on Windows.
 - **Auth logout message**: Changed "Successfully logged out from your Anthropic account" to generic "Successfully logged out." for gateway compatibility.
 

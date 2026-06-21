@@ -2,7 +2,7 @@ import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { getSessionId } from '../bootstrap/state.js';
 import { logForDebugging } from './debug.js';
-import { getClaudeConfigHomeDir } from './envUtils.js';
+import { getClewConfigHomeDir } from './envUtils.js';
 import { errorMessage, getErrnoCode } from './errors.js';
 import { getPlatform } from './platform.js';
 
@@ -13,7 +13,7 @@ import { getPlatform } from './platform.js';
 let sessionEnvScript: string | null | undefined;
 
 export async function getSessionEnvDirPath(): Promise<string> {
-  const sessionEnvDir = join(getClaudeConfigHomeDir(), 'session-env', getSessionId());
+  const sessionEnvDir = join(getClewConfigHomeDir(), 'session-env', getSessionId());
   await mkdir(sessionEnvDir, { recursive: true });
   return sessionEnvDir;
 }

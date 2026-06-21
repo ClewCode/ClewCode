@@ -65,8 +65,11 @@ desktop.ini
 research-dossiers/
 graphify-out/
 .provider.json
+.clew-code-provider.json
 .claude-code-provider.json
+.clew/
 .claude/
+.clewignore
 .claudeignore
 .CLAUDE.md
 CLAUDE.md

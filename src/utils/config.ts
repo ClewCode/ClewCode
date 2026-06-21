@@ -13,8 +13,8 @@ import { getCwd } from '../utils/cwd.js';
 import { registerCleanup } from './cleanupRegistry.js';
 import { logForDebugging } from './debug.js';
 import { logForDiagnosticsNoPII } from './diagLogs.js';
-import { getGlobalClaudeFile } from './env.js';
-import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getGlobalClaudeFile, getLegacyGlobalClaudeFile } from './env.js';
+import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { ConfigParseError, getErrnoCode } from './errors.js';
 import { writeFileSyncAndFlush_DEPRECATED } from './file.js';
 import { getFsImplementation } from './fsOperations.js';
@@ -810,16 +810,23 @@ export function saveGlobalConfig(updater: (currentConfig: GlobalConfig) => Globa
   }
 
   let written: GlobalConfig | null = null;
+  const primaryGlobalConfigFile = getGlobalClaudeFile();
+  const legacySeedFile = getGlobalConfigReadFile();
+  const legacySeedConfig =
+    legacySeedFile !== primaryGlobalConfigFile
+      ? migrateConfigFields(getConfig(legacySeedFile, createDefaultGlobalConfig))
+      : null;
   try {
-    const didWrite = saveConfigWithLock(getGlobalClaudeFile(), createDefaultGlobalConfig, current => {
-      const config = updater(current);
+    const didWrite = saveConfigWithLock(primaryGlobalConfigFile, createDefaultGlobalConfig, current => {
+      const baseConfig = legacySeedConfig ?? current;
+      const config = updater(baseConfig);
       // Skip if no changes (same reference returned)
-      if (config === current) {
+      if (config === baseConfig) {
         return current;
       }
       written = {
         ...config,
-        projects: removeProjectHistory(current.projects),
+        projects: removeProjectHistory(baseConfig.projects),
       };
       return written;
     });
@@ -837,7 +844,7 @@ export function saveGlobalConfig(updater: (currentConfig: GlobalConfig) => Globa
     // window: if another process is mid-write (or the file got truncated),
     // getConfig returns defaults. Refuse to write those over a good cached
     // config to avoid wiping auth. See GH #3117.
-    const currentConfig = getConfig(getGlobalClaudeFile(), createDefaultGlobalConfig);
+    const currentConfig = legacySeedConfig ?? getConfig(primaryGlobalConfigFile, createDefaultGlobalConfig);
     if (wouldLoseAuthState(currentConfig)) {
       logForDebugging(
         'saveGlobalConfig fallback: re-read config is missing auth that cache has; refusing to write. See GH #3117.',
@@ -855,7 +862,7 @@ export function saveGlobalConfig(updater: (currentConfig: GlobalConfig) => Globa
       ...config,
       projects: removeProjectHistory(currentConfig.projects),
     };
-    saveConfig(getGlobalClaudeFile(), written, DEFAULT_GLOBAL_CONFIG);
+    saveConfig(primaryGlobalConfigFile, written, DEFAULT_GLOBAL_CONFIG);
     writeThroughGlobalConfigCache(written);
   }
 }
@@ -877,6 +884,33 @@ let globalConfigWriteCount = 0;
 
 export function getGlobalConfigWriteCount(): number {
   return globalConfigWriteCount;
+}
+
+function getGlobalConfigReadFile(): string {
+  const primary = getGlobalClaudeFile();
+  const fs = getFsImplementation();
+  try {
+    fs.statSync(primary);
+    return primary;
+  } catch (e) {
+    const code = getErrnoCode(e);
+    if (code !== 'ENOENT') {
+      throw e;
+    }
+  }
+
+  const legacy = getLegacyGlobalClaudeFile();
+  try {
+    fs.statSync(legacy);
+    return legacy;
+  } catch (e) {
+    const code = getErrnoCode(e);
+    if (code !== 'ENOENT') {
+      throw e;
+    }
+  }
+
+  return primary;
 }
 
 export const CONFIG_WRITE_DISPLAY_THRESHOLD = 20;
@@ -1046,11 +1080,11 @@ export function getGlobalConfig(): GlobalConfig {
   try {
     let stats: { mtimeMs: number; size: number } | null = null;
     try {
-      stats = getFsImplementation().statSync(getGlobalClaudeFile());
+      stats = getFsImplementation().statSync(getGlobalConfigReadFile());
     } catch {
       // File doesn't exist
     }
-    const config = migrateConfigFields(getConfig(getGlobalClaudeFile(), createDefaultGlobalConfig));
+    const config = migrateConfigFields(getConfig(getGlobalConfigReadFile(), createDefaultGlobalConfig));
     globalConfigCache = {
       config,
       mtime: stats?.mtimeMs ?? Date.now(),
@@ -1060,7 +1094,7 @@ export function getGlobalConfig(): GlobalConfig {
     return config;
   } catch {
     // If anything goes wrong, fall back to uncached behavior
-    return migrateConfigFields(getConfig(getGlobalClaudeFile(), createDefaultGlobalConfig));
+    return migrateConfigFields(getConfig(getGlobalConfigReadFile(), createDefaultGlobalConfig));
   }
 }
 
@@ -1126,6 +1160,21 @@ function saveConfigWithLock<A extends object>(
   const defaultConfig = createDefault();
   const dir = dirname(file);
   const fs = getFsImplementation();
+  const globalPrimaryMissingBeforeLock =
+    file === getGlobalClaudeFile() &&
+    (() => {
+      try {
+        fs.statSync(file);
+        return false;
+      } catch (e) {
+        const code = getErrnoCode(e);
+        if (code !== 'ENOENT') {
+          throw e;
+        }
+        return true;
+      }
+    })();
+  const readFileForCurrentConfig = globalPrimaryMissingBeforeLock ? getLegacyGlobalClaudeFile() : file;
 
   // Ensure directory exists (mkdirSync is already recursive in FsOperations)
   fs.mkdirSync(dir);
@@ -1176,7 +1225,10 @@ function saveConfigWithLock<A extends object>(
     // Re-read the current config to get latest state. If the file is
     // momentarily corrupted (concurrent writes, kill-during-write), this
     // returns defaults -- we must not write those back over good config.
-    const currentConfig = getConfig(file, createDefault);
+    const currentConfig =
+      globalPrimaryMissingBeforeLock && globalConfigCache.config
+        ? (globalConfigCache.config as A)
+        : getConfig(readFileForCurrentConfig, createDefault);
     if (file === getGlobalClaudeFile() && wouldLoseAuthState(currentConfig)) {
       logForDebugging(
         'saveConfigWithLock: re-read config is missing auth that cache has; refusing to write to avoid wiping ~/.claude.json. See GH #3117.',
@@ -1299,7 +1351,7 @@ export function enableConfigs(): void {
   // to prevent us from adding config reading during module initialization
   configReadingAllowed = true;
   // We only check the global config because currently all the configs share a file
-  getConfig(getGlobalClaudeFile(), createDefaultGlobalConfig, true /* throw on invalid */);
+  getConfig(getGlobalConfigReadFile(), createDefaultGlobalConfig, true /* throw on invalid */);
 
   logForDiagnosticsNoPII('info', 'enable_configs_completed', {
     duration_ms: Date.now() - startTime,
@@ -1311,7 +1363,7 @@ export function enableConfigs(): void {
  * Uses ~/.clew/backups/ to keep the home directory clean.
  */
 function getConfigBackupDir(): string {
-  return join(getClaudeConfigHomeDir(), 'backups');
+  return join(getClewConfigHomeDir(), 'backups');
 }
 
 /**
@@ -1693,7 +1745,7 @@ export function getMemoryPath(memoryType: MemoryType): string {
 
   switch (memoryType) {
     case 'User':
-      return join(getClaudeConfigHomeDir(), 'CLAUDE.md');
+      return join(getClewConfigHomeDir(), 'CLAUDE.md');
     case 'Local':
       return join(cwd, 'CLAUDE.local.md');
     case 'Project':
@@ -1715,7 +1767,7 @@ export function getManagedClaudeRulesDir(): string {
 }
 
 export function getUserClaudeRulesDir(): string {
-  return join(getClaudeConfigHomeDir(), 'rules');
+  return join(getClewConfigHomeDir(), 'rules');
 }
 
 // Exported for testing only

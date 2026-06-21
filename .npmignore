@@ -19,8 +19,8 @@ tsconfig.json
 biome.json
 .gitattributes
 .gitignore
-.claudeignore
-.claude/
+.clewignore
+.clew/
 .claude-plugin/
 
 # CI/CD

@@ -9,7 +9,7 @@ import { getProviderRegistryEntry } from '../../services/ai/providerRegistry.js'
 import { getAnthropicClient } from '../../services/api/client.js';
 import { isClaudeAISubscriber } from '../auth.js';
 import { logForDebugging } from '../debug.js';
-import { getClaudeConfigHomeDir } from '../envUtils.js';
+import { getClewConfigHomeDir } from '../envUtils.js';
 import { safeParseJSON } from '../json.js';
 import { lazySchema } from '../lazySchema.js';
 import { isEssentialTrafficOnly } from '../privacyLevel.js';
@@ -33,7 +33,7 @@ const CacheFileSchema = lazySchema(() =>
   }),
 );
 function getCacheDir() {
-  return join(getClaudeConfigHomeDir(), 'cache');
+  return join(getClewConfigHomeDir(), 'cache');
 }
 function getCachePath() {
   return join(getCacheDir(), 'model-capabilities.json');

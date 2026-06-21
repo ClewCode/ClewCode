@@ -25,7 +25,7 @@ import {
 } from '../../utils/auth.js';
 import { registerCleanup } from '../../utils/cleanupRegistry.js';
 import { logForDebugging } from '../../utils/debug.js';
-import { getClaudeConfigHomeDir } from '../../utils/envUtils.js';
+import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { classifyAxiosError } from '../../utils/errors.js';
 import { safeParseJSON } from '../../utils/json.js';
 import { getAPIProvider, isFirstPartyAnthropicBaseUrl } from '../../utils/model/providers.js';
@@ -104,7 +104,7 @@ export function initializePolicyLimitsLoadingPromise(): void {
  * Get the path to the policy limits cache file
  */
 function getCachePath(): string {
-  return join(getClaudeConfigHomeDir(), CACHE_FILENAME);
+  return join(getClewConfigHomeDir(), CACHE_FILENAME);
 }
 
 /**

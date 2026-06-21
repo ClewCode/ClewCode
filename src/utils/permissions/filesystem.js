@@ -7,16 +7,16 @@ import { join, normalize, posix, sep } from 'path';
 import { hasAutoMemPathOverride, isAutoMemPath } from 'src/memdir/paths.js';
 import { isAgentMemoryPath } from 'src/tools/AgentTool/agentMemory.js';
 import {
-  CLAUDE_FOLDER_PERMISSION_PATTERN,
+  CLEW_FOLDER_PERMISSION_PATTERN,
   FILE_EDIT_TOOL_NAME,
-  GLOBAL_CLAUDE_FOLDER_PERMISSION_PATTERN,
+  GLOBAL_CLEW_FOLDER_PERMISSION_PATTERN,
 } from 'src/tools/FileEditTool/constants.js';
 import { getOriginalCwd, getSessionId } from '../../bootstrap/state.js';
 import { checkStatsigFeatureGate_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
 import { FILE_READ_TOOL_NAME } from '../../tools/FileReadTool/prompt.js';
 import { DOT_CLEW } from '../../utils/clewPaths.js';
 import { getCwd } from '../cwd.js';
-import { getClaudeConfigHomeDir } from '../envUtils.js';
+import { getClewConfigHomeDir } from '../envUtils.js';
 import { getFsImplementation, getPathsForPermissionCheck } from '../fsOperations.js';
 import { containsPathTraversal, expandPath, getDirectoryForPath, sanitizePath } from '../path.js';
 import { getPlanSlug, getPlansDirectory } from '../plans.js';
@@ -44,6 +44,7 @@ export const DANGEROUS_FILES = [
   '.ripgreprc',
   '.mcp.json',
   '.claude.json',
+  '.clew.json',
 ];
 /**
  * Dangerous directories that should be protected from auto-editing.
@@ -75,11 +76,11 @@ export function getClaudeSkillScope(filePath) {
   const bases = [
     {
       dir: expandPath(join(getOriginalCwd(), DOT_CLEW, 'skills')),
-      prefix: '/.claude/skills/',
+      prefix: '/.clew/skills/',
     },
     {
       dir: expandPath(join(homedir(), '.clew', 'skills')),
-      prefix: '~/.claude/skills/',
+      prefix: '~/.clew/skills/',
     },
   ];
   for (const { dir, prefix } of bases) {
@@ -107,7 +108,7 @@ export function getClaudeSkillScope(filePath) {
         // Reject glob metacharacters. skillName is interpolated into a
         // gitignore pattern consumed by ignore().add() in matchingRuleForInput
         // at step 1.6. A directory literally named '*' (valid on POSIX) would
-        // produce '/.claude/skills/*/**' which matches ALL skills. Return null
+        // produce '/.clew/skills/*/**' which matches ALL skills. Return null
         // to fall through to generateSuggestions() instead.
         if (/[*?[\]]/.test(skillName)) return null;
         return { skillName, pattern: `${prefix + skillName}/**` };
@@ -161,9 +162,11 @@ export function isClaudeSettingsPath(filePath) {
   // Use platform separator so endsWith checks work on both Unix (/) and Windows (\)
   if (
     normalizedPath.endsWith(`${sep}.claude${sep}settings.json`) ||
-    normalizedPath.endsWith(`${sep}.claude${sep}settings.local.json`)
+    normalizedPath.endsWith(`${sep}.claude${sep}settings.local.json`) ||
+    normalizedPath.endsWith(`${sep}.clew${sep}settings.json`) ||
+    normalizedPath.endsWith(`${sep}.clew${sep}settings.local.json`)
   ) {
-    // Include .claude/settings.json even for other projects
+    // Include .claude/settings.json or .clew/settings.json even for other projects
     return true;
   }
   // Check for current project's settings files (including managed settings and CLI args)
@@ -980,17 +983,17 @@ export function checkWritePermissionForTool(tool, input, toolPermissionContext, 
   );
   if (claudeFolderAllowRule) {
     // Check if this rule is scoped under .claude/ (project or global).
-    // Accepts both the broad patterns ('/.claude/**', '~/.claude/**') and
-    // narrowed ones like '/.claude/skills/my-skill/**' so users can grant
+    // Accepts both the broad patterns ('/.clew/**', '~/.clew/**') and
+    // narrowed ones like '/.clew/skills/my-skill/**' so users can grant
     // session access to a single skill without also exposing settings.json
     // or hooks/. The rule already matched the path via matchingRuleForInput;
     // this is an additional scope check. Reject '..' to prevent a rule like
-    // '/.claude/../**' from leaking this bypass outside .claude/.
+    // '/.clew/../**' from leaking this bypass outside .clew/.
     const ruleContent = claudeFolderAllowRule.ruleValue.ruleContent;
     if (
       ruleContent &&
-      (ruleContent.startsWith(CLAUDE_FOLDER_PERMISSION_PATTERN.slice(0, -2)) ||
-        ruleContent.startsWith(GLOBAL_CLAUDE_FOLDER_PERMISSION_PATTERN.slice(0, -2))) &&
+      (ruleContent.startsWith(CLEW_FOLDER_PERMISSION_PATTERN.slice(0, -2)) ||
+        ruleContent.startsWith(GLOBAL_CLEW_FOLDER_PERMISSION_PATTERN.slice(0, -2))) &&
       !ruleContent.includes('..') &&
       ruleContent.endsWith('/**')
     ) {
@@ -1168,7 +1171,7 @@ export function checkEditableInternalPath(absolutePath, input) {
   if (feature('TEMPLATES')) {
     const jobDir = process.env.CLAUDE_JOB_DIR;
     if (jobDir) {
-      const jobsRoot = join(getClaudeConfigHomeDir(), 'jobs');
+      const jobsRoot = join(getClewConfigHomeDir(), 'jobs');
       const jobDirForms = getPathsForPermissionCheck(jobDir).map(normalize);
       const jobsRootForms = getPathsForPermissionCheck(jobsRoot).map(normalize);
       // Hijack guard: every resolved form of the job dir must sit under
@@ -1348,7 +1351,7 @@ export function checkReadableInternalPath(absolutePath, input) {
     };
   }
   // Tasks directory (~/.claude/tasks/) for swarm task coordination
-  const tasksDir = join(getClaudeConfigHomeDir(), 'tasks') + sep;
+  const tasksDir = join(getClewConfigHomeDir(), 'tasks') + sep;
   if (normalizedPath === tasksDir.slice(0, -1) || normalizedPath.startsWith(tasksDir)) {
     return {
       behavior: 'allow',
@@ -1360,7 +1363,7 @@ export function checkReadableInternalPath(absolutePath, input) {
     };
   }
   // Teams directory (~/.claude/teams/) for swarm coordination
-  const teamsReadDir = join(getClaudeConfigHomeDir(), 'teams') + sep;
+  const teamsReadDir = join(getClewConfigHomeDir(), 'teams') + sep;
   if (normalizedPath === teamsReadDir.slice(0, -1) || normalizedPath.startsWith(teamsReadDir)) {
     return {
       behavior: 'allow',

@@ -48,8 +48,8 @@ export interface ComputerUseSetup {
  */
 export async function setupComputerUse(provider: ProviderId): Promise<ComputerUseSetup | null> {
   // Check platform
-  if (process.platform !== 'win32') {
-    logForDebugging('[ComputerUse] Skipped: not Windows');
+  if (process.platform !== 'win32' && process.platform !== 'darwin' && process.platform !== 'linux') {
+    logForDebugging('[ComputerUse] Skipped: unsupported platform');
     return null;
   }
 
@@ -91,7 +91,10 @@ export async function setupComputerUse(provider: ProviderId): Promise<ComputerUs
  * Check if computer use is enabled via environment variable.
  */
 export function isComputerUseEnabled(): boolean {
-  return process.env.ENABLE_COMPUTER_USE === '1' && process.platform === 'win32';
+  return (
+    process.env.ENABLE_COMPUTER_USE === '1' &&
+    (process.platform === 'win32' || process.platform === 'darwin' || process.platform === 'linux')
+  );
 }
 
 // ── Re-exports ───────────────────────────────────────────────────────────────
