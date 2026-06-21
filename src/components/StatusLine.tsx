@@ -27,8 +27,9 @@ import {
 } from '../cost-tracker.js';
 import { useMainLoopModel } from '../hooks/useMainLoopModel.js';
 import { type ReadonlySettings, useSettings } from '../hooks/useSettings.js';
-import { Ansi, Box, Text } from '../ink.js';
+import { Ansi, Box, Text, useAnimationFrame } from '../ink.js';
 import { getRawUtilization } from '../services/claudeAiLimits.js';
+import { getBackgroundAutoCompactStatus, isAutoCompactEnabled } from '../services/compact/autoCompact.js';
 import { roughTokenCountEstimationForMessages } from '../services/tokenEstimation.js';
 import type { Message } from '../types/message.js';
 import type { StatusLineCommandInput } from '../types/statusLine.js';
@@ -485,6 +486,7 @@ function StatusLineInner({
   const mainLoopProvider = useAppState(s => s.mainLoopProvider);
   const mainLoopProviderForSession = useAppState(s => s.mainLoopProviderForSession);
   const fullscreenEnabled = isFullscreenEnvEnabled();
+  const [, ctxCompactSpinnerTime] = useAnimationFrame(250);
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -678,6 +680,12 @@ function StatusLineInner({
         : usedPercentage > 70
           ? chalk.hex(CLAUDE_THEME.warning)(`${usedPercentage.toFixed(0)}%`)
           : claudeMuted(`${usedPercentage.toFixed(0)}%`);
+    const ctxCompactStatus = getBackgroundAutoCompactStatus();
+    const compactDots = '.'.repeat(Math.floor(ctxCompactSpinnerTime / 400) % 4);
+    const ctxCompactDisplay =
+      ctxCompactStatus.running || (isAutoCompactEnabled() && usedPercentage >= 80)
+        ? CLAUDE_DOT + chalk.hex(CLAUDE_THEME.warning)(`ctx compact${compactDots}`)
+        : '';
 
     let sessionGoalDisplay = '';
     if (sessionGoal) {
@@ -734,6 +742,7 @@ function StatusLineInner({
       bar +
       claudeSubtle(' ') +
       percentText +
+      ctxCompactDisplay +
       CLAUDE_DOT +
       claudeMuted(formatContextSize(contextWindowSize)) +
       mcpStats +

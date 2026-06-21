@@ -98,12 +98,27 @@ export async function authLogin({
   sso,
   console: useConsole,
   claudeai,
+  token: importToken,
 }: {
   email?: string;
   sso?: boolean;
   console?: boolean;
   claudeai?: boolean;
+  token?: string;
 }): Promise<void> {
+  // Token import: save a token from the web dashboard
+  if (importToken) {
+    const { importToken: doImport } = await import('../../utils/gatewayAuth.js');
+    try {
+      const result = await doImport(importToken);
+      process.stdout.write(`Logged in as ${result.user.email} (${result.user.tier})\n`);
+    } catch (err: any) {
+      process.stderr.write(`Token import failed: ${err.message}\n`);
+      process.exit(1);
+    }
+    process.exit(0);
+  }
+
   // Gateway mode: skip Anthropic OAuth and login via api.clew-code.org
   if (process.env.CLEW_GATEWAY_URL || process.env.CLEW_GATEWAY_KEY) {
     await gatewayLogin();
@@ -293,30 +308,37 @@ export async function authStatus(opts: { json?: boolean; text?: boolean }): Prom
 }
 
 /**
- * Gateway login: prompt email/password, exchange for gateway token,
+ * Gateway login: open browser to login via web, exchange for gateway token,
  * save locally so ClewGatewayProvider can use it.
  */
 async function gatewayLogin(): Promise<void> {
-  const readline = await import('node:readline');
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const q = (query: string): Promise<string> => new Promise(resolve => rl.question(query, resolve));
-
   try {
     process.stdout.write('Sign in to Clew Gateway (api.clew-code.org)\n');
-    const action = process.env.CLEW_GATEWAY_KEY ? 'already configured' : 'login';
-    process.stdout.write(`Gateway key: ${process.env.CLEW_GATEWAY_KEY ? 'Set ✓' : 'Not set'}\n`);
 
     if (process.env.CLEW_GATEWAY_KEY) {
       process.stdout.write('Gateway key is already configured. Run `unset CLEW_GATEWAY_KEY` to change it.\n');
       process.exit(0);
     }
 
+    // Try browser login first
+    const { loginViaBrowser } = await import('../../utils/gatewayAuth.js');
+    try {
+      await loginViaBrowser();
+      process.exit(0);
+    } catch (browserErr: any) {
+      process.stderr.write(`Browser login failed: ${browserErr.message}\n`);
+      process.stdout.write('Falling back to terminal login...\n');
+    }
+
+    const readline = await import('node:readline');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const q = (query: string): Promise<string> => new Promise(resolve => rl.question(query, resolve));
+
     const email = await q('Email: ');
     const password = await q('Password: ');
 
-    const { login, signup } = await import('../../utils/gatewayAuth.js');
+    const { login, signup, saveGatewayToken } = await import('../../utils/gatewayAuth.js');
 
-    // Try login first; if it fails with 401, offer signup
     let result;
     try {
       result = await login(email, password);
@@ -335,16 +357,12 @@ async function gatewayLogin(): Promise<void> {
       }
     }
 
-    // Save token to config
-    const { saveGatewayToken } = await import('../../utils/gatewayAuth.js');
     await saveGatewayToken(result.token, result.user);
     process.stdout.write(`Logged in as ${result.user.email} (${result.user.tier})\n`);
     process.exit(0);
   } catch (err: any) {
     process.stderr.write(`Gateway login failed: ${err.message}\n`);
     process.exit(1);
-  } finally {
-    rl.close();
   }
 }
 

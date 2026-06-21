@@ -62,11 +62,34 @@ export const AUTOCOMPACT_BUFFER_TOKENS = 13_000;
 export const WARNING_THRESHOLD_BUFFER_TOKENS = 20_000;
 export const ERROR_THRESHOLD_BUFFER_TOKENS = 20_000;
 export const MANUAL_COMPACT_BUFFER_TOKENS = 3_000;
+export const BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT = 0.8;
 
 // Stop trying autocompact after this many consecutive failures.
 // BQ 2026-03-10: 1,279 sessions had 50+ consecutive failures (up to 3,272)
 // in a single session, wasting ~250K API calls/day globally.
 const MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3;
+
+type BackgroundAutoCompactJob = {
+  model: string;
+  agentId?: string;
+  tailUuid: string;
+  promise: Promise<CompactionResult>;
+};
+
+export type BackgroundAutoCompactStatus = {
+  running: boolean;
+  tokenCount?: number;
+  threshold?: number;
+  startedAt?: number;
+  tailUuid?: string;
+};
+
+let backgroundAutoCompactJob: BackgroundAutoCompactJob | undefined;
+let backgroundAutoCompactStatus: BackgroundAutoCompactStatus = { running: false };
+
+export function getBackgroundAutoCompactStatus(): BackgroundAutoCompactStatus {
+  return backgroundAutoCompactStatus;
+}
 
 export function getAutoCompactThreshold(model: string): number {
   const effectiveContextWindow = getEffectiveContextWindowSize(model);
@@ -84,6 +107,14 @@ export function getAutoCompactThreshold(model: string): number {
   }
 
   return autocompactThreshold;
+}
+
+export function getBackgroundAutoCompactThreshold(model: string): number {
+  const autoCompactThreshold = getAutoCompactThreshold(model);
+  return Math.max(
+    Math.floor(autoCompactThreshold * BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT),
+    autoCompactThreshold - WARNING_THRESHOLD_BUFFER_TOKENS,
+  );
 }
 
 export function calculateTokenWarningState(
@@ -219,6 +250,172 @@ export async function shouldAutoCompact(
   return isAboveAutoCompactThreshold;
 }
 
+export async function shouldStartBackgroundAutoCompact(
+  messages: Message[],
+  model: string,
+  querySource?: QuerySource,
+  snipTokensFreed = 0,
+): Promise<boolean> {
+  if (await shouldAutoCompact(messages, model, querySource, snipTokensFreed)) {
+    return false;
+  }
+  if (querySource === 'session_memory' || querySource === 'compact') {
+    return false;
+  }
+  if (!isAutoCompactEnabled()) {
+    return false;
+  }
+  if (feature('REACTIVE_COMPACT')) {
+    if (getFeatureValue_CACHED_MAY_BE_STALE('tengu_cobalt_raccoon', false)) {
+      return false;
+    }
+  }
+  if (feature('CONTEXT_COLLAPSE')) {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { isContextCollapseEnabled } =
+      require('../contextCollapse/index.js') as typeof import('../contextCollapse/index.js');
+    /* eslint-enable @typescript-eslint/no-require-imports */
+    if (isContextCollapseEnabled()) {
+      return false;
+    }
+  }
+
+  const tokenCount = tokenCountWithEstimation(messages) - snipTokensFreed;
+  return tokenCount >= getBackgroundAutoCompactThreshold(model);
+}
+
+function getMessageUuid(message: Message | undefined): string | undefined {
+  return typeof message?.uuid === 'string' ? message.uuid : undefined;
+}
+
+function isSameBackgroundScope(job: BackgroundAutoCompactJob, model: string, agentId?: string): boolean {
+  return job.model === model && job.agentId === agentId;
+}
+
+function findMessageIndexByUuid(messages: Message[], uuid: string): number {
+  return messages.findIndex(message => getMessageUuid(message) === uuid);
+}
+
+function hasCompactBoundaryAfter(messages: Message[], index: number): boolean {
+  return messages.slice(index + 1).some(message => message.type === 'system' && message.subtype === 'compact_boundary');
+}
+
+export function mergeBackgroundAutoCompactDelta(
+  result: CompactionResult,
+  currentMessages: Message[],
+  snapshotTailUuid: string,
+): CompactionResult | undefined {
+  const tailIndex = findMessageIndexByUuid(currentMessages, snapshotTailUuid);
+  if (tailIndex === -1 || hasCompactBoundaryAfter(currentMessages, tailIndex)) {
+    return undefined;
+  }
+
+  const deltaMessages = currentMessages.slice(tailIndex + 1).filter(message => message.type !== 'progress');
+  if (deltaMessages.length === 0) {
+    return result;
+  }
+
+  const deltaTailUuid = getMessageUuid(deltaMessages.at(-1));
+  const boundaryWithMetadata = result.boundaryMarker as typeof result.boundaryMarker & {
+    compactMetadata?: {
+      preservedSegment?: Record<string, unknown>;
+      [key: string]: unknown;
+    };
+  };
+  const preservedSegment = boundaryWithMetadata.compactMetadata?.preservedSegment;
+  const boundaryMarker =
+    deltaTailUuid && preservedSegment
+      ? {
+          ...result.boundaryMarker,
+          compactMetadata: {
+            ...boundaryWithMetadata.compactMetadata,
+            preservedSegment: {
+              ...preservedSegment,
+              tailUuid: deltaTailUuid,
+            },
+          },
+        }
+      : result.boundaryMarker;
+
+  return {
+    ...result,
+    boundaryMarker,
+    messagesToKeep: [...(result.messagesToKeep ?? []), ...deltaMessages],
+  };
+}
+
+function startBackgroundAutoCompact(
+  messages: Message[],
+  toolUseContext: ToolUseContext,
+  cacheSafeParams: CacheSafeParams,
+  recompactionInfo: RecompactionInfo,
+  tokenCount: number,
+): void {
+  const model = toolUseContext.options.mainLoopModel;
+  const tailUuid = getMessageUuid(messages.at(-1));
+  if (!tailUuid) {
+    return;
+  }
+  if (
+    backgroundAutoCompactJob &&
+    isSameBackgroundScope(backgroundAutoCompactJob, model, toolUseContext.agentId) &&
+    findMessageIndexByUuid(messages, backgroundAutoCompactJob.tailUuid) !== -1
+  ) {
+    return;
+  }
+
+  const snapshot = [...messages];
+  backgroundAutoCompactStatus = {
+    running: true,
+    tokenCount,
+    threshold: getBackgroundAutoCompactThreshold(model),
+    startedAt: Date.now(),
+    tailUuid,
+  };
+  backgroundAutoCompactJob = {
+    model,
+    agentId: toolUseContext.agentId,
+    tailUuid,
+    promise: compactConversation(
+      snapshot,
+      toolUseContext,
+      {
+        ...cacheSafeParams,
+        forkContextMessages: [...(cacheSafeParams.forkContextMessages ?? snapshot)],
+      },
+      true,
+      undefined,
+      true,
+      recompactionInfo,
+    ),
+  };
+  backgroundAutoCompactJob.promise.catch(() => {
+    if (backgroundAutoCompactJob?.tailUuid === tailUuid) {
+      backgroundAutoCompactJob = undefined;
+      backgroundAutoCompactStatus = { running: false };
+    }
+  });
+}
+
+async function takeBackgroundAutoCompactResult(
+  messages: Message[],
+  model: string,
+  agentId?: string,
+): Promise<CompactionResult | undefined> {
+  const job = backgroundAutoCompactJob;
+  if (!job || !isSameBackgroundScope(job, model, agentId) || findMessageIndexByUuid(messages, job.tailUuid) === -1) {
+    return undefined;
+  }
+
+  backgroundAutoCompactJob = undefined;
+  try {
+    const result = await job.promise;
+    return mergeBackgroundAutoCompactDelta(result, messages, job.tailUuid);
+  } finally {
+    backgroundAutoCompactStatus = { running: false };
+  }
+}
+
 export async function autoCompactIfNeeded(
   messages: Message[],
   toolUseContext: ToolUseContext,
@@ -246,12 +443,6 @@ export async function autoCompactIfNeeded(
   }
 
   const model = toolUseContext.options.mainLoopModel;
-  const shouldCompact = await shouldAutoCompact(messages, model, querySource, snipTokensFreed);
-
-  if (!shouldCompact) {
-    return { wasCompacted: false };
-  }
-
   const recompactionInfo: RecompactionInfo = {
     isRecompactionInChain: tracking?.compacted === true,
     turnsSincePreviousCompact: tracking?.turnCounter ?? -1,
@@ -259,6 +450,21 @@ export async function autoCompactIfNeeded(
     autoCompactThreshold: getAutoCompactThreshold(model),
     querySource,
   };
+
+  const shouldCompact = await shouldAutoCompact(messages, model, querySource, snipTokensFreed);
+
+  if (!shouldCompact) {
+    if (await shouldStartBackgroundAutoCompact(messages, model, querySource, snipTokensFreed)) {
+      startBackgroundAutoCompact(
+        messages,
+        toolUseContext,
+        cacheSafeParams,
+        recompactionInfo,
+        tokenCountWithEstimation(messages) - (snipTokensFreed ?? 0),
+      );
+    }
+    return { wasCompacted: false };
+  }
 
   // EXPERIMENT: Try session memory compaction first
   const sessionMemoryResult = await trySessionMemoryCompaction(
@@ -281,7 +487,9 @@ export async function autoCompactIfNeeded(
     markPostCompaction();
     const raw1 = getLastRawCompactResponse();
     const mem1 = raw1 ? parseCompactMemories(raw1) : undefined;
-    autoExtractFromSession(mem1).catch(() => {});
+    autoExtractFromSession(mem1).catch(() => {
+      // Best-effort memory extraction must not block compaction.
+    });
     return {
       wasCompacted: true,
       compactionResult: sessionMemoryResult,
@@ -289,15 +497,17 @@ export async function autoCompactIfNeeded(
   }
 
   try {
-    const compactionResult = await compactConversation(
-      messages,
-      toolUseContext,
-      cacheSafeParams,
-      true, // Suppress user questions for autocompact
-      undefined, // No custom instructions for autocompact
-      true, // isAutoCompact
-      recompactionInfo,
-    );
+    const compactionResult =
+      (await takeBackgroundAutoCompactResult(messages, model, toolUseContext.agentId)) ??
+      (await compactConversation(
+        messages,
+        toolUseContext,
+        cacheSafeParams,
+        true, // Suppress user questions for autocompact
+        undefined, // No custom instructions for autocompact
+        true, // isAutoCompact
+        recompactionInfo,
+      ));
 
     // Reset lastSummarizedMessageId since legacy compaction replaces all messages
     // and the old message UUID will no longer exist in the new messages array
@@ -305,7 +515,9 @@ export async function autoCompactIfNeeded(
     runPostCompactCleanup(querySource);
     const raw2 = getLastRawCompactResponse();
     const mem2 = raw2 ? parseCompactMemories(raw2) : undefined;
-    autoExtractFromSession(mem2).catch(() => {});
+    autoExtractFromSession(mem2).catch(() => {
+      // Best-effort memory extraction must not block compaction.
+    });
 
     return {
       wasCompacted: true,

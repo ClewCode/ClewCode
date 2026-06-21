@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import type { Message } from '../../types/message.js';
+import {
+  getAutoCompactThreshold,
+  getBackgroundAutoCompactThreshold,
+  mergeBackgroundAutoCompactDelta,
+} from './autoCompact.js';
+import type { CompactionResult } from './compact.js';
 import { selectPostCompactMessagesToKeep } from './postCompactTail.js';
 
 function assistantMessage(uuid: string, id: string, content: string): Message {
@@ -57,6 +63,78 @@ describe('selectPostCompactMessagesToKeep', () => {
     expect(kept.map(message => message.uuid)).toEqual(['round-2-assistant', 'round-3-user', 'round-3-assistant']);
     expect(kept.some(message => message.uuid === oldBoundary.uuid)).toBe(false);
     expect(kept.some(message => message.uuid === 'old-summary')).toBe(false);
+  });
+});
+
+describe('getBackgroundAutoCompactThreshold', () => {
+  test('starts before the blocking autocompact threshold', () => {
+    const threshold = getAutoCompactThreshold('test-model');
+    const backgroundThreshold = getBackgroundAutoCompactThreshold('test-model');
+
+    expect(backgroundThreshold).toBeLessThan(threshold);
+    expect(backgroundThreshold).toBeGreaterThanOrEqual(Math.floor(threshold * 0.8));
+  });
+});
+
+describe('mergeBackgroundAutoCompactDelta', () => {
+  test('appends messages that arrived after the background compact snapshot tail', () => {
+    const result: CompactionResult = {
+      boundaryMarker: {
+        type: 'system',
+        uuid: 'boundary',
+        content: 'Conversation compacted',
+        compactMetadata: {
+          preservedSegment: {
+            headUuid: 'kept-tail',
+            anchorUuid: 'summary',
+            tailUuid: 'snapshot-tail',
+          },
+        },
+      } as CompactionResult['boundaryMarker'],
+      summaryMessages: [userMessage('summary', 'summary') as CompactionResult['summaryMessages'][number]],
+      attachments: [],
+      hookResults: [],
+      messagesToKeep: [assistantMessage('snapshot-tail', 'snapshot-tail-message', 'snapshot tail')],
+    };
+    const currentMessages: Message[] = [
+      userMessage('start', 'start'),
+      assistantMessage('snapshot-tail', 'snapshot-tail-message', 'snapshot tail'),
+      userMessage('delta-user', 'new work'),
+      assistantMessage('delta-assistant', 'delta-message', 'new answer'),
+    ];
+
+    const merged = mergeBackgroundAutoCompactDelta(result, currentMessages, 'snapshot-tail');
+
+    expect(merged?.messagesToKeep?.map(message => message.uuid)).toEqual([
+      'snapshot-tail',
+      'delta-user',
+      'delta-assistant',
+    ]);
+    const boundary = merged?.boundaryMarker as CompactionResult['boundaryMarker'] & {
+      compactMetadata?: { preservedSegment?: { tailUuid?: string } };
+    };
+    expect(boundary.compactMetadata?.preservedSegment?.tailUuid).toBe('delta-assistant');
+  });
+
+  test('rejects a background result if another compact boundary already happened after its tail', () => {
+    const result: CompactionResult = {
+      boundaryMarker: {
+        type: 'system',
+        uuid: 'boundary',
+        content: 'Conversation compacted',
+      },
+      summaryMessages: [],
+      attachments: [],
+      hookResults: [],
+      messagesToKeep: [assistantMessage('snapshot-tail', 'snapshot-tail-message', 'snapshot tail')],
+    };
+    const currentMessages: Message[] = [
+      assistantMessage('snapshot-tail', 'snapshot-tail-message', 'snapshot tail'),
+      { type: 'system', subtype: 'compact_boundary', uuid: 'new-boundary' },
+      userMessage('delta-user', 'new work'),
+    ];
+
+    expect(mergeBackgroundAutoCompactDelta(result, currentMessages, 'snapshot-tail')).toBeUndefined();
   });
 });
 

@@ -11,7 +11,6 @@ import color from './commands/color/index.js';
 import commit from './commands/commit.js';
 import copy from './commands/copy/index.js';
 import desktop from './commands/desktop/index.js';
-import datadog from './commands/datadog/index.js';
 import compact from './commands/compact/index.js';
 import config from './commands/config/index.js';
 import { context, contextNonInteractive } from './commands/context/index.js';
@@ -123,7 +122,6 @@ import perfIssue from './commands/perf-issue/index.js';
 import sandboxToggle from './commands/sandbox-toggle/index.js';
 import maxMode from './commands/maxMode/index.js';
 import chrome from './commands/chrome/index.js';
-import ant from './commands/ant/index.js';
 import stickers from './commands/stickers/index.js';
 import goal from './commands/goal/index.js';
 import bg from './commands/bg/index.js';
@@ -237,7 +235,6 @@ const COMMANDS = memoize((): Command[] => [
   advisor,
   agentCmd,
   agentsCmd,
-  ant,
   autofixPr,
   bg,
   branch,
@@ -250,7 +247,6 @@ const COMMANDS = memoize((): Command[] => [
   config,
   copy,
   desktop,
-  datadog,
   context,
   contextNonInteractive,
   cost,

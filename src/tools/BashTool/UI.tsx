@@ -3,9 +3,8 @@ import * as React from 'react';
 import { KeyboardShortcutHint } from '../../components/design-system/KeyboardShortcutHint.js';
 import { FallbackToolUseErrorMessage } from '../../components/FallbackToolUseErrorMessage.js';
 import { MessageResponse } from '../../components/MessageResponse.js';
-import { Spinner } from '../../components/Spinner.js';
 import { ShellProgressMessage } from '../../components/shell/ShellProgressMessage.js';
-import { Box, Text } from '../../ink.js';
+import { Box, Text, useAnimationFrame } from '../../ink.js';
 import { useKeybinding } from '../../keybindings/useKeybinding.js';
 import { useShortcutDisplay } from '../../keybindings/useShortcutDisplay.js';
 import { useAppStateStore, useSetAppState } from '../../state/AppState.js';
@@ -25,6 +24,12 @@ import { parseSedEditCommand } from './sedEditParser.js';
 // Constants for command display
 const MAX_COMMAND_DISPLAY_LINES = 2;
 const MAX_COMMAND_DISPLAY_CHARS = 160;
+
+function BashRunningIndicator(): React.ReactNode {
+  const [, time] = useAnimationFrame(250);
+  const dots = '.'.repeat(Math.floor(time / 400) % 4);
+  return <Text dimColor>Running{dots}</Text>;
+}
 
 // Simple component to show background hint and handle ctrl+b
 // When ctrl+b is pressed, backgrounds ALL running foreground commands
@@ -130,8 +135,7 @@ export function renderToolUseProgressMessage(
   if (!lastProgress?.data) {
     return (
       <MessageResponse height={1}>
-        <Spinner />
-        <Text dimColor> Running…</Text>
+        <BashRunningIndicator />
       </MessageResponse>
     );
   }
