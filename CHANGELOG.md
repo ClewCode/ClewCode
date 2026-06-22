@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **MACRO globals not set at build time**: `clew update` crashed with `TypeError: undefined is not an object (evaluating 'Fy.PACKAGE_URL')` because `MACRO.PACKAGE_URL` was never injected into the bundle. Added `scripts/postbuild-inject-macro.mjs` that reads `package.json` and prepends `var MACRO={...}` to `dist/main.js` at build time.
+
 ### Removed
 - **`/looplock`**: Removed the `/looplock` command — it was redundant with `/daemon start` + `/task`. Replaced UI hints with `/task` and `/daemon` throughout.
 - **`/agents`**: Removed the `/agents` command — it was identical to `/agent view`. Moved `getAgentViewDisabledReason` utility to `src/cli/handlers/agents.ts`.
