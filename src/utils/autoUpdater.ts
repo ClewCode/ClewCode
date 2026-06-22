@@ -8,8 +8,7 @@ import {
   logEvent,
 } from 'src/services/analytics/index.js';
 
-// loony: globalThis.MACRO avoids circular-dep TDZ with bun bundler
-const MACRO = globalThis.MACRO as typeof globalThis.MACRO;
+// MACRO is injected at build/dev time via Bun's `--define`
 
 import { type ReleaseChannel, saveGlobalConfig } from './config.js';
 import { logForDebugging } from './debug.js';
