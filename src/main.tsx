@@ -5813,7 +5813,7 @@ async function run(): Promise<CommanderCommand> {
       } else if (opts.config === true || opts.manage === true) {
         await agentsHandler();
       } else {
-        const { getAgentViewDisabledReason } = await import('./commands/agents/index.js');
+        const { getAgentViewDisabledReason } = await import('./cli/handlers/agents.js');
         const reason = getAgentViewDisabledReason();
         if (reason) {
           console.log(`Agent view is ${reason}.`);
@@ -6223,7 +6223,7 @@ Examples:
         } else if (bgArg === 'config' || bgArg === 'manage' || process.argv.includes('--config')) {
           await agentsHandler();
         } else {
-          const { getAgentViewDisabledReason } = await import('./commands/agents/index.js');
+          const { getAgentViewDisabledReason } = await import('./cli/handlers/agents.js');
           const reason = getAgentViewDisabledReason();
           if (reason) {
             console.log(`Agent view is ${reason}.`);

@@ -3841,20 +3841,20 @@ export function REPL({
       // exchange (matches OpenCode's auto-scroll behavior).
       repinScroll();
 
-      // Check if background loop is active and block input if it is, unless it's a looplock command
+      // Check if background loop is active and block input if it is, unless it's a daemon/task command
       try {
         const { isAutonomousAgentActive } = await import('../services/autonomous/supervisorIntegration.js');
         const isLoopActive = await isAutonomousAgentActive();
 
         const normalizedInput = input.trim();
-        const isLooplockCmd = normalizedInput.startsWith('/looplock') || normalizedInput.startsWith('/loop-lock');
+        const isAllowedCmd = normalizedInput.startsWith('/daemon') || normalizedInput.startsWith('/task');
 
-        if (isLoopActive && !isLooplockCmd) {
+        if (isLoopActive && !isAllowedCmd) {
           const chalk = (await import('chalk')).default;
 
           addNotification({
             key: 'loop-active-blocked',
-            text: chalk.yellow('ขณะนี้ Loop ทำงานอยู่ กรุณาใช้ `/looplock <คำสั่ง>` เพื่อป้อนงานใหม่'),
+            text: chalk.yellow('ขณะนี้ Loop ทำงานอยู่ กรุณาใช้ `/task <คำสั่ง>` หรือ `/daemon` เพื่อจัดการ'),
             priority: 'high',
           });
 

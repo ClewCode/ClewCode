@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- **`/looplock`**: Removed the `/looplock` command — it was redundant with `/daemon start` + `/task`. Replaced UI hints with `/task` and `/daemon` throughout.
+- **`/agents`**: Removed the `/agents` command — it was identical to `/agent view`. Moved `getAgentViewDisabledReason` utility to `src/cli/handlers/agents.ts`.
+- **17 dead stub commands**: Removed `ant-trace`, `backfill-sessions`, `break-cache`, `bughunter`, `ctx_viz`, `debug-tool-call`, `env`, `good-claude`, `issue`, `mock-limits`, `oauth-refresh`, `onboarding`, `perf-issue`, `reset-limits`, `share`, `summary`, `teleport` — all were `isEnabled: () => false, isHidden: true` stubs. Also removed the `INTERNAL_ONLY_COMMANDS` array and its conditional inclusion.
+
 ### Added
 - **Compact Orchestrator**: Added `src/services/compact/orchestrator.ts` as a unified entry point for all compaction strategies (micro-compaction, session-memory, and auto-compaction).
 - **Cross-platform Computer Use Tool**: Unifed the computer use execution paths by routing the primary `ComputerUseTool` through the new platform-native adapter (`getPlatformAdapter()`). Added support for macOS and Linux in addition to Windows when `ENABLE_COMPUTER_USE=1` is specified.
