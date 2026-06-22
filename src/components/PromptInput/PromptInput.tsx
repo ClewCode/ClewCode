@@ -2818,13 +2818,13 @@ function PromptInput({
       {isLoopActive && (
         <Box paddingLeft={2} paddingRight={2} marginBottom={0} flexDirection="row">
           <Text color="yellow" bold>
-            🔒 LOOP LOCKED:{' '}
+            🔒 DAEMON ACTIVE:{' '}
           </Text>
-          <Text color="cyan">Autonomous Loop is running. Use </Text>
+          <Text color="cyan">Autonomous loop is running. Use </Text>
           <Text color="green" bold>
-            /looplock &lt;message&gt;
+            /task &lt;description&gt;
           </Text>
-          <Text color="cyan"> to send instructions.</Text>
+          <Text color="cyan"> to enqueue work.</Text>
         </Box>
       )}
       {hasSuppressedDialogs && (
