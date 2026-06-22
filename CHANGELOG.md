@@ -42,6 +42,13 @@ All notable changes to this project will be documented in this file.
 - **Gitignore updated**: Added `.obsi/`, `.claude/`, `.claudeignore`, `ClewCode.wiki`, `test/`, `tests/`, `examples/` to `.gitignore`.
 - **Unintended assets**: Removed website assets from main repo after moving website to separate repo. (`d25393d`)
 
+### Changed
+- **MCP docs URL rebranded**: Changed all `code.claude.com/docs/en/mcp` references to `https://clew-code.org` across 5 files (MCP dialog, settings, warnings, panel, and config suggestions).
+- **Windows clipboard now uses PowerShell Set-Clipboard**: `clip.exe` corrupts non-ASCII text (Thai, Japanese, emoji, etc.) due to console code page limitations. Replaced with `powershell.exe Set-Clipboard` forced to UTF-8 stdin. Windows is also now counted as `'native'` clipboard path in `getClipboardPath()`. Both `.ts` source and `.js` mirror updated.
+
+### Removed
+- **`.mcp.json` untracked**: Added to `.gitignore` and removed from git tracking (contains `GITHUB_TOKEN`).
+
 ## [0.3.2] - 2026-06-18
 
 ### Fixed

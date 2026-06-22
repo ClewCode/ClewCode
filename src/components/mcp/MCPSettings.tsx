@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import type { CommandResultDisplay } from '../../commands.js';
 import { ClaudeAuthProvider } from '../../services/mcp/auth.js';
 import type {
@@ -30,6 +30,10 @@ export function MCPSettings({ onComplete }: Props): React.ReactNode {
     type: 'list',
   });
   const [servers, setServers] = React.useState<ServerInfo[]>([]);
+
+  // Keep a ref to onComplete so the effect below doesn't need it in deps
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   // Extract agent-specific MCP servers from agent definitions
   const agentMcpServers = useMemo(
@@ -124,11 +128,11 @@ export function MCPSettings({ onComplete }: Props): React.ReactNode {
 
     // Only show "no servers" message if no regular servers AND no agent servers
     if (servers.length === 0 && agentMcpServers.length === 0) {
-      onComplete(
-        'No MCP servers configured. Please run /doctor if this is unexpected. Otherwise, run `clew mcp --help` or visit https://code.claude.com/docs/en/mcp to learn more.',
+      onCompleteRef.current(
+        'No MCP servers configured. Please run /doctor if this is unexpected. Otherwise, run `clew mcp --help` or visit https://clew-code.org to learn more.',
       );
     }
-  }, [servers.length, filteredClients.length, agentMcpServers.length, onComplete]);
+  }, [servers.length, filteredClients.length, agentMcpServers.length]);
 
   switch (viewState.type) {
     case 'list':

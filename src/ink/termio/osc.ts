@@ -47,7 +47,7 @@ export function wrapForMultiplexer(sequence: string): string {
  * Which path setClipboard() will take, based on env state. Synchronous so
  * callers can show an honest toast without awaiting the copy itself.
  *
- * - 'native': pbcopy (or equivalent) will run — high-confidence system
+ * - 'native': pbcopy/Set-Clipboard (or equivalent) will run — high-confidence system
  *   clipboard write. tmux buffer may also be loaded as a bonus.
  * - 'tmux-buffer': tmux load-buffer will run, but no native tool — paste
  *   with prefix+] works. System clipboard depends on tmux's set-clipboard
@@ -62,7 +62,7 @@ export function wrapForMultiplexer(sequence: string): string {
 export type ClipboardPath = 'native' | 'tmux-buffer' | 'osc52';
 
 export function getClipboardPath(): ClipboardPath {
-  const nativeAvailable = process.platform === 'darwin' && !process.env['SSH_CONNECTION'];
+  const nativeAvailable = (process.platform === 'darwin' || process.platform === 'win32') && !process.env['SSH_CONNECTION'];
   if (nativeAvailable) return 'native';
   if (process.env['TMUX']) return 'tmux-buffer';
   return 'osc52';
@@ -125,7 +125,7 @@ export async function tmuxLoadBuffer(text: string): Promise<boolean> {
  * Local (no SSH_CONNECTION): also shell out to a native clipboard utility.
  * OSC 52 and tmux -w both depend on terminal settings — iTerm2 disables
  * OSC 52 by default, VS Code shows a permission prompt on first use. Native
- * utilities (pbcopy/wl-copy/xclip/xsel/clip.exe) always work locally. Over
+ * utilities (pbcopy/Set-Clipboard/wl-copy/xclip/xsel) always work locally. Over
  * SSH these would write to the remote clipboard — OSC 52 is the right path there.
  *
  * Returns the sequence for the caller to write to stdout (raw OSC 52
@@ -203,9 +203,21 @@ function copyNative(text: string): void {
       return;
     }
     case 'win32':
-      // clip.exe is always available on Windows. Unicode handling is
-      // imperfect (system locale encoding) but good enough for a fallback.
-      void execFileNoThrow('clip', [], opts);
+      // clip.exe reads stdin through the active console code page, which corrupts
+      // non-ASCII text (Thai, Japanese, emoji, etc.). Force PowerShell's stdin to
+      // UTF-8 before passing the text to the system clipboard.
+      void execFileNoThrow(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-Command',
+          '[Console]::InputEncoding = [System.Text.Encoding]::UTF8; $text = [Console]::In.ReadToEnd(); Set-Clipboard -Value $text',
+        ],
+        opts,
+      );
       return;
   }
 }

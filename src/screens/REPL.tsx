@@ -4747,7 +4747,7 @@ export function REPL({
     messageActionCaps,
   );
 
-  async function onInit() {
+  const onInit = useCallback(async function onInit() {
     // Always verify API key on startup, so we can show the user an error in the
     // bottom right corner of the screen if the API key is invalid.
     void reverify();
@@ -4777,7 +4777,7 @@ export function REPL({
     }
 
     // Initial message handling is done via the initialMessage effect
-  }
+  }, [reverify]);
 
   // Register cost summary tracker
   useCostSummary(useFpsMetrics());
@@ -5115,8 +5115,6 @@ export function REPL({
     return () => {
       void diagnosticTracker.shutdown();
     };
-    // TODO: fix this
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onInit]);
 
   // Listen for suspend/resume events

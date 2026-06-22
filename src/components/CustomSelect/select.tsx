@@ -247,17 +247,20 @@ export function Select<T>({
     for (const option of options) {
       if (option.type === 'input' && option.initialValue !== undefined) {
         const lastInitial = lastInitialValues.current.get(option.value) ?? '';
-        const currentValue = inputValues.get(option.value) ?? '';
         const newInitial = option.initialValue;
 
         // Only update if:
         // 1. The initialValue has changed
         // 2. The user hasn't edited (current value still matches the last initialValue we set)
-        if (newInitial !== lastInitial && currentValue === lastInitial) {
+        if (newInitial !== lastInitial) {
           setInputValues(prev => {
-            const next = new Map(prev);
-            next.set(option.value, newInitial);
-            return next;
+            const currentValue = prev.get(option.value) ?? '';
+            if (currentValue === lastInitial) {
+              const next = new Map(prev);
+              next.set(option.value, newInitial);
+              return next;
+            }
+            return prev;
           });
         }
 
@@ -265,7 +268,7 @@ export function Select<T>({
         lastInitialValues.current.set(option.value, newInitial);
       }
     }
-  }, [options, inputValues]);
+  }, [options]);
 
   const state = useSelectState({
     visibleOptionCount,

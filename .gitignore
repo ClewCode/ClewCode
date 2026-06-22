@@ -73,7 +73,8 @@ graphify-out/
 .claudeignore
 .CLAUDE.md
 CLAUDE.md
-.AGENTS.md 
+.AGENTS.md
+.mcp.json
 # Testing
 coverage/
 .nyc_output

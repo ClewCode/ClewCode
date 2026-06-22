@@ -24,11 +24,11 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 
 ---
 
-## Hacking in public
+## Overview
 
-Clew Code is a **multi-provider** AI coding agent — you're not locked into one API. As of this writing the project ships a MiMo-inspired memory system (SQLite-backed, budgeted injection, cross-session persistence), agent-to-agent LAN peer coordination with swarm execution and memory sync, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation (Dream + Distill), and 27 provider adapters.
+Clew Code is a **multi-provider** AI coding agent — you're not locked into one API. It ships with a MiMo-inspired memory system (SQLite-backed, budgeted injection, cross-session persistence), agent-to-agent LAN peer coordination with swarm execution and memory sync, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation (Dream + Distill), and 27 provider adapters.
 
-> Rebuilt for every provider. Gateway-native auth at [clew-code.org](https://clew-code.org).
+> Works with any provider. Gateway-native auth at [clew-code.org](https://clew-code.org).
 
 ---
 
@@ -218,7 +218,15 @@ You → personal profile → understand requirement → plan approach
      → worker implements → report back → you review
 ```
 
-In personal profile, you never edit files directly — the `delegate` skill spawns a Codex worker with a structured task prompt (goal, scope, constraints, validation criteria) and reports what was done, what passed/failed, and what's blocked. Use personal profile when you want to orchestrate rather than implement.
+In personal profile, you are not a code editor by default — the `delegate` skill spawns a Codex worker with a structured task prompt (goal, scope, constraints, validation criteria) and reports what was done, what passed/failed, and what's blocked. Use personal profile when you want to orchestrate rather than implement.
+
+### Additional capabilities in personal profile
+
+- **Cross-session memory** — reads stored memories on session start, writes preferences, corrections, and patterns back. Never repeats itself across sessions.
+- **Skill creation** — automatically creates reusable `SKILL.md` files in `.clew/skills/` when it spots a repeatable multi-step pattern.
+- **Scheduling** — uses `/cron` for recurring tasks (daily reports, weekly audits) and `/loop` for repeated polling.
+- **Daemon mode** — when running in the background (no user watching), it checks the task queue, runs cron tasks on schedule, and consolidates memory automatically.
+- **Parallel delegation** — breaks complex workflows into independent sub-tasks and runs them concurrently via sub-agents or peers.
 
 Profile and last-used permission mode are saved between sessions.
 
@@ -366,11 +374,17 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 <details>
 <summary><strong>v0.3.3 — unreleased</strong></summary>
 
-- **Gateway auth system**: Login/signup via browser or terminal at `api.clew-code.org`. Token import from web dashboard. `/login` and `/logout` now gateway-native.
+- **MACRO globals fix**: `clew update` no longer crashes with `TypeError` — globals now injected at build time.
+- **17 dead stub commands removed** (`ant-trace`, `bughunter`, `env`, `issue`, `onboarding`, etc.) plus `/looplock` and `/agents`.
+- **Compact Orchestrator**: Unified entry point for all compaction strategies.
+- **CLAUDE → CLEW full rename**: All remaining `.claude/` references renamed to `.clew/` across 83 files.
 - **URL rebranding**: All `claude.ai` and `claude.com` URLs replaced with `clew-code.org`.
-- **Marketing website**: Terminal-inspired design site at `clew-code.org`, moved to separate repo.
-- **Context compaction**: Background auto-compaction with configurable threshold.
-- **Interrupted prompt renamed**: Branded as "Clew".
+- **Gateway auth system**: Login/signup via browser or terminal at `api.clew-code.org`. `/login` and `/logout` now gateway-native.
+- **Windows clipboard fix**: PowerShell `Set-Clipboard` with UTF-8 replaces `clip.exe` (corrupted non-ASCII text).
+- **Cross-platform Computer Use Tool**: macOS/Linux support added alongside Windows.
+- **Onboarding wizard redesigned**: 27 providers, direct API key entry, no OAuth step.
+- **Auto-compact threshold adjusted**: Background compaction triggers earlier (0.65).
+- **MCP URLs rebranded**: Diagnostics now link to `clew-code.org`.
 - **AGENTS.md updated**: Gateway mode, dashboard deployment, removed commands documentation.
 
 </details>

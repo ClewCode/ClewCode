@@ -295,7 +295,7 @@ export function MCPListPanel({
               </Text>
             )}
             <Text dimColor>
-              <Link url="https://code.claude.com/docs/en/mcp">https://code.claude.com/docs/en/mcp</Link> for help
+              <Link url="https://clew-code.org">https://clew-code.org</Link> for help
             </Text>
           </Box>
         </Box>
