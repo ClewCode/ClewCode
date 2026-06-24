@@ -6,7 +6,7 @@
 
 **The open-source AI coding agent — in your terminal and on your LAN.**
 
-A multi-provider AI coding CLI that codes, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle. Local-first by design. MiMo-inspired memory system. Peer-to-peer LAN swarm. Gateway authentication at `clew-code.org`. 75+ built-in tools.
+A multi-provider AI coding CLI that codes, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle. Local-first by design. MiMo-inspired memory system. Peer-to-peer LAN swarm. Gateway authentication at `clew-code.org`. 76+ built-in tools.
 
 [![GitHub stars](https://img.shields.io/github/stars/ClewCode/ClewCode?style=social)](https://github.com/ClewCode/ClewCode/stargazers)
 [![Contributors](https://img.shields.io/github/contributors/ClewCode/ClewCode.svg)](https://github.com/ClewCode/ClewCode/graphs/contributors)
@@ -26,7 +26,7 @@ A multi-provider AI coding CLI that codes, learns your preferences, coordinates 
 
 ## Overview
 
-Clew Code is a **multi-provider** AI coding agent — you're not locked into one API. It ships with a MiMo-inspired memory system (SQLite-backed, budgeted injection, cross-session persistence), agent-to-agent LAN peer coordination with swarm execution and memory sync, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation (Dream + Distill), and 27 provider adapters.
+Clew Code is a **multi-provider** AI coding agent — you're not locked into one API. It ships with a MiMo-inspired memory system (SQLite-backed, budgeted injection, cross-session persistence), agent-to-agent LAN peer coordination with swarm execution and memory sync, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation (Dream + Distill), and 29 provider adapters.
 
 > Works with any provider. Gateway-native auth at [clew-code.org](https://clew-code.org).
 
@@ -73,9 +73,9 @@ bun install && bun run build && bun run start
 <details>
 <summary><b>Platform notes</b></summary>
 
+- **Windows** — requires Git Bash, WSL, or PowerShell. ComputerUse tool also works on macOS/Linux (set `ENABLE_COMPUTER_USE=1`).
 - **macOS** — works out of the box (Apple Silicon & Intel)
 - **Linux** — no special dependencies
-- **Windows** — requires Git Bash, WSL, or PowerShell. Some tools (ComputerUse) are Windows-only.
 </details>
 
 ---
@@ -148,12 +148,12 @@ export GEMINI_API_KEY=...
 
 ## Features
 
-- **27 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, OpenCode Go, KiloCode, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, custom. Switch mid-session. *(Anthropic accessible via OpenRouter.)*
+- **29 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, OpenCode Go, KiloCode, Sakana AI, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, custom. Switch mid-session. *(Anthropic accessible via OpenRouter.)*
 - **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
 - **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
 - **Gateway auth** (`/login` / `/logout`): Sign in at `api.clew-code.org` with browser or terminal login. Token import from web dashboard via `clew auth login --token`. Gateway token stored locally for `ClewGatewayProvider`.
-- **75+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (15+ LAN coordination tools including swarm + dashboard), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
+- **76+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (17 LAN coordination tools including discover, send, swarm, dashboard, broker), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
 - **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Templates for common workflows (`fix-build`, `green-tests`, `refactor`). Auto-integrates with AFK mode and the autonomous loop. Independent LLM verifier reviews completion and reports gaps.
 - **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
 - **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps). Project memory promotion at 70% checkpoint.
@@ -298,9 +298,9 @@ src/
 ├── query.ts                 # Non-streaming query variant
 ├── agentRuntime/            # Background agent orchestration
 ├── commands/                # 100+ slash command implementations
-├── tools/                   # 75+ built-in tools
+├── tools/                   # 76+ built-in tools
 ├── services/
-│   ├── ai/                  # Provider manager + 27 providers
+│   ├── ai/                  # Provider manager + 29 providers
 │   ├── mcp/                 # MCP client + auth + transports
 │   ├── plugins/             # Plugin hooks + marketplace
 │   ├── autonomous/          # Agent loop + task queue + cron
@@ -382,7 +382,7 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 - **Gateway auth system**: Login/signup via browser or terminal at `api.clew-code.org`. `/login` and `/logout` now gateway-native.
 - **Windows clipboard fix**: PowerShell `Set-Clipboard` with UTF-8 replaces `clip.exe` (corrupted non-ASCII text).
 - **Cross-platform Computer Use Tool**: macOS/Linux support added alongside Windows.
-- **Onboarding wizard redesigned**: 27 providers, direct API key entry, no OAuth step.
+- **Onboarding wizard redesigned**: 29 providers, direct API key entry, no OAuth step.
 - **Auto-compact threshold adjusted**: Background compaction triggers earlier (0.65).
 - **MCP URLs rebranded**: Diagnostics now link to `clew-code.org`.
 - **AGENTS.md updated**: Gateway mode, dashboard deployment, removed commands documentation.
