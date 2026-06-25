@@ -711,9 +711,10 @@ function StatusLineInner({
         progressStr = ` ${bar}`;
       }
 
-      // Compact goal label — just icon, time, turns, and optional progress bar
-      const parts = [elapsedStr, turnsStr, progressStr].filter(Boolean);
-      const text = `${icon} /goal${statusLabel ? ` ${statusLabel}` : ''} (${parts.join(' · ')})`;
+      // Compact goal label — icon, goal text, time, turns, and optional progress bar
+      const goalText = sessionGoal ? `"${sessionGoal}"` : '';
+      const parts = [goalText, elapsedStr, turnsStr, progressStr].filter(Boolean);
+      const text = `${icon} ${statusLabel ? `${statusLabel} ` : ''}${parts.join(' · ')}`;
 
       if (isPaused) {
         sessionGoalDisplay = claudePill(text);
