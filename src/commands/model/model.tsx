@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import * as React from 'react';
 import type { CommandResultDisplay } from '../../commands.js';
 import { ModelPicker } from '../../components/ModelPicker.js';
@@ -46,7 +46,7 @@ function ModelPickerWrapper({
       action: 'cancel' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     });
     const displayModel = renderModelLabel(mainLoopModel);
-    onDone(`Kept model as ${chalk.bold(displayModel)}`, {
+    onDone(`Kept model as ${ansis.bold(displayModel)}`, {
       display: 'system',
     });
   }
@@ -138,10 +138,10 @@ function ModelPickerWrapper({
     }
 
     let message = options?.persistAsDefault
-      ? `Set default model to ${chalk.bold(renderModelLabel(model))}`
-      : `Set model to ${chalk.bold(renderModelLabel(model))} for this session`;
+      ? `Set default model to ${ansis.bold(renderModelLabel(model))}`
+      : `Set model to ${ansis.bold(renderModelLabel(model))} for this session`;
     if (effort !== undefined) {
-      message += ` with ${chalk.bold(effort)} effort`;
+      message += ` with ${ansis.bold(effort)} effort`;
     }
 
     // Turn off fast mode if switching to unsupported model
@@ -303,7 +303,7 @@ function SetModelAndClose({
       // Persist the session model choice to transcript for resume restore
       setSessionModelForTranscript(modelValue ?? undefined);
 
-      let message = `Set model to ${chalk.bold(renderModelLabel(modelValue))} for this session`;
+      let message = `Set model to ${ansis.bold(renderModelLabel(modelValue))} for this session`;
 
       let wasFastModeToggledOn;
       if (isFastModeEnabled()) {
@@ -378,7 +378,7 @@ function ShowModelAndClose({ onDone }: { onDone: (result?: string) => void }): R
 
   if (mainLoopModelForSession) {
     onDone(
-      `Current model: ${chalk.bold(renderModelLabel(mainLoopModelForSession))} (session override from plan mode)\nBase model: ${displayModel}${effortInfo}`,
+      `Current model: ${ansis.bold(renderModelLabel(mainLoopModelForSession))} (session override from plan mode)\nBase model: ${displayModel}${effortInfo}`,
     );
   } else {
     onDone(`Current model: ${displayModel}${effortInfo}`);
@@ -406,7 +406,7 @@ function ShowModelListAndClose({ onDone }: { onDone: (result: string) => void })
         const { supportsModelFetching, fetchProviderModels } = await import('../../utils/model/fetchProviderModels.js');
 
         // Show a transient "loading…" status
-        onDone(chalk.dim(`Fetching live model list from ${providerLabel} API…`));
+        onDone(ansis.dim(`Fetching live model list from ${providerLabel} API…`));
 
         let lines: string[];
         if (!supportsModelFetching(providerId as any)) {
@@ -426,9 +426,9 @@ function ShowModelListAndClose({ onDone }: { onDone: (result: string) => void })
               // API returned nothing — show warning + static fallback
               const staticModels = (providersConfig as any)?.[providerId]?.models ?? [];
               lines = [
-                chalk.yellow(`${providerLabel} /v1/models returned no results — check your API key and network.`),
+                ansis.yellow(`${providerLabel} /v1/models returned no results — check your API key and network.`),
                 '',
-                `${chalk.dim('Static fallback (providers.json)')}:`,
+                `${ansis.dim('Static fallback (providers.json)')}:`,
                 ...buildStaticEntries(staticModels),
               ];
             } else {
@@ -443,9 +443,9 @@ function ShowModelListAndClose({ onDone }: { onDone: (result: string) => void })
             const staticModels = (providersConfig as any)?.[providerId]?.models ?? [];
             const errMsg = apiErr instanceof Error ? apiErr.message : 'Unknown error';
             lines = [
-              chalk.red(`API fetch failed: ${errMsg}`),
+              ansis.red(`API fetch failed: ${errMsg}`),
               '',
-              `${chalk.dim('Static fallback (providers.json)')}:`,
+              `${ansis.dim('Static fallback (providers.json)')}:`,
               ...buildStaticEntries(staticModels),
             ];
           }
@@ -456,7 +456,7 @@ function ShowModelListAndClose({ onDone }: { onDone: (result: string) => void })
         }
       } catch (err) {
         if (cancelled) return;
-        onDone(chalk.red(`Failed to list models: ${err instanceof Error ? err.message : 'Unknown error'}`));
+        onDone(ansis.red(`Failed to list models: ${err instanceof Error ? err.message : 'Unknown error'}`));
       }
     };
 

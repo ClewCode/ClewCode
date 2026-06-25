@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig, OAUTH_BETA_HEADER } from 'src/constants/oauth.js';
 import { getAnthropicApiKey } from 'src/utils/auth.js';
 import { getGlobalConfig } from 'src/utils/config.js';
@@ -14,7 +14,7 @@ export async function getOauthProfileFromApiKey() {
   }
   const endpoint = `${getOauthConfig().BASE_API_URL}/api/claude_cli_profile`;
   try {
-    const response = await axios.get(endpoint, {
+    const response = await ofetch(endpoint, {
       headers: {
         'x-api-key': apiKey,
         'anthropic-beta': OAUTH_BETA_HEADER,
@@ -32,7 +32,7 @@ export async function getOauthProfileFromApiKey() {
 export async function getOauthProfileFromOauthToken(accessToken) {
   const endpoint = `${getOauthConfig().BASE_API_URL}/api/oauth/profile`;
   try {
-    const response = await axios.get(endpoint, {
+    const response = await ofetch(endpoint, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',

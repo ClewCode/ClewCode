@@ -87,6 +87,7 @@ import privacySettings from './commands/privacy-settings/index.js';
 import hooks from './commands/hooks/index.js';
 import files from './commands/files/index.js';
 import branch from './commands/branch/index.js';
+import fork from './commands/fork/index.js';
 import plugin from './commands/plugin/index.js';
 import reloadPlugins from './commands/reload-plugins/index.js';
 import rewind from './commands/rewind/index.js';
@@ -178,6 +179,7 @@ const COMMANDS = memoize((): Command[] => [
   autofixPr,
   bg,
   branch,
+  fork,
   btw,
   capabilities,
   chrome,

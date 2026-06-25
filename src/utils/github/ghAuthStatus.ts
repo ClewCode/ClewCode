@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import spawn from 'nano-spawn';
 import { which } from '../which.js';
 
 export type GhAuthStatus = 'authenticated' | 'not_authenticated' | 'not_installed';
@@ -16,11 +16,14 @@ export async function getGhAuthStatus(): Promise<GhAuthStatus> {
   if (!ghPath) {
     return 'not_installed';
   }
-  const { exitCode } = await execa('gh', ['auth', 'token'], {
-    stdout: 'ignore',
-    stderr: 'ignore',
-    timeout: 5000,
-    reject: false,
-  });
+  let exitCode = 0;
+  try {
+    await spawn('gh', ['auth', 'token'], {
+      stdio: ['pipe', 'ignore', 'ignore'],
+      timeout: 5000,
+    });
+  } catch (e) {
+    exitCode = e.exitCode ?? 1;
+  }
   return exitCode === 0 ? 'authenticated' : 'not_authenticated';
 }

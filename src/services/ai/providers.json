@@ -635,6 +635,91 @@
       }
     ]
   },
+  "sakana": {
+    "providerId": "sakana",
+    "label": "Sakana AI (Fugu)",
+    "envKey": "SAKANA_API_KEY",
+    "defaultBaseUrl": "https://api.sakana.ai/v1",
+    "modelsUrl": "https://api.sakana.ai/v1/models",
+    "defaultModel": "fugu-ultra",
+    "defaultModelVerified": true,
+    "note": "Sakana AI - Fugu multi-agent orchestration system. Launched June 2026.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": true,
+      "jsonSchema": true,
+      "reasoningEffort": true,
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false
+    },
+    "models": [
+      {
+        "id": "fugu-ultra",
+        "label": "Fugu Ultra",
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "recommended",
+          "latest"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 131072,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "fugu-ultra-20260615",
+        "label": "Fugu Ultra (2026-06-15)",
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 131072,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "fugu",
+        "label": "Fugu (Standard)",
+        "tags": [
+          "tools",
+          "vision",
+          "fast"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 65536,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      }
+    ]
+  },
   "opencode": {
     "providerId": "opencode",
     "label": "OpenCode",

@@ -96,7 +96,7 @@ import type { StatusLineCommandInput } from '../types/statusLine.js';
 import type { ElicitResult } from '@modelcontextprotocol/sdk/types.js';
 import type { FileSuggestionCommandInput } from '../types/fileSuggestion.js';
 import type { HookResultMessage } from 'src/types/message.js';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import type { HookMatcher, HookCommand, PluginHookMatcher, SkillHookMatcher } from './settings/types.js';
 import { getHookDisplayText } from './hooks/hooksSettings.js';
 import { logForDebugging } from './debug.js';
@@ -2458,7 +2458,7 @@ async function* executeHooks({
         // Handle suppressOutput (skip for async responses)
         if (isSyncHookJSONOutput(json) && !json.suppressOutput && plainText && result.status === 0) {
           // Still show non-JSON output if not suppressed
-          const content = `${chalk.bold(hookName)} completed`;
+          const content = `${ansis.bold(hookName)} completed`;
           emitHookResponse({
             hookId,
             hookName,

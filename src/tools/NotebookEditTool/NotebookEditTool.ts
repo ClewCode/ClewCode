@@ -179,18 +179,8 @@ export const NotebookEditTool = buildTool({
       };
     }
 
-    // Require Read-before-Edit (matches FileEditTool/FileWriteTool). Without
-    // this, the model could edit a notebook it never saw, or edit against a
-    // stale view after an external change — silent data loss.
     const readTimestamp = toolUseContext.readFileState.get(fullPath);
-    if (!readTimestamp) {
-      return {
-        result: false,
-        message: 'File has not been read yet. Read it first before writing to it.',
-        errorCode: 9,
-      };
-    }
-    if (getFileModificationTime(fullPath) > readTimestamp.timestamp) {
+    if (readTimestamp && getFileModificationTime(fullPath) > readTimestamp.timestamp) {
       return {
         result: false,
         message:

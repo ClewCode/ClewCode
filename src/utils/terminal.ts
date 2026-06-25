@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { ctrlOToExpand } from '../components/CtrlOToExpand.js';
 import { stringWidth } from '../ink/stringWidth.js';
 import sliceAnsi from './sliceAnsi.js';
@@ -88,7 +88,7 @@ export function renderTruncatedContent(content: string, terminalWidth: number, s
   return [
     aboveTheFold,
     estimatedRemaining > 0
-      ? chalk.dim(`… +${estimatedRemaining} lines${suppressExpandHint ? '' : ` ${ctrlOToExpand()}`}`)
+      ? ansis.dim(`… +${estimatedRemaining} lines${suppressExpandHint ? '' : ` ${ctrlOToExpand()}`}`)
       : '',
   ]
     .filter(Boolean)

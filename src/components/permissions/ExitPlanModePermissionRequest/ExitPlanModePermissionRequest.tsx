@@ -202,29 +202,32 @@ export function ExitPlanModePermissionRequest({
       }),
     [showClearContext, showUltraplan, usage, mode, isAutoModeAvailable, isBypassPermissionsModeAvailable],
   );
-  function onImagePaste(
-    base64Image: string,
-    mediaType?: string,
-    filename?: string,
-    dimensions?: ImageDimensions,
-    _sourcePath?: string,
-  ) {
-    const pasteId = nextPasteIdRef.current++;
-    const newContent: PastedContent = {
-      id: pasteId,
-      type: 'image',
-      content: base64Image,
-      mediaType: mediaType || 'image/png',
-      filename: filename || 'Pasted image',
-      dimensions,
-    };
-    cacheImagePath(newContent);
-    void storeImage(newContent);
-    setPastedContents(prev => ({
-      ...prev,
-      [pasteId]: newContent,
-    }));
-  }
+  const onImagePaste = useCallback(
+    (
+      base64Image: string,
+      mediaType?: string,
+      filename?: string,
+      dimensions?: ImageDimensions,
+      _sourcePath?: string,
+    ) => {
+      const pasteId = nextPasteIdRef.current++;
+      const newContent: PastedContent = {
+        id: pasteId,
+        type: 'image',
+        content: base64Image,
+        mediaType: mediaType || 'image/png',
+        filename: filename || 'Pasted image',
+        dimensions,
+      };
+      cacheImagePath(newContent);
+      void storeImage(newContent);
+      setPastedContents(prev => ({
+        ...prev,
+        [pasteId]: newContent,
+      }));
+    },
+    [],
+  );
   const onRemoveImage = useCallback((id: number) => {
     setPastedContents(prev => {
       const next = {
@@ -489,6 +492,7 @@ export function ExitPlanModePermissionRequest({
         }),
       }));
       onDone();
+      await 0;
       toolUseConfirm.onAllow(updatedInput, [], acceptFeedback);
       return;
     }
@@ -521,6 +525,7 @@ export function ExitPlanModePermissionRequest({
       setHasExitedPlanMode(true);
       setNeedsPlanModeExitAttachment(true);
       onDone();
+      await 0;
       toolUseConfirm.onAllow(updatedInput, buildPermissionUpdates(keepContextMode, allowedPrompts), acceptFeedback);
       return;
     }
@@ -542,6 +547,7 @@ export function ExitPlanModePermissionRequest({
       setHasExitedPlanMode(true);
       setNeedsPlanModeExitAttachment(true);
       onDone();
+      await 0;
       toolUseConfirm.onAllow(updatedInput, buildPermissionUpdates(standardMode, allowedPrompts), acceptFeedback);
       return;
     }
@@ -609,6 +615,29 @@ export function ExitPlanModePermissionRequest({
     toolUseConfirm.onReject();
   };
   const useStickyFooter = !isEmpty && !!setStickyFooter;
+
+  // Use refs for all dynamic values so useLayoutEffect only depends on the
+  // stable mount/unmount flags. This prevents an infinite re-render cycle:
+  // effect → setStickyFooter(JSX) → parent re-render → child re-render →
+  // deps change → effect re-run → ...
+  // The JSX reads the latest values through ref.current at render time.
+  const stickyOptionsRef = useRef(options);
+  stickyOptionsRef.current = options;
+  const stickyPastedContentsRef = useRef(pastedContents);
+  stickyPastedContentsRef.current = pastedContents;
+  const stickyEditorNameRef = useRef(editorName);
+  stickyEditorNameRef.current = editorName;
+  const stickyIsV2Ref = useRef(isV2);
+  stickyIsV2Ref.current = isV2;
+  const stickyPlanFilePathRef = useRef(planFilePath);
+  stickyPlanFilePathRef.current = planFilePath;
+  const stickyShowSaveMessageRef = useRef(showSaveMessage);
+  stickyShowSaveMessageRef.current = showSaveMessage;
+  const stickyOnRemoveImageRef = useRef(onRemoveImage);
+  stickyOnRemoveImageRef.current = onRemoveImage;
+  const stickyOnImagePasteRef = useRef(onImagePaste);
+  stickyOnImagePasteRef.current = onImagePaste;
+
   useLayoutEffect(() => {
     if (!useStickyFooter) return;
     setStickyFooter(
@@ -624,22 +653,24 @@ export function ExitPlanModePermissionRequest({
         <Text dimColor>Would you like to proceed?</Text>
         <Box marginTop={1}>
           <Select
-            options={options}
+            options={stickyOptionsRef.current}
             onChange={v => void handleResponseRef.current(v)}
             onCancel={() => handleCancelRef.current?.()}
-            onImagePaste={onImagePaste}
-            pastedContents={pastedContents}
-            onRemoveImage={onRemoveImage}
+            onImagePaste={stickyOnImagePasteRef.current}
+            pastedContents={stickyPastedContentsRef.current}
+            onRemoveImage={stickyOnRemoveImageRef.current}
           />
         </Box>
-        {editorName && (
+        {stickyEditorNameRef.current && (
           <Box flexDirection="row" gap={1} marginTop={1}>
             <Text dimColor>ctrl-g to edit in </Text>
             <Text bold dimColor>
-              {editorName}
+              {stickyEditorNameRef.current}
             </Text>
-            {isV2 && planFilePath && <Text dimColor> · {getDisplayPath(planFilePath)}</Text>}
-            {showSaveMessage && (
+            {stickyIsV2Ref.current && stickyPlanFilePathRef.current && (
+              <Text dimColor> · {getDisplayPath(stickyPlanFilePathRef.current)}</Text>
+            )}
+            {stickyShowSaveMessageRef.current && (
               <>
                 <Text dimColor>{' · '}</Text>
                 <Text color="success">{figures.tick}Plan saved!</Text>
@@ -650,20 +681,10 @@ export function ExitPlanModePermissionRequest({
       </Box>,
     );
     return () => setStickyFooter(null);
-    // onImagePaste/onRemoveImage are stable (useCallback/useRef-backed above)
+    // Intentionally only depend on the mount/unmount flags. All dynamic values
+    // are accessed through refs to avoid dependency churn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    useStickyFooter,
-    setStickyFooter,
-    options,
-    pastedContents,
-    editorName,
-    isV2,
-    planFilePath,
-    showSaveMessage,
-    onRemoveImage,
-    onImagePaste,
-  ]);
+  }, [useStickyFooter, setStickyFooter]);
 
   // Simplified UI for empty plans
   if (isEmpty) {

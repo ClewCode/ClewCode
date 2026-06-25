@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from '../../constants/oauth.js';
 import { getClaudeAIOAuthTokens, hasProfileScope, isClaudeAISubscriber } from '../../utils/auth.js';
 import { getAuthHeaders } from '../../utils/http.js';
@@ -73,7 +73,7 @@ export async function fetchUtilization(): Promise<Utilization | null> {
 
   const url = `${getOauthConfig().BASE_API_URL}/api/oauth/usage`;
 
-  const response = await axios.get<Utilization>(url, {
+  const response = await ofetch<Utilization>(url, {
     headers,
     timeout: 5000, // 5 second timeout
   });

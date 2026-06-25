@@ -185,7 +185,7 @@ export class ProcessPeerProvider {
           args,
           cwd,
           elapsedMs: Date.now() - startedAt,
-          outputTail: tailPtyOutput(getDisplayOutput()),
+          outputTail: getDisplayOutput(),
           status,
         });
       };
@@ -281,7 +281,7 @@ export class ProcessPeerProvider {
           args,
           cwd,
           elapsedMs: Date.now() - startedAt,
-          outputTail: tailPtyOutput(stdout),
+          outputTail: stdout,
           status,
         });
       };

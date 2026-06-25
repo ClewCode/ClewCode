@@ -8,8 +8,8 @@
  * when there's a new SHA. Callers decide fallback behavior on failure.
  */
 
-import axios from 'axios';
 import { chmod, mkdir, readFile, rename, rm, writeFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { dirname, join, resolve, sep } from 'path';
 import { waitForScrollIdle } from '../../bootstrap/state.js';
 import type { AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS } from '../../services/analytics/index.js';
@@ -76,7 +76,7 @@ export async function fetchOfficialMarketplaceFromGcs(
   try {
     // 1. Latest pointer — ~40 bytes, backend sets Cache-Control: no-cache,
     //    max-age=300. Cheap enough to hit every startup.
-    const latest = await axios.get(`${GCS_BASE}/latest`, {
+    const latest = await ofetch(`${GCS_BASE}/latest`, {
       responseType: 'text',
       timeout: 10_000,
     });
@@ -102,7 +102,7 @@ export async function fetchOfficialMarketplaceFromGcs(
     // 3. Download zip and extract to a staging dir, then atomic-swap into
     //    place. Crash mid-extract leaves a .staging dir (next run rm's it)
     //    rather than a half-written installLocation.
-    const zipResp = await axios.get(`${GCS_BASE}/${sha}.zip`, {
+    const zipResp = await ofetch(`${GCS_BASE}/${sha}.zip`, {
       responseType: 'arraybuffer',
       timeout: 60_000,
     });
@@ -189,7 +189,7 @@ const KNOWN_FS_CODES = new Set([
  * (disk full, permission denied) before flipping the git-fallback kill switch.
  */
 export function classifyGcsError(e: unknown): string {
-  if (axios.isAxiosError(e)) {
+  if (isFetchError(e)) {
     if (e.code === 'ECONNABORTED') return 'timeout';
     if (e.response) return `http_${e.response.status}`;
     return 'network';

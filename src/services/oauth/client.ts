@@ -1,5 +1,5 @@
 // OAuth client for handling authentication flows with Claude services
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -123,7 +123,7 @@ export async function exchangeCodeForTokens(
     requestBody.expires_in = expiresIn;
   }
 
-  const response = await axios.post(getOauthConfig().TOKEN_URL, requestBody, {
+  const response = await ofetch(getOauthConfig().TOKEN_URL, requestBody, {
     headers: { 'Content-Type': 'application/json' },
     timeout: 15000,
   });
@@ -156,7 +156,7 @@ export async function refreshOAuthToken(
   };
 
   try {
-    const response = await axios.post(getOauthConfig().TOKEN_URL, requestBody, {
+    const response = await ofetch(getOauthConfig().TOKEN_URL, requestBody, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 15000,
     });
@@ -240,8 +240,7 @@ export async function refreshOAuthToken(
         : undefined,
     };
   } catch (error) {
-    const responseBody =
-      axios.isAxiosError(error) && error.response?.data ? JSON.stringify(error.response.data) : undefined;
+    const responseBody = isFetchError(error) && error.response?.data ? JSON.stringify(error.response.data) : undefined;
     logEvent('tengu_oauth_token_refresh_failure', {
       error: (error as Error).message as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       ...(responseBody && {
@@ -253,7 +252,7 @@ export async function refreshOAuthToken(
 }
 
 export async function fetchAndStoreUserRoles(accessToken: string): Promise<void> {
-  const response = await axios.get(getOauthConfig().ROLES_URL, {
+  const response = await ofetch(getOauthConfig().ROLES_URL, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
@@ -286,7 +285,7 @@ export async function fetchAndStoreUserRoles(accessToken: string): Promise<void>
 
 export async function createAndStoreApiKey(accessToken: string): Promise<string | null> {
   try {
-    const response = await axios.post(getOauthConfig().API_KEY_URL, null, {
+    const response = await ofetch(getOauthConfig().API_KEY_URL, null, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 

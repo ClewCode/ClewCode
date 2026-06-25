@@ -7,6 +7,7 @@ declare global {
   var MACRO: {
     VERSION: string;
     PACKAGE_URL: string;
+    NATIVE_PACKAGE_URL?: string;
     FEEDBACK_CHANNEL: string;
     ISSUES_EXPLAINER: string;
   };

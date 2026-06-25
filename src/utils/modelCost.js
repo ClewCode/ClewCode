@@ -305,6 +305,29 @@ export const PROVIDER_PRICING = {
       webSearchRequests: 0,
     },
   },
+  sakana: {
+    'fugu-ultra': {
+      inputTokens: 5,
+      outputTokens: 30,
+      promptCacheWriteTokens: 5,
+      promptCacheReadTokens: 0.5,
+      webSearchRequests: 0,
+    },
+    'fugu-ultra-20260615': {
+      inputTokens: 5,
+      outputTokens: 30,
+      promptCacheWriteTokens: 5,
+      promptCacheReadTokens: 0.5,
+      webSearchRequests: 0,
+    },
+    fugu: {
+      inputTokens: 1,
+      outputTokens: 5,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+  },
   xai: {
     'grok-2': {
       inputTokens: 2,

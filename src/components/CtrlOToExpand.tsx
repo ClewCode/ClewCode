@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import React, { useContext } from 'react';
 import { Text } from '../ink.js';
 import { getShortcutDisplay } from '../keybindings/shortcutFormat.js';
@@ -31,5 +31,5 @@ export function CtrlOToExpand(): React.ReactNode {
 
 export function ctrlOToExpand(): string {
   const shortcut = getShortcutDisplay('app:toggleTranscript', 'Global', 'ctrl+o');
-  return chalk.dim(`(${shortcut} to expand)`);
+  return ansis.dim(`(${shortcut} to expand)`);
 }

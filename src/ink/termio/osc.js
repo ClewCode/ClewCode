@@ -37,7 +37,8 @@ export function wrapForMultiplexer(sequence) {
   return sequence;
 }
 export function getClipboardPath() {
-  const nativeAvailable = (process.platform === 'darwin' || process.platform === 'win32') && !process.env['SSH_CONNECTION'];
+  const nativeAvailable =
+    (process.platform === 'darwin' || process.platform === 'win32') && !process.env['SSH_CONNECTION'];
   if (nativeAvailable) return 'native';
   if (process.env['TMUX']) return 'tmux-buffer';
   return 'osc52';

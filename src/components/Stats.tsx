@@ -1,6 +1,6 @@
 import { feature } from 'bun:bundle';
+import ansis from 'ansis';
 import { plot as asciichart } from 'asciichart';
-import chalk from 'chalk';
 import figures from 'figures';
 import type React from 'react';
 import { Suspense, use, useCallback, useEffect, useMemo, useState } from 'react';
@@ -984,7 +984,7 @@ function renderStatsToAnsi(stats: ClaudeCodeStats, activeTab: 'Overview' | 'Mode
     const contentWidth = activeTab === 'Overview' ? 70 : 80;
     const statsLabel = '/stats';
     const padding = Math.max(2, contentWidth - lastLineLen - statsLabel.length);
-    lines[lines.length - 1] = lastLine + ' '.repeat(padding) + chalk.gray(statsLabel);
+    lines[lines.length - 1] = lastLine + ' '.repeat(padding) + ansis.gray(statsLabel);
   }
 
   return lines.join('\n');
@@ -1103,7 +1103,7 @@ function renderOverviewToAnsi(stats: ClaudeCodeStats): string[] {
   // Fun factoid
   const factoid = generateFunFactoid(stats, totalTokens);
   lines.push(h(factoid));
-  lines.push(chalk.gray(`Stats from the last ${stats.totalDays} days`));
+  lines.push(ansis.gray(`Stats from the last ${stats.totalDays} days`));
 
   return lines;
 }
@@ -1116,7 +1116,7 @@ function renderModelsToAnsi(stats: ClaudeCodeStats): string[] {
   );
 
   if (modelEntries.length === 0) {
-    lines.push(chalk.gray('No model usage data available'));
+    lines.push(ansis.gray('No model usage data available'));
     return lines;
   }
 
@@ -1139,9 +1139,9 @@ function renderModelsToAnsi(stats: ClaudeCodeStats): string[] {
   );
 
   if (chartOutput) {
-    lines.push(chalk.bold('Tokens per Day'));
+    lines.push(ansis.bold('Tokens per Day'));
     lines.push(chartOutput.chart);
-    lines.push(chalk.gray(chartOutput.xAxisLabels));
+    lines.push(ansis.gray(chartOutput.xAxisLabels));
     // Legend - use pre-colored bullets from chart output
     const legendLine = chartOutput.legend.map(item => `${item.coloredBullet} ${item.model}`).join(' · ');
     lines.push(legendLine);
@@ -1150,11 +1150,11 @@ function renderModelsToAnsi(stats: ClaudeCodeStats): string[] {
 
   // Summary
   lines.push(
-    `${figures.star} Favorite: ${chalk.magenta.bold(renderModelName(favoriteModel?.[0] || '', favoriteModel?.[1]?.provider))} · ${figures.circle} Total: ${chalk.magenta(formatNumber(totalTokens))} tokens`,
+    `${figures.star} Favorite: ${ansis.magenta.bold(renderModelName(favoriteModel?.[0] || '', favoriteModel?.[1]?.provider))} · ${figures.circle} Total: ${ansis.magenta(formatNumber(totalTokens))} tokens`,
   );
   lines.push('');
 
-  lines.push(chalk.bold('Models by provider'));
+  lines.push(ansis.bold('Models by provider'));
 
   // Model breakdown - only show top 3 for screenshot
   const topModels = modelEntries.slice(0, 3);
@@ -1166,15 +1166,15 @@ function renderModelsToAnsi(stats: ClaudeCodeStats): string[] {
         ? ((providerTokens / (totalProviderTokens || totalTokens)) * 100).toFixed(1)
         : '0.0';
     lines.push(
-      `${figures.bullet} ${chalk.bold(formatProviderLabel(group.provider))} ${chalk.gray(`(${providerPercentage}%)`)} ${chalk.dim(`${formatNumber(providerTokens)} tokens`)}`,
+      `${figures.bullet} ${ansis.bold(formatProviderLabel(group.provider))} ${ansis.gray(`(${providerPercentage}%)`)} ${ansis.dim(`${formatNumber(providerTokens)} tokens`)}`,
     );
     for (const [model, usage] of group.models) {
       const modelTokens = usage.inputTokens + usage.outputTokens;
       const percentage = ((modelTokens / totalTokens) * 100).toFixed(1);
       lines.push(
-        `  - ${chalk.bold(formatModelLabelForProvider(model, usage.provider))} ${chalk.gray(`(${percentage}%)`)}`,
+        `  - ${ansis.bold(formatModelLabelForProvider(model, usage.provider))} ${ansis.gray(`(${percentage}%)`)}`,
       );
-      lines.push(chalk.dim(`    In: ${formatNumber(usage.inputTokens)} · Out: ${formatNumber(usage.outputTokens)}`));
+      lines.push(ansis.dim(`    In: ${formatNumber(usage.inputTokens)} · Out: ${formatNumber(usage.outputTokens)}`));
     }
   }
 

@@ -1,8 +1,7 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { exec } from 'child_process';
-import { execa } from 'execa';
 import { mkdir, stat } from 'fs/promises';
-import memoize from 'lodash-es/memoize.js';
+import spawn from 'nano-spawn';
 import { join } from 'path';
 import { CLAUDE_AI_PROFILE_SCOPE } from 'src/constants/oauth.js';
 import {
@@ -24,6 +23,7 @@ import { clearBetasCaches } from './betas.js';
 import { type AccountInfo, checkHasTrustDialogAccepted, getGlobalConfig, saveGlobalConfig } from './config.js';
 import { logAntError, logForDebugging } from './debug.js';
 import { getClewConfigHomeDir, isBareMode, isEnvTruthy, isRunningOnHomespace } from './envUtils.js';
+import { memoize } from './equals.js';
 import { errorMessage } from './errors.js';
 import { execSyncWithDefaults_DEPRECATED } from './execFileNoThrow.js';
 import * as lockfile from './lockfile.js';
@@ -479,7 +479,7 @@ async function _runAndCache(isNonInteractiveSession: boolean, isCold: boolean, e
     if (epoch !== _apiKeyHelperEpoch) return ' ';
     const detail = e instanceof Error ? e.message : String(e);
     // biome-ignore lint/suspicious/noConsole: user-configured script failed; must be visible without --debug
-    console.error(chalk.red(`apiKeyHelper failed: ${detail}`));
+    console.error(ansis.red(`apiKeyHelper failed: ${detail}`));
     logForDebugging(`Error getting API key from apiKeyHelper: ${detail}`, {
       level: 'error',
     });
@@ -518,15 +518,16 @@ async function _executeApiKeyHelper(isNonInteractiveSession: boolean): Promise<s
     }
   }
 
-  const result = await execa(apiKeyHelper, {
-    shell: true,
-    timeout: 10 * 60 * 1000,
-    reject: false,
-  });
-  if (result.failed) {
-    // reject:false — execa resolves on exit≠0/timeout, stderr is on result
-    const why = result.timedOut ? 'timed out' : `exited ${result.exitCode}`;
-    const stderr = result.stderr?.trim();
+  let result;
+  try {
+    result = await spawn(apiKeyHelper, {
+      shell: true,
+      timeout: 10 * 60 * 1000,
+    });
+  } catch (e) {
+    const err = e as { timedOut?: boolean; exitCode?: number; stderr?: string };
+    const why = err.timedOut ? 'timed out' : err.exitCode != null ? `exited ${err.exitCode}` : 'failed';
+    const stderr = err.stderr?.trim();
     throw new Error(stderr ? `${why}: ${stderr}` : why);
   }
   const stdout = result.stdout?.trim();
@@ -639,10 +640,10 @@ export function refreshAwsAuth(awsAuthRefresh: string): Promise<boolean> {
       } else {
         const timedOut = signal === 'SIGTERM';
         const message = timedOut
-          ? chalk.red(
+          ? ansis.red(
               'AWS auth refresh timed out after 3 minutes. Run your auth command manually in a separate terminal.',
             )
-          : chalk.red('Error running awsAuthRefresh (in settings or ~/.claude.json):');
+          : ansis.red('Error running awsAuthRefresh (in settings or ~/.claude.json):');
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(message);
         authStatusManager.endAuthentication(false);
@@ -683,16 +684,24 @@ async function getAwsCredsFromCredentialExport(): Promise<{
 
   try {
     logForDebugging('Running AWS credential export command');
-    const result = await execa(awsCredentialExport, {
-      shell: true,
-      reject: false,
-    });
-    if (result.exitCode !== 0 || !result.stdout) {
+    let stdout = '';
+    let exitCode = 0;
+    try {
+      const result = await spawn(awsCredentialExport, {
+        shell: true,
+      });
+      stdout = result.stdout;
+    } catch (e) {
+      const err = e as { exitCode?: number; stdout?: string };
+      exitCode = err.exitCode ?? 1;
+      stdout = err.stdout ?? '';
+    }
+    if (exitCode !== 0 || !stdout) {
       throw new Error('awsCredentialExport did not return a valid value');
     }
 
     // Parse the JSON output from aws sts commands
-    const awsOutput = jsonParse(result.stdout.trim());
+    const awsOutput = jsonParse(stdout.trim());
 
     if (!isValidAwsStsOutput(awsOutput)) {
       throw new Error('awsCredentialExport did not return valid AWS STS output structure');
@@ -705,7 +714,7 @@ async function getAwsCredsFromCredentialExport(): Promise<{
       sessionToken: awsOutput.Credentials.SessionToken,
     };
   } catch (e) {
-    const message = chalk.red(
+    const message = ansis.red(
       'Error getting AWS credentials from awsCredentialExport (in settings or ~/.claude.json):',
     );
     if (e instanceof Error) {
@@ -886,10 +895,10 @@ export function refreshGcpAuth(gcpAuthRefresh: string): Promise<boolean> {
       } else {
         const timedOut = signal === 'SIGTERM';
         const message = timedOut
-          ? chalk.red(
+          ? ansis.red(
               'GCP auth refresh timed out after 3 minutes. Run your auth command manually in a separate terminal.',
             )
-          : chalk.red('Error running gcpAuthRefresh (in settings or ~/.claude.json):');
+          : ansis.red('Error running gcpAuthRefresh (in settings or ~/.claude.json):');
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(message);
         authStatusManager.endAuthentication(false);
@@ -1040,9 +1049,8 @@ export async function saveApiKey(apiKey: string): Promise<void> {
       // Process monitors only see "security -i", not the password
       const command = `add-generic-password -U -a "${username}" -s "${storageServiceName}" -X "${hexValue}"\n`;
 
-      await execa('security', ['-i'], {
-        input: command,
-        reject: false,
+      await spawn('security', ['-i'], {
+        stdin: { string: command } as any,
       });
 
       logEvent('tengu_api_key_saved_to_keychain', {});

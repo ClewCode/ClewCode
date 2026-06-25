@@ -51,7 +51,7 @@ export function deriveFirstPrompt(firstUserMessage: Extract<SerializedMessage, {
  * Preserves all original metadata (timestamps, gitBranch, etc.) while updating
  * sessionId and adding forkedFrom traceability.
  */
-async function createFork(customTitle?: string): Promise<{
+export async function createFork(customTitle?: string): Promise<{
   sessionId: UUID;
   title: string | undefined;
   forkPath: string;

@@ -58,7 +58,9 @@ export type AutoCompactTrackingState = {
   consecutiveFailures?: number;
 };
 
-export const AUTOCOMPACT_BUFFER_TOKENS = 13_000;
+// Keep enough headroom for the next API request's system prompt, tools, and
+// user context. compact.ts records that this can add roughly 20-40K tokens.
+export const AUTOCOMPACT_BUFFER_TOKENS = 40_000;
 export const WARNING_THRESHOLD_BUFFER_TOKENS = 20_000;
 export const ERROR_THRESHOLD_BUFFER_TOKENS = 20_000;
 export const MANUAL_COMPACT_BUFFER_TOKENS = 3_000;
@@ -68,6 +70,11 @@ export const BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT = 0.65;
 // BQ 2026-03-10: 1,279 sessions had 50+ consecutive failures (up to 3,272)
 // in a single session, wasting ~250K API calls/day globally.
 const MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3;
+
+// Minimum turns to wait after a successful compact before allowing another.
+// Prevents re-triggering on every turn when the post-compact context is
+// still near the auto-compact threshold.
+const MIN_TURNS_BETWEEN_COMPACTS = 3;
 
 type BackgroundAutoCompactJob = {
   model: string;
@@ -463,6 +470,16 @@ export async function autoCompactIfNeeded(
         tokenCountWithEstimation(messages) - (snipTokensFreed ?? 0),
       );
     }
+    return { wasCompacted: false };
+  }
+
+  // Cooldown: skip autocompact if we recently compacted. Without this, the
+  // post-compact context can still be near the threshold, triggering another
+  // compact on the very next turn in an endless loop.
+  if (tracking?.compacted && tracking.turnCounter < MIN_TURNS_BETWEEN_COMPACTS) {
+    logForDebugging(
+      `autocompact: cooldown — skipping, only ${tracking.turnCounter}/${MIN_TURNS_BETWEEN_COMPACTS} turns since last compact`,
+    );
     return { wasCompacted: false };
   }
 

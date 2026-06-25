@@ -34,7 +34,7 @@ export interface WebSearchProgress {
 }
 
 export interface ProcessPeerProgress {
-  type: 'process_peer';
+  type: 'delegate';
   provider: string;
   mode: 'exec' | 'pty';
   command: string;

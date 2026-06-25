@@ -97,6 +97,7 @@ import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackToo
 import { ProcessPeerTool } from './tools/ProcessPeerTool/ProcessPeerTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
 
+import { AgentTool } from './tools/AgentTool/AgentTool.js';
 import { LSPTool } from './tools/LSPTool/LSPTool.js';
 import { ListMcpResourcesTool } from './tools/ListMcpResourcesTool/ListMcpResourcesTool.js';
 import { ReadMcpResourceTool } from './tools/ReadMcpResourceTool/ReadMcpResourceTool.js';
@@ -214,7 +215,8 @@ export function getAllBaseTools(): Tools {
     ...(overflowTestTool ? [overflowTestTool] : []),
     ...(ctxInspectTool ? [ctxInspectTool] : []),
     ...(terminalCaptureTool ? [terminalCaptureTool] : []),
-    ...(isEnvTruthy(process.env.ENABLE_LSP_TOOL) ? [LSPTool] : []),
+    LSPTool,
+    AgentTool,
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     SendMessageTool,
     PeerDiscoverTool,

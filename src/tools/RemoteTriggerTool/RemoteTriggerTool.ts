@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { z } from 'zod/v4';
 import { getOauthConfig } from '../../constants/oauth.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
@@ -121,7 +121,7 @@ export const RemoteTriggerTool = buildTool({
         break;
     }
 
-    const res = await axios.request({
+    const res = await ofetch({
       method,
       url,
       headers,

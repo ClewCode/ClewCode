@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import figures from 'figures';
 import type * as React from 'react';
 import { color, Text } from '../ink.js';
@@ -407,7 +407,7 @@ export function getModelDisplayLabel(mainLoopModel: string | null): string {
   let modelLabel = modelDisplayString(effectiveModel);
   if (effectiveModel === null && isClaudeAISubscriber()) {
     const description = getClaudeAiUserDefaultModelDescription();
-    modelLabel = `${chalk.bold('Default')} ${description}`;
+    modelLabel = `${ansis.bold('Default')} ${description}`;
   }
   return modelLabel;
 }

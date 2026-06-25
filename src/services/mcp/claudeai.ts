@@ -1,5 +1,5 @@
-import axios from 'axios';
 import memoize from 'lodash-es/memoize.js';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from 'src/constants/oauth.js';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -88,7 +88,7 @@ export const fetchClaudeAIMcpConfigsIfEligible = memoize(async (): Promise<Recor
 
     logForDebugging(`[claudeai-mcp] Fetching from ${url}`);
 
-    const response = await axios.get<ClaudeAIMcpServersResponse>(url, {
+    const response = await ofetch<ClaudeAIMcpServersResponse>(url, {
       headers: {
         Authorization: `Bearer ${tokens.accessToken}`,
         'Content-Type': 'application/json',

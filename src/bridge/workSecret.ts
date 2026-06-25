@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { jsonParse, jsonStringify } from '../utils/slowOperations.js';
 import type { WorkSecret } from './types.js';
 
@@ -81,7 +81,7 @@ export function buildCCRv2SdkUrl(apiBaseUrl: string, sessionId: string): string 
  * (api-go/environment-manager/cmd/cmd_task_run.go RegisterWorker).
  */
 export async function registerWorker(sessionUrl: string, accessToken: string): Promise<number> {
-  const response = await axios.post(
+  const response = await ofetch(
     `${sessionUrl}/worker/register`,
     {},
     {

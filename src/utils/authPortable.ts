@@ -1,14 +1,18 @@
-import { execa } from 'execa';
+import spawn from 'nano-spawn';
 import { getMacOsKeychainStorageServiceName } from 'src/utils/secureStorage/macOsKeychainHelpers.js';
 
 export async function maybeRemoveApiKeyFromMacOSKeychainThrows(): Promise<void> {
   if (process.platform === 'darwin') {
     const storageServiceName = getMacOsKeychainStorageServiceName();
-    const result = await execa(`security delete-generic-password -a $USER -s "${storageServiceName}"`, {
-      shell: true,
-      reject: false,
-    });
-    if (result.exitCode !== 0) {
+    let exitCode = 0;
+    try {
+      await spawn(`security delete-generic-password -a $USER -s "${storageServiceName}"`, {
+        shell: true,
+      });
+    } catch (e) {
+      exitCode = e.exitCode ?? 1;
+    }
+    if (exitCode !== 0) {
       throw new Error('Failed to delete keychain entry');
     }
   }

@@ -634,7 +634,7 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal = false) => {
   );
   // Process User file (only if userSettings is enabled)
   if (isSettingSourceEnabled('userSettings')) {
-    // Process User ~/.clew/ files (primary — read first)
+    // Process User ~/.clew/ files (primary config files)
     const clewConfigDir = getClewConfigHomeDir();
     const userClewAgentsMd = join(clewConfigDir, 'AGENTS.md');
     result.push(...(await processMemoryFile(userClewAgentsMd, 'User', processedPaths, true)));

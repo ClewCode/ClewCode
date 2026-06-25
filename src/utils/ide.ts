@@ -1,9 +1,9 @@
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import axios from 'axios';
-import { execa } from 'execa';
 import capitalize from 'lodash-es/capitalize.js';
 import memoize from 'lodash-es/memoize.js';
+import spawn from 'nano-spawn';
 import { createConnection } from 'net';
+import { ofetch } from 'ofetch';
 import * as os from 'os';
 import { basename, join, sep as pathSeparator, resolve } from 'path';
 import { logEvent } from 'src/services/analytics/index.js';
@@ -994,11 +994,14 @@ async function detectRunningIDEsImpl(): Promise<IdeType[]> {
     const platform = getPlatform();
     if (platform === 'macos') {
       // On macOS, use ps with process name matching
-      const result = await execa(
-        'ps aux | grep -E "Visual Studio Code|Code Helper|Cursor Helper|Windsurf Helper|IntelliJ IDEA|PyCharm|WebStorm|PhpStorm|RubyMine|CLion|GoLand|Rider|DataGrip|AppCode|DataSpell|Aqua|Gateway|Fleet|Android Studio" | grep -v grep',
-        { shell: true, reject: false },
-      );
-      const stdout = result.stdout ?? '';
+      let stdout = '';
+      try {
+        const result = await spawn(
+          'ps aux | grep -E "Visual Studio Code|Code Helper|Cursor Helper|Windsurf Helper|IntelliJ IDEA|PyCharm|WebStorm|PhpStorm|RubyMine|CLion|GoLand|Rider|DataGrip|AppCode|DataSpell|Aqua|Gateway|Fleet|Android Studio" | grep -v grep',
+          { shell: true },
+        );
+        stdout = result.stdout ?? '';
+      } catch {}
       for (const [ide, config] of Object.entries(supportedIdeConfigs)) {
         for (const keyword of config.processKeywordsMac) {
           if (stdout.includes(keyword)) {
@@ -1009,11 +1012,14 @@ async function detectRunningIDEsImpl(): Promise<IdeType[]> {
       }
     } else if (platform === 'windows') {
       // On Windows, use tasklist with findstr for multiple patterns
-      const result = await execa(
-        'tasklist | findstr /I "Code.exe Cursor.exe Windsurf.exe idea64.exe pycharm64.exe webstorm64.exe phpstorm64.exe rubymine64.exe clion64.exe goland64.exe rider64.exe datagrip64.exe appcode.exe dataspell64.exe aqua64.exe gateway64.exe fleet.exe studio64.exe"',
-        { shell: true, reject: false },
-      );
-      const stdout = result.stdout ?? '';
+      let stdout = '';
+      try {
+        const result = await spawn(
+          'tasklist | findstr /I "Code.exe Cursor.exe Windsurf.exe idea64.exe pycharm64.exe webstorm64.exe phpstorm64.exe rubymine64.exe clion64.exe goland64.exe rider64.exe datagrip64.exe appcode.exe dataspell64.exe aqua64.exe gateway64.exe fleet.exe studio64.exe"',
+          { shell: true },
+        );
+        stdout = result.stdout ?? '';
+      } catch {}
 
       const normalizedStdout = stdout.toLowerCase();
 
@@ -1027,11 +1033,14 @@ async function detectRunningIDEsImpl(): Promise<IdeType[]> {
       }
     } else if (platform === 'linux') {
       // On Linux, use ps with process name matching
-      const result = await execa(
-        'ps aux | grep -E "code|cursor|windsurf|idea|pycharm|webstorm|phpstorm|rubymine|clion|goland|rider|datagrip|dataspell|aqua|gateway|fleet|android-studio" | grep -v grep',
-        { shell: true, reject: false },
-      );
-      const stdout = result.stdout ?? '';
+      let stdout = '';
+      try {
+        const result = await spawn(
+          'ps aux | grep -E "code|cursor|windsurf|idea|pycharm|webstorm|phpstorm|rubymine|clion|goland|rider|datagrip|dataspell|aqua|gateway|fleet|android-studio" | grep -v grep',
+          { shell: true },
+        );
+        stdout = result.stdout ?? '';
+      } catch {}
 
       const normalizedStdout = stdout.toLowerCase();
 
@@ -1256,12 +1265,19 @@ const detectHostIP = memoize(
     // Windows, then we must use a different IP address to connect to the extension.
     // https://learn.microsoft.com/en-us/windows/wsl/networking
     try {
-      const routeResult = await execa('ip route show | grep -i default', {
-        shell: true,
-        reject: false,
-      });
-      if (routeResult.exitCode === 0 && routeResult.stdout) {
-        const gatewayMatch = routeResult.stdout.match(/default via (\d+\.\d+\.\d+\.\d+)/);
+      let routeStdout = '';
+      let routeExitCode = 0;
+      try {
+        const routeResult = await spawn('ip route show | grep -i default', {
+          shell: true,
+        });
+        routeStdout = routeResult.stdout;
+      } catch (e) {
+        routeExitCode = e.exitCode ?? 1;
+        routeStdout = e.stdout ?? '';
+      }
+      if (routeExitCode === 0 && routeStdout) {
+        const gatewayMatch = routeStdout.match(/default via (\d+\.\d+\.\d+\.\d+)/);
         if (gatewayMatch) {
           const gatewayIP = gatewayMatch[1]!;
           if (await checkIdeConnection(gatewayIP, port)) {
@@ -1312,7 +1328,7 @@ async function installFromArtifactory(command: string): Promise<string> {
     'https://artifactory.infra.ant.dev/artifactory/armorcode-claude-code-internal/claude-vscode-releases/stable';
 
   try {
-    const versionResponse = await axios.get(versionUrl, {
+    const versionResponse = await ofetch(versionUrl, {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
@@ -1328,7 +1344,7 @@ async function installFromArtifactory(command: string): Promise<string> {
     const tempVsixPath = join(os.tmpdir(), `claude-code-${version}-${Date.now()}.vsix`);
 
     try {
-      const vsixResponse = await axios.get(vsixUrl, {
+      const vsixResponse = await ofetch(vsixUrl, {
         headers: {
           Authorization: `Bearer ${authToken}`,
         },
@@ -1365,7 +1381,7 @@ async function installFromArtifactory(command: string): Promise<string> {
       }
     }
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isFetchError(error)) {
       throw new Error(`Failed to fetch extension version from artifactory: ${error.message}`);
     }
     throw error;

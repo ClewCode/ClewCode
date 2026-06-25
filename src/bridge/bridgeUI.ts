@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { toString as qrToString } from 'qrcode';
 import { BRIDGE_FAILED_INDICATOR, BRIDGE_READY_INDICATOR, BRIDGE_SPINNER_FRAMES } from '../constants/figures.js';
 import { stringWidth } from '../ink/stringWidth.js';
@@ -140,12 +140,12 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
     const frame = BRIDGE_SPINNER_FRAMES[connectingTick % BRIDGE_SPINNER_FRAMES.length]!;
     let suffix = '';
     if (repoName) {
-      suffix += chalk.dim(' \u00b7 ') + chalk.dim(repoName);
+      suffix += ansis.dim(' \u00b7 ') + ansis.dim(repoName);
     }
     if (branch) {
-      suffix += chalk.dim(' \u00b7 ') + chalk.dim(branch);
+      suffix += ansis.dim(' \u00b7 ') + ansis.dim(branch);
     }
-    writeStatus(`${chalk.yellow(frame)} ${chalk.yellow('Connecting')}${suffix}\n`);
+    writeStatus(`${ansis.yellow(frame)} ${ansis.yellow('Connecting')}${suffix}\n`);
   }
 
   /** Start the connecting spinner. Stopped by first updateIdleStatus(). */
@@ -182,29 +182,29 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
     // QR code above the status line
     if (qrVisible) {
       for (const line of qrLines) {
-        writeStatus(`${chalk.dim(line)}\n`);
+        writeStatus(`${ansis.dim(line)}\n`);
       }
     }
 
     // Determine indicator and colors based on state
     const indicator = BRIDGE_READY_INDICATOR;
-    const indicatorColor = isIdle ? chalk.green : chalk.cyan;
-    const baseColor = isIdle ? chalk.green : chalk.cyan;
+    const indicatorColor = isIdle ? ansis.green : ansis.cyan;
+    const baseColor = isIdle ? ansis.green : ansis.cyan;
     const stateText = baseColor(currentStateText);
 
     // Build the suffix with repo and branch
     let suffix = '';
     if (repoName) {
-      suffix += chalk.dim(' \u00b7 ') + chalk.dim(repoName);
+      suffix += ansis.dim(' \u00b7 ') + ansis.dim(repoName);
     }
     // In worktree mode each session gets its own branch, so showing the
     // bridge's branch would be misleading.
     if (branch && spawnMode !== 'worktree') {
-      suffix += chalk.dim(' \u00b7 ') + chalk.dim(branch);
+      suffix += ansis.dim(' \u00b7 ') + ansis.dim(branch);
     }
 
     if (process.env.USER_TYPE === 'ant' && debugLogPath) {
-      writeStatus(`${chalk.yellow('[ANT-ONLY] Logs:')} ${chalk.dim(debugLogPath)}\n`);
+      writeStatus(`${ansis.yellow('[ANT-ONLY] Logs:')} ${ansis.dim(debugLogPath)}\n`);
     }
     writeStatus(`${indicatorColor(indicator)} ${stateText}${suffix}\n`);
 
@@ -214,13 +214,13 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
         spawnMode === 'worktree'
           ? 'New sessions will be created in an isolated worktree'
           : 'New sessions will be created in the current directory';
-      writeStatus(`    ${chalk.dim(`Capacity: ${sessionActive}/${sessionMax} \u00b7 ${modeHint}`)}\n`);
+      writeStatus(`    ${ansis.dim(`Capacity: ${sessionActive}/${sessionMax} \u00b7 ${modeHint}`)}\n`);
       for (const [, info] of sessionDisplayInfo) {
-        const titleText = info.title ? truncatePrompt(info.title, 35) : chalk.dim('Attached');
+        const titleText = info.title ? truncatePrompt(info.title, 35) : ansis.dim('Attached');
         const titleLinked = wrapWithOsc8Link(titleText, info.url);
         const act = info.activity;
         const showAct = act && act.type !== 'result' && act.type !== 'error';
-        const actText = showAct ? chalk.dim(` ${truncatePrompt(act.summary, 40)}`) : '';
+        const actText = showAct ? ansis.dim(` ${truncatePrompt(act.summary, 40)}`) : '';
         writeStatus(`    ${titleLinked}${actText}
 `);
       }
@@ -234,12 +234,12 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
           : spawnMode === 'worktree'
             ? `Capacity: ${sessionActive}/1 \u00b7 New sessions will be created in an isolated worktree`
             : `Capacity: ${sessionActive}/1 \u00b7 New sessions will be created in the current directory`;
-      writeStatus(`    ${chalk.dim(modeText)}\n`);
+      writeStatus(`    ${ansis.dim(modeText)}\n`);
     }
 
     // Tool activity line for single-session mode
     if (sessionMax === 1 && !isIdle && lastToolSummary && Date.now() - lastToolTime < TOOL_DISPLAY_EXPIRY_MS) {
-      writeStatus(`  ${chalk.dim(truncatePrompt(lastToolSummary, 60))}\n`);
+      writeStatus(`  ${ansis.dim(truncatePrompt(lastToolSummary, 60))}\n`);
     }
 
     // Blank line separator before footer
@@ -247,9 +247,9 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
     if (url) {
       writeStatus('\n');
       const footerText = isIdle ? buildIdleFooterText(url) : buildActiveFooterText(url);
-      const qrHint = qrVisible ? chalk.dim.italic('space to hide QR code') : chalk.dim.italic('space to show QR code');
-      const toggleHint = spawnModeDisplay ? chalk.dim.italic(' \u00b7 w to toggle spawn mode') : '';
-      writeStatus(`${chalk.dim(footerText)}\n`);
+      const qrHint = qrVisible ? ansis.dim.italic('space to hide QR code') : ansis.dim.italic('space to show QR code');
+      const toggleHint = spawnModeDisplay ? ansis.dim.italic(' \u00b7 w to toggle spawn mode') : '';
+      writeStatus(`${ansis.dim(footerText)}\n`);
       writeStatus(`${qrHint}${toggleHint}\n`);
     }
   }
@@ -262,17 +262,17 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
       regenerateQr(connectUrl);
 
       if (verbose) {
-        write(`${chalk.dim(`Remote Control`)} v${MACRO.VERSION}\n`);
+        write(`${ansis.dim(`Remote Control`)} v${MACRO.VERSION}\n`);
       }
       if (verbose) {
         if (config.spawnMode !== 'single-session') {
-          write(`${chalk.dim(`Spawn mode: `)}${config.spawnMode}\n`);
-          write(`${chalk.dim(`Max concurrent sessions: `)}${config.maxSessions}\n`);
+          write(`${ansis.dim(`Spawn mode: `)}${config.spawnMode}\n`);
+          write(`${ansis.dim(`Max concurrent sessions: `)}${config.maxSessions}\n`);
         }
-        write(`${chalk.dim(`Environment ID: `)}${environmentId}\n`);
+        write(`${ansis.dim(`Environment ID: `)}${environmentId}\n`);
       }
       if (config.sandbox) {
-        write(`${chalk.dim(`Sandbox: `)}${chalk.green('Enabled')}\n`);
+        write(`${ansis.dim(`Sandbox: `)}${ansis.green('Enabled')}\n`);
       }
       write('\n');
 
@@ -284,39 +284,39 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
       if (verbose) {
         const short = truncatePrompt(prompt, 80);
         printLog(
-          `${chalk.dim(`[${timestamp()}]`)} Session started: ${chalk.white(`"${short}"`)} (${chalk.dim(sessionId)})\n`,
+          `${ansis.dim(`[${timestamp()}]`)} Session started: ${ansis.white(`"${short}"`)} (${ansis.dim(sessionId)})\n`,
         );
       }
     },
 
     logSessionComplete(sessionId: string, durationMs: number): void {
       printLog(
-        chalk.dim(`[${timestamp()}]`) +
-          ` Session ${chalk.green('completed')} (${formatDuration(durationMs)}) ${chalk.dim(sessionId)}\n`,
+        ansis.dim(`[${timestamp()}]`) +
+          ` Session ${ansis.green('completed')} (${formatDuration(durationMs)}) ${ansis.dim(sessionId)}\n`,
       );
     },
 
     logSessionFailed(sessionId: string, error: string): void {
-      printLog(`${chalk.dim(`[${timestamp()}]`)} Session ${chalk.red('failed')}: ${error} ${chalk.dim(sessionId)}\n`);
+      printLog(`${ansis.dim(`[${timestamp()}]`)} Session ${ansis.red('failed')}: ${error} ${ansis.dim(sessionId)}\n`);
     },
 
     logStatus(message: string): void {
-      printLog(`${chalk.dim(`[${timestamp()}]`)} ${message}\n`);
+      printLog(`${ansis.dim(`[${timestamp()}]`)} ${message}\n`);
     },
 
     logVerbose(message: string): void {
       if (verbose) {
-        printLog(`${chalk.dim(`[${timestamp()}] ${message}`)}\n`);
+        printLog(`${ansis.dim(`[${timestamp()}] ${message}`)}\n`);
       }
     },
 
     logError(message: string): void {
-      printLog(`${chalk.red(`[${timestamp()}] Error: ${message}`)}\n`);
+      printLog(`${ansis.red(`[${timestamp()}] Error: ${message}`)}\n`);
     },
 
     logReconnected(disconnectedMs: number): void {
       printLog(
-        `${chalk.dim(`[${timestamp()}]`)} ${chalk.green('Reconnected')} after ${formatDuration(disconnectedMs)}\n`,
+        `${ansis.dim(`[${timestamp()}]`)} ${ansis.green('Reconnected')} after ${formatDuration(disconnectedMs)}\n`,
       );
     },
 
@@ -364,14 +364,14 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
       // QR code above the status line
       if (qrVisible) {
         for (const line of qrLines) {
-          writeStatus(`${chalk.dim(line)}\n`);
+          writeStatus(`${ansis.dim(line)}\n`);
         }
       }
 
       const frame = BRIDGE_SPINNER_FRAMES[connectingTick % BRIDGE_SPINNER_FRAMES.length]!;
       connectingTick++;
       writeStatus(
-        `${chalk.yellow(frame)} ${chalk.yellow('Reconnecting')} ${chalk.dim('\u00b7')} ${chalk.dim(`retrying in ${delayStr}`)} ${chalk.dim('\u00b7')} ${chalk.dim(`disconnected ${elapsedStr}`)}\n`,
+        `${ansis.yellow(frame)} ${ansis.yellow('Reconnecting')} ${ansis.dim('\u00b7')} ${ansis.dim(`retrying in ${delayStr}`)} ${ansis.dim('\u00b7')} ${ansis.dim(`disconnected ${elapsedStr}`)}\n`,
       );
     },
 
@@ -382,17 +382,17 @@ export function createBridgeLogger(options: { verbose: boolean; write?: (s: stri
 
       let suffix = '';
       if (repoName) {
-        suffix += chalk.dim(' \u00b7 ') + chalk.dim(repoName);
+        suffix += ansis.dim(' \u00b7 ') + ansis.dim(repoName);
       }
       if (branch) {
-        suffix += chalk.dim(' \u00b7 ') + chalk.dim(branch);
+        suffix += ansis.dim(' \u00b7 ') + ansis.dim(branch);
       }
 
-      writeStatus(`${chalk.red(BRIDGE_FAILED_INDICATOR)} ${chalk.red('Remote Control Failed')}${suffix}\n`);
-      writeStatus(`${chalk.dim(FAILED_FOOTER_TEXT)}\n`);
+      writeStatus(`${ansis.red(BRIDGE_FAILED_INDICATOR)} ${ansis.red('Remote Control Failed')}${suffix}\n`);
+      writeStatus(`${ansis.dim(FAILED_FOOTER_TEXT)}\n`);
 
       if (error) {
-        writeStatus(`${chalk.red(error)}\n`);
+        writeStatus(`${ansis.red(error)}\n`);
       }
     },
 

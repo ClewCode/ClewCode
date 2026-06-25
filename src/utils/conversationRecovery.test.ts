@@ -3,7 +3,15 @@ import { randomUUID, type UUID } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildResumeConversationChain, loadTranscriptFile, loadTranscriptFromFile } from './sessionStorage.js';
+import { resetStateForTests, setOriginalCwd, switchSession } from '../bootstrap/state.js';
+import { asSessionId } from '../types/ids.js';
+import {
+  buildResumeConversationChain,
+  getProjectDir,
+  getTranscriptPathForSession,
+  loadTranscriptFile,
+  loadTranscriptFromFile,
+} from './sessionStorage.js';
 
 function userMessage({
   uuid = randomUUID() as UUID,
@@ -143,5 +151,26 @@ describe('buildResumeConversationChain', () => {
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('getTranscriptPathForSession', () => {
+  test('does not apply the active resumed project dir to other session ids', () => {
+    resetStateForTests();
+
+    const originalCwd = join(tmpdir(), `clew-original-${randomUUID()}`);
+    const activeSessionId = randomUUID() as UUID;
+    const otherSessionId = randomUUID() as UUID;
+    const activeProjectDir = join(tmpdir(), `clew-active-project-${randomUUID()}`);
+
+    setOriginalCwd(originalCwd);
+    switchSession(asSessionId(activeSessionId), activeProjectDir);
+
+    expect(getTranscriptPathForSession(activeSessionId)).toBe(join(activeProjectDir, `${activeSessionId}.jsonl`));
+    expect(getTranscriptPathForSession(otherSessionId)).toBe(
+      join(getProjectDir(originalCwd), `${otherSessionId}.jsonl`),
+    );
+
+    resetStateForTests();
   });
 });

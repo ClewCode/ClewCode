@@ -119,7 +119,6 @@ clew auth login --token <token>
 ❯ /memory init    # bootstrap project memory (SQLite + scan)
 ❯ /memory rebuild # reconstruct context from ranked memories
 ❯ /memory recall --verbose  # recall ranked memories
-❯ /profile personal  # command-center mode with delegation
 ❯ /login             # sign in via Clew Gateway
 ❯ /logout            # sign out
 
@@ -153,11 +152,10 @@ export GEMINI_API_KEY=...
 - **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
 - **Gateway auth** (`/login` / `/logout`): Sign in at `api.clew-code.org` with browser or terminal login. Token import from web dashboard via `clew auth login --token`. Gateway token stored locally for `ClewGatewayProvider`.
-- **76+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (17 LAN coordination tools including discover, send, swarm, dashboard, broker), MCP tools, ProcessPeer (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
+- **76+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (17 LAN coordination tools including discover, send, swarm, dashboard, broker), MCP tools, delegate (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
 - **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Templates for common workflows (`fix-build`, `green-tests`, `refactor`). Auto-integrates with AFK mode and the autonomous loop. Independent LLM verifier reviews completion and reports gaps.
 - **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
 - **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps). Project memory promotion at 70% checkpoint.
-- **Personal profile** — `/profile personal` sets command-center mode with plan/split/delegate workflow to Codex workers via ProcessPeer. Profile + last permission mode saved between sessions.
 - **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
 - **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
 - **8 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, guardian. Granular allow/deny rules with pattern matching.
@@ -203,32 +201,6 @@ Other runtime concepts:
 - **Goal verification:** When the agent declares a task done, an independent LLM call reviews the conversation against the goal text and reports specific gaps if unsatisfied (attached as `goalGap` in result metadata).
 - **Max Mode:** Generates N parallel candidate responses per turn via forked agents, then selects the best one via LLM judge with heuristic fallback. Toggle with `/maxmode`.
 - **Checkpoints:** Structured snapshots at 20%/45%/70% progress milestones. Includes a `notes.md` scratchpad for the main agent's findings. Used for layered multi-cycle rebuild during compaction.
-
----
-
-## Profiles: Coding vs Personal
-
-Clew Code has a **personal profile** (`/profile personal`) — command center mode. Plan, split tasks, **delegate** code work to a Codex worker via `process_peer`, then review and summarize results.
-
-### How personal delegation works
-
-```
-You → personal profile → understand requirement → plan approach
-     → /delegate skill → ProcessPeer → Codex worker
-     → worker implements → report back → you review
-```
-
-In personal profile, you are not a code editor by default — the `delegate` skill spawns a Codex worker with a structured task prompt (goal, scope, constraints, validation criteria) and reports what was done, what passed/failed, and what's blocked. Use personal profile when you want to orchestrate rather than implement.
-
-### Additional capabilities in personal profile
-
-- **Cross-session memory** — reads stored memories on session start, writes preferences, corrections, and patterns back. Never repeats itself across sessions.
-- **Skill creation** — automatically creates reusable `SKILL.md` files in `.clew/skills/` when it spots a repeatable multi-step pattern.
-- **Scheduling** — uses `/cron` for recurring tasks (daily reports, weekly audits) and `/loop` for repeated polling.
-- **Daemon mode** — when running in the background (no user watching), it checks the task queue, runs cron tasks on schedule, and consolidates memory automatically.
-- **Parallel delegation** — breaks complex workflows into independent sub-tasks and runs them concurrently via sub-agents or peers.
-
-Profile and last-used permission mode are saved between sessions.
 
 ---
 
@@ -372,20 +344,39 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 ## Changelog
 
 <details>
-<summary><strong>v0.3.3 — unreleased</strong></summary>
+<summary><strong>[Unreleased]</strong></summary>
 
-- **MACRO globals fix**: `clew update` no longer crashes with `TypeError` — globals now injected at build time.
-- **17 dead stub commands removed** (`ant-trace`, `bughunter`, `env`, `issue`, `onboarding`, etc.) plus `/looplock` and `/agents`.
+- **LSP Tool enabled by default**: Removed `ENABLE_LSP_TOOL` env gate — LSP tool now always registered.
+- **Agent Tool enabled for AI model**: `AgentTool` registered in `getAllBaseTools()` so the AI model can directly invoke subagents.
+
+</details>
+
+<details>
+<summary><strong>v0.3.6 — 2026-06-23</strong></summary>
+
+- **`/fork` command**: New slash command that forks the conversation into a new session, leaving the original intact.
+
+</details>
+
+<details>
+<summary><strong>v0.3.5 — 2026-06-23</strong></summary>
+
+- **`clew update` simplified**: Replaced complex multi-path update system with `npm install -g clew-code@latest`.
+- **`process_peer` renamed to `delegate`**: Renamed tool to avoid confusion with LAN P2P system.
+- **Peer UX improvements**: `peer_send_message` defaults `waitResponse: true`. `/peer` menu auto-discovers LAN peers.
+- **Auto-updater simplified**: Removed native/package-manager installers. Background updater shows notification only.
+- **MACRO globals fixed**: `clew update` no longer crashes — globals injected at build time.
+- **17 dead stub commands removed**: Plus `/looplock` and `/agents`.
 - **Compact Orchestrator**: Unified entry point for all compaction strategies.
-- **CLAUDE → CLEW full rename**: All remaining `.claude/` references renamed to `.clew/` across 83 files.
-- **URL rebranding**: All `claude.ai` and `claude.com` URLs replaced with `clew-code.org`.
-- **Gateway auth system**: Login/signup via browser or terminal at `api.clew-code.org`. `/login` and `/logout` now gateway-native.
-- **Windows clipboard fix**: PowerShell `Set-Clipboard` with UTF-8 replaces `clip.exe` (corrupted non-ASCII text).
-- **Cross-platform Computer Use Tool**: macOS/Linux support added alongside Windows.
-- **Onboarding wizard redesigned**: 29 providers, direct API key entry, no OAuth step.
+- **CLAUDE → CLEW full rename**: All `.claude/` references → `.clew/` across 83 files.
+- **URL rebranding**: All `claude.ai`/`claude.com` URLs replaced with `clew-code.org`.
+- **Gateway auth system**: Login/signup via browser or terminal. `/login` and `/logout` now gateway-native.
+- **Windows clipboard fix**: PowerShell `Set-Clipboard` with UTF-8 replaces `clip.exe`.
+- **Cross-platform Computer Use Tool**: macOS/Linux support added.
+- **Onboarding wizard redesigned**: 29 providers, direct API key entry, no OAuth.
 - **Auto-compact threshold adjusted**: Background compaction triggers earlier (0.65).
-- **MCP URLs rebranded**: Diagnostics now link to `clew-code.org`.
-- **AGENTS.md updated**: Gateway mode, dashboard deployment, removed commands documentation.
+- **Dead code cleanup**: ~1,900 lines removed (unregistered commands, Anthropic-gated tools).
+- **docs/ removed**: 44 HTML files deleted, documentation moved to GitHub Wiki.
 
 </details>
 

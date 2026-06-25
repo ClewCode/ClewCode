@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { logForDebugging } from 'src/utils/debug.js';
 import { fileHistoryEnabled } from 'src/utils/fileHistory.js';
 import { getInitialSettings, getSettings_DEPRECATED, getSettingsForSource } from 'src/utils/settings/settings.js';
@@ -206,7 +206,7 @@ const externalTips: Tip[] = [
     id: 'colorterm-truecolor',
     content: async () => 'Try setting environment variable COLORTERM=truecolor for richer colors',
     cooldownSessions: 30,
-    isRelevant: async () => !process.env.COLORTERM && chalk.level < 3,
+    isRelevant: async () => !process.env.COLORTERM && ansis.level < 3,
   },
   {
     id: 'powershell-tool-env',

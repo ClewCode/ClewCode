@@ -1,6 +1,6 @@
-import axios from 'axios';
 import { createHash } from 'crypto';
 import { chmod, writeFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { dirname, join, sep } from 'path';
 import { logForDebugging } from '../debug.js';
 import { parseAndValidateManifestFromBytes } from '../dxt/helpers.js';
@@ -336,7 +336,7 @@ async function downloadMcpb(url, destPath, onProgress) {
   const started = performance.now();
   let fetchTelemetryFired = false;
   try {
-    const response = await axios.get(url, {
+    const response = await ofetch(url, {
       timeout: 120000, // 2 minute timeout
       responseType: 'arraybuffer',
       maxRedirects: 5, // Follow redirects (like curl -L)

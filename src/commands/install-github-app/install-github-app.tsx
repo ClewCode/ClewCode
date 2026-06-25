@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import spawn from 'nano-spawn';
 import React, { useCallback, useState } from 'react';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -71,11 +71,15 @@ function InstallGitHubApp(props: { onDone: (message: string) => void }): React.R
     const warnings: Warning[] = [];
 
     // Check if gh is installed
-    const ghVersionResult = await execa('gh --version', {
-      shell: true,
-      reject: false,
-    });
-    if (ghVersionResult.exitCode !== 0) {
+    let ghVersionExitCode = 0;
+    try {
+      await spawn('gh --version', {
+        shell: true,
+      });
+    } catch (e) {
+      ghVersionExitCode = e.exitCode ?? 1;
+    }
+    if (ghVersionExitCode !== 0) {
       warnings.push({
         title: 'GitHub CLI not found',
         message: 'GitHub CLI (gh) does not appear to be installed or accessible.',
@@ -89,11 +93,18 @@ function InstallGitHubApp(props: { onDone: (message: string) => void }): React.R
     }
 
     // Check auth status
-    const authResult = await execa('gh auth status -a', {
-      shell: true,
-      reject: false,
-    });
-    if (authResult.exitCode !== 0) {
+    let authStdout = '';
+    let authExitCode = 0;
+    try {
+      const authResult = await spawn('gh auth status -a', {
+        shell: true,
+      });
+      authStdout = authResult.stdout;
+    } catch (e) {
+      authExitCode = e.exitCode ?? 1;
+      authStdout = e.stdout ?? '';
+    }
+    if (authExitCode !== 0) {
       warnings.push({
         title: 'GitHub CLI not authenticated',
         message: 'GitHub CLI does not appear to be authenticated.',
@@ -105,7 +116,7 @@ function InstallGitHubApp(props: { onDone: (message: string) => void }): React.R
       });
     } else {
       // Check if required scopes are present in the Token scopes line
-      const tokenScopesMatch = authResult.stdout.match(/Token scopes:.*$/m);
+      const tokenScopesMatch = authStdout.match(/Token scopes:.*$/m);
       if (tokenScopesMatch) {
         const scopes = tokenScopesMatch[0];
         const missingScopes: string[] = [];

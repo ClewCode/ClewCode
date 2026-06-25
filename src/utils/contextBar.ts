@@ -2,7 +2,7 @@
 // segmented bar where each color-coded segment represents a category's
 // proportion of the total context window.
 
-import chalk from 'chalk';
+import ansis from 'ansis';
 
 /** A single segment in the context bar */
 export interface BarSegment {
@@ -48,10 +48,10 @@ const FRACTIONS = [' ', '▏', '▎', '▍', '▌', '▋', '▊', '▉', '█'];
  * @returns         ANSI-colored string like "███▉██░░░░░░"
  */
 export function renderSegmentedBar(segments: BarSegment[], width: number = 20): string {
-  if (segments.length === 0) return chalk.dim('·').repeat(width);
+  if (segments.length === 0) return ansis.dim('·').repeat(width);
 
   const totalTokens = segments.reduce((s, seg) => s + seg.tokens, 0);
-  if (totalTokens <= 0) return chalk.dim('·'.repeat(width));
+  if (totalTokens <= 0) return ansis.dim('·'.repeat(width));
 
   const chars: string[] = [];
   let cursor = 0; // fractional position in [0, width)
@@ -65,13 +65,13 @@ export function renderSegmentedBar(segments: BarSegment[], width: number = 20): 
     // Fill full blocks
     const fullCount = endInt - startInt;
     for (let i = 0; i < fullCount; i++) {
-      chars.push(chalk.hex(seg.colorHex)('█'));
+      chars.push(ansis.hex(seg.colorHex)('█'));
     }
 
     // Partial block (if not already at an integer boundary)
     if (frac > 0.001 && endInt < width) {
       const fracIndex = Math.round(frac * 8);
-      chars.push(chalk.hex(seg.colorHex)(FRACTIONS[Math.min(fracIndex, 8)]));
+      chars.push(ansis.hex(seg.colorHex)(FRACTIONS[Math.min(fracIndex, 8)]));
     }
 
     cursor = end;
@@ -79,7 +79,7 @@ export function renderSegmentedBar(segments: BarSegment[], width: number = 20): 
 
   // Pad remaining width with free space
   while (chars.length < width) {
-    chars.push(chalk.hex(FREE_COLOR)('░'));
+    chars.push(ansis.hex(FREE_COLOR)('░'));
   }
 
   // Truncate if we overfilled (rounding can cause one extra char)
@@ -109,16 +109,16 @@ export function renderUsageBar(usedPct: number, width: number = 10): string {
 
   const chars: string[] = [];
   for (let i = 0; i < fullBlocks; i++) {
-    chars.push(chalk.hex(color)('█'));
+    chars.push(ansis.hex(color)('█'));
   }
   if (fullBlocks < width) {
     const fi = Math.round(frac * 8);
     if (fi > 0) {
-      chars.push(chalk.hex(color)(FRACTIONS[Math.min(fi, 8)]));
+      chars.push(ansis.hex(color)(FRACTIONS[Math.min(fi, 8)]));
     }
     // pad remaining
     while (chars.length < width) {
-      chars.push(chalk.hex(FREE_COLOR)('░'));
+      chars.push(ansis.hex(FREE_COLOR)('░'));
     }
   }
 

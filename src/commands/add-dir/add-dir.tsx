@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import figures from 'figures';
 import type React from 'react';
 import { useEffect } from 'react';
@@ -83,15 +83,15 @@ export async function call(
     if (remember) {
       try {
         persistPermissionUpdate(permissionUpdate);
-        message = `Added ${chalk.bold(path)} as a working directory and saved to local settings`;
+        message = `Added ${ansis.bold(path)} as a working directory and saved to local settings`;
       } catch (error) {
-        message = `Added ${chalk.bold(path)} as a working directory. Failed to save to local settings: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        message = `Added ${ansis.bold(path)} as a working directory. Failed to save to local settings: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
     } else {
-      message = `Added ${chalk.bold(path)} as a working directory for this session`;
+      message = `Added ${ansis.bold(path)} as a working directory for this session`;
     }
 
-    const messageWithHint = `${message} ${chalk.dim('· /permissions to manage')}`;
+    const messageWithHint = `${message} ${ansis.dim('· /permissions to manage')}`;
     onDone(messageWithHint);
   };
 
@@ -123,7 +123,7 @@ export async function call(
       permissionContext={appState.toolPermissionContext}
       onAddDirectory={handleAddDirectory}
       onCancel={() => {
-        onDone(`Did not add ${chalk.bold(result.absolutePath)} as a working directory.`);
+        onDone(`Did not add ${ansis.bold(result.absolutePath)} as a working directory.`);
       }}
     />
   );

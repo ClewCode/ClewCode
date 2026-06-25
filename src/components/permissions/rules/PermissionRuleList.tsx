@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import figures from 'figures';
 import type * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -440,7 +440,7 @@ export function PermissionRuleList({ onExit, initialTab, onRetryDenials }: Props
     for (const rule of rules) {
       setChanges(prev => [
         ...prev,
-        `Added ${rule.ruleBehavior} rule ${chalk.bold(permissionRuleValueToString(rule.ruleValue))}`,
+        `Added ${rule.ruleBehavior} rule ${ansis.bold(permissionRuleValueToString(rule.ruleValue))}`,
       ]);
     }
 
@@ -450,9 +450,9 @@ export function PermissionRuleList({ onExit, initialTab, onRetryDenials }: Props
         const severity = u.shadowType === 'deny' ? 'blocked' : 'shadowed';
         setChanges(prev => [
           ...prev,
-          chalk.yellow(`${figures.warning} Warning: ${permissionRuleValueToString(u.rule.ruleValue)} is ${severity}`),
-          chalk.dim(`  ${u.reason}`),
-          chalk.dim(`  Fix: ${u.fix}`),
+          ansis.yellow(`${figures.warning} Warning: ${permissionRuleValueToString(u.rule.ruleValue)} is ${severity}`),
+          ansis.dim(`  ${u.reason}`),
+          ansis.dim(`  Fix: ${u.fix}`),
         ]);
       }
     }
@@ -487,7 +487,7 @@ export function PermissionRuleList({ onExit, initialTab, onRetryDenials }: Props
     const approvedDenials = denialsFor(s.approved);
     if (approvedDenials.length > 0 || changes.length > 0) {
       const approvedMsg =
-        approvedDenials.length > 0 ? [`Approved ${approvedDenials.map(d => chalk.bold(d.display)).join(', ')}`] : [];
+        approvedDenials.length > 0 ? [`Approved ${approvedDenials.map(d => ansis.bold(d.display)).join(', ')}`] : [];
       onExit([...approvedMsg, ...changes].join('\n'));
     } else {
       onExit('Permissions dialog dismissed', {
@@ -539,7 +539,7 @@ export function PermissionRuleList({ onExit, initialTab, onRetryDenials }: Props
 
     setChanges(prev => [
       ...prev,
-      `Deleted ${selectedRule.ruleBehavior} rule ${chalk.bold(permissionRuleValueToString(selectedRule.ruleValue))}`,
+      `Deleted ${selectedRule.ruleBehavior} rule ${ansis.bold(permissionRuleValueToString(selectedRule.ruleValue))}`,
     ]);
     setSelectedRule(undefined);
   };
@@ -602,7 +602,7 @@ export function PermissionRuleList({ onExit, initialTab, onRetryDenials }: Props
 
           setChanges(prev => [
             ...prev,
-            `Added directory ${chalk.bold(path)} to workspace${remember ? ' and saved to local settings' : ' for this session'}`,
+            `Added directory ${ansis.bold(path)} to workspace${remember ? ' and saved to local settings' : ' for this session'}`,
           ]);
           setIsAddingWorkspaceDirectory(false);
         }}
@@ -617,7 +617,7 @@ export function PermissionRuleList({ onExit, initialTab, onRetryDenials }: Props
       <RemoveWorkspaceDirectory
         directoryPath={removingDirectory}
         onRemove={() => {
-          setChanges(prev => [...prev, `Removed directory ${chalk.bold(removingDirectory)} from workspace`]);
+          setChanges(prev => [...prev, `Removed directory ${ansis.bold(removingDirectory)} from workspace`]);
           setRemovingDirectory(null);
         }}
         onCancel={() => setRemovingDirectory(null)}

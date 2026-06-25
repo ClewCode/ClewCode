@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 
 type PlaceholderRendererProps = {
   placeholder?: string;
@@ -16,7 +16,7 @@ export function renderPlaceholder({
   showCursor,
   focus,
   terminalFocus = true,
-  invert = chalk.inverse,
+  invert = ansis.inverse,
   hidePlaceholderText = false,
 }: PlaceholderRendererProps): {
   renderedPlaceholder: string | undefined;
@@ -29,12 +29,12 @@ export function renderPlaceholder({
       // Voice recording: show only the cursor, no placeholder text
       renderedPlaceholder = showCursor && focus && terminalFocus ? invert(' ') : '';
     } else {
-      renderedPlaceholder = chalk.dim(placeholder);
+      renderedPlaceholder = ansis.dim(placeholder);
 
       // Show inverse cursor only when both input and terminal are focused
       if (showCursor && focus && terminalFocus) {
         renderedPlaceholder =
-          placeholder.length > 0 ? invert(placeholder[0]!) + chalk.dim(placeholder.slice(1)) : invert(' ');
+          placeholder.length > 0 ? invert(placeholder[0]!) + ansis.dim(placeholder.slice(1)) : invert(' ');
       }
     }
   }

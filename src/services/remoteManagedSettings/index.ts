@@ -12,9 +12,9 @@
  * - API returns empty settings for users without managed settings
  */
 
-import axios from 'axios';
 import { createHash } from 'crypto';
 import { open, unlink } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { getOauthConfig, OAUTH_BETA_HEADER } from '../../constants/oauth.js';
 import {
   checkAndRefreshOAuthTokenIfNeeded,
@@ -263,12 +263,10 @@ async function fetchRemoteManagedSettings(cachedChecksum?: string): Promise<Remo
       headers['If-None-Match'] = `"${cachedChecksum}"`;
     }
 
-    const response = await axios.get(endpoint, {
+    const response = await ofetch.raw(endpoint, {
       headers,
       timeout: SETTINGS_TIMEOUT_MS,
-      // Allow 204, 304, and 404 responses without treating them as errors.
-      // 204/404 are returned when no settings exist for the user or the feature flag is off.
-      validateStatus: status => status === 200 || status === 204 || status === 304 || status === 404,
+      ignoreResponseError: true,
     });
 
     // Handle 304 Not Modified - cached version is still valid
@@ -292,7 +290,7 @@ async function fetchRemoteManagedSettings(cachedChecksum?: string): Promise<Remo
       };
     }
 
-    const parsed = RemoteManagedSettingsResponseSchema().safeParse(response.data);
+    const parsed = RemoteManagedSettingsResponseSchema().safeParse(response._data);
     if (!parsed.success) {
       logForDebugging(`Remote settings: Invalid response format - ${parsed.error.message}`);
       return {

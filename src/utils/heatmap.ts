@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import type { DailyActivity } from './stats.js';
 import { toDateString } from './statsCache.js';
 
@@ -144,12 +144,12 @@ function getIntensity(messageCount: number, percentiles: Percentiles | null): nu
 }
 
 // Claude purple color (hex #af87ff)
-const claudePurple = chalk.hex('#af87ff');
+const claudePurple = ansis.hex('#af87ff');
 
 function getHeatmapChar(intensity: number): string {
   switch (intensity) {
     case 0:
-      return chalk.gray('·');
+      return ansis.gray('·');
     case 1:
       return claudePurple('░');
     case 2:
@@ -159,6 +159,6 @@ function getHeatmapChar(intensity: number): string {
     case 4:
       return claudePurple('█');
     default:
-      return chalk.gray('·');
+      return ansis.gray('·');
   }
 }

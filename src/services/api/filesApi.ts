@@ -7,14 +7,14 @@
  * API Reference: https://docs.anthropic.com/en/api/files-content
  */
 
-import axios from 'axios';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs/promises';
+import { ofetch } from 'ofetch';
 import * as path from 'path';
 import { count } from '../../utils/array.js';
 import { getCwd } from '../../utils/cwd.js';
 import { logForDebugging } from '../../utils/debug.js';
-import { errorMessage } from '../../utils/errors.js';
+import { errorMessage, isCancelError, isFetchError } from '../../utils/errors.js';
 import { logError } from '../../utils/log.js';
 import { sleep } from '../../utils/sleep.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
@@ -134,16 +134,16 @@ export async function downloadFile(fileId: string, config: FilesApiConfig): Prom
 
   return retryWithBackoff(`Download file ${fileId}`, async () => {
     try {
-      const response = await axios.get(url, {
+      const response = await ofetch.raw(url, {
         headers,
-        responseType: 'arraybuffer',
+        responseType: 'arrayBuffer',
         timeout: 60000, // 60 second timeout for large files
-        validateStatus: status => status < 500,
+        ignoreResponseError: true,
       });
 
       if (response.status === 200) {
-        logDebug(`Downloaded file ${fileId} (${response.data.length} bytes)`);
-        return { done: true, value: Buffer.from(response.data) };
+        logDebug(`Downloaded file ${fileId} (${response._data?.byteLength ?? 0} bytes)`);
+        return { done: true, value: Buffer.from(response._data!) };
       }
 
       // Non-retriable errors - throw immediately
@@ -159,7 +159,7 @@ export async function downloadFile(fileId: string, config: FilesApiConfig): Prom
 
       return { done: false, error: `status ${response.status}` };
     } catch (error) {
-      if (!axios.isAxiosError(error)) {
+      if (!isFetchError(error)) {
         throw error;
       }
       return { done: false, error: error.message };
@@ -415,7 +415,9 @@ export async function uploadFile(
   try {
     return await retryWithBackoff(`Upload file ${relativePath}`, async () => {
       try {
-        const response = await axios.post(url, body, {
+        const response = await ofetch.raw(url, {
+          method: 'POST',
+          body,
           headers: {
             ...headers,
             'Content-Type': `multipart/form-data; boundary=${boundary}`,
@@ -423,11 +425,11 @@ export async function uploadFile(
           },
           timeout: 120000, // 2 minute timeout for uploads
           signal: opts?.signal,
-          validateStatus: status => status < 500,
+          ignoreResponseError: true,
         });
 
         if (response.status === 200 || response.status === 201) {
-          const fileId = response.data?.id;
+          const fileId = response._data?.id;
           if (!fileId) {
             return {
               done: false,
@@ -474,11 +476,11 @@ export async function uploadFile(
         if (error instanceof UploadNonRetriableError) {
           throw error;
         }
-        if (axios.isCancel(error)) {
+        if (isCancelError(error)) {
           throw new UploadNonRetriableError('Upload canceled');
         }
         // Network errors are retriable
-        if (axios.isAxiosError(error)) {
+        if (isFetchError(error)) {
           return { done: false, error: error.message };
         }
         throw error;
@@ -586,15 +588,15 @@ export async function listFilesCreatedAfter(afterCreatedAt: string, config: File
 
     const page = await retryWithBackoff(`List files after ${afterCreatedAt}`, async () => {
       try {
-        const response = await axios.get(`${baseUrl}/v1/files`, {
+        const response = await ofetch.raw(`${baseUrl}/v1/files`, {
           headers,
           params,
           timeout: 60000,
-          validateStatus: status => status < 500,
+          ignoreResponseError: true,
         });
 
         if (response.status === 200) {
-          return { done: true, value: response.data };
+          return { done: true, value: response._data };
         }
 
         if (response.status === 401) {
@@ -612,7 +614,7 @@ export async function listFilesCreatedAfter(afterCreatedAt: string, config: File
 
         return { done: false, error: `status ${response.status}` };
       } catch (error) {
-        if (!axios.isAxiosError(error)) {
+        if (!isFetchError(error)) {
           throw error;
         }
         logEvent('tengu_file_list_failed', {

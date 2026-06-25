@@ -1,4 +1,4 @@
-import type { AddressFamily, LookupAddress as AxiosLookupAddress } from 'axios';
+import type { AddressFamily, LookupAddress } from 'dns';
 import { lookup as dnsLookup } from 'dns';
 import { isIP } from 'net';
 
@@ -193,7 +193,7 @@ function extractMappedIPv4(addr: string): string | null {
 export function ssrfGuardedLookup(
   hostname: string,
   options: object,
-  callback: (err: Error | null, address: AxiosLookupAddress | AxiosLookupAddress[], family?: AddressFamily) => void,
+  callback: (err: Error | null, address: LookupAddress | LookupAddress[], family?: AddressFamily) => void,
 ): void {
   const wantsAll = 'all' in options && options.all === true;
 

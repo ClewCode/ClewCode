@@ -13,13 +13,24 @@ import { DESCRIPTION, PROCESS_MESH_TOOL_NAME, PROMPT } from './prompt.js';
 
 const DEFAULT_PROCESS_MESH_MODE = (process.platform === 'win32' ? 'exec' : 'pty') as const;
 
+/** Auto-detect best available provider when none specified. */
+function pickDefaultProvider(): string {
+  const ids = getProcessPeerProviderIds();
+  // Priority: codex > opencode > claude > code
+  for (const preferred of ['codex', 'opencode', 'claude', 'code']) {
+    if (ids.includes(preferred)) return preferred;
+  }
+  return ids[0] ?? 'codex';
+}
+
 const inputSchema = lazySchema(() =>
   z.object({
     provider: z
       .string()
       .optional()
-      .default('codex')
-      .describe(`Process peer provider to run. Available: ${getProcessPeerProviderIds().join(', ')}`),
+      .describe(
+        `Which AI coding worker to use. Leave empty to auto-select. Available: ${getProcessPeerProviderIds().join(', ')}`,
+      ),
     prompt: z.string().describe('Task or message to send to the process-backed worker'),
     mode: z
       .enum(['exec', 'pty'])
@@ -77,7 +88,7 @@ export const ProcessPeerTool = buildTool({
   },
   name: PROCESS_MESH_TOOL_NAME,
   searchHint: 'delegate task to local process worker',
-  maxResultSizeChars: 30_000,
+  maxResultSizeChars: 100_000,
   async description() {
     return DESCRIPTION;
   },
@@ -99,7 +110,7 @@ export const ProcessPeerTool = buildTool({
       return {
         result: false,
         message:
-          'Clew cannot be used as a process_peer provider because it self-spawns the current CLI. Use provider "codex".',
+          'Clew cannot be used as a delegate provider because it self-spawns the current CLI. Use provider "codex".',
         errorCode: 400,
       };
     }
@@ -191,7 +202,7 @@ export const ProcessPeerTool = buildTool({
     _parentMessage,
     onProgress?: ToolCallProgress<ProcessPeerProgress>,
   ) {
-    const providerId = input.provider ?? 'codex';
+    const providerId = input.provider ?? pickDefaultProvider();
     const provider = getProcessPeerProvider(providerId);
     if (!provider) {
       return {
@@ -219,7 +230,7 @@ export const ProcessPeerTool = buildTool({
           onProgress?.({
             toolUseID: `process-peer-${++progressSeq}`,
             data: {
-              type: 'process_peer',
+              type: 'delegate',
               provider: progress.providerId,
               mode: progress.mode,
               command: progress.command,

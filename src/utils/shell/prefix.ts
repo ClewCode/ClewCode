@@ -7,7 +7,7 @@
  * aspects (examples, pre-checks) are configurable.
  */
 
-import chalk from 'chalk';
+import ansis from 'ansis';
 import type { QuerySource } from '../../constants/querySource.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
 import {
@@ -204,7 +204,7 @@ async function getCommandPrefixImpl(
           process.stderr.write(`${jsonStringify({ level: 'warn', message })}\n`);
         } else {
           // biome-ignore lint/suspicious/noConsole: intentional warning
-          console.warn(chalk.yellow(`⚠️  ${message}`));
+          console.warn(ansis.yellow(`⚠️  ${message}`));
         }
       },
       10000, // 10 seconds

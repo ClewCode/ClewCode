@@ -1,6 +1,6 @@
 import { execFile } from 'child_process';
-import { execa } from 'execa';
 import { mkdir, stat } from 'fs/promises';
+import spawn from 'nano-spawn';
 import * as os from 'os';
 import { join } from 'path';
 import { logEvent } from 'src/services/analytics/index.js';
@@ -250,9 +250,8 @@ async function getClaudeCodeSnapshotContent(): Promise<string> {
   let pathValue = process.env.PATH;
   if (getPlatform() === 'windows') {
     // On Windows with git-bash, read the Cygwin PATH
-    const cygwinResult = await execa('echo $PATH', {
+    const cygwinResult = await spawn('echo $PATH', {
       shell: true,
-      reject: false,
     });
     if (cygwinResult.exitCode === 0 && cygwinResult.stdout) {
       pathValue = cygwinResult.stdout.trim();

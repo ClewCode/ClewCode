@@ -2,11 +2,12 @@
 // dynamically in getAWSClientProxyConfig() to defer ~929KB of AWS SDK.
 // undici is lazy-required inside getProxyAgent/configureGlobalAgents to defer
 // ~1.5MB when no HTTPS_PROXY/mTLS env vars are set (the common case).
-import axios, { type AxiosInstance } from 'axios';
+
 import type { LookupOptions } from 'dns';
 import type { Agent } from 'http';
 import { HttpsProxyAgent, type HttpsProxyAgentOptions } from 'https-proxy-agent';
 import memoize from 'lodash-es/memoize.js';
+import { type $Fetch, ofetch } from 'ofetch';
 import type * as undici from 'undici';
 import { getCACertificates } from './caCerts.js';
 import { logForDebugging } from './debug.js';
@@ -150,32 +151,25 @@ function createHttpsProxyAgent(proxyUrl: string, extra: HttpsProxyAgentOptions<s
 }
 
 /**
- * Axios instance with its own proxy agent. Same NO_PROXY/mTLS/CA
- * resolution as the global interceptor, but agent options stay
+ * ofetch instance with its own proxy agent. Same NO_PROXY/mTLS/CA
+ * resolution as getProxyFetchOptions, but agent options stay
  * scoped to this instance.
+ *
+ * ofetch v1.x doesn't expose .defaults or .interceptors like axios,
+ * so proxy is configured via undici's setGlobalDispatcher or Bun's native
+ * proxy option rather than per-request interceptors.
  */
-export function createAxiosInstance(extra: HttpsProxyAgentOptions<string> = {}): AxiosInstance {
+export function createFetchInstance(): $Fetch {
   const proxyUrl = getProxyUrl();
-  const mtlsAgent = getMTLSAgent();
-  const instance = axios.create({ proxy: false });
-
   if (!proxyUrl) {
-    if (mtlsAgent) instance.defaults.httpsAgent = mtlsAgent;
-    return instance;
+    return ofetch.create({});
   }
-
-  const proxyAgent = createHttpsProxyAgent(proxyUrl, extra);
-  instance.interceptors.request.use(config => {
-    if (config.url && shouldBypassProxy(config.url)) {
-      config.httpsAgent = mtlsAgent;
-      config.httpAgent = mtlsAgent;
-    } else {
-      config.httpsAgent = proxyAgent;
-      config.httpAgent = proxyAgent;
-    }
-    return config;
-  });
-  return instance;
+  // Proxy: Bun's native fetch accepts a `proxy` string option;
+  // Node.js uses undici's EnvHttpProxyAgent as the dispatcher.
+  if (typeof Bun !== 'undefined') {
+    return ofetch.create({ proxy: proxyUrl } as any);
+  }
+  return ofetch.create({ dispatcher: getProxyAgent(proxyUrl) });
 }
 
 /**
@@ -306,62 +300,21 @@ export function getProxyFetchOptions(opts?: { forAnthropicAPI?: boolean }): {
 }
 
 /**
- * Configure global HTTP agents for both axios and undici
- * This ensures all HTTP requests use the proxy and/or mTLS if configured
+ * Configure global HTTP agents.
+ * ofetch v1.x doesn't expose .defaults or .interceptors like axios,
+ * so proxy handling is done via undici's global dispatcher (Node.js)
+ * or Bun's native proxy support.
  */
-let proxyInterceptorId: number | undefined;
-
 export function configureGlobalAgents(): void {
   const proxyUrl = getProxyUrl();
   const mtlsAgent = getMTLSAgent();
 
-  // Eject previous interceptor to avoid stacking on repeated calls
-  if (proxyInterceptorId !== undefined) {
-    axios.interceptors.request.eject(proxyInterceptorId);
-    proxyInterceptorId = undefined;
-  }
-
-  // Reset proxy-related defaults so reconfiguration is clean
-  axios.defaults.proxy = undefined;
-  axios.defaults.httpAgent = undefined;
-  axios.defaults.httpsAgent = undefined;
-
   if (proxyUrl) {
-    // workaround for https://github.com/axios/axios/issues/4531
-    axios.defaults.proxy = false;
-
-    // Create proxy agent with mTLS options if available
-    const proxyAgent = createHttpsProxyAgent(proxyUrl);
-
-    // Add axios request interceptor to handle NO_PROXY
-    proxyInterceptorId = axios.interceptors.request.use(config => {
-      // Check if URL should bypass proxy based on NO_PROXY
-      if (config.url && shouldBypassProxy(config.url)) {
-        // Bypass proxy - use mTLS agent if configured, otherwise undefined
-        if (mtlsAgent) {
-          config.httpsAgent = mtlsAgent;
-          config.httpAgent = mtlsAgent;
-        } else {
-          // Remove any proxy agents to use direct connection
-          delete config.httpsAgent;
-          delete config.httpAgent;
-        }
-      } else {
-        // Use proxy agent
-        config.httpsAgent = proxyAgent;
-        config.httpAgent = proxyAgent;
-      }
-      return config;
-    });
-
-    // Set global dispatcher that now respects NO_PROXY via EnvHttpProxyAgent
+    // EnvHttpProxyAgent respects NO_PROXY natively
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     (require('undici') as typeof undici).setGlobalDispatcher(getProxyAgent(proxyUrl));
   } else if (mtlsAgent) {
     // No proxy but mTLS is configured
-    axios.defaults.httpsAgent = mtlsAgent;
-
-    // Set undici global dispatcher with mTLS
     const mtlsOptions = getTLSFetchOptions();
     if (mtlsOptions.dispatcher) {
       // eslint-disable-next-line @typescript-eslint/no-require-imports

@@ -1,5 +1,5 @@
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import figures from 'figures';
 import type React from 'react';
 import { useMemo } from 'react';
@@ -26,11 +26,11 @@ function decisionReasonDisplayString(
   },
 ): string {
   if ((feature('BASH_CLASSIFIER') || feature('TRANSCRIPT_CLASSIFIER')) && decisionReason.type === 'classifier') {
-    return `${chalk.bold(decisionReason.classifier)} classifier: ${decisionReason.reason}`;
+    return `${ansis.bold(decisionReason.classifier)} classifier: ${decisionReason.reason}`;
   }
   switch (decisionReason.type) {
     case 'rule':
-      return `${chalk.bold(permissionRuleValueToString(decisionReason.rule.ruleValue))} rule from ${getSettingSourceDisplayNameLowercase(decisionReason.rule.source)}`;
+      return `${ansis.bold(permissionRuleValueToString(decisionReason.rule.ruleValue))} rule from ${getSettingSourceDisplayNameLowercase(decisionReason.rule.source)}`;
     case 'mode':
       return `${permissionModeTitle(decisionReason.mode)} mode`;
     case 'sandboxOverride':
@@ -41,11 +41,11 @@ function decisionReasonDisplayString(
     case 'other':
       return decisionReason.reason;
     case 'permissionPromptTool':
-      return `${chalk.bold(decisionReason.permissionPromptToolName)} permission prompt tool`;
+      return `${ansis.bold(decisionReason.permissionPromptToolName)} permission prompt tool`;
     case 'hook':
       return decisionReason.reason
-        ? `${chalk.bold(decisionReason.hookName)} hook: ${decisionReason.reason}`
-        : `${chalk.bold(decisionReason.hookName)} hook`;
+        ? `${ansis.bold(decisionReason.hookName)} hook: ${decisionReason.reason}`
+        : `${ansis.bold(decisionReason.hookName)} hook`;
     case 'asyncAgent':
       return decisionReason.reason;
     default:
@@ -110,7 +110,7 @@ function SuggestedRules({ suggestions }: { suggestions: PermissionUpdate[] | und
       <Text dimColor>
         {'  '}⎿{'  '}
       </Text>
-      Suggested rules: <Ansi>{rules.map(rule => chalk.bold(permissionRuleValueToString(rule))).join(', ')}</Ansi>
+      Suggested rules: <Ansi>{rules.map(rule => ansis.bold(permissionRuleValueToString(rule))).join(', ')}</Ansi>
     </Text>
   );
 }

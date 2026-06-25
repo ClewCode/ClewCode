@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
@@ -24,7 +24,7 @@ async function checkEndpoints(): Promise<PreflightCheckResult> {
 
     const checkEndpoint = async (url: string): Promise<PreflightCheckResult> => {
       try {
-        const response = await axios.get(url, {
+        const response = await ofetch(url, {
           headers: { 'User-Agent': getUserAgent() },
         });
         if (response.status !== 200) {

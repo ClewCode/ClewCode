@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { hasProfileScope, isClaudeAISubscriber } from '../../utils/auth.js';
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { logForDebugging } from '../../utils/debug.js';
@@ -43,7 +43,7 @@ async function _fetchMetricsEnabled(): Promise<MetricsEnabledResponse> {
   };
 
   const endpoint = `https://api.anthropic.com/api/claude_code/organizations/metrics_enabled`;
-  const response = await axios.get<MetricsEnabledResponse>(endpoint, {
+  const response = await ofetch<MetricsEnabledResponse>(endpoint, {
     headers,
     timeout: 5000,
   });

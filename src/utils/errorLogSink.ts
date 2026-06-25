@@ -10,7 +10,7 @@
  * log.ts has NO heavy dependencies - events are queued until this sink is attached.
  */
 
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { dirname, join } from 'path';
 import { getSessionId } from '../bootstrap/state.js';
 import { createBufferedWriter } from './bufferedWriter.js';
@@ -154,7 +154,7 @@ function logErrorImpl(error: Error): void {
 
   // Enrich axios errors with request URL, status, and server message for debugging
   let context = '';
-  if (axios.isAxiosError(error) && error.config?.url) {
+  if (isFetchError(error) && error.config?.url) {
     const parts = [`url=${error.config.url}`];
     if (error.response?.status !== undefined) {
       parts.push(`status=${error.response.status}`);

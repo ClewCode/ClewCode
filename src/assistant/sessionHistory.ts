@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from '../constants/oauth.js';
 import type { SDKMessage } from '../entrypoints/agentSdkTypes.js';
 import { logForDebugging } from '../utils/debug.js';
@@ -45,22 +45,22 @@ async function fetchPage(
   params: Record<string, string | number | boolean>,
   label: string,
 ): Promise<HistoryPage | null> {
-  const resp = await axios
-    .get<SessionEventsResponse>(ctx.baseUrl, {
+  const resp = (await ofetch
+    .raw(ctx.baseUrl, {
       headers: ctx.headers,
       params,
       timeout: 15000,
-      validateStatus: () => true,
+      ignoreResponseError: true,
     })
-    .catch(() => null);
+    .catch(() => null)) as { status: number; _data: SessionEventsResponse } | null;
   if (resp?.status !== 200) {
     logForDebugging(`[${label}] HTTP ${resp?.status ?? 'error'}`);
     return null;
   }
   return {
-    events: Array.isArray(resp.data.data) ? resp.data.data : [],
-    firstId: resp.data.first_id,
-    hasMore: resp.data.has_more,
+    events: Array.isArray(resp._data.data) ? resp._data.data : [],
+    firstId: resp._data.first_id,
+    hasMore: resp._data.has_more,
   };
 }
 

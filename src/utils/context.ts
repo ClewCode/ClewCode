@@ -235,6 +235,7 @@ function getContextWindowFromRegistry(model: string): number | null {
     cline: 'cline',
     groq: 'groq',
     xai: 'xai',
+    sakana: 'sakana',
     mistral: 'mistral',
   };
 
@@ -271,6 +272,7 @@ function getContextWindowFromRegistry(model: string): number | null {
     'cline',
     'groq',
     'xai',
+    'sakana',
     'mistral',
   ];
   for (const providerId of allProviders) {

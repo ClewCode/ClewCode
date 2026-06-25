@@ -13,9 +13,9 @@
  */
 
 import { feature } from 'bun:bundle';
-import axios from 'axios';
 import { randomUUID } from 'crypto';
 import { readFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { basename, extname } from 'path';
 import { z } from 'zod/v4';
 
@@ -128,7 +128,9 @@ export async function uploadBriefAttachment(
     ]);
 
     try {
-      const response = await axios.post(url, body, {
+      const rawResponse = await ofetch.raw(url, {
+        method: 'POST',
+        body,
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': `multipart/form-data; boundary=${boundary}`,
@@ -136,17 +138,17 @@ export async function uploadBriefAttachment(
         },
         timeout: UPLOAD_TIMEOUT_MS,
         signal: ctx.signal,
-        validateStatus: () => true,
+        retry: false,
       });
 
-      if (response.status !== 201) {
+      if (rawResponse.status !== 201) {
         debug(
-          `upload failed for ${fullPath}: status=${response.status} body=${jsonStringify(response.data).slice(0, 200)}`,
+          `upload failed for ${fullPath}: status=${rawResponse.status} body=${jsonStringify(rawResponse._data).slice(0, 200)}`,
         );
         return undefined;
       }
 
-      const parsed = uploadResponseSchema().safeParse(response.data);
+      const parsed = uploadResponseSchema().safeParse(rawResponse._data);
       if (!parsed.success) {
         debug(`unexpected response shape for ${fullPath}: ${parsed.error.message}`);
         return undefined;

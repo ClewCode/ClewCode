@@ -7,9 +7,9 @@
  */
 
 import { feature } from 'bun:bundle';
-import axios from 'axios';
 import { createHash } from 'crypto';
 import { chmod, writeFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { join } from 'path';
 import { logEvent } from 'src/services/analytics/index.js';
 import type { ReleaseChannel } from '../config.js';
@@ -73,7 +73,7 @@ export async function getLatestVersionFromBinaryRepo(
 ): Promise<string> {
   const startTime = Date.now();
   try {
-    const response = await axios.get(`${baseUrl}/${channel}`, {
+    const data = await ofetch(`${baseUrl}/${channel}`, {
       timeout: 30000,
       responseType: 'text',
       ...authConfig,
@@ -82,14 +82,14 @@ export async function getLatestVersionFromBinaryRepo(
     logEvent('tengu_version_check_success', {
       latency_ms: latencyMs,
     });
-    return response.data.trim();
+    return data.trim();
   } catch (error) {
     const latencyMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
-    let httpStatus: number | undefined;
-    if (axios.isAxiosError(error) && error.response) {
-      httpStatus = error.response.status;
-    }
+    const httpStatus =
+      error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { status?: number } }).response?.status
+        : undefined;
 
     logEvent('tengu_version_check_failure', {
       latency_ms: latencyMs,
@@ -373,10 +373,10 @@ export async function downloadVersionFromBinaryRepo(
   } catch (error) {
     const latencyMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
-    let httpStatus: number | undefined;
-    if (axios.isAxiosError(error) && error.response) {
-      httpStatus = error.response.status;
-    }
+    const httpStatus =
+      error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { status?: number } }).response?.status
+        : undefined;
 
     logEvent('tengu_binary_manifest_fetch_failure', {
       latency_ms: latencyMs,
@@ -413,10 +413,10 @@ export async function downloadVersionFromBinaryRepo(
   } catch (error) {
     const latencyMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
-    let httpStatus: number | undefined;
-    if (axios.isAxiosError(error) && error.response) {
-      httpStatus = error.response.status;
-    }
+    const httpStatus =
+      error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { status?: number } }).response?.status
+        : undefined;
 
     logEvent('tengu_binary_download_failure', {
       latency_ms: latencyMs,

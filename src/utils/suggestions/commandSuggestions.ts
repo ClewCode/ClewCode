@@ -1,4 +1,4 @@
-import Fuse from 'fuse.js';
+import MiniSearch from 'minisearch';
 import { type Command, formatDescriptionWithSource, getCommand, getCommandName } from '../../commands.js';
 import type { SuggestionItem } from '../../components/PromptInput/PromptInputFooterSuggestions.js';
 import { getSkillUsageScore } from './skillUsageTracking.js';
@@ -14,17 +14,17 @@ type CommandSearchItem = {
   aliasKey: string[] | undefined;
 };
 
-// Cache the Fuse index keyed by the commands array identity. The commands
+// Cache the MiniSearch index keyed by the commands array identity. The commands
 // array is stable (memoized in REPL.tsx), so we only rebuild when it changes
 // rather than on every keystroke.
-let fuseCache: {
+let searchCache: {
   commands: Command[];
-  fuse: Fuse<CommandSearchItem>;
+  search: MiniSearch<CommandSearchItem>;
 } | null = null;
 
-function getCommandFuse(commands: Command[]): Fuse<CommandSearchItem> {
-  if (fuseCache?.commands === commands) {
-    return fuseCache.fuse;
+function getCommandSearch(commands: Command[]): MiniSearch<CommandSearchItem> {
+  if (searchCache?.commands === commands) {
+    return searchCache.search;
   }
 
   const commandData: CommandSearchItem[] = commands
@@ -45,33 +45,25 @@ function getCommandFuse(commands: Command[]): Fuse<CommandSearchItem> {
       };
     });
 
-  const fuse = new Fuse(commandData, {
-    includeScore: true,
-    threshold: 0.3, // relatively strict matching
-    location: 0, // prefer matches at the beginning of strings
-    distance: 100, // increased to allow matching in descriptions
-    keys: [
-      {
-        name: 'commandName',
-        weight: 3, // Highest priority for command names
-      },
-      {
-        name: 'partKey',
-        weight: 2, // Next highest priority for command parts
-      },
-      {
-        name: 'aliasKey',
-        weight: 2, // Same high priority for aliases
-      },
-      {
-        name: 'descriptionKey',
-        weight: 0.5, // Lower priority for descriptions
-      },
-    ],
+  const search = new MiniSearch<CommandSearchItem>({
+    fields: ['commandName', 'partKey', 'aliasKey', 'descriptionKey'],
+    storeFields: ['commandName', 'command', 'aliasKey'],
+    searchOptions: {
+      boost: { commandName: 3, partKey: 2, aliasKey: 2, descriptionKey: 0.5 },
+      fuzzy: 0.3,
+      prefix: true,
+    },
+    extractField: (doc, field) => {
+      if (field === 'partKey' && doc.partKey) return doc.partKey.join(' ');
+      if (field === 'aliasKey' && doc.aliasKey) return doc.aliasKey.join(' ');
+      if (field === 'descriptionKey') return doc.descriptionKey.join(' ');
+      return doc[field as keyof CommandSearchItem] as string;
+    },
   });
 
-  fuseCache = { commands, fuse };
-  return fuse;
+  search.addAll(commandData);
+  searchCache = { commands, search };
+  return search;
 }
 
 /**
@@ -369,8 +361,8 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
     hiddenExact = undefined;
   }
 
-  const fuse = getCommandFuse(commands);
-  const searchResults = fuse.search(query);
+  const search = getCommandSearch(commands);
+  const searchResults = search.search(query);
 
   // Sort results prioritizing exact/prefix command name matches over fuzzy description matches
   // Priority order:
@@ -380,10 +372,19 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
   // 4. Prefix alias match
   // 5. Fuzzy match (lowest)
   // Precompute per-item values once to avoid O(n log n) recomputation in comparator
-  const withMeta = searchResults.map(r => {
-    const name = r.item.commandName.toLowerCase();
-    const aliases = r.item.aliasKey?.map(alias => alias.toLowerCase()) ?? [];
-    const usage = r.item.command.type === 'prompt' ? getSkillUsageScore(getCommandName(r.item.command)) : 0;
+  type MiniSearchResult = {
+    commandName: string;
+    command: Command;
+    aliasKey?: string[];
+    id?: string;
+    score?: number;
+    terms?: string[];
+    match?: Record<string, unknown>;
+  };
+  const withMeta = searchResults.map((r: MiniSearchResult) => {
+    const name = r.commandName.toLowerCase();
+    const aliases = r.aliasKey?.map(alias => alias.toLowerCase()) ?? [];
+    const usage = r.command.type === 'prompt' ? getSkillUsageScore(getCommandName(r.command)) : 0;
     return { r, name, aliases, usage };
   });
 
@@ -425,7 +426,7 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
       return aPrefixAlias.length - bPrefixAlias.length;
     }
 
-    // For similar match types, use Fuse score with usage as tiebreaker
+    // For similar match types, use MiniSearch score with usage as tiebreaker
     const scoreDiff = (a.r.score ?? 0) - (b.r.score ?? 0);
     if (Math.abs(scoreDiff) > 0.1) {
       return scoreDiff;
@@ -439,7 +440,7 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
   // from different sources (e.g., projectSettings vs userSettings) may have different
   // implementations and should both be available to the user
   const fuseSuggestions = sortedResults.map(result => {
-    const cmd = result.r.item.command;
+    const cmd = result.r.command;
     // Only show alias in parentheses if the user typed an alias
     const matchedAlias = findMatchedAlias(query, cmd.aliases);
     return createCommandSuggestionItem(cmd, matchedAlias);

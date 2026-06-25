@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import figures from 'figures';
 import type * as React from 'react';
 import { useCallback, useMemo, useState } from 'react';
@@ -97,7 +97,7 @@ export function AgentEditor({ agent, tools, onSaved, onBack }: Props): React.Rea
             },
           };
         });
-        onSaved(`Updated agent: ${chalk.bold(agent.agentType)}`);
+        onSaved(`Updated agent: ${ansis.bold(agent.agentType)}`);
         return true;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to save agent');

@@ -1,7 +1,7 @@
 /**
  * HTTP utility constants and helpers
  */
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { OAUTH_BETA_HEADER } from '../constants/oauth.js';
 import { getAnthropicApiKey, getClaudeAIOAuthTokens, handleOAuth401Error, isClaudeAISubscriber } from './auth.js';
 import { getClaudeCodeUserAgent } from './userAgent.js';
@@ -100,7 +100,7 @@ export async function withOAuth401Retry(request, opts) {
   try {
     return await request();
   } catch (err) {
-    if (!axios.isAxiosError(err)) throw err;
+    if (!isFetchError(err)) throw err;
     const status = err.response?.status;
     const isAuthError =
       status === 401 ||

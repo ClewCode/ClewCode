@@ -7,6 +7,7 @@ import { findCommand, getCommandName, isBridgeSafeCommand, type LocalJSXCommandC
 import type { CanUseToolFn } from '../../hooks/useCanUseTool.js';
 import type { IDESelection } from '../../hooks/useIdeSelection.js';
 import type { SetToolJSXFn, ToolUseContext } from '../../Tool.js';
+import type { AgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js';
 import type {
   AssistantMessage,
   AttachmentMessage,
@@ -630,7 +631,7 @@ async function processUserInputBase(
     return addImageMetadataMessage(slashResult, imageMetadataTexts);
   }
 
-  // Log agent mention queries for analysis
+  // @agent-name: dispatch to subagent
   if (inputString !== null && mode === 'prompt') {
     const trimmedInput = inputString.trim();
 
@@ -639,13 +640,47 @@ async function processUserInputBase(
     );
 
     if (agentMention) {
-      const agentMentionString = `@agent-${agentMention.attachment.agentType}`;
-      const isSubagentOnly = trimmedInput === agentMentionString;
-      const isPrefix = trimmedInput.startsWith(agentMentionString) && !isSubagentOnly;
+      const agentType = agentMention.attachment.agentType;
+      const agentMentionString = `@agent-${agentType}`;
+      const isPrefix = trimmedInput.startsWith(agentMentionString) && trimmedInput.length > agentMentionString.length;
 
-      // Log whenever users use @agent-<name> syntax
+      if (isPrefix) {
+        // Extract prompt after @agent-name and dispatch to subagent
+        const taskPrompt = trimmedInput.slice(agentMentionString.length).trim();
+        const agents: AgentDefinition[] = context.options?.agentDefinitions?.activeAgents ?? [];
+        const selectedAgent = agents.find(a => a.agentType === agentType);
+
+        if (selectedAgent && taskPrompt) {
+          const { registerAsyncAgent } = await import('../../tasks/LocalAgentTask/LocalAgentTask.js');
+          const agentId = `agent-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+          registerAsyncAgent({
+            agentId,
+            description: taskPrompt.length > 48 ? `${taskPrompt.slice(0, 45)}...` : taskPrompt,
+            prompt: taskPrompt,
+            selectedAgent,
+            setAppState: context.setAppState,
+          });
+
+          logEvent('tengu_subagent_at_mention', {
+            is_subagent_only: false,
+            is_prefix: true,
+          });
+
+          return {
+            messages: [
+              createUserMessage({
+                content: `Spawned ${selectedAgent.agentType} agent: ${taskPrompt}`,
+              }),
+            ],
+            shouldQuery: false,
+          };
+        }
+      }
+
+      // Log when @agent is used without a task prompt (just @agent-name)
       logEvent('tengu_subagent_at_mention', {
-        is_subagent_only: isSubagentOnly,
+        is_subagent_only: trimmedInput === agentMentionString,
         is_prefix: isPrefix,
       });
     }

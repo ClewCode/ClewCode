@@ -1,5 +1,5 @@
-import axios from 'axios';
 import memoize from 'lodash-es/memoize.js';
+import { ofetch } from 'ofetch';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -56,7 +56,7 @@ export const getGroveSettings = memoize(async (): Promise<ApiResult<AccountSetti
       if (authHeaders.error) {
         throw new Error(`Failed to get auth headers: ${authHeaders.error}`);
       }
-      return axios.get<AccountSettings>(`${getOauthConfig().BASE_API_URL}/api/oauth/account/settings`, {
+      return ofetch<AccountSettings>(`${getOauthConfig().BASE_API_URL}/api/oauth/account/settings`, {
         headers: {
           ...authHeaders.headers,
           'User-Agent': getClaudeCodeUserAgent(),
@@ -85,7 +85,7 @@ export async function markGroveNoticeViewed(): Promise<void> {
       if (authHeaders.error) {
         throw new Error(`Failed to get auth headers: ${authHeaders.error}`);
       }
-      return axios.post(
+      return ofetch(
         `${getOauthConfig().BASE_API_URL}/api/oauth/account/grove_notice_viewed`,
         {},
         {
@@ -115,7 +115,7 @@ export async function updateGroveSettings(groveEnabled: boolean): Promise<void> 
       if (authHeaders.error) {
         throw new Error(`Failed to get auth headers: ${authHeaders.error}`);
       }
-      return axios.patch(
+      return ofetch(
         `${getOauthConfig().BASE_API_URL}/api/oauth/account/settings`,
         {
           grove_enabled: groveEnabled,
@@ -225,7 +225,7 @@ export const getGroveNoticeConfig = memoize(async (): Promise<ApiResult<GroveCon
       if (authHeaders.error) {
         throw new Error(`Failed to get auth headers: ${authHeaders.error}`);
       }
-      return axios.get<GroveConfig>(`${getOauthConfig().BASE_API_URL}/api/claude_code_grove`, {
+      return ofetch<GroveConfig>(`${getOauthConfig().BASE_API_URL}/api/claude_code_grove`, {
         headers: {
           ...authHeaders.headers,
           'User-Agent': getUserAgent(),

@@ -76,7 +76,7 @@ startKeychainPrefetch();
 
 import { feature } from 'bun:bundle';
 import { Command as CommanderCommand, InvalidArgumentError, Option } from '@commander-js/extra-typings';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { readFileSync } from 'fs';
 import mapValues from 'lodash-es/mapValues.js';
 import pickBy from 'lodash-es/pickBy.js';
@@ -449,6 +449,12 @@ const CLI_PROVIDER_DEFAULTS = {
     baseUrl: 'https://api.x.ai/v1',
     defaultModelVerified: false,
   },
+  sakana: {
+    label: 'Sakana AI (Fugu)',
+    envKey: 'SAKANA_API_KEY',
+    baseUrl: 'https://api.sakana.ai/v1',
+    defaultModelVerified: true,
+  },
   mistral: {
     label: 'Mistral',
     envKey: 'MISTRAL_API_KEY',
@@ -608,7 +614,7 @@ function isBeingDebugged() {
 
 // Exit if we detect node debugging or inspection
 if ('external' !== 'ant' && isBeingDebugged()) {
-  process.stderr.write(chalk.red('Error: Node debugging is enabled. Please disable it to run Clew Code.\n'));
+  process.stderr.write(ansis.red('Error: Node debugging is enabled. Please disable it to run Clew Code.\n'));
   process.exit(1);
 }
 
@@ -619,7 +625,7 @@ function isNode18OrHigher(): boolean {
 }
 
 if (!isNode18OrHigher()) {
-  process.stderr.write(chalk.red('Error: Clew Code requires Node.js 18 or higher.\n'));
+  process.stderr.write(ansis.red('Error: Clew Code requires Node.js 18 or higher.\n'));
   process.exit(1);
 }
 
@@ -796,7 +802,7 @@ function loadSettingsFromFlag(settingsFile: string): void {
       // It's a JSON string - validate and create temp file
       const parsedJson = safeParseJSON(trimmedSettings);
       if (!parsedJson) {
-        process.stderr.write(chalk.red('Error: Invalid JSON provided to --settings\n'));
+        process.stderr.write(ansis.red('Error: Invalid JSON provided to --settings\n'));
         process.exit(1);
       }
 
@@ -820,7 +826,7 @@ function loadSettingsFromFlag(settingsFile: string): void {
         readFileSync(resolvedSettingsPath, 'utf8');
       } catch (e) {
         if (isENOENT(e)) {
-          process.stderr.write(chalk.red(`Error: Settings file not found: ${resolvedSettingsPath}\n`));
+          process.stderr.write(ansis.red(`Error: Settings file not found: ${resolvedSettingsPath}\n`));
           process.exit(1);
         }
         throw e;
@@ -833,7 +839,7 @@ function loadSettingsFromFlag(settingsFile: string): void {
     if (error instanceof Error) {
       logError(error);
     }
-    process.stderr.write(chalk.red(`Error processing settings: ${errorMessage(error)}\n`));
+    process.stderr.write(ansis.red(`Error processing settings: ${errorMessage(error)}\n`));
     process.exit(1);
   }
 }
@@ -846,7 +852,7 @@ function loadSettingSourcesFromFlag(settingSourcesArg: string): void {
     if (error instanceof Error) {
       logError(error);
     }
-    process.stderr.write(chalk.red(`Error processing --setting-sources: ${errorMessage(error)}\n`));
+    process.stderr.write(ansis.red(`Error processing --setting-sources: ${errorMessage(error)}\n`));
     process.exit(1);
   }
 }
@@ -1711,7 +1717,7 @@ async function run(): Promise<CommanderCommand> {
       if (prompt === 'code') {
         logEvent('tengu_code_prompt_ignored', {});
         // biome-ignore lint/suspicious/noConsole:: intentional console output
-        console.warn(chalk.yellow('Tip: You can launch Clew Code with just `clew`'));
+        console.warn(ansis.yellow('Tip: You can launch Clew Code with just `clew`'));
         prompt = undefined;
       }
 
@@ -1796,7 +1802,7 @@ async function run(): Promise<CommanderCommand> {
         if (!checkHasTrustDialogAccepted()) {
           // biome-ignore lint/suspicious/noConsole:: intentional console output
           console.warn(
-            chalk.yellow('Assistant mode disabled: directory is not trusted. Accept the trust dialog and restart.'),
+            ansis.yellow('Assistant mode disabled: directory is not trusted. Accept the trust dialog and restart.'),
           );
         } else {
           // Blocking gate check — returns cached `true` instantly; if disk
@@ -2024,15 +2030,15 @@ async function run(): Promise<CommanderCommand> {
       // Validate tmux option
       if (tmuxEnabled) {
         if (!worktreeEnabled) {
-          process.stderr.write(chalk.red('Error: --tmux requires --worktree\n'));
+          process.stderr.write(ansis.red('Error: --tmux requires --worktree\n'));
           process.exit(1);
         }
         if (getPlatform() === 'windows') {
-          process.stderr.write(chalk.red('Error: --tmux is not supported on Windows\n'));
+          process.stderr.write(ansis.red('Error: --tmux is not supported on Windows\n'));
           process.exit(1);
         }
         if (!(await isTmuxAvailable())) {
-          process.stderr.write(chalk.red(`Error: tmux is not installed.\n${getTmuxInstallInstructions()}\n`));
+          process.stderr.write(ansis.red(`Error: tmux is not installed.\n${getTmuxInstallInstructions()}\n`));
           process.exit(1);
         }
       }
@@ -2059,7 +2065,7 @@ async function run(): Promise<CommanderCommand> {
         const hasAllRequiredTeammateOpts = teammateOpts.agentId && teammateOpts.agentName && teammateOpts.teamName;
         if (hasAnyTeammateOpt && !hasAllRequiredTeammateOpts) {
           process.stderr.write(
-            chalk.red('Error: --agent-id, --agent-name, and --team-name must all be provided together\n'),
+            ansis.red('Error: --agent-id, --agent-name, and --team-name must all be provided together\n'),
           );
           process.exit(1);
         }
@@ -2162,7 +2168,7 @@ async function run(): Promise<CommanderCommand> {
         // (to specify a custom ID for the forked session)
         if ((options.continue || options.resume) && !options.forkSession) {
           process.stderr.write(
-            chalk.red(
+            ansis.red(
               'Error: --session-id can only be used with --continue or --resume if --fork-session is also specified.\n',
             ),
           );
@@ -2175,13 +2181,13 @@ async function run(): Promise<CommanderCommand> {
         if (!sdkUrl) {
           const validatedSessionId = validateUuid(sessionId);
           if (!validatedSessionId) {
-            process.stderr.write(chalk.red('Error: Invalid session ID. Must be a valid UUID.\n'));
+            process.stderr.write(ansis.red('Error: Invalid session ID. Must be a valid UUID.\n'));
             process.exit(1);
           }
 
           // Check if session ID already exists
           if (sessionIdExists(validatedSessionId)) {
-            process.stderr.write(chalk.red(`Error: Session ID ${validatedSessionId} is already in use.\n`));
+            process.stderr.write(ansis.red(`Error: Session ID ${validatedSessionId} is already in use.\n`));
             process.exit(1);
           }
         }
@@ -2198,7 +2204,7 @@ async function run(): Promise<CommanderCommand> {
         const sessionToken = getSessionIngressAuthToken();
         if (!sessionToken) {
           process.stderr.write(
-            chalk.red(
+            ansis.red(
               'Error: Session token required for file downloads. CLAUDE_CODE_SESSION_ACCESS_TOKEN must be set.\n',
             ),
           );
@@ -2228,7 +2234,7 @@ async function run(): Promise<CommanderCommand> {
       // Validate that fallback model is different from main model
       if (fallbackModel && options.model && fallbackModel === options.model) {
         process.stderr.write(
-          chalk.red(
+          ansis.red(
             'Error: Fallback model cannot be the same as the main model. Please specify a different model for --fallback-model.\n',
           ),
         );
@@ -2240,7 +2246,7 @@ async function run(): Promise<CommanderCommand> {
       if (options.systemPromptFile) {
         if (options.systemPrompt) {
           process.stderr.write(
-            chalk.red('Error: Cannot use both --system-prompt and --system-prompt-file. Please use only one.\n'),
+            ansis.red('Error: Cannot use both --system-prompt and --system-prompt-file. Please use only one.\n'),
           );
           process.exit(1);
         }
@@ -2251,11 +2257,11 @@ async function run(): Promise<CommanderCommand> {
           const code = getErrnoCode(error);
           if (code === 'ENOENT') {
             process.stderr.write(
-              chalk.red(`Error: System prompt file not found: ${resolve(options.systemPromptFile)}\n`),
+              ansis.red(`Error: System prompt file not found: ${resolve(options.systemPromptFile)}\n`),
             );
             process.exit(1);
           }
-          process.stderr.write(chalk.red(`Error reading system prompt file: ${errorMessage(error)}\n`));
+          process.stderr.write(ansis.red(`Error reading system prompt file: ${errorMessage(error)}\n`));
           process.exit(1);
         }
       }
@@ -2265,7 +2271,7 @@ async function run(): Promise<CommanderCommand> {
       if (options.appendSystemPromptFile) {
         if (options.appendSystemPrompt) {
           process.stderr.write(
-            chalk.red(
+            ansis.red(
               'Error: Cannot use both --append-system-prompt and --append-system-prompt-file. Please use only one.\n',
             ),
           );
@@ -2278,11 +2284,11 @@ async function run(): Promise<CommanderCommand> {
           const code = getErrnoCode(error);
           if (code === 'ENOENT') {
             process.stderr.write(
-              chalk.red(`Error: Append system prompt file not found: ${resolve(options.appendSystemPromptFile)}\n`),
+              ansis.red(`Error: Append system prompt file not found: ${resolve(options.appendSystemPromptFile)}\n`),
             );
             process.exit(1);
           }
-          process.stderr.write(chalk.red(`Error reading append system prompt file: ${errorMessage(error)}\n`));
+          process.stderr.write(ansis.red(`Error reading append system prompt file: ${errorMessage(error)}\n`));
           process.exit(1);
         }
       }
@@ -2504,7 +2510,7 @@ async function run(): Promise<CommanderCommand> {
       if (doesEnterpriseMcpConfigExist()) {
         if (strictMcpConfig) {
           process.stderr.write(
-            chalk.red('You cannot use --strict-mcp-config when an enterprise MCP config is present'),
+            ansis.red('You cannot use --strict-mcp-config when an enterprise MCP config is present'),
           );
           process.exit(1);
         }
@@ -2512,7 +2518,7 @@ async function run(): Promise<CommanderCommand> {
         // For --mcp-config, allow if all servers are internal types (sdk)
         if (dynamicMcpConfig && !areMcpConfigsAllowedWithEnterpriseMcpConfig(dynamicMcpConfig)) {
           process.stderr.write(
-            chalk.red('You cannot dynamically configure MCP servers when an enterprise MCP config is present'),
+            ansis.red('You cannot dynamically configure MCP servers when an enterprise MCP config is present'),
           );
           process.exit(1);
         }
@@ -2597,7 +2603,7 @@ async function run(): Promise<CommanderCommand> {
         }
         if (bad.length > 0) {
           process.stderr.write(
-            chalk.red(
+            ansis.red(
               `${flag} entries must be tagged: ${bad.join(', ')}\n` +
                 `  plugin:<name>@<marketplace>  — plugin-provided channel (allowlist enforced)\n` +
                 `  server:<name>                — manually configured MCP server\n`,
@@ -3107,13 +3113,13 @@ async function run(): Promise<CommanderCommand> {
           logForDebugging(`[AdvisorTool] --advisor ${advisorOption}`);
           if (!modelSupportsAdvisor(resolvedInitialModel)) {
             process.stderr.write(
-              chalk.red(`Error: The model "${resolvedInitialModel}" does not support the advisor tool.\n`),
+              ansis.red(`Error: The model "${resolvedInitialModel}" does not support the advisor tool.\n`),
             );
             process.exit(1);
           }
           const normalizedAdvisorModel = normalizeModelStringForAPI(parseUserSpecifiedModel(advisorOption));
           if (!isValidAdvisorModel(normalizedAdvisorModel)) {
-            process.stderr.write(chalk.red(`Error: The model "${advisorOption}" cannot be used as an advisor.\n`));
+            process.stderr.write(ansis.red(`Error: The model "${advisorOption}" cannot be used as an advisor.\n`));
             process.exit(1);
           }
         }
@@ -3267,7 +3273,7 @@ async function run(): Promise<CommanderCommand> {
           const disabledReason = await getBridgeDisabledReason();
           remoteControl = disabledReason === null;
           if (disabledReason) {
-            process.stderr.write(chalk.yellow(`${disabledReason}\n--rc flag ignored.\n`));
+            process.stderr.write(ansis.yellow(`${disabledReason}\n--rc flag ignored.\n`));
           }
         }
 
@@ -4797,8 +4803,8 @@ async function run(): Promise<CommanderCommand> {
                     // No known paths - show original error
                     throw new TeleportOperationError(
                       `You must run clew --teleport ${teleport} from a checkout of ${sessionRepo}.`,
-                      chalk.red(
-                        `You must run clew --teleport ${teleport} from a checkout of ${chalk.bold(sessionRepo)}.\n`,
+                      ansis.red(
+                        `You must run clew --teleport ${teleport} from a checkout of ${ansis.bold(sessionRepo)}.\n`,
                       ),
                     );
                   }
@@ -4806,7 +4812,7 @@ async function run(): Promise<CommanderCommand> {
               } else if (repoValidation.status === 'error') {
                 throw new TeleportOperationError(
                   repoValidation.errorMessage || 'Failed to validate session',
-                  chalk.red(`Error: ${repoValidation.errorMessage || 'Failed to validate session'}\n`),
+                  ansis.red(`Error: ${repoValidation.errorMessage || 'Failed to validate session'}\n`),
                 );
               }
               await validateGitState();
@@ -4824,7 +4830,7 @@ async function run(): Promise<CommanderCommand> {
                 process.stderr.write(`${error.formattedMessage}\n`);
               } else {
                 logError(error);
-                process.stderr.write(chalk.red(`Error: ${errorMessage(error)}\n`));
+                process.stderr.write(ansis.red(`Error: ${errorMessage(error)}\n`));
               }
               await gracefulShutdown(1);
             }
@@ -4980,7 +4986,7 @@ async function run(): Promise<CommanderCommand> {
             const failedCount = count(results, r => !r.success);
             if (failedCount > 0) {
               process.stderr.write(
-                chalk.yellow(`Warning: ${failedCount}/${results.length} file(s) failed to download.\n`),
+                ansis.yellow(`Warning: ${failedCount}/${results.length} file(s) failed to download.\n`),
               );
             }
           } catch (error) {
@@ -5116,7 +5122,7 @@ async function run(): Promise<CommanderCommand> {
   // Multi-provider AI support
   program.option(
     '--provider <provider>',
-    'Select AI provider: openai, gemini, openrouter, groq, xai, mistral, kilocode, ollama, anthropic (default: openai)',
+    'Select AI provider: openai, gemini, openrouter, groq, xai, sakana, mistral, kilocode, ollama, anthropic (default: openai)',
   );
   // --model already added earlier (line 1016), skip duplicate
   // program.option('--model <model>', 'Override the default model for the selected provider');

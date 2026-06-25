@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import type { Message } from '../../types/message.js';
 import {
+  AUTOCOMPACT_BUFFER_TOKENS,
   getAutoCompactThreshold,
   getBackgroundAutoCompactThreshold,
+  getEffectiveContextWindowSize,
   mergeBackgroundAutoCompactDelta,
 } from './autoCompact.js';
 import type { CompactionResult } from './compact.js';
@@ -67,6 +69,14 @@ describe('selectPostCompactMessagesToKeep', () => {
 });
 
 describe('getBackgroundAutoCompactThreshold', () => {
+  test('keeps enough foreground headroom for the next API request', () => {
+    const effectiveWindow = getEffectiveContextWindowSize('test-model');
+    const threshold = getAutoCompactThreshold('test-model');
+
+    expect(effectiveWindow - threshold).toBe(AUTOCOMPACT_BUFFER_TOKENS);
+    expect(AUTOCOMPACT_BUFFER_TOKENS).toBeGreaterThanOrEqual(40_000);
+  });
+
   test('starts before the blocking autocompact threshold', () => {
     const threshold = getAutoCompactThreshold('test-model');
     const backgroundThreshold = getBackgroundAutoCompactThreshold('test-model');

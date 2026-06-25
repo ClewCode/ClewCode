@@ -4,10 +4,6 @@ import { OffscreenFreeze } from '../components/OffscreenFreeze.js';
 import { Box, Text } from '../ink.js';
 import type { ProcessPeerProgress } from '../types/tools.js';
 
-// Show more lines for a smoother terminal scrolling effect.
-// 16 looked jerky; 32 gives a proper scroll-back feel.
-const TERMINAL_OUTPUT_MAX_LINES = 32;
-
 export function normalizeProcessPeerMode(
   mode: 'exec' | 'pty' | string | undefined,
   defaultMode: 'exec' | 'pty',
@@ -31,7 +27,7 @@ export function renderProcessPeerTerminal(options: {
   // Truncate the command display to the first N chars + '…' to keep the terminal clean.
   // The full command is visible in the header bar on hover.
   const truncatedCommand = command.length > 120 ? `${command.slice(0, 120)}\u2026` : command;
-  const outputLines = latest?.outputTail ? latest.outputTail.split(/\r?\n/).slice(-TERMINAL_OUTPUT_MAX_LINES) : [];
+  const outputLines = latest?.outputTail ? latest.outputTail.split(/\r?\n/) : [];
   const statusColor =
     status === 'complete' ? 'green' : status === 'failed' ? 'red' : status === 'running' ? 'cyan' : 'yellow';
   const promptColor = status === 'failed' ? 'red' : 'green';

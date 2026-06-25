@@ -1,4 +1,4 @@
-import axios, { type AxiosError } from 'axios';
+import { ofetch } from 'ofetch';
 import type { StdoutMessage } from 'src/entrypoints/sdk/controlTypes.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { logForDiagnosticsNoPII } from '../../utils/diagLogs.js';
@@ -552,7 +552,7 @@ export class SSETransport implements Transport {
 
     for (let attempt = 1; attempt <= POST_MAX_RETRIES; attempt++) {
       try {
-        const response = await axios.post(this.postUrl, message, {
+        const response = await ofetch(this.postUrl, message, {
           headers,
           validateStatus: alwaysValidStatus,
         });
@@ -579,8 +579,8 @@ export class SSETransport implements Transport {
           attempt,
         });
       } catch (error) {
-        const axiosError = error as AxiosError;
-        logForDebugging(`SSETransport: POST error: ${axiosError.message}, attempt ${attempt}/${POST_MAX_RETRIES}`);
+        const fetchError = error as Error;
+        logForDebugging(`SSETransport: POST error: ${fetchError.message}, attempt ${attempt}/${POST_MAX_RETRIES}`);
         logForDiagnosticsNoPII('warn', 'cli_sse_post_network_error', {
           attempt,
         });

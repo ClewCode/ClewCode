@@ -29,7 +29,7 @@
  */
 
 import { feature } from 'bun:bundle';
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { createV2ReplTransport, type ReplBridgeTransport } from './replBridgeTransport.js';
 import { buildCCRv2SdkUrl } from './workSecret.js';
 import { toCompatSessionId } from './sessionIdCompat.js';
@@ -838,7 +838,7 @@ async function archiveSession(
   // cse_* and we correctly send it.
   const compatId = toCompatSessionId(sessionId);
   try {
-    const response = await axios.post(
+    const response = await ofetch(
       `${baseUrl}/v1/sessions/${compatId}/archive`,
       {},
       {
@@ -856,6 +856,6 @@ async function archiveSession(
   } catch (err) {
     const msg = errorMessage(err);
     logForDebugging(`[remote-bridge] Archive failed: ${msg}`);
-    return axios.isAxiosError(err) && err.code === 'ECONNABORTED' ? 'timeout' : 'error';
+    return isFetchError(err) && err.code === 'ECONNABORTED' ? 'timeout' : 'error';
   }
 }

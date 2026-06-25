@@ -21,7 +21,7 @@ export const getLegacyGlobalClaudeFile = memoize(() => {
 });
 const hasInternetAccess = memoize(async () => {
   try {
-    const { default: axiosClient } = await import('axios');
+    const { ofetch: axiosClient } = await import('ofetch');
     await axiosClient.head('http://1.1.1.1', {
       signal: AbortSignal.timeout(1000),
     });

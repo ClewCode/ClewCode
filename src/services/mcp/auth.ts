@@ -24,10 +24,10 @@ import {
   OAuthTokensSchema,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import type { FetchLike } from '@modelcontextprotocol/sdk/shared/transport.js';
-import axios from 'axios';
 import { createHash, randomBytes, randomUUID } from 'crypto';
 import { mkdir } from 'fs/promises';
 import { createServer, type Server } from 'http';
+import { ofetch } from 'ofetch';
 import { join } from 'path';
 import { parse } from 'url';
 import xss from 'xss';
@@ -415,17 +415,17 @@ async function revokeToken({
   }
 
   try {
-    await axios.post(endpoint, params, { headers });
+    await ofetch(endpoint, params, { headers });
     logMCPDebug(serverName, `Successfully revoked ${tokenTypeHint}`);
   } catch (error: unknown) {
     // Fallback for non-RFC-7009-compliant servers that require Bearer auth
-    if (axios.isAxiosError(error) && error.response?.status === 401 && accessToken) {
+    if (isFetchError(error) && error.response?.status === 401 && accessToken) {
       logMCPDebug(serverName, `Got 401, retrying ${tokenTypeHint} revocation with Bearer auth`);
       // RFC 6749 §2.3.1: must not send more than one auth method. The retry
       // switches to Bearer — clear any client creds from the body.
       params.delete('client_id');
       params.delete('client_secret');
-      await axios.post(endpoint, params, {
+      await ofetch(endpoint, params, {
         headers: { ...headers, Authorization: `Bearer ${accessToken}` },
       });
       logMCPDebug(serverName, `Successfully revoked ${tokenTypeHint} with Bearer auth`);

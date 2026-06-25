@@ -1,5 +1,5 @@
-import { execa } from 'execa';
 import { readFile } from 'fs/promises';
+import spawn from 'nano-spawn';
 import { join } from 'path';
 import type * as React from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -121,15 +121,18 @@ export async function playAnimation(skillDir: string): Promise<{
 
   inkInstance.enterAlternateScreen();
   try {
-    await execa('node', [playerPath], {
-      stdio: 'inherit',
-      cwd: skillDir,
-      reject: false,
-    });
+    try {
+      await spawn('node', [playerPath], {
+        stdio: 'inherit',
+        cwd: skillDir,
+      });
+    } catch {
+      // Animation may have been interrupted (e.g., Ctrl+C)
+    } finally {
+      inkInstance.exitAlternateScreen();
+    }
   } catch {
-    // Animation may have been interrupted (e.g., Ctrl+C)
-  } finally {
-    inkInstance.exitAlternateScreen();
+    // Outer catch in case exitAlternateScreen throws
   }
 
   // Open the HTML file in browser for video download

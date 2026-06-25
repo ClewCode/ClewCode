@@ -21,7 +21,7 @@ const inputSchema = lazySchema(() =>
     waitResponse: z
       .boolean()
       .optional()
-      .default(false)
+      .default(true)
       .describe(
         'If true, after sending, wait for a response message from the peer node. ' +
           'Use instead of send-then-poll pattern.',

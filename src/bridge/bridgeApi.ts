@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 
 import { debugBody, extractErrorDetail } from './debugUtils.js';
 import {
@@ -155,40 +155,43 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
 
       const response = await withOAuthRetry(
         (token: string) =>
-          axios.post<{
-            environment_id: string;
-            environment_secret: string;
-          }>(
-            `${deps.baseUrl}/v1/environments/bridge`,
-            {
-              machine_name: config.machineName,
-              directory: config.dir,
-              branch: config.branch,
-              git_repo_url: config.gitRepoUrl,
-              // Advertise session capacity so claude.ai/code can show
-              // "2/4 sessions" badges and only block the picker when
-              // actually at capacity. Backends that don't yet accept
-              // this field will silently ignore it.
-              max_sessions: config.maxSessions,
-              // worker_type lets claude.ai filter environments by origin
-              // (e.g. assistant picker only shows assistant-mode workers).
-              // Desktop cowork app sends "cowork"; we send a distinct value.
-              metadata: { worker_type: config.workerType },
-              // Idempotent re-registration: if we have a backend-issued
-              // environment_id from a prior session (--session-id resume),
-              // send it back so the backend reattaches instead of creating
-              // a new env. The backend may still hand back a fresh ID if
-              // the old one expired — callers must compare the response.
-              ...(config.reuseEnvironmentId && {
-                environment_id: config.reuseEnvironmentId,
-              }),
-            },
-            {
+          ofetch
+            .raw<{
+              environment_id: string;
+              environment_secret: string;
+            }>(`${deps.baseUrl}/v1/environments/bridge`, {
+              method: 'POST',
+              body: {
+                machine_name: config.machineName,
+                directory: config.dir,
+                branch: config.branch,
+                git_repo_url: config.gitRepoUrl,
+                // Advertise session capacity so claude.ai/code can show
+                // "2/4 sessions" badges and only block the picker when
+                // actually at capacity. Backends that don't yet accept
+                // this field will silently ignore it.
+                max_sessions: config.maxSessions,
+                // worker_type lets claude.ai filter environments by origin
+                // (e.g. assistant picker only shows assistant-mode workers).
+                // Desktop cowork app sends "cowork"; we send a distinct value.
+                metadata: { worker_type: config.workerType },
+                // Idempotent re-registration: if we have a backend-issued
+                // environment_id from a prior session (--session-id resume),
+                // send it back so the backend reattaches instead of creating
+                // a new env. The backend may still hand back a fresh ID if
+                // the old one expired — callers must compare the response.
+                ...(config.reuseEnvironmentId && {
+                  environment_id: config.reuseEnvironmentId,
+                }),
+              },
               headers: getHeaders(token),
               timeout: 15_000,
-              validateStatus: status => status < 500,
-            },
-          ),
+              ignoreResponseError: true,
+            })
+            .then(({ status, _data }) => ({
+              status,
+              data: _data as { environment_id: string; environment_secret: string },
+            })),
         'Registration',
       );
 
@@ -216,35 +219,35 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
       const prevEmptyPolls = consecutiveEmptyPolls;
       consecutiveEmptyPolls = 0;
 
-      const response = await axios.get<WorkResponse | null>(
+      const { status, _data } = await ofetch.raw<WorkResponse | null>(
         `${deps.baseUrl}/v1/environments/${environmentId}/work/poll`,
         {
           headers: getHeaders(environmentSecret),
-          params: reclaimOlderThanMs !== undefined ? { reclaim_older_than_ms: reclaimOlderThanMs } : undefined,
+          query: reclaimOlderThanMs !== undefined ? { reclaim_older_than_ms: reclaimOlderThanMs } : undefined,
           timeout: 10_000,
           signal,
-          validateStatus: status => status < 500,
+          ignoreResponseError: true,
         },
       );
 
-      handleApiErrorStatus(response.status, response.data, 'Poll');
+      handleApiErrorStatus(status, _data, 'Poll');
 
       // Empty body or null = no work available
-      if (!response.data) {
+      if (!_data) {
         consecutiveEmptyPolls = prevEmptyPolls + 1;
         if (consecutiveEmptyPolls === 1 || consecutiveEmptyPolls % EMPTY_POLL_LOG_INTERVAL === 0) {
           debug(
-            `[bridge:api] GET .../work/poll -> ${response.status} (no work, ${consecutiveEmptyPolls} consecutive empty polls)`,
+            `[bridge:api] GET .../work/poll -> ${status} (no work, ${consecutiveEmptyPolls} consecutive empty polls)`,
           );
         }
         return null;
       }
 
       debug(
-        `[bridge:api] GET .../work/poll -> ${response.status} workId=${response.data.id} type=${response.data.data?.type}${response.data.data?.id ? ` sessionId=${response.data.data.id}` : ''}`,
+        `[bridge:api] GET .../work/poll -> ${status} workId=${_data.id} type=${_data.data?.type}${_data.data?.id ? ` sessionId=${_data.data.id}` : ''}`,
       );
-      debug(`[bridge:api] <<< ${debugBody(response.data)}`);
-      return response.data;
+      debug(`[bridge:api] <<< ${debugBody(_data)}`);
+      return _data;
     },
 
     async acknowledgeWork(environmentId: string, workId: string, sessionToken: string): Promise<void> {
@@ -253,18 +256,18 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
 
       debug(`[bridge:api] POST .../work/${workId}/ack`);
 
-      const response = await axios.post(
+      const { status: ackStatus, _data: ackData } = await ofetch.raw(
         `${deps.baseUrl}/v1/environments/${environmentId}/work/${workId}/ack`,
-        {},
         {
+          method: 'POST',
           headers: getHeaders(sessionToken),
           timeout: 10_000,
-          validateStatus: s => s < 500,
+          ignoreResponseError: true,
         },
       );
 
-      handleApiErrorStatus(response.status, response.data, 'Acknowledge');
-      debug(`[bridge:api] POST .../work/${workId}/ack -> ${response.status}`);
+      handleApiErrorStatus(ackStatus, ackData, 'Acknowledge');
+      debug(`[bridge:api] POST .../work/${workId}/ack -> ${ackStatus}`);
     },
 
     async stopWork(environmentId: string, workId: string, force: boolean): Promise<void> {
@@ -275,15 +278,15 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
 
       const response = await withOAuthRetry(
         (token: string) =>
-          axios.post(
-            `${deps.baseUrl}/v1/environments/${environmentId}/work/${workId}/stop`,
-            { force },
-            {
+          ofetch
+            .raw(`${deps.baseUrl}/v1/environments/${environmentId}/work/${workId}/stop`, {
+              method: 'POST',
+              body: { force },
               headers: getHeaders(token),
               timeout: 10_000,
-              validateStatus: s => s < 500,
-            },
-          ),
+              ignoreResponseError: true,
+            })
+            .then(({ status, _data }) => ({ status, data: _data })),
         'StopWork',
       );
 
@@ -298,11 +301,14 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
 
       const response = await withOAuthRetry(
         (token: string) =>
-          axios.delete(`${deps.baseUrl}/v1/environments/bridge/${environmentId}`, {
-            headers: getHeaders(token),
-            timeout: 10_000,
-            validateStatus: s => s < 500,
-          }),
+          ofetch
+            .raw(`${deps.baseUrl}/v1/environments/bridge/${environmentId}`, {
+              method: 'DELETE',
+              headers: getHeaders(token),
+              timeout: 10_000,
+              ignoreResponseError: true,
+            })
+            .then(({ status, _data }) => ({ status, data: _data })),
         'Deregister',
       );
 
@@ -317,15 +323,14 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
 
       const response = await withOAuthRetry(
         (token: string) =>
-          axios.post(
-            `${deps.baseUrl}/v1/sessions/${sessionId}/archive`,
-            {},
-            {
+          ofetch
+            .raw(`${deps.baseUrl}/v1/sessions/${sessionId}/archive`, {
+              method: 'POST',
               headers: getHeaders(token),
               timeout: 10_000,
-              validateStatus: s => s < 500,
-            },
-          ),
+              ignoreResponseError: true,
+            })
+            .then(({ status, _data }) => ({ status, data: _data })),
         'ArchiveSession',
       );
 
@@ -347,15 +352,15 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
 
       const response = await withOAuthRetry(
         (token: string) =>
-          axios.post(
-            `${deps.baseUrl}/v1/environments/${environmentId}/bridge/reconnect`,
-            { session_id: sessionId },
-            {
+          ofetch
+            .raw(`${deps.baseUrl}/v1/environments/${environmentId}/bridge/reconnect`, {
+              method: 'POST',
+              body: { session_id: sessionId },
               headers: getHeaders(token),
               timeout: 10_000,
-              validateStatus: s => s < 500,
-            },
-          ),
+              ignoreResponseError: true,
+            })
+            .then(({ status, _data }) => ({ status, data: _data })),
         'ReconnectSession',
       );
 
@@ -373,26 +378,30 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
 
       debug(`[bridge:api] POST .../work/${workId}/heartbeat`);
 
-      const response = await axios.post<{
+      const hbResponse = await ofetch.raw<{
         lease_extended: boolean;
         state: string;
         last_heartbeat: string;
         ttl_seconds: number;
-      }>(
-        `${deps.baseUrl}/v1/environments/${environmentId}/work/${workId}/heartbeat`,
-        {},
-        {
-          headers: getHeaders(sessionToken),
-          timeout: 10_000,
-          validateStatus: s => s < 500,
-        },
-      );
+      }>(`${deps.baseUrl}/v1/environments/${environmentId}/work/${workId}/heartbeat`, {
+        method: 'POST',
+        headers: getHeaders(sessionToken),
+        timeout: 10_000,
+        ignoreResponseError: true,
+      });
 
-      handleApiErrorStatus(response.status, response.data, 'Heartbeat');
+      const hbStatus = hbResponse.status;
+      const hbData = hbResponse._data as {
+        lease_extended: boolean;
+        state: string;
+        last_heartbeat: string;
+        ttl_seconds: number;
+      };
+      handleApiErrorStatus(hbStatus, hbData, 'Heartbeat');
       debug(
-        `[bridge:api] POST .../work/${workId}/heartbeat -> ${response.status} lease_extended=${response.data.lease_extended} state=${response.data.state}`,
+        `[bridge:api] POST .../work/${workId}/heartbeat -> ${hbStatus} lease_extended=${hbData.lease_extended} state=${hbData.state}`,
       );
-      return response.data;
+      return hbData;
     },
 
     async sendPermissionResponseEvent(
@@ -404,20 +413,21 @@ export function createBridgeApiClient(deps: BridgeApiDeps): BridgeApiClient {
 
       debug(`[bridge:api] POST /v1/sessions/${sessionId}/events type=${event.type}`);
 
-      const response = await axios.post(
+      const { status: permStatus, _data: permData } = await ofetch.raw(
         `${deps.baseUrl}/v1/sessions/${sessionId}/events`,
-        { events: [event] },
         {
+          method: 'POST',
+          body: { events: [event] },
           headers: getHeaders(sessionToken),
           timeout: 10_000,
-          validateStatus: s => s < 500,
+          ignoreResponseError: true,
         },
       );
 
-      handleErrorStatus(response.status, response.data, 'SendPermissionResponseEvent');
-      debug(`[bridge:api] POST /v1/sessions/${sessionId}/events -> ${response.status}`);
+      handleErrorStatus(permStatus, permData, 'SendPermissionResponseEvent');
+      debug(`[bridge:api] POST /v1/sessions/${sessionId}/events -> ${permStatus}`);
       debug(`[bridge:api] >>> ${debugBody({ events: [event] })}`);
-      debug(`[bridge:api] <<< ${debugBody(response.data)}`);
+      debug(`[bridge:api] <<< ${debugBody(permData)}`);
     },
   };
 }

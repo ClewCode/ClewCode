@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { mkdir, readFile, writeFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { dirname, join } from 'path';
 import { coerce } from 'semver';
 import { getIsNonInteractiveSession } from '../bootstrap/state.js';
@@ -88,7 +88,7 @@ export async function fetchAndStoreChangelog(): Promise<void> {
     return;
   }
 
-  const response = await axios.get(RAW_CHANGELOG_URL);
+  const response = await ofetch(RAW_CHANGELOG_URL);
   if (response.status === 200) {
     const changelogContent = response.data;
 

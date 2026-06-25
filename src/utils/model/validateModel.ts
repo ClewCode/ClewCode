@@ -72,6 +72,7 @@ export async function validateModel(model: string): Promise<{ valid: boolean; er
     'gemini',
     'groq',
     'xai',
+    'sakana',
     'mistral',
     'deepseek',
     'kilocode',

@@ -29,6 +29,7 @@ export type ProviderId =
   | 'digitalocean'
   | 'clew-gateway'
   | 'google-assist'
+  | 'sakana'
   | 'custom';
 
 export interface ProviderInitOptions {

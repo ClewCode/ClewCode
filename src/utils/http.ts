@@ -2,7 +2,7 @@
  * HTTP utility constants and helpers
  */
 
-import axios from 'axios';
+import { FetchError } from 'ofetch';
 import { OAUTH_BETA_HEADER } from '../constants/oauth.js';
 import { getAnthropicApiKey, getClaudeAIOAuthTokens, handleOAuth401Error, isClaudeAISubscriber } from './auth.js';
 import { getClaudeCodeUserAgent } from './userAgent.js';
@@ -111,14 +111,14 @@ export async function withOAuth401Retry<T>(request: () => Promise<T>, opts?: { a
   try {
     return await request();
   } catch (err) {
-    if (!axios.isAxiosError(err)) throw err;
-    const status = err.response?.status;
+    if (!(err instanceof FetchError)) throw err;
+    const status = err.status ?? err.response?.status;
     const isAuthError =
       status === 401 ||
       (opts?.also403Revoked &&
         status === 403 &&
-        typeof err.response?.data === 'string' &&
-        err.response.data.includes('OAuth token has been revoked'));
+        typeof err.data === 'string' &&
+        err.data.includes('OAuth token has been revoked'));
     if (!isAuthError) throw err;
     const failedAccessToken = getClaudeAIOAuthTokens()?.accessToken;
     if (!failedAccessToken) throw err;

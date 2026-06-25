@@ -1,4 +1,4 @@
-import { type Options as ExecaOptions, execaSync } from 'execa';
+import { execFileSync } from 'node:child_process';
 import { getCwd } from '../utils/cwd.js';
 import { slowLogging } from './slowOperations.js';
 
@@ -9,7 +9,7 @@ type ExecSyncOptions = {
   abortSignal?: AbortSignal;
   timeout?: number;
   input?: string;
-  stdio?: ExecaOptions['stdio'];
+  stdio?: Array<'ignore' | 'pipe' | 'inherit'>;
 };
 
 /**
@@ -66,20 +66,20 @@ export function execSyncWithDefaults_DEPRECATED(
   abortSignal?.throwIfAborted();
   using _ = slowLogging`exec: ${command.slice(0, 200)}`;
   try {
-    const result = execaSync(command, {
+    const result = execFileSync(command, {
       env: process.env,
       maxBuffer: 1_000_000,
       timeout: finalTimeout,
       cwd: getCwd(),
       stdio,
       shell: true, // execSync typically runs shell commands
-      reject: false, // Don't throw on non-zero exit codes
       input,
+      encoding: 'utf8' as const,
     });
-    if (!result.stdout) {
+    if (!result) {
       return null;
     }
-    return result.stdout.trim() || null;
+    return result.trim() || null;
   } catch {
     return null;
   }

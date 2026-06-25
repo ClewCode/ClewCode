@@ -1,10 +1,10 @@
-import { memoize } from 'lodash-es';
 import { getCommandName, getSkillToolCommands, getSlashCommandToolSkills } from 'src/commands.js';
 import { COMMAND_NAME_TAG } from '../../constants/xml.js';
 import { stringWidth } from '../../ink/stringWidth.js';
 import { logEvent } from '../../services/analytics/index.js';
 import { count } from '../../utils/array.js';
 import { logForDebugging } from '../../utils/debug.js';
+import { memoize } from '../../utils/equals.js';
 import { toError } from '../../utils/errors.js';
 import { truncate } from '../../utils/format.js';
 import { logError } from '../../utils/log.js';

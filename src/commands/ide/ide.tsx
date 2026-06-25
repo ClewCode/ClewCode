@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import * as path from 'path';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -307,18 +307,18 @@ export async function call(
             // VS Code-based IDEs
             const { code } = await execFileNoThrow('code', [targetPath]);
             if (code === 0) {
-              onDone(`Opened ${worktreeSession ? 'worktree' : 'project'} in ${chalk.bold(selectedIDE.name)}`);
+              onDone(`Opened ${worktreeSession ? 'worktree' : 'project'} in ${ansis.bold(selectedIDE.name)}`);
             } else {
               onDone(`Failed to open in ${selectedIDE.name}. Try opening manually: ${targetPath}`);
             }
           } else if (isSupportedJetBrainsTerminal()) {
             // JetBrains IDEs - they usually open via their CLI tools
             onDone(
-              `Please open the ${worktreeSession ? 'worktree' : 'project'} manually in ${chalk.bold(selectedIDE.name)}: ${targetPath}`,
+              `Please open the ${worktreeSession ? 'worktree' : 'project'} manually in ${ansis.bold(selectedIDE.name)}: ${targetPath}`,
             );
           } else {
             onDone(
-              `Please open the ${worktreeSession ? 'worktree' : 'project'} manually in ${chalk.bold(selectedIDE.name)}: ${targetPath}`,
+              `Please open the ${worktreeSession ? 'worktree' : 'project'} manually in ${ansis.bold(selectedIDE.name)}: ${targetPath}`,
             );
           }
         }}
@@ -341,11 +341,11 @@ export async function call(
         // The completion message will be shown after installation
         if (isJetBrainsIde(ide)) {
           onDone(
-            `Installed plugin to ${chalk.bold(toIDEDisplayName(ide))}\n` +
-              `Please ${chalk.bold('restart your IDE')} completely for it to take effect`,
+            `Installed plugin to ${ansis.bold(toIDEDisplayName(ide))}\n` +
+              `Please ${ansis.bold('restart your IDE')} completely for it to take effect`,
           );
         } else {
-          onDone(`Installed extension to ${chalk.bold(toIDEDisplayName(ide))}`);
+          onDone(`Installed extension to ${ansis.bold(toIDEDisplayName(ide))}`);
         }
       }
     };

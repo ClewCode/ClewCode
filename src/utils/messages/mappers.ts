@@ -169,7 +169,7 @@ export function toSDKMessages(messages: Message[]): SDKMessage[] {
  *   - api-go session-ingress convertSystemEvent (only init/compact_boundary)
  * See: https://anthropic.sentry.io/issues/7266299248/ (Android)
  *
- * Strips ANSI (e.g. chalk.dim() in /cost) then unwraps the XML wrapper tags.
+ * Strips ANSI (e.g. ansis.dim() in /cost) then unwraps the XML wrapper tags.
  */
 export function localCommandOutputToSDKAssistantMessage(rawContent: string, uuid: UUID): SDKAssistantMessage {
   const cleanContent = stripAnsi(rawContent)

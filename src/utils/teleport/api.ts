@@ -1,5 +1,5 @@
-import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import { randomUUID } from 'crypto';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from 'src/constants/oauth.js';
 import { getOrganizationUUID } from 'src/services/oauth/client.js';
 import z from 'zod/v4';
@@ -22,7 +22,7 @@ export const CCR_BYOC_BETA = 'ccr-byoc-2025-07-29';
  * Checks if an axios error is a transient network error that should be retried
  */
 export function isTransientNetworkError(error: unknown): boolean {
-  if (!axios.isAxiosError(error)) {
+  if (!isFetchError(error)) {
     return false;
   }
 
@@ -44,12 +44,12 @@ export function isTransientNetworkError(error: unknown): boolean {
  * Makes an axios GET request with automatic retry for transient network errors
  * Uses exponential backoff: 2s, 4s, 8s, 16s (4 retries = 5 total attempts)
  */
-export async function axiosGetWithRetry<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+export async function axiosGetWithRetry<T>(url: string, config?: Record<string, unknown>): Promise<Response<T>> {
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= MAX_TELEPORT_RETRIES; attempt++) {
     try {
-      return await axios.get<T>(url, config);
+      return await ofetch<T>(url, config);
     } catch (error) {
       lastError = error;
 
@@ -281,7 +281,7 @@ export async function fetchSession(sessionId: string): Promise<SessionResource> 
     'x-organization-uuid': orgUUID,
   };
 
-  const response = await axios.get<SessionResource>(url, {
+  const response = await ofetch<SessionResource>(url, {
     headers,
     timeout: 15000,
     validateStatus: status => status < 500,
@@ -366,7 +366,7 @@ export async function sendEventToRemoteSession(
     logForDebugging(`[sendEventToRemoteSession] Sending event to session ${sessionId}`);
     // The endpoint may block until the CCR worker is ready. Observed ~2.6s
     // in normal cases; allow a generous margin for cold-start containers.
-    const response = await axios.post(url, requestBody, {
+    const response = await ofetch(url, requestBody, {
       headers,
       validateStatus: status => status < 500,
       timeout: 30000,
@@ -405,7 +405,7 @@ export async function updateSessionTitle(sessionId: string, title: string): Prom
     };
 
     logForDebugging(`[updateSessionTitle] Updating title for session ${sessionId}: "${title}"`);
-    const response = await axios.patch(
+    const response = await ofetch(
       url,
       { title },
       {

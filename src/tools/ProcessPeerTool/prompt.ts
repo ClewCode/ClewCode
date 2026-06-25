@@ -1,7 +1,7 @@
-export const PROCESS_MESH_TOOL_NAME = 'process_peer';
+export const PROCESS_MESH_TOOL_NAME = 'delegate';
 
 export const DESCRIPTION =
-  'Delegate a task to a local process-backed AI worker (Codex, OpenCode, Claude Code) and return its output. ' +
+  'Delegate a task to a local AI coding worker (Codex, OpenCode, Claude Code) and return its output. ' +
   'Auto-detects available CLIs on your PATH. ' +
   'Use this for independent review, debugging, planning, or focused implementation subtasks. ' +
   'Your `prompt` is sent verbatim to the process worker as its sole instruction. ' +
@@ -76,18 +76,19 @@ The sender only sees stdout after you finish.
 `;
 
 export const PROMPT =
-  'Runs a local process-backed AI worker for one task and returns stdout/stderr. ' +
-  'Auto-detects available AI CLIs on your PATH (Codex, OpenCode, Claude Code) — no config needed. ' +
+  'Delegates a task to a local AI coding worker for one task and returns stdout/stderr. ' +
+  'Auto-detects available CLIs on your PATH (Codex, OpenCode, Claude Code) — no config needed. ' +
+  'Leave `provider` empty to auto-select based on what is available on PATH (priority: codex > opencode > claude > code). ' +
   'The default provider is Codex with terminal-style progress output and uses the existing Codex CLI session without exposing tokens. ' +
-  'Do not use Clew/ClewCode itself as a process worker; that self-spawns the current CLI and can create nested duplicate sessions. ' +
+  'Do not use Clew/ClewCode itself as a worker; that self-spawns the current CLI and can create nested duplicate sessions. ' +
   'Use it for second-opinion review, debugging, focused implementation subtasks, or ' +
   'asking a coding agent to inspect a repo.\n' +
   '\n' +
   '**PEER PROMPT TEMPLATE (use this structure when writing prompts):**\n' +
-  'The peer receives your `prompt` verbatim — write self-contained prompts with:\n' +
+  'The worker receives your `prompt` verbatim — write self-contained prompts with:\n' +
   '1. **PEER CONTEXT** — "Sender: Clew Code", "stdout = result", "you are an independent peer"\n' +
   '2. **TASK** — scoped, specific, one task only\n' +
-  '3. **COMMANDS & TOOLS** — what tools the peer node should use, `--help` to discover\n' +
+  '3. **COMMANDS & TOOLS** — what tools the worker should use, `--help` to discover\n' +
   '4. **WORKFLOW** — explicit numbered flow: plan → gather → execute → output\n' +
   '5. **OUTPUT FORMAT** — JSON, diff, summary, or plain text\n' +
   '6. **WORKING DIRECTORY** — absolute path for file operations\n' +

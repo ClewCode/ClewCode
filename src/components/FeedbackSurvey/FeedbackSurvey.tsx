@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useEffect } from 'react';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -31,6 +32,15 @@ export function FeedbackSurvey({
   onRequestFeedback,
   message,
 }: Props): React.ReactNode {
+  // Direct dismiss: catch '0' keypress immediately without debounce.
+  // The debounced input in FeedbackSurveyView can miss the key when the
+  // parent re-renders and clears the debounce timeout before it fires.
+  useEffect(() => {
+    if (state === 'open' && inputValue === '0') {
+      handleSelect('dismissed');
+    }
+  }, [inputValue, state, handleSelect]);
+
   if (state === 'closed') {
     return null;
   }

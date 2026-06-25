@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import type * as React from 'react';
 import { LIGHTNING_BOLT } from '../constants/figures.js';
 import { Text } from '../ink.js';
@@ -27,7 +27,7 @@ export function getFastIconString(applyColor = true, cooldown = false): string {
   }
   const themeName = resolveThemeSetting(getGlobalConfig().theme);
   if (cooldown) {
-    return chalk.dim(color('promptBorder', themeName)(LIGHTNING_BOLT));
+    return ansis.dim(color('promptBorder', themeName)(LIGHTNING_BOLT));
   }
   return color('fastMode', themeName)(LIGHTNING_BOLT);
 }

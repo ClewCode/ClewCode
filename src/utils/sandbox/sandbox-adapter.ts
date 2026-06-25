@@ -22,10 +22,10 @@ import {
 } from '@anthropic-ai/sandbox-runtime';
 import { rmSync, statSync } from 'fs';
 import { readFile } from 'fs/promises';
-import { memoize } from 'lodash-es';
 import { join, resolve, sep } from 'path';
 import { getAdditionalDirectoriesForClaudeMd, getCwdState, getOriginalCwd } from '../../bootstrap/state.js';
 import { logForDebugging } from '../debug.js';
+import { memoize } from '../equals.js';
 import { expandPath } from '../path.js';
 import { getPlatform, type Platform } from '../platform.js';
 import { settingsChangeDetector } from '../settings/changeDetector.js';

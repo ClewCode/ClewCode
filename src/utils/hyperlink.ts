@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { supportsHyperlinks } from '../ink/supports-hyperlinks.js';
 
 // OSC 8 hyperlink escape sequences
@@ -41,7 +41,7 @@ export function createHyperlink(url: string, content?: string, options?: Hyperli
   // Cyan is readable on both light and dark terminal themes, unlike plain blue
   // which appears dark-navy and is hard to read on dark backgrounds.
   const displayText = content ?? url;
-  const coloredText = chalk.cyan(displayText);
+  const coloredText = ansis.cyan(displayText);
 
   // Use id parameter to help terminals group wrapped segments of the same link.
   // Format: \e]8;id=ID;URL\e\\TEXT\e]8;;\e\\

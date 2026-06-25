@@ -104,6 +104,15 @@ const PROVIDERS: Record<string, ProviderInfo> = {
     timeout: 60000,
     note: 'grok-4 = deep reasoning, grok-4-mini = fast',
   },
+  sakana: {
+    label: 'Sakana AI (Fugu)',
+    envKey: 'SAKANA_API_KEY',
+    baseUrl: 'https://api.sakana.ai/v1',
+    modelsUrl: 'https://api.sakana.ai/v1/models',
+    defaultModel: 'fugu-ultra',
+    timeout: 120000,
+    note: 'Sakana AI - Fugu multi-agent orchestration system. Supports fugu-ultra and fugu.',
+  },
   mistral: {
     label: 'Mistral',
     envKey: 'MISTRAL_API_KEY',

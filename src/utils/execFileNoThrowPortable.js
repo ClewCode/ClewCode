@@ -69,7 +69,7 @@ var __disposeResources =
         },
   );
 
-import { execaSync } from 'execa';
+import { execFileSync } from 'node:child_process';
 import { getCwd } from '../utils/cwd.js';
 import { slowLogging } from './slowOperations.js';
 
@@ -109,17 +109,15 @@ export function execSyncWithDefaults_DEPRECATED(
     abortSignal?.throwIfAborted();
     const _ = __addDisposableResource(env_1, slowLogging`exec: ${command.slice(0, 200)}`, false);
     try {
-      const result = execaSync(command, {
+      const stdout = execFileSync(process.env.SHELL || 'sh', ['-c', command], {
         env: process.env,
         maxBuffer: 1_000_000,
         timeout: finalTimeout,
         cwd: getCwd(),
         stdio,
-        shell: true, // execSync typically runs shell commands
-        reject: false, // Don't throw on non-zero exit codes
         input,
       });
-      if (!result.stdout) {
+      if (!stdout) {
         return null;
       }
       return result.stdout.trim() || null;

@@ -1,4 +1,4 @@
-import { execaSync } from 'execa';
+import { execFileSync } from 'node:child_process';
 import { logForDebugging } from '../debug.js';
 import { execFileNoThrow } from '../execFileNoThrow.js';
 import { execSyncWithDefaults_DEPRECATED } from '../execFileNoThrowPortable.js';
@@ -113,28 +113,24 @@ export const macOsKeychainStorage = {
       // effectively no size limit for our purposes.
       const command = `add-generic-password -U -a "${username}" -s "${storageServiceName}" -X "${hexValue}"\n`;
 
-      let result;
       if (command.length <= SECURITY_STDIN_LINE_LIMIT) {
-        result = execaSync('security', ['-i'], {
+        execFileSync('security', ['-i'], {
           input: command,
           stdio: ['pipe', 'pipe', 'pipe'],
-          reject: false,
+          encoding: 'utf8',
         });
       } else {
         logForDebugging(`Keychain payload (${jsonString.length}B JSON) exceeds security -i stdin limit; using argv`, {
           level: 'warn',
         });
-        result = execaSync(
+        execFileSync(
           'security',
           ['add-generic-password', '-U', '-a', username, '-s', storageServiceName, '-X', hexValue],
-          { stdio: ['ignore', 'pipe', 'pipe'], reject: false },
+          { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' },
         );
       }
 
-      if (result.exitCode !== 0) {
-        return { success: false };
-      }
-
+      // execFileSync throws on non-zero exit, so getting here means success
       // Update cache with new data on success
       keychainCacheState.cache = { data, cachedAt: Date.now() };
       return { success: true };
@@ -197,15 +193,16 @@ export function isMacOsKeychainLocked(): boolean {
   }
 
   try {
-    const result = execaSync('security', ['show-keychain-info'], {
-      reject: false,
+    execFileSync('security', ['show-keychain-info'], {
       stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
     });
-    // Exit code 36 indicates the keychain is locked
-    keychainLockedCache = result.exitCode === 36;
-  } catch {
-    // If the command fails for any reason, assume keychain is not locked
+    // No error means keychain is unlocked
     keychainLockedCache = false;
+  } catch (e) {
+    // Exit code 36 indicates the keychain is locked
+    const err = e as { status?: number };
+    keychainLockedCache = err.status === 36;
   }
   return keychainLockedCache;
 }

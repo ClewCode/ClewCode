@@ -39,6 +39,8 @@ export function normalizeProviderId(provider: string): string {
     ollama: 'ollama',
     xai: 'xai',
     grok: 'xai',
+    sakana: 'sakana',
+    fugu: 'sakana',
     mistral: 'mistral',
     mixtral: 'mistral',
     deepseek: 'deepseek',
@@ -70,6 +72,7 @@ function extractProviderFromModel(model: string): string {
   if (lower.startsWith('gemini-')) return 'google';
   if (lower.startsWith('llama') || lower.startsWith('ollama')) return 'ollama';
   if (lower.startsWith('grok-')) return 'xai';
+  if (lower.startsWith('fugu')) return 'sakana';
   if (lower.startsWith('mistral')) return 'mistral';
   if (lower.startsWith('mixtral')) return 'mistral';
   if (lower.startsWith('kimi')) return 'openrouter'; // Often via OpenRouter

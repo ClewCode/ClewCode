@@ -1,7 +1,4 @@
-import {
-  CLEW_FOLDER_PERMISSION_PATTERN,
-  GLOBAL_CLEW_FOLDER_PERMISSION_PATTERN,
-} from '../../utils/clewPaths.js';
+import { CLEW_FOLDER_PERMISSION_PATTERN, GLOBAL_CLEW_FOLDER_PERMISSION_PATTERN } from '../../utils/clewPaths.js';
 
 // In its own file to avoid circular dependencies
 export const FILE_EDIT_TOOL_NAME = 'Edit';

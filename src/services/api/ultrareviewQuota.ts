@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from '../../constants/oauth.js';
 import { isClaudeAISubscriber } from '../../utils/auth.js';
 import { logForDebugging } from '../../utils/debug.js';
@@ -20,16 +20,13 @@ export async function fetchUltrareviewQuota(): Promise<UltrareviewQuotaResponse 
   if (!isClaudeAISubscriber()) return null;
   try {
     const { accessToken, orgUUID } = await prepareApiRequest();
-    const response = await axios.get<UltrareviewQuotaResponse>(
-      `${getOauthConfig().BASE_API_URL}/v1/ultrareview/quota`,
-      {
-        headers: {
-          ...getOAuthHeaders(accessToken),
-          'x-organization-uuid': orgUUID,
-        },
-        timeout: 5000,
+    const response = await ofetch<UltrareviewQuotaResponse>(`${getOauthConfig().BASE_API_URL}/v1/ultrareview/quota`, {
+      headers: {
+        ...getOAuthHeaders(accessToken),
+        'x-organization-uuid': orgUUID,
       },
-    );
+      timeout: 5000,
+    });
     return response.data;
   } catch (error) {
     logForDebugging(`fetchUltrareviewQuota failed: ${error}`);

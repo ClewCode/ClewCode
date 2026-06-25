@@ -1,5 +1,5 @@
-import { execa } from 'execa';
 import { readFile, realpath } from 'fs/promises';
+import spawn from 'nano-spawn';
 import { homedir } from 'os';
 import { delimiter, join, posix, win32 } from 'path';
 import { checkGlobalInstallPermissions } from './autoUpdater.js';
@@ -146,11 +146,18 @@ export async function getCurrentInstallationType(): Promise<InstallationType> {
     }
   }
 
-  const npmConfigResult = await execa('npm config get prefix', {
-    shell: true,
-    reject: false,
-  });
-  const globalPrefix = npmConfigResult.exitCode === 0 ? npmConfigResult.stdout.trim() : null;
+  let npmConfigStdout = '';
+  let npmConfigExitCode = 0;
+  try {
+    const npmConfigResult = await spawn('npm config get prefix', {
+      shell: true,
+    });
+    npmConfigStdout = npmConfigResult.stdout;
+  } catch (e) {
+    npmConfigExitCode = e.exitCode ?? 1;
+    npmConfigStdout = e.stdout ?? '';
+  }
+  const globalPrefix = npmConfigExitCode === 0 ? npmConfigStdout.trim() : null;
 
   if (globalPrefix && invokedPath.startsWith(globalPrefix)) {
     return 'npm-global';

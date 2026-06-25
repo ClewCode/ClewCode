@@ -59,7 +59,7 @@ export async function createBridgeSession({
   const { parseGitHubRepository } = await import('../utils/detectRepository.js');
   const { getDefaultBranch } = await import('../utils/git.js');
   const { getMainLoopModel } = await import('../utils/model/model.js');
-  const { default: axios } = await import('axios');
+  const { ofetch } = await import('ofetch');
 
   const accessToken = getAccessToken?.() ?? getClaudeAIOAuthTokens()?.accessToken;
   if (!accessToken) {
@@ -143,10 +143,12 @@ export async function createBridgeSession({
   const url = `${baseUrlOverride ?? getOauthConfig().BASE_API_URL}/v1/sessions`;
   let response;
   try {
-    response = await axios.post(url, requestBody, {
+    response = await ofetch.raw(url, {
+      method: 'POST',
+      body: requestBody,
       headers,
       signal,
-      validateStatus: s => s < 500,
+      ignoreResponseError: true,
     });
   } catch (err: unknown) {
     logForDebugging(`[bridge] Session creation request failed: ${errorMessage(err)}`);
@@ -155,12 +157,12 @@ export async function createBridgeSession({
   const isSuccess = response.status === 200 || response.status === 201;
 
   if (!isSuccess) {
-    const detail = extractErrorDetail(response.data);
+    const detail = extractErrorDetail(response._data);
     logForDebugging(`[bridge] Session creation failed with status ${response.status}${detail ? `: ${detail}` : ''}`);
     return null;
   }
 
-  const sessionData: unknown = response.data;
+  const sessionData: unknown = response._data;
   if (!sessionData || typeof sessionData !== 'object' || !('id' in sessionData) || typeof sessionData.id !== 'string') {
     logForDebugging('[bridge] No session ID in response');
     return null;
@@ -185,7 +187,7 @@ export async function getBridgeSession(
   const { getOrganizationUUID } = await import('../services/oauth/client.js');
   const { getOauthConfig } = await import('../constants/oauth.js');
   const { getOAuthHeaders } = await import('../utils/teleport/api.js');
-  const { default: axios } = await import('axios');
+  const { ofetch } = await import('ofetch');
 
   const accessToken = opts?.getAccessToken?.() ?? getClaudeAIOAuthTokens()?.accessToken;
   if (!accessToken) {
@@ -210,10 +212,10 @@ export async function getBridgeSession(
 
   let response;
   try {
-    response = await axios.get<{ environment_id?: string; title?: string }>(url, {
+    response = await ofetch.raw<{ environment_id?: string; title?: string }>(url, {
       headers,
       timeout: 10_000,
-      validateStatus: s => s < 500,
+      ignoreResponseError: true,
     });
   } catch (err: unknown) {
     logForDebugging(`[bridge] Session fetch request failed: ${errorMessage(err)}`);
@@ -221,12 +223,12 @@ export async function getBridgeSession(
   }
 
   if (response.status !== 200) {
-    const detail = extractErrorDetail(response.data);
+    const detail = extractErrorDetail(response._data);
     logForDebugging(`[bridge] Session fetch failed with status ${response.status}${detail ? `: ${detail}` : ''}`);
     return null;
   }
 
-  return response.data;
+  return response._data;
 }
 
 /**
@@ -258,7 +260,7 @@ export async function archiveBridgeSession(
   const { getOrganizationUUID } = await import('../services/oauth/client.js');
   const { getOauthConfig } = await import('../constants/oauth.js');
   const { getOAuthHeaders } = await import('../utils/teleport/api.js');
-  const { default: axios } = await import('axios');
+  const { ofetch } = await import('ofetch');
 
   const accessToken = opts?.getAccessToken?.() ?? getClaudeAIOAuthTokens()?.accessToken;
   if (!accessToken) {
@@ -281,20 +283,18 @@ export async function archiveBridgeSession(
   const url = `${opts?.baseUrl ?? getOauthConfig().BASE_API_URL}/v1/sessions/${sessionId}/archive`;
   logForDebugging(`[bridge] Archiving session ${sessionId}`);
 
-  const response = await axios.post(
-    url,
-    {},
-    {
-      headers,
-      timeout: opts?.timeoutMs ?? 10_000,
-      validateStatus: s => s < 500,
-    },
-  );
+  const response = await ofetch.raw(url, {
+    method: 'POST',
+    body: {},
+    headers,
+    timeout: opts?.timeoutMs ?? 10_000,
+    ignoreResponseError: true,
+  });
 
   if (response.status === 200) {
     logForDebugging(`[bridge] Session ${sessionId} archived successfully`);
   } else {
-    const detail = extractErrorDetail(response.data);
+    const detail = extractErrorDetail(response._data);
     logForDebugging(`[bridge] Session archive failed with status ${response.status}${detail ? `: ${detail}` : ''}`);
   }
 }
@@ -316,7 +316,7 @@ export async function updateBridgeSessionTitle(
   const { getOrganizationUUID } = await import('../services/oauth/client.js');
   const { getOauthConfig } = await import('../constants/oauth.js');
   const { getOAuthHeaders } = await import('../utils/teleport/api.js');
-  const { default: axios } = await import('axios');
+  const { ofetch } = await import('ofetch');
 
   const accessToken = opts?.getAccessToken?.() ?? getClaudeAIOAuthTokens()?.accessToken;
   if (!accessToken) {
@@ -344,12 +344,18 @@ export async function updateBridgeSessionTitle(
   logForDebugging(`[bridge] Updating session title: ${compatId} → ${title}`);
 
   try {
-    const response = await axios.patch(url, { title }, { headers, timeout: 10_000, validateStatus: s => s < 500 });
+    const response = await ofetch.raw(url, {
+      method: 'POST',
+      body: { title },
+      headers,
+      timeout: 10_000,
+      ignoreResponseError: true,
+    });
 
     if (response.status === 200) {
       logForDebugging(`[bridge] Session title updated successfully`);
     } else {
-      const detail = extractErrorDetail(response.data);
+      const detail = extractErrorDetail(response._data);
       logForDebugging(
         `[bridge] Session title update failed with status ${response.status}${detail ? `: ${detail}` : ''}`,
       );

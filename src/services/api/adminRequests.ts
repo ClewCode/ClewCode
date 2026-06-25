@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from '../../constants/oauth.js';
 import { getOAuthHeaders, prepareApiRequest } from '../../utils/teleport/api.js';
 
@@ -56,7 +56,7 @@ export async function createAdminRequest(params: AdminRequestCreateParams): Prom
 
   const url = `${getOauthConfig().BASE_API_URL}/api/oauth/organizations/${orgUUID}/admin_requests`;
 
-  const response = await axios.post<AdminRequest>(url, params, { headers });
+  const response = await ofetch<AdminRequest>(url, params, { headers });
 
   return response.data;
 }
@@ -82,7 +82,7 @@ export async function getMyAdminRequests(
     url += `&statuses=${status}`;
   }
 
-  const response = await axios.get<AdminRequest[] | null>(url, {
+  const response = await ofetch<AdminRequest[] | null>(url, {
     headers,
   });
 
@@ -109,7 +109,7 @@ export async function checkAdminRequestEligibility(
 
   const url = `${getOauthConfig().BASE_API_URL}/api/oauth/organizations/${orgUUID}/admin_requests/eligibility?request_type=${requestType}`;
 
-  const response = await axios.get<AdminRequestEligibilityResponse>(url, {
+  const response = await ofetch<AdminRequestEligibilityResponse>(url, {
     headers,
   });
 

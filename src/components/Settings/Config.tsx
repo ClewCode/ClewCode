@@ -14,7 +14,7 @@ import {
   formatAutoUpdaterDisabledReason,
   getRemoteControlAtStartup,
 } from '../../utils/config.js';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import {
   permissionModeTitle,
   permissionModeFromString,
@@ -1182,7 +1182,7 @@ export function Config({
         key: key as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         value: value as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       });
-      return `Set ${key} to ${chalk.bold(value)}`;
+      return `Set ${key} to ${ansis.bold(value)}`;
     });
     // Check for API key changes
     // On homespace, ANTHROPIC_API_KEY is preserved in process.env for child
@@ -1204,22 +1204,22 @@ export function Config({
       });
     }
     if (globalConfig.theme !== initialConfig.current.theme) {
-      formattedChanges.push(`Set theme to ${chalk.bold(globalConfig.theme)}`);
+      formattedChanges.push(`Set theme to ${ansis.bold(globalConfig.theme)}`);
     }
     if (globalConfig.preferredNotifChannel !== initialConfig.current.preferredNotifChannel) {
-      formattedChanges.push(`Set notifications to ${chalk.bold(globalConfig.preferredNotifChannel)}`);
+      formattedChanges.push(`Set notifications to ${ansis.bold(globalConfig.preferredNotifChannel)}`);
     }
     if (currentOutputStyle !== initialOutputStyle.current) {
-      formattedChanges.push(`Set output style to ${chalk.bold(currentOutputStyle)}`);
+      formattedChanges.push(`Set output style to ${ansis.bold(currentOutputStyle)}`);
     }
     if (currentLanguage !== initialLanguage.current) {
-      formattedChanges.push(`Set response language to ${chalk.bold(currentLanguage ?? 'Default (English)')}`);
+      formattedChanges.push(`Set response language to ${ansis.bold(currentLanguage ?? 'Default (English)')}`);
     }
     if (globalConfig.editorMode !== initialConfig.current.editorMode) {
-      formattedChanges.push(`Set editor mode to ${chalk.bold(globalConfig.editorMode || 'emacs')}`);
+      formattedChanges.push(`Set editor mode to ${ansis.bold(globalConfig.editorMode || 'emacs')}`);
     }
     if (globalConfig.diffTool !== initialConfig.current.diffTool) {
-      formattedChanges.push(`Set diff tool to ${chalk.bold(globalConfig.diffTool)}`);
+      formattedChanges.push(`Set diff tool to ${ansis.bold(globalConfig.diffTool)}`);
     }
     if (globalConfig.autoConnectIde !== initialConfig.current.autoConnectIde) {
       formattedChanges.push(`${globalConfig.autoConnectIde ? 'Enabled' : 'Disabled'} auto-connect to IDE`);
@@ -1265,7 +1265,7 @@ export function Config({
       formattedChanges.push(remoteLabel);
     }
     if (settingsData?.autoUpdatesChannel !== initialSettingsData.current?.autoUpdatesChannel) {
-      formattedChanges.push(`Set auto-update channel to ${chalk.bold(settingsData?.autoUpdatesChannel ?? 'latest')}`);
+      formattedChanges.push(`Set auto-update channel to ${ansis.bold(settingsData?.autoUpdatesChannel ?? 'latest')}`);
     }
     if (formattedChanges.length > 0) {
       onClose(formattedChanges.join('\n'));

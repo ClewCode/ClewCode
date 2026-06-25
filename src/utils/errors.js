@@ -168,13 +168,38 @@ export function isFsInaccessible(e) {
   return code === 'ENOENT' || code === 'EACCES' || code === 'EPERM' || code === 'ENOTDIR' || code === 'ELOOP';
 }
 /**
+ * Check if an error is a fetch/HTTP error with a response property.
+ * Works with both FetchError (ofetch) and AxiosError shapes.
+ */
+export function isFetchError(e) {
+  if (!e || typeof e !== 'object') return false;
+  // ofetch FetchError
+  if ('name' in e && e.name === 'FetchError') return true;
+  // Generic HTTP error with response
+  if ('response' in e && e.response && typeof e.response === 'object') return true;
+  return false;
+}
+
+/**
+ * Check if an error is an abort/cancellation error (e.g., AbortController signal).
+ */
+export function isCancelError(e) {
+  if (!e || typeof e !== 'object') return false;
+  // DOMException AbortError
+  if (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') return true;
+  // Error with name AbortError
+  if ('name' in e && e.name === 'AbortError') return true;
+  return false;
+}
+
+/**
  * Classify a caught error from an axios request into one of a few buckets.
  * Replaces the ~20-line isAxiosError → 401/403 → ECONNABORTED → ECONNREFUSED
  * chain duplicated across sync-style services (settingsSync, policyLimits,
  * remoteManagedSettings, teamMemorySync).
  *
  * Checks the `.isAxiosError` marker property directly (same as
- * axios.isAxiosError()) to keep this module dependency-free.
+ * isFetchError()) to keep this module dependency-free.
  */
 export function classifyAxiosError(e) {
   const message = errorMessage(e);

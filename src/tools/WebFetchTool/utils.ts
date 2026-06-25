@@ -1,5 +1,5 @@
-import axios, { type AxiosResponse } from 'axios';
 import { LRUCache } from 'lru-cache';
+import { ofetch } from 'ofetch';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -188,7 +188,7 @@ export async function checkDomainBlocklist(domain: string): Promise<DomainCheckR
     return { status: 'allowed' };
   }
   try {
-    const response = await axios.get(
+    const response = await ofetch(
       `https://api.anthropic.com/api/web/domain_info?domain=${encodeURIComponent(domain)}`,
       { timeout: DOMAIN_CHECK_TIMEOUT_MS },
     );
@@ -269,12 +269,12 @@ export async function getWithPermittedRedirects(
   signal: AbortSignal,
   redirectChecker: (originalUrl: string, redirectUrl: string) => boolean,
   depth = 0,
-): Promise<AxiosResponse<ArrayBuffer> | RedirectInfo> {
+): Promise<Response | RedirectInfo> {
   if (depth > MAX_REDIRECTS) {
     throw new Error(`Too many redirects (exceeded ${MAX_REDIRECTS})`);
   }
   try {
-    return await axios.get(url, {
+    return await ofetch(url, {
       signal,
       timeout: FETCH_TIMEOUT_MS,
       maxRedirects: 0,
@@ -286,7 +286,7 @@ export async function getWithPermittedRedirects(
       },
     });
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response && [301, 302, 307, 308].includes(error.response.status)) {
+    if (isFetchError(error) && error.response && [301, 302, 307, 308].includes(error.response.status)) {
       const redirectLocation = error.response.headers.location;
       if (!redirectLocation) {
         throw new Error('Redirect missing Location header');
@@ -312,7 +312,7 @@ export async function getWithPermittedRedirects(
     // Detect egress proxy blocks: the proxy returns 403 with
     // X-Proxy-Error: blocked-by-allowlist when egress is restricted
     if (
-      axios.isAxiosError(error) &&
+      isFetchError(error) &&
       error.response?.status === 403 &&
       error.response.headers['x-proxy-error'] === 'blocked-by-allowlist'
     ) {
@@ -324,7 +324,7 @@ export async function getWithPermittedRedirects(
   }
 }
 
-function isRedirectInfo(response: AxiosResponse<ArrayBuffer> | RedirectInfo): response is RedirectInfo {
+function isRedirectInfo(response: Response | RedirectInfo): response is RedirectInfo {
   return 'type' in response && response.type === 'redirect';
 }
 

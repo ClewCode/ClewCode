@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { randomUUID } from 'crypto';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from 'src/constants/oauth.js';
 import { getOrganizationUUID } from 'src/services/oauth/client.js';
 import z from 'zod/v4';
@@ -20,7 +20,7 @@ export const CCR_BYOC_BETA = 'ccr-byoc-2025-07-29';
  * Checks if an axios error is a transient network error that should be retried
  */
 export function isTransientNetworkError(error) {
-  if (!axios.isAxiosError(error)) {
+  if (!isFetchError(error)) {
     return false;
   }
   // Retry on network errors (no response received)
@@ -42,7 +42,7 @@ export async function axiosGetWithRetry(url, config) {
   let lastError;
   for (let attempt = 0; attempt <= MAX_TELEPORT_RETRIES; attempt++) {
     try {
-      return await axios.get(url, config);
+      return await ofetch(url, config);
     } catch (error) {
       lastError = error;
       // Don't retry if this isn't a transient error
@@ -183,7 +183,7 @@ export async function fetchSession(sessionId) {
     'anthropic-beta': 'ccr-byoc-2025-07-29',
     'x-organization-uuid': orgUUID,
   };
-  const response = await axios.get(url, {
+  const response = await ofetch(url, {
     headers,
     timeout: 15000,
     validateStatus: status => status < 500,
@@ -244,7 +244,7 @@ export async function sendEventToRemoteSession(sessionId, messageContent, opts) 
     logForDebugging(`[sendEventToRemoteSession] Sending event to session ${sessionId}`);
     // The endpoint may block until the CCR worker is ready. Observed ~2.6s
     // in normal cases; allow a generous margin for cold-start containers.
-    const response = await axios.post(url, requestBody, {
+    const response = await ofetch(url, requestBody, {
       headers,
       validateStatus: status => status < 500,
       timeout: 30000,
@@ -278,7 +278,7 @@ export async function updateSessionTitle(sessionId, title) {
       'x-organization-uuid': orgUUID,
     };
     logForDebugging(`[updateSessionTitle] Updating title for session ${sessionId}: "${title}"`);
-    const response = await axios.patch(
+    const response = await ofetch(
       url,
       { title },
       {

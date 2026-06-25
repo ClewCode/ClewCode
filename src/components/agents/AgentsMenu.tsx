@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import type * as React from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { SettingSource } from 'src/utils/settings/constants.js';
@@ -81,7 +81,7 @@ export function AgentsMenu({ tools, onExit }: Props): React.ReactNode {
           };
         });
 
-        setChanges(prev => [...prev, `Deleted agent: ${chalk.bold(agent.agentType)}`]);
+        setChanges(prev => [...prev, `Deleted agent: ${ansis.bold(agent.agentType)}`]);
         // Go back to the agents list after deletion
         setModeState({ mode: 'list-agents', source: 'all' });
       } catch (error) {

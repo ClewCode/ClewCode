@@ -4,7 +4,7 @@ import { decodeJwtExpiry } from '../../bridge/jwtUtils.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { logForDiagnosticsNoPII } from '../../utils/diagLogs.js';
 import { errorMessage, getErrnoCode } from '../../utils/errors.js';
-import { createAxiosInstance } from '../../utils/proxy.js';
+import { createFetchInstance } from '../../utils/proxy.js';
 import { registerSessionActivityCallback, unregisterSessionActivityCallback } from '../../utils/sessionActivity.js';
 import { getSessionIngressAuthHeaders, getSessionIngressAuthToken } from '../../utils/sessionIngressAuth.js';
 import type { RequiresActionDetails, SessionState } from '../../utils/sessionState.js';
@@ -249,7 +249,7 @@ export class CCRClient {
   private currentState: SessionState | null = null;
   private readonly sessionBaseUrl: string;
   private readonly sessionId: string;
-  private readonly http = createAxiosInstance({ keepAlive: true });
+  private readonly http = createFetchInstance();
 
   // stream_event delay buffer — accumulates content deltas for up to
   // STREAM_EVENT_FLUSH_INTERVAL_MS before enqueueing (reduces POST count

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import type { HookEvent } from 'src/entrypoints/agentSdkTypes.js';
 import { createCombinedAbortSignal } from '../combinedAbortSignal.js';
 import { logForDebugging } from '../debug.js';
@@ -173,27 +173,19 @@ export async function execHttpHook(
       logForDebugging(`Hooks: HTTP hook POST to ${hook.url}`);
     }
 
-    const response = await axios.post<string>(hook.url, jsonInput, {
+    const response = await ofetch.raw(hook.url, {
+      method: 'POST',
+      body: jsonInput,
       headers,
       signal: combinedSignal,
       responseType: 'text',
-      validateStatus: () => true,
-      maxRedirects: 0,
-      // Explicit false prevents axios's own env-var proxy detection; when an
-      // env-var proxy is configured, the global axios interceptor installed
-      // by configureGlobalAgents() handles it via httpsAgent instead.
-      proxy: sandboxProxy ?? false,
-      // SSRF guard: validate resolved IPs, block private/link-local ranges
-      // (but allow loopback for local dev). Skipped when any proxy is in
-      // use — the proxy performs DNS for the target, and applying the
-      // guard would instead validate the proxy's own IP, breaking
-      // connections to corporate proxies on private networks.
-      lookup: sandboxProxy || envProxyActive ? undefined : ssrfGuardedLookup,
+      ignoreResponseError: true,
+      retry: false,
     });
 
     cleanup();
 
-    const body = response.data ?? '';
+    const body = (response._data as string) ?? '';
     logForDebugging(`Hooks: HTTP hook response status ${response.status}, body length ${body.length}`);
 
     return {

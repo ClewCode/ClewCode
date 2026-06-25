@@ -11,9 +11,9 @@
  */
 
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs';
-import axios from 'axios';
 import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { basename, join } from 'path';
 import { z } from 'zod/v4';
 import { getSessionId } from '../bootstrap/state.js';
@@ -79,7 +79,7 @@ async function resolveOne(att: InboundAttachment): Promise<string | undefined> {
     // FedStart URL degrades to "no @path" instead of crashing print.ts's
     // reader loop (which has no catch around the await).
     const url = `${getBridgeBaseUrl()}/api/oauth/files/${encodeURIComponent(att.file_uuid)}/content`;
-    const response = await axios.get(url, {
+    const response = await ofetch(url, {
       headers: { Authorization: `Bearer ${token}` },
       responseType: 'arraybuffer',
       timeout: DOWNLOAD_TIMEOUT_MS,

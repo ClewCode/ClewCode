@@ -1,5 +1,5 @@
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { spawnSync } from 'child_process';
 import { copyFile, mkdir, readdir, readFile, stat, symlink, utimes } from 'fs/promises';
 import ignore from 'ignore';
@@ -1085,7 +1085,7 @@ export async function execIntoTmuxWorktree(args) {
   const tmuxGlobalArgs = useControlMode ? ['-CC'] : [];
   // Print hint about iTerm2 preferences when using control mode
   if (useControlMode && !sessionExists) {
-    const y = chalk.yellow;
+    const y = ansis.yellow;
     // biome-ignore lint/suspicious/noConsole: intentional user guidance
     console.log(
       `\n${y('╭─ iTerm2 Tip ────────────────────────────────────────────────────────╮')}\n` +

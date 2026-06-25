@@ -1,5 +1,5 @@
-import axios, { type AxiosError } from 'axios';
 import type { UUID } from 'crypto';
+import { type FetchError, type FetchResponse, ofetch } from 'ofetch';
 import { getOauthConfig } from '../../constants/oauth.js';
 import type { Entry, TranscriptMessage } from '../../types/logs.js';
 import { logForDebugging } from '../../utils/debug.js';
@@ -67,13 +67,15 @@ async function appendSessionLogImpl(
         requestHeaders['Last-Uuid'] = lastUuid;
       }
 
-      const response = await axios.put(url, entry, {
+      const response = await ofetch.raw(url, {
+        method: 'POST',
+        body: entry,
         headers: requestHeaders,
-        validateStatus: status => status < 500,
+        ignoreResponseError: true,
       });
 
       if (response.status === 200 || response.status === 201) {
-        lastUuidMap.set(sessionId, entry.uuid);
+        lastUuidMap.set(sessionId, entry.uuid as UUID);
         logForDebugging(`Successfully persisted session log entry for session ${sessionId}`);
         return true;
       }
@@ -82,10 +84,10 @@ async function appendSessionLogImpl(
         // Check if our entry was actually stored (server returned 409 but entry exists)
         // This handles the scenario where entry was stored but client received an error
         // response, causing lastUuidMap to be stale
-        const serverLastUuid = response.headers['x-last-uuid'];
+        const serverLastUuid: string | null | undefined = response.headers.get('x-last-uuid');
         if (serverLastUuid === entry.uuid) {
           // Our entry IS the last entry on server - it was stored successfully previously
-          lastUuidMap.set(sessionId, entry.uuid);
+          lastUuidMap.set(sessionId, entry.uuid as UUID);
           logForDebugging(`Session entry ${entry.uuid} already present on server, recovering from stale state`);
           logForDiagnosticsNoPII('info', 'session_persist_recovered_from_409');
           return true;
@@ -111,8 +113,8 @@ async function appendSessionLogImpl(
             );
           } else {
             // Can't determine server state — give up
-            const errorData = response.data as SessionIngressError;
-            const errorMessage = errorData.error?.message || 'Concurrent modification detected';
+            const errorData = response._data as SessionIngressError | undefined;
+            const errorMessage = errorData?.error?.message || 'Concurrent modification detected';
             logError(
               new Error(
                 `Session persistence conflict: UUID mismatch for session ${sessionId}, entry ${entry.uuid}. ${errorMessage}`,
@@ -140,10 +142,10 @@ async function appendSessionLogImpl(
       });
     } catch (error) {
       // Network errors, 5xx - retryable
-      const axiosError = error as AxiosError<SessionIngressError>;
-      logError(new Error(`Error persisting session log: ${axiosError.message}`));
+      const fetchError = error as FetchError;
+      logError(new Error(`Error persisting session log: ${fetchError.message}`));
       logForDiagnosticsNoPII('error', 'session_persist_fail_status', {
-        status: axiosError.status,
+        status: fetchError.status,
         attempt,
       });
     }
@@ -286,16 +288,16 @@ export async function getTeleportEvents(
       params.cursor = cursor;
     }
 
-    let response;
+    let response: FetchResponse<TeleportEventsResponse>;
     try {
-      response = await axios.get<TeleportEventsResponse>(baseUrl, {
+      response = await ofetch.raw<TeleportEventsResponse>(baseUrl, {
         headers,
         params,
         timeout: 20000,
-        validateStatus: status => status < 500,
+        ignoreResponseError: true,
       });
     } catch (e) {
-      const err = e as AxiosError;
+      const err = e as Error;
       logError(new Error(`Teleport events fetch failed: ${err.message}`));
       logForDiagnosticsNoPII('error', 'teleport_events_fetch_fail');
       return null;
@@ -326,14 +328,20 @@ export async function getTeleportEvents(
     }
 
     if (response.status !== 200) {
-      logError(new Error(`Teleport events returned ${response.status}: ${jsonStringify(response.data)}`));
+      logError(new Error(`Teleport events returned ${response.status}: ${jsonStringify(response._data)}`));
       logForDiagnosticsNoPII('error', 'teleport_events_bad_status');
       return null;
     }
 
-    const { data, next_cursor } = response.data;
+    if (!response._data) {
+      logError(new Error(`Teleport events empty response body`));
+      logForDiagnosticsNoPII('error', 'teleport_events_invalid_shape');
+      return null;
+    }
+
+    const { data, next_cursor } = response._data;
     if (!Array.isArray(data)) {
-      logError(new Error(`Teleport events invalid response shape: ${jsonStringify(response.data)}`));
+      logError(new Error(`Teleport events invalid response shape: ${jsonStringify(response._data)}`));
       logForDiagnosticsNoPII('error', 'teleport_events_invalid_shape');
       return null;
     }
@@ -377,15 +385,15 @@ async function fetchSessionLogsFromUrl(
   headers: Record<string, string>,
 ): Promise<Entry[] | null> {
   try {
-    const response = await axios.get(url, {
+    const response = await ofetch.raw(url, {
       headers,
       timeout: 20000,
-      validateStatus: status => status < 500,
+      ignoreResponseError: true,
       params: isEnvTruthy(process.env.CLAUDE_AFTER_LAST_COMPACT) ? { after_last_compact: true } : undefined,
     });
 
     if (response.status === 200) {
-      const data = response.data;
+      const data = response._data;
 
       // Validate the response structure
       if (!data || typeof data !== 'object' || !Array.isArray(data.loglines)) {
@@ -417,10 +425,10 @@ async function fetchSessionLogsFromUrl(
     });
     return null;
   } catch (error) {
-    const axiosError = error as AxiosError<SessionIngressError>;
-    logError(new Error(`Error fetching session logs: ${axiosError.message}`));
+    const fetchError = error as FetchError;
+    logError(new Error(`Error fetching session logs: ${fetchError.message}`));
     logForDiagnosticsNoPII('error', 'session_get_fail_status', {
-      status: axiosError.status,
+      status: fetchError.status,
     });
     return null;
   }

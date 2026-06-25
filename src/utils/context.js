@@ -198,6 +198,7 @@ function getContextWindowFromRegistry(model) {
     cline: 'cline',
     groq: 'groq',
     xai: 'xai',
+    sakana: 'sakana',
     mistral: 'mistral',
   };
   // Try each provider to find matching model
@@ -230,6 +231,7 @@ function getContextWindowFromRegistry(model) {
     'cline',
     'groq',
     'xai',
+    'sakana',
     'mistral',
   ];
   for (const providerId of allProviders) {

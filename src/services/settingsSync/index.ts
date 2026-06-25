@@ -10,9 +10,9 @@
  */
 
 import { feature } from 'bun:bundle';
-import axios from 'axios';
 import { mkdir, readFile, stat, writeFile } from 'fs/promises';
 import pickBy from 'lodash-es/pickBy.js';
+import { ofetch } from 'ofetch';
 import { dirname } from 'path';
 import { getIsInteractive } from '../../bootstrap/state.js';
 import { CLAUDE_AI_INFERENCE_SCOPE, getOauthConfig, OAUTH_BETA_HEADER } from '../../constants/oauth.js';
@@ -238,7 +238,7 @@ async function fetchUserSettingsOnce(): Promise<SettingsSyncFetchResult> {
     };
 
     const endpoint = getSettingsSyncEndpoint();
-    const response = await axios.get(endpoint, {
+    const response = await ofetch(endpoint, {
       headers,
       timeout: SETTINGS_SYNC_TIMEOUT_MS,
       validateStatus: status => status === 200 || status === 404,
@@ -336,7 +336,7 @@ async function uploadUserSettings(entries: Record<string, string>): Promise<Sett
     };
 
     const endpoint = getSettingsSyncEndpoint();
-    const response = await axios.put(
+    const response = await ofetch(
       endpoint,
       { entries },
       {

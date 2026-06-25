@@ -1,5 +1,5 @@
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import type React from 'react';
 import { useMemo, useRef } from 'react';
 import { useVoiceState } from '../context/voice.js';
@@ -62,7 +62,7 @@ export default function TextInput(props: Props): React.ReactNode {
   useClipboardImageHint(isTerminalFocused, !!props.onImagePaste);
 
   // Cursor invert function: mini waveform during voice recording,
-  // standard chalk.inverse otherwise. No warmup pulse — the ~120ms
+  // standard ansis.inverse otherwise. No warmup pulse — the ~120ms
   // warmup window is too short for a 1s-period pulse to register, and
   // driving TextInput re-renders at 50ms during warmup (while spaces
   // are simultaneously arriving every 30-80ms) causes visible stutter.
@@ -87,9 +87,9 @@ export default function TextInput(props: Props): React.ReactNode {
           b: 128,
         }
       : hueToRgb(hue);
-    invert = () => chalk.rgb(r, g, b)(BARS[barIndex]!);
+    invert = () => ansis.rgb(r, g, b)(BARS[barIndex]!);
   } else {
-    invert = chalk.inverse;
+    invert = ansis.inverse;
   }
   const textInputState = useTextInput({
     value: props.value,
@@ -117,7 +117,7 @@ export default function TextInput(props: Props): React.ReactNode {
     onOffsetChange: props.onChangeCursorOffset,
     inputFilter: props.inputFilter,
     inlineGhostText: props.inlineGhostText,
-    dim: chalk.dim,
+    dim: ansis.dim,
   });
   return (
     <Box ref={animRef}>

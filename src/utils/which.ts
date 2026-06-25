@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import spawn from 'nano-spawn';
 import { execSync_DEPRECATED } from './execSyncWrapper.js';
 
 /**
@@ -29,28 +29,42 @@ async function whichNodeAsync(command: string): Promise<string | null> {
 
   if (process.platform === 'win32') {
     // On Windows, use where.exe and return the first result
-    const result = await execa(`where.exe ${command}`, {
-      shell: true,
-      stderr: 'ignore',
-      reject: false,
-    });
-    if (result.exitCode !== 0 || !result.stdout) {
+    let stdout = '';
+    let exitCode = 0;
+    try {
+      const result = await spawn(`where.exe ${command}`, {
+        shell: true,
+        stdio: ['pipe', 'pipe', 'ignore'],
+      });
+      stdout = result.stdout;
+    } catch (e) {
+      exitCode = e.exitCode ?? 1;
+      stdout = e.stdout ?? '';
+    }
+    if (exitCode !== 0 || !stdout) {
       setMissingCache(command);
       return null;
     }
     // where.exe returns multiple paths separated by newlines, return the first
-    return result.stdout.trim().split(/\r?\n/)[0] || null;
+    return stdout.trim().split(/\r?\n/)[0] || null;
   }
 
   // On POSIX systems (macOS, Linux, WSL), use which
   // Cross-platform safe: Windows is handled above
   // eslint-disable-next-line custom-rules/no-cross-platform-process-issues
-  const result = await execa(`which ${command}`, {
-    shell: true,
-    stderr: 'ignore',
-    reject: false,
-  });
-  if (result.exitCode !== 0 || !result.stdout) {
+  let stdout = '';
+  let exitCode = 0;
+  try {
+    const result = await spawn(`which ${command}`, {
+      shell: true,
+      stdio: ['pipe', 'pipe', 'ignore'],
+    });
+    stdout = result.stdout;
+  } catch (e) {
+    exitCode = e.exitCode ?? 1;
+    stdout = e.stdout ?? '';
+  }
+  if (exitCode !== 0 || !stdout) {
     setMissingCache(command);
     return null;
   }

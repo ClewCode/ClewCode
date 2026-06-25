@@ -1,6 +1,6 @@
-import axios from 'axios';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { randomUUID } from 'crypto';
+import { ofetch } from 'ofetch';
 import { getOriginalCwd, getSessionId } from 'src/bootstrap/state.js';
 import { checkGate_CACHED_OR_BLOCKING } from 'src/services/analytics/growthbook.js';
 import {
@@ -189,7 +189,7 @@ export async function validateGitState(): Promise<void> {
     logEvent('tengu_teleport_error_git_not_clean', {});
     const error = new TeleportOperationError(
       'Git working directory is not clean. Please commit or stash your changes before using --teleport.',
-      chalk.red(
+      ansis.red(
         'Error: Git working directory is not clean. Please commit or stash your changes before using --teleport.\n',
       ),
     );
@@ -290,7 +290,7 @@ async function checkoutBranch(branchName: string): Promise<void> {
     logEvent('tengu_teleport_error_branch_checkout_failed', {});
     throw new TeleportOperationError(
       `Failed to checkout branch '${branchName}': ${checkoutStderr}`,
-      chalk.red(`Failed to checkout branch '${branchName}'\n`),
+      ansis.red(`Failed to checkout branch '${branchName}'\n`),
     );
   }
 
@@ -505,7 +505,7 @@ export async function teleportResumeCodeSession(
             : repoValidation.sessionRepo;
         throw new TeleportOperationError(
           `You must run clew --teleport ${sessionId} from a checkout of ${notInRepoDisplay}.`,
-          chalk.red(`You must run clew --teleport ${sessionId} from a checkout of ${chalk.bold(notInRepoDisplay)}.\n`),
+          ansis.red(`You must run clew --teleport ${sessionId} from a checkout of ${ansis.bold(notInRepoDisplay)}.\n`),
         );
       }
       case 'mismatch': {
@@ -527,15 +527,15 @@ export async function teleportResumeCodeSession(
           : repoValidation.currentRepo;
         throw new TeleportOperationError(
           `You must run clew --teleport ${sessionId} from a checkout of ${sessionDisplay}.\nThis repo is ${currentDisplay}.`,
-          chalk.red(
-            `You must run clew --teleport ${sessionId} from a checkout of ${chalk.bold(sessionDisplay)}.\nThis repo is ${chalk.bold(currentDisplay)}.\n`,
+          ansis.red(
+            `You must run clew --teleport ${sessionId} from a checkout of ${ansis.bold(sessionDisplay)}.\nThis repo is ${ansis.bold(currentDisplay)}.\n`,
           ),
         );
       }
       case 'error':
         throw new TeleportOperationError(
           repoValidation.errorMessage || 'Failed to validate session repository',
-          chalk.red(`Error: ${repoValidation.errorMessage || 'Failed to validate session repository'}\n`),
+          ansis.red(`Error: ${repoValidation.errorMessage || 'Failed to validate session repository'}\n`),
         );
       default: {
         const _exhaustive: never = repoValidation.status;
@@ -552,7 +552,7 @@ export async function teleportResumeCodeSession(
     logEvent('tengu_teleport_resume_error', {
       error_type: 'resume_session_id_catch' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     });
-    throw new TeleportOperationError(err.message, chalk.red(`Error: ${err.message}\n`));
+    throw new TeleportOperationError(err.message, ansis.red(`Error: ${err.message}\n`));
   }
 }
 
@@ -680,13 +680,13 @@ export async function teleportFromSessionsAPI(
     const err = toError(error);
 
     // Handle 404 specifically
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
+    if (isFetchError(error) && error.response?.status === 404) {
       logEvent('tengu_teleport_error_session_not_found_404', {
         sessionId: sessionId as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       });
       throw new TeleportOperationError(
         `${sessionId} not found.`,
-        `${sessionId} not found.\n${chalk.dim('Run /status in Clew Code to check your account.')}`,
+        `${sessionId} not found.\n${ansis.dim('Run /status in Clew Code to check your account.')}`,
       );
     }
     logError(err);
@@ -742,7 +742,7 @@ export async function pollRemoteSessionEvents(
   const sdkMessages: SDKMessage[] = [];
   let cursor = afterId;
   for (let page = 0; page < MAX_EVENT_PAGES; page++) {
-    const eventsResponse = await axios.get(eventsUrl, {
+    const eventsResponse = await ofetch(eventsUrl, {
       headers,
       params: cursor
         ? {
@@ -965,7 +965,7 @@ export async function teleportToRemote(options: {
       logForDebugging(
         `[teleportToRemote] explicit env ${options.environmentId}, ${Object.keys(envVars).length} env vars, ${seedBundleFileId ? `bundle=${seedBundleFileId}` : `source=${gitSource?.url ?? 'none'}@${options.branchName ?? 'default'}`}`,
       );
-      const response = await axios.post(url, requestBody, {
+      const response = await ofetch(url, requestBody, {
         headers,
         signal,
       });
@@ -1292,7 +1292,7 @@ export async function teleportToRemote(options: {
     logForDebugging(`Creating session with payload: ${jsonStringify(requestBody, null, 2)}`);
 
     // Make API call
-    const response = await axios.post(url, requestBody, {
+    const response = await ofetch(url, requestBody, {
       headers,
       signal,
     });
@@ -1344,7 +1344,7 @@ export async function archiveRemoteSession(sessionId: string): Promise<void> {
   };
   const url = `${getOauthConfig().BASE_API_URL}/v1/sessions/${sessionId}/archive`;
   try {
-    const resp = await axios.post(
+    const resp = await ofetch(
       url,
       {},
       {

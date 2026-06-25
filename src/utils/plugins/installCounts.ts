@@ -8,9 +8,9 @@
  * Cache location: ~/.claude/plugins/install-counts-cache.json
  */
 
-import axios from 'axios';
 import { randomBytes } from 'crypto';
 import { readFile, rename, unlink, writeFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { join } from 'path';
 import { logForDebugging } from '../debug.js';
 import { errorMessage, getErrnoCode } from '../errors.js';
@@ -182,16 +182,17 @@ async function fetchInstallCountsFromGitHub(): Promise<Array<{ plugin: string; u
 
   const started = performance.now();
   try {
-    const response = await axios.get<GitHubStatsResponse>(INSTALL_COUNTS_URL, {
+    const response = await ofetch.raw<GitHubStatsResponse>(INSTALL_COUNTS_URL, {
       timeout: 10000,
+      retry: false,
     });
 
-    if (!response.data?.plugins || !Array.isArray(response.data.plugins)) {
+    if (!response._data?.plugins || !Array.isArray(response._data.plugins)) {
       throw new Error('Invalid response format from install counts API');
     }
 
     logPluginFetch('install_counts', INSTALL_COUNTS_URL, 'success', performance.now() - started);
-    return response.data.plugins;
+    return response._data.plugins;
   } catch (error) {
     logPluginFetch(
       'install_counts',

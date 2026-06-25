@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { readFile, writeFile } from 'fs/promises';
 import * as React from 'react';
 import { type OptionWithDescription, Select } from '../../components/CustomSelect/select.js';
@@ -121,8 +121,8 @@ async function providerList(): Promise<string> {
     const isActive = provider === currentProvider;
 
     return [
-      `${isActive ? chalk.bold.green('●') : ' '} ${provider} (${info.label})${isActive ? chalk.dim(' (active)') : ''}`,
-      `    key: ${hasKey ? chalk.green('saved') : info.isLocal ? chalk.dim('not required') : chalk.yellow(`missing ${info.envKey}`)}`,
+      `${isActive ? ansis.bold.green('●') : ' '} ${provider} (${info.label})${isActive ? ansis.dim(' (active)') : ''}`,
+      `    key: ${hasKey ? ansis.green('saved') : info.isLocal ? ansis.dim('not required') : ansis.yellow(`missing ${info.envKey}`)}`,
     ].join('\n');
   });
 
@@ -668,11 +668,11 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     const status = hasKey
       ? entry.isLocal && !entry.envKey
         ? 'not required'
-        : chalk.green(`${entry.envKey || 'configured'} - OK`)
+        : ansis.green(`${entry.envKey || 'configured'} - OK`)
       : entry.isLocal
         ? 'not required'
         : `${entry.envKey} - MISSING`;
-    const markers = [entry.providerId === activeProvider ? chalk.green('current') : null].filter(Boolean);
+    const markers = [entry.providerId === activeProvider ? ansis.green('current') : null].filter(Boolean);
     return {
       label: entry.label,
       value: entry.value,
@@ -695,8 +695,8 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
         entry.isLocal && !entry.envKey
           ? true
           : Boolean(config?.apiKeys?.[entry.providerId] || process.env[entry.envKey]);
-      const status = hasKey ? chalk.green('configured') : entry.isLocal ? 'not required' : `${entry.envKey} - MISSING`;
-      const markers = [entry.providerId === activeProvider ? chalk.green('current') : null].filter(Boolean);
+      const status = hasKey ? ansis.green('configured') : entry.isLocal ? 'not required' : `${entry.envKey} - MISSING`;
+      const markers = [entry.providerId === activeProvider ? ansis.green('current') : null].filter(Boolean);
       return {
         label: entry.label,
         value: entry.value,

@@ -7,7 +7,7 @@ import {
   type PushMetricExporter,
   type ResourceMetrics,
 } from '@opentelemetry/sdk-metrics';
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { checkMetricsEnabled } from 'src/services/api/metricsOptOut.js';
 import { getIsNonInteractiveSession } from '../../bootstrap/state.js';
 import { getSubscriptionType, isClaudeAISubscriber } from '../auth.js';
@@ -113,7 +113,7 @@ export class BigQueryMetricsExporter implements PushMetricExporter {
         ...authResult.headers,
       };
 
-      const response = await axios.post(this.endpoint, payload, {
+      const response = await ofetch(this.endpoint, payload, {
         timeout: this.timeout,
         headers,
       });

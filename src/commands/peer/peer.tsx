@@ -16,7 +16,7 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { spawn as childSpawn } from 'child_process';
 import { getProjectRoot } from '../../bootstrap/state.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
@@ -121,7 +121,7 @@ function spawnPeerTerminal(options: { name?: string; prompt?: string; model?: st
 
 async function startSharing(onDone: (msg: string) => void): Promise<void> {
   if (sharingStatus()) {
-    onDone(chalk.dim('Already sharing. Run /peer share stop to stop.'));
+    onDone(ansis.dim('Already sharing. Run /peer share stop to stop.'));
     return;
   }
 
@@ -192,27 +192,27 @@ async function startSharing(onDone: (msg: string) => void): Promise<void> {
     }
 
     await discovery.startAdvertising(port, process.cwd());
-    onDone(chalk.dim(`Sharing (port ${port}). Others can find you with /peer discover.`));
+    onDone(ansis.dim(`Sharing (port ${port}). Others can find you with /peer discover.`));
   } catch (err) {
-    onDone(chalk.red(`Failed: ${errorMessage(err)}`));
+    onDone(ansis.red(`Failed: ${errorMessage(err)}`));
   }
 }
 
 function stopSharing(onDone: (msg: string) => void): void {
   if (!sharingStatus()) {
-    onDone(chalk.dim('Not sharing.'));
+    onDone(ansis.dim('Not sharing.'));
     return;
   }
   getGlobalDiscovery().stopAdvertising();
   getGlobalPeerServer().stop();
-  onDone(chalk.dim('Stopped sharing.'));
+  onDone(ansis.dim('Stopped sharing.'));
 }
 
 async function doDiscover(onDone: (msg: string) => void): Promise<void> {
   try {
     const peers = await getGlobalDiscovery().discoverPeers(3000);
     if (peers.length === 0) {
-      onDone(chalk.dim('No peers found.'));
+      onDone(ansis.dim('No peers found.'));
       return;
     }
     const lines = ['Available peers:', ''];
@@ -221,7 +221,7 @@ async function doDiscover(onDone: (msg: string) => void): Promise<void> {
     }
     onDone(lines.join('\n'));
   } catch (err) {
-    onDone(chalk.red(`Failed: ${errorMessage(err)}`));
+    onDone(ansis.red(`Failed: ${errorMessage(err)}`));
   }
 }
 
@@ -249,12 +249,12 @@ async function sendMessage(peerQuery: string, text: string, onDone: (msg: string
     const store = getGlobalPeerStore();
     const peer = store.findPeer(peerQuery);
     if (!peer) {
-      onDone(chalk.red(`✗ Peer "${peerQuery}" not found. Run /peer discover first.`));
+      onDone(ansis.red(`✗ Peer "${peerQuery}" not found. Run /peer discover first.`));
       return;
     }
 
     const url = `http://${peer.ip}:${peer.port}/peer-msg`;
-    onDone(chalk.dim(`📡 Sending to ${peer.hostname}...`));
+    onDone(ansis.dim(`📡 Sending to ${peer.hostname}...`));
 
     const response = await fetchWithRetry(
       url,
@@ -263,17 +263,17 @@ async function sendMessage(peerQuery: string, text: string, onDone: (msg: string
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: myPeerId || getMyName(), fromName: getMyName(), text }),
       },
-      (a, t) => onDone(chalk.yellow(`♻️  Retry ${a}/${t}...`)),
+      (a, t) => onDone(ansis.yellow(`♻️  Retry ${a}/${t}...`)),
     );
 
     if (!response.ok) {
-      onDone(chalk.red(`✗ ${peer.hostname} replied HTTP ${response.status}`));
+      onDone(ansis.red(`✗ ${peer.hostname} replied HTTP ${response.status}`));
       return;
     }
 
-    onDone(chalk.green(`✓ Message sent to ${peer.hostname}`));
+    onDone(ansis.green(`✓ Message sent to ${peer.hostname}`));
   } catch {
-    onDone(chalk.red(`✗ Could not reach ${peer?.hostname ?? peerQuery} after several tries`));
+    onDone(ansis.red(`✗ Could not reach ${peer?.hostname ?? peerQuery} after several tries`));
   }
 }
 
@@ -282,12 +282,12 @@ async function sendTask(peerQuery: string, text: string, onDone: (msg: string) =
     const store = getGlobalPeerStore();
     const peer = store.findPeer(peerQuery);
     if (!peer) {
-      onDone(chalk.red(`✗ Worker "${peerQuery}" not found. Run /peer discover first.`));
+      onDone(ansis.red(`✗ Worker "${peerQuery}" not found. Run /peer discover first.`));
       return;
     }
 
     const url = `http://${peer.ip}:${peer.port}/peer-todo`;
-    onDone(chalk.dim(`📡 Sending task to ${peer.hostname}...`));
+    onDone(ansis.dim(`📡 Sending task to ${peer.hostname}...`));
 
     const response = await fetchWithRetry(
       url,
@@ -296,17 +296,17 @@ async function sendTask(peerQuery: string, text: string, onDone: (msg: string) =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: myPeerId || getMyName(), fromName: getMyName(), message: text }),
       },
-      (a, t) => onDone(chalk.yellow(`♻️  Retry ${a}/${t}...`)),
+      (a, t) => onDone(ansis.yellow(`♻️  Retry ${a}/${t}...`)),
     );
 
     if (!response.ok) {
-      onDone(chalk.red(`✗ ${peer.hostname} replied HTTP ${response.status}`));
+      onDone(ansis.red(`✗ ${peer.hostname} replied HTTP ${response.status}`));
       return;
     }
 
-    onDone(chalk.green(`✓ Task sent to ${peer.hostname}`));
+    onDone(ansis.green(`✓ Task sent to ${peer.hostname}`));
   } catch {
-    onDone(chalk.red(`✗ Could not reach ${peer?.hostname ?? peerQuery} after several tries`));
+    onDone(ansis.red(`✗ Could not reach ${peer?.hostname ?? peerQuery} after several tries`));
   }
 }
 
@@ -363,14 +363,14 @@ function parseProcessPeerRunArgs(rest: string): ProcessPeerRunArgs | { error: st
 async function runProcessPeer(rest: string, onDone: (msg: string) => void): Promise<void> {
   const parsed = parseProcessPeerRunArgs(rest);
   if ('error' in parsed) {
-    onDone(chalk.yellow(parsed.error));
+    onDone(ansis.yellow(parsed.error));
     return;
   }
 
   const provider = getProcessPeerProvider(parsed.providerId);
   if (!provider) {
     onDone(
-      chalk.red(
+      ansis.red(
         `Unknown process worker provider "${parsed.providerId}". Available: ${getProcessPeerProviderIds().join(', ')}`,
       ),
     );
@@ -387,41 +387,41 @@ async function runProcessPeer(rest: string, onDone: (msg: string) => void): Prom
     const output = result.stdout.trim() || result.stderr.trim() || '(no output)';
     const status =
       result.exitCode === 0 && !result.timedOut
-        ? chalk.dim(`${provider.label} peer finished in ${(result.durationMs / 1000).toFixed(1)}s`)
-        : chalk.red(
+        ? ansis.dim(`${provider.label} peer finished in ${(result.durationMs / 1000).toFixed(1)}s`)
+        : ansis.red(
             `${provider.label} peer failed${result.timedOut ? ' (timed out)' : ''}: exit ${result.exitCode ?? result.signal ?? 'unknown'}`,
           );
 
     onDone([status, '', output].join('\n'));
   } catch (err) {
-    onDone(chalk.red(`Failed to run ${provider.label} peer: ${errorMessage(err)}`));
+    onDone(ansis.red(`Failed to run ${provider.label} peer: ${errorMessage(err)}`));
   }
 }
 
 function showTodos(onDone: (msg: string) => void): void {
   const todos = getGlobalPeerStore().getTodos();
   if (todos.length === 0) {
-    onDone(chalk.dim('No pending tasks.'));
+    onDone(ansis.dim('No pending tasks.'));
     return;
   }
   const lines = ['Pending tasks:', ''];
   for (const todo of todos) {
     const status =
       todo.status === 'pending'
-        ? chalk.yellow('pending')
+        ? ansis.yellow('pending')
         : todo.status === 'done'
-          ? chalk.green('done')
-          : chalk.red('rejected');
-    lines.push(`  ${chalk.bold(todo.id.slice(0, 12))}  ${status}  from ${todo.fromName}: ${todo.message}`);
+          ? ansis.green('done')
+          : ansis.red('rejected');
+    lines.push(`  ${ansis.bold(todo.id.slice(0, 12))}  ${status}  from ${todo.fromName}: ${todo.message}`);
   }
   onDone(lines.join('\n'));
 }
 
 function markTodoDone(id: string, onDone: (msg: string) => void): void {
   if (getGlobalPeerStore().updateTodoStatus(id, 'done')) {
-    onDone(chalk.dim(`Task ${id} done.`));
+    onDone(ansis.dim(`Task ${id} done.`));
   } else {
-    onDone(chalk.red(`Task "${id}" not found.`));
+    onDone(ansis.red(`Task "${id}" not found.`));
   }
 }
 
@@ -622,14 +622,14 @@ async function runSwarm(rest: string, onDone: (msg: string, opts?: any) => void)
 
   const command = commandTokens.join(' ');
   if (!command) {
-    onDone(chalk.yellow('Missing command. Usage: /peer swarm <command>'), { display: 'system' });
+    onDone(ansis.yellow('Missing command. Usage: /peer swarm <command>'), { display: 'system' });
     return;
   }
 
   const store = getGlobalPeerStore();
   const peers = store.getConnections().filter(p => p.status === 'online' && p.port > 0);
   if (peers.length === 0) {
-    onDone(chalk.dim('No connected peers. Use /peer discover and /peer join first.'), { display: 'system' });
+    onDone(ansis.dim('No connected peers. Use /peer discover and /peer join first.'), { display: 'system' });
     return;
   }
 
@@ -648,13 +648,13 @@ async function runMemorySync(onDone: (msg: string) => void): Promise<void> {
   const peers = store.getPeers().filter(p => p.port && p.ip);
 
   if (peers.length === 0) {
-    onDone(chalk.yellow('No connected peers. Use /peer discover and /peer join first.'));
+    onDone(ansis.yellow('No connected peers. Use /peer discover and /peer join first.'));
     return;
   }
 
   const { MemoryDB } = await import('../../memory/database.js');
   if (!MemoryDB.isInitialized()) {
-    onDone(chalk.yellow('MemoryDB not initialized. Run /memory init first.'));
+    onDone(ansis.yellow('MemoryDB not initialized. Run /memory init first.'));
     return;
   }
   const db = MemoryDB.getInstance();
@@ -673,7 +673,7 @@ async function runMemorySync(onDone: (msg: string) => void): Promise<void> {
         signal: AbortSignal.timeout(10000),
       });
       if (!response.ok) {
-        results.push(`  ${chalk.red('✗')} ${peer.hostname} — HTTP ${response.status}`);
+        results.push(`  ${ansis.red('✗')} ${peer.hostname} — HTTP ${response.status}`);
         return;
       }
 
@@ -690,7 +690,7 @@ async function runMemorySync(onDone: (msg: string) => void): Promise<void> {
         }>;
       };
       if (!data.ok || !data.memories?.length) {
-        results.push(`  ${chalk.dim('−')} ${peer.hostname} — no memories`);
+        results.push(`  ${ansis.dim('−')} ${peer.hostname} — no memories`);
         return;
       }
 
@@ -708,11 +708,11 @@ async function runMemorySync(onDone: (msg: string) => void): Promise<void> {
         if (upsertResult.action !== 'unchanged') imported++;
       }
       totalImported += imported;
-      results.push(`  ${chalk.green('✓')} ${peer.hostname} — ${imported} memories imported`);
+      results.push(`  ${ansis.green('✓')} ${peer.hostname} — ${imported} memories imported`);
     } catch (err: any) {
       const msg =
         err?.name === 'TimeoutError' || err?.name === 'AbortError' ? 'timed out' : (err?.message ?? String(err));
-      results.push(`  ${chalk.red('✗')} ${peer.hostname} — ${msg}`);
+      results.push(`  ${ansis.red('✗')} ${peer.hostname} — ${msg}`);
     }
   });
 
@@ -720,12 +720,12 @@ async function runMemorySync(onDone: (msg: string) => void): Promise<void> {
   const duration = ((performance.now() - startedAt) / 1000).toFixed(1);
 
   const lines = [
-    chalk.bold(`Memory Sync (${duration}s)`),
+    ansis.bold(`Memory Sync (${duration}s)`),
     ...results,
     '',
     totalImported > 0
-      ? chalk.green(`Imported ${totalImported} memories from ${peers.length} peer(s)`)
-      : chalk.dim('No new memories imported'),
+      ? ansis.green(`Imported ${totalImported} memories from ${peers.length} peer(s)`)
+      : ansis.dim('No new memories imported'),
   ];
   onDone(lines.join('\n'));
 }
@@ -762,10 +762,10 @@ async function runMemoryAuto(args: string, onDone: (msg: string) => void): Promi
 
   // /peer memory auto → show status
   if (!args) {
-    const status = state.enabled ? chalk.green('ON') : chalk.dim('OFF');
+    const status = state.enabled ? ansis.green('ON') : ansis.dim('OFF');
     onDone(
       [
-        chalk.bold('Auto Memory Sync'),
+        ansis.bold('Auto Memory Sync'),
         `  Status: ${status}`,
         `  Interval: ${state.intervalMin} min`,
         '',
@@ -783,7 +783,7 @@ async function runMemoryAuto(args: string, onDone: (msg: string) => void): Promi
       await removeCronTasks([state.cronTaskId]);
     }
     await writePeerMemoryState({ ...state, enabled: false, cronTaskId: undefined });
-    onDone(chalk.dim('Auto memory sync disabled.'));
+    onDone(ansis.dim('Auto memory sync disabled.'));
     return;
   }
 
@@ -815,14 +815,14 @@ async function runMemoryAuto(args: string, onDone: (msg: string) => void): Promi
     });
 
     // Run an initial sync immediately
-    onDone(chalk.green(`Auto memory sync enabled (every ${clampedInterval} min). Syncing now...`), {
+    onDone(ansis.green(`Auto memory sync enabled (every ${clampedInterval} min). Syncing now...`), {
       display: 'system',
     });
     await runMemorySync(msg => onDone(msg, { display: 'system' }));
     return;
   }
 
-  onDone(chalk.yellow('Usage: /peer memory auto [on|off]'));
+  onDone(ansis.yellow('Usage: /peer memory auto [on|off]'));
 }
 
 // ── Command entry ──────────────────────────────────────────
@@ -853,7 +853,7 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     const host = parts.length > 1 ? parts[0]! : '127.0.0.1';
     const port = parseInt(parts[parts.length > 1 ? 1 : 0]!, 10);
     if (Number.isNaN(port)) {
-      onDone(chalk.yellow('Usage: /peer join <port> or /peer join <host>:<port>'), { display: 'system' });
+      onDone(ansis.yellow('Usage: /peer join <port> or /peer join <host>:<port>'), { display: 'system' });
       return;
     }
     try {
@@ -880,9 +880,9 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
         queueDepth: typeof info.queueDepth === 'number' ? info.queueDepth : 0,
         latencyMs,
       });
-      onDone(chalk.dim(`Joined ${info.hostname ?? host} (port ${port})`), { display: 'system' });
+      onDone(ansis.dim(`Joined ${info.hostname ?? host} (port ${port})`), { display: 'system' });
     } catch (err) {
-      onDone(chalk.red(`Failed to connect to ${host}:${port}: ${errorMessage(err)}`), { display: 'system' });
+      onDone(ansis.red(`Failed to connect to ${host}:${port}: ${errorMessage(err)}`), { display: 'system' });
     }
     return;
   }
@@ -890,7 +890,7 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
   if (args.startsWith('name ')) {
     const name = args.slice(5).trim();
     if (!name) {
-      onDone(chalk.yellow('Usage: /peer name <new_name>'), { display: 'system' });
+      onDone(ansis.yellow('Usage: /peer name <new_name>'), { display: 'system' });
       return;
     }
     const store = getGlobalPeerStore();
@@ -899,14 +899,14 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     store.setPeerName(discovery.peerId, name);
     const server = getGlobalPeerServer();
     server.extraInfo.displayName = name;
-    onDone(chalk.dim(`Set local display name to "${name}"`), { display: 'system' });
+    onDone(ansis.dim(`Set local display name to "${name}"`), { display: 'system' });
     return;
   }
 
   if (args.startsWith('role ')) {
     const role = args.slice(5).trim();
     if (!role) {
-      onDone(chalk.yellow('Usage: /peer role <new_role>'), { display: 'system' });
+      onDone(ansis.yellow('Usage: /peer role <new_role>'), { display: 'system' });
       return;
     }
     const store = getGlobalPeerStore();
@@ -914,7 +914,7 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     store.setPeerRole(discovery.peerId, role);
     const server = getGlobalPeerServer();
     server.extraInfo.role = role;
-    onDone(chalk.dim(`Set local role to "${role}"`), { display: 'system' });
+    onDone(ansis.dim(`Set local role to "${role}"`), { display: 'system' });
     return;
   }
 
@@ -930,7 +930,7 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     // /peer send <peer> <message...>
     const spaceIdx = rest.indexOf(' ');
     if (spaceIdx === -1) {
-      onDone(chalk.yellow('Usage: /peer send <peer> <message>'), { display: 'system' });
+      onDone(ansis.yellow('Usage: /peer send <peer> <message>'), { display: 'system' });
       return;
     }
     const peerQuery = rest.slice(0, spaceIdx);
@@ -942,7 +942,7 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
   if (args.startsWith('todo ')) {
     const rest = args.slice(5).trim();
     if (rest === 'done') {
-      onDone(chalk.yellow('Usage: /peer todo done <id>'));
+      onDone(ansis.yellow('Usage: /peer todo done <id>'));
       return;
     }
     if (rest.startsWith('done ')) {
@@ -952,7 +952,7 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     // /peer todo <peer> <task...>
     const spaceIdx = rest.indexOf(' ');
     if (spaceIdx === -1) {
-      onDone(chalk.yellow('Usage: /peer todo <worker> <task description>'), { display: 'system' });
+      onDone(ansis.yellow('Usage: /peer todo <worker> <task description>'), { display: 'system' });
       return;
     }
     const peerQuery = rest.slice(0, spaceIdx);
@@ -969,18 +969,18 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
   if (args === 'dashboard' || args === 'dash') {
     const dash = formatPeerTaskDashboard();
     if (!dash) {
-      onDone(chalk.dim('No peer activity. Share or join peers first with /peer share or /peer join.'), {
+      onDone(ansis.dim('No peer activity. Share or join peers first with /peer share or /peer join.'), {
         display: 'system',
       });
       return;
     }
     const summary = formatPeerTaskSummary();
-    onDone([dash, '', chalk.dim(summary)].join('\n'), { display: 'system' });
+    onDone([dash, '', ansis.dim(summary)].join('\n'), { display: 'system' });
     return;
   }
 
   if (args === 'memory') {
-    onDone(chalk.dim('Usage: /peer memory sync | auto [on|off]'), { display: 'system' });
+    onDone(ansis.dim('Usage: /peer memory sync | auto [on|off]'), { display: 'system' });
     return;
   }
 
@@ -1020,13 +1020,13 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     ];
 
     if (inboxItems.length === 0) {
-      onDone(chalk.dim('No pending messages or tasks.'), { display: 'system' });
+      onDone(ansis.dim('No pending messages or tasks.'), { display: 'system' });
       return;
     }
 
     // Show first item and inject it
     const item = inboxItems[0]!;
-    onDone(chalk.dim(`Inbox (${inboxItems.length}): ${item.text}`), {
+    onDone(ansis.dim(`Inbox (${inboxItems.length}): ${item.text}`), {
       display: 'system',
       nextInput: item.raw,
       submitNextInput: true,
@@ -1048,9 +1048,9 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
 
     try {
       spawnPeerTerminal({ name, prompt, model, agent });
-      onDone(chalk.dim(`Spawning new peer shell${name ? ` "${name}"` : ''}...`), { display: 'system' });
+      onDone(ansis.dim(`Spawning new peer shell${name ? ` "${name}"` : ''}...`), { display: 'system' });
     } catch (err) {
-      onDone(chalk.red(`Failed to spawn peer: ${errorMessage(err)}`), { display: 'system' });
+      onDone(ansis.red(`Failed to spawn peer: ${errorMessage(err)}`), { display: 'system' });
     }
     return;
   }
@@ -1095,5 +1095,5 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     return;
   }
 
-  onDone(chalk.yellow(`Unknown: /peer ${args}. Run /peer help.`), { display: 'system' });
+  onDone(ansis.yellow(`Unknown: /peer ${args}. Run /peer help.`), { display: 'system' });
 };

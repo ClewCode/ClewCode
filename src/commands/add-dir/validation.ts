@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { stat } from 'fs/promises';
 import { dirname, resolve } from 'path';
 import type { ToolPermissionContext } from '../../Tool.js';
@@ -89,14 +89,14 @@ export function addDirHelpMessage(result: AddDirectoryResult): string {
     case 'emptyPath':
       return 'Please provide a directory path.';
     case 'pathNotFound':
-      return `Path ${chalk.bold(result.absolutePath)} was not found.`;
+      return `Path ${ansis.bold(result.absolutePath)} was not found.`;
     case 'notADirectory': {
       const parentDir = dirname(result.absolutePath);
-      return `${chalk.bold(result.directoryPath)} is not a directory. Did you mean to add the parent directory ${chalk.bold(parentDir)}?`;
+      return `${ansis.bold(result.directoryPath)} is not a directory. Did you mean to add the parent directory ${ansis.bold(parentDir)}?`;
     }
     case 'alreadyInWorkingDirectory':
-      return `${chalk.bold(result.directoryPath)} is already accessible within the existing working directory ${chalk.bold(result.workingDir)}.`;
+      return `${ansis.bold(result.directoryPath)} is already accessible within the existing working directory ${ansis.bold(result.workingDir)}.`;
     case 'success':
-      return `Added ${chalk.bold(result.absolutePath)} as a working directory.`;
+      return `Added ${ansis.bold(result.absolutePath)} as a working directory.`;
   }
 }

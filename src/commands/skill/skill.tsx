@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import figures from 'figures';
 import type React from 'react';
 import { getCwdState } from '../../bootstrap/state.js';
@@ -32,9 +32,9 @@ export async function call(
 
     const skillList = skills
       .map(skill => {
-        const name = chalk.bold(skill.name);
+        const name = ansis.bold(skill.name);
         const description = skill.description;
-        const whenToUse = skill.whenToUse ? chalk.dim(`· ${skill.whenToUse}`) : '';
+        const whenToUse = skill.whenToUse ? ansis.dim(`· ${skill.whenToUse}`) : '';
         return `${figures.pointer} ${name}: ${description} ${whenToUse}`;
       })
       .join('\n');
@@ -54,7 +54,7 @@ export async function call(
   const skill = skills.find(s => s.name === skillName);
 
   if (!skill) {
-    const message = `Skill not found: ${chalk.bold(skillName)}`;
+    const message = `Skill not found: ${ansis.bold(skillName)}`;
     onDone(message);
     return (
       <MessageResponse>
@@ -63,7 +63,7 @@ export async function call(
     );
   }
 
-  const message = `${chalk.bold(skill.name)}\n${skill.description}${skill.whenToUse ? `\n\nWhen to use: ${skill.whenToUse}` : ''}`;
+  const message = `${ansis.bold(skill.name)}\n${skill.description}${skill.whenToUse ? `\n\nWhen to use: ${skill.whenToUse}` : ''}`;
   onDone(message);
 
   return (

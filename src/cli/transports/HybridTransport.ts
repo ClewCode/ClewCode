@@ -1,4 +1,4 @@
-import axios, { type AxiosError } from 'axios';
+import { ofetch } from 'ofetch';
 import type { StdoutMessage } from 'src/entrypoints/sdk/controlTypes.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { logForDiagnosticsNoPII } from '../../utils/diagLogs.js';
@@ -204,7 +204,7 @@ export class HybridTransport extends WebSocketTransport {
 
     let response;
     try {
-      response = await axios.post(
+      response = await ofetch(
         this.postUrl,
         { events },
         {
@@ -214,8 +214,8 @@ export class HybridTransport extends WebSocketTransport {
         },
       );
     } catch (error) {
-      const axiosError = error as AxiosError;
-      logForDebugging(`HybridTransport: POST error: ${axiosError.message}`);
+      const fetchError = error as Error;
+      logForDebugging(`HybridTransport: POST error: ${fetchError.message}`);
       logForDiagnosticsNoPII('warn', 'cli_hybrid_post_network_error');
       throw error;
     }

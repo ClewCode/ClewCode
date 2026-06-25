@@ -1,4 +1,4 @@
-import Fuse from 'fuse.js';
+import MiniSearch from 'minisearch';
 import { basename } from 'path';
 import type { SuggestionItem } from 'src/components/PromptInput/PromptInputFooterSuggestions.js';
 import { generateFileSuggestions } from 'src/hooks/fileSuggestions.js';
@@ -166,25 +166,29 @@ export async function generateUnifiedSuggestions(
     });
   }
 
-  // Score non-file sources with Fuse.js and add them
+  // Score non-file sources with MiniSearch and add them
   if (nonFileSources.length > 0) {
-    const fuse = new Fuse(nonFileSources, {
-      includeScore: true,
-      threshold: 0.6, // Allow more matches through, we'll sort by score
-      keys: [
-        { name: 'displayText', weight: 2 },
-        { name: 'name', weight: 3 },
-        { name: 'server', weight: 1 },
-        { name: 'description', weight: 1 },
-        { name: 'agentType', weight: 3 },
-      ],
+    const miniSearch = new MiniSearch({
+      fields: ['displayText', 'name', 'server', 'description', 'agentType'],
+      storeFields: ['displayText', 'name', 'server', 'description', 'agentType', 'source'],
+      searchOptions: {
+        fuzzy: 0.6,
+        prefix: true,
+        boost: { displayText: 2, name: 3, server: 1, description: 1, agentType: 3 },
+      },
+      extractField: (doc: SuggestionSource, field: string) => {
+        return ((doc as Record<string, unknown>)[field] as string) || '';
+      },
     });
 
-    const fuseResults = fuse.search(query, { limit: MAX_UNIFIED_SUGGESTIONS });
-    for (const result of fuseResults) {
+    const searchItems = nonFileSources.map((source, i) => ({ ...source, id: String(i), source }));
+    miniSearch.addAll(searchItems);
+
+    const miniResults = miniSearch.search(query, { prefix: true, fuzzy: 0.6 });
+    for (const result of miniResults.slice(0, MAX_UNIFIED_SUGGESTIONS)) {
       scoredResults.push({
-        source: result.item,
-        score: result.score ?? 0.5,
+        source: result.source,
+        score: result.score,
       });
     }
   }

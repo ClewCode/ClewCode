@@ -3,21 +3,28 @@ import { registerBundledSkill } from '../bundledSkills.js';
 const SKILL_PROMPT = `# Personal Delegate
 
 You are in personal profile and the user has asked for coding work.
-Your job is to delegate this work to a coding worker, NOT to do it yourself.
+Your job is to delegate this work to a coding worker (LAN peer or local process), NOT to do it yourself.
 
-## Delegation Workflow
+## Peer Flow (always use this)
 
 ### 1. Understand & Plan
 - Clarify scope, files involved, expected output
 - Identify risks (destructive changes, credentials, deployment)
 - Plan the approach
 
-### 2. Delegate via process_peer
-Use the \`process_peer\` tool with these settings:
-- \`provider\`: "codex"
-- \`mode\`: "exec" (for self-contained tasks) or "pty" (for interactive)
-- \`cwd\`: the project root directory
-- \`prompt\`: a structured task description containing:
+### 2. \`peer_spawn\`
+Spawn peer node(s) for the task.
+
+### 3. \`peer_discover\`
+Confirm spawned peers are ready and get their info.
+
+### 4. Send tasks
+- **Single task → one peer**: \`peer_send_message\`
+- **Same task → all peers**: \`peer_broadcast\`
+- **Shell command → all peers**: \`peer_swarm\`
+- **Multiple tasks → multiple peers**: \`peer_send_message\` to each
+
+Each message must contain a self-contained task prompt:
   - **Goal**: what to accomplish
   - **Scope**: files to touch, not to touch
   - **Context**: relevant background, existing code patterns
@@ -26,29 +33,27 @@ Use the \`process_peer\` tool with these settings:
   - **Forbidden**: destructive ops, deploys, credentials
   - **Output format**: summary of what was done
 
-### 3. Multi-turn conversations (session resume)
-If the result includes a \`sessionId\`, you can continue the conversation by calling \`process_peer\` again with \`sessionId: "<id>"\` and a follow-up \`prompt\`. This resumes the same codex session and lets you ask follow-up questions without losing context.
+### 5. Summarize & report
+Tell the user what was done, what passed/failed, what's blocked, next steps.
 
-### 4. Create a summarize-and-report step
-Send a follow-up if needed to get a summary. Then report to the user:
-- What was done
-- What passed/failed
-- What's blocked
-- What decision is needed next
+## Codex (ONLY when user explicitly says)
+Never auto-select Codex. Only use \`delegate\` tool if the user says "ใช้ Codex" or "use Codex":
+- \`provider\`: leave empty (auto-selects codex)
+- \`mode\`: "exec" or "pty"
+- \`cwd\`: project root
+- \`prompt\`: structured task description
 
 ## Rules
-- Do NOT edit files directly when delegated
-- Do NOT use bash for the task — let the worker handle execution
-- Set appropriate timeout based on task complexity (default 600s)
-- If the worker fails, diagnose and re-delegate with clearer instructions
-- Always report results back to the user
+- Do NOT edit files directly
+- ALWAYS use peer flow above, never default to Codex
+- Only use Codex when the user explicitly says so
 `;
 
 export function registerPersonalDelegateSkill(): void {
   registerBundledSkill({
     name: 'delegate',
     description:
-      'Delegate coding work to a Codex worker via process_peer. Use when you need coding done in personal profile — creates a structured task, spawns a worker, and reports results.',
+      'Delegate coding work to LAN peer nodes or a local Codex worker. Use when you need coding done in personal profile — discovers peers for parallel work, falls back to local process, and reports results.',
     aliases: ['code', 'worker'],
     whenToUse: 'Personal profile: any coding task should be delegated instead of done directly.',
     userInvocable: true,

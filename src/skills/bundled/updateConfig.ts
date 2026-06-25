@@ -448,7 +448,7 @@ User: "Set DEBUG=true"
 1. **Replacing instead of merging** - Always preserve existing settings
 2. **Wrong file** - Ask user if scope is unclear
 3. **Invalid JSON** - Validate syntax after changes
-4. **Forgetting to read first** - Always read before write
+4. **Forgetting context** - Read first when you need the existing value, but avoid unnecessary read-before-write requirements
 
 ## Troubleshooting Hooks
 

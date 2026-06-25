@@ -1,5 +1,5 @@
 import type { BetaUsage as Usage } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import {
   addToTotalCostState,
   addToTotalLinesChanged,
@@ -224,7 +224,7 @@ export function formatTotalCost(): string {
 
   const modelUsageDisplay = formatModelUsage();
 
-  return chalk.dim(
+  return ansis.dim(
     `Total cost:            ${costDisplay}\n` +
       `Total duration (API):  ${formatDuration(getTotalAPIDuration())}
 Total duration (wall): ${formatDuration(getTotalDuration())}

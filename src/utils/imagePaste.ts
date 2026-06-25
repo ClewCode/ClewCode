@@ -1,6 +1,6 @@
 import { feature } from 'bun:bundle';
 import { randomBytes } from 'crypto';
-import { execa } from 'execa';
+import spawn from 'nano-spawn';
 import { basename, extname, isAbsolute, join } from 'path';
 import { IMAGE_MAX_HEIGHT, IMAGE_MAX_WIDTH, IMAGE_TARGET_RAW_SIZE } from '../constants/apiLimits.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
@@ -28,17 +28,24 @@ const CLIPBOARD_IMAGE_CHECK_TIMEOUT_MS = 3000;
 
 async function runClipboardImageCheck(command: string): Promise<boolean> {
   try {
-    const result = await execa(command, {
-      shell: true,
-      reject: false,
-      timeout: CLIPBOARD_IMAGE_CHECK_TIMEOUT_MS,
-    });
+    let stdout = '';
+    let exitCode = 0;
+    try {
+      const result = await spawn(command, {
+        shell: true,
+        timeout: CLIPBOARD_IMAGE_CHECK_TIMEOUT_MS,
+      });
+      stdout = result.stdout;
+    } catch (e) {
+      exitCode = e.exitCode ?? 1;
+      stdout = e.stdout ?? '';
+    }
 
-    if (result.exitCode !== 0) {
+    if (exitCode !== 0) {
       return false;
     }
 
-    return process.platform === 'win32' ? result.stdout?.trim().toLowerCase() === 'true' : true;
+    return process.platform === 'win32' ? stdout?.trim().toLowerCase() === 'true' : true;
   } catch (e) {
     logError(e as Error);
     return false;
@@ -215,10 +222,13 @@ export async function getImageFromClipboard(): Promise<ImageWithDimensions | nul
   try {
     // Check if clipboard has image with timeout
     const checkResult = await Promise.race([
-      execa(commands.checkImage, {
-        shell: true,
-        reject: false,
-      }),
+      (async () => {
+        try {
+          return await spawn(commands.checkImage, { shell: true });
+        } catch (e) {
+          return { exitCode: e.exitCode ?? 1, stdout: e.stdout ?? '', stderr: e.stderr ?? '' };
+        }
+      })(),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Clipboard check timed out')), CLIPBOARD_CHECK_TIMEOUT_MS),
       ),
@@ -229,10 +239,13 @@ export async function getImageFromClipboard(): Promise<ImageWithDimensions | nul
 
     // Save the image with timeout
     const saveResult = await Promise.race([
-      execa(commands.saveImage, {
-        shell: true,
-        reject: false,
-      }),
+      (async () => {
+        try {
+          return await spawn(commands.saveImage, { shell: true });
+        } catch (e) {
+          return { exitCode: e.exitCode ?? 1, stdout: e.stdout ?? '', stderr: e.stderr ?? '' };
+        }
+      })(),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Clipboard save timed out')), CLIPBOARD_SAVE_TIMEOUT_MS),
       ),
@@ -262,7 +275,7 @@ export async function getImageFromClipboard(): Promise<ImageWithDimensions | nul
     const mediaType = detectImageFormatFromBase64(base64Image);
 
     // Cleanup (fire-and-forget, don't await)
-    void execa(commands.deleteFile, { shell: true, reject: false });
+    void spawn(commands.deleteFile, { shell: true }).catch(() => {});
 
     return {
       base64: base64Image,
@@ -279,14 +292,21 @@ export async function getImagePathFromClipboard(): Promise<string | null> {
 
   try {
     // Try to get text from clipboard
-    const result = await execa(commands.getPath, {
-      shell: true,
-      reject: false,
-    });
-    if (result.exitCode !== 0 || !result.stdout) {
+    let stdout = '';
+    let exitCode = 0;
+    try {
+      const result = await spawn(commands.getPath, {
+        shell: true,
+      });
+      stdout = result.stdout;
+    } catch (e) {
+      exitCode = e.exitCode ?? 1;
+      stdout = e.stdout ?? '';
+    }
+    if (exitCode !== 0 || !stdout) {
       return null;
     }
-    return result.stdout.trim();
+    return stdout.trim();
   } catch (e) {
     logError(e as Error);
     return null;

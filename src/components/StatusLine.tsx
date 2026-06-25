@@ -1,5 +1,5 @@
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { existsSync } from 'fs';
 import { dirname, join } from 'path';
 import type * as React from 'react';
@@ -183,27 +183,27 @@ const CLAUDE_THEME = {
 
 const _BAR_FREE_HEX = CLAUDE_THEME.surface;
 const _CONTEXT_HEART_COUNT = 6;
-const CLAUDE_DOT = chalk.hex(CLAUDE_THEME.subtle)(' · ');
+const CLAUDE_DOT = ansis.hex(CLAUDE_THEME.subtle)(' · ');
 
 function claudeMuted(text: string): string {
-  return chalk.hex(CLAUDE_THEME.muted)(text);
+  return ansis.hex(CLAUDE_THEME.muted)(text);
 }
 
 function claudeSubtle(text: string): string {
-  return chalk.hex(CLAUDE_THEME.subtle)(text);
+  return ansis.hex(CLAUDE_THEME.subtle)(text);
 }
 
 function _claudeAccent(text: string): string {
-  return chalk.hex(CLAUDE_THEME.accent)(text);
+  return ansis.hex(CLAUDE_THEME.accent)(text);
 }
 
 function _claudeSuccess(text: string): string {
-  return chalk.hex(CLAUDE_THEME.success)(text);
+  return ansis.hex(CLAUDE_THEME.success)(text);
 }
 
 function claudePill(text: string): string {
   return (
-    chalk.hex(CLAUDE_THEME.subtle)('[') + chalk.hex(CLAUDE_THEME.muted)(text) + chalk.hex(CLAUDE_THEME.subtle)(']')
+    ansis.hex(CLAUDE_THEME.subtle)('[') + ansis.hex(CLAUDE_THEME.muted)(text) + ansis.hex(CLAUDE_THEME.subtle)(']')
   );
 }
 
@@ -676,15 +676,15 @@ function StatusLineInner({
 
     const percentText =
       usedPercentage > 85
-        ? chalk.hex(CLAUDE_THEME.danger)(`${usedPercentage.toFixed(0)}%`)
+        ? ansis.hex(CLAUDE_THEME.danger)(`${usedPercentage.toFixed(0)}%`)
         : usedPercentage > 70
-          ? chalk.hex(CLAUDE_THEME.warning)(`${usedPercentage.toFixed(0)}%`)
+          ? ansis.hex(CLAUDE_THEME.warning)(`${usedPercentage.toFixed(0)}%`)
           : claudeMuted(`${usedPercentage.toFixed(0)}%`);
     const ctxCompactStatus = getBackgroundAutoCompactStatus();
     const compactDots = '.'.repeat(Math.floor(ctxCompactSpinnerTime / 400) % 4);
     const ctxCompactDisplay =
       ctxCompactStatus.running || (isAutoCompactEnabled() && usedPercentage >= 80)
-        ? CLAUDE_DOT + chalk.hex(CLAUDE_THEME.warning)(`ctx compact${compactDots}`)
+        ? CLAUDE_DOT + ansis.hex(CLAUDE_THEME.warning)(`ctx compact${compactDots}`)
         : '';
 
     let sessionGoalDisplay = '';
@@ -726,7 +726,7 @@ function StatusLineInner({
           else if (ratio > 0.65) color = CLAUDE_THEME.warning;
         }
         sessionGoalDisplay =
-          chalk.hex(CLAUDE_THEME.subtle)('[') + chalk.hex(color)(text) + chalk.hex(CLAUDE_THEME.subtle)(']');
+          ansis.hex(CLAUDE_THEME.subtle)('[') + ansis.hex(color)(text) + ansis.hex(CLAUDE_THEME.subtle)(']');
       } else {
         sessionGoalDisplay = claudePill(text);
       }
@@ -746,7 +746,7 @@ function StatusLineInner({
       CLAUDE_DOT +
       claudeMuted(formatContextSize(contextWindowSize)) +
       mcpStats +
-      (rightText ? CLAUDE_DOT + chalk.hex('#FFD700')(rightText) : '');
+      (rightText ? CLAUDE_DOT + ansis.hex('#FFD700')(rightText) : '');
 
     const agentLines: Array<{ key: string; node: React.ReactNode }> = [];
 

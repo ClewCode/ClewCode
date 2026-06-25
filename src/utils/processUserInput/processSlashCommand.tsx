@@ -319,6 +319,7 @@ async function executeForkedSlashCommand(
   logForDebugging(`Forked slash command /${command.name} completed with agent ${agentId}`);
 
   // Prepend debug log for ant users so it appears inside the command output
+  // biome-ignore lint/correctness/noConstantCondition: build-time distribution marker.
   if ('external' === 'ant') {
     resultText = `[ANT-ONLY] API calls: ${getDisplayPath(getDumpPromptsPath(agentId))}\n${resultText}`;
   }
@@ -355,6 +356,10 @@ export function looksLikeCommand(commandName: string): boolean {
   // If it contains other characters, it's probably a file path or other input
   return !/[^a-zA-Z0-9:\-_]/.test(commandName);
 }
+
+const POST_COMPACT_CONTINUE_PROMPT =
+  'Continue from the compacted conversation. Pick up the previous task exactly where it left off. Do not ask what to do unless you are blocked.';
+
 export async function processSlashCommand(
   inputString: string,
   precedingInputBlocks: ContentBlockParam[],
@@ -836,6 +841,8 @@ async function getMessagesForSlashCommand(
               messages: buildPostCompactMessages(compactionResultWithSlashMessages),
               shouldQuery: false,
               command,
+              nextInput: POST_COMPACT_CONTINUE_PROMPT,
+              submitNextInput: true,
             };
           }
 

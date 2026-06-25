@@ -8,6 +8,7 @@ Run all commands from the repository root using **Bun**.
 
 ```bash
 bun run dev              # Bun --watch live reload (with Voice, Transcript, Chicago flags)
+bun run dev:channels     # Dev mode with development channels loaded (server:clew-orc)
 bun run build            # Production build to dist/ (bundles with --external deps)
 bun run start            # Run compiled build from dist/
 bun test                 # Full test suite via Vitest
@@ -76,7 +77,7 @@ Provider logic lives in `src/services/ai/`. Key files:
 
 ```
 src/services/ai/ProviderManager.ts    # Unified LLM call interface
-src/services/ai/providers.json        # Declarative provider definitions (26+ providers)
+src/services/ai/providers.json        # Declarative provider definitions (29 providers)
 src/services/ai/providerRegistry.ts   # Provider discovery and model selection
 src/services/ai/adapter/              # Per-provider request/response normalization
 src/services/ai/errorNormalizer.ts    # Cross-provider error normalization
@@ -112,7 +113,7 @@ Key tool directories (70+ total):
 
 | Service | Purpose |
 |---|---|
-| `ai/` | Provider manager + 26+ adapters |
+| `ai/` | Provider manager + 29 adapters |
 | `mcp/` | MCP client, auth, stdio/SSE/DirectConnect transports |
 | `autonomous/` | Persistent task queue, lease-based concurrency (max 3), cron, backoff retry, dead-letter |
 | `goal/` | Goal evaluation, heuristic pre-checks, goal verification |
@@ -148,6 +149,9 @@ Registration is handled by `src/commands.ts` which merges:
 3. Plugin commands
 4. MCP-provided skill commands
 5. Dynamic skills discovered at runtime
+
+Key slash commands:
+`/login`, `/logout`, `/model`, `/status`, `/doctor`, `/profile`, `/context`, `/compact`, `/goal`, `/maxmode`, `/mcp`, `/code-review`, `/simplify`, `/plugin`, `/bridge`, `/agent`, `/agents`, `/peer`, `/remote`, `/daemon`, `/task`, `/memory`, `/tasks`, `/effort`, `/stats`, `/guardian`, `/approve`, `/pr`, `/voice`, `/buddy`, `/team`, `/bg`, `/plan`, `/vim`, `/research`, `/workflow`, `/rewind`, `/upgrade`, `/session`, `/theme`, `/skills`, `/ultracode`
 
 ### Peer / P2P
 
@@ -297,6 +301,43 @@ Each tool is a class extending `Tool`. Add the import and instantiation to `src/
 ### Command Registration Pattern
 
 Each command in `src/commands/` exports `{ name, description, type, handler, ... }`. Add it to the `COMMANDS()` memoized function in `src/commands.ts`. Commands are merged with skills, plugins, MCP skills, and dynamic skills at load time.
+
+## Execution Concepts
+
+Clew Code has several execution layers that do different jobs:
+
+- **Agent** — An AI worker with a prompt, model, tools, and permissions. The main chat session is an agent. Custom agents live in `.clew/agents/*.md`.
+- **Subagent** — A short-lived child agent launched by another agent through the `Agent` tool. Use for independent work such as codebase exploration, test triage, or review. The built-in `Explore` agent is read-only and suited for parallel "go inspect this area" tasks.
+- **Teammate / Swarm** — A longer-lived agent team member with an identity, mailbox, task coordination, and optional pane/tmux or in-process execution. Use when agents need to keep working together across multiple turns.
+- **LAN Peer** — A network of Clew instances on the same machine or LAN. `/peer` discovers peers, sends messages, assigns tasks, and runs commands on other Clew nodes.
+- **Process Peer** — A local process-backed worker layer. Delegates a prompt to an external CLI/provider (e.g. Codex) using `exec` or `pty`, then returns stdout, stderr, exit code, timeout state, and progress.
+
+Use the layers by intent:
+- Need a quick independent read-only investigation? Use an `Explore` subagent.
+- Need long-running coordination between named workers? Use teammates/swarm.
+- Need another Clew instance on the LAN? Use `/peer`.
+- Need Clew to run a local external worker? Use Process Peer.
+
+Other runtime concepts:
+- **Plan mode** — Full-access planning mode with bypass permissions. Plan files persist to `.clew/plans/long-term-plan.md`.
+- **Multi-pass compaction** — Automatic chunk-based context compression with recursive re-compaction.
+- **Goal verification** — Independent LLM call reviews completion against goal text and reports specific gaps.
+- **Max Mode** — Generates N parallel candidate responses per turn via forked agents, selects best via LLM judge.
+- **Checkpoints** — Structured snapshots at 20%/45%/70% progress milestones with a `notes.md` scratchpad.
+
+## Profiles
+
+Clew Code has a **personal profile** (`/profile personal`) — command-center mode. It plans, splits tasks, and delegates code work to Codex workers via `process_peer`, then reviews and summarizes results.
+
+In personal profile, you are not a code editor by default — the `delegate` skill spawns a Codex worker with a structured task prompt and reports what was done, what passed/failed, and what's blocked. Additional capabilities:
+
+- **Cross-session memory** — reads stored memories on session start, writes preferences, corrections, and patterns back.
+- **Skill creation** — automatically creates reusable `SKILL.md` files in `.clew/skills/` when it spots a repeatable multi-step pattern.
+- **Scheduling** — uses `/cron` for recurring tasks and `/loop` for repeated polling.
+- **Daemon mode** — when running in the background, checks the task queue, runs cron tasks on schedule, and consolidates memory automatically.
+- **Parallel delegation** — breaks complex workflows into independent sub-tasks and runs them concurrently via sub-agents or peers.
+
+Profile and last-used permission mode are saved between sessions.
 
 ## Security Rules
 

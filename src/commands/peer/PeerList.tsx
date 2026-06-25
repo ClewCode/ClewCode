@@ -2,7 +2,7 @@
  * PeerList — Ink component showing discovered peers in a table.
  */
 
-import chalk from 'chalk';
+import ansis from 'ansis';
 import * as React from 'react';
 import { Byline } from '../../components/design-system/Byline.js';
 import { KeyboardShortcutHint } from '../../components/design-system/KeyboardShortcutHint.js';
@@ -129,7 +129,7 @@ export function PeerList({ isSharing, myPeerId: _myPeerId, onRefresh, onConnect,
                 return (
                   <Box key={peer.id} flexDirection="row" paddingLeft={1}>
                     <Text color={healthColor} dimColor={!isSelected}>
-                      {isSelected ? chalk.bold(`${isOnline ? '*' : 'o'} `) : `${isOnline ? '*' : 'o'} `}
+                      {isSelected ? ansis.bold(`${isOnline ? '*' : 'o'} `) : `${isOnline ? '*' : 'o'} `}
                     </Text>
                     <Text dimColor={!isSelected} color={healthColor}>
                       {String(peer.port).padEnd(6)}
@@ -138,7 +138,7 @@ export function PeerList({ isSharing, myPeerId: _myPeerId, onRefresh, onConnect,
                       {displayName.padEnd(18)}
                     </Text>
                     <Text dimColor={!isSelected} color={healthColor}>
-                      {role.padEnd(10) || chalk.dim('-').padEnd(10)}
+                      {role.padEnd(10) || ansis.dim('-').padEnd(10)}
                     </Text>
                     <Text dimColor={!isSelected} color={healthColor}>
                       {health.padEnd(9)}

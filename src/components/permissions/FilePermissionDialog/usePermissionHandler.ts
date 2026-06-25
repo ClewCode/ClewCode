@@ -91,9 +91,7 @@ function handleAcceptSession(params: PermissionHandlerParams, options?: Permissi
   // For clew-folder scope, grant session-level access to all .clew/ files
   if (options?.scope === 'clew-folder' || options?.scope === 'global-clew-folder') {
     const pattern =
-      options.scope === 'global-clew-folder'
-        ? GLOBAL_CLEW_FOLDER_PERMISSION_PATTERN
-        : CLEW_FOLDER_PERMISSION_PATTERN;
+      options.scope === 'global-clew-folder' ? GLOBAL_CLEW_FOLDER_PERMISSION_PATTERN : CLEW_FOLDER_PERMISSION_PATTERN;
     const suggestions: PermissionUpdate[] = [
       {
         type: 'addRules',

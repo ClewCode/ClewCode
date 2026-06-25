@@ -12,10 +12,10 @@
  * - API returns empty restrictions for users without policy limits
  */
 
-import axios from 'axios';
 import { createHash } from 'crypto';
 import { readFileSync as fsReadFileSync } from 'fs';
 import { unlink, writeFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { join } from 'path';
 import { CLAUDE_AI_INFERENCE_SCOPE, getOauthConfig, OAUTH_BETA_HEADER } from '../../constants/oauth.js';
 import {
@@ -309,10 +309,10 @@ async function fetchPolicyLimits(cachedChecksum?: string): Promise<PolicyLimitsF
       headers['If-None-Match'] = `"${cachedChecksum}"`;
     }
 
-    const response = await axios.get(endpoint, {
+    const response = await ofetch.raw(endpoint, {
       headers,
       timeout: FETCH_TIMEOUT_MS,
-      validateStatus: status => status === 200 || status === 304 || status === 404,
+      ignoreResponseError: true,
     });
 
     // Handle 304 Not Modified - cached version is still valid
@@ -335,7 +335,7 @@ async function fetchPolicyLimits(cachedChecksum?: string): Promise<PolicyLimitsF
       };
     }
 
-    const parsed = PolicyLimitsResponseSchema().safeParse(response.data);
+    const parsed = PolicyLimitsResponseSchema().safeParse(response._data);
     if (!parsed.success) {
       logForDebugging(`Policy limits: Invalid response format - ${parsed.error.message}`);
       return {
@@ -350,7 +350,7 @@ async function fetchPolicyLimits(cachedChecksum?: string): Promise<PolicyLimitsF
       restrictions: parsed.data.restrictions,
     };
   } catch (error) {
-    // 404 is handled above via validateStatus, so it won't reach here
+    // 404 is handled above via ignoreResponseError, so it won't reach here
     const { kind, message } = classifyAxiosError(error);
     switch (kind) {
       case 'auth':

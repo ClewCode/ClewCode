@@ -18,6 +18,12 @@ const inputSchema = lazySchema(() =>
     role: z.string().optional().describe('Agent role for the peer node (e.g. builder, tester, reviewer)'),
     model: z.string().optional().describe('Model for the peer node session (e.g. sonnet)'),
     prompt: z.string().optional().describe('Custom system prompt for the peer node session'),
+    permissionMode: z
+      .enum(['acceptEdits', 'ask', 'bypassPermissions', 'default', 'dontAsk', 'plan'])
+      .optional()
+      .describe(
+        'Permission mode for the spawned peer session. Use "dontAsk" or "acceptEdits" for autonomous operation.',
+      ),
   }),
 );
 
@@ -83,12 +89,12 @@ export const PeerSpawnTool = buildTool({
   getPath() {
     return getCwd();
   },
-  renderToolUseMessage(input: Partial<{ name?: string; role?: string }>) {
+  renderToolUseMessage(input: Partial<{ name?: string; role?: string; permissionMode?: string }>) {
     return React.createElement(
       Text,
       null,
       React.createElement(Text, { bold: true }, '⚙ spawn'),
-      ` ${input.name ?? 'peer'}${input.role ? ` (${input.role})` : ''}`,
+      ` ${input.name ?? 'peer'}${input.role ? ` (${input.role})` : ''}${input.permissionMode ? ` [${input.permissionMode}]` : ''}`,
     );
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
@@ -97,7 +103,7 @@ export const PeerSpawnTool = buildTool({
     const result = `Spawned peer "${output.name}"${output.role ? ` (${output.role})` : ''} on port ${output.port}`;
     return { tool_use_id: toolUseID, type: 'tool_result', content: result };
   },
-  async call(input: { name?: string; role?: string; model?: string; prompt?: string }) {
+  async call(input: { name?: string; role?: string; model?: string; prompt?: string; permissionMode?: string }) {
     const randomId = Math.random().toString(36).substring(2, 7);
     const targetName = input.name || `peer-${randomId}`;
 
@@ -137,20 +143,14 @@ export const PeerSpawnTool = buildTool({
       // Use same model as the main session
       const spawnModel = input.model || getMainLoopModel();
       const cliArgs = ['--peer-share', '--peer-name', targetName, '--name', targetName, '--model', spawnModel];
+      if (input.permissionMode) cliArgs.push('--permission-mode', input.permissionMode);
       const promptArg = effectivePrompt.replace(/\s*\r?\n\s*/g, ' ').trim();
       if (promptArg) cliArgs.push('--system-prompt', promptArg);
       const cmd = buildPeerSpawnCommand(cliArgs);
-      const commandPreview = buildPeerSpawnCommand([
-        '--peer-share',
-        '--peer-name',
-        targetName,
-        '--name',
-        targetName,
-        '--model',
-        spawnModel,
-        '--system-prompt',
-        '<prompt>',
-      ]);
+      const previewArgs = ['--peer-share', '--peer-name', targetName, '--name', targetName, '--model', spawnModel];
+      if (input.permissionMode) previewArgs.push('--permission-mode', input.permissionMode);
+      previewArgs.push('--system-prompt', '<prompt>');
+      const commandPreview = buildPeerSpawnCommand(previewArgs);
 
       if (platform === 'win32') {
         const clewCmd = `${process.env.APPDATA}\\npm\\clew.cmd`;

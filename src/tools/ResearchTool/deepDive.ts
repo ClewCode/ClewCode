@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { logError } from '../../utils/log.js';
 
 // Configuration for deep dive
@@ -93,17 +93,17 @@ function extractLinksFromHtml(html: string, baseUrl: string): string[] {
  */
 async function fetchPageContent(url: string, level: number): Promise<DeepDiveResult> {
   try {
-    const response = await axios.get(url, {
+    const response = await ofetch.raw(url, {
       timeout: DEEP_DIVE_CONFIG.timeout,
       headers: {
         'User-Agent': DEEP_DIVE_CONFIG.userAgent,
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
-      maxRedirects: 5,
+      retry: false,
     });
 
     // Only process HTML content
-    const contentType = response.headers['content-type'] || '';
+    const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('text/html')) {
       return {
         originalUrl: url,
@@ -115,7 +115,7 @@ async function fetchPageContent(url: string, level: number): Promise<DeepDiveRes
       };
     }
 
-    const html = response.data as string;
+    const html = response._data as string;
     const textContent = extractTextFromHtml(html).substring(0, DEEP_DIVE_CONFIG.maxContentLength);
     const excerpt = textContent.substring(0, 500);
     const links = extractLinksFromHtml(html, url);

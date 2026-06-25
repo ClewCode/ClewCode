@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from 'src/constants/oauth.js';
 import { getOrganizationUUID } from 'src/services/oauth/client.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../../services/analytics/growthbook.js';
@@ -93,7 +93,7 @@ export async function checkGithubAppInstalled(owner: string, repo: string, signa
 
     logForDebugging(`Checking GitHub app installation for ${owner}/${repo}`);
 
-    const response = await axios.get<{
+    const response = await ofetch<{
       repo: {
         name: string;
         owner: { login: string };
@@ -124,7 +124,7 @@ export async function checkGithubAppInstalled(owner: string, repo: string, signa
     return false;
   } catch (error) {
     // 4XX errors typically mean app is not installed or repo not accessible
-    if (axios.isAxiosError(error)) {
+    if (isFetchError(error)) {
       const status = error.response?.status;
       if (status && status >= 400 && status < 500) {
         logForDebugging(`checkGithubAppInstalled: Got ${status} error, app likely not installed on ${owner}/${repo}`);
@@ -163,7 +163,7 @@ export async function checkGithubTokenSynced(): Promise<boolean> {
 
     logForDebugging('Checking if GitHub token is synced via web-setup');
 
-    const response = await axios.get(url, {
+    const response = await ofetch(url, {
       headers,
       timeout: 15000,
     });
@@ -174,7 +174,7 @@ export async function checkGithubTokenSynced(): Promise<boolean> {
     );
     return synced;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isFetchError(error)) {
       const status = error.response?.status;
       if (status && status >= 400 && status < 500) {
         logForDebugging(`checkGithubTokenSynced: Got ${status}, token not synced`);

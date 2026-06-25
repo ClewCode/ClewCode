@@ -292,6 +292,10 @@ export function markInProcessFallback(): void {
  * Returns the session snapshot captured at startup, ignoring runtime config changes.
  */
 function getTeammateMode(): 'auto' | 'tmux' | 'in-process' {
+  // CLEW_EXPERIMENTAL_AGENT_TEAMS=1 forces in-process teammate mode
+  if (process.env.CLEW_EXPERIMENTAL_AGENT_TEAMS === '1') {
+    return 'in-process';
+  }
   return getTeammateModeFromSnapshot();
 }
 

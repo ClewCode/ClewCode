@@ -1,5 +1,5 @@
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import type * as React from 'react';
@@ -166,7 +166,7 @@ export function MemoryFileSelector({ onSelect, onCancel }: Props): React.ReactNo
       if (agent.memory) {
         const agentDir = getAgentMemoryDir(agent.agentType, agent.memory);
         folderOptions.push({
-          label: `Open ${chalk.bold(agent.agentType)} agent memory`,
+          label: `Open ${ansis.bold(agent.agentType)} agent memory`,
           value: `${OPEN_FOLDER_PREFIX}${agentDir}`,
           description: `${agent.memory} scope`,
         });

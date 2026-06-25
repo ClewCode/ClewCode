@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { readFile, stat } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import type { Message } from '../../types/message.js';
 import { checkAndRefreshOAuthTokenIfNeeded } from '../../utils/auth.js';
 import { logForDebugging } from '../../utils/debug.js';
@@ -74,7 +74,7 @@ export async function submitTranscriptShare(
       ...authResult.headers,
     };
 
-    const response = await axios.post(
+    const response = await ofetch(
       'https://api.anthropic.com/api/claude_code_shared_session_transcripts',
       { content, appearance_id: appearanceId },
       {

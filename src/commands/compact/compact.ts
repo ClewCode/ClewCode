@@ -1,5 +1,5 @@
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { markPostCompaction } from 'src/bootstrap/state.js';
 import { getSystemPrompt } from '../../constants/prompts.js';
 import { getSystemContext, getUserContext } from '../../context.js';
@@ -237,7 +237,7 @@ function buildDisplayText(
       : []),
     ...(upgradeMessage ? [upgradeMessage] : []),
   ];
-  return chalk.dim(`Compacted ${dimmed.join('\n')}`);
+  return ansis.dim(`Compacted ${dimmed.join('\n')}`);
 }
 
 async function getCacheSharingParams(

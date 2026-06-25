@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import spawn from 'nano-spawn';
 import { logForDebugging } from '../debug.js';
 import { memoizeWithLRU } from '../memoize.js';
 import { getCachedPowerShellPath } from '../shell/powershellDetection.js';
@@ -1133,21 +1133,28 @@ async function parsePowerShellCommandImpl(command: string): Promise<ParsedPowerS
   let timedOut = false;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await execa(pwshPath, args, {
+      const result = await spawn(pwshPath, args, {
         timeout: parseTimeoutMs,
-        reject: false,
       });
       stdout = result.stdout;
       stderr = result.stderr;
-      timedOut = result.timedOut;
-      code = result.failed ? (result.exitCode ?? 1) : 0;
+      timedOut = false;
+      code = 0;
     } catch (e: unknown) {
-      logForDebugging(`PowerShell parser: failed to spawn pwsh: ${e instanceof Error ? e.message : e}`);
-      return makeInvalidResult(
-        command,
-        `Failed to spawn PowerShell: ${e instanceof Error ? e.message : e}`,
-        'PwshSpawnError',
-      );
+      if (e instanceof Error && 'timedOut' in e) {
+        const spawnError = e as { timedOut?: boolean; exitCode?: number; stdout?: string; stderr?: string };
+        stdout = spawnError.stdout ?? '';
+        stderr = spawnError.stderr ?? '';
+        timedOut = spawnError.timedOut ?? false;
+        code = spawnError.exitCode ?? 1;
+      } else {
+        logForDebugging(`PowerShell parser: failed to spawn pwsh: ${e instanceof Error ? e.message : e}`);
+        return makeInvalidResult(
+          command,
+          `Failed to spawn PowerShell: ${e instanceof Error ? e.message : e}`,
+          'PwshSpawnError',
+        );
+      }
     }
     if (!timedOut) break;
     logForDebugging(`PowerShell parser: pwsh timed out after ${parseTimeoutMs}ms (attempt ${attempt + 1})`);

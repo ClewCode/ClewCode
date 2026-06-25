@@ -164,20 +164,11 @@ export const FileWriteTool = buildTool({
       throw e;
     }
 
-    const readTimestamp = toolUseContext.readFileState.get(fullFilePath);
-    if (!readTimestamp || readTimestamp.isPartialView) {
-      return {
-        result: false,
-        message: 'File has not been read yet. Read it first before writing to it.',
-        errorCode: 2,
-      };
-    }
-
     // Reuse mtime from the stat above — avoids a redundant statSync via
-    // getFileModificationTime. The readTimestamp guard above ensures this
-    // block is always reached when the file exists.
+    // getFileModificationTime.
     const lastWriteTime = Math.floor(fileMtimeMs);
-    if (lastWriteTime > readTimestamp.timestamp) {
+    const readTimestamp = toolUseContext.readFileState.get(fullFilePath);
+    if (readTimestamp && lastWriteTime > readTimestamp.timestamp) {
       return {
         result: false,
         message:
@@ -206,7 +197,7 @@ export const FileWriteTool = buildTool({
         dynamicSkillDirTriggers?.add(dir);
       }
       // Don't await - let skill loading happen in the background
-      addSkillDirectories(newSkillDirs).catch(() => {});
+      addSkillDirectories(newSkillDirs).catch(() => undefined);
     }
 
     // Activate conditional skills whose path patterns match this file

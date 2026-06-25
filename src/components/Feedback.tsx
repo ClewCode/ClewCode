@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { readFile, stat } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import type * as React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { getLastAPIRequest } from 'src/bootstrap/state.js';
@@ -666,7 +666,7 @@ async function submitFeedback(
       'User-Agent': getUserAgent(),
       ...authResult.headers,
     };
-    const response = await axios.post(
+    const response = await ofetch(
       'https://api.anthropic.com/api/claude_cli_feedback',
       {
         content: redactSensitiveJSON(jsonStringify(data)),
@@ -697,12 +697,12 @@ async function submitFeedback(
     };
   } catch (err) {
     // Handle cancellation/abort - don't log as error
-    if (axios.isCancel(err)) {
+    if (isCancelError(err)) {
       return {
         success: false,
       };
     }
-    if (axios.isAxiosError(err) && err.response?.status === 403) {
+    if (isFetchError(err) && err.response?.status === 403) {
       const errorData = err.response.data;
       if (
         errorData?.error?.type === 'permission_error' &&

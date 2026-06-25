@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { pathToFileURL } from 'url';
@@ -82,7 +82,7 @@ export async function setupShellCompletion(theme: ThemeName): Promise<string> {
     await mkdir(dirname(shell.cacheFile), { recursive: true });
   } catch (e: unknown) {
     logError(e);
-    return `${EOL}${color('warning', theme)(`Could not write ${shell.name} completion cache`)}${EOL}${chalk.dim(`Run manually: claude completion ${shell.shellFlag} > ${shell.cacheFile}`)}${EOL}`;
+    return `${EOL}${color('warning', theme)(`Could not write ${shell.name} completion cache`)}${EOL}${ansis.dim(`Run manually: claude completion ${shell.shellFlag} > ${shell.cacheFile}`)}${EOL}`;
   }
 
   // Generate the completion script by writing directly to the cache file.
@@ -91,7 +91,7 @@ export async function setupShellCompletion(theme: ThemeName): Promise<string> {
   const claudeBin = process.argv[1] || 'claude';
   const result = await execFileNoThrow(claudeBin, ['completion', shell.shellFlag, '--output', shell.cacheFile]);
   if (result.code !== 0) {
-    return `${EOL}${color('warning', theme)(`Could not generate ${shell.name} shell completions`)}${EOL}${chalk.dim(`Run manually: claude completion ${shell.shellFlag} > ${shell.cacheFile}`)}${EOL}`;
+    return `${EOL}${color('warning', theme)(`Could not generate ${shell.name} shell completions`)}${EOL}${ansis.dim(`Run manually: claude completion ${shell.shellFlag} > ${shell.cacheFile}`)}${EOL}`;
   }
 
   // Check if rc file already sources completions
@@ -99,12 +99,12 @@ export async function setupShellCompletion(theme: ThemeName): Promise<string> {
   try {
     existing = await readFile(shell.rcFile, { encoding: 'utf-8' });
     if (existing.includes('claude completion') || existing.includes(shell.cacheFile)) {
-      return `${EOL}${color('success', theme)(`Shell completions updated for ${shell.name}`)}${EOL}${chalk.dim(`See ${formatPathLink(shell.rcFile)}`)}${EOL}`;
+      return `${EOL}${color('success', theme)(`Shell completions updated for ${shell.name}`)}${EOL}${ansis.dim(`See ${formatPathLink(shell.rcFile)}`)}${EOL}`;
     }
   } catch (e: unknown) {
     if (!isENOENT(e)) {
       logError(e);
-      return `${EOL}${color('warning', theme)(`Could not install ${shell.name} shell completions`)}${EOL}${chalk.dim(`Add this to ${formatPathLink(shell.rcFile)}:`)}${EOL}${chalk.dim(shell.completionLine)}${EOL}`;
+      return `${EOL}${color('warning', theme)(`Could not install ${shell.name} shell completions`)}${EOL}${ansis.dim(`Add this to ${formatPathLink(shell.rcFile)}:`)}${EOL}${ansis.dim(shell.completionLine)}${EOL}`;
     }
   }
 
@@ -117,10 +117,10 @@ export async function setupShellCompletion(theme: ThemeName): Promise<string> {
     const content = `${existing}${separator}\n# Clew Code shell completions\n${shell.completionLine}\n`;
     await writeFile(shell.rcFile, content, { encoding: 'utf-8' });
 
-    return `${EOL}${color('success', theme)(`Installed ${shell.name} shell completions`)}${EOL}${chalk.dim(`Added to ${formatPathLink(shell.rcFile)}`)}${EOL}${chalk.dim(`Run: source ${shell.rcFile}`)}${EOL}`;
+    return `${EOL}${color('success', theme)(`Installed ${shell.name} shell completions`)}${EOL}${ansis.dim(`Added to ${formatPathLink(shell.rcFile)}`)}${EOL}${ansis.dim(`Run: source ${shell.rcFile}`)}${EOL}`;
   } catch (error) {
     logError(error);
-    return `${EOL}${color('warning', theme)(`Could not install ${shell.name} shell completions`)}${EOL}${chalk.dim(`Add this to ${formatPathLink(shell.rcFile)}:`)}${EOL}${chalk.dim(shell.completionLine)}${EOL}`;
+    return `${EOL}${color('warning', theme)(`Could not install ${shell.name} shell completions`)}${EOL}${ansis.dim(`Add this to ${formatPathLink(shell.rcFile)}:`)}${EOL}${ansis.dim(shell.completionLine)}${EOL}`;
   }
 }
 

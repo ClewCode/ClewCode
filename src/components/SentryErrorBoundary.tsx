@@ -40,6 +40,8 @@ export class SentryErrorBoundary extends React.Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     const componentStack = (errorInfo as unknown as { componentStack?: string })?.componentStack ?? '';
     process.stderr.write(`[SentryErrorBoundary] Caught render error: ${error.message}\n${componentStack}\n`);
+    // Also write to stdout so the user can see the component stack in the terminal
+    process.stdout.write(`\n[SentryErrorBoundary COMPONENT STACK]:\n${componentStack}\n`);
     // Send to Sentry when enabled (fire-and-forget, never blocks)
     captureException(error, {
       source: 'react_error_boundary',

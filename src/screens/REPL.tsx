@@ -2879,6 +2879,11 @@ export function REPL({
         // Use setToolUseConfirmQueue callback to get current queue state
         // instead of capturing it in the closure, to avoid stale closure issues
         setToolUseConfirmQueue(currentQueue => {
+          // During plan mode exit, the queue may already be empty (onDone fires
+          // before persistPermissions), and returning early here prevents a
+          // spurious setState that can cascade into React error #185 via
+          // useSyncExternalStore-driven re-renders.
+          if (currentQueue.length === 0) return currentQueue;
           currentQueue.forEach(item => {
             void item.recheckPermission();
           });
@@ -3850,11 +3855,11 @@ export function REPL({
         const isAllowedCmd = normalizedInput.startsWith('/daemon') || normalizedInput.startsWith('/task');
 
         if (isLoopActive && !isAllowedCmd) {
-          const chalk = (await import('chalk')).default;
+          const ansis = (await import('ansis')).default;
 
           addNotification({
             key: 'loop-active-blocked',
-            text: chalk.yellow('ขณะนี้ Loop ทำงานอยู่ กรุณาใช้ `/task <คำสั่ง>` หรือ `/daemon` เพื่อจัดการ'),
+            text: ansis.yellow('ขณะนี้ Loop ทำงานอยู่ กรุณาใช้ `/task <คำสั่ง>` หรือ `/daemon` เพื่อจัดการ'),
             priority: 'high',
           });
 
@@ -4747,37 +4752,42 @@ export function REPL({
     messageActionCaps,
   );
 
-  const onInit = useCallback(async function onInit() {
-    // Always verify API key on startup, so we can show the user an error in the
-    // bottom right corner of the screen if the API key is invalid.
-    void reverify();
+  const onInit = useCallback(
+    async function onInit() {
+      // Always verify API key on startup, so we can show the user an error in the
+      // bottom right corner of the screen if the API key is invalid.
+      void reverify();
 
-    // Populate readFileState with CLAUDE.md files at startup
-    const memoryFiles = await getMemoryFiles();
-    if (memoryFiles.length > 0) {
-      const fileList = memoryFiles
-        .map(f => `  [${f.type}] ${f.path} (${f.content.length} chars)${f.parent ? ` (included by ${f.parent})` : ''}`)
-        .join('\n');
-      logForDebugging(`Loaded ${memoryFiles.length} CLAUDE.md/rules files:\n${fileList}`);
-    } else {
-      logForDebugging('No CLAUDE.md/rules files found');
-    }
-    for (const file of memoryFiles) {
-      // When the injected content doesn't match disk (stripped HTML comments,
-      // stripped frontmatter, MEMORY.md truncation), cache the RAW disk bytes
-      // with isPartialView so Edit/Write require a real Read first while
-      // getChangedFiles + nested_memory dedup still work.
-      readFileState.current.set(file.path, {
-        content: file.contentDiffersFromDisk ? (file.rawContent ?? file.content) : file.content,
-        timestamp: Date.now(),
-        offset: undefined,
-        limit: undefined,
-        isPartialView: file.contentDiffersFromDisk,
-      });
-    }
+      // Populate readFileState with CLAUDE.md files at startup
+      const memoryFiles = await getMemoryFiles();
+      if (memoryFiles.length > 0) {
+        const fileList = memoryFiles
+          .map(
+            f => `  [${f.type}] ${f.path} (${f.content.length} chars)${f.parent ? ` (included by ${f.parent})` : ''}`,
+          )
+          .join('\n');
+        logForDebugging(`Loaded ${memoryFiles.length} CLAUDE.md/rules files:\n${fileList}`);
+      } else {
+        logForDebugging('No CLAUDE.md/rules files found');
+      }
+      for (const file of memoryFiles) {
+        // When the injected content doesn't match disk (stripped HTML comments,
+        // stripped frontmatter, MEMORY.md truncation), cache the RAW disk bytes
+        // with isPartialView so Edit/Write require a real Read first while
+        // getChangedFiles + nested_memory dedup still work.
+        readFileState.current.set(file.path, {
+          content: file.contentDiffersFromDisk ? (file.rawContent ?? file.content) : file.content,
+          timestamp: Date.now(),
+          offset: undefined,
+          limit: undefined,
+          isPartialView: file.contentDiffersFromDisk,
+        });
+      }
 
-    // Initial message handling is done via the initialMessage effect
-  }, [reverify]);
+      // Initial message handling is done via the initialMessage effect
+    },
+    [reverify],
+  );
 
   // Register cost summary tracker
   useCostSummary(useFpsMetrics());
@@ -5761,6 +5771,7 @@ export function REPL({
                 unseenDivider={viewedAgentTask ? undefined : unseenDivider}
                 scrollRef={isFullscreenEnvEnabled() ? scrollRef : undefined}
                 trackStickyPrompt={isFullscreenEnvEnabled() ? true : undefined}
+                disableRenderCap={(initialMessages?.length ?? 0) > 0}
                 cursor={cursor}
                 setCursor={setCursor}
                 cursorNavRef={cursorNavRef}

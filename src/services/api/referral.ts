@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from '../../constants/oauth.js';
 import { getOauthAccountInfo, getSubscriptionType, isClaudeAISubscriber } from '../../utils/auth.js';
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
@@ -31,7 +31,7 @@ export async function fetchReferralEligibility(
 
   const url = `${getOauthConfig().BASE_API_URL}/api/oauth/organizations/${orgUUID}/referral/eligibility`;
 
-  const response = await axios.get(url, {
+  const response = await ofetch(url, {
     headers,
     params: { campaign },
     timeout: 5000, // 5 second timeout for background fetch
@@ -52,7 +52,7 @@ export async function fetchReferralRedemptions(
 
   const url = `${getOauthConfig().BASE_API_URL}/api/oauth/organizations/${orgUUID}/referral/redemptions`;
 
-  const response = await axios.get<ReferralRedemptionsResponse>(url, {
+  const response = await ofetch<ReferralRedemptionsResponse>(url, {
     headers,
     params: { campaign },
     timeout: 10000, // 10 second timeout

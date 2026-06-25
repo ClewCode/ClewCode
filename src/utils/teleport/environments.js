@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from 'src/constants/oauth.js';
 import { getOrganizationUUID } from 'src/services/oauth/client.js';
 import { getClaudeAIOAuthTokens } from '../auth.js';
@@ -27,7 +27,7 @@ export async function fetchEnvironments() {
       ...getOAuthHeaders(accessToken),
       'x-organization-uuid': orgUUID,
     };
-    const response = await axios.get(url, {
+    const response = await ofetch(url, {
       headers,
       timeout: 15000,
     });
@@ -55,7 +55,7 @@ export async function createDefaultCloudEnvironment(name) {
     throw new Error('Unable to get organization UUID');
   }
   const url = `${getOauthConfig().BASE_API_URL}/v1/environment_providers/cloud/create`;
-  const response = await axios.post(
+  const response = await ofetch(
     url,
     {
       name,

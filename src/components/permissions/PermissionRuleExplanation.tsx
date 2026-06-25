@@ -1,5 +1,5 @@
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import type React from 'react';
 import { Ansi, Box, Text } from '../../ink.js';
 import { useAppState } from '../../state/AppState.js';
@@ -36,23 +36,23 @@ function stringsForDecisionReason(
       };
     }
     return {
-      reasonString: `Classifier ${chalk.bold(reason.classifier)} requires confirmation for this ${toolType}.\n${reason.reason}`,
+      reasonString: `Classifier ${ansis.bold(reason.classifier)} requires confirmation for this ${toolType}.\n${reason.reason}`,
       configString: undefined,
     };
   }
   switch (reason.type) {
     case 'rule':
       return {
-        reasonString: `Permission rule ${chalk.bold(
+        reasonString: `Permission rule ${ansis.bold(
           permissionRuleValueToString(reason.rule.ruleValue),
         )} requires confirmation for this ${toolType}.`,
         configString: reason.rule.source === 'policySettings' ? undefined : '/permissions to update rules',
       };
     case 'hook': {
       const hookReasonString = reason.reason ? `:\n${reason.reason}` : '.';
-      const sourceLabel = reason.hookSource ? ` ${chalk.dim(`[${reason.hookSource}]`)}` : '';
+      const sourceLabel = reason.hookSource ? ` ${ansis.dim(`[${reason.hookSource}]`)}` : '';
       return {
-        reasonString: `Hook ${chalk.bold(reason.hookName)} requires confirmation for this ${toolType}${hookReasonString}${sourceLabel}`,
+        reasonString: `Hook ${ansis.bold(reason.hookName)} requires confirmation for this ${toolType}${hookReasonString}${sourceLabel}`,
         configString: '/hooks to update',
       };
     }

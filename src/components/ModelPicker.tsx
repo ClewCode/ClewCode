@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import capitalize from 'lodash-es/capitalize.js';
 import type * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -476,7 +476,7 @@ export function ModelPicker(t0) {
             />
           </Box>
           <Text dimColor={true} italic={true}>
-            Press {chalk.bold('Enter')} to confirm or {chalk.bold('Esc')} to go back
+            Press {ansis.bold('Enter')} to confirm or {ansis.bold('Esc')} to go back
           </Text>
         </Box>
       </Pane>

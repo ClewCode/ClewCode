@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { mkdir, writeFile } from 'fs/promises';
 import * as React from 'react';
 import type { CommandResultDisplay } from '../../commands.js';
@@ -627,15 +627,15 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
       case 'dashboard':
       case 'dash': {
         try {
-          const lines: string[] = [chalk.bold('🧠 Memory System Dashboard'), ''];
+          const lines: string[] = [ansis.bold('🧠 Memory System Dashboard'), ''];
 
           // ── Profile ────────────────────────────────────────────
           try {
             const appState = _context?.getAppState?.();
             if (appState?.profile) {
               const mode = appState.toolPermissionContext?.mode ?? 'default';
-              const modeIcon = mode === 'bypassPermissions' ? chalk.yellow('⚡') : chalk.dim('●');
-              lines.push(chalk.bold('  Profile'));
+              const modeIcon = mode === 'bypassPermissions' ? ansis.yellow('⚡') : ansis.dim('●');
+              lines.push(ansis.bold('  Profile'));
               lines.push(`    Personal  ${modeIcon} ${mode}`);
             }
           } catch {
@@ -653,7 +653,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           const total = stats.total;
           const byType = Object.entries(stats.byType)
             .sort((a, b) => b[1] - a[1])
-            .map(([t, c]) => `${chalk.cyan(t)} ${c}`)
+            .map(([t, c]) => `${ansis.cyan(t)} ${c}`)
             .join(' · ');
           // Count session memories for display
           let sessionCount = 0;
@@ -664,9 +664,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             /* ignore */
           }
 
-          const memStatus = total > 0 ? chalk.green(`${total} memories`) : chalk.yellow('empty');
-          const sessionStr = sessionCount > 0 ? chalk.dim(` · ${sessionCount} sessions`) : '';
-          lines.push(chalk.bold('  MemoryDB'));
+          const memStatus = total > 0 ? ansis.green(`${total} memories`) : ansis.yellow('empty');
+          const sessionStr = sessionCount > 0 ? ansis.dim(` · ${sessionCount} sessions`) : '';
+          lines.push(ansis.bold('  MemoryDB'));
           lines.push(`    ${memStatus}${sessionStr}  ${byType ? `[ ${byType} ]` : ''}`);
 
           // ── Dream ─────────────────────────────────────────────
@@ -676,16 +676,16 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             if (dreamStatus) {
               const lastDream = dreamStatus.lastDreamAt
                 ? new Date(dreamStatus.lastDreamAt).toLocaleString()
-                : chalk.dim('never');
+                : ansis.dim('never');
               const nextDream =
                 dreamStatus.nextDreamIn > 0
-                  ? chalk.dim(`${Math.round(dreamStatus.nextDreamIn / 3600000)}h`)
-                  : chalk.green('ready');
+                  ? ansis.dim(`${Math.round(dreamStatus.nextDreamIn / 3600000)}h`)
+                  : ansis.green('ready');
               const pending =
                 dreamStatus.pendingConsolidations > 0
-                  ? chalk.yellow(`${dreamStatus.pendingConsolidations} pending`)
-                  : chalk.dim('0 pending');
-              lines.push(chalk.bold('  Dream'));
+                  ? ansis.yellow(`${dreamStatus.pendingConsolidations} pending`)
+                  : ansis.dim('0 pending');
+              lines.push(ansis.bold('  Dream'));
               lines.push(
                 `    last ${lastDream}  ·  next ${nextDream}  ·  ${pending}  ·  runs ${dreamStatus.dreamsRun}`,
               );
@@ -701,12 +701,12 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             if (distillStatus) {
               const lastDistill = distillStatus.lastDistillAt
                 ? new Date(distillStatus.lastDistillAt).toLocaleString()
-                : chalk.dim('never');
+                : ansis.dim('never');
               const nextDistill =
                 distillStatus.nextDistillIn > 0
-                  ? chalk.dim(`${Math.round(distillStatus.nextDistillIn / 86400000)}d`)
-                  : chalk.green('ready');
-              lines.push(chalk.bold('  Distill'));
+                  ? ansis.dim(`${Math.round(distillStatus.nextDistillIn / 86400000)}d`)
+                  : ansis.green('ready');
+              lines.push(ansis.bold('  Distill'));
               lines.push(
                 `    last ${lastDistill}  ·  next ${nextDistill}  ·  ${distillStatus.experiencesCount} experiences  ·  runs ${distillStatus.distillsRun}`,
               );
@@ -725,8 +725,8 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             if (existsSync(statePath)) {
               const raw = await readFile(statePath, 'utf-8');
               const peerState = JSON.parse(raw);
-              const statusIcon = peerState.enabled ? chalk.green('● ON') : chalk.dim('○ OFF');
-              lines.push(chalk.bold('  Peer Sync'));
+              const statusIcon = peerState.enabled ? ansis.green('● ON') : ansis.dim('○ OFF');
+              lines.push(ansis.bold('  Peer Sync'));
               if (peerState.enabled) {
                 lines.push(
                   `    ${statusIcon}  every ${peerState.intervalMin} min  ·  cron ${peerState.cronTaskId || '—'}`,
@@ -744,12 +744,12 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             const db = MemoryDB.getInstance();
             const recentEvents = db.getTimeline(5);
             if (recentEvents.length > 0) {
-              lines.push(chalk.bold('  Recent Events'));
+              lines.push(ansis.bold('  Recent Events'));
               for (const event of recentEvents) {
                 const date = new Date(event.createdAt).toLocaleString();
-                const eventLabel = event.event === 'created' ? chalk.green('+') : chalk.blue('~');
+                const eventLabel = event.event === 'created' ? ansis.green('+') : ansis.blue('~');
                 lines.push(
-                  `    ${chalk.dim('[' + date + ']')} ${eventLabel} ${event.event}${event.note ? ': ' + event.note : ''}`,
+                  `    ${ansis.dim('[' + date + ']')} ${eventLabel} ${event.event}${event.note ? ': ' + event.note : ''}`,
                 );
               }
             }
@@ -758,7 +758,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           }
 
           lines.push('');
-          lines.push(chalk.dim('  /memory help · /memory init · /memory scan · /memory recall'));
+          lines.push(ansis.dim('  /memory help · /memory init · /memory scan · /memory recall'));
           onDone(lines.join('\n'), { display: 'system' });
         } catch (err: any) {
           onDone(`Error loading dashboard: ${err.message}`, { display: 'system' });

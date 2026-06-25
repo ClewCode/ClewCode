@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from 'src/constants/oauth.js';
 import { getOrganizationUUID } from 'src/services/oauth/client.js';
 import { getClaudeAIOAuthTokens } from '../auth.js';
@@ -50,7 +50,7 @@ export async function fetchEnvironments(): Promise<EnvironmentResource[]> {
       'x-organization-uuid': orgUUID,
     };
 
-    const response = await axios.get<EnvironmentListResponse>(url, {
+    const response = await ofetch<EnvironmentListResponse>(url, {
       headers,
       timeout: 15000,
     });
@@ -82,7 +82,7 @@ export async function createDefaultCloudEnvironment(name: string): Promise<Envir
   }
 
   const url = `${getOauthConfig().BASE_API_URL}/v1/environment_providers/cloud/create`;
-  const response = await axios.post<EnvironmentResource>(
+  const response = await ofetch<EnvironmentResource>(
     url,
     {
       name,

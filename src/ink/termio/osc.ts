@@ -62,7 +62,8 @@ export function wrapForMultiplexer(sequence: string): string {
 export type ClipboardPath = 'native' | 'tmux-buffer' | 'osc52';
 
 export function getClipboardPath(): ClipboardPath {
-  const nativeAvailable = (process.platform === 'darwin' || process.platform === 'win32') && !process.env['SSH_CONNECTION'];
+  const nativeAvailable =
+    (process.platform === 'darwin' || process.platform === 'win32') && !process.env['SSH_CONNECTION'];
   if (nativeAvailable) return 'native';
   if (process.env['TMUX']) return 'tmux-buffer';
   return 'osc52';

@@ -721,6 +721,17 @@ export function useTypeahead({
             description: status ? `send message · ${status}` : 'send message',
           });
         }
+        // Add custom/built-in agent definitions from .clew/agents/
+        for (const agent of agents) {
+          if (seen.has(agent.agentType)) continue;
+          if (!agent.agentType.toLowerCase().startsWith(partialName)) continue;
+          seen.add(agent.agentType);
+          members.push({
+            id: `agent-${agent.agentType}`,
+            displayText: `@agent-${agent.agentType}`,
+            description: agent.whenToUse || 'subagent',
+          });
+        }
         if (members.length > 0) {
           debouncedFetchFileSuggestions.cancel();
           setSuggestionsState(prev => ({
@@ -917,7 +928,10 @@ export function useTypeahead({
         // we need to clear the suggestions.
         clearSuggestions();
       }
-      if (suggestionType === 'agent' && suggestionsRef.current.some((s: SuggestionItem) => s.id?.startsWith('dm-'))) {
+      if (
+        suggestionType === 'agent' &&
+        suggestionsRef.current.some((s: SuggestionItem) => s.id?.startsWith('dm-') || s.id?.startsWith('agent-'))
+      ) {
         // If we had team member suggestions but the input no longer has @
         // we need to clear the suggestions.
         const hasAt = value.substring(0, effectiveCursorOffset).match(/(^|\s)@([\w-]*)$/);
@@ -1376,7 +1390,7 @@ export function useTypeahead({
     } else if (
       suggestionType === 'agent' &&
       selectedSuggestion < suggestions.length &&
-      suggestion?.id?.startsWith('dm-')
+      (suggestion?.id?.startsWith('dm-') || suggestion?.id?.startsWith('agent-'))
     ) {
       applyTriggerSuggestion(suggestion, input, cursorOffset, DM_MEMBER_RE, onInputChange, setCursorOffset);
       debouncedFetchFileSuggestions.cancel();

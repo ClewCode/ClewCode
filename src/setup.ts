@@ -1,7 +1,7 @@
 /* eslint-disable custom-rules/no-process-exit */
 
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -68,7 +68,7 @@ export async function setup(
   const nodeVersion = process.version.match(/^v(\d+)\./)?.[1];
   if (!nodeVersion || parseInt(nodeVersion, 10) < 18) {
     // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.error(chalk.bold.red('Error: Clew Code requires Node.js version 18 or higher.'));
+    console.error(ansis.bold.red('Error: Clew Code requires Node.js version 18 or higher.'));
     process.exit(1);
   }
 
@@ -110,14 +110,14 @@ export async function setup(
       if (restoredIterm2Backup.status === 'restored') {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(
-          chalk.yellow(
+          ansis.yellow(
             'Detected an interrupted iTerm2 setup. Your original settings have been restored. You may need to restart iTerm2 for the changes to take effect.',
           ),
         );
       } else if (restoredIterm2Backup.status === 'failed') {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(
-          chalk.red(
+          ansis.red(
             `Failed to restore iTerm2 settings. Please manually restore your original settings with: defaults import com.googlecode.iterm2 ${restoredIterm2Backup.backupPath}.`,
           ),
         );
@@ -130,14 +130,14 @@ export async function setup(
       if (restoredTerminalBackup.status === 'restored') {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(
-          chalk.yellow(
+          ansis.yellow(
             'Detected an interrupted Terminal.app setup. Your original settings have been restored. You may need to restart Terminal.app for the changes to take effect.',
           ),
         );
       } else if (restoredTerminalBackup.status === 'failed') {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(
-          chalk.red(
+          ansis.red(
             `Failed to restore Terminal.app settings. Please manually restore your original settings with: defaults import com.apple.Terminal ${restoredTerminalBackup.backupPath}.`,
           ),
         );
@@ -171,8 +171,8 @@ export async function setup(
     const inGit = await getIsGit();
     if (!hasHook && !inGit) {
       process.stderr.write(
-        chalk.red(
-          `Error: Can only use --worktree in a git repository, but ${chalk.bold(cwd)} is not a git repository. ` +
+        ansis.red(
+          `Error: Can only use --worktree in a git repository, but ${ansis.bold(cwd)} is not a git repository. ` +
             `Configure a WorktreeCreate hook in settings.json to use --worktree with other VCS systems.\n`,
         ),
       );
@@ -191,7 +191,7 @@ export async function setup(
       // findGitRoot cache was already warmed by getIsGit() above, so this is ~free.
       const mainRepoRoot = findCanonicalGitRoot(getCwd());
       if (!mainRepoRoot) {
-        process.stderr.write(chalk.red(`Error: Could not determine the main git repository root.\n`));
+        process.stderr.write(ansis.red(`Error: Could not determine the main git repository root.\n`));
         process.exit(1);
       }
 
@@ -218,7 +218,7 @@ export async function setup(
         worktreePRNumber ? { prNumber: worktreePRNumber } : undefined,
       );
     } catch (error) {
-      process.stderr.write(chalk.red(`Error creating worktree: ${errorMessage(error)}\n`));
+      process.stderr.write(ansis.red(`Error creating worktree: ${errorMessage(error)}\n`));
       process.exit(1);
     }
 
@@ -230,13 +230,13 @@ export async function setup(
       if (tmuxResult.created) {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(
-          chalk.green(
-            `Created tmux session: ${chalk.bold(tmuxSessionName)}\nTo attach: ${chalk.bold(`tmux attach -t ${tmuxSessionName}`)}`,
+          ansis.green(
+            `Created tmux session: ${ansis.bold(tmuxSessionName)}\nTo attach: ${ansis.bold(`tmux attach -t ${tmuxSessionName}`)}`,
           ),
         );
       } else {
         // biome-ignore lint/suspicious/noConsole:: intentional console output
-        console.error(chalk.yellow(`Warning: Failed to create tmux session: ${tmuxResult.error}`));
+        console.error(ansis.yellow(`Warning: Failed to create tmux session: ${tmuxResult.error}`));
       }
     }
 

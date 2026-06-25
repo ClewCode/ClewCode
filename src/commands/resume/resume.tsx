@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import type { UUID } from 'crypto';
 import figures from 'figures';
 import * as React from 'react';
@@ -37,9 +37,9 @@ type ResumeResult =
 function resumeHelpMessage(result: ResumeResult): string {
   switch (result.resultType) {
     case 'sessionNotFound':
-      return `Session ${chalk.bold(result.arg)} was not found.`;
+      return `Session ${ansis.bold(result.arg)} was not found.`;
     case 'multipleMatches':
-      return `Found ${result.count} sessions matching ${chalk.bold(result.arg)}. Please use /resume to pick a specific session.`;
+      return `Found ${result.count} sessions matching ${ansis.bold(result.arg)}. Please use /resume to pick a specific session.`;
   }
 }
 

@@ -1,7 +1,7 @@
 import type { McpbManifest, McpbUserConfigurationOption } from '@anthropic-ai/mcpb';
-import axios from 'axios';
 import { createHash } from 'crypto';
 import { chmod, writeFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import { dirname, join, sep } from 'path';
 import type { McpServerConfig } from '../../services/mcp/types.js';
 import { logForDebugging } from '../debug.js';
@@ -435,19 +435,13 @@ async function downloadMcpb(url: string, destPath: string, onProgress?: Progress
   const started = performance.now();
   let fetchTelemetryFired = false;
   try {
-    const response = await axios.get(url, {
+    const response = await ofetch.raw(url, {
       timeout: 120000, // 2 minute timeout
-      responseType: 'arraybuffer',
-      maxRedirects: 5, // Follow redirects (like curl -L)
-      onDownloadProgress: progressEvent => {
-        if (progressEvent.total && onProgress) {
-          const percent = Math.round((progressEvent.loaded / progressEvent.total) * 100);
-          onProgress(`Downloading... ${percent}%`);
-        }
-      },
+      responseType: 'arrayBuffer',
+      retry: false,
     });
 
-    const data = new Uint8Array(response.data);
+    const data = new Uint8Array(response._data as ArrayBuffer);
     // Fire telemetry before writeFile — the event measures the network
     // fetch, not disk I/O. A writeFile EACCES would otherwise match
     // classifyFetchError's /permission denied/ → misreport as auth.

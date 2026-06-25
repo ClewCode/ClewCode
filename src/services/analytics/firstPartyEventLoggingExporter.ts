@@ -1,9 +1,9 @@
 import type { HrTime } from '@opentelemetry/api';
 import { type ExportResult, ExportResultCode } from '@opentelemetry/core';
 import type { LogRecordExporter, ReadableLogRecord } from '@opentelemetry/sdk-logs';
-import axios from 'axios';
 import { randomUUID } from 'crypto';
 import { appendFile, mkdir, readdir, unlink, writeFile } from 'fs/promises';
+import { ofetch } from 'ofetch';
 import * as path from 'path';
 import type { CoreUserData } from 'src/utils/user.js';
 import { getIsNonInteractiveSession, getSessionId } from '../../bootstrap/state.js';
@@ -511,7 +511,7 @@ export class FirstPartyEventLoggingExporter implements LogRecordExporter {
     const headers = useAuth ? { ...baseHeaders, ...authResult.headers } : baseHeaders;
 
     try {
-      const response = await axios.post(this.endpoint, payload, {
+      const response = await ofetch(this.endpoint, payload, {
         timeout: this.timeout,
         headers,
       });
@@ -519,11 +519,11 @@ export class FirstPartyEventLoggingExporter implements LogRecordExporter {
       return;
     } catch (error) {
       // Handle 401 by retrying without auth
-      if (useAuth && axios.isAxiosError(error) && error.response?.status === 401) {
+      if (useAuth && isFetchError(error) && error.response?.status === 401) {
         if (process.env.USER_TYPE === 'ant') {
           logForDebugging('1P event logging: 401 auth error, retrying without auth');
         }
-        const response = await axios.post(this.endpoint, payload, {
+        const response = await ofetch(this.endpoint, payload, {
           timeout: this.timeout,
           headers: baseHeaders,
         });
@@ -663,7 +663,7 @@ export class FirstPartyEventLoggingExporter implements LogRecordExporter {
 }
 
 function getAxiosErrorContext(error: unknown): string {
-  if (!axios.isAxiosError(error)) {
+  if (!isFetchError(error)) {
     return errorMessage(error);
   }
 

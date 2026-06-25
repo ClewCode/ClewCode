@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from '../../constants/oauth.js';
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { getAuthHeaders } from '../../utils/http.js';
@@ -26,7 +26,7 @@ export async function fetchAndStoreClaudeCodeFirstTokenDate(): Promise<void> {
     const oauthConfig = getOauthConfig();
     const url = `${oauthConfig.BASE_API_URL}/api/organization/claude_code_first_token_date`;
 
-    const response = await axios.get(url, {
+    const response = await ofetch(url, {
       headers: {
         ...authHeaders.headers,
         'User-Agent': getClaudeCodeUserAgent(),

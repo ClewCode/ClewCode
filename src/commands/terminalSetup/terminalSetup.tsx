@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { randomBytes } from 'crypto';
 import { copyFile, mkdir, readFile, writeFile } from 'fs/promises';
 import { homedir, platform } from 'os';
@@ -74,7 +74,7 @@ export function getNativeCSIuTerminalDisplayName(): string | null {
  * while displaying the clean path to the user.
  *
  * Unlike createHyperlink(), this doesn't apply any color styling so the
- * path inherits the parent's styling (e.g., chalk.dim).
+ * path inherits the parent's styling (e.g., ansis.dim).
  */
 function formatPathLink(filePath: string): string {
   if (!supportsHyperlinks()) {
@@ -201,7 +201,7 @@ No configuration needed. Just use Shift+Enter to add newlines.`;
     const message = `Terminal setup cannot be run from ${terminalName}.
 
 This command configures a convenient Shift+Enter shortcut for multi-line prompts.
-${chalk.dim('Note: You can already use backslash (\\\\) + return to add newlines.')}
+${ansis.dim('Note: You can already use backslash (\\\\) + return to add newlines.')}
 
 To set up the shortcut (optional):
 1. Exit tmux/screen temporarily
@@ -210,7 +210,7 @@ ${platformTerminals}   • IDE: VSCode, Cursor, Windsurf, Zed
    • Other: Alacritty
 3. Return to tmux/screen - settings will persist
 
-${chalk.dim('Note: iTerm2, WezTerm, Ghostty, Kitty, and Warp support Shift+Enter natively.')}`;
+${ansis.dim('Note: iTerm2, WezTerm, Ghostty, Kitty, and Warp support Shift+Enter natively.')}`;
     onDone(message);
     return null;
   }
@@ -233,7 +233,7 @@ async function installBindingsForVSCodeTerminal(
   // Check if we're running in a VSCode Remote SSH session
   // In this case, keybindings need to be installed on the LOCAL machine
   if (isVSCodeRemoteSSH()) {
-    return `${color('warning', theme)(`Cannot install keybindings from a remote ${editor} session.`)}${EOL}${EOL}${editor} keybindings must be installed on your local machine, not the remote server.${EOL}${EOL}To install the Shift+Enter keybinding:${EOL}1. Open ${editor} on your local machine (not connected to remote)${EOL}2. Open the Command Palette (Cmd/Ctrl+Shift+P) → "Preferences: Open Keyboard Shortcuts (JSON)"${EOL}3. Add this keybinding (the file must be a JSON array):${EOL}${EOL}${chalk.dim(`[
+    return `${color('warning', theme)(`Cannot install keybindings from a remote ${editor} session.`)}${EOL}${EOL}${editor} keybindings must be installed on your local machine, not the remote server.${EOL}${EOL}To install the Shift+Enter keybinding:${EOL}1. Open ${editor} on your local machine (not connected to remote)${EOL}2. Open the Command Palette (Cmd/Ctrl+Shift+P) → "Preferences: Open Keyboard Shortcuts (JSON)"${EOL}3. Add this keybinding (the file must be a JSON array):${EOL}${EOL}${ansis.dim(`[
   {
     "key": "shift+enter",
     "command": "workbench.action.terminal.sendSequence",
@@ -279,7 +279,7 @@ async function installBindingsForVSCodeTerminal(
       try {
         await copyFile(keybindingsPath, backupPath);
       } catch {
-        return `${color('warning', theme)(`Error backing up existing ${editor} terminal keybindings. Bailing out.`)}${EOL}${chalk.dim(`See ${formatPathLink(keybindingsPath)}`)}${EOL}${chalk.dim(`Backup path: ${formatPathLink(backupPath)}`)}${EOL}`;
+        return `${color('warning', theme)(`Error backing up existing ${editor} terminal keybindings. Bailing out.`)}${EOL}${ansis.dim(`See ${formatPathLink(keybindingsPath)}`)}${EOL}${ansis.dim(`Backup path: ${formatPathLink(backupPath)}`)}${EOL}`;
       }
     }
 
@@ -291,7 +291,7 @@ async function installBindingsForVSCodeTerminal(
         binding.when === 'terminalFocus',
     );
     if (existingBinding) {
-      return `${color('warning', theme)(`Found existing ${editor} terminal Shift+Enter key binding. Remove it to continue.`)}${EOL}${chalk.dim(`See ${formatPathLink(keybindingsPath)}`)}${EOL}`;
+      return `${color('warning', theme)(`Found existing ${editor} terminal Shift+Enter key binding. Remove it to continue.`)}${EOL}${ansis.dim(`See ${formatPathLink(keybindingsPath)}`)}${EOL}`;
     }
 
     // Create the new keybinding
@@ -311,7 +311,7 @@ async function installBindingsForVSCodeTerminal(
     await writeFile(keybindingsPath, updatedContent, {
       encoding: 'utf-8',
     });
-    return `${color('success', theme)(`Installed ${editor} terminal Shift+Enter key binding`)}${EOL}${chalk.dim(`See ${formatPathLink(keybindingsPath)}`)}${EOL}`;
+    return `${color('success', theme)(`Installed ${editor} terminal Shift+Enter key binding`)}${EOL}${ansis.dim(`See ${formatPathLink(keybindingsPath)}`)}${EOL}`;
   } catch (error) {
     logError(error);
     throw new Error(`Failed to install ${editor} terminal Shift+Enter key binding`);
@@ -414,7 +414,7 @@ async function enableOptionAsMetaForTerminal(theme: ThemeName): Promise<string> 
     // Flush the preferences cache
     await execFileNoThrow('killall', ['cfprefsd']);
     markTerminalSetupComplete();
-    return `${color('success', theme)(`Configured Terminal.app settings:`)}${EOL}${color('success', theme)('- Enabled "Use Option as Meta key"')}${EOL}${color('success', theme)('- Switched to visual bell')}${EOL}${chalk.dim('Option+Enter will now enter a newline.')}${EOL}${chalk.dim('You must restart Terminal.app for changes to take effect.', theme)}${EOL}`;
+    return `${color('success', theme)(`Configured Terminal.app settings:`)}${EOL}${color('success', theme)('- Enabled "Use Option as Meta key"')}${EOL}${color('success', theme)('- Switched to visual bell')}${EOL}${ansis.dim('Option+Enter will now enter a newline.')}${EOL}${ansis.dim('You must restart Terminal.app for changes to take effect.', theme)}${EOL}`;
   } catch (error) {
     logError(error);
 
@@ -486,7 +486,7 @@ chars = "\\u001B\\r"`;
     if (configExists) {
       // Check if keybinding already exists (look for Shift+Return binding)
       if (configContent.includes('mods = "Shift"') && configContent.includes('key = "Return"')) {
-        return `${color('warning', theme)('Found existing Alacritty Shift+Enter key binding. Remove it to continue.')}${EOL}${chalk.dim(`See ${formatPathLink(configPath)}`)}${EOL}`;
+        return `${color('warning', theme)('Found existing Alacritty Shift+Enter key binding. Remove it to continue.')}${EOL}${ansis.dim(`See ${formatPathLink(configPath)}`)}${EOL}`;
       }
 
       // Create backup
@@ -495,7 +495,7 @@ chars = "\\u001B\\r"`;
       try {
         await copyFile(configPath, backupPath);
       } catch {
-        return `${color('warning', theme)('Error backing up existing Alacritty config. Bailing out.')}${EOL}${chalk.dim(`See ${formatPathLink(configPath)}`)}${EOL}${chalk.dim(`Backup path: ${formatPathLink(backupPath)}`)}${EOL}`;
+        return `${color('warning', theme)('Error backing up existing Alacritty config. Bailing out.')}${EOL}${ansis.dim(`See ${formatPathLink(configPath)}`)}${EOL}${ansis.dim(`Backup path: ${formatPathLink(backupPath)}`)}${EOL}`;
       }
     } else {
       // Ensure config directory exists (idempotent with recursive)
@@ -515,7 +515,7 @@ chars = "\\u001B\\r"`;
     await writeFile(configPath, updatedContent, {
       encoding: 'utf-8',
     });
-    return `${color('success', theme)('Installed Alacritty Shift+Enter key binding')}${EOL}${color('success', theme)('You may need to restart Alacritty for changes to take effect')}${EOL}${chalk.dim(`See ${formatPathLink(configPath)}`)}${EOL}`;
+    return `${color('success', theme)('Installed Alacritty Shift+Enter key binding')}${EOL}${color('success', theme)('You may need to restart Alacritty for changes to take effect')}${EOL}${ansis.dim(`See ${formatPathLink(configPath)}`)}${EOL}`;
   } catch (error) {
     logError(error);
     throw new Error('Failed to install Alacritty Shift+Enter key binding');
@@ -545,7 +545,7 @@ async function installBindingsForZed(theme: ThemeName): Promise<string> {
     if (fileExists) {
       // Check if keybinding already exists
       if (keymapContent.includes('shift-enter')) {
-        return `${color('warning', theme)('Found existing Zed Shift+Enter key binding. Remove it to continue.')}${EOL}${chalk.dim(`See ${formatPathLink(keymapPath)}`)}${EOL}`;
+        return `${color('warning', theme)('Found existing Zed Shift+Enter key binding. Remove it to continue.')}${EOL}${ansis.dim(`See ${formatPathLink(keymapPath)}`)}${EOL}`;
       }
 
       // Create backup
@@ -554,7 +554,7 @@ async function installBindingsForZed(theme: ThemeName): Promise<string> {
       try {
         await copyFile(keymapPath, backupPath);
       } catch {
-        return `${color('warning', theme)('Error backing up existing Zed keymap. Bailing out.')}${EOL}${chalk.dim(`See ${formatPathLink(keymapPath)}`)}${EOL}${chalk.dim(`Backup path: ${formatPathLink(backupPath)}`)}${EOL}`;
+        return `${color('warning', theme)('Error backing up existing Zed keymap. Bailing out.')}${EOL}${ansis.dim(`See ${formatPathLink(keymapPath)}`)}${EOL}${ansis.dim(`Backup path: ${formatPathLink(backupPath)}`)}${EOL}`;
       }
     }
 
@@ -584,7 +584,7 @@ async function installBindingsForZed(theme: ThemeName): Promise<string> {
     await writeFile(keymapPath, `${jsonStringify(keymap, null, 2)}\n`, {
       encoding: 'utf-8',
     });
-    return `${color('success', theme)('Installed Zed Shift+Enter key binding')}${EOL}${chalk.dim(`See ${formatPathLink(keymapPath)}`)}${EOL}`;
+    return `${color('success', theme)('Installed Zed Shift+Enter key binding')}${EOL}${ansis.dim(`See ${formatPathLink(keymapPath)}`)}${EOL}`;
   } catch (error) {
     logError(error);
     throw new Error('Failed to install Zed Shift+Enter key binding');

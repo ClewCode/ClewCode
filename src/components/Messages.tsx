@@ -1,5 +1,5 @@
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import type { UUID } from 'crypto';
 import type { RefObject } from 'react';
 import * as React from 'react';
@@ -862,7 +862,7 @@ const MessagesImpl = ({
       {/* Truncation indicator */}
       {hasTruncatedMessages && hiddenMessageCount > 0 && (
         <Divider
-          title={`${toggleShowAllShortcut} to show ${chalk.bold(hiddenMessageCount)} previous messages`}
+          title={`${toggleShowAllShortcut} to show ${ansis.bold(hiddenMessageCount)} previous messages`}
           width={columns}
         />
       )}
@@ -876,7 +876,7 @@ const MessagesImpl = ({
         // nothing is actually "hidden" to restore.
         !disableRenderCap && (
           <Divider
-            title={`${toggleShowAllShortcut} to hide ${chalk.bold(hiddenMessageCount)} previous messages`}
+            title={`${toggleShowAllShortcut} to hide ${ansis.bold(hiddenMessageCount)} previous messages`}
             width={columns}
           />
         )}

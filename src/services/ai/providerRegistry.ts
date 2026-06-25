@@ -152,6 +152,7 @@ const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
   cerebras: 'automatic',
   opencode: 'automatic',
   'opencode-go': 'automatic',
+  sakana: 'automatic',
   cline: 'automatic',
   siliconflow: 'automatic',
   moonshot: 'automatic',

@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import cliBoxes, { type Boxes, type BoxStyle } from 'cli-boxes';
 import { applyColor } from './colorize.js';
 import type { DOMNode } from './dom.js';
@@ -77,7 +77,7 @@ function embedTextInBorder(
 function styleBorderLine(line: string, color: Color | undefined, dim: boolean | undefined): string {
   let styled = applyColor(line, color);
   if (dim) {
-    styled = chalk.dim(styled);
+    styled = ansis.dim(styled);
   }
   return styled;
 }
@@ -149,13 +149,13 @@ const renderBorder = (x: number, y: number, node: DOMNode, output: Output): void
     let leftBorder = `${applyColor(box.left, leftBorderColor)}\n`.repeat(verticalBorderHeight);
 
     if (dimLeftBorderColor) {
-      leftBorder = chalk.dim(leftBorder);
+      leftBorder = ansis.dim(leftBorder);
     }
 
     let rightBorder = `${applyColor(box.right, rightBorderColor)}\n`.repeat(verticalBorderHeight);
 
     if (dimRightBorderColor) {
-      rightBorder = chalk.dim(rightBorder);
+      rightBorder = ansis.dim(rightBorder);
     }
 
     const bottomBorderLine = showBottomBorder

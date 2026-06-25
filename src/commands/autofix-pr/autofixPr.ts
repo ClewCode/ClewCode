@@ -4,7 +4,7 @@
  * comments, and registers a RemoteAgentTask so the polling loop pipes results
  * back into the local session via task-notification.
  *
- * Uses skipBundle: true — autofix pushes to GitHub, so a read-only bundle
+ * Uses skipBundle: true because autofix pushes to GitHub, so a read-only bundle
  * would block the workflow.
  */
 
@@ -16,6 +16,7 @@ import {
   getRemoteTaskSessionUrl,
   registerRemoteAgentTask,
 } from '../../tasks/RemoteAgentTask/RemoteAgentTask.js';
+import type { LocalJSXCommandCall } from '../../types/command.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { detectCurrentRepositoryWithHost } from '../../utils/detectRepository.js';
 import { execFileNoThrow } from '../../utils/execFileNoThrow.js';
@@ -52,7 +53,7 @@ export async function launchAutofixPr(args: string, context: ToolUseContext): Pr
     }
   }
 
-  // Parse PR number from args (leading number token) or detect from branch
+  // Parse PR number from args (leading number token) or detect from branch.
   const trimmed = args.trim();
   const leadingNumberMatch = trimmed.match(/^(\d+)\s*(.*)$/);
   let prNumber: number | null = null;
@@ -77,12 +78,11 @@ export async function launchAutofixPr(args: string, context: ToolUseContext): Pr
         type: 'text',
         text:
           'No PR number found. Provide a PR number as the first argument ' +
-          '(e.g. `/autofix-pr 123 fix the CI errors`), or switch to a branch that has an open PR.',
+          '(e.g. `/autofix-pr 123 monitor and fix the PR`), or switch to a branch that has an open PR.',
       },
     ];
   }
 
-  // Detect current repository
   const repo = await detectCurrentRepositoryWithHost();
   if (repo?.host !== 'github.com') {
     return [
@@ -93,12 +93,16 @@ export async function launchAutofixPr(args: string, context: ToolUseContext): Pr
     ];
   }
 
+  const defaultPrompt =
+    `Monitor PR #${prNumber} for failing checks, review comments, merge blockers, and other issues. ` +
+    'Autofix what can be fixed safely, push the changes, and report anything that remains blocked.';
+
   const description = prompt
-    ? `autofix-pr: ${repo.owner}/${repo.name}#${prNumber} — ${prompt.slice(0, 60)}`
+    ? `autofix-pr: ${repo.owner}/${repo.name}#${prNumber} - ${prompt.slice(0, 60)}`
     : `autofix-pr: ${repo.owner}/${repo.name}#${prNumber}`;
 
   const session = await teleportToRemote({
-    initialMessage: prompt || `Fix CI errors and address review comments on PR #${prNumber}`,
+    initialMessage: prompt || defaultPrompt,
     description,
     signal: context.abortController.signal,
     skipBundle: true,
@@ -137,17 +141,12 @@ export async function launchAutofixPr(args: string, context: ToolUseContext): Pr
       type: 'text',
       text:
         `Autofix-PR launched for ${repo.owner}/${repo.name}#${prNumber} ` +
-        `(~10–20 min, runs in Clew Code on the web). ` +
+        `(~10-20 min, runs in Clew Code on the web). ` +
         `Track: ${sessionUrl}\n` +
         `Results arrive via task-notification.`,
     },
   ];
 }
-
-/**
- * LocalJSXCommandCall — entry point for /autofix-pr command invocation.
- */
-import type { LocalJSXCommandCall } from '../../types/command.js';
 
 function contentBlocksToString(blocks: ContentBlockParam[]): string {
   return blocks

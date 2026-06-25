@@ -1,11 +1,11 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 
 /**
  * xterm.js (VS Code, Cursor, code-server, Coder) has supported truecolor
  * since 2017, but code-server/Coder containers often don't set
  * COLORTERM=truecolor. chalk's supports-color doesn't recognize
  * TERM_PROGRAM=vscode (it only knows iTerm.app/Apple_Terminal), so it falls
- * through to the -256color regex → level 2. At level 2, chalk.rgb()
+ * through to the -256color regex → level 2. At level 2, ansis.rgb()
  * downgrades to the nearest 6×6×6 cube color: rgb(215,119,87) (Claude
  * orange) → idx 174 rgb(215,135,135) — washed-out salmon.
  *
@@ -17,8 +17,8 @@ import chalk from 'chalk';
  * terminal, tmux's passthrough limitation wins and we want level 2.
  */
 function boostChalkLevelForXtermJs() {
-  if (process.env.TERM_PROGRAM === 'vscode' && chalk.level === 2) {
-    chalk.level = 3;
+  if (process.env.TERM_PROGRAM === 'vscode' && ansis.level === 2) {
+    ansis.level = 3;
     return true;
   }
   return false;
@@ -47,8 +47,8 @@ function clampChalkLevelForTmux() {
   // through — skip the clamp. General escape hatch for anyone who's
   // configured their tmux correctly.
   if (process.env.CLAUDE_CODE_TMUX_TRUECOLOR) return false;
-  if (process.env.TMUX && chalk.level > 2) {
-    chalk.level = 2;
+  if (process.env.TMUX && ansis.level > 2) {
+    ansis.level = 2;
     return true;
   }
   return false;
@@ -68,41 +68,41 @@ export const colorize = (str, color, type) => {
     const value = color.substring('ansi:'.length);
     switch (value) {
       case 'black':
-        return type === 'foreground' ? chalk.black(str) : chalk.bgBlack(str);
+        return type === 'foreground' ? ansis.black(str) : ansis.bgBlack(str);
       case 'red':
-        return type === 'foreground' ? chalk.red(str) : chalk.bgRed(str);
+        return type === 'foreground' ? ansis.red(str) : ansis.bgRed(str);
       case 'green':
-        return type === 'foreground' ? chalk.green(str) : chalk.bgGreen(str);
+        return type === 'foreground' ? ansis.green(str) : ansis.bgGreen(str);
       case 'yellow':
-        return type === 'foreground' ? chalk.yellow(str) : chalk.bgYellow(str);
+        return type === 'foreground' ? ansis.yellow(str) : ansis.bgYellow(str);
       case 'blue':
-        return type === 'foreground' ? chalk.blue(str) : chalk.bgBlue(str);
+        return type === 'foreground' ? ansis.blue(str) : ansis.bgBlue(str);
       case 'magenta':
-        return type === 'foreground' ? chalk.magenta(str) : chalk.bgMagenta(str);
+        return type === 'foreground' ? ansis.magenta(str) : ansis.bgMagenta(str);
       case 'cyan':
-        return type === 'foreground' ? chalk.cyan(str) : chalk.bgCyan(str);
+        return type === 'foreground' ? ansis.cyan(str) : ansis.bgCyan(str);
       case 'white':
-        return type === 'foreground' ? chalk.white(str) : chalk.bgWhite(str);
+        return type === 'foreground' ? ansis.white(str) : ansis.bgWhite(str);
       case 'blackBright':
-        return type === 'foreground' ? chalk.blackBright(str) : chalk.bgBlackBright(str);
+        return type === 'foreground' ? ansis.blackBright(str) : ansis.bgBlackBright(str);
       case 'redBright':
-        return type === 'foreground' ? chalk.redBright(str) : chalk.bgRedBright(str);
+        return type === 'foreground' ? ansis.redBright(str) : ansis.bgRedBright(str);
       case 'greenBright':
-        return type === 'foreground' ? chalk.greenBright(str) : chalk.bgGreenBright(str);
+        return type === 'foreground' ? ansis.greenBright(str) : ansis.bgGreenBright(str);
       case 'yellowBright':
-        return type === 'foreground' ? chalk.yellowBright(str) : chalk.bgYellowBright(str);
+        return type === 'foreground' ? ansis.yellowBright(str) : ansis.bgYellowBright(str);
       case 'blueBright':
-        return type === 'foreground' ? chalk.blueBright(str) : chalk.bgBlueBright(str);
+        return type === 'foreground' ? ansis.blueBright(str) : ansis.bgBlueBright(str);
       case 'magentaBright':
-        return type === 'foreground' ? chalk.magentaBright(str) : chalk.bgMagentaBright(str);
+        return type === 'foreground' ? ansis.magentaBright(str) : ansis.bgMagentaBright(str);
       case 'cyanBright':
-        return type === 'foreground' ? chalk.cyanBright(str) : chalk.bgCyanBright(str);
+        return type === 'foreground' ? ansis.cyanBright(str) : ansis.bgCyanBright(str);
       case 'whiteBright':
-        return type === 'foreground' ? chalk.whiteBright(str) : chalk.bgWhiteBright(str);
+        return type === 'foreground' ? ansis.whiteBright(str) : ansis.bgWhiteBright(str);
     }
   }
   if (color.startsWith('#')) {
-    return type === 'foreground' ? chalk.hex(color)(str) : chalk.bgHex(color)(str);
+    return type === 'foreground' ? ansis.hex(color)(str) : ansis.bgHex(color)(str);
   }
   if (color.startsWith('ansi256')) {
     const matches = ANSI_REGEX.exec(color);
@@ -110,7 +110,7 @@ export const colorize = (str, color, type) => {
       return str;
     }
     const value = Number(matches[1]);
-    return type === 'foreground' ? chalk.ansi256(value)(str) : chalk.bgAnsi256(value)(str);
+    return type === 'foreground' ? ansis.ansi256(value)(str) : ansis.bgAnsi256(value)(str);
   }
   if (color.startsWith('rgb')) {
     const matches = RGB_REGEX.exec(color);
@@ -121,13 +121,13 @@ export const colorize = (str, color, type) => {
     const secondValue = Number(matches[2]);
     const thirdValue = Number(matches[3]);
     return type === 'foreground'
-      ? chalk.rgb(firstValue, secondValue, thirdValue)(str)
-      : chalk.bgRgb(firstValue, secondValue, thirdValue)(str);
+      ? ansis.rgb(firstValue, secondValue, thirdValue)(str)
+      : ansis.bgRgb(firstValue, secondValue, thirdValue)(str);
   }
   return str;
 };
 /**
- * Apply TextStyles to a string using chalk.
+ * Apply TextStyles to a string using ansis.
  * This is the inverse of parsing ANSI codes - we generate them from structured styles.
  * Theme resolution happens at component layer, not here.
  */
@@ -139,22 +139,22 @@ export function applyTextStyles(text, styles) {
   //   background > foreground > text modifiers
   // So we apply: text modifiers first, then foreground, then background last.
   if (styles.inverse) {
-    result = chalk.inverse(result);
+    result = ansis.inverse(result);
   }
   if (styles.strikethrough) {
-    result = chalk.strikethrough(result);
+    result = ansis.strikethrough(result);
   }
   if (styles.underline) {
-    result = chalk.underline(result);
+    result = ansis.underline(result);
   }
   if (styles.italic) {
-    result = chalk.italic(result);
+    result = ansis.italic(result);
   }
   if (styles.bold) {
-    result = chalk.bold(result);
+    result = ansis.bold(result);
   }
   if (styles.dim) {
-    result = chalk.dim(result);
+    result = ansis.dim(result);
   }
   if (styles.color) {
     // Color is now always a raw color value (theme resolution happens at component layer)

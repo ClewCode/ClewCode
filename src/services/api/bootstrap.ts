@@ -1,5 +1,5 @@
-import axios from 'axios';
 import isEqual from 'lodash-es/isEqual.js';
+import { ofetch } from 'ofetch';
 import { getAnthropicApiKey, getClaudeAIOAuthTokens, hasProfileScope } from 'src/utils/auth.js';
 import { z } from 'zod';
 import { getOauthConfig, OAUTH_BETA_HEADER } from '../../constants/oauth.js';
@@ -77,7 +77,7 @@ async function fetchBootstrapAPI(): Promise<BootstrapResponse | null> {
       }
 
       logForDebugging('[Bootstrap] Fetching');
-      const response = await axios.get<unknown>(endpoint, {
+      const response = await ofetch<unknown>(endpoint, {
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': getClaudeCodeUserAgent(),
@@ -95,7 +95,7 @@ async function fetchBootstrapAPI(): Promise<BootstrapResponse | null> {
     });
   } catch (error) {
     logForDebugging(
-      `[Bootstrap] Fetch failed: ${axios.isAxiosError(error) ? (error.response?.status ?? error.code) : 'unknown'}`,
+      `[Bootstrap] Fetch failed: ${isFetchError(error) ? (error.response?.status ?? error.code) : 'unknown'}`,
     );
     throw error;
   }

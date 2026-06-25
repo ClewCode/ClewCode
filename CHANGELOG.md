@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-06-25
+
+### Changed
+- **LSP Tool enabled by default**: Removed `ENABLE_LSP_TOOL` env gate — LSP tool is now always registered and available without environment variable. (`src/tools.ts`)
+- **Agent Tool enabled for AI model**: Registered `AgentTool` in `getAllBaseTools()` so the AI model can directly invoke subagents via the Agent tool with `subagent_type`. Previously only accessible through `/agent` slash command. (`src/tools.ts`)
+
+### Fixed
+- **Startup crash in proxy module**: `bun run dev` crashed with `TypeError: undefined is not an object (evaluating 'ofetch.defaults.proxy = void 0')` in `configureGlobalAgents()`. The `proxy.js`/`proxy.ts` files were partially migrated from `axios` to `ofetch` v1.5.1 but retained axios-specific APIs (`ofetch.defaults`, `ofetch.interceptors.request`) that don't exist in ofetch v1.x. Rewrote `createFetchInstance()` to use `ofetch.create()` with undici dispatcher (Node.js) or Bun-native `proxy` option, and simplified `configureGlobalAgents()` to only use `undici.setGlobalDispatcher()`. (`src/utils/proxy.js`, `src/utils/proxy.ts`, `src/cli/transports/ccrClient.ts`)
+
+## [0.3.6] - 2026-06-23
+
+### Added
+- **`/fork` command**: New slash command that forks the current conversation into a new session, leaving the original intact. Use `/resume <session-id>` to return to the original. (`src/commands/fork/`)
+
+## [0.3.5] - 2026-06-23
+
+### Changed
+- **`clew update` simplified**: Replaced complex multi-path update system (~370 lines) with a simple `npm install -g clew-code@latest` exec call (~35 lines). Removed installation type detection, lock mechanism, native/local installer fallbacks, and auto-relaunch. The current session continues running uninterrupted. (`src/cli/update.ts`)
+- **`autoUpdater.ts` simplified**: Removed `installGlobalPackage()`, lock mechanism, and package manager detection — kept only `getLatestVersion()`, `getNpmDistTags()`, `assertMinVersion()`, `classifyUpdateError()`. (~745→~430 lines) (`src/utils/autoUpdater.ts`)
+- **`localInstaller.ts` simplified**: Removed `installOrUpdateClaudePackage()` and installation helpers — kept only `localInstallationExists()`. (~162→~35 lines) (`src/utils/localInstaller.ts`)
+- **Background auto-updater simplified**: `AutoUpdater.tsx` now only shows "Update available" notification instead of auto-installing. Removed `NativeAutoUpdater.tsx` and `PackageManagerAutoUpdater.tsx`. Simplified `AutoUpdaterWrapper.tsx`. (`src/components/AutoUpdater.tsx`)
+- **Peer system UX improvements**: `peer_send_message` now defaults `waitResponse: true` (most common case). `/peer` menu auto-discovers LAN peers on open. Fixed variable shadowing bug in PeerMenu peers view. Added `PeerIndicator` showing connected peer count in REPL footer. (`src/tools/PeerSendMessageTool/`, `src/commands/peer/`, `src/components/PeerIndicator.tsx`)
+- **`process_peer` renamed to `delegate`**: Renamed tool from `process_peer` to `delegate` to avoid confusion with LAN P2P system. Updated all references in prompts, profiles, and types. (`src/tools/ProcessPeerTool/`, `src/skills/bundled/personalDelegate.ts`, `src/constants/profilePrompts.ts`, `src/types/tools.ts`)
+
 ### Fixed
 - **MACRO globals not set at build time**: `clew update` crashed with `TypeError: undefined is not an object (evaluating 'Fy.PACKAGE_URL')` because `MACRO.PACKAGE_URL` was never injected into the bundle. Added `scripts/postbuild-inject-macro.mjs` that reads `package.json` and prepends `var MACRO={...}` to `dist/main.js` at build time.
 

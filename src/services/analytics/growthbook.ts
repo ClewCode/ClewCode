@@ -1,9 +1,9 @@
 import { GrowthBook } from '@growthbook/growthbook';
-import { isEqual, memoize } from 'lodash-es';
 import { getIsNonInteractiveSession, getSessionTrustAccepted } from '../../bootstrap/state.js';
 import { getGrowthBookClientKey } from '../../constants/keys.js';
 import { checkHasTrustDialogAccepted, getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { logForDebugging } from '../../utils/debug.js';
+import { isEqual, memoize } from '../../utils/equals.js';
 import { toError } from '../../utils/errors.js';
 import { getAuthHeaders } from '../../utils/http.js';
 import { logError } from '../../utils/log.js';

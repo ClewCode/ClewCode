@@ -72,9 +72,7 @@ function getToolBuckets(): ToolBuckets {
     },
     EXECUTION: {
       name: 'Execution tools',
-      toolNames: new Set(
-        [BashTool.name],
-      ),
+      toolNames: new Set([BashTool.name]),
     },
     MCP: {
       name: 'MCP tools',

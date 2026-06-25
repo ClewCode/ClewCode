@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { logError } from '../../utils/log.js';
 import { calculateSourceScore, type SourceScore } from './smartSourceRanking.js';
 
@@ -120,7 +120,7 @@ export async function searchTavily(
   const { searchDepth = 'basic', maxResults = 5, includeAnswer = true, includeImages = false } = options;
 
   try {
-    const response = await axios.post(
+    const response = await ofetch(
       `${TAVILY_API_BASE}/search`,
       {
         api_key: apiKey,
@@ -188,7 +188,7 @@ export async function searchBrave(
   const { count = 10, offset = 0 } = options;
 
   try {
-    const response = await axios.get(`${BRAVE_API_BASE}/web/search`, {
+    const response = await ofetch(`${BRAVE_API_BASE}/web/search`, {
       params: {
         q: query,
         count,

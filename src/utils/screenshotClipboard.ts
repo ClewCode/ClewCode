@@ -14,10 +14,20 @@ import { getPlatform } from './platform.js';
 async function ensureFlowControlDisabled(): Promise<boolean> {
   if (process.platform !== 'linux') return false;
   try {
-    const { execa } = await import('execa');
-    const { stdout } = await execa('stty', ['-a'], { reject: false });
+    const { default: nanoSpawn } = await import('nano-spawn');
+    let stdout = '';
+    try {
+      const result = await nanoSpawn('stty', ['-a']);
+      stdout = result.stdout;
+    } catch (e) {
+      stdout = (e as { stdout?: string }).stdout ?? '';
+    }
     if (!stdout?.includes('ixon')) return false;
-    await execa('stty', ['-ixon'], { reject: false });
+    try {
+      await nanoSpawn('stty', ['-ixon']);
+    } catch {
+      // ignore
+    }
     return true;
   } catch {
     return false;

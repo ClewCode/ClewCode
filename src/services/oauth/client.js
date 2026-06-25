@@ -1,5 +1,5 @@
 // OAuth client for handling authentication flows with Claude services
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { logEvent } from 'src/services/analytics/index.js';
 import {
   ALL_OAUTH_SCOPES,
@@ -89,7 +89,7 @@ export async function exchangeCodeForTokens(
   if (expiresIn !== undefined) {
     requestBody.expires_in = expiresIn;
   }
-  const response = await axios.post(getOauthConfig().TOKEN_URL, requestBody, {
+  const response = await ofetch(getOauthConfig().TOKEN_URL, requestBody, {
     headers: { 'Content-Type': 'application/json' },
     timeout: 15000,
   });
@@ -116,7 +116,7 @@ export async function refreshOAuthToken(refreshToken, { scopes: requestedScopes 
     scope: (requestedScopes?.length ? requestedScopes : CLAUDE_AI_OAUTH_SCOPES).join(' '),
   };
   try {
-    const response = await axios.post(getOauthConfig().TOKEN_URL, requestBody, {
+    const response = await ofetch(getOauthConfig().TOKEN_URL, requestBody, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 15000,
     });
@@ -192,8 +192,7 @@ export async function refreshOAuthToken(refreshToken, { scopes: requestedScopes 
         : undefined,
     };
   } catch (error) {
-    const responseBody =
-      axios.isAxiosError(error) && error.response?.data ? JSON.stringify(error.response.data) : undefined;
+    const responseBody = isFetchError(error) && error.response?.data ? JSON.stringify(error.response.data) : undefined;
     logEvent('tengu_oauth_token_refresh_failure', {
       error: error.message,
       ...(responseBody && {
@@ -204,7 +203,7 @@ export async function refreshOAuthToken(refreshToken, { scopes: requestedScopes 
   }
 }
 export async function fetchAndStoreUserRoles(accessToken) {
-  const response = await axios.get(getOauthConfig().ROLES_URL, {
+  const response = await ofetch(getOauthConfig().ROLES_URL, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (response.status !== 200) {
@@ -232,7 +231,7 @@ export async function fetchAndStoreUserRoles(accessToken) {
 }
 export async function createAndStoreApiKey(accessToken) {
   try {
-    const response = await axios.post(getOauthConfig().API_KEY_URL, null, {
+    const response = await ofetch(getOauthConfig().API_KEY_URL, null, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const apiKey = response.data?.raw_key;

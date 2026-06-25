@@ -1,5 +1,5 @@
 import { feature } from 'bun:bundle';
-import chalk from 'chalk';
+import ansis from 'ansis';
 import * as path from 'path';
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -3021,12 +3021,12 @@ function buildBorderText(
 ): BorderTextOptions | undefined {
   const segments: string[] = [];
   if (isLoopActive) {
-    segments.push(chalk.bold(chalk.yellow('🔒 LOOP LOCKED')));
+    segments.push(ansis.bold(ansis.yellow('🔒 LOOP LOCKED')));
   }
-  if (isUltra) segments.push(chalk.bold(chalk.hex('#8B5CF6')(' ultra ')));
+  if (isUltra) segments.push(ansis.bold(ansis.hex('#8B5CF6')(' ultra ')));
   if (showFastIcon) {
     const fastSeg = showFastIconHint
-      ? `${getFastIconString(true, fastModeCooldown)} ${chalk.dim('/fast')}`
+      ? `${getFastIconString(true, fastModeCooldown)} ${ansis.dim('/fast')}`
       : getFastIconString(true, fastModeCooldown);
     segments.push(fastSeg);
   }

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig, OAUTH_BETA_HEADER } from 'src/constants/oauth.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from 'src/services/analytics/growthbook.js';
 import { getIsNonInteractiveSession, getKairosActive, preferThirdPartyAuthentication } from '../bootstrap/state.js';
@@ -253,7 +253,7 @@ async function fetchFastModeStatus(auth) {
           'anthropic-beta': OAUTH_BETA_HEADER,
         }
       : { 'x-api-key': auth.apiKey };
-  const response = await axios.get(endpoint, { headers, timeout: 15_000 });
+  const response = await ofetch(endpoint, { headers, timeout: 15_000 });
   return response.data;
 }
 const PREFETCH_MIN_INTERVAL_MS = 30_000;
@@ -324,7 +324,7 @@ export async function prefetchFastModeStatus() {
         status = await fetchWithCurrentAuth();
       } catch (err) {
         const isAuthError =
-          axios.isAxiosError(err) &&
+          isFetchError(err) &&
           (err.response?.status === 401 ||
             (err.response?.status === 403 &&
               typeof err.response?.data === 'string' &&

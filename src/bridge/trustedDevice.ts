@@ -1,5 +1,5 @@
-import axios from 'axios';
 import memoize from 'lodash-es/memoize.js';
+import { ofetch } from 'ofetch';
 import { hostname } from 'os';
 import { getOauthConfig } from '../constants/oauth.js';
 import { checkGate_CACHED_OR_BLOCKING, getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
@@ -134,7 +134,7 @@ export async function enrollTrustedDevice(): Promise<void> {
     const baseUrl = getOauthConfig().BASE_API_URL;
     let response;
     try {
-      response = await axios.post<{
+      response = await ofetch<{
         device_token?: string;
         device_id?: string;
       }>(

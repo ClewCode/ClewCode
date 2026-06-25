@@ -7,7 +7,7 @@
  * accessToken + baseUrl — no implicit auth or config reads.
  */
 
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { logForDebugging } from '../utils/debug.js';
 import { errorMessage } from '../utils/errors.js';
 import { jsonStringify } from '../utils/slowOperations.js';
@@ -33,7 +33,7 @@ export async function createCodeSession(
   const url = `${baseUrl}/v1/code/sessions`;
   let response;
   try {
-    response = await axios.post(
+    response = await ofetch(
       url,
       // bridge: {} is the positive signal for the oneof runner — omitting it
       // (or sending environment_id: "") now 400s. BridgeRunner is an empty
@@ -98,7 +98,7 @@ export async function fetchRemoteCredentials(
   }
   let response;
   try {
-    response = await axios.post(
+    response = await ofetch(
       url,
       {},
       {

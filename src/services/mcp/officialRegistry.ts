@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { logForDebugging } from '../../utils/debug.js';
 import { errorMessage } from '../../utils/errors.js';
 
@@ -36,7 +36,7 @@ export async function prefetchOfficialMcpUrls(): Promise<void> {
   }
 
   try {
-    const response = await axios.get<RegistryResponse>(
+    const response = await ofetch<RegistryResponse>(
       'https://api.anthropic.com/mcp-registry/v0/servers?version=latest&visibility=commercial',
       { timeout: 5000 },
     );

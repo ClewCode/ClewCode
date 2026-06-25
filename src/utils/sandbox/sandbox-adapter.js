@@ -10,7 +10,6 @@ import {
 } from '@anthropic-ai/sandbox-runtime';
 import { rmSync, statSync } from 'fs';
 import { readFile } from 'fs/promises';
-import { memoize } from 'lodash-es';
 import { join, resolve, sep } from 'path';
 // ============================================================================
 // Settings Converter
@@ -22,6 +21,7 @@ import { WEB_FETCH_TOOL_NAME } from 'src/tools/WebFetchTool/prompt.js';
 import { getAdditionalDirectoriesForClaudeMd, getCwdState, getOriginalCwd } from '../../bootstrap/state.js';
 import { DOT_CLEW } from '../clewPaths.js';
 import { logForDebugging } from '../debug.js';
+import { memoize } from '../equals.js';
 import { errorMessage } from '../errors.js';
 import { expandPath } from '../path.js';
 import { getClaudeTempDir } from '../permissions/filesystem.js';

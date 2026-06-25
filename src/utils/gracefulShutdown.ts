@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { writeSync } from 'fs';
 import memoize from 'lodash-es/memoize.js';
 import { onExit } from 'signal-exit';
@@ -158,7 +158,7 @@ function printResumeHint(): void {
         resumeArg = sessionId;
       }
 
-      writeSync(1, chalk.dim(`\nResume this session with:\nclew --resume ${resumeArg}\n`));
+      writeSync(1, ansis.dim(`\nResume this session with:\nclew --resume ${resumeArg}\n`));
       resumeHintPrinted = true;
     } catch {
       // Ignore write errors

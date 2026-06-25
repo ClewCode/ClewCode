@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import figures from 'figures';
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
@@ -78,7 +78,7 @@ export function RemoteEnvironmentDialog({ onDone }: Props): React.ReactNode {
       },
     });
 
-    onDone(`Set default remote environment to ${chalk.bold(selectedEnv.name)} (${selectedEnv.environment_id})`);
+    onDone(`Set default remote environment to ${ansis.bold(selectedEnv.name)} (${selectedEnv.environment_id})`);
   }
 
   // Loading state

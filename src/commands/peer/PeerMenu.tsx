@@ -68,6 +68,8 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
     };
     update();
     const iv = setInterval(update, 3000);
+    // Auto-trigger discovery on mount so user sees peers immediately
+    discovery.discoverPeers(5000).catch(() => {});
     return () => clearInterval(iv);
   }, [store, discovery]);
 
@@ -150,7 +152,7 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
   });
 
   if (view === 'peers') {
-    const peers = summarizePeers(peers);
+    const summary = summarizePeers(peers);
     return (
       <Pane color="claude">
         <Box flexDirection="column">
@@ -158,9 +160,9 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
             LAN Peer
           </Text>
           <Text dimColor>
-            {peers.length + (isSharing ? 1 : 0)} peer(s) | {peers.healthy} healthy | {peers.lagging} lagging |{' '}
-            {peers.offline} offline
-            {peers.avgLatencyMs !== undefined ? ` | avg ${Math.round(peers.avgLatencyMs)}ms` : ''}
+            {peers.length + (isSharing ? 1 : 0)} peer(s) | {summary.healthy} healthy | {summary.lagging} lagging |{' '}
+            {summary.offline} offline
+            {summary.avgLatencyMs !== undefined ? ` | avg ${Math.round(summary.avgLatencyMs)}ms` : ''}
           </Text>
           <Box marginTop={1} flexDirection="column">
             {/* Self */}

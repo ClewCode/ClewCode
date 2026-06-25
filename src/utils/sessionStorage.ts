@@ -3688,7 +3688,10 @@ async function loadSessionFile(sessionId: UUID): Promise<{
   contextCollapseCommits: ContextCollapseCommitEntry[];
   contextCollapseSnapshot: ContextCollapseSnapshotEntry | undefined;
 }> {
-  const sessionFile = join(getSessionProjectDir() ?? getProjectDir(getOriginalCwd()), `${sessionId}.jsonl`);
+  // Only the current session should honor sessionProjectDir. Direct lookups
+  // for another session, such as "/resume <original-id>" from a fork or
+  // cross-project resume, must not inherit the active session's project dir.
+  const sessionFile = getTranscriptPathForSession(sessionId);
   return loadTranscriptFile(sessionFile);
 }
 

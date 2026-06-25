@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { type ReactNode, useCallback, useState } from 'react';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -73,9 +73,9 @@ export function ConfirmStepWrapper({ tools, existingAgents, onComplete }: Props)
             : {}),
         } as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS);
         const message = openInEditor
-          ? `Created agent: ${chalk.bold(wizardData.finalAgent.agentType)} and opened in editor. ` +
+          ? `Created agent: ${ansis.bold(wizardData.finalAgent.agentType)} and opened in editor. ` +
             `If you made edits, restart to load the latest version.`
-          : `Created agent: ${chalk.bold(wizardData.finalAgent.agentType)}`;
+          : `Created agent: ${ansis.bold(wizardData.finalAgent.agentType)}`;
         onComplete(message);
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Failed to save agent');

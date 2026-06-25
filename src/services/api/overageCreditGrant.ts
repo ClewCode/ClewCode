@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { getOauthConfig } from '../../constants/oauth.js';
 import { getOauthAccountInfo } from '../../utils/auth.js';
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
@@ -30,7 +30,7 @@ async function fetchOverageCreditGrant(): Promise<OverageCreditGrantInfo | null>
   try {
     const { accessToken, orgUUID } = await prepareApiRequest();
     const url = `${getOauthConfig().BASE_API_URL}/api/oauth/organizations/${orgUUID}/overage_credit_grant`;
-    const response = await axios.get<OverageCreditGrantInfo>(url, {
+    const response = await ofetch<OverageCreditGrantInfo>(url, {
       headers: getOAuthHeaders(accessToken),
     });
     return response.data;

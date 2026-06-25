@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import ansis from 'ansis';
 import { marked, type Token, type Tokens } from 'marked';
 import { color } from '../components/design-system/color.js';
 import { BLOCKQUOTE_BAR } from '../constants/figures.js';
@@ -69,11 +69,11 @@ export function formatToken(
     case 'blockquote': {
       const inner = (token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, null, highlight)).join('');
       // Prefix each line with a dim vertical bar. Keep text italic but at
-      // normal brightness — chalk.dim is nearly invisible on dark themes.
-      const bar = chalk.dim(BLOCKQUOTE_BAR);
+      // normal brightness — ansis.dim is nearly invisible on dark themes.
+      const bar = ansis.dim(BLOCKQUOTE_BAR);
       return inner
         .split(EOL)
-        .map(line => (getStripAnsi()(line).trim() ? `${bar} ${chalk.italic(line)}` : line))
+        .map(line => (getStripAnsi()(line).trim() ? `${bar} ${ansis.italic(line)}` : line))
         .join(EOL);
     }
     case 'code': {
@@ -96,14 +96,14 @@ export function formatToken(
       return color('permission', theme)(decodeHtmlEntities(token.text));
     }
     case 'em':
-      return chalk.italic((token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, parent, highlight)).join(''));
+      return ansis.italic((token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, parent, highlight)).join(''));
     case 'strong':
-      return chalk.bold((token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, parent, highlight)).join(''));
+      return ansis.bold((token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, parent, highlight)).join(''));
     case 'heading':
       switch (token.depth) {
         case 1: // h1
           return (
-            chalk.bold.italic.underline(
+            ansis.bold.italic.underline(
               (token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, null, highlight)).join(''),
             ) +
             EOL +
@@ -111,13 +111,13 @@ export function formatToken(
           );
         case 2: // h2
           return (
-            chalk.bold((token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, null, highlight)).join('')) +
+            ansis.bold((token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, null, highlight)).join('')) +
             EOL +
             EOL
           );
         default: // h3+
           return (
-            chalk.bold((token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, null, highlight)).join('')) +
+            ansis.bold((token.tokens ?? []).map(_ => formatToken(_, theme, 0, null, null, highlight)).join('')) +
             EOL +
             EOL
           );
@@ -181,7 +181,7 @@ export function formatToken(
         // GFM task list item: render checkbox instead of bullet/number
         const listItem = parent as Tokens.ListItem;
         if (listItem.task) {
-          const checkbox = listItem.checked ? chalk.green('☑') : chalk.dim('☐');
+          const checkbox = listItem.checked ? ansis.green('☑') : ansis.dim('☐');
           return `${checkbox} ${innerContent}${reset}${EOL}`;
         }
         return `${orderedListNumber === null ? '-' : `${getListNumber(listDepth, orderedListNumber)}.`} ${innerContent}${reset}${EOL}`;

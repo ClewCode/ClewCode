@@ -1,4 +1,4 @@
-import { execaSync } from 'execa';
+import { execFileSync } from 'node:child_process';
 import { logForDebugging } from '../debug.js';
 import { execFileNoThrow } from '../execFileNoThrow.js';
 import { execSyncWithDefaults_DEPRECATED } from '../execFileNoThrowPortable.js';
@@ -107,23 +107,28 @@ export const macOsKeychainStorage = {
       const command = `add-generic-password -U -a "${username}" -s "${storageServiceName}" -X "${hexValue}"\n`;
       let result;
       if (command.length <= SECURITY_STDIN_LINE_LIMIT) {
-        result = execaSync('security', ['-i'], {
-          input: command,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          reject: false,
-        });
+        try {
+          execFileSync('security', ['-i'], {
+            encoding: 'utf-8',
+            input: command,
+            stdio: ['pipe', 'pipe', 'pipe'],
+          });
+        } catch {
+          return { success: false };
+        }
       } else {
         logForDebugging(`Keychain payload (${jsonString.length}B JSON) exceeds security -i stdin limit; using argv`, {
           level: 'warn',
         });
-        result = execaSync(
-          'security',
-          ['add-generic-password', '-U', '-a', username, '-s', storageServiceName, '-X', hexValue],
-          { stdio: ['ignore', 'pipe', 'pipe'], reject: false },
-        );
-      }
-      if (result.exitCode !== 0) {
-        return { success: false };
+        try {
+          execFileSync(
+            'security',
+            ['add-generic-password', '-U', '-a', username, '-s', storageServiceName, '-X', hexValue],
+            { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
+          );
+        } catch {
+          return { success: false };
+        }
       }
       // Update cache with new data on success
       keychainCacheState.cache = { data, cachedAt: Date.now() };
@@ -182,12 +187,17 @@ export function isMacOsKeychainLocked() {
     return false;
   }
   try {
-    const result = execaSync('security', ['show-keychain-info'], {
-      reject: false,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    // Exit code 36 indicates the keychain is locked
-    keychainLockedCache = result.exitCode === 36;
+    try {
+      execFileSync('security', ['show-keychain-info'], {
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      // Exit code 0 = unlocked
+      keychainLockedCache = false;
+    } catch (e) {
+      // Exit code 36 indicates the keychain is locked
+      keychainLockedCache = e.status === 36;
+    }
   } catch {
     // If the command fails for any reason, assume keychain is not locked
     keychainLockedCache = false;
