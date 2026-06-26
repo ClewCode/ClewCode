@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **MiniSearch deep search enabled**: Changed `isDeepSearchEnabled` from hardcoded `false` to `true` in LogSelector, enabling transcript content search via MiniSearch. Previously gated behind Anthropic-internal build flag. (`src/components/LogSelector.tsx`)
+- **Stale "Fuse" comments updated to "MiniSearch"**: Replaced all remaining references to the old Fuse.js library name in comments across `commandSuggestions.ts` and `unifiedSuggestions.ts`. (`src/utils/suggestions/commandSuggestions.ts`, `src/hooks/unifiedSuggestions.ts`)
+- **MiniSearch index caching in unifiedSuggestions**: Added module-level cache for MiniSearch instance to avoid rebuilding the index on every keystroke, matching the caching pattern already used in `commandSuggestions.ts`. (`src/hooks/unifiedSuggestions.ts`)
+
 ## [0.3.7] - 2026-06-25
 
 ### Changed

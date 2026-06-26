@@ -134,7 +134,7 @@ export function LogSelector({
   const exitState = useExitOnCtrlCDWithKeybindings(onCancel);
   const isTerminalFocused = useTerminalFocus();
   const isResumeWithRenameEnabled = isCustomTitleEnabled();
-  const isDeepSearchEnabled = 'external' === 'ant';
+  const isDeepSearchEnabled = true;
   const isAgenticSearchEnabled = 'external' === 'ant';
 
   const [currentBranch, setCurrentBranch] = React.useState<string | null>(null);
