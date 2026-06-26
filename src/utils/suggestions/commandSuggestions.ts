@@ -7,6 +7,7 @@ import { getSkillUsageScore } from './skillUsageTracking.js';
 const SEPARATORS = /[:_-]/g;
 
 type CommandSearchItem = {
+  id: string;
   descriptionKey: string[];
   partKey: string[] | undefined;
   commandName: string;
@@ -34,6 +35,7 @@ function getCommandSearch(commands: Command[]): MiniSearch<CommandSearchItem> {
       const parts = commandName.split(SEPARATORS).filter(Boolean);
 
       return {
+        id: getCommandId(cmd),
         descriptionKey: (cmd.description ?? '')
           .split(' ')
           .map(word => cleanWord(word))
@@ -261,6 +263,53 @@ function createCommandSuggestionItem(cmd: Command, matchedAlias?: string): Sugge
   };
 }
 
+function rankCommandSuggestionForQuery(item: SuggestionItem, query: string): number {
+  if (query === '') return 0;
+  const commandName = item.displayText.replace(/^\//, '').split(/[ (]/)[0]?.toLowerCase() ?? '';
+  if (commandName === query) return 0;
+  if (commandName.startsWith(query)) return 1;
+  if (commandName.includes(query)) return 2;
+  return 3;
+}
+
+function sortCommandSuggestionsForQuery(items: SuggestionItem[], query: string): SuggestionItem[] {
+  if (query === '') return items;
+  return items.sort((a, b) => {
+    const rankDiff = rankCommandSuggestionForQuery(a, query) - rankCommandSuggestionForQuery(b, query);
+    if (rankDiff !== 0) return rankDiff;
+    return a.displayText.localeCompare(b.displayText);
+  });
+}
+
+function directCommandSuggestionsForQuery(query: string, commands: Command[]): SuggestionItem[] {
+  if (query === '') return [];
+  return commands
+    .filter(cmd => {
+      if (cmd.isHidden) return false;
+      const name = getCommandName(cmd).toLowerCase();
+      const aliases = cmd.aliases?.map(alias => alias.toLowerCase()) ?? [];
+      return name.startsWith(query) || aliases.some(alias => alias.startsWith(query));
+    })
+    .sort((a, b) => {
+      const aName = getCommandName(a).toLowerCase();
+      const bName = getCommandName(b).toLowerCase();
+      if (aName.length !== bName.length) return aName.length - bName.length;
+      return aName.localeCompare(bName);
+    })
+    .map(cmd => createCommandSuggestionItem(cmd, findMatchedAlias(query, cmd.aliases)));
+}
+
+function mergeCommandSuggestions(primary: SuggestionItem[], secondary: SuggestionItem[]): SuggestionItem[] {
+  const seen = new Set<string>();
+  const merged: SuggestionItem[] = [];
+  for (const item of [...primary, ...secondary]) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    merged.push(item);
+  }
+  return merged;
+}
+
 /**
  * Generate command suggestions based on input
  */
@@ -347,11 +396,11 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
     ].map(cmd => createCommandSuggestionItem(cmd));
   }
 
-  // The Fuse index filters isHidden at build time and is keyed on the
-  // (memoized) commands array identity, so a command that is hidden when Fuse
-  // first builds stays invisible to Fuse for the whole session. If the user
-  // types the exact name of a currently-hidden command, prepend it to the
-  // Fuse results so exact-name always wins over weak description fuzzy
+  // The MiniSearch index filters isHidden at build time and is keyed on the
+  // (memoized) commands array identity, so a command that is hidden when
+  // MiniSearch first builds stays invisible to MiniSearch for the whole session.
+  // If the user types the exact name of a currently-hidden command, prepend it
+  // to the MiniSearch results so exact-name always wins over weak description fuzzy
   // matches — but only when no visible command shares the name (that would
   // be the user's explicit override and should win). Prepend rather than
   // early-return so visible prefix siblings (e.g. /voice-memo) still appear
@@ -363,6 +412,7 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
 
   const search = getCommandSearch(commands);
   const searchResults = search.search(query);
+  const directSuggestions = directCommandSuggestionsForQuery(query, commands);
 
   // Sort results prioritizing exact/prefix command name matches over fuzzy description matches
   // Priority order:
@@ -431,7 +481,7 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
     if (Math.abs(scoreDiff) > 0.1) {
       return scoreDiff;
     }
-    // For similar Fuse scores, prefer more frequently used skills
+    // For similar MiniSearch scores, prefer more frequently used skills
     return b.usage - a.usage;
   });
 
@@ -447,17 +497,20 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
   });
   // Skip the prepend if hiddenExact is already in fuseSuggestions — this
   // happens when isHidden flips false→true mid-session (OAuth expiry,
-  // GrowthBook kill-switch) and the stale Fuse index still holds the
-  // command. Fuse already sorts exact-name matches first, so no reorder
+  // GrowthBook kill-switch) and the stale MiniSearch index still holds the
+  // command. MiniSearch already sorts exact-name matches first, so no reorder
   // is needed; we just don't want a duplicate id (duplicate React keys,
   // both rows rendering as selected).
   if (hiddenExact) {
     const hiddenId = getCommandId(hiddenExact);
     if (!fuseSuggestions.some(s => s.id === hiddenId)) {
-      return [createCommandSuggestionItem(hiddenExact), ...fuseSuggestions];
+      return sortCommandSuggestionsForQuery(
+        mergeCommandSuggestions([createCommandSuggestionItem(hiddenExact), ...directSuggestions], fuseSuggestions),
+        query,
+      );
     }
   }
-  return fuseSuggestions;
+  return sortCommandSuggestionsForQuery(mergeCommandSuggestions(directSuggestions, fuseSuggestions), query);
 }
 
 /**
@@ -536,13 +589,14 @@ export function findSlashCommandPositions(text: string): Array<{ start: number; 
   const positions: Array<{ start: number; end: number }> = [];
   // Match /command patterns preceded by whitespace or start-of-string
   const regex = /(^|[\s])(\/[a-zA-Z][a-zA-Z0-9:\-_]*)/g;
-  let match: RegExpExecArray | null = null;
-  while ((match = regex.exec(text)) !== null) {
+  let match = regex.exec(text);
+  while (match !== null) {
     const precedingChar = match[1] ?? '';
     const commandName = match[2] ?? '';
     // Start position is after the whitespace (if any)
     const start = match.index + precedingChar.length;
     positions.push({ start, end: start + commandName.length });
+    match = regex.exec(text);
   }
   return positions;
 }
