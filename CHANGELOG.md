@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-29
+
 ### Added
 - **Peer security hardening**: Auth token (randomUUID) required on all POST endpoints (`/peer-msg`, `/peer-todo`, `/peer-exec`, `/broker/*`, `/peer-queue-cancel`, `/peer-queue-cancel-all`, `/memory/export`). Tokens generated per-instance on server start, written to peer files (`~/.clew/peers/`), and exchanged via UDP beacon for cross-machine auth. (`src/peer/PeerServer.ts`, `src/peer/PeerDiscovery.ts`, `src/peer/PeerStore.ts`)
 - **Body size limit**: 10MB max request body on all HTTP endpoints, enforced via Content-Length header check and streaming accumulation. (`src/peer/PeerServer.ts`)

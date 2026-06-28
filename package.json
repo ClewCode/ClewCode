@@ -1,6 +1,6 @@
 {
   "name": "clew-code",
-  "version": "0.3.7",
+  "version": "0.4.0",
   "description": "ClewCode — multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
   "type": "module",
@@ -110,6 +110,7 @@
     "diff": "^9.0.0",
     "dotenv": "^17.4.2",
     "fflate": "^0.8.3",
+    "fuse.js": "^7.4.2",
     "https-proxy-agent": "^9.1.0",
     "ignore": "^7.0.5",
     "ink": "^7.1.0",
@@ -124,7 +125,6 @@
     "jsonrepair": "^3.14.0",
     "lru-cache": "^11.5.1",
     "lucide-react": "^1.21.0",
-    "minisearch": "^7.2.0",
     "nano-spawn": "^2.1.0",
     "node-pty": "^1.1.0",
     "ofetch": "^1.5.1",
