@@ -7,6 +7,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_SHARE_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -55,6 +56,13 @@ export const PeerShareTool = buildTool({
   getPath() {
     return getCwd();
   },
+  renderToolUseMessage(input) {
+    const action = input.action ?? 'status';
+    return `${action} peer sharing`;
+  },
+  renderToolResultMessage(output) {
+    return output.sharing ? `Peer sharing active${output.port ? ` on port ${output.port}` : ''}.` : output.message;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     return {
       tool_use_id: toolUseID,
@@ -67,6 +75,7 @@ export const PeerShareTool = buildTool({
     const server = getGlobalPeerServer();
     const isSharing = discovery.isSharing;
     const action = input.action ?? 'status';
+    notifyPeerFeedback(`${action} peer sharing`, 'peer-share', 'low');
 
     if (action === 'status') {
       return { data: { sharing: isSharing, message: isSharing ? 'Sharing active' : 'Not sharing' } };
@@ -78,6 +87,7 @@ export const PeerShareTool = buildTool({
       }
       discovery.stopAdvertising();
       server.stop();
+      notifyPeerFeedback('peer sharing stopped', 'peer-share-result', 'medium');
       return { data: { sharing: false, message: 'Stopped sharing' } };
     }
 
@@ -126,14 +136,19 @@ export const PeerShareTool = buildTool({
 
       const port = await server.start(peerInfo);
       peerInfo.port = port;
-      await discovery.startAdvertising(port, process.cwd());
+      await discovery.startAdvertising(port, process.cwd(), undefined, undefined, server.token);
 
+      notifyPeerFeedback(`sharing on port ${port}; discovering peers`, 'peer-share-discover', 'low');
       const peers = await discovery.discoverPeers(3000);
       for (const p of peers) store.addPeer(p);
+      store.populateTokensFromDiscovery(discovery);
 
+      notifyPeerFeedback(`sharing on port ${port}; found ${peers.length} peer(s)`, 'peer-share-result', 'medium');
       return { data: { sharing: true, port, peersDiscovered: peers.length, message: `Sharing on port ${port}` } };
     } catch (err) {
-      return { data: { sharing: false, message: `Failed: ${errorMessage(err)}` } };
+      const message = `Failed: ${errorMessage(err)}`;
+      notifyPeerFeedback(message, 'peer-share-error', 'high');
+      return { data: { sharing: false, message } };
     }
   },
 });

@@ -150,6 +150,7 @@ export const PeerDiscoverTool = buildTool({
     const doDiscover = async (): Promise<number> => {
       const peers = await discovery.discoverPeers(scanTimeout);
       for (const p of peers) store.addPeer(p);
+      store.populateTokensFromDiscovery(discovery);
       return store.getMeshs().length;
     };
 

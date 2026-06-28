@@ -4,6 +4,7 @@ import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_SET_ROLE_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -49,6 +50,14 @@ export const PeerSetRoleTool = buildTool({
   getPath() {
     return getCwd();
   },
+  renderToolUseMessage(input) {
+    return `set peer role for ${input.worker} to "${input.role}"`;
+  },
+  renderToolResultMessage(output) {
+    return output.success
+      ? `Set ${output.workerHostname ?? 'peer'} role to "${output.role}".`
+      : `Failed to set peer role: ${output.error}`;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success)
       return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
@@ -57,12 +66,14 @@ export const PeerSetRoleTool = buildTool({
   async call(input: { worker: string; role: string }) {
     const store = getGlobalPeerStore();
     const discovery = getGlobalDiscovery();
+    notifyPeerFeedback(`setting peer role for ${input.worker}`, 'peer-set-role', 'low');
 
     if (input.worker === 'me' || input.worker === 'self') {
       store.setPeerRole(discovery.peerId, input.role);
       const { getGlobalPeerServer } = await import('../../peer/PeerServer.js');
       const server = getGlobalPeerServer();
       server.extraInfo.role = input.role;
+      notifyPeerFeedback(`set self role to ${input.role}`, 'peer-set-role-result', 'medium');
       return { data: { success: true, workerHostname: 'self', role: input.role } };
     }
 
@@ -70,12 +81,15 @@ export const PeerSetRoleTool = buildTool({
     if (!peer) {
       const peers = await discovery.discoverPeers(3000);
       for (const p of peers) store.addPeer(p);
+      store.populateTokensFromDiscovery(discovery);
       peer = store.findPeer(input.worker);
     }
     if (!peer) {
+      notifyPeerFeedback(`worker not found: ${input.worker}`, 'peer-set-role-result', 'high');
       return { data: { success: false, error: `Worker "${input.worker}" not found` } };
     }
     store.setPeerRole(peer.id, input.role);
+    notifyPeerFeedback(`set ${peer.hostname} role to ${input.role}`, 'peer-set-role-result', 'medium');
     return { data: { success: true, workerHostname: peer.hostname, role: input.role } };
   },
 });

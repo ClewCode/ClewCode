@@ -135,6 +135,7 @@ export const PeerRunTool = buildTool({
       const discovery = getGlobalDiscovery();
       const peers = await discovery.discoverPeers(3000);
       for (const p of peers) store.addPeer(p);
+      store.populateTokensFromDiscovery(discovery);
       peer = store.findPeer(input.worker);
       if (!peer && !Number.isNaN(portNum)) peer = store.getPeerByPort(portNum);
     }
@@ -149,6 +150,11 @@ export const PeerRunTool = buildTool({
       const timeout = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
       notifyPeerFeedback(`running on ${peer.hostname}:${peer.port}`, 'peer-run', 'low');
       const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-exec`;
+
+      // Get the target peer's auth token
+      const discovery = getGlobalDiscovery();
+      const targetToken = store.getPeerToken(peer.id) || discovery.getPeerToken(peer.id) || '';
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,6 +163,7 @@ export const PeerRunTool = buildTool({
           priority: input.priority ?? 'normal',
           from: 'ai-agent',
           fromName: 'Clew AI',
+          token: targetToken,
         }),
         signal: AbortSignal.timeout(timeout + 5000),
       });

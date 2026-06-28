@@ -7,6 +7,7 @@
  */
 
 import { logForDebugging } from '../utils/debug.js';
+import type { PeerDiscovery } from './PeerDiscovery.js';
 import {
   type BrokerMessage,
   type MeshChatMessage,
@@ -48,6 +49,9 @@ export class PeerStore {
     string,
     { resolve: (msgs: MeshChatMessage[]) => void; after: number; from?: string }
   >();
+
+  /** Tokens discovered via peer files (same-machine auth) */
+  private peerTokens = new Map<string, string>();
 
   /** Broker: undelivered messages */
   private outbox: BrokerMessage[] = [];
@@ -511,6 +515,39 @@ export class PeerStore {
   /** Get all peer tags. */
   getAllPeerTags(): Array<{ peerId: string; tags: SwarmTags }> {
     return Array.from(this.swarmTags.entries()).map(([peerId, tags]) => ({ peerId, tags }));
+  }
+
+  // ── Token management ─────────────────────────────────────────
+
+  /**
+   * Store a peer's auth token (read from their peer file).
+   */
+  setPeerToken(peerId: string, token: string): void {
+    this.peerTokens.set(peerId, token);
+  }
+
+  /**
+   * Get a peer's auth token (needed for API requests to this peer).
+   */
+  getPeerToken(peerId: string): string | undefined {
+    return this.peerTokens.get(peerId);
+  }
+
+  /**
+   * Bulk import tokens from PeerDiscovery's token map
+   * (after scanning peer files).
+   */
+  populateTokensFromDiscovery(discovery: PeerDiscovery): void {
+    let imported = 0;
+    for (const [peerId, token] of discovery.getAllPeerTokens()) {
+      if (token) {
+        this.peerTokens.set(peerId, token);
+        imported++;
+      }
+    }
+    if (imported > 0) {
+      logForDebugging(`[PeerStore] Imported ${imported} peer token(s) from discovery`);
+    }
   }
 
   /** Resolve display name — custom name or fallback to hostname */

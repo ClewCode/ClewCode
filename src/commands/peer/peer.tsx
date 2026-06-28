@@ -191,7 +191,7 @@ async function startSharing(onDone: (msg: string) => void): Promise<void> {
       port = await server.start(peerInfo);
     }
 
-    await discovery.startAdvertising(port, process.cwd());
+    await discovery.startAdvertising(port, process.cwd(), undefined, undefined, server.token);
     onDone(ansis.dim(`Sharing (port ${port}). Others can find you with /peer discover.`));
   } catch (err) {
     onDone(ansis.red(`Failed: ${errorMessage(err)}`));

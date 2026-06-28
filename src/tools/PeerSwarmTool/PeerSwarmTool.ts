@@ -2,11 +2,13 @@ import * as React from 'react';
 import { z } from 'zod/v4';
 import { MessageResponse } from '../../components/MessageResponse.js';
 import { Text } from '../../ink.js';
+import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_SWARM_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -111,8 +113,10 @@ export const PeerSwarmTool = buildTool({
   async call(input: { command: string; filter?: string; timeout?: number }) {
     const store = getGlobalPeerStore();
     const allPeers = store.getConnections().filter(p => p.status === 'online' && p.port > 0);
+    notifyPeerFeedback(`running swarm command: ${truncateText(input.command, 100)}`, 'peer-swarm', 'low');
 
     if (allPeers.length === 0) {
+      notifyPeerFeedback('swarm skipped: no connected peers', 'peer-swarm-result', 'low');
       return {
         data: {
           success: false,
@@ -136,6 +140,7 @@ export const PeerSwarmTool = buildTool({
         return name.includes(f) || role.includes(f);
       });
       if (peers.length === 0) {
+        notifyPeerFeedback(`swarm skipped: no peers match "${input.filter}"`, 'peer-swarm-result', 'high');
         return {
           data: {
             success: false,
@@ -155,11 +160,18 @@ export const PeerSwarmTool = buildTool({
     let succeeded = 0;
     let failed = 0;
     let timedOut = 0;
+    notifyPeerFeedback(`sending swarm command to ${peers.length} peer(s)`, 'peer-swarm-send', 'low');
 
     const requests = peers.map(async peer => {
       const start = performance.now();
       try {
+        notifyPeerFeedback(`running on ${peer.hostname}:${peer.port}`, 'peer-swarm-peer', 'low');
         const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-exec`;
+
+        // Get the target peer's auth token
+        const discovery = getGlobalDiscovery();
+        const targetToken = store.getPeerToken(peer.id) || discovery.getPeerToken(peer.id) || '';
+
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -168,6 +180,7 @@ export const PeerSwarmTool = buildTool({
             priority: 'normal',
             from: 'ai-agent',
             fromName: 'Clew AI',
+            token: targetToken,
           }),
           signal: AbortSignal.timeout(timeoutMs),
         });
@@ -235,6 +248,11 @@ export const PeerSwarmTool = buildTool({
     });
 
     await Promise.allSettled(requests);
+    notifyPeerFeedback(
+      `swarm complete: ${succeeded}/${peers.length} peer(s) succeeded`,
+      'peer-swarm-result',
+      failed > 0 || timedOut > 0 ? 'high' : 'medium',
+    );
 
     return {
       data: {

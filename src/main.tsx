@@ -1930,7 +1930,7 @@ async function run(): Promise<CommanderCommand> {
 
             const port = await server.start(peerInfo);
             peerInfo.port = port;
-            await discovery.startAdvertising(port, process.cwd());
+            await discovery.startAdvertising(port, process.cwd(), undefined, undefined, server.token);
             logForDebugging(`[Peer] Automatically sharing as worker peer on port ${port} with name "${myName}"`);
           } catch (err) {
             logError(new Error(`Failed to auto-start peer sharing: ${(err as Error).message}`));

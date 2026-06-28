@@ -244,7 +244,7 @@ export const PeerSendMessageTool = buildTool({
       };
       const port = await server.start(peerInfo);
       peerInfo.port = port;
-      await discovery.startAdvertising(port, process.cwd());
+      await discovery.startAdvertising(port, process.cwd(), undefined, undefined, server.token);
     }
 
     let peer: PeerInfo | undefined;
@@ -261,6 +261,7 @@ export const PeerSendMessageTool = buildTool({
       notifyPeerFeedback(`looking for ${input.peer}`, 'peer-send-lookup', 'low');
       const peers = await discovery.discoverPeers(3000);
       for (const p of peers) store.addPeer(p);
+      store.populateTokensFromDiscovery(discovery);
       peer = store.findPeer(input.peer);
       if (!peer && !Number.isNaN(portNum)) peer = store.getPeerByPort(portNum);
     }
@@ -286,12 +287,16 @@ export const PeerSendMessageTool = buildTool({
     // fromName = display name or hostname, with role suffix
     const myFromName = myDisplayName || myHostname;
 
+    // Get the target peer's auth token from their peer file
+    const targetToken = store.getPeerToken(peer.id) || discovery.getPeerToken(peer.id) || '';
+
     // Build the base identity block included in every POST
     const identityBody = {
       from: myHostname,
       fromName: myFromName,
       senderRole: myRole,
       senderPort: myPort,
+      token: targetToken,
     };
 
     const sendTimestamp = Date.now();

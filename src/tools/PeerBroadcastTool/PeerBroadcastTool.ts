@@ -1,9 +1,11 @@
 import { z } from 'zod/v4';
+import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_BROADCAST_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -58,6 +60,14 @@ export const PeerBroadcastTool = buildTool({
   getPath() {
     return getCwd();
   },
+  renderToolUseMessage(input) {
+    return `broadcast task to all peers: ${truncateText(input.task, 120)}`;
+  },
+  renderToolResultMessage(output) {
+    if (output.totalMeshs === 0) return 'No connected peers to broadcast to.';
+    const failed = output.failed > 0 ? `, ${output.failed} failed` : '';
+    return `Broadcast delivered to ${output.delivered}/${output.totalMeshs} peer(s)${failed}.`;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success) return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Broadcast failed` };
     const summary = output.results
@@ -75,8 +85,10 @@ export const PeerBroadcastTool = buildTool({
   async call(input: { task: string }) {
     const store = getGlobalPeerStore();
     const peers = store.getMeshs();
+    notifyPeerFeedback(`broadcasting task to ${peers.length} peer(s)`, 'peer-broadcast', 'low');
 
     if (peers.length === 0) {
+      notifyPeerFeedback('broadcast skipped: no connected peers', 'peer-broadcast-result', 'low');
       return {
         data: {
           success: false,
@@ -89,6 +101,7 @@ export const PeerBroadcastTool = buildTool({
     }
 
     // First, check each peer node's status (idle/busy/queue depth)
+    notifyPeerFeedback('checking peer availability', 'peer-broadcast-status', 'low');
     const peerStatuses: Array<{
       peer: (typeof peers)[0];
       isBusy: boolean;
@@ -142,11 +155,14 @@ export const PeerBroadcastTool = buildTool({
       }
 
       try {
+        notifyPeerFeedback(`sending task to ${ps.peer.hostname}:${ps.peer.port}`, 'peer-broadcast-send', 'low');
+        const discovery = getGlobalDiscovery();
+        const targetToken = store.getPeerToken(ps.peer.id) || discovery.getPeerToken(ps.peer.id) || '';
         const url = `http://${ps.peer.ip || '127.0.0.1'}:${ps.peer.port}/peer-todo`;
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ from: 'ai-agent', fromName: 'Clew AI', message: input.task }),
+          body: JSON.stringify({ from: 'ai-agent', fromName: 'Clew AI', message: input.task, token: targetToken }),
           signal: AbortSignal.timeout(10000),
         });
 
@@ -192,6 +208,11 @@ export const PeerBroadcastTool = buildTool({
       }
     }
 
+    notifyPeerFeedback(
+      `broadcast delivered to ${delivered}/${peers.length} peer(s)`,
+      'peer-broadcast-result',
+      delivered > 0 ? 'medium' : 'high',
+    );
     return {
       data: {
         success: delivered > 0,

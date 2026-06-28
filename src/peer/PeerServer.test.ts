@@ -96,9 +96,10 @@ describe('PeerServer', () => {
       },
     });
     const port = await server.start(mi());
+    const token = server.token;
     const r = await fetch(`http://127.0.0.1:${port}/peer-msg`, {
       method: 'POST',
-      body: JSON.stringify({ from: 'p2', text: 'hello' }),
+      body: JSON.stringify({ from: 'p2', text: 'hello', token }),
     });
     expect(r.status).toBe(200);
     expect((await r.json()).ok).toBeTrue();
@@ -113,9 +114,10 @@ describe('PeerServer', () => {
       },
     });
     const port = await server.start(mi());
+    const token = server.token;
     await fetch(`http://127.0.0.1:${port}/peer-msg`, {
       method: 'POST',
-      body: JSON.stringify({ from: 'p2', chunkGroup: 'g1', chunkIndex: 0 }),
+      body: JSON.stringify({ from: 'p2', chunkGroup: 'g1', chunkIndex: 0, token }),
     });
     expect(m.chunkGroup).toBe('g1');
   });
@@ -128,7 +130,8 @@ describe('PeerServer', () => {
       },
     });
     const port = await server.start(mi());
-    await fetch(`http://127.0.0.1:${port}/peer-msg`, { method: 'POST', body: JSON.stringify({}) });
+    const token = server.token;
+    await fetch(`http://127.0.0.1:${port}/peer-msg`, { method: 'POST', body: JSON.stringify({ token }) });
     expect(m.from).toBe('unknown');
   });
 
@@ -140,9 +143,10 @@ describe('PeerServer', () => {
       },
     });
     const port = await server.start(mi());
+    const token = server.token;
     const r = await fetch(`http://127.0.0.1:${port}/peer-todo`, {
       method: 'POST',
-      body: JSON.stringify({ from: 'p2', fromName: 'P2', message: 'do it' }),
+      body: JSON.stringify({ from: 'p2', fromName: 'P2', message: 'do it', token }),
     });
     expect(r.status).toBe(200);
     const body = await r.json();
@@ -153,9 +157,10 @@ describe('PeerServer', () => {
 
   test('POST /peer-exec without onExec returns 501', async () => {
     const port = await server.start(mi());
+    const token = server.token;
     const r = await fetch(`http://127.0.0.1:${port}/peer-exec`, {
       method: 'POST',
-      body: JSON.stringify({ command: 'echo x', from: 't' }),
+      body: JSON.stringify({ command: 'echo x', from: 't', token }),
     });
     expect(r.status).toBe(501);
   });
@@ -169,9 +174,10 @@ describe('PeerServer', () => {
       },
     });
     const port = await server.start(mi());
+    const token = server.token;
     const r = await fetch(`http://127.0.0.1:${port}/peer-exec`, {
       method: 'POST',
-      body: JSON.stringify({ command: 'echo hi', from: 't', fromName: 'T' }),
+      body: JSON.stringify({ command: 'echo hi', from: 't', fromName: 'T', token }),
     });
     expect(r.status).toBe(200);
     const body = await r.json();
@@ -190,16 +196,21 @@ describe('PeerServer', () => {
 
   test('POST /peer-queue-cancel returns 404 for unknown task', async () => {
     const port = await server.start(mi());
+    const token = server.token;
     const r = await fetch(`http://127.0.0.1:${port}/peer-queue-cancel`, {
       method: 'POST',
-      body: JSON.stringify({ id: 'nope' }),
+      body: JSON.stringify({ id: 'nope', token }),
     });
     expect(r.status).toBe(404);
   });
 
   test('POST /peer-queue-cancel-all clears empty queue', async () => {
     const port = await server.start(mi());
-    const r = await fetch(`http://127.0.0.1:${port}/peer-queue-cancel-all`, { method: 'POST' });
+    const token = server.token;
+    const r = await fetch(`http://127.0.0.1:${port}/peer-queue-cancel-all`, {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
     expect(r.status).toBe(200);
     const body = await r.json();
     expect(body.ok).toBeTrue();
@@ -208,7 +219,8 @@ describe('PeerServer', () => {
 
   test('GET /peer-events returns SSE content-type', async () => {
     const port = await server.start(mi());
-    const r = await fetch(`http://127.0.0.1:${port}/peer-events`);
+    const token = server.token;
+    const r = await fetch(`http://127.0.0.1:${port}/peer-events?token=${token}`);
     expect(r.status).toBe(200);
     expect(r.headers.get('content-type')).toContain('text/event-stream');
     r.body?.cancel();
@@ -216,7 +228,8 @@ describe('PeerServer', () => {
 
   test('GET /peer-events sends connected event', async () => {
     const port = await server.start(mi());
-    const r = await fetch(`http://127.0.0.1:${port}/peer-events`);
+    const token = server.token;
+    const r = await fetch(`http://127.0.0.1:${port}/peer-events?token=${token}`);
     const reader = r.body!.getReader();
     const decoder = new TextDecoder();
     const { value } = await reader.read();
@@ -240,9 +253,10 @@ describe('PeerServer', () => {
 
   test('todo lifecycle — add via HTTP then update', async () => {
     const port = await server.start(mi());
+    const token = server.token;
     await fetch(`http://127.0.0.1:${port}/peer-todo`, {
       method: 'POST',
-      body: JSON.stringify({ from: 't', fromName: 'T', message: 'task' }),
+      body: JSON.stringify({ from: 't', fromName: 'T', message: 'task', token }),
     });
     expect(server.getTodos()).toHaveLength(1);
     const id = server.getTodos()[0]!.id;
@@ -261,9 +275,10 @@ describe('PeerServer', () => {
       },
     });
     const port = await server.start(mi());
+    const token = server.token;
     const p = fetch(`http://127.0.0.1:${port}/peer-exec`, {
       method: 'POST',
-      body: JSON.stringify({ command: 'slow', from: 't', fromName: 'T' }),
+      body: JSON.stringify({ command: 'slow', from: 't', fromName: 'T', token }),
     });
     await new Promise(r => setTimeout(r, 50));
     expect(server.isBusy).toBeTrue();

@@ -439,7 +439,7 @@ export async function startLoop(): Promise<void> {
 
     const port = await server.start(peerInfo);
     peerInfo.port = port;
-    await discovery.startAdvertising(port, process.cwd());
+    await discovery.startAdvertising(port, process.cwd(), undefined, undefined, server.token);
     isPeerSharingActive = true;
     console.log(`[Autonomous] Background peer sharing active on port ${port} as hostname "${discovery.hostname}"`);
   } catch (err) {

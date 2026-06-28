@@ -4,10 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
-- **MiniSearch deep search enabled**: Changed `isDeepSearchEnabled` from hardcoded `false` to `true` in LogSelector, enabling transcript content search via MiniSearch. Previously gated behind Anthropic-internal build flag. (`src/components/LogSelector.tsx`)
-- **Stale "Fuse" comments updated to "MiniSearch"**: Replaced all remaining references to the old Fuse.js library name in comments across `commandSuggestions.ts` and `unifiedSuggestions.ts`. (`src/utils/suggestions/commandSuggestions.ts`, `src/hooks/unifiedSuggestions.ts`)
-- **MiniSearch index caching in unifiedSuggestions**: Added module-level cache for MiniSearch instance to avoid rebuilding the index on every keystroke, matching the caching pattern already used in `commandSuggestions.ts`. (`src/hooks/unifiedSuggestions.ts`)
+### Added
+- **Peer security hardening**: Auth token (randomUUID) required on all POST endpoints (`/peer-msg`, `/peer-todo`, `/peer-exec`, `/broker/*`, `/peer-queue-cancel`, `/peer-queue-cancel-all`, `/memory/export`). Tokens generated per-instance on server start, written to peer files (`~/.clew/peers/`), and exchanged via UDP beacon for cross-machine auth. (`src/peer/PeerServer.ts`, `src/peer/PeerDiscovery.ts`, `src/peer/PeerStore.ts`)
+- **Body size limit**: 10MB max request body on all HTTP endpoints, enforced via Content-Length header check and streaming accumulation. (`src/peer/PeerServer.ts`)
+- **Client disconnect handling**: Long-poll broker endpoints and async exec handlers check `res.destroyed` before writing response — prevents errors when client disconnects mid-request. (`src/peer/PeerServer.ts`)
+- **Peer token sync in tools**: All tools that discover peers now sync tokens from PeerDiscovery into PeerStore via `populateTokensFromDiscovery()`. (`PeerSendMessageTool`, `PeerRunTool`, `PeerSwarmTool`, `PeerBroadcastTool`, `PeerSetRoleTool`, `PeerSetNameTool`, `PeerDiscoverTool`)
+
+### Changed
+- **PeerServer binds 0.0.0.0**: Previously bound to `127.0.0.1` which prevented cross-machine communication despite LAN discovery advertising the real IP. Now listens on all interfaces with per-request token auth. (`src/peer/PeerServer.ts`)
+- **Peer share passes server token to discovery**: `PeerShareTool`, `main.tsx`, `agentLoop.ts`, `peer.tsx`, `PeerMenu.tsx` all pass `server.token` to `discovery.startAdvertising()` so the peer file and UDP beacon carry the correct auth token. (`src/tools/PeerShareTool/PeerShareTool.ts`)
+
+### Removed
+- **WebSocket dead code**: Removed unused `wsClients` set, `upgrade` event listener, and `handleWebSocketUpgrade()` method — WebSocket chat was never implemented. (`src/peer/PeerServer.ts`)
+- **Host header check**: Removed ALLOWED_HOSTS / `checkHostHeader()` — was redundant with per-request token auth and blocked LAN peers. (`src/peer/PeerServer.ts`)
+- **Unused `PROTECTED_POST` constant**: Documentation-only constant for protected endpoints, never actually used in code. (`src/peer/PeerServer.ts`)
 
 ## [0.3.7] - 2026-06-25
 
@@ -205,7 +215,7 @@ All notable changes to this project will be documented in this file.
 - **Session rebuild from checkpoints**: Enhanced `src/services/compact/compact.ts` — when autoCompact runs, it first checks for existing checkpoints and rebuilds context from the latest checkpoint + delta messages. Falls back to LLM summarization if no checkpoints exist. Preserves more detail than pure summarization.
 - **Automated Dream process**: New `src/services/longTermMemory/dream.ts` — 7-day memory consolidation cycle. Groups sessions from the past week, merges duplicate insights, deduplicates topic_index entries, creates weekly digests with patterns, and prunes low-value records. Runs automatically on session start.
 - **Automated Distill process**: New `src/services/longTermMemory/distill.ts` — 30-day pattern extraction cycle. Analyzes weekly digests, identifies recurring patterns (file types, tool usage, problem categories), creates experience records, and generates reusable skill suggestions. Keeps 12 months of experiences.
-- **Max Mode (parallel candidates)**: New `src/services/maxMode/candidateRunner.ts` — generates N parallel candidates (default 3) for each turn using forked agents. Selects best candidate based on tool usage, response completeness, and token efficiency. `/maxmode` command to enable/disable and configure candidate count.
+
 
 ## [0.2.22] — 2026-06-15
 

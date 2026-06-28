@@ -117,9 +117,10 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
                 lastSeen: Date.now(),
                 status: 'online',
               };
-              const port = await getGlobalPeerServer().start(info);
+              const server = getGlobalPeerServer();
+              const port = await server.start(info);
               info.port = port;
-              await discovery.startAdvertising(port, process.cwd());
+              await discovery.startAdvertising(port, process.cwd(), undefined, undefined, server.token);
               setIsSharing(true);
             })();
           }

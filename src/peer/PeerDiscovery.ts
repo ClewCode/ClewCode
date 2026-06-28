@@ -12,6 +12,7 @@
  *   discoverPeers()              — scan peer files + send UDP query
  */
 
+import * as crypto from 'node:crypto';
 import * as dgram from 'node:dgram';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -42,6 +43,8 @@ interface SwarmFile {
   term: string;
   startedAt: number;
   sessionId?: string;
+  /** Auth token for API requests — generated per instance, stored in file */
+  token?: string;
 }
 
 export type PeerDiscoveryCallbacks = {
@@ -59,6 +62,11 @@ export class PeerDiscovery {
 
   /** Rate limiting: timestamps of recent messages (max 10/sec) */
   private messageTimestamps: number[] = [];
+
+  /** Auth token generated for this instance — shared via peer file for same-machine access */
+  private _token = '';
+  /** Tokens read from other peers' files during discovery */
+  private peerTokens = new Map<string, string>();
 
   /** Unique peer ID per instance (hostname-ip-pid) */
   private localId = '';
@@ -229,6 +237,7 @@ export class PeerDiscovery {
         term: this.termName,
         startedAt: Date.now(),
         sessionId,
+        token: this._token || undefined,
       };
       fs.writeFileSync(path.join(PEER_DIR, `${this.pid}.json`), JSON.stringify(data, null, 2));
     } catch {
@@ -271,6 +280,9 @@ export class PeerDiscovery {
           }
 
           const data = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as SwarmFile;
+          if (data.token) {
+            this.peerTokens.set(data.id, data.token);
+          }
           result.push({
             id: data.id,
             hostname: data.hostname,
@@ -375,12 +387,19 @@ export class PeerDiscovery {
 
   // ── Public API ───────────────────────────────────────────
 
-  async startAdvertising(myPort: number, cwd: string, sessionId?: string, version?: string): Promise<void> {
+  async startAdvertising(
+    myPort: number,
+    cwd: string,
+    sessionId?: string,
+    version?: string,
+    token?: string,
+  ): Promise<void> {
     if (this.isAdvertising) return;
 
     try {
       this.localPort = myPort;
       this.isAdvertising = true;
+      this._token = token || crypto.randomUUID();
 
       // Write peer file (same-machine discovery)
       this.writePeerFile(cwd, sessionId);
@@ -565,6 +584,21 @@ export class PeerDiscovery {
     return this.localHostname;
   }
 
+  /** The auth token our peer server uses (written to our peer file). */
+  get token(): string {
+    return this._token;
+  }
+
+  /** Get a discovered peer's auth token from their peer file. */
+  getPeerToken(peerId: string): string | undefined {
+    return this.peerTokens.get(peerId);
+  }
+
+  /** Get all known peer tokens (for syncing to PeerStore). */
+  getAllPeerTokens(): Map<string, string> {
+    return new Map(this.peerTokens);
+  }
+
   // ── UDP message handling ─────────────────────────────────
 
   private sendBeacon(cwd: string, sessionId?: string, version?: string): void {
@@ -583,6 +617,7 @@ export class PeerDiscovery {
       platform: this.platformName,
       term: this.termName,
       status: 'online',
+      token: this._token || undefined,
     });
   }
 
@@ -625,6 +660,11 @@ export class PeerDiscovery {
 
         case 'clew-peer-info': {
           if (data.id === this.localId) break;
+          // Store token from LAN peer (used for cross-machine auth)
+          const incomingData = data as Record<string, unknown>;
+          if (incomingData.token) {
+            this.peerTokens.set(data.id, String(incomingData.token));
+          }
           const peer: PeerInfo = {
             id: data.id,
             hostname: data.hostname,

@@ -15,6 +15,7 @@
  * - WebSocket /peer-chat → real-time chat between two peers
  */
 
+import { randomUUID } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { logForDebugging } from '../utils/debug.js';
@@ -49,14 +50,18 @@ export type MeshEvent = {
   timestamp: number;
 };
 
+/** Maximum POST/PUT request body size (10 MB) */
+const MAX_BODY_SIZE = 10 * 1024 * 1024;
+
 export class PeerServer {
   private server: ReturnType<typeof createServer> | null = null;
-  private wsClients = new Set<WebSocket>();
   private callbacks: PeerServerCallbacks;
   private started = false;
   private actualPort = 0;
   private currentPeerInfo: PeerInfo | null = null;
   private todos: MeshTodo[] = [];
+  /** Auth token generated on start — required on all protected endpoints */
+  private authToken = '';
   /** Extra metadata broadcast via /peer-info */
   extraInfo: Record<string, string> = {};
   /** SSE clients — response objects kept alive for real-time events */
@@ -88,17 +93,19 @@ export class PeerServer {
   /**
    * Start the server. Idempotent — returns existing port if already started.
    */
+  /** The current auth token used to validate incoming requests. */
+  get token(): string {
+    return this.authToken;
+  }
+
   async start(peerInfo: PeerInfo): Promise<number> {
     if (this.started) return this.actualPort;
     this.currentPeerInfo = peerInfo;
+    this.authToken = randomUUID();
 
     return new Promise((resolve, reject) => {
       this.server = createServer((req, res) => {
         this.handleHttpRequest(req, res);
-      });
-
-      this.server.on('upgrade', (req, socket, head) => {
-        this.handleWebSocketUpgrade(req, socket, head);
       });
 
       this.server.on('error', err => {
@@ -107,7 +114,8 @@ export class PeerServer {
       });
 
       // Listen on port 0 (OS picks a free port) on localhost only
-      this.server.listen(0, '127.0.0.1', () => {
+      // Listen on all interfaces so LAN peers can connect (auth token protects against unauthorized access)
+      this.server.listen(0, '0.0.0.0', () => {
         const addr = this.server!.address() as AddressInfo;
         this.actualPort = addr.port;
         this.started = true;
@@ -122,15 +130,15 @@ export class PeerServer {
    */
   stop(): void {
     this.started = false;
-    // Close all WebSocket connections
-    for (const ws of this.wsClients) {
+    // Close SSE connections
+    for (const client of this.sseClients) {
       try {
-        ws.close();
+        client.end();
       } catch {
         /* ignore */
       }
     }
-    this.wsClients.clear();
+    this.sseClients.clear();
     if (this.server) {
       try {
         this.server.close();
@@ -394,16 +402,51 @@ export class PeerServer {
   // ── HTTP request handling ────────────────────────────────────
 
   /**
-   * Handle HTTP requests.
+   * Send a standard 401 response for missing/invalid token.
+   */
+  private sendUnauthorized(res: ServerResponse): void {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Unauthorized: invalid or missing token' }));
+  }
+
+  /**
+   * Send a standard 413 response for oversized body.
+   */
+  private sendTooLarge(res: ServerResponse): void {
+    res.writeHead(413, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Request body too large' }));
+  }
+
+  /**
+   * Handle HTTP requests with security checks:
+   * 1. Body size limit (prevent local DoS)
+   * 2. Token authentication (prevent unauthorized access)
    */
   private handleHttpRequest(req: IncomingMessage, res: ServerResponse): void {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
     const body: Buffer[] = [];
+    let bodyLength = 0;
 
-    req.on('data', (chunk: Buffer) => body.push(chunk));
+    req.on('data', (chunk: Buffer) => {
+      bodyLength += chunk.length;
+      if (bodyLength > MAX_BODY_SIZE) {
+        req.destroy();
+        return;
+      }
+      body.push(chunk);
+    });
+
     req.on('end', () => {
       try {
+        // ── 2. Body size check (early return if oversized) ──────
+        if (bodyLength > MAX_BODY_SIZE) {
+          this.sendTooLarge(res);
+          return;
+        }
+
         switch (url.pathname) {
+          // ── Public endpoints (no auth needed) ─────────────────
+
           case '/peer-info': {
             // Include queue status in peer info
             const info: Record<string, any> = {
@@ -417,13 +460,116 @@ export class PeerServer {
             break;
           }
 
+          case '/peer-queue-status': {
+            const { queue, current } = this.getTasks();
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                isBusy: this.isBusyInternal,
+                currentTask: current
+                  ? {
+                      id: current.id,
+                      command: current.command,
+                      from: current.from,
+                      status: current.status,
+                      priority: current.priority,
+                      createdAt: current.createdAt,
+                      startedAt: current.startedAt,
+                    }
+                  : null,
+                queueDepth: this.taskQueue.length,
+                queue: queue.map(t => ({
+                  id: t.id,
+                  command: t.command,
+                  from: t.from,
+                  status: t.status,
+                  priority: t.priority,
+                  createdAt: t.createdAt,
+                })),
+              }),
+            );
+            break;
+          }
+
+          // ── Auth-required GET endpoints (token in query param) ──
+
           case '/peer-events': {
+            // Token via ?token= query param
+            const token = url.searchParams.get('token') ?? '';
+            if (token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
             this.handleSSE(req, res);
             break;
           }
 
+          case '/broker/recv': {
+            // Token via ?token= query param
+            const token = url.searchParams.get('token') ?? '';
+            if (token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
+            const peersParam = (url.searchParams.get('peers') ?? '').trim();
+            const rolesParam = (url.searchParams.get('roles') ?? '').trim();
+            const replyTo = (url.searchParams.get('replyTo') ?? '').trim();
+            const timeoutSec = Math.min(
+              Math.max(0, parseInt(url.searchParams.get('timeout') ?? '30', 10) || 30),
+              120,
+            );
+            const store = getGlobalPeerStore();
+
+            // Build target list from peers + roles
+            const targets: string[] = [];
+            if (peersParam)
+              targets.push(
+                ...peersParam
+                  .split(',')
+                  .map(s => s.trim())
+                  .filter(Boolean),
+              );
+            if (rolesParam)
+              targets.push(
+                ...rolesParam
+                  .split(',')
+                  .map(s => s.trim())
+                  .filter(Boolean),
+              );
+
+            // If waiting for a reply
+            if (replyTo) {
+              store.waitForReply(replyTo, timeoutSec * 1000).then(reply => {
+                if (res.destroyed) return;
+                if (reply) {
+                  reply.delivered = true;
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ messages: [reply] }));
+                } else {
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ messages: [] }));
+                }
+              });
+              return;
+            }
+
+            // Long-poll for new messages
+            store.waitForBrokerMessages(targets, timeoutSec * 1000).then(msgs => {
+              if (res.destroyed) return;
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ messages: msgs }));
+            });
+            return;
+          }
+
+          // ── Auth-required POST endpoints (token in JSON body) ──
+
           case '/peer-msg': {
             const data = JSON.parse(Buffer.concat(body).toString());
+            if (data.token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
             const msg: MeshChatMessage = {
               id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
               from: data.from ?? 'unknown',
@@ -446,6 +592,10 @@ export class PeerServer {
 
           case '/peer-todo': {
             const data = JSON.parse(Buffer.concat(body).toString());
+            if (data.token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
             const todo: MeshTodo = {
               id: `todo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
               from: data.from ?? 'unknown',
@@ -464,6 +614,10 @@ export class PeerServer {
 
           case '/peer-exec': {
             const data = JSON.parse(Buffer.concat(body).toString());
+            if (data.token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
             if (!this.callbacks.onExec) {
               res.writeHead(501, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ stdout: '', stderr: 'Exec not supported', exitCode: 1 }));
@@ -515,6 +669,7 @@ export class PeerServer {
               .onExec(command)
               .then(result => {
                 this.finishTask(task, result);
+                if (res.destroyed) return;
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(
                   JSON.stringify({
@@ -527,45 +682,19 @@ export class PeerServer {
               .catch(err => {
                 const errMsg = errorMessage(err);
                 this.finishTask(task, undefined, errMsg);
+                if (res.destroyed) return;
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ stdout: '', stderr: errMsg, exitCode: 1 }));
               });
             break;
           }
 
-          case '/peer-queue-status': {
-            const { queue, current } = this.getTasks();
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(
-              JSON.stringify({
-                isBusy: this.isBusyInternal,
-                currentTask: current
-                  ? {
-                      id: current.id,
-                      command: current.command,
-                      from: current.from,
-                      status: current.status,
-                      priority: current.priority,
-                      createdAt: current.createdAt,
-                      startedAt: current.startedAt,
-                    }
-                  : null,
-                queueDepth: this.taskQueue.length,
-                queue: queue.map(t => ({
-                  id: t.id,
-                  command: t.command,
-                  from: t.from,
-                  status: t.status,
-                  priority: t.priority,
-                  createdAt: t.createdAt,
-                })),
-              }),
-            );
-            break;
-          }
-
           case '/peer-queue-cancel': {
             const data = JSON.parse(Buffer.concat(body).toString());
+            if (data.token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
             if (!data.id) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Missing task id' }));
@@ -578,6 +707,11 @@ export class PeerServer {
           }
 
           case '/peer-queue-cancel-all': {
+            const data = JSON.parse(Buffer.concat(body).toString());
+            if (data.token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
             const count = this.cancelAllQueuedTasks();
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true, cancelled: count }));
@@ -587,14 +721,17 @@ export class PeerServer {
           // ── Memory export endpoint ────────────────────────────
 
           case '/memory/export': {
+            const data = JSON.parse(Buffer.concat(body).toString());
+            if (data.token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
             // Must run synchronously — handleHttpRequest is not async.
             // Use a top-level require-style via dynamic import cached by ESM.
             (async () => {
               try {
                 const { MemoryDB } = await import('../../memory/database.js');
                 if (MemoryDB.isInitialized()) {
-                  const bodyStr = Buffer.concat(body).toString();
-                  const data = bodyStr ? JSON.parse(bodyStr) : {};
                   const limit = typeof data.limit === 'number' ? data.limit : 50;
                   const projectPath = typeof data.projectPath === 'string' ? data.projectPath : undefined;
                   const memories = MemoryDB.getInstance().exportMemories(limit, projectPath);
@@ -616,6 +753,10 @@ export class PeerServer {
 
           case '/broker/send': {
             const data = JSON.parse(Buffer.concat(body).toString());
+            if (data.token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
             const msg: BrokerMessage = {
               id: `brk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
               from: data.from ?? 'unknown',
@@ -633,55 +774,12 @@ export class PeerServer {
             break;
           }
 
-          case '/broker/recv': {
-            const peersParam = (url.searchParams.get('peers') ?? '').trim();
-            const rolesParam = (url.searchParams.get('roles') ?? '').trim();
-            const replyTo = (url.searchParams.get('replyTo') ?? '').trim();
-            const timeoutSec = Math.min(Math.max(0, parseInt(url.searchParams.get('timeout') ?? '30', 10) || 30), 120);
-            const store = getGlobalPeerStore();
-
-            // Build target list from peers + roles
-            const targets: string[] = [];
-            if (peersParam)
-              targets.push(
-                ...peersParam
-                  .split(',')
-                  .map(s => s.trim())
-                  .filter(Boolean),
-              );
-            if (rolesParam)
-              targets.push(
-                ...rolesParam
-                  .split(',')
-                  .map(s => s.trim())
-                  .filter(Boolean),
-              );
-
-            // If waiting for a reply
-            if (replyTo) {
-              store.waitForReply(replyTo, timeoutSec * 1000).then(reply => {
-                if (reply) {
-                  reply.delivered = true;
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ messages: [reply] }));
-                } else {
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ messages: [] }));
-                }
-              });
-              return;
-            }
-
-            // Long-poll for new messages
-            store.waitForBrokerMessages(targets, timeoutSec * 1000).then(msgs => {
-              res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ messages: msgs }));
-            });
-            return;
-          }
-
           case '/broker/reply': {
             const data = JSON.parse(Buffer.concat(body).toString());
+            if (data.token !== this.authToken) {
+              this.sendUnauthorized(res);
+              return;
+            }
             const replyMsg: BrokerMessage = {
               id: `brk_reply_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
               from: data.from ?? 'unknown',
@@ -711,15 +809,6 @@ export class PeerServer {
     });
   }
 
-  /**
-   * Handle WebSocket upgrade for chat.
-   */
-  private handleWebSocketUpgrade(_req: IncomingMessage, socket: any, _head: Buffer): void {
-    // Simple WebSocket upgrade without external library
-    // For v1, chat will use HTTP POST /peer-msg (simpler, no WS needed)
-    // WebSocket support can be added in a future iteration
-    socket.destroy();
-  }
 }
 
 /**
