@@ -98,7 +98,7 @@ import guardianCmd from './commands/guardian/index.js';
 import approveCmd from './commands/approve/index.js';
 import prCmd from './commands/pr/index.js';
 import sandboxToggle from './commands/sandbox-toggle/index.js';
-import maxMode from './commands/maxMode/index.js';
+
 import chrome from './commands/chrome/index.js';
 import stickers from './commands/stickers/index.js';
 import goal from './commands/goal/index.js';
@@ -276,7 +276,6 @@ const COMMANDS = memoize((): Command[] => [
   hooks,
   exportCommand,
   sandboxToggle,
-  maxMode,
   ...(!isUsing3PServices() && isActiveProviderAnthropic() ? [logout, login()] : []),
   passes,
   tasks,

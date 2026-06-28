@@ -106,7 +106,7 @@ clew auth login --token <token>
 ❯ /help           # list everything
 ❯ /status         # current provider, model, context info
 ❯ /goal "tests pass"  # track task completion with verification
-❯ /maxmode on     # parallel candidate generation
+
 ❯ /peer discover  # find other Clew instances on LAN
 ❯ /peer swarm clew -p "summarize CHANGELOG.md"  # run on all peers
 ❯ /peer dashboard # show peer task checklist
@@ -149,12 +149,12 @@ export GEMINI_API_KEY=...
 
 - **29 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, OpenCode Go, KiloCode, Sakana AI, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, custom. Switch mid-session. *(Anthropic accessible via OpenRouter.)*
 - **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
-- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
+- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Auth token** protection on all endpoints prevents unauthorized access. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
 - **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
 - **Gateway auth** (`/login` / `/logout`): Sign in at `api.clew-code.org` with browser or terminal login. Token import from web dashboard via `clew auth login --token`. Gateway token stored locally for `ClewGatewayProvider`.
 - **76+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (17 LAN coordination tools including discover, send, swarm, dashboard, broker), MCP tools, delegate (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
 - **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Templates for common workflows (`fix-build`, `green-tests`, `refactor`). Auto-integrates with AFK mode and the autonomous loop. Independent LLM verifier reviews completion and reports gaps.
-- **Max Mode** — parallel candidate generation (default 3 per turn) using forked agents. Selects the best response via LLM judge (model-as-judge) with heuristic fallback. Toggle with `/maxmode`.
+
 - **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps). Project memory promotion at 70% checkpoint.
 - **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
 - **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
@@ -199,7 +199,7 @@ Other runtime concepts:
 - **Plan mode:** Full-access planning mode with bypass permissions — explore, read, write, and edit files freely. Plan files persist to `.clew/plans/long-term-plan.md` with task progress snapshot.
 - **Multi-pass compaction:** Automatic chunk-based context compression with recursive re-compaction when context exceeds the model window.
 - **Goal verification:** When the agent declares a task done, an independent LLM call reviews the conversation against the goal text and reports specific gaps if unsatisfied (attached as `goalGap` in result metadata).
-- **Max Mode:** Generates N parallel candidate responses per turn via forked agents, then selects the best one via LLM judge with heuristic fallback. Toggle with `/maxmode`.
+
 - **Checkpoints:** Structured snapshots at 20%/45%/70% progress milestones. Includes a `notes.md` scratchpad for the main agent's findings. Used for layered multi-cycle rebuild during compaction.
 
 ---
@@ -219,7 +219,7 @@ Other runtime concepts:
 /context        Active context usage
 /compact        Compress conversation history + extract memories
 /goal           Track and verify task completion (chains, templates)
-/maxmode        Toggle parallel candidate generation
+
 /mcp            MCP server management
 /code-review    Review changed files for bugs
 /simplify       Cleanup-focused review
@@ -280,7 +280,7 @@ src/
 │   ├── checkpoint/          # Structured progress checkpoints
 │   ├── goal/                # Goal evaluation and verification
 │   ├── longTermMemory/      # Dream (7d) + Distill (30d) consolidation
-│   ├── maxMode/             # Candidate runner + evaluator
+
 │   ├── compact/             # Context compression and compaction
 │   ├── autoDream/           # Dream process scheduling
 │   ├── extractMemories/     # In-compact memory extraction

@@ -118,7 +118,7 @@ Key tool directories (70+ total):
 | `autonomous/` | Persistent task queue, lease-based concurrency (max 3), cron, backoff retry, dead-letter |
 | `goal/` | Goal evaluation, heuristic pre-checks, goal verification |
 | `checkpoint/` | Structured checkpoints at 20%/45%/70% milestones with notes scratchpad |
-| `maxMode/` | Parallel candidate generation (3 per turn), LLM judge with heuristic fallback |
+
 | `compact/` | Context compaction with in-compact memory extraction |
 | `longTermMemory/` | Dream (7-day) and Distill (30-day) memory consolidation |
 | `autoDream/` | Dream process scheduling and execution |
@@ -151,7 +151,7 @@ Registration is handled by `src/commands.ts` which merges:
 5. Dynamic skills discovered at runtime
 
 Key slash commands:
-`/login`, `/logout`, `/model`, `/status`, `/doctor`, `/profile`, `/context`, `/compact`, `/goal`, `/maxmode`, `/mcp`, `/code-review`, `/simplify`, `/plugin`, `/bridge`, `/agent`, `/agents`, `/peer`, `/remote`, `/daemon`, `/task`, `/memory`, `/tasks`, `/effort`, `/stats`, `/guardian`, `/approve`, `/pr`, `/voice`, `/buddy`, `/team`, `/bg`, `/plan`, `/vim`, `/research`, `/workflow`, `/rewind`, `/upgrade`, `/session`, `/theme`, `/skills`, `/ultracode`
+`/login`, `/logout`, `/model`, `/status`, `/doctor`, `/profile`, `/context`, `/compact`, `/goal`, `/mcp`, `/code-review`, `/simplify`, `/plugin`, `/bridge`, `/agent`, `/agents`, `/peer`, `/remote`, `/daemon`, `/task`, `/memory`, `/tasks`, `/effort`, `/stats`, `/guardian`, `/approve`, `/pr`, `/voice`, `/buddy`, `/team`, `/bg`, `/plan`, `/vim`, `/research`, `/workflow`, `/rewind`, `/upgrade`, `/session`, `/theme`, `/skills`, `/ultracode`
 
 ### Peer / P2P
 

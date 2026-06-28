@@ -676,31 +676,6 @@ export class QueryEngine {
       } as unknown as SDKMessage;
     }
 
-    // Max Mode: if enabled, run parallel candidates and inject best-of-n context
-    if (typeof prompt === 'string') {
-      const { getMaxModeConfig: getMaxCfg } = await import('./services/maxMode/candidateRunner.js');
-      if (getMaxCfg().enabled) {
-        try {
-          const { runMaxMode } = await import('./services/maxMode/candidateRunner.js');
-          const { createCacheSafeParams } = await import('./utils/forkedAgent.js');
-          const { createUserMessage: cUM } = await import('./utils/messages.js');
-          const cacheSafeParams = createCacheSafeParams(processUserInputContext);
-          const maxModeResult = await runMaxMode(prompt, messages, wrappedCanUseTool, cacheSafeParams);
-          if (maxModeResult?.response) {
-            // Inject winning candidate as system context — main model builds on it
-            messages.unshift(
-              cUM({
-                content: `[Best-of-N candidate #${maxModeResult.candidateIndex} context]\n${maxModeResult.response}`,
-                isMeta: true,
-              }),
-            );
-          }
-        } catch (e) {
-          // Max mode failure is non-fatal — fall through to normal query
-          console.warn('[max-mode] candidate run failed:', e);
-        }
-      }
-    }
 
     for await (const message of query({
       messages,
