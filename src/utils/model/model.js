@@ -366,7 +366,7 @@ export function renderDefaultModelSetting(setting) {
 }
 export function getOpus46PricingSuffix(fastMode) {
   if (getAPIProvider() !== 'firstParty') return '';
-  const pricing = formatModelPricing(getOpus46CostTier(fastMode));
+  const pricing = formatModelPricing(getOpus46CostTier());
   const fastModeIndicator = fastMode ? ` (${LIGHTNING_BOLT})` : '';
   return ` ·${fastModeIndicator} ${pricing}`;
 }

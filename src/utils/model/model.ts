@@ -413,7 +413,7 @@ export function renderDefaultModelSetting(setting: ModelName | ModelAlias): stri
 
 export function getOpus46PricingSuffix(): string {
   if (getAPIProvider() !== 'firstParty') return '';
-  const pricing = formatModelPricing(getOpus46CostTier(false));
+  const pricing = formatModelPricing(getOpus46CostTier());
   return ` · ${pricing}`;
 }
 
