@@ -21,12 +21,6 @@ const inputSchema = lazySchema(() =>
     role: z.string().optional().describe('Agent role for the peer node (e.g. builder, tester, reviewer)'),
     model: z.string().optional().describe('Model for the peer node session (e.g. sonnet)'),
     prompt: z.string().optional().describe('Custom system prompt for the peer node session'),
-    permissionMode: z
-      .enum(['acceptEdits', 'ask', 'bypassPermissions', 'default', 'dontAsk', 'plan'])
-      .optional()
-      .describe(
-        'Permission mode for the spawned peer session. Use "dontAsk" or "acceptEdits" for autonomous operation.',
-      ),
   }),
 );
 
@@ -92,12 +86,12 @@ export const PeerSpawnTool = buildTool({
   getPath() {
     return getCwd();
   },
-  renderToolUseMessage(input: Partial<{ name?: string; role?: string; permissionMode?: string }>) {
+  renderToolUseMessage(input: Partial<{ name?: string; role?: string }>) {
     return React.createElement(
       Text,
       null,
       React.createElement(Text, { bold: true }, '⚙ spawn'),
-      ` ${input.name ?? 'peer'}${input.role ? ` (${input.role})` : ''}${input.permissionMode ? ` [${input.permissionMode}]` : ''}`,
+      ` ${input.name ?? 'peer'}${input.role ? ` (${input.role})` : ''}`,
     );
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
@@ -106,7 +100,7 @@ export const PeerSpawnTool = buildTool({
     const result = `Spawned peer "${output.name}"${output.role ? ` (${output.role})` : ''} on port ${output.port}`;
     return { tool_use_id: toolUseID, type: 'tool_result', content: result };
   },
-  async call(input: { name?: string; role?: string; model?: string; prompt?: string; permissionMode?: string }) {
+  async call(input: { name?: string; role?: string; model?: string; prompt?: string }) {
     const randomId = Math.random().toString(36).substring(2, 7);
     const targetName = input.name || `peer-${randomId}`;
 
@@ -114,45 +108,8 @@ export const PeerSpawnTool = buildTool({
       const cwd = process.cwd();
       const platform = process.platform;
 
-      // Ensure the parent's PeerServer is running so the spawned peer can
-      // forward permission requests back here for interactive approval.
-      let parentUrl: string | undefined;
-      let parentToken: string | undefined;
-      try {
-        const { getGlobalPeerServer } = await import('../../peer/PeerServer.js');
-        const { getGlobalDiscovery } = await import('../../peer/PeerDiscovery.js');
-        const server = getGlobalPeerServer();
-        let parentPort = server.port;
-        if (parentPort <= 0) {
-          const discovery = getGlobalDiscovery();
-          parentPort = await server.start({
-            id: discovery.peerId,
-            hostname: discovery.hostname,
-            ip: '127.0.0.1',
-            port: 0,
-            cwd,
-            version: '',
-            lastSeen: Date.now(),
-            status: 'online',
-          });
-        }
-        if (parentPort > 0 && server.token) {
-          parentUrl = `http://127.0.0.1:${parentPort}`;
-          parentToken = server.token;
-        }
-      } catch {
-        // If the parent server can't start, the peer simply falls back to its
-        // own local permission dialogs — degraded but functional.
-      }
-
-      // Environment passed to the spawned peer so it can route permission
-      // prompts back to this parent instead of blocking in its own terminal.
+      // Environment passed to the spawned peer.
       const childEnv: NodeJS.ProcessEnv = { ...process.env };
-      if (parentUrl && parentToken) {
-        childEnv.CLEW_PEER_PARENT_URL = parentUrl;
-        childEnv.CLEW_PEER_PARENT_TOKEN = parentToken;
-        childEnv.CLEW_PEER_SELF_NAME = targetName;
-      }
 
       // Default peer behavior: share → receive task → reply back to sender
       const DEFAULT_PEER_PROMPT =
@@ -186,12 +143,10 @@ export const PeerSpawnTool = buildTool({
       // Use same model as the main session
       const spawnModel = input.model || getMainLoopModel();
       const cliArgs = ['--peer-share', '--peer-name', targetName, '--name', targetName, '--model', spawnModel];
-      if (input.permissionMode) cliArgs.push('--permission-mode', input.permissionMode);
       const promptArg = effectivePrompt.replace(/\s*\r?\n\s*/g, ' ').trim();
       if (promptArg) cliArgs.push('--system-prompt', promptArg);
       const cmd = buildPeerSpawnCommand(cliArgs);
       const previewArgs = ['--peer-share', '--peer-name', targetName, '--name', targetName, '--model', spawnModel];
-      if (input.permissionMode) previewArgs.push('--permission-mode', input.permissionMode);
       previewArgs.push('--system-prompt', '<prompt>');
       const commandPreview = buildPeerSpawnCommand(previewArgs);
 
@@ -268,13 +223,7 @@ export const PeerSpawnTool = buildTool({
           { cwd, detached: true, stdio: 'ignore', windowsVerbatimArguments: true, env: childEnv },
         ).unref();
       } else if (platform === 'darwin') {
-        // Terminal.app is a separate running process, so the spawn `env` option
-        // doesn't reach the command — embed the parent vars as inline exports.
-        const envPrefix =
-          parentUrl && parentToken
-            ? `export CLEW_PEER_PARENT_URL=${quoteArg(parentUrl)} CLEW_PEER_PARENT_TOKEN=${quoteArg(parentToken)} CLEW_PEER_SELF_NAME=${quoteArg(targetName)}; `
-            : '';
-        const appleScript = `tell application "Terminal" to do script "${(envPrefix + cmd).replace(/"/g, '\\"')}"`;
+        const appleScript = `tell application "Terminal" to do script "${cmd.replace(/"/g, '\\"')}"`;
         childSpawn('osascript', ['-e', appleScript], {
           detached: true,
           stdio: 'ignore',

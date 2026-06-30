@@ -1877,17 +1877,6 @@ async function run(): Promise<CommanderCommand> {
               const { executeCommand } = await import('./tools/PeerRunTool/PeerRunTool.js');
               return executeCommand(command, 60_000);
             },
-            onPermissionRequest: req => {
-              import('./peer/peerPermissionSurface.js')
-                .then(({ surfacePeerPermissionRequest }) => surfacePeerPermissionRequest(req))
-                .catch(() => {
-                  // If surfacing fails, reject so the forwarding worker stops waiting.
-                  getGlobalPeerServer().resolvePeerPermission(req.requestId, {
-                    decision: 'rejected',
-                    feedback: 'Parent failed to surface the permission request.',
-                  });
-                });
-            },
           });
 
           // Auto-start PeerServer on all peers (so they can receive messages)
