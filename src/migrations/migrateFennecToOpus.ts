@@ -32,7 +32,6 @@ export function migrateFennecToOpus(): void {
     } else if (model.startsWith('fennec-fast-latest') || model.startsWith('opus-4-5-fast')) {
       updateSettingsForSource('userSettings', {
         model: 'opus[1m]',
-        fastMode: true,
       });
     }
   }

@@ -116,11 +116,9 @@ export function useKickOffCheckAndDisableAutoModeIfNeeded(): void {
   const store = useAppStateStore();
   const isFirstRunRef = useRef(true);
 
-  // Runs on mount (startup check) AND whenever the model or fast mode changes
+  // Runs on mount (startup check) AND whenever the model changes
   // (kick-out / carousel-restore). Watching both model fields covers /model,
-  // Cmd+P picker, /config, and bridge onSetModel paths; fastMode covers
-  // /fast on|off for the tengu_auto_mode_config.disableFastMode circuit
-  // breaker. The print.ts headless paths are covered by the sync
+  // Cmd+P picker, /config, and bridge onSetModel paths. The print.ts headless paths are covered by the sync
   // isAutoModeGateEnabled() check.
   useEffect(() => {
     if (getIsRemoteMode()) return;

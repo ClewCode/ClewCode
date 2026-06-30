@@ -411,11 +411,10 @@ export function renderDefaultModelSetting(setting: ModelName | ModelAlias): stri
   return renderModelName(parseUserSpecifiedModel(setting));
 }
 
-export function getOpus46PricingSuffix(fastMode: boolean): string {
+export function getOpus46PricingSuffix(): string {
   if (getAPIProvider() !== 'firstParty') return '';
-  const pricing = formatModelPricing(getOpus46CostTier(fastMode));
-  const fastModeIndicator = fastMode ? ` (${LIGHTNING_BOLT})` : '';
-  return ` ·${fastModeIndicator} ${pricing}`;
+  const pricing = formatModelPricing(getOpus46CostTier());
+  return ` · ${pricing}`;
 }
 
 export function isOpus1mMergeEnabled(): boolean {

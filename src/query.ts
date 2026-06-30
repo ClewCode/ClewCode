@@ -585,9 +585,6 @@ async function* queryLoop(
                 return appState.toolPermissionContext;
               },
               model: currentModel,
-              ...(config.gates.fastModeEnabled && {
-                fastMode: appState.fastMode,
-              }),
               toolChoice: undefined,
               isNonInteractiveSession: toolUseContext.options.isNonInteractiveSession,
               fallbackModel,
@@ -1191,6 +1188,7 @@ async function* queryLoop(
         if (
           goalState?.goal &&
           !goalState.achieved &&
+          !goalState.blocked &&
           goalState.lastReason &&
           !toolUseContext.agentId &&
           querySource.startsWith('repl_main_thread')
@@ -1271,15 +1269,6 @@ async function* queryLoop(
             queryDepth: queryTracking.depth,
           });
         }
-      }
-
-      // Increment goal turn counter so /goal status line reflects turns since goal was set
-      const goalState = toolUseContext.getAppState();
-      if (goalState.sessionGoal) {
-        toolUseContext.setAppState(prev => ({
-          ...prev,
-          sessionGoalTurnCount: (prev.sessionGoalTurnCount ?? 0) + 1,
-        }));
       }
 
       return { reason: 'completed' };

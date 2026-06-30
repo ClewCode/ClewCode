@@ -35,6 +35,7 @@ import { getFsImplementation } from '../../utils/fsOperations.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { expandPath } from '../../utils/path.js';
 import type { PermissionResult } from '../../utils/permissions/PermissionResult.js';
+import { getPlatform } from '../../utils/platform.js';
 import { maybeRecordPluginHint } from '../../utils/plugins/hintRecommendation.js';
 import { exec } from '../../utils/Shell.js';
 import type { ExecResult } from '../../utils/ShellCommand.js';
@@ -52,6 +53,7 @@ import {
   getToolResultPath,
   PREVIEW_SIZE_BYTES,
 } from '../../utils/toolResultStorage.js';
+import { isGitBashAvailable } from '../../utils/windowsPaths.js';
 import { userFacingName as fileEditUserFacingName } from '../FileEditTool/UI.js';
 import { trackGitOperations } from '../shared/gitOperationTracking.js';
 import {
@@ -602,6 +604,13 @@ export const BashTool = buildTool({
   // 30K chars - tool result persistence threshold
   maxResultSizeChars: 30_000,
   strict: true,
+  isEnabled() {
+    // On Windows without Git Bash (or WSL bash) there is no POSIX shell to run
+    // bash-syntax commands. Disable BashTool so the agent uses PowerShellTool
+    // instead (which isPowerShellToolEnabled() force-enables in this case).
+    if (getPlatform() === 'windows' && !isGitBashAvailable()) return false;
+    return true;
+  },
   async description({ description }) {
     return description || 'Run shell command';
   },

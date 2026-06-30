@@ -84,9 +84,17 @@ function findExecutable(executable: string): string | null {
  */
 export function setShellIfWindows(): void {
   if (getPlatform() === 'windows') {
-    const gitBashPath = findGitBashPath();
-    process.env.SHELL = gitBashPath;
-    logForDebugging(`Using bash path: "${gitBashPath}"`);
+    // Non-fatal: if Git Bash isn't installed we must NOT exit here, otherwise
+    // Clew can't even open on a Windows box without Git Bash. Leave SHELL unset
+    // so the rest of the app falls back to PowerShell (see resolveDefaultShell,
+    // isPowerShellToolEnabled, BashTool.isEnabled).
+    const gitBashPath = tryFindGitBashPath();
+    if (gitBashPath) {
+      process.env.SHELL = gitBashPath;
+      logForDebugging(`Using bash path: "${gitBashPath}"`);
+    } else {
+      logForDebugging('Git Bash not found on Windows — falling back to PowerShell for shell commands.');
+    }
   }
 }
 
@@ -132,17 +140,27 @@ function findGitBashFromCommonLocations(): string | null {
  * 4. WSL bash (if WSL is installed)
  * 5. Exit with helpful error message
  */
-export const findGitBashPath = memoize((): string => {
+/**
+ * Non-fatal Git Bash lookup. Returns the resolved bash.exe path (or a
+ * `wsl <path>` invocation), or `null` if none is found. Unlike
+ * findGitBashPath(), this NEVER exits the process — callers decide how to
+ * degrade (typically by falling back to PowerShell).
+ *
+ * Resolution order:
+ * 1. CLAUDE_CODE_GIT_BASH_PATH env var (if it points at an existing file)
+ * 2. Git installation directory (via where.exe or PATH)
+ * 3. Common installation paths (Program Files, Scoop, Choco, etc.)
+ * 4. WSL bash (if WSL is installed)
+ */
+export const tryFindGitBashPath = memoize((): string | null => {
   if (process.env.CLAUDE_CODE_GIT_BASH_PATH) {
     if (checkPathExists(process.env.CLAUDE_CODE_GIT_BASH_PATH)) {
       return process.env.CLAUDE_CODE_GIT_BASH_PATH;
     }
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.error(
+    logForDebugging(
       `Clew Code was unable to find CLAUDE_CODE_GIT_BASH_PATH path "${process.env.CLAUDE_CODE_GIT_BASH_PATH}"`,
     );
-    // eslint-disable-next-line custom-rules/no-process-exit
-    process.exit(1);
+    // Fall through to autodetection rather than failing outright.
   }
 
   // Try finding git and resolving bash from its location
@@ -170,7 +188,28 @@ export const findGitBashPath = memoize((): string => {
     // WSL not available
   }
 
-  // biome-ignore lint/suspicious/noConsole:: intentional console output
+  return null;
+});
+
+/**
+ * Whether a usable Git Bash (or WSL bash) is available on this Windows machine.
+ * Used to decide whether to fall back to PowerShell for the default shell and
+ * for shell-tool gating.
+ */
+export function isGitBashAvailable(): boolean {
+  if (getPlatform() !== 'windows') return true;
+  return tryFindGitBashPath() !== null;
+}
+
+/**
+ * Find the path where `bash.exe` included with git-bash exists, exiting the
+ * process if not found. Prefer tryFindGitBashPath() in new code — this fatal
+ * variant only remains for callers that genuinely cannot proceed without bash.
+ */
+export const findGitBashPath = memoize((): string => {
+  const found = tryFindGitBashPath();
+  if (found) return found;
+
   console.error(
     'Clew Code on Windows requires git-bash (https://git-scm.com/downloads/win). If installed but not in PATH, set environment variable pointing to your bash.exe, similar to: CLAUDE_CODE_GIT_BASH_PATH=C:\\Program Files\\Git\\bin\\bash.exe',
   );
@@ -184,12 +223,8 @@ export const findGitBashPath = memoize((): string => {
 export function isCmdExeDefault(): boolean {
   if (getPlatform() !== 'windows') return false;
 
-  try {
-    // If Git Bash or WSL bash is available, cmd.exe is not the default
-    if (findGitBashPath()) return false;
-  } catch {
-    // findGitBashPath exits on failure, but catch just in case
-  }
+  // If Git Bash or WSL bash is available, cmd.exe is not the default
+  if (tryFindGitBashPath()) return false;
 
   return true;
 }

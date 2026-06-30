@@ -6,7 +6,6 @@ import type { ApiKeySource, PermissionMode, SDKMessage } from 'src/entrypoints/a
 import { AGENT_TOOL_NAME, LEGACY_AGENT_TOOL_NAME } from 'src/tools/AgentTool/constants.js';
 import { getAnthropicApiKeyWithSource } from '../auth.js';
 import { getCwd } from '../cwd.js';
-import { getFastModeState } from '../fastMode.js';
 import { getSettings_DEPRECATED } from '../settings/settings.js';
 
 // TODO(next-minor): remove this translation once SDK consumers have migrated
@@ -28,7 +27,6 @@ export type SystemInitInputs = {
   agents: ReadonlyArray<{ agentType: string }>;
   skills: ReadonlyArray<CommandLike>;
   plugins: ReadonlyArray<{ name: string; path: string; source: string }>;
-  fastMode: boolean | undefined;
 };
 
 /**
@@ -80,6 +78,5 @@ export function buildSystemInitMessage(inputs: SystemInitInputs): SDKMessage {
       require('../udsMessaging.js').getUdsMessagingSocketPath();
     /* eslint-enable @typescript-eslint/no-require-imports */
   }
-  initMessage.fast_mode_state = getFastModeState(inputs.model, inputs.fastMode);
   return initMessage;
 }

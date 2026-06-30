@@ -11,8 +11,8 @@
 import type { SDKAssistantMessage } from 'src/entrypoints/agentSdkTypes.js';
 import type { StdoutMessage } from 'src/entrypoints/sdk/controlTypes.js';
 import { FILE_EDIT_TOOL_NAME } from 'src/tools/FileEditTool/constants.js';
-import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
-import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
+import { FILE_READ_TOOL_NAME } from '../tools/FileReadTool/prompt.js';
+import { FILE_WRITE_TOOL_NAME } from '../tools/FileWriteTool/prompt.js';
 import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
 import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
 import { LIST_MCP_RESOURCES_TOOL_NAME } from 'src/tools/ListMcpResourcesTool/prompt.js';

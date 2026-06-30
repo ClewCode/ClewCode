@@ -102,6 +102,17 @@ export const PeerListMessagesTool = buildTool({
   getPath() {
     return getCwd();
   },
+  renderToolUseMessage(input) {
+    const from = input.from ? ` from ${input.from}` : '';
+    return input.wait ? `wait for peer messages${from}` : `list peer messages${from}`;
+  },
+  renderToolResultMessage(output) {
+    if (!output.messages || output.messages.length === 0) {
+      if (output.waited && output.timedOut) return 'No new peer messages before timeout.';
+      return 'No peer messages.';
+    }
+    return `Found ${output.count} peer message(s).`;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.messages || output.messages.length === 0) {
       let content = 'No messages.';

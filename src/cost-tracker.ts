@@ -37,7 +37,6 @@ import {
 import { getAdvisorUsage } from './utils/advisor.js';
 import { getCurrentProjectConfig, saveCurrentProjectConfig } from './utils/config.js';
 import { getContextWindowForModel, getModelMaxOutputTokens } from './utils/context.js';
-import { isFastModeEnabled } from './utils/fastMode.js';
 import { formatDuration, formatNumber } from './utils/format.js';
 import type { FpsMetrics } from './utils/fpsTracker.js';
 import { getCanonicalName } from './utils/model/model.js';
@@ -322,7 +321,7 @@ export function addToTotalSessionCost(
     : ((usage as ProviderUsage).cacheCreationInputTokens ?? 0);
   const speed = isAnthropicUsage ? (usage as Usage).speed : undefined;
 
-  const attrs = isFastModeEnabled() && speed === 'fast' ? { model, speed: 'fast' } : { model };
+  const attrs = { model };
 
   getCostCounter()?.add(cost, attrs);
   getTokenCounter()?.add(inputTokens, { ...attrs, type: 'input' });

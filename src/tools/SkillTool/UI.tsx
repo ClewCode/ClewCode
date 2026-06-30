@@ -21,23 +21,33 @@ const INITIALIZING_TEXT = 'Initializing…';
 export function renderToolResultMessage(output: Output): React.ReactNode {
   // Handle forked skill result
   if ('status' in output && output.status === 'forked') {
+    const resultText = output.result
+      ? (typeof output.result === 'string' ? output.result.slice(0, 120) : 'Done')
+      : 'Done';
     return (
       <MessageResponse height={1}>
         <Text>
-          <Byline>{['Done']}</Byline>
+          <Byline>{[`⚡ ${resultText}`]}</Byline>
         </Text>
       </MessageResponse>
     );
   }
-  const parts: string[] = ['Successfully loaded skill'];
+  const parts: string[] = [];
 
-  // Show tools count (only for inline skills)
-  if ('allowedTools' in output && output.allowedTools && output.allowedTools.length > 0) {
-    const count = output.allowedTools.length;
-    parts.push(`${count} ${plural(count, 'tool')} allowed`);
+  // Show skill name
+  if ('commandName' in output && output.commandName) {
+    parts.push(output.commandName);
   }
 
-  // Show model if non-default (only for inline skills)
+  parts.push('inline');
+
+  // Show tools count
+  if ('allowedTools' in output && output.allowedTools && output.allowedTools.length > 0) {
+    const count = output.allowedTools.length;
+    parts.push(`${count} ${plural(count, 'tool')}`);
+  }
+
+  // Show model if non-default
   if ('model' in output && output.model) {
     parts.push(output.model);
   }

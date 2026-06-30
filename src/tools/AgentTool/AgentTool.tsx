@@ -64,9 +64,9 @@ import { teleportToRemote } from '../../utils/teleport.js';
 import { getAssistantMessageContentLength } from '../../utils/tokens.js';
 import { createAgentId } from '../../utils/uuid.js';
 import { createAgentWorktree, hasWorktreeChanges, removeAgentWorktree } from '../../utils/worktree.js';
-import { BASH_TOOL_NAME } from '../BashTool/toolName.js';
+import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import { BackgroundHint } from '../BashTool/UI.js';
-import { FILE_READ_TOOL_NAME } from '../FileReadTool/prompt.js';
+import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
 import { spawnTeammate } from '../shared/spawnMultiAgent.js';
 import { setAgentColor } from './agentColorManager.js';
 import {
@@ -313,7 +313,7 @@ export const AgentTool = buildTool({
   name: AGENT_TOOL_NAME,
   searchHint: 'delegate work to a subagent',
   aliases: [LEGACY_AGENT_TOOL_NAME],
-  maxResultSizeChars: 100_000,
+  maxResultSizeChars: 250_000,
   async description() {
     return 'Launch a new agent';
   },

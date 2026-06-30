@@ -1,4 +1,4 @@
-import MiniSearch from 'minisearch';
+import Fuse from 'fuse.js';
 import { type Command, formatDescriptionWithSource, getCommand, getCommandName } from '../../commands.js';
 import type { SuggestionItem } from '../../components/PromptInput/PromptInputFooterSuggestions.js';
 import { getSkillUsageScore } from './skillUsageTracking.js';
@@ -7,7 +7,6 @@ import { getSkillUsageScore } from './skillUsageTracking.js';
 const SEPARATORS = /[:_-]/g;
 
 type CommandSearchItem = {
-  id: string;
   descriptionKey: string[];
   partKey: string[] | undefined;
   commandName: string;
@@ -15,17 +14,17 @@ type CommandSearchItem = {
   aliasKey: string[] | undefined;
 };
 
-// Cache the MiniSearch index keyed by the commands array identity. The commands
+// Cache the Fuse index keyed by the commands array identity. The commands
 // array is stable (memoized in REPL.tsx), so we only rebuild when it changes
 // rather than on every keystroke.
-let searchCache: {
+let fuseCache: {
   commands: Command[];
-  search: MiniSearch<CommandSearchItem>;
+  fuse: Fuse<CommandSearchItem>;
 } | null = null;
 
-function getCommandSearch(commands: Command[]): MiniSearch<CommandSearchItem> {
-  if (searchCache?.commands === commands) {
-    return searchCache.search;
+function getCommandFuse(commands: Command[]): Fuse<CommandSearchItem> {
+  if (fuseCache?.commands === commands) {
+    return fuseCache.fuse;
   }
 
   const commandData: CommandSearchItem[] = commands
@@ -35,7 +34,6 @@ function getCommandSearch(commands: Command[]): MiniSearch<CommandSearchItem> {
       const parts = commandName.split(SEPARATORS).filter(Boolean);
 
       return {
-        id: getCommandId(cmd),
         descriptionKey: (cmd.description ?? '')
           .split(' ')
           .map(word => cleanWord(word))
@@ -47,25 +45,33 @@ function getCommandSearch(commands: Command[]): MiniSearch<CommandSearchItem> {
       };
     });
 
-  const search = new MiniSearch<CommandSearchItem>({
-    fields: ['commandName', 'partKey', 'aliasKey', 'descriptionKey'],
-    storeFields: ['commandName', 'command', 'aliasKey'],
-    searchOptions: {
-      boost: { commandName: 3, partKey: 2, aliasKey: 2, descriptionKey: 0.5 },
-      fuzzy: 0.3,
-      prefix: true,
-    },
-    extractField: (doc, field) => {
-      if (field === 'partKey' && doc.partKey) return doc.partKey.join(' ');
-      if (field === 'aliasKey' && doc.aliasKey) return doc.aliasKey.join(' ');
-      if (field === 'descriptionKey') return doc.descriptionKey.join(' ');
-      return doc[field as keyof CommandSearchItem] as string;
-    },
+  const fuse = new Fuse(commandData, {
+    includeScore: true,
+    threshold: 0.3, // relatively strict matching
+    location: 0, // prefer matches at the beginning of strings
+    distance: 100, // increased to allow matching in descriptions
+    keys: [
+      {
+        name: 'commandName',
+        weight: 3, // Highest priority for command names
+      },
+      {
+        name: 'partKey',
+        weight: 2, // Next highest priority for command parts
+      },
+      {
+        name: 'aliasKey',
+        weight: 2, // Same high priority for aliases
+      },
+      {
+        name: 'descriptionKey',
+        weight: 0.5, // Lower priority for descriptions
+      },
+    ],
   });
 
-  search.addAll(commandData);
-  searchCache = { commands, search };
-  return search;
+  fuseCache = { commands, fuse };
+  return fuse;
 }
 
 /**
@@ -263,53 +269,6 @@ function createCommandSuggestionItem(cmd: Command, matchedAlias?: string): Sugge
   };
 }
 
-function rankCommandSuggestionForQuery(item: SuggestionItem, query: string): number {
-  if (query === '') return 0;
-  const commandName = item.displayText.replace(/^\//, '').split(/[ (]/)[0]?.toLowerCase() ?? '';
-  if (commandName === query) return 0;
-  if (commandName.startsWith(query)) return 1;
-  if (commandName.includes(query)) return 2;
-  return 3;
-}
-
-function sortCommandSuggestionsForQuery(items: SuggestionItem[], query: string): SuggestionItem[] {
-  if (query === '') return items;
-  return items.sort((a, b) => {
-    const rankDiff = rankCommandSuggestionForQuery(a, query) - rankCommandSuggestionForQuery(b, query);
-    if (rankDiff !== 0) return rankDiff;
-    return a.displayText.localeCompare(b.displayText);
-  });
-}
-
-function directCommandSuggestionsForQuery(query: string, commands: Command[]): SuggestionItem[] {
-  if (query === '') return [];
-  return commands
-    .filter(cmd => {
-      if (cmd.isHidden) return false;
-      const name = getCommandName(cmd).toLowerCase();
-      const aliases = cmd.aliases?.map(alias => alias.toLowerCase()) ?? [];
-      return name.startsWith(query) || aliases.some(alias => alias.startsWith(query));
-    })
-    .sort((a, b) => {
-      const aName = getCommandName(a).toLowerCase();
-      const bName = getCommandName(b).toLowerCase();
-      if (aName.length !== bName.length) return aName.length - bName.length;
-      return aName.localeCompare(bName);
-    })
-    .map(cmd => createCommandSuggestionItem(cmd, findMatchedAlias(query, cmd.aliases)));
-}
-
-function mergeCommandSuggestions(primary: SuggestionItem[], secondary: SuggestionItem[]): SuggestionItem[] {
-  const seen = new Set<string>();
-  const merged: SuggestionItem[] = [];
-  for (const item of [...primary, ...secondary]) {
-    if (seen.has(item.id)) continue;
-    seen.add(item.id);
-    merged.push(item);
-  }
-  return merged;
-}
-
 /**
  * Generate command suggestions based on input
  */
@@ -396,11 +355,11 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
     ].map(cmd => createCommandSuggestionItem(cmd));
   }
 
-  // The MiniSearch index filters isHidden at build time and is keyed on the
-  // (memoized) commands array identity, so a command that is hidden when
-  // MiniSearch first builds stays invisible to MiniSearch for the whole session.
-  // If the user types the exact name of a currently-hidden command, prepend it
-  // to the MiniSearch results so exact-name always wins over weak description fuzzy
+  // The Fuse index filters isHidden at build time and is keyed on the
+  // (memoized) commands array identity, so a command that is hidden when Fuse
+  // first builds stays invisible to Fuse for the whole session. If the user
+  // types the exact name of a currently-hidden command, prepend it to the
+  // Fuse results so exact-name always wins over weak description fuzzy
   // matches — but only when no visible command shares the name (that would
   // be the user's explicit override and should win). Prepend rather than
   // early-return so visible prefix siblings (e.g. /voice-memo) still appear
@@ -410,9 +369,8 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
     hiddenExact = undefined;
   }
 
-  const search = getCommandSearch(commands);
-  const searchResults = search.search(query);
-  const directSuggestions = directCommandSuggestionsForQuery(query, commands);
+  const fuse = getCommandFuse(commands);
+  const searchResults = fuse.search(query);
 
   // Sort results prioritizing exact/prefix command name matches over fuzzy description matches
   // Priority order:
@@ -422,19 +380,10 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
   // 4. Prefix alias match
   // 5. Fuzzy match (lowest)
   // Precompute per-item values once to avoid O(n log n) recomputation in comparator
-  type MiniSearchResult = {
-    commandName: string;
-    command: Command;
-    aliasKey?: string[];
-    id?: string;
-    score?: number;
-    terms?: string[];
-    match?: Record<string, unknown>;
-  };
-  const withMeta = searchResults.map((r: MiniSearchResult) => {
-    const name = r.commandName.toLowerCase();
-    const aliases = r.aliasKey?.map(alias => alias.toLowerCase()) ?? [];
-    const usage = r.command.type === 'prompt' ? getSkillUsageScore(getCommandName(r.command)) : 0;
+  const withMeta = searchResults.map(r => {
+    const name = r.item.commandName.toLowerCase();
+    const aliases = r.item.aliasKey?.map(alias => alias.toLowerCase()) ?? [];
+    const usage = r.item.command.type === 'prompt' ? getSkillUsageScore(getCommandName(r.item.command)) : 0;
     return { r, name, aliases, usage };
   });
 
@@ -476,12 +425,12 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
       return aPrefixAlias.length - bPrefixAlias.length;
     }
 
-    // For similar match types, use MiniSearch score with usage as tiebreaker
+    // For similar match types, use Fuse score with usage as tiebreaker
     const scoreDiff = (a.r.score ?? 0) - (b.r.score ?? 0);
     if (Math.abs(scoreDiff) > 0.1) {
       return scoreDiff;
     }
-    // For similar MiniSearch scores, prefer more frequently used skills
+    // For similar Fuse scores, prefer more frequently used skills
     return b.usage - a.usage;
   });
 
@@ -490,27 +439,24 @@ export function generateCommandSuggestions(input: string, commands: Command[]): 
   // from different sources (e.g., projectSettings vs userSettings) may have different
   // implementations and should both be available to the user
   const fuseSuggestions = sortedResults.map(result => {
-    const cmd = result.r.command;
+    const cmd = result.r.item.command;
     // Only show alias in parentheses if the user typed an alias
     const matchedAlias = findMatchedAlias(query, cmd.aliases);
     return createCommandSuggestionItem(cmd, matchedAlias);
   });
   // Skip the prepend if hiddenExact is already in fuseSuggestions — this
   // happens when isHidden flips false→true mid-session (OAuth expiry,
-  // GrowthBook kill-switch) and the stale MiniSearch index still holds the
-  // command. MiniSearch already sorts exact-name matches first, so no reorder
+  // GrowthBook kill-switch) and the stale Fuse index still holds the
+  // command. Fuse already sorts exact-name matches first, so no reorder
   // is needed; we just don't want a duplicate id (duplicate React keys,
   // both rows rendering as selected).
   if (hiddenExact) {
     const hiddenId = getCommandId(hiddenExact);
     if (!fuseSuggestions.some(s => s.id === hiddenId)) {
-      return sortCommandSuggestionsForQuery(
-        mergeCommandSuggestions([createCommandSuggestionItem(hiddenExact), ...directSuggestions], fuseSuggestions),
-        query,
-      );
+      return [createCommandSuggestionItem(hiddenExact), ...fuseSuggestions];
     }
   }
-  return sortCommandSuggestionsForQuery(mergeCommandSuggestions(directSuggestions, fuseSuggestions), query);
+  return fuseSuggestions;
 }
 
 /**
@@ -589,14 +535,13 @@ export function findSlashCommandPositions(text: string): Array<{ start: number; 
   const positions: Array<{ start: number; end: number }> = [];
   // Match /command patterns preceded by whitespace or start-of-string
   const regex = /(^|[\s])(\/[a-zA-Z][a-zA-Z0-9:\-_]*)/g;
-  let match = regex.exec(text);
-  while (match !== null) {
+  let match: RegExpExecArray | null = null;
+  while ((match = regex.exec(text)) !== null) {
     const precedingChar = match[1] ?? '';
     const commandName = match[2] ?? '';
     // Start position is after the whitespace (if any)
     const start = match.index + precedingChar.length;
     positions.push({ start, end: start + commandName.length });
-    match = regex.exec(text);
   }
   return positions;
 }

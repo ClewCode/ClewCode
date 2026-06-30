@@ -427,7 +427,6 @@ import { useIDEStatusIndicator } from 'src/hooks/notifs/useIDEStatusIndicator.js
 import { useModelMigrationNotifications } from 'src/hooks/notifs/useModelMigrationNotifications.js';
 import { useCanSwitchToExistingSubscription } from 'src/hooks/notifs/useCanSwitchToExistingSubscription.js';
 import { useTeammateLifecycleNotification } from 'src/hooks/notifs/useTeammateShutdownNotification.js';
-import { useFastModeNotification } from 'src/hooks/notifs/useFastModeNotification.js';
 import {
   AutoRunIssueNotification,
   shouldAutoRunIssue,
@@ -1012,7 +1011,6 @@ export function REPL({
   usePluginAutoupdateNotification();
   useSettingsErrors();
   useRateLimitWarningNotification(mainLoopModel);
-  useFastModeNotification();
   useDeprecationWarningNotification(mainLoopModel);
   useNpmDeprecationNotification();
   useAntOrgWarningNotification();
@@ -1531,10 +1529,6 @@ export function REPL({
   const { dividerIndex, dividerYRef, onScrollAway, onRepin, jumpToNew, shiftDivider } = useUnseenDivider(
     messages.length,
   );
-  if (feature('AWAY_SUMMARY')) {
-    // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
-    useAwaySummary(messages, setMessages, isLoading);
-  }
   const [cursor, setCursor] = useState<MessageActionsState | null>(null);
   const cursorNavRef = useRef<MessageActionsNav | null>(null);
   // Memoized so Messages' React.memo holds.
@@ -1624,6 +1618,10 @@ export function REPL({
   const [inputValue, setInputValueRaw] = useState(() => consumeEarlyInput());
   const inputValueRef = useRef(inputValue);
   inputValueRef.current = inputValue;
+  if (feature('AWAY_SUMMARY')) {
+    // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+    useAwaySummary(messages, setMessages, isLoading, inputValue);
+  }
   const insertTextRef = useRef<{
     insert: (text: string) => void;
     setInputWithCursor: (value: string, cursor: number) => void;

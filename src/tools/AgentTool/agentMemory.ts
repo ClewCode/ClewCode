@@ -8,7 +8,7 @@ import { findCanonicalGitRoot } from '../../utils/git.js';
 import { sanitizePath } from '../../utils/path.js';
 
 // Persistent agent memory scope: 'user' (~/.clew/agent-memory/), 'project' (.clew/agent-memory/), or 'local' (.clew/agent-memory-local/)
-export type AgentMemoryScope = 'user' | 'project' | 'local';
+export type AgentMemoryScope = 'user' | 'project' | 'local' | 'team';
 
 /**
  * Sanitize an agent type name for use as a directory name.
@@ -54,6 +54,9 @@ export function getAgentMemoryDir(agentType: string, scope: AgentMemoryScope): s
       return getLocalAgentMemoryDir(dirName);
     case 'user':
       return join(getMemoryBaseDir(), 'agent-memory', dirName) + sep;
+    case 'team':
+      // Team scope shares memory within the project, accessible by all agents
+      return join(getCwd(), DOT_CLEW, AGENT_MEMORY_DIR, '__team__', dirName) + sep;
   }
 }
 
@@ -70,6 +73,11 @@ export function isAgentMemoryPath(absolutePath: string): boolean {
 
   // Project scope: always cwd-based (not redirected)
   if (normalizedPath.startsWith(join(getCwd(), DOT_CLEW, AGENT_MEMORY_DIR) + sep)) {
+    return true;
+  }
+
+  // Team scope: shares the project agent-memory directory under __team__
+  if (normalizedPath.startsWith(join(getCwd(), DOT_CLEW, AGENT_MEMORY_DIR, '__team__') + sep)) {
     return true;
   }
 
@@ -103,6 +111,8 @@ export function getMemoryScopeDisplay(memory: AgentMemoryScope | undefined): str
       return 'Project (.claude/agent-memory/)';
     case 'local':
       return `Local (${getLocalAgentMemoryDir('...')})`;
+    case 'team':
+      return 'Team (.claude/agent-memory/__team__/)';
     default:
       return 'None';
   }

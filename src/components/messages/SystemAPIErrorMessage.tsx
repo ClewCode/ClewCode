@@ -9,6 +9,15 @@ import { MessageResponse } from '../MessageResponse.js';
 
 const MAX_API_ERROR_CHARS = 1000;
 
+// Helpful tips surfaced while the user waits out a retry. Rotated by attempt so
+// the message stays stable across the per-second countdown re-renders but a
+// long backoff still shows variety.
+const RETRY_TIPS = [
+  "Use /btw to ask a quick side question without interrupting Claude's current work",
+  'Press Esc to interrupt and try a different approach',
+  'High API load usually clears within a minute — Claude will resume automatically',
+];
+
 type Props = {
   message: SystemAPIErrorMessage;
   verbose: boolean;
@@ -34,18 +43,33 @@ export function SystemAPIErrorMessage({
 
   const formatted = formatAPIError(error);
   const truncated = !verbose && formatted.length > MAX_API_ERROR_CHARS;
+  const tip = RETRY_TIPS[(retryAttempt - 1) % RETRY_TIPS.length];
 
   return (
-    <MessageResponse>
-      <Box flexDirection="column">
-        <Text color="error">{truncated ? `${formatted.slice(0, MAX_API_ERROR_CHARS)}…` : formatted}</Text>
-        {truncated && <CtrlOToExpand />}
+    <Box flexDirection="column">
+      {/* Compact status line, flush-left (no ⎿ gutter) */}
+      <Box>
+        <Text color="claude">✳ </Text>
+        <Text bold color="error">
+          API error
+        </Text>
         <Text dimColor>
-          Retrying in {retryInSecondsLive} {retryInSecondsLive === 1 ? 'second' : 'seconds'}… (attempt {retryAttempt}/
-          {maxRetries})
+          {' · '}
+          {retryInSecondsLive > 0 ? `Retrying in ${retryInSecondsLive}s` : 'Retrying…'}
+          {' · '}
+          attempt {retryAttempt}/{maxRetries}
           {process.env.API_TIMEOUT_MS ? ` · API_TIMEOUT_MS=${process.env.API_TIMEOUT_MS}ms, try increasing it` : ''}
         </Text>
       </Box>
-    </MessageResponse>
+
+      {/* Full error detail only when verbose; otherwise offer Ctrl+O to expand */}
+      {verbose && <Text color="error">{truncated ? `${formatted.slice(0, MAX_API_ERROR_CHARS)}…` : formatted}</Text>}
+      {!verbose && formatted.length > 0 && <CtrlOToExpand />}
+
+      {/* Indented tip (MessageResponse supplies the ⎿ gutter) */}
+      <MessageResponse>
+        <Text dimColor>Tip: {tip}</Text>
+      </MessageResponse>
+    </Box>
   );
 }

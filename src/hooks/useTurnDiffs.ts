@@ -1,7 +1,7 @@
 import type { StructuredPatchHunk } from 'diff';
 import { useMemo, useRef } from 'react';
-import type { FileEditOutput } from '../tools/FileEditTool/types.js';
-import type { Output as FileWriteOutput } from '../tools/FileWriteTool/FileWriteTool.js';
+import type { FileEditOutput } from 'src/tools/FileEditTool/types.js';
+import type { Output as FileWriteOutput } from 'src/tools/FileWriteTool/FileWriteTool.js';
 import type { Message } from '../types/message.js';
 
 export type TurnFileDiff = {

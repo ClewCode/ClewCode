@@ -82,6 +82,13 @@ export const PeerListRolesTool = buildTool({
   getPath() {
     return getCwd();
   },
+  renderToolUseMessage(input) {
+    return input.wait ? `wait for ${input.minPeers ?? 1} peer role(s)` : 'list peer roles';
+  },
+  renderToolResultMessage(output) {
+    if (!output.workers || output.workers.length === 0) return 'No peers joined.';
+    return `Found ${output.count} peer role(s): ${output.workers.map(formatPeerDetails).join(' | ')}`;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.workers || output.workers.length === 0) {
       let content = 'No peers joined.';

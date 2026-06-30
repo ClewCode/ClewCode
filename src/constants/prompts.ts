@@ -10,9 +10,9 @@ import { getInitialSettings } from '../utils/settings/settings.js';
 import { AGENT_TOOL_NAME, VERIFICATION_AGENT_TYPE } from '../tools/AgentTool/constants.js';
 import { FILE_WRITE_TOOL_NAME } from '../tools/FileWriteTool/prompt.js';
 import { FILE_READ_TOOL_NAME } from '../tools/FileReadTool/prompt.js';
-import { FILE_EDIT_TOOL_NAME } from '../tools/FileEditTool/FileEditTool.js';
-import { TODO_WRITE_TOOL_NAME } from '../tools/TodoWriteTool/TodoWriteTool.js';
-import { TASK_CREATE_TOOL_NAME } from '../tools/TaskCreateTool/TaskCreateTool.js';
+import { FILE_EDIT_TOOL_NAME } from '../tools/FileEditTool/constants.js';
+import { TODO_WRITE_TOOL_NAME } from '../tools/TodoWriteTool/constants.js';
+import { TASK_CREATE_TOOL_NAME } from '../tools/TaskCreateTool/constants.js';
 import type { Tools } from '../Tool.js';
 import type { Command } from '../types/command.js';
 import { BASH_TOOL_NAME } from '../tools/BashTool/toolName.js';
@@ -93,9 +93,6 @@ export const CLEW_CODE_DOCS_MAP_URL = 'https://code.claude.com/docs/en/claude_co
  * - src/services/api/claude.ts (buildSystemPromptBlocks)
  */
 export const SYSTEM_PROMPT_DYNAMIC_BOUNDARY = '__SYSTEM_PROMPT_DYNAMIC_BOUNDARY__';
-
-// @[MODEL LAUNCH]: Update the latest frontier model.
-const FRONTIER_MODEL_NAME = 'Claude Opus 4.7';
 
 // @[MODEL LAUNCH]: Update the model family IDs below to the latest in each tier.
 const CLAUDE_4_5_OR_4_6_MODEL_IDS = {
@@ -701,9 +698,6 @@ export async function computeSimpleEnvInfo(modelId: string, additionalWorkingDir
     !isAnthropic || (process.env.USER_TYPE === 'ant' && isUndercover())
       ? null
       : `Clew Code is available as a CLI in the terminal, desktop app (Mac/Windows), web app (clew-code.org), and IDE extensions (VS Code, JetBrains).`,
-    !isAnthropic || (process.env.USER_TYPE === 'ant' && isUndercover())
-      ? null
-      : `Fast mode for Clew Code uses the same ${FRONTIER_MODEL_NAME} model with faster output. It does NOT switch to a different model. It can be toggled with /fast.`,
   ].filter(item => item !== null);
 
   return [`# Environment`, `You have been invoked in the following environment: `, ...prependBullets(envItems)].join(

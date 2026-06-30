@@ -56,6 +56,7 @@ import { executeAutoDream } from '../services/autoDream/autoDream.js';
 import { evaluateGoal } from '../services/goal/goalEvaluator.js';
 import { executePromptSuggestion } from '../services/PromptSuggestion/promptSuggestion.js';
 import { isBareMode, isEnvDefinedFalsy } from '../utils/envUtils.js';
+import { setExecutionMode } from '../utils/executionMode.js';
 import { createCacheSafeParams, saveCacheSafeParams } from '../utils/forkedAgent.js';
 
 type StopHookResult = {
@@ -423,7 +424,11 @@ export async function* handleStopHooks(
       const goalState = getFullGoalState();
       if (goalState?.goal && !goalState.achieved && !goalState.paused && !goalState.blocked) {
         const allMessages = [...messagesForQuery, ...assistantMessages];
-        const turnCount = toolUseContext.getAppState().sessionGoalTurnCount ?? 0;
+        const previousTurnCount = Math.max(
+          toolUseContext.getAppState().sessionGoalTurnCount ?? 0,
+          goalState.turnCount ?? 0,
+        );
+        const turnCount = previousTurnCount + 1;
         const startTime = goalState.setAt ?? Date.now();
         const totalPausedMs = goalState.totalPausedMs ?? 0;
 
@@ -443,6 +448,10 @@ export async function* handleStopHooks(
             evalTokens: (goalState.evalTokens ?? 0) + result.inputTokens + result.outputTokens,
             lastReason: result.reason,
           });
+          toolUseContext.setAppState(prev => ({
+            ...prev,
+            sessionGoalTurnCount: turnCount,
+          }));
 
           if (result.met) {
             // Goal achieved — record and let session end naturally
@@ -466,6 +475,7 @@ export async function* handleStopHooks(
             }
 
             const restoredMode = goalState.preGoalMode;
+            setExecutionMode('safe');
             toolUseContext.setAppState(prev => ({
               ...prev,
               sessionGoal: undefined,
@@ -482,6 +492,34 @@ export async function* handleStopHooks(
             }));
             if (restoredMode) {
               yield createSystemMessage(`  🔒 Permission mode restored to '${restoredMode}'`, 'info');
+            }
+          } else if (result.blocked) {
+            const restoredMode = goalState.preGoalMode;
+            updateGoalState({
+              blocked: true,
+              blockedAt: Date.now(),
+              blockedReason: result.reason,
+              lastReason: result.reason,
+            });
+            setExecutionMode('safe');
+            toolUseContext.setAppState(prev => ({
+              ...prev,
+              sessionGoalPaused: false,
+              toolPermissionContext: restoredMode
+                ? {
+                    ...prev.toolPermissionContext,
+                    mode: restoredMode,
+                  }
+                : prev.toolPermissionContext,
+            }));
+            yield createSystemMessage(
+              result.budgetExhausted
+                ? `Goal stopped: ${result.reason}\n  "${goalState.goal}"`
+                : `Goal blocked: ${result.reason}\n  "${goalState.goal}"`,
+              'info',
+            );
+            if (restoredMode) {
+              yield createSystemMessage(`  Permission mode restored to '${restoredMode}'`, 'info');
             }
           } else {
             // Goal not met — inject nudge with progress context

@@ -54,6 +54,14 @@ export const PeerJoinTool = buildTool({
   getPath() {
     return getCwd();
   },
+  renderToolUseMessage(input) {
+    return `join peer ${input.host ?? '127.0.0.1'}:${input.port ?? '?'}`;
+  },
+  renderToolResultMessage(output) {
+    if (!output.success) return `Failed to join peer: ${output.error}`;
+    const extra = [output.displayName, output.role, output.shell].filter(Boolean).join(' ');
+    return `Joined ${output.peerHostname}:${output.peerPort}${extra ? ` (${extra})` : ''}.`;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success)
       return { tool_use_id: toolUseID, type: 'tool_result', content: `Failed to join peer: ${output.error}` };

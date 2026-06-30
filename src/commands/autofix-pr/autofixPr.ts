@@ -25,7 +25,7 @@ import { teleportToRemote } from '../../utils/teleport.js';
 /**
  * Try to detect the PR number for the current branch using `gh`.
  */
-async function detectCurrentPrNumber(): Promise<number | null> {
+export async function detectCurrentPrNumber(): Promise<number | null> {
   const { stdout, code } = await execFileNoThrow('gh', ['pr', 'view', '--json', 'number', '--jq', '.number'], {
     preserveOutputOnError: false,
   });
@@ -155,19 +155,65 @@ function contentBlocksToString(blocks: ContentBlockParam[]): string {
     .join('\n');
 }
 
+type AutofixMode = 'local' | 'remote' | 'auto';
+
+/**
+ * Pull a leading/trailing `--local` / `--remote` flag out of the args.
+ * Defaults to 'auto' (remote when a cloud env is available, else local).
+ */
+function parseMode(args: string): { mode: AutofixMode; rest: string } {
+  let mode: AutofixMode = 'auto';
+  const rest = args
+    .replace(/(^|\s)--(local|remote)\b/g, (_m, _sp, flag) => {
+      mode = flag as AutofixMode;
+      return ' ';
+    })
+    .replace(/\s+/g, ' ')
+    .trim();
+  return { mode, rest };
+}
+
+/**
+ * Decide whether to run remotely. Returns the eligibility so callers can show
+ * blockers that also apply locally (e.g. not a git repo).
+ */
+async function shouldUseRemote(mode: AutofixMode): Promise<boolean> {
+  if (mode === 'local') return false;
+  if (mode === 'remote') return true;
+  // auto: prefer remote only when a cloud environment is actually available.
+  const eligibility = await checkRemoteAgentEligibility({ skipBundle: true });
+  if (eligibility.eligible) return true;
+  const hasNoCloudEnv = eligibility.errors.some(e => e.type === 'no_remote_environment');
+  // If the only thing missing is the cloud env, fall back to local. Any other
+  // blocker (not a git repo, no remote) breaks both paths, so let the remote
+  // path surface the precise error message.
+  return !hasNoCloudEnv;
+}
+
 export const call: LocalJSXCommandCall = async (onDone, context, args) => {
-  const result = await launchAutofixPr(args, context);
-  if (result) {
-    onDone(contentBlocksToString(result), {
-      shouldQuery: true,
-    });
+  const { mode, rest } = parseMode(args);
+  const useRemote = await shouldUseRemote(mode);
+
+  if (useRemote) {
+    const result = await launchAutofixPr(rest, context);
+    if (result) {
+      onDone(contentBlocksToString(result), { shouldQuery: true });
+    } else {
+      onDone(
+        '/autofix-pr failed to launch the remote session. Check that this is a GitHub repo with an open PR and try again.',
+        { display: 'system' },
+      );
+    }
+    return null;
+  }
+
+  // Local path: gather PR context and let the agent fix it in this session.
+  const { buildLocalAutofixPrompt } = await import('./autofixPrLocal.js');
+  const outcome = await buildLocalAutofixPrompt(rest, context.abortController.signal);
+  if (outcome.kind === 'prompt') {
+    onDone(outcome.prompt, { shouldQuery: true, display: 'user' });
   } else {
-    onDone(
-      '/autofix-pr failed to launch the remote session. Check that this is a GitHub repo with an open PR and try again.',
-      {
-        display: 'system',
-      },
-    );
+    onDone(contentBlocksToString(outcome.blocks), { display: 'system' });
   }
   return null;
 };

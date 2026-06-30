@@ -81,7 +81,15 @@ export async function* withStreamWatchdog(stream, timeoutMs, label) {
       const check = () => {
         const elapsed = Date.now() - lastChunkTime;
         if (elapsed >= timeoutMs) {
-          reject(new Error(`[${label}] Stream stalled — no chunk received for ${Math.round(elapsed / 1000)}s`));
+          const stallError = new Error(
+            `[${label}] Stream stalled — no chunk received for ${Math.round(elapsed / 1000)}s`,
+          );
+          // Tag as a transient network error so the retry layer (shouldRetry →
+          // classifyProviderError) retries it as a fresh stream with backoff,
+          // instead of treating the bare Error as non-retryable.
+          stallError._providerError = { category: 'network' };
+          stallError._streamStalled = true;
+          reject(stallError);
           return;
         }
         // Re-check after the remaining time

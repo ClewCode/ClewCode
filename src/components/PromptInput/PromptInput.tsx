@@ -17,7 +17,6 @@ import { isQueuedCommandEditable, popAllEditable } from 'src/utils/messageQueueM
 import stripAnsi from 'strip-ansi';
 import { companionReservedColumns } from '../../buddy/CompanionSprite.js';
 import { findBuddyTriggerPositions, useBuddyNotification } from '../../buddy/useBuddyNotification.js';
-import { FastModePicker } from '../../commands/fast/fast.js';
 import { isUltrareviewEnabled } from '../../commands/review/ultrareviewEnabled.js';
 import { getNativeCSIuTerminalDisplayName } from '../../commands/terminalSetup/terminalSetup.js';
 import { type Command, hasCommand } from '../../commands.js';
@@ -77,13 +76,6 @@ import type { EffortLevel } from '../../utils/effort.js';
 import { env } from '../../utils/env.js';
 import { errorMessage } from '../../utils/errors.js';
 import { isBilledAsExtraUsage } from '../../utils/extraUsage.js';
-import {
-  getFastModeUnavailableReason,
-  isFastModeAvailable,
-  isFastModeCooldown,
-  isFastModeEnabled,
-  isFastModeSupportedByModel,
-} from '../../utils/fastMode.js';
 import { isFullscreenEnvEnabled } from '../../utils/fullscreen.js';
 import type { PromptInputHelpers } from '../../utils/handlePromptSubmit.js';
 import { getImageFromClipboard, PASTE_THRESHOLD } from '../../utils/imagePaste.js';
@@ -136,7 +128,6 @@ import { BridgeDialog } from '../BridgeDialog.js';
 import { ConfigurableShortcutHint } from '../ConfigurableShortcutHint.js';
 import { getVisibleAgentTasks, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
 import { getEffortNotificationText } from '../EffortIndicator.js';
-import { getFastIconString } from '../FastIcon.js';
 import { GlobalSearchDialog } from '../GlobalSearchDialog.js';
 import { HistorySearchDialog } from '../HistorySearchDialog.js';
 import { ModelPicker } from '../ModelPicker.js';
@@ -156,7 +147,6 @@ import { PromptInputQueuedCommands } from './PromptInputQueuedCommands.js';
 import { PromptInputStashNotice } from './PromptInputStashNotice.js';
 import { useMaybeTruncateInput } from './useMaybeTruncateInput.js';
 import { usePromptInputPlaceholder } from './usePromptInputPlaceholder.js';
-import { useShowFastIconHint } from './useShowFastIconHint.js';
 import { useSwarmBanner } from './useSwarmBanner.js';
 import { isNonSpacePrintable, isVimModeEnabled } from './utils.js';
 
@@ -387,7 +377,6 @@ function PromptInput({
   const mainLoopModel_ = useAppState(s => s.mainLoopModel);
   const mainLoopModelForSession = useAppState(s => s.mainLoopModelForSession);
   const thinkingEnabled = useAppState(s => s.thinkingEnabled);
-  const isFastMode = useAppState(s => (isFastModeEnabled() ? s.fastMode : false));
   const effortValue = useAppState(s => s.effortValue);
   const viewedTeammate = getViewedTeammateTask(store.getState());
   const viewingAgentName = viewedTeammate?.identity.agentName;
@@ -487,7 +476,6 @@ function PromptInput({
   const [showQuickOpen, setShowQuickOpen] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [showHistoryPicker, setShowHistoryPicker] = useState(false);
-  const [showFastModePicker, setShowFastModePicker] = useState(false);
   const [showThinkingToggle, setShowThinkingToggle] = useState(false);
   const [showAutoModeOptIn, setShowAutoModeOptIn] = useState(false);
   const [previousModeBeforeAuto, setPreviousModeBeforeAuto] = useState<PermissionMode | null>(null);
@@ -1208,11 +1196,14 @@ function PromptInput({
     }
   }, [isSearchingHistory, dismissSearchHint]);
 
-  // Only use history navigation when there are 0 or 1 slash command suggestions.
+  // Block arrow → history navigation while any suggestion is visible.
+  // With >0 (not >1) guard: when a filter narrows suggestions to 1 item,
+  // ArrowUp would reach onHistoryUp(), set historyIndex>0, and break
+  // suppressSuggestions — blocking all subsequent typing-filtering.
   // Footer nav is NOT here — when a pill is selected, TextInput focus=false so
   // these never fire. The Footer keybinding context handles ↑/↓ instead.
   function handleHistoryUp() {
-    if (suggestions.length > 1) {
+    if (suggestions.length > 0) {
       return;
     }
 
@@ -1232,7 +1223,7 @@ function PromptInput({
     onHistoryUp();
   }
   function handleHistoryDown() {
-    if (suggestions.length > 1) {
+    if (suggestions.length > 0) {
       return;
     }
 
@@ -1766,14 +1757,6 @@ function PromptInput({
     }
   }, [helpOpen, setHelpOpen]);
 
-  // Handler for chat:fastMode - toggle fast mode picker
-  const handleFastModePicker = useCallback(() => {
-    setShowFastModePicker(prev => !prev);
-    if (helpOpen) {
-      setHelpOpen(false);
-    }
-  }, [helpOpen, setHelpOpen]);
-
   // Handler for chat:thinkingToggle - toggle thinking mode
   const handleThinkingToggle = useCallback(() => {
     setShowThinkingToggle(prev => !prev);
@@ -2111,12 +2094,6 @@ function PromptInput({
     isActive: !isModalOverlayActive && !isSearchingHistory,
   });
 
-  // Fast mode keybinding is only active when fast mode is enabled and available
-  useKeybinding('chat:fastMode', handleFastModePicker, {
-    context: 'Chat',
-    isActive: !isModalOverlayActive && isFastModeEnabled() && isFastModeAvailable(),
-  });
-
   // Handle help:dismiss keybinding (ESC closes help menu)
   // This is registered separately from Chat context so it has priority over
   // CancelRequestHandler when help menu is open
@@ -2356,9 +2333,7 @@ function PromptInput({
           ? 'chat:thinkingToggle'
           : shortcut === 'alt+p'
             ? 'chat:modelPicker'
-            : shortcut === 'alt+o'
-              ? 'chat:fastMode'
-              : null;
+            : null;
       if (action) {
         return { key: action };
       }
@@ -2444,10 +2419,6 @@ function PromptInput({
     }
   });
   const swarmBanner = useSwarmBanner();
-  const fastModeCooldown = isFastModeEnabled() ? isFastModeCooldown() : false;
-  const showFastIcon = isFastModeEnabled() ? isFastMode && (isFastModeAvailable() || fastModeCooldown) : false;
-  const showFastIconHint = useShowFastIconHint(showFastIcon ?? false);
-
   // Show effort notification on startup and when effort changes.
   // Suppressed in brief/assistant mode — the value reflects the local
   // client's effort, not the connected agent's.
@@ -2508,27 +2479,17 @@ function PromptInput({
   // from visually "jumping" when notifications arrive.
   const handleModelSelect = useCallback(
     (model: string | null, _effort: EffortLevel | undefined) => {
-      let wasFastModeDisabled = false;
       setAppState(prev => {
-        wasFastModeDisabled = isFastModeEnabled() && !isFastModeSupportedByModel(model) && !!prev.fastMode;
         return {
           ...prev,
           mainLoopModel: model,
           mainLoopModelForSession: null,
-          // Turn off fast mode if switching to a model that doesn't support it
-          ...(wasFastModeDisabled && {
-            fastMode: false,
-          }),
         };
       });
       setShowModelPicker(false);
-      const effectiveFastMode = (isFastMode ?? false) && !wasFastModeDisabled;
       let message = `Model set to ${modelDisplayString(model)}`;
-      if (isBilledAsExtraUsage(model, effectiveFastMode, isOpus1mMergeEnabled())) {
+      if (isBilledAsExtraUsage(model, false, isOpus1mMergeEnabled())) {
         message += ' · Usage credits';
-      }
-      if (wasFastModeDisabled) {
-        message += ' · Fast mode OFF';
       }
       addNotification({
         key: 'model-switched',
@@ -2540,7 +2501,7 @@ function PromptInput({
         model: model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       });
     },
-    [setAppState, addNotification, isFastMode],
+    [setAppState, addNotification],
   );
   const handleModelCancel = useCallback(() => {
     setShowModelPicker(false);
@@ -2558,37 +2519,10 @@ function PromptInput({
           onSelect={handleModelSelect}
           onCancel={handleModelCancel}
           isStandaloneCommand
-          showFastModeNotice={
-            isFastModeEnabled() && isFastMode && isFastModeSupportedByModel(mainLoopModel_) && isFastModeAvailable()
-          }
         />
       </Box>
     );
-  }, [showModelPicker, mainLoopModel_, mainLoopModelForSession, handleModelSelect, handleModelCancel, isFastMode]);
-  const handleFastModeSelect = useCallback(
-    (result?: string) => {
-      setShowFastModePicker(false);
-      if (result) {
-        addNotification({
-          key: 'fast-mode-toggled',
-          jsx: <Text>{result}</Text>,
-          priority: 'immediate',
-          timeoutMs: 3000,
-        });
-      }
-    },
-    [addNotification],
-  );
-
-  // Memoize the fast mode picker element
-  const fastModePickerElement = useMemo(() => {
-    if (!showFastModePicker) return null;
-    return (
-      <Box flexDirection="column" marginTop={1}>
-        <FastModePicker onDone={handleFastModeSelect} unavailableReason={getFastModeUnavailableReason()} />
-      </Box>
-    );
-  }, [showFastModePicker, handleFastModeSelect]);
+  }, [showModelPicker, mainLoopModel_, mainLoopModelForSession, handleModelSelect, handleModelCancel]);
 
   // Memoized callbacks for thinking toggle
   const handleThinkingSelect = useCallback(
@@ -2697,9 +2631,6 @@ function PromptInput({
   // Show loop mode menu when requested (ant-only, eliminated from external builds)
   if (modelPickerElement) {
     return modelPickerElement;
-  }
-  if (fastModePickerElement) {
-    return fastModePickerElement;
   }
   if (thinkingToggleElement) {
     return thinkingToggleElement;
@@ -2873,13 +2804,7 @@ function PromptInput({
           borderRight={false}
           borderBottom
           width="100%"
-          borderText={buildBorderText(
-            showFastIcon ?? false,
-            showFastIconHint,
-            fastModeCooldown,
-            isUltraActive(),
-            isLoopActive,
-          )}
+          borderText={buildBorderText(isUltraActive(), isLoopActive)}
         >
           <PromptInputModeIndicator
             mode={mode}
@@ -3013,9 +2938,6 @@ function isUltraActive(): boolean {
 }
 
 function buildBorderText(
-  showFastIcon: boolean,
-  showFastIconHint: boolean,
-  fastModeCooldown: boolean,
   isUltra: boolean,
   isLoopActive?: boolean,
 ): BorderTextOptions | undefined {
@@ -3024,12 +2946,6 @@ function buildBorderText(
     segments.push(ansis.bold(ansis.yellow('🔒 LOOP LOCKED')));
   }
   if (isUltra) segments.push(ansis.bold(ansis.hex('#8B5CF6')(' ultra ')));
-  if (showFastIcon) {
-    const fastSeg = showFastIconHint
-      ? `${getFastIconString(true, fastModeCooldown)} ${ansis.dim('/fast')}`
-      : getFastIconString(true, fastModeCooldown);
-    segments.push(fastSeg);
-  }
   if (segments.length === 0) return undefined;
   return {
     content: ` ${segments.join(' ')} `,

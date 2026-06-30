@@ -67,8 +67,6 @@ export type Theme = {
   memoryBackgroundColor: string;
   rate_limit_fill: string;
   rate_limit_empty: string;
-  fastMode: string;
-  fastModeShimmer: string;
   // Brief/assistant mode label colors
   briefLabelYou: string;
   briefLabelClaude: string;

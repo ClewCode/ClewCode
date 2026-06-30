@@ -26,6 +26,10 @@ export type SuggestionType =
 
 export const OVERLAY_MAX_ITEMS = 5;
 
+function normalizeDescription(description: string): string {
+  return description.replace(/\s+/g, ' ').trim();
+}
+
 /**
  * Get the icon for a suggestion based on its type
  * Icons: + for files, ◇ for MCP resources, * for agents
@@ -46,11 +50,9 @@ function isUnifiedSuggestion(itemId: string): boolean {
 
 const SuggestionItemRow = memo(function SuggestionItemRow({
   item,
-  maxColumnWidth,
   isSelected,
 }: {
   item: SuggestionItem;
-  maxColumnWidth?: number;
   isSelected: boolean;
 }): ReactNode {
   const columns = useTerminalSize().columns;
@@ -106,42 +108,35 @@ const SuggestionItemRow = memo(function SuggestionItemRow({
     );
   }
 
-  // For non-unified suggestions (commands, shell, etc.), use improved layout from main
-  // Cap the command name column at 40% of terminal width to ensure description has space
-  const maxNameWidth = Math.floor(columns * 0.4);
-  const displayTextWidth = Math.min(maxColumnWidth ?? stringWidth(item.displayText) + 5, maxNameWidth);
-
   const textColor = item.color || (isSelected ? 'suggestion' : undefined);
   const shouldDim = !isSelected;
 
-  // Truncate and pad the display text to fixed width
-  let displayText = item.displayText;
-  if (stringWidth(displayText) > displayTextWidth - 2) {
-    displayText = truncateToWidth(displayText, displayTextWidth - 2);
-  }
-  const paddedDisplayText = displayText + ' '.repeat(Math.max(0, displayTextWidth - stringWidth(displayText)));
-
   const tagText = item.tag ? `[${item.tag}] ` : '';
   const tagWidth = stringWidth(tagText);
-  const descriptionWidth = Math.max(0, columns - displayTextWidth - tagWidth - 4);
   // Skill descriptions can contain newlines (e.g. /claude-api's "TRIGGER
   // when:" block). A multi-line row grows the overlay past minHeight; when
   // the filter narrows past that skill, the overlay shrinks and leaves
   // ghost rows. Flatten to one line before truncating.
-  const truncatedDescription = item.description
-    ? truncateToWidth(item.description.replace(/\s+/g, ' '), descriptionWidth)
-    : '';
+  const description = item.description ? normalizeDescription(item.description) : '';
+  const displayTextWidth = Math.max(8, columns - tagWidth - 4);
+  const displayText = truncateToWidth(item.displayText, displayTextWidth);
+  const detailWidth = Math.max(0, columns - 6);
 
   return (
-    <Text wrap="truncate">
-      <Text color={textColor} dimColor={shouldDim}>
-        {paddedDisplayText}
+    <Box flexDirection="column">
+      <Text wrap="truncate">
+        <Text color={textColor} dimColor={shouldDim}>
+          {displayText}
+        </Text>
+        {tagText ? <Text dimColor> {tagText}</Text> : null}
       </Text>
-      {tagText ? <Text dimColor>{tagText}</Text> : null}
-      <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected}>
-        {truncatedDescription}
-      </Text>
-    </Text>
+      {description ? (
+        <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected} wrap="truncate">
+          {'  '}
+          {truncateToWidth(description, detailWidth)}
+        </Text>
+      ) : null}
+    </Box>
   );
 });
 
@@ -164,18 +159,25 @@ export function PromptInputFooterSuggestions({
   overlay,
 }: Props): ReactNode {
   const { rows } = useTerminalSize();
+  const hasTwoLineRows = suggestions.some(item => !isUnifiedSuggestion(item.id) && item.description);
   // Maximum number of suggestions to show at once (leaving space for prompt).
   // Overlay mode (fullscreen) uses a fixed 5 — the floating box sits over
   // the ScrollBox, so terminal height isn't the constraint.
-  const maxVisibleItems = overlay ? OVERLAY_MAX_ITEMS : Math.min(6, Math.max(1, rows - 3));
+  const maxVisibleItems = hasTwoLineRows
+    ? overlay
+      ? Math.min(4, OVERLAY_MAX_ITEMS)
+      : Math.min(4, Math.max(1, Math.floor((rows - 3) / 2)))
+    : overlay
+      ? OVERLAY_MAX_ITEMS
+      : Math.min(6, Math.max(1, rows - 3));
 
   // No suggestions to display
   if (suggestions.length === 0) {
     return null;
   }
 
-  // Use prop if provided (stable width from all commands), otherwise calculate from visible
-  const maxColumnWidth = maxColumnWidthProp ?? Math.max(...suggestions.map(item => stringWidth(item.displayText))) + 5;
+  // Kept for API compatibility with callers that still pass stable column width.
+  void maxColumnWidthProp;
 
   // Calculate visible items range based on selected index
   const startIndex = Math.max(
@@ -195,12 +197,7 @@ export function PromptInputFooterSuggestions({
   return (
     <Box flexDirection="column" justifyContent={overlay ? undefined : 'flex-end'}>
       {visibleItems.map(item => (
-        <SuggestionItemRow
-          key={item.id}
-          item={item}
-          maxColumnWidth={maxColumnWidth}
-          isSelected={item.id === suggestions[selectedSuggestion]?.id}
-        />
+        <SuggestionItemRow key={item.id} item={item} isSelected={item.id === suggestions[selectedSuggestion]?.id} />
       ))}
     </Box>
   );

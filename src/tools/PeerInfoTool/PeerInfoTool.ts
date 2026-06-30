@@ -4,7 +4,7 @@ import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { formatPeerDetails } from '../peer/peerFeedback.js';
+import { formatPeerDetails, notifyPeerFeedback } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_INFO_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -77,6 +77,13 @@ export const PeerInfoTool = buildTool({
   getPath() {
     return getCwd();
   },
+  renderToolUseMessage(input) {
+    return input.wait ? `wait for peer info: ${input.worker}` : `get peer info: ${input.worker}`;
+  },
+  renderToolResultMessage(output) {
+    if (!output.found) return output.error ?? 'Peer not found.';
+    return `Peer ${output.hostname}:${output.port ?? '?'}${output.role ? ` [${output.role}]` : ''}`;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.found) {
       let content = `Not found: ${output.error}`;
@@ -94,6 +101,13 @@ export const PeerInfoTool = buildTool({
   async call(input: { worker: string; wait?: boolean; timeout?: number }) {
     const store = getGlobalPeerStore();
     const timeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
+    notifyPeerFeedback(
+      input.wait
+        ? `waiting up to ${Math.round(timeoutMs / 1000)}s for ${input.worker}`
+        : `getting info for ${input.worker}`,
+      'peer-info',
+      'low',
+    );
 
     // Try to find peer with optional retry
     const attemptFind = async (): Promise<{ found: boolean; data?: any; error?: string }> => {
@@ -175,9 +189,15 @@ export const PeerInfoTool = buildTool({
     }
 
     if (!result.found) {
+      notifyPeerFeedback(`peer info not found: ${input.worker}`, 'peer-info-result', 'high');
       return { data: { found: false, waited, timedOut, error: result.error } };
     }
 
+    notifyPeerFeedback(
+      `found ${result.data?.hostname ?? input.worker}:${result.data?.port ?? '?'}`,
+      'peer-info-result',
+      'medium',
+    );
     return { data: { found: true, waited, timedOut: false, ...result.data } };
   },
 });

@@ -236,6 +236,8 @@ export type GlobalConfig = {
   autoCompactEnabled: boolean; // Controls whether auto-compact is enabled
   statusLineEnabled?: boolean; // Controls whether to show the footer status line
   showTurnDuration: boolean; // Controls whether to show turn duration message (e.g., "Cooked for 1m 6s")
+  recapEnabled?: boolean; // Controls whether to show automatic "where we left off" recaps after idle/blur
+  recapDelayMs?: number; // How long the terminal must be blurred before generating an automatic recap
   /**
    * @deprecated Use settings.env instead.
    */
@@ -599,6 +601,8 @@ function createDefaultGlobalConfig(): GlobalConfig {
     autoCompactEnabled: true,
     statusLineEnabled: true,
     showTurnDuration: true,
+    recapEnabled: true,
+    recapDelayMs: 5 * 60_000,
     hasSeenTasksHint: false,
     hasUsedStash: false,
     hasUsedBackgroundTask: false,
@@ -649,6 +653,8 @@ export const GLOBAL_CONFIG_KEYS = [
   'autoCompactEnabled',
   'statusLineEnabled',
   'showTurnDuration',
+  'recapEnabled',
+  'recapDelayMs',
   'diffTool',
   'env',
   'tipsHistory',

@@ -87,14 +87,12 @@ import { APIConnectionTimeoutError, APIError, APIUserAbortError } from '@anthrop
 import {
   getAfkModeHeaderLatched,
   getCacheEditingHeaderLatched,
-  getFastModeHeaderLatched,
   getLastApiCompletionTimestamp,
   getPromptCache1hAllowlist,
   getPromptCache1hEligible,
   getThinkingClearLatched,
   setAfkModeHeaderLatched,
   setCacheEditingHeaderLatched,
-  setFastModeHeaderLatched,
   setLastMainRequestId,
   setPromptCache1hAllowlist,
   setPromptCache1hEligible,
@@ -105,7 +103,6 @@ import {
   CONTEXT_1M_BETA_HEADER,
   CONTEXT_MANAGEMENT_BETA_HEADER,
   EFFORT_BETA_HEADER,
-  FAST_MODE_BETA_HEADER,
   PROMPT_CACHING_SCOPE_BETA_HEADER,
   REDACT_THINKING_BETA_HEADER,
   STRUCTURED_OUTPUTS_BETA_HEADER,
@@ -138,12 +135,6 @@ import { getMaxThinkingTokensForModel } from 'src/utils/context.js';
 import { logForDebugging } from 'src/utils/debug.js';
 import { logForDiagnosticsNoPII } from 'src/utils/diagLogs.js';
 import { type EffortValue, modelSupportsEffort } from 'src/utils/effort.js';
-import {
-  isFastModeAvailable,
-  isFastModeCooldown,
-  isFastModeEnabled,
-  isFastModeSupportedByModel,
-} from 'src/utils/fastMode.js';
 import { returnValue } from 'src/utils/generators.js';
 import { headlessProfilerCheckpoint } from 'src/utils/headlessProfiler.js';
 import { isMcpInstructionsDeltaEnabled } from 'src/utils/mcpInstructionsDelta.js';
@@ -643,7 +634,6 @@ export type Options = {
   agentId?: AgentId; // Only set for subagents
   parentAgentId?: AgentId; // Set when the subagent has a parent subagent
   outputFormat?: BetaJSONOutputFormat;
-  fastMode?: boolean;
   advisorModel?: string;
   addNotification?: (notif: Notification) => void;
   // API-side task budget (output_config.task_budget). Distinct from the
@@ -769,7 +759,6 @@ export async function* executeNonStreamingRequest(
     fallbackModel?: string;
     thinkingConfig: ThinkingConfig;
     fastMode?: boolean;
-    signal: AbortSignal;
     initialConsecutive529Errors?: number;
     querySource?: QuerySource;
   },
@@ -846,7 +835,7 @@ export async function* executeNonStreamingRequest(
       model: retryOptions.model,
       fallbackModel: retryOptions.fallbackModel,
       thinkingConfig: retryOptions.thinkingConfig,
-      ...(isFastModeEnabled() && { fastMode: retryOptions.fastMode }),
+
       signal: retryOptions.signal,
       initialConsecutive529Errors: retryOptions.initialConsecutive529Errors,
       querySource: retryOptions.querySource,
@@ -1557,13 +1546,6 @@ async function* queryModel(
   }
   const allTools = [...toolSchemas, ...extraToolSchemas];
 
-  const isFastMode =
-    isFastModeEnabled() &&
-    isFastModeAvailable() &&
-    !isFastModeCooldown() &&
-    isFastModeSupportedByModel(options.model) &&
-    !!options.fastMode;
-
   // Sticky-on latches for dynamic beta headers. Each header, once first
   // sent, keeps being sent for the rest of the session so mid-session
   // toggles don't change the server-side cache key and bust ~50-70K tokens.
@@ -1582,12 +1564,6 @@ async function* queryModel(
       afkHeaderLatched = true;
       setAfkModeHeaderLatched(true);
     }
-  }
-
-  let fastModeHeaderLatched = getFastModeHeaderLatched() === true;
-  if (!fastModeHeaderLatched && isFastMode) {
-    fastModeHeaderLatched = true;
-    setFastModeHeaderLatched(true);
   }
 
   let cacheEditingHeaderLatched = getCacheEditingHeaderLatched() === true;
@@ -1631,7 +1607,7 @@ async function* queryModel(
       querySource: options.querySource,
       model: options.model,
       agentId: options.agentId,
-      fastMode: fastModeHeaderLatched,
+      fastMode: false,
       globalCacheStrategy,
       betas,
       autoModeActive: afkHeaderLatched,
@@ -1656,7 +1632,7 @@ async function* queryModel(
     options.model,
     newContext,
     messagesForAPI,
-    isFastMode,
+    false,
     options.agentId,
     options.parentAgentId,
   );
@@ -1790,23 +1766,6 @@ async function* queryModel(
 
     const enablePromptCaching = options.enablePromptCaching ?? getPromptCachingEnabled(retryContext.model);
 
-    // Fast mode: header is latched session-stable (cache-safe), but
-    // `speed='fast'` stays dynamic so cooldown still suppresses the actual
-    // fast-mode request without changing the cache key.
-    let speed: BetaMessageStreamParams['speed'];
-    const isFastModeForRetry =
-      isFastModeEnabled() &&
-      isFastModeAvailable() &&
-      !isFastModeCooldown() &&
-      isFastModeSupportedByModel(options.model) &&
-      !!retryContext.fastMode;
-    if (isFastModeForRetry) {
-      speed = 'fast';
-    }
-    if (fastModeHeaderLatched && !betasParams.includes(FAST_MODE_BETA_HEADER)) {
-      betasParams.push(FAST_MODE_BETA_HEADER);
-    }
-
     // AFK mode beta: latched once auto mode is first activated. Still gated
     // by isAgenticQuery per-call so classifiers/compaction don't get it.
     if (feature('TRANSCRIPT_CLASSIFIER')) {
@@ -1869,7 +1828,6 @@ async function* queryModel(
       ...(Object.keys(outputConfig).length > 0 && {
         output_config: outputConfig,
       }),
-      ...(speed !== undefined && { speed }),
     };
   };
 
@@ -1904,7 +1862,7 @@ async function* queryModel(
         queryTracking: options.queryTracking,
         thinkingType: logThinkingType,
         effortValue: logEffortValue,
-        fastMode: isFastMode,
+        fastMode: false,
         previousRequestId,
       });
     });
@@ -1923,7 +1881,7 @@ async function* queryModel(
   let maxOutputTokens = 0;
   let responseHeaders: globalThis.Headers | undefined;
   let research: unknown;
-  let isFastModeRequest = isFastMode; // Keep separate state as it may change if falling back
+  let isFastModeRequest = false;
   let isAdvisorInProgress = false;
 
   try {
@@ -1943,7 +1901,7 @@ async function* queryModel(
           `[Query] Client received, type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, beta type: ${typeof anthropic?.beta}, has messages: ${anthropic?.beta?.messages !== undefined}`,
         );
         attemptNumber = attempt;
-        isFastModeRequest = context.fastMode ?? false;
+        isFastModeRequest = false;
         start = Date.now();
         attemptStartTimes.push(start);
         // Client has been created by withRetry's getClient() call. This fires
@@ -2015,7 +1973,7 @@ async function* queryModel(
         model: options.model,
         fallbackModel: options.fallbackModel,
         thinkingConfig,
-        ...(isFastModeEnabled() ? { fastMode: isFastMode } : false),
+
         signal,
         querySource: options.querySource,
       },
@@ -2659,7 +2617,6 @@ async function* queryModel(
           model: options.model,
           fallbackModel: options.fallbackModel,
           thinkingConfig,
-          ...(isFastModeEnabled() && { fastMode: isFastMode }),
           signal,
           initialConsecutive529Errors: is529Error(streamingError) ? 1 : 0,
           querySource: options.querySource,
@@ -2751,7 +2708,6 @@ async function* queryModel(
             model: options.model,
             fallbackModel: options.fallbackModel,
             thinkingConfig,
-            ...(isFastModeEnabled() && { fastMode: isFastMode }),
             signal,
           },
           paramsFromContext,
@@ -2820,7 +2776,7 @@ async function* queryModel(
           queryTracking: options.queryTracking,
           querySource: options.querySource,
           llmSpan,
-          fastMode: isFastModeRequest,
+          fastMode: false,
           previousRequestId,
         });
 
@@ -2874,7 +2830,7 @@ async function* queryModel(
         queryTracking: options.queryTracking,
         querySource: options.querySource,
         llmSpan,
-        fastMode: isFastModeRequest,
+        fastMode: false,
         previousRequestId,
       });
 

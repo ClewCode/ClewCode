@@ -127,12 +127,6 @@ import { getSettings_DEPRECATED, getSettingsWithSources } from 'src/utils/settin
 import { settingsChangeDetector } from 'src/utils/settings/changeDetector.js';
 import { applySettingsChange } from 'src/utils/settings/applySettingsChange.js';
 import {
-  isFastModeAvailable,
-  isFastModeEnabled,
-  isFastModeSupportedByModel,
-  getFastModeState,
-} from 'src/utils/fastMode.js';
-import {
   isAutoModeGateEnabled,
   getAutoModeUnavailableNotification,
   getAutoModeUnavailableReason,
@@ -417,16 +411,6 @@ export async function runHeadless(
   // managed-settings / policy updates) are fully applied.
   settingsChangeDetector.subscribe(source => {
     applySettingsChange(source, setAppState);
-
-    // In headless mode, also sync the denormalized fastMode field from
-    // settings. The TUI manages fastMode via the UI so it skips this.
-    if (isFastModeEnabled()) {
-      setAppState(prev => {
-        const s = prev.settings as Record<string, unknown>;
-        const fastMode = s.fastMode === true && !s.fastModePerSessionOptIn;
-        return { ...prev, fastMode };
-      });
-    }
   });
 
   // Proactive activation is now handled in main.tsx before getTools() so
@@ -1051,7 +1035,6 @@ function runHeadlessStreaming(
     const resolvedModel = modelId === 'default' ? getDefaultMainLoopModel() : parseUserSpecifiedModel(modelId);
     const hasEffort = modelSupportsEffort(resolvedModel);
     const hasAdaptiveThinking = modelSupportsAdaptiveThinking(resolvedModel);
-    const hasFastMode = isFastModeSupportedByModel(option.value);
     const hasAutoMode = modelSupportsAutoMode(resolvedModel);
     return {
       value: modelId,
@@ -1064,7 +1047,6 @@ function runHeadlessStreaming(
           : EFFORT_LEVELS.filter(l => l !== 'max'),
       }),
       ...(hasAdaptiveThinking && { supportsAdaptiveThinking: true }),
-      ...(hasFastMode && { supportsFastMode: true }),
       ...(hasAutoMode && { supportsAutoMode: true }),
     };
   });
@@ -3910,11 +3892,6 @@ async function handleInitializeRequest(
     },
     pid: process.pid,
   };
-
-  if (isFastModeEnabled() && isFastModeAvailable()) {
-    const appState = getAppState();
-    initResponse.fast_mode_state = getFastModeState(options.userSpecifiedModel ?? null, appState.fastMode);
-  }
 
   output.enqueue({
     type: 'control_response',

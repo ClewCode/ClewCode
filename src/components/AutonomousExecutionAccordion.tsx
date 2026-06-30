@@ -1,5 +1,5 @@
 import type * as React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getProjectRoot } from '../bootstrap/state.js';
 import { Box, Text } from '../ink.js';
 import { getAutonomousStatus } from '../services/autonomous/supervisorIntegration.js';
@@ -35,6 +35,10 @@ const MAX_COLLAPSED_COMPLETED = 4;
 /** A task is considered stale if it has been pending for more than 1 hour */
 const STALE_THRESHOLD_MS = 60 * 60 * 1000;
 
+function isBudgetStopped(reason: string | undefined): boolean {
+  return /(?:turn|time) limit reached/i.test(reason ?? '');
+}
+
 function isStaleTask(task: TaskQueueEntry): boolean {
   if (task.status === 'completed' || task.status === 'in_progress') return false;
   const start = task.startedAt ?? task.createdAt;
@@ -44,19 +48,19 @@ function isStaleTask(task: TaskQueueEntry): boolean {
 function statusGlyph(task: TaskQueueEntry): { glyph: string; color: 'success' | 'warning' | 'error' | 'suggestion' } {
   switch (task.status) {
     case 'completed':
-      return { glyph: '✓', color: 'success' };
+      return { glyph: 'done', color: 'success' };
     case 'in_progress':
-      return { glyph: '◉', color: 'suggestion' };
+      return { glyph: 'run', color: 'suggestion' };
     case 'failed':
     case 'dead_letter':
     case 'cancelled':
-      return { glyph: '✗', color: 'error' };
+      return { glyph: 'fail', color: 'error' };
     default:
       // Stale pending tasks get a warning indicator
       if (isStaleTask(task)) {
-        return { glyph: '⚠', color: 'warning' };
+        return { glyph: 'warn', color: 'warning' };
       }
-      return { glyph: '○', color: 'warning' };
+      return { glyph: 'wait', color: 'warning' };
   }
 }
 
@@ -108,8 +112,8 @@ function LogPreview({ taskId }: { taskId: string }) {
 
   return (
     <Box flexDirection="column">
-      {lines.map((line, index) => (
-        <Text key={`${taskId}-${index}`} dimColor>
+      {lines.map(line => (
+        <Text key={`${taskId}-${line}`} dimColor>
           {'    '}
           {truncateToWidth(line, 110)}
         </Text>
@@ -187,13 +191,31 @@ function GoalProgressSection({
   if (goalState?.achieved) {
     return (
       <Box flexDirection="column">
-        <Text color="success">✓ Goal achieved!</Text>
+        <Text color="success">Goal achieved</Text>
         <Text dimColor>{goalState.goal}</Text>
         {goalState.chain && goalState.chain.length > 0 ? (
           <Text bold>Next: {goalState.chain[0]}</Text>
         ) : (
           <Text dimColor>Use /goal clear to dismiss</Text>
         )}
+      </Box>
+    );
+  }
+
+  if (goalState?.blocked) {
+    const reason = goalState.blockedReason ?? goalState.lastReason;
+    const statusLabel = isBudgetStopped(reason) ? 'Goal stopped' : 'Goal blocked';
+    return (
+      <Box flexDirection="column">
+        <Text color="warning">{statusLabel}</Text>
+        <Text dimColor>{goalState.goal}</Text>
+        {reason ? (
+          <Text dimColor>
+            {'  '}
+            {truncateToWidth(reason, 100)}
+          </Text>
+        ) : null}
+        <Text dimColor>{'  '}/goal edit &lt;text&gt; to continue, or /goal clear to dismiss</Text>
       </Box>
     );
   }
@@ -241,37 +263,37 @@ function GoalProgressSection({
       {/* Chain progress */}
       {goalState?.chain && goalState.chain.length > 0 ? (
         <Text dimColor>
-          {'  '}🔗 Chain: {goalState.chain.map((g, i) => `${i + 2}. ${truncateToWidth(g, 30)}`).join(' → ')}
+          {'  '}Chain: {goalState.chain.map((g, i) => `${i + 2}. ${truncateToWidth(g, 30)}`).join(' -> ')}
         </Text>
       ) : null}
 
       {/* Evaluator feedback */}
       {goalState?.lastReason ? (
         <Text dimColor>
-          {'  '}💬 {truncateToWidth(goalState.lastReason, 100)}
+          {'  '}Evaluator: {truncateToWidth(goalState.lastReason, 100)}
         </Text>
       ) : null}
 
       {/* Eval stats */}
       {tokens > 0 ? (
         <Text dimColor>
-          {'  '}📊 Eval tokens: {tokens.toLocaleString()}
+          {'  '}Eval tokens: {tokens.toLocaleString()}
         </Text>
       ) : null}
 
       {/* Status line */}
       <Box>
         {isPaused ? (
-          <Text color="warning">⏸ Goal paused — /goal resume to continue</Text>
+          <Text color="warning">Goal paused - /goal resume to continue</Text>
         ) : (
           <>
-            {isLoading ? <Text color="suggestion">◉</Text> : <Text dimColor>○</Text>}
+            {isLoading ? <Text color="suggestion">Working</Text> : <Text dimColor>Idle</Text>}
             <Text dimColor>
               {' '}
               {isLoading ? 'Working toward goal' : 'Goal not yet met'}
-              {elapsed ? ` · ${elapsed}` : ''}
-              {turns > 0 ? ` · ${turns} turn${turns === 1 ? '' : 's'}` : ''}
-              {isLoading ? ' · esc to interrupt' : ' · continuing'}
+              {elapsed ? ` | ${elapsed}` : ''}
+              {turns > 0 ? ` | ${turns} turn${turns === 1 ? '' : 's'}` : ''}
+              {isLoading ? ' | esc to interrupt' : ' | continuing'}
             </Text>
           </>
         )}
@@ -284,7 +306,7 @@ export function AutonomousExecutionAccordion({ goal, goalStartedAt, goalTurns, i
   const [tasks, setTasks] = useState<TaskQueueEntry[]>([]);
   const [daemon, setDaemon] = useState<DaemonSnapshot | null>(null);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     await loadQueue();
     setTasks(listTasks({ limit: 50 }));
     const status = await getAutonomousStatus();
@@ -293,7 +315,7 @@ export function AutonomousExecutionAccordion({ goal, goalStartedAt, goalTurns, i
       enabled: status.enabled,
       currentTaskTitle: status.agent?.currentTaskTitle,
     });
-  };
+  }, []);
 
   useEffect(() => {
     void refresh();
@@ -333,7 +355,7 @@ export function AutonomousExecutionAccordion({ goal, goalStartedAt, goalTurns, i
         {goal ? (
           <Box flexDirection="column">
             <Text>
-              <Text color="suggestion">◎</Text>
+              <Text color="suggestion">Goal</Text>
               <Text bold> Goal: </Text>
               <Text>{truncateToWidth(goal, 90)}</Text>
             </Text>

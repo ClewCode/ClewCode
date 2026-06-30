@@ -26,8 +26,8 @@ import { clearPluginAgentCache, loadPluginAgents } from '../../utils/plugins/loa
 import { HooksSchema, type HooksSettings } from '../../utils/settings/types.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
 import { FILE_EDIT_TOOL_NAME } from '../FileEditTool/constants.js';
-import { FILE_READ_TOOL_NAME } from '../FileReadTool/prompt.js';
-import { FILE_WRITE_TOOL_NAME } from '../FileWriteTool/prompt.js';
+import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
+import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
 import { AGENT_COLORS, type AgentColorName, setAgentColor } from './agentColorManager.js';
 import { type AgentMemoryScope, loadAgentMemoryPrompt } from './agentMemory.js';
 import { checkAgentMemorySnapshot, initializeFromSnapshot } from './agentMemorySnapshot.js';
@@ -67,6 +67,7 @@ const AgentJsonSchema = lazySchema(() =>
     mcpServers: z.array(AgentMcpServerSpecSchema()).optional(),
     hooks: HooksSchema().optional(),
     maxTurns: z.number().int().positive().optional(),
+    timeoutMs: z.number().int().positive().optional().describe('Max wall-clock time in ms before auto-stop'),
     skills: z.array(z.string()).optional(),
     initialPrompt: z.string().optional(),
     memory: z.enum(['user', 'project', 'local']).optional(),
@@ -91,6 +92,7 @@ export type BaseAgentDefinition = {
   effort?: EffortValue;
   permissionMode?: PermissionMode;
   maxTurns?: number; // Maximum number of agentic turns before stopping
+  timeoutMs?: number; // Maximum wall-clock time in ms before auto-stop
   filename?: string; // Original filename without .md extension (for user/project/managed agents)
   baseDir?: string;
   criticalSystemReminder_EXPERIMENTAL?: string; // Short message re-injected at every user turn
@@ -399,6 +401,7 @@ export function parseAgentFromJson(
       ...(parsed.mcpServers && parsed.mcpServers.length > 0 ? { mcpServers: parsed.mcpServers } : {}),
       ...(parsed.hooks ? { hooks: parsed.hooks } : {}),
       ...(parsed.maxTurns !== undefined ? { maxTurns: parsed.maxTurns } : {}),
+      ...(parsed.timeoutMs !== undefined ? { timeoutMs: parsed.timeoutMs } : {}),
       ...(parsed.skills && parsed.skills.length > 0 ? { skills: parsed.skills } : {}),
       ...(parsed.initialPrompt ? { initialPrompt: parsed.initialPrompt } : {}),
       ...(parsed.background ? { background: parsed.background } : {}),
@@ -485,7 +488,7 @@ export function parseAgentFromMarkdown(
     const background = backgroundRaw === 'true' || backgroundRaw === true ? true : undefined;
 
     // Parse memory scope
-    const VALID_MEMORY_SCOPES: AgentMemoryScope[] = ['user', 'project', 'local'];
+    const VALID_MEMORY_SCOPES: AgentMemoryScope[] = ['user', 'project', 'local', 'team'];
     const memoryRaw = frontmatter['memory'] as string | undefined;
     let memory: AgentMemoryScope | undefined;
     if (memoryRaw !== undefined) {
@@ -539,6 +542,13 @@ export function parseAgentFromMarkdown(
     const maxTurns = parsePositiveIntFromFrontmatter(maxTurnsRaw);
     if (maxTurnsRaw !== undefined && maxTurns === undefined) {
       logForDebugging(`Agent file ${filePath} has invalid maxTurns '${maxTurnsRaw}'. Must be a positive integer.`);
+    }
+
+    // Parse timeoutMs from frontmatter
+    const timeoutMsRaw = frontmatter['timeoutMs'];
+    const timeoutMs = parsePositiveIntFromFrontmatter(timeoutMsRaw);
+    if (timeoutMsRaw !== undefined && timeoutMs === undefined) {
+      logForDebugging(`Agent file ${filePath} has invalid timeoutMs '${timeoutMsRaw}'. Must be a positive integer.`);
     }
 
     // Extract filename without extension
@@ -615,6 +625,7 @@ export function parseAgentFromMarkdown(
       ...(parsedEffort !== undefined ? { effort: parsedEffort } : {}),
       ...(isValidPermissionMode ? { permissionMode: permissionModeRaw as PermissionMode } : {}),
       ...(maxTurns !== undefined ? { maxTurns } : {}),
+      ...(timeoutMs !== undefined ? { timeoutMs } : {}),
       ...(background ? { background } : {}),
       ...(memory ? { memory } : {}),
       ...(isolation ? { isolation } : {}),

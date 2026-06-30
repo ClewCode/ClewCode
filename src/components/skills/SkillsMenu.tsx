@@ -9,9 +9,8 @@ import {
   type PromptCommand,
 } from '../../commands.js';
 import { Box, Text } from '../../ink.js';
-import { estimateSkillFrontmatterTokens, getSkillsPath } from '../../skills/loadSkillsDir.js';
+import { getSkillsPath } from '../../skills/loadSkillsDir.js';
 import { getDisplayPath } from '../../utils/file.js';
-import { formatTokens } from '../../utils/format.js';
 import { getSettingSourceName, type SettingSource } from '../../utils/settings/constants.js';
 import { plural } from '../../utils/stringUtils.js';
 import { ConfigurableShortcutHint } from '../ConfigurableShortcutHint.js';
@@ -112,16 +111,28 @@ export function SkillsMenu({ onExit, commands }: Props): React.ReactNode {
   }
 
   const renderSkill = (skill: SkillCommand) => {
-    const estimatedTokens = estimateSkillFrontmatterTokens(skill);
-    const tokenDisplay = `~${formatTokens(estimatedTokens)}`;
     const pluginName = skill.source === 'plugin' ? skill.pluginInfo?.pluginManifest.name : undefined;
+    const contextMode = skill.context === 'fork' ? 'fork' : 'inline';
+    const contextColor = contextMode === 'fork' ? '#6199cc' : '#8fbc8f';
 
     return (
-      <Box key={`${skill.name}-${skill.source}`}>
-        <Text>{getCommandName(skill)}</Text>
-        <Text dimColor>
-          {pluginName ? ` · ${pluginName}` : ''} · {tokenDisplay} description tokens
-        </Text>
+      <Box flexDirection="column">
+        <Box>
+          <Text bold>{getCommandName(skill)}</Text>
+          <Text dimColor>
+            {pluginName ? ` · ${pluginName}` : ''}
+            {skill.model ? ` · ${skill.model}` : ''}
+            {skill.allowedTools ? ` · ${skill.allowedTools.length} tools` : ''}
+          </Text>
+        </Box>
+        <Box>
+          <Text color={contextColor} dimColor>
+            [{contextMode}]
+          </Text>
+          <Text dimColor italic>
+            {' '}{skill.whenToUse || skill.description}
+          </Text>
+        </Box>
       </Box>
     );
   };
@@ -141,7 +152,11 @@ export function SkillsMenu({ onExit, commands }: Props): React.ReactNode {
           </Text>
           {subtitle && <Text dimColor> ({subtitle})</Text>}
         </Box>
-        {groupSkills.map(skill => renderSkill(skill))}
+        {groupSkills.map(skill => (
+          <Box key={`${skill.name}-${skill.source}`} paddingLeft={1} marginBottom={0}>
+            {renderSkill(skill)}
+          </Box>
+        ))}
       </Box>
     );
   };

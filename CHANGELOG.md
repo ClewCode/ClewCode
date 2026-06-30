@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Build: AWAY_SUMMARY flag**: Added `--define.AWAY_SUMMARY=true` to the build script to gate away-summary feature at compile time. (`package.json`)
+- **Away summary improvements**: Enhanced prompt to produce structured `Goal: ... Next: ...` output, added `cleanAwaySummary()` to strip prefixes, switched from GB/telemetry gating to `config.recapEnabled` setting. (`src/services/awaySummary.ts`, `src/hooks/useAwaySummary.ts`)
+- **Goal blocked/stopped display**: StatusLine now shows `blocked`/`stopped` states with progress bar format changed to `[####-]`. (`src/components/StatusLine.tsx`)
+
+### Removed
+- **Fast mode system removed**: Deleted entire fast mode system — `src/utils/fastMode.ts` (470 lines), `/fast` command, `FastIcon` component, `useFastModeNotification` hook, `useShowFastIconHint` hook, and all references across 40+ files (QueryEngine, query.ts, config.ts, main.tsx, AppStateStore, StatusLine, constants/prompts, systemPromptSections, commands.ts, etc.). Fast mode state hardcoded to `'off'`. (`src/utils/fastMode.ts`, `src/commands/fast/`, `src/components/FastIcon.tsx`, `src/hooks/notifs/useFastModeNotification.tsx`, `src/components/PromptInput/useShowFastIconHint.ts`)
+- **init-verifiers command**: Removed import from commands.ts. (`src/commands.ts`)
+- **`/profile` command removed**: Deleted `src/commands/profile/` — the profile system is now a background state only, no longer user-togglable via slash command. (`src/commands/profile/`, `src/commands.ts`)
+- **Duplicate AGENT.md removed**: `AGENT.md` was a subset of `AGENTS.md` — consolidated to single `AGENTS.md`. (`AGENT.md`)
+
+### Fixed
+- **Goal evaluation skip when blocked**: Added `!goalState.blocked` check to prevent goal evaluation when the goal is blocked. Removed stale goal turn counter increment in query.ts. (`src/query.ts`)
+- **Import path cleanup**: Moved tool constants (`FILE_EDIT_TOOL_NAME`, `TODO_WRITE_TOOL_NAME`, `TASK_CREATE_TOOL_NAME`) to their respective `constants.ts` files; fixed relative→absolute import paths in AppStateStore.ts. (`src/constants/prompts.ts`, `src/state/AppStateStore.ts`)
+
 ## [0.4.0] — 2026-06-29
 
 ### Added

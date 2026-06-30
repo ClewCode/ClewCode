@@ -141,25 +141,28 @@ export function formatCommandsWithinBudget(commands: Command[], contextWindowTok
 export const getPrompt = memoize(async (_cwd: string): Promise<string> => {
   return `Execute a skill within the main conversation
 
-When users ask you to perform tasks, check if any of the available skills match. Skills provide specialized capabilities and domain knowledge.
+Skills are pre-built capabilities that provide specialized domain knowledge and workflows. When a user asks you to do something and a relevant skill exists, use the Skill tool to load it.
 
-When users reference a "slash command" or "/<something>" (e.g., "/commit", "/review-pr"), they are referring to a skill. Use this tool to invoke it.
+When to use:
+- User references a slash command like /commit, /review-pr, /debug, /delegate
+- User asks for a capability you know a skill provides (code review, git commit, debugging, etc.)
+- User mentions a specific workflow or domain task
 
 How to invoke:
-- Use this tool with the skill name and optional arguments
-- Examples:
-  - \`skill: "pdf"\` - invoke the pdf skill
-  - \`skill: "commit", args: "-m 'Fix bug'"\` - invoke with arguments
-  - \`skill: "review-pr", args: "123"\` - invoke with arguments
-  - \`skill: "ms-office-suite:pdf"\` - invoke using fully qualified name
+\`skill: "<name>", args: "<arguments>"\`
 
-Important:
-- Available skills are listed in system-reminder messages in the conversation
-- When a skill matches the user's request, this is a BLOCKING REQUIREMENT: invoke the relevant Skill tool BEFORE generating any other response about the task
-- NEVER mention a skill without actually calling this tool
-- Do not invoke a skill that is already running
-- Do not use this tool for built-in CLI commands (like /help, /clear, etc.)
-- If you see a <${COMMAND_NAME_TAG}> tag in the current conversation turn, the skill has ALREADY been loaded - follow the instructions directly instead of calling this tool again
+Examples:
+- \`skill: "code-review"\`
+- \`skill: "commit", args: "-m 'Fix login bug'"\`
+- \`skill: "delegate", args: "research X and report findings"\`
+
+Important rules:
+- When a skill matches the user's request: invoke the Skill tool FIRST, before responding
+- NEVER mention a skill name without actually calling the tool — just use it
+- Available skills appear below in <available-skills> tags
+- Skills may restrict tools or override the model — this is intentional
+- Do not use this tool for built-in CLI commands (/help, /clear, etc.)
+- If you see a <${COMMAND_NAME_TAG}> tag in the current turn, the skill is already loaded — follow its instructions directly
 `;
 });
 

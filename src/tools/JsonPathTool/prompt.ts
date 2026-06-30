@@ -1,5 +1,5 @@
-import { FILE_READ_TOOL_NAME } from '../FileReadTool/prompt.js';
-import { FILE_WRITE_TOOL_NAME } from '../FileWriteTool/prompt.js';
+import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
+import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
 
 export const PROMPT = `A tool for querying, validating, formatting, and minifying JSON data. Use this tool when you need to extract specific values from JSON, validate JSON structure, or transform JSON for storage/transmission.
 

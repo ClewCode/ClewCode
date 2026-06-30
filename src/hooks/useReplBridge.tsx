@@ -340,7 +340,6 @@ export function useReplBridge(
                           agents: state_0.agentDefinitions.activeAgents,
                           skills,
                           plugins: [],
-                          fastMode: state_0.fastMode,
                         }),
                       ]);
                     } catch (err_0) {

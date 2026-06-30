@@ -260,7 +260,6 @@ export function startLLMRequestSpan(
   model: string,
   newContext?: LLMRequestNewContext,
   messagesForAPI?: APIMessage[],
-  fastMode?: boolean,
   agentId?: string,
   parentAgentId?: string,
 ): Span {
@@ -297,7 +296,7 @@ export function startLLMRequestSpan(
   const attributes = createSpanAttributes('llm_request', {
     model: model,
     'llm_request.context': parentSpanCtx ? 'interaction' : 'standalone',
-    speed: fastMode ? 'fast' : 'normal',
+    speed: 'normal',
   });
 
   const ctx = parentSpanCtx ? trace.setSpan(otelContext.active(), parentSpanCtx.span) : otelContext.active();

@@ -93,7 +93,9 @@ export function UserToolSuccessMessage({
   return (
     <Box flexDirection="column">
       <Box flexDirection="column" width={rendersAsAssistantText ? undefined : width}>
-        {renderedMessage}
+        {/* renderToolResultMessage may return a bare string (e.g. MemoryFeedbackTool).
+            Ink throws if a string isn't wrapped in <Text>, so wrap defensively. */}
+        {typeof renderedMessage === 'string' ? <Text>{renderedMessage}</Text> : renderedMessage}
         {feature('BASH_CLASSIFIER')
           ? classifierRule && (
               <MessageResponse height={1}>

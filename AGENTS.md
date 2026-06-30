@@ -151,7 +151,7 @@ Registration is handled by `src/commands.ts` which merges:
 5. Dynamic skills discovered at runtime
 
 Key slash commands:
-`/login`, `/logout`, `/model`, `/status`, `/doctor`, `/profile`, `/context`, `/compact`, `/goal`, `/mcp`, `/code-review`, `/simplify`, `/plugin`, `/bridge`, `/agent`, `/agents`, `/peer`, `/remote`, `/daemon`, `/task`, `/memory`, `/tasks`, `/effort`, `/stats`, `/guardian`, `/approve`, `/pr`, `/voice`, `/buddy`, `/team`, `/bg`, `/plan`, `/vim`, `/research`, `/workflow`, `/rewind`, `/upgrade`, `/session`, `/theme`, `/skills`, `/ultracode`
+`/login`, `/logout`, `/model`, `/status`, `/doctor`, `/context`, `/compact`, `/goal`, `/mcp`, `/code-review`, `/simplify`, `/plugin`, `/bridge`, `/agent`, `/agents`, `/peer`, `/remote`, `/daemon`, `/task`, `/memory`, `/tasks`, `/effort`, `/stats`, `/guardian`, `/approve`, `/pr`, `/voice`, `/buddy`, `/team`, `/bg`, `/plan`, `/vim`, `/research`, `/workflow`, `/rewind`, `/upgrade`, `/session`, `/theme`, `/skills`, `/ultracode`
 
 ### Peer / P2P
 
@@ -327,7 +327,7 @@ Other runtime concepts:
 
 ## Profiles
 
-Clew Code has a **personal profile** (`/profile personal`) — command-center mode. It plans, splits tasks, and delegates code work to Codex workers via `process_peer`, then reviews and summarizes results.
+Clew Code has a **personal profile** — command-center mode. It plans, splits tasks, and delegates code work to Codex workers via `process_peer`, then reviews and summarizes results.
 
 In personal profile, you are not a code editor by default — the `delegate` skill spawns a Codex worker with a structured task prompt and reports what was done, what passed/failed, and what's blocked. Additional capabilities:
 
