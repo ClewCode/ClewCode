@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - **Duplicate AGENT.md removed**: `AGENT.md` was a subset of `AGENTS.md` — consolidated to single `AGENTS.md`. (`AGENT.md`)
 
 ### Fixed
+- **Tool input schema render crash**: Guarded UI rendering for dynamic/remote tools whose `inputSchema` is not a Zod schema, and fixed remote permission tool stubs to use a real loose Zod object schema. (`src/utils/safeParseToolInput.ts`, `src/remote/remotePermissionBridge.ts`)
 - **Goal evaluation skip when blocked**: Added `!goalState.blocked` check to prevent goal evaluation when the goal is blocked. Removed stale goal turn counter increment in query.ts. (`src/query.ts`)
 - **Import path cleanup**: Moved tool constants (`FILE_EDIT_TOOL_NAME`, `TODO_WRITE_TOOL_NAME`, `TASK_CREATE_TOOL_NAME`) to their respective `constants.ts` files; fixed relative→absolute import paths in AppStateStore.ts. (`src/constants/prompts.ts`, `src/state/AppStateStore.ts`)
 
