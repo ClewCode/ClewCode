@@ -145,6 +145,19 @@ Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), 
 
 ---
 
+## SWE-bench Verified
+
+Clew Code ships a SWE-bench Verified evaluation harness modeled after the public
+agent-comparison workflow used by projects like ClawCodex: a FastAPI wrapper
+around `clew -p`, a `prepare`/`run` driver, prediction JSONL output, and optional
+Docker harness execution.
+
+No official Clew Code SWE-bench score is claimed in this repository yet. See
+[`eval/README.md`](eval/README.md) to run a smoke batch, full Verified split, or
+side-by-side comparison with another agent.
+
+---
+
 ## Execution layers
 
 Clew Code runs work at several layers, each for a different job:

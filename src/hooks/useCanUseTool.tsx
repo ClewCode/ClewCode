@@ -30,6 +30,7 @@ import { hasPermissionsToUseTool } from '../utils/permissions/permissions.js';
 import { jsonStringify } from '../utils/slowOperations.js';
 import { handleCoordinatorPermission } from './toolPermission/handlers/coordinatorHandler.js';
 import { handleInteractivePermission } from './toolPermission/handlers/interactiveHandler.js';
+import { handleParentPeerPermission } from './toolPermission/handlers/parentPeerHandler.js';
 import { handleSwarmWorkerPermission } from './toolPermission/handlers/swarmWorkerHandler.js';
 import { createPermissionContext, createPermissionQueueOps } from './toolPermission/PermissionContext.js';
 import { logPermissionDecision } from './toolPermission/permissionLogging.js';
@@ -195,6 +196,27 @@ function useCanUseTool(
                   resolve(swarmDecision);
                   return;
                 }
+
+                // For peers spawned with a parent, forward the request to the
+                // parent's session for approval instead of prompting locally.
+                const parentPeerDecision = await handleParentPeerPermission({
+                  ctx,
+                  description,
+                  ...(feature('BASH_CLASSIFIER')
+                    ? {
+                        pendingClassifierCheck: result.pendingClassifierCheck,
+                      }
+                    : {}),
+                  updatedInput: result.updatedInput,
+                  suggestions: result.suggestions,
+                });
+                if (parentPeerDecision) {
+                  resolve(parentPeerDecision);
+                  return;
+                }
+
+                // After awaiting the parent, re-check abort before any dialog.
+                if (ctx.resolveIfAborted(resolve)) return;
 
                 // Grace period: wait up to 2s for speculative classifier
                 // to resolve before showing the dialog (main agent only)

@@ -29,6 +29,8 @@ import {
   type PeerColor,
   type PeerInfo,
   peerColorFromId,
+  type PeerPermissionRequest,
+  type PeerPermissionResolution,
   type SwarmTask,
 } from './types.js';
 
@@ -40,6 +42,22 @@ export type PeerServerCallbacks = {
   onChatDisconnected?: (meshName: string) => void;
   /** Called when a queued task starts or completes */
   onQueueUpdate?: (queue: SwarmTask[], currentTask: SwarmTask | null) => void;
+  /** Called when a spawned peer forwards a permission request for parent approval */
+  onPermissionRequest?: (req: PeerPermissionRequest) => void;
+};
+
+/** How long the server holds a /peer-permission poll open before replying "pending" (ms) */
+const PERMISSION_POLL_HOLD_MS = 280_000;
+/** Drop an unresolved permission entry after this long with no activity (ms) */
+const PERMISSION_ENTRY_TTL_MS = 30 * 60_000;
+
+type PendingPeerPermission = {
+  request: PeerPermissionRequest;
+  resolution: PeerPermissionResolution | null;
+  /** Waiters parked on a long-poll, woken when the parent resolves */
+  waiters: Set<(resolution: PeerPermissionResolution | null) => void>;
+  /** TTL cleanup timer */
+  expiry: ReturnType<typeof setTimeout>;
 };
 
 export type MeshEventType = 'new_message' | 'new_todo' | 'swarm_online' | 'swarm_offline' | 'queue_update';
@@ -79,6 +97,10 @@ export class PeerServer {
   private isBusyInternal = false;
   private currentTask: SwarmTask | null = null;
   private readonly maxQueueSize = 50;
+
+  // ── Forwarded peer permission state ──────────────────────────
+  /** Permission requests forwarded by spawned peers, keyed by requestId */
+  private pendingPermissions = new Map<string, PendingPeerPermission>();
 
   constructor(callbacks?: PeerServerCallbacks) {
     this.callbacks = callbacks ?? {};
@@ -146,6 +168,13 @@ export class PeerServer {
       }
     }
     this.sseClients.clear();
+    // Wake and drop any parked permission waiters so workers stop hanging.
+    for (const entry of this.pendingPermissions.values()) {
+      clearTimeout(entry.expiry);
+      for (const w of entry.waiters) w(null);
+      entry.waiters.clear();
+    }
+    this.pendingPermissions.clear();
     if (this.server) {
       try {
         this.server.close();
@@ -242,6 +271,61 @@ export class PeerServer {
     this.taskQueue = [];
     if (count > 0) this.emitQueueUpdate();
     return count;
+  }
+
+  // ── Forwarded peer permissions ───────────────────────────────
+
+  /**
+   * Register (or look up) a forwarded permission request. Idempotent by
+   * requestId: a re-POST from a re-polling worker returns the existing entry
+   * and does NOT re-fire the onPermissionRequest callback.
+   *
+   * @returns the entry and whether it was newly created
+   */
+  private getOrCreatePermissionEntry(request: PeerPermissionRequest): {
+    entry: PendingPeerPermission;
+    created: boolean;
+  } {
+    const existing = this.pendingPermissions.get(request.requestId);
+    if (existing) return { entry: existing, created: false };
+
+    const entry: PendingPeerPermission = {
+      request,
+      resolution: null,
+      waiters: new Set(),
+      expiry: setTimeout(() => {
+        // Unresolved for too long — wake any waiters with null so workers stop
+        // hanging, then drop the entry.
+        const e = this.pendingPermissions.get(request.requestId);
+        if (e) {
+          for (const w of e.waiters) w(null);
+          e.waiters.clear();
+          this.pendingPermissions.delete(request.requestId);
+        }
+      }, PERMISSION_ENTRY_TTL_MS),
+    };
+    this.pendingPermissions.set(request.requestId, entry);
+    return { entry, created: true };
+  }
+
+  /**
+   * Resolve a forwarded permission request. Called by the parent UI when the
+   * user approves/rejects. Wakes any parked long-poll waiters.
+   *
+   * @returns true if a matching pending request was found
+   */
+  resolvePeerPermission(requestId: string, resolution: PeerPermissionResolution): boolean {
+    const entry = this.pendingPermissions.get(requestId);
+    if (!entry) return false;
+    entry.resolution = resolution;
+    for (const w of entry.waiters) w(resolution);
+    entry.waiters.clear();
+    return true;
+  }
+
+  /** Snapshot of permission requests still awaiting a decision (for the UI). */
+  getPendingPeerPermissions(): PeerPermissionRequest[] {
+    return [...this.pendingPermissions.values()].filter(e => e.resolution === null).map(e => e.request);
   }
 
   // ── SSE (Server-Sent Events) ──────────────────────────────
@@ -723,6 +807,76 @@ export class PeerServer {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true, cancelled: count }));
             break;
+          }
+
+          // ── Forwarded peer permission endpoint ────────────────
+
+          case '/peer-permission': {
+            const data = JSON.parse(Buffer.concat(body).toString());
+            if (!tokenMatches(data.token, this.authToken)) {
+              this.sendUnauthorized(res);
+              return;
+            }
+
+            const requestId: string = data.requestId ?? '';
+            if (!requestId) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Missing requestId' }));
+              return;
+            }
+
+            const request: PeerPermissionRequest = {
+              requestId,
+              fromName: data.fromName ?? 'peer',
+              toolName: data.toolName ?? 'unknown',
+              toolUseId: data.toolUseId ?? requestId,
+              description: data.description ?? '',
+              input: (data.input ?? {}) as Record<string, unknown>,
+              createdAt: Date.now(),
+            };
+
+            const { entry, created } = this.getOrCreatePermissionEntry(request);
+            // Surface in the parent's permission UI only on first sighting.
+            if (created) this.callbacks.onPermissionRequest?.(request);
+
+            // Already resolved (parent decided before/between polls) — reply now.
+            if (entry.resolution) {
+              const resolution = entry.resolution;
+              clearTimeout(entry.expiry);
+              this.pendingPermissions.delete(requestId);
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ status: 'resolved', ...resolution }));
+              return;
+            }
+
+            // Park a long-poll waiter; reply "pending" after the hold window so
+            // the worker re-polls (callback won't re-fire — entry persists).
+            let settled = false;
+            const waiter = (resolution: PeerPermissionResolution | null): void => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(holdTimer);
+              entry.waiters.delete(waiter);
+              if (res.destroyed) return;
+              if (resolution) {
+                clearTimeout(entry.expiry);
+                this.pendingPermissions.delete(requestId);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'resolved', ...resolution }));
+              } else {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ status: 'pending' }));
+              }
+            };
+            const holdTimer = setTimeout(() => waiter(null), PERMISSION_POLL_HOLD_MS);
+            entry.waiters.add(waiter);
+            req.on('close', () => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(holdTimer);
+              entry.waiters.delete(waiter);
+            });
+            return;
           }
 
           // ── Memory export endpoint ────────────────────────────

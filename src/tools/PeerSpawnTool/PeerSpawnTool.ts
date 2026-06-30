@@ -1,4 +1,7 @@
 import { spawn as childSpawn } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import * as React from 'react';
 import { z } from 'zod/v4';
 import { Text } from '../../ink.js';
@@ -111,6 +114,46 @@ export const PeerSpawnTool = buildTool({
       const cwd = process.cwd();
       const platform = process.platform;
 
+      // Ensure the parent's PeerServer is running so the spawned peer can
+      // forward permission requests back here for interactive approval.
+      let parentUrl: string | undefined;
+      let parentToken: string | undefined;
+      try {
+        const { getGlobalPeerServer } = await import('../../peer/PeerServer.js');
+        const { getGlobalDiscovery } = await import('../../peer/PeerDiscovery.js');
+        const server = getGlobalPeerServer();
+        let parentPort = server.port;
+        if (parentPort <= 0) {
+          const discovery = getGlobalDiscovery();
+          parentPort = await server.start({
+            id: discovery.peerId,
+            hostname: discovery.hostname,
+            ip: '127.0.0.1',
+            port: 0,
+            cwd,
+            version: '',
+            lastSeen: Date.now(),
+            status: 'online',
+          });
+        }
+        if (parentPort > 0 && server.token) {
+          parentUrl = `http://127.0.0.1:${parentPort}`;
+          parentToken = server.token;
+        }
+      } catch {
+        // If the parent server can't start, the peer simply falls back to its
+        // own local permission dialogs — degraded but functional.
+      }
+
+      // Environment passed to the spawned peer so it can route permission
+      // prompts back to this parent instead of blocking in its own terminal.
+      const childEnv: NodeJS.ProcessEnv = { ...process.env };
+      if (parentUrl && parentToken) {
+        childEnv.CLEW_PEER_PARENT_URL = parentUrl;
+        childEnv.CLEW_PEER_PARENT_TOKEN = parentToken;
+        childEnv.CLEW_PEER_SELF_NAME = targetName;
+      }
+
       // Default peer behavior: share → receive task → reply back to sender
       const DEFAULT_PEER_PROMPT =
         'You are a spawned peer. You are already sharing via --peer-share.\n' +
@@ -152,31 +195,102 @@ export const PeerSpawnTool = buildTool({
       previewArgs.push('--system-prompt', '<prompt>');
       const commandPreview = buildPeerSpawnCommand(previewArgs);
 
+      // In dev (running from .ts/.tsx source) spawn the peer from the SAME
+      // source as the parent so code changes apply to both; in prod use the
+      // installed clew binary.
+      const mainScript = process.argv[1] ?? '';
+      const isDev = mainScript.endsWith('.tsx') || mainScript.endsWith('.ts');
+
       if (platform === 'win32') {
-        const clewCmd = `${process.env.APPDATA}\\npm\\clew.cmd`;
-        const quotedArgs = cliArgs.map(a => (a.includes(' ') ? quoteArg(a) : `"${a}"`)).join(' ');
-        const winCmd = `title Clew Peer - ${targetName} && cd /d "${cwd}" && "${clewCmd}" ${quotedArgs}`;
-        childSpawn('cmd.exe', ['/k', winCmd], {
-          cwd,
-          detached: true,
-          stdio: 'ignore',
-          windowsVerbatimArguments: true,
-        }).unref();
+        // Use a PowerShell script (.ps1) instead of a batch file, and pass the
+        // system prompt via a FILE (--system-prompt-file) rather than as a
+        // command-line argument.
+        //
+        // Two distinct Windows quoting bugs make inline argument passing unsafe:
+        //   1. cmd.exe treats < and > as redirectors even inside "quoted" strings,
+        //      so the <placeholders> in the prompt corrupt batch-file parsing and
+        //      cause clew to print --help.
+        //   2. Windows PowerShell 5.1 does NOT escape embedded double-quotes when
+        //      it builds the Win32 command line for a native exe (`& $exe @args`).
+        //      The prompt contains literal " chars (e.g. `"I am {name}"`,
+        //      `peer: "<sender_peer_name>"`), each of which toggles the quoting
+        //      state and splits the argument on the next space — so clew receives
+        //      the prompt as many bare operands and dies with
+        //      "too many arguments. Expected 1 argument but got N".
+        //
+        // Writing the prompt to a temp file and passing only its PATH sidesteps
+        // both: the path has no spaces/quotes/<> chars, so no shell or
+        // CreateProcess quoting layer can mangle it. clew reads the file verbatim.
+        const safeName = targetName.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const ps1Path = join(tmpdir(), `clew-peer-${safeName}-${randomId}.ps1`);
+        const promptFilePath = join(tmpdir(), `clew-peer-${safeName}-${randomId}.prompt.txt`);
+
+        // The prompt file keeps the original multi-line prompt verbatim — no
+        // need to collapse newlines now that it is never a command-line arg.
+        writeFileSync(promptFilePath, effectivePrompt, 'utf8');
+
+        // cliArgs already includes --system-prompt <inline>; drop it (flag +
+        // value) and pass --system-prompt-file <path> instead.
+        const promptFlagIdx = cliArgs.lastIndexOf('--system-prompt');
+        const cliArgsBase = promptFlagIdx >= 0 ? cliArgs.slice(0, promptFlagIdx) : [...cliArgs];
+
+        // Executable to invoke + its arguments (same logic as buildPeerSpawnCommand).
+        const execPath = process.execPath;
+        const innerArgs = [
+          ...(isDev ? ['run', mainScript, ...cliArgsBase] : [mainScript, ...cliArgsBase]),
+          '--system-prompt-file',
+          promptFilePath,
+        ];
+
+        // In PS1, single-quoted strings are fully literal; escape ' as ''.
+        const ps1q = (s: string) => s.replace(/'/g, "''");
+        // Build an args array and splat it (& $exe @args). Every element is a
+        // single-quoted literal (no embedded " to confuse CreateProcess), so the
+        // 5.1 quoting bug above cannot trigger. Splatting passes each element as
+        // a separate argument cleanly.
+        const argsArrayPs1 = innerArgs.map(a => `'${ps1q(a)}'`).join(', ');
+
+        const ps1Content = [
+          `$host.UI.RawUI.WindowTitle = 'Clew Peer - ${ps1q(targetName)}'`,
+          `Set-Location '${ps1q(cwd)}'`,
+          `$clewArgs = @(${argsArrayPs1})`,
+          `& '${ps1q(execPath)}' @clewArgs`,
+          ``,
+        ].join('\r\n');
+
+        writeFileSync(ps1Path, ps1Content, 'utf8');
+
+        // `start ""` opens a new independent console window; -NoExit keeps it
+        // open after clew exits so the user can see any final output.
+        childSpawn(
+          'cmd.exe',
+          ['/c', 'start', '""', 'powershell.exe', '-NoExit', '-ExecutionPolicy', 'Bypass', '-File', ps1Path],
+          { cwd, detached: true, stdio: 'ignore', windowsVerbatimArguments: true, env: childEnv },
+        ).unref();
       } else if (platform === 'darwin') {
-        const appleScript = `tell application "Terminal" to do script "${cmd}"`;
+        // Terminal.app is a separate running process, so the spawn `env` option
+        // doesn't reach the command — embed the parent vars as inline exports.
+        const envPrefix =
+          parentUrl && parentToken
+            ? `export CLEW_PEER_PARENT_URL=${quoteArg(parentUrl)} CLEW_PEER_PARENT_TOKEN=${quoteArg(parentToken)} CLEW_PEER_SELF_NAME=${quoteArg(targetName)}; `
+            : '';
+        const appleScript = `tell application "Terminal" to do script "${(envPrefix + cmd).replace(/"/g, '\\"')}"`;
         childSpawn('osascript', ['-e', appleScript], {
           detached: true,
           stdio: 'ignore',
+          env: childEnv,
         }).unref();
       } else {
         childSpawn('x-terminal-emulator', ['-e', 'sh', '-c', `${cmd}; exec sh`], {
           detached: true,
           stdio: 'ignore',
+          env: childEnv,
         })
           .on('error', () => {
             childSpawn('gnome-terminal', ['--', 'sh', '-c', `${cmd}; exec sh`], {
               detached: true,
               stdio: 'ignore',
+              env: childEnv,
             });
           })
           .unref();

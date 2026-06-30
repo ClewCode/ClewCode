@@ -78,6 +78,7 @@ CLAUDE.md
 # Testing
 coverage/
 .nyc_output
+eval/runs/
 
 # Bun
 bun.lockb
