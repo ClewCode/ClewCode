@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { getGlobalPeerServer, PeerServer } from './PeerServer.js';
 
+const noop = () => undefined;
+
 function mi(o) {
   return {
     id: 'tp',
@@ -30,7 +32,7 @@ describe('PeerServer', () => {
   });
 
   test('constructor accepts callbacks', () => {
-    const s = new PeerServer({ onMessage: () => {} });
+    const s = new PeerServer({ onMessage: noop });
     expect(s).toBeInstanceOf(PeerServer);
     s.stop();
   });
@@ -40,8 +42,8 @@ describe('PeerServer', () => {
   });
 
   test('setCallbacks merges', () => {
-    server.setCallbacks({ onMessage: () => {} });
-    server.setCallbacks({ onTodo: () => {} });
+    server.setCallbacks({ onMessage: noop });
+    server.setCallbacks({ onTodo: noop });
     expect(server).toBeInstanceOf(PeerServer);
   });
 
@@ -86,6 +88,7 @@ describe('PeerServer', () => {
     const d = await r.json();
     expect(d.id).toBe('info-test');
     expect(d.isBusy).toBeFalse();
+    expect(d.cwd).toBeUndefined();
   });
 
   test('POST /peer-msg fires callback', async () => {
@@ -194,6 +197,41 @@ describe('PeerServer', () => {
     expect(body.queueDepth).toBe(0);
   });
 
+  test('GET /peer-queue-status redacts command from public response', async () => {
+    let release: (v?: unknown) => void;
+    server.setCallbacks({
+      onExec: async c => {
+        if (c === 'slow-secret') {
+          await new Promise(resolve => {
+            release = resolve;
+          });
+        }
+        return { stdout: c, stderr: '', exitCode: 0 };
+      },
+    });
+    const port = await server.start(mi());
+    const token = server.token;
+    const running = fetch(`http://127.0.0.1:${port}/peer-exec`, {
+      method: 'POST',
+      body: JSON.stringify({ command: 'slow-secret', from: 't', token }),
+    });
+    await new Promise(r => setTimeout(r, 50));
+    await fetch(`http://127.0.0.1:${port}/peer-exec`, {
+      method: 'POST',
+      body: JSON.stringify({ command: 'queued-secret', from: 't', token }),
+    });
+
+    const r = await fetch(`http://127.0.0.1:${port}/peer-queue-status`);
+    const body = await r.json();
+    expect(JSON.stringify(body)).not.toContain('slow-secret');
+    expect(JSON.stringify(body)).not.toContain('queued-secret');
+    expect(body.currentTask.command).toBeUndefined();
+    expect(body.queue[0].command).toBeUndefined();
+
+    release!();
+    await running;
+  });
+
   test('POST /peer-queue-cancel returns 404 for unknown task', async () => {
     const port = await server.start(mi());
     const token = server.token;
@@ -224,6 +262,29 @@ describe('PeerServer', () => {
     expect(r.status).toBe(200);
     expect(r.headers.get('content-type')).toContain('text/event-stream');
     r.body?.cancel();
+  });
+
+  test('GET /peer-events rejects invalid same-length token', async () => {
+    const port = await server.start(mi());
+    const badToken = '0'.repeat(server.token.length);
+    const r = await fetch(`http://127.0.0.1:${port}/peer-events?token=${badToken}`);
+    expect(r.status).toBe(401);
+  });
+
+  test('GET /peer-events only allows localhost CORS origins', async () => {
+    const port = await server.start(mi());
+    const token = server.token;
+    const bad = await fetch(`http://127.0.0.1:${port}/peer-events?token=${token}`, {
+      headers: { Origin: 'https://evil.example' },
+    });
+    expect(bad.headers.get('access-control-allow-origin')).toBeNull();
+    bad.body?.cancel();
+
+    const good = await fetch(`http://127.0.0.1:${port}/peer-events?token=${token}`, {
+      headers: { Origin: 'http://localhost:3000' },
+    });
+    expect(good.headers.get('access-control-allow-origin')).toBe('http://localhost:3000');
+    good.body?.cancel();
   });
 
   test('GET /peer-events sends connected event', async () => {

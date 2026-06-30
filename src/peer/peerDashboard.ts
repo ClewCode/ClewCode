@@ -78,7 +78,7 @@ export function formatPeerTaskDashboard(): string {
         const reply = repliesByReplyTo.get(todo.id);
         if (reply) {
           const preview =
-            reply.text.length > RESULT_PREVIEW_LENGTH ? reply.text.slice(0, RESULT_PREVIEW_LENGTH) + '...' : reply.text;
+            reply.text.length > RESULT_PREVIEW_LENGTH ? `${reply.text.slice(0, RESULT_PREVIEW_LENGTH)}...` : reply.text;
           sections.push(`    \u21b3 result: "${preview}" (${reply.text.length} chars)`);
         }
       }
@@ -88,7 +88,6 @@ export function formatPeerTaskDashboard(): string {
   }
 
   // Summary
-  const failedTasks = totalTasks - doneTasks - runningTasks;
   const summary = `${totalTasks} task${totalTasks !== 1 ? 's' : ''} total \u00b7 ${doneTasks} done \u00b7 ${runningTasks} pending`;
   sections.push(`\u2500\u2500\u2500 ${summary} \u2500\u2500\u2500`);
 
