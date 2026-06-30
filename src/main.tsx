@@ -419,6 +419,13 @@ const CLI_PROVIDER_DEFAULTS = {
     baseUrl: 'https://openrouter.ai/api/v1',
     defaultModelVerified: false,
   },
+  deepseek: {
+    label: 'DeepSeek',
+    envKey: 'DEEPSEEK_API_KEY',
+    baseUrl: 'https://api.deepseek.com/v1',
+    defaultModel: 'deepseek-v4-pro',
+    defaultModelVerified: true,
+  },
   opencode: {
     label: 'OpenCode',
     envKey: 'OPENCODE_API_KEY',

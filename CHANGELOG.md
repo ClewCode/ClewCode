@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **SWE-bench Verified evaluation harness**: Added a Clew Code FastAPI wrapper plus prepare/run driver for SWE-bench custom API workflows, with generated run artifacts ignored by git. (`eval/clew_api_server.py`, `eval/run_swebench.py`, `eval/compare_results.py`, `eval/README.md`, `.gitignore`, `README.md`)
 - **Build: AWAY_SUMMARY flag**: Added `--define.AWAY_SUMMARY=true` to the build script to gate away-summary feature at compile time. (`package.json`)
 - **Away summary improvements**: Enhanced prompt to produce structured `Goal: ... Next: ...` output, added `cleanAwaySummary()` to strip prefixes, switched from GB/telemetry gating to `config.recapEnabled` setting. (`src/services/awaySummary.ts`, `src/hooks/useAwaySummary.ts`)
 - **Goal blocked/stopped display**: StatusLine now shows `blocked`/`stopped` states with progress bar format changed to `[####-]`. (`src/components/StatusLine.tsx`)

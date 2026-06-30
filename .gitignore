@@ -78,6 +78,10 @@ CLAUDE.md
 # Testing
 coverage/
 .nyc_output
+eval/runs/
+eval/__pycache__/
+SWE-bench-dev/
+__pycache__/
 
 # Bun
 bun.lockb
@@ -122,6 +126,7 @@ scratch/
 temp-test-memory-workspace/
 PLAN.md
 plan.md
+peer-perm-proof.txt
 
 .playwright-mcp/
 
