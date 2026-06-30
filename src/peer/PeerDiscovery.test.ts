@@ -52,6 +52,46 @@ describe('PeerDiscovery', () => {
     expect(discovery.getPeer('nobody')).toBeUndefined();
   });
 
+  test('UDP messages strip auth token before sending', () => {
+    discovery = new PeerDiscovery();
+    let sent = '';
+    discovery.socket = {
+      send: (buf: Buffer) => {
+        sent = buf.toString();
+      },
+    };
+
+    discovery.sendUdpMessage({ type: 'clew-peer-info', token: 'secret-token', id: 'peer-a' });
+
+    expect(sent).toContain('peer-a');
+    expect(sent).not.toContain('secret-token');
+    expect(JSON.parse(sent).token).toBeUndefined();
+  });
+
+  test('UDP peer-info token is ignored on receive', () => {
+    discovery = new PeerDiscovery();
+    discovery.handleMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'clew-peer-info',
+          version: 1,
+          id: 'remote-peer',
+          hostname: 'remote',
+          ip: '127.0.0.2',
+          port: 1234,
+          cwd: '/remote',
+          appVersion: 'test',
+          status: 'online',
+          token: 'leaked-token',
+        }),
+      ),
+      { address: '127.0.0.2', port: 42069 } as any,
+    );
+
+    expect(discovery.getPeer('remote-peer')).toBeDefined();
+    expect(discovery.getPeerToken('remote-peer')).toBeUndefined();
+  });
+
   test('close stops advertising', () => {
     discovery = new PeerDiscovery();
     discovery.close();

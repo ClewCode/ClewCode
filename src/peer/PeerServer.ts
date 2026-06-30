@@ -15,7 +15,7 @@
  * - WebSocket /peer-chat → real-time chat between two peers
  */
 
-import { randomUUID } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { logForDebugging } from '../utils/debug.js';
@@ -52,6 +52,13 @@ export type MeshEvent = {
 
 /** Maximum POST/PUT request body size (10 MB) */
 const MAX_BODY_SIZE = 10 * 1024 * 1024;
+
+function tokenMatches(given: unknown, expected: string): boolean {
+  if (typeof given !== 'string' || !given || !expected) return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 export class PeerServer {
   private server: ReturnType<typeof createServer> | null = null;
@@ -190,6 +197,28 @@ export class PeerServer {
     return { queue: [...this.taskQueue], current: this.currentTask };
   }
 
+  private publicPeerInfo(): Record<string, any> {
+    const { cwd: _cwd, ...peerInfo } = this.currentPeerInfo ?? {};
+    const { command: _command, cwd: _extraCwd, ...extraInfo } = this.extraInfo;
+    return {
+      ...peerInfo,
+      ...extraInfo,
+      isBusy: this.isBusyInternal,
+      queueDepth: this.taskQueue.length,
+    };
+  }
+
+  private publicTaskInfo(task: SwarmTask): Record<string, any> {
+    return {
+      id: task.id,
+      from: task.from,
+      status: task.status,
+      priority: task.priority,
+      createdAt: task.createdAt,
+      startedAt: task.startedAt,
+    };
+  }
+
   /**
    * Cancel a queued task by ID. Returns true if found and cancelled.
    */
@@ -236,12 +265,17 @@ export class PeerServer {
    * Keeps the connection open and sends events as they occur.
    */
   private handleSSE(req: IncomingMessage, res: ServerResponse): void {
-    res.writeHead(200, {
+    const origin = req.headers.origin;
+    const headers: Record<string, string> = {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
-    });
+    };
+    if (origin && /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(origin)) {
+      headers['Access-Control-Allow-Origin'] = origin;
+      headers.Vary = 'Origin';
+    }
+    res.writeHead(200, headers);
 
     // Send initial connection event with queue state
     const { queue, current } = this.getTasks();
@@ -448,15 +482,8 @@ export class PeerServer {
           // ── Public endpoints (no auth needed) ─────────────────
 
           case '/peer-info': {
-            // Include queue status in peer info
-            const info: Record<string, any> = {
-              ...this.currentPeerInfo,
-              ...this.extraInfo,
-              isBusy: this.isBusyInternal,
-              queueDepth: this.taskQueue.length,
-            };
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(info));
+            res.end(JSON.stringify(this.publicPeerInfo()));
             break;
           }
 
@@ -466,26 +493,9 @@ export class PeerServer {
             res.end(
               JSON.stringify({
                 isBusy: this.isBusyInternal,
-                currentTask: current
-                  ? {
-                      id: current.id,
-                      command: current.command,
-                      from: current.from,
-                      status: current.status,
-                      priority: current.priority,
-                      createdAt: current.createdAt,
-                      startedAt: current.startedAt,
-                    }
-                  : null,
+                currentTask: current ? this.publicTaskInfo(current) : null,
                 queueDepth: this.taskQueue.length,
-                queue: queue.map(t => ({
-                  id: t.id,
-                  command: t.command,
-                  from: t.from,
-                  status: t.status,
-                  priority: t.priority,
-                  createdAt: t.createdAt,
-                })),
+                queue: queue.map(t => this.publicTaskInfo(t)),
               }),
             );
             break;
@@ -496,7 +506,7 @@ export class PeerServer {
           case '/peer-events': {
             // Token via ?token= query param
             const token = url.searchParams.get('token') ?? '';
-            if (token !== this.authToken) {
+            if (!tokenMatches(token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
@@ -507,17 +517,14 @@ export class PeerServer {
           case '/broker/recv': {
             // Token via ?token= query param
             const token = url.searchParams.get('token') ?? '';
-            if (token !== this.authToken) {
+            if (!tokenMatches(token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
             const peersParam = (url.searchParams.get('peers') ?? '').trim();
             const rolesParam = (url.searchParams.get('roles') ?? '').trim();
             const replyTo = (url.searchParams.get('replyTo') ?? '').trim();
-            const timeoutSec = Math.min(
-              Math.max(0, parseInt(url.searchParams.get('timeout') ?? '30', 10) || 30),
-              120,
-            );
+            const timeoutSec = Math.min(Math.max(0, parseInt(url.searchParams.get('timeout') ?? '30', 10) || 30), 120);
             const store = getGlobalPeerStore();
 
             // Build target list from peers + roles
@@ -566,7 +573,7 @@ export class PeerServer {
 
           case '/peer-msg': {
             const data = JSON.parse(Buffer.concat(body).toString());
-            if (data.token !== this.authToken) {
+            if (!tokenMatches(data.token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
@@ -592,7 +599,7 @@ export class PeerServer {
 
           case '/peer-todo': {
             const data = JSON.parse(Buffer.concat(body).toString());
-            if (data.token !== this.authToken) {
+            if (!tokenMatches(data.token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
@@ -614,7 +621,7 @@ export class PeerServer {
 
           case '/peer-exec': {
             const data = JSON.parse(Buffer.concat(body).toString());
-            if (data.token !== this.authToken) {
+            if (!tokenMatches(data.token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
@@ -691,7 +698,7 @@ export class PeerServer {
 
           case '/peer-queue-cancel': {
             const data = JSON.parse(Buffer.concat(body).toString());
-            if (data.token !== this.authToken) {
+            if (!tokenMatches(data.token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
@@ -708,7 +715,7 @@ export class PeerServer {
 
           case '/peer-queue-cancel-all': {
             const data = JSON.parse(Buffer.concat(body).toString());
-            if (data.token !== this.authToken) {
+            if (!tokenMatches(data.token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
@@ -722,7 +729,7 @@ export class PeerServer {
 
           case '/memory/export': {
             const data = JSON.parse(Buffer.concat(body).toString());
-            if (data.token !== this.authToken) {
+            if (!tokenMatches(data.token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
@@ -753,7 +760,7 @@ export class PeerServer {
 
           case '/broker/send': {
             const data = JSON.parse(Buffer.concat(body).toString());
-            if (data.token !== this.authToken) {
+            if (!tokenMatches(data.token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
@@ -776,7 +783,7 @@ export class PeerServer {
 
           case '/broker/reply': {
             const data = JSON.parse(Buffer.concat(body).toString());
-            if (data.token !== this.authToken) {
+            if (!tokenMatches(data.token, this.authToken)) {
               this.sendUnauthorized(res);
               return;
             }
@@ -808,7 +815,6 @@ export class PeerServer {
       }
     });
   }
-
 }
 
 /**

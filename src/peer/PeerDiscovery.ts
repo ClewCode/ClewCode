@@ -379,7 +379,8 @@ export class PeerDiscovery {
   private sendUdpMessage(msg: object, targetPort = PEER_DISCOVERY_PORT, targetAddress = PEER_MULTICAST_GROUP): void {
     if (!this.socket) return;
     try {
-      this.socket.send(Buffer.from(JSON.stringify(msg)), targetPort, targetAddress);
+      const { token: _token, ...safeMsg } = msg as Record<string, unknown>;
+      this.socket.send(Buffer.from(JSON.stringify(safeMsg)), targetPort, targetAddress);
     } catch {
       /* best-effort */
     }
@@ -478,10 +479,6 @@ export class PeerDiscovery {
     }
 
     logForDebugging('[PeerDiscovery] Stopped');
-  }
-
-  async discoverPeers(timeout = 3000): Promise<PeerInfo[]> {
-    return this.discoverPeers(timeout);
   }
 
   async discoverPeers(timeout = 3000): Promise<PeerInfo[]> {
@@ -617,7 +614,6 @@ export class PeerDiscovery {
       platform: this.platformName,
       term: this.termName,
       status: 'online',
-      token: this._token || undefined,
     });
   }
 
@@ -660,11 +656,6 @@ export class PeerDiscovery {
 
         case 'clew-peer-info': {
           if (data.id === this.localId) break;
-          // Store token from LAN peer (used for cross-machine auth)
-          const incomingData = data as Record<string, unknown>;
-          if (incomingData.token) {
-            this.peerTokens.set(data.id, String(incomingData.token));
-          }
           const peer: PeerInfo = {
             id: data.id,
             hostname: data.hostname,
