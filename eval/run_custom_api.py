@@ -79,6 +79,14 @@ def _post_json(url: str, payload: dict[str, Any], timeout: int) -> dict[str, Any
 
 
 def extract_diff(text: str) -> str:
+    try:
+        parsed, _ = json.JSONDecoder().raw_decode(text.lstrip())
+        if isinstance(parsed, dict) and isinstance(parsed.get("result"), str):
+            nested = extract_diff(parsed["result"])
+            if nested:
+                return nested
+    except json.JSONDecodeError:
+        pass
     fenced = FENCED_DIFF_RE.search(text)
     if fenced:
         text = fenced.group(1)

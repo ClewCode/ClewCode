@@ -152,9 +152,34 @@ agent-comparison workflow used by projects like ClawCodex: a FastAPI wrapper
 around `clew -p`, a `prepare`/`run` driver, prediction JSONL output, and optional
 Docker harness execution.
 
-No official Clew Code SWE-bench score is claimed in this repository yet. See
-[`eval/README.md`](eval/README.md) to run a smoke batch, full Verified split, or
-side-by-side comparison with another agent.
+<p align="center">
+  <img src="assets/swebench-results.svg" alt="SWE-bench Verified comparison: Clew Code DeepSeek smoke resolved 1 of 1, ClawCodex public full split 291 of 499, OpenClaude 265 of 499." />
+</p>
+
+### Local Smoke Result
+
+Clew Code has one checked local smoke result using DeepSeek on
+`astropy__astropy-12907`, evaluated through the official SWE-bench Docker
+harness:
+
+| Agent | Provider / model | Scope | Resolved | Unresolved | Error |
+|---|---|---:|---:|---:|---:|
+| Clew Code | DeepSeek `deepseek-v4-flash` | 1-instance smoke | 1 / 1 (100%) | 0 | 0 |
+
+Harness artifacts:
+
+- Instance report:
+  [`eval/results/swebench-smoke-astropy-deepseek-oracle-report.json`](eval/results/swebench-smoke-astropy-deepseek-oracle-report.json)
+- Summary:
+  [`eval/results/swebench-smoke-astropy-deepseek-oracle-summary.json`](eval/results/swebench-smoke-astropy-deepseek-oracle-summary.json)
+
+The public [ClawCodex README](https://github.com/agentforce314/clawcodex)
+reports a full Verified split comparison of `clawcodex` at 291 / 499 (58.2%)
+versus `openclaude` at 265 / 499 (53.0%).
+Those numbers are shown above as an external reference, not as a like-for-like
+Clew Code score. No official full-split Clew Code SWE-bench score is claimed in
+this repository yet. See [`eval/README.md`](eval/README.md) to run a smoke
+batch, full Verified split, or side-by-side comparison with another agent.
 
 ---
 

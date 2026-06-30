@@ -79,6 +79,9 @@ CLAUDE.md
 coverage/
 .nyc_output
 eval/runs/
+eval/__pycache__/
+SWE-bench-dev/
+__pycache__/
 
 # Bun
 bun.lockb

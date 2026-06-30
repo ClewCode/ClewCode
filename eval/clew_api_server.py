@@ -87,6 +87,14 @@ def _eval_env_overrides() -> dict[str, str]:
 
 
 def _extract_unified_diff(text: str) -> str:
+    try:
+        parsed, _ = json.JSONDecoder().raw_decode(text.lstrip())
+        if isinstance(parsed, dict) and isinstance(parsed.get("result"), str):
+            nested = _extract_unified_diff(parsed["result"])
+            if nested:
+                return nested
+    except json.JSONDecodeError:
+        pass
     match = re.search(r"(?ms)^diff --git .*\Z", text)
     if match:
         return match.group(0).strip() + "\n"
