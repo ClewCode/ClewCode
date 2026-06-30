@@ -4,31 +4,33 @@
 
 # Clew Code
 
-**The open-source AI coding agent — in your terminal and on your LAN.**
+**The open-source, multi-provider AI coding agent — in your terminal and on your LAN.**
 
-A multi-provider AI coding CLI that codes, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle. Local-first by design. MiMo-inspired memory system. Peer-to-peer LAN swarm. Gateway authentication at `clew-code.org`. 76+ built-in tools.
+A local-first coding CLI that writes code, learns your preferences, coordinates across machines, and runs autonomously on your own hardware. One Bun bundle, 27 provider adapters, a persistent memory system, and a peer-to-peer LAN swarm.
 
 [![GitHub stars](https://img.shields.io/github/stars/ClewCode/ClewCode?style=social)](https://github.com/ClewCode/ClewCode/stargazers)
-[![Contributors](https://img.shields.io/github/contributors/ClewCode/ClewCode.svg)](https://github.com/ClewCode/ClewCode/graphs/contributors)
 [![Release](https://img.shields.io/github/v/release/ClewCode/ClewCode)](https://github.com/ClewCode/ClewCode/releases)
 [![npm](https://img.shields.io/npm/v/clew-code)](https://www.npmjs.com/package/clew-code)
 [![CI](https://img.shields.io/github/actions/workflow/status/ClewCode/ClewCode/ci.yml?branch=main)](https://github.com/ClewCode/ClewCode/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](#license)
-[![Platform](https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-lightgrey.svg)](#installation)
-[![Website](https://img.shields.io/badge/web-clew--code.org-blue.svg)](https://clew-code.org)
+[![Platform](https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-lightgrey.svg)](#install)
 [![Built with Bun](https://img.shields.io/badge/built%20with-Bun-ff69b4.svg)](https://bun.sh)
 
-[GitHub](https://github.com/ClewCode/ClewCode) · [Website](https://clew-code.org) · [Latest Release](https://github.com/ClewCode/ClewCode/releases) · [Wiki](https://github.com/ClewCode/ClewCode/wiki) · [Issues](https://github.com/ClewCode/ClewCode/issues)
+[GitHub](https://github.com/ClewCode/ClewCode) · [Website](https://clew-code.org) · [Releases](https://github.com/ClewCode/ClewCode/releases) · [Wiki](https://github.com/ClewCode/ClewCode/wiki) · [Issues](https://github.com/ClewCode/ClewCode/issues)
 
 </div>
 
 ---
 
-## Overview
+## What is Clew Code?
 
-Clew Code is a **multi-provider** AI coding agent — you're not locked into one API. It ships with a MiMo-inspired memory system (SQLite-backed, budgeted injection, cross-session persistence), agent-to-agent LAN peer coordination with swarm execution and memory sync, a preference-learning engine, autonomous background loops, multi-pass context compaction, MCP integration, plan mode with full bypass permissions, goal verification, Max Mode parallel candidates, structured checkpoints, automated memory consolidation (Dream + Distill), and 29 provider adapters.
+Clew Code is an AI coding agent that lives in your terminal. Unlike single-vendor tools, it is **provider-agnostic** — bring an API key from OpenAI, Google, DeepSeek, Groq, OpenRouter, a local Ollama model, or any of 27 supported providers, and switch between them mid-session.
 
-> Works with any provider. Gateway-native auth at [clew-code.org](https://clew-code.org).
+It is built around three ideas:
+
+- **Local-first.** Your code, memory, and configuration stay on your machine. Ships as a single Bun bundle with no required cloud backend.
+- **It remembers.** A SQLite-backed memory system learns your decisions, taste, and project structure, then budgets that context back into every prompt.
+- **It scales across machines.** Discover other Clew instances on your LAN, assign tasks, sync memory, and broadcast commands to a swarm.
 
 ---
 
@@ -36,33 +38,25 @@ Clew Code is a **multi-provider** AI coding agent — you're not locked into one
 
 ### One-liner (recommended)
 
-Installs Bun automatically if missing, then installs clew-code and opens a new terminal ready to go.
+Installs Bun if missing, then installs `clew-code` and drops you into a ready terminal.
 
-macOS / Linux:
+**macOS / Linux**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ClewCode/ClewCode/main/scripts/install.sh | bash
 ```
 
-Windows (PowerShell as Admin):
+**Windows (PowerShell as Admin)**
 ```powershell
 irm https://raw.githubusercontent.com/ClewCode/ClewCode/main/scripts/install.ps1 | iex
 ```
 
-### With npm (requires Bun or Node.js already installed)
+### npm
 
 ```bash
 npm install -g clew-code
 ```
 
-```bash
-# Then run inside any project
-cd my-project
-clew
-```
-
-Requires [Bun](https://bun.sh) 1.3+, Node.js 18+, Git, and one provider API key.
-
-### Build from source
+### From source
 
 ```bash
 git clone https://github.com/ClewCode/ClewCode.git
@@ -70,68 +64,27 @@ cd ClewCode
 bun install && bun run build && bun run start
 ```
 
+**Requirements:** [Bun](https://bun.sh) 1.3+, Git, and at least one provider API key. Node.js 18+ is supported as a fallback runtime.
+
 <details>
 <summary><b>Platform notes</b></summary>
 
-- **Windows** — requires Git Bash, WSL, or PowerShell. ComputerUse tool also works on macOS/Linux (set `ENABLE_COMPUTER_USE=1`).
-- **macOS** — works out of the box (Apple Silicon & Intel)
-- **Linux** — no special dependencies
+- **macOS** — works out of the box (Apple Silicon & Intel).
+- **Linux** — no special dependencies.
+- **Windows** — requires Git Bash, WSL, or PowerShell. The ComputerUse tool also works on macOS/Linux with `ENABLE_COMPUTER_USE=1`.
 </details>
 
 ---
 
 ## Quick start
 
-```sh
-# First run — pick a provider when prompted
+```bash
+# Launch in any project — pick a provider on first run
+cd my-project
 clew
-
-# Configure a provider (inside the REPL)
-❯ /provider openai
-❯ /model gpt-5.5
-
-# Or try DeepSeek
-❯ /model deepseek-v4-pro
-
-# Or go local with Ollama
-❯ /model ollama/llama3.3
-
-# Sign in via Clew Gateway (api.clew-code.org)
-❯ /login
-
-# Token import from web dashboard
-clew auth login --token <token>
-
-# In-session commands
-❯ /help           # list everything
-❯ /status         # current provider, model, context info
-❯ /goal "tests pass"  # track task completion with verification
-
-❯ /peer discover  # find other Clew instances on LAN
-❯ /peer swarm clew -p "summarize CHANGELOG.md"  # run on all peers
-❯ /peer dashboard # show peer task checklist
-❯ /peer memory sync       # import memories from all peers
-❯ /peer memory auto on    # auto-sync memories every 60 min
-❯ /mcp list       # connected MCP servers
-❯ /daemon        # background autonomous loop
-❯ /compact        # compress context + auto-extract durable memories
-❯ /memory dashboard # unified memory system status
-❯ /memory init    # bootstrap project memory (SQLite + scan)
-❯ /memory rebuild # reconstruct context from ranked memories
-❯ /memory recall --verbose  # recall ranked memories
-❯ /login             # sign in via Clew Gateway
-❯ /logout            # sign out
-
-# One-shot mode (pipe-friendly)
-clew -p "summarize CHANGELOG.md"
-
-# Resume last session
-clew --resume last
 ```
 
----
-
-## Provider setup
+Set a provider key via environment variable, or configure it inside the REPL:
 
 ```bash
 export OPENAI_API_KEY=sk-...
@@ -140,67 +93,71 @@ export DEEPSEEK_API_KEY=...
 export GROQ_API_KEY=...
 export OPENROUTER_API_KEY=...
 export OLLAMA_HOST=http://localhost:11434
-export GEMINI_API_KEY=...
+```
+
+```bash
+# One-shot mode (pipe-friendly)
+clew -p "summarize CHANGELOG.md"
+
+# Resume your last session
+clew --resume last
+```
+
+Inside the REPL:
+
+```text
+❯ /model gpt-5.5          # switch provider/model mid-session
+❯ /model ollama/llama3.3  # go fully local
+❯ /status                 # provider, model, context usage
+❯ /goal "tests pass"      # track + verify task completion
+❯ /memory dashboard       # memory system status
+❯ /peer discover          # find Clew instances on the LAN
+❯ /mcp list               # connected MCP servers
+❯ /help                   # list everything
 ```
 
 ---
 
 ## Features
 
-- **29 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, OpenCode Go, KiloCode, Sakana AI, Ollama (local), Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, custom. Switch mid-session. *(Anthropic accessible via OpenRouter.)*
-- **Memory system (MiMo-inspired)** — SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline event logging. Auto-init + legacy migration + scan on first use. Budgeted memory injection into system prompt selects memories by importance × recency × confidence to fit the token budget. **In-compact extraction** automatically saves durable facts (`[decision]`, `[architecture]`, `[taste]`, `[bug]`) during context compaction. **Dream** (7-day) + **Distill** (30-day) auto-consolidate. Dream output synced to MemoryDB automatically. `/memory dashboard` shows unified status of MemoryDB, Dream, Distill, Peer Sync, and timeline.
-- **Peer-to-peer LAN** — find other Clew instances on the same machine (file registry) or across machines (UDP multicast). Assign tasks, set roles, execute remote commands — 15+ peer AI tools let your agent coordinate autonomously via `/peer` commands. **Auth token** protection on all endpoints prevents unauthorized access. **Swarm execution** broadcasts shell commands to all peers in parallel with aggregated results. **Peer memory sync** imports memories from all peers into local MemoryDB; auto-sync on cron. **Message broker** (in-process queue) enables offline message delivery with correlation IDs. **Peer dashboard** shows task checklists across all peers.
-- **Autonomous agent loop** — file-backed persistent task queue, lease-based concurrency, exponential backoff retry, dead-letter management. Cron scheduler for recurring jobs. Max 3 concurrent workers.
-- **Gateway auth** (`/login` / `/logout`): Sign in at `api.clew-code.org` with browser or terminal login. Token import from web dashboard via `clew auth login --token`. Gateway token stored locally for `ClewGatewayProvider`.
-- **76+ built-in tools** — Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, JsonPath, ReadArtifact, peer tools (17 LAN coordination tools including discover, send, swarm, dashboard, broker), MCP tools, delegate (exec/pty), MemoryFeedback (agent-driven memory curation), plan mode with full bypass permissions, multi-pass context compaction.
-- **Goal system** — `/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results). Goal chains with `then` syntax. Templates for common workflows (`fix-build`, `green-tests`, `refactor`). Auto-integrates with AFK mode and the autonomous loop. Independent LLM verifier reviews completion and reports gaps.
+### Multi-provider
+**27 providers** — OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, KiloCode, Sakana AI, Ollama, Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, and custom endpoints. Switch any time with `/model`. *(Anthropic models are reachable via OpenRouter or Cline.)*
 
-- **Structured checkpoints** — automatic progress snapshots at 20%/45%/70% milestones with notes scratchpad (`notes.md`) for main-agent findings. Multi-cycle rebuild from checkpoints during compaction preserves layered context (decisions → notes → blockers → next steps). Project memory promotion at 70% checkpoint.
-- **MCP — Model Context Protocol** — connect external tools via stdio (local subprocesses), SSE (remote servers with OAuth), or DirectConnect (in-process plugin servers).
-- **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins with manifest, hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
-- **8 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, guardian. Granular allow/deny rules with pattern matching.
+### Memory system (MiMo-inspired)
+A SQLite-backed memory store with importance ranking, confidence scoring, access tracking, and timeline logging. It auto-initializes and scans your project on first use, then injects a token-budgeted selection of memories (ranked by importance × recency × confidence) into the system prompt each turn. Durable facts are extracted automatically during context compaction, and **Dream** (7-day) + **Distill** (30-day) jobs consolidate memory over time. See it all in `/memory dashboard`.
+
+### Peer-to-peer LAN swarm
+Discover other Clew instances on the same machine (file registry) or across the LAN (UDP multicast). Assign tasks, set roles, and broadcast shell commands to every peer in parallel with `/peer swarm`. Memory syncs between peers on demand or on a cron. All endpoints are protected by a per-instance auth token, with a 10 MB request-body limit.
+
+### Autonomous agent loop
+A file-backed persistent task queue with lease-based concurrency, exponential-backoff retry, and dead-letter handling. A cron scheduler runs recurring jobs, up to 3 concurrent workers.
+
+### Goals & verification
+`/goal` tracks task completion with heuristic pre-checks (exit codes, test output, lint results), chained goals via `then`, and templates like `fix-build` and `green-tests`. When the agent declares a task done, an independent LLM verifier reviews the conversation against the goal and reports any gaps.
+
+### 70+ built-in tools
+Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Browser (Playwright), NotebookEdit, LSP, subagent dispatch (`Agent`), 17 LAN peer-coordination tools, MCP tools, `delegate` (exec/pty to external CLIs), and agent-driven memory curation.
+
+### Extensible
+- **MCP** — connect external tools over stdio, SSE (with OAuth), or in-process DirectConnect.
+- **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins via manifest, and hooks at every lifecycle stage (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
+- **8 permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, guardian, with granular allow/deny pattern rules.
 
 ---
 
-## Concepts: Agents, Subagents, and Peers
+## Execution layers
 
-Clew Code has several execution layers. They are related, but they do different jobs:
+Clew Code runs work at several layers, each for a different job:
 
-- **Agent:** An AI worker with a prompt, model, tools, and permissions. The main chat session is an agent. Custom agents live in `.clew/agents/*.md`, and built-ins include `Explore`, `Plan`, and `general-purpose`.
-- **Subagent:** A short-lived child agent launched by another agent through the `Agent` tool. Use subagents for independent work such as codebase exploration, test triage, or review. The built-in `Explore` agent is read-only and is the right choice for parallel "go inspect this area" tasks.
-- **Teammate / Swarm:** A longer-lived agent team member with an identity, mailbox, task coordination, and optional pane/tmux or in-process execution. Use this when agents need to keep working together across multiple turns, not for isolated one-shot exploration.
-- **LAN Peer:** A network of Clew instances on the same machine or LAN. `/peer` discovers peers, sends messages, assigns tasks, and runs commands on other Clew nodes.
-- **Process Peer:** A local process-backed worker layer. It delegates a prompt to an external CLI/provider such as Codex using `exec` or `pty`, then returns stdout, stderr, exit code, timeout state, and progress.
+| Layer | What it is | Use it for |
+|-------|-----------|------------|
+| **Agent** | An AI worker with a prompt, model, tools, and permissions. The main chat is an agent; custom ones live in `.clew/agents/*.md`. | The session itself. |
+| **Subagent** | A short-lived child launched via the `Agent` tool (e.g. read-only `Explore`). | Independent investigation, test triage, review. |
+| **Teammate / Swarm** | A longer-lived agent with identity, mailbox, and task coordination. | Multi-turn collaboration between named workers. |
+| **LAN Peer** | Another Clew instance on the same machine or network, reached via `/peer`. | Distributing work across machines. |
+| **Process Peer** | A local worker that delegates to an external CLI (e.g. Codex) via `exec`/`pty`. | Running another coding tool as a subprocess. |
 
-Typical flows:
-
-```text
-User
-  -> main Clew agent
-      -> Agent tool
-          -> short-lived subagent, e.g. Explore
-```
-
-```text
-Clew instance A
-  -> LAN Peer
-      -> Clew instance B
-          -> local agent, daemon task, or process worker
-```
-
-Use the layers by intent:
-
-- Need a quick independent read-only investigation? Use an `Explore` subagent.
-- Need long-running coordination between named workers? Use teammates/swarm.
-- Need another Clew instance on the LAN? Use `/peer`.
-- Need Clew to run a local external worker such as Codex? Use Process Peer.
-
-Other runtime concepts:
-- **Plan mode:** Full-access planning mode with bypass permissions — explore, read, write, and edit files freely. Plan files persist to `.clew/plans/long-term-plan.md` with task progress snapshot.
-- **Multi-pass compaction:** Automatic chunk-based context compression with recursive re-compaction when context exceeds the model window.
-- **Goal verification:** When the agent declares a task done, an independent LLM call reviews the conversation against the goal text and reports specific gaps if unsatisfied (attached as `goalGap` in result metadata).
-
-- **Checkpoints:** Structured snapshots at 20%/45%/70% progress milestones. Includes a `notes.md` scratchpad for the main agent's findings. Used for layered multi-cycle rebuild during compaction.
+Other runtime concepts: **Plan mode** (full-access planning that persists to `.clew/plans/`), **multi-pass compaction** (recursive context compression when the window fills), and **structured checkpoints** (progress snapshots at 20/45/70% with a `notes.md` scratchpad, used for layered rebuild during compaction).
 
 ---
 
@@ -210,48 +167,38 @@ Other runtime concepts:
 <summary><strong>100+ slash commands</strong></summary>
 
 ```
-/login          Sign in via Clew Gateway
-/logout         Sign out from Clew Gateway
 /model          Switch provider or model
 /status         Provider, session, context info
 /doctor         Diagnostics
-/profile        Personal profile mode (coding / personal)
 /context        Active context usage
-/compact        Compress conversation history + extract memories
-/goal           Track and verify task completion (chains, templates)
-
-/mcp            MCP server management
-/code-review    Review changed files for bugs
-/simplify       Cleanup-focused review
-/plugin         Plugin and hook management
-/bridge         Bridge mode config
-/agent          Background agent dispatch & subcommands
-/agents         TUI Agent dashboard (operational view)
-/peer           LAN peers: share, discover, join, send, swarm, dashboard, memory sync/auto
-/remote         WebSocket remote control
+/compact        Compress history + extract memories
+/goal           Track and verify task completion
+/memory         Memory: init, scan, rebuild, recall, feedback, dashboard, search
+/peer           LAN peers: discover, send, swarm, dashboard, memory sync/auto
 /daemon         Autonomous daemon dashboard
 /task           Scheduled tasks
-/memory         Memory system: init, scan, rebuild, recall, feedback, dashboard, search
-/tasks          Curated task list management
-/effort         Set reasoning effort (including ultracode)
-/stats          Session statistics and cost breakdown
-/guardian       Auto-review mode using secondary LLM
+/mcp            MCP server management
+/plugin         Plugin and hook management
+/skills         List and manage skills
+/code-review    Review changed files for bugs
+/simplify       Cleanup-focused review
+/guardian       Auto-review mode using a secondary LLM
 /approve        Override guardian denials
 /pr             GitHub PR lifecycle
-/voice          Voice input via browser Web Speech API
-/buddy          Companion card and naming
-/team           Team dashboard for in-process teammates
-/bg             Background sessions
 /plan           Plan mode
-/vim            Vim keybindings
-/research       Research dossier management
-/workflow       Multi-step workflow automation
+/fork           Fork conversation into a new session
 /rewind         Undo last response
-/upgrade        Check for updates
+/effort         Set reasoning effort
+/stats          Session statistics and cost breakdown
+/voice          Voice input via browser Web Speech API
+/remote         WebSocket remote control
+/bridge         Bridge mode config
 /session        Session management
 /theme          Theme switcher
-/skills         List and manage skills
-/ultracode      UltraCode reasoning mode
+/vim            Vim keybindings
+/login          Sign in via Clew Gateway
+/logout         Sign out
+/upgrade        Check for updates
 ```
 
 </details>
@@ -265,38 +212,25 @@ Other runtime concepts:
 
 ```
 src/
-├── main.tsx                 # Entry point
-├── QueryEngine.ts           # Core query + tool loop
-├── query.ts                 # Non-streaming query variant
-├── agentRuntime/            # Background agent orchestration
-├── commands/                # 100+ slash command implementations
-├── tools/                   # 76+ built-in tools
+├── main.tsx              # Entry point
+├── QueryEngine.ts        # Core query + tool loop
+├── commands/             # Slash command implementations
+├── tools/                # Built-in tools
 ├── services/
-│   ├── ai/                  # Provider manager + 29 providers
-│   ├── mcp/                 # MCP client + auth + transports
-│   ├── plugins/             # Plugin hooks + marketplace
-│   ├── autonomous/          # Agent loop + task queue + cron
-│   ├── search/              # Web search providers (brave, duckduckgo, serper, tavily)
-│   ├── checkpoint/          # Structured progress checkpoints
-│   ├── goal/                # Goal evaluation and verification
-│   ├── longTermMemory/      # Dream (7d) + Distill (30d) consolidation
-
-│   ├── compact/             # Context compression and compaction
-│   ├── autoDream/           # Dream process scheduling
-│   ├── extractMemories/     # In-compact memory extraction
-│   ├── api/                 # API utilities (errors, retry)
-│   ├── openaiOAuth/         # OpenAI OAuth device flow
-│   ├── lsp/                 # LSP integration
-│   ├── voiceInput/          # Voice transcription pipeline
-│   ├── sessionSearch/       # FTS5 session transcript search
-│   ├── analytics/           # Session analytics
-│   └── Supervisor/          # Agent supervisor IPC
-├── peer/                    # PeerServer + PeerDiscovery (agent-to-agent)
-├── memory/                  # MemoryDB + autoInit + scanner + hierarchy + feedback (MiMo-style)
-├── bridge/                  # WebSocket bridge + relay
-├── components/              # Ink terminal UI components
-├── state/                   # AppState management
-└── hooks/                   # React hooks
+│   ├── ai/               # Provider manager + adapters
+│   ├── mcp/              # MCP client + auth + transports
+│   ├── plugins/          # Plugin hooks + marketplace
+│   ├── autonomous/       # Agent loop + task queue + cron
+│   ├── search/           # Web search providers
+│   ├── checkpoint/       # Structured progress checkpoints
+│   ├── goal/             # Goal evaluation and verification
+│   ├── longTermMemory/   # Dream (7d) + Distill (30d)
+│   └── compact/          # Context compression
+├── peer/                 # PeerServer + PeerDiscovery
+├── memory/               # MemoryDB + scanner + feedback
+├── bridge/               # WebSocket bridge + relay
+├── components/           # Ink terminal UI
+└── hooks/                # React hooks
 ```
 
 </details>
@@ -308,32 +242,29 @@ src/
 ```bash
 bun run dev           # Live reload
 bun run build         # Build to dist/
-bun test              # Vitest
+bun test              # Run tests
 bun x tsc --noEmit    # Type-check
 bun run check:ci      # Lint + format check (Biome CI)
 ```
 
-**Windows:**
+**Windows**
 ```powershell
 Remove-Item -Recurse -Force node_modules
-bun install && bun run dev
+bun install; bun run dev
 ```
 
 ---
 
-## Contribute
+## Contributing
 
-We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SECURITY.md](SECURITY.md), and [LICENSE.md](LICENSE.md) before submitting.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md) first.
 
-### Good first issues
-
-- Add a new provider adapter in `src/services/ai/`
+**Good first issues**
+- Add a provider adapter in `src/services/ai/`
 - Write tests for untested tools
-- Fix docs, add examples
+- Improve docs and examples
 - Build a plugin or MCP server
 - Improve Windows support
-
-### Contributors
 
 <a href="https://github.com/ClewCode/ClewCode/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=ClewCode/ClewCode" alt="Contributors" />
@@ -341,132 +272,8 @@ We welcome contributions. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_COND
 
 ---
 
-## Changelog
-
-<details>
-<summary><strong>[Unreleased]</strong></summary>
-
-- **LSP Tool enabled by default**: Removed `ENABLE_LSP_TOOL` env gate — LSP tool now always registered.
-- **Agent Tool enabled for AI model**: `AgentTool` registered in `getAllBaseTools()` so the AI model can directly invoke subagents.
-
-</details>
-
-<details>
-<summary><strong>v0.3.6 — 2026-06-23</strong></summary>
-
-- **`/fork` command**: New slash command that forks the conversation into a new session, leaving the original intact.
-
-</details>
-
-<details>
-<summary><strong>v0.3.5 — 2026-06-23</strong></summary>
-
-- **`clew update` simplified**: Replaced complex multi-path update system with `npm install -g clew-code@latest`.
-- **`process_peer` renamed to `delegate`**: Renamed tool to avoid confusion with LAN P2P system.
-- **Peer UX improvements**: `peer_send_message` defaults `waitResponse: true`. `/peer` menu auto-discovers LAN peers.
-- **Auto-updater simplified**: Removed native/package-manager installers. Background updater shows notification only.
-- **MACRO globals fixed**: `clew update` no longer crashes — globals injected at build time.
-- **17 dead stub commands removed**: Plus `/looplock` and `/agents`.
-- **Compact Orchestrator**: Unified entry point for all compaction strategies.
-- **CLAUDE → CLEW full rename**: All `.claude/` references → `.clew/` across 83 files.
-- **URL rebranding**: All `claude.ai`/`claude.com` URLs replaced with `clew-code.org`.
-- **Gateway auth system**: Login/signup via browser or terminal. `/login` and `/logout` now gateway-native.
-- **Windows clipboard fix**: PowerShell `Set-Clipboard` with UTF-8 replaces `clip.exe`.
-- **Cross-platform Computer Use Tool**: macOS/Linux support added.
-- **Onboarding wizard redesigned**: 29 providers, direct API key entry, no OAuth.
-- **Auto-compact threshold adjusted**: Background compaction triggers earlier (0.65).
-- **Dead code cleanup**: ~1,900 lines removed (unregistered commands, Anthropic-gated tools).
-- **docs/ removed**: 44 HTML files deleted, documentation moved to GitHub Wiki.
-
-</details>
-
-<details>
-<summary><strong>v0.3.2 — 2026-06-18</strong></summary>
-
-- **Fixed `schema._zod.def` crash**: `zodToJsonSchema()` now checks for `_zod` branding before calling `toJSONSchema()`, preventing crashes when a non-Zod value is passed as a tool schema.
-- **Fixed `generateSettingsJSONSchema()` crash**: Wrapped `toJSONSchema()` with try-catch to handle Zod v4 serialization failures.
-
-</details>
-
-<details>
-<summary><strong>v0.3.1 — 2026-06-18</strong></summary>
-
-- **Fixed PeerStore infinite recursion**: Removed 7 duplicate alias methods that called themselves recursively, fixing `Maximum call stack size exceeded` during `peer_discover`.
-
-</details>
-
-<details>
-<summary><strong>v0.3.0 — 2026-06-18</strong></summary>
-
-- **Peer memory sync**: `/peer memory sync` imports memories from all connected peers. Auto-sync on cron (`/peer memory auto on`).
-- **Memory system dashboard**: `/memory dashboard` shows unified view of MemoryDB, Dream, Distill, Peer Sync, and timeline.
-- **Legacy migration**: Auto-migrates old `session-memory.db` into MemoryDB during `/memory init`.
-- **Redirected longTermMemory to MemoryDB**: Dream, graph, experience, cross-session all now read/write to MemoryDB instead of their own SQLite/JSON files.
-- **MemoryDB — SQLite-backed memory store**: `memories` table (importance, confidence, access_count, type), `memory_timeline` table (event lifecycle). Budgeted querying, auto-eviction, timeline logging.
-- **Memory hierarchy**: `.clew/memory/` directory with MEMORY.md, DECISIONS.md, TASTE.md. Auto-initializes on first use.
-- **Budgeted injection**: Importance-ranked memory injection into system prompt, fits configurable token budget.
-- **`/memory scan`**: Detects stack/language/package-manager/entrypoints, bootstraps seed memories.
-- **`/memory rebuild`**: Reconstructs context from memories via budgeted injection with per-memory detail.
-- **`/memory recall`**: Recalls memories ranked by combined score. Access count bump, `--verbose` for breakdown.
-- **`/memory feedback`**: 7 signals (accepted, rejected, corrected, preferred, disliked, important, wrong). Updates importance/confidence, writes `preferred` to TASTE.md.
-- **In-compact memory extraction**: Compact prompt asks LLM for `<memories>` block with structured facts; `parseCompactMemories()` extracts and saves to MemoryDB + markdown.
-- **Peer task dashboard**: `/peer dashboard` command + `peer_dashboard` AI tool. Shows connected peers, tasks, and result summaries.
-- **`/peer swarm`**: Sends shell command to ALL connected peers in parallel via `/peer-exec`, aggregates results. Supports `--timeout`, `--filter`, `--dry-run`.
-- **`peer_swarm` tool**: New AI-callable tool — runs shell commands on all peers in parallel.
-- **In-process message broker**: `POST /broker/send`, `GET /broker/recv` (long-poll), `POST /broker/reply`. Message queuing with correlation IDs inside existing PeerServer.
-- **`/model` fetches from API for all providers**: `supportsModelFetching()` expanded to all providers (except google-assist).
-- **Removed Anthropic provider**: clew-gateway + cline cover Anthropic models. Standalone `anthropic` entry removed.
-- **Hidden `clew-gateway` provider**: Filtered from `PROVIDER_IDS`.
-- **Auto memory lifecycle**: `ensureMemorySystem()` auto-inits DB + auto-scans on first access. Budgeted memories auto-injected every turn.
-- **Memory tests**: 8 new tests for upsert idempotency, content-hash detection, recall ranking, feedback signals, and budget limits.
-
-</details>
-
-<details>
-<summary><strong>v0.2.6 — 2026-06-10</strong></summary>
-
-- **Peer HTTP heartbeat** — 60s liveness checks, offline peers detected immediately
-- **Removed GitHub Copilot** — provider and all references cleaned out
-- **`/agents` visual polish** — redesigned dashboard, cleaner layout
-- **Auto-updater** — switched from Anthropic GCS to npm registry
-
-</details>
-
-<details>
-<summary><strong>v0.2.5 — 2026-06-10</strong></summary>
-
-- **Rebranded to Clew Code** — docs, UI copy, and package updated
-- **Memory search** — `/memory search` for stored entries
-- **Peer tools** — 14 AI coordination tools, peer help, connection count in footer
-- **Fixed `/providers`** — duplicate `const info` runtime error fixed
-
-</details>
-
-<details>
-<summary><strong>v0.2.4 — 2026-06-08</strong></summary>
-
-- **Peer-to-peer** — UDP multicast discovery, file registry, 14 AI coordination tools, interactive PeerMenu
-- **Autonomous agents** — agent loop, supervisor integration, task queue, Loop Lock
-- **Workflow Rainbow** — per-character gradient highlight for "workflow" keyword
-
-</details>
-
-<details>
-<summary><strong>v0.2.3 — 2026-06-07</strong></summary>
-
-- `/effort` works with any provider exposing `reasoningEffort` (NVIDIA, DeepSeek, OpenRouter, etc.)
-- `/model` fetches live model list from provider APIs
-- Relay server for cross-network remote control
-- Bridge v2: provider-agnostic remote control
-- `/pr create/list/view/review/merge/status`
-- Security: PowerShell rules, malformed tool call guard, 100 MB bash output cap
-
-</details>
-
-[Full changelog](CHANGELOG.md)
-
----
-
 ## License
 
-[LICENSE.md](LICENSE.md) — covers only contributor-authored modifications and original additions. Does not grant rights to third-party software, models, or trademarks.
+See [LICENSE.md](LICENSE.md). The license covers only contributor-authored modifications and original additions; it does not grant rights to third-party software, models, or trademarks.
+
+Full version history: [CHANGELOG.md](CHANGELOG.md).
