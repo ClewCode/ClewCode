@@ -4,6 +4,7 @@ import { useTheme } from '../../../ink.js';
 import { filterToolProgressMessages, type Tool, type Tools } from '../../../Tool.js';
 import type { ProgressMessage } from '../../../types/message.js';
 import type { buildMessageLookups } from '../../../utils/messages.js';
+import { safeParseToolInput } from '../../../utils/safeParseToolInput.js';
 import { FallbackToolUseRejectedMessage } from '../../FallbackToolUseRejectedMessage.js';
 
 type Props = {
@@ -33,7 +34,7 @@ export function UserToolRejectMessage({
     return <FallbackToolUseRejectedMessage />;
   }
 
-  const parsedInput = tool.inputSchema.safeParse(input);
+  const parsedInput = safeParseToolInput(tool.inputSchema, input);
   if (!parsedInput.success) {
     return <FallbackToolUseRejectedMessage />;
   }

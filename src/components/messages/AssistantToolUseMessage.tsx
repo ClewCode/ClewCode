@@ -13,6 +13,7 @@ import type { ProgressMessage } from '../../types/message.js';
 import { useIsClassifierChecking } from '../../utils/classifierApprovalsHook.js';
 import { logError } from '../../utils/log.js';
 import type { buildMessageLookups } from '../../utils/messages.js';
+import { safeParseToolInput } from '../../utils/safeParseToolInput.js';
 import { MessageResponse } from '../MessageResponse.js';
 import { useSelectedMessageBg } from '../messageActions.js';
 import { SentryErrorBoundary } from '../SentryErrorBoundary.js';
@@ -73,7 +74,7 @@ export function AssistantToolUseMessage({
     if (!tools) return null;
     const tool = findToolByName(tools, param.name);
     if (!tool) return null;
-    const input = tool.inputSchema.safeParse(param.input);
+    const input = safeParseToolInput(tool.inputSchema, param.input);
     const data = input.success ? input.data : undefined;
     return {
       tool,
@@ -228,7 +229,7 @@ function renderToolUseMessage(
   { theme, verbose, commands }: { theme: ThemeName; verbose: boolean; commands: Command[] },
 ): React.ReactNode {
   try {
-    const parsed = tool.inputSchema.safeParse(input);
+    const parsed = safeParseToolInput(tool.inputSchema, input);
     if (!parsed.success) {
       return '';
     }

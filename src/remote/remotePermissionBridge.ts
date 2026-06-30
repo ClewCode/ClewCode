@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { z } from 'zod/v4';
 import type { SDKControlPermissionRequest } from '../entrypoints/sdk/controlTypes.js';
 import type { Tool } from '../Tool.js';
 import type { AssistantMessage } from '../types/message.js';
@@ -53,7 +54,7 @@ export function createSyntheticAssistantMessage(
 export function createToolStub(toolName: string): Tool {
   return {
     name: toolName,
-    inputSchema: {} as Tool['inputSchema'],
+    inputSchema: z.looseObject({}) as Tool['inputSchema'],
     isEnabled: () => true,
     userFacingName: () => toolName,
     renderToolUseMessage: (input: Record<string, unknown>) => {

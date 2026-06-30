@@ -24,6 +24,7 @@ import { formatDuration, formatNumber } from '../../utils/format.js';
 import { buildSubagentLookups, createAssistantMessage, EMPTY_LOOKUPS } from '../../utils/messages.js';
 import type { ModelAlias } from '../../utils/model/aliases.js';
 import { getMainLoopModel, parseUserSpecifiedModel, renderModelName } from '../../utils/model/model.js';
+import { safeParseToolInput } from '../../utils/safeParseToolInput.js';
 import type { Theme, ThemeName } from '../../utils/theme.js';
 import type { outputSchema, Progress, RemoteLaunchedOutput } from './AgentTool.js';
 import { inputSchema } from './AgentTool.js';
@@ -974,7 +975,7 @@ export function extractLastToolInfo(progressMessages: ProgressMessage<Progress>[
         }
 
         const input = toolUseBlock.input as Record<string, unknown>;
-        const parsedInput = tool.inputSchema.safeParse(input);
+        const parsedInput = safeParseToolInput(tool.inputSchema, input);
 
         // Get user-facing tool name
         const userFacingToolName = tool.userFacingName(parsedInput.success ? parsedInput.data : undefined);

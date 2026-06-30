@@ -13,6 +13,7 @@ import { getDisplayPath } from '../../utils/file.js';
 import { formatDuration, formatSecondsShort } from '../../utils/format.js';
 import { isFullscreenEnvEnabled } from '../../utils/fullscreen.js';
 import type { buildMessageLookups } from '../../utils/messages.js';
+import { safeParseToolInput } from '../../utils/safeParseToolInput.js';
 import type { ThemeName } from '../../utils/theme.js';
 import { CtrlOToExpand } from '../CtrlOToExpand.js';
 import { useSelectedMessageBg } from '../messageActions.js';
@@ -73,7 +74,7 @@ function VerboseToolUse({
   const parsedOutput = tool.outputSchema?.safeParse(rawToolResult);
   const toolResult = parsedOutput?.success ? parsedOutput.data : undefined;
 
-  const parsedInput = tool.inputSchema.safeParse(content.input);
+  const parsedInput = safeParseToolInput(tool.inputSchema, content.input);
   const input = parsedInput.success ? parsedInput.data : undefined;
   const userFacingName = tool.userFacingName(input);
   const toolUseMessage = input ? tool.renderToolUseMessage(input, { theme, verbose: true }) : null;
