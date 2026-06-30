@@ -78,7 +78,7 @@ Always set a goal when the user gives you a complex task (>3 steps). This helps 
     };
   },
 
-  async call(input, _context, _canUseTool, _parentMessage) {
+  async call(input, context, _canUseTool, _parentMessage) {
     const { action, goal, reason } = input;
     const existing = getFullGoalState();
 
@@ -146,7 +146,7 @@ Always set a goal when the user gives you a complex task (>3 steps). This helps 
       turnCount: action === 'update' ? (existing?.turnCount ?? 0) : 0,
       evalTokens: action === 'update' ? (existing?.evalTokens ?? 0) : 0,
       achieved: false,
-      preGoalMode: 'bypassPermissions',
+      preGoalMode: context.getAppState().toolPermissionContext?.mode,
       paused: false,
       totalPausedMs: 0,
       chain: chain?.chain,

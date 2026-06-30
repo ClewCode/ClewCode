@@ -8,9 +8,9 @@ import type { MCPServerConnection, ServerResource } from '../services/mcp/types.
 import { shouldEnablePromptSuggestion } from '../services/PromptSuggestion/promptSuggestion.js';
 import { getEmptyToolPermissionContext, type Tool, type ToolPermissionContext, type ToolUseConfirm } from '../Tool.js';
 import type { TaskState } from '../tasks/types.js';
-import type { AgentColorName } from '../tools/AgentTool/agentColorManager.js';
-import type { AgentDefinitionsResult } from '../tools/AgentTool/loadAgentsDir.js';
-import type { AllowedPrompt } from '../tools/ExitPlanModeTool/ExitPlanModeV2Tool.js';
+import type { AgentColorName } from 'src/tools/AgentTool/agentColorManager.js';
+import type { AgentDefinitionsResult } from 'src/tools/AgentTool/loadAgentsDir.js';
+import type { AllowedPrompt } from 'src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.js';
 import type { AgentId } from '../types/ids.js';
 import type { Message, UserMessage } from '../types/message.js';
 import type { LoadedPlugin, PluginError } from '../types/plugin.js';
@@ -441,7 +441,6 @@ export type AppState = DeepImmutable<{
   // Active overlays (Select dialogs, etc.) for Escape key coordination
   activeOverlays: ReadonlySet<string>;
   // Fast mode
-  fastMode?: boolean;
   // Advisor model for server-side advisor tool (undefined = disabled).
   advisorModel?: string;
   // Effort value
@@ -594,7 +593,6 @@ export function getDefaultAppState(): AppState {
     initialMessage: null,
     effortValue: undefined,
     activeOverlays: new Set<string>(),
-    fastMode: false,
     computerUseEnabled: process.env.ENABLE_COMPUTER_USE === '1',
     rateLimitOptionsOpened: false,
   };

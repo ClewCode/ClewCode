@@ -13,8 +13,8 @@ import type { ToolPermissionContext, Tool as ToolType, ToolUseContext } from '..
 import {
   consumeSpeculativeClassifierCheck,
   peekSpeculativeClassifierCheck,
-} from '../tools/BashTool/bashPermissions.js';
-import { BASH_TOOL_NAME } from '../tools/BashTool/toolName.js';
+} from 'src/tools/BashTool/bashPermissions.js';
+import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import type { AssistantMessage } from '../types/message.js';
 import { recordAutoModeDenial } from '../utils/autoModeDenials.js';
 import {

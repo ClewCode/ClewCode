@@ -689,38 +689,34 @@ function StatusLineInner({
 
     let sessionGoalDisplay = '';
     if (sessionGoal) {
-      const totalPausedMs = getFullGoalState()?.totalPausedMs ?? 0;
+      const goalState = getFullGoalState();
+      const totalPausedMs = goalState?.totalPausedMs ?? 0;
       const elapsedMs = sessionGoalStartTime ? Date.now() - sessionGoalStartTime - totalPausedMs : 0;
       const elapsedStr = formatCompactDuration(elapsedMs);
       const turns = sessionGoalTurnCount ?? 0;
       const isPaused = sessionGoalPaused ?? false;
+      const isBlocked = goalState?.blocked ?? false;
+      const isStopped = /(?:turn|time) limit reached/i.test(goalState?.blockedReason ?? goalState?.lastReason ?? '');
 
-      // Build a richer goal label with turn count
-      const icon = isPaused ? '⏸' : '◎';
-      const statusLabel = isPaused ? 'paused' : '';
+      const statusLabel = isBlocked ? (isStopped ? 'stopped' : 'blocked') : isPaused ? 'paused' : 'active';
       const turnsStr = turns > 0 ? `${turns}t` : '';
 
-      // Progress indicator for bounded goals
       let progressStr = '';
-      const goalState = getFullGoalState();
       if (goalState?.maxTurns && turns > 0) {
-        const ratio = turns / goalState.maxTurns;
+        const ratio = Math.min(1, turns / goalState.maxTurns);
         const filled = Math.round(ratio * 6);
         const empty = 6 - filled;
-        const bar = '▰'.repeat(filled) + '▱'.repeat(empty);
+        const bar = `[${'#'.repeat(filled)}${'-'.repeat(empty)}]`;
         progressStr = ` ${bar}`;
       }
 
-      // Compact goal label — icon, goal text, time, turns, and optional progress bar
-      const goalText = sessionGoal ? `"${sessionGoal}"` : '';
-      const parts = [goalText, elapsedStr, turnsStr, progressStr].filter(Boolean);
-      const text = `${icon} ${statusLabel ? `${statusLabel} ` : ''}${parts.join(' · ')}`;
+      const parts = [elapsedStr, turnsStr, progressStr].filter(Boolean);
+      const text = `/goal ${statusLabel} (${parts.join(' | ')})`;
 
-      if (isPaused) {
+      if (isPaused || isBlocked) {
         sessionGoalDisplay = claudePill(text);
       } else if (permissionMode === 'bypassPermissions') {
-        // Color based on progress toward limits
-        let color = CLAUDE_THEME.accent;
+        let color: string = CLAUDE_THEME.accent;
         if (goalState?.maxTurns) {
           const ratio = turns / goalState.maxTurns;
           if (ratio > 0.85) color = CLAUDE_THEME.danger;

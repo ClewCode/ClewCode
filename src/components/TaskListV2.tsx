@@ -2,14 +2,15 @@ import figures from 'figures';
 import * as React from 'react';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { stringWidth } from '../ink/stringWidth.js';
-import { Box, Text } from '../ink.js';
+import { Box, Text, useAnimationFrame } from '../ink.js';
+import { SpinnerGlyph } from './Spinner/SpinnerGlyph.js';
 import { useAppState } from '../state/AppState.js';
 import { isInProcessTeammateTask } from '../tasks/InProcessTeammateTask/types.js';
-import { AGENT_COLOR_TO_THEME_COLOR, type AgentColorName } from '../tools/AgentTool/agentColorManager.js';
+import { AGENT_COLOR_TO_THEME_COLOR, type AgentColorName } from 'src/tools/AgentTool/agentColorManager.js';
 import { isAgentSwarmsEnabled } from '../utils/agentSwarmsEnabled.js';
 import { count } from '../utils/array.js';
 import { summarizeRecentActivities } from '../utils/collapseReadSearch.js';
-import { truncateToWidth } from '../utils/format.js';
+import { formatDuration, truncateToWidth } from '../utils/format.js';
 import { isTodoV2Enabled, type Task } from '../utils/tasks.js';
 import type { Theme } from '../utils/theme.js';
 import ThemedText from './design-system/ThemedText.js';
@@ -59,6 +60,25 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
   }
   previousCompletedIdsRef.current = currentCompletedIds;
 
+  // Track when in_progress tasks started (for elapsed time display)
+  const startTimestampsRef = React.useRef(new Map<string, number>());
+  const previousInProgressIdsRef = React.useRef<Set<string> | null>(null);
+  if (previousInProgressIdsRef.current === null) {
+    previousInProgressIdsRef.current = new Set(tasks.filter(t => t.status === 'in_progress').map(t => t.id));
+  }
+  const currentInProgressIds = new Set(tasks.filter(t => t.status === 'in_progress').map(t => t.id));
+  for (const id of currentInProgressIds) {
+    if (!previousInProgressIdsRef.current.has(id)) {
+      startTimestampsRef.current.set(id, Date.now());
+    }
+  }
+  for (const id of startTimestampsRef.current.keys()) {
+    if (!currentInProgressIds.has(id)) {
+      startTimestampsRef.current.delete(id);
+    }
+  }
+  previousInProgressIdsRef.current = currentInProgressIds;
+
   // Schedule re-render when the next recent completion expires.
   // Depend on `tasks` so the timer is only reset when the task list changes,
   // not on every render (which was causing unnecessary work).
@@ -84,6 +104,11 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
     );
     return () => clearTimeout(timer);
   }, []);
+
+  // Animation frame for spinner glyphs on in_progress tasks
+  const hasInProgressTasks = tasks.some(t => t.status === 'in_progress');
+  const [animViewportRef, animTime] = useAnimationFrame(hasInProgressTasks ? 50 : null);
+  const spinnerFrame = Math.floor((animTime ?? 0) / 120);
 
   if (!isTodoV2Enabled()) {
     return null;
@@ -224,6 +249,8 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
           activity={task.owner ? teammateActivity[task.owner] : undefined}
           ownerActive={task.owner ? activeTeammates.has(task.owner) : false}
           columns={columns}
+          spinnerFrame={task.status === 'in_progress' ? spinnerFrame : undefined}
+          elapsedMs={task.status === 'in_progress' && startTimestampsRef.current.has(task.id) ? Date.now() - startTimestampsRef.current.get(task.id)! : undefined}
         />
       ))}
       {maxDisplay > 0 && hiddenSummary && <Text dimColor>{hiddenSummary}</Text>}
@@ -231,22 +258,22 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
   );
 
   if (isStandalone) {
+    const barLength = 10;
+    const doneFraction = tasks.length > 0 ? completedCount / tasks.length : 0;
+    const filledCount = Math.round(doneFraction * barLength);
+    const bar = '▰'.repeat(filledCount) + '▱'.repeat(barLength - filledCount);
     return (
       <Box flexDirection="column" marginTop={1} marginLeft={2}>
         <Box>
           <Text dimColor>
-            <Text bold>{tasks.length}</Text>
-            {' tasks ('}
-            <Text bold>{completedCount}</Text>
-            {' done, '}
+            Tasks{' '}
+            <Text color={completedCount === tasks.length ? 'success' : undefined}>{bar}</Text>
+            {' '}{completedCount}/{tasks.length}
             {inProgressCount > 0 && (
               <>
-                <Text bold>{inProgressCount}</Text>
-                {' in progress, '}
+                {' · '}<Text color="claude">{inProgressCount} running</Text>
               </>
             )}
-            <Text bold>{pendingCount}</Text>
-            {' open)'}
           </Text>
         </Box>
         {content}
@@ -264,12 +291,17 @@ type TaskItemProps = {
   activity?: string;
   ownerActive: boolean;
   columns: number;
+  spinnerFrame?: number;
+  elapsedMs?: number;
 };
 
-function getTaskIcon(status: Task['status']): {
+function getTaskIcon(status: Task['status'], isBlocked: boolean): {
   icon: string;
   color: keyof Theme | undefined;
 } {
+  if (isBlocked) {
+    return { icon: '⊘', color: 'warning' };
+  }
   switch (status) {
     case 'completed':
       return { icon: '✓', color: 'success' };
@@ -280,12 +312,12 @@ function getTaskIcon(status: Task['status']): {
   }
 }
 
-function TaskItem({ task, ownerColor, openBlockers, activity, ownerActive, columns }: TaskItemProps): React.ReactNode {
+function TaskItem({ task, ownerColor, openBlockers, activity, ownerActive, columns, spinnerFrame, elapsedMs }: TaskItemProps): React.ReactNode {
   const isCompleted = task.status === 'completed';
   const isInProgress = task.status === 'in_progress';
   const isBlocked = openBlockers.length > 0;
 
-  const { icon, color } = getTaskIcon(task.status);
+  const { icon, color } = getTaskIcon(task.status, isBlocked);
 
   const showActivity = isInProgress && !isBlocked && activity;
 
@@ -293,9 +325,11 @@ function TaskItem({ task, ownerColor, openBlockers, activity, ownerActive, colum
   // Truncate subject based on available space
   const showOwner = columns >= 60 && task.owner && ownerActive;
   const ownerWidth = showOwner ? stringWidth(` (@${task.owner})`) : 0;
-  // Account for: icon(2) + indentation(~8 when nested under spinner) + owner + safety
+  const elapsedStr = isInProgress && elapsedMs !== undefined ? formatDuration(elapsedMs) : undefined;
+  const elapsedWidth = elapsedStr ? stringWidth(` (${elapsedStr})`) : 0;
+  // Account for: icon(2) + indentation(~8 when nested under spinner) + owner + elapsed + safety
   // Use columns - 15 as a conservative estimate for nested layouts
-  const maxSubjectWidth = Math.max(15, columns - 15 - ownerWidth);
+  const maxSubjectWidth = Math.max(15, columns - 15 - ownerWidth - elapsedWidth);
   const displaySubject = truncateToWidth(task.subject, maxSubjectWidth);
 
   // Truncate activity for narrow screens
@@ -305,10 +339,26 @@ function TaskItem({ task, ownerColor, openBlockers, activity, ownerActive, colum
   return (
     <Box flexDirection="column">
       <Box>
-        <Text color={color}>{icon} </Text>
-        <Text bold={isInProgress} strikethrough={isCompleted} dimColor={isCompleted || isBlocked}>
+        {isInProgress && spinnerFrame !== undefined ? (
+          <Box marginRight={1}>
+            <SpinnerGlyph frame={spinnerFrame} messageColor="claude" />
+          </Box>
+        ) : (
+          <Text color={color}>{icon} </Text>
+        )}
+        <Text
+          bold={isInProgress}
+          strikethrough={isCompleted}
+          dimColor={isCompleted}
+          color={isBlocked ? 'warning' : undefined}
+        >
           {displaySubject}
         </Text>
+        {elapsedStr && (
+          <Text dimColor>
+            {' '}({elapsedStr})
+          </Text>
+        )}
         {showOwner && (
           <Text dimColor>
             {' ('}

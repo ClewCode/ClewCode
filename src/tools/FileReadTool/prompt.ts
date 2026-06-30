@@ -1,5 +1,5 @@
 import { isPDFSupported } from '../../utils/pdfUtils.js';
-import { BASH_TOOL_NAME } from '../BashTool/toolName.js';
+import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 
 // Use a string constant for tool names to avoid circular dependencies
 export const FILE_READ_TOOL_NAME = 'Read';

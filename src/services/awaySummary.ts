@@ -8,17 +8,29 @@ import { asSystemPrompt } from '../utils/systemPromptType.js';
 import { queryModelWithoutStreaming } from './api/claude.js';
 import { getSessionMemoryContent } from './SessionMemory/sessionMemoryUtils.js';
 
-// Recap only needs recent context — truncate to avoid "prompt too long" on
-// large sessions. 30 messages ≈ ~15 exchanges, plenty for "where we left off."
+// Recap only needs recent context. Truncate to avoid "prompt too long" on
+// large sessions. 30 messages is roughly 15 exchanges, plenty for handoff.
 const RECENT_MESSAGE_WINDOW = 30;
 
 function buildAwaySummaryPrompt(memory: string | null): string {
   const memoryBlock = memory ? `Session memory (broader context):\n${memory}\n\n` : '';
-  return `${memoryBlock}The user stepped away and is coming back. Write exactly 1-3 short sentences. Start by stating the high-level task — what they are building or debugging, not implementation details. Next: the concrete next step. Skip status reports and commit recaps.`;
+  return `${memoryBlock}The user stepped away and is coming back. Write a tiny handoff recap in the same language the user has been using. Output exactly this shape and nothing else:
+
+Goal: <what they are trying to accomplish at a high level>. Next: <the concrete next action>.
+
+Keep it to one or two short sentences total. Avoid markdown, bullets, status reports, commit recaps, and implementation trivia.`;
+}
+
+function cleanAwaySummary(text: string): string {
+  return text
+    .trim()
+    .replace(/^recap:\s*/i, '')
+    .replace(/^summary:\s*/i, '')
+    .replace(/\s+/g, ' ');
 }
 
 /**
- * Generates a short session recap for the "while you were away" card.
+ * Generates a short session recap for the "while you were away" line.
  * Returns null on abort, empty transcript, or error.
  */
 export async function generateAwaySummary(messages: readonly Message[], signal: AbortSignal): Promise<string | null> {
@@ -53,7 +65,9 @@ export async function generateAwaySummary(messages: readonly Message[], signal: 
       logForDebugging(`[awaySummary] API error: ${getAssistantMessageText(response)}`);
       return null;
     }
-    return getAssistantMessageText(response);
+
+    const text = cleanAwaySummary(getAssistantMessageText(response));
+    return text.length > 0 ? text : null;
   } catch (err) {
     if (err instanceof APIUserAbortError || signal.aborted) {
       return null;

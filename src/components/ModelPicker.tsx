@@ -16,12 +16,6 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from 'src/services/analytics/index.js';
-import {
-  FAST_MODE_MODEL_DISPLAY,
-  isFastModeAvailable,
-  isFastModeCooldown,
-  isFastModeEnabled,
-} from 'src/utils/fastMode.js';
 import { Box, Text, useInput, useTerminalFocus } from '../ink.js';
 import { useKeybindings } from '../keybindings/useKeybinding.js';
 import { useAppState, useSetAppState } from '../state/AppState.js';
@@ -60,7 +54,6 @@ export type Props = {
   onSetDefault?: (model: string | null, effort: EffortLevel | undefined) => void;
   onCancel?: () => void;
   isStandaloneCommand?: boolean;
-  showFastModeNotice?: boolean;
   /** Overrides the dim header line below "Select model". */
   headerText?: string;
   /**
@@ -81,7 +74,6 @@ export function ModelPicker(t0) {
     onSetDefault,
     onCancel,
     isStandaloneCommand,
-    showFastModeNotice,
     headerText,
     skipSettingsWrite,
   } = t0;
@@ -551,22 +543,6 @@ export function ModelPicker(t0) {
             </Text>
           )}
         </Box>
-        {isFastModeEnabled() ? (
-          showFastModeNotice ? (
-            <Box marginBottom={1}>
-              <Text dimColor={true}>
-                Fast mode is <Text bold={true}>ON</Text> and available with {FAST_MODE_MODEL_DISPLAY} only (/fast).
-                Switching to other models turn off fast mode.
-              </Text>
-            </Box>
-          ) : isFastModeAvailable() && !isFastModeCooldown() ? (
-            <Box marginBottom={1}>
-              <Text dimColor={true}>
-                Use <Text bold={true}>/fast</Text> to turn on Fast mode ({FAST_MODE_MODEL_DISPLAY} only).
-              </Text>
-            </Box>
-          ) : null
-        ) : null}
       </Box>
       {isStandaloneCommand && (
         <Text dimColor={true} italic={true}>
@@ -598,8 +574,8 @@ function _temp3(opt_0) {
 function _temp2(s_0) {
   return s_0.effortValue;
 }
-function _temp(s) {
-  return isFastModeEnabled() ? s.fastMode : false;
+function _temp(_s) {
+  return false;
 }
 function getDefaultHeaderText(
   providerInfo?: {
@@ -633,7 +609,6 @@ function getActiveProviderInfo(): {
 }
 
 function getEffectiveModelOptions(
-  fastMode: boolean,
   fetchedModels?: FetchedModel[] | null,
   entry?: ReturnType<typeof getProviderRegistryEntry>,
   initial?: string | null,
@@ -645,7 +620,7 @@ function getEffectiveModelOptions(
 
   // Fall back to legacy model options when no provider info
   if (!providerEntry) {
-    return getModelOptions(fastMode);
+    return getModelOptions();
   }
 
   const implementationType = providerManager.getImplementationType();

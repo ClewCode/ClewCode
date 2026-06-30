@@ -3,8 +3,8 @@ import { ASK_USER_QUESTION_TOOL_NAME } from '../../tools/AskUserQuestionTool/pro
 import { ENTER_PLAN_MODE_TOOL_NAME } from '../../tools/EnterPlanModeTool/constants.js';
 import { EXIT_PLAN_MODE_TOOL_NAME } from '../../tools/ExitPlanModeTool/constants.js';
 import { FILE_READ_TOOL_NAME } from '../../tools/FileReadTool/prompt.js';
-import { GLOB_TOOL_NAME } from '../../tools/GlobTool/prompt.js';
-import { GREP_TOOL_NAME } from '../../tools/GrepTool/prompt.js';
+import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
+import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
 import { LIST_MCP_RESOURCES_TOOL_NAME } from '../../tools/ListMcpResourcesTool/prompt.js';
 import { LSP_TOOL_NAME } from '../../tools/LSPTool/prompt.js';
 import { SEND_MESSAGE_TOOL_NAME } from '../../tools/SendMessageTool/constants.js';

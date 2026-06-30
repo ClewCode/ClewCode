@@ -58,7 +58,13 @@ export function SystemTextMessage({ message, addMargin, verbose, isTranscriptMod
         <Box minWidth={2}>
           <Text dimColor>{REFERENCE_MARK}</Text>
         </Box>
-        <Text dimColor>{message.content}</Text>
+        <Box flexDirection="row" flexShrink={1}>
+          <Text bold>recap:</Text>
+          <Text> </Text>
+          <Text dimColor italic wrap="wrap">
+            {message.content}
+          </Text>
+        </Box>
       </Box>
     );
   }

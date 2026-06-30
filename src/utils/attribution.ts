@@ -7,8 +7,8 @@ import type { AppState } from '../state/AppState.js';
 import { FILE_EDIT_TOOL_NAME } from '../tools/FileEditTool/constants.js';
 import { FILE_READ_TOOL_NAME } from '../tools/FileReadTool/prompt.js';
 import { FILE_WRITE_TOOL_NAME } from '../tools/FileWriteTool/prompt.js';
-import { GLOB_TOOL_NAME } from '../tools/GlobTool/prompt.js';
-import { GREP_TOOL_NAME } from '../tools/GrepTool/prompt.js';
+import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
+import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
 import type { Entry } from '../types/logs.js';
 import {
   type AttributionData,

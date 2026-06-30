@@ -4,6 +4,7 @@ import type { ValidationResult } from '../../Tool.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
+import { notifyPeerFeedback } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_DISCONNECT_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -53,6 +54,12 @@ export const PeerDisconnectTool = buildTool({
     }
     return { result: true };
   },
+  renderToolUseMessage(input) {
+    return `disconnect peer ${input.peer}`;
+  },
+  renderToolResultMessage(output) {
+    return output.success ? `Disconnected ${output.hostname}.` : `Failed to disconnect peer: ${output.error}`;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success)
       return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer] Failed: ${output.error}` };
@@ -60,16 +67,19 @@ export const PeerDisconnectTool = buildTool({
   },
   async call(input: { peer: string }) {
     const store = getGlobalPeerStore();
+    notifyPeerFeedback(`disconnecting ${input.peer}`, 'peer-disconnect', 'low');
     let peer = store.findPeer(input.peer);
 
     const portNum = parseInt(input.peer, 10);
     if (!peer && !Number.isNaN(portNum)) peer = store.getPeerByPort(portNum);
 
     if (!peer) {
+      notifyPeerFeedback(`peer not found: ${input.peer}`, 'peer-disconnect-result', 'high');
       return { data: { success: false, error: `Peer "${input.peer}" not found` } };
     }
 
     store.removeMesh(peer.id);
+    notifyPeerFeedback(`disconnected ${peer.hostname}`, 'peer-disconnect-result', 'medium');
     return { data: { success: true, hostname: peer.hostname } };
   },
 });

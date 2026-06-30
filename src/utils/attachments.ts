@@ -81,7 +81,7 @@ const autoModeStateModule = feature('TRANSCRIPT_CLASSIFIER')
   ? (require('./permissions/autoModeState.js') as typeof import('./permissions/autoModeState.js'))
   : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
-import { MAX_LINES_TO_READ, FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
+import { MAX_LINES_TO_READ, FILE_READ_TOOL_NAME } from '../tools/FileReadTool/prompt.js';
 import { getDefaultFileReadingLimits } from 'src/tools/FileReadTool/limits.js';
 import { cacheKeys, type FileStateCache } from './fileStateCache.js';
 import { createAbortController, createChildAbortController } from './abortController.js';

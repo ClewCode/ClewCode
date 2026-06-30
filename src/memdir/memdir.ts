@@ -13,8 +13,8 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from '../services/analytics/index.js';
-import { GREP_TOOL_NAME } from '../tools/GrepTool/prompt.js';
-import { isReplModeEnabled } from '../tools/REPLTool/constants.js';
+import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
+import { isReplModeEnabled } from 'src/tools/REPLTool/constants.js';
 import { logForDebugging } from '../utils/debug.js';
 import { hasEmbeddedSearchTools } from '../utils/embeddedTools.js';
 import { isEnvTruthy } from '../utils/envUtils.js';

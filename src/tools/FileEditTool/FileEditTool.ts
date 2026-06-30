@@ -263,10 +263,14 @@ export const FileEditTool = buildTool({
       const lastWriteTime = getFileModificationTime(fullFilePath);
       if (lastWriteTime > readTimestamp.timestamp) {
         // Timestamp indicates modification, but on Windows timestamps can change
-        // without content changes (cloud sync, antivirus, etc.). For full reads,
-        // compare content as a fallback to avoid false positives.
+        // without content changes (cloud sync, antivirus, etc.). Compare content
+        // as a fallback: for full reads, exact match; for partial reads, check
+        // that the stored portion is still present in the file.
         const isFullRead = readTimestamp.offset === undefined && readTimestamp.limit === undefined;
-        if (isFullRead && fileContent === readTimestamp.content) {
+        const contentUnchanged = isFullRead
+          ? fileContent === readTimestamp.content
+          : fileContent.includes(readTimestamp.content);
+        if (contentUnchanged) {
           // Content unchanged, safe to proceed
         } else {
           return {

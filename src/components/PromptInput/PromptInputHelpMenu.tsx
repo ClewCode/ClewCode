@@ -5,7 +5,6 @@ import { getPlatform } from 'src/utils/platform.js';
 import { isKeybindingCustomizationEnabled } from '../../keybindings/loadUserBindings.js';
 import { useShortcutDisplay } from '../../keybindings/useShortcutDisplay.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
-import { isFastModeAvailable, isFastModeEnabled } from '../../utils/fastMode.js';
 import { getNewlineInstructions } from './utils.js';
 
 /** Format a shortcut for display in the help menu (e.g., "ctrl+o" → "ctrl + o") */
@@ -30,7 +29,6 @@ export function PromptInputHelpMenu(props: Props): React.ReactNode {
   const stashShortcut = formatShortcut(useShortcutDisplay('chat:stash', 'Chat', 'ctrl+s'));
   const cycleModeShortcut = formatShortcut(useShortcutDisplay('chat:cycleMode', 'Chat', 'shift+tab'));
   const modelPickerShortcut = formatShortcut(useShortcutDisplay('chat:modelPicker', 'Chat', 'alt+p'));
-  const fastModeShortcut = formatShortcut(useShortcutDisplay('chat:fastMode', 'Chat', 'alt+o'));
   const externalEditorShortcut = formatShortcut(useShortcutDisplay('chat:externalEditor', 'Chat', 'ctrl+g'));
   const terminalShortcut = formatShortcut(useShortcutDisplay('app:toggleTerminal', 'Global', 'meta+j'));
   const imagePasteShortcut = formatShortcut(useShortcutDisplay('chat:imagePaste', 'Chat', 'ctrl+v'));
@@ -65,9 +63,7 @@ export function PromptInputHelpMenu(props: Props): React.ReactNode {
           <Text dimColor={dimColor}>double tap esc to clear input</Text>
         </Box>
         <Box>
-          <Text dimColor={dimColor}>
-            {cycleModeShortcut} {'external' === 'ant' ? 'to cycle modes' : 'to auto-accept edits'}
-          </Text>
+          <Text dimColor={dimColor}>{cycleModeShortcut} to auto-accept edits</Text>
         </Box>
         <Box>
           <Text dimColor={dimColor}>{transcriptShortcut} for verbose output</Text>
@@ -95,11 +91,6 @@ export function PromptInputHelpMenu(props: Props): React.ReactNode {
         <Box>
           <Text dimColor={dimColor}>{modelPickerShortcut} to switch model</Text>
         </Box>
-        {isFastModeEnabled() && isFastModeAvailable() && (
-          <Box>
-            <Text dimColor={dimColor}>{fastModeShortcut} to toggle fast mode</Text>
-          </Box>
-        )}
         <Box>
           <Text dimColor={dimColor}>{stashShortcut} to stash prompt</Text>
         </Box>

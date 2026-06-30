@@ -1,4 +1,4 @@
-import MiniSearch from 'minisearch';
+import Fuse from 'fuse.js';
 import { basename } from 'path';
 import type { SuggestionItem } from 'src/components/PromptInput/PromptInputFooterSuggestions.js';
 import { generateFileSuggestions } from 'src/hooks/fileSuggestions.js';
@@ -65,13 +65,6 @@ function createSuggestionFromSource(source: SuggestionSource): SuggestionItem {
 }
 
 const MAX_UNIFIED_SUGGESTIONS = 15;
-
-// Cache MiniSearch index keyed by the non-file sources content.
-// Avoids rebuilding the index on every keystroke.
-let miniSearchCache: {
-  key: string;
-  miniSearch: MiniSearch<SuggestionSource>;
-} | null = null;
 const DESCRIPTION_MAX_LENGTH = 60;
 
 function truncateDescription(description: string): string {
@@ -160,7 +153,7 @@ export async function generateUnifiedSuggestions(
 
   const nonFileSources: SuggestionSource[] = [...mcpSources, ...agentSources];
 
-  // Score non-file sources with MiniSearch
+  // Score non-file sources with Fuse.js
   // File sources are already scored by Rust/nucleo
   type ScoredSource = { source: SuggestionSource; score: number };
   const scoredResults: ScoredSource[] = [];
@@ -173,37 +166,25 @@ export async function generateUnifiedSuggestions(
     });
   }
 
-  // Score non-file sources with MiniSearch and add them
+  // Score non-file sources with Fuse.js and add them
   if (nonFileSources.length > 0) {
-    // Build cache key from nonFileSources content to detect changes
-    const cacheKey = nonFileSources
-      .map(s => `${s.type}:${'displayText' in s ? s.displayText : ''}:${'uri' in s ? s.uri : ''}`)
-      .join('|');
+    const fuse = new Fuse(nonFileSources, {
+      includeScore: true,
+      threshold: 0.6, // Allow more matches through, we'll sort by score
+      keys: [
+        { name: 'displayText', weight: 2 },
+        { name: 'name', weight: 3 },
+        { name: 'server', weight: 1 },
+        { name: 'description', weight: 1 },
+        { name: 'agentType', weight: 3 },
+      ],
+    });
 
-    if (!miniSearchCache || miniSearchCache.key !== cacheKey) {
-      const miniSearch = new MiniSearch({
-        fields: ['displayText', 'name', 'server', 'description', 'agentType'],
-        storeFields: ['displayText', 'name', 'server', 'description', 'agentType', 'source'],
-        searchOptions: {
-          fuzzy: 0.6,
-          prefix: true,
-          boost: { displayText: 2, name: 3, server: 1, description: 1, agentType: 3 },
-        },
-        extractField: (doc: SuggestionSource, field: string) => {
-          return ((doc as Record<string, unknown>)[field] as string) || '';
-        },
-      });
-
-      const searchItems = nonFileSources.map((source, i) => ({ ...source, id: String(i), source }));
-      miniSearch.addAll(searchItems);
-      miniSearchCache = { key: cacheKey, miniSearch };
-    }
-
-    const miniResults = miniSearchCache.miniSearch.search(query, { prefix: true, fuzzy: 0.6 });
-    for (const result of miniResults.slice(0, MAX_UNIFIED_SUGGESTIONS)) {
+    const fuseResults = fuse.search(query, { limit: MAX_UNIFIED_SUGGESTIONS });
+    for (const result of fuseResults) {
       scoredResults.push({
-        source: result.source,
-        score: result.score,
+        source: result.item,
+        score: result.score ?? 0.5,
       });
     }
   }

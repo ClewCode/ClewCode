@@ -3,6 +3,7 @@ import { POWERSHELL_TOOL_NAME } from '../../tools/PowerShellTool/toolName.js';
 import { isEnvDefinedFalsy, isEnvTruthy } from '../envUtils.js';
 import { getAPIProvider } from '../model/providers.js';
 import { getPlatform } from '../platform.js';
+import { isGitBashAvailable } from '../windowsPaths.js';
 export const SHELL_TOOL_NAMES = [BASH_TOOL_NAME, POWERSHELL_TOOL_NAME];
 /**
  * Runtime gate for PowerShellTool. Windows-only (the permission engine uses
@@ -16,6 +17,11 @@ export const SHELL_TOOL_NAMES = [BASH_TOOL_NAME, POWERSHELL_TOOL_NAME];
  */
 export function isPowerShellToolEnabled() {
   if (getPlatform() !== 'windows') return false;
+  // No Git Bash on this Windows machine → PowerShell is the only working shell,
+  // so force-enable it regardless of user type (unless explicitly opted out).
+  if (!isGitBashAvailable()) {
+    return !isEnvDefinedFalsy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
+  }
   // Ant internal: default on, opt out with env=0
   if (process.env.USER_TYPE === 'ant') {
     return !isEnvDefinedFalsy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);

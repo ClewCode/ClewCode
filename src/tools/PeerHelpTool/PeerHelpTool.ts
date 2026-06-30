@@ -268,6 +268,12 @@ export const PeerHelpTool = buildTool({
   getPath() {
     return getCwd();
   },
+  renderToolUseMessage(input) {
+    return `show peer help: ${input.topic ?? 'overview'}`;
+  },
+  renderToolResultMessage(output) {
+    return `Peer help: ${output.topic}`;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     return {
       tool_use_id: toolUseID,

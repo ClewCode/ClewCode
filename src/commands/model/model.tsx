@@ -12,12 +12,6 @@ import { useAppState, useSetAppState } from '../../state/AppState.js';
 import type { LocalJSXCommandCall } from '../../types/command.js';
 import type { EffortLevel } from '../../utils/effort.js';
 import { isBilledAsExtraUsage } from '../../utils/extraUsage.js';
-import {
-  clearFastModeCooldown,
-  isFastModeAvailable,
-  isFastModeEnabled,
-  isFastModeSupportedByModel,
-} from '../../utils/fastMode.js';
 import { MODEL_ALIASES } from '../../utils/model/aliases.js';
 import { checkOpus1mAccess, checkSonnet1mAccess } from '../../utils/model/check1mAccess.js';
 import {
@@ -38,7 +32,6 @@ function ModelPickerWrapper({
 }): React.ReactNode {
   const mainLoopModel = useAppState(s => s.mainLoopModel);
   const mainLoopModelForSession = useAppState(s => s.mainLoopModelForSession);
-  const isFastMode = useAppState(s => s.fastMode);
   const setAppState = useSetAppState();
 
   function handleCancel(): void {
@@ -144,31 +137,7 @@ function ModelPickerWrapper({
       message += ` with ${ansis.bold(effort)} effort`;
     }
 
-    // Turn off fast mode if switching to unsupported model
-    let wasFastModeToggledOn;
-    if (isFastModeEnabled()) {
-      clearFastModeCooldown();
-      if (!isFastModeSupportedByModel(model) && isFastMode) {
-        setAppState(prev => ({
-          ...prev,
-          fastMode: false,
-        }));
-        wasFastModeToggledOn = false;
-        // Do not update fast mode in settings since this is an automatic downgrade
-      } else if (isFastModeSupportedByModel(model) && isFastModeAvailable() && isFastMode) {
-        message += ` · Fast mode ON`;
-        wasFastModeToggledOn = true;
-      }
-    }
 
-    if (isBilledAsExtraUsage(model, wasFastModeToggledOn === true, isOpus1mMergeEnabled())) {
-      message += ` · Billed as usage credits`;
-    }
-
-    if (wasFastModeToggledOn === false) {
-      // Fast mode was toggled off, show suffix after extra usage billing
-      message += ` · Fast mode OFF`;
-    }
 
     onDone(message);
   }
@@ -183,9 +152,6 @@ function ModelPickerWrapper({
       onSetDefault={model => handleSelect(model, undefined, { persistAsDefault: true })}
       onCancel={handleCancel}
       isStandaloneCommand
-      showFastModeNotice={
-        isFastModeEnabled() && isFastMode && isFastModeSupportedByModel(mainLoopModel) && isFastModeAvailable()
-      }
     />
   );
 }
@@ -197,7 +163,6 @@ function SetModelAndClose({
   args: string;
   onDone: (result?: string, options?: { display?: CommandResultDisplay }) => void;
 }): React.ReactNode {
-  const isFastMode = useAppState(s => s.fastMode);
   const setAppState = useSetAppState();
 
   const initialModel = args === 'default' ? null : args;
@@ -305,30 +270,7 @@ function SetModelAndClose({
 
       let message = `Set model to ${ansis.bold(renderModelLabel(modelValue))} for this session`;
 
-      let wasFastModeToggledOn;
-      if (isFastModeEnabled()) {
-        clearFastModeCooldown();
-        if (!isFastModeSupportedByModel(modelValue) && isFastMode) {
-          setAppState(prev => ({
-            ...prev,
-            fastMode: false,
-          }));
-          wasFastModeToggledOn = false;
-          // Do not update fast mode in settings since this is an automatic downgrade
-        } else if (isFastModeSupportedByModel(modelValue) && isFastMode) {
-          message += ` · Fast mode ON`;
-          wasFastModeToggledOn = true;
-        }
-      }
 
-      if (isBilledAsExtraUsage(modelValue, wasFastModeToggledOn === true, isOpus1mMergeEnabled())) {
-        message += ` · Billed as extra usage`;
-      }
-
-      if (wasFastModeToggledOn === false) {
-        // Fast mode was toggled off, show suffix after extra usage billing
-        message += ` · Fast mode OFF`;
-      }
 
       onDone(message);
     }

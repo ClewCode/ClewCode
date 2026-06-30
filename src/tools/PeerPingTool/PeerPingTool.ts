@@ -77,6 +77,13 @@ export const PeerPingTool = buildTool({
     }
     return { result: true };
   },
+  renderToolUseMessage(input) {
+    return input.wait ? `wait for peer ${input.peer}` : `ping peer ${input.peer}`;
+  },
+  renderToolResultMessage(output) {
+    if (!output.online) return output.error ?? 'Peer is offline or unreachable.';
+    return `Peer online: ${output.hostname}:${output.port ?? '?'}${output.role ? ` [${output.role}]` : ''}`;
+  },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.online) {
       let content = `Peer is offline or unreachable: ${output.error}`;

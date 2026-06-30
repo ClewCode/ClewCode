@@ -209,6 +209,16 @@ export const agentToolResultSchema = lazySchema(() =>
     totalToolUseCount: z.number(),
     totalDurationMs: z.number(),
     totalTokens: z.number(),
+    // Structured summary of key findings, files changed, and issues
+    summary: z
+      .object({
+        keyFindings: z.array(z.string()).optional(),
+        filesRead: z.array(z.string()).optional(),
+        filesChanged: z.array(z.string()).optional(),
+        issues: z.array(z.string()).optional(),
+        warnings: z.array(z.string()).optional(),
+      })
+      .optional(),
     usage: z.object({
       input_tokens: z.number(),
       output_tokens: z.number(),
@@ -247,6 +257,48 @@ export function countToolUses(messages: MessageType[]): number {
   return count;
 }
 
+/**
+ * Extract a structured summary from agent messages by scanning tool_use blocks
+ * for file reads, writes, edits, and tool results for key information.
+ */
+function buildAgentSummary(agentMessages: MessageType[]): {
+  filesRead: string[];
+  filesChanged: string[];
+} {
+  const filesRead: string[] = [];
+  const filesChanged: string[] = [];
+
+  for (const m of agentMessages) {
+    if (m.type !== 'assistant') continue;
+    for (const block of m.message.content) {
+      if (block.type === 'tool_use') {
+        if (
+          (block.name === 'Read' || block.name === 'FileRead' || block.name === 'Grep') &&
+          block.input &&
+          typeof block.input === 'object'
+        ) {
+          const fp = (block.input as Record<string, unknown>).file_path ?? (block.input as Record<string, unknown>).path;
+          if (typeof fp === 'string' && !filesRead.includes(fp)) {
+            filesRead.push(fp);
+          }
+        }
+        if (
+          (block.name === 'Edit' || block.name === 'Write' || block.name === 'FileWrite' || block.name === 'FileEdit') &&
+          block.input &&
+          typeof block.input === 'object'
+        ) {
+          const fp = (block.input as Record<string, unknown>).file_path;
+          if (typeof fp === 'string' && !filesChanged.includes(fp)) {
+            filesChanged.push(fp);
+          }
+        }
+      }
+    }
+  }
+
+  return { filesRead, filesChanged };
+}
+
 export function finalizeAgentTool(
   agentMessages: MessageType[],
   agentId: string,
@@ -263,7 +315,11 @@ export function finalizeAgentTool(
 
   const lastAssistantMessage = getLastAssistantMessage(agentMessages);
   if (lastAssistantMessage === undefined) {
-    throw new Error('No assistant messages found');
+    throw new Error(
+      `No assistant messages found for agent "${agentType}" (${agentId}) after ${(Date.now() - startTime) / 1000}s. ` +
+        `Total messages in transcript: ${agentMessages.length}. ` +
+        `This may indicate the agent was killed or failed before producing any output.`,
+    );
   }
   // Extract text content from the agent's response. If the final assistant
   // message is a pure tool_use block (loop exited mid-turn), fall back to
@@ -283,6 +339,12 @@ export function finalizeAgentTool(
 
   const totalTokens = getTokenCountFromUsage(lastAssistantMessage.message.usage);
   const totalToolUseCount = countToolUses(agentMessages);
+
+  // Build structured summary from tool usage
+  const { filesRead, filesChanged } = buildAgentSummary(agentMessages);
+  const summaryRecord: Record<string, string[]> = {};
+  if (filesRead.length > 0) summaryRecord.filesRead = filesRead;
+  if (filesChanged.length > 0) summaryRecord.filesChanged = filesChanged;
 
   logEvent('tengu_agent_tool_completed', {
     agent_type: agentType as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -313,6 +375,7 @@ export function finalizeAgentTool(
     totalDurationMs: Date.now() - startTime,
     totalTokens,
     totalToolUseCount,
+    summary: Object.keys(summaryRecord).length > 0 ? summaryRecord : undefined,
     usage: lastAssistantMessage.message.usage,
   };
 }

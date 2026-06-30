@@ -68,6 +68,8 @@ const PROVIDER_DESCRIPTIONS: Record<string, { description: string; highlight: st
 };
 
 function ProviderIntroContent({ onSelect }: { onSelect: (provider: string) => void }) {
+  const [focusedProvider, setFocusedProvider] = useState('anthropic');
+  const focusedInfo = PROVIDER_DESCRIPTIONS[focusedProvider];
   return (
     <Box flexDirection="column" gap={1}>
       <Box flexDirection="column">
@@ -84,43 +86,16 @@ function ProviderIntroContent({ onSelect }: { onSelect: (provider: string) => vo
           { label: 'Ollama (Local)', value: 'ollama' },
         ]}
         onChange={onSelect}
+        onFocus={value => setFocusedProvider(value as string)}
         onCancel={() => {}}
       />
-      <Box flexDirection="column" gap={0} marginTop={1}>
-        <Text bold color="claude">
-          Provider overview:
-        </Text>
-        <Box flexDirection="column" gap={0} marginTop={0}>
-          {(['anthropic', 'openai', 'google', 'deepseek', 'openrouter', 'opencode', 'ollama'] as const).map(id => {
-            const info = PROVIDER_DESCRIPTIONS[id];
-            return (
-              <Box key={id} flexDirection="column" paddingLeft={1} marginTop={0}>
-                <Text>
-                  <Text bold>
-                    {id === 'anthropic'
-                      ? 'Claude'
-                      : id === 'openai'
-                        ? 'OpenAI'
-                        : id === 'google'
-                          ? 'Gemini'
-                          : id === 'deepseek'
-                            ? 'DeepSeek'
-                            : id === 'openrouter'
-                              ? 'OpenRouter'
-                              : id === 'opencode'
-                                ? 'OpenCode'
-                                : 'Ollama'}
-                  </Text>
-                  <Text dimColor> — {info.description}</Text>
-                </Text>
-                <Text dimColor italic>
-                  {info.highlight}
-                </Text>
-              </Box>
-            );
-          })}
+      {focusedInfo && (
+        <Box flexDirection="column" gap={0} marginTop={1} paddingLeft={1}>
+          <Text bold color="claude">{focusedProvider === 'anthropic' ? 'Claude' : focusedProvider === 'openai' ? 'OpenAI' : focusedProvider === 'google' ? 'Gemini' : focusedProvider === 'deepseek' ? 'DeepSeek' : focusedProvider === 'openrouter' ? 'OpenRouter' : focusedProvider === 'opencode' ? 'OpenCode' : 'Ollama'}</Text>
+          <Text>{focusedInfo.description}</Text>
+          <Text dimColor italic>{focusedInfo.highlight}</Text>
         </Box>
-      </Box>
+      )}
     </Box>
   );
 }
@@ -201,6 +176,12 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
       });
     } else {
       onDone();
+    }
+  }
+
+  function goToPrevStep() {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(currentStepIndex - 1);
     }
   }
 
@@ -431,6 +412,16 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
     },
   );
 
+  useKeybindings(
+    {
+      dismiss: goToPrevStep,
+    },
+    {
+      context: 'Onboarding',
+      isActive: currentStepIndex > 0 && currentStep?.id !== 'terminal-setup',
+    },
+  );
+
   const totalSteps = steps.length;
   const showProgress = totalSteps > 1;
 
@@ -440,13 +431,25 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
       <Box flexDirection="column" marginTop={1}>
         {/* Step progress indicator */}
         {showProgress && (
-          <Box paddingLeft={1} marginBottom={1}>
-            <Text dimColor>
-              Step {currentStepIndex + 1} of {totalSteps}
+        <Box paddingLeft={1} marginBottom={1}>
+          <Text dimColor>
+            Step {currentStepIndex + 1}/{totalSteps}
+            {' '}
+            <Text color="claude">
+              {'●'.repeat(currentStepIndex + 1)}
             </Text>
+            <Text dimColor>
+              {'○'.repeat(Math.max(0, totalSteps - currentStepIndex - 1))}
+            </Text>
+          </Text>
+        </Box>
+      )}
+        {currentStep?.component}
+        {currentStepIndex > 0 && currentStep?.id !== 'terminal-setup' && (
+          <Box paddingLeft={1} marginTop={1}>
+            <Text dimColor>Esc to go back</Text>
           </Box>
         )}
-        {currentStep?.component}
         {exitState.pending && (
           <Box padding={1}>
             <Text dimColor>Press {exitState.keyName} again to exit</Text>

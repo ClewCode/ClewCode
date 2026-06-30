@@ -1,5 +1,5 @@
 import figures from 'figures';
-import MiniSearch from 'minisearch';
+import Fuse from 'fuse.js';
 import React from 'react';
 import { getOriginalCwd, getSessionId } from '../bootstrap/state.js';
 import { useExitOnCtrlCDWithKeybindings } from '../hooks/useExitOnCtrlCDWithKeybindings.js';
@@ -134,7 +134,7 @@ export function LogSelector({
   const exitState = useExitOnCtrlCDWithKeybindings(onCancel);
   const isTerminalFocused = useTerminalFocus();
   const isResumeWithRenameEnabled = isCustomTitleEnabled();
-  const isDeepSearchEnabled = true;
+  const isDeepSearchEnabled = 'external' === 'ant';
   const isAgenticSearchEnabled = 'external' === 'ant';
 
   const [currentBranch, setCurrentBranch] = React.useState<string | null>(null);
@@ -209,25 +209,23 @@ export function LogSelector({
   // Memoize searchable text extraction - only recompute when logs change
   const searchableTextByLog = React.useMemo(() => new Map(logs.map(log => [log, buildSearchableText(log)])), [logs]);
 
-  // Pre-build MiniSearch index once when logs change (not on every search query)
-  const miniSearchIndex = React.useMemo(() => {
+  // Pre-build Fuse index once when logs change (not on every search query)
+  const fuseIndex = React.useMemo(() => {
     if (!isDeepSearchEnabled) return null;
 
     const logsWithText = logs
-      .map((log, i) => ({
-        id: String(i),
+      .map(log => ({
         log,
         searchableText: searchableTextByLog.get(log) ?? '',
       }))
       .filter(item => item.searchableText);
 
-    const miniSearch = new MiniSearch({
-      fields: ['searchableText'],
-      storeFields: ['log', 'searchableText'],
-      searchOptions: { fuzzy: FUSE_THRESHOLD, prefix: true },
+    return new Fuse(logsWithText, {
+      keys: ['searchableText'],
+      threshold: FUSE_THRESHOLD,
+      ignoreLocation: true,
+      includeScore: true,
     });
-    miniSearch.addAll(logsWithText);
-    return miniSearch;
   }, [logs, searchableTextByLog]);
 
   // Compute unique tags from logs (before any filtering)
@@ -322,7 +320,7 @@ export function LogSelector({
 
   // Async deep search effect - runs after 300ms debounce
   React.useEffect(() => {
-    if (!isDeepSearchEnabled || !debouncedDeepSearchQuery || !miniSearchIndex) {
+    if (!isDeepSearchEnabled || !debouncedDeepSearchQuery || !fuseIndex) {
       setDeepSearchResults(null);
       setIsSearching(false);
       return;
@@ -330,33 +328,33 @@ export function LogSelector({
 
     // Use setTimeout(0) to yield to the event loop - prevents UI freeze
     const timeoutId = setTimeout(
-      (miniSearchIndex, debouncedDeepSearchQuery, setDeepSearchResults, setIsSearching) => {
-        const results = miniSearchIndex.search(debouncedDeepSearchQuery);
+      (fuseIndex, debouncedDeepSearchQuery, setDeepSearchResults, setIsSearching) => {
+        const results = fuseIndex.search(debouncedDeepSearchQuery);
 
         // Sort by date (newest first), with relevance as tie-breaker within same minute
         results.sort((a, b) => {
-          const aTime = new Date(a.log.modified).getTime();
-          const bTime = new Date(b.log.modified).getTime();
+          const aTime = new Date(a.item.log.modified).getTime();
+          const bTime = new Date(b.item.log.modified).getTime();
           const timeDiff = bTime - aTime;
           if (Math.abs(timeDiff) > DATE_TIE_THRESHOLD_MS) {
             return timeDiff;
           }
           // Within same minute window, use relevance score (lower is better)
-          return a.score - b.score;
+          return (a.score ?? 1) - (b.score ?? 1);
         });
 
         setDeepSearchResults({
           results: results.map(r => ({
-            log: r.log,
+            log: r.item.log,
             score: r.score,
-            searchableText: r.searchableText,
+            searchableText: r.item.searchableText,
           })),
           query: debouncedDeepSearchQuery,
         });
         setIsSearching(false);
       },
       0,
-      miniSearchIndex,
+      fuseIndex,
       debouncedDeepSearchQuery,
       setDeepSearchResults,
       setIsSearching,
@@ -365,7 +363,7 @@ export function LogSelector({
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [debouncedDeepSearchQuery, miniSearchIndex]);
+  }, [debouncedDeepSearchQuery, fuseIndex]);
 
   // Merge title matches with async deep search results
   const filteredLogs = React.useMemo(() => {

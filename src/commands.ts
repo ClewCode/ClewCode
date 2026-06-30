@@ -18,7 +18,6 @@ import explorer from './commands/explorer/index.js';
 import help from './commands/help/index.js';
 import ide from './commands/ide/index.js';
 import init from './commands/init.js';
-import initVerifiers from './commands/init-verifiers.js';
 import keybindings from './commands/keybindings/index.js';
 
 import login from './commands/login/index.js';
@@ -79,9 +78,7 @@ import thinkbackPlay from './commands/thinkback-play/index.js';
 import toolsCmd from './commands/tools/index.js';
 import permissions from './commands/permissions/index.js';
 import plan from './commands/plan/index.js';
-import profile from './commands/profile/index.js';
 import research from './commands/research/index.js';
-import fast from './commands/fast/index.js';
 import passes from './commands/passes/index.js';
 import privacySettings from './commands/privacy-settings/index.js';
 import hooks from './commands/hooks/index.js';
@@ -199,7 +196,6 @@ const COMMANDS = memoize((): Command[] => [
   effort,
   exit,
   explorer,
-  fast,
   files,
   goal,
   heapDump,
@@ -266,7 +262,6 @@ const COMMANDS = memoize((): Command[] => [
   toolsCmd,
   permissions,
   plan,
-  profile,
   research,
   remoteCmd,
   guardianCmd,

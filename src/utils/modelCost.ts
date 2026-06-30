@@ -3,7 +3,6 @@ import type { AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS } from 
 import { logEvent } from 'src/services/analytics/index.js';
 import { setHasUnknownModelCost } from '../bootstrap/state.js';
 import { calculateUsageCost, type ModelCostRates, type ProviderUsage } from '../services/ai/usageTypes.js';
-import { isFastModeEnabled } from './fastMode.js';
 import {
   CLAUDE_3_5_HAIKU_CONFIG,
   CLAUDE_3_5_V2_SONNET_CONFIG,
@@ -1465,7 +1464,7 @@ const DEFAULT_UNKNOWN_MODEL_COST = COST_TIER_5_25;
  * Get the cost tier for Opus 4.6 based on fast mode.
  */
 export function getOpus46CostTier(fastMode: boolean): ModelCosts {
-  if (isFastModeEnabled() && fastMode) {
+  if (false && fastMode) {
     return COST_TIER_30_150;
   }
   return COST_TIER_5_25;

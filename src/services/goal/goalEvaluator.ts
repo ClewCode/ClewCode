@@ -32,6 +32,8 @@ export type GoalEvaluationResult = {
   model: string;
   /** Whether the goal is considered blocked */
   blocked?: boolean;
+  /** True when an explicit turn/time bound stopped the goal before completion */
+  budgetExhausted?: boolean;
 };
 
 /**
@@ -211,12 +213,14 @@ export async function evaluateGoal(
   // Check turn/time bounds first (deterministic, no model call needed)
   if (maxTurns !== undefined && turnCount >= maxTurns) {
     return {
-      met: true,
+      met: false,
       reason: `Turn limit reached: ${turnCount}/${maxTurns} turns`,
       inputTokens: 0,
       outputTokens: 0,
       durationMs: Date.now() - evalStart,
       model,
+      blocked: true,
+      budgetExhausted: true,
     };
   }
 
@@ -224,12 +228,14 @@ export async function evaluateGoal(
     const elapsedMinutes = (Date.now() - startTime) / 60_000;
     if (elapsedMinutes >= maxMinutes) {
       return {
-        met: true,
+        met: false,
         reason: `Time limit reached: ${Math.round(elapsedMinutes)}/${maxMinutes} minutes`,
         inputTokens: 0,
         outputTokens: 0,
         durationMs: Date.now() - evalStart,
         model,
+        blocked: true,
+        budgetExhausted: true,
       };
     }
   }

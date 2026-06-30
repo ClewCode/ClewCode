@@ -59,6 +59,11 @@ const _UNBLOCK_VERBS = new Set(['unblock', 'resume', 'continue']);
 
 const WARN_THRESHOLD = 0.8;
 
+function isBudgetStopped(goal: GoalState): boolean {
+  const reason = goal.blockedReason ?? goal.lastReason ?? '';
+  return /(?:turn|time) limit reached/i.test(reason);
+}
+
 /** Build a text-based mini progress bar that renders on any terminal. */
 function renderTextProgressBar(ratio: number, width: number = 20): string {
   const clamped = Math.min(1, Math.max(0, ratio));
@@ -84,11 +89,12 @@ function renderBlockedStatus(state: AppStateSnapshot, goal: GoalState): string {
   const activeElapsed = Math.max(0, rawElapsed - totalPausedMs);
   const turns = state.sessionGoalTurnCount ?? 0;
   const elapsedStr = formatElapsed(activeElapsed);
+  const statusLabel = isBudgetStopped(goal) ? 'STOPPED' : 'BLOCKED';
 
   const lines: string[] = [];
-  lines.push(`⊘ Goal [BLOCKED]  ${goal.goal}`);
+  lines.push(`Goal [${statusLabel}]  ${goal.goal}`);
   lines.push('');
-  lines.push(`  ${elapsedStr} · ${turns} turns`);
+  lines.push(`  elapsed ${elapsedStr}  |  turns ${turns}`);
   if (goal.blockedReason) {
     lines.push('');
     lines.push(`  reason: ${goal.blockedReason}`);
@@ -99,6 +105,8 @@ function renderBlockedStatus(state: AppStateSnapshot, goal: GoalState): string {
       `  workflows: ${goal.linkedWorkflowRunIds.length} linked run${goal.linkedWorkflowRunIds.length === 1 ? '' : 's'} (see /workflow)`,
     );
   }
+  lines.push('');
+  lines.push('  /goal edit <text> to change the condition, or /goal clear to dismiss.');
   return lines.join('\n');
 }
 
@@ -113,23 +121,19 @@ function renderActiveStatus(state: AppStateSnapshot, goal: GoalState): string {
   const tokens = goal.evalTokens ?? 0;
   const isPaused = goal.paused ?? false;
 
-  // Show blocked status first if goal is blocked
   if (goal.blocked) {
     return renderBlockedStatus(state, goal);
   }
 
   const lines: string[] = [];
-  const statusIcon = isPaused ? '⏸' : '◎';
   const statusLabel = isPaused ? 'PAUSED' : 'ACTIVE';
-  lines.push(`${statusIcon} Goal [${statusLabel}]  ${goal.goal}`);
+  lines.push(`Goal [${statusLabel}]  ${goal.goal}`);
   lines.push('');
 
-  // Time + turns
   const parts: string[] = [`elapsed ${elapsedStr}`, `turns ${turns}`];
   if (tokens > 0) parts.push(`eval tokens ${tokens.toLocaleString()}`);
-  lines.push(`  ${parts.join('  ·  ')}`);
+  lines.push(`  ${parts.join('  |  ')}`);
 
-  // Bounds + budget warnings
   const warnings: string[] = [];
   if (goal.maxTurns) {
     const ratio = turns / goal.maxTurns;
@@ -142,17 +146,14 @@ function renderActiveStatus(state: AppStateSnapshot, goal: GoalState): string {
     lines.push(`  time:   ${renderTextProgressBar(ratio)}  (${Math.round(elapsedMinutes)}/${goal.maxMinutes} min)`);
     if (ratio >= WARN_THRESHOLD) warnings.push(`${Math.round(ratio * 100)}% of time budget used`);
   }
-  if (goal.maxTurns && turns >= goal.maxTurns)
-    warnings.push('turn budget exhausted — goal will be cleared on next clear or session end');
+  if (goal.maxTurns && turns >= goal.maxTurns) warnings.push('turn budget exhausted - goal is stopped');
   if (goal.maxMinutes && activeElapsed / 60_000 >= goal.maxMinutes) warnings.push('time budget exhausted');
 
-  // Evaluator feedback
   if (goal.lastReason) {
     lines.push('');
     lines.push(`  evaluator: ${goal.lastReason}`);
   }
 
-  // Linked workflows
   if (goal.linkedWorkflowRunIds && goal.linkedWorkflowRunIds.length > 0) {
     lines.push('');
     lines.push(
@@ -160,13 +161,12 @@ function renderActiveStatus(state: AppStateSnapshot, goal: GoalState): string {
     );
   }
 
-  // Permission mode
   lines.push('');
   lines.push(`  permissions: ${state.toolPermissionContext?.mode ?? 'unknown'}`);
 
   if (warnings.length > 0) {
     lines.push('');
-    for (const w of warnings) lines.push(`  ⚠ ${w}`);
+    for (const w of warnings) lines.push(`  warning: ${w}`);
   }
 
   return lines.join('\n');
@@ -179,14 +179,13 @@ function renderAchievedStatus(goal: GoalState): string {
   const turns = goal.turnCount ?? 0;
   const tokens = goal.evalTokens ?? 0;
   const lines: string[] = [];
-  const statusIcon = goal.achieved ? '✓' : '◎';
   const statusLabel = goal.achieved ? 'ACHIEVED' : 'CLEARED';
-  lines.push(`${statusIcon} Last goal [${statusLabel}]  ${goal.goal}`);
+  lines.push(`Last goal [${statusLabel}]  ${goal.goal}`);
   lines.push('');
   const parts: string[] = [`elapsed ${elapsed}`, `turns ${turns}`];
   if (tokens > 0) parts.push(`eval tokens ${tokens.toLocaleString()}`);
   if (goal.endedAt) parts.push(`ended ${new Date(goal.endedAt).toLocaleString()}`);
-  lines.push(`  ${parts.join('  ·  ')}`);
+  lines.push(`  ${parts.join('  |  ')}`);
   if (goal.lastReason) {
     lines.push('');
     lines.push(`  last evaluator: ${goal.lastReason}`);
@@ -196,9 +195,9 @@ function renderAchievedStatus(goal: GoalState): string {
 
 function renderNoGoalHelp(): string {
   return [
-    '◎ No goal set.',
+    'No goal set.',
     '',
-    '  /goal <text>              set a goal (claude works until the condition holds)',
+    '  /goal <text>              set a goal (Clew works until the condition holds)',
     '  /goal edit <text>         update the condition (keeps turn count + timer)',
     '  /goal status              show current or last-finished goal',
     '  /goal pause | resume      pause / resume autonomous execution',
@@ -242,7 +241,7 @@ export async function call(
     if (settings.disableAllHooks || settings.allowManagedHooksOnly) {
       const reason = settings.disableAllHooks ? 'disableAllHooks' : 'allowManagedHooksOnly';
       onDone(
-        `◎ Goal cannot be tracked: hooks are disabled (${reason}). Goal-based turn tracking requires hooks to be enabled.`,
+        `Goal cannot be tracked: hooks are disabled (${reason}). Goal-based turn tracking requires hooks to be enabled.`,
         { display: 'system' },
       );
       return null;
@@ -257,7 +256,7 @@ export async function call(
       if (goalState) {
         onDone(renderActiveStatus(appState as AppStateSnapshot, goalState), { display: 'system' });
       } else {
-        onDone(`◎ Goal [ACTIVE]  ${currentGoal}\n  (state file missing — using fallback)`, { display: 'system' });
+        onDone(`Goal [ACTIVE]  ${currentGoal}\n  (state file missing - using fallback)`, { display: 'system' });
       }
     } else {
       const last = getLastAchieved();
@@ -274,15 +273,15 @@ export async function call(
   if (first === 'pause') {
     const goalState = getFullGoalState();
     if (!goalState?.goal) {
-      onDone('◎ No active goal to pause.', { display: 'system' });
+      onDone('No active goal to pause.', { display: 'system' });
       return null;
     }
     if (goalState.paused) {
-      onDone('◎ Goal is already paused. Use /goal resume to continue.', { display: 'system' });
+      onDone('Goal is already paused. Use /goal resume to continue.', { display: 'system' });
       return null;
     }
     if (goalState.blocked) {
-      onDone('◎ Goal is blocked. Use /goal clear to remove it, or /goal edit to update the condition.', {
+      onDone('Goal is blocked. Use /goal clear to remove it, or /goal edit to update the condition.', {
         display: 'system',
       });
       return null;
@@ -305,7 +304,7 @@ export async function call(
 
     const restoreMsg = restoredMode ? `  permissions restored to '${restoredMode}'.` : '';
     onDone(
-      `⏸ Goal paused: "${goalState.goal}"\n  ${formatElapsed(Date.now() - (goalState.setAt ?? Date.now()))} elapsed · ${goalState.turnCount ?? 0} turns.${restoreMsg}\n  Use /goal resume to continue.`,
+      `Goal [PAUSED]  ${goalState.goal}\n  elapsed ${formatElapsed(Date.now() - (goalState.setAt ?? Date.now()))} | turns ${goalState.turnCount ?? 0}.${restoreMsg}\n  Use /goal resume to continue.`,
       { display: 'system' },
     );
     return null;
@@ -315,11 +314,11 @@ export async function call(
   if (first === 'resume') {
     const goalState = getFullGoalState();
     if (!goalState?.goal) {
-      onDone('◎ No goal to resume. Set one with /goal <text>.', { display: 'system' });
+      onDone('No goal to resume. Set one with /goal <text>.', { display: 'system' });
       return null;
     }
     if (!goalState.paused) {
-      onDone('◎ Goal is not paused — it is already active.', { display: 'system' });
+      onDone('Goal is not paused - it is already active.', { display: 'system' });
       return null;
     }
 
@@ -346,16 +345,13 @@ export async function call(
 
     const elapsed = goalState.setAt ? formatElapsed(Date.now() - goalState.setAt - (goalState.totalPausedMs ?? 0)) : '';
     const turns = goalState.turnCount ?? 0;
-    onDone(
-      `▶ Goal resumed: "${goalState.goal}"\n  ${elapsed} elapsed · ${turns} turns · permissions: bypassPermissions`,
-      {
-        display: 'system',
-        shouldQuery: true,
-        metaMessages: [
-          `Autonomous Agent Mode re-activated. Your active goal is: "${goalState.goal}". Please continue working autonomously toward this goal. Permissions are automatically bypassed for execution.`,
-        ],
-      },
-    );
+    onDone(`Goal [ACTIVE]  ${goalState.goal}\n  elapsed ${elapsed} | turns ${turns} | permissions bypassPermissions`, {
+      display: 'system',
+      shouldQuery: true,
+      metaMessages: [
+        `Autonomous Agent Mode re-activated. Your active goal is: "${goalState.goal}". Please continue working autonomously toward this goal. Permissions are automatically bypassed for execution.`,
+      ],
+    });
     return null;
   }
 
@@ -378,7 +374,7 @@ export async function call(
       if (maxTurns) bounds.push(`max ${maxTurns} turns`);
       if (maxMinutes) bounds.push(`max ${maxMinutes} min`);
       const boundsMsg = bounds.length > 0 ? ` (${bounds.join(', ')})` : '';
-      onDone(`◎ Goal updated.${boundsMsg}\n  "${rest}"`, {
+      onDone(`Goal updated.${boundsMsg}\n  "${rest}"`, {
         display: 'system',
         shouldQuery: true,
         metaMessages: [`Your active goal condition has been updated to: "${rest}".`],
@@ -415,9 +411,9 @@ export async function call(
     setFullGoalState(null);
     setExecutionMode('safe');
 
-    const statsLine = `${elapsed} · ${turns} turns${tokens_ > 0 ? ` · ${tokens_.toLocaleString()} eval tokens` : ''}`;
+    const statsLine = `${elapsed} | ${turns} turns${tokens_ > 0 ? ` | ${tokens_.toLocaleString()} eval tokens` : ''}`;
     const restoreMsg = restoredMode ? `\n  permissions restored to '${restoredMode}'` : '';
-    onDone(`◎ Goal cleared.\n  ${statsLine}${restoreMsg}\n  (run /goal again to see the finished stats next time)`, {
+    onDone(`Goal cleared.\n  ${statsLine}${restoreMsg}\n  (run /goal again to see the finished stats next time)`, {
       display: 'system',
     });
     return null;
@@ -474,11 +470,11 @@ export async function call(
   setFullGoalState(goalState);
 
   const lines: string[] = [];
-  lines.push('◎ Goal activated [AFK]');
+  lines.push('Goal [ACTIVE]  AFK mode');
   lines.push(`  "${effectiveGoal}"`);
   if (chain) {
     lines.push('');
-    lines.push(`  chain: ${chain.chain.map((g, i) => `${i + 2}. "${g}"`).join(' → ')}`);
+    lines.push(`  chain: ${chain.chain.map((g, i) => `${i + 2}. "${g}"`).join(' -> ')}`);
   }
   lines.push('');
 
@@ -490,19 +486,19 @@ export async function call(
   if (maxTurns) bounds.push(`stop after ${maxTurns} turns`);
   if (maxMinutes) bounds.push(`stop after ${maxMinutes} min`);
   if (bounds.length > 0) {
-    lines.push(`  bounds: ${bounds.join('  ·  ')}`);
+    lines.push(`  bounds: ${bounds.join('  |  ')}`);
   }
 
   const prevMode = appState.toolPermissionContext?.mode ?? 'default';
-  lines.push(`  permissions: ${prevMode} → bypassPermissions  ·  mode: afk`);
+  lines.push(`  permissions: ${prevMode} -> bypassPermissions  |  mode: afk`);
   lines.push('');
-  lines.push('  claude works autonomously. /goal to check, /goal pause to pause, /goal clear to stop.');
+  lines.push('  Clew works autonomously. /goal to check, /goal pause to pause, /goal clear to stop.');
 
   onDone(lines.join('\n'), {
     display: 'system',
     shouldQuery: true,
     metaMessages: [
-      `Autonomous Agent Mode activated. Your active goal is: "${effectiveGoal}"${bounds.length > 0 ? ` (${bounds.join(', ')})` : ''}${chain ? `. Chain: ${chain.chain.join(' → ')}` : ''}. Please proceed autonomously with the tools available to achieve this goal. Permissions are automatically bypassed for execution.`,
+      `Autonomous Agent Mode activated. Your active goal is: "${effectiveGoal}"${bounds.length > 0 ? ` (${bounds.join(', ')})` : ''}${chain ? `. Chain: ${chain.chain.join(' -> ')}` : ''}. Please proceed autonomously with the tools available to achieve this goal. Permissions are automatically bypassed for execution.`,
     ],
   });
   return null;

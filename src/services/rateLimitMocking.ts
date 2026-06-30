@@ -6,10 +6,8 @@
 import { APIError } from '@anthropic-ai/sdk';
 import {
   applyMockHeaders,
-  checkMockFastModeRateLimit,
   getMockHeaderless429Message,
   getMockHeaders,
-  isMockFastModeRateLimitScenario,
   shouldProcessMockLimits,
 } from './mockRateLimits.js';
 
@@ -37,7 +35,7 @@ export function shouldProcessRateLimits(isSubscriber: boolean): boolean {
  * @param currentModel The model being used for the current request
  * @param isFastModeActive Whether fast mode is currently active (for fast-mode-only mocks)
  */
-export function checkMockRateLimitError(currentModel: string, isFastModeActive?: boolean): APIError | null {
+export function checkMockRateLimitError(currentModel: string): APIError | null {
   if (!shouldProcessMockLimits()) {
     return null;
   }
@@ -77,23 +75,6 @@ export function checkMockRateLimitError(currentModel: string, isFastModeActive?:
   // This simulates the real API behavior where fallback to Sonnet succeeds
   if (isOpusLimit && !isUsingOpus) {
     return null;
-  }
-
-  // Check for mock fast mode rate limits (handles expiry, countdown, etc.)
-  if (isMockFastModeRateLimitScenario()) {
-    const fastModeHeaders = checkMockFastModeRateLimit(isFastModeActive);
-    if (fastModeHeaders === null) {
-      return null;
-    }
-    // Create a mock 429 error with the fast mode headers
-    const error = new APIError(
-      429,
-      { error: { type: 'rate_limit_error', message: 'Rate limit exceeded' } },
-      'Rate limit exceeded',
-      // eslint-disable-next-line eslint-plugin-n/no-unsupported-features/node-builtins
-      new globalThis.Headers(Object.entries(fastModeHeaders).filter(([_, v]) => v !== undefined) as [string, string][]),
-    );
-    return error;
   }
 
   const shouldThrow429 = status === 'rejected' && (!overageStatus || overageStatus === 'rejected');

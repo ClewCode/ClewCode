@@ -13,7 +13,7 @@ import { getClaudeAIOAuthTokens, hasProfileScope, isClaudeAISubscriber } from '.
 import { checkHasTrustDialogAccepted } from '../../utils/config.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { getClewConfigHomeDir } from '../../utils/envUtils.js';
-import { errorMessage, isFsInaccessible, toError } from '../../utils/errors.js';
+import { errorMessage, isFetchError, isFsInaccessible, toError } from '../../utils/errors.js';
 import { getAuthHeaders } from '../../utils/http.js';
 import { readJSONLFile } from '../../utils/json.js';
 import { logError } from '../../utils/log.js';
@@ -96,6 +96,11 @@ export class FirstPartyEventLoggingExporter implements LogRecordExporter {
       schedule?: (fn: () => Promise<void>, delayMs: number) => () => void;
     } = {},
   ) {
+    // Clew Code: skip Anthropic-internal telemetry unless explicitly configured
+    if (process.env.USER_TYPE !== 'ant' && !options.baseUrl) {
+      options.isKilled = () => true;
+    }
+
     // Default: prod, except when ANTHROPIC_BASE_URL is explicitly staging.
     // Overridable via tengu_1p_event_batch_config.baseUrl.
     const baseUrl =

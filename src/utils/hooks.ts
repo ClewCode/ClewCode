@@ -14,7 +14,7 @@ import { formatShellPrefixCommand } from './bash/shellPrefix.js';
 import { getHookEnvFilePath, invalidateSessionEnvCache } from './sessionEnvironment.js';
 import { subprocessEnv } from './subprocessEnv.js';
 import { getPlatform } from './platform.js';
-import { findGitBashPath, windowsPathToPosixPath } from './windowsPaths.js';
+import { tryFindGitBashPath, windowsPathToPosixPath } from './windowsPaths.js';
 import { getCachedPowerShellPath } from './shell/powershellDetection.js';
 import { DEFAULT_HOOK_SHELL } from './shell/shellProvider.js';
 import { buildPowerShellArgs } from './shell/powershellProvider.js';
@@ -986,7 +986,10 @@ async function execCommandHook(
     } else {
       // On Windows, use Git Bash explicitly (cmd.exe can't run bash syntax).
       // On other platforms, shell: true uses /bin/sh.
-      const shell = isWindows ? findGitBashPath() : true;
+      // Non-fatal: if Git Bash is missing we fall back to the default shell
+      // rather than exiting the whole session mid-hook. A bash-syntax hook will
+      // then fail loudly on its own instead of taking Clew down.
+      const shell = isWindows ? (tryFindGitBashPath() ?? true) : true;
       child = spawn(finalCommand, [], {
         env: envVars,
         cwd: safeCwd,

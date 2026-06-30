@@ -17,6 +17,7 @@ import type { PromptInputMode, VimMode } from '../../types/textInputTypes.js';
 import type { AutoUpdaterResult } from '../../utils/autoUpdater.js';
 import { formatDuration } from '../../utils/format.js';
 import { isFullscreenEnvEnabled } from '../../utils/fullscreen.js';
+import { getFullGoalState } from '../../utils/sessionGoalState.js';
 import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
@@ -139,14 +140,15 @@ function PromptInputFooter({
   const suppressHint = suppressHintFromProps || statusLineShouldDisplay(settings) || isSearching || isPersonalProfile;
   const showStatusLine =
     mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings) && !isPersonalProfile;
+  const goalState = getFullGoalState();
+  const goalBlocked = goalState?.blocked ?? false;
+  const goalStopped = /(?:turn|time) limit reached/i.test(goalState?.blockedReason ?? goalState?.lastReason ?? '');
+  const goalStatus = goalBlocked ? (goalStopped ? 'stopped' : 'blocked') : sessionGoalPaused ? 'paused' : 'active';
   const goalActiveText = sessionGoal
-    ? `${sessionGoalPaused ? '⏸' : '◎'} /goal ${sessionGoalPaused ? 'paused' : 'active'} (${formatDuration(
-        goalNow - (sessionGoalStartTime ?? goalNow) - (sessionGoalTotalPausedMs ?? 0),
-        {
-          hideTrailingZeros: true,
-          mostSignificantOnly: true,
-        },
-      )})`
+    ? `/goal ${goalStatus} (${formatDuration(goalNow - (sessionGoalStartTime ?? goalNow) - (sessionGoalTotalPausedMs ?? 0), {
+        hideTrailingZeros: true,
+        mostSignificantOnly: true,
+      })})`
     : undefined;
   const footerLeftSide = (
     <PromptInputFooterLeftSide

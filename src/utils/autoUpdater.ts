@@ -9,11 +9,12 @@ import {
   logEvent,
 } from 'src/services/analytics/index.js';
 
-import { type ReleaseChannel, saveGlobalConfig } from './config.js';
+import { getGlobalConfig, type ReleaseChannel, saveGlobalConfig } from './config.js';
 import { logForDebugging } from './debug.js';
 import { env } from './env.js';
 import { execFileNoThrowWithCwd } from './execFileNoThrow.js';
 import { logError } from './log.js';
+import { getPackageManager, type PackageManager } from './nativeInstaller/packageManagers.js';
 import { getPlatform } from './platform.js';
 import { gte, lt } from './semver.js';
 import { getInitialSettings } from './settings/settings.js';
@@ -371,7 +372,7 @@ export async function installGlobalPackage(specificVersion?: string | null): Pro
   return 'success';
 }
 
-function detectGlobalPackageManager(): 'npm' | 'bun' {
+export function detectGlobalPackageManager(): 'npm' | 'bun' {
   let invokedPath = process.argv[1] || '';
   let execPath = process.execPath || process.argv[0] || '';
   let argv0 = process.argv[0] || '';
@@ -428,4 +429,60 @@ function detectGlobalPackageManager(): 'npm' | 'bun' {
   }
 
   return env.isRunningWithBun() ? 'bun' : 'npm';
+}
+
+/**
+ * The correct manual upgrade command for a system package manager that owns the
+ * Clew binary. Self-updating via npm/bun for these would create a conflicting
+ * parallel install, so we surface the right command instead.
+ */
+export function getManagedUpgradeCommand(manager: PackageManager): string {
+  switch (manager) {
+    case 'homebrew':
+      return 'brew upgrade clew';
+    case 'winget':
+      return 'winget upgrade clew';
+    case 'pacman':
+      return 'sudo pacman -Syu clew';
+    case 'deb':
+      return 'sudo apt update && sudo apt install --only-upgrade clew';
+    case 'rpm':
+      return 'sudo dnf upgrade clew';
+    case 'apk':
+      return 'sudo apk upgrade clew';
+    case 'mise':
+      return 'mise upgrade clew';
+    case 'asdf':
+      return 'asdf install clew latest';
+    default:
+      return 'clew update';
+  }
+}
+
+export type UpdateStrategy =
+  | { kind: 'managed'; manager: PackageManager; command: string }
+  | { kind: 'native' }
+  | { kind: 'global'; pm: 'npm' | 'bun' };
+
+/**
+ * Decide how Clew should update itself based on how it was installed:
+ * - `native`  → the native installer owns it (NativeAutoUpdater / installLatest)
+ * - `managed` → a system package manager owns it (brew/winget/apt/…); do NOT
+ *               run npm/bun, surface the correct upgrade command instead
+ * - `global`  → a plain npm/bun global install we can update ourselves
+ *
+ * Used by both `clew update` and the in-app auto-updater so every path agrees
+ * and we never npm-install over a brew/winget/native install.
+ */
+export async function resolveUpdateStrategy(): Promise<UpdateStrategy> {
+  if (getGlobalConfig().installMethod === 'native') {
+    return { kind: 'native' };
+  }
+
+  const manager = await getPackageManager();
+  if (manager !== 'unknown') {
+    return { kind: 'managed', manager, command: getManagedUpgradeCommand(manager) };
+  }
+
+  return { kind: 'global', pm: detectGlobalPackageManager() };
 }
