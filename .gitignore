@@ -48,11 +48,7 @@ desktop.ini
 *.sublime-workspace
 
 # Claude Code / Research Tools
-.clew/*
-!.clew/skills/
-!.clew/agents/
-!.clew/workflows/
-!.clew/settings.json
+.clew/
 .codegraph/
 .codegg/
 .codex/
@@ -78,8 +74,7 @@ CLAUDE.md
 # Testing
 coverage/
 .nyc_output
-eval/runs/
-eval/__pycache__/
+eval/
 SWE-bench-dev/
 __pycache__/
 
