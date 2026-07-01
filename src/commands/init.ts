@@ -22,7 +22,7 @@ Usage notes:
 \`\`\`
 # AGENT.md
 
-This file provides guidance to Clew Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Clew Code when working with code in this repository.
 \`\`\``;
 
 const NEW_INIT_PROMPT = `Set up a minimal AGENT.md (and optionally skills and hooks) for this repo. AGENT.md is loaded into every Clew Code session, so it must be concise — only include what Claude would get wrong without it.
@@ -215,7 +215,7 @@ Prefix the file with:
 \`\`\`
 # AGENT.md
 
-This file provides guidance to Clew Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Clew Code when working with code in this repository.
 \`\`\`
 
 If AGENT.md already exists: read it, propose specific changes as diffs, and explain why each change improves it. Do not silently overwrite.

@@ -25,8 +25,8 @@ const MAX_RELEASE_NOTES_SHOWN = 5;
  * 2. We fetch the changelog in the background and store it in config
  * 3. Next time the user starts Claude, the cached changelog is available immediately
  */
-export const CHANGELOG_URL = 'https://github.com/JonusNattapong/ClaudeCode/blob/main/CHANGELOG.md';
-const RAW_CHANGELOG_URL = 'https://raw.githubusercontent.com/JonusNattapong/ClaudeCode/refs/heads/main/CHANGELOG.md';
+export const CHANGELOG_URL = 'https://github.com/ClewCode/ClewCode/blob/main/CHANGELOG.md';
+const RAW_CHANGELOG_URL = 'https://raw.githubusercontent.com/ClewCode/ClewCode/refs/heads/main/CHANGELOG.md';
 
 /**
  * Get the path for the cached changelog file.

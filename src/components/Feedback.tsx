@@ -43,7 +43,7 @@ const GITHUB_URL_LIMIT = 7250;
 const GITHUB_ISSUES_REPO_URL =
   'external' === 'ant'
     ? 'https://github.com/anthropics/claude-cli-internal/issues'
-    : 'https://github.com/JonusNattapong/ClaudeCode/issues';
+    : 'https://github.com/ClewCode/ClewCode/issues';
 type Props = {
   abortSignal: AbortSignal;
   messages: Message[];

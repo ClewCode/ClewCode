@@ -162,9 +162,9 @@ function ClaudeInChromeMenu({
 
             <Text>
               <Text dimColor>Usage: </Text>
-              <Text>claude --chrome</Text>
+              <Text>clew --chrome</Text>
               <Text dimColor> or </Text>
-              <Text>claude --no-chrome</Text>
+              <Text>clew --no-chrome</Text>
             </Text>
 
             <Text dimColor>
@@ -173,7 +173,7 @@ function ClaudeInChromeMenu({
             </Text>
           </>
         )}
-        <Text dimColor>Learn more: https://code.claude.com/docs/en/chrome</Text>
+        <Text dimColor>Learn more: https://clew-code.org/docs</Text>
       </Box>
     </Dialog>
   );

@@ -108,7 +108,7 @@ function IDEScreen({
           <Text dimColor>
             {isSupportedJetBrainsTerminal()
               ? 'No available IDEs detected. Please install the plugin and restart your IDE:\n' +
-                'https://docs.claude.com/s/claude-code-jetbrains'
+                'https://clew-code.org/docs'
               : 'No available IDEs detected. Make sure your IDE has the Clew Code extension or plugin installed and is running.'}
           </Text>
         )}

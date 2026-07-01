@@ -914,7 +914,7 @@ export function useVoice({ onTranscript, onError, enabled, focusMode }: UseVoice
         }
         if (!conn) {
           logForDebugging('[voice] Failed to connect to voice_stream (no OAuth token?)');
-          onErrorRef.current?.('Voice mode requires a Claude.ai account. Please run /login to sign in.');
+          onErrorRef.current?.('Voice mode requires an authenticated account. Please run /login to sign in.');
           // Clear the audio buffer on failure
           audioBuffer.length = 0;
           cleanup();

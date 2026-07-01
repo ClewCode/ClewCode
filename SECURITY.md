@@ -2,7 +2,7 @@
 
 ## Nature of This Repository
 
-This repository contains an unofficial, reverse-engineered rebuild of Anthropic's Claude Code CLI, renamed to Clew Code (clew-code). The code has been reconstructed and extended for research, local development, and self-hosted use.
+This repository contains an unofficial, independent implementation of an AI coding CLI, named Clew Code (clew-code). The code has been developed and extended for research, local development, and self-hosted use.
 
 This repository is not an official Anthropic product. Anthropic has not authorized, endorsed, sponsored, or approved this project.
 

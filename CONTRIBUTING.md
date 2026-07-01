@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing.
 
-This repository is an unofficial, community-maintained rebuild and extension project. It is not an official Anthropic product, distribution, or supported implementation.
+This repository is an unofficial, community-maintained independent implementation and extension project.
 
 Please read `LICENSE.md` and `SECURITY.md` before contributing.
 
@@ -16,7 +16,7 @@ Do not contribute:
 * Leaked or copied code
 * Private documentation
 * Credentials, API keys, tokens, or secrets
-* Material copied from Anthropic's proprietary products or private services
+* Material copied from proprietary products or private services
 * Code that violates third-party licenses or terms
 
 Contributor-authored modifications and original additions may be licensed under the terms described in `LICENSE.md`.
@@ -33,7 +33,7 @@ Contributor-authored modifications and original additions may be licensed under 
 
 ```bash
 git clone https://github.com/ClewCode/ClewCode.git
-cd claudecode
+cd ClewCode
 
 bun install
 bun run build
@@ -49,7 +49,7 @@ bun run dev
 ## Project Structure
 
 ```text
-claudecode/
+clew-code/
 ├── src/                      # Core CLI application
 │   ├── main.tsx              # Application entry point
 │   ├── cli/                  # CLI handlers

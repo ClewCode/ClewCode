@@ -52,7 +52,7 @@ export function getFastModeUnavailableReason() {
   // Previously, fast mode required the native binary (bun build). This is no
   // longer necessary, but we keep this option behind a flag just in case.
   if (!isInBundledMode() && getFeatureValue_CACHED_MAY_BE_STALE('tengu_marble_sandcastle', false)) {
-    return 'Fast mode requires the native binary · Install from: https://claude.com/product/claude-code';
+    return 'Fast mode requires the native binary · Install from: https://clew-code.org';
   }
   // Not available in the SDK unless explicitly opted in via --settings.
   // Assistant daemon mode is exempt — it's first-party orchestration, and

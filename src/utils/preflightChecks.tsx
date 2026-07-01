@@ -115,19 +115,19 @@ export function PreflightStep({ onSuccess }: PreflightStepProps): React.ReactNod
         !result?.success &&
         !isChecking && (
           <Box flexDirection="column" gap={1}>
-            <Text color="error">Unable to connect to Anthropic services</Text>
+            <Text color="error">Unable to connect to AI services</Text>
             <Text color="error">{result?.error}</Text>
             {result?.sslHint ? (
               <Box flexDirection="column" gap={1}>
                 <Text>{result.sslHint}</Text>
-                <Text color="suggestion">See https://code.claude.com/docs/en/network-config</Text>
+                <Text color="suggestion">See https://clew-code.org/docs</Text>
               </Box>
             ) : (
               <Box flexDirection="column" gap={1}>
                 <Text>Please check your internet connection and network settings.</Text>
                 <Text>
                   Note: Clew Code might not be available in your country. Check supported countries at{' '}
-                  <Text color="suggestion">https://anthropic.com/supported-countries</Text>
+                  <Text color="suggestion">https://clew-code.org/docs</Text>
                 </Text>
               </Box>
             )}

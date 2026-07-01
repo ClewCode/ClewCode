@@ -294,7 +294,7 @@ export async function call(
 
     // Resume into the fork
     const titleInfo = title ? ` "${title}"` : '';
-    const resumeHint = `\nTo resume the original: claude -r ${originalSessionId}`;
+    const resumeHint = `\nTo resume the original: clew -r ${originalSessionId}`;
     // E38: Include new branch session ID in success message
     const successMessage = `Branched conversation${titleInfo} (id: ${sessionId}). You are now in the branch.${resumeHint}`;
 
