@@ -349,10 +349,6 @@ export function useSearchInput({
     }
   };
 
-  // Backward-compat bridge: existing consumers don't yet wire handleKeyDown
-  // to <Box onKeyDown>. Subscribe via useInput and adapt InputEvent →
-  // KeyboardEvent until all 11 call sites are migrated (separate PRs).
-  // TODO(onKeyDown-migration): remove once all consumers pass handleKeyDown.
   useInput(
     (_input, _key, event) => {
       handleKeyDown(new KeyboardEvent(event.keypress));

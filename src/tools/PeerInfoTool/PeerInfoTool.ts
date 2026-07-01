@@ -4,7 +4,7 @@ import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { formatPeerDetails, notifyPeerFeedback } from '../peer/peerFeedback.js';
+import { clampTimeout, formatPeerDetails, notifyPeerFeedback, retryUntil } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_INFO_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -100,7 +100,7 @@ export const PeerInfoTool = buildTool({
   },
   async call(input: { worker: string; wait?: boolean; timeout?: number }) {
     const store = getGlobalPeerStore();
-    const timeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
+    const timeoutMs = clampTimeout(input.timeout, 30, 120);
     notifyPeerFeedback(
       input.wait
         ? `waiting up to ${Math.round(timeoutMs / 1000)}s for ${input.worker}`
@@ -157,36 +157,23 @@ export const PeerInfoTool = buildTool({
       };
     };
 
-    let result = await attemptFind();
-    let waited = false;
-    let timedOut = false;
-
-    // If `wait` is true and not found, retry every 2s
-    if (input.wait && !result.found) {
-      waited = true;
-      const deadline = Date.now() + timeoutMs;
-      const retryInterval = 2000;
-
-      while (Date.now() < deadline) {
-        const remaining = deadline - Date.now();
-        if (remaining <= 0) break;
-        await new Promise(resolve => setTimeout(resolve, Math.min(retryInterval, remaining)));
-
-        // Rediscover peers before retry
-        try {
-          const discovery = getGlobalDiscovery();
-          const peers = await discovery.discoverPeers(3000);
-          for (const p of peers) store.addPeer(p);
-        } catch {
-          /* best-effort */
-        }
-
-        result = await attemptFind();
-        if (result.found) break;
-      }
-
-      if (!result.found) timedOut = true;
-    }
+    const { result, waited, timedOut } = input.wait
+      ? await retryUntil(
+          attemptFind,
+          r => r.found,
+          timeoutMs,
+          2000,
+          async () => {
+            try {
+              const discovery = getGlobalDiscovery();
+              const peers = await discovery.discoverPeers(3000);
+              for (const p of peers) store.addPeer(p);
+            } catch {
+              /* best-effort */
+            }
+          },
+        )
+      : { result: await attemptFind(), waited: false, timedOut: false };
 
     if (!result.found) {
       notifyPeerFeedback(`peer info not found: ${input.worker}`, 'peer-info-result', 'high');

@@ -6,7 +6,7 @@ import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { formatPeerDetails, notifyPeerFeedback } from '../peer/peerFeedback.js';
+import { clampTimeout, formatPeerDetails, notifyPeerFeedback } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_DISCOVER_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -136,9 +136,9 @@ export const PeerDiscoverTool = buildTool({
   async call(input: { timeout?: number; wait?: boolean; waitTimeout?: number; minPeers?: number }) {
     const discovery = getGlobalDiscovery();
     const store = getGlobalPeerStore();
-    const scanTimeout = Math.min(Math.max(1, input.timeout ?? 3), 10) * 1000;
+    const scanTimeout = clampTimeout(input.timeout, 3, 10);
     const minPeers = input.minPeers ?? 1;
-    const waitTimeoutMs = Math.min(Math.max(1, input.waitTimeout ?? 30), 120) * 1000;
+    const waitTimeoutMs = clampTimeout(input.waitTimeout, 30, 120);
 
     notifyPeerFeedback(
       input.wait ? `discovering peers for up to ${Math.round(waitTimeoutMs / 1000)}s` : 'discovering peers',

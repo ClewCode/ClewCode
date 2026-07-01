@@ -11,7 +11,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
+import { clampTimeout, notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_SEND_MESSAGE_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -373,7 +373,7 @@ export const PeerSendMessageTool = buildTool({
 
       // If waitResponse, wait after all chunks sent
       if (input.waitResponse) {
-        const timeoutMs = Math.min(Math.max(1, input.responseTimeout ?? 60), 300) * 1000;
+        const timeoutMs = clampTimeout(input.responseTimeout, 60, 300);
         notifyPeerFeedback(`waiting up to ${Math.round(timeoutMs / 1000)}s for a response`, 'peer-send-wait', 'low');
         const responses = await store.waitForMessageFrom(sendTimestamp, timeoutMs, peer.hostname);
         if (responses.length > 0) {
@@ -445,7 +445,7 @@ export const PeerSendMessageTool = buildTool({
 
     // If waitResponse, wait for a message from the specific peer
     if (input.waitResponse) {
-      const timeoutMs = Math.min(Math.max(1, input.responseTimeout ?? 60), 300) * 1000;
+      const timeoutMs = clampTimeout(input.responseTimeout, 60, 300);
       notifyPeerFeedback(`waiting up to ${Math.round(timeoutMs / 1000)}s for a response`, 'peer-send-wait', 'low');
       const responses = await store.waitForMessageFrom(sendTimestamp, timeoutMs, peer.hostname);
       if (responses.length > 0) {

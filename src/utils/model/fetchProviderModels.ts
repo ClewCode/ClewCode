@@ -69,13 +69,11 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
   }
 
   if (!modelsUrl) {
-    console.log(`[fetchProviderModels] No modelsUrl for provider: ${activeProvider}`);
     return null;
   }
 
   const apiKey = providerManager.getApiKeyForProvider(activeProvider);
   if (!apiKey) {
-    console.log(`[fetchProviderModels] No API key for provider: ${activeProvider}`);
     return null;
   }
 

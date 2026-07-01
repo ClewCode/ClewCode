@@ -16,8 +16,6 @@ export async function collectWebSearch(_cwd: string, query: string, runDir: stri
     mkdirSync(sourcesDir, { recursive: true });
   }
 
-  console.log(`[webSearch] Searching for: "${query}"`);
-
   let allResults: Array<{ title: string; url: string; excerpt: string }> = [];
 
   try {
@@ -44,8 +42,6 @@ export async function collectWebSearch(_cwd: string, query: string, runDir: stri
   } catch (err) {
     console.error(`[webSearch] Search failed: ${err instanceof Error ? err.message : String(err)}`);
   }
-
-  console.log(`[webSearch] Found ${allResults.length} results`);
 
   const sources: ResearchSource[] = [];
   const runDirName = runDir.split(/[\\/]/).pop() || '';

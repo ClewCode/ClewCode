@@ -7,7 +7,7 @@ import type { ProcessPeerProgress } from '../../types/tools.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
+import { clampTimeout, notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { normalizeProcessPeerMode, renderProcessPeerTerminal } from '../processPeerTerminal.js';
 import { DESCRIPTION, PROCESS_MESH_TOOL_NAME, PROMPT } from './prompt.js';
 
@@ -31,7 +31,7 @@ const inputSchema = lazySchema(() =>
       .describe(
         `Which AI coding worker to use. Leave empty to auto-select. Available: ${getProcessPeerProviderIds().join(', ')}`,
       ),
-    prompt: z.string().describe('Task or message to send to the process-backed worker'),
+    prompt: z.string().describe('Task or message to send to the local AI CLI runner'),
     mode: z
       .enum(['exec', 'pty'])
       .optional()
@@ -41,7 +41,10 @@ const inputSchema = lazySchema(() =>
           ? 'Execution mode. Windows uses "exec" with terminal-style output because node-pty is unstable there.'
           : 'Execution mode. "pty" is the default terminal-style live view; "exec" is stable one-shot capture.',
       ),
-    cwd: z.string().optional().describe('Working directory for the peer node task. Defaults to the current Clew cwd.'),
+    cwd: z
+      .string()
+      .optional()
+      .describe('Working directory for the local runner task. Defaults to the current Clew cwd.'),
     model: z.string().optional().describe('Optional model override for providers that support it.'),
     timeout: z.number().optional().default(600).describe('Max execution time in seconds (default: 600, max: 1800).'),
     sessionId: z
@@ -87,7 +90,7 @@ export const ProcessPeerTool = buildTool({
     return true;
   },
   name: PROCESS_MESH_TOOL_NAME,
-  searchHint: 'delegate task to local process worker',
+  searchHint: 'delegate task to local AI CLI runner',
   maxResultSizeChars: 100_000,
   async description() {
     return DESCRIPTION;
@@ -117,7 +120,7 @@ export const ProcessPeerTool = buildTool({
     return { result: true };
   },
   userFacingName() {
-    return 'Local process';
+    return 'Local runner';
   },
   renderToolUseMessage(
     input: Partial<{ provider?: string; prompt?: string; cwd?: string; mode?: string; sessionId?: string }>,
@@ -137,7 +140,7 @@ export const ProcessPeerTool = buildTool({
       latest,
       defaultProvider: 'codex',
       defaultMode: DEFAULT_PROCESS_MESH_MODE,
-      title: 'Local process terminal',
+      title: 'Local runner',
     });
   },
   renderToolUseQueuedMessage(): React.ReactNode {
@@ -145,16 +148,16 @@ export const ProcessPeerTool = buildTool({
       latest: undefined,
       defaultProvider: 'codex',
       defaultMode: DEFAULT_PROCESS_MESH_MODE,
-      title: 'Local process terminal',
+      title: 'Local runner',
     });
   },
   getActivityDescription(input: Partial<{ provider?: string; prompt?: string; mode?: string }>) {
     const mode = normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE);
-    return `Running ${input.provider ?? 'local process'} (${mode}): ${truncateText(input.prompt ?? '', 80)}`;
+    return `Running ${input.provider ?? 'local runner'} (${mode}): ${truncateText(input.prompt ?? '', 80)}`;
   },
   getToolUseSummary(input: Partial<{ provider?: string; prompt?: string; mode?: string }>) {
     const mode = normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE);
-    return `${input.provider ?? 'local process'} ${mode}: ${truncateText(input.prompt ?? '', 80)}`;
+    return `${input.provider ?? 'local runner'} ${mode}: ${truncateText(input.prompt ?? '', 80)}`;
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     const sessionLine = output.sessionId ? `sessionId: ${output.sessionId}` : '';
@@ -165,7 +168,7 @@ export const ProcessPeerTool = buildTool({
         tool_use_id: toolUseID,
         type: 'tool_result',
         content: [
-          `[Process worker:${output.provider}] Failed: ${output.exitCode ?? output.signal ?? 'unknown'}`,
+          `[Local runner:${output.provider}] Failed: ${output.exitCode ?? output.signal ?? 'unknown'}`,
           sessionLine,
           '',
           text,
@@ -178,7 +181,7 @@ export const ProcessPeerTool = buildTool({
       tool_use_id: toolUseID,
       type: 'tool_result',
       content: [
-        `[Process worker:${output.provider}] exit ${output.exitCode ?? output.signal ?? 'unknown'} in ${(
+        `[Local runner:${output.provider}] exit ${output.exitCode ?? output.signal ?? 'unknown'} in ${(
           (output.durationMs ?? 0) / 1000
         ).toFixed(1)}s`,
         sessionLine,
@@ -209,13 +212,13 @@ export const ProcessPeerTool = buildTool({
         data: {
           success: false,
           provider: providerId,
-          error: `Unknown process worker provider "${providerId}". Available: ${getProcessPeerProviderIds().join(', ')}`,
+          error: `Unknown local runner provider "${providerId}". Available: ${getProcessPeerProviderIds().join(', ')}`,
         },
       };
     }
 
     try {
-      const timeout = Math.min(Math.max(1, input.timeout ?? 600), 1800) * 1000;
+      const timeout = clampTimeout(input.timeout, 600, 1800);
       let progressSeq = 0;
       notifyPeerFeedback(`asking ${provider.label}`, 'process-peer', 'low');
       const result = await provider.runTask({

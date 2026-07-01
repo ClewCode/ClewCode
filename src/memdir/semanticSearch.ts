@@ -37,11 +37,9 @@ let extractor: Awaited<ReturnType<typeof pipeline>> | null = null;
  */
 async function getExtractor() {
   if (!extractor) {
-    console.log('[Memory] Loading embedding model (granite-97m-multilingual-r2)...');
     extractor = await pipeline('feature-extraction', 'Xenova/granite-embedding-97m-multilingual-r2', {
       quantized: true,
     });
-    console.log('[Memory] Embedding model loaded.');
   }
   return extractor;
 }
@@ -146,9 +144,9 @@ async function getOrCreateEmbedding(header: MemoryHeader, content: string): Prom
 }
 
 /**
- * Memory search result.
+ * Result from a semantic memory file search.
  */
-export interface MemorySearchResult {
+export interface SemanticMemoryResult {
   file: string;
   filePath: string;
   type: string | undefined;
@@ -165,7 +163,7 @@ export interface MemorySearchResult {
  * @param threshold - Minimum similarity score (0-1)
  * @returns Sorted list of relevant memories
  */
-export async function searchMemories(query: string, topK = 5, threshold = 0.6): Promise<MemorySearchResult[]> {
+export async function searchMemories(query: string, topK = 5, threshold = 0.6): Promise<SemanticMemoryResult[]> {
   const memoryDir = getAutoMemPath();
   if (!memoryDir) return [];
 
@@ -178,7 +176,7 @@ export async function searchMemories(query: string, topK = 5, threshold = 0.6): 
 
   // Search in parallel
   const results = await Promise.allSettled(
-    headers.map(async (header): Promise<MemorySearchResult | null> => {
+    headers.map(async (header): Promise<SemanticMemoryResult | null> => {
       try {
         // Read file content (first 1000 chars for embedding)
         const content = await readFile(header.filePath, 'utf-8');
@@ -208,9 +206,9 @@ export async function searchMemories(query: string, topK = 5, threshold = 0.6): 
 
   // Filter, sort, and return top K
   return results
-    .filter((r): r is PromiseFulfilledResult<MemorySearchResult | null> => r.status === 'fulfilled')
+    .filter((r): r is PromiseFulfilledResult<SemanticMemoryResult | null> => r.status === 'fulfilled')
     .map(r => r.value)
-    .filter((r): r is MemorySearchResult => r !== null)
+    .filter((r): r is SemanticMemoryResult => r !== null)
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
 }

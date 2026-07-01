@@ -4,7 +4,7 @@ import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { formatPeerDetails, notifyPeerFeedback } from '../peer/peerFeedback.js';
+import { clampTimeout, formatPeerDetails, notifyPeerFeedback } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_LIST_ROLES_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -108,7 +108,7 @@ export const PeerListRolesTool = buildTool({
   async call(input: { wait?: boolean; timeout?: number; minPeers?: number }) {
     const store = getGlobalPeerStore();
     const minPeers = input.minPeers ?? 1;
-    const timeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
+    const timeoutMs = clampTimeout(input.timeout, 30, 120);
 
     notifyPeerFeedback(
       input.wait ? `waiting up to ${Math.round(timeoutMs / 1000)}s for peer roles` : 'reading peer roles',

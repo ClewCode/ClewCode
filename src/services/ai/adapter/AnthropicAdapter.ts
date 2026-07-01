@@ -207,35 +207,6 @@ export async function* withStreamWatchdog<T>(
   if (watchdog) clearTimeout(watchdog);
 }
 
-// ── Provider Adapter Interface ───────────────────────────────────────────────
-
-/**
- * A provider adapter converts provider-specific API responses into
- * Anthropic-compatible types so the main streaming loop can remain unchanged.
- */
-export interface ProviderAdapter {
-  /** Human-readable label (e.g. "OpenAI", "Google Gemini"). */
-  readonly label: string;
-
-  /**
-   * Perform a non-streaming chat completion and return the result as an
-   * Anthropic-compatible `BetaMessage`.
-   */
-  createMessage(params: BetaMessageStreamParams, options?: { signal?: AbortSignal }): Promise<BetaMessage>;
-
-  /**
-   * Perform a streaming chat completion. Returns an async iterable of
-   * Anthropic-compatible `BetaRawMessageStreamEvent` values.
-   */
-  streamMessage(
-    params: BetaMessageStreamParams,
-    options?: { signal?: AbortSignal },
-  ): AsyncGenerator<unknown, void, undefined> | Promise<AsyncGenerator<unknown, void, undefined>>;
-
-  /** Convert a provider error into a standardised Error object. */
-  normalizeError(error: unknown): Error;
-}
-
 // ── Adapter registry ─────────────────────────────────────────────────────────
 
 const adapterRegistry = new Map<string, (client: any, providerId: string) => ProviderAdapter>();

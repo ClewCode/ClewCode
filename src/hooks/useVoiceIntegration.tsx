@@ -665,7 +665,6 @@ export function useVoiceKeybindingHandler({
   // Backward-compat bridge: REPL.tsx doesn't yet wire handleKeyDown to
   // <Box onKeyDown>. Subscribe via useInput and adapt InputEvent →
   // KeyboardEvent until the consumer is migrated (separate PR).
-  // TODO(onKeyDown-migration): remove once REPL passes handleKeyDown.
   useInput(
     (_input, _key, event) => {
       const kbEvent = new KeyboardEvent(event.keypress);
@@ -686,9 +685,6 @@ export function useVoiceKeybindingHandler({
   };
 }
 
-// TODO(onKeyDown-migration): temporary shim so existing JSX callers
-// (<VoiceKeybindingHandler .../>) keep compiling. Remove once REPL.tsx
-// wires handleKeyDown directly.
 export function VoiceKeybindingHandler(props) {
   useVoiceKeybindingHandler(props);
   return null;
