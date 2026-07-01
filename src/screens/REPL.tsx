@@ -2591,7 +2591,7 @@ export function REPL({
     prevDialogRef.current = focusedInputDialog;
   }, [focusedInputDialog, repinScroll]);
 
-  function onCancel() {
+  function onCancel(options?: { restoreSubmittedPrompt?: boolean }) {
     if (focusedInputDialog === 'elicitation') {
       // Elicitation dialog handles its own Escape, and closing it shouldn't affect any loading state.
       return;
@@ -2605,14 +2605,13 @@ export function REPL({
       proactiveModule?.pauseProactive();
     }
 
-    queryGuard.forceEnd();
-    skipIdleCheckRef.current = false;
+    const restoreSubmittedPrompt = options?.restoreSubmittedPrompt === true;
 
     // Preserve partially-streamed text so the user can read what was
     // generated before pressing Esc. Pushed before resetLoadingState clears
     // streamingText, and before query.ts yields the async interrupt marker,
     // giving final order [user, partial-assistant, [Request interrupted by user]].
-    if (streamingText?.trim()) {
+    if (!restoreSubmittedPrompt && streamingText?.trim()) {
       setMessages(prev => [...prev, createAssistantMessage({ content: streamingText })]);
     }
 
@@ -2642,11 +2641,27 @@ export function REPL({
       abortController?.abort('user-cancel');
     }
 
+    queryGuard.forceEnd();
+    skipIdleCheckRef.current = false;
+
     // Clear the controller so subsequent Escape presses don't see a stale
     // aborted signal. Without this, canCancelRunningTask is false (signal
     // defined but .aborted === true), so isActive becomes false if no other
     // activating conditions hold — leaving the Escape keybinding inactive.
     setAbortController(null);
+
+    if (
+      restoreSubmittedPrompt &&
+      inputValueRef.current === '' &&
+      getCommandQueueLength() === 0 &&
+      !store.getState().viewingAgentTaskId
+    ) {
+      const lastUserMsg = messagesRef.current.findLast(selectableUserMessagesFilter);
+      if (lastUserMsg) {
+        removeLastFromHistory();
+        restoreMessageSyncRef.current(lastUserMsg);
+      }
+    }
 
     // forceEnd() skips the finally path — fire directly (aborted=true).
     void mrOnTurnComplete(messagesRef.current, true);
@@ -3497,6 +3512,9 @@ export function REPL({
         toolUseContext,
         querySource: getQuerySourceForREPL(),
       })) {
+        if (abortController.signal.aborted) {
+          break;
+        }
         onQueryEvent(event);
       }
 
