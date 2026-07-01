@@ -22,7 +22,9 @@ export function renderToolResultMessage(output: Output): React.ReactNode {
   // Handle forked skill result
   if ('status' in output && output.status === 'forked') {
     const resultText = output.result
-      ? (typeof output.result === 'string' ? output.result.slice(0, 120) : 'Done')
+      ? typeof output.result === 'string'
+        ? output.result.slice(0, 120)
+        : 'Done'
       : 'Done';
     return (
       <MessageResponse height={1}>

@@ -57,10 +57,7 @@ export async function call(onDone: LocalJSXCommandOnDone, context: LocalJSXComma
           void checkAndDisableBypassPermissionsIfNeeded(appState.toolPermissionContext, context.setAppState);
           if (feature('TRANSCRIPT_CLASSIFIER')) {
             resetAutoModeGateCheck();
-            void checkAndDisableAutoModeIfNeeded(
-              appState.toolPermissionContext,
-              context.setAppState,
-            );
+            void checkAndDisableAutoModeIfNeeded(appState.toolPermissionContext, context.setAppState);
           }
           // Increment authVersion to trigger re-fetching of auth-dependent data in hooks (e.g., MCP servers)
           context.setAppState(prev => ({

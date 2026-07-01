@@ -137,8 +137,6 @@ function ModelPickerWrapper({
       message += ` with ${ansis.bold(effort)} effort`;
     }
 
-
-
     onDone(message);
   }
 
@@ -269,8 +267,6 @@ function SetModelAndClose({
       setSessionModelForTranscript(modelValue ?? undefined);
 
       let message = `Set model to ${ansis.bold(renderModelLabel(modelValue))} for this session`;
-
-
 
       onDone(message);
     }

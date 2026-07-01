@@ -2328,12 +2328,7 @@ function PromptInput({
       });
       // Also fire the mapped action so the shortcut works even without
       // "Option as Meta" — prevents inserting the literal character.
-      const action =
-        shortcut === 'alt+t'
-          ? 'chat:thinkingToggle'
-          : shortcut === 'alt+p'
-            ? 'chat:modelPicker'
-            : null;
+      const action = shortcut === 'alt+t' ? 'chat:thinkingToggle' : shortcut === 'alt+p' ? 'chat:modelPicker' : null;
       if (action) {
         return { key: action };
       }
@@ -2937,10 +2932,7 @@ function isUltraActive(): boolean {
   }
 }
 
-function buildBorderText(
-  isUltra: boolean,
-  isLoopActive?: boolean,
-): BorderTextOptions | undefined {
+function buildBorderText(isUltra: boolean, isLoopActive?: boolean): BorderTextOptions | undefined {
   const segments: string[] = [];
   if (isLoopActive) {
     segments.push(ansis.bold(ansis.yellow('🔒 LOOP LOCKED')));

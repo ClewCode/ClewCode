@@ -277,13 +277,17 @@ function buildAgentSummary(agentMessages: MessageType[]): {
           block.input &&
           typeof block.input === 'object'
         ) {
-          const fp = (block.input as Record<string, unknown>).file_path ?? (block.input as Record<string, unknown>).path;
+          const fp =
+            (block.input as Record<string, unknown>).file_path ?? (block.input as Record<string, unknown>).path;
           if (typeof fp === 'string' && !filesRead.includes(fp)) {
             filesRead.push(fp);
           }
         }
         if (
-          (block.name === 'Edit' || block.name === 'Write' || block.name === 'FileWrite' || block.name === 'FileEdit') &&
+          (block.name === 'Edit' ||
+            block.name === 'Write' ||
+            block.name === 'FileWrite' ||
+            block.name === 'FileEdit') &&
           block.input &&
           typeof block.input === 'object'
         ) {

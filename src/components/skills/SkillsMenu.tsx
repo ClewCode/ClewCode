@@ -130,7 +130,8 @@ export function SkillsMenu({ onExit, commands }: Props): React.ReactNode {
             [{contextMode}]
           </Text>
           <Text dimColor italic>
-            {' '}{skill.whenToUse || skill.description}
+            {' '}
+            {skill.whenToUse || skill.description}
           </Text>
         </Box>
       </Box>
