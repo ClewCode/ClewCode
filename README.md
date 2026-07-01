@@ -22,19 +22,19 @@ A reverse-engineered, local-first coding CLI inspired by Claude Code. It runs on
 
 ---
 
-## What is Clew Code?
+## Overview
 
-Clew Code is an AI coding agent that lives in your terminal. It is **provider-agnostic** — bring an API key from OpenAI, Google, DeepSeek, Groq, OpenRouter, a local Ollama model, or any supported provider, and switch between them mid-session.
+Clew Code is an AI coding agent that runs in your terminal. It is **provider-agnostic**: bring an API key from OpenAI, Google, DeepSeek, Groq, OpenRouter, a local Ollama model, or any other supported provider, and switch between them mid-session.
 
-It is built around three ideas:
+The project is built around three principles:
 
-- **Local-first.** Your code, memory, and configuration stay on your machine. Ships as a single Bun bundle with no required cloud backend.
-- **It remembers.** A SQLite-backed memory system stores decisions, preferences, and project context, then injects relevant information back into prompts.
-- **It scales across machines.** Discover other Clew instances on your LAN, assign tasks, sync memory, and broadcast commands to a swarm.
+- **Local-first.** Code, memory, and configuration stay on your machine. It ships as a single Bun bundle and requires no cloud backend.
+- **Persistent memory.** A SQLite-backed memory system records decisions, preferences, and project context, then injects relevant history back into future prompts.
+- **Horizontal scale.** Instances on the same LAN can discover one another, distribute tasks, synchronize memory, and execute commands as a swarm.
 
 ---
 
-## Install
+## Installation
 
 ### npm
 
@@ -55,7 +55,7 @@ bun install && bun run build && bun run start
 <details>
 <summary><b>Platform notes</b></summary>
 
-- **macOS** — works out of the box (Apple Silicon & Intel).
+- **macOS** — works out of the box (Apple Silicon and Intel).
 - **Linux** — no special dependencies.
 - **Windows** — requires Git Bash, WSL, or PowerShell.
 </details>
@@ -65,12 +65,12 @@ bun install && bun run build && bun run start
 ## Quick start
 
 ```bash
-# Launch in any project — pick a provider on first run
+# Launch in any project — select a provider on first run
 cd my-project
 clew
 ```
 
-Set a provider key via environment variable, or configure it inside the REPL:
+Set a provider key via environment variable, or configure it from within the REPL:
 
 ```bash
 export OPENAI_API_KEY=sk-...
@@ -85,60 +85,60 @@ export OLLAMA_HOST=http://localhost:11434
 # One-shot mode (pipe-friendly)
 clew -p "summarize CHANGELOG.md"
 
-# Resume your last session
+# Resume the most recent session
 clew --resume last
 ```
 
-Inside the REPL:
+Common commands inside the REPL:
 
 ```text
 ❯ /model gemini-2.5-flash   # switch provider/model mid-session
-❯ /model ollama/llama3.3    # go fully local
-❯ /status                   # provider, model, context usage
-❯ /goal "tests pass"        # track + verify task completion
+❯ /model ollama/llama3.3    # switch to a fully local model
+❯ /status                   # provider, model, and context usage
+❯ /goal "tests pass"        # track and verify task completion
 ❯ /memory dashboard         # memory system status
 ❯ /peer discover            # find Clew instances on the LAN
 ❯ /mcp list                 # connected MCP servers
-❯ /help                     # list everything
+❯ /help                     # full command list
 ```
 
 ---
 
 ## Features
 
-### Multi-provider
-Supports OpenAI, Google Gemini & Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, KiloCode, Sakana AI, Ollama, Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, and custom endpoints. Switch any time with `/model`. Anthropic models are reachable via OpenRouter or Cline.
+### Multi-provider support
+OpenAI, Google Gemini and Code Assist, DeepSeek, Groq, xAI (Grok), Mistral, Cohere, Perplexity, Cerebras, Moonshot (Kimi), Zhipu (GLM), NVIDIA NIM, OpenRouter, OpenCode, KiloCode, Sakana AI, Ollama, Together AI, Fireworks AI, Deep Infra, SiliconFlow, Hugging Face, Poe, DigitalOcean, Cline, and custom endpoints. Switch providers or models at any time with `/model`. Anthropic models are reachable via OpenRouter or Cline.
 
 ### Memory system
-A SQLite-backed memory store with importance ranking, confidence scoring, and access tracking. It auto-initializes and scans your project on first use, then injects a token-budgeted selection of memories into the system prompt each turn. Durable facts are extracted during context compaction, and background jobs consolidate memory over time.
+A SQLite-backed memory store ranks entries by importance, confidence, and access frequency. It initializes and scans a project automatically on first use, then injects a token-budgeted selection of memories into the system prompt on each turn. Durable facts are extracted during context compaction, and background jobs consolidate memory over time.
 
 ### Peer-to-peer LAN swarm
-Discover other Clew instances on the same machine or across the LAN. Assign tasks, set roles, and broadcast shell commands to every peer in parallel. Team memory sync with conflict resolution and delta uploads.
+Discover other Clew instances on the same machine or across the local network. Assign tasks, set roles, and broadcast shell commands to every peer in parallel, with team memory sync and conflict resolution.
 
 ### Tools
-Built-in tools for file I/O (Read, Write, Edit, Glob, Grep), shell commands (Bash), web (WebSearch, WebFetch, browser via Playwright), task tracking, LSP integration, subagent dispatch (`Agent`), LAN peer coordination, MCP tools, and agent-driven memory curation.
+Built-in tools cover file I/O (Read, Write, Edit, Glob, Grep), shell execution (Bash), web access (WebSearch, WebFetch, browser automation via Playwright), task tracking, LSP integration, subagent dispatch (`Agent`), LAN peer coordination, MCP tools, and agent-driven memory curation.
 
-### Extensible
+### Extensibility
 - **MCP** — connect external tools over stdio, SSE, or in-process DirectConnect.
-- **Skills, plugins, hooks** — extend without touching source. Skills via `SKILL.md`, plugins via manifest, and lifecycle hooks (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit).
-- **Permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, guardian.
+- **Skills, plugins, and hooks** — extend behavior without modifying source. Skills are defined via `SKILL.md`, plugins via manifest, and lifecycle hooks cover PreToolUse, PostToolUse, PreBash, PostPrompt, and PreAcceptEdit.
+- **Permission modes** — default, ask, plan, auto, acceptEdits, bypassPermissions, dontAsk, and guardian.
 
-### Other capabilities
-- **Goals & verification** — track task completion with chained goals and independent LLM verification.
-- **Autonomous agent loop** — persistent task queue with lease-based concurrency, retry, and dead-letter handling.
-- **Context compaction** — recursive compression when the context window fills.
-- **Checkpoints** — progress snapshots with a scratchpad for layered rebuild during compaction.
+### Additional capabilities
+- **Goals and verification** — track task completion with chained goals and independent LLM verification.
+- **Autonomous agent loop** — a persistent task queue with lease-based concurrency, retry, and dead-letter handling.
+- **Context compaction** — recursive compression as the context window fills.
+- **Checkpoints** — progress snapshots with a scratchpad for layered rebuilds during compaction.
 
 ---
 
 ## Execution layers
 
-Clew Code runs work at several layers, each for a different job:
+Clew Code executes work at several distinct layers:
 
-| Layer | What it is | Use it for |
-|-------|-----------|------------|
-| **Agent** | An AI worker with a prompt, model, tools, and permissions. The main chat is an agent; custom ones live in `.clew/agents/*.md`. | The session itself. |
-| **Subagent** | A short-lived child launched via the `Agent` tool. | Independent investigation, test triage, review. |
+| Layer | Description | Typical use |
+|-------|-------------|--------------|
+| **Agent** | An AI worker with a prompt, model, tools, and permissions. The main chat is an agent; custom agents live in `.clew/agents/*.md`. | The session itself. |
+| **Subagent** | A short-lived child process launched via the `Agent` tool. | Independent investigation, test triage, review. |
 | **Teammate / Swarm** | A longer-lived agent with identity, mailbox, and task coordination. | Multi-turn collaboration between named workers. |
 | **LAN Peer** | Another Clew instance on the same machine or network, reached via `/peer`. | Distributing work across machines. |
 | **Process Peer** | A local worker that delegates to an external CLI via `exec`/`pty`. | Running another coding tool as a subprocess. |
@@ -235,7 +235,7 @@ bun run check:ci      # Lint + format check (Biome CI)
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md) first.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [SECURITY.md](SECURITY.md) before opening a pull request.
 
 <a href="https://github.com/ClewCode/ClewCode/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=ClewCode/ClewCode" alt="Contributors" />
