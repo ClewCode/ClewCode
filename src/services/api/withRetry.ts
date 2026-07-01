@@ -222,7 +222,6 @@ export async function* withRetry<T>(
       // and the for-loop terminates. Persistent sessions want the chunked
       // keep-alive path instead of fast-mode cache-preservation anyway.
 
-
       // Non-foreground sources bail immediately on 529 — no retry amplification
       // during capacity cascades. User never sees these fail.
       if (is529Error(error) && !shouldRetry529(options.querySource)) {

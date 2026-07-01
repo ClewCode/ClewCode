@@ -402,7 +402,7 @@ function getInitialState(): State {
     promptCache1hEligible: null,
     // Beta header latches (null = not yet triggered)
     afkModeHeaderLatched: null,
-        cacheEditingHeaderLatched: null,
+    cacheEditingHeaderLatched: null,
     thinkingClearLatched: null,
     // Current prompt ID
     promptId: null,
@@ -1645,7 +1645,6 @@ export function setAfkModeHeaderLatched(v: boolean): void {
   STATE.afkModeHeaderLatched = v;
 }
 
-
 export function getCacheEditingHeaderLatched(): boolean | null {
   return STATE.cacheEditingHeaderLatched;
 }
@@ -1668,7 +1667,7 @@ export function setThinkingClearLatched(v: boolean): void {
  */
 export function clearBetaHeaderLatches(): void {
   STATE.afkModeHeaderLatched = null;
-    STATE.cacheEditingHeaderLatched = null;
+  STATE.cacheEditingHeaderLatched = null;
   STATE.thinkingClearLatched = null;
 }
 

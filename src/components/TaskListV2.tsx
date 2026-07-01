@@ -250,7 +250,11 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
           ownerActive={task.owner ? activeTeammates.has(task.owner) : false}
           columns={columns}
           spinnerFrame={task.status === 'in_progress' ? spinnerFrame : undefined}
-          elapsedMs={task.status === 'in_progress' && startTimestampsRef.current.has(task.id) ? Date.now() - startTimestampsRef.current.get(task.id)! : undefined}
+          elapsedMs={
+            task.status === 'in_progress' && startTimestampsRef.current.has(task.id)
+              ? Date.now() - startTimestampsRef.current.get(task.id)!
+              : undefined
+          }
         />
       ))}
       {maxDisplay > 0 && hiddenSummary && <Text dimColor>{hiddenSummary}</Text>}
@@ -266,12 +270,12 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
       <Box flexDirection="column" marginTop={1} marginLeft={2}>
         <Box>
           <Text dimColor>
-            Tasks{' '}
-            <Text color={completedCount === tasks.length ? 'success' : undefined}>{bar}</Text>
-            {' '}{completedCount}/{tasks.length}
+            Tasks <Text color={completedCount === tasks.length ? 'success' : undefined}>{bar}</Text> {completedCount}/
+            {tasks.length}
             {inProgressCount > 0 && (
               <>
-                {' · '}<Text color="claude">{inProgressCount} running</Text>
+                {' · '}
+                <Text color="claude">{inProgressCount} running</Text>
               </>
             )}
           </Text>
@@ -295,7 +299,10 @@ type TaskItemProps = {
   elapsedMs?: number;
 };
 
-function getTaskIcon(status: Task['status'], isBlocked: boolean): {
+function getTaskIcon(
+  status: Task['status'],
+  isBlocked: boolean,
+): {
   icon: string;
   color: keyof Theme | undefined;
 } {
@@ -312,7 +319,16 @@ function getTaskIcon(status: Task['status'], isBlocked: boolean): {
   }
 }
 
-function TaskItem({ task, ownerColor, openBlockers, activity, ownerActive, columns, spinnerFrame, elapsedMs }: TaskItemProps): React.ReactNode {
+function TaskItem({
+  task,
+  ownerColor,
+  openBlockers,
+  activity,
+  ownerActive,
+  columns,
+  spinnerFrame,
+  elapsedMs,
+}: TaskItemProps): React.ReactNode {
   const isCompleted = task.status === 'completed';
   const isInProgress = task.status === 'in_progress';
   const isBlocked = openBlockers.length > 0;
@@ -354,11 +370,7 @@ function TaskItem({ task, ownerColor, openBlockers, activity, ownerActive, colum
         >
           {displaySubject}
         </Text>
-        {elapsedStr && (
-          <Text dimColor>
-            {' '}({elapsedStr})
-          </Text>
-        )}
+        {elapsedStr && <Text dimColor> ({elapsedStr})</Text>}
         {showOwner && (
           <Text dimColor>
             {' ('}

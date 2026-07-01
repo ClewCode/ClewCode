@@ -675,7 +675,6 @@ export class QueryEngine {
       } as unknown as SDKMessage;
     }
 
-
     for await (const message of query({
       messages,
       systemPrompt,

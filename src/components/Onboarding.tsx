@@ -91,9 +91,25 @@ function ProviderIntroContent({ onSelect }: { onSelect: (provider: string) => vo
       />
       {focusedInfo && (
         <Box flexDirection="column" gap={0} marginTop={1} paddingLeft={1}>
-          <Text bold color="claude">{focusedProvider === 'anthropic' ? 'Claude' : focusedProvider === 'openai' ? 'OpenAI' : focusedProvider === 'google' ? 'Gemini' : focusedProvider === 'deepseek' ? 'DeepSeek' : focusedProvider === 'openrouter' ? 'OpenRouter' : focusedProvider === 'opencode' ? 'OpenCode' : 'Ollama'}</Text>
+          <Text bold color="claude">
+            {focusedProvider === 'anthropic'
+              ? 'Claude'
+              : focusedProvider === 'openai'
+                ? 'OpenAI'
+                : focusedProvider === 'google'
+                  ? 'Gemini'
+                  : focusedProvider === 'deepseek'
+                    ? 'DeepSeek'
+                    : focusedProvider === 'openrouter'
+                      ? 'OpenRouter'
+                      : focusedProvider === 'opencode'
+                        ? 'OpenCode'
+                        : 'Ollama'}
+          </Text>
           <Text>{focusedInfo.description}</Text>
-          <Text dimColor italic>{focusedInfo.highlight}</Text>
+          <Text dimColor italic>
+            {focusedInfo.highlight}
+          </Text>
         </Box>
       )}
     </Box>
@@ -431,19 +447,13 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
       <Box flexDirection="column" marginTop={1}>
         {/* Step progress indicator */}
         {showProgress && (
-        <Box paddingLeft={1} marginBottom={1}>
-          <Text dimColor>
-            Step {currentStepIndex + 1}/{totalSteps}
-            {' '}
-            <Text color="claude">
-              {'●'.repeat(currentStepIndex + 1)}
-            </Text>
+          <Box paddingLeft={1} marginBottom={1}>
             <Text dimColor>
-              {'○'.repeat(Math.max(0, totalSteps - currentStepIndex - 1))}
+              Step {currentStepIndex + 1}/{totalSteps} <Text color="claude">{'●'.repeat(currentStepIndex + 1)}</Text>
+              <Text dimColor>{'○'.repeat(Math.max(0, totalSteps - currentStepIndex - 1))}</Text>
             </Text>
-          </Text>
-        </Box>
-      )}
+          </Box>
+        )}
         {currentStep?.component}
         {currentStepIndex > 0 && currentStep?.id !== 'terminal-setup' && (
           <Box paddingLeft={1} marginTop={1}>

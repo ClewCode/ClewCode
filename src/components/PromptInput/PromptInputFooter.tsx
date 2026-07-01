@@ -145,10 +145,13 @@ function PromptInputFooter({
   const goalStopped = /(?:turn|time) limit reached/i.test(goalState?.blockedReason ?? goalState?.lastReason ?? '');
   const goalStatus = goalBlocked ? (goalStopped ? 'stopped' : 'blocked') : sessionGoalPaused ? 'paused' : 'active';
   const goalActiveText = sessionGoal
-    ? `/goal ${goalStatus} (${formatDuration(goalNow - (sessionGoalStartTime ?? goalNow) - (sessionGoalTotalPausedMs ?? 0), {
-        hideTrailingZeros: true,
-        mostSignificantOnly: true,
-      })})`
+    ? `/goal ${goalStatus} (${formatDuration(
+        goalNow - (sessionGoalStartTime ?? goalNow) - (sessionGoalTotalPausedMs ?? 0),
+        {
+          hideTrailingZeros: true,
+          mostSignificantOnly: true,
+        },
+      )})`
     : undefined;
   const footerLeftSide = (
     <PromptInputFooterLeftSide
