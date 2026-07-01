@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **README rewrite**: Removed fictional model IDs (gpt-5.5 → gemini-2.5-flash), inflated feature counts, unverified claims, and SWE-bench Verified section. Replaced with honest, code-backed descriptions.
+
 - **Build: AWAY_SUMMARY flag**: Added `--define.AWAY_SUMMARY=true` to the build script to gate away-summary feature at compile time. (`package.json`)
 - **Away summary improvements**: Enhanced prompt to produce structured `Goal: ... Next: ...` output, added `cleanAwaySummary()` to strip prefixes, switched from GB/telemetry gating to `config.recapEnabled` setting. (`src/services/awaySummary.ts`, `src/hooks/useAwaySummary.ts`)
 - **Goal blocked/stopped display**: StatusLine now shows `blocked`/`stopped` states with progress bar format changed to `[####-]`. (`src/components/StatusLine.tsx`)
