@@ -4,7 +4,7 @@ import type { MeshChatMessage } from '../../peer/types.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
+import { clampTimeout, notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_LIST_MESSAGES_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -172,8 +172,8 @@ export const PeerListMessagesTool = buildTool({
 
     if (input.wait && messages.length === 0) {
       waited = true;
-      const cycleTimeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
-      const maxTotalMs = Math.min(Math.max(1, input.maxTotalWait ?? 600), 3600) * 1000;
+      const cycleTimeoutMs = clampTimeout(input.timeout, 30, 120);
+      const maxTotalMs = clampTimeout(input.maxTotalWait, 600, 3600);
       const deadline = Date.now() + maxTotalMs;
       const trackMesh = input.trackMesh && input.from;
 

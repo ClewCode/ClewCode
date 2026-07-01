@@ -6,10 +6,6 @@ import { loadKeybindingsSync } from './loadUserBindings.js';
 import { getBindingDisplayText } from './resolver.js';
 import type { KeybindingContextName } from './types.js';
 
-// TODO(keybindings-migration): Remove fallback parameter after migration is
-// complete and we've confirmed no 'keybinding_fallback_used' events are being
-// logged. The fallback exists as a safety net during migration - if bindings
-// fail to load or an action isn't found, we fall back to hardcoded values.
 // Once stable, callers should be able to trust that getBindingDisplayText
 // always returns a value for known actions, and we can remove this defensive
 // pattern.

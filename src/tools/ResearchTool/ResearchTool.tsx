@@ -157,25 +157,7 @@ export const ResearchTool = buildTool({
 
       const shouldSearchWeb = sources.includes('web');
 
-      console.log('[ResearchTool] Starting research with features:', {
-        query,
-        enableDeepDive,
-        enableTruthCheck,
-        generateDossier,
-        enableSmartRanking,
-      });
-
       const providerResults = shouldSearchWeb ? await searchWithProviders(query, { maxResults }) : [];
-
-      console.log('[ResearchTool] Provider results:', {
-        query,
-        providerCount: providerResults.length,
-        totalResults: providerResults.reduce((sum: number, p: SearchProviderResult) => sum + p.results.length, 0),
-        providers: providerResults.map((p: SearchProviderResult) => ({
-          source: p.source,
-          resultCount: p.results.length,
-        })),
-      });
 
       let allWebResults: WebResult[] = dedupeResults(
         providerResults.flatMap((provider: SearchProviderResult) =>
@@ -190,12 +172,9 @@ export const ResearchTool = buildTool({
       );
 
       const foundCount = allWebResults.length;
-      console.log('[ResearchTool] Deduplicated results count:', foundCount);
 
       let rankingReport: string | undefined;
       if (enableSmartRanking && allWebResults.length > 0) {
-        console.log('[ResearchTool] Applying smart source ranking...');
-
         const rankedSources = rankSources(
           allWebResults.map(r => ({
             url: r.url || '',
@@ -221,8 +200,6 @@ export const ResearchTool = buildTool({
           excerpt: r.excerpt,
           content: (r as any).content || '',
         }));
-
-        console.log('[ResearchTool] Smart ranking applied. Results after ranking:', allWebResults.length);
       }
 
       let deepDiveResults:
@@ -235,8 +212,6 @@ export const ResearchTool = buildTool({
         | undefined;
 
       if (enableDeepDive && allWebResults.length > 0) {
-        console.log('[ResearchTool] Starting deep-dive mode...');
-
         const urlsToDive = allWebResults
           .filter(r => r.url)
           .slice(0, 5)
@@ -255,8 +230,6 @@ export const ResearchTool = buildTool({
           title: r.title,
           excerpt: r.excerpt,
         }));
-
-        console.log('[ResearchTool] Deep-dive completed. Found', deepDiveResults.length, 'relevant deep results');
       }
 
       const searchResultsText = allWebResults
@@ -302,27 +275,11 @@ Please perform deep research for the query.
         content: searchContext,
       });
 
-      console.log('[ResearchTool] Provider search completed. Found', foundCount, 'results. Starting synthesis...');
-
       const synthesisTools = availableTools.filter((t: any) => {
         const name = t.name.toLowerCase();
         const isForbidden = name === 'research' || name === 'agent' || name.includes('search') || name.includes('web');
         return !isForbidden;
       });
-
-      console.log(
-        '[ResearchTool] Aggressive Filter - Excluded tools:',
-        availableTools
-          .filter((t: any) => {
-            const name = t.name.toLowerCase();
-            return name === 'research' || name === 'agent' || name.includes('search') || name.includes('web');
-          })
-          .map((t: any) => t.name),
-      );
-      console.log(
-        '[ResearchTool] Aggressive Filter - Allowed tools:',
-        synthesisTools.map((t: any) => t.name),
-      );
 
       let answer = '';
       let eventCount = 0;
@@ -332,7 +289,6 @@ Please perform deep research for the query.
 
       while (iterations < MAX_SYNTHESIS_ITERATIONS) {
         iterations++;
-        console.log(`[ResearchTool] Synthesis iteration ${iterations}...`);
 
         const queryStream = queryModelWithStreaming({
           messages: synthesisMessages,
@@ -376,7 +332,6 @@ Please perform deep research for the query.
             currentAssistantText += event.delta.text;
           } else if (event.type === 'tool_use') {
             hasToolUseInThisIteration = true;
-            console.log(`[ResearchTool] Sub-agent using tool: ${event.name}`);
 
             // Add what we have so far to the assistant message
             if (currentAssistantText) {
@@ -448,13 +403,9 @@ Please perform deep research for the query.
         }
       }
 
-      console.log('[ResearchTool] Synthesis complete. Total events:', eventCount, 'Answer length:', answer.length);
-
       let truthCheckResult: any | undefined;
 
       if (enableTruthCheck && allWebResults.length > 1) {
-        console.log('[ResearchTool] Running truth-check and conflict detection...');
-
         const credibilityScores: SourceCredibility[] = allWebResults
           .filter(r => r.url)
           .map(r => assessSourceCredibility(r.url));
@@ -476,15 +427,11 @@ Please perform deep research for the query.
           conflicts: truthCheck.conflicts,
           recommendations: truthCheck.recommendations,
         };
-
-        console.log('[ResearchTool] Truth-check completed. Found', conflicts.length, 'conflict(s)');
       }
 
       let dossierPath: string | undefined;
 
       if (generateDossier) {
-        console.log('[ResearchTool] Generating research dossier...');
-
         try {
           const dossierData: DossierData = generateDossierData(
             query,
@@ -533,8 +480,6 @@ Please perform deep research for the query.
             includeDeepDive: !!deepDiveResults,
             includeTruthCheck: !!truthCheckResult,
           });
-
-          console.log('[ResearchTool] Dossier saved to:', dossierPath);
         } catch (error) {
           logError(error as Error);
           console.error('[ResearchTool] Failed to generate dossier:', error);

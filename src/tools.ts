@@ -12,7 +12,7 @@ import { BriefTool } from './tools/BriefTool/BriefTool.js';
 
 // Lazy loading for feature-gated or potentially absent tools
 /* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
-const getREPLTool = () => null; // Anthropic-internal, removed in Clew Code
+const getREPLTool = () => null;
 const getSleepTool = () =>
   feature('PROACTIVE') || feature('KAIROS') ? require('./tools/SleepTool/SleepTool.js').SleepTool : null;
 const getCronTools = () => [
@@ -125,8 +125,6 @@ export {
   COORDINATOR_MODE_ALLOWED_TOOLS,
 } from './constants/tools.js';
 import { feature } from 'bun:bundle';
-
-const _CODE_INDEX_FEATURE = 'CODE_INDEX';
 
 import type { ToolPermissionContext } from './Tool.js';
 import { getDenyRuleForTool } from './utils/permissions/permissions.js';

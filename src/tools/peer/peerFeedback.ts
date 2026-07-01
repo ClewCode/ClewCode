@@ -40,3 +40,44 @@ export function formatPeerList(peers: Array<{ hostname?: string; port?: number }
   const visible = peers.slice(0, limit).map(peer => `${peer.hostname ?? 'peer'}:${peer.port ?? '?'}`);
   return `${visible.join(', ')}${peers.length > limit ? `, +${peers.length - limit} more` : ''}`;
 }
+
+/**
+ * Clamp a user-supplied timeout (in seconds) and convert to milliseconds.
+ * Respects a minimum of 1s and a caller-specified maximum.
+ */
+export function clampTimeout(raw: number | undefined, defaultSecs: number, maxSecs: number): number {
+  return Math.min(Math.max(1, raw ?? defaultSecs), maxSecs) * 1000;
+}
+
+/**
+ * Retry an async action until it succeeds or a deadline expires.
+ * Returns the final result plus waited/timedOut flags.
+ *
+ * @param attempt — async function that returns a result (caller determines success via `isSuccess`)
+ * @param isSuccess — predicate on the result
+ * @param timeoutMs — total retry window in milliseconds
+ * @param retryInterval — pause between attempts in ms (default 2000)
+ * @param onRetry — optional hook called before each retry (e.g. rediscover peers)
+ */
+export async function retryUntil<T>(
+  attempt: () => Promise<T>,
+  isSuccess: (result: T) => boolean,
+  timeoutMs: number,
+  retryInterval: number = 2000,
+  onRetry?: () => Promise<void>,
+): Promise<{ result: T; waited: boolean; timedOut: boolean }> {
+  let result = await attempt();
+  if (isSuccess(result)) return { result, waited: false, timedOut: false };
+
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    await new Promise(resolve => setTimeout(resolve, Math.min(retryInterval, remaining)));
+    if (onRetry) await onRetry();
+    result = await attempt();
+    if (isSuccess(result)) return { result, waited: true, timedOut: false };
+  }
+
+  return { result, waited: true, timedOut: !isSuccess(result) };
+}

@@ -369,9 +369,7 @@ export function rankSources(
   let filtered = scoredSources;
 
   if (excludeSpam) {
-    const beforeCount = filtered.length;
     filtered = filtered.filter(s => s.score.tier !== 'spam');
-    console.log(`[SmartRanking] Excluded ${beforeCount - filtered.length} spam sources`);
   }
 
   if (minScore > 0) {

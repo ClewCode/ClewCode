@@ -8,7 +8,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
+import { clampTimeout, notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_SWARM_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -155,7 +155,7 @@ export const PeerSwarmTool = buildTool({
       }
     }
 
-    const timeoutMs = Math.min(Math.max(1, input.timeout ?? 60), 300) * 1000;
+    const timeoutMs = clampTimeout(input.timeout, 60, 300);
     const results: Output['results'] = [];
     let succeeded = 0;
     let failed = 0;

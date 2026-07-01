@@ -6,7 +6,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
+import { clampTimeout, notifyPeerFeedback, retryUntil, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_PING_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -102,7 +102,7 @@ export const PeerPingTool = buildTool({
   },
   async call(input: { peer: string; wait?: boolean; timeout?: number }) {
     const store = getGlobalPeerStore();
-    const timeoutMs = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
+    const timeoutMs = clampTimeout(input.timeout, 30, 120);
 
     notifyPeerFeedback(
       input.wait ? `waiting up to ${Math.round(timeoutMs / 1000)}s for ${input.peer}` : `pinging ${input.peer}`,
@@ -141,29 +141,14 @@ export const PeerPingTool = buildTool({
       }
     };
 
-    // First attempt
-    let attempt = await attemptPing();
-    let waited = false;
-    let timedOut = false;
-
-    // If `wait` is true and peer is not found/online, retry
-    if (input.wait && !attempt.ok) {
-      waited = true;
-      const deadline = Date.now() + timeoutMs;
-      const retryInterval = 2000; // 2 seconds between retries
-
-      while (Date.now() < deadline) {
-        const remaining = deadline - Date.now();
-        if (remaining <= 0) break;
-        await new Promise(resolve => setTimeout(resolve, Math.min(retryInterval, remaining)));
-        attempt = await attemptPing();
-        if (attempt.ok) break;
-      }
-
-      if (!attempt.ok) {
-        timedOut = true;
-      }
-    }
+    // First attempt with optional retry
+    const {
+      result: attempt,
+      waited,
+      timedOut,
+    } = input.wait
+      ? await retryUntil(attemptPing, r => r.ok, timeoutMs)
+      : { result: await attemptPing(), waited: false, timedOut: false };
 
     if (!attempt.ok) {
       notifyPeerFeedback(`offline: ${truncateText(attempt.error, 120)}`, 'peer-ping-result', 'high');

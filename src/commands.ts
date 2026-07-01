@@ -31,6 +31,7 @@ import pr_comments from './commands/pr_comments/index.js';
 import releaseNotes from './commands/release-notes/index.js';
 import rename from './commands/rename/index.js';
 import resume from './commands/resume/index.js';
+import runner from './commands/runner/index.js';
 import review, { ultrareview } from './commands/review.js';
 import session from './commands/session/index.js';
 import skills from './commands/skills/index.js';
@@ -224,6 +225,7 @@ const COMMANDS = memoize((): Command[] => [
   reloadPlugins,
   rename,
   resume,
+  runner,
   session,
   skills,
   stats,
@@ -327,10 +329,6 @@ async function getSkills(cwd: string): Promise<{
   }
 }
 
-/* eslint-disable @typescript-eslint/no-require-imports */
-const getWorkflowCommands = null; // feature('WORKFLOW_SCRIPTS') ? ... : null
-/* eslint-enable @typescript-eslint/no-require-imports */
-
 /**
  * Filters commands by their declared `availability` (auth/provider requirement).
  * Commands without `availability` are treated as universal.
@@ -369,11 +367,7 @@ export function meetsAvailabilityRequirement(cmd: Command): boolean {
  */
 const loadAllCommands = memoize(async (cwd: string): Promise<Command[]> => {
   const [{ skillDirCommands, pluginSkills, bundledSkills, builtinPluginSkills }, pluginCommands, workflowCommands] =
-    await Promise.all([
-      getSkills(cwd),
-      getPluginCommands(),
-      getWorkflowCommands ? getWorkflowCommands(cwd) : Promise.resolve([]),
-    ]);
+    await Promise.all([getSkills(cwd), getPluginCommands(), Promise.resolve([])]);
 
   return [
     ...bundledSkills,

@@ -307,8 +307,6 @@ export async function saveDossier(data: DossierData, options: DossierOptions = {
     // Write to file
     fs.writeFileSync(outputPath, markdown, 'utf-8');
 
-    console.log(`[DossierGenerator] Saved dossier to: ${outputPath}`);
-
     return outputPath;
   } catch (error) {
     logError(error as Error);

@@ -312,7 +312,6 @@ export class LuluLSPServer {
 
   private handleExecuteCommand(request: LSPRequest): void {
     const _params = request.params as { command: string; arguments?: unknown[] };
-    // TODO: Integrate with Lulu agent system via IPC
     this.sendResponse(request.id, null);
   }
 

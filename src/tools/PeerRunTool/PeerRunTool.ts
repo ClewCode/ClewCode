@@ -9,7 +9,7 @@ import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
+import { clampTimeout, notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_RUN_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -147,7 +147,7 @@ export const PeerRunTool = buildTool({
     }
 
     try {
-      const timeout = Math.min(Math.max(1, input.timeout ?? 30), 120) * 1000;
+      const timeout = clampTimeout(input.timeout, 30, 120);
       notifyPeerFeedback(`running on ${peer.hostname}:${peer.port}`, 'peer-run', 'low');
       const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-exec`;
 

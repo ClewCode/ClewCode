@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { CommandResultDisplay } from '../../commands.js';
 import { Dialog } from '../../components/design-system/Dialog.js';
 import { Box, Text } from '../../ink.js';
-import { type MemorySearchResult, searchMemories } from '../../memdir/semanticSearch.js';
+import { type SemanticMemoryResult, searchMemories } from '../../memdir/semanticSearch.js';
 import type { LocalJSXCommandCall } from '../../types/command.js';
 
 /**
@@ -16,7 +16,7 @@ function MemorySearchCommand({
   query?: string;
   onDone: (result?: string, options?: { display?: CommandResultDisplay }) => void;
 }): React.ReactNode {
-  const [results, setResults] = React.useState<MemorySearchResult[]>([]);
+  const [results, setResults] = React.useState<SemanticMemoryResult[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
