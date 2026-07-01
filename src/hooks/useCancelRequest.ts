@@ -28,7 +28,7 @@ const KILL_AGENTS_CONFIRM_WINDOW_MS = 3000;
 
 type CancelRequestHandlerProps = {
   setToolUseConfirmQueue: (f: (toolUseConfirmQueue: ToolUseConfirm[]) => ToolUseConfirm[]) => void;
-  onCancel: () => void;
+  onCancel: (options?: { restoreSubmittedPrompt?: boolean }) => void;
   onAgentsKilled: () => void;
   isMessageSelectorVisible: boolean;
   screen: Screen;
@@ -182,10 +182,27 @@ export function CancelRequestHandler(props: CancelRequestHandlerProps): null {
       killAllAgentsAndNotify();
       exitTeammateView(setAppState);
     }
-    if (canCancelRunningTask || hasQueuedCommands) {
+    if (canCancelRunningTask) {
+      logEvent('tengu_cancel', {
+        source: 'ctrl_c' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+        streamMode: streamMode as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      });
+      setToolUseConfirmQueue(() => []);
+      onCancel({ restoreSubmittedPrompt: true });
+    } else if (hasQueuedCommands) {
       handleCancel();
     }
-  }, [isViewingTeammate, killAllAgentsAndNotify, setAppState, canCancelRunningTask, hasQueuedCommands, handleCancel]);
+  }, [
+    isViewingTeammate,
+    killAllAgentsAndNotify,
+    setAppState,
+    canCancelRunningTask,
+    hasQueuedCommands,
+    handleCancel,
+    setToolUseConfirmQueue,
+    onCancel,
+    streamMode,
+  ]);
 
   useKeybinding('app:interrupt', handleInterrupt, {
     context: 'Global',
