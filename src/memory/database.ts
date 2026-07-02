@@ -1,5 +1,5 @@
 /**
- * MemoryDB — SQLite-backed memory store for the MiMo-inspired
+ * MemoryDB — SQLite-backed memory store for the durable
  * context reconstruction system.
  *
  * Uses bun:sqlite (built into the Bun runtime, no external dependency).

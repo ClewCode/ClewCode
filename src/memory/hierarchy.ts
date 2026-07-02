@@ -1,7 +1,7 @@
 /**
  * Memory Hierarchy — manage `.clew/memory/` directory structure.
  *
- * Creates and maintains the file hierarchy for the MiMo-inspired
+ * Creates and maintains the file hierarchy for the durable
  * context reconstruction system.
  *
  * .clew/

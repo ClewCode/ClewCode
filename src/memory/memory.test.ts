@@ -276,7 +276,7 @@ describe('Claude Memory System (PLAN E)', () => {
   });
 });
 
-// ── MiMo MemoryDB tests ────────────────────────────────────
+// ── MemoryDB tests ─────────────────────────────────────────
 
 import { mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
@@ -286,7 +286,7 @@ import { getMemoryDirPath, initMemoryHierarchy, writeMemoryFile } from './hierar
 
 const memDbDir = join(tempCwd, '.clew', 'memory-test');
 
-describe('MiMo MemoryDB', () => {
+describe('MemoryDB', () => {
   beforeAll(async () => {
     await mkdir(memDbDir, { recursive: true });
     MemoryDB.reset();

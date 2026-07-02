@@ -5,7 +5,7 @@
  * to review the conversation vs the goal text. If the goal isn't satisfied,
  * it feeds back the specific gap so the agent can continue.
  *
- * Inspired by MiMo Code's Goal mechanism: the verifier does not participate
+ * Goal verifier: this verifier does not participate
  * in actual work, so it doesn't develop alignment bias toward completed parts.
  * Each call gets the same context as the agent, including actual tool outputs.
  */

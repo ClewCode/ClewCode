@@ -270,15 +270,22 @@ function CodeReviewRunner({
       </Text>
 
       <Box marginTop={1} borderStyle="single" borderColor="ansi:whiteBright" flexDirection="row" paddingX={1}>
-        <PhaseRail state={state} activePhase={activePhase} />
         {state.view === 'detail' && selectedWorker ? (
-          <WorkerDetailPanel worker={selectedWorker} now={now} />
-        ) : (
-          <WorkerOverviewPanel
-            state={state}
+          <WorkerDetailLayout
+            workers={visibleWorkers}
             selectedPhase={selectedPhase}
-            selectedWorkerKey={state.selectedWorkerKey}
+            selectedWorker={selectedWorker}
+            now={now}
           />
+        ) : (
+          <>
+            <PhaseRail state={state} activePhase={activePhase} />
+            <WorkerOverviewPanel
+              state={state}
+              selectedPhase={selectedPhase}
+              selectedWorkerKey={state.selectedWorkerKey}
+            />
+          </>
         )}
       </Box>
 
@@ -296,10 +303,12 @@ function CodeReviewRunner({
 function PhaseRail({ state, activePhase }: { state: RunnerState; activePhase: ReviewPhase }): React.ReactNode {
   const activeCount = state.workers.filter(worker => worker.phase === activePhase.id).length;
   return (
-    <Box width={28} flexDirection="column" borderRight borderColor="ansi:whiteBright" marginRight={1}>
-      <Text>Phases</Text>
-      <Text dimColor>
-        {activePhase.label} * {activeCount} agent{activeCount === 1 ? '' : 's'}
+    <Box width={18} flexDirection="column" borderRight borderColor="ansi:whiteBright" marginRight={1}>
+      <Text>
+        Phases{' '}
+        <Text dimColor>
+          {activePhase.label} * {activeCount} agent{activeCount === 1 ? '' : 's'}
+        </Text>
       </Text>
       {PHASES.map((phase, index) => {
         const phaseWorkers = state.workers.filter(worker => worker.phase === phase.id);
@@ -330,108 +339,73 @@ function WorkerOverviewPanel({
   selectedPhase: ReviewPhase;
   selectedWorkerKey?: string;
 }): React.ReactNode {
-  const visiblePhases = PHASES.filter(phase => {
-    const workers = state.workers.filter(worker => worker.phase === phase.id);
-    return (
-      phase.id === selectedPhase.id ||
-      phase.id === state.activePhase ||
-      workers.some(worker => worker.status !== 'pending')
-    );
-  }).sort(
-    (left, right) =>
-      phaseSortScore(left.id, state, selectedPhase.id) - phaseSortScore(right.id, state, selectedPhase.id),
-  );
+  const workers = state.workers.filter(worker => worker.phase === selectedPhase.id);
+  const selectedWorker = workers.find(worker => worker.key === selectedWorkerKey);
 
   return (
-    <Box flexDirection="column" flexGrow={1} paddingLeft={1}>
-      <Text color="permission">/code-review:{state.activePhase}</Text>
-      {visiblePhases.map(phase => (
-        <PhaseTreeSection
-          key={phase.id}
-          phase={phase}
-          isSelected={phase.id === selectedPhase.id}
-          selectedWorkerKey={selectedWorkerKey}
-          workers={state.workers.filter(worker => worker.phase === phase.id)}
-        />
-      ))}
-    </Box>
-  );
-}
-
-function PhaseTreeSection({
-  phase,
-  workers,
-  isSelected,
-  selectedWorkerKey,
-}: {
-  phase: ReviewPhase;
-  workers: ReviewWorker[];
-  isSelected: boolean;
-  selectedWorkerKey?: string;
-}): React.ReactNode {
-  const activeWorkers = workers.filter(worker => worker.status !== 'pending');
-  const completed = workers.filter(worker => worker.status === 'completed').length;
-  const failed = workers.filter(worker => worker.status === 'failed').length;
-  const running = workers.filter(worker => worker.status === 'running').length;
-  const allDone = workers.length > 0 && completed === workers.length;
-  const color = failed > 0 ? 'error' : allDone ? 'success' : isSelected ? 'permission' : 'inactive';
-  const header =
-    workers.length === 0
-      ? `${phase.label} * no agents yet`
-      : allDone
-        ? `${workers.length} Task agents finished`
-        : `${phase.label} * ${running} running * ${completed}/${workers.length} finished`;
-
-  return (
-    <Box flexDirection="column" marginTop={1}>
-      <Text color={color}>
-        {isSelected ? '> ' : '* '}
-        {header}
+    <Box flexDirection="column" flexGrow={1}>
+      <Text>
+        {selectedPhase.label} * {workers.length} agent{workers.length === 1 ? '' : 's'}
+        {selectedWorker ? <Text dimColor> - {selectedWorker.label}</Text> : null}
       </Text>
       {workers.length === 0 ? (
         <Text dimColor> no verifier agents needed yet</Text>
       ) : (
-        workers.map((worker, index) => (
-          <WorkerTreeRow
-            key={worker.key}
-            worker={worker}
-            isLast={index === workers.length - 1}
-            isSelected={worker.key === selectedWorkerKey}
-            showPending={isSelected || phase.id === 'find' || activeWorkers.length === 0}
-          />
+        workers.map(worker => (
+          <WorkerOverviewRow key={worker.key} worker={worker} isSelected={worker.key === selectedWorkerKey} />
         ))
       )}
     </Box>
   );
 }
 
-function WorkerTreeRow({
-  worker,
-  isLast,
-  isSelected,
-  showPending,
-}: {
-  worker: ReviewWorker;
-  isLast: boolean;
-  isSelected: boolean;
-  showPending: boolean;
-}): React.ReactNode {
-  if (worker.status === 'pending' && !showPending) return null;
-  const branch = isLast ? 'L--' : '|--';
-  const childPrefix = isLast ? '   ' : '|  ';
+function WorkerOverviewRow({ worker, isSelected }: { worker: ReviewWorker; isSelected: boolean }): React.ReactNode {
   const stats = workerStats(worker);
   return (
-    <Box flexDirection="column">
-      <Text color={isSelected ? 'permission' : statusColor(worker.status)} wrap="truncate-end">
-        {isSelected ? '> ' : '  '}
-        {branch} {worker.label}
-        {stats ? ` * ${stats}` : ''}
-      </Text>
-      <Text dimColor>
-        {'  '}
-        {childPrefix} L {workerSubstatus(worker)}
-      </Text>
+    <Box>
+      <Box width={28}>
+        <Text color={isSelected ? 'permission' : statusColor(worker.status)}>
+          {isSelected ? '> ' : '  '}
+          {statusGlyph(worker.status)} {worker.label}
+        </Text>
+      </Box>
+      <Box width={24}>
+        <Text dimColor wrap="truncate-end">
+          {worker.model ?? 'waiting'}
+        </Text>
+      </Box>
+      <Box flexGrow={1} />
+      <Text dimColor>{stats}</Text>
     </Box>
+  );
+}
+
+function WorkerDetailLayout({
+  workers,
+  selectedPhase,
+  selectedWorker,
+  now,
+}: {
+  workers: ReviewWorker[];
+  selectedPhase: ReviewPhase;
+  selectedWorker: ReviewWorker;
+  now: number;
+}): React.ReactNode {
+  return (
+    <>
+      <Box width={18} flexDirection="column" borderRight borderColor="ansi:whiteBright" marginRight={1}>
+        <Text wrap="truncate-end">
+          {selectedPhase.label} * {workers.length} agents - {selectedWorker.label}
+        </Text>
+        {workers.map(worker => (
+          <Text key={worker.key} color={worker.key === selectedWorker.key ? 'permission' : statusColor(worker.status)}>
+            {worker.key === selectedWorker.key ? '> ' : '  '}
+            {statusGlyph(worker.status)} {worker.label}
+          </Text>
+        ))}
+      </Box>
+      <WorkerDetailPanel worker={selectedWorker} now={now} />
+    </>
   );
 }
 
@@ -996,31 +970,6 @@ function workerStats(worker: ReviewWorker): string {
     parts.push(`${formatCompact(worker.tokenCount)} tokens`);
   }
   return parts.join(' * ');
-}
-
-function workerSubstatus(worker: ReviewWorker): string {
-  switch (worker.status) {
-    case 'completed':
-      return 'Done';
-    case 'running':
-      return (
-        worker.recentActivities?.at(-1)?.activityDescription ?? worker.recentActivities?.at(-1)?.toolName ?? 'Running'
-      );
-    case 'failed':
-      return worker.error ?? 'Failed';
-    case 'cancelled':
-      return 'Cancelled';
-    case 'pending':
-      return 'Waiting';
-  }
-}
-
-function phaseSortScore(phase: PhaseId, state: RunnerState, selectedPhase: PhaseId): number {
-  if (phase === state.activePhase) return 0;
-  if (phase === selectedPhase) return 1;
-  const phaseIndex = PHASES.findIndex(item => item.id === phase);
-  const activeIndex = PHASES.findIndex(item => item.id === state.activePhase);
-  return phaseIndex < activeIndex ? 2 + phaseIndex : 20 + phaseIndex;
 }
 
 function hydrateWorkersFromTasks(state: RunnerState, context: LocalJSXCommandContext): RunnerState {

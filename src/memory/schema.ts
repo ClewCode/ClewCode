@@ -1,7 +1,7 @@
 /**
  * Memory Database Schema
  *
- * SQLite schema for the MiMo-inspired memory system.
+ * SQLite schema for the durable memory system.
  * Uses bun:sqlite which is built into the Bun runtime.
  */
 
