@@ -8,6 +8,7 @@ import {
   DEFAULT_PROVIDER,
   getProviderOptions,
   getProviderRegistryEntry,
+  normalizeProviderId,
   PROVIDER_REGISTRY,
 } from './providerRegistry.js';
 
@@ -55,6 +56,29 @@ function migrateLegacyConfig() {
 }
 // Run migration on module load
 migrateLegacyConfig();
+/**
+ * In-memory migration of legacy provider IDs (e.g. gemini -> google) in a
+ * loaded provider.json. Non-destructive: the file on disk is untouched, and
+ * legacy apiKeys entries are copied to the canonical ID rather than removed,
+ * so downgrading to an older Clew Code version keeps working.
+ */
+export function normalizeLegacyProviderConfig(config) {
+  if (config.provider) {
+    const canonical = normalizeProviderId(config.provider);
+    if (canonical && canonical !== config.provider) {
+      config.provider = canonical;
+    }
+  }
+  if (config.apiKeys) {
+    for (const [key, value] of Object.entries(config.apiKeys)) {
+      const canonical = normalizeProviderId(key);
+      if (canonical && canonical !== key && !config.apiKeys[canonical]) {
+        config.apiKeys[canonical] = value;
+      }
+    }
+  }
+  return config;
+}
 export class ProviderManager {
   static instance = null;
   cachedConfig = null;
@@ -78,7 +102,7 @@ export class ProviderManager {
     this.cachedConfig = null;
   }
   setSessionProvider(provider) {
-    this.sessionProvider = provider;
+    this.sessionProvider = provider ? (normalizeProviderId(provider) ?? provider) : null;
   }
   setSessionModel(model) {
     this.sessionModel = model;
@@ -92,7 +116,7 @@ export class ProviderManager {
     }
     try {
       const content = readFileSync(this.getProviderConfigPath(), 'utf8');
-      this.cachedConfig = JSON.parse(content);
+      this.cachedConfig = normalizeLegacyProviderConfig(JSON.parse(content));
       return this.cachedConfig;
     } catch {
       this.cachedConfig = {};
@@ -107,13 +131,14 @@ export class ProviderManager {
     if (this.sessionProvider) {
       return this.sessionProvider;
     }
-    const forcedProvider = process.env.AI_PROVIDER?.toLowerCase();
-    if (forcedProvider && PROVIDER_REGISTRY[forcedProvider]) {
+    const forcedProvider = normalizeProviderId(process.env.AI_PROVIDER);
+    if (forcedProvider) {
       return forcedProvider;
     }
     const config = this.getSelectedProviderConfig();
-    if (config.provider && PROVIDER_REGISTRY[config.provider]) {
-      return config.provider;
+    const configProvider = normalizeProviderId(config.provider);
+    if (configProvider) {
+      return configProvider;
     }
     const { isEnvTruthy } = require('../../utils/envUtils.js');
     if (

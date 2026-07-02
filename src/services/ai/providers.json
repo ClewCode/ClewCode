@@ -18,7 +18,10 @@
       "contextLength": "1M",
       "imageIn": true,
       "videoIn": false,
-      "imageGen": { "defaultModel": "dall-e-3", "apiType": "openai-image" }
+      "imageGen": {
+        "defaultModel": "dall-e-3",
+        "apiType": "openai-image"
+      }
     },
     "models": [
       {
@@ -88,6 +91,138 @@
       }
     ]
   },
+  "anthropic": {
+    "providerId": "anthropic",
+    "label": "Anthropic",
+    "envKey": "ANTHROPIC_API_KEY",
+    "defaultBaseUrl": "https://api.anthropic.com",
+    "modelsUrl": "https://api.anthropic.com/v1/models",
+    "defaultModel": "claude-opus-4-8",
+    "defaultModelVerified": true,
+    "note": "Anthropic Claude - native Messages API (Clew Internal Protocol v1, no adapter). Source: platform.claude.com model catalog, June 2026.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": true,
+      "jsonSchema": true,
+      "reasoningEffort": true,
+      "contextLength": "1M",
+      "imageIn": true,
+      "videoIn": false,
+      "promptCaching": "explicit"
+    },
+    "models": [
+      {
+        "id": "claude-opus-4-8",
+        "label": "Claude Opus 4.8",
+        "tags": [
+          "tools",
+          "vision",
+          "native",
+          "verified",
+          "recommended",
+          "latest"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "claude-opus-4-7",
+        "label": "Claude Opus 4.7",
+        "tags": [
+          "tools",
+          "vision",
+          "native",
+          "verified"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "claude-sonnet-5",
+        "label": "Claude Sonnet 5",
+        "tags": [
+          "tools",
+          "vision",
+          "native",
+          "verified"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "claude-sonnet-4-6",
+        "label": "Claude Sonnet 4.6",
+        "tags": [
+          "tools",
+          "vision",
+          "native",
+          "verified"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "claude-haiku-4-5",
+        "label": "Claude Haiku 4.5",
+        "tags": [
+          "tools",
+          "vision",
+          "native",
+          "verified",
+          "fast"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 200000,
+          "maxOutput": 64000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      }
+    ]
+  },
   "google": {
     "providerId": "google",
     "label": "Google",
@@ -107,7 +242,10 @@
       "contextLength": "1M+",
       "imageIn": true,
       "videoIn": true,
-      "imageGen": { "defaultModel": "imagen-3.0-generate-002", "apiType": "google-image" }
+      "imageGen": {
+        "defaultModel": "imagen-3.0-generate-002",
+        "apiType": "google-image"
+      }
     },
     "models": [
       {
@@ -330,7 +468,11 @@
       {
         "id": "gemini-3.5-flash",
         "label": "Gemini 3.5 Flash",
-        "tags": ["fast", "recommended", "latest"],
+        "tags": [
+          "fast",
+          "recommended",
+          "latest"
+        ],
         "capabilities": {
           "toolCalling": "none",
           "vision": true,
@@ -345,7 +487,9 @@
       {
         "id": "gemini-2.5-flash",
         "label": "Gemini 2.5 Flash",
-        "tags": ["fast"],
+        "tags": [
+          "fast"
+        ],
         "capabilities": {
           "toolCalling": "none",
           "vision": true,
@@ -360,7 +504,9 @@
       {
         "id": "gemini-2.5-pro",
         "label": "Gemini 2.5 Pro",
-        "tags": ["reasoning"],
+        "tags": [
+          "reasoning"
+        ],
         "capabilities": {
           "toolCalling": "none",
           "vision": true,
@@ -375,7 +521,9 @@
       {
         "id": "gemini-2.0-flash",
         "label": "Gemini 2.0 Flash",
-        "tags": ["fast"],
+        "tags": [
+          "fast"
+        ],
         "capabilities": {
           "toolCalling": "none",
           "vision": true,
@@ -407,7 +555,10 @@
       "reasoningEffort": true,
       "contextLength": "10M",
       "imageIn": true,
-      "imageGen": { "defaultModel": "google/gemini-3.1-flash-image-preview", "apiType": "openrouter-image" },
+      "imageGen": {
+        "defaultModel": "google/gemini-3.1-flash-image-preview",
+        "apiType": "openrouter-image"
+      },
       "videoIn": false
     },
     "models": [

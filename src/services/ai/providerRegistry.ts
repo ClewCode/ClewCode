@@ -1,3 +1,4 @@
+import { AnthropicProvider } from './providers/AnthropicProvider.js';
 import { ClewGatewayProvider } from './providers/ClewGatewayProvider.js';
 import { CodeAssistProvider } from './providers/CodeAssistProvider.js';
 import { CohereProvider } from './providers/CohereProvider.js';
@@ -71,6 +72,8 @@ import providersConfig from './providers.json';
 
 function createProvider(key: string, entry: any): ProviderInterface {
   switch (key) {
+    case 'anthropic':
+      return new AnthropicProvider();
     case 'openai':
       return new OpenAIProvider();
     case 'google':
@@ -107,6 +110,32 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderRegistryEntry> = Obje
 export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY).filter(id => id !== 'clew-gateway') as ProviderId[];
 export const DEFAULT_PROVIDER: ProviderId = 'openai';
 
+/**
+ * Legacy provider IDs that older configs/CLIs wrote to provider.json but that
+ * were never registered in providers.json. Maps each alias to its canonical
+ * registry ID so old configs keep working instead of silently falling back to
+ * DEFAULT_PROVIDER.
+ */
+export const LEGACY_PROVIDER_ALIASES: Record<string, ProviderId> = {
+  gemini: 'google',
+};
+
+export function isRegisteredProviderId(id: string): id is ProviderId {
+  return Boolean(PROVIDER_REGISTRY[id as ProviderId]);
+}
+
+/**
+ * Resolve a raw provider string (from provider.json, AI_PROVIDER, or CLI args)
+ * to a registered ProviderId. Applies legacy aliases (e.g. gemini -> google).
+ * Returns undefined when the value doesn't resolve to a registered provider.
+ */
+export function normalizeProviderId(id: string | null | undefined): ProviderId | undefined {
+  if (!id) return undefined;
+  const lower = id.toLowerCase().trim();
+  const resolved = LEGACY_PROVIDER_ALIASES[lower] ?? lower;
+  return isRegisteredProviderId(resolved) ? (resolved as ProviderId) : undefined;
+}
+
 export function getProviderRegistryEntry(provider: ProviderId): ProviderRegistryEntry {
   return PROVIDER_REGISTRY[provider];
 }
@@ -139,6 +168,7 @@ export function createProviderInstance(provider: ProviderId): ProviderInterface 
  * - `"none"`: No prompt caching support.
  */
 const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
+  anthropic: 'explicit',
   openai: 'automatic',
   openrouter: 'automatic',
   deepseek: 'automatic',

@@ -16,9 +16,11 @@ import {
 import { clearProviderModelsCache, fetchProviderModels } from '../../services/ai/providerModels.js';
 import {
   getProviderRegistryEntry,
+  normalizeProviderId,
   PROVIDER_IDS,
   type ProviderRegistryEntry,
 } from '../../services/ai/providerRegistry.js';
+import { validateProviderModelSelection } from '../../services/ai/providerSelection.js';
 import type { GoogleOAuthTokens } from '../../services/googleOAuth/index.js';
 import type { OpenAIOAuthTokens } from '../../services/openaiOAuth/index.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
@@ -54,6 +56,14 @@ type ProviderSelectValue = string | '__SECTION_RECENT__' | '__SECTION_PROVIDERS_
 
 function isProviderKey(provider: string): provider is ProviderKey {
   return PROVIDER_KEYS.includes(provider as ProviderKey);
+}
+
+/**
+ * Resolve user-typed provider input (including legacy aliases like `gemini`)
+ * to a registered provider key.
+ */
+function resolveProviderKey(input: string | undefined): ProviderKey | undefined {
+  return normalizeProviderId(input) as ProviderKey | undefined;
 }
 
 function getProviderInfo(provider: ProviderKey): ProviderRegistryEntry {
@@ -207,8 +217,8 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
   }
 
   if (command === 'key') {
-    const provider = providerArg?.toLowerCase();
-    if (!provider || !isProviderKey(provider)) {
+    const provider = resolveProviderKey(providerArg);
+    if (!provider) {
       return {
         result: {
           type: 'text',
@@ -228,13 +238,13 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
       };
     }
     const setParts = setIndex === -1 ? [] : modelParts.slice(setIndex + 1);
-    const setProvider = setParts[0]?.toLowerCase();
+    const setProvider = resolveProviderKey(setParts[0]);
     const setModel = setParts.slice(1).join(' ');
-    if (setParts.length > 0 && (!setProvider || !isProviderKey(setProvider))) {
+    if (setParts.length > 0 && !setProvider) {
       return {
         result: {
           type: 'text',
-          value: `Unknown provider in set: ${setProvider ?? '(missing)'}`,
+          value: `Unknown provider in set: ${setParts[0] ?? '(missing)'}`,
         },
       };
     }
@@ -304,8 +314,8 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
   }
 
   if (command === 'set' || command === '--set' || command === '-s') {
-    const provider = providerArg?.toLowerCase();
-    if (!provider || !isProviderKey(provider)) {
+    const provider = resolveProviderKey(providerArg);
+    if (!provider) {
       return {
         result: {
           type: 'text',
@@ -333,6 +343,21 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
         },
       };
     }
+    if (actualModelParts.length > 0) {
+      const validation = await validateProviderModelSelection(provider, model);
+      if (!validation.valid) {
+        const suggestions = validation.suggestions?.length
+          ? `\nAvailable models: ${validation.suggestions.join(', ')}`
+          : '';
+        return {
+          result: {
+            type: 'text',
+            value: `${validation.error}${suggestions}\n\nUse /providers models ${provider} to list available models.`,
+          },
+        };
+      }
+      model = validation.model ?? model;
+    }
     const currentConfig = await loadConfig();
     const config: ProviderConfig = {
       provider,
@@ -358,8 +383,8 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
   }
 
   if (command === 'models' || command === '--models' || command === '-m') {
-    const provider = providerArg?.toLowerCase();
-    if (!provider || !isProviderKey(provider)) {
+    const provider = resolveProviderKey(providerArg);
+    if (!provider) {
       return {
         result: {
           type: 'text',
