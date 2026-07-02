@@ -94,6 +94,7 @@ import { PeerDashboardTool } from './tools/PeerDashboardTool/PeerDashboardTool.j
 import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackTool.js';
+import { PeerMemorySyncTool } from './tools/PeerMemorySyncTool/PeerMemorySyncTool.js';
 import { ProcessPeerTool } from './tools/ProcessPeerTool/ProcessPeerTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
 
@@ -235,6 +236,7 @@ export function getAllBaseTools(): Tools {
     MemoryFeedbackTool,
     PeerListMessagesTool,
     PeerHelpTool,
+    PeerMemorySyncTool,
     ProcessPeerTool,
 
     ...(listPeersTool ? [listPeersTool] : []),

@@ -26,6 +26,12 @@ export function formatPeerTaskDashboard(): string {
   sections.push('─── Peer Task Dashboard ───');
   sections.push('');
 
+  const restored = store.getRestoredSummary();
+  if (restored) {
+    sections.push(`↺ ${restored}`);
+    sections.push('');
+  }
+
   if (peers.length === 0) {
     sections.push('(no connected peers)');
     sections.push('');

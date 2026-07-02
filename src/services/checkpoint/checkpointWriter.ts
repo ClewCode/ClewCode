@@ -194,6 +194,115 @@ export async function incrementCycle(): Promise<number> {
   }
 }
 
+// ── Compaction checkpoints ──
+// Compaction is the moment context is about to be destroyed, so it's the
+// natural point to snapshot session state — for every session, not just
+// goal-mode runs with a turn budget.
+
+type MessageLike = {
+  type?: string;
+  message?: { content?: unknown };
+};
+
+/** Extract decision statements, shell commands, and modified files from message tail. */
+export function extractCheckpointSignals(
+  messages: MessageLike[],
+  tail = 40,
+): { decisions: string[]; commandsRun: string[]; filesModified: string[] } {
+  const decisions: string[] = [];
+  const commandsRun: string[] = [];
+  const filesModified: string[] = [];
+
+  for (const msg of messages.slice(-tail)) {
+    if (msg.type !== 'assistant' || !msg.message) continue;
+    const content = msg.message.content;
+    if (!Array.isArray(content)) continue;
+    for (const block of content) {
+      if (block?.type === 'text' && typeof block.text === 'string') {
+        const text = block.text as string;
+        if (text.includes("I'll") || text.includes('Let me') || text.includes('plan')) {
+          decisions.push(text.slice(0, 200));
+        }
+      }
+      if (block?.type === 'tool_use') {
+        const input = (block.input ?? {}) as Record<string, unknown>;
+        if (block.name === 'Bash' && typeof input.command === 'string') {
+          commandsRun.push(input.command.slice(0, 200));
+        }
+        if ((block.name === 'Write' || block.name === 'Edit') && typeof input.file_path === 'string') {
+          filesModified.push(input.file_path);
+        }
+      }
+    }
+  }
+
+  return {
+    decisions: decisions.slice(-5),
+    commandsRun: commandsRun.slice(-10),
+    filesModified: [...new Set(filesModified)].slice(-20),
+  };
+}
+
+export type CompactionCheckpointInfo = {
+  cycle: number;
+  filesModified: number;
+  commandsRun: number;
+  timestamp: number;
+};
+
+let lastCompactionCheckpoint: CompactionCheckpointInfo | null = null;
+
+/** Info about the most recent compaction checkpoint (for UI display). */
+export function getLastCompactionCheckpointInfo(): CompactionCheckpointInfo | null {
+  return lastCompactionCheckpoint;
+}
+
+/**
+ * Write a checkpoint at compaction time so post-compact context rebuild
+ * (tryRebuildFromCheckpoint) has fresh session state even without an
+ * active goal. Increments the rebuild cycle and consumes scratchpad notes.
+ * Never throws — checkpointing must not block compaction.
+ */
+export async function writeCompactionCheckpoint(messages: MessageLike[], goalText?: string): Promise<void> {
+  try {
+    const signals = extractCheckpointSignals(messages);
+    const notes = await readNotes();
+    const cycle = await incrementCycle();
+    const turnCount = messages.filter(m => m.type === 'user').length;
+
+    await writeCheckpoint({
+      id: `checkpoint-compact-${Date.now()}`,
+      timestamp: Date.now(),
+      // 100 ranks compaction snapshots above threshold checkpoints so
+      // getLatestCheckpoint() prefers the freshest state.
+      progressPercent: 100,
+      goalText: goalText || 'Session checkpoint (written at compaction)',
+      turnCount,
+      elapsedMs: 0,
+      filesModified: signals.filesModified,
+      commandsRun: signals.commandsRun,
+      decisions: signals.decisions,
+      currentBlockers: [],
+      nextSteps: [],
+      summary: '',
+      cycle,
+      notes,
+    });
+    // Notes are baked into the checkpoint (and thus the rebuilt context) —
+    // clear the scratchpad so the next window starts fresh.
+    await clearNotes();
+
+    lastCompactionCheckpoint = {
+      cycle,
+      filesModified: signals.filesModified.length,
+      commandsRun: signals.commandsRun.length,
+      timestamp: Date.now(),
+    };
+  } catch {
+    // Silent — advisory, never blocks compaction
+  }
+}
+
 /** Get the current cycle number (0 = first window). */
 export async function getCurrentCycle(): Promise<number> {
   try {

@@ -79,7 +79,7 @@ import { getMaxOutputTokensForModel, queryModelWithStreaming } from '../api/clau
 import { getPromptTooLongTokenGap, PROMPT_TOO_LONG_ERROR_MESSAGE, startsWithApiErrorPrefix } from '../api/errors.js';
 import { notifyCompaction } from '../api/promptCacheBreakDetection.js';
 import { getRetryDelay } from '../api/withRetry.js';
-import { getLatestCheckpoint, type TaskCheckpoint } from '../checkpoint/checkpointWriter.js';
+import { getLatestCheckpoint, type TaskCheckpoint, writeCompactionCheckpoint } from '../checkpoint/checkpointWriter.js';
 import { logPermissionContextForAnts } from '../internalLogging.js';
 import { roughTokenCountEstimation, roughTokenCountEstimationForMessages } from '../tokenEstimation.js';
 import { groupMessagesByApiRound } from './grouping.js';
@@ -741,6 +741,11 @@ export async function compactConversation(
     const promptCacheSharingEnabled = getFeatureValue_CACHED_MAY_BE_STALE('tengu_compact_cache_prefix', true);
 
     const compactPrompt = getCompactPrompt(customInstructions);
+
+    // Snapshot session state right before the context window is destroyed,
+    // so checkpoint-based rebuild works for every session (not just goal mode).
+    const { getSessionGoalSync } = await import('../../utils/sessionGoalState.js');
+    await writeCompactionCheckpoint(messages, getSessionGoalSync() ?? undefined);
 
     // Try to rebuild context from checkpoints for richer summarization
     const checkpointContext = await tryRebuildFromCheckpoint();

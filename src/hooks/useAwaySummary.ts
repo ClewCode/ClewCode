@@ -11,7 +11,7 @@ const BLUR_DELAY_MS = 5 * 60_000;
 
 type SetMessages = (updater: (prev: Message[]) => Message[]) => void;
 
-function hasSummarySinceLastUserTurn(messages: readonly Message[]): boolean {
+export function hasSummarySinceLastUserTurn(messages: readonly Message[]): boolean {
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i]!;
     if (m.type === 'user' && !m.isMeta && !m.isCompactSummary) return false;

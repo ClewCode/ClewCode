@@ -6,8 +6,15 @@
  * - Query by ID or list all
  */
 
+import { notifyPeerFeedback } from '../tools/peer/peerFeedback.js';
 import { logForDebugging } from '../utils/debug.js';
 import type { PeerDiscovery } from './PeerDiscovery.js';
+import {
+  flushPeerStateSave,
+  loadPeerState,
+  type PersistedPeerState,
+  schedulePeerStateSave,
+} from './peerPersistence.js';
 import {
   type BrokerMessage,
   type MeshChatMessage,
@@ -63,12 +70,70 @@ export class PeerStore {
     { resolve: (msgs: BrokerMessage[]) => void; filter: (msg: BrokerMessage) => boolean }
   >();
 
-  constructor(callbacks?: PeerStoreCallbacks) {
+  /** Whether mutations are persisted to disk (enabled for the global store). */
+  private persist: boolean;
+
+  constructor(callbacks?: PeerStoreCallbacks, options?: { persist?: boolean }) {
     this.callbacks = callbacks ?? {};
+    this.persist = options?.persist ?? false;
+    if (this.persist) this.hydrateFromDisk();
     // Start stale peer cleanup
     this.cleanupTimer = setInterval(() => this.cleanup(), 30_000);
     // Start HTTP liveness pings for joined connections
     this.pingTimer = setInterval(() => this.pingConnections(), PEER_CONNECTION_PING_INTERVAL);
+  }
+
+  /** Human-readable summary of what was restored from disk, if anything. */
+  private restoredSummary: string | null = null;
+
+  /** What was restored from a previous session (null if nothing / fresh start). */
+  getRestoredSummary(): string | null {
+    return this.restoredSummary;
+  }
+
+  /** Restore connections/messages/todos/tags persisted by a previous run. */
+  private hydrateFromDisk(): void {
+    const state = loadPeerState();
+    if (!state) return;
+    for (const peer of state.connections) {
+      // Rehydrate as offline — the liveness ping loop promotes reachable
+      // peers back to online within one interval.
+      this.connections.set(peer.id, { ...peer, status: 'offline' });
+    }
+    this.messages = state.messages;
+    this.todos = state.todos;
+    for (const [peerId, tags] of Object.entries(state.swarmTags)) {
+      this.swarmTags.set(peerId, tags);
+    }
+    if (state.connections.length > 0 || state.messages.length > 0 || state.todos.length > 0) {
+      const parts: string[] = [];
+      if (state.connections.length > 0) parts.push(`${state.connections.length} connection(s)`);
+      if (state.messages.length > 0) parts.push(`${state.messages.length} message(s)`);
+      const pendingTodos = state.todos.filter(t => t.status === 'pending').length;
+      if (pendingTodos > 0) parts.push(`${pendingTodos} pending todo(s)`);
+      this.restoredSummary = `Restored from last session: ${parts.join(', ')}`;
+      notifyPeerFeedback(this.restoredSummary, 'peer-restore', 'medium');
+    }
+    logForDebugging(
+      `[PeerStore] Restored ${state.connections.length} connection(s), ${state.messages.length} message(s), ${state.todos.length} todo(s) from disk`,
+    );
+  }
+
+  /** Snapshot current durable state for persistence. */
+  private snapshot(): PersistedPeerState {
+    return {
+      version: 1,
+      connections: Array.from(this.connections.values()),
+      messages: this.messages,
+      todos: this.todos,
+      swarmTags: Object.fromEntries(this.swarmTags),
+    };
+  }
+
+  /** Schedule a debounced save if persistence is enabled. */
+  private persistState(): void {
+    if (!this.persist) return;
+    schedulePeerStateSave(() => this.snapshot());
   }
 
   /** Update callbacks after creation (e.g., to wire up SSE events). */
@@ -82,6 +147,7 @@ export class PeerStore {
   addConnection(peer: PeerInfo): void {
     this.connections.set(peer.id, { ...peer });
     this.swarmTags.set(peer.id, this.swarmTags.get(peer.id) ?? {});
+    this.persistState();
     this.callbacks.onPeerAdded?.(peer);
     logForDebugging(`[PeerStore] New connection: ${peer.hostname} (${peer.ip}:${peer.port})`);
   }
@@ -190,6 +256,7 @@ export class PeerStore {
    */
   addMessage(msg: MeshChatMessage): void {
     this.messages.push(msg);
+    this.persistState();
     this.callbacks.onMessageReceived?.(msg);
 
     // Resolve any waiting message waiters
@@ -331,6 +398,7 @@ export class PeerStore {
    */
   clearMessages(): void {
     this.messages = [];
+    this.persistState();
   }
 
   // ── Broker methods ──────────────────────────────────────────
@@ -457,6 +525,7 @@ export class PeerStore {
    */
   addTodo(todo: MeshTodo): void {
     this.todos.push(todo);
+    this.persistState();
     this.callbacks.onTodoReceived?.(todo);
   }
 
@@ -474,6 +543,7 @@ export class PeerStore {
     const todo = this.todos.find(t => t.id === id);
     if (!todo) return false;
     todo.status = status;
+    this.persistState();
     return true;
   }
 
@@ -498,6 +568,7 @@ export class PeerStore {
     const tags = this.swarmTags.get(peerId) ?? {};
     tags.displayName = name;
     this.swarmTags.set(peerId, tags);
+    this.persistState();
   }
 
   /** Set a role for a peer. */
@@ -505,6 +576,7 @@ export class PeerStore {
     const tags = this.swarmTags.get(peerId) ?? {};
     tags.role = role;
     this.swarmTags.set(peerId, tags);
+    this.persistState();
   }
 
   /** Get tags for a peer. */
@@ -621,6 +693,7 @@ export class PeerStore {
    * Destroy the store and clean up.
    */
   destroy(): void {
+    if (this.persist) void flushPeerStateSave();
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = null;
@@ -647,7 +720,7 @@ let globalStore: PeerStore | null = null;
 
 export function getGlobalPeerStore(): PeerStore {
   if (!globalStore) {
-    globalStore = new PeerStore();
+    globalStore = new PeerStore(undefined, { persist: true });
   }
   return globalStore;
 }
