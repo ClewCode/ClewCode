@@ -152,6 +152,17 @@ export class MemoryDB {
     importance?: number;
     confidence?: number;
   }): string {
+    // Dedup: identical content for the same project+type reinforces the
+    // existing memory instead of inserting a duplicate row.
+    const existing = this.db
+      .prepare('SELECT id FROM memories WHERE project_path = ? AND type = ? AND content = ?')
+      .get(opts.projectPath, opts.type, opts.content) as { id: string } | null;
+    if (existing) {
+      this.updateImportance(existing.id, 0.05);
+      this.logEvent({ memoryId: existing.id, event: 'reinforced', note: 'duplicate save' });
+      return existing.id;
+    }
+
     const id = generateId();
     const stmt = this.db.prepare(`
       INSERT INTO memories (id, project_path, type, content, importance, confidence, created_at)
@@ -479,6 +490,37 @@ export class MemoryDB {
     params.push(limit);
     const rows = this.db.prepare(query).all(...params) as MemoryRow[];
     return rows.map(toMemoryRecord);
+  }
+
+  /**
+   * Prune low-value memories to keep the store lean and injection quality high.
+   * Deletes memories that are old, rarely accessed, and score poorly on
+   * importance × confidence. Keyed memories (from repo scans) are exempt —
+   * they're refreshed by upsert and represent current repo facts.
+   *
+   * Returns the number of memories deleted.
+   */
+  pruneMemories(opts?: { maxAgeDays?: number; minScore?: number; maxAccessCount?: number }): number {
+    const maxAgeDays = opts?.maxAgeDays ?? 60;
+    const minScore = opts?.minScore ?? 0.09; // e.g. importance 0.3 × confidence 0.3
+    const maxAccessCount = opts?.maxAccessCount ?? 2;
+    const cutoff = new Date(Date.now() - maxAgeDays * 86400000).toISOString();
+
+    // Select ids first — the reported `changes` of a DELETE can include
+    // cascaded memory_timeline rows, which would inflate the count.
+    const rows = this.db
+      .prepare(
+        `SELECT id FROM memories
+         WHERE importance * confidence < ?
+           AND access_count <= ?
+           AND created_at < ?
+           AND COALESCE(last_accessed_at, created_at) < ?
+           AND id NOT IN (SELECT memory_id FROM memory_keys)`,
+      )
+      .all(minScore, maxAccessCount, cutoff, cutoff) as Array<{ id: string }>;
+    const del = this.db.prepare('DELETE FROM memories WHERE id = ?');
+    for (const row of rows) del.run(row.id);
+    return rows.length;
   }
 
   // ── Stats ─────────────────────────────────────────────────

@@ -652,12 +652,7 @@ async function runMemorySync(onDone: (msg: string) => void): Promise<void> {
     return;
   }
 
-  const { MemoryDB } = await import('../../memory/database.js');
-  if (!MemoryDB.isInitialized()) {
-    onDone(ansis.yellow('MemoryDB not initialized. Run /memory init first.'));
-    return;
-  }
-  const db = MemoryDB.getInstance();
+  const { importPeerMemories } = await import('../../memory/peerSync.js');
 
   const startedAt = performance.now();
   let totalImported = 0;
@@ -665,50 +660,25 @@ async function runMemorySync(onDone: (msg: string) => void): Promise<void> {
 
   const requests = peers.map(async peer => {
     try {
-      const url = `http://${peer.ip}:${peer.port}/memory/export`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ limit: 50 }),
-        signal: AbortSignal.timeout(10000),
-      });
+      const token = store.getPeerToken(peer.id) ?? '';
+      const url = `http://${peer.ip}:${peer.port}/peer-memory-export?token=${encodeURIComponent(token)}&limit=50`;
+      const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
       if (!response.ok) {
         results.push(`  ${ansis.red('✗')} ${peer.hostname} — HTTP ${response.status}`);
         return;
       }
 
-      const data = (await response.json()) as {
-        ok: boolean;
-        count: number;
-        memories: Array<{
-          key: string;
-          projectPath: string;
-          type: string;
-          content: string;
-          importance: number;
-          confidence: number;
-        }>;
-      };
-      if (!data.ok || !data.memories?.length) {
+      const data = (await response.json()) as { memories?: unknown[] };
+      if (!data.memories?.length) {
         results.push(`  ${ansis.dim('−')} ${peer.hostname} — no memories`);
         return;
       }
 
-      let imported = 0;
-      for (const mem of data.memories) {
-        if (!mem.key) continue; // Skip memories without keys
-        const upsertResult = db.upsertMemory({
-          key: `peer.${mem.key}`,
-          projectPath: mem.projectPath,
-          type: mem.type as any,
-          content: mem.content,
-          importance: mem.importance,
-          confidence: mem.confidence,
-        });
-        if (upsertResult.action !== 'unchanged') imported++;
-      }
-      totalImported += imported;
-      results.push(`  ${ansis.green('✓')} ${peer.hostname} — ${imported} memories imported`);
+      const syncResult = await importPeerMemories(data.memories, peer.hostname);
+      totalImported += syncResult.imported;
+      results.push(
+        `  ${ansis.green('✓')} ${peer.hostname} — ${syncResult.imported} imported, ${syncResult.reinforced} reinforced`,
+      );
     } catch (err: any) {
       const msg =
         err?.name === 'TimeoutError' || err?.name === 'AbortError' ? 'timed out' : (err?.message ?? String(err));

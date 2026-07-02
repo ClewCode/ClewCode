@@ -234,6 +234,7 @@ import {
   limitMessagesToLastNExchanges,
 } from '../utils/messages.js';
 import { generateSessionTitle } from '../utils/sessionTitle.js';
+import { appendLongTurnRecap } from '../services/longTurnRecap.js';
 import { BASH_INPUT_TAG, COMMAND_MESSAGE_TAG, COMMAND_NAME_TAG, LOCAL_COMMAND_STDOUT_TAG } from '../constants/xml.js';
 import { escapeXml } from '../utils/xml.js';
 import type { ThinkingConfig } from '../utils/thinking.js';
@@ -3787,6 +3788,10 @@ export function REPL({
                 ...prev,
                 createTurnDurationMessage(turnDurationMs, budgetInfo, count(prev, isLoggableMessage)),
               ]);
+              // Long turns often involve many tool calls the user didn't watch
+              // live — recap what happened and what's next. Fire-and-forget;
+              // uses the same abort signal as the turn it summarizes.
+              void appendLongTurnRecap(messagesRef.current, turnDurationMs, setMessages, abortController.signal);
             }
           }
           // Clear the controller so CancelRequestHandler's canCancelRunningTask

@@ -237,6 +237,7 @@ export type GlobalConfig = {
   showTurnDuration: boolean; // Controls whether to show turn duration message (e.g., "Cooked for 1m 6s")
   recapEnabled?: boolean; // Controls whether to show automatic "where we left off" recaps after idle/blur
   recapDelayMs?: number; // How long the terminal must be blurred before generating an automatic recap
+  longTurnRecapThresholdMs?: number; // Turn duration after which a recap is generated automatically on completion
   /**
    * @deprecated Use settings.env instead.
    */
@@ -602,6 +603,7 @@ function createDefaultGlobalConfig(): GlobalConfig {
     showTurnDuration: true,
     recapEnabled: true,
     recapDelayMs: 5 * 60_000,
+    longTurnRecapThresholdMs: 5 * 60_000,
     hasSeenTasksHint: false,
     hasUsedStash: false,
     hasUsedBackgroundTask: false,
@@ -654,6 +656,7 @@ export const GLOBAL_CONFIG_KEYS = [
   'showTurnDuration',
   'recapEnabled',
   'recapDelayMs',
+  'longTurnRecapThresholdMs',
   'diffTool',
   'env',
   'tipsHistory',

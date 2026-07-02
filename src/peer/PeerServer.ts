@@ -514,6 +514,28 @@ export class PeerServer {
             break;
           }
 
+          case '/peer-memory-export': {
+            // Cross-peer memory sync: export this node's top memories.
+            const token = url.searchParams.get('token') ?? '';
+            if (!tokenMatches(token, this.authToken)) {
+              this.sendUnauthorized(res);
+              return;
+            }
+            const limit = Math.min(Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10) || 50), 200);
+            void (async () => {
+              try {
+                const { exportLocalMemories } = await import('../memory/peerSync.js');
+                const payload = await exportLocalMemories(limit);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(payload));
+              } catch (err) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
+              }
+            })();
+            break;
+          }
+
           case '/broker/recv': {
             // Token via ?token= query param
             const token = url.searchParams.get('token') ?? '';
@@ -722,37 +744,6 @@ export class PeerServer {
             const count = this.cancelAllQueuedTasks();
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true, cancelled: count }));
-            break;
-          }
-
-          // ── Memory export endpoint ────────────────────────────
-
-          case '/memory/export': {
-            const data = JSON.parse(Buffer.concat(body).toString());
-            if (!tokenMatches(data.token, this.authToken)) {
-              this.sendUnauthorized(res);
-              return;
-            }
-            // Must run synchronously — handleHttpRequest is not async.
-            // Use a top-level require-style via dynamic import cached by ESM.
-            (async () => {
-              try {
-                const { MemoryDB } = await import('../../memory/database.js');
-                if (MemoryDB.isInitialized()) {
-                  const limit = typeof data.limit === 'number' ? data.limit : 50;
-                  const projectPath = typeof data.projectPath === 'string' ? data.projectPath : undefined;
-                  const memories = MemoryDB.getInstance().exportMemories(limit, projectPath);
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ ok: true, count: memories.length, memories }));
-                } else {
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ ok: true, count: 0, memories: [] }));
-                }
-              } catch (error) {
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: false, error: String(error) }));
-              }
-            })().catch(() => res.end('{}'));
             break;
           }
 

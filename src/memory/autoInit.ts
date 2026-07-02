@@ -41,6 +41,13 @@ export async function ensureMemorySystem(): Promise<boolean> {
     const stats = MemoryDB.getInstance().getStats();
     if (stats.total === 0) {
       await scanRepo();
+    } else {
+      // Maintenance: drop stale low-value memories once per session
+      try {
+        MemoryDB.getInstance().pruneMemories();
+      } catch {
+        // Non-fatal — pruning is advisory
+      }
     }
 
     initialized = true;
