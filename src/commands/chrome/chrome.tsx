@@ -173,7 +173,7 @@ function ClaudeInChromeMenu({
             </Text>
           </>
         )}
-        <Text dimColor>Learn more: https://clew-code.org/docs</Text>
+        <Text dimColor>Learn more: https://clew-docs.pages.dev</Text>
       </Box>
     </Dialog>
   );

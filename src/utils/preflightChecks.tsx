@@ -120,14 +120,14 @@ export function PreflightStep({ onSuccess }: PreflightStepProps): React.ReactNod
             {result?.sslHint ? (
               <Box flexDirection="column" gap={1}>
                 <Text>{result.sslHint}</Text>
-                <Text color="suggestion">See https://clew-code.org/docs</Text>
+                <Text color="suggestion">See https://clew-docs.pages.dev</Text>
               </Box>
             ) : (
               <Box flexDirection="column" gap={1}>
                 <Text>Please check your internet connection and network settings.</Text>
                 <Text>
                   Note: Clew Code might not be available in your country. Check supported countries at{' '}
-                  <Text color="suggestion">https://clew-code.org/docs</Text>
+                  <Text color="suggestion">https://clew-docs.pages.dev</Text>
                 </Text>
               </Box>
             )}

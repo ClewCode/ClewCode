@@ -15,7 +15,7 @@ A local-first coding CLI that runs on your own hardware with your own API keys �
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg?style=flat-square)](#license)
 [![Built with Bun](https://img.shields.io/badge/built%20with-Bun-ff69b4.svg?style=flat-square)](https://bun.sh)
 
-[GitHub](https://github.com/ClewCode/ClewCode) · [Website](https://clew-code.org) · [Documentation](https://clew-code.org/docs)
+[GitHub](https://github.com/ClewCode/ClewCode) · [Website](https://clew-code.org) · [Documentation](https://clew-docs.pages.dev)
 
 </div>
 
@@ -300,18 +300,22 @@ Set these environment variables to authenticate with providers:
 
 ```text
 src/
-├── main.tsx              # CLI Entry point & flag parser
-├── replLauncher.tsx      # Boots the Ink/React REPL
-├── QueryEngine.ts        # Coordinates message flow & tool executions
-├── commands/             # Slash command implementations
-├── tools/                # Built-in tools (File I/O, Bash, Browser, etc.)
-├── peer/                 # UDP discovery and heartbeat servers
-├── memory/               # SQLite-backed memory controllers
-└── services/
-    ├── ai/               # Provider manager & adapters
-    ├── autonomous/       # Persistent task queues & background crons
-    └── checkpoint/       # Structured progress checkpoints
+├── main.tsx              # CLI entry point & flag parser
+├── replLauncher.tsx      # Boots the Ink/React 19 REPL
+├── QueryEngine.ts        # Streaming message/tool loop
+├── query.ts              # Non-streaming variant
+├── commands/             # Slash commands (prompt, local, local-jsx types)
+├── tools/                # 70+ tools (File I/O, Bash, Browser, Peer, MCP, etc.)
+├── peer/                 # LAN P2P: UDP multicast discovery, HTTP heartbeat
+├── memory/               # SQLite-backed memory with importance/recency ranking
+├── services/             # 36+ services (AI, MCP, autonomous, compact, etc.)
+├── skills/               # SKILL.md loader (Claude Code compatible)
+├── plugins/              # Plugin loader, registry, marketplace
+├── agentRuntime/         # Background agent orchestration
+└── remote/               # WebSocket server, auth tokens, NAT relay (Bridge v2)
 ```
+
+Full architecture reference in **[AGENTS.md](AGENTS.md)**.
 
 ---
 
@@ -320,7 +324,7 @@ src/
 Run development commands from the repository root using **Bun**:
 
 ```bash
-bun run dev              # Live-reload REPL (passes Transcript, Voice, Chicago flags)
+bun run dev              # Live-reload REPL (Voice, Transcript, Chicago flags on)
 bun run dev:channels     # Launch dev server with development channels
 bun test                 # Run the test suite via Vitest
 bun test --bail          # Run tests and stop on the first failure
@@ -329,11 +333,28 @@ bun run format           # Run Biome formatter with auto-fix
 bun x tsc --noEmit       # Compile-free TypeScript validation
 ```
 
-### Pull Requests & Releases
-Before submitting a PR, make sure all verification tests pass:
+### Pre-commit check
+
 ```bash
 bun run check:ci && bun x tsc --noEmit && bun test --bail
 ```
+
+### Knowledge graph
+
+This project has a pre-built knowledge graph for codebase exploration:
+
+```bash
+graphify query "<question>"   # Ask questions about the codebase
+graphify path "<A>" "<B>"     # Trace relationships between symbols
+graphify explain "<concept>"  # Focused explanation of a concept
+graphify update .             # Refresh after code changes (AST-only, no API cost)
+```
+
+### Important: `.js` shadows `.ts`
+
+`src/` has ~188 committed `.js` files next to `.ts`/`.tsx` twins (JS-to-TS migration in progress). Bun resolves `.js` import specifiers to the real `.js` file — if you edit only the `.ts` file, your change won't run at runtime. Check for a `.js` sibling and edit both.
+
+Full developer reference in **[AGENTS.md](AGENTS.md)**.
 
 ---
 
