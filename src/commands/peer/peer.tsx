@@ -22,7 +22,7 @@ import { getProjectRoot } from '../../bootstrap/state.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
-import { getProcessPeerProvider, getProcessPeerProviderIds } from '../../peer/ProcessPeerProvider.js';
+import { getProcessPeerProvider, getProcessPeerProviderIds } from '../../peer/ProcessDelegateProvider.js';
 import { formatPeerTaskDashboard, formatPeerTaskSummary } from '../../peer/peerDashboard.js';
 import type { PeerInfo } from '../../peer/types.js';
 import { errorMessage } from '../../utils/errors.js';

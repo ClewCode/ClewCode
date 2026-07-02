@@ -1,14 +1,14 @@
 import * as React from 'react';
 import { z } from 'zod/v4';
 import { Text } from '../../ink.js';
-import { getProcessPeerProvider, getProcessPeerProviderIds } from '../../peer/ProcessPeerProvider.js';
+import { getProcessPeerProvider, getProcessPeerProviderIds } from '../../peer/ProcessDelegateProvider.js';
 import { buildTool, type ToolCallProgress } from '../../Tool.js';
 import type { ProcessPeerProgress } from '../../types/tools.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { clampTimeout, notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
-import { normalizeProcessPeerMode, renderProcessPeerTerminal } from '../processPeerTerminal.js';
+import { normalizeProcessPeerMode, renderProcessPeerTerminal } from '../processDelegateTerminal.js';
 import { DESCRIPTION, PROCESS_MESH_TOOL_NAME, PROMPT } from './prompt.js';
 
 const DEFAULT_PROCESS_MESH_MODE = (process.platform === 'win32' ? 'exec' : 'pty') as const;

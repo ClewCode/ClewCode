@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { buildCodexExecArgs, buildCodexPtyArgs, tailPtyOutput } from './ProcessPeerProvider.js';
+import { buildCodexExecArgs, buildCodexPtyArgs, tailPtyOutput } from './ProcessDelegateProvider.js';
 
 describe('tailPtyOutput', () => {
   test('preserves SGR color while limiting recent lines', () => {

@@ -1,5 +1,7 @@
+import * as React from 'react';
 import type { PermissionResult } from 'src/utils/permissions/PermissionResult.js';
 import { z } from 'zod/v4';
+import { Text } from '../../ink.js';
 import { parseGoalBounds } from '../../services/goal/goalEvaluator.js';
 import { buildTool } from '../../Tool.js';
 import { setExecutionMode } from '../../utils/executionMode.js';
@@ -33,6 +35,17 @@ function parseGoalChain(input: string): { first: string; chain: string[] } | nul
 }
 
 const GOAL_TOOL_NAME = 'Goal';
+const MAX_GOAL_PREVIEW = 120;
+
+function truncatePreview(value: string, max = MAX_GOAL_PREVIEW): string {
+  return value.length > max ? `${value.slice(0, max - 1)}...` : value;
+}
+
+function summarizeGoalInput(input: Partial<z.infer<typeof inputSchema>> | undefined): string {
+  const action = input?.action ?? 'update';
+  const target = input?.goal ?? input?.reason;
+  return target ? `${action}: ${truncatePreview(target)}` : action;
+}
 
 export const GoalTool = buildTool({
   name: GOAL_TOOL_NAME,
@@ -50,6 +63,20 @@ export const GoalTool = buildTool({
   userFacingName: () => 'Goal',
   getActivityDescription(input) {
     return input.action === 'set' ? `Setting goal: ${input.goal?.slice(0, 40)}` : `Goal ${input.action}`;
+  },
+  getToolUseSummary(input) {
+    return summarizeGoalInput(input);
+  },
+  renderToolUseMessage(input) {
+    const action = input.action ?? 'update';
+    const target = input.goal ?? input.reason;
+    if (!target) return action;
+    return React.createElement(
+      Text,
+      null,
+      `${action}: `,
+      React.createElement(Text, { dimColor: true }, truncatePreview(target)),
+    );
   },
   async description(input) {
     return `Goal: ${input.action} — ${input.goal?.slice(0, 80) ?? 'current'}`;
