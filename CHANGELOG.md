@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Workflow-backed `/code-review` UI**: Added a local JSX `/code-review` workflow panel with phase navigation, parallel review agents, live token/tool progress, compact task-tree overview, and per-agent detail panes. (`src/commands/code-review/`)
 - **`/cd` command**: New slash command to change working directory from the REPL. (`src/commands/cd/`)
 - **`/privacy-settings` made local**: Privacy settings now render in-terminal instead of opening a browser. (`src/commands/privacy-settings/`)
 - **Peer state persistence**: PeerStore now persists connections, messages, todos, and tags to `~/.clew/peer/state.json` with debounced atomic writes — survives CLI restarts. (`src/peer/PeerStore.ts`, `src/peer/peerPersistence.ts`)
@@ -31,6 +32,7 @@ All notable changes to this project will be documented in this file.
 - **Duplicate AGENT.md removed**: `AGENT.md` was a subset of `AGENTS.md` — consolidated to single `AGENTS.md`. (`AGENT.md`)
 
 ### Changed
+- **Context and workflow terminal UI polish**: Refined `/context` category coloring/provider display, redesigned resume-session rows into compact metadata-first entries, and moved selected alert notifications into the LogoV2 header while keeping prompt-only status notices near the input. (`src/components/ContextStats.tsx`, `src/components/LogSelector.tsx`, `src/components/LogoV2/`, `src/components/PromptInput/Notifications.tsx`)
 - **`/clear` description updated**: Updated the `/clear` slash command description for clarity.
 - **Documentation URL**: Replaced all `clew-code.org/docs` references with `clew-docs.pages.dev` across README, chrome command, IDE command, and preflight checks. (`README.md`, `src/commands/chrome/chrome.tsx`, `src/commands/ide/ide.tsx`, `src/utils/preflightChecks.tsx`)
 - **ProcessPeer → ProcessDelegate rename**: Renamed `ProcessPeerTool`/`ProcessPeerProvider` to `ProcessDelegateTool`/`ProcessDelegateProvider` for clearer semantics. Updated all imports across peer, tools, and commands. (`src/tools/ProcessDelegateTool/`, `src/peer/ProcessDelegateProvider.ts`, `src/commands/peer/peer.tsx`, `src/tools.ts`)
