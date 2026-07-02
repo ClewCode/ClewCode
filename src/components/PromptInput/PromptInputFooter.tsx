@@ -1,12 +1,11 @@
 import { feature } from 'bun:bundle';
 import type * as React from 'react';
-import { memo, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { isBridgeEnabled } from '../../bridge/bridgeEnabled.js';
 import { getBridgeStatus } from '../../bridge/bridgeStatusUtil.js';
 import { useSetPromptOverlay } from '../../context/promptOverlayContext.js';
 import type { VerificationStatus } from '../../hooks/useApiKeyVerification.js';
 import type { IDESelection } from '../../hooks/useIdeSelection.js';
-import { useSettings } from '../../hooks/useSettings.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { Box, Text } from '../../ink.js';
 import type { MCPServerConnection } from '../../services/mcp/types.js';
@@ -22,7 +21,6 @@ import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
 import { PeerStatusLine } from '../PeerStatusLine.js';
-import { getLastAssistantMessageId, StatusLine, statusLineShouldDisplay } from '../StatusLine.js';
 
 import { Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
@@ -68,7 +66,6 @@ type Props = {
 };
 function PromptInputFooter({
   apiKeyStatus,
-  debug,
   exitMessage,
   vimMode,
   mode,
@@ -100,11 +97,7 @@ function PromptInputFooter({
   historyFailedMatch,
   onOpenTasksDialog,
 }: Props): ReactNode {
-  const settings = useSettings();
   const { columns } = useTerminalSize();
-  const messagesRef = useRef(messages);
-  messagesRef.current = messages;
-  const lastAssistantMessageId = useMemo(() => getLastAssistantMessageId(messages), [messages]);
   const isNarrow = columns < 80;
   const isFullscreen = isFullscreenEnvEnabled();
 
@@ -136,10 +129,7 @@ function PromptInputFooter({
   const personalPersonaName =
     ((settingsSnapshot as Record<string, unknown>).personalPersonaName as string | undefined) || 'Clew Personal';
 
-  // Hide `? for shortcuts` if the user has a custom status line, or during ctrl-r
-  const suppressHint = suppressHintFromProps || statusLineShouldDisplay(settings) || isSearching || isPersonalProfile;
-  const showStatusLine =
-    mode === 'prompt' && !exitMessage.show && !isPasting && statusLineShouldDisplay(settings) && !isPersonalProfile;
+  const suppressHint = suppressHintFromProps || isSearching || isPersonalProfile;
   const goalState = getFullGoalState();
   const goalBlocked = goalState?.blocked ?? false;
   const goalStopped = /(?:turn|time) limit reached/i.test(goalState?.blockedReason ?? goalState?.lastReason ?? '');
@@ -173,7 +163,6 @@ function PromptInputFooter({
       onOpenTasksDialog={onOpenTasksDialog}
     />
   );
-  const statusLineRightText = debug ? 'Debug mode' : undefined;
   // Fullscreen: portal data to FullscreenLayout — see promptOverlayContext.tsx
   const overlayData = useMemo(
     () =>
@@ -211,29 +200,6 @@ function PromptInputFooter({
         gap={isNarrow ? 0 : 1}
       >
         <Box flexDirection="column" flexGrow={isNarrow ? 0 : 1} flexShrink={isNarrow ? 0 : 1}>
-          {showStatusLine && (
-            <Box flexDirection="row" justifyContent="space-between" width="100%">
-              <Box overflowX="hidden" flexShrink={1}>
-                {footerLeftSide}
-              </Box>
-              <Box flexDirection="row" flexShrink={0} gap={1}>
-                {currentProfile === 'personal' ? <Text bold>{personalPersonaName}</Text> : null}
-                {goalActiveText ? (
-                  <Text color="ide" wrap="truncate">
-                    {goalActiveText}
-                  </Text>
-                ) : null}
-                <StatusLine
-                  key={columns}
-                  messagesRef={messagesRef}
-                  lastAssistantMessageId={lastAssistantMessageId}
-                  vimMode={vimMode}
-                  rightOnly
-                  rightText={statusLineRightText}
-                />
-              </Box>
-            </Box>
-          )}
           {!isFullscreen && (
             <Notifications
               apiKeyStatus={apiKeyStatus}
@@ -249,21 +215,19 @@ function PromptInputFooter({
               isNarrow={isNarrow}
             />
           )}
-          {!showStatusLine && (
-            <Box flexDirection="row" justifyContent="space-between" width="100%">
-              <Box overflowX="hidden" flexShrink={1}>
-                {footerLeftSide}
-              </Box>
-              <Box flexDirection="row" flexShrink={0} gap={1}>
-                {isPersonalProfile ? <Text bold>{personalPersonaName}</Text> : null}
-                {goalActiveText ? (
-                  <Text color="ide" wrap="truncate">
-                    {goalActiveText}
-                  </Text>
-                ) : null}
-              </Box>
+          <Box flexDirection="row" justifyContent="space-between" width="100%">
+            <Box overflowX="hidden" flexShrink={1}>
+              {footerLeftSide}
             </Box>
-          )}
+            <Box flexDirection="row" flexShrink={0} gap={1}>
+              {isPersonalProfile ? <Text bold>{personalPersonaName}</Text> : null}
+              {goalActiveText ? (
+                <Text color="ide" wrap="truncate">
+                  {goalActiveText}
+                </Text>
+              ) : null}
+            </Box>
+          </Box>
         </Box>
         <Box flexShrink={1} gap={1} justifyContent="flex-end">
           {'external' === 'ant' && isUndercover() && <Text dimColor>undercover</Text>}
