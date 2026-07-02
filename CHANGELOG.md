@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **`/cd` command**: New slash command to change working directory from the REPL. (`src/commands/cd/`)
+- **`/privacy-settings` made local**: Privacy settings now render in-terminal instead of opening a browser. (`src/commands/privacy-settings/`)
+- **Peer state persistence**: PeerStore now persists connections, messages, todos, and tags to `~/.clew/peer/state.json` with debounced atomic writes — survives CLI restarts. (`src/peer/PeerStore.ts`, `src/peer/peerPersistence.ts`)
+- **Checkpoint on every compaction**: Previously checkpoints only wrote when a goal with `maxTurns` was active. Now every compaction writes a checkpoint snapshot first, so `tryRebuildFromCheckpoint()` always has state to work with. (`src/services/checkpoint/checkpointWriter.ts`)
+- **MiMo memory maintenance**: `saveMemory` now deduplicates identical content; `pruneMemories()` removes stale low-value memories on session init. (`src/memory/database.ts`)
+- **Cross-peer memory sync**: Replaced broken `/memory/export` + `/peer memory-sync` path with a working `GET /peer-memory-export` endpoint, `src/memory/peerSync.ts` (validation, confidence discount, provenance), and new `peer_memory_sync` tool. (`src/memory/peerSync.ts`, `src/peer/PeerServer.ts`, `src/tools/PeerMemorySyncTool/`)
+- **Long-turn recap**: Turns exceeding a threshold (default 5 min) now get an automatic "Goal / Next" recap appended on completion. Configurable via `recapEnabled` / `longTurnRecapThresholdMs`. (`src/services/longTurnRecap.ts`)
+- **Provider selection validation**: Provider must be in registry, model must be in registry catalog or live model list. Unverifiable setups (no key, offline, custom endpoints) accepted as before. (`src/services/ai/providerSelection.ts`)
+
 - **Notification placement utility**: New `src/components/notifications/notificationPlacement.ts` for managing notification UI positioning.
 
 - **README rewrite**: Removed fictional model IDs (gpt-5.5 → gemini-2.5-flash), inflated feature counts, unverified claims, and SWE-bench Verified section. Replaced with honest, code-backed descriptions.
@@ -22,11 +31,18 @@ All notable changes to this project will be documented in this file.
 - **Duplicate AGENT.md removed**: `AGENT.md` was a subset of `AGENTS.md` — consolidated to single `AGENTS.md`. (`AGENT.md`)
 
 ### Changed
+- **`/clear` description updated**: Updated the `/clear` slash command description for clarity.
 - **Documentation URL**: Replaced all `clew-code.org/docs` references with `clew-docs.pages.dev` across README, chrome command, IDE command, and preflight checks. (`README.md`, `src/commands/chrome/chrome.tsx`, `src/commands/ide/ide.tsx`, `src/utils/preflightChecks.tsx`)
 - **ProcessPeer → ProcessDelegate rename**: Renamed `ProcessPeerTool`/`ProcessPeerProvider` to `ProcessDelegateTool`/`ProcessDelegateProvider` for clearer semantics. Updated all imports across peer, tools, and commands. (`src/tools/ProcessDelegateTool/`, `src/peer/ProcessDelegateProvider.ts`, `src/commands/peer/peer.tsx`, `src/tools.ts`)
 - **GoalTool rendering enhancements**: Added React-based tool use summary with truncation preview via `renderToolUseMessage()`, `getToolUseSummary()`, and `summarizeGoalInput()` helpers. (`src/tools/GoalTool/GoalTool.ts`)
 
 ### Fixed
+- **Anthropic provider registration**: Registered anthropic as a first-class `PROVIDER_REGISTRY` entry. Previously `provider: "anthropic"` was silently rejected and fell back to openai. Anthropic API keys stored in `provider.json` now reach the native client. (`src/services/ai/providers.json`, `src/services/ai/providerRegistry.ts`)
+- **`clew provider` CLI rebuilt on registry**: Deleted hardcoded provider table from `provider-select-cli.ts` and the unreferenced legacy `provider-select.js`. Provider selection now reads from `PROVIDER_REGISTRY`. Fixes stale defaults (gpt-4.1-mini on `--reset`) and the `gemini` key writing an unregistered provider id. (`src/commands/provider-select-cli.ts`)
+- **gemini → google migration alias**: `normalizeProviderId()` applies legacy alias migration in-memory when `provider.json` loads, to `AI_PROVIDER`, session values, and CLI/slash-command arguments. Legacy `apiKeys` entries copied, not deleted. (`src/services/ai/providerRegistry.ts`)
+- **Clew Internal Protocol v1**: Declared Anthropic Messages format as the canonical internal protocol with type aliases and docs. (`src/services/api/clewProtocol.ts`)
+- **Provider system architecture docs**: New `docs/architecture/provider-system.md` documenting provider registration, adapter normalization, and the `.js` shadow caveat.
+
 - **Tool input schema render crash**: Guarded UI rendering for dynamic/remote tools whose `inputSchema` is not a Zod schema, and fixed remote permission tool stubs to use a real loose Zod object schema. (`src/utils/safeParseToolInput.ts`, `src/remote/remotePermissionBridge.ts`)
 - **Goal evaluation skip when blocked**: Added `!goalState.blocked` check to prevent goal evaluation when the goal is blocked. Removed stale goal turn counter increment in query.ts. (`src/query.ts`)
 - **Import path cleanup**: Moved tool constants (`FILE_EDIT_TOOL_NAME`, `TODO_WRITE_TOOL_NAME`, `TASK_CREATE_TOOL_NAME`) to their respective `constants.ts` files; fixed relative→absolute import paths in AppStateStore.ts. (`src/constants/prompts.ts`, `src/state/AppStateStore.ts`)
