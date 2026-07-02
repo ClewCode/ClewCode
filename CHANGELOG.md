@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Notification placement utility**: New `src/components/notifications/notificationPlacement.ts` for managing notification UI positioning.
+
 - **README rewrite**: Removed fictional model IDs (gpt-5.5 → gemini-2.5-flash), inflated feature counts, unverified claims, and SWE-bench Verified section. Replaced with honest, code-backed descriptions.
 
 - **CI: Install Playwright browsers before tests**: Added `npx playwright install chromium --with-deps` step to ci.yml and publish.yml to fix `BrowserSession` test failure. Made publish job depend on quality job passing.
@@ -18,6 +20,11 @@ All notable changes to this project will be documented in this file.
 - **init-verifiers command**: Removed import from commands.ts. (`src/commands.ts`)
 - **`/profile` command removed**: Deleted `src/commands/profile/` — the profile system is now a background state only, no longer user-togglable via slash command. (`src/commands/profile/`, `src/commands.ts`)
 - **Duplicate AGENT.md removed**: `AGENT.md` was a subset of `AGENTS.md` — consolidated to single `AGENTS.md`. (`AGENT.md`)
+
+### Changed
+- **Documentation URL**: Replaced all `clew-code.org/docs` references with `clew-docs.pages.dev` across README, chrome command, IDE command, and preflight checks. (`README.md`, `src/commands/chrome/chrome.tsx`, `src/commands/ide/ide.tsx`, `src/utils/preflightChecks.tsx`)
+- **ProcessPeer → ProcessDelegate rename**: Renamed `ProcessPeerTool`/`ProcessPeerProvider` to `ProcessDelegateTool`/`ProcessDelegateProvider` for clearer semantics. Updated all imports across peer, tools, and commands. (`src/tools/ProcessDelegateTool/`, `src/peer/ProcessDelegateProvider.ts`, `src/commands/peer/peer.tsx`, `src/tools.ts`)
+- **GoalTool rendering enhancements**: Added React-based tool use summary with truncation preview via `renderToolUseMessage()`, `getToolUseSummary()`, and `summarizeGoalInput()` helpers. (`src/tools/GoalTool/GoalTool.ts`)
 
 ### Fixed
 - **Tool input schema render crash**: Guarded UI rendering for dynamic/remote tools whose `inputSchema` is not a Zod schema, and fixed remote permission tool stubs to use a real loose Zod object schema. (`src/utils/safeParseToolInput.ts`, `src/remote/remotePermissionBridge.ts`)
