@@ -1,249 +1,84 @@
-import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+/**
+ * `clew provider` — terminal provider/model selector.
+ *
+ * All provider metadata comes from PROVIDER_REGISTRY (providers.json); this
+ * file must not carry its own provider list. Config reads/writes go through
+ * ProviderManager so path resolution and legacy migrations stay in one place.
+ */
+
 import { createInterface } from 'readline';
-import { getClewConfigHomeDir } from '../utils/envUtils.js';
+import { type ProviderConfigFile, ProviderManager } from '../services/ai/ProviderManager.js';
+import { fetchProviderModels } from '../services/ai/providerModels.js';
+import {
+  DEFAULT_PROVIDER,
+  getProviderRegistryEntry,
+  normalizeProviderId,
+  PROVIDER_IDS,
+  type ProviderRegistryEntry,
+} from '../services/ai/providerRegistry.js';
+import { validateProviderModelSelection } from '../services/ai/providerSelection.js';
+import type { ProviderId } from '../services/ai/providers/ProviderInterface.js';
 import { readLocalProviderKey } from '../utils/localProviderKeys.js';
 
-interface ProviderInfo {
-  label: string;
-  envKey: string;
-  baseUrl: string;
-  modelsUrl: string;
-  defaultModel: string;
-  defaultModelVerified?: boolean;
-  timeout: number;
-  note: string;
-  isLocal?: boolean;
-  supportsStreaming?: boolean;
+type SerializableProviderRegistryEntry = Omit<ProviderRegistryEntry, 'provider'>;
+
+function getSerializableProviderInfo(provider: ProviderId): SerializableProviderRegistryEntry {
+  const { provider: _instance, ...serializable } = getProviderRegistryEntry(provider);
+  return serializable;
 }
 
-const PROVIDERS: Record<string, ProviderInfo> = {
-  openai: {
-    label: 'OpenAI',
-    envKey: 'OPENAI_API_KEY',
-    baseUrl: 'https://api.openai.com/v1',
-    modelsUrl: 'https://api.openai.com/v1/models',
-    defaultModel: 'gpt-5.4-mini',
-    defaultModelVerified: true,
-    timeout: 60000,
-    note: 'gpt-5.4 = flagship, gpt-5.4-mini = cost-efficient, gpt-5.4-nano = cheapest',
-  },
-  anthropic: {
-    label: 'Anthropic',
-    envKey: 'ANTHROPIC_API_KEY',
-    baseUrl: 'https://api.anthropic.com/v1',
-    modelsUrl: 'https://api.anthropic.com/v1/models',
-    defaultModel: 'claude-sonnet-4-20250514',
-    defaultModelVerified: true,
-    timeout: 90000,
-    note: 'claude-opus-4-20250514 = most capable, claude-sonnet-4-20250514 = balanced',
-  },
-  gemini: {
-    label: 'Google Gemini',
-    envKey: 'GEMINI_API_KEY',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    modelsUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
-    defaultModel: 'gemini-2.5-flash',
-    defaultModelVerified: true,
-    timeout: 60000,
-    note: 'gemini-2.5-flash = best price-performance',
-  },
-  'google-assist': {
-    label: 'Gemini Code Assist (OAuth)',
-    envKey: 'GEMINI_API_KEY',
-    baseUrl: 'https://cloudcode-pa.googleapis.com/v1internal',
-    modelsUrl: '',
-    defaultModel: 'gemini-2.5-flash',
-    defaultModelVerified: true,
-    timeout: 60000,
-    note: 'ใช้ OAuth จาก ~/.gemini/oauth_creds.json, ไม่ต้องใช้ API key',
-    isLocal: false,
-  },
-  openrouter: {
-    label: 'OpenRouter',
-    envKey: 'OPENROUTER_API_KEY',
-    baseUrl: 'https://openrouter.ai/api/v1',
-    modelsUrl: 'https://openrouter.ai/api/v1/models',
-    defaultModel: 'openai/gpt-5.4-mini',
-    timeout: 120000,
-    note: 'ใช้ model string แบบ provider/model-name',
-  },
-  opencode: {
-    label: 'OpenCode',
-    envKey: 'OPENCODE_API_KEY',
-    baseUrl: 'https://opencode.ai/zen/v1',
-    modelsUrl: 'https://opencode.ai/zen/v1/models',
-    defaultModel: 'qwen3.6-plus',
-    timeout: 120000,
-    note: 'For OpenAI-compatible /chat/completions use qwen3.6-plus, minimax-m2.7, glm-5.1, kimi-k2.6, big-pickle.',
-  },
-  cline: {
-    label: 'Cline API',
-    envKey: 'CLINE_API_KEY',
-    baseUrl: 'https://api.cline.bot/api/v1',
-    modelsUrl: 'https://api.cline.bot/api/v1/models',
-    defaultModel: 'anthropic/claude-sonnet-4-6',
-    timeout: 120000,
-    note: 'Cline is OpenAI-compatible chat/completions; use free model examples like minimax/minimax-m2.5',
-  },
-  groq: {
-    label: 'Groq',
-    envKey: 'GROQ_API_KEY',
-    baseUrl: 'https://api.groq.com/openai/v1',
-    modelsUrl: 'https://api.groq.com/openai/v1/models',
-    defaultModel: 'llama-3.3-70b-versatile',
-    timeout: 60000,
-    note: 'llama-3.1-8b-instant = fast/cheap, llama-3.3-70b-versatile = smarter',
-  },
-  xai: {
-    label: 'xAI',
-    envKey: 'XAI_API_KEY',
-    baseUrl: 'https://api.x.ai/v1',
-    modelsUrl: 'https://api.x.ai/v1/models',
-    defaultModel: 'grok-4-mini',
-    timeout: 60000,
-    note: 'grok-4 = deep reasoning, grok-4-mini = fast',
-  },
-  sakana: {
-    label: 'Sakana AI (Fugu)',
-    envKey: 'SAKANA_API_KEY',
-    baseUrl: 'https://api.sakana.ai/v1',
-    modelsUrl: 'https://api.sakana.ai/v1/models',
-    defaultModel: 'fugu-ultra',
-    timeout: 120000,
-    note: 'Sakana AI - Fugu multi-agent orchestration system. Supports fugu-ultra and fugu.',
-  },
-  mistral: {
-    label: 'Mistral',
-    envKey: 'MISTRAL_API_KEY',
-    baseUrl: 'https://api.mistral.ai/v1',
-    modelsUrl: 'https://api.mistral.ai/v1/models',
-    defaultModel: 'mistral-large-latest',
-    defaultModelVerified: true,
-    timeout: 60000,
-    note: 'mistral-large-latest = flagship',
-  },
-  kilocode: {
-    label: 'KiloCode',
-    envKey: 'KILOCODE_API_KEY',
-    baseUrl: 'https://api.kilo.ai/api/gateway',
-    modelsUrl: 'https://api.kilo.ai/api/gateway/models',
-    defaultModel: 'kilo-pro/free',
-    defaultModelVerified: true,
-    supportsStreaming: true,
-    timeout: 180000,
-    note: 'KiloCode AI Gateway',
-  },
-  ollama: {
-    label: 'Ollama (Local)',
-    envKey: 'OLLAMA_API_KEY',
-    baseUrl: 'http://localhost:11434/v1',
-    modelsUrl: 'http://localhost:11434/v1/models',
-    defaultModel: 'llama3.3',
-    defaultModelVerified: true,
-    isLocal: true,
-    timeout: 300000,
-    note: 'Local Ollama server',
-  },
-};
+function loadConfig(): ProviderConfigFile {
+  return ProviderManager.getInstance().getSelectedProviderConfig(true);
+}
 
-const PROVIDER_KEYS = Object.keys(PROVIDERS);
-const CONFIG_PATH = join(getClewConfigHomeDir(), 'provider.json');
+function saveConfig(config: ProviderConfigFile): void {
+  const providerManager = ProviderManager.getInstance();
+  providerManager.saveSelectedProviderConfig(config);
+  console.log('✅ Config saved to', providerManager.getProviderConfigPathForSave());
+}
 
-function loadConfig() {
+function hasApiKey(provider: ProviderId, config: ProviderConfigFile): boolean {
+  const info = getProviderRegistryEntry(provider);
+  return Boolean(
+    config.apiKeys?.[provider] || (info.envKey && process.env[info.envKey]) || readLocalProviderKey(provider),
+  );
+}
+
+async function fetchModels(provider: ProviderId): Promise<string[]> {
   try {
-    return JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
-function saveConfig(config: any) {
-  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-  console.log('✅ Config saved to', CONFIG_PATH);
-}
-
-async function fetchModels(provider: string): Promise<string[]> {
-  const p = PROVIDERS[provider];
-  if (!p) return [];
-
-  const config = loadConfig();
-  const apiKey = config?.apiKeys?.[provider] || process.env[p.envKey] || readLocalProviderKey(provider);
-
-  if (!apiKey && !p.isLocal) {
-    if (p.defaultModelVerified && p.defaultModel) {
-      console.log(`⚠️  No ${p.envKey} found. Using verified default model ${p.defaultModel}.`);
-      return [p.defaultModel];
-    }
-    console.log(`⚠️  No ${p.envKey} found and no verified default model is available.`);
-    return [];
-  }
-
-  try {
-    const url = p.modelsUrl;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (apiKey) {
-      if (provider === 'anthropic') {
-        headers['x-api-key'] = apiKey;
-      } else {
-        headers['Authorization'] = `Bearer ${apiKey}`;
-      }
-    }
-
-    const res = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
-    const data = (await res.json()) as any;
-
-    if (data.data && Array.isArray(data.data)) {
-      return data.data.map((m: any) => m.id).filter(Boolean);
-    } else if (data.models && Array.isArray(data.models)) {
-      return data.models.map((m: any) => m.id || m.name).filter(Boolean);
-    } else if (Array.isArray(data)) {
-      return data.map((m: any) => m.id || m.name || m).filter(Boolean);
-    }
-
-    if (p.defaultModelVerified && p.defaultModel) {
-      return [p.defaultModel];
-    }
-    return [];
+    return (await fetchProviderModels(provider)).map(model => model.id);
   } catch (e) {
     console.log(`⚠️  Failed to fetch models: ${e}`);
-    if (p.defaultModelVerified && p.defaultModel) {
-      return [p.defaultModel];
+    const info = getProviderRegistryEntry(provider);
+    if (info.defaultModelVerified && info.defaultModel) {
+      return [info.defaultModel];
     }
     return [];
   }
 }
 
-async function promptForModel(provider: string): Promise<string> {
-  const p = PROVIDERS[provider];
-  if (!p) return '';
-
-  const readline = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
+function promptLine(question: string): Promise<string> {
+  const readline = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise(resolve => {
-    readline.question(`\n🔧 Enter a model for ${p.label}: `, answer => {
+    readline.question(question, answer => {
       readline.close();
       resolve(answer.trim());
     });
   });
 }
 
-async function promptForApiKey(provider: string): Promise<string> {
-  const p = PROVIDERS[provider];
-  if (!p || p.isLocal) {
+async function promptForModel(provider: ProviderId): Promise<string> {
+  const info = getProviderRegistryEntry(provider);
+  return promptLine(`\n🔧 Enter a model for ${info.label}: `);
+}
+
+async function promptForApiKey(provider: ProviderId): Promise<string> {
+  const info = getProviderRegistryEntry(provider);
+  if (info.isLocal) {
     return '';
   }
 
-  const config = loadConfig();
-  const hasExistingKey = Boolean(
-    config?.apiKeys?.[provider] || process.env[p.envKey] || readLocalProviderKey(provider),
-  );
+  const hasExistingKey = hasApiKey(provider, loadConfig());
 
   const readline = createInterface({
     input: process.stdin,
@@ -260,8 +95,8 @@ async function promptForApiKey(provider: string): Promise<string> {
   };
 
   const promptStr = hasExistingKey
-    ? `\n🔑 Enter ${p.envKey} for ${p.label} (leave blank to keep existing): `
-    : `\n🔑 Enter ${p.envKey} for ${p.label}: `;
+    ? `\n🔑 Enter ${info.envKey} for ${info.label} (leave blank to keep existing): `
+    : `\n🔑 Enter ${info.envKey} for ${info.label}: `;
 
   return new Promise(resolve => {
     process.stdout.write(promptStr);
@@ -280,11 +115,7 @@ function selectFromList<T>(items: T[], display: (item: T) => string): Promise<T>
     console.log(`  ${i + 1}. ${display(item)}`);
   });
 
-  const readline = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
+  const readline = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise(resolve => {
     readline.question(`\n🔢 Select (1-${items.length}): `, answer => {
       readline.close();
@@ -299,29 +130,21 @@ function selectFromList<T>(items: T[], display: (item: T) => string): Promise<T>
   });
 }
 
-async function selectProvider() {
+async function selectProvider(): Promise<ProviderConfigFile> {
   console.log('\n🚀 Clew Code - Provider & Model Selector\n');
 
   console.log('🌐 Available providers:');
-  PROVIDER_KEYS.forEach((p, i) => {
-    const info = PROVIDERS[p]!;
+  PROVIDER_IDS.forEach((p, i) => {
+    const info = getProviderRegistryEntry(p);
     console.log(`  ${i + 1}. ${info.label} ${info.isLocal ? '(Local)' : ''}`);
   });
 
-  const readline = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const answer = await promptLine(`\n🔧 Select provider (1-${PROVIDER_IDS.length}): `);
+  const idx = parseInt(answer, 10) - 1;
+  const provider = PROVIDER_IDS[idx] ?? PROVIDER_IDS[0] ?? DEFAULT_PROVIDER;
+  const info = getProviderRegistryEntry(provider);
 
-  const provider = await new Promise<string>(resolve => {
-    readline.question(`\n🔧 Select provider (1-${PROVIDER_KEYS.length}): `, answer => {
-      readline.close();
-      const idx = parseInt(answer, 10) - 1;
-      resolve(PROVIDER_KEYS[idx] || PROVIDER_KEYS[0] || 'openai');
-    });
-  });
-
-  console.log(`\n⏳ Fetching models from ${PROVIDERS[provider]!.label}...`);
+  console.log(`\n⏳ Fetching models from ${info.label}...`);
   const models = await fetchModels(provider);
 
   let model: string;
@@ -335,30 +158,36 @@ async function selectProvider() {
     }
   }
 
+  const validation = await validateProviderModelSelection(provider, model);
+  if (!validation.valid) {
+    console.log(`❌ ${validation.error}`);
+    if (validation.suggestions?.length) {
+      console.log('   Did you mean:', validation.suggestions.join(', '));
+    }
+    process.exit(1);
+  }
+  model = validation.model ?? model;
+
   const apiKey = await promptForApiKey(provider);
   const currentConfig = loadConfig();
-  const hasExistingKey = Boolean(
-    currentConfig?.apiKeys?.[provider] || process.env[PROVIDERS[provider]!.envKey] || readLocalProviderKey(provider),
-  );
+  const hasExistingKey = hasApiKey(provider, currentConfig);
 
-  if (!PROVIDERS[provider]!.isLocal && !apiKey && !hasExistingKey) {
-    console.log(`❌ No API key provided for ${PROVIDERS[provider]!.envKey}. Aborting.`);
+  if (!info.isLocal && !apiKey && !hasExistingKey) {
+    console.log(`❌ No API key provided for ${info.envKey}. Aborting.`);
     process.exit(1);
   }
 
   const apiKeys = {
-    ...(currentConfig?.apiKeys || {}),
+    ...(currentConfig.apiKeys || {}),
     ...(apiKey ? { [provider]: apiKey } : {}),
   };
 
-  const config = {
+  return {
     provider,
     model,
-    providerConfig: PROVIDERS[provider],
+    providerConfig: getSerializableProviderInfo(provider) as unknown as Record<string, unknown>,
     apiKeys,
   };
-
-  return config;
 }
 
 export async function runProviderSelectCli(options: {
@@ -371,26 +200,30 @@ export async function runProviderSelectCli(options: {
 }): Promise<void> {
   if (options.list) {
     console.log('\n📦 Available providers:\n');
-    for (const [_key, info] of Object.entries(PROVIDERS)) {
-      console.log(`🌐 ${info.label}:`);
-      console.log(`   Default: ${info.defaultModel}`);
-      console.log(`   Base:   ${info.baseUrl}`);
-      console.log(`   Note:   ${info.note}`);
+    for (const providerId of PROVIDER_IDS) {
+      const info = getProviderRegistryEntry(providerId);
+      console.log(`🌐 ${info.label} (${providerId}):`);
+      console.log(`   Default: ${info.defaultModel ?? '(dynamic)'}`);
+      console.log(`   Base:   ${info.defaultBaseUrl}`);
+      if (info.note) {
+        console.log(`   Note:   ${info.note}`);
+      }
       console.log();
     }
     return;
   }
 
   if (options.models) {
-    const provider = options.models.toLowerCase();
-    if (!PROVIDERS[provider]) {
-      console.log(`❌ Unknown provider: ${provider}`);
-      console.log('Available:', Object.keys(PROVIDERS).join(', '));
+    const provider = normalizeProviderId(options.models);
+    if (!provider) {
+      console.log(`❌ Unknown provider: ${options.models}`);
+      console.log('Available:', PROVIDER_IDS.join(', '));
       return;
     }
-    console.log(`\n⏳ Fetching models from ${PROVIDERS[provider]!.label}...`);
+    const info = getProviderRegistryEntry(provider);
+    console.log(`\n⏳ Fetching models from ${info.label}...`);
     const models = await fetchModels(provider);
-    console.log(`\n📋 Models from ${PROVIDERS[provider]!.label} (${models.length}):\n`);
+    console.log(`\n📋 Models from ${info.label} (${models.length}):\n`);
     models.slice(0, 30).forEach(m => {
       console.log(`   • ${m}`);
     });
@@ -402,31 +235,36 @@ export async function runProviderSelectCli(options: {
 
   if (options.modelsUrl) {
     console.log('\n📡 Models API URLs:\n');
-    for (const [_key, info] of Object.entries(PROVIDERS)) {
+    for (const providerId of PROVIDER_IDS) {
+      const info = getProviderRegistryEntry(providerId);
       console.log(`🌐 ${info.label}:`);
-      console.log(`   ${info.modelsUrl}`);
+      console.log(`   ${info.modelsUrl ?? '(none)'}`);
       console.log();
     }
     return;
   }
 
   if (options.reset) {
-    const defaultConfig = {
-      provider: 'openai',
-      model: 'gpt-4.1-mini',
-      providerConfig: PROVIDERS.openai,
+    const info = getProviderRegistryEntry(DEFAULT_PROVIDER);
+    const currentConfig = loadConfig();
+    const defaultConfig: ProviderConfigFile = {
+      provider: DEFAULT_PROVIDER,
+      model: info.defaultModel ?? '',
+      providerConfig: getSerializableProviderInfo(DEFAULT_PROVIDER) as unknown as Record<string, unknown>,
+      apiKeys: currentConfig.apiKeys,
     };
     saveConfig(defaultConfig);
-    console.log('🔄 Reset to default:', defaultConfig);
+    console.log(`🔄 Reset to default: ${DEFAULT_PROVIDER} (${defaultConfig.model})`);
     return;
   }
 
   if (options.get) {
     const config = loadConfig();
-    if (config) {
+    if (config.provider) {
       console.log('\n⚙️  Current configuration:\n');
       console.log(`  Provider: ${config.provider}`);
       console.log(`  Model:    ${config.model}`);
+      console.log(`  Config:   ${ProviderManager.getInstance().getProviderConfigPath()}`);
       console.log();
     } else {
       console.log('\n⚠️  No configuration found. Run with --set to configure.\n');
@@ -434,18 +272,9 @@ export async function runProviderSelectCli(options: {
     return;
   }
 
-  if (options.set) {
-    const config = await selectProvider();
-    saveConfig(config);
-    console.log('\n✅ Configuration updated!\n');
-    console.log(`  Provider: ${config.provider}`);
-    console.log(`  Model:    ${config.model}\n`);
-    return;
-  }
-
   const config = await selectProvider();
   saveConfig(config);
-  console.log('\n✅ Configuration saved!\n');
+  console.log(options.set ? '\n✅ Configuration updated!\n' : '\n✅ Configuration saved!\n');
   console.log(`  Provider: ${config.provider}`);
   console.log(`  Model:    ${config.model}\n`);
 }

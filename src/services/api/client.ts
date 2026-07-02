@@ -17,6 +17,10 @@ import { createAnthropicClient } from './anthropicClient.js';
 /**
  * The unified client shape that every provider exposes.
  *
+ * The request/response types flowing through `beta.messages.create()` are
+ * the Clew Internal Protocol v1 — the Anthropic Messages format, declared in
+ * `clewProtocol.ts`.
+ *
  * - Anthropic SDK clients already satisfy this natively.
  * - Non-Anthropic clients are wrapped in `AnthropicAdapter` which provides
  *   the same `beta.messages.create()` shape.
@@ -72,9 +76,14 @@ export async function getAIProviderClient({
   const providerManager = ProviderManager.getInstance();
   const effectiveProvider = provider ?? providerManager.getActiveProviderName();
 
-  // Anthropic: return native client directly (no adapter needed)
+  // Anthropic: return native client directly (no adapter needed).
+  // Resolve the key through ProviderManager first so a key stored in
+  // provider.json (apiKeys.anthropic) works like it does for every other
+  // provider; createAnthropicClient still falls back to its own auth chain
+  // (env, keychain, apiKeyHelper, OAuth) when this resolves to undefined.
   if (effectiveProvider === 'anthropic') {
-    return getAnthropicClient({ apiKey, maxRetries, model, fetchOverride, source });
+    const resolvedApiKey = apiKey ?? providerManager.getApiKeyForProvider('anthropic');
+    return getAnthropicClient({ apiKey: resolvedApiKey, maxRetries, model, fetchOverride, source });
   }
 
   // Other providers: create SDK client and wrap with adapter

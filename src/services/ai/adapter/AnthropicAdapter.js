@@ -2,6 +2,10 @@
  * Provider adapter that wraps non-Anthropic SDK clients into an
  * Anthropic-compatible interface (`client.beta.messages.*`).
  *
+ * The target shape is the Clew Internal Protocol v1 (Anthropic Messages
+ * format) — see services/api/clewProtocol.ts. Adapters convert provider
+ * wire formats to/from that protocol at the system edge.
+ *
  * This allows the existing `claude.ts` streaming loop (which speaks
  * Anthropic `BetaMessageStreamEvent`) to work with OpenAI-compatible,
  * Google Gemini, and other provider APIs via unified conversion.
