@@ -21,14 +21,14 @@ A local-first coding CLI that runs on your own hardware with your own API keys â
 
 ---
 
-**Clew Code is a local-first, multi-provider AI coding CLI.** It is built to run on your own machine using your own API keys, with support for more than 25 LLM providers. Featuring a built-in SQLite memory system, a peer-to-peer LAN swarm capability, Model Context Protocol (MCP) tool integration, and multiple execution layers, it allows you to run agentic workflows locally or scale them across your local network.
+**Clew Code is a local-first, multi-provider AI coding CLI.** It is built to run on your own machine using your own API keys, with support for 29 LLM providers. Featuring a built-in SQLite memory system, a peer-to-peer LAN swarm capability, Model Context Protocol (MCP) tool integration, and multiple execution layers, it allows you to run agentic workflows locally or scale them across your local network.
 
 <table>
 <tr><td><b>A real terminal interface</b></td><td>Ink-based terminal REPL with autocompletion, slash commands, syntax highlighting, and inline tool stream.</td></tr>
 <tr><td><b>Durable memory loop</b></td><td>SQLite-backed memory store that builds a factual profile of your project, manages context compaction, and injects relevant context into prompt cycles.</td></tr>
 <tr><td><b>Peer-to-peer swarm</b></td><td>Zero-config multicast LAN discovery. Synchronize memory, assign tasks, and broadcast shell execution to multiple peer nodes.</td></tr>
 <tr><td><b>Extensible tools & MCP</b></td><td>Integrates with external tools over Model Context Protocol (stdio, SSE, DirectConnect) and supports custom markdown-based skills (SKILL.md).</td></tr>
-<tr><td><b>Multiple execution layers</b></td><td>Run tasks using standard Agents, isolated Subagents, teammate swarms, or delegate to external CLIs via Process Peers.</td></tr>
+<tr><td><b>Multiple execution layers</b></td><td>Run tasks using standard Agents, isolated Subagents, teammate swarms, or delegate to external CLIs via Process Delegates.</td></tr>
 <tr><td><b>Comprehensive guardrails</b></td><td>Secondary LLM guardian validation, manual approve/deny override, and multi-mode permissions (ask, auto, plan, etc.).</td></tr>
 </table>
 
@@ -75,7 +75,7 @@ graph TD
     QE <--> SQLite[(SQLite\nPersistent Memory)]
     QE <--> Tools[Built-in Tools\nFile, Bash, Web, MCP]
     QE <--> Peers[Peer Server\nLAN Swarm Sync]
-    QE <--> Provider[Provider Manager\n25+ Model Adapters]
+    QE <--> Provider[Provider Manager\n29 Model Adapters]
 ```
 
 ---
@@ -91,14 +91,14 @@ Work is distributed across four distinct layers to balance isolation, capability
 *   **Agent (Root Agent):** The main interactive session. It coordinates the overall workspace, maintains the system prompt, handles session-scoped permissions, and holds the active SQLite memory context. Custom agents can be configured dynamically or defined locally under `.clew/agents/*.md`.
 *   **Subagent (Child Agent):** Short-lived, task-focused processes spawned in the background via the `AgentTool`. Subagents run concurrently in their own isolated memory contexts (often with read-only tools) to perform targeted tasks such as triaging failed unit tests, auditing changed files, or researching a subdirectory.
 *   **Peer (LAN Peer Swarm):** Decentralized peer-to-peer nodes discovered automatically across the local network via UDP multicast. Peers communicate using correlation-ID brokered messages, allowing you to delegate tasks, synchronize memory databases, and broadcast shell execution to other local machines.
-*   **Process Peer (Codex / Shell Delegation):** A local subprocess wrapper that delegates tasks to external CLI tools or models using `exec`/`pty`. For example, in personal command-center mode, the main agent delegates editor file changes to a Codex worker, monitors execution, and evaluates the results before merging.
+*   **Process Delegate (Codex / Shell Delegation):** A local subprocess wrapper that delegates tasks to external CLI tools or models using `exec`/`pty`. For example, in personal command-center mode, the main agent delegates editor file changes to a Codex worker, monitors execution, and evaluates the results before merging.
 
 ### Model Routing and Providers
 
 Provider adapters map query payloads to their corresponding external APIs. The main intelligence engines include:
 
 *   **Claude:** Native support for Anthropic models. In personal configurations, these models act as the master planner, supervisor, and guardian, coordinating workflows and reviewing changes made by workers.
-*   **Codex:** Targeted code-generation models that run in the background (via Process Peers) to perform precise edits, script generation, and code rewrites.
+*   **Codex:** Targeted code-generation models that run in the background (via Process Delegates) to perform precise edits, script generation, and code rewrites.
 *   **OpenCode / OpenCode-Go:** Specialized open-source model configurations and endpoints optimized for code comprehension and fast inference.
 
 ---
@@ -170,8 +170,9 @@ clew --resume last
 
 Clew Code interfaces with the following model provider registries natively:
 
-*   **openai** - OpenAI models (e.g. GPT-5.5, GPT-5.4, GPT-5.4 Mini)
-*   **google** - Google Gemini models (e.g. Gemini 3.5 Flash) via native SDK
+*   **openai** - OpenAI models via native SDK
+*   **anthropic** - Anthropic Claude models via native SDK
+*   **google** - Google Gemini models via native SDK
 *   **google-assist** - Google Cloud AI and Code Assist integrations
 *   **openrouter** - OpenRouter unified endpoint router
 *   **deepseek** - DeepSeek API models (e.g. DeepSeek-V3, DeepSeek-R1)
@@ -202,7 +203,7 @@ Pass these arguments to the `clew` binary to customize your session:
 | `-r, --resume [id]` | Resume a conversation by session ID, or open the interactive picker. |
 | `--fork-session` | When resuming a session, clone it under a new ID instead of overwriting history. |
 | `--from-pr [id]` | Resume a session linked to a specific GitHub PR number or URL. |
-| `--model <model>` | Specify model override (e.g. `sonnet`, `opus`, `gpt-5.5`, or `gemini-3.5-flash`). |
+| `--model <model>` | Specify model override (e.g. `sonnet`, `opus`, `gemini-2.5-flash`). |
 | `--effort <level>` | Set reasoning effort level (`low`, `medium`, `high`, or `max`). |
 | `--agent <agent>` | Specify custom agent profile for the session. |
 | `--permission-mode <mode>` | Specify default permission mode (`default`, `ask`, `plan`, `auto`, etc.). |
@@ -270,7 +271,7 @@ The agent has access to the following built-in tools based on active permission 
 ### Advanced Capabilities
 *   `AgentTool` - Spawns a subagent to research, write tests, or triage issues.
 *   `LSPTool` - Query local Language Server Protocol diagnostics.
-*   `ProcessPeerTool` - Delegate prompts to external CLI models or Codex.
+*   `ProcessDelegateTool` - Delegate prompts to external CLI models or Codex.
 *   `MemoryFeedbackTool` - Update project memories, decisions, and preferences.
 
 ---
