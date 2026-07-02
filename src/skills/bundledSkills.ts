@@ -22,6 +22,7 @@ export type BundledSkillDefinition = {
   model?: string;
   disableModelInvocation?: boolean;
   userInvocable?: boolean;
+  kind?: 'workflow';
   isEnabled?: () => boolean;
   hooks?: HooksSettings;
   context?: 'inline' | 'fork';
@@ -84,6 +85,7 @@ export function registerBundledSkill(definition: BundledSkillDefinition): void {
     contentLength: 0, // Not applicable for bundled skills
     source: 'bundled',
     loadedFrom: 'bundled',
+    kind: definition.kind,
     hooks: definition.hooks,
     skillRoot,
     context: definition.context,

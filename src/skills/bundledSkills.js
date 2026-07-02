@@ -47,6 +47,7 @@ export function registerBundledSkill(definition) {
     contentLength: 0, // Not applicable for bundled skills
     source: 'bundled',
     loadedFrom: 'bundled',
+    kind: definition.kind,
     hooks: definition.hooks,
     skillRoot,
     context: definition.context,

@@ -266,7 +266,7 @@ function SetModelAndClose({
       // Persist the session model choice to transcript for resume restore
       setSessionModelForTranscript(modelValue ?? undefined);
 
-      let message = `Set model to ${ansis.bold(renderModelLabel(modelValue))} for this session`;
+      const message = `Set model to ${ansis.bold(renderModelLabel(modelValue))} for this session`;
 
       onDone(message);
     }

@@ -3,7 +3,7 @@ import type { LocalCommandCall } from '../../types/command.js';
 import { setCwd } from '../../utils/Shell.js';
 import { pwd } from '../../utils/cwd.js';
 
-export const call: LocalCommandCall = async (args) => {
+export const call: LocalCommandCall = async args => {
   const targetPath = (args ?? '').trim();
 
   if (!targetPath) {

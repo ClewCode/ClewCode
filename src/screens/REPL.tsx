@@ -1929,6 +1929,7 @@ export function REPL({
           count(prev, isLoggableMessage),
         ),
       ]);
+      void appendLongTurnRecap(messagesRef.current, totalMs, setMessages, new AbortController().signal);
     }
   }, [hasRunningTeammates, setMessages]);
 

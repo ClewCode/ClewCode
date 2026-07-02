@@ -1,6 +1,6 @@
 import { feature } from 'bun:bundle';
 import { basename } from 'path';
-import { useCallback, useEffect, useRef } from 'react';
+import { createElement, Fragment, useCallback, useEffect, useRef } from 'react';
 import { getSessionId } from '../../bootstrap/state.js';
 import type { Command } from '../../commands.js';
 import type { Tool } from '../../Tool.js';
@@ -47,6 +47,7 @@ import type { PluginError } from 'src/types/plugin.js';
 import { logForDebugging } from 'src/utils/debug.js';
 import { getAllowedChannels } from '../../bootstrap/state.js';
 import { useNotifications } from '../../context/notifications.js';
+import { Text } from '../../ink.js';
 import { useAppState, useAppStateStore, useSetAppState } from '../../state/AppState.js';
 import { errorMessage } from '../../utils/errors.js';
 /* eslint-enable @typescript-eslint/no-require-imports */
@@ -74,6 +75,24 @@ import { commandBelongsToServer, excludeStalePluginClients } from './utils.js';
 const MAX_RECONNECT_ATTEMPTS = 5;
 const INITIAL_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 30000;
+
+function renderMcpConnectedNotification(serverName: string, toolCount: number) {
+  const hasTools = toolCount > 0;
+  const toolLabel = `${toolCount} tool${toolCount === 1 ? '' : 's'}`;
+
+  return createElement(
+    Fragment,
+    null,
+    createElement(
+      Text,
+      { color: hasTools ? 'success' : 'warning' },
+      hasTools ? 'MCP connected' : 'MCP connected, no tools',
+    ),
+    createElement(Text, { dimColor: true }, '  '),
+    createElement(Text, { color: 'suggestion' }, serverName),
+    createElement(Text, { dimColor: true }, `  ${toolLabel}`),
+  );
+}
 
 /**
  * Create a unique key for a plugin error to enable deduplication
@@ -275,7 +294,7 @@ export function useManageMCPConnections(
             const toolCount = tools.length;
             addNotification({
               key: `mcp-connected-${client.name}`,
-              text: `Connected to ${client.name} (${toolCount} tool${toolCount === 1 ? '' : 's'})${toolCount === 0 ? ' ⚠' : ''}`,
+              jsx: renderMcpConnectedNotification(client.name, toolCount),
               priority: 'low',
             });
           }
@@ -563,7 +582,7 @@ export function useManageMCPConnections(
                 if (client.name !== 'ide') {
                   addNotification({
                     key: `mcp-connected-${client.name}`,
-                    text: `Connected to ${client.name} (${newCount} tool${newCount === 1 ? '' : 's'})${newCount === 0 ? ' ⚠' : ''}`,
+                    jsx: renderMcpConnectedNotification(client.name, newCount),
                     priority: 'low',
                   });
                 }
@@ -701,7 +720,7 @@ export function useManageMCPConnections(
           }
           if (s.type === 'connected') {
             s.client.onclose = undefined;
-            void clearServerCache(s.name, s.config).catch(() => {});
+            void clearServerCache(s.name, s.config).catch(() => undefined);
           }
         }
 

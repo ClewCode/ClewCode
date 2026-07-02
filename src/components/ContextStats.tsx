@@ -9,10 +9,7 @@ import { useMemo, useState } from 'react';
 import { Box, Text, useInput } from '../ink.js';
 import type { LocalJSXCommandOnDone } from '../types/command.js';
 import type { ContextData } from '../utils/analyzeContext.js';
-import { getDisplayPath } from '../utils/file.js';
 import { formatTokens } from '../utils/format.js';
-import { getSourceDisplayName } from '../utils/settings/constants.js';
-import { Pane } from './design-system/Pane.js';
 
 type Props = {
   data: ContextData;
@@ -22,10 +19,17 @@ type Props = {
 type DetailSection = {
   title: string;
   hint?: string;
+  suffix?: string;
   items: Array<{ label: string; value: string }>;
 };
 
+type DetailRow =
+  | { key: string; type: 'section'; title: string; hint?: string }
+  | { key: string; type: 'item'; label: string; value: string };
+
 const GRID_COLS = 10;
+const RESERVED_CATEGORY_NAME = 'Autocompact buffer';
+const MANUAL_COMPACT_BUFFER_NAME = 'Manual compact buffer';
 const DISPLAY_NAMES: Record<string, string> = {
   'System prompt': 'System prompt',
   'System tools': 'Tools',
@@ -38,27 +42,28 @@ const DISPLAY_NAMES: Record<string, string> = {
   Skills: 'Skills',
   Messages: 'Conversation',
 };
-const DOT_COLORS: Record<string, string> = {
-  gray: '#94A3B8',
-  blue: '#38BDF8',
-  green: '#34D399',
-  yellow: '#FBBF24',
-  magenta: '#EC4899',
-  cyan: '#A78BFA',
-  red: '#F87171',
-};
 
 function displayName(name: string): string {
   return DISPLAY_NAMES[name] ?? name;
 }
 
-/** Build a grid row: N filled squares then (10-N) empty squares. */
-function gridRow(filled: number): string {
-  const cells: string[] = [];
-  for (let i = 0; i < GRID_COLS; i++) {
-    cells.push(i < filled ? '⛁' : '⬚');
-  }
-  return cells.join(' ');
+function modelDisplayName(model: string): string {
+  const match = model.match(/(?:claude-)?(opus|sonnet|haiku)-(\d+)-(\d+)/i);
+  if (!match) return model;
+  const [, family, major, minor] = match;
+  return `${family[0]?.toUpperCase()}${family.slice(1)} ${major}.${minor}`;
+}
+
+function detailHint(hint: string): string {
+  return hint.startsWith('/') ? hint : `/${hint}`;
+}
+
+type GridSquare = ContextData['gridRows'][number][number];
+
+function squareSymbol(square: GridSquare): string {
+  if (square.categoryName === 'Free space') return '⛶';
+  if (square.categoryName === RESERVED_CATEGORY_NAME || square.categoryName === MANUAL_COMPACT_BUFFER_NAME) return '⛝';
+  return square.squareFullness >= 0.7 ? '⛁' : '⛀';
 }
 
 export function ContextStats({ data, onClose }: Props): React.ReactNode {
@@ -69,6 +74,7 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
     totalTokens,
     rawMaxTokens,
     percentage,
+    gridRows,
     model,
     memoryFiles,
     mcpTools,
@@ -81,260 +87,255 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
 
   // ── Build usable categories (exclude free/compact buffer) ──
   const usableCategories = useMemo(
-    () => categories.filter(c => c.tokens > 0 && c.name !== 'Free space' && c.name !== 'Autocompact buffer'),
+    () =>
+      categories.filter(
+        c =>
+          c.tokens > 0 &&
+          c.name !== 'Free space' &&
+          c.name !== RESERVED_CATEGORY_NAME &&
+          c.name !== MANUAL_COMPACT_BUFFER_NAME &&
+          !c.isDeferred,
+      ),
     [categories],
   );
 
-  // ── Build grid ──────────────────────────────────────────────
-  const totalSquares = 100;
-  const filledCount = Math.round((percentage / 100) * totalSquares);
-  const fullRows = Math.floor(filledCount / GRID_COLS);
-  const remainder = filledCount % GRID_COLS;
-
-  const gridLines = useMemo(() => {
-    const lines: string[] = [];
-    for (let r = 0; r < 10; r++) {
-      if (r < fullRows) {
-        lines.push(gridRow(GRID_COLS));
-      } else if (r === fullRows && remainder > 0) {
-        lines.push(gridRow(remainder));
-      } else {
-        lines.push(gridRow(0));
-      }
-    }
-    return lines;
-  }, [fullRows, remainder]);
-
   // ── Right-side labels for each row ─────────────────────────
   const rowRightLabels = useMemo(() => {
-    const labels: Array<{ text: string; color?: string } | null> = [];
+    const labels: Array<
+      | { type: 'text'; text: string; dim?: boolean; italic?: boolean }
+      | { type: 'category'; name: string; tokens: number; color: string }
+      | { type: 'free'; tokens: number }
+      | null
+    > = [];
 
-    // Row 0: model info
+    labels.push({ type: 'text', text: modelDisplayName(model) });
+    labels.push({ type: 'text', text: model });
     labels.push({
-      text: `${model ?? ''} · ${formatTokens(totalTokens)}/${formatTokens(rawMaxTokens)} tokens (${percentage.toFixed(0)}%)`,
+      type: 'text',
+      text: `${formatTokens(totalTokens)}/${formatTokens(rawMaxTokens)} tokens (${percentage}%)`,
     });
-
-    // Row 1-2: empty
     labels.push(null);
-    labels.push(null);
+    labels.push({ type: 'text', text: 'Estimated usage by category', dim: true, italic: true });
 
-    // Row 3+: categories with ⛁/⬚ prefix
     let catIdx = 0;
-    for (let r = 3; r < 10; r++) {
+    for (let r = 5; r < gridRows.length; r++) {
       if (catIdx < usableCategories.length) {
         const cat = usableCategories[catIdx]!;
-        const pct = rawMaxTokens > 0 ? ((cat.tokens / rawMaxTokens) * 100).toFixed(1) : '0';
-        labels.push({
-          text: `⛁ ${displayName(cat.name)}: ${formatTokens(cat.tokens)} tokens (${pct}%)`,
-          color: cat.color,
-        });
-        catIdx++;
-      } else {
-        // Free space or empty
-        const freeCat = categories.find(c => c.name === 'Free space');
-        if (freeCat && freeCat.tokens > 0) {
-          const pct = rawMaxTokens > 0 ? ((freeCat.tokens / rawMaxTokens) * 100).toFixed(1) : '0';
-          labels.push({ text: `⬚ Free space: ${formatTokens(freeCat.tokens)} (${pct}%)` });
-        } else {
-          labels.push(null);
-        }
+        labels.push({ type: 'category', name: cat.name, tokens: cat.tokens, color: cat.color });
         catIdx++;
       }
     }
+
+    const freeCat = categories.find(c => c.name === 'Free space');
+    if (freeCat && freeCat.tokens > 0 && labels.length < gridRows.length) {
+      labels.push({ type: 'free', tokens: freeCat.tokens });
+    }
+    while (labels.length < gridRows.length) labels.push(null);
+
     return labels;
-  }, [model, totalTokens, rawMaxTokens, percentage, usableCategories, categories]);
+  }, [model, totalTokens, rawMaxTokens, percentage, usableCategories, categories, gridRows.length]);
 
   // ── Build detail sections ─────────────────────────────────
   const detailSections = useMemo((): DetailSection[] => {
     const sections: DetailSection[] = [];
 
     if (mcpTools.length > 0) {
+      const total = mcpTools.reduce((sum, tool) => sum + tool.tokens, 0);
+      const hasDeferred = mcpTools.some(tool => !tool.isLoaded);
       sections.push({
         title: 'MCP tools',
         hint: '/mcp',
-        items: mcpTools.map(t => ({
-          label: `${t.name} (${t.serverName})`,
-          value: `${formatTokens(t.tokens)} tokens`,
-        })),
+        suffix: hasDeferred ? '(loaded on-demand)' : undefined,
+        items: [{ label: `${mcpTools.length} tools`, value: `${formatTokens(total)} tokens` }],
       });
     }
 
     if (memoryFiles.length > 0) {
+      const total = memoryFiles.reduce((sum, file) => sum + file.tokens, 0);
       sections.push({
         title: 'Memory files',
         hint: '/memory',
-        items: memoryFiles.map(f => ({
-          label: `${f.type === 'project' ? 'Project' : 'Global'} (${getDisplayPath(f.path)})`,
-          value: `${formatTokens(f.tokens)} tokens`,
-        })),
+        items: [{ label: `${memoryFiles.length} files`, value: `${formatTokens(total)} tokens` }],
       });
     }
 
     if (systemPromptSections.length > 0) {
+      const total = systemPromptSections.reduce((sum, section) => sum + section.tokens, 0);
       sections.push({
         title: 'System prompt',
-        items: systemPromptSections.map(s => ({
-          label: s.name,
-          value: `${formatTokens(s.tokens)} tokens`,
-        })),
+        items: [{ label: `${systemPromptSections.length} sections`, value: `${formatTokens(total)} tokens` }],
       });
     }
 
     const loadedSystem = systemTools.filter(t => !('isLoaded' in t) || (t as any).isLoaded);
     if (loadedSystem.length > 0) {
+      const total = loadedSystem.reduce((sum, tool) => sum + tool.tokens, 0);
       sections.push({
         title: 'System tools',
-        items: loadedSystem.map(t => ({
-          label: t.name,
-          value: `${formatTokens(t.tokens)} tokens`,
-        })),
+        items: [{ label: `${loadedSystem.length} tools`, value: `${formatTokens(total)} tokens` }],
       });
     }
 
     if (agents.length > 0) {
+      const total = agents.reduce((sum, agent) => sum + agent.tokens, 0);
       sections.push({
         title: 'Custom agents',
-        items: agents.map(a => ({
-          label: `[${getSourceDisplayName(a.source)}] ${a.agentType}`,
-          value: `${formatTokens(a.tokens)} tokens`,
-        })),
+        hint: '/agents',
+        items: [{ label: `${agents.length} agents`, value: `${formatTokens(total)} tokens` }],
       });
     }
 
     if (skills && skills.tokens > 0) {
+      const total = skills.skillFrontmatter.reduce((sum, skill) => sum + skill.tokens, 0);
       sections.push({
         title: 'Skills',
-        items: skills.skillFrontmatter.map(s => ({
-          label: `[${getSourceDisplayName(s.source)}] ${s.name}`,
-          value: `${formatTokens(s.tokens)} tokens`,
-        })),
+        hint: '/skills',
+        items: [{ label: `${skills.skillFrontmatter.length} skills`, value: `${formatTokens(total)} tokens` }],
       });
     }
 
     if (messageBreakdown) {
-      const items: Array<{ label: string; value: string }> = [
-        { label: 'Assistant messages', value: formatTokens(messageBreakdown.assistantMessageTokens) },
-        { label: 'Tool calls', value: formatTokens(messageBreakdown.toolCallTokens) },
-        { label: 'Tool results', value: formatTokens(messageBreakdown.toolResultTokens) },
-        { label: 'User messages', value: formatTokens(messageBreakdown.userMessageTokens) },
-        { label: 'Attachments', value: formatTokens(messageBreakdown.attachmentTokens) },
-      ];
-      if (messageBreakdown.toolCallsByType.length > 0) {
-        for (const t of messageBreakdown.toolCallsByType.slice(0, 5)) {
-          items.push({ label: `  └ ${t.name}`, value: `${formatTokens(t.callTokens)} calls` });
-        }
-      }
-      sections.push({ title: 'Conversation', items });
+      sections.push({
+        title: 'Messages',
+        items: [{ label: 'Current conversation', value: `${formatTokens(messageBreakdown.totalTokens)} tokens` }],
+      });
     }
 
     return sections;
   }, [mcpTools, memoryFiles, systemPromptSections, systemTools, agents, skills, messageBreakdown]);
 
+  const renderGridRows = useMemo(
+    () =>
+      gridRows.map((row, rowIndex) => ({
+        key: `grid-row-${rowIndex}`,
+        cells: row.map((square, colIndex) => ({
+          key: `grid-cell-${rowIndex}-${colIndex}`,
+          square,
+        })),
+      })),
+    [gridRows],
+  );
+
   // ── Build flat detail rows for scrolling ──────────────────
   const detailRows = useMemo(() => {
-    const rows: Array<
-      { type: 'section' | 'item' } & ({ title: string; hint?: string } | { label: string; value: string })
-    > = [];
-    for (const sec of detailSections) {
-      rows.push({ type: 'section', title: sec.title, hint: sec.hint } as any);
-      for (const item of sec.items) {
-        rows.push({ type: 'item', ...item } as any);
+    const rows: DetailRow[] = [];
+    for (const [sectionIndex, sec] of detailSections.entries()) {
+      rows.push({
+        key: `section-${sectionIndex}-${sec.title}`,
+        type: 'section',
+        title: sec.title,
+        hint: [sec.hint, sec.suffix].filter(Boolean).join(' '),
+      });
+      for (const [itemIndex, item] of sec.items.entries()) {
+        rows.push({
+          key: `item-${sectionIndex}-${itemIndex}-${item.label}`,
+          type: 'item',
+          ...item,
+        });
       }
     }
     return rows;
   }, [detailSections]);
 
   const VISIBLE = 12;
-  const maxScroll = Math.max(0, detailRows.length - VISIBLE);
   const visibleDetails = detailRows.slice(scrollOffset, scrollOffset + VISIBLE);
+  const canExpand = detailRows.length > VISIBLE;
 
   useInput((input, key) => {
     if (key.escape || input === 'q' || (key.ctrl && (input === 'c' || input === 'd'))) {
       onClose('Context stats dismissed', { display: 'system' });
       return;
     }
+    const maxScroll = Math.max(0, detailRows.length - VISIBLE);
     if (key.downArrow || input === 'j') setScrollOffset(prev => Math.min(prev + 1, maxScroll));
     if (key.upArrow || input === 'k') setScrollOffset(prev => Math.max(prev - 1, 0));
   });
 
   return (
-    <Pane color="claude">
-      <Box flexDirection="column" gap={0}>
-        {/* Title */}
-        <Box paddingLeft={2} marginBottom={0}>
-          <Text bold color="claude">
-            └ Context Usage
-          </Text>
-        </Box>
+    <Box flexDirection="column" gap={0} paddingLeft={1}>
+      {/* Title */}
+      <Box paddingLeft={1} marginBottom={0}>
+        <Text bold>└ Context Usage</Text>
+      </Box>
 
-        {/* Grid rows */}
-        <Box flexDirection="column" gap={0}>
-          {gridLines.map((line, i) => {
-            const rightLabel = rowRightLabels[i];
-            return (
-              <Box key={i} flexDirection="row" paddingLeft={2} gap={2}>
-                <Text>{line}</Text>
-                {rightLabel ? (
-                  <Text
-                    dimColor={!rightLabel.color}
-                    color={rightLabel.color ? (DOT_COLORS[rightLabel.color] ?? rightLabel.color) : undefined}
-                  >
-                    {rightLabel.text}
+      {/* Grid rows */}
+      <Box flexDirection="column" gap={0}>
+        {renderGridRows.map((row, i) => {
+          const rightLabel = rowRightLabels[i];
+          return (
+            <Box key={row.key} flexDirection="row" paddingLeft={2} gap={2}>
+              <Box
+                flexDirection="row"
+                flexShrink={0}
+                width={gridRows[0]?.length ? gridRows[0].length * 2 : GRID_COLS * 2}
+              >
+                {row.cells.map(({ key, square }) => {
+                  const isFree = square.categoryName === 'Free space';
+                  return (
+                    <Text key={key} color={isFree ? undefined : square.color} dimColor={isFree}>
+                      {squareSymbol(square)}{' '}
+                    </Text>
+                  );
+                })}
+              </Box>
+              {rightLabel?.type === 'text' ? (
+                <Text dimColor={rightLabel.dim} italic={rightLabel.italic}>
+                  {rightLabel.text}
+                </Text>
+              ) : rightLabel?.type === 'category' ? (
+                <Box flexDirection="row">
+                  <Text color={rightLabel.color}>⛁</Text>
+                  <Text> {displayName(rightLabel.name)}: </Text>
+                  <Text dimColor>
+                    {formatTokens(rightLabel.tokens)} tokens (
+                    {rawMaxTokens > 0 ? ((rightLabel.tokens / rawMaxTokens) * 100).toFixed(1) : '0.0'}%)
                   </Text>
-                ) : null}
+                </Box>
+              ) : rightLabel?.type === 'free' ? (
+                <Box flexDirection="row">
+                  <Text dimColor>⛶</Text>
+                  <Text> Free space: </Text>
+                  <Text dimColor>
+                    {formatTokens(rightLabel.tokens)} (
+                    {rawMaxTokens > 0 ? ((rightLabel.tokens / rawMaxTokens) * 100).toFixed(1) : '0.0'}%)
+                  </Text>
+                </Box>
+              ) : null}
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* Detail sections */}
+      {detailRows.length > 0 ? (
+        <Box flexDirection="column" marginTop={1} marginLeft={1}>
+          {visibleDetails.map(row => {
+            if (row.type === 'section') {
+              const isFirst = row.title === detailSections[0]?.title;
+              return (
+                <Box key={row.key} flexDirection="row" marginTop={isFirst ? 0 : 1}>
+                  <Text bold>{row.title}</Text>
+                  {row.hint ? <Text dimColor> · {detailHint(row.hint)}</Text> : null}
+                </Box>
+              );
+            }
+            return (
+              <Box key={row.key} flexDirection="row">
+                <Text dimColor>
+                  {' '}
+                  └ {row.label}: {row.value}
+                </Text>
               </Box>
             );
           })}
         </Box>
+      ) : null}
 
-        {/* Detail sections */}
-        {detailRows.length > 0 ? (
-          <Box flexDirection="column" marginTop={1}>
-            {visibleDetails.map((row, i) => {
-              if (row.type === 'section') {
-                const s = row as any;
-                const isFirst = s.title === detailSections[0]?.title;
-                return (
-                  <Box key={`s-${i}`} flexDirection="row" marginTop={isFirst ? 0 : 1}>
-                    <Text bold>{s.title}</Text>
-                    {s.hint ? <Text dimColor> · /{s.hint}</Text> : null}
-                  </Box>
-                );
-              }
-              const item = row as any;
-              return (
-                <Box key={`i-${i}`} flexDirection="row">
-                  <Text dimColor>
-                    {' '}
-                    └ {item.label}: {item.value}
-                  </Text>
-                </Box>
-              );
-            })}
-          </Box>
-        ) : null}
-
-        {/* Footer */}
-        <Box
-          paddingLeft={1}
-          marginTop={1}
-          borderStyle="single"
-          borderTop
-          borderBottom={false}
-          borderLeft={false}
-          borderRight={false}
-          borderColor="subtle"
-        >
-          <Box flexDirection="row" justifyContent="space-between" width="100%">
-            <Text dimColor>
-              Esc/q close · ↑↓/jk scroll
-              {detailRows.length > VISIBLE
-                ? ` · ${scrollOffset + 1}–${Math.min(scrollOffset + VISIBLE, detailRows.length)} of ${detailRows.length}`
-                : ''}
-            </Text>
-          </Box>
+      {canExpand ? (
+        <Box marginTop={1} marginLeft={1}>
+          <Text dimColor>/context all to expand</Text>
         </Box>
-      </Box>
-    </Pane>
+      ) : null}
+    </Box>
   );
 }

@@ -159,9 +159,9 @@ export function CondensedLogo({ isPersonal = false }: { isPersonal?: boolean }) 
   if ($[23] !== t10 || $[24] !== t11 || $[25] !== t6 || $[26] !== t7 || $[27] !== t9) {
     t12 = (
       <OffscreenFreeze freezeKey={isPersonal}>
-        <Box flexDirection="row" gap={2} alignItems="center">
+        <Box flexDirection="row" gap={2} alignItems="flex-start">
           {t4}
-          <Box flexDirection="column">
+          <Box flexDirection="column" marginTop={1}>
             {t6}
             {t7}
             {t9}

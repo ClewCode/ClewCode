@@ -9,6 +9,7 @@ import copy from './commands/copy/index.js';
 import desktop from './commands/desktop/index.js';
 import compact from './commands/compact/index.js';
 import cd from './commands/cd/index.js';
+import codeReview from './commands/code-review/index.js';
 import config from './commands/config/index.js';
 import { context, contextNonInteractive } from './commands/context/index.js';
 import cost from './commands/cost/index.js';
@@ -183,6 +184,7 @@ const COMMANDS = memoize((): Command[] => [
   cd,
   chrome,
   clear,
+  codeReview,
   color,
   compact,
   config,
@@ -368,15 +370,19 @@ export function meetsAvailabilityRequirement(cmd: Command): boolean {
 const loadAllCommands = memoize(async (cwd: string): Promise<Command[]> => {
   const [{ skillDirCommands, pluginSkills, bundledSkills, builtinPluginSkills }, pluginCommands, workflowCommands] =
     await Promise.all([getSkills(cwd), getPluginCommands(), Promise.resolve([])]);
+  const builtinCommands = COMMANDS();
+  const priorityBuiltinCommands = builtinCommands.filter(cmd => cmd.name === 'code-review');
+  const remainingBuiltinCommands = builtinCommands.filter(cmd => cmd.name !== 'code-review');
 
   return [
+    ...priorityBuiltinCommands,
     ...bundledSkills,
     ...builtinPluginSkills,
     ...skillDirCommands,
     ...workflowCommands,
     ...pluginCommands,
     ...pluginSkills,
-    ...COMMANDS(),
+    ...remainingBuiltinCommands,
   ];
 });
 

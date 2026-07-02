@@ -66,8 +66,30 @@ import {
   incrementOverageCreditUpsellSeenCount,
   useShowOverageCreditUpsell,
 } from './OverageCreditUpsell.js';
+import { shouldShowNotificationInLogo } from '../notifications/notificationPlacement.js';
 
 const LEFT_PANEL_MAX_WIDTH = 50;
+
+function LogoNotifications() {
+  const notification = useAppState(s => s.notifications.current);
+
+  if (!notification || !shouldShowNotificationInLogo(notification)) {
+    return null;
+  }
+
+  return (
+    <Box paddingLeft={2} marginTop={1} flexDirection="row" overflowX="hidden">
+      {'jsx' in notification ? (
+        notification.jsx
+      ) : (
+        <Text color={notification.color} dimColor={!notification.color} wrap="truncate">
+          {notification.text}
+        </Text>
+      )}
+    </Box>
+  );
+}
+
 export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean }) {
   const isPersonal = propIsPersonal ?? (getInitialSettings() as any).profile === 'personal';
   const $ = _c(95);
@@ -294,6 +316,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
       t23 = (
         <>
           {t11}
+          <LogoNotifications />
           {t12}
           {t13}
           {t14}
@@ -422,6 +445,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
             {!isPersonal && <Text dimColor={true}>{agentName ? `@${agentName} · ${truncatedCwd}` : truncatedCwd}</Text>}
           </Box>
         </OffscreenFreeze>
+        <LogoNotifications />
         {t14}
         {t15}
         {t16}
@@ -707,6 +731,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
     t41 = (
       <>
         {t28}
+        <LogoNotifications />
         {t29}
         {t30}
         {t31}

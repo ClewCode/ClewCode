@@ -28,6 +28,7 @@ import { AutoUpdaterWrapper } from '../AutoUpdaterWrapper.js';
 import { ConfigurableShortcutHint } from '../ConfigurableShortcutHint.js';
 import { IdeStatusIndicator } from '../IdeStatusIndicator.js';
 import { MemoryUsageIndicator } from '../MemoryUsageIndicator.js';
+import { shouldShowNotificationNearPrompt } from '../notifications/notificationPlacement.js';
 import { PeerIndicator } from '../PeerIndicator.js';
 import { SentryErrorBoundary } from '../SentryErrorBoundary.js';
 import { TokenWarning } from '../TokenWarning.js';
@@ -52,7 +53,7 @@ type Props = {
   ideSelection: IDESelection | undefined;
   mcpClients?: MCPServerConnection[];
   isInputWrapped?: boolean;
-  isNarrow?: boolean;
+  showCurrentNotification?: boolean;
 };
 
 export function Notifications({
@@ -66,7 +67,7 @@ export function Notifications({
   ideSelection,
   mcpClients,
   isInputWrapped = false,
-  isNarrow = false,
+  showCurrentNotification = true,
 }: Props): ReactNode {
   const tokenUsage = useMemo(() => {
     const messagesForTokenCount = getMessagesAfterCompactBoundary(messages);
@@ -162,6 +163,7 @@ export function Notifications({
           onAutoUpdaterResult={onAutoUpdaterResult}
           onChangeIsUpdating={onChangeIsUpdating}
           messages={messages}
+          showCurrentNotification={showCurrentNotification}
         />
       </Box>
     </SentryErrorBoundary>
@@ -185,6 +187,7 @@ function NotificationContent({
   onAutoUpdaterResult,
   onChangeIsUpdating,
   messages,
+  showCurrentNotification,
 }: {
   ideSelection: IDESelection | undefined;
   mcpClients?: MCPServerConnection[];
@@ -205,6 +208,7 @@ function NotificationContent({
   onAutoUpdaterResult: (result: AutoUpdaterResult) => void;
   onChangeIsUpdating: (isUpdating: boolean) => void;
   messages: Message[];
+  showCurrentNotification: boolean;
 }): ReactNode {
   // Poll apiKeyHelper inflight state to show slow-helper notice.
   // Gated on configuration — most users never set apiKeyHelper, so the
@@ -250,7 +254,9 @@ function NotificationContent({
   return (
     <>
       <IdeStatusIndicator ideSelection={ideSelection} mcpClients={mcpClients} />
-      {notifications.current &&
+      {showCurrentNotification &&
+        notifications.current &&
+        shouldShowNotificationNearPrompt(notifications.current) &&
         ('jsx' in notifications.current ? (
           <Text wrap="wrap" key={notifications.current.key}>
             {notifications.current.jsx}

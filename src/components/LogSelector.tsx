@@ -61,7 +61,7 @@ function normalizeAndTruncateToWidth(text: string, maxWidth: number): string {
 // Width of prefixes that TreeSelect will add
 const PARENT_PREFIX_WIDTH = 2; // '▼ ' or '▶ '
 const CHILD_PREFIX_WIDTH = 4; // '  ▸ '
-const TIME_COLUMN_WIDTH = 12;
+const SESSION_ROW_HEIGHT = 2;
 
 // Deep search constants
 const DEEP_SEARCH_MAX_MESSAGES = 2000;
@@ -90,26 +90,48 @@ function buildLogLabel(
   const sidechainSuffix = log.isSidechain ? ' (sidechain)' : '';
   const bgSuffix = log.isBackground ? ' [bg]' : '';
 
-  const timeLabel = formatRelativeTimeAgo(log.modified, { style: 'narrow' }).padEnd(TIME_COLUMN_WIDTH, ' ');
   const maxSummaryWidth = Math.max(
     1,
-    maxLabelWidth -
-      prefixWidth -
-      TIME_COLUMN_WIDTH -
-      sidechainSuffix.length -
-      bgSuffix.length -
-      sessionCountSuffix.length,
+    maxLabelWidth - prefixWidth - sidechainSuffix.length - bgSuffix.length - sessionCountSuffix.length,
   );
   const truncatedSummary = normalizeAndTruncateToWidth(getLogDisplayTitle(log), maxSummaryWidth);
   return (
     <>
-      <Text dimColor>{timeLabel}</Text>
       <Text>{truncatedSummary}</Text>
       {bgSuffix && <Text>{bgSuffix}</Text>}
       {sidechainSuffix && <Text>{sidechainSuffix}</Text>}
       {sessionCountSuffix && <Text>{sessionCountSuffix}</Text>}
     </>
   );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  const units = ['KB', 'MB', 'GB'];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value >= 10 ? 0 : 1)}${units[unitIndex]}`;
+}
+
+function getProjectLabel(log: LogOption): string | undefined {
+  if (log.prRepository) return log.prNumber ? `${log.prRepository}#${log.prNumber}` : log.prRepository;
+  if (!log.projectPath) return undefined;
+  return log.projectPath.split(/[\\/]/).filter(Boolean).at(-1);
+}
+
+function buildLogDescription(log: LogOption): string {
+  return [
+    formatRelativeTimeAgo(log.modified),
+    log.gitBranch,
+    log.fileSize === undefined ? undefined : formatFileSize(log.fileSize),
+    getProjectLabel(log),
+  ]
+    .filter((part): part is string => Boolean(part))
+    .join(' • ');
 }
 
 function formatSessionCount(count: number): string {
@@ -412,6 +434,7 @@ export function LogSelector({
           id: `log:${sessionId}:0`,
           value: { log: latestLog, indexInFiltered },
           label: buildLogLabel(latestLog, maxLabelWidth),
+          description: buildLogDescription(latestLog),
         };
       }
 
@@ -423,6 +446,7 @@ export function LogSelector({
           id: `log:${sessionId}:${index + 1}`,
           value: { log, indexInFiltered: childIndexInFiltered },
           label: buildLogLabel(log, maxLabelWidth, { isChild: true }),
+          description: buildLogDescription(log),
         };
       });
 
@@ -433,6 +457,7 @@ export function LogSelector({
           isGroupHeader: true,
           forkCount,
         }),
+        description: buildLogDescription(latestLog),
         children,
       };
     });
@@ -447,6 +472,7 @@ export function LogSelector({
     return displayedLogs.map((log, index) => {
       return {
         label: buildLogLabel(log, maxLabelWidth),
+        description: buildLogDescription(log),
         value: index.toString(),
       };
     });
@@ -734,6 +760,12 @@ export function LogSelector({
         } else if (lowerInput === '/' && keyIsNotCtrlOrMeta) {
           setViewMode('search');
           logEvent('tengu_session_search_toggled', { enabled: true });
+        } else if (input === ' ' && keyIsNotCtrlOrMeta && focusedLog) {
+          setPreviewLog(focusedLog);
+          setViewMode('preview');
+          logEvent('tengu_session_preview_opened', {
+            messageCount: focusedLog.messageCount,
+          });
         } else if (lowerInput === 'r' && key.ctrl && focusedLog) {
           setViewMode('rename');
           setRenameValue('');
@@ -767,9 +799,9 @@ export function LogSelector({
 
   // Search box takes 3 lines (border top, content, border bottom)
   const searchBoxLines = 3;
-  const headerLines = 4 + searchBoxLines + (showAdditionalFilterLine ? 1 : 0) + tagTabsLines;
-  const footerLines = 2;
-  const visibleCount = Math.max(1, maxHeight - headerLines - footerLines);
+  const headerLines = 3 + searchBoxLines + (showAdditionalFilterLine ? 1 : 0) + tagTabsLines;
+  const footerLines = 1;
+  const visibleCount = Math.max(1, Math.floor((maxHeight - headerLines - footerLines) / SESSION_ROW_HEIGHT));
 
   // Progressive loading: request more logs when user scrolls near the end
   React.useEffect(() => {
@@ -805,22 +837,14 @@ export function LogSelector({
       ? 'all worktrees'
       : 'current directory';
   const resultCountLabel =
-    viewMode === 'list' && displayedLogs.length > visibleCount
-      ? `${focusedIndex} of ${displayedLogs.length}`
-      : formatSessionCount(displayedLogs.length);
+    displayedLogs.length > 0 ? `${focusedIndex} of ${displayedLogs.length}` : formatSessionCount(0);
 
   return (
     <Pane color="suggestion">
       <Box flexDirection="column" height={maxHeight - 1}>
         <Box flexShrink={0} flexDirection="column">
           <Text bold color="suggestion">
-            Resume Session <Text dimColor>({resultCountLabel})</Text>
-          </Text>
-          <Text dimColor>
-            <Byline>
-              <Text>{scopeLabel}</Text>
-              {currentBranch && branchFilterEnabled && <Text>{currentBranch}</Text>}
-            </Byline>
+            Resume session <Text dimColor>({resultCountLabel})</Text>
           </Text>
         </Box>
 
@@ -834,10 +858,19 @@ export function LogSelector({
         )}
         <SearchBox
           query={searchQuery}
+          placeholder="Search..."
           isFocused={viewMode === 'search'}
           isTerminalFocused={isTerminalFocused}
           cursorOffset={searchCursorOffset}
         />
+        <Box flexShrink={0} paddingLeft={2}>
+          <Text dimColor>
+            <Byline>
+              <Text>{scopeLabel}</Text>
+              {currentBranch && branchFilterEnabled && <Text>{currentBranch}</Text>}
+            </Byline>
+          </Text>
+        </Box>
         {filterIndicators.length > 0 && viewMode !== 'search' && (
           <Box flexShrink={0} paddingLeft={2}>
             <Text dimColor>
@@ -936,7 +969,7 @@ export function LogSelector({
             onCancel={onCancel}
             focusNodeId={focusedNode?.id}
             visibleOptionCount={visibleCount}
-            layout="compact"
+            layout="compact-vertical"
             isDisabled={viewMode === 'search' || isAgenticSearchOptionFocused}
             hideIndexes={true}
             isNodeExpanded={nodeId => {
@@ -982,7 +1015,7 @@ export function LogSelector({
             onCancel={onCancel}
             onFocus={handleFlatOptionsSelectFocus}
             defaultFocusValue={focusedNode?.id.toString()}
-            layout="compact"
+            layout="compact-vertical"
             isDisabled={viewMode === 'search' || isAgenticSearchOptionFocused}
             hideIndexes={true}
             onUpFromFirstItem={enterSearchMode}
@@ -1057,7 +1090,7 @@ export function LogSelector({
                     action={`show ${showAllWorktrees ? 'current worktree' : 'all worktrees'}`}
                   />
                 )}
-                <KeyboardShortcutHint shortcut="Ctrl+V" action="preview" />
+                <KeyboardShortcutHint shortcut="Space" action="preview" />
                 <KeyboardShortcutHint shortcut="Ctrl+R" action="rename" />
                 <Text>Type to search</Text>
                 <ConfigurableShortcutHint
