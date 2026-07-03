@@ -17,6 +17,7 @@ import { computeFingerprint } from './fingerprint.js';
 import { logError } from './log.js';
 import { normalizeModelStringForAPI } from './model/model.js';
 import { getActiveProviderId, isAnthropicProvider } from './model/providers.js';
+import { PROVIDER_REGISTRY } from '../services/ai/providerRegistry.js';
 import { calculateUSDCostFromProviderUsage } from './modelCost.js';
 
 type MessageParam = Anthropic.MessageParam;
@@ -126,7 +127,18 @@ export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
   // Non-Anthropic path: skip OAuth fingerprint/attribution headers (Anthropic-
   // specific), use provider's chat API, and track costs via ProviderUsage.
   const anthropic = isAnthropicProvider();
-  const normalizedModel = normalizeModelStringForAPI(model);
+  let normalizedModel = normalizeModelStringForAPI(model);
+
+  // When using a non-Anthropic provider, resolve Claude model names to the
+  // provider's default model (e.g. "claude-sonnet-4-7" → "deepseek-v4-pro").
+  if (!anthropic && normalizedModel.startsWith('claude-')) {
+    const providerId = getActiveProviderId();
+    const registryEntry = PROVIDER_REGISTRY[providerId];
+    if (registryEntry?.defaultModel) {
+      normalizedModel = registryEntry.defaultModel;
+    }
+  }
+
   const start = Date.now();
 
   if (!anthropic) {
