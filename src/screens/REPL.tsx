@@ -9,6 +9,7 @@ import {
   getTotalInputTokens,
 } from '../bootstrap/state.js';
 import { parseTokenBudget } from '../utils/tokenBudget.js';
+import { loadProjectRules, formatRulesNotification } from '../utils/projectRules.js';
 import { count } from '../utils/array.js';
 import { dirname, join, basename } from 'path';
 import { tmpdir } from 'os';
@@ -980,6 +981,20 @@ export function REPL({
         setPeerFeedbackHandler(null);
       });
     };
+  }, [addNotification]);
+
+  // Check for project rules at startup and notify the user
+  useEffect(() => {
+    loadProjectRules().then(rules => {
+      if (rules.length > 0) {
+        addNotification({
+          key: 'project-rules',
+          text: `Project rules (${rules.length}): ${formatRulesNotification(rules)}`,
+          priority: 'medium',
+          timeoutMs: 10000,
+        });
+      }
+    });
   }, [addNotification]);
 
   // eslint-disable-next-line prefer-const

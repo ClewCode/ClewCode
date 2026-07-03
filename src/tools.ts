@@ -113,6 +113,7 @@ import { TaskUpdateTool } from './tools/TaskUpdateTool/TaskUpdateTool.js';
 import { TaskListTool } from './tools/TaskListTool/TaskListTool.js';
 import { SessionSearchTool } from './tools/SessionSearchTool/SessionSearchTool.js';
 import { BrowserTool } from './tools/BrowserTool/BrowserTool.js';
+import { ProjectRuleTool } from './tools/ProjectRuleTool/ProjectRuleTool.js';
 import uniqBy from 'lodash-es/uniqBy.js';
 import { isToolSearchEnabledOptimistic } from './utils/toolSearch.js';
 import { isTodoV2Enabled } from './utils/tasks.js';
@@ -262,6 +263,7 @@ export function getAllBaseTools(): Tools {
     ...(isToolSearchEnabledOptimistic() ? [ToolSearchTool] : []),
     ...(getComputerUseTool() ? [getComputerUseTool()] : []),
     SessionSearchTool,
+    ProjectRuleTool,
   ];
 }
 

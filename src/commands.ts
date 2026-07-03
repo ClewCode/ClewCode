@@ -41,6 +41,7 @@ import tasks from './commands/tasks/index.js';
 import teamOnboarding from './commands/team-onboarding/index.js';
 import teamDashboard from './commands/team/index.js';
 import providerSelect from './commands/provider-select/index.js';
+import ruleCmd from './commands/rule/index.js';
 import securityReview from './commands/security-review.js';
 import terminalSetup from './commands/terminalSetup/index.js';
 import usage from './commands/usage/index.js';
@@ -241,6 +242,7 @@ const COMMANDS = memoize((): Command[] => [
   ultrareview,
   ultracode,
   rewind,
+  ruleCmd,
   securityReview,
   terminalSetup,
   upgrade,

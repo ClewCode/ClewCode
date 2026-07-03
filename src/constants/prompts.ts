@@ -4,6 +4,7 @@ import { env } from '../utils/env.js';
 import { getIsGit } from '../utils/git.js';
 import { getCwd } from '../utils/cwd.js';
 import { getIsNonInteractiveSession } from '../bootstrap/state.js';
+import { loadProjectRules, formatRulesNotification } from '../utils/projectRules.js';
 import { getCurrentWorktreeSession } from '../utils/worktree.js';
 import { getSessionStartDate } from './common.js';
 import { getInitialSettings } from '../utils/settings/settings.js';
@@ -450,6 +451,11 @@ export async function getSystemPrompt(
 
   const dynamicSections = [
     systemPromptSection('session_guidance', () => getSessionSpecificGuidanceSection(enabledTools, skillToolCommands)),
+    systemPromptSection('project_rules', async () => {
+      const rules = await loadProjectRules();
+      if (rules.length === 0) return null;
+      return `# Project Rules\n\nThe following project-specific behavioral rules have been observed and saved:\n\n${formatRulesNotification(rules)}\n\nApply these rules when working in this project. Use the ProjectRule tool to manage rules (save new observations, list all rules, or remove outdated ones).`;
+    }),
     systemPromptSection('memory', () => loadMemoryPrompt()),
     systemPromptSection('budgeted_memory', () => loadBudgetedMemory()),
     systemPromptSection('session_goal', () => loadGoalPrompt()),
