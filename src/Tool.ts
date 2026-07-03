@@ -773,12 +773,17 @@ type ToolDefaults = typeof TOOL_DEFAULTS;
 type AnyToolDef = ToolDef<any, any, any>;
 
 export function buildTool<D extends AnyToolDef>(def: D): BuiltTool<D> {
-  // The runtime spread is straightforward; the `as` bridges the gap between
-  // the structural-any constraint and the precise BuiltTool<D> return. The
-  // type semantics are proven by the 0-error typecheck across all 60+ tools.
-  return {
+  // Preserve getters/setters from def using defineProperties. Object spread
+  // eagerly invokes getters, which triggers circular-dependency-sensitive
+  // lazy schemas (e.g. AgentTool.outputSchema → agentToolResultSchema) at
+  // module-init time when they may be in the temporal dead zone.
+  const result = {
     ...TOOL_DEFAULTS,
     userFacingName: () => def.name,
-    ...def,
-  } as BuiltTool<D>;
+  } as Record<string, unknown>;
+  const descriptors = Object.getOwnPropertyDescriptors(def);
+  for (const [key, descriptor] of Object.entries(descriptors)) {
+    Object.defineProperty(result, key, descriptor);
+  }
+  return result as BuiltTool<D>;
 }
