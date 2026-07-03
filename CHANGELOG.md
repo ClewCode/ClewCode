@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **Resume system crash**: Fixed `ReferenceError: Cannot access 'agentToolResultSchema' before initialization` that caused resume (`/resume`, `--resume`, `--continue`) to crash the app. Root cause: `buildTool` in `Tool.ts` used object spread which eagerly invoked getters like `outputSchema` during module init — for AgentTool, the `agentToolResultSchema` lazy import was still in the temporal dead zone. Fixed by preserving getters via `Object.defineProperties` instead of spread.
+
+## [0.4.6] — 2026-07-02
+
 ### Added
 - **Workflow-backed `/code-review` UI**: Added a local JSX `/code-review` workflow panel with phase navigation, parallel review agents, live token/tool progress, compact task-tree overview, and per-agent detail panes. (`src/commands/code-review/`)
 - **`/cd` command**: New slash command to change working directory from the REPL. (`src/commands/cd/`)
@@ -296,8 +301,6 @@ All notable changes to this project will be documented in this file.
 - Remove temp screenshot PNGs (`docs-index-check.png`, `docs-peer-check.png`) from root
 - Remove `package-lock.json` (using `bun.lock` exclusively)
 - Remove `index.json` cache and `scratch/` directory from root
-
-## [Unreleased]
 
 ## [0.2.16] — 2026-06-14
 
