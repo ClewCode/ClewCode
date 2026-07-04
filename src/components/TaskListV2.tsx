@@ -1,12 +1,11 @@
 import figures from 'figures';
 import * as React from 'react';
+import { AGENT_COLOR_TO_THEME_COLOR, type AgentColorName } from 'src/tools/AgentTool/agentColorManager.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { stringWidth } from '../ink/stringWidth.js';
-import { Box, Text, useAnimationFrame } from '../ink.js';
-import { SpinnerGlyph } from './Spinner/SpinnerGlyph.js';
+import { Box, Text } from '../ink.js';
 import { useAppState } from '../state/AppState.js';
 import { isInProcessTeammateTask } from '../tasks/InProcessTeammateTask/types.js';
-import { AGENT_COLOR_TO_THEME_COLOR, type AgentColorName } from 'src/tools/AgentTool/agentColorManager.js';
 import { isAgentSwarmsEnabled } from '../utils/agentSwarmsEnabled.js';
 import { count } from '../utils/array.js';
 import { summarizeRecentActivities } from '../utils/collapseReadSearch.js';
@@ -105,11 +104,6 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
     return () => clearTimeout(timer);
   }, []);
 
-  // Animation frame for spinner glyphs on in_progress tasks
-  const hasInProgressTasks = tasks.some(t => t.status === 'in_progress');
-  const [animViewportRef, animTime] = useAnimationFrame(hasInProgressTasks ? 50 : null);
-  const spinnerFrame = Math.floor((animTime ?? 0) / 120);
-
   if (!isTodoV2Enabled()) {
     return null;
   }
@@ -125,7 +119,7 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
     const pendingCount = tasks.length - completedCount - inProgressCount;
     const parts: string[] = [];
     if (completedCount > 0) parts.push(`${completedCount}✓`);
-    if (inProgressCount > 0) parts.push(`${inProgressCount}◉`);
+    if (inProgressCount > 0) parts.push(`${inProgressCount}●`);
     if (pendingCount > 0) parts.push(`${pendingCount}○`);
     return (
       <Box>
@@ -249,7 +243,6 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
           activity={task.owner ? teammateActivity[task.owner] : undefined}
           ownerActive={task.owner ? activeTeammates.has(task.owner) : false}
           columns={columns}
-          spinnerFrame={task.status === 'in_progress' ? spinnerFrame : undefined}
           elapsedMs={
             task.status === 'in_progress' && startTimestampsRef.current.has(task.id)
               ? Date.now() - startTimestampsRef.current.get(task.id)!
@@ -295,7 +288,6 @@ type TaskItemProps = {
   activity?: string;
   ownerActive: boolean;
   columns: number;
-  spinnerFrame?: number;
   elapsedMs?: number;
 };
 
@@ -313,7 +305,7 @@ function getTaskIcon(
     case 'completed':
       return { icon: '✓', color: 'success' };
     case 'in_progress':
-      return { icon: '◉', color: 'claude' };
+      return { icon: '●', color: 'warning' };
     case 'pending':
       return { icon: '○', color: undefined };
   }
@@ -326,7 +318,6 @@ function TaskItem({
   activity,
   ownerActive,
   columns,
-  spinnerFrame,
   elapsedMs,
 }: TaskItemProps): React.ReactNode {
   const isCompleted = task.status === 'completed';
@@ -355,19 +346,8 @@ function TaskItem({
   return (
     <Box flexDirection="column">
       <Box>
-        {isInProgress && spinnerFrame !== undefined ? (
-          <Box marginRight={1}>
-            <SpinnerGlyph frame={spinnerFrame} messageColor="claude" />
-          </Box>
-        ) : (
-          <Text color={color}>{icon} </Text>
-        )}
-        <Text
-          bold={isInProgress}
-          strikethrough={isCompleted}
-          dimColor={isCompleted}
-          color={isBlocked ? 'warning' : undefined}
-        >
+        <Text color={color}>{icon} </Text>
+        <Text bold={isInProgress} dimColor={isCompleted} color={isBlocked ? 'warning' : undefined}>
           {displaySubject}
         </Text>
         {elapsedStr && <Text dimColor> ({elapsedStr})</Text>}

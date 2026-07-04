@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- **README overhaul**: Rewrote README.md in the style of OpenClaw/Hermes Agent — cleaner layout, feature table, punchier tagline, streamlined install + CLI reference sections. (`README.md`)
+- **Task list layout styling**: Changed task list in-progress spinner to a static yellow circle status indicator, and removed strikethroughs from completed tasks. (`src/components/TaskListV2.tsx`)
 - **Rebrand `CLAUDE_CODE` → `CLEW_CODE`**: Renamed all `CLAUDE_CODE_*` environment variables, class names, comments, and URLs to `CLEW_CODE_*` across the entire codebase (390 files). Documentation links updated from `code.claude.com` to `clew-code.org`. (`src/`)
 - **Soften ultracode effort glow**: Reduced visual intensity of ultracode mode — smaller initial radius (12→4), subtler wave/ring effects, lower saturation variance, reduced feather distance. Makes the purple radial spotlight read better in terminals with coarse background cells. (`src/commands/effort/effort.tsx`)
 

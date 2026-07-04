@@ -1,0 +1,74 @@
+<svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="50%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#a78bfa" />
+    </linearGradient>
+    <linearGradient id="thread1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="thread2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="thread3" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#818cf8" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="200" fill="transparent"/>
+
+  <!-- === Clew / Yarn ball icon === -->
+  <!-- Outer circle -->
+  <circle cx="80" cy="100" r="58" fill="none" stroke="url(#primary)" stroke-width="2.5"/>
+
+  <!-- Wrapping threads (the "clew" = ball of yarn) -->
+  <path d="M30 75 Q55 60 80 70 Q105 80 130 70" fill="none" stroke="url(#thread1)" stroke-width="2.5" stroke-linecap="round">
+    <animate attributeName="d" values="M30 75 Q55 60 80 70 Q105 80 130 70;M30 75 Q55 80 80 65 Q105 75 130 70;M30 75 Q55 60 80 70 Q105 80 130 70" dur="6s" repeatCount="indefinite"/>
+  </path>
+  <path d="M35 95 Q60 80 80 95 Q100 110 125 95" fill="none" stroke="url(#thread2)" stroke-width="2" stroke-linecap="round">
+    <animate attributeName="d" values="M35 95 Q60 80 80 95 Q100 110 125 95;M35 95 Q60 105 80 90 Q100 100 125 95;M35 95 Q60 80 80 95 Q100 110 125 95" dur="5s" repeatCount="indefinite"/>
+  </path>
+  <path d="M40 115 Q65 105 80 115 Q95 125 120 115" fill="none" stroke="url(#thread3)" stroke-width="1.8" stroke-linecap="round">
+    <animate attributeName="d" values="M40 115 Q65 105 80 115 Q95 125 120 115;M40 115 Q65 120 80 110 Q95 118 120 115;M40 115 Q65 105 80 115 Q95 125 120 115" dur="7s" repeatCount="indefinite"/>
+  </path>
+
+  <!-- Inner threads -->
+  <path d="M45 85 Q65 75 80 85 Q95 95 115 85" fill="none" stroke="url(#thread1)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M50 105 Q70 95 80 105 Q90 115 110 105" fill="none" stroke="url(#thread2)" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Loose thread trailing off -->
+  <path d="M130 70 Q145 55 155 65 Q165 75 175 60 Q185 45 195 55" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+
+  <!-- Code bracket decorations on the ball -->
+  <text x="65" y="107" font-family="'Courier New', monospace" font-size="18" fill="#a78bfa" opacity="0.7" font-weight="bold">&lt;/&gt;</text>
+
+  <!-- === Typography === -->
+  <!-- "Clew" -->
+  <text x="165" y="95" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="#1a1a2e">
+    <tspan fill="#4f46e5">C</tspan><tspan fill="#1a1a2e">lew</tspan>
+  </text>
+
+  <!-- "Code" -->
+  <text x="165" y="142" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="40" font-weight="300" fill="#64748b" letter-spacing="4">
+    <tspan fill="#6366f1">C</tspan><tspan fill="#64748b">ODE</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="380" y="120" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#94a3b8" letter-spacing="1.5" font-weight="400">
+    <tspan x="380" dy="0">the agent that works</tspan>
+    <tspan x="380" dy="18">where you do</tspan>
+  </text>
+
+  <!-- Vertical divider -->
+  <line x1="350" y1="85" x2="350" y2="140" stroke="#e2e8f0" stroke-width="1" opacity="0.6"/>
+
+  <!-- Small terminal cursor blink at end -->
+  <rect x="490" y="118" width="8" height="14" rx="1" fill="#818cf8" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;0.1;0.8" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+</svg>

@@ -3,86 +3,129 @@
 <img src="assets/clew-logo-long.png" alt="Clew Code" width="520" />
 
 # Clew Code
+### *The agent that works where you do.*
 
-**An AI coding agent that lives in your terminal, uses your API keys, and doesn't phone home.**
+<p align="center">
+  <a href="https://github.com/ClewCode/ClewCode/stargazers"><img src="https://img.shields.io/github/stars/ClewCode/ClewCode?style=for-the-badge&color=blue" alt="GitHub stars"></a>
+  <a href="https://github.com/ClewCode/ClewCode/releases"><img src="https://img.shields.io/github/v/release/ClewCode/ClewCode?style=for-the-badge&color=orange" alt="Release"></a>
+  <a href="https://www.npmjs.com/package/clew-code"><img src="https://img.shields.io/npm/v/clew-code?style=for-the-badge&color=red" alt="npm"></a>
+  <a href="https://github.com/ClewCode/ClewCode/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/ClewCode/ClewCode/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
+  <a href="https://bun.sh"><img src="https://img.shields.io/badge/built%20with-Bun-ff69b4.svg?style=for-the-badge" alt="Bun"></a>
+</p>
 
-[![GitHub stars](https://img.shields.io/github/stars/ClewCode/ClewCode?style=flat-square&color=blue)](https://github.com/ClewCode/ClewCode/stargazers)
-[![Release](https://img.shields.io/github/v/release/ClewCode/ClewCode?style=flat-square&color=orange)](https://github.com/ClewCode/ClewCode/releases)
-[![npm](https://img.shields.io/npm/v/clew-code?style=flat-square&color=red)](https://www.npmjs.com/package/clew-code)
-[![CI](https://img.shields.io/github/actions/workflow/status/ClewCode/ClewCode/ci.yml?branch=main&style=flat-square)](https://github.com/ClewCode/ClewCode/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg?style=flat-square)](#license)
-[![Built with Bun](https://img.shields.io/badge/built%20with-Bun-ff69b4.svg?style=flat-square)](https://bun.sh)
-
-[GitHub](https://github.com/ClewCode/ClewCode) · [Website](https://clew-code.org) · [Docs](https://clew-docs.pages.dev)
+[Website](https://clew-code.org) · [Docs](https://clew-docs.pages.dev) · [Wiki](https://github.com/ClewCode/ClewCode/wiki) · [GitHub](https://github.com/ClewCode/ClewCode)
 
 </div>
 
 ---
 
-Clew Code is a local-first AI coding agent. It reads your repo, writes code, runs commands, and talks to LLMs through your own API keys. No SaaS, no vendor lock-in, no telemetry.
+Clew Code is a terminal-native AI coding agent that lives in your repo, works with your API keys, and **doesn't phone home**. It reads your code, writes files, runs commands, and talks to any LLM you bring — all on your machine, no telemetry, no vendor lock-in.
 
-It's one binary that replaces the loop you'd otherwise do manually: think, edit, run, read errors, repeat. You bring the API keys, it brings 29 providers, 70+ tools, and enough infrastructure to keep a session alive across days of work.
+If you want a coding assistant that feels local, fast, and doesn't ship your context to a third-party server, this is it.
 
-## Why this exists
+---
 
-Most AI coding tools are either hosted SaaS (your code leaves your machine) or tied to a single provider. Clew Code is neither. It's a CLI that runs on your hardware, talks to any provider you configure, and saves everything to a local SQLite database. Your context, memory, and session state survive restarts. No data leaves your network unless you explicitly allow it.
+## Quick Install
 
-## What you get
+### macOS / Linux
 
-- **A terminal REPL** — Ink-based with autocomplete, syntax highlighting, slash commands, inline streaming. Feels like a real editor, not a chat widget.
-- **Multi-provider out of the box** — Switch between OpenAI, Anthropic, Google, DeepSeek, Groq, OpenRouter, Ollama, and 20+ others mid-session with `/model`.
-- **Persistent memory** — SQLite-backed store that learns your project over time. Facts survive compaction, sessions, and restarts. No vector DB needed.
-- **LAN swarm** — Zero-config peer discovery over UDP multicast. Sync memory across machines, delegate tasks, broadcast shell commands to your whole local network.
-- **MCP support** — Model Context Protocol over stdio, SSE, or direct WebSocket. Bolt on external tools without modifying Clew Code itself.
-- **Background daemon** — Runs a task queue with lease-based concurrency, cron scheduling, dead-letter retries, and memory maintenance while you're not looking.
-- **70+ built-in tools** — File I/O, git, browser automation, LSP, web search, task management, goal verification, peer coordination, media generation, voice input.
+```bash
+curl -fsSL https://raw.githubusercontent.com/ClewCode/ClewCode/main/scripts/install.sh | bash
+```
 
-## Quick start
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/ClewCode/ClewCode/main/scripts/install.ps1 | iex
+```
+
+### npm (cross-platform)
 
 ```bash
 npm install -g clew-code
+```
 
+---
+
+## Getting Started
+
+```bash
 cd your-project
-clew
+clew                      # Launch the REPL
+clew -p "fix the tests"   # One-shot mode
+clew --resume last         # Pick up where you left off
 ```
 
-First launch walks you through provider setup. After that, `/model` to pick your LLM, then start typing.
+First launch walks you through provider setup. After that, use `/model` to switch providers mid-session.
 
-One-shot commands without entering the REPL:
+---
 
-```bash
-clew -p "Fix the failing tests and explain what was wrong"
-```
+## Features
 
-Resume where you left off:
+| | |
+|---|---|
+| **29+ providers** | OpenAI, DeepSeek, Groq, Anthropic, Google, Ollama (local), and 22+ more. Switch mid-session with `/model`. No lock-in. |
+| **Persistent memory** | SQLite-backed, MiMo-inspired store with importance ranking, confidence scoring, and cross-session persistence. Auto-consolidation via Dream + Distill. |
+| **75+ tools** | Read, Write, Edit, Grep, Bash, Browser, MCP, LSP, git, web search, task management, peer coordination, media generation, voice input. |
+| **LAN peer swarm** | Zero-config peer discovery over UDP multicast. Sync memory across machines, delegate tasks, broadcast shell commands across your network. |
+| **MCP + Plugins + Skills** | Model Context Protocol over stdio/SSE/WebSocket. Extend with plugins, `SKILL.md` workflows, or lifecycle hooks. |
+| **Background daemon** | Task queue with lease-based concurrency, cron scheduling, dead-letter retries, and memory maintenance. |
+| **Goal verification + checkpoints** | Track completion with heuristic checks and independent LLM verification. Structured snapshots at 20%/45%/70% progress. |
+| **Multi-agent architecture** | Agents, Subagents, LAN Peers, Process Peers. Personal profile turns Clew into a command center that delegates to Codex workers. |
 
-```bash
-clew --resume last
-```
+---
 
-## Providers
-
-Clew Code talks to any OpenAI-compatible API plus native SDKs for Anthropic, Google, and others. Configure one or configure ten — switch with `/model` any time.
-
-openai · anthropic · google · openrouter · deepseek · groq · xai · mistral · together · fireworks · deepinfra · nvidia · cohere · perplexity · cerebras · siliconflow · moonshot · zhipu · huggingface · poe · digitalocean · cline · ollama · kilocode · opencode · opencode-go · clew-gateway · custom
-
-Full list at **[clew-docs.pages.dev](https://clew-docs.pages.dev)**.
-
-## CLI options
+## CLI Quick Reference
 
 ```
 -p, --prompt <text>       One-shot prompt, then exit
 -c, --continue            Continue last conversation
 -r, --resume [id]         Resume a session (opens picker if no id)
---fork-session            Clone a session under a new ID
 --model <model>           Override model (sonnet, opus, gemini-2.5-flash, etc.)
 --effort <level>          Reasoning effort (low|medium|high|max)
 --agent <agent>           Custom agent profile
---permission-mode <mode>  default|ask|plan|auto
+--permission-mode <mode>  default\|ask\|plan\|auto
 --peer-share              Start as a LAN worker peer
---computer                Enable OS-level computer use (Windows)
+--computer                Enable OS-level computer use (Windows only)
 --debug                   Developer debug output
 ```
+
+Slash commands: `/model`, `/memory`, `/task`, `/goal`, `/compact`, `/peer`, `/mcp`, `/agent`, `/plan`, `/voice`, `/research`, `/workflow`, `/skills`, and [many more](https://clew-docs.pages.dev/cli).
+
+---
+
+## Security
+
+Clew Code runs entirely on your machine. No code or context leaves your network unless you explicitly configure a remote provider or send a web fetch.
+
+- Prompts for permission before read, write, or terminal execution
+- Fine-tune auto-approve rules per workspace
+- Permission scopes: default, ask, plan, auto
+- Guardian system for auto-review using secondary LLM
+
+---
+
+## Documentation
+
+| Guide | Description |
+|---|---|
+| [Quick Start](https://clew-docs.pages.dev/quick-start) | Launch the CLI and start coding |
+| [Installation](https://clew-docs.pages.dev/installation) | One-liner, npm, or build from source |
+| [CLI Reference](https://clew-docs.pages.dev/cli) | Full CLI options, providers, commands |
+| [Configuration](https://clew-docs.pages.dev/configuration) | Settings files, hooks, permission modes |
+| [MCP Guide](https://clew-docs.pages.dev/mcp) | Connect external tools and APIs |
+| [Plugins](https://clew-docs.pages.dev/plugins) | Lifecycle hooks and customization |
+| [Security & Permissions](https://clew-docs.pages.dev/security-permissions) | Permission scopes, guardian system |
+| [Skills System](https://clew-docs.pages.dev/skills) | Automate repeatable workflows |
+| [Memory System](https://clew-docs.pages.dev/memory-system) | SQLite-backed long-term memory |
+| [Peer-to-Peer LAN](https://clew-docs.pages.dev/peer-to-peer) | Discover, delegate, swarm commands |
+| [Architecture](https://clew-docs.pages.dev/concepts-agents-subagents-peers) | Agents, Subagents, Peers |
+| [Troubleshooting](https://clew-docs.pages.dev/troubleshooting) | Common issues and fixes |
+
+Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
+
+---
 
 ## Architecture
 
@@ -110,15 +153,16 @@ Full list at **[clew-docs.pages.dev](https://clew-docs.pages.dev)**.
 └──────┘└──────────┘└──────────────┘
 ```
 
-## Project structure
+---
+
+## Project Structure
 
 ```
 src/
 ├── main.tsx              # Entry point
 ├── QueryEngine.ts        # Message + tool loop
-├── query.ts              # Non-streaming variant
 ├── commands/             # Slash command handlers
-├── tools/                # 70+ tool implementations
+├── tools/                # 75+ tool implementations
 ├── services/
 │   ├── ai/               # 29 provider adapters
 │   ├── mcp/              # MCP client (stdio/SSE/WebSocket)
@@ -131,6 +175,8 @@ src/
 ```
 
 Full breakdown in **[AGENTS.md](AGENTS.md)**.
+
+---
 
 ## Development
 
@@ -148,16 +194,11 @@ bun x tsc --noEmit        # TypeScript check
 bun run check:ci && bun x tsc --noEmit && bun test --bail
 ```
 
-### Codebase graph
-
-```bash
-graphify query "<question>"   # Ask about the codebase
-graphify update .             # Refresh after changes
-```
-
 ### Shadow `.js` files
 
-`src/` has ~188 `.js` files alongside `.ts` twins (JS→TS migration in progress). Bun resolves `.js` import specifiers to the real `.js` file on disk. If you're making a runtime fix, edit **both** the `.ts` and `.js` files.
+`src/` has ~410 `.js` files alongside `.ts` twins (leftover from JS → TS migration). Bun resolves `.js` import specifiers to the real `.js` file on disk — it does **not** prefer the `.ts` source. If you're making a runtime fix, check for a `.js` sibling and edit **both** files.
+
+---
 
 ## License
 
