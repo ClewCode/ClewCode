@@ -37,7 +37,7 @@ Each message must contain a self-contained task prompt:
 Tell the user what was done, what passed/failed, what's blocked, next steps.
 
 ## Codex (ONLY when user explicitly says)
-Never auto-select Codex. Only use \`delegate\` tool if the user says "ใช้ Codex" or "use Codex":
+Never auto-select Codex. Only use the \`ExecAgent\` tool if the user says "ใช้ Codex" or "use Codex":
 - \`provider\`: leave empty (auto-selects codex)
 - \`mode\`: "exec" or "pty"
 - \`cwd\`: project root

@@ -2,9 +2,9 @@ import * as React from 'react';
 import { MessageResponse } from '../components/MessageResponse.js';
 import { OffscreenFreeze } from '../components/OffscreenFreeze.js';
 import { Box, Text } from '../ink.js';
-import type { ProcessPeerProgress } from '../types/tools.js';
+import type { ExecAgentProgress } from '../types/tools.js';
 
-export function normalizeProcessPeerMode(
+export function normalizeExecAgentMode(
   mode: 'exec' | 'pty' | string | undefined,
   defaultMode: 'exec' | 'pty',
 ): 'exec' | 'pty' {
@@ -12,8 +12,8 @@ export function normalizeProcessPeerMode(
   return process.platform === 'win32' && requestedMode === 'pty' ? 'exec' : requestedMode;
 }
 
-export function renderProcessPeerTerminal(options: {
-  latest: ProcessPeerProgress | undefined;
+export function renderExecAgentTerminal(options: {
+  latest: ExecAgentProgress | undefined;
   defaultProvider: string;
   defaultMode: 'exec' | 'pty';
   title: string;

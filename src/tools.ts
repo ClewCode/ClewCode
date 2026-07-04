@@ -95,7 +95,7 @@ import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessa
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackTool.js';
 import { PeerMemorySyncTool } from './tools/PeerMemorySyncTool/PeerMemorySyncTool.js';
-import { ProcessPeerTool } from './tools/ProcessDelegateTool/ProcessDelegateTool.js';
+import { ExecAgentTool } from './tools/ProcessDelegateTool/ProcessDelegateTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
 
 import { AgentTool } from './tools/AgentTool/AgentTool.js';
@@ -238,7 +238,7 @@ export function getAllBaseTools(): Tools {
     PeerListMessagesTool,
     PeerHelpTool,
     PeerMemorySyncTool,
-    ProcessPeerTool,
+    ExecAgentTool,
 
     ...(listPeersTool ? [listPeersTool] : []),
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),

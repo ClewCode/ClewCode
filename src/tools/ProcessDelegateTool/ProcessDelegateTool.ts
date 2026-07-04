@@ -1,21 +1,21 @@
 import * as React from 'react';
 import { z } from 'zod/v4';
 import { Text } from '../../ink.js';
-import { getProcessPeerProvider, getProcessPeerProviderIds } from '../../peer/ProcessDelegateProvider.js';
+import { getExecAgentProvider, getExecAgentProviderIds } from '../../peer/ProcessDelegateProvider.js';
 import { buildTool, type ToolCallProgress } from '../../Tool.js';
-import type { ProcessPeerProgress } from '../../types/tools.js';
+import type { ExecAgentProgress } from '../../types/tools.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { clampTimeout, notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
-import { normalizeProcessPeerMode, renderProcessPeerTerminal } from '../processDelegateTerminal.js';
-import { DESCRIPTION, PROCESS_MESH_TOOL_NAME, PROMPT } from './prompt.js';
+import { normalizeExecAgentMode, renderExecAgentTerminal } from '../processDelegateTerminal.js';
+import { DESCRIPTION, EXEC_AGENT_TOOL_NAME, PROMPT } from './prompt.js';
 
-const DEFAULT_PROCESS_MESH_MODE = (process.platform === 'win32' ? 'exec' : 'pty') as const;
+const DEFAULT_EXEC_AGENT_MODE = (process.platform === 'win32' ? 'exec' : 'pty') as const;
 
 /** Auto-detect best available provider when none specified. */
 function pickDefaultProvider(): string {
-  const ids = getProcessPeerProviderIds();
+  const ids = getExecAgentProviderIds();
   // Priority: codex > opencode > claude > code
   for (const preferred of ['codex', 'opencode', 'claude', 'code']) {
     if (ids.includes(preferred)) return preferred;
@@ -29,22 +29,19 @@ const inputSchema = lazySchema(() =>
       .string()
       .optional()
       .describe(
-        `Which AI coding worker to use. Leave empty to auto-select. Available: ${getProcessPeerProviderIds().join(', ')}`,
+        `Which AI coding CLI to use. Leave empty to auto-select. Available: ${getExecAgentProviderIds().join(', ')}`,
       ),
-    prompt: z.string().describe('Task or message to send to the local AI CLI runner'),
+    prompt: z.string().describe('Task or message to send to the local AI CLI agent'),
     mode: z
       .enum(['exec', 'pty'])
       .optional()
-      .default(DEFAULT_PROCESS_MESH_MODE)
+      .default(DEFAULT_EXEC_AGENT_MODE)
       .describe(
         process.platform === 'win32'
           ? 'Execution mode. Windows uses "exec" with terminal-style output because node-pty is unstable there.'
           : 'Execution mode. "pty" is the default terminal-style live view; "exec" is stable one-shot capture.',
       ),
-    cwd: z
-      .string()
-      .optional()
-      .describe('Working directory for the local runner task. Defaults to the current Clew cwd.'),
+    cwd: z.string().optional().describe('Working directory for the exec agent task. Defaults to the current Clew cwd.'),
     model: z.string().optional().describe('Optional model override for providers that support it.'),
     timeout: z.number().optional().default(600).describe('Max execution time in seconds (default: 600, max: 1800).'),
     sessionId: z
@@ -76,7 +73,7 @@ const outputSchema = lazySchema(() =>
 
 export type Output = z.infer<ReturnType<typeof outputSchema>>;
 
-export const ProcessPeerTool = buildTool({
+export const ExecAgentTool = buildTool({
   isConcurrencySafe() {
     return false;
   },
@@ -89,8 +86,8 @@ export const ProcessPeerTool = buildTool({
   isTransparentWrapper() {
     return true;
   },
-  name: PROCESS_MESH_TOOL_NAME,
-  searchHint: 'delegate task to local AI CLI runner',
+  name: EXEC_AGENT_TOOL_NAME,
+  searchHint: 'run task on local AI CLI agent (codex, opencode, claude)',
   maxResultSizeChars: 100_000,
   async description() {
     return DESCRIPTION;
@@ -113,19 +110,19 @@ export const ProcessPeerTool = buildTool({
       return {
         result: false,
         message:
-          'Clew cannot be used as a delegate provider because it self-spawns the current CLI. Use provider "codex".',
+          'Clew cannot be used as an exec agent provider because it self-spawns the current CLI. Use provider "codex".',
         errorCode: 400,
       };
     }
     return { result: true };
   },
   userFacingName() {
-    return 'Local runner';
+    return 'Exec agent';
   },
   renderToolUseMessage(
     input: Partial<{ provider?: string; prompt?: string; cwd?: string; mode?: string; sessionId?: string }>,
   ) {
-    const mode = normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE);
+    const mode = normalizeExecAgentMode(input.mode, DEFAULT_EXEC_AGENT_MODE);
     const label = input.sessionId ? `resume ${mode}` : mode;
     return React.createElement(
       Text,
@@ -135,29 +132,29 @@ export const ProcessPeerTool = buildTool({
     );
   },
   renderToolUseProgressMessage(progressMessages): React.ReactNode {
-    const latest = progressMessages.at(-1)?.data as ProcessPeerProgress | undefined;
-    return renderProcessPeerTerminal({
+    const latest = progressMessages.at(-1)?.data as ExecAgentProgress | undefined;
+    return renderExecAgentTerminal({
       latest,
       defaultProvider: 'codex',
-      defaultMode: DEFAULT_PROCESS_MESH_MODE,
-      title: 'Local runner',
+      defaultMode: DEFAULT_EXEC_AGENT_MODE,
+      title: 'Exec agent',
     });
   },
   renderToolUseQueuedMessage(): React.ReactNode {
-    return renderProcessPeerTerminal({
+    return renderExecAgentTerminal({
       latest: undefined,
       defaultProvider: 'codex',
-      defaultMode: DEFAULT_PROCESS_MESH_MODE,
-      title: 'Local runner',
+      defaultMode: DEFAULT_EXEC_AGENT_MODE,
+      title: 'Exec agent',
     });
   },
   getActivityDescription(input: Partial<{ provider?: string; prompt?: string; mode?: string }>) {
-    const mode = normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE);
-    return `Running ${input.provider ?? 'local runner'} (${mode}): ${truncateText(input.prompt ?? '', 80)}`;
+    const mode = normalizeExecAgentMode(input.mode, DEFAULT_EXEC_AGENT_MODE);
+    return `Running ${input.provider ?? 'exec agent'} (${mode}): ${truncateText(input.prompt ?? '', 80)}`;
   },
   getToolUseSummary(input: Partial<{ provider?: string; prompt?: string; mode?: string }>) {
-    const mode = normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE);
-    return `${input.provider ?? 'local runner'} ${mode}: ${truncateText(input.prompt ?? '', 80)}`;
+    const mode = normalizeExecAgentMode(input.mode, DEFAULT_EXEC_AGENT_MODE);
+    return `${input.provider ?? 'exec agent'} ${mode}: ${truncateText(input.prompt ?? '', 80)}`;
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     const sessionLine = output.sessionId ? `sessionId: ${output.sessionId}` : '';
@@ -168,7 +165,7 @@ export const ProcessPeerTool = buildTool({
         tool_use_id: toolUseID,
         type: 'tool_result',
         content: [
-          `[Local runner:${output.provider}] Failed: ${output.exitCode ?? output.signal ?? 'unknown'}`,
+          `[Exec agent:${output.provider}] Failed: ${output.exitCode ?? output.signal ?? 'unknown'}`,
           sessionLine,
           '',
           text,
@@ -181,7 +178,7 @@ export const ProcessPeerTool = buildTool({
       tool_use_id: toolUseID,
       type: 'tool_result',
       content: [
-        `[Local runner:${output.provider}] exit ${output.exitCode ?? output.signal ?? 'unknown'} in ${(
+        `[Exec agent:${output.provider}] exit ${output.exitCode ?? output.signal ?? 'unknown'} in ${(
           (output.durationMs ?? 0) / 1000
         ).toFixed(1)}s`,
         sessionLine,
@@ -203,16 +200,16 @@ export const ProcessPeerTool = buildTool({
     _context,
     _canUseTool,
     _parentMessage,
-    onProgress?: ToolCallProgress<ProcessPeerProgress>,
+    onProgress?: ToolCallProgress<ExecAgentProgress>,
   ) {
     const providerId = input.provider ?? pickDefaultProvider();
-    const provider = getProcessPeerProvider(providerId);
+    const provider = getExecAgentProvider(providerId);
     if (!provider) {
       return {
         data: {
           success: false,
           provider: providerId,
-          error: `Unknown local runner provider "${providerId}". Available: ${getProcessPeerProviderIds().join(', ')}`,
+          error: `Unknown exec agent provider "${providerId}". Available: ${getExecAgentProviderIds().join(', ')}`,
         },
       };
     }
@@ -220,10 +217,10 @@ export const ProcessPeerTool = buildTool({
     try {
       const timeout = clampTimeout(input.timeout, 600, 1800);
       let progressSeq = 0;
-      notifyPeerFeedback(`asking ${provider.label}`, 'process-peer', 'low');
+      notifyPeerFeedback(`asking ${provider.label}`, 'exec-agent', 'low');
       const result = await provider.runTask({
         prompt: input.prompt,
-        mode: normalizeProcessPeerMode(input.mode, DEFAULT_PROCESS_MESH_MODE),
+        mode: normalizeExecAgentMode(input.mode, DEFAULT_EXEC_AGENT_MODE),
         cwd: input.cwd ?? getCwd(),
         model: input.model,
         sessionId: input.sessionId,
@@ -231,9 +228,9 @@ export const ProcessPeerTool = buildTool({
         abortSignal: _context.abortController.signal,
         onProgress: progress => {
           onProgress?.({
-            toolUseID: `process-peer-${++progressSeq}`,
+            toolUseID: `exec-agent-${++progressSeq}`,
             data: {
-              type: 'delegate',
+              type: 'execAgent',
               provider: progress.providerId,
               mode: progress.mode,
               command: progress.command,
@@ -251,7 +248,7 @@ export const ProcessPeerTool = buildTool({
         `${provider.label} ${result.exitCode === 0 && !result.timedOut ? 'finished' : 'failed'} with exit ${
           result.exitCode ?? result.signal ?? 'unknown'
         }`,
-        'process-peer-result',
+        'exec-agent-result',
         result.exitCode === 0 && !result.timedOut ? 'medium' : 'high',
       );
 
@@ -269,7 +266,7 @@ export const ProcessPeerTool = buildTool({
       };
     } catch (err) {
       const error = errorMessage(err);
-      notifyPeerFeedback(`failed: ${truncateText(error, 120)}`, 'process-peer-error', 'high');
+      notifyPeerFeedback(`failed: ${truncateText(error, 120)}`, 'exec-agent-error', 'high');
       return {
         data: {
           success: false,

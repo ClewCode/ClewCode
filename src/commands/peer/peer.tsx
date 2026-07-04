@@ -22,7 +22,7 @@ import { getProjectRoot } from '../../bootstrap/state.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
-import { getProcessPeerProvider, getProcessPeerProviderIds } from '../../peer/ProcessDelegateProvider.js';
+import { getExecAgentProvider, getExecAgentProviderIds } from '../../peer/ProcessDelegateProvider.js';
 import { formatPeerTaskDashboard, formatPeerTaskSummary } from '../../peer/peerDashboard.js';
 import type { PeerInfo } from '../../peer/types.js';
 import { errorMessage } from '../../utils/errors.js';
@@ -167,9 +167,9 @@ async function startSharing(onDone: (msg: string) => void): Promise<void> {
           }
         });
       },
-      onExec: async (command: string) => {
+      onExec: async (command: string, cwd?: string) => {
         const { executeCommand } = await import('../../tools/PeerRunTool/PeerRunTool.js');
-        return executeCommand(command, 60_000);
+        return executeCommand(command, 60_000, cwd);
       },
     });
 
@@ -310,7 +310,7 @@ async function sendTask(peerQuery: string, text: string, onDone: (msg: string) =
   }
 }
 
-type ProcessPeerRunArgs = {
+type ExecAgentRunArgs = {
   providerId: string;
   prompt: string;
   cwd?: string;
@@ -318,11 +318,11 @@ type ProcessPeerRunArgs = {
   timeoutMs?: number;
 };
 
-function parseProcessPeerRunArgs(rest: string): ProcessPeerRunArgs | { error: string } {
+function parseExecAgentRunArgs(rest: string): ExecAgentRunArgs | { error: string } {
   const tokens = parseArgs(rest);
   const providerId = tokens.shift();
   if (!providerId) {
-    return { error: `Usage: /peer run <${getProcessPeerProviderIds().join('|')}> [options] <task>` };
+    return { error: `Usage: /peer run <${getExecAgentProviderIds().join('|')}> [options] <task>` };
   }
 
   const promptTokens: string[] = [];
@@ -360,18 +360,18 @@ function parseProcessPeerRunArgs(rest: string): ProcessPeerRunArgs | { error: st
   return { providerId, prompt, cwd, model, timeoutMs };
 }
 
-async function runProcessPeer(rest: string, onDone: (msg: string) => void): Promise<void> {
-  const parsed = parseProcessPeerRunArgs(rest);
+async function runExecAgent(rest: string, onDone: (msg: string) => void): Promise<void> {
+  const parsed = parseExecAgentRunArgs(rest);
   if ('error' in parsed) {
     onDone(ansis.yellow(parsed.error));
     return;
   }
 
-  const provider = getProcessPeerProvider(parsed.providerId);
+  const provider = getExecAgentProvider(parsed.providerId);
   if (!provider) {
     onDone(
       ansis.red(
-        `Unknown process worker provider "${parsed.providerId}". Available: ${getProcessPeerProviderIds().join(', ')}`,
+        `Unknown exec agent provider "${parsed.providerId}". Available: ${getExecAgentProviderIds().join(', ')}`,
       ),
     );
     return;
@@ -966,7 +966,7 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
   }
 
   if (args.startsWith('run ')) {
-    await runProcessPeer(args.slice(4).trim(), msg => onDone(msg, { display: 'system' }));
+    await runExecAgent(args.slice(4).trim(), msg => onDone(msg, { display: 'system' }));
     return;
   }
 

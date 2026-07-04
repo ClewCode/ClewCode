@@ -1,19 +1,19 @@
-export const PROCESS_MESH_TOOL_NAME = 'delegate';
+export const EXEC_AGENT_TOOL_NAME = 'ExecAgent';
 
 export const DESCRIPTION =
-  'Delegate a task to a local AI coding worker (Codex, OpenCode, Claude Code) and return its output. ' +
+  'Run a task on a local AI coding CLI (Codex, OpenCode, Claude Code) as a subprocess and return its output. ' +
   'Auto-detects available CLIs on your PATH. ' +
   'Use this for independent review, debugging, planning, or focused implementation subtasks. ' +
-  'Your `prompt` is sent verbatim to the process worker as its sole instruction. ' +
-  'Follow the PEER_PROMPT_TEMPLATE to write self-contained prompts that include ' +
+  'Your `prompt` is sent verbatim to the exec agent as its sole instruction. ' +
+  'Follow the EXEC_AGENT_PROMPT_TEMPLATE to write self-contained prompts that include ' +
   'sender identity, tool guidance, workflow sequence, and output format.';
 
 /**
- * Template for building prompts to send to process peers.
+ * Template for building prompts to send to exec agents (subprocess CLIs).
  * Sections to fill: {task_description}, {expected_output_format}, {cwd}
  *
  * Flow:
- *   1. PEER CONTEXT — sender identity, stdout contract
+ *   1. AGENT CONTEXT — sender identity, stdout contract
  *   2. TASK — what to do (scoped and specific)
  *   3. COMMANDS & TOOLS — available tools, how to discover them
  *   4. WORKFLOW — numbered sequence: plan → gather → execute → output
@@ -21,12 +21,12 @@ export const DESCRIPTION =
  *   6. WORKING DIRECTORY — cwd for file operations
  *   7. ERROR HANDLING — what to do when stuck
  */
-export const PEER_PROMPT_TEMPLATE = `\
+export const EXEC_AGENT_PROMPT_TEMPLATE = `\
 ═══════════════════════════════════════════
- PEER CONTEXT
+ AGENT CONTEXT
 ═══════════════════════════════════════════
 Sender: Clew Code
-You are an independent AI peer completing ONE task.
+You are an independent AI agent completing ONE task.
 All your stdout output is captured and returned as the result.
 Do NOT ask clarifying questions — make the best assumption.
 
@@ -43,7 +43,7 @@ Use your built-in tools to complete this task:
 • Shell/exec tools — to run commands, build, test
 • Web/search tools — to look up external info if needed
 • \`--help\` on any command — to discover available flags and subcommands
-Do NOT try to call Clew Code peer tools (peer_*) — you are a standalone peer.
+Do NOT try to call Clew Code peer tools (peer_*) — you are a standalone agent, not a Clew LAN peer.
 
 ═══════════════════════════════════════════
  WORKFLOW
@@ -76,22 +76,22 @@ The sender only sees stdout after you finish.
 `;
 
 export const PROMPT =
-  'Delegates a task to a local AI coding worker for one task and returns stdout/stderr. ' +
+  'Runs a task on a local AI coding CLI as a subprocess for one task and returns stdout/stderr. ' +
   'Auto-detects available CLIs on your PATH (Codex, OpenCode, Claude Code) — no config needed. ' +
   'Leave `provider` empty to auto-select based on what is available on PATH (priority: codex > opencode > claude > code). ' +
   'The default provider is Codex with terminal-style progress output and uses the existing Codex CLI session without exposing tokens. ' +
-  'Do not use Clew/ClewCode itself as a worker; that self-spawns the current CLI and can create nested duplicate sessions. ' +
+  'Do not use Clew/ClewCode itself as a provider; that self-spawns the current CLI and can create nested duplicate sessions. ' +
   'Use it for second-opinion review, debugging, focused implementation subtasks, or ' +
   'asking a coding agent to inspect a repo.\n' +
   '\n' +
-  '**PEER PROMPT TEMPLATE (use this structure when writing prompts):**\n' +
-  'The worker receives your `prompt` verbatim — write self-contained prompts with:\n' +
-  '1. **PEER CONTEXT** — "Sender: Clew Code", "stdout = result", "you are an independent peer"\n' +
+  '**EXEC AGENT PROMPT TEMPLATE (use this structure when writing prompts):**\n' +
+  'The agent receives your `prompt` verbatim — write self-contained prompts with:\n' +
+  '1. **AGENT CONTEXT** — "Sender: Clew Code", "stdout = result", "you are an independent agent"\n' +
   '2. **TASK** — scoped, specific, one task only\n' +
-  '3. **COMMANDS & TOOLS** — what tools the worker should use, `--help` to discover\n' +
+  '3. **COMMANDS & TOOLS** — what tools the agent should use, `--help` to discover\n' +
   '4. **WORKFLOW** — explicit numbered flow: plan → gather → execute → output\n' +
   '5. **OUTPUT FORMAT** — JSON, diff, summary, or plain text\n' +
   '6. **WORKING DIRECTORY** — absolute path for file operations\n' +
   '7. **ERROR HANDLING** — try --help, adapt, never give up without attempting\n' +
   'Do not send secrets, credentials, API keys, or private env data. ' +
-  'The constant PEER_PROMPT_TEMPLATE can be referenced directly.';
+  'The constant EXEC_AGENT_PROMPT_TEMPLATE can be referenced directly.';

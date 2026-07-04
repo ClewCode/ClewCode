@@ -33,8 +33,8 @@ export interface WebSearchProgress {
   urlsFound?: number;
 }
 
-export interface ProcessPeerProgress {
-  type: 'delegate';
+export interface ExecAgentProgress {
+  type: 'execAgent';
   provider: string;
   mode: 'exec' | 'pty';
   command: string;

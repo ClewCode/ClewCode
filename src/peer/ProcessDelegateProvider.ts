@@ -3,23 +3,23 @@ import * as path from 'node:path';
 import { type SpawnOptionsWithoutStdio, spawn } from 'child_process';
 import * as pty from 'node-pty';
 
-export type ProcessPeerTask = {
+export type ExecAgentTask = {
   prompt: string;
   cwd?: string;
   model?: string;
   timeoutMs?: number;
-  mode?: ProcessPeerMode;
+  mode?: ExecAgentMode;
   abortSignal?: AbortSignal;
-  onProgress?: (progress: ProcessPeerProgressEvent) => void;
+  onProgress?: (progress: ExecAgentProgressEvent) => void;
   /** Resume an existing codex session instead of starting fresh. */
   sessionId?: string;
 };
 
-export type ProcessPeerMode = 'exec' | 'pty';
+export type ExecAgentMode = 'exec' | 'pty';
 
-export type ProcessPeerProgressEvent = {
+export type ExecAgentProgressEvent = {
   providerId: string;
-  mode: ProcessPeerMode;
+  mode: ExecAgentMode;
   command: string;
   displayCommand: string;
   args: string[];
@@ -29,9 +29,9 @@ export type ProcessPeerProgressEvent = {
   status: 'starting' | 'running' | 'complete' | 'failed';
 };
 
-export type ProcessPeerResult = {
+export type ExecAgentResult = {
   providerId: string;
-  mode: ProcessPeerMode;
+  mode: ExecAgentMode;
   command: string;
   args: string[];
   cwd: string;
@@ -45,15 +45,15 @@ export type ProcessPeerResult = {
   sessionId?: string;
 };
 
-export type ProcessPeerProviderConfig = {
+export type ExecAgentProviderConfig = {
   id: string;
   label: string;
   command: string;
   defaultTimeoutMs?: number;
   maxOutputBytes?: number;
-  buildArgs: (task: ProcessPeerTask) => string[];
-  buildPtyArgs?: (task: ProcessPeerTask) => string[];
-  buildStdin?: (task: ProcessPeerTask) => string | undefined;
+  buildArgs: (task: ExecAgentTask) => string[];
+  buildPtyArgs?: (task: ExecAgentTask) => string[];
+  buildStdin?: (task: ExecAgentTask) => string | undefined;
   /** Optional: transform raw stdout before it's used for progress display and the final result.
    *  E.g., parse JSONL output to extract human-readable text. */
   formatOutput?: (raw: string) => string;
@@ -62,19 +62,19 @@ export type ProcessPeerProviderConfig = {
   extractSessionId?: (raw: string) => string | undefined;
 };
 
-export class ProcessPeerProvider {
+export class ExecAgentProvider {
   readonly id: string;
   readonly label: string;
   private readonly command: string;
   private readonly defaultTimeoutMs: number;
   private readonly maxOutputBytes: number;
-  private readonly buildArgs: (task: ProcessPeerTask) => string[];
-  private readonly buildPtyArgs: ((task: ProcessPeerTask) => string[]) | undefined;
-  private readonly buildStdin: ((task: ProcessPeerTask) => string | undefined) | undefined;
+  private readonly buildArgs: (task: ExecAgentTask) => string[];
+  private readonly buildPtyArgs: ((task: ExecAgentTask) => string[]) | undefined;
+  private readonly buildStdin: ((task: ExecAgentTask) => string | undefined) | undefined;
   private readonly formatOutput: ((raw: string) => string) | undefined;
   private readonly extractSessionId: ((raw: string) => string | undefined) | undefined;
 
-  constructor(config: ProcessPeerProviderConfig) {
+  constructor(config: ExecAgentProviderConfig) {
     this.id = config.id;
     this.label = config.label;
     this.command = config.command;
@@ -87,7 +87,7 @@ export class ProcessPeerProvider {
     this.extractSessionId = config.extractSessionId;
   }
 
-  async runTask(task: ProcessPeerTask): Promise<ProcessPeerResult> {
+  async runTask(task: ExecAgentTask): Promise<ExecAgentResult> {
     const prompt = task.prompt.trim();
     if (!prompt) {
       throw new Error(`${this.label} peer task is empty`);
@@ -176,7 +176,7 @@ export class ProcessPeerProvider {
         return [formattedStdout, stderr].filter(Boolean).join('\n');
       };
 
-      const emitProgress = (status: ProcessPeerProgressEvent['status']): void => {
+      const emitProgress = (status: ExecAgentProgressEvent['status']): void => {
         task.onProgress?.({
           providerId: this.id,
           mode,
@@ -247,13 +247,13 @@ export class ProcessPeerProvider {
     startedAt,
     onProgress,
     abortSignal,
-  }: ProcessPeerTask & {
+  }: ExecAgentTask & {
     prompt: string;
     cwd: string;
     timeoutMs: number;
     args: string[];
     startedAt: number;
-  }): Promise<ProcessPeerResult> {
+  }): Promise<ExecAgentResult> {
     return await new Promise((resolve, reject) => {
       let stdout = '';
       let stdoutBytes = 0;
@@ -272,7 +272,7 @@ export class ProcessPeerProvider {
       };
 
       const displayCommand = formatCommandForDisplay(this.command, args);
-      const emitProgress = (status: ProcessPeerProgressEvent['status']): void => {
+      const emitProgress = (status: ExecAgentProgressEvent['status']): void => {
         onProgress?.({
           providerId: this.id,
           mode: 'pty',
@@ -359,7 +359,7 @@ export class ProcessPeerProvider {
   }
 }
 
-export function buildCodexExecArgs(task: ProcessPeerTask): string[] {
+export function buildCodexExecArgs(task: ExecAgentTask): string[] {
   const base = ['exec', '-C', task.cwd ?? process.cwd(), '--color', 'never', '--ignore-user-config', '--json'];
   if (task.model) base.push('-m', task.model);
   if (task.sessionId) {
@@ -372,7 +372,7 @@ export function buildCodexExecArgs(task: ProcessPeerTask): string[] {
   return base;
 }
 
-export function buildCodexPtyArgs(task: ProcessPeerTask): string[] {
+export function buildCodexPtyArgs(task: ExecAgentTask): string[] {
   const base = ['exec', '-C', task.cwd ?? process.cwd(), '--color', 'always', '--ignore-user-config'];
   if (task.model) base.push('-m', task.model);
   if (task.sessionId) {
@@ -433,8 +433,8 @@ function getPtyCommand(command: string, args: string[]): { command: string; args
   };
 }
 
-export function createCodexExecPeerProvider(command = process.env.CLEW_CODEX_COMMAND || 'codex'): ProcessPeerProvider {
-  return new ProcessPeerProvider({
+export function createCodexExecAgentProvider(command = process.env.CLEW_CODEX_COMMAND || 'codex'): ExecAgentProvider {
+  return new ExecAgentProvider({
     id: 'codex',
     label: 'Codex',
     command: resolveWindowsCommand(command),
@@ -469,7 +469,7 @@ function resolveWindowsCommand(command: string): string {
 }
 
 // ponytail: dynamic registry + PATH detection — data-driven, no hardcoded if/else
-const providerRegistry = new Map<string, ProcessPeerProvider>();
+const providerRegistry = new Map<string, ExecAgentProvider>();
 
 type KnownTool = {
   id: string;
@@ -498,15 +498,15 @@ function toolExistsOnPath(tool: string): boolean {
   });
 }
 
-function createProviderForTool(tool: KnownTool): ProcessPeerProvider {
+function createProviderForTool(tool: KnownTool): ExecAgentProvider {
   if (tool.id === 'codex') {
-    return createCodexExecPeerProvider(tool.command);
+    return createCodexExecAgentProvider(tool.command);
   }
 
   const command = resolveWindowsCommand(tool.command);
   const args = tool.args;
   // ponytail: args = pass prompt as argument; no args = pipe via stdin
-  return new ProcessPeerProvider({
+  return new ExecAgentProvider({
     id: tool.id,
     label: tool.label,
     command,
@@ -515,11 +515,11 @@ function createProviderForTool(tool: KnownTool): ProcessPeerProvider {
   });
 }
 
-export function registerProcessPeerProvider(provider: ProcessPeerProvider): void {
+export function registerExecAgentProvider(provider: ExecAgentProvider): void {
   providerRegistry.set(provider.id, provider);
 }
 
-export function discoverProcessPeerProviders(): string[] {
+export function discoverExecAgentProviders(): string[] {
   const found: string[] = [];
   for (const tool of KNOWN_AI_TOOLS) {
     if (providerRegistry.has(tool.id)) continue;
@@ -530,13 +530,13 @@ export function discoverProcessPeerProviders(): string[] {
   return found;
 }
 
-export function getProcessPeerProvider(providerId: string): ProcessPeerProvider | undefined {
-  if (providerRegistry.size === 0) discoverProcessPeerProviders();
+export function getExecAgentProvider(providerId: string): ExecAgentProvider | undefined {
+  if (providerRegistry.size === 0) discoverExecAgentProviders();
   return providerRegistry.get(providerId);
 }
 
-export function getProcessPeerProviderIds(): string[] {
-  if (providerRegistry.size === 0) discoverProcessPeerProviders();
+export function getExecAgentProviderIds(): string[] {
+  if (providerRegistry.size === 0) discoverExecAgentProviders();
   return [...providerRegistry.keys()];
 }
 
