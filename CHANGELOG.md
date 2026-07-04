@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.8] — 2026-07-04
+
 ### Changed
 - **README overhaul**: Rewrote README.md in the style of OpenClaw/Hermes Agent — cleaner layout, feature table, punchier tagline, streamlined install + CLI reference sections. (`README.md`)
 - **Task list layout styling**: Changed task list in-progress spinner to a static yellow circle status indicator, and removed strikethroughs from completed tasks. (`src/components/TaskListV2.tsx`)
