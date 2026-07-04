@@ -43,6 +43,7 @@ import securityReview from './commands/security-review.js';
 import terminalSetup from './commands/terminalSetup/index.js';
 import usage from './commands/usage/index.js';
 import theme from './commands/theme/index.js';
+import workspace from './commands/workspace/index.js';
 import { feature } from 'bun:bundle';
 // Dead code elimination: conditional imports
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -171,6 +172,7 @@ export { getCommandName, isCommandEnabled } from './types/command.js';
 // since underlying functions read from config, which can't be read at module initialization time
 const COMMANDS = memoize((): Command[] => [
   addDir,
+  workspace,
   advisor,
   agentCmd,
   autofixPr,

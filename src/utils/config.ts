@@ -111,6 +111,10 @@ export type ProjectConfig = {
   projectOnboardingSeenCount: number;
   hasClaudeMdExternalIncludesApproved?: boolean;
   hasClaudeMdExternalIncludesWarningShown?: boolean;
+  /** Linked project roots (from .clew/workspace.json) the user approved auto-loading. */
+  workspaceLinksApproved?: string[];
+  /** Linked project roots the user declined auto-loading (don't re-prompt). */
+  workspaceLinksDeclined?: string[];
   // MCP server approval fields - migrated to settings but kept for backward compatibility
   enabledMcpjsonServers?: string[];
   disabledMcpjsonServers?: string[];

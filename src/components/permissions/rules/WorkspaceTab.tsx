@@ -6,6 +6,7 @@ import type { CommandResultDisplay } from '../../../commands.js';
 import { Select } from '../../../components/CustomSelect/select.js';
 import { Box, Text } from '../../../ink.js';
 import type { ToolPermissionContext } from '../../../Tool.js';
+import { getLinkedDirs, normalizeRepoDir } from '../../../utils/workspace/workspace.js';
 import { useTabHeaderFocus } from '../../design-system/Tabs.js';
 
 type Props = {
@@ -59,10 +60,13 @@ export function WorkspaceTab({
 
   const handleCancel = useCallback(() => onExit('Workspace dialog dismissed', { display: 'system' }), [onExit]);
 
+  // Directories that are linked via .clew/workspace.json (shown with a badge).
+  const linkedDirs = React.useMemo(() => new Set(getLinkedDirs(getOriginalCwd())), []);
+
   // Main list view options
   const options = React.useMemo(() => {
     const opts = additionalDirectories.map(dir => ({
-      label: dir.path,
+      label: linkedDirs.has(normalizeRepoDir(dir.path)) ? `${dir.path}  🔗 linked` : dir.path,
       value: dir.path,
     }));
 
@@ -72,7 +76,7 @@ export function WorkspaceTab({
     });
 
     return opts;
-  }, [additionalDirectories]);
+  }, [additionalDirectories, linkedDirs]);
 
   // Main list view
   return (

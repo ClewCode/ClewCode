@@ -204,7 +204,7 @@ import {
 } from '../utils/permissions/PermissionUpdate.js';
 import { buildPermissionUpdates } from '../components/permissions/ExitPlanModePermissionRequest/ExitPlanModePermissionRequest.js';
 import { stripDangerousPermissionsForAutoMode } from '../utils/permissions/permissionSetup.js';
-import { getScratchpadDir, isScratchpadEnabled } from '../utils/permissions/filesystem.js';
+import { allWorkingDirectories, getScratchpadDir, isScratchpadEnabled } from '../utils/permissions/filesystem.js';
 import { WEB_FETCH_TOOL_NAME } from '../tools/WebFetchTool/prompt.js';
 import { SLEEP_TOOL_NAME } from '../tools/SleepTool/prompt.js';
 import { clearSpeculativeChecks } from '../tools/BashTool/bashPermissions.js';
@@ -366,6 +366,12 @@ import { useSessionBackgrounding } from '../hooks/useSessionBackgrounding.js';
 import { diagnosticTracker } from '../services/diagnosticTracking.js';
 import { handleSpeculationAccept, type ActiveSpeculationState } from '../services/PromptSuggestion/speculation.js';
 import { IdeOnboardingDialog } from '../components/IdeOnboardingDialog.js';
+import { WorkspaceLinkDialog } from '../components/WorkspaceLinkDialog.js';
+import {
+  computePendingWorkspaceLinks,
+  recordWorkspaceApproval,
+  recordWorkspaceDecline,
+} from '../utils/workspace/startup.js';
 import { EffortCallout, shouldShowEffortCallout } from '../components/EffortCallout.js';
 import type { EffortValue } from '../utils/effort.js';
 import { RemoteCallout } from '../components/RemoteCallout.js';
@@ -993,6 +999,7 @@ export function REPL({
   const [ideToInstallExtension, setIDEToInstallExtension] = useState<IdeType | null>(null);
   const [ideInstallationStatus, setIDEInstallationStatus] = useState<IDEExtensionInstallationStatus | null>(null);
   const [showIdeOnboarding, setShowIdeOnboarding] = useState(false);
+  const [pendingWorkspaceLinks, setPendingWorkspaceLinks] = useState<string[]>([]);
   // Dead code elimination: model switch callout state (ant-only)
   const [showModelSwitchCallout, setShowModelSwitchCallout] = useState(() => {
     if ('external' === 'ant') {
@@ -2105,6 +2112,18 @@ export function REPL({
     setIDEInstallationState: setIDEInstallationStatus,
   });
 
+  // On session start, if this repo's .clew/workspace.json links to other
+  // projects not yet loaded (and not previously declined), offer to load them.
+  useEffect(() => {
+    const workingDirs = allWorkingDirectories(store.getState().toolPermissionContext);
+    const pending = computePendingWorkspaceLinks(workingDirs);
+    if (pending.length > 0) {
+      setPendingWorkspaceLinks(pending);
+    }
+    // Mount-only: workspace links are read from disk at startup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useFileHistorySnapshotInit(initialFileHistorySnapshots, fileHistory, fileHistoryState =>
     setAppState(prev => ({
       ...prev,
@@ -2487,6 +2506,7 @@ export function REPL({
     | 'idle-return'
     | 'init-onboarding'
     | 'ide-onboarding'
+    | 'workspace-link'
     | 'model-switch'
     | 'undercover-callout'
     | 'effort-callout'
@@ -2527,6 +2547,7 @@ export function REPL({
 
     // Onboarding dialogs (special conditions)
     if (allowDialogsWithAnimation && showIdeOnboarding) return 'ide-onboarding';
+    if (allowDialogsWithAnimation && pendingWorkspaceLinks.length > 0) return 'workspace-link';
 
     // Model switch callout (ant-only, eliminated from external builds)
     if ('external' === 'ant' && allowDialogsWithAnimation && showModelSwitchCallout) return 'model-switch';
@@ -6125,6 +6146,35 @@ export function REPL({
                   <IdeOnboardingDialog
                     onDone={() => setShowIdeOnboarding(false)}
                     installationStatus={ideInstallationStatus}
+                  />
+                )}
+                {focusedInputDialog === 'workspace-link' && (
+                  <WorkspaceLinkDialog
+                    pendingLinks={pendingWorkspaceLinks}
+                    onDone={decision => {
+                      const links = pendingWorkspaceLinks;
+                      setPendingWorkspaceLinks([]);
+                      if (decision === 'yes') {
+                        const update = {
+                          type: 'addDirectories' as const,
+                          directories: links,
+                          destination: 'localSettings' as const,
+                        };
+                        setAppState(prev => ({
+                          ...prev,
+                          toolPermissionContext: applyPermissionUpdate(prev.toolPermissionContext, update),
+                        }));
+                        try {
+                          persistPermissionUpdate(update);
+                        } catch {
+                          // Non-fatal: dirs still active for this session.
+                        }
+                        recordWorkspaceApproval(links);
+                        SandboxManager.refreshConfig();
+                      } else {
+                        recordWorkspaceDecline(links);
+                      }
+                    }}
                   />
                 )}
                 {'external' === 'ant' && focusedInputDialog === 'model-switch' && AntModelSwitchCallout && (
