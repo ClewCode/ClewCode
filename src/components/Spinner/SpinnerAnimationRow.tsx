@@ -179,10 +179,29 @@ export function SpinnerAnimationRow({
   const tokensText = hasRunningTeammates ? `${tokenCount} tokens` : `${figures.arrowDown} ${tokenCount} tokens`;
   const tokensWidth = stringWidth(tokensText);
 
+  // === Progressive thinking phrase ===
+  // Stamp when the current thinking phase began (mutating a ref during render
+  // is safe here — same pattern as turnStartRef above) and bucket the elapsed
+  // time into "thinking" → "thinking more" → "almost done thinking".
+  const thinkingStartRef = useRef<number | null>(null);
+  if (thinkingStatus === 'thinking') {
+    if (thinkingStartRef.current === null) thinkingStartRef.current = now;
+  } else {
+    thinkingStartRef.current = null;
+  }
+  const thinkingElapsedMs = thinkingStartRef.current !== null ? now - thinkingStartRef.current : 0;
+  const thinkingPhrase =
+    thinkingElapsedMs > 40_000 ? 'almost done thinking' : thinkingElapsedMs > 15_000 ? 'thinking more' : 'thinking';
+
+  // Effort reads as "with low effort" when attached to the thinking phrase
+  // (getEffortSuffix hands us " · low effort" for use as a standalone Byline
+  // part; here it joins the phrase inline instead).
+  const thinkingEffort = effortSuffix.replace(' · ', ' with ');
+
   // === Thinking text (may shrink to fit) ===
   let thinkingText =
     thinkingStatus === 'thinking'
-      ? `thinking${effortSuffix}`
+      ? `${thinkingPhrase}${thinkingEffort}`
       : typeof thinkingStatus === 'number'
         ? `thought for ${Math.max(1, Math.round(thinkingStatus / 1000))}s`
         : null;

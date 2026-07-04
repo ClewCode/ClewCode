@@ -14,6 +14,11 @@ import {
   mcpToolDetailsForAnalytics,
   sanitizeToolNameForAnalytics,
 } from 'src/services/analytics/metadata.js';
+import { auditCommandExec, auditFileAccess, auditToolCall } from 'src/services/auditLog/index.js';
+import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
+import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
+import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
+import { POWERSHELL_TOOL_NAME } from 'src/tools/PowerShellTool/toolName.js';
 import { addToToolDuration, getCodeEditToolDecisionCounter, getStatsStore } from '../../bootstrap/state.js';
 import { buildCodeEditToolAttributes, isCodeEditingTool } from '../../hooks/toolPermission/permissionLogging.js';
 import type { CanUseToolFn } from '../../hooks/useCanUseTool.js';
@@ -26,12 +31,8 @@ import {
 } from '../../Tool.js';
 import type { BashToolInput } from '../../tools/BashTool/BashTool.js';
 import { startSpeculativeClassifierCheck } from '../../tools/BashTool/bashPermissions.js';
-import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import { FILE_EDIT_TOOL_NAME } from '../../tools/FileEditTool/constants.js';
-import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
-import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
 import { NOTEBOOK_EDIT_TOOL_NAME } from '../../tools/NotebookEditTool/constants.js';
-import { POWERSHELL_TOOL_NAME } from 'src/tools/PowerShellTool/toolName.js';
 import { parseGitCommitId } from '../../tools/shared/gitOperationTracking.js';
 import { isDeferredTool, TOOL_SEARCH_TOOL_NAME } from '../../tools/ToolSearchTool/prompt.js';
 import { getAllBaseTools } from '../../tools.js';
@@ -278,6 +279,22 @@ function getMcpServerBaseUrlFromToolName(toolName: string, mcpClients: MCPServer
     return undefined;
   }
   return getLoggingSafeMcpBaseUrl(serverConnection.config);
+}
+
+function inputAsRecord(input: unknown): Record<string, unknown> | undefined {
+  return input && typeof input === 'object' && !Array.isArray(input) ? (input as Record<string, unknown>) : undefined;
+}
+
+function getCommandSummary(command: string): string {
+  const [firstToken] = command.trim().split(/\s+/);
+  return firstToken || 'command';
+}
+
+function getExitCode(resultData: unknown): number | undefined {
+  if (!resultData || typeof resultData !== 'object') return undefined;
+  const data = resultData as Record<string, unknown>;
+  const value = data.exitCode ?? data.exit_code ?? data.code;
+  return typeof value === 'number' ? value : undefined;
 }
 
 export async function* runToolUse(
@@ -543,6 +560,14 @@ async function checkPermissionsAndCallTool(
     }
 
     logForDebugging(`${tool.name} tool input error: ${errorContent.slice(0, 200)}`);
+    auditToolCall({
+      toolName: tool.name,
+      input: inputAsRecord(input),
+      allowed: false,
+      event: 'tool.failure',
+      level: 'error',
+      reason: `InputValidationError: ${parsedInput.error.message}`,
+    });
     logEvent('tengu_tool_use_error', {
       error: 'InputValidationError' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       errorDetails: errorContent.slice(0, 2000) as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -585,6 +610,14 @@ async function checkPermissionsAndCallTool(
   const isValidCall = await tool.validateInput?.(parsedInput.data, toolUseContext);
   if (isValidCall?.result === false) {
     logForDebugging(`${tool.name} tool validation error: ${isValidCall.message?.slice(0, 200)}`);
+    auditToolCall({
+      toolName: tool.name,
+      input: inputAsRecord(parsedInput.data),
+      allowed: false,
+      event: 'tool.failure',
+      level: 'error',
+      reason: isValidCall.message,
+    });
     logEvent('tengu_tool_use_error', {
       messageID: messageId as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       toolName: sanitizeToolNameForAnalytics(tool.name),
@@ -883,6 +916,14 @@ async function checkPermissionsAndCallTool(
     if (shouldPreventContinuation && !errorMessage) {
       errorMessage = `Execution stopped by PreToolUse hook${stopReason ? `: ${stopReason}` : ''}`;
     }
+    auditToolCall({
+      toolName: tool.name,
+      input: inputAsRecord(processedInput),
+      allowed: false,
+      event: 'tool.failure',
+      level: 'warn',
+      reason: errorMessage,
+    });
 
     // Build top-level content: tool_result (text-only for is_error compatibility) + images alongside
     const messageContent: ContentBlockParam[] = [
@@ -975,6 +1016,49 @@ async function checkPermissionsAndCallTool(
     processedInput = permissionDecision.updatedInput;
   }
 
+  auditToolCall({
+    toolName: tool.name,
+    input: inputAsRecord(processedInput),
+    allowed: true,
+    event: 'tool.call',
+  });
+  if (
+    (tool.name === FILE_READ_TOOL_NAME ||
+      tool.name === FILE_WRITE_TOOL_NAME ||
+      tool.name === FILE_EDIT_TOOL_NAME ||
+      tool.name === NOTEBOOK_EDIT_TOOL_NAME) &&
+    processedInput &&
+    typeof processedInput === 'object'
+  ) {
+    const filePath =
+      'file_path' in processedInput
+        ? String(processedInput.file_path)
+        : 'notebook_path' in processedInput
+          ? String(processedInput.notebook_path)
+          : undefined;
+    if (filePath) {
+      auditFileAccess({
+        event: tool.name === FILE_READ_TOOL_NAME ? 'file.read' : 'file.write',
+        path: filePath,
+        allowed: true,
+      });
+    }
+  }
+  if (
+    (tool.name === BASH_TOOL_NAME || tool.name === POWERSHELL_TOOL_NAME) &&
+    processedInput &&
+    typeof processedInput === 'object' &&
+    'command' in processedInput &&
+    typeof processedInput.command === 'string'
+  ) {
+    auditCommandExec({
+      event: 'command.exec',
+      safeSummary: getCommandSummary(processedInput.command),
+      full: processedInput.command,
+      allowed: true,
+    });
+  }
+
   // Prepare tool parameters for logging in tool_result event.
   // Gated by OTEL_LOG_TOOL_DETAILS — tool parameters can contain sensitive
   // content (bash commands, MCP server names, etc.) so they're opt-in only.
@@ -1062,6 +1146,29 @@ async function checkPermissionsAndCallTool(
     );
     const durationMs = Date.now() - startTime;
     addToToolDuration(durationMs);
+    auditToolCall({
+      toolName: tool.name,
+      input: inputAsRecord(processedInput),
+      allowed: true,
+      event: 'tool.result',
+      durationMs,
+    });
+    if (
+      (tool.name === BASH_TOOL_NAME || tool.name === POWERSHELL_TOOL_NAME) &&
+      processedInput &&
+      typeof processedInput === 'object' &&
+      'command' in processedInput &&
+      typeof processedInput.command === 'string'
+    ) {
+      auditCommandExec({
+        event: 'command.result',
+        safeSummary: getCommandSummary(processedInput.command),
+        full: processedInput.command,
+        exitCode: getExitCode(result.data),
+        durationMs,
+        allowed: true,
+      });
+    }
 
     // Track tool usage
     try {
@@ -1413,6 +1520,15 @@ async function checkPermissionsAndCallTool(
   } catch (error) {
     const durationMs = Date.now() - startTime;
     addToToolDuration(durationMs);
+    auditToolCall({
+      toolName: tool.name,
+      input: inputAsRecord(processedInput),
+      allowed: true,
+      event: 'tool.failure',
+      level: 'error',
+      durationMs,
+      reason: errorMessage(error),
+    });
 
     endToolExecutionSpan({
       success: false,

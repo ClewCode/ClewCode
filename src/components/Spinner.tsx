@@ -20,6 +20,7 @@ import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { stringWidth } from '../ink/stringWidth.js';
 import { getDefaultCharacters } from './Spinner/index.js';
 import type { SpinnerMode } from './Spinner/index.js';
+import { getWhimsicalVerb } from './Spinner/whimsy.js';
 import { SpinnerAnimationRow } from './Spinner/SpinnerAnimationRow.js';
 import { useSettings } from '../hooks/useSettings.js';
 import { isInProcessTeammateTask } from '../tasks/InProcessTeammateTask/types.js';
@@ -170,8 +171,13 @@ function SpinnerWithVerbInner({
   // Fallback verb based on actual mode
   const modeVerb = mode === 'thinking' ? 'Thinking' : mode === 'loading' ? 'Responding' : 'Processing';
 
+  // Whimsical generic verb ("Recombobulating…") — stable within a turn,
+  // seeded off loadingStartTime. Only used as the leader's fallback when
+  // there's no explicit override or active todo to name the work.
+  const whimsicalVerb = getWhimsicalVerb(loadingStartTimeRef.current);
+
   // Leader's own verb (always the leader's, regardless of who is foregrounded)
-  const leaderVerb = overrideMessage ?? currentTodo?.activeForm ?? currentTodo?.subject ?? modeVerb;
+  const leaderVerb = overrideMessage ?? currentTodo?.activeForm ?? currentTodo?.subject ?? whimsicalVerb;
 
   const effectiveVerb =
     foregroundedTeammate && !foregroundedTeammate.isIdle ? (foregroundedTeammate.spinnerVerb ?? modeVerb) : leaderVerb;
