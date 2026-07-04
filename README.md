@@ -193,6 +193,30 @@ Key environment variables read at startup:
 
 All provider keys can also be set via the `/model` provider setup flow or in `.clew/settings.json` under `env`.
 
+### Enterprise audit logging
+
+Audit logging is opt-in and writes newline-delimited JSON events for SIEM ingestion. When enabled, Clew records tool calls, tool results/failures, file read/write access, and Bash/PowerShell command execution/results.
+
+| Variable | Required | Description |
+|---|---|---|
+| `CLEW_AUDIT_LOG` | No | Enable audit logging when set to `1` |
+| `CLEW_CODE_AUDIT_LOG` | No | Alternate enable flag when set to `1` |
+| `CLEW_AUDIT_LOG_PATH` | No | Audit log directory, relative to the project root by default (`.clew/audit`) |
+| `CLEW_CODE_AUDIT_LOG_PATH` | No | Alternate audit log directory variable |
+| `CLEW_AUDIT_LOG_MAX_BYTES` | No | Rotate `audit.ndjson` after this size in bytes (default: 100 MB) |
+| `CLEW_AUDIT_LOG_MAX_FILES` | No | Number of audit log files to retain, including the active file (default: 10) |
+| `CLEW_AUDIT_LOG_INCLUDE` | No | Comma-separated event allowlist, such as `tool.call,tool.result` |
+| `CLEW_AUDIT_LOG_EXCLUDE` | No | Comma-separated event blocklist |
+| `CLEW_AUDIT_LOG_MIN_LEVEL` | No | Minimum level to write: `info`, `warn`, `error`, or `audit` |
+| `CLEW_AUDIT_LOG_CONSOLE` | No | Also mirror audit summaries to stderr when set to `1` |
+| `CLEW_AUDIT_USER` | No | User identifier to include in each audit event |
+
+Example:
+
+```bash
+CLEW_AUDIT_LOG=1 CLEW_AUDIT_LOG_PATH=.clew/audit bun run dev
+```
+
 ---
 
 ## Architecture
