@@ -22,8 +22,6 @@ import ide from './commands/ide/index.js';
 import init from './commands/init.js';
 import keybindings from './commands/keybindings/index.js';
 
-import login from './commands/login/index.js';
-import logout from './commands/logout/index.js';
 import installGitHubApp from './commands/install-github-app/index.js';
 import installSlackApp from './commands/install-slack-app/index.js';
 import mcp from './commands/mcp/index.js';
@@ -125,7 +123,7 @@ import {
   clearPluginSkillsCache,
 } from './utils/plugins/loadPluginCommands.js';
 import memoize from 'lodash-es/memoize.js';
-import { isUsing3PServices, isClaudeAISubscriber, isActiveProviderAnthropic } from './utils/auth.js';
+import { isUsing3PServices, isClaudeAISubscriber } from './utils/auth.js';
 import { isFirstPartyAnthropicBaseUrl } from './utils/model/providers.js';
 import exit from './commands/exit/index.js';
 import exportCommand from './commands/export/index.js';
@@ -277,7 +275,6 @@ const COMMANDS = memoize((): Command[] => [
   hooks,
   exportCommand,
   sandboxToggle,
-  ...(!isUsing3PServices() && isActiveProviderAnthropic() ? [logout, login()] : []),
   passes,
   tasks,
   ...(workflowsCmd ? [workflowsCmd] : []),

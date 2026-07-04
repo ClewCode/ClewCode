@@ -281,6 +281,7 @@ function ModeIndicator({
     }
   }, [voiceEnabled, voiceHintUnderCap, voiceHintIncrementedRef?.current, voiceHintIncrementedRef]);
   const isKillAgentsConfirmShowing = useAppState(s => s.notifications.current?.key === 'kill-agents-confirm');
+  const currentProfile = useAppState(s => s.profile);
 
   // Derive team info from teamContext (no filesystem I/O needed)
   // Match the same logic as TeamStatus to avoid trailing separator
@@ -371,7 +372,6 @@ function ModeIndicator({
     : 0;
 
   // Short profile label displayed before task/teammate indicators
-  const currentProfile = useAppState(s => s.profile);
   const profileLabel = currentProfile === 'personal' ? 'P' : '';
 
   // Build parts array - exclude BackgroundTaskStatus when we have teammate pills
