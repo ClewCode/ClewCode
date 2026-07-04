@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { normalizeOpenAIToolInputSchema } from './AnthropicAdapter.js';
+import { AnthropicAdapter, normalizeOpenAIToolInputSchema } from './AnthropicAdapter.js';
 
 describe('normalizeOpenAIToolInputSchema', () => {
   test('keeps a plain object schema unchanged', () => {
@@ -54,5 +54,46 @@ describe('normalizeOpenAIToolInputSchema', () => {
       properties: {},
       additionalProperties: true,
     });
+  });
+});
+
+describe('AnthropicAdapter media fallback', () => {
+  test('strips image blocks for DeepSeek text-only models', async () => {
+    let capturedParams: any;
+    const client = {
+      chat: {
+        completions: {
+          create: async (params: any) => {
+            capturedParams = params;
+            return {
+              id: 'msg-test',
+              model: params.model,
+              choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+              usage: { prompt_tokens: 1, completion_tokens: 1 },
+            };
+          },
+        },
+      },
+    };
+
+    const adapter = new AnthropicAdapter(client, 'deepseek');
+    await adapter.beta.messages.create({
+      model: 'deepseek-v4-pro',
+      max_tokens: 16,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'describe this if possible' },
+            { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'abc' } },
+            { type: 'image_url', image_url: { url: 'data:image/png;base64,abc' } } as any,
+          ],
+        },
+      ],
+    } as any);
+
+    expect(capturedParams.messages[0].content).toContain('describe this if possible');
+    expect(capturedParams.messages[0].content).toContain('Image not sent');
+    expect(JSON.stringify(capturedParams.messages)).not.toContain('image_url');
   });
 });

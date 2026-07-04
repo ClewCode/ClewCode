@@ -1,6 +1,5 @@
 import { useContext, useEffect } from 'react';
-import stripAnsi from 'strip-ansi';
-import { OSC, osc } from '../termio/osc.js';
+import { setTerminalTitle } from '../../utils/terminalTitle.js';
 import { TerminalWriteContext } from '../useTerminalNotification.js';
 /**
  * Declaratively set the terminal tab/window title.
@@ -10,18 +9,13 @@ import { TerminalWriteContext } from '../useTerminalNotification.js';
  * Pass `null` to opt out — the hook becomes a no-op and leaves the
  * terminal title untouched.
  *
- * On Windows, uses `process.title` (classic conhost doesn't support OSC).
- * Elsewhere, writes OSC 0 (set title+icon) via Ink's stdout.
+ * Updates process.title and, when the terminal supports it, writes OSC 0
+ * (set title+icon) via Ink's stdout.
  */
 export function useTerminalTitle(title) {
   const writeRaw = useContext(TerminalWriteContext);
   useEffect(() => {
     if (title === null || !writeRaw) return;
-    const clean = stripAnsi(title);
-    if (process.platform === 'win32') {
-      process.title = clean;
-    } else {
-      writeRaw(osc(OSC.SET_TITLE_AND_ICON, clean));
-    }
+    setTerminalTitle(title, writeRaw);
   }, [title, writeRaw]);
 }

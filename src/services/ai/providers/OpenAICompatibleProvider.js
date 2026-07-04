@@ -28,6 +28,34 @@ function getChatCompletionsUrl(baseUrl, chatPath = DEFAULT_CHAT_PATH) {
   const normalized = baseUrl.replace(/\/$/, '');
   return normalized.endsWith(chatPath) ? normalized : `${normalized}${chatPath}`;
 }
+function shouldForceTextOnlyPayload(providerId) {
+  return providerId === 'deepseek';
+}
+function sanitizeMessagesForTextOnlyProvider(messages, model) {
+  if (!Array.isArray(messages)) return messages;
+  return messages.map(message => {
+    if (!message || typeof message !== 'object') return message;
+    const record = message;
+    const content = record.content;
+    if (!Array.isArray(content)) return message;
+    const textParts = [];
+    let strippedMedia = false;
+    for (const part of content) {
+      if (!part || typeof part !== 'object') continue;
+      const partRecord = part;
+      if (partRecord.type === 'text' && typeof partRecord.text === 'string') {
+        textParts.push(partRecord.text);
+      } else if (partRecord.type === 'image_url') {
+        strippedMedia = true;
+      }
+    }
+    if (!strippedMedia) return message;
+    return {
+      ...record,
+      content: [...textParts, `[Image not sent - ${model} does not support vision]`].filter(Boolean).join('\n'),
+    };
+  });
+}
 export class OpenAICompatibleProvider {
   providerId;
   label;
@@ -77,10 +105,13 @@ export class OpenAICompatibleProvider {
             if (apiKey) {
               headers.Authorization = `Bearer ${apiKey}`;
             }
+            const requestParams = shouldForceTextOnlyPayload(this.providerId)
+              ? { ...params, messages: sanitizeMessagesForTextOnlyProvider(params.messages, params.model) }
+              : params;
             const response = await fetch(getChatCompletionsUrl(baseUrl, this.chatPath), {
               method: 'POST',
               headers,
-              body: JSON.stringify({ ...params, stream: isStreaming }),
+              body: JSON.stringify({ ...requestParams, stream: isStreaming }),
             });
             if (!response.ok) {
               const text = await response.text();

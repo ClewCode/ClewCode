@@ -26,6 +26,36 @@ If you want a coding assistant that feels local, fast, and doesn't ship your con
 
 ---
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Quick Install](#quick-install)
+- [Getting Started](#getting-started)
+- [Use Cases](#use-cases)
+- [Features](#features)
+- [CLI Quick Reference](#cli-quick-reference)
+- [Screenshots](#screenshots)
+- [Security](#security)
+- [Documentation](#documentation)
+- [Configuration](#configuration)
+- [FAQ](#faq)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [Contributing](#contributing)
+- [Star History](#star-history)
+- [License](#license)
+
+---
+
+## Prerequisites
+
+- **Node.js** 18+ or **Bun** 1.x (recommended for development)
+- An **API key** from at least one supported provider (see [Providers docs](https://clew-docs.pages.dev/providers))
+- *Optional:* Git, Playwright (for browser automation), microphone (for voice input)
+
+---
+
 ## Quick Install
 
 ### macOS / Linux
@@ -58,6 +88,18 @@ clew --resume last         # Pick up where you left off
 ```
 
 First launch walks you through provider setup. After that, use `/model` to switch providers mid-session.
+
+---
+
+## Use Cases
+
+| Scenario | How Clew Code Helps |
+|---|---|
+| **Fix failing tests** | `clew -p "Fix the failing tests and explain what was wrong"` — reads test output, diagnoses root cause, applies fixes. |
+| **Refactor a module** | Point it at a file, describe the target structure. Uses multi-file edit tools, git status awareness, and checkpoint rollback on mistakes. |
+| **Research a codebase** | `/research "How does auth work?"` — searches code, docs, and web, then compiles a dossier with source references. |
+| **Background automation** | Run `/bg` to delegate long-running tasks (migration, lint fixes) to a background agent while you keep working in the REPL. |
+| **Cross-repo changes** | `/workspace link ../other-repo` — edit across linked projects with full context from both. |
 
 ---
 
@@ -95,6 +137,14 @@ Slash commands: `/model`, `/memory`, `/task`, `/goal`, `/compact`, `/peer`, `/mc
 
 ---
 
+## Screenshots
+
+![Clew Code REPL](assets/screenshots/clew-code-repl.png)
+
+Clew Code running in the terminal REPL.
+
+---
+
 ## Security
 
 Clew Code runs entirely on your machine. No code or context leaves your network unless you explicitly configure a remote provider or send a web fetch.
@@ -124,6 +174,24 @@ Clew Code runs entirely on your machine. No code or context leaves your network 
 | [Troubleshooting](https://clew-docs.pages.dev/troubleshooting) | Common issues and fixes |
 
 Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
+
+---
+
+## Configuration
+
+Key environment variables read at startup:
+
+| Variable | Required | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | No | Anthropic Claude models |
+| `OPENAI_API_KEY` | No | OpenAI GPT models |
+| `DEEPSEEK_API_KEY` | No | DeepSeek models |
+| `GOOGLE_API_KEY` | No | Google Gemini models |
+| `GROQ_API_KEY` | No | Groq-hosted models |
+| `TAVILY_API_KEY` | No | Enhanced web search provider |
+| `CLEW_DISABLE_TELEMETRY` | No | Disable anonymous usage stats (`1`) |
+
+All provider keys can also be set via the `/model` provider setup flow or in `.clew/settings.json` under `env`.
 
 ---
 
@@ -197,6 +265,41 @@ bun run check:ci && bun x tsc --noEmit && bun test --bail
 ### Shadow `.js` files
 
 `src/` has ~410 `.js` files alongside `.ts` twins (leftover from JS → TS migration). Bun resolves `.js` import specifiers to the real `.js` file on disk — it does **not** prefer the `.ts` source. If you're making a runtime fix, check for a `.js` sibling and edit **both** files.
+
+---
+
+## FAQ
+
+**Q: Does this send my code to a remote server?**  
+A: No. Clew Code runs entirely on your machine. Code only leaves your network if you explicitly configure a remote provider or use a web fetch tool.
+
+**Q: Which providers are supported?**  
+A: 29+ including OpenAI, Anthropic, DeepSeek, Groq, Google, Ollama (local), and more. Switch mid-session with `/model`.
+
+**Q: Can I use it without an internet connection?**  
+A: Yes — pair it with a local provider like Ollama running on your machine.
+
+**Q: How is this different from Claude Code or Cursor?**  
+A: Clew Code is provider-agnostic (not locked to one LLM), fully local (no SaaS), and open source (GPL-3.0). It supports multi-provider routing, LAN peer swarms, and persistent memory.
+
+**Q: Does it have a GUI?**  
+A: It runs in the terminal with a full TUI (Ink + React 19). Some features are also available via a web dashboard at [clew-code.org/app](https://clew-code.org/app).
+
+---
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+- Report bugs via [GitHub Issues](https://github.com/ClewCode/ClewCode/issues)
+- Discuss ideas in [GitHub Discussions](https://github.com/ClewCode/ClewCode/discussions)
+- Read [AGENTS.md](AGENTS.md) for architecture and code conventions
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ClewCode/ClewCode&type=Date)](https://star-history.com/#ClewCode/ClewCode&Date)
 
 ---
 

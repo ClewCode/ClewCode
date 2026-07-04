@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **README sections**: Added table of contents, prerequisites, use cases, screenshots, configuration reference, FAQ, contributing guide, and star history chart. (`README.md`)
+- **Terminal title utility**: Extracted shared `setTerminalTitle()` to `src/utils/terminalTitle.ts` — handles both `process.title` (Windows) and OSC 0 (POSIX) in one place. (`src/utils/terminalTitle.ts`, `src/utils/terminalTitle.js`)
+- **Screenshot asset**: Added REPL screenshot for README. (`assets/screenshots/`)
+- **Test for media fallback**: Added `AnthropicAdapter` test covering DeepSeek text-only model image stripping. (`src/services/ai/adapter/AnthropicAdapter.test.ts`)
+
+### Changed
+- **Vision/media graceful degradation**: `modelSupportsVision()` now defaults to `false` (instead of `true`) when registry lookup fails — prevents sending multimodal blocks to APIs that reject them. (`src/services/ai/adapter/AnthropicAdapter.ts`, `src/services/ai/adapter/AnthropicAdapter.js`)
+- **DeepSeek text-only sanitization**: `OpenAICompatibleProvider` now strips `image_url` blocks and replaces with a text notice before sending to DeepSeek's API. (`src/services/ai/providers/OpenAICompatibleProvider.ts`, `src/services/ai/providers/OpenAICompatibleProvider.js`)
+- **Rewind UI improvements**: Refined MessageSelector layout — grouped Rewind header, added "Current point" indicator, extracted `DiffStatsSummary` component, cleaner file history metadata display. (`src/components/MessageSelector.tsx`)
+- **`useTerminalTitle` hook**: Refactored to delegate title-setting to the shared utility. (`src/ink/hooks/use-terminal-title.ts`, `src/ink/hooks/use-terminal-title.js`)
+- **`main.tsx`**: Uses shared `setTerminalTitle` with `DEFAULT_TERMINAL_TITLE` constant instead of inline `process.title`. (`src/main.tsx`)
+
 ## [0.4.8] — 2026-07-04
 
 ### Changed

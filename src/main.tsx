@@ -350,6 +350,7 @@ import { setCwd } from 'src/utils/Shell.js';
 import { type ProcessedResume, processResumedConversation } from 'src/utils/sessionRestore.js';
 import { parseSettingSourcesFlag } from 'src/utils/settings/constants.js';
 import { plural } from 'src/utils/stringUtils.js';
+import { DEFAULT_TERMINAL_TITLE, setTerminalTitle } from 'src/utils/terminalTitle.js';
 import {
   type ChannelEntry,
   getInitialMainLoopModel,
@@ -1338,11 +1339,11 @@ async function run(): Promise<CommanderCommand> {
 
     profileCheckpoint('preAction_after_init');
 
-    // process.title on Windows sets the console title directly; on POSIX,
-    // terminal shell integration may mirror the process name to the tab.
+    // process.title on Windows sets the console title directly; OSC 0 updates
+    // modern terminal tabs before the React UI mounts.
     // After init() so settings.json env can also gate this (gh-4765).
     if (!isEnvTruthy(process.env.CLEW_CODE_DISABLE_TERMINAL_TITLE)) {
-      process.title = 'clew';
+      setTerminalTitle(DEFAULT_TERMINAL_TITLE);
     }
 
     // Attach logging sinks so subcommand handlers can use logEvent/logError.

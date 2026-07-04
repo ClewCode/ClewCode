@@ -387,9 +387,16 @@ export function MessageSelector({
     <Box flexDirection="column" width="100%">
       <Divider color="suggestion" />
       <Box flexDirection="column" marginX={1} gap={1}>
-        <Text bold color="suggestion">
-          Rewind
-        </Text>
+        <Box flexDirection="column">
+          <Text bold color="suggestion">
+            Rewind
+          </Text>
+          {showPickList && (
+            <Text dimColor>
+              Choose the message to rewind to. The restore point is just before that message was sent.
+            </Text>
+          )}
+        </Box>
 
         {error && <Text color="error">Error: {error}</Text>}
         {!hasMessagesToSelect && <Text>Nothing to rewind to yet.</Text>}
@@ -441,11 +448,7 @@ export function MessageSelector({
         )}
         {showPickList && (
           <>
-            {isFileHistoryEnabled ? (
-              <Text>Restore the code and/or conversation to the point before…</Text>
-            ) : (
-              <Text>Restore and fork the conversation to the point before…</Text>
-            )}
+            <Text bold>{isFileHistoryEnabled ? 'Restore code and/or conversation' : 'Restore conversation'}</Text>
             <Box width="100%" flexDirection="column">
               {messageOptions
                 .slice(firstVisibleIndex, firstVisibleIndex + MAX_VISIBLE_MESSAGES)
@@ -454,9 +457,8 @@ export function MessageSelector({
                   const isSelected = optionIndex === selectedIndex;
                   const isCurrent = msg.uuid === currentUUID;
 
-                  const metadataLoaded = optionIndex in fileHistoryMetadata;
+                  const metadataLoaded = isCurrent || optionIndex in fileHistoryMetadata;
                   const metadata = fileHistoryMetadata[optionIndex];
-                  const numFilesChanged = metadata?.filesChanged?.length;
 
                   return (
                     <Box
@@ -475,7 +477,7 @@ export function MessageSelector({
                           <Text>{'  '}</Text>
                         )}
                       </Box>
-                      <Box flexDirection="column">
+                      <Box flexDirection="column" flexGrow={1}>
                         <Box flexShrink={1} height={1} overflow="hidden">
                           <UserMessageOption
                             userMessage={msg}
@@ -486,22 +488,17 @@ export function MessageSelector({
                         </Box>
                         {isFileHistoryEnabled && metadataLoaded && (
                           <Box height={1} flexDirection="row">
-                            {metadata ? (
+                            {isCurrent ? (
+                              <Text dimColor color="inactive">
+                                Current point - no rewind
+                              </Text>
+                            ) : metadata ? (
                               <Text dimColor={!isSelected} color="inactive">
-                                {numFilesChanged ? (
-                                  <>
-                                    {numFilesChanged === 1 && metadata.filesChanged![0]
-                                      ? `${path.basename(metadata.filesChanged![0])} `
-                                      : `${numFilesChanged} files changed `}
-                                    <DiffStatsText diffStats={metadata} />
-                                  </>
-                                ) : (
-                                  <>No code changes</>
-                                )}
+                                Code: <DiffStatsSummary diffStats={metadata} />
                               </Text>
                             ) : (
                               <Text dimColor color="warning">
-                                {figures.warning} No code restore
+                                Code: {figures.warning} No code snapshot
                               </Text>
                             )}
                           </Box>
@@ -518,7 +515,7 @@ export function MessageSelector({
             {exitState.pending ? (
               <>Press {exitState.keyName} again to exit</>
             ) : (
-              <>{!error && hasMessagesToSelect && 'Enter to continue · '}Esc to exit</>
+              <>{!error && hasMessagesToSelect && 'Enter to continue - '}Esc to exit</>
             )}
           </Text>
         )}
@@ -611,6 +608,25 @@ function DiffStatsText({ diffStats }: { diffStats: DiffStats | undefined }): Rea
   );
 }
 
+function DiffStatsSummary({ diffStats }: { diffStats: NonNullable<DiffStats> }): React.ReactNode {
+  const numFilesChanged = diffStats.filesChanged?.length ?? 0;
+
+  if (numFilesChanged === 0) {
+    return <>no code changes</>;
+  }
+
+  const changedFileLabel =
+    numFilesChanged === 1 && diffStats.filesChanged?.[0]
+      ? path.basename(diffStats.filesChanged[0])
+      : `${numFilesChanged} files`;
+
+  return (
+    <>
+      {changedFileLabel} <DiffStatsText diffStats={diffStats} />
+    </>
+  );
+}
+
 function UserMessageOption({
   userMessage,
   color,
@@ -628,8 +644,8 @@ function UserMessageOption({
   if (isCurrent) {
     return (
       <Box width="100%">
-        <Text italic color={color} dimColor={dimColor}>
-          (current)
+        <Text color={color} dimColor={dimColor}>
+          Current point
         </Text>
       </Box>
     );

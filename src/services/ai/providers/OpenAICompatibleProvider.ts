@@ -37,6 +37,43 @@ function getChatCompletionsUrl(baseUrl: string, chatPath: string = DEFAULT_CHAT_
   return normalized.endsWith(chatPath) ? normalized : `${normalized}${chatPath}`;
 }
 
+function shouldForceTextOnlyPayload(providerId: ProviderId): boolean {
+  return providerId === 'deepseek';
+}
+
+function sanitizeMessagesForTextOnlyProvider(messages: unknown, model: string): unknown {
+  if (!Array.isArray(messages)) return messages;
+
+  return messages.map(message => {
+    if (!message || typeof message !== 'object') return message;
+
+    const record = message as Record<string, unknown>;
+    const content = record.content;
+    if (!Array.isArray(content)) return message;
+
+    const textParts: string[] = [];
+    let strippedMedia = false;
+
+    for (const part of content) {
+      if (!part || typeof part !== 'object') continue;
+
+      const partRecord = part as Record<string, unknown>;
+      if (partRecord.type === 'text' && typeof partRecord.text === 'string') {
+        textParts.push(partRecord.text);
+      } else if (partRecord.type === 'image_url') {
+        strippedMedia = true;
+      }
+    }
+
+    if (!strippedMedia) return message;
+
+    return {
+      ...record,
+      content: [...textParts, `[Image not sent - ${model} does not support vision]`].filter(Boolean).join('\n'),
+    };
+  });
+}
+
 export class OpenAICompatibleProvider implements ProviderInterface {
   readonly providerId: ProviderId;
   readonly label: string;
@@ -104,10 +141,14 @@ export class OpenAICompatibleProvider implements ProviderInterface {
               headers.Authorization = `Bearer ${apiKey}`;
             }
 
+            const requestParams = shouldForceTextOnlyPayload(this.providerId)
+              ? { ...params, messages: sanitizeMessagesForTextOnlyProvider(params.messages, params.model) }
+              : params;
+
             const response = await fetch(getChatCompletionsUrl(baseUrl, this.chatPath), {
               method: 'POST',
               headers,
-              body: JSON.stringify({ ...params, stream: isStreaming }),
+              body: JSON.stringify({ ...requestParams, stream: isStreaming }),
             });
 
             if (!response.ok) {

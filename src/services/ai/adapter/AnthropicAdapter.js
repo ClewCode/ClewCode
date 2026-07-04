@@ -213,8 +213,9 @@ class OpenAICompatibleAdapter {
       if (entry.capabilities.imageIn !== undefined) return entry.capabilities.imageIn;
       return entry.capabilities.vision;
     } catch {
-      // If registry lookup fails, assume yes — let the provider reject if needed
-      return true;
+      // Unknown provider capability should degrade to text-only instead of
+      // sending multimodal blocks that many OpenAI-compatible APIs reject.
+      return false;
     }
   }
   /**
@@ -335,6 +336,20 @@ class OpenAICompatibleAdapter {
                 type: 'image_url',
                 image_url: {
                   url: `data:${source.media_type};base64,${source.data}`,
+                },
+              });
+            }
+          } else if (c.type === 'image_url') {
+            if (!this.modelSupportsVision(params.model)) {
+              textParts.push(`[Image not sent — ${params.model} does not support vision]`);
+              continue;
+            }
+            const imageUrl = c.image_url?.url;
+            if (typeof imageUrl === 'string' && imageUrl.length > 0) {
+              imageParts.push({
+                type: 'image_url',
+                image_url: {
+                  url: imageUrl,
                 },
               });
             }
