@@ -19,11 +19,14 @@ export async function launchRepl(
 ): Promise<void> {
   const { App } = await import('./components/App.js');
   const { REPL } = await import('./screens/REPL.js');
+  const { Splash } = await import('./components/LogoV2/Splash.js');
   await renderAndRun(
     root,
     <SentryErrorBoundary>
       <App {...appProps}>
-        <REPL {...replProps} />
+        <Splash>
+          <REPL {...replProps} />
+        </Splash>
       </App>
     </SentryErrorBoundary>,
   );

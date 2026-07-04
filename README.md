@@ -21,6 +21,12 @@
 
 ---
 
+<p align="center">
+  <img src="assets/screenshots/clew-code-repl.png" alt="Clew Code REPL" width="680" />
+</p>
+
+---
+
 Clew Code is a terminal-native AI coding agent that lives in your repo, works with your API keys, and **doesn't phone home**. It reads your code, writes files, runs commands, and talks to any LLM you bring — all on your machine, no telemetry, no vendor lock-in.
 
 If you want a coding assistant that feels local, fast, and doesn't ship your context to a third-party server, this is it.
