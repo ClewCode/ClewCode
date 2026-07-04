@@ -375,6 +375,13 @@ import {
 import { EffortCallout, shouldShowEffortCallout } from '../components/EffortCallout.js';
 import type { EffortValue } from '../utils/effort.js';
 import { RemoteCallout } from '../components/RemoteCallout.js';
+import { UpdateCallout } from '../components/UpdateCallout.js';
+import {
+  confirmUpdate,
+  dismissPendingUpdate,
+  getPendingUpdate,
+  subscribePendingUpdate,
+} from '../utils/updatePrompt.js';
 /* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
 const AntModelSwitchCallout =
   'external' === 'ant' ? require('../components/AntModelSwitchCallout.js').AntModelSwitchCallout : null;
@@ -1237,6 +1244,10 @@ export function REPL({
   const [isPromptInputActive, setIsPromptInputActive] = React.useState(false);
 
   const [autoUpdaterResult, setAutoUpdaterResult] = useState<AutoUpdaterResult | null>(null);
+
+  // Version awaiting the user's update choice (set by AutoUpdater's version
+  // check via the updatePrompt store). Drives the 'update-callout' dialog.
+  const pendingUpdateVersion = React.useSyncExternalStore(subscribePendingUpdate, getPendingUpdate);
 
   useEffect(() => {
     if (autoUpdaterResult?.notifications) {
@@ -2554,6 +2565,9 @@ export function REPL({
 
     // Undercover auto-enable explainer (ant-only, eliminated from external builds)
     if ('external' === 'ant' && allowDialogsWithAnimation && showUndercoverCallout) return 'undercover-callout';
+
+    // Update available — ask before installing (shown at startup with the logo)
+    if (allowDialogsWithAnimation && pendingUpdateVersion) return 'update-callout';
 
     // Effort callout (shown once for Opus 4.6 users when effort is enabled)
     // Don't show on empty conversations — it's confusing to see a dialog before any interaction
@@ -6193,6 +6207,28 @@ export function REPL({
                 )}
                 {'external' === 'ant' && focusedInputDialog === 'undercover-callout' && UndercoverAutoCallout && (
                   <UndercoverAutoCallout onDone={() => setShowUndercoverCallout(false)} />
+                )}
+                {focusedInputDialog === 'update-callout' && pendingUpdateVersion && (
+                  <UpdateCallout
+                    currentVersion={MACRO.VERSION}
+                    latestVersion={pendingUpdateVersion}
+                    onDone={selection => {
+                      if (selection === 'update') {
+                        confirmUpdate(pendingUpdateVersion);
+                      } else {
+                        // 'keep' or 'manual' — stop asking for this version this session.
+                        dismissPendingUpdate(pendingUpdateVersion);
+                        if (selection === 'manual') {
+                          addNotification({
+                            key: 'update-manual',
+                            text: `Update ${pendingUpdateVersion} available · run clew update`,
+                            priority: 'low',
+                            timeoutMs: 8000,
+                          });
+                        }
+                      }
+                    }}
+                  />
                 )}
                 {focusedInputDialog === 'effort-callout' && (
                   <EffortCallout

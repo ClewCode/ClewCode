@@ -1,5 +1,5 @@
 import type * as React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useInterval } from 'usehooks-ts';
 import { useUpdateNotification } from '../hooks/useUpdateNotification.js';
 import { Box, Text } from '../ink.js';
@@ -8,6 +8,13 @@ import { getLatestVersion, installGlobalPackage, resolveUpdateStrategy } from '.
 import { isAutoUpdaterDisabled } from '../utils/config.js';
 import { logForDebugging } from '../utils/debug.js';
 import { lt } from '../utils/semver.js';
+import {
+  getConfirmedUpdate,
+  isUpdateDismissed,
+  setPendingUpdate,
+  subscribePendingUpdate,
+  takeConfirmedUpdate,
+} from '../utils/updatePrompt.js';
 
 type Props = {
   isUpdating: boolean;
@@ -31,13 +38,6 @@ export function AutoUpdater({
     latest?: string | null;
   }>({});
   const updateSemver = useUpdateNotification(autoUpdaterResult?.version);
-
-  // Tracks the auto-install we've already attempted for a given target version,
-  // so the 30-min interval doesn't re-install the same version on every tick.
-  // The running process keeps its old MACRO.VERSION until restart, so
-  // lt(current, latest) stays true after a successful install — we must not
-  // loop on it. Failed installs are allowed to retry on the next tick.
-  const autoInstall = useRef<{ version: string; outcome: 'done' | 'failed' } | null>(null);
 
   const checkForUpdates = useCallback(async () => {
     if (isAutoUpdaterDisabled()) {
@@ -64,11 +64,7 @@ export function AutoUpdater({
 
     logForDebugging(`AutoUpdater: Update available ${current} → ${latest}`);
 
-    // Skip if we already installed this version, or an attempt is in flight.
-    // (Re-attempt only if the previous attempt for this version failed.)
-    if (autoInstall.current?.version === latest && autoInstall.current.outcome === 'done') {
-      return;
-    }
+    // An install kicked off from the dialog is in flight — don't re-prompt.
     if (isUpdating) {
       return;
     }
@@ -83,28 +79,53 @@ export function AutoUpdater({
       return;
     }
 
-    // Auto-install in the background. UI states (Updating… / ✓ installed /
-    // ✗ failed) are driven by isUpdating + autoUpdaterResult below.
-    onChangeIsUpdating(true);
-    try {
-      const status = await installGlobalPackage(latest);
-      onAutoUpdaterResult({ version: latest, status });
-      autoInstall.current = { version: latest, outcome: status === 'success' ? 'done' : 'failed' };
-      logForDebugging(`AutoUpdater: auto-install ${latest} → ${status}`);
-    } catch (error) {
-      onAutoUpdaterResult({ version: latest, status: 'install_failed' });
-      autoInstall.current = { version: latest, outcome: 'failed' };
-      logForDebugging(`AutoUpdater: auto-install ${latest} threw ${String(error)}`);
-    } finally {
-      onChangeIsUpdating(false);
+    // Instead of silently installing, surface a choice to the user (Update now /
+    // Keep / I'll update myself). The REPL renders the dialog via its
+    // focusedInputDialog machine off the shared updatePrompt store; the actual
+    // install runs from there when the user picks "Update now". isUpdating +
+    // autoUpdaterResult still drive the footer UI states below.
+    if (!isUpdateDismissed(latest)) {
+      logForDebugging(`AutoUpdater: prompting for update ${current} → ${latest}`);
+      setPendingUpdate(latest);
     }
   }, [isUpdating, onChangeIsUpdating, onAutoUpdaterResult]);
+
+  const runInstall = useCallback(
+    async (latest: string) => {
+      onChangeIsUpdating(true);
+      try {
+        const status = await installGlobalPackage(latest);
+        onAutoUpdaterResult({ version: latest, status });
+        logForDebugging(`AutoUpdater: install ${latest} → ${status}`);
+      } catch (error) {
+        onAutoUpdaterResult({ version: latest, status: 'install_failed' });
+        logForDebugging(`AutoUpdater: install ${latest} threw ${String(error)}`);
+      } finally {
+        onChangeIsUpdating(false);
+      }
+    },
+    [onChangeIsUpdating, onAutoUpdaterResult],
+  );
 
   useEffect(() => {
     void checkForUpdates();
   }, [checkForUpdates]);
 
   useInterval(checkForUpdates, 30 * 60 * 1000);
+
+  // Run the install when the user confirms "Update now" in the dialog (REPL
+  // sets confirmedVersion via the updatePrompt store). Take-once so a re-render
+  // can't double-install.
+  useEffect(() => {
+    const maybeInstall = () => {
+      if (isUpdating) return;
+      if (getConfirmedUpdate() === null) return;
+      const version = takeConfirmedUpdate();
+      if (version) void runInstall(version);
+    };
+    maybeInstall();
+    return subscribePendingUpdate(maybeInstall);
+  }, [isUpdating, runInstall]);
 
   if (!isUpdating && !autoUpdaterResult?.version && !versions.latest) {
     return null;
