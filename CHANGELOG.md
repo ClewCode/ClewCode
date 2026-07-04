@@ -6,12 +6,21 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **Rebrand `CLAUDE_CODE` → `CLEW_CODE`**: Renamed all `CLAUDE_CODE_*` environment variables, class names, comments, and URLs to `CLEW_CODE_*` across the entire codebase (390 files). Documentation links updated from `code.claude.com` to `clew-code.org`. (`src/`)
+- **Soften ultracode effort glow**: Reduced visual intensity of ultracode mode — smaller initial radius (12→4), subtler wave/ring effects, lower saturation variance, reduced feather distance. Makes the purple radial spotlight read better in terminals with coarse background cells. (`src/commands/effort/effort.tsx`)
 
 ### Added
 - **Project rules system**: Auto-observed behavioral rules scoped to the working repo, stored in `.clew/rules.json`. Includes `ProjectRule` tool (save/list/remove), `/rule` slash command (supports `/rule on`/`/rule off` to toggle), rules injection into system prompt, startup notification, and footer indicator showing rule count (e.g. `3R`). (`src/utils/projectRules.ts`, `src/tools/ProjectRuleTool/`, `src/commands/rule/`)
+- **OpenRouter live pricing fallback**: `getModelCosts()` now falls back to live OpenRouter API pricing for unknown models. Fetches `https://openrouter.ai/api/v1/models` on startup, caches to `~/.clew/model-pricing-cache.json` with 6-hour TTL, with prefix matching for model ID resolution. (`src/utils/modelCost.js`, `src/utils/modelCost.ts`)
+- **New model pricing entries**: Added pricing for gemini-3.5-flash, gemini-3.1-pro, qwen3.6-plus, glm-5.1, and kimi-k2.6 to `PROVIDER_PRICING`. (`src/utils/modelCost.js`, `src/utils/modelCost.ts`)
+
+### Removed
+- **`/mobile` command**: Deleted iOS/Android QR code display command that linked to Claude mobile app — no longer relevant. (`src/commands/mobile/`)
+- **`/login` and `/logout` auth commands**: Disabled auth commands entirely — removed login/logout imports and registration from the command registry. (`src/commands.ts`)
 
 ### Fixed
 - **Resume system crash**: Fixed `ReferenceError: Cannot access 'agentToolResultSchema' before initialization` that caused resume (`/resume`, `--resume`, `--continue`) to crash the app. Root cause: `buildTool` in `Tool.ts` used object spread which eagerly invoked getters like `outputSchema` during module init — for AgentTool, the `agentToolResultSchema` lazy import was still in the temporal dead zone. Fixed by preserving getters via `Object.defineProperties` instead of spread.
+- **Bash mode crash from auth import**: Removed `isActiveProviderAnthropic()` import which caused undefined reference crashes in bash mode (`-p` one-shot). (`src/commands.ts`)
+- **`CLAUDE_CODE` env alias fallback**: Fixed `getEnvWithAlias()` calls in `envUtils.js` — `CLEW_CONFIG_DIR` was incorrectly aliased to itself instead of `CLAUDE_CONFIG_DIR`, and `CLEW_CODE_SIMPLE` similarly lacked the `CLAUDE_CODE_SIMPLE` fallback. (`src/utils/envUtils.js`)
 
 ## [0.4.6] — 2026-07-02
 
