@@ -255,16 +255,11 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
   );
 
   if (isStandalone) {
-    const barLength = 10;
-    const doneFraction = tasks.length > 0 ? completedCount / tasks.length : 0;
-    const filledCount = Math.round(doneFraction * barLength);
-    const bar = '▰'.repeat(filledCount) + '▱'.repeat(barLength - filledCount);
     return (
       <Box flexDirection="column" marginTop={1} marginLeft={2}>
         <Box>
           <Text dimColor>
-            Tasks <Text color={completedCount === tasks.length ? 'success' : undefined}>{bar}</Text> {completedCount}/
-            {tasks.length}
+            Tasks {completedCount}/{tasks.length}
             {inProgressCount > 0 && (
               <>
                 {' · '}
