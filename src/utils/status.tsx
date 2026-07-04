@@ -320,7 +320,7 @@ export function buildAPIProviderProperties(): Property[] {
       label: 'AWS region',
       value: getAWSRegion(),
     });
-    if (isEnvTruthy(process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH)) {
       properties.push({
         value: 'AWS auth skipped',
       });
@@ -344,7 +344,7 @@ export function buildAPIProviderProperties(): Property[] {
       label: 'Default region',
       value: getDefaultVertexRegion(),
     });
-    if (isEnvTruthy(process.env.CLAUDE_CODE_SKIP_VERTEX_AUTH)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_SKIP_VERTEX_AUTH)) {
       properties.push({
         value: 'GCP auth skipped',
       });
@@ -364,7 +364,7 @@ export function buildAPIProviderProperties(): Property[] {
         value: foundryResource,
       });
     }
-    if (isEnvTruthy(process.env.CLAUDE_CODE_SKIP_FOUNDRY_AUTH)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_SKIP_FOUNDRY_AUTH)) {
       properties.push({
         value: 'Microsoft Foundry auth skipped',
       });
@@ -385,16 +385,16 @@ export function buildAPIProviderProperties(): Property[] {
     });
   }
   if (mtlsConfig) {
-    if (mtlsConfig.cert && process.env.CLAUDE_CODE_CLIENT_CERT) {
+    if (mtlsConfig.cert && process.env.CLEW_CODE_CLIENT_CERT) {
       properties.push({
         label: 'mTLS client cert',
-        value: process.env.CLAUDE_CODE_CLIENT_CERT,
+        value: process.env.CLEW_CODE_CLIENT_CERT,
       });
     }
-    if (mtlsConfig.key && process.env.CLAUDE_CODE_CLIENT_KEY) {
+    if (mtlsConfig.key && process.env.CLEW_CODE_CLIENT_KEY) {
       properties.push({
         label: 'mTLS client key',
-        value: process.env.CLAUDE_CODE_CLIENT_KEY,
+        value: process.env.CLEW_CODE_CLIENT_KEY,
       });
     }
   }

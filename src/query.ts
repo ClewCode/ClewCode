@@ -1044,7 +1044,7 @@ async function* queryLoop(
         // 64k also hits the cap.
         // 3P default: false (not validated on Bedrock/Vertex)
         const capEnabled = getFeatureValue_CACHED_MAY_BE_STALE('tengu_otk_slot_v1', false);
-        if (capEnabled && maxOutputTokensOverride === undefined && !process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS) {
+        if (capEnabled && maxOutputTokensOverride === undefined && !process.env.CLEW_CODE_MAX_OUTPUT_TOKENS) {
           logEvent('tengu_max_tokens_escalate', {
             escalatedTo: ESCALATED_MAX_TOKENS,
           });
@@ -1147,7 +1147,7 @@ async function* queryLoop(
 
       if (stopHookResult.blockingErrors.length > 0) {
         const nextBlockCount = stopHookBlockCount + 1;
-        const blockCap = Number(process.env.CLAUDE_CODE_STOP_HOOK_BLOCK_CAP) || 8;
+        const blockCap = Number(process.env.CLEW_CODE_STOP_HOOK_BLOCK_CAP) || 8;
         if (nextBlockCount > blockCap) {
           yield createAttachmentMessage({
             type: 'error',

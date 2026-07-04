@@ -27,10 +27,10 @@ export const getMTLSConfig = memoize((): MTLSConfig | undefined => {
   // We don't need to manually load it - Node.js appends it to the built-in CAs automatically
 
   // Client certificate
-  if (process.env.CLAUDE_CODE_CLIENT_CERT) {
+  if (process.env.CLEW_CODE_CLIENT_CERT) {
     try {
-      config.cert = getFsImplementation().readFileSync(process.env.CLAUDE_CODE_CLIENT_CERT, { encoding: 'utf8' });
-      logForDebugging('mTLS: Loaded client certificate from CLAUDE_CODE_CLIENT_CERT');
+      config.cert = getFsImplementation().readFileSync(process.env.CLEW_CODE_CLIENT_CERT, { encoding: 'utf8' });
+      logForDebugging('mTLS: Loaded client certificate from CLEW_CODE_CLIENT_CERT');
     } catch (error) {
       logForDebugging(`mTLS: Failed to load client certificate: ${error}`, {
         level: 'error',
@@ -39,10 +39,10 @@ export const getMTLSConfig = memoize((): MTLSConfig | undefined => {
   }
 
   // Client key
-  if (process.env.CLAUDE_CODE_CLIENT_KEY) {
+  if (process.env.CLEW_CODE_CLIENT_KEY) {
     try {
-      config.key = getFsImplementation().readFileSync(process.env.CLAUDE_CODE_CLIENT_KEY, { encoding: 'utf8' });
-      logForDebugging('mTLS: Loaded client key from CLAUDE_CODE_CLIENT_KEY');
+      config.key = getFsImplementation().readFileSync(process.env.CLEW_CODE_CLIENT_KEY, { encoding: 'utf8' });
+      logForDebugging('mTLS: Loaded client key from CLEW_CODE_CLIENT_KEY');
     } catch (error) {
       logForDebugging(`mTLS: Failed to load client key: ${error}`, {
         level: 'error',
@@ -51,8 +51,8 @@ export const getMTLSConfig = memoize((): MTLSConfig | undefined => {
   }
 
   // Key passphrase
-  if (process.env.CLAUDE_CODE_CLIENT_KEY_PASSPHRASE) {
-    config.passphrase = process.env.CLAUDE_CODE_CLIENT_KEY_PASSPHRASE;
+  if (process.env.CLEW_CODE_CLIENT_KEY_PASSPHRASE) {
+    config.passphrase = process.env.CLEW_CODE_CLIENT_KEY_PASSPHRASE;
     logForDebugging('mTLS: Using client key passphrase');
   }
 

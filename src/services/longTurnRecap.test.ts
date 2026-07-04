@@ -24,7 +24,7 @@ const { appendLongTurnRecap, shouldGenerateLongTurnRecap } = await import('./lon
 describe('shouldGenerateLongTurnRecap', () => {
   beforeEach(() => {
     configOverride = { recapEnabled: true, longTurnRecapThresholdMs: 300_000 };
-    delete process.env.CLAUDE_CODE_ENABLE_AWAY_SUMMARY;
+    delete process.env.CLEW_CODE_ENABLE_AWAY_SUMMARY;
     delete process.env.CLEW_ENABLE_RECAP;
   });
 
@@ -55,7 +55,7 @@ describe('shouldGenerateLongTurnRecap', () => {
 describe('appendLongTurnRecap', () => {
   beforeEach(() => {
     configOverride = { recapEnabled: true, longTurnRecapThresholdMs: 300_000 };
-    delete process.env.CLAUDE_CODE_ENABLE_AWAY_SUMMARY;
+    delete process.env.CLEW_CODE_ENABLE_AWAY_SUMMARY;
     delete process.env.CLEW_ENABLE_RECAP;
   });
 

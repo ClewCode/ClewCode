@@ -1557,7 +1557,7 @@ export async function cleanupNpmInstallations(): Promise<{
     }
   }
 
-  // Check for local installation at ~/.claude/local
+  // Check for local installation at ~/.clew/local
   const localInstallDir = join(homedir(), '.clew', 'local');
 
   try {

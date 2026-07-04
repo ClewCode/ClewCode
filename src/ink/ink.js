@@ -447,7 +447,7 @@ export default class Ink {
         '\x1b[H' +
         // cursor home
         (this.altScreenMouseTracking ? ENABLE_MOUSE_TRACKING : '') +
-        // re-enable mouse (skip if CLAUDE_CODE_DISABLE_MOUSE)
+        // re-enable mouse (skip if CLEW_CODE_DISABLE_MOUSE)
         (this.altScreenActive ? '' : '\x1b[?1049l') +
         // exit alt (non-fullscreen only)
         '\x1b[?25l',

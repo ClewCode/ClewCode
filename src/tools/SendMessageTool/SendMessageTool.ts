@@ -193,7 +193,7 @@ async function handleBroadcast(
 
   const senderName = getAgentName() || (isTeammate() ? 'teammate' : TEAM_LEAD_NAME);
   if (!senderName) {
-    throw new Error('Cannot broadcast: sender name is required. Set CLAUDE_CODE_AGENT_NAME.');
+    throw new Error('Cannot broadcast: sender name is required. Set CLEW_CODE_AGENT_NAME.');
   }
 
   const senderColor = getTeammateColor();

@@ -116,7 +116,7 @@ function ripGrepRaw(
   // Allow timeout to be configured via env var (in seconds), otherwise use platform defaults
   // WSL has severe performance penalty for file reads (3-5x slower on WSL2)
   const defaultTimeout = getPlatform() === 'wsl' ? 60_000 : 20_000;
-  const parsedSeconds = parseInt(process.env.CLAUDE_CODE_GLOB_TIMEOUT_SECONDS || '', 10) || 0;
+  const parsedSeconds = parseInt(process.env.CLEW_CODE_GLOB_TIMEOUT_SECONDS || '', 10) || 0;
   const timeout = parsedSeconds > 0 ? parsedSeconds * 1000 : defaultTimeout;
 
   // For embedded ripgrep, use spawn with argv0 (execFile doesn't support argv0 properly)

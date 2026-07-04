@@ -58,13 +58,13 @@ export function DesktopHandoff({ onDone }: Props): React.ReactNode {
       const installStatus = await getDesktopInstallStatus();
 
       if (installStatus.status === 'not-installed') {
-        setDownloadMessage('Claude Desktop is not installed.');
+        setDownloadMessage('Clew Desktop is not installed.');
         setState('prompt-download');
         return;
       }
 
       if (installStatus.status === 'version-too-old') {
-        setDownloadMessage(`Claude Desktop needs to be updated (found v${installStatus.version}, need v1.1.2396+).`);
+        setDownloadMessage(`Clew Desktop needs to be updated (found v${installStatus.version}, need v1.1.2396+).`);
         setState('prompt-download');
         return;
       }
@@ -78,7 +78,7 @@ export function DesktopHandoff({ onDone }: Props): React.ReactNode {
       const result = await openCurrentSessionInDesktop();
 
       if (!result.success) {
-        setError(result.error ?? 'Failed to open Claude Desktop');
+        setError(result.error ?? 'Failed to open Clew Desktop');
         setState('error');
         return;
       }
@@ -89,7 +89,7 @@ export function DesktopHandoff({ onDone }: Props): React.ReactNode {
       // Give the user a moment to see the success message
       setTimeout(
         async (onDone: Props['onDone']) => {
-          onDone('Session transferred to Claude Desktop', { display: 'system' });
+          onDone('Session transferred to Clew Desktop', { display: 'system' });
           await gracefulShutdown(0, 'other');
         },
         500,
@@ -122,10 +122,10 @@ export function DesktopHandoff({ onDone }: Props): React.ReactNode {
   }
 
   const messages: Record<Exclude<DesktopHandoffState, 'error' | 'prompt-download'>, string> = {
-    checking: 'Checking for Claude Desktop…',
+    checking: 'Checking for Clew Desktop…',
     flushing: 'Saving session…',
-    opening: 'Opening Claude Desktop…',
-    success: 'Opening in Claude Desktop…',
+    opening: 'Opening Clew Desktop…',
+    success: 'Opening in Clew Desktop…',
   };
 
   return <LoadingState message={messages[state]} />;

@@ -7,7 +7,7 @@
  * periodic timer fires the registered callback every 30 seconds to keep the
  * container alive.
  *
- * Sending keep-alives is gated behind CLAUDE_CODE_REMOTE_SEND_KEEPALIVES.
+ * Sending keep-alives is gated behind CLEW_CODE_REMOTE_SEND_KEEPALIVES.
  * Diagnostic logging always fires to help diagnose idle gaps.
  */
 
@@ -33,7 +33,7 @@ function startHeartbeatTimer(): void {
     logForDiagnosticsNoPII('debug', 'session_keepalive_heartbeat', {
       refcount,
     });
-    if (isEnvTruthy(process.env.CLAUDE_CODE_REMOTE_SEND_KEEPALIVES)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_REMOTE_SEND_KEEPALIVES)) {
       activityCallback?.();
     }
   }, SESSION_ACTIVITY_INTERVAL_MS);
@@ -76,7 +76,7 @@ export function unregisterSessionActivityCallback(): void {
 }
 
 export function sendSessionActivitySignal(): void {
-  if (isEnvTruthy(process.env.CLAUDE_CODE_REMOTE_SEND_KEEPALIVES)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_REMOTE_SEND_KEEPALIVES)) {
     activityCallback?.();
   }
 }

@@ -122,7 +122,7 @@ export function usePostCompactSurvey(
     }
 
     // Check if survey is explicitly disabled
-    if (isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_DISABLE_FEEDBACK_SURVEY)) {
       return;
     }
 

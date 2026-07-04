@@ -224,7 +224,7 @@ export async function initReplBridge(options?: InitBridgeOptions): Promise<ReplB
   // The slug fallback (e.g. "hostname-slug") makes
   // auto-started sessions distinguishable in the claude.ai list before the
   // first prompt.
-  const sessionNamePrefix = process.env.CLAUDE_CODE_REMOTE_CONTROL_SESSION_NAME_PREFIX || hostname();
+  const sessionNamePrefix = process.env.CLEW_CODE_REMOTE_CONTROL_SESSION_NAME_PREFIX || hostname();
   let title = `${sessionNamePrefix}-${generateShortWordSlug()}`;
   let hasTitle = false;
   let hasExplicitTitle = false;
@@ -352,7 +352,7 @@ export async function initReplBridge(options?: InitBridgeOptions): Promise<ReplB
   // on env-based.
   //
   // NAMING: "env-less" is distinct from "CCR v2" (the /worker/* transport).
-  // The env-based path below can ALSO use CCR v2 via CLAUDE_CODE_USE_CCR_V2.
+  // The env-based path below can ALSO use CCR v2 via CLEW_CODE_USE_CCR_V2.
   // tengu_bridge_repl_v2 gates env-less (no poll loop), not transport version.
   //
   // perpetual (assistant-mode session continuity via bridge-pointer.json) is

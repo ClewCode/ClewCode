@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { DOT_CLEW } from '../../utils/clewPaths.js';
-import { getGlobalConfig } from '../../utils/config.js';
 import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { readLocalProviderKey } from '../../utils/localProviderKeys.js';
 import {
@@ -13,10 +12,7 @@ import {
 } from './providerRegistry.js';
 import type { ProviderId, ProviderInitOptions, ProviderInterface } from './providers/ProviderInterface.js';
 
-const LEGACY_PROVIDER_CONFIG_PATH = join(
-  process.env.HOME || process.env.USERPROFILE || '',
-  '.claude-code-provider.json',
-);
+const LEGACY_PROVIDER_CONFIG_PATH = join(process.env.HOME || process.env.USERPROFILE || '', '.clew-code-provider.json');
 const PREVIOUS_PROVIDER_CONFIG_PATH = join(getClewConfigHomeDir(), '.provider.json');
 export const PROVIDER_CONFIG_PATH = join(getClewConfigHomeDir(), 'provider.json');
 
@@ -35,7 +31,7 @@ export function getEffectiveProviderConfigPath(): string {
  */
 function migrateLegacyConfig(): void {
   try {
-    // 1. Migrate from absolute legacy path (~/.claude-code-provider.json)
+    // 1. Migrate from absolute legacy path (~/.clew-code-provider.json)
     if (existsSync(LEGACY_PROVIDER_CONFIG_PATH) && !existsSync(PROVIDER_CONFIG_PATH)) {
       const targetDir = getClewConfigHomeDir();
       if (!existsSync(targetDir)) {
@@ -47,7 +43,7 @@ function migrateLegacyConfig(): void {
       );
     }
 
-    // 2. Migrate from previous dot-file path (~/.claude/.provider.json)
+    // 2. Migrate from previous dot-file path (~/.clew/.provider.json)
     if (existsSync(PREVIOUS_PROVIDER_CONFIG_PATH) && !existsSync(PROVIDER_CONFIG_PATH)) {
       renameSync(PREVIOUS_PROVIDER_CONFIG_PATH, PROVIDER_CONFIG_PATH);
       console.log(
@@ -187,9 +183,9 @@ export class ProviderManager {
 
     const { isEnvTruthy } = require('../../utils/envUtils.js');
     if (
-      isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
-      isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
-      isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)
+      isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) ||
+      isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX) ||
+      isEnvTruthy(process.env.CLEW_CODE_USE_FOUNDRY)
     ) {
       return 'anthropic';
     }
@@ -214,16 +210,16 @@ export class ProviderManager {
     const config = this.getSelectedProviderConfig();
     if (config.provider === 'anthropic' && (config.providerConfig as any)?.anthropicType) {
       const type = (config.providerConfig as any).anthropicType;
-      if (type === 'direct' || type === 'subscriber') return 'firstParty';
-      return type;
+      if (type === 'bedrock' || type === 'vertex' || type === 'foundry') return type;
+      return 'firstParty';
     }
 
     const { isEnvTruthy } = require('../../utils/envUtils.js');
-    return isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK)
+    return isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK)
       ? 'bedrock'
-      : isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX)
+      : isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX)
         ? 'vertex'
-        : isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)
+        : isEnvTruthy(process.env.CLEW_CODE_USE_FOUNDRY)
           ? 'foundry'
           : 'firstParty';
   }
@@ -266,35 +262,10 @@ export class ProviderManager {
     const providerEntry = PROVIDER_REGISTRY[providerName];
     const config = this.getSelectedProviderConfig();
 
-    // Special handling for OpenAI subscriber (ChatGPT OAuth)
-    if (providerName === 'openai' && (config.providerConfig as any)?.openaiType === 'subscriber') {
-      // First check CHATGPT_SESSION_TOKEN from OAuth flow
-      if (process.env.CHATGPT_SESSION_TOKEN) {
-        return process.env.CHATGPT_SESSION_TOKEN;
-      }
-      // Also check global config for stored OAuth tokens
-      const globalConfig = getGlobalConfig() as any;
-      if (globalConfig?.openaiOAuthTokens?.accessToken) {
-        return globalConfig.openaiOAuthTokens.accessToken;
-      }
-    }
-
-    // Special handling for Google subscriber (Google OAuth)
-    if (providerName === 'google' && (config.providerConfig as any)?.googleType === 'subscriber') {
-      // First check GOOGLE_OAUTH_TOKEN from OAuth flow
-      if (process.env.GOOGLE_OAUTH_TOKEN) {
-        return process.env.GOOGLE_OAUTH_TOKEN;
-      }
-      // Also check global config for stored OAuth tokens
-      const globalConfig = getGlobalConfig() as any;
-      if (globalConfig?.googleOAuthTokens?.accessToken) {
-        return globalConfig.googleOAuthTokens.accessToken;
-      }
-    }
-
     return (
       config.apiKeys?.[providerName] ||
       (providerEntry?.envKey ? process.env[providerEntry.envKey] : undefined) ||
+      (providerName === 'huggingface' ? process.env.HUGGINGFACE_API_KEY : undefined) ||
       readLocalProviderKey(providerName) ||
       undefined
     );
@@ -352,13 +323,13 @@ export class ProviderManager {
     if (effectiveProvider === 'anthropic') {
       const type = this.getAnthropicProviderType();
       // Clear all first to ensure only one is active
-      delete process.env.CLAUDE_CODE_USE_BEDROCK;
-      delete process.env.CLAUDE_CODE_USE_VERTEX;
-      delete process.env.CLAUDE_CODE_USE_FOUNDRY;
+      delete process.env.CLEW_CODE_USE_BEDROCK;
+      delete process.env.CLEW_CODE_USE_VERTEX;
+      delete process.env.CLEW_CODE_USE_FOUNDRY;
 
-      if (type === 'bedrock') process.env.CLAUDE_CODE_USE_BEDROCK = 'true';
-      if (type === 'vertex') process.env.CLAUDE_CODE_USE_VERTEX = 'true';
-      if (type === 'foundry') process.env.CLAUDE_CODE_USE_FOUNDRY = 'true';
+      if (type === 'bedrock') process.env.CLEW_CODE_USE_BEDROCK = 'true';
+      if (type === 'vertex') process.env.CLEW_CODE_USE_VERTEX = 'true';
+      if (type === 'foundry') process.env.CLEW_CODE_USE_FOUNDRY = 'true';
     }
 
     if (effectiveProvider === 'google') {

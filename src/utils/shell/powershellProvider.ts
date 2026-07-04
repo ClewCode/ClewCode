@@ -13,11 +13,11 @@ import type { ShellProvider } from './shellProvider.js';
  *
  * Adds -ExecutionPolicy Bypass by default to avoid restrictive PowerShell
  * execution policies blocking scripts. Users can set
- * CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY=1 to use the system default.
+ * CLEW_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY=1 to use the system default.
  */
 export function buildPowerShellArgs(cmd: string): string[] {
   const baseArgs = ['-NoProfile', '-NonInteractive'];
-  if (!isEnvTruthy('CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY')) {
+  if (!isEnvTruthy('CLEW_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY')) {
     baseArgs.push('-ExecutionPolicy', 'Bypass');
   }
   return [...baseArgs, '-Command', cmd];
@@ -130,7 +130,7 @@ export function createPowerShellProvider(shellPath: string): ShellProvider {
       if (currentSandboxTmpDir) {
         // PowerShell on Linux/macOS honors TMPDIR for [System.IO.Path]::GetTempPath()
         env.TMPDIR = currentSandboxTmpDir;
-        env.CLAUDE_CODE_TMPDIR = currentSandboxTmpDir;
+        env.CLEW_CODE_TMPDIR = currentSandboxTmpDir;
       }
       // Add plugin bin directories to PATH for plugin executables
       try {

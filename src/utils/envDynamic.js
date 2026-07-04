@@ -14,7 +14,7 @@ const getIsDocker = memoize(async () => {
   return code === 0;
 });
 function getIsBubblewrapSandbox() {
-  return process.platform === 'linux' && isEnvTruthy(process.env.CLAUDE_CODE_BUBBLEWRAP);
+  return process.platform === 'linux' && isEnvTruthy(process.env.CLEW_CODE_BUBBLEWRAP);
 }
 // Cache for the runtime musl detection fallback (node/unbundled only).
 // In native linux builds, feature flags resolve this at compile time, so the

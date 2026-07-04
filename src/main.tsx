@@ -406,13 +406,6 @@ const CLI_PROVIDER_DEFAULTS = {
     defaultModel: 'gemini-2.5-flash',
     defaultModelVerified: true,
   },
-  'google-assist': {
-    label: 'Gemini Code Assist (OAuth)',
-    envKey: 'GEMINI_API_KEY',
-    baseUrl: 'https://cloudcode-pa.googleapis.com/v1internal',
-    defaultModel: 'gemini-2.5-flash',
-    defaultModelVerified: true,
-  },
   openrouter: {
     label: 'OpenRouter',
     envKey: 'OPENROUTER_API_KEY',
@@ -477,6 +470,13 @@ const CLI_PROVIDER_DEFAULTS = {
     defaultModel: 'llama3.3',
     defaultModelVerified: true,
     isLocal: true,
+  },
+  huggingface: {
+    label: 'Hugging Face Inference Providers',
+    envKey: 'HF_TOKEN',
+    baseUrl: 'https://router.huggingface.co/v1',
+    defaultModel: 'openai/gpt-oss-120b:fastest',
+    defaultModelVerified: true,
   },
 } as const;
 
@@ -652,7 +652,7 @@ function getCertEnvVarTelemetry(): Record<string, boolean> {
   if (process.env.NODE_EXTRA_CA_CERTS) {
     result.has_node_extra_ca_certs = true;
   }
-  if (process.env.CLAUDE_CODE_CLIENT_CERT) {
+  if (process.env.CLEW_CODE_CLIENT_CERT) {
     result.has_client_cert = true;
   }
   if (hasNodeOption('--use-system-ca')) {
@@ -754,7 +754,7 @@ export function startDeferredPrefetches(): void {
   // loop time, which skews startup benchmarks (CPU profiles, time-to-first-render
   // measurements). Skip all of it when we're only measuring startup performance.
   if (
-    isEnvTruthy(process.env.CLAUDE_CODE_EXIT_AFTER_FIRST_RENDER) ||
+    isEnvTruthy(process.env.CLEW_CODE_EXIT_AFTER_FIRST_RENDER) ||
     // --bare: skip ALL prefetches. These are cache-warms for the REPL's
     // first-turn responsiveness (initUser, getUserContext, tips, countFiles,
     // modelCapabilities, change detectors). Scripted -p calls don't have a
@@ -770,10 +770,10 @@ export function startDeferredPrefetches(): void {
   void getUserContext();
   prefetchSystemContextIfSafe();
   void getRelevantTips();
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) && !isEnvTruthy(process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) && !isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH)) {
     void prefetchAwsCredentialsAndBedRockInfoIfSafe();
   }
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) && !isEnvTruthy(process.env.CLAUDE_CODE_SKIP_VERTEX_AUTH)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX) && !isEnvTruthy(process.env.CLEW_CODE_SKIP_VERTEX_AUTH)) {
     void prefetchGcpCredentialsIfSafe();
   }
   void countFilesRoundedRg(getCwd(), AbortSignal.timeout(3000), []);
@@ -880,7 +880,7 @@ function eagerLoadSettings(): void {
 
 function initializeEntrypoint(isNonInteractive: boolean): void {
   // Skip if already set (e.g., by SDK or other entrypoints)
-  if (process.env.CLAUDE_CODE_ENTRYPOINT) {
+  if (process.env.CLEW_CODE_ENTRYPOINT) {
     return;
   }
   const cliArgs = process.argv.slice(2);
@@ -888,19 +888,19 @@ function initializeEntrypoint(isNonInteractive: boolean): void {
   // Check for MCP serve command (handle flags before mcp serve, e.g., --debug mcp serve)
   const mcpIndex = cliArgs.indexOf('mcp');
   if (mcpIndex !== -1 && cliArgs[mcpIndex + 1] === 'serve') {
-    process.env.CLAUDE_CODE_ENTRYPOINT = 'mcp';
+    process.env.CLEW_CODE_ENTRYPOINT = 'mcp';
     return;
   }
-  if (isEnvTruthy(process.env.CLAUDE_CODE_ACTION)) {
-    process.env.CLAUDE_CODE_ENTRYPOINT = 'claude-code-github-action';
+  if (isEnvTruthy(process.env.CLEW_CODE_ACTION)) {
+    process.env.CLEW_CODE_ENTRYPOINT = 'claude-code-github-action';
     return;
   }
 
   // Note: 'local-agent' entrypoint is set by the local agent mode launcher
-  // via CLAUDE_CODE_ENTRYPOINT env var (handled by early return above)
+  // via CLEW_CODE_ENTRYPOINT env var (handled by early return above)
 
   // Set based on interactive status
-  process.env.CLAUDE_CODE_ENTRYPOINT = isNonInteractive ? 'sdk-cli' : 'cli';
+  process.env.CLEW_CODE_ENTRYPOINT = isNonInteractive ? 'sdk-cli' : 'cli';
 }
 
 // Set by early argv processing when `claude open <url>` is detected (interactive mode only)
@@ -1132,7 +1132,7 @@ export async function main() {
       }
       // Forward session-resume + model flags to the remote CLI's initial spawn.
       // --continue/-c and --resume <uuid> operate on the REMOTE session history
-      // (which persists under the remote's ~/.claude/projects/<cwd>/).
+      // (which persists under the remote's ~/.clew/projects/<cwd>/).
       // --model controls which model the remote uses.
       const extractFlag = (
         flag: string,
@@ -1218,23 +1218,23 @@ export async function main() {
   // Determine client type
   const clientType = (() => {
     if (isEnvTruthy(process.env.GITHUB_ACTIONS)) return 'github-action';
-    if (process.env.CLAUDE_CODE_ENTRYPOINT === 'sdk-ts') return 'sdk-typescript';
-    if (process.env.CLAUDE_CODE_ENTRYPOINT === 'sdk-py') return 'sdk-python';
-    if (process.env.CLAUDE_CODE_ENTRYPOINT === 'sdk-cli') return 'sdk-cli';
-    if (process.env.CLAUDE_CODE_ENTRYPOINT === 'claude-vscode') return 'claude-vscode';
-    if (process.env.CLAUDE_CODE_ENTRYPOINT === 'local-agent') return 'local-agent';
-    if (process.env.CLAUDE_CODE_ENTRYPOINT === 'claude-desktop') return 'claude-desktop';
+    if (process.env.CLEW_CODE_ENTRYPOINT === 'sdk-ts') return 'sdk-typescript';
+    if (process.env.CLEW_CODE_ENTRYPOINT === 'sdk-py') return 'sdk-python';
+    if (process.env.CLEW_CODE_ENTRYPOINT === 'sdk-cli') return 'sdk-cli';
+    if (process.env.CLEW_CODE_ENTRYPOINT === 'claude-vscode') return 'claude-vscode';
+    if (process.env.CLEW_CODE_ENTRYPOINT === 'local-agent') return 'local-agent';
+    if (process.env.CLEW_CODE_ENTRYPOINT === 'claude-desktop') return 'claude-desktop';
 
     // Check if session-ingress token is provided (indicates remote session)
     const hasSessionIngressToken =
-      process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN || process.env.CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR;
-    if (process.env.CLAUDE_CODE_ENTRYPOINT === 'remote' || hasSessionIngressToken) {
+      process.env.CLEW_CODE_SESSION_ACCESS_TOKEN || process.env.CLEW_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR;
+    if (process.env.CLEW_CODE_ENTRYPOINT === 'remote' || hasSessionIngressToken) {
       return 'remote';
     }
     return 'cli';
   })();
   setClientType(clientType);
-  const previewFormat = process.env.CLAUDE_CODE_QUESTION_PREVIEW_FORMAT;
+  const previewFormat = process.env.CLEW_CODE_QUESTION_PREVIEW_FORMAT;
   if (previewFormat === 'markdown' || previewFormat === 'html') {
     setQuestionPreviewFormat(previewFormat);
   } else if (
@@ -1249,7 +1249,7 @@ export async function main() {
   }
 
   // Tag sessions created via `claude remote-control` so the backend can identify them
-  if (process.env.CLAUDE_CODE_ENVIRONMENT_KIND === 'bridge') {
+  if (process.env.CLEW_CODE_ENVIRONMENT_KIND === 'bridge') {
     setSessionSource('remote-control');
   }
   profileCheckpoint('main_client_type_determined');
@@ -1341,7 +1341,7 @@ async function run(): Promise<CommanderCommand> {
     // process.title on Windows sets the console title directly; on POSIX,
     // terminal shell integration may mirror the process name to the tab.
     // After init() so settings.json env can also gate this (gh-4765).
-    if (!isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_TERMINAL_TITLE)) {
+    if (!isEnvTruthy(process.env.CLEW_CODE_DISABLE_TERMINAL_TITLE)) {
       process.title = 'clew';
     }
 
@@ -1435,7 +1435,7 @@ async function run(): Promise<CommanderCommand> {
     )
     .option(
       '--bare',
-      'Minimal mode: skip hooks, LSP, plugin sync, attribution, auto-memory, background prefetches, keychain reads, and CLAUDE.md auto-discovery. Sets CLAUDE_CODE_SIMPLE=1. Anthropic auth is strictly ANTHROPIC_API_KEY or apiKeyHelper via --settings (OAuth and keychain are never read). 3P providers (Bedrock/Vertex/Foundry) use their own credentials. Skills still resolve via /skill-name. Explicitly provide context via: --system-prompt[-file], --append-system-prompt[-file], --add-dir (CLAUDE.md dirs), --mcp-config, --settings, --agents, --plugin-dir.',
+      'Minimal mode: skip hooks, LSP, plugin sync, attribution, auto-memory, background prefetches, keychain reads, and CLAUDE.md auto-discovery. Sets CLEW_CODE_SIMPLE=1. Anthropic auth is strictly ANTHROPIC_API_KEY or apiKeyHelper via --settings (OAuth and keychain are never read). 3P providers (Bedrock/Vertex/Foundry) use their own credentials. Skills still resolve via /skill-name. Explicitly provide context via: --system-prompt[-file], --append-system-prompt[-file], --add-dir (CLAUDE.md dirs), --mcp-config, --settings, --agents, --plugin-dir.',
       () => true,
     )
     .addOption(new Option('--init', 'Run Setup hooks with init trigger, then continue').hideHelp())
@@ -1701,7 +1701,7 @@ async function run(): Promise<CommanderCommand> {
           }
         ).bare
       ) {
-        process.env.CLAUDE_CODE_SIMPLE = '1';
+        process.env.CLEW_CODE_SIMPLE = '1';
       }
 
       if (
@@ -1946,7 +1946,7 @@ async function run(): Promise<CommanderCommand> {
           }
         ).remoteControlSessionNamePrefix
       ) {
-        process.env.CLAUDE_CODE_REMOTE_CONTROL_SESSION_NAME_PREFIX = (
+        process.env.CLEW_CODE_REMOTE_CONTROL_SESSION_NAME_PREFIX = (
           options as {
             remoteControlSessionNamePrefix?: string;
           }
@@ -1961,7 +1961,7 @@ async function run(): Promise<CommanderCommand> {
       const agentsJson = options.agents;
       const agentCli = options.agent;
       if (feature('BG_SESSIONS') && agentCli) {
-        process.env.CLAUDE_CODE_AGENT = agentCli;
+        process.env.CLEW_CODE_AGENT = agentCli;
       }
 
       // NOTE: LSP manager initialization is intentionally deferred until after
@@ -1994,7 +1994,7 @@ async function run(): Promise<CommanderCommand> {
           : DEFAULT_TASKS_MODE_TASK_LIST_ID
         : undefined;
       if ('external' === 'ant' && taskListId) {
-        process.env.CLAUDE_CODE_TASK_LIST_ID = taskListId;
+        process.env.CLEW_CODE_TASK_LIST_ID = taskListId;
       }
 
       // Extract worktree option
@@ -2049,7 +2049,7 @@ async function run(): Promise<CommanderCommand> {
       let storedTeammateOpts: TeammateOptions | undefined;
       if (isAgentSwarmsEnabled()) {
         // Extract agent identity options (for tmux-spawned agents)
-        // These replace the CLAUDE_CODE_* environment variables
+        // These replace the CLEW_CODE_* environment variables
         const teammateOpts = extractTeammateOptions(options);
         storedTeammateOpts = teammateOpts;
 
@@ -2057,8 +2057,8 @@ async function run(): Promise<CommanderCommand> {
         // coordinator mode so the coordinator system prompt and tool filter
         // apply from the first turn. Teammates set this via --agent-id, so
         // the absence of agent-id means this is the leader session.
-        if (!teammateOpts?.agentId && !process.env.CLAUDE_CODE_COORDINATOR_MODE) {
-          process.env.CLAUDE_CODE_COORDINATOR_MODE = '1';
+        if (!teammateOpts?.agentId && !process.env.CLEW_CODE_COORDINATOR_MODE) {
+          process.env.CLEW_CODE_COORDINATOR_MODE = '1';
         }
 
         // If any teammate identity option is provided, all three required ones must be present
@@ -2100,12 +2100,12 @@ async function run(): Promise<CommanderCommand> {
 
       // Allow env var to enable partial messages (used by sandbox gateway for baku)
       const effectiveIncludePartialMessages =
-        includePartialMessages || isEnvTruthy(process.env.CLAUDE_CODE_INCLUDE_PARTIAL_MESSAGES);
+        includePartialMessages || isEnvTruthy(process.env.CLEW_CODE_INCLUDE_PARTIAL_MESSAGES);
 
       // Enable all hook event types when explicitly requested via SDK option
-      // or when running in CLAUDE_CODE_REMOTE mode (CCR needs them).
+      // or when running in CLEW_CODE_REMOTE mode (CCR needs them).
       // Without this, only SessionStart and Setup events are emitted.
-      if (includeHookEvents || isEnvTruthy(process.env.CLAUDE_CODE_REMOTE)) {
+      if (includeHookEvents || isEnvTruthy(process.env.CLEW_CODE_REMOTE)) {
         setAllHookEventsEnabled(true);
       }
 
@@ -2201,19 +2201,19 @@ async function run(): Promise<CommanderCommand> {
         }
       ).file;
       if (fileSpecs && fileSpecs.length > 0) {
-        // Get session ingress token (provided by EnvManager via CLAUDE_CODE_SESSION_ACCESS_TOKEN)
+        // Get session ingress token (provided by EnvManager via CLEW_CODE_SESSION_ACCESS_TOKEN)
         const sessionToken = getSessionIngressAuthToken();
         if (!sessionToken) {
           process.stderr.write(
             ansis.red(
-              'Error: Session token required for file downloads. CLAUDE_CODE_SESSION_ACCESS_TOKEN must be set.\n',
+              'Error: Session token required for file downloads. CLEW_CODE_SESSION_ACCESS_TOKEN must be set.\n',
             ),
           );
           process.exit(1);
         }
 
         // Resolve session ID: prefer remote session ID, fall back to internal session ID
-        const fileSessionId = process.env.CLAUDE_CODE_REMOTE_SESSION_ID || getSessionId();
+        const fileSessionId = process.env.CLEW_CODE_REMOTE_SESSION_ID || getSessionId();
         const files = parseFileSpecs(fileSpecs);
         if (files.length > 0) {
           // Use ANTHROPIC_BASE_URL if set (by EnvManager), otherwise use OAuth config
@@ -2811,7 +2811,7 @@ async function run(): Promise<CommanderCommand> {
 
       // Apply coordinator mode tool filtering for headless path
       // (mirrors useMergedTools.ts filtering for REPL/interactive path)
-      if (isEnvTruthy(process.env.CLAUDE_CODE_COORDINATOR_MODE)) {
+      if (isEnvTruthy(process.env.CLEW_CODE_COORDINATOR_MODE)) {
         const { applyCoordinatorToolFilter } = await import('./utils/toolPool.js');
         tools = applyCoordinatorToolFilter(tools);
       }
@@ -2868,7 +2868,7 @@ async function run(): Promise<CommanderCommand> {
       // pure in-memory array pushes (<1ms, zero I/O) that getBundledSkills()
       // reads synchronously. Previously ran inside setup() after ~20ms of
       // await points, so the parallel getCommands() memoized an empty list.
-      if (process.env.CLAUDE_CODE_ENTRYPOINT !== 'local-agent') {
+      if (process.env.CLEW_CODE_ENTRYPOINT !== 'local-agent') {
         initBuiltinPlugins();
         initBundledSkills();
         warnIfPromptCachingDisabled();
@@ -3208,7 +3208,7 @@ async function run(): Promise<CommanderCommand> {
             proactive?: boolean;
           }
         ).proactive ||
-          isEnvTruthy(process.env.CLAUDE_CODE_PROACTIVE)) &&
+          isEnvTruthy(process.env.CLEW_CODE_PROACTIVE)) &&
         !coordinatorModeModule?.isCoordinatorMode()
       ) {
         /* eslint-disable @typescript-eslint/no-require-imports */
@@ -3240,7 +3240,7 @@ async function run(): Promise<CommanderCommand> {
         const ctx = getRenderContext(false);
         getFpsMetrics = ctx.getFpsMetrics;
         stats = ctx.stats;
-        // Install asciicast recorder before Ink mounts (ant-only, opt-in via CLAUDE_CODE_TERMINAL_RECORDING=1)
+        // Install asciicast recorder before Ink mounts (ant-only, opt-in via CLEW_CODE_TERMINAL_RECORDING=1)
         if ('external' === 'ant') {
           installAsciicastRecorder();
         }
@@ -3564,7 +3564,7 @@ async function run(): Promise<CommanderCommand> {
       void logPermissionContextForAnts(null, 'initialization');
       logManagedSettings();
 
-      // Register PID file for concurrent-session detection (~/.claude/sessions/)
+      // Register PID file for concurrent-session detection (~/.clew/sessions/)
       // and fire multi-clauding telemetry. Lives here (not init.ts) so only the
       // REPL path registers — not subcommands like `claude doctor`. Chained:
       // count must run after register's write completes or it misses our own file.
@@ -4156,7 +4156,7 @@ async function run(): Promise<CommanderCommand> {
       // environments can be recreated at any user message index. Gating:
       //   - Build-time: this import is stubbed in external builds.
       //   - Runtime: uploader checks github.com/anthropics/* remote + gcloud auth.
-      //   - Safety: CLAUDE_CODE_DISABLE_SESSION_DATA_UPLOAD=1 bypasses (tests set this).
+      //   - Safety: CLEW_CODE_DISABLE_SESSION_DATA_UPLOAD=1 bypasses (tests set this).
       // Import is dynamic + async to avoid adding startup latency.
       const sessionUploaderPromise = 'external' === 'ant' ? import('./utils/sessionDataUploader.js') : null;
 
@@ -5186,7 +5186,7 @@ async function run(): Promise<CommanderCommand> {
   );
 
   // Teammate identity options (set by leader when spawning tmux teammates)
-  // These replace the CLAUDE_CODE_* environment variables
+  // These replace the CLEW_CODE_* environment variables
   program.addOption(new Option('--agent-id <id>', 'Teammate agent ID').hideHelp());
   program.addOption(new Option('--agent-name <name>', 'Teammate display name').hideHelp());
   program.addOption(new Option('--team-name <name>', 'Team name for swarm coordination').hideHelp());
@@ -6364,7 +6364,7 @@ function maybeActivateProactive(options: unknown): void {
         proactive?: boolean;
       }
     ).proactive ||
-      isEnvTruthy(process.env.CLAUDE_CODE_PROACTIVE))
+      isEnvTruthy(process.env.CLEW_CODE_PROACTIVE))
   ) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const proactiveModule = require('./proactive/index.js');
@@ -6380,12 +6380,12 @@ function maybeActivateBrief(options: unknown): void {
       brief?: boolean;
     }
   ).brief;
-  const briefEnv = isEnvTruthy(process.env.CLAUDE_CODE_BRIEF);
+  const briefEnv = isEnvTruthy(process.env.CLEW_CODE_BRIEF);
   if (!briefFlag && !briefEnv) return;
-  // --brief / CLAUDE_CODE_BRIEF are explicit opt-ins: check entitlement,
+  // --brief / CLEW_CODE_BRIEF are explicit opt-ins: check entitlement,
   // then set userMsgOptIn to activate the tool + prompt section. The env
   // var also grants entitlement (isBriefEntitled() reads it), so setting
-  // CLAUDE_CODE_BRIEF=1 alone force-enables for dev/testing — no GB gate
+  // CLEW_CODE_BRIEF=1 alone force-enables for dev/testing — no GB gate
   // needed. initialIsBriefOnly reads getUserMsgOptIn() directly.
   // Conditional require: static import would leak the tool name string
   // into external builds via BriefTool.ts → prompt.ts.

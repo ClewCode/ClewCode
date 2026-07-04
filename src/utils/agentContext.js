@@ -11,7 +11,7 @@
  *    Context: TeammateAgentContext with agentType: 'teammate'
  *
  * For swarm teammates in separate processes (tmux/iTerm2), use environment
- * variables instead: CLAUDE_CODE_AGENT_ID, CLAUDE_CODE_PARENT_SESSION_ID
+ * variables instead: CLEW_CODE_AGENT_ID, CLEW_CODE_PARENT_SESSION_ID
  *
  * WHY AsyncLocalStorage (not AppState):
  * When agents are backgrounded (ctrl+b), multiple agents can run concurrently

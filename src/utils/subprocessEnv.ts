@@ -17,7 +17,7 @@ import { getSettings_DEPRECATED } from './settings/settings.js';
 const GHA_SUBPROCESS_SCRUB = [
   // Anthropic auth — claude re-reads these per-request, subprocesses don't need them
   'ANTHROPIC_API_KEY',
-  'CLAUDE_CODE_OAUTH_TOKEN',
+  'CLEW_CODE_OAUTH_TOKEN',
   'ANTHROPIC_AUTH_TOKEN',
   'ANTHROPIC_FOUNDRY_API_KEY',
   'ANTHROPIC_CUSTOM_HEADERS',
@@ -59,7 +59,7 @@ const GHA_SUBPROCESS_SCRUB = [
  * spawning subprocesses (Bash tool, shell snapshot, MCP stdio servers, LSP
  * servers, shell hooks).
  *
- * Gated on CLAUDE_CODE_SUBPROCESS_ENV_SCRUB. claude-code-action sets this
+ * Gated on CLEW_CODE_SUBPROCESS_ENV_SCRUB. claude-code-action sets this
  * automatically when `allowed_non_write_users` is configured — the flag that
  * exposes a workflow to untrusted content (prompt injection surface).
  */
@@ -85,13 +85,13 @@ export function subprocessEnv(): NodeJS.ProcessEnv {
 
   const env = { ...process.env, ...proxyEnv };
 
-  // Always propagate CLAUDE_CODE_SESSION_ID so subprocesses (Bash tool, hooks,
+  // Always propagate CLEW_CODE_SESSION_ID so subprocesses (Bash tool, hooks,
   // MCP stdio servers, LSP servers) can correlate their execution context back
   // to the parent session. Required for telemetry, log correlation, and tool
   // execution tracing.
-  const sessionId = process.env.CLAUDE_CODE_SESSION_ID;
+  const sessionId = process.env.CLEW_CODE_SESSION_ID;
   if (sessionId) {
-    env.CLAUDE_CODE_SESSION_ID = sessionId;
+    env.CLEW_CODE_SESSION_ID = sessionId;
   }
 
   // Set CLAUDECODE=1 so MCP stdio servers and other subprocesses can detect
@@ -102,7 +102,7 @@ export function subprocessEnv(): NodeJS.ProcessEnv {
   // Propagate CLAUDE_EFFORT so subprocess hooks and scripts can adapt their
   // behavior to the current effort level (e.g., skip expensive validation at
   // low effort, run exhaustive checks at high effort).
-  const effortLevel = process.env.CLAUDE_CODE_EFFORT_LEVEL;
+  const effortLevel = process.env.CLEW_CODE_EFFORT_LEVEL;
   if (effortLevel) {
     env.CLAUDE_EFFORT = effortLevel;
   }
@@ -142,7 +142,7 @@ export function subprocessEnv(): NodeJS.ProcessEnv {
     }
   }
 
-  if (!isEnvTruthy(process.env.CLAUDE_CODE_SUBPROCESS_ENV_SCRUB)) {
+  if (!isEnvTruthy(process.env.CLEW_CODE_SUBPROCESS_ENV_SCRUB)) {
     return env;
   }
 

@@ -121,7 +121,7 @@ export class BrowserAgent {
         action: 'evaluate',
         expression: `
           (() => {
-            ${drawLabels ? `document.querySelectorAll('.claude-vision-label').forEach(e => e.remove());` : ''}
+            ${drawLabels ? `document.querySelectorAll('.clew-vision-label').forEach(e => e.remove());` : ''}
 
             const allElements = Array.from(document.querySelectorAll('a, button, input, textarea, select, [role="button"]'));
             const visibleElements = allElements.filter(el => {
@@ -139,7 +139,7 @@ export class BrowserAgent {
               const rect = el.getBoundingClientRect();
               const label = document.createElement('div');
               label.textContent = index.toString();
-              label.className = 'claude-vision-label';
+              label.className = 'clew-vision-label';
               Object.assign(label.style, {
                 position: 'absolute',
                 top: (rect.top + window.scrollY) + 'px',
@@ -225,7 +225,7 @@ export class BrowserAgent {
         } finally {
           await handleBrowserAction({
             action: 'evaluate',
-            expression: `document.querySelectorAll('.claude-vision-label').forEach(e => e.remove());`,
+            expression: `document.querySelectorAll('.clew-vision-label').forEach(e => e.remove());`,
             timeout: 1000,
           }).catch(() => undefined);
         }
@@ -375,7 +375,7 @@ export class BrowserAgent {
     if (!selector) return undefined;
     const trimmed = selector.trim();
     const labelMatch = trimmed.match(/^\[?(\d+)\]?$/);
-    if (labelMatch) return `[data-claude-id="${labelMatch[1]}"]`;
+    if (labelMatch) return `[data-clew-id="${labelMatch[1]}"]`;
     return trimmed;
   }
 

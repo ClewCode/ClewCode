@@ -13,8 +13,8 @@
  * - User input waiting time
  *
  * Usage:
- * 1. Enable via CLAUDE_CODE_PERFETTO_TRACE=1 or CLAUDE_CODE_PERFETTO_TRACE=<path>
- * 2. Optionally set CLAUDE_CODE_PERFETTO_WRITE_INTERVAL_S=<positive integer> to write the
+ * 1. Enable via CLEW_CODE_PERFETTO_TRACE=1 or CLEW_CODE_PERFETTO_TRACE=<path>
+ * 2. Optionally set CLEW_CODE_PERFETTO_WRITE_INTERVAL_S=<positive integer> to write the
  *    trace file periodically (default: write only on exit).
  * 3. Run Clew Code normally
  * 4. Trace file is written to ~/.clew/traces/trace-<session-id>.json
@@ -245,7 +245,7 @@ function evictOldestEvents(): void {
  * Call this early in the application lifecycle
  */
 export function initializePerfettoTracing(): void {
-  const envValue = process.env.CLAUDE_CODE_PERFETTO_TRACE;
+  const envValue = process.env.CLEW_CODE_PERFETTO_TRACE;
   logForDebugging(`[Perfetto] initializePerfettoTracing called, env value: ${envValue}`);
 
   // Wrap in feature() for dead code elimination - entire block removed from external builds
@@ -269,8 +269,8 @@ export function initializePerfettoTracing(): void {
 
     logForDebugging(`[Perfetto] Tracing enabled, will write to: ${tracePath}, isEnabled=${isEnabled}`);
 
-    // Start periodic full-trace write if CLAUDE_CODE_PERFETTO_WRITE_INTERVAL_S is a positive integer
-    const intervalSec = parseInt(process.env.CLAUDE_CODE_PERFETTO_WRITE_INTERVAL_S ?? '', 10);
+    // Start periodic full-trace write if CLEW_CODE_PERFETTO_WRITE_INTERVAL_S is a positive integer
+    const intervalSec = parseInt(process.env.CLEW_CODE_PERFETTO_WRITE_INTERVAL_S ?? '', 10);
     if (intervalSec > 0) {
       writeIntervalId = setInterval(() => {
         void periodicWrite();

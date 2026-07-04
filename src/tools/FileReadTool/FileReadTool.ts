@@ -555,7 +555,7 @@ export const FileReadTool = buildTool({
 
     // Discover skills from this file's path
     const cwd = getCwd();
-    if (!isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)) {
+    if (!isEnvTruthy(process.env.CLEW_CODE_SIMPLE)) {
       const newSkillDirs = await discoverSkillDirsForPaths([fullFilePath], cwd);
       if (newSkillDirs.length > 0) {
         for (const dir of newSkillDirs) {

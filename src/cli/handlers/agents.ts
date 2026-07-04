@@ -22,8 +22,8 @@ import { listSessionsJsonCommand } from '../sessionManager.js';
  */
 export function getAgentViewDisabledReason(): string | null {
   if (!process.stdin.isTTY) return 'not available in non-TTY mode (run in an interactive terminal)';
-  if (process.env.CLAUDE_CODE_DISABLE_AGENT_VIEW === 'true' || process.env.CLAUDE_CODE_DISABLE_AGENT_VIEW === '1') {
-    return 'disabled by CLAUDE_CODE_DISABLE_AGENT_VIEW environment variable';
+  if (process.env.CLEW_CODE_DISABLE_AGENT_VIEW === 'true' || process.env.CLEW_CODE_DISABLE_AGENT_VIEW === '1') {
+    return 'disabled by CLEW_CODE_DISABLE_AGENT_VIEW environment variable';
   }
   return null;
 }

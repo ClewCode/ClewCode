@@ -83,11 +83,11 @@ export async function glob(
   // --files: list files instead of searching content
   // --glob: filter by pattern
   // --sort=modified: sort by modification time (oldest first)
-  // --no-ignore: don't respect .gitignore (default true, set CLAUDE_CODE_GLOB_NO_IGNORE=false to respect .gitignore)
-  // --hidden: include hidden files (default true, set CLAUDE_CODE_GLOB_HIDDEN=false to exclude)
+  // --no-ignore: don't respect .gitignore (default true, set CLEW_CODE_GLOB_NO_IGNORE=false to respect .gitignore)
+  // --hidden: include hidden files (default true, set CLEW_CODE_GLOB_HIDDEN=false to exclude)
   // Note: use || instead of ?? to treat empty string as unset (defaulting to true)
-  const noIgnore = isEnvTruthy(process.env.CLAUDE_CODE_GLOB_NO_IGNORE || 'true');
-  const hidden = isEnvTruthy(process.env.CLAUDE_CODE_GLOB_HIDDEN || 'true');
+  const noIgnore = isEnvTruthy(process.env.CLEW_CODE_GLOB_NO_IGNORE || 'true');
+  const hidden = isEnvTruthy(process.env.CLEW_CODE_GLOB_HIDDEN || 'true');
   const args = [
     '--files',
     '--glob',

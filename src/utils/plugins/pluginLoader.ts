@@ -127,7 +127,7 @@ export function getVersionedCachePathIn(baseDir: string, pluginId: string, versi
 
 /**
  * Get versioned cache path for a plugin under the primary plugins directory.
- * Format: ~/.claude/plugins/cache/{marketplace}/{plugin}/{version}/
+ * Format: ~/.clew/plugins/cache/{marketplace}/{plugin}/{version}/
  *
  * @param pluginId - Plugin identifier in format "name@marketplace"
  * @param version - Version string (semver, git SHA, etc.)
@@ -192,7 +192,7 @@ export async function probeSeedCacheAnyVersion(pluginId: string): Promise<string
 
 /**
  * Get legacy (non-versioned) cache path for a plugin.
- * Format: ~/.claude/plugins/cache/{plugin-name}/
+ * Format: ~/.clew/plugins/cache/{plugin-name}/
  *
  * Used for backward compatibility with existing installations.
  *
@@ -604,8 +604,8 @@ async function installFromGitHub(
   }
   // Use HTTPS for CCR (no SSH keys), when PREFER_HTTPS is set, or if SSH is not configured
   const preferHttps =
-    isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS) ||
+    isEnvTruthy(process.env.CLEW_CODE_REMOTE) ||
+    isEnvTruthy(process.env.CLEW_CODE_PLUGIN_PREFER_HTTPS) ||
     !(await isGitHubSshLikelyConfigured());
   const gitUrl = preferHttps ? `https://github.com/${repo}.git` : `git@github.com:${repo}.git`;
   return installFromGit(gitUrl, targetPath, ref, sha, skipLfs);
@@ -614,14 +614,14 @@ async function installFromGitHub(
 /**
  * Resolve a git-subdir `url` field to a clonable git URL.
  * Accepts GitHub owner/repo shorthand (converted to ssh or https depending on
- * CLAUDE_CODE_REMOTE) or any URL that passes validateGitUrl (https, http,
+ * CLEW_CODE_REMOTE) or any URL that passes validateGitUrl (https, http,
  * file, git@ ssh).
  */
 async function resolveGitSubdirUrl(url: string): Promise<string> {
   if (/^[a-zA-Z0-9-_.]+\/[a-zA-Z0-9-_.]+$/.test(url)) {
     const preferHttps =
-      isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) ||
-      isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS) ||
+      isEnvTruthy(process.env.CLEW_CODE_REMOTE) ||
+      isEnvTruthy(process.env.CLEW_CODE_PLUGIN_PREFER_HTTPS) ||
       !(await isGitHubSshLikelyConfigured());
     return preferHttps ? `https://github.com/${url}.git` : `git@github.com:${url}.git`;
   }
@@ -2818,7 +2818,7 @@ export const loadAllPlugins = memoize(async (): Promise<PluginLoadResult> => {
  * plugins. Use loadAllPlugins() in explicit refresh paths (/plugins,
  * refresh.ts, headlessPluginInstall) where fresh source is the intent.
  *
- * CLAUDE_CODE_SYNC_PLUGIN_INSTALL=1 delegates to the full loader — that
+ * CLEW_CODE_SYNC_PLUGIN_INSTALL=1 delegates to the full loader — that
  * mode explicitly opts into blocking install before first query, and
  * main.tsx's getClaudeCodeMcpConfigs()/getInitialSettings().agent run
  * BEFORE runHeadless() can warm this cache. First-run CCR/headless has
@@ -2833,7 +2833,7 @@ export const loadAllPlugins = memoize(async (): Promise<PluginLoadResult> => {
  * cache-only consumers.
  */
 export const loadAllPluginsCacheOnly = memoize(async (): Promise<PluginLoadResult> => {
-  if (isEnvTruthy(process.env.CLAUDE_CODE_SYNC_PLUGIN_INSTALL)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_SYNC_PLUGIN_INSTALL)) {
     return loadAllPlugins();
   }
   return assemblePluginLoadResult(() => loadPluginsFromMarketplaces({ cacheOnly: true }));

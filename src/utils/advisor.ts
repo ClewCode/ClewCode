@@ -47,7 +47,7 @@ function getAdvisorConfig(): AdvisorConfig {
 }
 
 export function isAdvisorEnabled(): boolean {
-  if (isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_DISABLE_ADVISOR_TOOL)) {
     return false;
   }
   // The advisor beta header is first-party only (Bedrock/Vertex 400 on it).

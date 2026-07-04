@@ -40,7 +40,7 @@ export function logForDiagnosticsNoPII(level, event, data) {
   }
 }
 function getDiagnosticLogFile() {
-  return process.env.CLAUDE_CODE_DIAGNOSTICS_FILE;
+  return process.env.CLEW_CODE_DIAGNOSTICS_FILE;
 }
 /**
  * Wraps an async function with diagnostic timing logs.

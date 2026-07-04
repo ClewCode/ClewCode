@@ -257,7 +257,7 @@ export const clearYogaNodeReferences = node => {
  * the deepest node whose bounding box contains `y`. Called from ink.tsx when
  * log-update triggers a full reset, to attribute the flicker to its source.
  *
- * Only useful when CLAUDE_CODE_DEBUG_REPAINTS is set (otherwise chains are
+ * Only useful when CLEW_CODE_DEBUG_REPAINTS is set (otherwise chains are
  * undefined and this returns []).
  */
 export function findOwnerChainAtRow(root, y) {

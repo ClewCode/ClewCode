@@ -28,7 +28,7 @@ export const CREDENTIALS_SERVICE_SUFFIX = '-credentials';
 
 export function getMacOsKeychainStorageServiceName(serviceSuffix: string = ''): string {
   const configDir = getClewConfigHomeDir();
-  const isDefaultDir = !process.env.CLAUDE_CONFIG_DIR;
+  const isDefaultDir = !process.env.CLEW_CONFIG_DIR;
 
   // Use a hash of the config dir path to create a unique but stable suffix
   // Only add suffix for non-default directories to maintain backwards compatibility

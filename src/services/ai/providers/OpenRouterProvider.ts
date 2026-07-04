@@ -8,8 +8,8 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
 
   protected getExtraHeaders(): Record<string, string> {
     return {
-      'HTTP-Referer': 'https://github.com/claude-code',
-      'X-Title': 'Claude Code',
+      'HTTP-Referer': 'https://github.com/clew-code/clew-code',
+      'X-Title': 'Clew Code',
     };
   }
 }

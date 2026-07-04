@@ -97,7 +97,7 @@ function ensureCleanupInterval() {
  */
 export function isEnhancedTelemetryEnabled() {
   if (feature('ENHANCED_TELEMETRY_BETA')) {
-    const env = process.env.CLAUDE_CODE_ENHANCED_TELEMETRY_BETA ?? process.env.ENABLE_ENHANCED_TELEMETRY_BETA;
+    const env = process.env.CLEW_CODE_ENHANCED_TELEMETRY_BETA ?? process.env.ENABLE_ENHANCED_TELEMETRY_BETA;
     if (isEnvTruthy(env)) {
       return true;
     }

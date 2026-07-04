@@ -17,9 +17,9 @@ function getFeedbackDisabledReason(): string | undefined {
     return 'Feedback is not allowed by policy settings';
   }
   if (
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)
+    isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_FOUNDRY)
   ) {
     return 'Feedback is not available when using Bedrock, Vertex, or Foundry';
   }

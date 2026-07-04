@@ -38,7 +38,7 @@ const INTERNAL_WORKER_TOOLS = new Set([
  * flag handler) is responsible for setting the env var.
  */
 export function isCoordinatorMode(): boolean {
-  return isEnvTruthy(process.env.CLAUDE_CODE_COORDINATOR_MODE);
+  return isEnvTruthy(process.env.CLEW_CODE_COORDINATOR_MODE);
 }
 
 /**
@@ -62,9 +62,9 @@ export function matchSessionMode(sessionMode: 'coordinator' | 'normal' | undefin
 
   // Flip the env var — isCoordinatorMode() reads it live, no caching
   if (sessionIsCoordinator) {
-    process.env.CLAUDE_CODE_COORDINATOR_MODE = '1';
+    process.env.CLEW_CODE_COORDINATOR_MODE = '1';
   } else {
-    delete process.env.CLAUDE_CODE_COORDINATOR_MODE;
+    delete process.env.CLEW_CODE_COORDINATOR_MODE;
   }
 
   logEvent('tengu_coordinator_mode_switched', {
@@ -84,7 +84,7 @@ export function getCoordinatorUserContext(
     return {};
   }
 
-  const workerTools = isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)
+  const workerTools = isEnvTruthy(process.env.CLEW_CODE_SIMPLE)
     ? [BASH_TOOL_NAME, FILE_READ_TOOL_NAME, FILE_EDIT_TOOL_NAME].sort().join(', ')
     : Array.from(ASYNC_AGENT_ALLOWED_TOOLS)
         .filter(name => !INTERNAL_WORKER_TOOLS.has(name))
@@ -106,7 +106,7 @@ export function getCoordinatorUserContext(
 }
 
 export function getCoordinatorSystemPrompt(): string {
-  const workerCapabilities = isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)
+  const workerCapabilities = isEnvTruthy(process.env.CLEW_CODE_SIMPLE)
     ? 'Workers have access to Bash, Read, and Edit tools, plus MCP tools from configured MCP servers.'
     : 'Workers have access to standard tools, MCP tools from configured MCP servers, and project skills via the Skill tool. Delegate skill invocations (e.g. /commit, /verify) to workers.';
 

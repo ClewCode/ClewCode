@@ -39,7 +39,7 @@ const getPushNotificationTool = () =>
 const getSubscribePRTool = () =>
   feature('KAIROS_GITHUB_WEBHOOKS') ? require('./tools/SubscribePRTool/SubscribePRTool.js').SubscribePRTool : null;
 const getVerifyPlanExecutionTool = () =>
-  process.env.CLAUDE_CODE_VERIFY_PLAN === 'true'
+  process.env.CLEW_CODE_VERIFY_PLAN === 'true'
     ? require('./tools/VerifyPlanExecutionTool/VerifyPlanExecutionTool.js').VerifyPlanExecutionTool
     : null;
 const getOverflowTestTool = () =>
@@ -278,7 +278,7 @@ export function filterToolsByDenyRules<
 
 export const getTools = (permissionContext: ToolPermissionContext): Tools => {
   const replTool = getREPLTool();
-  if (isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_SIMPLE)) {
     if (isReplModeEnabled() && replTool) {
       const replSimple: Tool[] = [replTool];
       if (feature('COORDINATOR_MODE') && isCoordinatorMode()) {

@@ -14,11 +14,11 @@ export function logDebug(message) {
   logForDebugging(`[file-persistence] ${message}`);
 }
 /**
- * Get the environment kind from CLAUDE_CODE_ENVIRONMENT_KIND.
+ * Get the environment kind from CLEW_CODE_ENVIRONMENT_KIND.
  * Returns null if not set or not a recognized value.
  */
 export function getEnvironmentKind() {
-  const kind = process.env.CLAUDE_CODE_ENVIRONMENT_KIND;
+  const kind = process.env.CLEW_CODE_ENVIRONMENT_KIND;
   if (kind === 'byoc' || kind === 'anthropic_cloud') {
     return kind;
   }

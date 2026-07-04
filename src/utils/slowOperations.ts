@@ -15,12 +15,12 @@ type WriteFileOptionsWithFlush = WriteFileOptions | (WriteFileOptions & { flush?
 /**
  * Threshold in milliseconds for logging slow JSON/clone operations.
  * Operations taking longer than this will be logged for debugging.
- * - Override: set CLAUDE_CODE_SLOW_OPERATION_THRESHOLD_MS to a number
+ * - Override: set CLEW_CODE_SLOW_OPERATION_THRESHOLD_MS to a number
  * - Dev builds: 20ms (lower threshold for development)
  * - Ants: 300ms (enabled for all internal users)
  */
 const SLOW_OPERATION_THRESHOLD_MS = (() => {
-  const envValue = process.env.CLAUDE_CODE_SLOW_OPERATION_THRESHOLD_MS;
+  const envValue = process.env.CLEW_CODE_SLOW_OPERATION_THRESHOLD_MS;
   if (envValue !== undefined) {
     const parsed = Number(envValue);
     if (!Number.isNaN(parsed) && parsed >= 0) {

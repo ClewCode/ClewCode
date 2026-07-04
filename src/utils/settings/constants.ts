@@ -189,4 +189,4 @@ export const SOURCES = [
  * The JSON Schema URL for Clew Code settings
  * You can edit the contents at https://github.com/SchemaStore/schemastore/blob/master/src/schemas/json/claude-code-settings.json
  */
-export const CLAUDE_CODE_SETTINGS_SCHEMA_URL = 'https://json.schemastore.org/claude-code-settings.json';
+export const CLEW_CODE_SETTINGS_SCHEMA_URL = 'https://json.schemastore.org/claude-code-settings.json';

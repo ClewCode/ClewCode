@@ -138,7 +138,7 @@ export function* normalizeMessage(message: Message): Generator<SDKMessage> {
       } else if (message.data.type === 'bash_progress' || message.data.type === 'powershell_progress') {
         // Filter bash progress to send only one per minute
         // Only emit for Clew Code Remote for now
-        if (!isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) && !process.env.CLAUDE_CODE_CONTAINER_ID) {
+        if (!isEnvTruthy(process.env.CLEW_CODE_REMOTE) && !process.env.CLEW_CODE_CONTAINER_ID) {
           break;
         }
 

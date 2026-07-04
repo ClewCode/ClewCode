@@ -58,7 +58,7 @@ export function buildEffectiveSystemPrompt({
   }
   // Coordinator mode: use coordinator prompt instead of default.
   // Check env var at runtime (no compile-time feature gate).
-  if (isEnvTruthy(process.env.CLAUDE_CODE_COORDINATOR_MODE) && !mainThreadAgentDefinition) {
+  if (isEnvTruthy(process.env.CLEW_CODE_COORDINATOR_MODE) && !mainThreadAgentDefinition) {
     // Lazy require to avoid circular dependency at module load time
     const { getCoordinatorSystemPrompt } =
       // eslint-disable-next-line @typescript-eslint/no-require-imports

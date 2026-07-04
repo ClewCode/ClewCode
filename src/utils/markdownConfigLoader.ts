@@ -24,7 +24,7 @@ import { getManagedFilePath } from './settings/managedPath.js';
 import { isRestrictedToPluginOnly } from './settings/pluginOnlyPolicy.js';
 
 // Claude configuration directory names
-export const CLAUDE_CONFIG_DIRECTORIES = [
+export const CLEW_CONFIG_DIRECTORIES = [
   'commands',
   'agents',
   'output-styles',
@@ -33,7 +33,7 @@ export const CLAUDE_CONFIG_DIRECTORIES = [
   ...(feature('TEMPLATES') ? (['templates'] as const) : []),
 ] as const;
 
-export type ClaudeConfigDirectory = (typeof CLAUDE_CONFIG_DIRECTORIES)[number];
+export type ClaudeConfigDirectory = (typeof CLEW_CONFIG_DIRECTORIES)[number];
 
 export type MarkdownFile = {
   filePath: string;
@@ -404,7 +404,7 @@ export const loadMarkdownFilesForSubdir = memoize(
  * This implementation exists alongside ripgrep for the following reasons:
  * 1. Ripgrep has poor startup performance in native builds (noticeable on app startup)
  * 2. Provides a fallback when ripgrep is unavailable
- * 3. Can be explicitly enabled via CLAUDE_CODE_USE_NATIVE_FILE_SEARCH env var
+ * 3. Can be explicitly enabled via CLEW_CODE_USE_NATIVE_FILE_SEARCH env var
  *
  * Symlink handling:
  * - Follows symlinks (equivalent to ripgrep's --follow flag)
@@ -498,7 +498,7 @@ async function findMarkdownFilesNative(dir: string, signal: AbortSignal): Promis
 
 /**
  * Generic function to load markdown files from specified directories
- * @param dir Directory (eg. "~/.claude/commands")
+ * @param dir Directory (eg. "~/.clew/commands")
  * @returns Array of parsed markdown files with metadata
  */
 async function loadMarkdownFiles(dir: string): Promise<
@@ -510,10 +510,10 @@ async function loadMarkdownFiles(dir: string): Promise<
 > {
   // File search strategy:
   // - Default: ripgrep (faster, battle-tested)
-  // - Fallback: native Node.js (when CLAUDE_CODE_USE_NATIVE_FILE_SEARCH is set)
+  // - Fallback: native Node.js (when CLEW_CODE_USE_NATIVE_FILE_SEARCH is set)
   //
   // Why both? Ripgrep has poor startup performance in native builds.
-  const useNative = isEnvTruthy(process.env.CLAUDE_CODE_USE_NATIVE_FILE_SEARCH);
+  const useNative = isEnvTruthy(process.env.CLEW_CODE_USE_NATIVE_FILE_SEARCH);
   const signal = AbortSignal.timeout(3000);
   let files: string[];
   try {

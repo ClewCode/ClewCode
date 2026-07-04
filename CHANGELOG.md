@@ -4,8 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **Rebrand `CLAUDE_CODE` → `CLEW_CODE`**: Renamed all `CLAUDE_CODE_*` environment variables, class names, comments, and URLs to `CLEW_CODE_*` across the entire codebase (390 files). Documentation links updated from `code.claude.com` to `clew-code.org`. (`src/`)
+
 ### Added
-- **Project rules system**: Auto-observed behavioral rules scoped to the working repo, stored in `.clew/rules.json`. Includes `ProjectRule` tool (save/list/remove), `/rule` slash command, rules injection into system prompt, and startup notification. (`src/utils/projectRules.ts`, `src/tools/ProjectRuleTool/`, `src/commands/rule/`)
+- **Project rules system**: Auto-observed behavioral rules scoped to the working repo, stored in `.clew/rules.json`. Includes `ProjectRule` tool (save/list/remove), `/rule` slash command (supports `/rule on`/`/rule off` to toggle), rules injection into system prompt, startup notification, and footer indicator showing rule count (e.g. `3R`). (`src/utils/projectRules.ts`, `src/tools/ProjectRuleTool/`, `src/commands/rule/`)
 
 ### Fixed
 - **Resume system crash**: Fixed `ReferenceError: Cannot access 'agentToolResultSchema' before initialization` that caused resume (`/resume`, `--resume`, `--continue`) to crash the app. Root cause: `buildTool` in `Tool.ts` used object spread which eagerly invoked getters like `outputSchema` during module init — for AgentTool, the `agentToolResultSchema` lazy import was still in the temporal dead zone. Fixed by preserving getters via `Object.defineProperties` instead of spread.

@@ -39,7 +39,7 @@ export function TranscriptSharePrompt({ onSelect, inputValue, setInputValue }: P
       </Box>
 
       <Box marginLeft={2}>
-        <Text dimColor>Learn more: https://code.claude.com/docs/en/data-usage#session-quality-surveys</Text>
+        <Text dimColor>Learn more: https://clew-code.org/docs/data-usage#session-quality-surveys</Text>
       </Box>
 
       <Box marginLeft={2}>

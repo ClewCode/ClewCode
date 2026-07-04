@@ -106,24 +106,24 @@ export function _resetTmuxControlModeProbeForTesting(): void {
 /**
  * Runtime env-var check only. Fullscreen defaults to on so the prompt/status
  * footer can stay anchored to the terminal bottom. Use
- * CLAUDE_CODE_NO_FLICKER=0 or CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 to opt out.
+ * CLEW_CODE_NO_FLICKER=0 or CLEW_CODE_DISABLE_ALTERNATE_SCREEN=1 to opt out.
  */
 export function isFullscreenEnvEnabled(): boolean {
-  // CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1: complete opt-out of the alt-screen
+  // CLEW_CODE_DISABLE_ALTERNATE_SCREEN=1: complete opt-out of the alt-screen
   // renderer. Overrides all other detection. Useful for terminals where the
   // alt-screen causes issues (VS Code integrated terminal, certain tmux setups).
-  if (isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN)) return false;
+  if (isEnvTruthy(process.env.CLEW_CODE_DISABLE_ALTERNATE_SCREEN)) return false;
   // Explicit user opt-out always wins.
-  if (isEnvDefinedFalsy(process.env.CLAUDE_CODE_NO_FLICKER)) return false;
+  if (isEnvDefinedFalsy(process.env.CLEW_CODE_NO_FLICKER)) return false;
   // Explicit opt-in overrides auto-detection (escape hatch).
-  if (isEnvTruthy(process.env.CLAUDE_CODE_NO_FLICKER)) return true;
+  if (isEnvTruthy(process.env.CLEW_CODE_NO_FLICKER)) return true;
   // Auto-disable under tmux -CC: alt-screen + mouse tracking corrupts
   // terminal state on double-click and mouse wheel is dead.
   if (isTmuxControlMode()) {
     if (!loggedTmuxCcDisable) {
       loggedTmuxCcDisable = true;
       logForDebugging(
-        'fullscreen disabled: tmux -CC (iTerm2 integration mode) detected · set CLAUDE_CODE_NO_FLICKER=1 to override',
+        'fullscreen disabled: tmux -CC (iTerm2 integration mode) detected · set CLEW_CODE_NO_FLICKER=1 to override',
       );
     }
     return false;
@@ -133,26 +133,26 @@ export function isFullscreenEnvEnabled(): boolean {
 
 /**
  * Whether fullscreen mode should enable SGR mouse tracking (DEC 1000/1002/1006).
- * Set CLAUDE_CODE_DISABLE_MOUSE=1 to keep alt-screen + virtualized scroll
+ * Set CLEW_CODE_DISABLE_MOUSE=1 to keep alt-screen + virtualized scroll
  * (keyboard PgUp/PgDn/Ctrl+Home/End still work) but skip mouse capture,
  * so tmux/kitty/terminal-native copy-on-select keeps working.
  *
- * Compare with CLAUDE_CODE_NO_FLICKER=0 which is all-or-nothing — it also
+ * Compare with CLEW_CODE_NO_FLICKER=0 which is all-or-nothing — it also
  * disables alt-screen and virtualized scrollback.
  */
 export function isMouseTrackingEnabled(): boolean {
-  return !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_MOUSE);
+  return !isEnvTruthy(process.env.CLEW_CODE_DISABLE_MOUSE);
 }
 
 /**
  * Whether mouse click handling is disabled (clicks/drags ignored, wheel still
- * works). Set CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1 to prevent accidental clicks
+ * works). Set CLEW_CODE_DISABLE_MOUSE_CLICKS=1 to prevent accidental clicks
  * from triggering cursor positioning, text selection, or message expansion.
  *
- * Fullscreen-specific — only reachable when CLAUDE_CODE_NO_FLICKER is active.
+ * Fullscreen-specific — only reachable when CLEW_CODE_NO_FLICKER is active.
  */
 export function isMouseClicksDisabled(): boolean {
-  return isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_MOUSE_CLICKS);
+  return isEnvTruthy(process.env.CLEW_CODE_DISABLE_MOUSE_CLICKS);
 }
 
 /**

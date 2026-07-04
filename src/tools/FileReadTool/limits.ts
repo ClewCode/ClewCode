@@ -22,7 +22,7 @@ export const DEFAULT_MAX_OUTPUT_TOKENS = 25000;
  * so the caller can fall through to the next precedence tier.
  */
 function getEnvMaxTokens(): number | undefined {
-  const override = process.env.CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS;
+  const override = process.env.CLEW_CODE_FILE_READ_MAX_OUTPUT_TOKENS;
   if (override) {
     const parsed = parseInt(override, 10);
     if (!Number.isNaN(parsed) && parsed > 0) {

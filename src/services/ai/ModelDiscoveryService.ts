@@ -8,7 +8,7 @@
  * 3. Parse, normalize, and cache results locally
  * 4. Provide enriched model list with context_window, pricing, capabilities
  *
- * Cache: ~/.claude/model-cache.json (TTL: 6 hours)
+ * Cache: ~/.clew/model-cache.json (TTL: 6 hours)
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';

@@ -63,15 +63,15 @@ function setEffortValue(effortValue: EffortValue, ultracodeMode = false): Effort
 
   const envOverride = getEffortEnvOverride();
   if (envOverride !== undefined && envOverride !== effortValue) {
-    const envRaw = process.env.CLAUDE_CODE_EFFORT_LEVEL;
+    const envRaw = process.env.CLEW_CODE_EFFORT_LEVEL;
     if (persistable === undefined) {
       return {
-        message: `Not applied: CLAUDE_CODE_EFFORT_LEVEL=${envRaw} overrides effort this session, and ${effortValue} is session-only (nothing saved)`,
+        message: `Not applied: CLEW_CODE_EFFORT_LEVEL=${envRaw} overrides effort this session, and ${effortValue} is session-only (nothing saved)`,
         effortUpdate: { value: effortValue },
       };
     }
     return {
-      message: `CLAUDE_CODE_EFFORT_LEVEL=${envRaw} overrides this session — clear it and ${effortValue} takes over`,
+      message: `CLEW_CODE_EFFORT_LEVEL=${envRaw} overrides this session — clear it and ${effortValue} takes over`,
       effortUpdate: { value: effortValue },
     };
   }
@@ -117,9 +117,9 @@ function unsetEffortLevel(): EffortCommandResult {
   });
   const envOverride = getEffortEnvOverride();
   if (envOverride !== undefined && envOverride !== null) {
-    const envRaw = process.env.CLAUDE_CODE_EFFORT_LEVEL;
+    const envRaw = process.env.CLEW_CODE_EFFORT_LEVEL;
     return {
-      message: `Cleared effort from settings, but CLAUDE_CODE_EFFORT_LEVEL=${envRaw} still controls this session`,
+      message: `Cleared effort from settings, but CLEW_CODE_EFFORT_LEVEL=${envRaw} still controls this session`,
       effortUpdate: { value: undefined },
     };
   }

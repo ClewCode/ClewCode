@@ -2318,38 +2318,75 @@
   },
   "huggingface": {
     "providerId": "huggingface",
-    "label": "Hugging Face",
-    "envKey": "HUGGINGFACE_API_KEY",
+    "label": "Hugging Face Inference Providers",
+    "envKey": "HF_TOKEN",
     "defaultBaseUrl": "https://router.huggingface.co/v1",
-    "note": "Hugging Face Inference API. Updated 2026.",
+    "modelsUrl": "https://router.huggingface.co/v1/models",
+    "note": "Hugging Face Inference Providers OpenAI-compatible router. Use HF_TOKEN; HUGGINGFACE_API_KEY is accepted as a legacy fallback.",
     "capabilities": {
       "chat": true,
-      "streaming": "partial",
-      "toolCalling": false,
-      "vision": false,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": true,
       "jsonSchema": false,
       "reasoningEffort": false,
       "contextLength": "varies",
-      "imageIn": false,
+      "imageIn": true,
       "videoIn": false
     },
     "models": [
       {
-        "id": "meta-llama/Llama-3.3-70B-Instruct",
-        "label": "Llama 3.3 70B (HF)",
+        "id": "openai/gpt-oss-120b:fastest",
+        "label": "GPT-OSS 120B (fastest)",
+        "tags": [
+          "tools",
+          "recommended",
+          "latest"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "deepseek-ai/DeepSeek-R1:fastest",
+        "label": "DeepSeek R1 (fastest)",
+        "tags": [
+          "reasoning"
+        ],
         "capabilities": {
           "toolCalling": "none",
           "vision": false,
           "streaming": "full",
-          "maxContext": 8192,
-          "maxOutput": 32768,
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "meta-llama/Llama-3.3-70B-Instruct:fastest",
+        "label": "Llama 3.3 70B Instruct (fastest)",
+        "capabilities": {
+          "toolCalling": "none",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
           "reasoning": false,
           "imageIn": false,
           "videoIn": false
         }
       }
     ],
-    "defaultModel": "meta-llama/Llama-3.3-70B-Instruct",
+    "defaultModel": "openai/gpt-oss-120b:fastest",
     "defaultModelVerified": true
   },
   "poe": {

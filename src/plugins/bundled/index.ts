@@ -25,7 +25,7 @@ import { registerBuiltinPlugin } from '../builtinPlugins.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '../../..');
-const upstreamPluginsRoot = resolve(process.env.CLAUDE_CODE_UPSTREAM_PLUGINS_DIR ?? join(repoRoot, 'plugins'));
+const upstreamPluginsRoot = resolve(process.env.CLEW_CODE_UPSTREAM_PLUGINS_DIR ?? join(repoRoot, 'plugins'));
 
 function pluginPath(name: string): string {
   return join(upstreamPluginsRoot, name);

@@ -231,11 +231,11 @@ export function getSettingsRootPathForSource(source: SettingSource): string {
  *
  * Priority:
  * 1. Session state (set by CLI flag --cowork)
- * 2. Environment variable CLAUDE_CODE_USE_COWORK_PLUGINS
+ * 2. Environment variable CLEW_CODE_USE_COWORK_PLUGINS
  * 3. Default: 'settings.json'
  */
 function getUserSettingsFilePath(): string {
-  if (getUseCoworkPlugins() || isEnvTruthy(process.env.CLAUDE_CODE_USE_COWORK_PLUGINS)) {
+  if (getUseCoworkPlugins() || isEnvTruthy(process.env.CLEW_CODE_USE_COWORK_PLUGINS)) {
     return 'cowork_settings.json';
   }
   return 'settings.json';

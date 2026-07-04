@@ -8,7 +8,7 @@
  * - Track and update marketplace configurations
  *
  * File structure managed by this module:
- * ~/.claude/
+ * ~/.clew/
  *   └── plugins/
  *       ├── known_marketplaces.json    # Configuration of all known marketplaces
  *       └── marketplaces/              # Cache directory for marketplace data
@@ -212,7 +212,7 @@ export function saveMarketplaceToSettings(
 /**
  * Load known marketplaces configuration from disk
  *
- * Reads the configuration file at ~/.claude/plugins/known_marketplaces.json
+ * Reads the configuration file at ~/.clew/plugins/known_marketplaces.json
  * which contains a mapping of marketplace names to their sources and metadata.
  *
  * Example configuration file content:
@@ -291,7 +291,7 @@ export async function loadKnownMarketplacesConfigSafe(): Promise<KnownMarketplac
 /**
  * Save known marketplaces configuration to disk
  *
- * Writes the configuration to ~/.claude/plugins/known_marketplaces.json,
+ * Writes the configuration to ~/.clew/plugins/known_marketplaces.json,
  * creating the directory structure if it doesn't exist.
  *
  * @param config - The marketplace configuration to save
@@ -454,7 +454,7 @@ function seedDirFor(installLocation: string): string | undefined {
 /**
  * Git pull operation (exported for testing)
  *
- * Pulls latest changes with a configurable timeout (default 120s, override via CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS).
+ * Pulls latest changes with a configurable timeout (default 120s, override via CLEW_CODE_PLUGIN_GIT_TIMEOUT_MS).
  * Provides helpful error messages for common failure scenarios.
  * If a ref is specified, fetches and checks out that specific branch or tag.
  */
@@ -467,7 +467,7 @@ const GIT_NO_PROMPT_ENV = {
 const DEFAULT_PLUGIN_GIT_TIMEOUT_MS = 120 * 1000;
 
 function getPluginGitTimeoutMs(): number {
-  const envValue = process.env.CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS;
+  const envValue = process.env.CLEW_CODE_PLUGIN_GIT_TIMEOUT_MS;
   if (envValue) {
     const parsed = parseInt(envValue, 10);
     if (!Number.isNaN(parsed) && parsed > 0) {
@@ -611,7 +611,7 @@ function enhanceGitPullErrorMessages(result: { code: number; stderr: string; err
     const timeoutSec = Math.round(getPluginGitTimeoutMs() / 1000);
     return {
       ...result,
-      stderr: `Git pull timed out after ${timeoutSec}s. Try increasing the timeout via CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS environment variable.\n\nOriginal error: ${result.stderr}`,
+      stderr: `Git pull timed out after ${timeoutSec}s. Try increasing the timeout via CLEW_CODE_PLUGIN_GIT_TIMEOUT_MS environment variable.\n\nOriginal error: ${result.stderr}`,
     };
   }
 
@@ -683,7 +683,7 @@ function extractSshHost(gitUrl: string): string | null {
 /**
  * Git clone operation (exported for testing)
  *
- * Clones a git repository with a configurable timeout (default 120s, override via CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS)
+ * Clones a git repository with a configurable timeout (default 120s, override via CLEW_CODE_PLUGIN_GIT_TIMEOUT_MS)
  * and larger repositories. Provides helpful error messages for common failure scenarios.
  * Optionally checks out a specific branch or tag.
  *
@@ -803,7 +803,7 @@ export async function gitClone(
   if (result.error?.includes('timed out')) {
     return {
       ...result,
-      stderr: `Git clone timed out after ${Math.round(timeoutMs / 1000)}s. The repository may be too large for the current timeout. Set CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS to increase it (e.g., 300000 for 5 minutes).\n\nOriginal error: ${result.stderr}`,
+      stderr: `Git clone timed out after ${Math.round(timeoutMs / 1000)}s. The repository may be too large for the current timeout. Set CLEW_CODE_PLUGIN_GIT_TIMEOUT_MS to increase it (e.g., 300000 for 5 minutes).\n\nOriginal error: ${result.stderr}`,
     };
   }
 
@@ -1006,9 +1006,9 @@ async function cacheMarketplaceFromGit(
     );
     if (pullResult.code === 0) return;
 
-    if (isEnvTruthy('CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE')) {
+    if (isEnvTruthy('CLEW_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE')) {
       logForDebugging(
-        `git pull failed but CLAUDE_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE is set, keeping existing cache: ${pullResult.stderr}`,
+        `git pull failed but CLEW_CODE_PLUGIN_KEEP_MARKETPLACE_ON_FAILURE is set, keeping existing cache: ${pullResult.stderr}`,
         { level: 'warn' },
       );
       return;
@@ -1279,7 +1279,7 @@ async function parseFileWithSchema<T>(
  * to match the marketplace's actual name from the manifest.
  *
  * Cache structure:
- * ~/.claude/plugins/marketplaces/
+ * ~/.clew/plugins/marketplaces/
  *   ├── official-marketplace.json     # From URL source
  *   ├── github-marketplace/          # From GitHub/Git source
  *   │   └── .claude-plugin/
@@ -1330,8 +1330,8 @@ async function loadAndCacheMarketplace(
         let lastError: Error | null = null;
 
         // Quick check if SSH is likely to work
-        // CLAUDE_CODE_PLUGIN_PREFER_HTTPS forces HTTPS-only
-        const preferHttps = isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS);
+        // CLEW_CODE_PLUGIN_PREFER_HTTPS forces HTTPS-only
+        const preferHttps = isEnvTruthy(process.env.CLEW_CODE_PLUGIN_PREFER_HTTPS);
         const sshConfigured = preferHttps ? false : await isGitHubSshLikelyConfigured();
 
         if (sshConfigured) {
@@ -1568,7 +1568,7 @@ async function loadAndCacheMarketplace(
  * Add a marketplace source to the known marketplaces
  *
  * The marketplace is fetched, validated, and cached locally.
- * The configuration is saved to ~/.claude/plugins/known_marketplaces.json.
+ * The configuration is saved to ~/.clew/plugins/known_marketplaces.json.
  *
  * @param source - MarketplaceSource object representing the marketplace source.
  *                 Callers should parse user input into MarketplaceSource format
@@ -2207,7 +2207,7 @@ export async function refreshMarketplace(
         const sshUrl = `git@github.com:${source.repo}.git`;
         const httpsUrl = `https://github.com/${source.repo}.git`;
 
-        if (isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) || isEnvTruthy(process.env.CLAUDE_CODE_PLUGIN_PREFER_HTTPS)) {
+        if (isEnvTruthy(process.env.CLEW_CODE_REMOTE) || isEnvTruthy(process.env.CLEW_CODE_PLUGIN_PREFER_HTTPS)) {
           // CCR or PREFER_HTTPS: always HTTPS (no SSH keys available / user preference)
           await cacheMarketplaceFromGit(httpsUrl, installLocation, source.ref, source.sparsePaths, onProgress, options);
         } else {

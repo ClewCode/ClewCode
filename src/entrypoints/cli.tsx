@@ -6,7 +6,7 @@ process.env.COREPACK_ENABLE_AUTO_PIN = '0';
 
 // Set max heap size for child processes in CCR environments (containers have 16GB)
 // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level, custom-rules/safe-env-boolean-check
-if (process.env.CLAUDE_CODE_REMOTE === 'true') {
+if (process.env.CLEW_CODE_REMOTE === 'true') {
   // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
   const existing = process.env.NODE_OPTIONS || '';
   // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
@@ -18,15 +18,15 @@ if (process.env.CLAUDE_CODE_REMOTE === 'true') {
 // module-level consts at import time — init() runs too late. feature() gate
 // DCEs this entire block from external builds.
 // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
-if (feature('ABLATION_BASELINE') && process.env.CLAUDE_CODE_ABLATION_BASELINE) {
+if (feature('ABLATION_BASELINE') && process.env.CLEW_CODE_ABLATION_BASELINE) {
   for (const k of [
-    'CLAUDE_CODE_SIMPLE',
-    'CLAUDE_CODE_DISABLE_THINKING',
+    'CLEW_CODE_SIMPLE',
+    'CLEW_CODE_DISABLE_THINKING',
     'DISABLE_INTERLEAVED_THINKING',
     'DISABLE_COMPACT',
     'DISABLE_AUTO_COMPACT',
-    'CLAUDE_CODE_DISABLE_AUTO_MEMORY',
-    'CLAUDE_CODE_DISABLE_BACKGROUND_TASKS',
+    'CLEW_CODE_DISABLE_AUTO_MEMORY',
+    'CLEW_CODE_DISABLE_BACKGROUND_TASKS',
   ]) {
     // eslint-disable-next-line custom-rules/no-top-level-side-effects, custom-rules/no-process-env-top-level
     process.env[k] ??= '1';
@@ -172,7 +172,7 @@ async function main(): Promise<void> {
   }
 
   // Fast-path for `claude ps|logs|attach|kill` and `--bg`/`--background`.
-  // Session management against the ~/.claude/sessions/ registry. Flag
+  // Session management against the ~/.clew/sessions/ registry. Flag
   // literals are inlined so bg.js only loads when actually dispatching.
   if (
     args[0] === 'ps' ||
@@ -278,7 +278,7 @@ async function main(): Promise<void> {
   // --bare: set SIMPLE early so gates fire during module eval / commander
   // option building (not just inside the action handler).
   if (args.includes('--bare')) {
-    process.env.CLAUDE_CODE_SIMPLE = '1';
+    process.env.CLEW_CODE_SIMPLE = '1';
   }
 
   // No special flags detected, load and run the full CLI

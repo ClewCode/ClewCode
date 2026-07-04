@@ -368,10 +368,10 @@ export function calculateMessagesToKeepIndex(messages: Message[], lastSummarized
  */
 export function shouldUseSessionMemoryCompaction(): boolean {
   // Allow env var override for eval runs and testing
-  if (isEnvTruthy(process.env.ENABLE_CLAUDE_CODE_SM_COMPACT)) {
+  if (isEnvTruthy(process.env.ENABLE_CLEW_CODE_SM_COMPACT)) {
     return true;
   }
-  if (isEnvTruthy(process.env.DISABLE_CLAUDE_CODE_SM_COMPACT)) {
+  if (isEnvTruthy(process.env.DISABLE_CLEW_CODE_SM_COMPACT)) {
     return false;
   }
 

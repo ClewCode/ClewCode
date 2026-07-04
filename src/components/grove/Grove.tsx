@@ -52,7 +52,7 @@ function GracePeriodContentBody(): React.ReactNode {
         <Box paddingLeft={1}>
           <Text>
             <Text>· </Text>
-            <Text bold>You can help improve Claude </Text>
+            <Text bold>You can help improve Clew Code </Text>
             <Text>
               — Allow the use of your chats and coding sessions to train and improve Anthropic AI models. Change anytime
               in your Privacy Settings (<Link url={'https://clew-code.org/settings/privacy'}></Link>
@@ -89,9 +89,9 @@ function PostGracePeriodContentBody(): React.ReactNode {
         <Text>What&apos;s changing?</Text>
 
         <Box flexDirection="column">
-          <Text bold>Help improve Claude</Text>
+          <Text bold>Help improve Clew Code</Text>
           <Text>
-            Allow the use of your chats and coding sessions to train and improve Anthropic AI models. You can change
+            Allow the use of your chats and coding sessions to train and improve Clew Code and Anthropic AI models. You can change
             this anytime in Privacy Settings
           </Text>
           <Link url={'https://clew-code.org/settings/privacy'}></Link>
@@ -100,7 +100,7 @@ function PostGracePeriodContentBody(): React.ReactNode {
         <Box flexDirection="column">
           <Text bold>How this affects data retention</Text>
           <Text>
-            Turning ON the improve Claude setting extends data retention from 30 days to 5 years. Turning it OFF keeps
+            Turning ON the improve Clew Code setting extends data retention from 30 days to 5 years. Turning it OFF keeps
             the default 30-day data retention. Delete data anytime.
           </Text>
         </Box>
@@ -194,17 +194,17 @@ export function GroveDialog({ showIfAlreadyViewed, location, onDone }: Props): R
   const acceptOptions = groveConfig?.domain_excluded
     ? [
         {
-          label: 'Accept terms · Help improve Claude: OFF (for emails with your domain)',
+          label: 'Accept terms · Help improve Clew Code: OFF (for emails with your domain)',
           value: 'accept_opt_out',
         },
       ]
     : [
         {
-          label: 'Accept terms · Help improve Claude: ON',
+          label: 'Accept terms · Help improve Clew Code: ON',
           value: 'accept_opt_in',
         },
         {
-          label: 'Accept terms · Help improve Claude: OFF',
+          label: 'Accept terms · Help improve Clew Code: OFF',
           value: 'accept_opt_out',
         },
       ];
@@ -319,7 +319,7 @@ export function PrivacySettingsDialog({
 
       <Box>
         <Box width={44}>
-          <Text bold>Help improve Claude</Text>
+          <Text bold>Help improve Clew Code</Text>
         </Box>
         <Box>{valueComponent}</Box>
       </Box>

@@ -3,8 +3,6 @@ import { readFile, writeFile } from 'fs/promises';
 import * as React from 'react';
 import { type OptionWithDescription, Select } from '../../components/CustomSelect/select.js';
 import { Dialog } from '../../components/design-system/Dialog.js';
-import { GoogleOAuthFlow } from '../../components/GoogleOAuthFlow.js';
-import { OpenAIOAuthFlow } from '../../components/OpenAIOAuthFlow.js';
 import TextInput from '../../components/TextInput.js';
 import { Box, Text } from '../../ink.js';
 import {
@@ -21,8 +19,6 @@ import {
   type ProviderRegistryEntry,
 } from '../../services/ai/providerRegistry.js';
 import { validateProviderModelSelection } from '../../services/ai/providerSelection.js';
-import type { GoogleOAuthTokens } from '../../services/googleOAuth/index.js';
-import type { OpenAIOAuthTokens } from '../../services/openaiOAuth/index.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
 import type { LocalCommandResult, LocalJSXCommandCall, LocalJSXCommandOnDone } from '../../types/command.js';
 import { readLocalProviderKey } from '../../utils/localProviderKeys.js';
@@ -34,8 +30,8 @@ type ProviderConfig = {
   model: string;
   apiKeys?: Partial<Record<(typeof PROVIDER_IDS)[number], string>>;
   providerConfig?: SerializableProviderRegistryEntry & {
-    googleType?: 'direct' | 'vertex' | 'subscriber';
-    openaiType?: 'direct' | 'subscriber' | 'azure';
+    googleType?: 'direct' | 'vertex';
+    openaiType?: 'direct' | 'azure';
   };
 };
 
@@ -49,7 +45,7 @@ type ExpandedEntry = {
   description: string;
   envKey: string;
   isLocal: boolean;
-  authType?: 'direct' | 'subscriber' | 'vertex' | 'azure';
+  authType?: 'direct' | 'vertex' | 'azure';
   value: string; // compound: "providerId:authType" or just "providerId"
 };
 type ProviderSelectValue = string | '__SECTION_RECENT__' | '__SECTION_PROVIDERS__';
@@ -431,12 +427,10 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   const [apiKeyError, setApiKeyError] = React.useState<string | null>(null);
   const [config, setConfig] = React.useState<ProviderConfig | null>(null);
   const [showChangeKey, setShowChangeKey] = React.useState(false);
-  const [googleType, setGoogleType] = React.useState<'direct' | 'vertex' | 'subscriber' | null>(null);
-  const [openaiType, setOpenaiType] = React.useState<'direct' | 'subscriber' | 'azure' | null>(null);
+  const [googleType, setGoogleType] = React.useState<'direct' | 'vertex' | null>(null);
+  const [openaiType, setOpenaiType] = React.useState<'direct' | 'azure' | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchCursorOffset, setSearchCursorOffset] = React.useState(0);
-  const [showOpenAIOAuth, setShowOpenAIOAuth] = React.useState(false);
-  const [showGoogleOAuth, setShowGoogleOAuth] = React.useState(false);
   const [customName, setCustomName] = React.useState('');
   const [customBaseUrl, setCustomBaseUrl] = React.useState('');
   const [customModel, setCustomModel] = React.useState('');
@@ -453,106 +447,15 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     void loadConfig().then(loadedConfig => {
       setConfig(loadedConfig);
       if (loadedConfig?.provider === 'google' && (loadedConfig.providerConfig as any)?.googleType) {
-        setGoogleType((loadedConfig.providerConfig as any).googleType);
+        const type = (loadedConfig.providerConfig as any).googleType;
+        setGoogleType(type === 'vertex' ? 'vertex' : 'direct');
       }
       if (loadedConfig?.provider === 'openai' && (loadedConfig.providerConfig as any)?.openaiType) {
-        setOpenaiType((loadedConfig.providerConfig as any).openaiType);
+        const type = (loadedConfig.providerConfig as any).openaiType;
+        setOpenaiType(type === 'azure' ? 'azure' : 'direct');
       }
     });
   }, []);
-
-  const filteredOptions = React.useMemo(() => {
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return PROVIDER_KEYS;
-    return PROVIDER_KEYS.filter(key => {
-      const info = getProviderInfo(key);
-      return (
-        key.toLowerCase().includes(query) ||
-        info.label.toLowerCase().includes(query) ||
-        info.envKey.toLowerCase().includes(query)
-      );
-    });
-  }, [searchQuery]);
-
-  // Store OpenAI OAuth token
-  async function saveOpenAIToken(token: string) {
-    if (!provider) return;
-
-    const currentConfig = await loadConfig();
-    // Preserve existing provider/model so other sessions aren't affected
-    const nextConfig: ProviderConfig = {
-      provider: currentConfig?.provider || provider,
-      model: currentConfig?.model || (currentSessionModel as string) || getDefaultModelForProvider(provider) || '',
-      providerConfig:
-        currentConfig?.providerConfig ??
-        ({
-          ...getSerializableProviderInfo(provider),
-          openaiType: 'subscriber',
-        } as any),
-      apiKeys: {
-        ...(currentConfig?.apiKeys ?? {}),
-        openai: token,
-      },
-    };
-
-    await saveConfig(nextConfig);
-    clearProviderModelsCache(provider);
-
-    // Set the session token in environment for immediate use
-    process.env.CHATGPT_SESSION_TOKEN = token;
-
-    // Invalidate provider config cache to force reload
-    const providerManager = ProviderManager.getInstance();
-    providerManager.invalidateConfigCache();
-
-    const isProviderSwitching = currentConfig && currentConfig.provider !== provider;
-    const currentModel = isProviderSwitching
-      ? getDefaultModelForProvider(provider)
-      : (currentSessionModel as string) || getDefaultModelForProvider(provider);
-    applyProviderSelectionToSession(setAppState, { model: currentModel, provider }, false);
-
-    onDone(`Set provider to ${provider} (ChatGPT Plus)\nModel: ${currentModel}\n(Session only)`, { display: 'system' });
-  }
-
-  // Store Google OAuth token
-  async function saveGoogleToken(token: string) {
-    if (!provider) return;
-
-    const currentConfig = await loadConfig();
-    // Preserve existing provider/model so other sessions aren't affected
-    const nextConfig: ProviderConfig = {
-      provider: currentConfig?.provider || provider,
-      model: currentConfig?.model || (currentSessionModel as string) || getDefaultModelForProvider(provider) || '',
-      providerConfig:
-        currentConfig?.providerConfig ??
-        ({
-          ...getSerializableProviderInfo(provider),
-          googleType: 'subscriber',
-        } as any),
-      apiKeys: {
-        ...(currentConfig?.apiKeys ?? {}),
-        google: token,
-      },
-    };
-
-    await saveConfig(nextConfig);
-    clearProviderModelsCache(provider);
-
-    // Set the session token in environment for immediate use
-    process.env.GOOGLE_OAUTH_TOKEN = token;
-
-    // Invalidate provider config cache to force reload
-    const providerManager = ProviderManager.getInstance();
-    providerManager.invalidateConfigCache();
-
-    const isProviderSwitching = currentConfig && currentConfig.provider !== provider;
-    const currentModel = isProviderSwitching
-      ? getDefaultModelForProvider(provider)
-      : (currentSessionModel as string) || getDefaultModelForProvider(provider);
-    applyProviderSelectionToSession(setAppState, { model: currentModel, provider }, false);
-
-    onDone(`Set provider to ${provider} (Google OAuth)\nModel: ${currentModel}\n(Session only)`, { display: 'system' });
-  }
 
   async function saveProviderSelection(apiKey?: string) {
     if (!provider) return;
@@ -572,16 +475,14 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     const nextConfig: ProviderConfig = {
       provider: existingConfig?.provider || provider,
       model: existingConfig?.model || (currentSessionModel as string) || info.defaultModel || '',
-      providerConfig:
-        existingConfig?.providerConfig ??
-        ({
-          ...getSerializableProviderInfo(provider),
-          ...(provider === 'google' && googleType ? { googleType } : {}),
-          ...(provider === 'openai' && openaiType ? { openaiType } : {}),
-          // Store the value from prompt if needed
-          ...(provider === 'openai' && openaiType === 'azure' && apiKey ? { baseUrl: apiKey } : {}),
-          ...(provider === 'google' && googleType === 'vertex' && apiKey ? { projectId: apiKey } : {}),
-        } as any),
+      providerConfig: {
+        ...getSerializableProviderInfo(provider),
+        ...(provider === 'google' ? { googleType: googleType ?? 'direct' } : {}),
+        ...(provider === 'openai' ? { openaiType: openaiType ?? 'direct' } : {}),
+        // Store the value from prompt if needed
+        ...(provider === 'openai' && openaiType === 'azure' && apiKey ? { baseUrl: apiKey } : {}),
+        ...(provider === 'google' && googleType === 'vertex' && apiKey ? { projectId: apiKey } : {}),
+      } as any,
       apiKeys: nextApiKeys,
     };
 
@@ -615,15 +516,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     },
     {
       providerId: 'google',
-      label: 'Google OAuth (Web Login)',
-      authType: 'subscriber',
-      envKey: '',
-      isLocal: true,
-      description: 'Login via browser OAuth',
-      value: 'google:subscriber',
-    },
-    {
-      providerId: 'google',
       label: 'Google Vertex AI',
       authType: 'vertex',
       envKey: '',
@@ -643,15 +535,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     },
     {
       providerId: 'openai',
-      label: 'ChatGPT Plus (Web)',
-      authType: 'subscriber',
-      envKey: '',
-      isLocal: true,
-      description: 'ChatGPT OAuth login',
-      value: 'openai:subscriber',
-    },
-    {
-      providerId: 'openai',
       label: 'Azure OpenAI',
       authType: 'azure',
       envKey: 'AZURE_API_KEY',
@@ -661,12 +544,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     },
   ];
   const expandedMap = new Map(EXPANDED_ENTRIES.map(e => [e.value, e]));
-
-  function getProviderKeyFromValue(v: string): ProviderKey {
-    const exp = expandedMap.get(v);
-    if (exp) return exp.providerId;
-    return v as ProviderKey;
-  }
 
   function buildAllEntries(): ExpandedEntry[] {
     const entries: ExpandedEntry[] = [];
@@ -685,24 +562,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     }
     entries.push(...EXPANDED_ENTRIES);
     return entries;
-  }
-
-  function createExpandedOption(entry: ExpandedEntry): OptionWithDescription<ProviderSelectValue> {
-    const hasKey =
-      entry.isLocal && !entry.envKey ? true : Boolean(config?.apiKeys?.[entry.providerId] || process.env[entry.envKey]);
-    const status = hasKey
-      ? entry.isLocal && !entry.envKey
-        ? 'not required'
-        : ansis.green(`${entry.envKey || 'configured'} - OK`)
-      : entry.isLocal
-        ? 'not required'
-        : `${entry.envKey} - MISSING`;
-    const markers = [entry.providerId === activeProvider ? ansis.green('current') : null].filter(Boolean);
-    return {
-      label: entry.label,
-      value: entry.value,
-      description: markers.length > 0 ? `${status} - ${markers.join(', ')}` : status,
-    };
   }
 
   if (!provider) {
@@ -808,24 +667,16 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
             if (value === '__SECTION_RECENT__' || value === '__SECTION_PROVIDERS__') {
               return;
             }
-            // Parse expanded value (e.g. "google:subscriber" -> provider=google, authType=subscriber)
+            // Parse expanded value (e.g. "google:vertex" -> provider=google, authType=vertex)
             const expanded = expandedMap.get(value);
             if (expanded) {
               setProvider(expanded.providerId);
               if (expanded.authType) {
                 if (expanded.providerId === 'google') {
-                  if (expanded.authType === 'subscriber') {
-                    setShowGoogleOAuth(true);
-                  } else {
-                    setGoogleType(expanded.authType as any);
-                  }
+                  setGoogleType(expanded.authType as any);
                 }
                 if (expanded.providerId === 'openai') {
-                  if (expanded.authType === 'subscriber') {
-                    setShowOpenAIOAuth(true);
-                  } else {
-                    setOpenaiType(expanded.authType as any);
-                  }
+                  setOpenaiType(expanded.authType as any);
                 }
               }
             } else {
@@ -1035,56 +886,8 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   }
 
   // Google/OpenAI auth types are now selected directly from the expanded provider list
-  // (e.g. "Google OAuth (Web Login)", "Google (API Key)", etc.)
+  // (e.g. "Google (API Key)", "Google Vertex AI", "OpenAI (API Key)", etc.)
   // No sub-menu needed here -- authType is set by the list selection handler above.
-
-  // OpenAI OAuth flow for ChatGPT Plus (Web)
-  if (provider === 'openai' && showOpenAIOAuth) {
-    return React.createElement(OpenAIOAuthFlow, {
-      onDone: (tokens: OpenAIOAuthTokens | null) => {
-        setShowOpenAIOAuth(false);
-        if (tokens?.accessToken) {
-          setOpenaiType('subscriber');
-          // Store the session token
-          void saveOpenAIToken(tokens.accessToken);
-        } else {
-          // Cancelled, go back to type selection
-          setOpenaiType(null);
-        }
-      },
-      onCancel: () => {
-        setShowOpenAIOAuth(false);
-        setOpenaiType(null);
-        setProvider(null);
-        setSearchQuery('');
-        setSearchCursorOffset(0);
-      },
-    });
-  }
-
-  // Google OAuth flow for subscriber (Google OAuth Login)
-  if (provider === 'google' && showGoogleOAuth) {
-    return React.createElement(GoogleOAuthFlow, {
-      onDone: (tokens: GoogleOAuthTokens | null) => {
-        setShowGoogleOAuth(false);
-        if (tokens?.accessToken) {
-          setGoogleType('subscriber');
-          // Store the session token
-          void saveGoogleToken(tokens.accessToken);
-        } else {
-          // Cancelled, go back to type selection
-          setGoogleType(null);
-        }
-      },
-      onCancel: () => {
-        setShowGoogleOAuth(false);
-        setGoogleType(null);
-        setProvider(null);
-        setSearchQuery('');
-        setSearchCursorOffset(0);
-      },
-    });
-  }
 
   // Show input field when: (no existing key) OR (user chose to change key)
   if ((!hasExistingKey && !info.isLocal) || (showChangeKey && !info.isLocal)) {
@@ -1096,13 +899,11 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
         { marginBottom: 1 },
         showChangeKey
           ? `Enter new ${info.envKey} for ${info.label}`
-          : openaiType === 'subscriber'
-            ? `Enter CHATGPT_SESSION_TOKEN for ChatGPT Plus (Web)`
-            : googleType === 'vertex'
-              ? `Enter Google Cloud Project ID for Vertex AI (or press Enter to use GCLOUD_PROJECT env)`
-              : openaiType === 'azure'
-                ? `Enter Azure OpenAI Endpoint URL (e.g. https://res-name.openai.azure.com/)`
-                : `API key required for ${info.label} (${info.envKey})`,
+          : googleType === 'vertex'
+            ? `Enter Google Cloud Project ID for Vertex AI (or press Enter to use GCLOUD_PROJECT env)`
+            : openaiType === 'azure'
+              ? `Enter Azure OpenAI Endpoint URL (e.g. https://res-name.openai.azure.com/)`
+              : `API key required for ${info.label} (${info.envKey})`,
       ),
       apiKeyError ? React.createElement(Text, { color: 'error', marginBottom: 1 }, apiKeyError) : null,
       React.createElement(TextInput, {
@@ -1113,7 +914,7 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
         },
         onSubmit: async value => {
           const trimmed = value.trim();
-          const needsKey = (!googleType || googleType === 'direct') && (!openaiType || openaiType === 'direct');
+          const needsKey = provider !== 'google' || googleType !== 'vertex';
 
           if (!trimmed && needsKey) {
             setApiKeyError(`Enter ${info.envKey} or cancel to go back.`);
@@ -1127,7 +928,6 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
           setApiKeyCursorOffset(0);
           setApiKeyError(null);
           setShowChangeKey(false);
-          setIsGhLogin(false);
           setGoogleType(null);
           setOpenaiType(null);
           setSearchQuery('');

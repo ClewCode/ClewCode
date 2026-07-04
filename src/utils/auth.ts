@@ -46,7 +46,7 @@ const DEFAULT_API_KEY_HELPER_TTL = 5 * 60 * 1000;
 
 /**
  * CCR, Claude Desktop, third-party provider sessions, and any host-managed
- * context should never fall back to the user's ~/.claude/settings.json API-key
+ * context should never fall back to the user's ~/.clew/settings.json API-key
  * config (apiKeyHelper, env.ANTHROPIC_API_KEY, env.ANTHROPIC_AUTH_TOKEN).
  * Those settings exist for the user's terminal CLI, not managed sessions.
  *
@@ -55,20 +55,20 @@ const DEFAULT_API_KEY_HELPER_TTL = 5 * 60 * 1000;
  *   session also use that key — and fail if it's stale/wrong-org.
  * - A managed-settings `apiKeyHelper` set by the host leaks into third-party
  *   provider sessions, overriding the provider's own auth.
- * - A host that sets CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST to manage provider
+ * - A host that sets CLEW_CODE_PROVIDER_MANAGED_BY_HOST to manage provider
  *   routing sees its managed-settings auth config leak into CLI sessions.
  */
 function isManagedOAuthContext(): boolean {
-  if (isEnvTruthy(process.env.CLAUDE_CODE_REMOTE)) return true;
-  if (process.env.CLAUDE_CODE_ENTRYPOINT === 'claude-desktop') return true;
-  if (isEnvTruthy(process.env.CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST)) return true;
+  if (isEnvTruthy(process.env.CLEW_CODE_REMOTE)) return true;
+  if (process.env.CLEW_CODE_ENTRYPOINT === 'claude-desktop') return true;
+  if (isEnvTruthy(process.env.CLEW_CODE_PROVIDER_MANAGED_BY_HOST)) return true;
 
   // Third-party provider sessions are managed by the host's provider config,
   // not the user's local settings — skip user-configured apiKeyHelper/auth tokens.
   if (
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)
+    isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_FOUNDRY)
   ) {
     return true;
   }
@@ -102,27 +102,27 @@ export function isAnthropicAuthEnabled(): boolean {
   if (!isActiveProviderAnthropic()) return false;
 
   // `claude ssh` remote: ANTHROPIC_UNIX_SOCKET tunnels API calls through a
-  // local auth-injecting proxy. The launcher sets CLAUDE_CODE_OAUTH_TOKEN as a
+  // local auth-injecting proxy. The launcher sets CLEW_CODE_OAUTH_TOKEN as a
   // placeholder iff the local side is a subscriber (so the remote includes the
   // oauth-2025 beta header to match what the proxy will inject). The remote's
   // ~/.claude settings (apiKeyHelper, settings.env.ANTHROPIC_API_KEY) MUST NOT
   // flip this — they'd cause a header mismatch with the proxy and a bogus
   // "invalid x-api-key" from the API. See src/ssh/sshAuthProxy.ts.
   if (process.env.ANTHROPIC_UNIX_SOCKET) {
-    return !!process.env.CLAUDE_CODE_OAUTH_TOKEN;
+    return !!process.env.CLEW_CODE_OAUTH_TOKEN;
   }
 
   const is3P =
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY);
+    isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_FOUNDRY);
 
   // Check if user has configured an external API key source
   // This allows externally-provided API keys to work (without requiring proxy configuration)
   const settings = getSettings_DEPRECATED() || {};
   const apiKeyHelper = settings.apiKeyHelper;
   const hasExternalAuthToken =
-    process.env.ANTHROPIC_AUTH_TOKEN || apiKeyHelper || process.env.CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR;
+    process.env.ANTHROPIC_AUTH_TOKEN || apiKeyHelper || process.env.CLEW_CODE_API_KEY_FILE_DESCRIPTOR;
 
   // Check if API key is from an external source (not managed by /login)
   const { source: apiKeySource } = getAnthropicApiKeyWithSource({
@@ -168,8 +168,8 @@ export function getAuthTokenSource() {
     return { source: 'ANTHROPIC_AUTH_TOKEN' as const, hasToken: true };
   }
 
-  if (process.env.CLAUDE_CODE_OAUTH_TOKEN) {
-    return { source: 'CLAUDE_CODE_OAUTH_TOKEN' as const, hasToken: true };
+  if (process.env.CLEW_CODE_OAUTH_TOKEN) {
+    return { source: 'CLEW_CODE_OAUTH_TOKEN' as const, hasToken: true };
   }
 
   // Check for OAuth token from file descriptor (or its CCR disk fallback)
@@ -181,9 +181,9 @@ export function getAuthTokenSource() {
     // doesn't exist. Call sites fall through correctly — the new source is
     // !== 'none' (cli/handlers/auth.ts → oauth_token) and not in the
     // isEnvVarToken set (auth.ts:1844 → generic re-login message).
-    if (process.env.CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR) {
+    if (process.env.CLEW_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR) {
       return {
-        source: 'CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR' as const,
+        source: 'CLEW_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR' as const,
         hasToken: true,
       };
     }
@@ -265,8 +265,8 @@ export function getAnthropicApiKeyWithSource(opts: { skipRetrievingKeyFromApiKey
       };
     }
 
-    if (!apiKeyEnv && !process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR) {
-      throw new Error('ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN env var is required');
+    if (!apiKeyEnv && !process.env.CLEW_CODE_OAUTH_TOKEN && !process.env.CLEW_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR) {
+      throw new Error('ANTHROPIC_API_KEY or CLEW_CODE_OAUTH_TOKEN env var is required');
     }
 
     if (apiKeyEnv) {
@@ -332,7 +332,7 @@ export function getAnthropicApiKeyWithSource(opts: { skipRetrievingKeyFromApiKey
 /**
  * Get the configured apiKeyHelper from settings.
  * In bare mode, only the --settings flag source is consulted — apiKeyHelper
- * from ~/.claude/settings.json or project settings is ignored.
+ * from ~/.clew/settings.json or project settings is ignored.
  */
 export function getConfiguredApiKeyHelper(): string | undefined {
   if (isBareMode()) {
@@ -405,18 +405,18 @@ export function isAwsCredentialExportFromProjectSettings(): boolean {
 
 /**
  * Calculate TTL in milliseconds for the API key helper cache
- * Uses CLAUDE_CODE_API_KEY_HELPER_TTL_MS env var if set and valid,
+ * Uses CLEW_CODE_API_KEY_HELPER_TTL_MS env var if set and valid,
  * otherwise defaults to 5 minutes
  */
 export function calculateApiKeyHelperTTL(): number {
-  const envTtl = process.env.CLAUDE_CODE_API_KEY_HELPER_TTL_MS;
+  const envTtl = process.env.CLEW_CODE_API_KEY_HELPER_TTL_MS;
 
   if (envTtl) {
     const parsed = parseInt(envTtl, 10);
     if (!Number.isNaN(parsed) && parsed >= 0) {
       return parsed;
     }
-    logForDebugging(`Found CLAUDE_CODE_API_KEY_HELPER_TTL_MS env var, but it was not a valid number. Got ${envTtl}`, {
+    logForDebugging(`Found CLEW_CODE_API_KEY_HELPER_TTL_MS env var, but it was not a valid number. Got ${envTtl}`, {
       level: 'error',
     });
   }
@@ -1189,10 +1189,10 @@ export const getClaudeAIOAuthTokens = memoize((): OAuthTokens | null => {
   if (isBareMode()) return null;
 
   // Check for force-set OAuth token from environment variable
-  if (process.env.CLAUDE_CODE_OAUTH_TOKEN) {
+  if (process.env.CLEW_CODE_OAUTH_TOKEN) {
     // Return an inference-only token (unknown refresh and expiry)
     return {
-      accessToken: process.env.CLAUDE_CODE_OAUTH_TOKEN,
+      accessToken: process.env.CLEW_CODE_OAUTH_TOKEN,
       refreshToken: null,
       expiresAt: null,
       scopes: ['user:inference'],
@@ -1334,7 +1334,7 @@ export async function getClaudeAIOAuthTokensAsync(): Promise<OAuthTokens | null>
   if (isBareMode()) return null;
 
   // Env var and FD tokens are sync and don't hit the keychain
-  if (process.env.CLAUDE_CODE_OAUTH_TOKEN || getOAuthTokenFromFileDescriptor()) {
+  if (process.env.CLEW_CODE_OAUTH_TOKEN || getOAuthTokenFromFileDescriptor()) {
     return getClaudeAIOAuthTokens();
   }
 
@@ -1522,9 +1522,9 @@ export function is1PApiCustomer(): boolean {
 
   // Exclude Vertex, Bedrock, and Foundry customers
   if (
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)
+    isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_FOUNDRY)
   ) {
     return false;
   }
@@ -1678,9 +1678,9 @@ export function getSubscriptionName(): string {
 /** Check if using third-party services (Bedrock or Vertex or Foundry) */
 export function isUsing3PServices(): boolean {
   return !!(
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)
+    isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_FOUNDRY)
   );
 }
 
@@ -1722,7 +1722,7 @@ export function getOtelHeadersFromHelper(): Record<string, string> {
 
   // Return cached headers if still valid (debounce)
   const debounceMs = parseInt(
-    process.env.CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS || DEFAULT_OTEL_HEADERS_DEBOUNCE_MS.toString(),
+    process.env.CLEW_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS || DEFAULT_OTEL_HEADERS_DEBOUNCE_MS.toString(),
     10,
   );
   if (cachedOtelHeaders && Date.now() - cachedOtelHeadersTimestamp < debounceMs) {
@@ -1797,7 +1797,7 @@ export function getAccountInformation() {
   }
   const { source: authTokenSource } = getAuthTokenSource();
   const accountInfo: UserAccountInfo = {};
-  if (authTokenSource === 'CLAUDE_CODE_OAUTH_TOKEN' || authTokenSource === 'CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR') {
+  if (authTokenSource === 'CLEW_CODE_OAUTH_TOKEN' || authTokenSource === 'CLEW_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR') {
     accountInfo.tokenSource = authTokenSource;
   } else if (isClaudeAISubscriber()) {
     accountInfo.subscription = getSubscriptionName();
@@ -1876,7 +1876,7 @@ export async function validateForceLoginOrg(): Promise<OrgValidationResult> {
   // Even keychain-sourced tokens verify server-side: the cached org UUID
   // in ~/.claude.json is user-writable and cannot be trusted.
   const { source } = getAuthTokenSource();
-  const isEnvVarToken = source === 'CLAUDE_CODE_OAUTH_TOKEN' || source === 'CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR';
+  const isEnvVarToken = source === 'CLEW_CODE_OAUTH_TOKEN' || source === 'CLEW_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR';
 
   const profile = await getOauthProfileFromOauthToken(tokens.accessToken);
   if (!profile) {
@@ -1899,7 +1899,7 @@ export async function validateForceLoginOrg(): Promise<OrgValidationResult> {
 
   if (isEnvVarToken) {
     const envVarName =
-      source === 'CLAUDE_CODE_OAUTH_TOKEN' ? 'CLAUDE_CODE_OAUTH_TOKEN' : 'CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR';
+      source === 'CLEW_CODE_OAUTH_TOKEN' ? 'CLEW_CODE_OAUTH_TOKEN' : 'CLEW_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR';
     return {
       valid: false,
       message:

@@ -23,7 +23,7 @@ export const CCR_SESSION_INGRESS_TOKEN_PATH = `${CCR_TOKEN_DIR}/.session_ingress
  * put a token on disk that the FD was meant to keep off disk.
  */
 export function maybePersistTokenForSubprocesses(path: string, token: string, tokenName: string): void {
-  if (!isEnvTruthy(process.env.CLAUDE_CODE_REMOTE)) {
+  if (!isEnvTruthy(process.env.CLEW_CODE_REMOTE)) {
     return;
   }
   try {
@@ -141,12 +141,12 @@ function getCredentialFromFd({
 
 /**
  * Get the CCR-injected OAuth token. See getCredentialFromFd for FD-vs-disk
- * rationale. Env var: CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR.
+ * rationale. Env var: CLEW_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR.
  * Well-known file: /home/claude/.claude/remote/.oauth_token.
  */
 export function getOAuthTokenFromFileDescriptor(): string | null {
   return getCredentialFromFd({
-    envVar: 'CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR',
+    envVar: 'CLEW_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR',
     wellKnownPath: CCR_OAUTH_TOKEN_PATH,
     label: 'OAuth token',
     getCached: getOauthTokenFromFd,
@@ -156,12 +156,12 @@ export function getOAuthTokenFromFileDescriptor(): string | null {
 
 /**
  * Get the CCR-injected API key. See getCredentialFromFd for FD-vs-disk
- * rationale. Env var: CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR.
+ * rationale. Env var: CLEW_CODE_API_KEY_FILE_DESCRIPTOR.
  * Well-known file: /home/claude/.claude/remote/.api_key.
  */
 export function getApiKeyFromFileDescriptor(): string | null {
   return getCredentialFromFd({
-    envVar: 'CLAUDE_CODE_API_KEY_FILE_DESCRIPTOR',
+    envVar: 'CLEW_CODE_API_KEY_FILE_DESCRIPTOR',
     wellKnownPath: CCR_API_KEY_PATH,
     label: 'API key',
     getCached: getApiKeyFromFd,

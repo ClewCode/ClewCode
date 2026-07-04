@@ -134,7 +134,7 @@ function findGitBashFromCommonLocations(): string | null {
  * Find the path where `bash.exe` included with git-bash exists, exiting the process if not found.
  *
  * Resolution order:
- * 1. CLAUDE_CODE_GIT_BASH_PATH env var
+ * 1. CLEW_CODE_GIT_BASH_PATH env var
  * 2. Git installation directory (via where.exe or PATH)
  * 3. Common installation paths (Program Files, Scoop, Choco, etc.)
  * 4. WSL bash (if WSL is installed)
@@ -147,18 +147,18 @@ function findGitBashFromCommonLocations(): string | null {
  * degrade (typically by falling back to PowerShell).
  *
  * Resolution order:
- * 1. CLAUDE_CODE_GIT_BASH_PATH env var (if it points at an existing file)
+ * 1. CLEW_CODE_GIT_BASH_PATH env var (if it points at an existing file)
  * 2. Git installation directory (via where.exe or PATH)
  * 3. Common installation paths (Program Files, Scoop, Choco, etc.)
  * 4. WSL bash (if WSL is installed)
  */
 export const tryFindGitBashPath = memoize((): string | null => {
-  if (process.env.CLAUDE_CODE_GIT_BASH_PATH) {
-    if (checkPathExists(process.env.CLAUDE_CODE_GIT_BASH_PATH)) {
-      return process.env.CLAUDE_CODE_GIT_BASH_PATH;
+  if (process.env.CLEW_CODE_GIT_BASH_PATH) {
+    if (checkPathExists(process.env.CLEW_CODE_GIT_BASH_PATH)) {
+      return process.env.CLEW_CODE_GIT_BASH_PATH;
     }
     logForDebugging(
-      `Clew Code was unable to find CLAUDE_CODE_GIT_BASH_PATH path "${process.env.CLAUDE_CODE_GIT_BASH_PATH}"`,
+      `Clew Code was unable to find CLEW_CODE_GIT_BASH_PATH path "${process.env.CLEW_CODE_GIT_BASH_PATH}"`,
     );
     // Fall through to autodetection rather than failing outright.
   }
@@ -211,7 +211,7 @@ export const findGitBashPath = memoize((): string => {
   if (found) return found;
 
   console.error(
-    'Clew Code on Windows requires git-bash (https://git-scm.com/downloads/win). If installed but not in PATH, set environment variable pointing to your bash.exe, similar to: CLAUDE_CODE_GIT_BASH_PATH=C:\\Program Files\\Git\\bin\\bash.exe',
+    'Clew Code on Windows requires git-bash (https://git-scm.com/downloads/win). If installed but not in PATH, set environment variable pointing to your bash.exe, similar to: CLEW_CODE_GIT_BASH_PATH=C:\\Program Files\\Git\\bin\\bash.exe',
   );
   // eslint-disable-next-line custom-rules/no-process-exit
   process.exit(1);

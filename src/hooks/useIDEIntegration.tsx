@@ -39,10 +39,10 @@ export function useIDEIntegration({
           isSupportedTerminal() ||
           // tmux/screen overwrite TERM_PROGRAM, breaking terminal detection, but the
           // IDE extension's port env var is inherited. If set, auto-connect anyway.
-          process.env.CLAUDE_CODE_SSE_PORT ||
+          process.env.CLEW_CODE_SSE_PORT ||
           ideToInstallExtension ||
-          isEnvTruthy(process.env.CLAUDE_CODE_AUTO_CONNECT_IDE)) &&
-        !isEnvDefinedFalsy(process.env.CLAUDE_CODE_AUTO_CONNECT_IDE);
+          isEnvTruthy(process.env.CLEW_CODE_AUTO_CONNECT_IDE)) &&
+        !isEnvDefinedFalsy(process.env.CLEW_CODE_AUTO_CONNECT_IDE);
 
       if (!autoConnectEnabled) {
         return;

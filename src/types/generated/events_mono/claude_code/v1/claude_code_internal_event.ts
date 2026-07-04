@@ -2,7 +2,7 @@
 // versions:
 //   protoc-gen-ts_proto  v2.6.1
 //   protoc               unknown
-// source: events_mono/claude_code/v1/claude_code_internal_event.proto
+// source: events_mono/claude_code/v1/clew_code_internal_event.proto
 
 /* eslint-disable */
 import { Timestamp } from '../../../google/protobuf/timestamp.js';

@@ -127,7 +127,7 @@ async function writeHighWaterMark(taskListId: string, value: number): Promise<vo
 
 export function isTodoV2Enabled(): boolean {
   // Force-enable tasks in non-interactive mode (e.g. SDK users who want Task tools over TodoWrite)
-  if (isEnvTruthy(process.env.CLAUDE_CODE_ENABLE_TASKS)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_ENABLE_TASKS)) {
     return true;
   }
   // Enable tasks for agents/teammates even if session is marked non-interactive
@@ -190,14 +190,14 @@ export async function resetTaskList(taskListId: string): Promise<void> {
 /**
  * Gets the task list ID based on the current context.
  * Priority:
- * 1. CLAUDE_CODE_TASK_LIST_ID - explicit task list ID
+ * 1. CLEW_CODE_TASK_LIST_ID - explicit task list ID
  * 2. In-process teammate: leader's team name (so teammates share the leader's task list)
  * 3. Leader team name - set when the leader creates a team via TeamCreate
  * 4. Session ID - fallback for standalone sessions
  */
 export function getTaskListId(): string {
-  if (process.env.CLAUDE_CODE_TASK_LIST_ID) {
-    return process.env.CLAUDE_CODE_TASK_LIST_ID;
+  if (process.env.CLEW_CODE_TASK_LIST_ID) {
+    return process.env.CLEW_CODE_TASK_LIST_ID;
   }
   // In-process teammates use the leader's team name so they share the same
   // task list that tmux/iTerm2 teammates also resolve to.

@@ -836,7 +836,7 @@ export async function teleportToRemote(options: {
   /**
    * Per-session env vars merged into session_context.environment_variables.
    * Write-only at the API layer (stripped from Get/List responses). When
-   * environmentId is set, CLAUDE_CODE_OAUTH_TOKEN is auto-injected from the
+   * environmentId is set, CLEW_CODE_OAUTH_TOKEN is auto-injected from the
    * caller's accessToken so the container's hook can hit inference (the
    * server only passes through what the caller sends; bughunter.go mints
    * its own, user sessions don't get one automatically).
@@ -908,7 +908,7 @@ export async function teleportToRemote(options: {
         'x-organization-uuid': orgUUID,
       };
       const envVars = {
-        CLAUDE_CODE_OAUTH_TOKEN: accessToken,
+        CLEW_CODE_OAUTH_TOKEN: accessToken,
         ...(options.environmentVariables ?? {}),
       };
 

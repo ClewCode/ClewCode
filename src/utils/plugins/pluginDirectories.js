@@ -4,9 +4,9 @@
  * This module provides the single source of truth for the plugins directory path.
  * It supports switching between 'plugins' and 'cowork_plugins' directories via:
  * - CLI flag: --cowork
- * - Environment variable: CLAUDE_CODE_USE_COWORK_PLUGINS
+ * - Environment variable: CLEW_CODE_USE_COWORK_PLUGINS
  *
- * The base directory can be overridden via CLAUDE_CODE_PLUGIN_CACHE_DIR.
+ * The base directory can be overridden via CLEW_CODE_PLUGIN_CACHE_DIR.
  */
 import { mkdirSync } from 'fs';
 import { readdir, rm, stat } from 'fs/promises';
@@ -26,7 +26,7 @@ const COWORK_PLUGINS_DIR = 'cowork_plugins';
  *
  * Priority:
  * 1. Session state (set by CLI flag --cowork)
- * 2. Environment variable CLAUDE_CODE_USE_COWORK_PLUGINS
+ * 2. Environment variable CLEW_CODE_USE_COWORK_PLUGINS
  * 3. Default: 'plugins'
  */
 function getPluginsDirectoryName() {
@@ -35,7 +35,7 @@ function getPluginsDirectoryName() {
     return COWORK_PLUGINS_DIR;
   }
   // Fall back to env var
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_COWORK_PLUGINS)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_USE_COWORK_PLUGINS)) {
     return COWORK_PLUGINS_DIR;
   }
   return PLUGINS_DIR;
@@ -44,15 +44,15 @@ function getPluginsDirectoryName() {
  * Get the full path to the plugins directory.
  *
  * Priority:
- * 1. CLAUDE_CODE_PLUGIN_CACHE_DIR env var (explicit override)
- * 2. Default: ~/.claude/plugins or ~/.claude/cowork_plugins
+ * 1. CLEW_CODE_PLUGIN_CACHE_DIR env var (explicit override)
+ * 2. Default: ~/.clew/plugins or ~/.clew/cowork_plugins
  */
 export function getPluginsDirectory() {
-  // expandTilde: when CLAUDE_CODE_PLUGIN_CACHE_DIR is set via settings.json
+  // expandTilde: when CLEW_CODE_PLUGIN_CACHE_DIR is set via settings.json
   // `env` (not shell), ~ is not expanded by the shell. Without this, a value
-  // like "~/.claude/plugins" becomes a literal `~` directory created in the
+  // like "~/.clew/plugins" becomes a literal `~` directory created in the
   // cwd of every project (gh-30794 / CC-212).
-  const envOverride = process.env.CLAUDE_CODE_PLUGIN_CACHE_DIR;
+  const envOverride = process.env.CLEW_CODE_PLUGIN_CACHE_DIR;
   if (envOverride) {
     return expandTilde(envOverride);
   }
@@ -62,7 +62,7 @@ export function getPluginsDirectory() {
  * Get the read-only plugin seed directories, if configured.
  *
  * Customers can pre-bake a populated plugins directory into their container
- * image and point CLAUDE_CODE_PLUGIN_SEED_DIR at it. CC will use it as a
+ * image and point CLEW_CODE_PLUGIN_SEED_DIR at it. CC will use it as a
  * read-only fallback layer under the primary plugins directory — marketplaces
  * and plugin caches found in the seed are used in place without re-cloning.
  *
@@ -71,7 +71,7 @@ export function getPluginsDirectory() {
  * seed that contains a given marketplace or plugin cache wins.
  *
  * Seed structure mirrors the primary plugins directory:
- *   $CLAUDE_CODE_PLUGIN_SEED_DIR/
+ *   $CLEW_CODE_PLUGIN_SEED_DIR/
  *     known_marketplaces.json
  *     marketplaces/<name>/...
  *     cache/<marketplace>/<plugin>/<version>/...
@@ -80,7 +80,7 @@ export function getPluginsDirectory() {
  */
 export function getPluginSeedDirs() {
   // Same tilde-expansion rationale as getPluginsDirectory (gh-30794).
-  const raw = process.env.CLAUDE_CODE_PLUGIN_SEED_DIR;
+  const raw = process.env.CLEW_CODE_PLUGIN_SEED_DIR;
   if (!raw) return [];
   return raw.split(delimiter).filter(Boolean).map(expandTilde);
 }

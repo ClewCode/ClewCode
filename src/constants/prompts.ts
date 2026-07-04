@@ -4,7 +4,7 @@ import { env } from '../utils/env.js';
 import { getIsGit } from '../utils/git.js';
 import { getCwd } from '../utils/cwd.js';
 import { getIsNonInteractiveSession } from '../bootstrap/state.js';
-import { loadProjectRules, formatRulesNotification } from '../utils/projectRules.js';
+import { loadProjectRules, formatRulesNotification, isProjectRulesDisabled } from '../utils/projectRules.js';
 import { getCurrentWorktreeSession } from '../utils/worktree.js';
 import { getSessionStartDate } from './common.js';
 import { getInitialSettings } from '../utils/settings/settings.js';
@@ -412,8 +412,8 @@ export async function getSystemPrompt(
   additionalWorkingDirectories?: string[],
   mcpClients?: MCPServerConnection[],
 ): Promise<string[]> {
-  if (isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)) {
-    const isAnthropic = process.env.CLAUDE_CODE_PROVIDER === 'anthropic' || !process.env.CLAUDE_CODE_PROVIDER;
+  if (isEnvTruthy(process.env.CLEW_CODE_SIMPLE)) {
+    const isAnthropic = process.env.CLEW_CODE_PROVIDER === 'anthropic' || !process.env.CLEW_CODE_PROVIDER;
     return [
       isAnthropic
         ? `You are Clew Code, a CLI coding agent.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`
@@ -452,8 +452,8 @@ export async function getSystemPrompt(
   const dynamicSections = [
     systemPromptSection('session_guidance', () => getSessionSpecificGuidanceSection(enabledTools, skillToolCommands)),
     systemPromptSection('project_rules', async () => {
-      const rules = await loadProjectRules();
-      if (rules.length === 0) return null;
+      const [rules, disabled] = await Promise.all([loadProjectRules(), isProjectRulesDisabled()]);
+      if (disabled || rules.length === 0) return null;
       return `# Project Rules\n\nThe following project-specific behavioral rules have been observed and saved:\n\n${formatRulesNotification(rules)}\n\nApply these rules when working in this project. Use the ProjectRule tool to manage rules (save new observations, list all rules, or remove outdated ones).`;
     }),
     systemPromptSection('memory', () => loadMemoryPrompt()),

@@ -49,7 +49,7 @@ export function useAwaySummary(
     if (!feature('AWAY_SUMMARY')) return;
     const config = getGlobalConfig();
     if (config.recapEnabled === false) return;
-    if (isEnvDefinedFalsy(process.env.CLAUDE_CODE_ENABLE_AWAY_SUMMARY)) return;
+    if (isEnvDefinedFalsy(process.env.CLEW_CODE_ENABLE_AWAY_SUMMARY)) return;
     if (isEnvDefinedFalsy(process.env.CLEW_ENABLE_RECAP)) return;
 
     const configuredDelayMs =

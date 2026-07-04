@@ -20,7 +20,7 @@ import { getAutoMemPath } from './paths.js';
 // Configure Xenova
 env.allowLocalModels = false;
 env.useBrowserCache = false;
-// Cache models in ~/.claude/models to persist across sessions
+// Cache models in ~/.clew/models to persist across sessions
 // Note: cacheDir type may vary by version, so we use type assertion
 try {
   (env as any).cacheDir = join(getClewConfigHomeDir(), 'models');

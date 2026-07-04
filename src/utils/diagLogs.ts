@@ -53,7 +53,7 @@ export function logForDiagnosticsNoPII(level: DiagnosticLogLevel, event: string,
 }
 
 function getDiagnosticLogFile(): string | undefined {
-  return process.env.CLAUDE_CODE_DIAGNOSTICS_FILE;
+  return process.env.CLEW_CODE_DIAGNOSTICS_FILE;
 }
 
 /**

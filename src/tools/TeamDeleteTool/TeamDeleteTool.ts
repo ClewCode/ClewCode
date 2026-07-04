@@ -112,7 +112,7 @@ export const TeamDeleteTool: Tool<InputSchema, Output> = buildTool({
     }
 
     // Clear coordinator mode since the team is dissolved
-    delete process.env.CLAUDE_CODE_COORDINATOR_MODE;
+    delete process.env.CLEW_CODE_COORDINATOR_MODE;
 
     // Clear team context and inbox from app state
     setAppState(prev => ({

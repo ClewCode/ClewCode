@@ -245,7 +245,7 @@ export function getLogoDisplayData(): {
 } {
   const version = process.env.DEMO_VERSION ?? MACRO.VERSION;
   const serverUrl = getDirectConnectServerUrl();
-  const hideCwd = isEnvTruthy(process.env.CLAUDE_CODE_HIDE_CWD);
+  const hideCwd = isEnvTruthy(process.env.CLEW_CODE_HIDE_CWD);
   const displayPath = hideCwd ? '' : process.env.DEMO_VERSION ? '/code/claude' : getDisplayPath(getCwd());
   const cwd = serverUrl
     ? hideCwd

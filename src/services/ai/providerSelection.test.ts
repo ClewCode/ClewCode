@@ -42,11 +42,11 @@ describe('legacy provider.json migration', () => {
         apiKeys: { gemini: 'legacy-key' },
       }),
     );
-    process.env.CLAUDE_CONFIG_DIR = configDir;
+    process.env.CLEW_CONFIG_DIR = configDir;
     delete process.env.AI_PROVIDER;
-    delete process.env.CLAUDE_CODE_USE_BEDROCK;
-    delete process.env.CLAUDE_CODE_USE_VERTEX;
-    delete process.env.CLAUDE_CODE_USE_FOUNDRY;
+    delete process.env.CLEW_CODE_USE_BEDROCK;
+    delete process.env.CLEW_CODE_USE_VERTEX;
+    delete process.env.CLEW_CODE_USE_FOUNDRY;
 
     const { ProviderManager } = await import(`./ProviderManager.js?migration-test=${Date.now()}`);
     const providerManager = ProviderManager.getInstance();
@@ -64,7 +64,7 @@ describe('legacy provider.json migration', () => {
   test('provider "anthropic" in provider.json is honored', async () => {
     const configDir = mkdtempSync(join(tmpdir(), 'clew-provider-anthropic-'));
     writeFileSync(join(configDir, 'provider.json'), JSON.stringify({ provider: 'anthropic' }));
-    process.env.CLAUDE_CONFIG_DIR = configDir;
+    process.env.CLEW_CONFIG_DIR = configDir;
     delete process.env.AI_PROVIDER;
 
     const { ProviderManager } = await import(`./ProviderManager.js?anthropic-test=${Date.now()}`);

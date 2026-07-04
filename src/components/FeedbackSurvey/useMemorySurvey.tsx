@@ -186,7 +186,7 @@ export function useMemorySurvey(
     if (!isPolicyAllowed('allow_product_feedback')) {
       return;
     }
-    if (isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_DISABLE_FEEDBACK_SURVEY)) {
       return;
     }
     if (!lastAssistant || seenAssistantUuids.current.has(lastAssistant.uuid)) {

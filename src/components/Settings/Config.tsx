@@ -235,7 +235,7 @@ export function Config({
 
   const isConnectedToIde = hasAccessToIDEExtensionDiffFeature(context.options.mcpClients);
 
-  const isFileCheckpointingAvailable = !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_FILE_CHECKPOINTING);
+  const isFileCheckpointingAvailable = !isEnvTruthy(process.env.CLEW_CODE_DISABLE_FILE_CHECKPOINTING);
 
   const memoryFiles = React.use(getMemoryFiles(true));
   const shouldShowExternalIncludesToggle = hasExternalClaudeMdIncludes(memoryFiles);

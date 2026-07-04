@@ -79,7 +79,7 @@ export function registerMcpAddCommand(mcp: Command): void {
 
         // XAA fail-fast: validate at add-time, not auth-time.
         if (options.xaa && !isXaaEnabled()) {
-          cliError('Error: --xaa requires CLAUDE_CODE_ENABLE_XAA=1 in your environment');
+          cliError('Error: --xaa requires CLEW_CODE_ENABLE_XAA=1 in your environment');
         }
         const xaa = Boolean(options.xaa);
         if (xaa) {

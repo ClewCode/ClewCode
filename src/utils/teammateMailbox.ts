@@ -523,11 +523,11 @@ export type SandboxPermissionRequestMessage = {
   type: 'sandbox_permission_request';
   /** Unique identifier for this request */
   requestId: string;
-  /** Worker's CLAUDE_CODE_AGENT_ID */
+  /** Worker's CLEW_CODE_AGENT_ID */
   workerId: string;
-  /** Worker's CLAUDE_CODE_AGENT_NAME */
+  /** Worker's CLEW_CODE_AGENT_NAME */
   workerName: string;
-  /** Worker's CLAUDE_CODE_AGENT_COLOR */
+  /** Worker's CLEW_CODE_AGENT_COLOR */
   workerColor?: string;
   /** The host pattern requesting network access */
   hostPattern: {

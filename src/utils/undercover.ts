@@ -7,7 +7,7 @@
  * model it is.
  *
  * Activation:
- *   - CLAUDE_CODE_UNDERCOVER=1 — force ON (even in internal repos)
+ *   - CLEW_CODE_UNDERCOVER=1 — force ON (even in internal repos)
  *   - Otherwise AUTO: active UNLESS the repo remote matches the internal
  *     allowlist (INTERNAL_MODEL_REPOS in commitAttribution.ts). Safe default
  *     is ON — Claude may push to public remotes from a CWD that isn't itself
@@ -27,7 +27,7 @@ import { isEnvTruthy } from './envUtils.js';
 
 export function isUndercover(): boolean {
   if (process.env.USER_TYPE === 'ant') {
-    if (isEnvTruthy(process.env.CLAUDE_CODE_UNDERCOVER)) return true;
+    if (isEnvTruthy(process.env.CLEW_CODE_UNDERCOVER)) return true;
     // Auto: active unless we've positively confirmed we're in an allowlisted
     // internal repo. 'external', 'none', and null (check not yet run) all
     // resolve to ON. The check is primed in setup.ts; only 'internal' → OFF.
@@ -80,7 +80,7 @@ BAD (never write these):
 export function shouldShowUndercoverAutoNotice(): boolean {
   if (process.env.USER_TYPE === 'ant') {
     // If forced via env, user already knows; don't nag.
-    if (isEnvTruthy(process.env.CLAUDE_CODE_UNDERCOVER)) return false;
+    if (isEnvTruthy(process.env.CLEW_CODE_UNDERCOVER)) return false;
     if (!isUndercover()) return false;
     if (getGlobalConfig().hasSeenUndercoverAutoNotice) return false;
     return true;

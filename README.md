@@ -239,6 +239,7 @@ Type these slash commands directly inside the interactive REPL:
 *   `/memory init` - Initialize a clean SQLite memory database for the project.
 *   `/memory scan` - Scan the active codebase to build code hierarchy memory.
 *   `/memory dashboard` - View memory statistics, confidence scores, and facts.
+*   `/rule` - Show project-specific behavioral rules auto-observed by the model. `/rule off` to disable, `/rule on` to re-enable.
 *   `/skills` - List and manage active custom skills defined in `.clew/skills/`.
 
 ### Swarm & LAN Peers
@@ -273,6 +274,7 @@ The agent has access to the following built-in tools based on active permission 
 *   `LSPTool` - Query local Language Server Protocol diagnostics.
 *   `ProcessDelegateTool` - Delegate prompts to external CLI models or Codex.
 *   `MemoryFeedbackTool` - Update project memories, decisions, and preferences.
+*   `ProjectRuleTool` - Save, list, or remove project-specific behavioral rules auto-observed from user patterns (stored in `.clew/rules.json`).
 
 ---
 

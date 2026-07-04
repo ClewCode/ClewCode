@@ -36,7 +36,7 @@ export function getEffectiveContextWindowSize(model: string): number {
   const reservedTokensForSummary = Math.min(getMaxOutputTokensForModel(model), MAX_OUTPUT_TOKENS_FOR_SUMMARY);
   let contextWindow = getContextWindowForModel(model, getSdkBetas());
 
-  const autoCompactWindow = process.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW;
+  const autoCompactWindow = process.env.CLEW_CODE_AUTO_COMPACT_WINDOW;
   if (autoCompactWindow) {
     const parsed = parseInt(autoCompactWindow, 10);
     if (!Number.isNaN(parsed) && parsed > 0) {
@@ -151,7 +151,7 @@ export function calculateTokenWarningState(
   const defaultBlockingLimit = actualContextWindow - MANUAL_COMPACT_BUFFER_TOKENS;
 
   // Allow override for testing
-  const blockingLimitOverride = process.env.CLAUDE_CODE_BLOCKING_LIMIT_OVERRIDE;
+  const blockingLimitOverride = process.env.CLEW_CODE_BLOCKING_LIMIT_OVERRIDE;
   const parsedOverride = blockingLimitOverride ? parseInt(blockingLimitOverride, 10) : NaN;
   const blockingLimit = !Number.isNaN(parsedOverride) && parsedOverride > 0 ? parsedOverride : defaultBlockingLimit;
 

@@ -8,20 +8,20 @@ export function getEnvWithAlias(primary, legacy) {
   return process.env[primary] ?? process.env[legacy];
 }
 /**
- * Primary config home: ~/.clew (or CLEW_CONFIG_DIR / CLAUDE_CONFIG_DIR fallback).
+ * Primary config home: ~/.clew (or CLEW_CONFIG_DIR / CLEW_CONFIG_DIR fallback).
  *
  * ~170 callers across the codebase. Named `getClewConfigHomeDir` for backward
  * compatibility — it returns the Clew home, not the old Claude home.
  */
 export const getClewConfigHomeDir = memoize(
   () => {
-    const clewDir = getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR');
+    const clewDir = getEnvWithAlias('CLEW_CONFIG_DIR', 'CLEW_CONFIG_DIR');
     if (clewDir) {
       return clewDir.normalize('NFC');
     }
     return join(homedir(), '.clew').normalize('NFC');
   },
-  () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR') ?? '.clew',
+  () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLEW_CONFIG_DIR') ?? '.clew',
 );
 /** Alias for the same function. */
 export const getClaudeConfigHomeDir = getClewConfigHomeDir;
@@ -53,18 +53,18 @@ export function isEnvDefinedFalsy(envVar) {
   return ['0', 'false', 'no', 'off'].includes(normalizedValue);
 }
 /**
- * --bare / CLAUDE_CODE_SIMPLE / CLEW_CODE_SIMPLE — skip hooks, LSP, plugin sync,
+ * --bare / CLEW_CODE_SIMPLE / CLEW_CODE_SIMPLE — skip hooks, LSP, plugin sync,
  * skill dir-walk, attribution, background prefetches, and ALL keychain/credential
  * reads. Auth is strictly ANTHROPIC_API_KEY env or apiKeyHelper from --settings.
  * Explicit CLI flags (--plugin-dir, --add-dir, --mcp-config) still honored.
  * ~30 gates across the codebase.
  *
  * Checks argv directly (in addition to the env var) because several gates
- * run before main.tsx's action handler sets CLAUDE_CODE_SIMPLE=1 from --bare
+ * run before main.tsx's action handler sets CLEW_CODE_SIMPLE=1 from --bare
  * — notably startKeychainPrefetch() at main.tsx top-level.
  */
 export function isBareMode() {
-  return isEnvTruthy(getEnvWithAlias('CLEW_CODE_SIMPLE', 'CLAUDE_CODE_SIMPLE')) || process.argv.includes('--bare');
+  return isEnvTruthy(getEnvWithAlias('CLEW_CODE_SIMPLE', 'CLEW_CODE_SIMPLE')) || process.argv.includes('--bare');
 }
 /**
  * Parses an array of environment variable strings into a key-value object

@@ -48,7 +48,7 @@ function clampChalkLevelForTmux(): boolean {
   // bg.ts sets terminal-overrides :Tc before attach, so truecolor passes
   // through — skip the clamp. General escape hatch for anyone who's
   // configured their tmux correctly.
-  if (process.env.CLAUDE_CODE_TMUX_TRUECOLOR) return false;
+  if (process.env.CLEW_CODE_TMUX_TRUECOLOR) return false;
   if (process.env.TMUX && ansis.level > 2) {
     ansis.level = 2;
     return true;

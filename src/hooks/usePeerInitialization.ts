@@ -104,8 +104,8 @@ export function usePeerInitialization(
         );
 
         // Re-activate coordinator mode
-        if (!process.env.CLAUDE_CODE_COORDINATOR_MODE) {
-          process.env.CLAUDE_CODE_COORDINATOR_MODE = '1';
+        if (!process.env.CLEW_CODE_COORDINATOR_MODE) {
+          process.env.CLEW_CODE_COORDINATOR_MODE = '1';
         }
 
         // Re-populate teamContext in AppState

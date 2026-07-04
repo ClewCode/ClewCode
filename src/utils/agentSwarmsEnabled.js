@@ -17,7 +17,7 @@ function isAgentTeamsFlagSet() {
  *
  * Ant builds: always enabled.
  * External builds require both:
- * 1. Opt-in via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS env var OR --agent-teams flag
+ * 1. Opt-in via CLEW_CODE_EXPERIMENTAL_AGENT_TEAMS env var OR --agent-teams flag
  * 2. GrowthBook gate 'tengu_amber_flint' enabled (killswitch)
  */
 export function isAgentSwarmsEnabled() {
@@ -26,7 +26,7 @@ export function isAgentSwarmsEnabled() {
     return true;
   }
   // External: require opt-in via env var or --agent-teams flag
-  if (!isEnvTruthy(process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) && !isAgentTeamsFlagSet()) {
+  if (!isEnvTruthy(process.env.CLEW_CODE_EXPERIMENTAL_AGENT_TEAMS) && !isAgentTeamsFlagSet()) {
     return false;
   }
   // Killswitch — always respected for external users

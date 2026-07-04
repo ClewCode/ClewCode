@@ -118,7 +118,7 @@ export function Doctor({ onDone }: Props): React.ReactNode {
         upperLimit: TASK_MAX_OUTPUT_UPPER_LIMIT,
       },
       {
-        name: 'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
+        name: 'CLEW_CODE_MAX_OUTPUT_TOKENS',
         // Check for values against the latest supported model
         ...getModelMaxOutputTokens('claude-opus-4-6'),
       },

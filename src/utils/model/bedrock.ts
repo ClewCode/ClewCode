@@ -50,7 +50,7 @@ async function createBedrockClient() {
   // This ensures we query profiles from the same region the client will use
   const region = getAWSRegion();
 
-  const skipAuth = isEnvTruthy(process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH);
+  const skipAuth = isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH);
 
   const clientConfig: ConstructorParameters<typeof BedrockClient>[0] = {
     region,
@@ -89,7 +89,7 @@ async function createBedrockClient() {
 export async function createBedrockRuntimeClient() {
   const { BedrockRuntimeClient } = await import('@aws-sdk/client-bedrock-runtime');
   const region = getAWSRegion();
-  const skipAuth = isEnvTruthy(process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH);
+  const skipAuth = isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH);
 
   const clientConfig: ConstructorParameters<typeof BedrockRuntimeClient>[0] = {
     region,

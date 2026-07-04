@@ -82,7 +82,7 @@ export function clearPluginCacheExclusions(): void {
 /**
  * One path is a prefix of the other. Special-cases root (normalize('/') + sep
  * = '//'). Case-insensitive on win32 since normalize() doesn't lowercase
- * drive letters and CLAUDE_CODE_PLUGIN_CACHE_DIR may disagree with resolved.
+ * drive letters and CLEW_CODE_PLUGIN_CACHE_DIR may disagree with resolved.
  */
 function pathsOverlap(a: string, b: string): boolean {
   const na = normalizeForCompare(a);

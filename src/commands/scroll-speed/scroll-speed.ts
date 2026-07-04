@@ -5,7 +5,7 @@ import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/
 /**
  * /scroll-speed command — set the wheel scroll multiplier.
  *
- * Reads/writes CLAUDE_CODE_SCROLL_SPEED. The ScrollKeybindingHandler
+ * Reads/writes CLEW_CODE_SCROLL_SPEED. The ScrollKeybindingHandler
  * already reads this env var at runtime.
  *
  * Usage:
@@ -29,7 +29,7 @@ export async function call(
 
   // Reset to default
   if (trimmed.toLowerCase() === 'default' || trimmed.toLowerCase() === 'reset') {
-    process.env.CLAUDE_CODE_SCROLL_SPEED = '';
+    process.env.CLEW_CODE_SCROLL_SPEED = '';
     onDone('Scroll speed reset to default (1).', { display: 'system' });
     return null;
   }
@@ -41,7 +41,7 @@ export async function call(
     return null;
   }
 
-  process.env.CLAUDE_CODE_SCROLL_SPEED = String(n);
+  process.env.CLEW_CODE_SCROLL_SPEED = String(n);
   onDone(`Scroll speed set to ${n}.`, { display: 'system' });
   return null;
 }

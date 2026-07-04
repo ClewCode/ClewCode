@@ -160,7 +160,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
   useEffect(t2, t3);
   let t4;
   if ($[5] === Symbol.for('react.memo_cache_sentinel')) {
-    t4 = !hasReleaseNotes && !showOnboarding && !isEnvTruthy(process.env.CLAUDE_CODE_FORCE_FULL_LOGO);
+    t4 = !hasReleaseNotes && !showOnboarding && !isEnvTruthy(process.env.CLEW_CODE_FORCE_FULL_LOGO);
     $[5] = t4;
   } else {
     t4 = $[5];
@@ -216,7 +216,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
     t10 = $[14];
   }
   const modelDisplayName = t10;
-  if (!hasReleaseNotes && !showOnboarding && !isEnvTruthy(process.env.CLAUDE_CODE_FORCE_FULL_LOGO)) {
+  if (!hasReleaseNotes && !showOnboarding && !isEnvTruthy(process.env.CLEW_CODE_FORCE_FULL_LOGO)) {
     let t11;
     let t12;
     let t13;
@@ -236,13 +236,13 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
         </Box>
       );
       t16 = <EmergencyTip />;
-      t17 = process.env.CLAUDE_CODE_TMUX_SESSION && (
+      t17 = process.env.CLEW_CODE_TMUX_SESSION && (
         <Box paddingLeft={2} flexDirection="column">
-          <Text dimColor={true}>tmux session: {process.env.CLAUDE_CODE_TMUX_SESSION}</Text>
+          <Text dimColor={true}>tmux session: {process.env.CLEW_CODE_TMUX_SESSION}</Text>
           <Text dimColor={true}>
-            {process.env.CLAUDE_CODE_TMUX_PREFIX_CONFLICTS
-              ? `Detach: ${process.env.CLAUDE_CODE_TMUX_PREFIX} ${process.env.CLAUDE_CODE_TMUX_PREFIX} d (press prefix twice - Claude uses ${process.env.CLAUDE_CODE_TMUX_PREFIX})`
-              : `Detach: ${process.env.CLAUDE_CODE_TMUX_PREFIX} d`}
+            {process.env.CLEW_CODE_TMUX_PREFIX_CONFLICTS
+              ? `Detach: ${process.env.CLEW_CODE_TMUX_PREFIX} ${process.env.CLEW_CODE_TMUX_PREFIX} d (press prefix twice - Claude uses ${process.env.CLEW_CODE_TMUX_PREFIX})`
+              : `Detach: ${process.env.CLEW_CODE_TMUX_PREFIX} d`}
           </Text>
         </Box>
       );
@@ -642,13 +642,13 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
       </Box>
     );
     t33 = <EmergencyTip />;
-    t34 = process.env.CLAUDE_CODE_TMUX_SESSION && (
+    t34 = process.env.CLEW_CODE_TMUX_SESSION && (
       <Box paddingLeft={2} flexDirection="column">
-        <Text dimColor={true}>tmux session: {process.env.CLAUDE_CODE_TMUX_SESSION}</Text>
+        <Text dimColor={true}>tmux session: {process.env.CLEW_CODE_TMUX_SESSION}</Text>
         <Text dimColor={true}>
-          {process.env.CLAUDE_CODE_TMUX_PREFIX_CONFLICTS
-            ? `Detach: ${process.env.CLAUDE_CODE_TMUX_PREFIX} ${process.env.CLAUDE_CODE_TMUX_PREFIX} d (press prefix twice - Claude uses ${process.env.CLAUDE_CODE_TMUX_PREFIX})`
-            : `Detach: ${process.env.CLAUDE_CODE_TMUX_PREFIX} d`}
+          {process.env.CLEW_CODE_TMUX_PREFIX_CONFLICTS
+            ? `Detach: ${process.env.CLEW_CODE_TMUX_PREFIX} ${process.env.CLEW_CODE_TMUX_PREFIX} d (press prefix twice - Claude uses ${process.env.CLEW_CODE_TMUX_PREFIX})`
+            : `Detach: ${process.env.CLEW_CODE_TMUX_PREFIX} d`}
         </Text>
       </Box>
     );
