@@ -14,7 +14,6 @@
 
 import { appendFile, mkdir, readdir, rename, stat, unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { createId } from '../../utils/id.js';
 import type { AuditEvent, AuditLogConfig } from './types.js';
 
 /** Default audit log directory relative to project root */
@@ -41,7 +40,6 @@ export class AuditLogWriter {
   private readonly auditDir: string;
   private currentFilePath: string;
   private currentSize = 0;
-  private writeStream: { write: (line: string) => void; end: () => void } | null = null;
   private flushTimer: ReturnType<typeof setInterval> | null = null;
   private buffer: string[] = [];
   private readonly FLUSH_INTERVAL_MS = 2000; // flush every 2s
@@ -111,9 +109,8 @@ export class AuditLogWriter {
     const minLevel = levelOrder[this.config.minLevel] ?? 0;
     if (eventLevel < minLevel) return;
 
-    const line = JSON.stringify(event) + '\n';
+    const line = `${JSON.stringify(event)}\n`;
     this.buffer.push(line);
-    this.currentSize += Buffer.byteLength(line);
 
     // Console output for real-time debugging
     if (this.config.consoleOutput) {
@@ -127,18 +124,22 @@ export class AuditLogWriter {
    * Automatically called on a timer and on `close()`.
    */
   async flush(): Promise<void> {
-    if (this.buffer.length === 0 || this.closed) return;
+    if (this.buffer.length === 0) return;
 
     const lines = this.buffer.splice(0, this.buffer.length);
     const content = lines.join('');
+    const contentSize = Buffer.byteLength(content);
 
     try {
+      await mkdir(this.auditDir, { recursive: true });
+
       // Check if rotation is needed before writing
-      if (this.currentSize > this.config.maxFileSizeBytes) {
+      if (this.currentSize > 0 && this.currentSize + contentSize > this.config.maxFileSizeBytes) {
         await this.rotate();
       }
 
       await appendFile(this.currentFilePath, content, 'utf-8');
+      this.currentSize += contentSize;
     } catch (err) {
       // If rotation failed or write failed, put lines back in buffer
       this.buffer.unshift(...lines);
@@ -194,14 +195,13 @@ export class AuditLogWriter {
    * Flushes all buffered events and stops the flush timer.
    */
   async close(): Promise<void> {
-    this.closed = true;
-
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
       this.flushTimer = null;
     }
 
     await this.flush();
+    this.closed = true;
   }
 
   /** Get the current audit directory path */

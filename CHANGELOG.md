@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Enterprise audit logging**: Added NDJSON audit log writer/service, env-based opt-in, tool execution audit events, command/file access audit events, rotation/filtering, and focused tests. (`src/services/auditLog/`, `src/services/tools/toolExecution.ts`)
 - **README sections**: Added table of contents, prerequisites, use cases, screenshots, configuration reference, FAQ, contributing guide, and star history chart. (`README.md`)
 - **Terminal title utility**: Extracted shared `setTerminalTitle()` to `src/utils/terminalTitle.ts` — handles both `process.title` (Windows) and OSC 0 (POSIX) in one place. (`src/utils/terminalTitle.ts`, `src/utils/terminalTitle.js`)
 - **Screenshot asset**: Added REPL screenshot for README. (`assets/screenshots/`)
