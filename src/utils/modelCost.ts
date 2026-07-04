@@ -22,6 +22,10 @@ import {
   getDefaultMainLoopModelSetting,
   type ModelShortName,
 } from './model/model.js';
+import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 // @see https://platform.claude.com/docs/en/about-claude/pricing
 export type ModelCosts = ModelCostRates;
@@ -279,6 +283,20 @@ export const PROVIDER_PRICING: Record<string, ProviderPricing> = {
     'gemini-2.5-flash-lite': {
       inputTokens: 0.1,
       outputTokens: 0.4,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+    'gemini-3.5-flash': {
+      inputTokens: 0.1,
+      outputTokens: 0.4,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+    'gemini-3.1-pro': {
+      inputTokens: 2,
+      outputTokens: 10,
       promptCacheWriteTokens: 0,
       promptCacheReadTokens: 0,
       webSearchRequests: 0,
@@ -1152,6 +1170,13 @@ export const PROVIDER_PRICING: Record<string, ProviderPricing> = {
       promptCacheReadTokens: 0,
       webSearchRequests: 0,
     },
+    'qwen3.6-plus': {
+      inputTokens: 2,
+      outputTokens: 6,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
   },
   zhipu: {
     // ByteDance Zhipu
@@ -1179,6 +1204,13 @@ export const PROVIDER_PRICING: Record<string, ProviderPricing> = {
     'glm-4-plus-long': {
       inputTokens: 2,
       outputTokens: 10,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+    'glm-5.1': {
+      inputTokens: 0.5,
+      outputTokens: 2,
       promptCacheWriteTokens: 0,
       promptCacheReadTokens: 0,
       webSearchRequests: 0,
@@ -1227,6 +1259,13 @@ export const PROVIDER_PRICING: Record<string, ProviderPricing> = {
     'moonshot-v1-128k': {
       inputTokens: 3,
       outputTokens: 15,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+    'kimi-k2.6': {
+      inputTokens: 2,
+      outputTokens: 10,
       promptCacheWriteTokens: 0,
       promptCacheReadTokens: 0,
       webSearchRequests: 0,
@@ -1449,7 +1488,13 @@ export const COST_HAIKU_45 = {
   webSearchRequests: 0.01,
 } as const satisfies ModelCosts;
 
-const DEFAULT_UNKNOWN_MODEL_COST = COST_TIER_5_25;
+const DEFAULT_UNKNOWN_MODEL_COST = {
+  inputTokens: 1,
+  outputTokens: 4,
+  promptCacheWriteTokens: 0,
+  promptCacheReadTokens: 0,
+  webSearchRequests: 0,
+} as const satisfies ModelCosts;
 
 /**
  * Get the cost tier for Opus 4.6.
@@ -1522,6 +1567,12 @@ export function getModelCosts(model: string, speedInfo?: { speed?: string }): Mo
   const providerCost = lookupProviderPricing(model);
   if (providerCost) {
     return providerCost;
+  }
+
+  // Try OpenRouter pricing (covers 300+ models across all providers)
+  const orCost = lookupOpenRouterPricing(model);
+  if (orCost) {
+    return orCost;
   }
 
   // Track and fallback
@@ -1657,6 +1708,103 @@ export function calculateCostFromTokens(
   } as Usage;
   return calculateUSDCost(model, usage);
 }
+
+// ── OpenRouter live pricing fallback ─────────────────────────────────
+// Fetches OpenRouter's model list (covers 300+ models) and caches it
+// so unknown models can still get accurate pricing.
+
+const OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/v1/models';
+const PRICING_CACHE_PATH = join(homedir(), '.clew', 'model-pricing-cache.json');
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+interface OpenRouterPricingEntry {
+  prompt: number;
+  completion: number;
+}
+
+interface OpenRouterModelEntry {
+  id: string;
+  pricing?: OpenRouterPricingEntry;
+}
+
+interface OpenRouterResponse {
+  data: OpenRouterModelEntry[];
+}
+
+let openRouterPricingCache: Record<string, ModelCosts> | null = null;
+let openRouterPricingPromise: Promise<void> | null = null;
+
+async function loadOpenRouterPricingCacheFromDisk(): Promise<void> {
+  try {
+    if (existsSync(PRICING_CACHE_PATH)) {
+      const raw = await readFile(PRICING_CACHE_PATH, 'utf8');
+      const cached = JSON.parse(raw) as { timestamp: number; data: Record<string, ModelCosts> };
+      if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        openRouterPricingCache = cached.data;
+      }
+    }
+  } catch { /* corrupt cache, ignore */ }
+}
+
+async function saveOpenRouterPricingCacheToDisk(): Promise<void> {
+  try {
+    await writeFile(
+      PRICING_CACHE_PATH,
+      JSON.stringify({ timestamp: Date.now(), data: openRouterPricingCache }),
+      'utf8',
+    );
+  } catch { /* best-effort */ }
+}
+
+async function fetchOpenRouterPricing(): Promise<void> {
+  try {
+    const res = await fetch(OPENROUTER_MODELS_URL);
+    if (!res.ok) return;
+    const json = (await res.json()) as OpenRouterResponse;
+    if (!json.data) return;
+
+    const cache: Record<string, ModelCosts> = {};
+    for (const entry of json.data) {
+      if (!entry.pricing) continue;
+      const prompt = Number(entry.pricing.prompt);
+      const completion = Number(entry.pricing.completion);
+      if (!Number.isFinite(prompt) || !Number.isFinite(completion)) continue;
+      cache[entry.id.toLowerCase()] = {
+        inputTokens: prompt,
+        outputTokens: completion,
+        promptCacheWriteTokens: 0,
+        promptCacheReadTokens: 0,
+        webSearchRequests: 0,
+      };
+    }
+    openRouterPricingCache = cache;
+    saveOpenRouterPricingCacheToDisk();
+  } catch { /* network error, probe disk cache fallback */ }
+}
+
+function initOpenRouterPricing(): void {
+  if (!openRouterPricingPromise) {
+    openRouterPricingPromise = (async () => {
+      await loadOpenRouterPricingCacheFromDisk();
+      fetchOpenRouterPricing(); // fire-and-forget refresh
+    })();
+  }
+}
+
+function lookupOpenRouterPricing(model: string): ModelCosts | null {
+  if (!openRouterPricingCache) return null;
+  const key = model.toLowerCase();
+  // Direct match
+  if (openRouterPricingCache[key]) return openRouterPricingCache[key];
+  // Try partial match (e.g., "claude-opus-4-7" in "anthropic/claude-opus-4-7")
+  for (const [orId, costs] of Object.entries(openRouterPricingCache)) {
+    if (orId.includes(key) || key.includes(orId)) return costs;
+  }
+  return null;
+}
+
+// Init on module load (non-blocking, uses cached data if available)
+initOpenRouterPricing();
 
 function formatPrice(price: number): string {
   // Format price: integers without decimals, others with 2 decimal places

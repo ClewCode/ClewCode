@@ -25,7 +25,6 @@ import keybindings from './commands/keybindings/index.js';
 import installGitHubApp from './commands/install-github-app/index.js';
 import installSlackApp from './commands/install-slack-app/index.js';
 import mcp from './commands/mcp/index.js';
-import mobile from './commands/mobile/index.js';
 import swarmCmd from './commands/peer/index.js';
 import pr_comments from './commands/pr_comments/index.js';
 import releaseNotes from './commands/release-notes/index.js';
@@ -211,7 +210,6 @@ const COMMANDS = memoize((): Command[] => [
   mcp,
   memory,
   memorySearch,
-  mobile,
   model,
   outputStyle,
   swarmCmd,
@@ -530,7 +528,6 @@ export const REMOTE_SAFE_COMMANDS: Set<Command> = new Set([
   keybindings, // Keybinding management
 
   stickers, // Stickers
-  mobile, // Mobile QR code
 ]);
 
 /**

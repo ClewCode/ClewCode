@@ -8,20 +8,20 @@ export function getEnvWithAlias(primary, legacy) {
   return process.env[primary] ?? process.env[legacy];
 }
 /**
- * Primary config home: ~/.clew (or CLEW_CONFIG_DIR / CLEW_CONFIG_DIR fallback).
+ * Primary config home: ~/.clew (or CLEW_CONFIG_DIR, fallback CLAUDE_CONFIG_DIR).
  *
  * ~170 callers across the codebase. Named `getClewConfigHomeDir` for backward
  * compatibility — it returns the Clew home, not the old Claude home.
  */
 export const getClewConfigHomeDir = memoize(
   () => {
-    const clewDir = getEnvWithAlias('CLEW_CONFIG_DIR', 'CLEW_CONFIG_DIR');
+    const clewDir = getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR');
     if (clewDir) {
       return clewDir.normalize('NFC');
     }
     return join(homedir(), '.clew').normalize('NFC');
   },
-  () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLEW_CONFIG_DIR') ?? '.clew',
+  () => getEnvWithAlias('CLEW_CONFIG_DIR', 'CLAUDE_CONFIG_DIR') ?? '.clew',
 );
 /** Alias for the same function. */
 export const getClaudeConfigHomeDir = getClewConfigHomeDir;
@@ -64,7 +64,7 @@ export function isEnvDefinedFalsy(envVar) {
  * — notably startKeychainPrefetch() at main.tsx top-level.
  */
 export function isBareMode() {
-  return isEnvTruthy(getEnvWithAlias('CLEW_CODE_SIMPLE', 'CLEW_CODE_SIMPLE')) || process.argv.includes('--bare');
+  return isEnvTruthy(getEnvWithAlias('CLEW_CODE_SIMPLE', 'CLAUDE_CODE_SIMPLE')) || process.argv.includes('--bare');
 }
 /**
  * Parses an array of environment variable strings into a key-value object

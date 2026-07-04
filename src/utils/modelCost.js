@@ -15,6 +15,10 @@ import {
   CLAUDE_SONNET_4_CONFIG,
 } from './model/configs.js';
 import { firstPartyNameToCanonical, getCanonicalName, getDefaultMainLoopModelSetting } from './model/model.js';
+import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 export const PROVIDER_PRICING = {
   anthropic: {
     'claude-3-haiku': {
@@ -262,6 +266,20 @@ export const PROVIDER_PRICING = {
     'gemini-2.5-flash-lite': {
       inputTokens: 0.1,
       outputTokens: 0.4,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+    'gemini-3.5-flash': {
+      inputTokens: 0.1,
+      outputTokens: 0.4,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+    'gemini-3.1-pro': {
+      inputTokens: 2,
+      outputTokens: 10,
       promptCacheWriteTokens: 0,
       promptCacheReadTokens: 0,
       webSearchRequests: 0,
@@ -1135,6 +1153,13 @@ export const PROVIDER_PRICING = {
       promptCacheReadTokens: 0,
       webSearchRequests: 0,
     },
+    'qwen3.6-plus': {
+      inputTokens: 2,
+      outputTokens: 6,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
   },
   zhipu: {
     // ByteDance Zhipu
@@ -1162,6 +1187,13 @@ export const PROVIDER_PRICING = {
     'glm-4-plus-long': {
       inputTokens: 2,
       outputTokens: 10,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+    'glm-5.1': {
+      inputTokens: 0.5,
+      outputTokens: 2,
       promptCacheWriteTokens: 0,
       promptCacheReadTokens: 0,
       webSearchRequests: 0,
@@ -1210,6 +1242,13 @@ export const PROVIDER_PRICING = {
     'moonshot-v1-128k': {
       inputTokens: 3,
       outputTokens: 15,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+    'kimi-k2.6': {
+      inputTokens: 2,
+      outputTokens: 10,
       promptCacheWriteTokens: 0,
       promptCacheReadTokens: 0,
       webSearchRequests: 0,
@@ -1425,7 +1464,13 @@ export const COST_HAIKU_45 = {
   promptCacheReadTokens: 0.1,
   webSearchRequests: 0.01,
 };
-const DEFAULT_UNKNOWN_MODEL_COST = COST_TIER_5_25;
+const DEFAULT_UNKNOWN_MODEL_COST = {
+  inputTokens: 1,
+  outputTokens: 4,
+  promptCacheWriteTokens: 0,
+  promptCacheReadTokens: 0,
+  webSearchRequests: 0,
+};
 /**
  * Get the cost tier for Opus 4.6 based on fast mode.
  */
@@ -1481,6 +1526,11 @@ export function getModelCosts(model, speedInfo) {
   const providerCost = lookupProviderPricing(model);
   if (providerCost) {
     return providerCost;
+  }
+  // Try OpenRouter pricing (covers 300+ models across all providers)
+  const orCost = lookupOpenRouterPricing(model);
+  if (orCost) {
+    return orCost;
   }
   // Track and fallback
   trackUnknownModelCost(model, shortName);
@@ -1585,6 +1635,78 @@ export function calculateCostFromTokens(model, tokens) {
   };
   return calculateUSDCost(model, usage);
 }
+// ── OpenRouter live pricing fallback ─────────────────────────────────
+const OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/v1/models';
+const PRICING_CACHE_PATH = join(homedir(), '.clew', 'model-pricing-cache.json');
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+let openRouterPricingCache = null;
+let openRouterPricingPromise = null;
+
+async function loadOpenRouterPricingCacheFromDisk() {
+  try {
+    if (existsSync(PRICING_CACHE_PATH)) {
+      const raw = await readFile(PRICING_CACHE_PATH, 'utf8');
+      const cached = JSON.parse(raw);
+      if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        openRouterPricingCache = cached.data;
+      }
+    }
+  } catch { /* corrupt cache, ignore */ }
+}
+
+async function saveOpenRouterPricingCacheToDisk() {
+  try {
+    await writeFile(PRICING_CACHE_PATH, JSON.stringify({ timestamp: Date.now(), data: openRouterPricingCache }), 'utf8');
+  } catch { /* best-effort */ }
+}
+
+async function fetchOpenRouterPricing() {
+  try {
+    const res = await fetch(OPENROUTER_MODELS_URL);
+    if (!res.ok) return;
+    const json = await res.json();
+    if (!json.data) return;
+    const cache = {};
+    for (const entry of json.data) {
+      if (!entry.pricing) continue;
+      const prompt = Number(entry.pricing.prompt);
+      const completion = Number(entry.pricing.completion);
+      if (!Number.isFinite(prompt) || !Number.isFinite(completion)) continue;
+      cache[entry.id.toLowerCase()] = {
+        inputTokens: prompt,
+        outputTokens: completion,
+        promptCacheWriteTokens: 0,
+        promptCacheReadTokens: 0,
+        webSearchRequests: 0,
+      };
+    }
+    openRouterPricingCache = cache;
+    saveOpenRouterPricingCacheToDisk();
+  } catch { /* network error */ }
+}
+
+function initOpenRouterPricing() {
+  if (!openRouterPricingPromise) {
+    openRouterPricingPromise = (async () => {
+      await loadOpenRouterPricingCacheFromDisk();
+      fetchOpenRouterPricing();
+    })();
+  }
+}
+
+function lookupOpenRouterPricing(model) {
+  if (!openRouterPricingCache) return null;
+  const key = model.toLowerCase();
+  if (openRouterPricingCache[key]) return openRouterPricingCache[key];
+  for (const [orId, costs] of Object.entries(openRouterPricingCache)) {
+    if (orId.includes(key) || key.includes(orId)) return costs;
+  }
+  return null;
+}
+
+initOpenRouterPricing();
+
 function formatPrice(price) {
   // Format price: integers without decimals, others with 2 decimal places
   // e.g., 3 -> "$3", 0.8 -> "$0.80", 22.5 -> "$22.50"
