@@ -194,7 +194,6 @@ function clampNumber(value: number, min: number, max: number): number {
 function computeExpandingPanelColors(
   totalWidth: number,
   row: number,
-  totalRows: number,
   animTime: number,
   progress: number,
   centerX: number,
@@ -208,20 +207,15 @@ function computeExpandingPanelColors(
   // ripple look circular in a monospaced terminal grid.
   const cellAspectY = 2.15;
 
-  const initialRadius = 12;
-  const cornerDistances = [
-    Math.hypot(centerX, centerY * cellAspectY),
-    Math.hypot(totalWidth - 1 - centerX, centerY * cellAspectY),
-    Math.hypot(centerX, (totalRows - 1 - centerY) * cellAspectY),
-    Math.hypot(totalWidth - 1 - centerX, (totalRows - 1 - centerY) * cellAspectY),
-  ];
-  const finalRadius = Math.max(...cornerDistances) + 10;
+  const initialRadius = 4;
+  const finalRadius = Math.min(30, Math.max(18, totalWidth * 0.28));
   const radius = initialRadius + (finalRadius - initialRadius) * eased;
 
-  // Feather gives the edge a soft wave instead of a hard rectangle.
-  const feather = 8;
-  const baseHue = 265 + Math.sin(frame * 0.06) * 5;
-  const baseSat = 79 + Math.cos(frame * 0.07) * 4;
+  // Keep ultracode as a soft radial spotlight instead of flooding the whole
+  // panel. This reads better in terminals with coarse background cells.
+  const feather = 7;
+  const baseHue = 264 + Math.sin(frame * 0.04) * 3;
+  const baseSat = 76 + Math.cos(frame * 0.05) * 3;
 
   for (let x = 0; x < totalWidth; x++) {
     const dx = x - centerX;
@@ -236,21 +230,13 @@ function computeExpandingPanelColors(
     const inside = clampNumber((radius + feather - dist) / feather, 0, 1);
     const core = clampNumber((radius - dist) / Math.max(radius, 1), 0, 1);
 
-    // Beautiful concentric circular waves radiating from the center!
-    // Using dist directly makes the waves perfectly circular/elliptical.
-    const wave1 = Math.sin(dist / 2.2 - frame * 0.1);
-    const wave2 = Math.cos(dist / 4.5 - frame * 0.05);
-    // Combine two waves with different frequencies for a rich organic ripple effect
-    const circularWave = wave1 * 0.65 + wave2 * 0.35;
+    const wave = Math.sin(dist / 3.4 - frame * 0.045);
+    const ring = Math.exp(-((dist - radius * 0.62) ** 2) / 36);
 
-    // Expanding ripple ring boost
-    const ring = Math.exp(-((dist - radius * 0.72) ** 2) / 48);
-
-    // Lightness should be dynamic and smooth
     const lightness = clampNumber(
-      16 + inside * 6 + core * 14 + circularWave * 8 + ring * (6 + (1 - eased) * 6),
-      12,
-      45,
+      12 + inside * 7 + core * 12 + wave * 3 + ring * (8 + (1 - eased) * 4),
+      10,
+      34,
     );
 
     colors.push(hslToHex(baseHue, baseSat, lightness));
@@ -586,9 +572,8 @@ function EffortSlider({
   ];
 
   // 5. Purple animated panel. It is only active after the cursor moves to ultracode.
-  // The first frames are a small oval around ultracode; the oval then expands until
-  // it fills the slider panel.
-  const totalRows = 8;
+  // The first frames are a small oval around ultracode; the oval then expands into
+  // a bounded spotlight so the panel does not turn into a solid purple block.
   const revealMs = 6000;
   const elapsedMs = ultraEnterAnimTime === null ? 0 : Math.max(0, animTime - ultraEnterAnimTime);
   const revealProgress = isUltra ? Math.min(1, elapsedMs / revealMs) : 0;
@@ -606,7 +591,6 @@ function EffortSlider({
       ? computeExpandingPanelColors(
           totalWidth,
           row,
-          totalRows,
           panelAnimTime,
           revealProgress,
           ultraCenterX,
