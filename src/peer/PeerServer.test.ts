@@ -349,3 +349,146 @@ describe('PeerServer', () => {
     expect(server.isBusy).toBeFalse();
   });
 });
+
+describe('PeerServer — concurrency', () => {
+  let server;
+  afterEach(() => {
+    server.stop();
+  });
+
+  test('maxConcurrentTasks lets N tasks run at once instead of queuing', async () => {
+    server = new PeerServer(undefined, { maxConcurrentTasks: 2 });
+    const releases: Array<(v: any) => void> = [];
+    server.setCallbacks({
+      onExec: async () =>
+        new Promise(r => {
+          releases.push(r);
+        }),
+    });
+    const port = await server.start(mi());
+    const token = server.token;
+
+    const p1 = fetch(`http://127.0.0.1:${port}/peer-exec`, {
+      method: 'POST',
+      body: JSON.stringify({ command: 'a', from: 't', token }),
+    });
+    await new Promise(r => setTimeout(r, 30));
+    const p2 = fetch(`http://127.0.0.1:${port}/peer-exec`, {
+      method: 'POST',
+      body: JSON.stringify({ command: 'b', from: 't', token }),
+    });
+    await new Promise(r => setTimeout(r, 30));
+
+    // Both should be running concurrently (not one queued), since capacity is 2.
+    expect(server.getTasks().running).toHaveLength(2);
+    expect(server.queueDepth).toBe(0);
+    expect(server.isBusy).toBeTrue();
+
+    for (const rel of releases) rel({ stdout: '', stderr: '', exitCode: 0 });
+    await Promise.all([p1, p2]);
+  });
+
+  test('a third task queues once at capacity', async () => {
+    server = new PeerServer(undefined, { maxConcurrentTasks: 2 });
+    const releases: Array<(v: any) => void> = [];
+    server.setCallbacks({
+      onExec: async () =>
+        new Promise(r => {
+          releases.push(r);
+        }),
+    });
+    const port = await server.start(mi());
+    const token = server.token;
+
+    for (const cmd of ['a', 'b']) {
+      void fetch(`http://127.0.0.1:${port}/peer-exec`, {
+        method: 'POST',
+        body: JSON.stringify({ command: cmd, from: 't', token }),
+      });
+      await new Promise(r => setTimeout(r, 20));
+    }
+
+    const r3 = await fetch(`http://127.0.0.1:${port}/peer-exec`, {
+      method: 'POST',
+      body: JSON.stringify({ command: 'c', from: 't', token }),
+    });
+    const body3 = await r3.json();
+    expect(body3.queued).toBeTrue();
+    expect(server.queueDepth).toBe(1);
+
+    for (const rel of releases) rel({ stdout: '', stderr: '', exitCode: 0 });
+  });
+});
+
+describe('PeerServer — task dependencies', () => {
+  let server;
+  afterEach(() => {
+    server.stop();
+  });
+
+  test('a task with an unmet dependsOn stays queued even with free capacity', async () => {
+    server = new PeerServer(undefined, { maxConcurrentTasks: 2 });
+    const ranCommands: string[] = [];
+    server.setCallbacks({
+      onExec: async (cmd: string) => {
+        ranCommands.push(cmd);
+        return { stdout: '', stderr: '', exitCode: 0 };
+      },
+    });
+    const port = await server.start(mi());
+    const token = server.token;
+
+    const r = await fetch(`http://127.0.0.1:${port}/peer-exec`, {
+      method: 'POST',
+      body: JSON.stringify({ command: 'dependent', from: 't', token, dependsOn: ['nonexistent-task'] }),
+    });
+    const body = await r.json();
+    expect(body.queued).toBeTrue();
+    // Give the (would-be) scheduler a moment; it must NOT have run.
+    await new Promise(res => setTimeout(res, 30));
+    expect(ranCommands).toEqual([]);
+    expect(server.queueDepth).toBe(1);
+  });
+
+  test('a dependent task runs once its dependency completes', async () => {
+    server = new PeerServer(undefined, { maxConcurrentTasks: 1 });
+    const ranCommands: string[] = [];
+    let releaseFirst: (v: any) => void;
+    server.setCallbacks({
+      onExec: async (cmd: string) => {
+        ranCommands.push(cmd);
+        if (cmd === 'first') {
+          return new Promise(r => {
+            releaseFirst = r;
+          });
+        }
+        return { stdout: '', stderr: '', exitCode: 0 };
+      },
+    });
+    const port = await server.start(mi());
+    const token = server.token;
+
+    // "first" runs immediately (capacity free).
+    const p1 = fetch(`http://127.0.0.1:${port}/peer-exec`, {
+      method: 'POST',
+      body: JSON.stringify({ command: 'first', from: 't', token }),
+    });
+    await new Promise(r => setTimeout(r, 30));
+    const firstId = server.getTasks().running[0]?.id;
+    expect(firstId).toBeTruthy();
+
+    // "second" depends on "first" — must queue even though nothing else is queued.
+    const r2 = await fetch(`http://127.0.0.1:${port}/peer-exec`, {
+      method: 'POST',
+      body: JSON.stringify({ command: 'second', from: 't', token, dependsOn: [firstId] }),
+    });
+    expect((await r2.json()).queued).toBeTrue();
+    expect(ranCommands).toEqual(['first']);
+
+    // Completing "first" should unblock "second".
+    releaseFirst!({ stdout: '', stderr: '', exitCode: 0 });
+    await p1;
+    await new Promise(r => setTimeout(r, 30));
+    expect(ranCommands).toEqual(['first', 'second']);
+  });
+});

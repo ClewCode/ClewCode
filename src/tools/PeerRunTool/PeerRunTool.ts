@@ -22,6 +22,12 @@ const inputSchema = lazySchema(() =>
       .optional()
       .default('normal')
       .describe('Task priority (low/normal/high). High priority tasks skip the queue.'),
+    dependsOn: z
+      .array(z.string())
+      .optional()
+      .describe(
+        'Task IDs (from a previous peer_run result on the SAME worker) that must complete before this task starts. Use to sequence dependent work (e.g. "build" after "install") without polling.',
+      ),
   }),
 );
 
@@ -35,6 +41,8 @@ const outputSchema = lazySchema(() =>
     queued: z.boolean().optional(),
     queuePosition: z.number().optional(),
     queueDepth: z.number().optional(),
+    /** This task's ID — pass it as a future call's `dependsOn` to sequence work. */
+    id: z.string().optional(),
   }),
 );
 
@@ -42,10 +50,14 @@ export type Output = z.infer<ReturnType<typeof outputSchema>>;
 
 /**
  * Execute a command on the local machine (for when we receive an exec request).
+ * `cwd` overrides the working directory — used to run swarm tasks inside an
+ * isolated git worktree instead of the peer's own cwd (see PeerServer's
+ * isolateWorktrees option).
  */
 export function executeCommand(
   command: string,
   timeoutMs: number,
+  cwd?: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise(resolve => {
     const _child = exec(
@@ -54,6 +66,7 @@ export function executeCommand(
         timeout: timeoutMs,
         maxBuffer: 1024 * 1024, // 1MB
         shell: process.env.SHELL || (process.platform === 'win32' ? process.env.ComSpec || 'cmd' : '/bin/sh'),
+        ...(cwd ? { cwd } : {}),
       },
       (err, stdout, stderr) => {
         resolve({
@@ -122,7 +135,13 @@ export const PeerRunTool = buildTool({
       content: `${output.exitCode === 0 ? '✓' : '✗'} exit ${output.exitCode}: ${truncateText(out, 500)}`,
     };
   },
-  async call(input: { worker: string; command: string; timeout?: number; priority?: 'low' | 'normal' | 'high' }) {
+  async call(input: {
+    worker: string;
+    command: string;
+    timeout?: number;
+    priority?: 'low' | 'normal' | 'high';
+    dependsOn?: string[];
+  }) {
     const store = getGlobalPeerStore();
     let peer = store.findPeer(input.worker);
 
@@ -164,6 +183,7 @@ export const PeerRunTool = buildTool({
           from: 'ai-agent',
           fromName: 'Clew AI',
           token: targetToken,
+          ...(input.dependsOn && input.dependsOn.length > 0 ? { dependsOn: input.dependsOn } : {}),
         }),
         signal: AbortSignal.timeout(timeout + 5000),
       });
@@ -189,6 +209,7 @@ export const PeerRunTool = buildTool({
             queued: true,
             queuePosition: body.queuePosition,
             queueDepth: body.queueDepth,
+            id: body.id,
             stdout: `⏳ Task queued at position ${body.queuePosition} on ${peer.hostname} (${body.queueDepth} tasks in queue)`,
           },
         };
@@ -213,6 +234,7 @@ export const PeerRunTool = buildTool({
           stdout: body.result?.stdout ?? '',
           stderr: body.result?.stderr ?? '',
           exitCode: body.result?.exitCode ?? 1,
+          id: body.id,
         },
       };
     } catch (err) {

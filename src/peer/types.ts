@@ -111,6 +111,15 @@ export interface SwarmTask {
   result?: { stdout: string; stderr: string; exitCode: number };
   /** Error message if execution failed before running */
   error?: string;
+  /**
+   * IDs of tasks that must reach status 'completed' before this task is
+   * eligible to run. IDs referring to unknown/missing tasks are treated as
+   * unmet (fail closed) so a typo'd dependency blocks rather than silently
+   * runs immediately.
+   */
+  dependsOn?: string[];
+  /** Path to the isolated git worktree this task executed in, if any. */
+  worktreePath?: string;
 }
 
 /** A todo item assigned by a swarm */

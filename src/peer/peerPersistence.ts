@@ -13,7 +13,7 @@ import { mkdir, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { logForDebugging } from '../utils/debug.js';
 import { getClewConfigHomeDir } from '../utils/envUtils.js';
-import type { MeshChatMessage, MeshTodo, PeerInfo } from './types.js';
+import type { MeshChatMessage, MeshTodo, PeerInfo, SwarmTask } from './types.js';
 
 export interface PersistedPeerState {
   version: 1;
@@ -113,4 +113,79 @@ export function ensurePeerDirSync(): void {
   } catch {
     // Non-fatal
   }
+}
+
+// ── SwarmTask persistence ──────────────────────────────────────
+//
+// Stored in a separate file from state.json (own debounce timer, own atomic
+// write) so PeerServer's task-queue saves never race with PeerStore's
+// connections/messages/todos saves to the same file.
+
+export interface PersistedSwarmTasks {
+  version: 1;
+  /** Queued + terminal (completed/failed/cancelled) tasks. Never 'running' —
+   *  a task can't have survived a restart mid-execution. */
+  tasks: SwarmTask[];
+}
+
+/** Keep the file bounded — oldest terminal tasks are dropped first. */
+export const MAX_PERSISTED_TASKS = 200;
+
+export function getPeerTasksPath(): string {
+  return join(getClewConfigHomeDir(), 'peer', 'tasks.json');
+}
+
+/** Load persisted swarm tasks. Returns null when none exist or the file is unreadable. */
+export function loadPeerTasks(statePath = getPeerTasksPath()): PersistedSwarmTasks | null {
+  try {
+    const raw = readFileSync(statePath, 'utf-8');
+    const parsed = JSON.parse(raw) as PersistedSwarmTasks;
+    if (parsed?.version !== 1 || !Array.isArray(parsed.tasks)) return null;
+    return { version: 1, tasks: parsed.tasks };
+  } catch {
+    return null;
+  }
+}
+
+let taskSaveTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingTaskSave: (() => PersistedSwarmTasks) | null = null;
+
+/** Schedule a debounced save of the swarm task queue. */
+export function schedulePeerTasksSave(snapshot: () => PersistedSwarmTasks, statePath = getPeerTasksPath()): void {
+  pendingTaskSave = snapshot;
+  if (taskSaveTimer) return;
+  taskSaveTimer = setTimeout(() => {
+    taskSaveTimer = null;
+    const snap = pendingTaskSave;
+    pendingTaskSave = null;
+    if (snap) void savePeerTasksState(snap(), statePath);
+  }, SAVE_DEBOUNCE_MS);
+  taskSaveTimer.unref?.();
+}
+
+/** Immediately persist swarm tasks (atomic write via temp file + rename). */
+export async function savePeerTasksState(state: PersistedSwarmTasks, statePath = getPeerTasksPath()): Promise<void> {
+  try {
+    const bounded: PersistedSwarmTasks = {
+      ...state,
+      tasks: state.tasks.slice(-MAX_PERSISTED_TASKS),
+    };
+    await mkdir(dirname(statePath), { recursive: true });
+    const tmp = `${statePath}.tmp`;
+    await writeFile(tmp, JSON.stringify(bounded), 'utf-8');
+    await rename(tmp, statePath);
+  } catch (err) {
+    logForDebugging(`[peerPersistence] task save failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+/** Flush any pending debounced task save right now (used on shutdown). */
+export async function flushPeerTasksSave(statePath = getPeerTasksPath()): Promise<void> {
+  if (taskSaveTimer) {
+    clearTimeout(taskSaveTimer);
+    taskSaveTimer = null;
+  }
+  const snap = pendingTaskSave;
+  pendingTaskSave = null;
+  if (snap) await savePeerTasksState(snap(), statePath);
 }

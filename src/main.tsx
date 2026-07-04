@@ -1873,9 +1873,9 @@ async function run(): Promise<CommanderCommand> {
                 enqueue({ value: `From ${msg.fromName}: ${msg.text}`, mode: 'prompt', priority: 'next' });
               });
             },
-            onExec: async (command: string) => {
+            onExec: async (command: string, cwd?: string) => {
               const { executeCommand } = await import('./tools/PeerRunTool/PeerRunTool.js');
-              return executeCommand(command, 60_000);
+              return executeCommand(command, 60_000, cwd);
             },
           });
 
