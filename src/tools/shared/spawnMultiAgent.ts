@@ -366,7 +366,7 @@ async function handleSpawnSplitPane(input: SpawnInput, context: ToolUseContext):
   // Note: We spawn without a prompt - initial instructions are sent via mailbox
   const binaryPath = getTeammateCommand();
 
-  // Build teammate identity CLI args (replaces CLAUDE_CODE_* env vars)
+  // Build teammate identity CLI args (replaces CLEW_CODE_* env vars)
   const teammateArgs = [
     `--agent-id ${quote([teammateId])}`,
     `--agent-name ${quote([sanitizedName])}`,
@@ -399,7 +399,7 @@ async function handleSpawnSplitPane(input: SpawnInput, context: ToolUseContext):
 
   const flagsStr = inheritedFlags ? ` ${inheritedFlags}` : '';
   // Propagate env vars that teammates need but may not inherit from tmux split-window shells.
-  // Includes CLAUDECODE, CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, and API provider vars.
+  // Includes CLAUDECODE, CLEW_CODE_EXPERIMENTAL_AGENT_TEAMS, and API provider vars.
   const envStr = buildInheritedEnvVars();
   const spawnCommand = `cd ${quote([workingDir])} && env ${envStr} ${quote([binaryPath])} ${teammateArgs}${flagsStr}`;
 
@@ -564,7 +564,7 @@ async function handleSpawnSeparateWindow(input: SpawnInput, context: ToolUseCont
   // Note: We spawn without a prompt - initial instructions are sent via mailbox
   const binaryPath = getTeammateCommand();
 
-  // Build teammate identity CLI args (replaces CLAUDE_CODE_* env vars)
+  // Build teammate identity CLI args (replaces CLEW_CODE_* env vars)
   const teammateArgs = [
     `--agent-id ${quote([teammateId])}`,
     `--agent-name ${quote([sanitizedName])}`,
@@ -597,7 +597,7 @@ async function handleSpawnSeparateWindow(input: SpawnInput, context: ToolUseCont
 
   const flagsStr = inheritedFlags ? ` ${inheritedFlags}` : '';
   // Propagate env vars that teammates need but may not inherit from tmux split-window shells.
-  // Includes CLAUDECODE, CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, and API provider vars.
+  // Includes CLAUDECODE, CLEW_CODE_EXPERIMENTAL_AGENT_TEAMS, and API provider vars.
   const envStr = buildInheritedEnvVars();
   const spawnCommand = `cd ${quote([workingDir])} && env ${envStr} ${quote([binaryPath])} ${teammateArgs}${flagsStr}`;
 

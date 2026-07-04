@@ -131,7 +131,7 @@ export async function* handleStopHooks(
   // or forked agents contending for resources during shutdown.
   if (!isBareMode()) {
     // Inline env check for dead code elimination in external builds
-    if (!isEnvDefinedFalsy(process.env.CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION)) {
+    if (!isEnvDefinedFalsy(process.env.CLEW_CODE_ENABLE_PROMPT_SUGGESTION)) {
       void executePromptSuggestion(stopHookContext);
     }
     if (feature('EXTRACT_MEMORIES') && !toolUseContext.agentId && isExtractModeActive()) {

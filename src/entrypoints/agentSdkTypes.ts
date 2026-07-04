@@ -84,7 +84,7 @@ type CreateSdkMcpServerOptions = {
  * Creates an MCP server instance that can be used with the SDK transport.
  * This allows SDK users to define custom tools that run in the same process.
  *
- * If your SDK MCP calls will run longer than 60s, override CLAUDE_CODE_STREAM_CLOSE_TIMEOUT
+ * If your SDK MCP calls will run longer than 60s, override CLEW_CODE_STREAM_CLOSE_TIMEOUT
  */
 export function createSdkMcpServer(_options: CreateSdkMcpServerOptions): McpSdkServerConfigWithInstance {
   throw new Error('not implemented');

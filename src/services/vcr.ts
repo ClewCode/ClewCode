@@ -37,7 +37,7 @@ async function withFixture<T>(input: unknown, fixtureName: string, f: () => Prom
 
   // Create hash of input for fixture filename
   const hash = createHash('sha1').update(jsonStringify(input)).digest('hex').slice(0, 12);
-  const filename = join(process.env.CLAUDE_CODE_TEST_FIXTURES_ROOT ?? getCwd(), `fixtures/${fixtureName}-${hash}.json`);
+  const filename = join(process.env.CLEW_CODE_TEST_FIXTURES_ROOT ?? getCwd(), `fixtures/${fixtureName}-${hash}.json`);
 
   // Fetch cached fixture
   try {
@@ -90,7 +90,7 @@ export async function withVCR(
     dehydrateValue,
   );
   const filename = join(
-    process.env.CLAUDE_CODE_TEST_FIXTURES_ROOT ?? getCwd(),
+    process.env.CLEW_CODE_TEST_FIXTURES_ROOT ?? getCwd(),
     `fixtures/${dehydratedInput.map(_ => createHash('sha1').update(jsonStringify(_)).digest('hex').slice(0, 6)).join('-')}.json`,
   );
 

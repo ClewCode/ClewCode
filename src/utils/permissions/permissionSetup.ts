@@ -656,9 +656,9 @@ export function initialPermissionModeFromCLI({
     // CCR only supports acceptEdits and plan — ignore other defaultModes from
     // settings (e.g. bypassPermissions would otherwise silently grant full
     // access in a remote environment).
-    if (isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) && !['acceptEdits', 'plan', 'default'].includes(settingsMode)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_REMOTE) && !['acceptEdits', 'plan', 'default'].includes(settingsMode)) {
       logForDebugging(
-        `settings defaultMode "${settingsMode}" is not supported in CLAUDE_CODE_REMOTE — only acceptEdits and plan are allowed`,
+        `settings defaultMode "${settingsMode}" is not supported in CLEW_CODE_REMOTE — only acceptEdits and plan are allowed`,
         { level: 'warn' },
       );
       logEvent('tengu_ccr_unsupported_default_mode_ignored', {
@@ -846,8 +846,8 @@ export async function initializeToolPermissionContext({
   let overlyBroadBashPermissions: DangerousPermissionInfo[] = [];
   if (
     process.env.USER_TYPE === 'ant' &&
-    !isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) &&
-    process.env.CLAUDE_CODE_ENTRYPOINT !== 'local-agent'
+    !isEnvTruthy(process.env.CLEW_CODE_REMOTE) &&
+    process.env.CLEW_CODE_ENTRYPOINT !== 'local-agent'
   ) {
     overlyBroadBashPermissions = [
       ...findOverlyBroadBashPermissions(rulesFromDisk, parsedAllowedToolsCli),

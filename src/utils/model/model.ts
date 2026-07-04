@@ -32,7 +32,7 @@ export type ModelSetting = ModelName | ModelAlias | null;
  */
 export function getSmallFastModel(): ModelName {
   // Anthropic-specific env var
-  const envSmallModel = process.env.CLAUDE_CODE_SMALL_FAST_MODEL || process.env.ANTHROPIC_SMALL_FAST_MODEL;
+  const envSmallModel = process.env.CLEW_CODE_SMALL_FAST_MODEL || process.env.ANTHROPIC_SMALL_FAST_MODEL;
   if (envSmallModel) {
     return envSmallModel;
   }
@@ -90,7 +90,7 @@ export function getActiveProviderKeyStatus(): 'valid' | 'missing' | 'not-require
  * Priority order within this function:
  * 1. Model override during session (from /model command) - highest priority
  * 2. Model override at startup (from --model flag)
- * 3. CLAUDE_CODE_MODEL environment variable (provider-neutral)
+ * 3. CLEW_CODE_MODEL environment variable (provider-neutral)
  * 4. ANTHROPIC_MODEL environment variable (legacy, Anthropic-specific)
  * 5. Saved provider config (from /provider command)
  * 6. Settings (from user's saved settings)
@@ -104,9 +104,9 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
   } else {
     const settings = getSettings_DEPRECATED() || {};
 
-    // Check environment variables — CLAUDE_CODE_MODEL is provider-neutral
+    // Check environment variables — CLEW_CODE_MODEL is provider-neutral
     // and takes priority over the Anthropic-specific ANTHROPIC_MODEL
-    const envModel = process.env.CLAUDE_CODE_MODEL || process.env.ANTHROPIC_MODEL;
+    const envModel = process.env.CLEW_CODE_MODEL || process.env.ANTHROPIC_MODEL;
     if (envModel) {
       specifiedModel = envModel;
     } else {
@@ -139,7 +139,7 @@ export function getUnifiedModel(): ModelName {
   }
 
   // 2. Check for environment variable
-  const envModel = process.env.CLAUDE_CODE_MODEL || process.env.ANTHROPIC_MODEL;
+  const envModel = process.env.CLEW_CODE_MODEL || process.env.ANTHROPIC_MODEL;
   if (envModel) {
     return parseUserSpecifiedModel(envModel);
   }
@@ -192,7 +192,7 @@ export function getBestModel(): ModelName {
 
 // @[MODEL LAUNCH]: Update the default Opus model (3P providers may lag so keep defaults unchanged).
 export function getDefaultOpusModel(): ModelName {
-  const customOpusModel = process.env.CLAUDE_CODE_DEFAULT_OPUS_MODEL || process.env.ANTHROPIC_DEFAULT_OPUS_MODEL;
+  const customOpusModel = process.env.CLEW_CODE_DEFAULT_OPUS_MODEL || process.env.ANTHROPIC_DEFAULT_OPUS_MODEL;
   if (customOpusModel) {
     return customOpusModel;
   }
@@ -207,7 +207,7 @@ export function getDefaultOpusModel(): ModelName {
 
 // @[MODEL LAUNCH]: Update the default Sonnet model (3P providers may lag so keep defaults unchanged).
 export function getDefaultSonnetModel(): ModelName {
-  const customSonnetModel = process.env.CLAUDE_CODE_DEFAULT_SONNET_MODEL || process.env.ANTHROPIC_DEFAULT_SONNET_MODEL;
+  const customSonnetModel = process.env.CLEW_CODE_DEFAULT_SONNET_MODEL || process.env.ANTHROPIC_DEFAULT_SONNET_MODEL;
   if (customSonnetModel) {
     return customSonnetModel;
   }
@@ -220,7 +220,7 @@ export function getDefaultSonnetModel(): ModelName {
 
 // @[MODEL LAUNCH]: Update the default Haiku model (3P providers may lag so keep defaults unchanged).
 export function getDefaultHaikuModel(): ModelName {
-  const customHaikuModel = process.env.CLAUDE_CODE_DEFAULT_HAIKU_MODEL || process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL;
+  const customHaikuModel = process.env.CLEW_CODE_DEFAULT_HAIKU_MODEL || process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL;
   if (customHaikuModel) {
     return customHaikuModel;
   }
@@ -386,8 +386,8 @@ export function getCanonicalName(fullModelName: ModelName): ModelShortName {
 // @[MODEL LAUNCH]: Update the default model description strings shown to users.
 export function getClaudeAiUserDefaultModelDescription(fastMode = false): string {
   // Check for env var overrides first
-  const customOpusModel = process.env.CLAUDE_CODE_DEFAULT_OPUS_MODEL || process.env.ANTHROPIC_DEFAULT_OPUS_MODEL;
-  const customSonnetModel = process.env.CLAUDE_CODE_DEFAULT_SONNET_MODEL || process.env.ANTHROPIC_DEFAULT_SONNET_MODEL;
+  const customOpusModel = process.env.CLEW_CODE_DEFAULT_OPUS_MODEL || process.env.ANTHROPIC_DEFAULT_OPUS_MODEL;
+  const customSonnetModel = process.env.CLEW_CODE_DEFAULT_SONNET_MODEL || process.env.ANTHROPIC_DEFAULT_SONNET_MODEL;
 
   if (isMaxSubscriber() || isTeamPremiumSubscriber()) {
     if (customOpusModel) {
@@ -681,7 +681,7 @@ function isLegacyOpusFirstParty(model: string): boolean {
  * Opt-out for the legacy Opus 4.0/4.1 → current Opus remap.
  */
 export function isLegacyModelRemapEnabled(): boolean {
-  return !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_LEGACY_MODEL_REMAP);
+  return !isEnvTruthy(process.env.CLEW_CODE_DISABLE_LEGACY_MODEL_REMAP);
 }
 
 /**

@@ -63,7 +63,7 @@ export function ClaudeInChromeOnboarding({ onDone }: Props): React.ReactNode {
           <Text bold color="chromeYellow">
             /chrome
           </Text>{' '}
-          or visit <Link url="https://code.claude.com/docs/en/chrome" />
+           or visit <Link url="https://clew-code.org/docs/chrome" />
         </Text>
       </Box>
     </Dialog>

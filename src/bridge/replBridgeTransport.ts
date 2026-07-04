@@ -146,7 +146,7 @@ export async function createV2ReplTransport(opts: {
   /**
    * Per-instance auth header source. When provided, CCRClient + SSETransport
    * read auth from this closure instead of the process-wide
-   * CLAUDE_CODE_SESSION_ACCESS_TOKEN env var. Required for callers managing
+   * CLEW_CODE_SESSION_ACCESS_TOKEN env var. Required for callers managing
    * multiple concurrent sessions — the env-var path stomps across sessions.
    * When omitted, falls back to the env var (single-session callers).
    */

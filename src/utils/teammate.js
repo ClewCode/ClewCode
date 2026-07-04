@@ -120,7 +120,7 @@ export function isPlanModeRequired() {
   if (dynamicTeamContext !== null) {
     return dynamicTeamContext.planModeRequired;
   }
-  return isEnvTruthy(process.env.CLAUDE_CODE_PLAN_MODE_REQUIRED);
+  return isEnvTruthy(process.env.CLEW_CODE_PLAN_MODE_REQUIRED);
 }
 /**
  * Check if this session is a team lead.
@@ -128,8 +128,8 @@ export function isPlanModeRequired() {
  * A session is considered a team lead if:
  * 1. A team context exists with a leadAgentId, AND
  * 2. Either:
- *    - Our CLAUDE_CODE_AGENT_ID matches the leadAgentId, OR
- *    - We have no CLAUDE_CODE_AGENT_ID set (backwards compat: the original
+ *    - Our CLEW_CODE_AGENT_ID matches the leadAgentId, OR
+ *    - We have no CLEW_CODE_AGENT_ID set (backwards compat: the original
  *      session that created the team before agent IDs were standardized)
  *
  * @param teamContext - The team context from AppState, if any

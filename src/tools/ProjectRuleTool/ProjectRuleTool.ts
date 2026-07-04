@@ -2,7 +2,7 @@ import { z } from 'zod/v4';
 import type { Tool } from '../../Tool.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { loadProjectRules, saveProjectRule, removeProjectRule, formatRulesNotification } from '../../utils/projectRules.js';
+import { loadProjectRules, saveProjectRule, removeProjectRule, formatRulesNotification, isProjectRulesDisabled } from '../../utils/projectRules.js';
 import { getDescription, getPrompt } from './prompt.js';
 import { renderToolResultMessage, renderToolUseMessage } from './UI.js';
 
@@ -79,18 +79,21 @@ export const ProjectRuleTool: Tool<InputSchema, Output> = buildTool({
         };
       }
       case 'list': {
-        const rules = await loadProjectRules();
+        const [rules, disabled] = await Promise.all([loadProjectRules(), isProjectRulesDisabled()]);
         if (rules.length === 0) {
           return {
             data: {
-              message: 'No project rules saved yet. Use "save" to add rules based on observed user behavior.',
+              message: disabled
+                ? 'Project rules are currently disabled. Use /rule on to re-enable.'
+                : 'No project rules saved yet. Use "save" to add rules based on observed user behavior.',
               rules: [],
             },
           };
         }
+        const prefix = disabled ? '(disabled) ' : '';
         return {
           data: {
-            message: formatRulesNotification(rules),
+            message: prefix + formatRulesNotification(rules),
             rules,
           },
         };

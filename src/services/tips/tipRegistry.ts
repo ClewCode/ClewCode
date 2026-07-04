@@ -210,9 +210,9 @@ const externalTips: Tip[] = [
   },
   {
     id: 'powershell-tool-env',
-    content: async () => 'Set CLAUDE_CODE_USE_POWERSHELL_TOOL=1 to enable the PowerShell tool (preview)',
+    content: async () => 'Set CLEW_CODE_USE_POWERSHELL_TOOL=1 to enable the PowerShell tool (preview)',
     cooldownSessions: 10,
-    isRelevant: async () => getPlatform() === 'windows' && process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL === undefined,
+    isRelevant: async () => getPlatform() === 'windows' && process.env.CLEW_CODE_USE_POWERSHELL_TOOL === undefined,
   },
   {
     id: 'status-line',
@@ -348,7 +348,7 @@ const externalTips: Tip[] = [
   {
     id: 'custom-commands',
     content: async () =>
-      'Create skills by adding .md files to .claude/skills/ in your project or ~/.claude/skills/ for skills that work in any project',
+      'Create skills by adding .md files to .claude/skills/ in your project or ~/.clew/skills/ for skills that work in any project',
     cooldownSessions: 15,
     async isRelevant() {
       const config = getGlobalConfig();

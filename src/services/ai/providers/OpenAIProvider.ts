@@ -32,19 +32,6 @@ export class OpenAIProvider implements ProviderInterface {
 
     const { default: OpenAI } = await import('openai');
 
-    // Subscriber mode (ChatGPT Plus via OAuth or subscription key).
-    // The API key is resolved by ProviderManager.getApiKeyForProvider() which
-    // checks CHATGPT_SUBSCRIPTION_KEY, CHATGPT_SESSION_TOKEN, or stored OAuth tokens.
-    if (openaiType === 'subscriber') {
-      // For subscriber mode, we default to opencode.ai proxy if no baseURL is provided,
-      // as standard api.openai.com does not accept session tokens.
-      const baseUrl = options.baseUrl ?? process.env.OPENAI_BASE_URL ?? 'https://opencode.ai/zen/v1';
-      return new OpenAI({
-        apiKey: options.apiKey,
-        baseURL: baseUrl,
-      });
-    }
-
     const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY;
     const baseUrl = options.baseUrl ?? process.env.OPENAI_BASE_URL;
     return new OpenAI({
@@ -60,10 +47,7 @@ export class OpenAIProvider implements ProviderInterface {
     }
 
     const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY;
-    const baseUrl =
-      options.baseUrl ??
-      process.env.OPENAI_BASE_URL ??
-      (openaiType === 'subscriber' ? 'https://opencode.ai/zen/v1' : 'https://api.openai.com/v1');
+    const baseUrl = options.baseUrl ?? process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1';
 
     if (!apiKey) return [];
 

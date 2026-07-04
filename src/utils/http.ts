@@ -26,13 +26,13 @@ export function getUserAgent(): string {
   // so the read picks up the same setWorkload() value as getAttributionHeader.
   const workload = getWorkload();
   const workloadSuffix = workload ? `, workload/${workload}` : '';
-  return `claude-cli/${MACRO.VERSION} (${process.env.USER_TYPE}, ${process.env.CLAUDE_CODE_ENTRYPOINT ?? 'cli'}${agentSdkVersion}${clientApp}${workloadSuffix})`;
+  return `claude-cli/${MACRO.VERSION} (${process.env.USER_TYPE}, ${process.env.CLEW_CODE_ENTRYPOINT ?? 'cli'}${agentSdkVersion}${clientApp}${workloadSuffix})`;
 }
 
 export function getMCPUserAgent(): string {
   const parts: string[] = [];
-  if (process.env.CLAUDE_CODE_ENTRYPOINT) {
-    parts.push(process.env.CLAUDE_CODE_ENTRYPOINT);
+  if (process.env.CLEW_CODE_ENTRYPOINT) {
+    parts.push(process.env.CLEW_CODE_ENTRYPOINT);
   }
   if (process.env.CLAUDE_AGENT_SDK_VERSION) {
     parts.push(`agent-sdk/${process.env.CLAUDE_AGENT_SDK_VERSION}`);

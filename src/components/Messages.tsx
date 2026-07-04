@@ -508,7 +508,7 @@ const MessagesImpl = ({
 
   const isTranscriptMode = screen === 'transcript';
   // Hoisted to mount-time — this component re-renders on every scroll.
-  const disableVirtualScroll = useMemo(() => isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_VIRTUAL_SCROLL), []);
+  const disableVirtualScroll = useMemo(() => isEnvTruthy(process.env.CLEW_CODE_DISABLE_VIRTUAL_SCROLL), []);
   // Virtual scroll replaces the transcript cap: everything is scrollable and
   // memory is bounded by the mounted-item count, not the total. scrollRef is
   // only passed when isFullscreenEnvEnabled() is true (REPL.tsx gates it),

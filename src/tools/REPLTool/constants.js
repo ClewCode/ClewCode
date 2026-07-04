@@ -10,7 +10,7 @@ import { NOTEBOOK_EDIT_TOOL_NAME } from '../NotebookEditTool/constants.js';
 export const REPL_TOOL_NAME = 'REPL';
 /**
  * REPL mode is default-on for ants in the interactive CLI (opt out with
- * CLAUDE_CODE_REPL=0). The legacy CLAUDE_REPL_MODE=1 also forces it on.
+ * CLEW_CODE_REPL=0). The legacy CLAUDE_REPL_MODE=1 also forces it on.
  *
  * SDK entrypoints (sdk-ts, sdk-py, sdk-cli) are NOT defaulted on — SDK
  * consumers script direct tool calls (Bash, Read, etc.) and REPL mode
@@ -19,9 +19,9 @@ export const REPL_TOOL_NAME = 'REPL';
  * of the env the caller passes.
  */
 export function isReplModeEnabled() {
-  if (isEnvDefinedFalsy(process.env.CLAUDE_CODE_REPL)) return false;
+  if (isEnvDefinedFalsy(process.env.CLEW_CODE_REPL)) return false;
   if (isEnvTruthy(process.env.CLAUDE_REPL_MODE)) return true;
-  return process.env.USER_TYPE === 'ant' && process.env.CLAUDE_CODE_ENTRYPOINT === 'cli';
+  return process.env.USER_TYPE === 'ant' && process.env.CLEW_CODE_ENTRYPOINT === 'cli';
 }
 /**
  * Tools that are only accessible via REPL when REPL mode is enabled.

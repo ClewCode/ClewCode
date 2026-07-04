@@ -2,7 +2,7 @@
  * Files are loaded in the following order:
  *
  * 1. Managed memory (eg. /etc/claude-code/CLAUDE.md) - Global instructions for all users
- * 2. User memory (~/.claude/CLAUDE.md, ~/.clew/CLAUDE.md) - Private global instructions for all projects
+ * 2. User memory (~/.clew/CLAUDE.md, ~/.clew/CLAUDE.md) - Private global instructions for all projects
  * 3. Project memory (CLAUDE.md, AGENTS.md, .claude/*, .clew/*, and rules/*.md in project roots) - Instructions checked into the codebase
  * 4. Local memory (CLAUDE.local.md in project roots) - Private project-specific instructions
  *
@@ -10,7 +10,7 @@
  * with the model paying more attention to them.
  *
  * File discovery:
- * - User memory is loaded from ~/.clew/ first (primary), then ~/.claude/ (legacy fallback)
+ * - User memory is loaded from ~/.clew/ first (primary), then ~/.clew/ (legacy fallback)
  * - Project and Local files are discovered by traversing from the current directory up to root
  * - Files closer to the current directory have higher priority (loaded later)
  * - For each directory: AGENTS.md → CLAUDE.md → .clew/AGENTS.md → .clew/CLAUDE.md →
@@ -909,10 +909,10 @@ export const getMemoryFiles = memoize(async (forceIncludeExternal: boolean = fal
   }
 
   // Process CLAUDE.md from additional directories (--add-dir) if env var is enabled
-  // This is controlled by CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD and defaults to off
+  // This is controlled by CLEW_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD and defaults to off
   // Note: we don't check isSettingSourceEnabled('projectSettings') here because --add-dir
   // is an explicit user action and the SDK defaults settingSources to [] when not specified
-  if (isEnvTruthy(process.env.CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD)) {
     const additionalDirs = getAdditionalDirectoriesForClaudeMd();
     for (const dir of additionalDirs) {
       // Try reading AGENTS.md from the additional directory — primary

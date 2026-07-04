@@ -254,7 +254,7 @@ Hooks can return JSON to control behavior:
       "matcher": "Bash",
       "hooks": [{
         "type": "command",
-        "command": "jq -r '.tool_input.command' >> ~/.claude/bash-log.txt"
+        "command": "jq -r '.tool_input.command' >> ~/.clew/bash-log.txt"
       }]
     }]
   }

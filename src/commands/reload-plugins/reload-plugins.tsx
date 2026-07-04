@@ -34,7 +34,7 @@ function ReloadDashboard({ onDone, context }: Props): React.ReactNode {
 
     async function performReload() {
       try {
-        if (feature('DOWNLOAD_USER_SETTINGS') && (isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) || getIsRemoteMode())) {
+        if (feature('DOWNLOAD_USER_SETTINGS') && (isEnvTruthy(process.env.CLEW_CODE_REMOTE) || getIsRemoteMode())) {
           const applied = await redownloadUserSettings();
           if (applied && !isCancelled) {
             settingsChangeDetector.notifyChange('userSettings');

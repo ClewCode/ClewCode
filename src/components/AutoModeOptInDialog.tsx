@@ -7,7 +7,7 @@ import { Dialog } from './design-system/Dialog.js';
 
 // NOTE: This copy is legally reviewed — do not modify without Legal team approval.
 export const AUTO_MODE_DESCRIPTION =
-  "Auto mode lets Claude handle permission prompts automatically — Claude checks each tool call for risky actions and prompt injection before executing. Actions Claude identifies as safe are executed, while actions Claude identifies as risky are blocked and Claude may try a different approach. Ideal for long-running tasks. Sessions are slightly more expensive. Claude can make mistakes that allow harmful commands to run, it's recommended to only use in isolated environments. Shift+Tab to change mode.";
+  "Auto mode lets Clew Code handle permission prompts automatically — Clew Code checks each tool call for risky actions and prompt injection before executing. Actions Clew Code identifies as safe are executed, while actions Clew Code identifies as risky are blocked and Clew Code may try a different approach. Ideal for long-running tasks. Sessions are slightly more expensive. Clew Code can make mistakes that allow harmful commands to run, it's recommended to only use in isolated environments. Shift+Tab to change mode.";
 
 type Props = {
   onAccept(): void;

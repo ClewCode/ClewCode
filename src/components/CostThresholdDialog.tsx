@@ -12,7 +12,7 @@ export function CostThresholdDialog({ onDone }: Props): React.ReactNode {
     <Dialog title="You've spent $5 on the Anthropic API this session." onCancel={onDone}>
       <Box flexDirection="column">
         <Text>Learn more about how to monitor your spending:</Text>
-        <Link url="https://code.claude.com/docs/en/costs" />
+        <Link url="https://clew-code.org/docs/costs" />
       </Box>
       <Select
         options={[

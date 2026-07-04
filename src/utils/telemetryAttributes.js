@@ -41,7 +41,7 @@ export function getTelemetryAttributes() {
     if (email) attributes['user.email'] = email;
     if (accountUuid && shouldIncludeAttribute('OTEL_METRICS_INCLUDE_ACCOUNT_UUID')) {
       attributes['user.account_uuid'] = accountUuid;
-      attributes['user.account_id'] = process.env.CLAUDE_CODE_ACCOUNT_TAGGED_ID || toTaggedId('user', accountUuid);
+      attributes['user.account_id'] = process.env.CLEW_CODE_ACCOUNT_TAGGED_ID || toTaggedId('user', accountUuid);
     }
   }
   // Add terminal type if available

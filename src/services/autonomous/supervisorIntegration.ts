@@ -106,8 +106,8 @@ export async function startAutonomousAgent(): Promise<boolean> {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        CLAUDE_CODE_AUTONOMOUS_MODE: '1',
-        CLAUDE_CODE_DAEMON_MODE: '1',
+        CLEW_CODE_AUTONOMOUS_MODE: '1',
+        CLEW_CODE_DAEMON_MODE: '1',
       },
     });
 

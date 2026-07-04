@@ -31,7 +31,7 @@ function normalizeUrl(url: string): string | undefined {
  * Populates officialUrls for isOfficialMcpUrl lookups.
  */
 export async function prefetchOfficialMcpUrls(): Promise<void> {
-  if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
+  if (process.env.CLEW_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
     return;
   }
 
@@ -42,7 +42,7 @@ export async function prefetchOfficialMcpUrls(): Promise<void> {
     );
 
     const urls = new Set<string>();
-    for (const entry of response.data.servers) {
+    for (const entry of response.servers) {
       for (const remote of entry.server.remotes ?? []) {
         const normalized = normalizeUrl(remote.url);
         if (normalized) {

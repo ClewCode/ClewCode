@@ -25,7 +25,7 @@ import { getFsImplementation } from './fsOperations.js';
  * so `proxy.ts`/`mtls.ts` don't transitively pull in the command registry.
  */
 export const getCACertificates = memoize(() => {
-  const certStore = process.env.CLAUDE_CODE_CERT_STORE;
+  const certStore = process.env.CLEW_CODE_CERT_STORE;
   // Default to system CA trust if certStore is not 'bundled'.
   // Explicit 'system' or presence of --use-system-ca / --use-openssl-ca also enables it.
   const useSystemCA =

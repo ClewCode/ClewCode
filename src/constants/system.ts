@@ -8,10 +8,10 @@ import { getAPIProvider } from '../utils/model/providers.js';
 import { getWorkload } from '../utils/workloadContext.js';
 
 const DEFAULT_PREFIX = `You are Clew Code, a CLI coding agent.`;
-const AGENT_SDK_CLAUDE_CODE_PRESET_PREFIX = `You are Clew Code, a CLI coding agent, running within the Claude Agent SDK.`;
+const AGENT_SDK_CLEW_CODE_PRESET_PREFIX = `You are Clew Code, a CLI coding agent, running within the Claude Agent SDK.`;
 const AGENT_SDK_PREFIX = `You are a Claude agent, built on Anthropic's Claude Agent SDK.`;
 
-const CLI_SYSPROMPT_PREFIX_VALUES = [DEFAULT_PREFIX, AGENT_SDK_CLAUDE_CODE_PRESET_PREFIX, AGENT_SDK_PREFIX] as const;
+const CLI_SYSPROMPT_PREFIX_VALUES = [DEFAULT_PREFIX, AGENT_SDK_CLEW_CODE_PRESET_PREFIX, AGENT_SDK_PREFIX] as const;
 
 export type CLISyspromptPrefix = (typeof CLI_SYSPROMPT_PREFIX_VALUES)[number];
 
@@ -32,7 +32,7 @@ export function getCLISyspromptPrefix(options?: {
 
   if (options?.isNonInteractive) {
     if (options.hasAppendSystemPrompt) {
-      return AGENT_SDK_CLAUDE_CODE_PRESET_PREFIX;
+      return AGENT_SDK_CLEW_CODE_PRESET_PREFIX;
     }
     return AGENT_SDK_PREFIX;
   }
@@ -44,7 +44,7 @@ export function getCLISyspromptPrefix(options?: {
  * Enabled by default, can be disabled via env var or GrowthBook killswitch.
  */
 function isAttributionHeaderEnabled(): boolean {
-  if (isEnvDefinedFalsy(process.env.CLAUDE_CODE_ATTRIBUTION_HEADER)) {
+  if (isEnvDefinedFalsy(process.env.CLEW_CODE_ATTRIBUTION_HEADER)) {
     return false;
   }
   return getFeatureValue_CACHED_MAY_BE_STALE('tengu_attribution_header', true);
@@ -70,7 +70,7 @@ export function getAttributionHeader(fingerprint: string): string {
   }
 
   const version = `${MACRO.VERSION}.${fingerprint}`;
-  const entrypoint = process.env.CLAUDE_CODE_ENTRYPOINT ?? 'unknown';
+  const entrypoint = process.env.CLEW_CODE_ENTRYPOINT ?? 'unknown';
 
   // cch=00000 placeholder is overwritten by Bun's HTTP stack with attestation token
   const cch = feature('NATIVE_CLIENT_ATTESTATION') ? ' cch=00000;' : '';

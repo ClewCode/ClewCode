@@ -455,12 +455,12 @@ function parseRawDiffToToolUseDiff(
 /**
  * Determine the best ref to diff against for a PR-like diff.
  * Priority:
- * 1. CLAUDE_CODE_BASE_REF env var (set externally, e.g. by CCR managed containers)
+ * 1. CLEW_CODE_BASE_REF env var (set externally, e.g. by CCR managed containers)
  * 2. Merge base with the default branch (best guess)
  * 3. HEAD (fallback if merge-base fails)
  */
 async function getDiffRef(gitRoot: string): Promise<string> {
-  const baseBranch = process.env.CLAUDE_CODE_BASE_REF || (await getDefaultBranch());
+  const baseBranch = process.env.CLEW_CODE_BASE_REF || (await getDefaultBranch());
   const { stdout, code } = await execFileNoThrowWithCwd(
     gitExe(),
     ['--no-optional-locks', 'merge-base', 'HEAD', baseBranch],

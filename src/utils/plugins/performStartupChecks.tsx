@@ -33,7 +33,7 @@ export async function performStartupChecks(setAppState: SetAppState): Promise<vo
   try {
     logForDebugging('Starting background plugin installations');
 
-    // Register seed marketplaces (CLAUDE_CODE_PLUGIN_SEED_DIR) before diffing.
+    // Register seed marketplaces (CLEW_CODE_PLUGIN_SEED_DIR) before diffing.
     // Idempotent; no-op if seed not configured. Without this, background install
     // would see seed marketplaces as missing → clone → defeats seed's purpose.
     //

@@ -9,8 +9,8 @@ import { WebSocketTransport } from './WebSocketTransport.js';
  * Helper function to get the appropriate transport for a URL.
  *
  * Transport selection priority:
- * 1. SSETransport (SSE reads + POST writes) when CLAUDE_CODE_USE_CCR_V2 is set
- * 2. HybridTransport (WS reads + POST writes) when CLAUDE_CODE_POST_FOR_SESSION_INGRESS_V2 is set
+ * 1. SSETransport (SSE reads + POST writes) when CLEW_CODE_USE_CCR_V2 is set
+ * 2. HybridTransport (WS reads + POST writes) when CLEW_CODE_POST_FOR_SESSION_INGRESS_V2 is set
  * 3. WebSocketTransport (WS reads + WS writes) — default
  */
 export function getTransportForUrl(
@@ -19,7 +19,7 @@ export function getTransportForUrl(
   sessionId?: string,
   refreshHeaders?: () => Record<string, string>,
 ): Transport {
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_CCR_V2)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_USE_CCR_V2)) {
     // v2: SSE for reads, HTTP POST for writes
     // --sdk-url is the session URL (.../sessions/{id});
     // derive the SSE stream URL by appending /worker/events/stream
@@ -34,7 +34,7 @@ export function getTransportForUrl(
   }
 
   if (url.protocol === 'ws:' || url.protocol === 'wss:') {
-    if (isEnvTruthy(process.env.CLAUDE_CODE_POST_FOR_SESSION_INGRESS_V2)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_POST_FOR_SESSION_INGRESS_V2)) {
       return new HybridTransport(url, headers, sessionId, refreshHeaders);
     }
     return new WebSocketTransport(url, headers, sessionId, refreshHeaders);

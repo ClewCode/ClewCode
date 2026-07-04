@@ -117,7 +117,7 @@ function createHttpsProxyAgent(proxyUrl, extra = {}) {
     }),
     ...(caCerts && { ca: caCerts }),
   };
-  if (isEnvTruthy(process.env.CLAUDE_CODE_PROXY_RESOLVES_HOSTS)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_PROXY_RESOLVES_HOSTS)) {
     // Skip local DNS resolution - let the proxy resolve hostnames
     // This is needed for environments where DNS is not configured locally
     // and instead handled by the proxy (as in sandboxes)

@@ -222,7 +222,7 @@ function isSessionMemoryPath(absolutePath) {
 }
 /**
  * Check if file is within the current project's directory.
- * Path format: ~/.claude/projects/{sanitized-cwd}/...
+ * Path format: ~/.clew/projects/{sanitized-cwd}/...
  */
 function isProjectDirPath(absolutePath) {
   const projectDir = getProjectDir(getCwd());
@@ -264,10 +264,10 @@ export function getClaudeTempDirName() {
  * resolution, paths like /tmp/claude-{uid}/... wouldn't match /private/tmp/claude-{uid}/...
  */
 // Memoized: called per-tool from permission checks (yoloClassifier, sandbox-adapter)
-// and per-turn from BashTool prompt. Inputs (CLAUDE_CODE_TMPDIR env + platform) are
+// and per-turn from BashTool prompt. Inputs (CLEW_CODE_TMPDIR env + platform) are
 // fixed at startup, and the realpath of the system tmp dir does not change mid-session.
 export const getClaudeTempDir = memoize(function getClaudeTempDir() {
-  const baseTmpDir = process.env.CLAUDE_CODE_TMPDIR || (getPlatform() === 'windows' ? tmpdir() : '/tmp');
+  const baseTmpDir = process.env.CLEW_CODE_TMPDIR || (getPlatform() === 'windows' ? tmpdir() : '/tmp');
   // Resolve symlinks in the base temp directory (e.g., /tmp -> /private/tmp on macOS)
   // This ensures the path matches resolved paths in permission checks
   const fs = getFsImplementation();
@@ -1162,7 +1162,7 @@ export function checkEditableInternalPath(absolutePath, input) {
   // Template job's own directory. Env key hardcoded (vs importing JOB_ENV_KEY
   // from jobs/state) so tree-shaking eliminates the string from external
   // builds — spawn.test.ts asserts the string matches. Hijack guard: the env
-  // var value must itself resolve under ~/.claude/jobs/. Symlink guard: every
+  // var value must itself resolve under ~/.clew/jobs/. Symlink guard: every
   // resolved form of the target (lexical + symlink chain) must fall under some
   // resolved form of the job dir, so a symlink inside the job dir pointing at
   // e.g. ~/.ssh/authorized_keys does not get a free write. Resolving both
@@ -1210,7 +1210,7 @@ export function checkEditableInternalPath(absolutePath, input) {
   }
   // Memdir directory (persistent memory for cross-session learning)
   // This pre-safety-check carve-out exists because the default path is under
-  // ~/.claude/, which is in DANGEROUS_DIRECTORIES. The CLAUDE_COWORK_MEMORY_PATH_OVERRIDE
+  // ~/.clew/, which is in DANGEROUS_DIRECTORIES. The CLAUDE_COWORK_MEMORY_PATH_OVERRIDE
   // override is an arbitrary caller-designated directory with no such conflict,
   // so it gets NO special permission treatment here — writes go through normal
   // permission flow (step 5 → ask). SDK callers who want silent memory should
@@ -1231,7 +1231,7 @@ export function checkEditableInternalPath(absolutePath, input) {
   // .claude/ DANGEROUS_DIRECTORIES check prompts for it, which in SDK mode
   // cascades: user clicks "Always allow" → setMode:acceptEdits suggestion
   // applied → silent downgrade from auto mode. Matches the project-level
-  // .claude/ only (not ~/.claude/) since launch.json is per-project.
+  // .claude/ only (not ~/.clew/) since launch.json is per-project.
   if (
     normalizeCaseForComparison(normalizedPath) ===
     normalizeCaseForComparison(join(getOriginalCwd(), DOT_CLEW, 'launch.json'))
@@ -1267,7 +1267,7 @@ export function checkReadableInternalPath(absolutePath, input) {
     };
   }
   // Project directory (for reading past session memories)
-  // Path format: ~/.claude/projects/{sanitized-cwd}/...
+  // Path format: ~/.clew/projects/{sanitized-cwd}/...
   if (isProjectDirPath(normalizedPath)) {
     return {
       behavior: 'allow',
@@ -1350,7 +1350,7 @@ export function checkReadableInternalPath(absolutePath, input) {
       },
     };
   }
-  // Tasks directory (~/.claude/tasks/) for swarm task coordination
+  // Tasks directory (~/.clew/tasks/) for swarm task coordination
   const tasksDir = join(getClewConfigHomeDir(), 'tasks') + sep;
   if (normalizedPath === tasksDir.slice(0, -1) || normalizedPath.startsWith(tasksDir)) {
     return {
@@ -1362,7 +1362,7 @@ export function checkReadableInternalPath(absolutePath, input) {
       },
     };
   }
-  // Teams directory (~/.claude/teams/) for swarm coordination
+  // Teams directory (~/.clew/teams/) for swarm coordination
   const teamsReadDir = join(getClewConfigHomeDir(), 'teams') + sep;
   if (normalizedPath === teamsReadDir.slice(0, -1) || normalizedPath.startsWith(teamsReadDir)) {
     return {

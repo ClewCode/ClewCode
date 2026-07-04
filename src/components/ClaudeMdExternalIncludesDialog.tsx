@@ -77,7 +77,7 @@ export function ClaudeMdExternalIncludesDialog({
 
       <Text dimColor>
         Important: Only use Clew Code with files you trust. Accessing untrusted files may pose security risks{' '}
-        <Link url="https://code.claude.com/docs/en/security" />{' '}
+        <Link url="https://clew-code.org/docs/security" />{' '}
       </Text>
 
       <Select

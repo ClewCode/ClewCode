@@ -75,7 +75,7 @@ async function resolveOne(att: InboundAttachment): Promise<string | undefined> {
   let data: Buffer;
   try {
     // getOauthConfig() (via getBridgeBaseUrl) throws on a non-allowlisted
-    // CLAUDE_CODE_CUSTOM_OAUTH_URL — keep it inside the try so a bad
+    // CLEW_CODE_CUSTOM_OAUTH_URL — keep it inside the try so a bad
     // FedStart URL degrades to "no @path" instead of crashing print.ts's
     // reader loop (which has no catch around the await).
     const url = `${getBridgeBaseUrl()}/api/oauth/files/${encodeURIComponent(att.file_uuid)}/content`;

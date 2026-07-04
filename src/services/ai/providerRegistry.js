@@ -42,7 +42,9 @@ function createProvider(key, entry) {
 export const PROVIDER_REGISTRY = Object.fromEntries(
   Object.entries(providersConfig).map(([key, config]) => [key, { ...config, provider: createProvider(key, config) }]),
 );
-export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY).filter(id => id !== 'clew-gateway');
+export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY).filter(
+  id => id !== 'clew-gateway' && id !== 'google-assist',
+);
 export const DEFAULT_PROVIDER = 'openai';
 /**
  * Legacy provider IDs that older configs/CLIs wrote to provider.json but that

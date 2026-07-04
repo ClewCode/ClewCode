@@ -48,7 +48,7 @@ function isModelCapabilitiesEligible() {
 function sortForMatching(models) {
   return [...models].sort((a, b) => b.id.length - a.id.length || a.id.localeCompare(b.id));
 }
-// Keyed on cache path so tests that set CLAUDE_CONFIG_DIR get a fresh read
+// Keyed on cache path so tests that set CLEW_CONFIG_DIR get a fresh read
 const loadCache = memoize(
   path => {
     try {

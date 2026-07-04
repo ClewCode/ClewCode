@@ -42,7 +42,7 @@ async function createBedrockClient() {
   // - Falls back to 'us-east-1' if neither is set
   // This ensures we query profiles from the same region the client will use
   const region = getAWSRegion();
-  const skipAuth = isEnvTruthy(process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH);
+  const skipAuth = isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH);
   const clientConfig = {
     region,
     ...(process.env.ANTHROPIC_BEDROCK_BASE_URL && {
@@ -77,7 +77,7 @@ async function createBedrockClient() {
 export async function createBedrockRuntimeClient() {
   const { BedrockRuntimeClient } = await import('@aws-sdk/client-bedrock-runtime');
   const region = getAWSRegion();
-  const skipAuth = isEnvTruthy(process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH);
+  const skipAuth = isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH);
   const clientConfig = {
     region,
     ...(process.env.ANTHROPIC_BEDROCK_BASE_URL && {

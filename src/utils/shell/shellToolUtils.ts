@@ -10,7 +10,7 @@ export const SHELL_TOOL_NAMES: string[] = [BASH_TOOL_NAME, POWERSHELL_TOOL_NAME]
 /**
  * Runtime gate for PowerShellTool. Windows-only (the permission engine uses
  * Win32-specific path normalizations). Ant defaults on (opt-out via env=0);
- * Bedrock/Vertex/Foundry defaults on (opt-out via CLAUDE_CODE_USE_POWERSHELL_TOOL=0);
+ * Bedrock/Vertex/Foundry defaults on (opt-out via CLEW_CODE_USE_POWERSHELL_TOOL=0);
  * external defaults off (opt-in via env=1).
  *
  * Used by tools.ts (tool-list visibility), processBashCommand (! routing),
@@ -24,20 +24,20 @@ export function isPowerShellToolEnabled(): boolean {
   // so force-enable it regardless of user type (unless explicitly opted out).
   // Pairs with BashTool.isEnabled() returning false in the same condition.
   if (!isGitBashAvailable()) {
-    return !isEnvDefinedFalsy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
+    return !isEnvDefinedFalsy(process.env.CLEW_CODE_USE_POWERSHELL_TOOL);
   }
 
   // Ant internal: default on, opt out with env=0
   if (process.env.USER_TYPE === 'ant') {
-    return !isEnvDefinedFalsy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
+    return !isEnvDefinedFalsy(process.env.CLEW_CODE_USE_POWERSHELL_TOOL);
   }
 
-  // Bedrock/Vertex/Foundry: default on, opt out with CLAUDE_CODE_USE_POWERSHELL_TOOL=0
+  // Bedrock/Vertex/Foundry: default on, opt out with CLEW_CODE_USE_POWERSHELL_TOOL=0
   const provider = getAPIProvider();
   if (provider === 'bedrock' || provider === 'vertex' || provider === 'foundry') {
-    return !isEnvDefinedFalsy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
+    return !isEnvDefinedFalsy(process.env.CLEW_CODE_USE_POWERSHELL_TOOL);
   }
 
   // External: opt-in with env=1
-  return isEnvTruthy(process.env.CLAUDE_CODE_USE_POWERSHELL_TOOL);
+  return isEnvTruthy(process.env.CLEW_CODE_USE_POWERSHELL_TOOL);
 }

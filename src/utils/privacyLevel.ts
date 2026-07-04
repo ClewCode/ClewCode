@@ -11,14 +11,14 @@
  *                       (telemetry + auto-updates, grove, release notes, model capabilities, etc.).
  *
  * The resolved level is the most restrictive signal from:
- *   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC  →  essential-traffic
+ *   CLEW_CODE_DISABLE_NONESSENTIAL_TRAFFIC  →  essential-traffic
  *   DISABLE_TELEMETRY                         →  no-telemetry
  */
 
 type PrivacyLevel = 'default' | 'no-telemetry' | 'essential-traffic';
 
 export function getPrivacyLevel(): PrivacyLevel {
-  if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
+  if (process.env.CLEW_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
     return 'essential-traffic';
   }
   if (process.env.DISABLE_TELEMETRY) {
@@ -29,7 +29,7 @@ export function getPrivacyLevel(): PrivacyLevel {
 
 /**
  * True when all nonessential network traffic should be suppressed.
- * Equivalent to the old `process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` check.
+ * Equivalent to the old `process.env.CLEW_CODE_DISABLE_NONESSENTIAL_TRAFFIC` check.
  */
 export function isEssentialTrafficOnly(): boolean {
   return getPrivacyLevel() === 'essential-traffic';
@@ -48,8 +48,8 @@ export function isTelemetryDisabled(): boolean {
  * or null if unrestricted. Used for user-facing "unset X to re-enable" messages.
  */
 export function getEssentialTrafficOnlyReason(): string | null {
-  if (process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
-    return 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC';
+  if (process.env.CLEW_CODE_DISABLE_NONESSENTIAL_TRAFFIC) {
+    return 'CLEW_CODE_DISABLE_NONESSENTIAL_TRAFFIC';
   }
   return null;
 }

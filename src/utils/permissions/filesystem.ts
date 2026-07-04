@@ -296,10 +296,10 @@ export function getClaudeTempDirName(): string {
  * resolution, paths like /tmp/claude-{uid}/... wouldn't match /private/tmp/claude-{uid}/...
  */
 // Memoized: called per-tool from permission checks (yoloClassifier, sandbox-adapter)
-// and per-turn from BashTool prompt. Inputs (CLAUDE_CODE_TMPDIR env + platform) are
+// and per-turn from BashTool prompt. Inputs (CLEW_CODE_TMPDIR env + platform) are
 // fixed at startup, and the realpath of the system tmp dir does not change mid-session.
 export const getClaudeTempDir = memoize(function getClaudeTempDir(): string {
-  const baseTmpDir = process.env.CLAUDE_CODE_TMPDIR || (getPlatform() === 'windows' ? tmpdir() : '/tmp');
+  const baseTmpDir = process.env.CLEW_CODE_TMPDIR || (getPlatform() === 'windows' ? tmpdir() : '/tmp');
 
   // Resolve symlinks in the base temp directory (e.g., /tmp -> /private/tmp on macOS)
   // This ensures the path matches resolved paths in permission checks
@@ -1353,7 +1353,7 @@ export function checkEditableInternalPath(absolutePath: string, input: { [key: s
   // Template job's own directory. Env key hardcoded (vs importing JOB_ENV_KEY
   // from jobs/state) so tree-shaking eliminates the string from external
   // builds — spawn.test.ts asserts the string matches. Hijack guard: the env
-  // var value must itself resolve under ~/.claude/jobs/. Symlink guard: every
+  // var value must itself resolve under ~/.clew/jobs/. Symlink guard: every
   // resolved form of the target (lexical + symlink chain) must fall under some
   // resolved form of the job dir, so a symlink inside the job dir pointing at
   // e.g. ~/.ssh/authorized_keys does not get a free write. Resolving both
@@ -1403,7 +1403,7 @@ export function checkEditableInternalPath(absolutePath: string, input: { [key: s
 
   // Memdir directory (persistent memory for cross-session learning)
   // This pre-safety-check carve-out exists because the default path is under
-  // ~/.claude/, which is in DANGEROUS_DIRECTORIES. The CLAUDE_COWORK_MEMORY_PATH_OVERRIDE
+  // ~/.clew/, which is in DANGEROUS_DIRECTORIES. The CLAUDE_COWORK_MEMORY_PATH_OVERRIDE
   // override is an arbitrary caller-designated directory with no such conflict,
   // so it gets NO special permission treatment here — writes go through normal
   // permission flow (step 5 → ask). SDK callers who want silent memory should

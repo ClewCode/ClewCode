@@ -314,8 +314,8 @@ export function computeUnseenDivider(
  * Outside fullscreen mode, renders content sequentially so the existing
  * main-screen scrollback rendering works unchanged.
  *
- * Fullscreen mode defaults on for ants (CLAUDE_CODE_NO_FLICKER=0 to opt out)
- * and off for external users (CLAUDE_CODE_NO_FLICKER=1 to opt in).
+ * Fullscreen mode defaults on for ants (CLEW_CODE_NO_FLICKER=0 to opt out)
+ * and off for external users (CLEW_CODE_NO_FLICKER=1 to opt in).
  * The <AlternateScreen> wrapper
  * (alt buffer + mouse tracking + height constraint) lives at REPL's root
  * so nothing can accidentally render outside it.
@@ -506,7 +506,7 @@ export function FullscreenLayout({
 }
 
 function isIdeShellEnabled(): boolean {
-  return isEnvTruthy(process.env.CLAUDE_CODE_IDE_UI);
+  return isEnvTruthy(process.env.CLEW_CODE_IDE_UI);
 }
 
 // ─── IDE Panel State ─────────────────────────────────────────────────────

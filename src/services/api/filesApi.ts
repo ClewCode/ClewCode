@@ -27,7 +27,7 @@ const ANTHROPIC_VERSION = '2023-06-01';
 // API base URL - uses ANTHROPIC_BASE_URL set by env-manager for the appropriate environment
 // Falls back to public API for standalone usage
 function getDefaultApiBaseUrl(): string {
-  return process.env.ANTHROPIC_BASE_URL || process.env.CLAUDE_CODE_API_BASE_URL || 'https://api.anthropic.com';
+  return process.env.ANTHROPIC_BASE_URL || process.env.CLEW_CODE_API_BASE_URL || 'https://api.anthropic.com';
 }
 
 function logDebugError(message: string): void {

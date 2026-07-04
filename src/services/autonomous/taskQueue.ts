@@ -1,5 +1,5 @@
 /**
- * Persistent Task Queue — file-backed queue stored at ~/.claude/daemon/tasks.json.
+ * Persistent Task Queue — file-backed queue stored at ~/.clew/daemon/tasks.json.
  *
  * Survives restarts, supports priorities, scheduling, dependencies, and tags.
  * Uses a JSON file for simplicity (no external dependencies).

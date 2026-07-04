@@ -402,7 +402,7 @@ async function addToPromptHistory(command: HistoryEntry | string): Promise<void>
 export function addToHistory(command: HistoryEntry | string): void {
   // Skip history when running in a tmux session spawned by Clew Code's Tungsten tool.
   // This prevents verification/test sessions from polluting the user's real command history.
-  if (isEnvTruthy(process.env.CLAUDE_CODE_SKIP_PROMPT_HISTORY)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_SKIP_PROMPT_HISTORY)) {
     return;
   }
 

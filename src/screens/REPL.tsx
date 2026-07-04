@@ -9,7 +9,7 @@ import {
   getTotalInputTokens,
 } from '../bootstrap/state.js';
 import { parseTokenBudget } from '../utils/tokenBudget.js';
-import { loadProjectRules, formatRulesNotification } from '../utils/projectRules.js';
+import { loadProjectRules, formatRulesNotification, isProjectRulesDisabled } from '../utils/projectRules.js';
 import { count } from '../utils/array.js';
 import { dirname, join, basename } from 'path';
 import { tmpdir } from 'os';
@@ -507,7 +507,7 @@ function TranscriptModeFooter({
    *  right-aligned count instead of scroll hints. */
   searchBadge?: { current: number; count: number };
   /** Hide the ctrl+e hint. The [ dump path shares this footer with
-   *  env-opted dump (CLAUDE_CODE_NO_FLICKER=0 / DISABLE_VIRTUAL_SCROLL=1),
+   *  env-opted dump (CLEW_CODE_NO_FLICKER=0 / DISABLE_VIRTUAL_SCROLL=1),
    *  but ctrl+e only works in the env case — useGlobalKeybindings.tsx
    *  gates on !virtualScrollActive which is env-derived, doesn't know
    *  [ happened. */
@@ -804,12 +804,12 @@ export function REPL({
 
   // Env-var gates hoisted to mount-time — isEnvTruthy does toLowerCase+trim+
   // includes, and these were on the render path (hot during PageUp spam).
-  const titleDisabled = useMemo(() => isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_TERMINAL_TITLE), []);
+  const titleDisabled = useMemo(() => isEnvTruthy(process.env.CLEW_CODE_DISABLE_TERMINAL_TITLE), []);
   const moreRightEnabled = useMemo(() => 'external' === 'ant' && isEnvTruthy(process.env.CLAUDE_MORERIGHT), []);
-  const disableVirtualScroll = useMemo(() => isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_VIRTUAL_SCROLL), []);
+  const disableVirtualScroll = useMemo(() => isEnvTruthy(process.env.CLEW_CODE_DISABLE_VIRTUAL_SCROLL), []);
   const disableMessageActions = feature('MESSAGE_ACTIONS')
     ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
-      useMemo(() => isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_MESSAGE_ACTIONS), [])
+      useMemo(() => isEnvTruthy(process.env.CLEW_CODE_DISABLE_MESSAGE_ACTIONS), [])
     : false;
 
   // Log REPL mount/unmount lifecycle
@@ -948,7 +948,7 @@ export function REPL({
 
   const [showAllInTranscript, setShowAllInTranscript] = useState(false);
   // [ forces the dump-to-scrollback path inside transcript mode. Separate
-  // from CLAUDE_CODE_NO_FLICKER=0 (which is process-lifetime) — this is
+  // from CLEW_CODE_NO_FLICKER=0 (which is process-lifetime) — this is
   // ephemeral, reset on transcript exit. Diagnostic escape hatch so
   // terminal/tmux native cmd-F can search the full flat render.
   const [dumpMode, setDumpMode] = useState(false);
@@ -981,20 +981,6 @@ export function REPL({
         setPeerFeedbackHandler(null);
       });
     };
-  }, [addNotification]);
-
-  // Check for project rules at startup and notify the user
-  useEffect(() => {
-    loadProjectRules().then(rules => {
-      if (rules.length > 0) {
-        addNotification({
-          key: 'project-rules',
-          text: `Project rules (${rules.length}): ${formatRulesNotification(rules)}`,
-          priority: 'medium',
-          timeoutMs: 10000,
-        });
-      }
-    });
   }, [addNotification]);
 
   // eslint-disable-next-line prefer-const
@@ -1275,12 +1261,12 @@ export function REPL({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addNotification]);
 
-  // Warning for deprecated CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE
+  // Warning for deprecated CLEW_CODE_OPUS_4_6_FAST_MODE_OVERRIDE
   useEffect(() => {
-    if (process.env.CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE) {
+    if (process.env.CLEW_CODE_OPUS_4_6_FAST_MODE_OVERRIDE) {
       addNotification({
         key: 'opus-4-6-override-deprecation',
-        text: 'Warning: CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE is deprecated and will be removed in a future release. Fast mode defaults to Opus 4.7/4.8.',
+        text: 'Warning: CLEW_CODE_OPUS_4_6_FAST_MODE_OVERRIDE is deprecated and will be removed in a future release. Fast mode defaults to Opus 4.7/4.8.',
         priority: 'medium',
         color: 'warning',
         timeoutMs: 0x7fffffff, // Persist indefinitely during the session
@@ -1527,6 +1513,16 @@ export function REPL({
   // Wire peer events → agent conversation as system_reminder messages.
   // Eliminates polling-based swarm_list_messages tool.
   usePeerAutoInject(setMessages);
+
+  // Show project rules as a system message in chat at startup
+  useEffect(() => {
+    Promise.all([loadProjectRules(), isProjectRulesDisabled()]).then(([rules, disabled]) => {
+      if (!disabled && rules.length > 0) {
+        setMessages(prev => [...prev, createSystemMessage(`Project rules (${rules.length}): ${formatRulesNotification(rules)}`, 'info')]);
+      }
+    });
+  }, [setMessages]);
+
   // Capture the baseline message count alongside the placeholder text so
   // the render can hide it once displayedMessages grows past the baseline.
   const setUserInputOnProcessing = useCallback((input: string | undefined) => {
@@ -3726,27 +3722,6 @@ export function REPL({
           // can stop the spark animation and show post-turn UI.
           sendBridgeResultRef.current();
 
-          // Show turn performance timer if not aborted
-          if (!abortController.signal.aborted) {
-            const hookMs = getTurnHookDurationMs();
-            const toolMs = getTurnToolDurationMs();
-            const classifierMs = getTurnClassifierDurationMs();
-            const totalToolHookMs = hookMs + toolMs + classifierMs;
-            const turnDurationMs = Date.now() - loadingStartTimeRef.current - totalPausedMsRef.current;
-            const apiMs = Math.max(0, turnDurationMs - totalToolHookMs);
-
-            const turnSec = (turnDurationMs / 1000).toFixed(1);
-            const apiSec = (apiMs / 1000).toFixed(1);
-            const toolHookSec = (totalToolHookMs / 1000).toFixed(1);
-
-            addNotification({
-              key: 'turn-performance-timer',
-              text: `✳ Turn completed in ${turnSec}s (API: ${apiSec}s · Tools & Hooks: ${toolHookSec}s)`,
-              priority: 'medium',
-              timeoutMs: 5000,
-            });
-          }
-
           // Auto-hide tungsten panel content at turn end (ant-only), but keep
           // tungstenActiveSession set so the pill stays in the footer and the user
           // can reopen the panel. Background tmux tasks (e.g. /hunter) run for
@@ -4067,8 +4042,8 @@ export function REPL({
       // controls treatment: "dialog" (blocking), "hint" (notification), "off".
       {
         const willowMode = getFeatureValue_CACHED_MAY_BE_STALE('tengu_willow_mode', 'off');
-        const idleThresholdMin = Number(process.env.CLAUDE_CODE_IDLE_THRESHOLD_MINUTES ?? 75);
-        const tokenThreshold = Number(process.env.CLAUDE_CODE_IDLE_TOKEN_THRESHOLD ?? 100_000);
+        const idleThresholdMin = Number(process.env.CLEW_CODE_IDLE_THRESHOLD_MINUTES ?? 75);
+        const tokenThreshold = Number(process.env.CLEW_CODE_IDLE_TOKEN_THRESHOLD ?? 100_000);
         if (
           willowMode !== 'off' &&
           !getGlobalConfig().idleReturnDismissed &&
@@ -4997,10 +4972,10 @@ export function REPL({
     if (willowMode !== 'hint' && willowMode !== 'hint_v2') return;
     if (getGlobalConfig().idleReturnDismissed) return;
 
-    const tokenThreshold = Number(process.env.CLAUDE_CODE_IDLE_TOKEN_THRESHOLD ?? 100_000);
+    const tokenThreshold = Number(process.env.CLEW_CODE_IDLE_TOKEN_THRESHOLD ?? 100_000);
     if (getTotalInputTokens() < tokenThreshold) return;
 
-    const idleThresholdMs = Number(process.env.CLAUDE_CODE_IDLE_THRESHOLD_MINUTES ?? 75) * 60_000;
+    const idleThresholdMs = Number(process.env.CLEW_CODE_IDLE_THRESHOLD_MINUTES ?? 75) * 60_000;
     const elapsed = Date.now() - lastQueryCompletionTime;
     const remaining = idleThresholdMs - elapsed;
 

@@ -99,7 +99,7 @@ export function isAnalyticsToolDetailsLoggingEnabled(
   mcpServerType: string | undefined,
   mcpServerBaseUrl: string | undefined,
 ): boolean {
-  if (process.env.CLAUDE_CODE_ENTRYPOINT === 'local-agent') {
+  if (process.env.CLEW_CODE_ENTRYPOINT === 'local-agent') {
     return true;
   }
   if (mcpServerType === 'claudeai-proxy') {
@@ -467,8 +467,8 @@ export type EventMetadata = {
   sweBenchInstanceId: string;
   sweBenchTaskId: string;
   // Swarm/team agent identification for analytics attribution
-  agentId?: string; // CLAUDE_CODE_AGENT_ID (format: agentName@teamName) or subagent UUID
-  parentSessionId?: string; // CLAUDE_CODE_PARENT_SESSION_ID (team lead's session)
+  agentId?: string; // CLEW_CODE_AGENT_ID (format: agentName@teamName) or subagent UUID
+  parentSessionId?: string; // CLEW_CODE_PARENT_SESSION_ID (team lead's session)
   agentType?: 'teammate' | 'subagent' | 'standalone'; // Distinguishes swarm teammates, Agent tool subagents, and standalone agents
   teamName?: string; // Team name for swarm agents (from env var or AsyncLocalStorage)
   subscriptionType?: string; // OAuth subscription tier (max, pro, enterprise, team)
@@ -562,8 +562,8 @@ const buildEnvContext = memoize(async (): Promise<EnvContext> => {
     platform: getHostPlatformForAnalytics(),
     // Raw process.platform so freebsd/openbsd/aix/sunos are visible in BQ.
     // getHostPlatformForAnalytics() buckets those into 'linux'; here we want
-    // the truth. CLAUDE_CODE_HOST_PLATFORM still overrides for container/remote.
-    platformRaw: process.env.CLAUDE_CODE_HOST_PLATFORM || process.platform,
+    // the truth. CLEW_CODE_HOST_PLATFORM still overrides for container/remote.
+    platformRaw: process.env.CLEW_CODE_HOST_PLATFORM || process.platform,
     arch: env.arch,
     nodeVersion: env.nodeVersion,
     terminal: envDynamic.terminal,
@@ -572,29 +572,29 @@ const buildEnvContext = memoize(async (): Promise<EnvContext> => {
     isRunningWithBun: env.isRunningWithBun(),
     isCi: isEnvTruthy(process.env.CI),
     isClaubbit: isEnvTruthy(process.env.CLAUBBIT),
-    isClaudeCodeRemote: isEnvTruthy(process.env.CLAUDE_CODE_REMOTE),
-    isLocalAgentMode: process.env.CLAUDE_CODE_ENTRYPOINT === 'local-agent',
+    isClaudeCodeRemote: isEnvTruthy(process.env.CLEW_CODE_REMOTE),
+    isLocalAgentMode: process.env.CLEW_CODE_ENTRYPOINT === 'local-agent',
     isConductor: env.isConductor(),
-    ...(process.env.CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE && {
-      remoteEnvironmentType: process.env.CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE,
+    ...(process.env.CLEW_CODE_REMOTE_ENVIRONMENT_TYPE && {
+      remoteEnvironmentType: process.env.CLEW_CODE_REMOTE_ENVIRONMENT_TYPE,
     }),
     // Gated by feature flag to prevent leaking "coworkerType" string in external builds
     ...(feature('COWORKER_TYPE_TELEMETRY')
-      ? process.env.CLAUDE_CODE_COWORKER_TYPE
-        ? { coworkerType: process.env.CLAUDE_CODE_COWORKER_TYPE }
+      ? process.env.CLEW_CODE_COWORKER_TYPE
+        ? { coworkerType: process.env.CLEW_CODE_COWORKER_TYPE }
         : {}
       : {}),
-    ...(process.env.CLAUDE_CODE_CONTAINER_ID && {
-      claudeCodeContainerId: process.env.CLAUDE_CODE_CONTAINER_ID,
+    ...(process.env.CLEW_CODE_CONTAINER_ID && {
+      claudeCodeContainerId: process.env.CLEW_CODE_CONTAINER_ID,
     }),
-    ...(process.env.CLAUDE_CODE_REMOTE_SESSION_ID && {
-      claudeCodeRemoteSessionId: process.env.CLAUDE_CODE_REMOTE_SESSION_ID,
+    ...(process.env.CLEW_CODE_REMOTE_SESSION_ID && {
+      claudeCodeRemoteSessionId: process.env.CLEW_CODE_REMOTE_SESSION_ID,
     }),
-    ...(process.env.CLAUDE_CODE_TAGS && {
-      tags: process.env.CLAUDE_CODE_TAGS,
+    ...(process.env.CLEW_CODE_TAGS && {
+      tags: process.env.CLEW_CODE_TAGS,
     }),
     isGithubAction: isEnvTruthy(process.env.GITHUB_ACTIONS),
-    isClaudeCodeAction: isEnvTruthy(process.env.CLAUDE_CODE_ACTION),
+    isClaudeCodeAction: isEnvTruthy(process.env.CLEW_CODE_ACTION),
     isClaudeAiAuth: isClaudeAISubscriber(),
     version: MACRO.VERSION,
     versionBase: getVersionBase(),
@@ -678,8 +678,8 @@ export async function getEventMetadata(options: EnrichMetadataOptions = {}): Pro
     userType: process.env.USER_TYPE || '',
     ...(betas.length > 0 ? { betas: betas } : {}),
     envContext,
-    ...(process.env.CLAUDE_CODE_ENTRYPOINT && {
-      entrypoint: process.env.CLAUDE_CODE_ENTRYPOINT,
+    ...(process.env.CLEW_CODE_ENTRYPOINT && {
+      entrypoint: process.env.CLEW_CODE_ENTRYPOINT,
     }),
     ...(process.env.CLAUDE_AGENT_SDK_VERSION && {
       agentSdkVersion: process.env.CLAUDE_AGENT_SDK_VERSION,
@@ -772,7 +772,7 @@ export function to1PEventFormat(
   // parallel type previously let #11318, #13924, #19448, and coworker_type all
   // ship fields that never reached BQ.
   // Adding a field? Update the monorepo proto first (go/cc-logging):
-  //   event_schemas/.../claude_code/v1/claude_code_internal_event.proto
+  //   event_schemas/.../claude_code/v1/clew_code_internal_event.proto
   // then run `bun run generate:proto` here.
   const env: EnvironmentMetadata = {
     platform: envContext.platform,

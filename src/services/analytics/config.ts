@@ -26,9 +26,9 @@ export function isAnalyticsDisabled(): boolean {
   } catch {}
   return (
     process.env.NODE_ENV === 'test' ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX) ||
+    isEnvTruthy(process.env.CLEW_CODE_USE_FOUNDRY) ||
     isTelemetryDisabled()
   );
 }

@@ -1156,7 +1156,7 @@ export async function checkCommandAndSuggestRules(
   // AST parse already succeeded — tree-sitter has verified there are no
   // hidden substitutions or structural tricks, so the legacy regex-based
   // validators (backslash-escaped operators, etc.) would only add FPs.
-  if (!astParseSucceeded && !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_COMMAND_INJECTION_CHECK)) {
+  if (!astParseSucceeded && !isEnvTruthy(process.env.CLEW_CODE_DISABLE_COMMAND_INJECTION_CHECK)) {
     const safetyResult = await bashCommandIsSafeAsync(input.command);
 
     if (safetyResult.behavior !== 'passthrough') {
@@ -1576,7 +1576,7 @@ export async function bashToolHasPermission(
   //
   // When tree-sitter WASM is unavailable OR the injection check is disabled
   // via env var, we fall back to the old path (legacy gate at ~1370 runs).
-  const injectionCheckDisabled = isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_COMMAND_INJECTION_CHECK);
+  const injectionCheckDisabled = isEnvTruthy(process.env.CLEW_CODE_DISABLE_COMMAND_INJECTION_CHECK);
   // GrowthBook killswitch for shadow mode — when off, skip the native parse
   // entirely. Computed once; feature() must stay inline in the ternary below.
   const shadowEnabled = feature('TREE_SITTER_BASH_SHADOW')
@@ -1936,7 +1936,7 @@ export async function bashToolHasPermission(
   // block is skipped entirely. The AST's 'too-complex' result subsumes
   // everything isBashSecurityCheckForMisparsing covered — both answer the
   // same question: "can splitCommand be trusted on this input?"
-  if (astSubcommands === null && !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_COMMAND_INJECTION_CHECK)) {
+  if (astSubcommands === null && !isEnvTruthy(process.env.CLEW_CODE_DISABLE_COMMAND_INJECTION_CHECK)) {
     const originalCommandSafetyResult = await bashCommandIsSafeAsync(input.command);
     if (
       originalCommandSafetyResult.behavior === 'ask' &&
@@ -2143,7 +2143,7 @@ export async function bashToolHasPermission(
   // substitutions, no structural tricks); the per-subcommand re-check is
   // redundant. When on the legacy path, re-run bashCommandIsSafeAsync per sub.
   let hasPossibleCommandInjection = false;
-  if (astSubcommands === null && !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_COMMAND_INJECTION_CHECK)) {
+  if (astSubcommands === null && !isEnvTruthy(process.env.CLEW_CODE_DISABLE_COMMAND_INJECTION_CHECK)) {
     // CC-643: Batch divergence telemetry into a single logEvent. The per-sub
     // logEvent was the hot-path syscall driver (each call → /proc/self/stat
     // via process.memoryUsage()). Aggregate count preserves the signal.

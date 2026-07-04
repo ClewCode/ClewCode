@@ -35,7 +35,6 @@ import {
   modelDisplayString,
   parseUserSpecifiedModel,
 } from '../utils/model/model.js';
-import { getModelOptions } from '../utils/model/modelOptions.js';
 import { mergeRecentModels } from '../utils/model/recentModels.js';
 import { getSettingsForSource, updateSettingsForSource } from '../utils/settings/settings.js';
 import { ConfigurableShortcutHint } from './ConfigurableShortcutHint.js';
@@ -81,7 +80,6 @@ export function ModelPicker(t0) {
   const exitState = useExitOnCtrlCDWithKeybindings();
   const initialValue = initial === null ? NO_PREFERENCE : initial;
   const [focusedValue, setFocusedValue] = useState(initialValue);
-  const isFastMode = useAppState(_temp);
   const fetchedModelsData = useAppState(
     (s: { fetchedModels?: { provider: string; models: FetchedModel[]; fetchedAt: number } }) => s.fetchedModels,
   );
@@ -105,8 +103,6 @@ export function ModelPicker(t0) {
     onExit: () => setIsSearchActive(false),
     backspaceExitsOnEmpty: false,
   });
-  const t2 = Boolean(isFastMode);
-
   const selectableProviderIds = useMemo(() => getSelectableProviderIds(), []);
   const [activeProviderId, setActiveProviderId] = useState(() => {
     const current = ProviderManager.getInstance().getActiveProviderName();
@@ -171,8 +167,8 @@ export function ModelPicker(t0) {
 
   // Compute model options with fetched models
   const modelOptions = useMemo(() => {
-    return getEffectiveModelOptions(t2, currentFetchedModels, providerInfo?.entry, initial, activeProviderId);
-  }, [t2, currentFetchedModels, providerInfo?.entry, initial, activeProviderId]);
+    return getEffectiveModelOptions(currentFetchedModels, providerInfo?.entry, initial, activeProviderId);
+  }, [currentFetchedModels, providerInfo?.entry, initial, activeProviderId]);
   let t4;
   bb0: {
     if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {
@@ -618,17 +614,37 @@ function getEffectiveModelOptions(
   const currentProviderId = activeProviderId ?? providerManager.getActiveProviderName();
   const providerEntry = entry ?? getProviderRegistryEntry(currentProviderId as any);
 
-  // Fall back to legacy model options when no provider info
+  // When no provider registry entry found, return minimal options instead of
+  // falling back to hardcoded Claude models (getModelOptions()). Show the
+  // default option and a custom model input so users can type any model ID.
   if (!providerEntry) {
-    return getModelOptions();
+    const defaultModel = providerManager.getModelForProvider(currentProviderId as any) ?? 'custom';
+    return [
+      {
+        value: null,
+        label: 'Default (recommended)',
+        description: `Use current default (${defaultModel})`,
+      },
+      {
+        value: '__CUSTOM_INPUT__',
+        label: '✏️  Type custom model ID',
+        description: 'Use: /model your-model-id',
+      },
+    ] as any;
   }
 
   const implementationType = providerManager.getImplementationType();
 
-  // When API-fetched models are available, use them directly instead of
-  // the static providers.json list — the API is the source of truth.
+  // Merge API-fetched models with static providers.json models.
+  // Fetched models are preferred (they're the live source of truth), but
+  // static models backfill any gaps — some provider APIs return partial lists
+  // or are temporarily unreachable.
+  const staticModels: ModelOption[] = (providerEntry.models ?? [])
+    .filter(m => !m.supportedTypes || m.supportedTypes.includes(implementationType))
+    .map(m => toProviderModelOption(m));
   let providerModels: ModelOption[];
   if (fetchedModels && fetchedModels.length > 0) {
+    // Map fetched models to ModelOption format
     providerModels = fetchedModels.map(m => {
       const parts: string[] = [];
       if (m.contextWindow) parts.push(`${formatContext(m.contextWindow)} ctx`);
@@ -644,10 +660,15 @@ function getEffectiveModelOptions(
         descriptionForModel: m.id,
       };
     });
+    // Backfill any static models not returned by the API
+    const fetchedIds = new Set(providerModels.map(m => m.value));
+    for (const sm of staticModels) {
+      if (!fetchedIds.has(sm.value)) {
+        providerModels.push(sm);
+      }
+    }
   } else {
-    providerModels = (providerEntry.models ?? [])
-      .filter(m => !m.supportedTypes || m.supportedTypes.includes(implementationType))
-      .map(m => toProviderModelOption(m));
+    providerModels = staticModels;
   }
 
   const defaultModel =
@@ -682,6 +703,7 @@ function getEffectiveModelOptions(
         label: found?.label ?? id,
         description: 'Recently used',
         descriptionForModel: found?.descriptionForModel ?? id,
+        hideIndex: true,
       });
     }
   }
@@ -751,6 +773,7 @@ type ModelSelectOption = {
   descriptionForModel?: string;
   type?: 'text' | 'section';
   disabled?: boolean;
+  hideIndex?: boolean;
 };
 
 type ModelOption = {
@@ -760,6 +783,7 @@ type ModelOption = {
   descriptionForModel?: string;
   type?: 'text' | 'section';
   disabled?: boolean;
+  hideIndex?: boolean;
 };
 
 function countRealModelOptions(options: ModelSelectOption[]): number {
@@ -886,15 +910,8 @@ function formatProviderModelSetting(providerId: string, modelId: string): string
 }
 
 function getSelectableProviderIds(): string[] {
-  const providerManager = ProviderManager.getInstance();
-  const implementationType = providerManager.getImplementationType();
-
-  return PROVIDER_IDS.filter(providerId => {
-    const entry = PROVIDER_REGISTRY[providerId];
-    return Boolean(
-      entry?.models?.some(model => !model.supportedTypes || model.supportedTypes.includes(implementationType)),
-    );
-  });
+  // Show all registered providers so users can browse models across all providers
+  return [...PROVIDER_IDS];
 }
 
 function ProviderTabs({

@@ -5,7 +5,7 @@
  * - One supervisor per user, auto-started on first background session
  * - Communicates via Windows named pipe or Unix socket
  * - Each background session is a child Bun process
- * - Roster persisted to ~/.claude/daemon/roster.json
+ * - Roster persisted to ~/.clew/daemon/roster.json
  * - Auto-exits when all sessions finished and no terminal connected for ~1h
  *
  * IPC Protocol (JSON, newline-delimited over pipe/socket):
@@ -204,8 +204,8 @@ function spawnSessionProcess(entry: SessionEntry): ChildProcess {
     cwd: entry.cwd,
     env: {
       ...process.env,
-      CLAUDE_CODE_DAEMON_SESSION_ID: entry.id,
-      CLAUDE_CODE_DAEMON_MODE: '1',
+      CLEW_CODE_DAEMON_SESSION_ID: entry.id,
+      CLEW_CODE_DAEMON_MODE: '1',
     },
     detached: true,
     stdio: ['ignore', 'pipe', 'pipe'],

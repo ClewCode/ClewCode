@@ -4,7 +4,7 @@
  * This module provides plugin installation without AppState updates,
  * suitable for non-interactive environments like CCR.
  *
- * When CLAUDE_CODE_PLUGIN_USE_ZIP_CACHE is enabled, plugins are stored as
+ * When CLEW_CODE_PLUGIN_USE_ZIP_CACHE is enabled, plugins are stored as
  * ZIPs on a mounted volume. The storage layer (pluginLoader.ts) handles
  * ZIP creation on install and extraction on load transparently.
  */
@@ -40,7 +40,7 @@ export async function installPluginsForHeadless(): Promise<boolean> {
   const zipCacheMode = isPluginZipCacheEnabled();
   logForDebugging(`installPluginsForHeadless: starting${zipCacheMode ? ' (zip cache mode)' : ''}`);
 
-  // Register seed marketplaces (CLAUDE_CODE_PLUGIN_SEED_DIR) before diffing.
+  // Register seed marketplaces (CLEW_CODE_PLUGIN_SEED_DIR) before diffing.
   // Idempotent; no-op if seed not configured. Without this, findMissingMarketplaces
   // would see seed entries as missing → clone → defeats seed's purpose.
   //
@@ -64,7 +64,7 @@ export async function installPluginsForHeadless(): Promise<boolean> {
   // Declared now includes an implicit claude-plugins-official entry when any
   // enabled plugin references it (see getDeclaredMarketplaces). This routes
   // the official marketplace through the same reconciler path as any other —
-  // which composes correctly with CLAUDE_CODE_PLUGIN_SEED_DIR: seed registers
+  // which composes correctly with CLEW_CODE_PLUGIN_SEED_DIR: seed registers
   // it in known_marketplaces.json, reconciler diff sees it as upToDate, no clone.
   const declaredCount = Object.keys(getDeclaredMarketplaces()).length;
 

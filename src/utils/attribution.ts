@@ -46,7 +46,7 @@ export function getAttributionTexts(): AttributionTexts {
   }
 
   if (getClientType() === 'remote') {
-    const remoteSessionId = process.env.CLAUDE_CODE_REMOTE_SESSION_ID;
+    const remoteSessionId = process.env.CLEW_CODE_REMOTE_SESSION_ID;
     if (remoteSessionId) {
       const ingressUrl = process.env.SESSION_INGRESS_URL;
       // Skip for local dev - URLs won't persist
@@ -64,7 +64,7 @@ export function getAttributionTexts(): AttributionTexts {
   const model = getMainLoopModel();
   const isKnownPublicModel = getPublicModelDisplayName(model) !== null;
   const modelName = isInternalModelRepoCached() || isKnownPublicModel ? getPublicModelName(model) : 'Clew';
-  const coAuthoredEmail = process.env.CLAUDE_CODE_CO_AUTHOR_EMAIL || '204852177+Clew-Code@users.noreply.github.com';
+  const coAuthoredEmail = process.env.CLEW_CODE_CO_AUTHOR_EMAIL || '204852177+Clew-Code@users.noreply.github.com';
   const defaultAttribution = `Generated with [${PRODUCT_NAME}](${PRODUCT_URL})`;
   const defaultCommit = `Co-Authored-By: ${modelName} <${coAuthoredEmail}>`;
 
@@ -270,7 +270,7 @@ export async function getEnhancedPRAttribution(getAppState: () => AppState): Pro
   }
 
   if (getClientType() === 'remote') {
-    const remoteSessionId = process.env.CLAUDE_CODE_REMOTE_SESSION_ID;
+    const remoteSessionId = process.env.CLEW_CODE_REMOTE_SESSION_ID;
     if (remoteSessionId) {
       const ingressUrl = process.env.SESSION_INGRESS_URL;
       // Skip for local dev - URLs won't persist

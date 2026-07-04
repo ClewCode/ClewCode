@@ -80,7 +80,7 @@ export function validatePathWithinBase(basePath: string, relativePath: string): 
  * Cache a plugin (local or external) and add it to installed_plugins.json
  *
  * This function combines the common pattern of:
- * 1. Caching a plugin to ~/.claude/plugins/cache/
+ * 1. Caching a plugin to ~/.clew/plugins/cache/
  * 2. Adding it to the installed plugins registry
  *
  * Both local plugins (with string source like "./path") and external plugins

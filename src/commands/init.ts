@@ -343,7 +343,7 @@ const command = {
     return feature('NEW_INIT') &&
       (process.env.USER_TYPE === 'ant' ||
         isEnvTruthy(process.env.CLEW_CODE_NEW_INIT) ||
-        isEnvTruthy(process.env.CLAUDE_CODE_NEW_INIT))
+        isEnvTruthy(process.env.CLEW_CODE_NEW_INIT))
       ? 'Initialize new AGENT.md file(s) and optional skills/hooks with codebase documentation'
       : 'Initialize a new AGENT.md file with codebase documentation';
   },
@@ -365,7 +365,7 @@ const command = {
         feature('NEW_INIT') &&
         (process.env.USER_TYPE === 'ant' ||
           isEnvTruthy(process.env.CLEW_CODE_NEW_INIT) ||
-          isEnvTruthy(process.env.CLAUDE_CODE_NEW_INIT))
+          isEnvTruthy(process.env.CLEW_CODE_NEW_INIT))
           ? NEW_INIT_PROMPT
           : OLD_INIT_PROMPT;
     }

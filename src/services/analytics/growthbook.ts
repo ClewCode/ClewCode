@@ -474,7 +474,7 @@ const getGrowthBookClient = memoize((): { client: GrowthBook; initialized: Promi
   }
   const baseUrl =
     process.env.USER_TYPE === 'ant'
-      ? process.env.CLAUDE_CODE_GB_BASE_URL || 'https://api.anthropic.com/'
+      ? process.env.CLEW_CODE_GB_BASE_URL || 'https://api.anthropic.com/'
       : 'https://api.anthropic.com/';
 
   // Skip auth if trust hasn't been established yet

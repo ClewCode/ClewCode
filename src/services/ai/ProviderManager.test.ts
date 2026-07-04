@@ -4,11 +4,11 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 
 test('defaults to OpenAI when no provider is configured', async () => {
-  process.env.CLAUDE_CONFIG_DIR = mkdtempSync(join(tmpdir(), 'claude-provider-test-'));
+  process.env.CLEW_CONFIG_DIR = mkdtempSync(join(tmpdir(), 'claude-provider-test-'));
   delete process.env.AI_PROVIDER;
-  delete process.env.CLAUDE_CODE_USE_BEDROCK;
-  delete process.env.CLAUDE_CODE_USE_VERTEX;
-  delete process.env.CLAUDE_CODE_USE_FOUNDRY;
+  delete process.env.CLEW_CODE_USE_BEDROCK;
+  delete process.env.CLEW_CODE_USE_VERTEX;
+  delete process.env.CLEW_CODE_USE_FOUNDRY;
 
   const cacheBust = Date.now();
   const [{ ProviderManager }, { DEFAULT_PROVIDER }] = await Promise.all([

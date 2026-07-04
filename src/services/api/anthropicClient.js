@@ -18,8 +18,8 @@ import { getOauthConfig } from '../../constants/oauth.js';
 import { isDebugToStdErr, logForDebugging } from '../../utils/debug.js';
 import { getAWSRegion, getVertexRegionForModel, isEnvTruthy } from '../../utils/envUtils.js';
 export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOverride, source }) {
-  const containerId = process.env.CLAUDE_CODE_CONTAINER_ID;
-  const remoteSessionId = process.env.CLAUDE_CODE_REMOTE_SESSION_ID;
+  const containerId = process.env.CLEW_CODE_CONTAINER_ID;
+  const remoteSessionId = process.env.CLEW_CODE_REMOTE_SESSION_ID;
   const _clientApp = process.env.CLAUDE_AGENT_SDK_CLIENT_APP;
   const customHeaders = getCustomHeaders();
   const defaultHeaders = {
@@ -33,7 +33,7 @@ export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOv
   logForDebugging(
     `[API:request] Creating client, ANTHROPIC_CUSTOM_HEADERS present: ${!!process.env.ANTHROPIC_CUSTOM_HEADERS}, has Authorization header: ${!!customHeaders['Authorization']}`,
   );
-  const additionalProtectionEnabled = isEnvTruthy(process.env.CLAUDE_CODE_ADDITIONAL_PROTECTION);
+  const additionalProtectionEnabled = isEnvTruthy(process.env.CLEW_CODE_ADDITIONAL_PROTECTION);
   if (additionalProtectionEnabled) {
     defaultHeaders['x-anthropic-additional-protection'] = 'true';
   }
@@ -56,7 +56,7 @@ export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOv
       fetch: resolvedFetch,
     }),
   };
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) || isEnvTruthy(process.env.CLAUDE_CODE_USE_MANTLE)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) || isEnvTruthy(process.env.CLEW_CODE_USE_MANTLE)) {
     const { AnthropicBedrock } = await import('@anthropic-ai/bedrock-sdk');
     const awsRegion =
       model === getSmallFastModel() && process.env.ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION
@@ -65,12 +65,12 @@ export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOv
     const bedrockArgs = {
       ...ARGS,
       awsRegion,
-      ...(isEnvTruthy(process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH) && {
+      ...(isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH) && {
         skipAuth: true,
       }),
       ...(isDebugToStdErr() && { logger: createStderrLogger() }),
     };
-    const skipBedrockAuth = isEnvTruthy(process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH);
+    const skipBedrockAuth = isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH);
     const bedrockAuthorizationHeader = process.env.AWS_BEARER_TOKEN_BEDROCK
       ? `Bearer ${process.env.AWS_BEARER_TOKEN_BEDROCK}`
       : defaultHeaders['Authorization'];
@@ -78,7 +78,7 @@ export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOv
     // AWS Signature V4 or Bearer token. When ANTHROPIC_MANTLE_API_KEY is set,
     // skip AWS credential resolution and inject the key in API requests.
     const mantleApiKey = process.env.ANTHROPIC_MANTLE_API_KEY;
-    const isMantle = isEnvTruthy(process.env.CLAUDE_CODE_USE_MANTLE);
+    const isMantle = isEnvTruthy(process.env.CLEW_CODE_USE_MANTLE);
     if (isMantle && mantleApiKey) {
       bedrockArgs.skipAuth = true;
       bedrockArgs.defaultHeaders = {
@@ -126,7 +126,7 @@ export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOv
         ...bedrockArgs.defaultHeaders,
         Authorization: `Bearer ${process.env.AWS_BEARER_TOKEN_BEDROCK}`,
       };
-    } else if (!isEnvTruthy(process.env.CLAUDE_CODE_SKIP_BEDROCK_AUTH)) {
+    } else if (!isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH)) {
       const cachedCredentials = await refreshAndGetAwsCredentials();
       if (cachedCredentials) {
         bedrockArgs.awsAccessKey = cachedCredentials.accessKeyId;
@@ -136,11 +136,11 @@ export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOv
     }
     return new AnthropicBedrock(bedrockArgs);
   }
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_USE_FOUNDRY)) {
     const { AnthropicFoundry } = await import('@anthropic-ai/foundry-sdk');
     let azureADTokenProvider;
     if (!process.env.ANTHROPIC_FOUNDRY_API_KEY) {
-      if (isEnvTruthy(process.env.CLAUDE_CODE_SKIP_FOUNDRY_AUTH)) {
+      if (isEnvTruthy(process.env.CLEW_CODE_SKIP_FOUNDRY_AUTH)) {
         azureADTokenProvider = () => Promise.resolve('');
       } else {
         const { DefaultAzureCredential: AzureCredential, getBearerTokenProvider } = await import('@azure/identity');
@@ -157,8 +157,8 @@ export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOv
     };
     return new AnthropicFoundry(foundryArgs);
   }
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX)) {
-    if (!isEnvTruthy(process.env.CLAUDE_CODE_SKIP_VERTEX_AUTH)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX)) {
+    if (!isEnvTruthy(process.env.CLEW_CODE_SKIP_VERTEX_AUTH)) {
       await refreshGcpCredentialsIfNeeded();
     }
     const [{ AnthropicVertex }, { GoogleAuth }] = await Promise.all([
@@ -171,7 +171,7 @@ export async function createAnthropicClient({ apiKey, maxRetries, model, fetchOv
       process.env['gcloud_project'] ||
       process.env['google_cloud_project'];
     const hasKeyFile = process.env['GOOGLE_APPLICATION_CREDENTIALS'] || process.env['google_application_credentials'];
-    const googleAuth = isEnvTruthy(process.env.CLAUDE_CODE_SKIP_VERTEX_AUTH)
+    const googleAuth = isEnvTruthy(process.env.CLEW_CODE_SKIP_VERTEX_AUTH)
       ? {
           getClient: () => ({
             getRequestHeaders: () => ({}),

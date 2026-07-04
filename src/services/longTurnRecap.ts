@@ -23,7 +23,7 @@ const DEFAULT_THRESHOLD_MS = 5 * 60_000;
 export function shouldGenerateLongTurnRecap(turnDurationMs: number, messages: readonly Message[]): boolean {
   const config = getGlobalConfig();
   if (config.recapEnabled === false) return false;
-  if (isEnvDefinedFalsy(process.env.CLAUDE_CODE_ENABLE_AWAY_SUMMARY)) return false;
+  if (isEnvDefinedFalsy(process.env.CLEW_CODE_ENABLE_AWAY_SUMMARY)) return false;
   if (isEnvDefinedFalsy(process.env.CLEW_ENABLE_RECAP)) return false;
 
   const threshold =

@@ -14,7 +14,7 @@ import { isEssentialTrafficOnly } from './privacyLevel.js';
 import { getInitialSettings, getSettingsForSource, updateSettingsForSource } from './settings/settings.js';
 import { createSignal } from './signal.js';
 export function isFastModeEnabled() {
-  return !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_FAST_MODE);
+  return !isEnvTruthy(process.env.CLEW_CODE_DISABLE_FAST_MODE);
 }
 export function isFastModeAvailable() {
   if (!isFastModeEnabled()) {
@@ -74,10 +74,10 @@ export function getFastModeUnavailableReason() {
   if (orgStatus.status === 'disabled') {
     if (orgStatus.reason === 'network_error' || orgStatus.reason === 'unknown') {
       // The org check can fail behind corporate proxies that block the
-      // endpoint. We add CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS=1 to
+      // endpoint. We add CLEW_CODE_SKIP_FAST_MODE_NETWORK_ERRORS=1 to
       // bypass this check in the CC binary. This is OK since we have
       // another check in the API to error out when disabled by org.
-      if (isEnvTruthy(process.env.CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS)) {
+      if (isEnvTruthy(process.env.CLEW_CODE_SKIP_FAST_MODE_NETWORK_ERRORS)) {
         return null;
       }
     }
@@ -92,9 +92,9 @@ export function getFastModeUnavailableReason() {
 export const FAST_MODE_MODEL_DISPLAY = 'Opus 4.7';
 /**
  * Override env var to pin fast mode to Opus 4.6 instead of Opus 4.7.
- * Set CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1 to use Opus 4.6.
+ * Set CLEW_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1 to use Opus 4.6.
  */
-const FAST_MODE_OPUS_4_6_OVERRIDE = isEnvTruthy(process.env.CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE);
+const FAST_MODE_OPUS_4_6_OVERRIDE = isEnvTruthy(process.env.CLEW_CODE_OPUS_4_6_FAST_MODE_OVERRIDE);
 export function getFastModeModel() {
   return `opus${isOpus1mMergeEnabled() ? '[1m]' : ''}`;
 }

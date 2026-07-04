@@ -48,6 +48,7 @@ import { useHasSelection, useSelection } from '../../ink/hooks/use-selection.js'
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { getPlatform } from '../../utils/platform.js';
 import { PrBadge } from '../PrBadge.js';
+import { loadProjectRules, isProjectRulesDisabled } from '../../utils/projectRules.js';
 
 // Dead code elimination: conditional import for proactive mode
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -215,6 +216,14 @@ function ModeIndicator({
   const showSpinnerTree = expandedView === 'teammates';
   const prStatus = usePrStatus(isLoading, isPrStatusEnabled());
   const hasTmuxSession = useAppState(s => 'external' === 'ant' && s.tungstenActiveSession !== undefined);
+
+  // Project rules indicator
+  const [ruleCount, setRuleCount] = useState(0);
+  useEffect(() => {
+    Promise.all([loadProjectRules(), isProjectRulesDisabled()]).then(([rules, disabled]) => {
+      setRuleCount(disabled ? 0 : rules.length);
+    });
+  }, []);
 
   const nextTickAt = useSyncExternalStore(
     proactiveModule?.subscribeToProactiveChanges ?? NO_OP_SUBSCRIBE,
@@ -390,6 +399,14 @@ function ModeIndicator({
           <Link url={remoteSessionUrl} key="remote">
             <Text color="ide">{figures.circleDouble} remote</Text>
           </Link>,
+        ]
+      : []),
+    // Rule indicator
+    ...(ruleCount > 0
+      ? [
+          <Text key="rules" dimColor>
+            {ruleCount}R
+          </Text>,
         ]
       : []),
     // BackgroundTaskStatus is NOT in parts — it renders as a Box sibling so

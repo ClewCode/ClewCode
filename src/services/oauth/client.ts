@@ -178,7 +178,7 @@ export async function refreshOAuthToken(
     // Routine refreshes satisfy both, so we cut ~7M req/day fleet-wide.
     //
     // Checking secure storage (not just config) matters for the
-    // CLAUDE_CODE_OAUTH_REFRESH_TOKEN re-login path: installOAuthTokens runs
+    // CLEW_CODE_OAUTH_REFRESH_TOKEN re-login path: installOAuthTokens runs
     // performLogout() AFTER we return, wiping secure storage. If we returned
     // null for subscriptionType here, saveOAuthTokensIfNeeded would persist
     // null ?? (wiped) ?? null = null, and every future refresh would see the
@@ -422,9 +422,9 @@ export async function populateOAuthAccountInfoIfNeeded(): Promise<boolean> {
   // eliminates the race condition where early telemetry events lack account info.
   // NB: If/when adding additional SDK-relevant functionality requiring _other_ OAuth account properties,
   // please reach out to #proj-cowork so the team can add additional env var fallbacks.
-  const envAccountUuid = process.env.CLAUDE_CODE_ACCOUNT_UUID;
-  const envUserEmail = process.env.CLAUDE_CODE_USER_EMAIL;
-  const envOrganizationUuid = process.env.CLAUDE_CODE_ORGANIZATION_UUID;
+  const envAccountUuid = process.env.CLEW_CODE_ACCOUNT_UUID;
+  const envUserEmail = process.env.CLEW_CODE_USER_EMAIL;
+  const envOrganizationUuid = process.env.CLEW_CODE_ORGANIZATION_UUID;
   const hasEnvVars = Boolean(envAccountUuid && envUserEmail && envOrganizationUuid);
   if (envAccountUuid && envUserEmail && envOrganizationUuid) {
     if (!getGlobalConfig().oauthAccount) {

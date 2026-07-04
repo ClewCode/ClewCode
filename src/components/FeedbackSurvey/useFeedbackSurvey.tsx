@@ -258,20 +258,20 @@ export function useFeedbackSurvey(
     }
 
     // Force display for testing
-    if (process.env.CLAUDE_FORCE_DISPLAY_SURVEY && !feedbackSurvey.timeLastShown) {
+    if (process.env.CLEW_FORCE_DISPLAY_SURVEY && !feedbackSurvey.timeLastShown) {
       return true;
     }
     if (!isModelAllowed) {
       return false;
     }
-    if (isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_DISABLE_FEEDBACK_SURVEY)) {
       return false;
     }
-    // CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL: OTel enterprise opt-in.
+    // CLEW_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL: OTel enterprise opt-in.
     // When set, overrides isFeedbackSurveyDisabled() so that enterprises
     // using OTel (which disables the default analytics-backed survey gate)
     // can re-enable session quality surveys.
-    if (!isEnvTruthy(process.env.CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL) && isFeedbackSurveyDisabled()) {
+    if (!isEnvTruthy(process.env.CLEW_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL) && isFeedbackSurveyDisabled()) {
       return false;
     }
 

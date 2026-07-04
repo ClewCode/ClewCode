@@ -60,14 +60,14 @@ export function fileHistoryEnabled(): boolean {
   }
   return (
     getGlobalConfig().fileCheckpointingEnabled !== false &&
-    !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_FILE_CHECKPOINTING)
+    !isEnvTruthy(process.env.CLEW_CODE_DISABLE_FILE_CHECKPOINTING)
   );
 }
 
 function fileHistoryEnabledSdk(): boolean {
   return (
-    isEnvTruthy(process.env.CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING) &&
-    !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_FILE_CHECKPOINTING)
+    isEnvTruthy(process.env.CLEW_CODE_ENABLE_SDK_FILE_CHECKPOINTING) &&
+    !isEnvTruthy(process.env.CLEW_CODE_DISABLE_FILE_CHECKPOINTING)
   );
 }
 

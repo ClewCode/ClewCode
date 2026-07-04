@@ -241,7 +241,7 @@ const DEFAULT_STALL_TIMEOUT_MS = 60000; // 60 seconds
 const MAX_DOWNLOAD_RETRIES = 3;
 
 function getStallTimeoutMs(): number {
-  return Number(process.env.CLAUDE_CODE_STALL_TIMEOUT_MS_FOR_TESTING) || DEFAULT_STALL_TIMEOUT_MS;
+  return Number(process.env.CLEW_CODE_STALL_TIMEOUT_MS_FOR_TESTING) || DEFAULT_STALL_TIMEOUT_MS;
 }
 
 class StallTimeoutError extends Error {

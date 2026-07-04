@@ -242,7 +242,7 @@ export function ConsoleOAuthFlow({
 
       if (mode === 'setup-token') {
         // For setup-token mode, return the OAuth access token directly (it can be used as an API key)
-        // Don't save to keychain - the token is displayed for manual use with CLAUDE_CODE_OAUTH_TOKEN
+        // Don't save to keychain - the token is displayed for manual use with CLEW_CODE_OAUTH_TOKEN
         setOAuthStatus({ state: 'success', token: result.accessToken });
       } else {
         await installOAuthTokens(result);
@@ -345,7 +345,7 @@ export function ConsoleOAuthFlow({
             <Text>Your OAuth token (valid for 1 year):</Text>
             <Text color="warning">{oauthStatus.token}</Text>
             <Text dimColor>Store this token securely. You won&apos;t be able to see it again.</Text>
-            <Text dimColor>Use this token by setting: export CLAUDE_CODE_OAUTH_TOKEN=&lt;token&gt;</Text>
+            <Text dimColor>Use this token by setting: export CLEW_CODE_OAUTH_TOKEN=&lt;token&gt;</Text>
           </Box>
         </Box>
       )}
@@ -505,20 +505,20 @@ function OAuthStatusMessage({
               <Text bold>Documentation:</Text>
               <Text>
                 · Amazon Bedrock:{' '}
-                <Link url="https://code.claude.com/docs/en/amazon-bedrock">
-                  https://code.claude.com/docs/en/amazon-bedrock
+                <Link url="https://clew-code.org/docs/amazon-bedrock">
+                  https://clew-code.org/docs/amazon-bedrock
                 </Link>
               </Text>
               <Text>
                 · Microsoft Foundry:{' '}
-                <Link url="https://code.claude.com/docs/en/microsoft-foundry">
-                  https://code.claude.com/docs/en/microsoft-foundry
+                <Link url="https://clew-code.org/docs/microsoft-foundry">
+                  https://clew-code.org/docs/microsoft-foundry
                 </Link>
               </Text>
               <Text>
                 · Vertex AI:{' '}
-                <Link url="https://code.claude.com/docs/en/google-vertex-ai">
-                  https://code.claude.com/docs/en/google-vertex-ai
+                <Link url="https://clew-code.org/docs/google-vertex-ai">
+                  https://clew-code.org/docs/google-vertex-ai
                 </Link>
               </Text>
             </Box>

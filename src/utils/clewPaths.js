@@ -61,7 +61,7 @@ export const CLEW_FOLDER_PERMISSION_PATTERN = `/${DOT_CLEW}/**`;
 export const GLOBAL_CLEW_FOLDER_PERMISSION_PATTERN = `~/${DOT_CLEW}/**`;
 /** Legacy project-level .claude/ permission pattern */
 export const CLAUDE_FOLDER_PERMISSION_PATTERN = `/${DOT_CLAUDE}/**`;
-/** Legacy global ~/.claude/ permission pattern */
+/** Legacy global ~/.clew/ permission pattern */
 export const GLOBAL_CLAUDE_FOLDER_PERMISSION_PATTERN = `~/${DOT_CLAUDE}/**`;
 // ── Helpers ────────────────────────────────────────────────
 /** Build a path under .clew/ (or .claude/ for legacy) */

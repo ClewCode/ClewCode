@@ -683,7 +683,7 @@ export async function getAttachments(
   querySource?: QuerySource,
   options?: { skipSkillDiscovery?: boolean },
 ): Promise<Attachment[]> {
-  if (isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_ATTACHMENTS) || isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_DISABLE_ATTACHMENTS) || isEnvTruthy(process.env.CLEW_CODE_SIMPLE)) {
     // query.ts:removeFromQueue dequeues these unconditionally after
     // getAttachmentMessages runs — returning [] here silently drops them.
     // Coworker runs with --bare and depends on task-notification for
@@ -3343,7 +3343,7 @@ function getTeamContextAttachment(messages: Message[]): Attachment[] {
 }
 
 function getTokenUsageAttachment(messages: Message[], model: string): Attachment[] {
-  if (!isEnvTruthy(process.env.CLAUDE_CODE_ENABLE_TOKEN_USAGE_ATTACHMENT)) {
+  if (!isEnvTruthy(process.env.CLEW_CODE_ENABLE_TOKEN_USAGE_ATTACHMENT)) {
     return [];
   }
 
@@ -3427,7 +3427,7 @@ async function getVerifyPlanReminderAttachment(
   messages: Message[] | undefined,
   toolUseContext: ToolUseContext,
 ): Promise<Attachment[]> {
-  if (process.env.USER_TYPE !== 'ant' || !isEnvTruthy(process.env.CLAUDE_CODE_VERIFY_PLAN)) {
+  if (process.env.USER_TYPE !== 'ant' || !isEnvTruthy(process.env.CLEW_CODE_VERIFY_PLAN)) {
     return [];
   }
 

@@ -68,7 +68,7 @@ function shouldRetry529(querySource) {
   // undefined → retry (conservative for untagged call paths)
   return querySource === undefined || FOREGROUND_529_RETRY_SOURCES.has(querySource);
 }
-// CLAUDE_CODE_UNATTENDED_RETRY: for unattended sessions (ant-only). Retries 429/529
+// CLEW_CODE_UNATTENDED_RETRY: for unattended sessions (ant-only). Retries 429/529
 // indefinitely with higher backoff and periodic keep-alive yields so the host
 // environment does not mark the session idle mid-wait.
 // TODO(ANT-344): the keep-alive via SystemAPIErrorMessage yields is a stopgap
@@ -77,7 +77,7 @@ const PERSISTENT_MAX_BACKOFF_MS = 5 * 60 * 1000;
 const PERSISTENT_RESET_CAP_MS = 6 * 60 * 60 * 1000;
 const HEARTBEAT_INTERVAL_MS = 30_000;
 function isPersistentRetryEnabled() {
-  return feature('UNATTENDED_RETRY') ? isEnvTruthy(process.env.CLAUDE_CODE_UNATTENDED_RETRY) : false;
+  return feature('UNATTENDED_RETRY') ? isEnvTruthy(process.env.CLEW_CODE_UNATTENDED_RETRY) : false;
 }
 function isTransientCapacityError(error) {
   return is529Error(error) || (error instanceof APIError && error.status === 429);
@@ -435,7 +435,7 @@ function isOAuthTokenRevokedError(error) {
   );
 }
 function isBedrockAuthError(error) {
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK)) {
     // AWS libs reject without an API call if .aws holds a past Expiration value
     // otherwise, API calls that receive expired tokens give generic 403
     // "The security token included in the request is invalid"
@@ -468,7 +468,7 @@ function isGoogleAuthLibraryCredentialError(error) {
   );
 }
 function isVertexAuthError(error) {
-  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_USE_VERTEX)) {
     // SDK-level: google-auth-library fails in prepareOptions() before the HTTP call
     if (isGoogleAuthLibraryCredentialError(error)) {
       return true;
@@ -532,7 +532,7 @@ function shouldRetry(error) {
   // transient blip (auth service flap, network hiccup) rather than bad
   // credentials. Bypass x-should-retry:false — the server assumes we'd retry
   // the same bad key, but our key is fine.
-  if (isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) && (error.status === 401 || error.status === 403)) {
+  if (isEnvTruthy(process.env.CLEW_CODE_REMOTE) && (error.status === 401 || error.status === 403)) {
     return true;
   }
   // Check for overloaded errors first by examining the message content
@@ -589,8 +589,8 @@ function shouldRetry(error) {
   return false;
 }
 export function getDefaultMaxRetries() {
-  if (process.env.CLAUDE_CODE_MAX_RETRIES) {
-    return parseInt(process.env.CLAUDE_CODE_MAX_RETRIES, 10);
+  if (process.env.CLEW_CODE_MAX_RETRIES) {
+    return parseInt(process.env.CLEW_CODE_MAX_RETRIES, 10);
   }
   return DEFAULT_MAX_RETRIES;
 }

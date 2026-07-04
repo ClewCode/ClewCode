@@ -276,7 +276,7 @@ export function getTerminalIdeType(): IdeType | null {
 }
 
 /**
- * Gets sorted IDE lockfiles from the Claude config dir (respects CLAUDE_CONFIG_DIR)
+ * Gets sorted IDE lockfiles from the Claude config dir (respects CLEW_CONFIG_DIR)
  * @returns Array of full lockfile paths sorted by modification time (newest first)
  */
 export async function getSortedIdeLockfiles(): Promise<string[]> {
@@ -630,8 +630,8 @@ export async function detectIDEs(includeInvalid: boolean): Promise<DetectedIDEIn
   const detectedIDEs: DetectedIDEInfo[] = [];
 
   try {
-    // Get the CLAUDE_CODE_SSE_PORT if set
-    const ssePort = process.env.CLAUDE_CODE_SSE_PORT;
+    // Get the CLEW_CODE_SSE_PORT if set
+    const ssePort = process.env.CLEW_CODE_SSE_PORT;
     const envPort = ssePort ? parseInt(ssePort, 10) : null;
 
     // Get the current working directory, normalized to NFC for consistent
@@ -657,7 +657,7 @@ export async function detectIDEs(includeInvalid: boolean): Promise<DetectedIDEIn
       if (!lockfileInfo) continue;
 
       let isValid = false;
-      if (isEnvTruthy(process.env.CLAUDE_CODE_IDE_SKIP_VALID_CHECK)) {
+      if (isEnvTruthy(process.env.CLEW_CODE_IDE_SKIP_VALID_CHECK)) {
         isValid = true;
       } else if (lockfileInfo.port === envPort) {
         // If the port matches the environment variable, mark as valid regardless of directory
@@ -1204,7 +1204,7 @@ export async function initializeIdeIntegration(
   void findAvailableIDE().then(onIdeDetected);
 
   const shouldAutoInstall = getGlobalConfig().autoInstallIdeExtension ?? true;
-  if (!isEnvTruthy(process.env.CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL) && shouldAutoInstall) {
+  if (!isEnvTruthy(process.env.CLEW_CODE_IDE_SKIP_AUTO_INSTALL) && shouldAutoInstall) {
     const ideType = ideToInstallExtension ?? getTerminalIdeType();
     if (ideType) {
       if (isVSCodeIde(ideType)) {
@@ -1253,8 +1253,8 @@ export async function initializeIdeIntegration(
  */
 const detectHostIP = memoize(
   async (isIdeRunningInWindows: boolean, port: number) => {
-    if (process.env.CLAUDE_CODE_IDE_HOST_OVERRIDE) {
-      return process.env.CLAUDE_CODE_IDE_HOST_OVERRIDE;
+    if (process.env.CLEW_CODE_IDE_HOST_OVERRIDE) {
+      return process.env.CLEW_CODE_IDE_HOST_OVERRIDE;
     }
 
     if (getPlatform() !== 'wsl' || !isIdeRunningInWindows) {

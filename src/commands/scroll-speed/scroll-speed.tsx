@@ -91,7 +91,7 @@ export async function call(
   // Non-interactive: set from argument
   if (trimmed) {
     if (trimmed.toLowerCase() === 'default' || trimmed.toLowerCase() === 'reset') {
-      process.env.CLAUDE_CODE_SCROLL_SPEED = '';
+      process.env.CLEW_CODE_SCROLL_SPEED = '';
       onDone(`Scroll speed reset to default (1).`, { display: 'system' });
       return null;
     }
@@ -104,7 +104,7 @@ export async function call(
       return null;
     }
 
-    process.env.CLAUDE_CODE_SCROLL_SPEED = String(n);
+    process.env.CLEW_CODE_SCROLL_SPEED = String(n);
     const label = n === 1 ? ' (default)' : '';
     onDone(`Scroll speed set to ${n}${label}.`, { display: 'system' });
     return null;
@@ -117,7 +117,7 @@ export async function call(
     <ScrollSpeedSelector
       initialSpeed={current}
       onConfirm={(speed: number) => {
-        process.env.CLAUDE_CODE_SCROLL_SPEED = speed === 1 ? '' : String(speed);
+        process.env.CLEW_CODE_SCROLL_SPEED = speed === 1 ? '' : String(speed);
         const label = speed === 1 ? ' (default)' : '';
         onDone(`Scroll speed set to ${speed}${label}.`, { display: 'system' });
       }}

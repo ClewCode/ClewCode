@@ -3,14 +3,15 @@ import { homedir } from 'os';
 import { join } from 'path';
 
 /**
- * Read an env var with CLEW_* primary and CLAUDE_* legacy fallback.
+ * Read an env var with CLEW_* primary and legacy CLAUDE_* fallback
+ * (transition period).
  */
 export function getEnvWithAlias(primary: string, legacy: string): string | undefined {
   return process.env[primary] ?? process.env[legacy];
 }
 
 /**
- * Primary config home: ~/.clew (or CLEW_CONFIG_DIR / CLAUDE_CONFIG_DIR fallback).
+ * Primary config home: ~/.clew (or CLEW_CONFIG_DIR, fallback CLAUDE_CONFIG_DIR).
  */
 export const getClewConfigHomeDir = memoize(
   (): string => {
@@ -58,14 +59,14 @@ export function isEnvDefinedFalsy(envVar: string | boolean | undefined): boolean
 }
 
 /**
- * --bare / CLAUDE_CODE_SIMPLE / CLEW_CODE_SIMPLE — skip hooks, LSP, plugin sync,
+ * --bare / CLEW_CODE_SIMPLE / CLEW_CODE_SIMPLE — skip hooks, LSP, plugin sync,
  * skill dir-walk, attribution, background prefetches, and ALL keychain/credential
  * reads. Auth is strictly ANTHROPIC_API_KEY env or apiKeyHelper from --settings.
  * Explicit CLI flags (--plugin-dir, --add-dir, --mcp-config) still honored.
  * ~30 gates across the codebase.
  *
  * Checks argv directly (in addition to the env var) because several gates
- * run before main.tsx's action handler sets CLAUDE_CODE_SIMPLE=1 from --bare
+ * run before main.tsx's action handler sets CLEW_CODE_SIMPLE=1 from --bare
  * — notably startKeychainPrefetch() at main.tsx top-level.
  */
 export function isBareMode(): boolean {

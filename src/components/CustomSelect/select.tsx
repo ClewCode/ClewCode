@@ -26,6 +26,7 @@ function getTextContent(node: ReactNode): string {
 type BaseOption<T> = {
   description?: string;
   dimDescription?: boolean;
+  hideIndex?: boolean;
   label: ReactNode;
   value: T;
   disabled?: boolean;
@@ -537,7 +538,7 @@ export function Select<T>({
                 shouldShowDownArrow={areMoreOptionsBelow && isLastVisibleOption}
                 shouldShowUpArrow={areMoreOptionsAbove && isFirstVisibleOption}
               >
-                {!hideIndexes && <Text dimColor>{`${i}.`.padEnd(maxIndexWidth + 1)}</Text>}
+                {!hideIndexes && !option.hideIndex && <Text dimColor>{`${i}.`.padEnd(maxIndexWidth + 1)}</Text>}
                 <Text
                   dimColor={isOptionDisabled}
                   color={isOptionDisabled ? undefined : isSelected ? 'success' : isFocused ? 'suggestion' : undefined}
@@ -546,7 +547,7 @@ export function Select<T>({
                 </Text>
               </SelectOption>
               {option.description && (
-                <Box paddingLeft={hideIndexes ? 4 : maxIndexWidth + 4}>
+                <Box paddingLeft={hideIndexes || option.hideIndex ? 4 : maxIndexWidth + 4}>
                   <Text
                     dimColor={isOptionDisabled || option.dimDescription !== false}
                     color={isOptionDisabled ? undefined : isSelected ? 'success' : isFocused ? 'suggestion' : undefined}
@@ -613,7 +614,7 @@ export function Select<T>({
         if (data.option.type === 'input' || data.option.type === 'section') return 0;
         const labelText = getTextContent(data.option.label);
         // Width: indicator (1) + space (1) + index + label + space + checkmark (1)
-        const indexWidth = hideIndexes ? 0 : maxIndexWidth + 2;
+        const indexWidth = hideIndexes || data.option.hideIndex ? 0 : maxIndexWidth + 2;
         const checkmarkWidth = data.isSelected ? 2 : 0;
         return 2 + indexWidth + stringWidth(labelText) + checkmarkWidth;
       }),
@@ -636,7 +637,7 @@ export function Select<T>({
             );
           }
           const labelText = getTextContent(data.option.label);
-          const indexWidth = hideIndexes ? 0 : maxIndexWidth + 2;
+          const indexWidth = hideIndexes || data.option.hideIndex ? 0 : maxIndexWidth + 2;
           const checkmarkWidth = data.isSelected ? 2 : 0;
           const currentLabelWidth = 2 + indexWidth + stringWidth(labelText) + checkmarkWidth;
           const padding = maxLabelWidth - currentLabelWidth;
@@ -667,7 +668,9 @@ export function Select<T>({
                           : undefined
                   }
                 >
-                  {!hideIndexes && <Text dimColor>{`${data.index}.`.padEnd(maxIndexWidth + 2)}</Text>}
+                  {!hideIndexes && !data.option.hideIndex && (
+                    <Text dimColor>{`${data.index}.`.padEnd(maxIndexWidth + 2)}</Text>
+                  )}
                   {data.label}
                 </Text>
                 {data.isSelected && <Text color="success"> {figures.tick}</Text>}
@@ -806,7 +809,7 @@ export function Select<T>({
             shouldShowUpArrow={areMoreOptionsAbove && isFirstVisibleOption}
           >
             <Box flexDirection="row" flexShrink={0}>
-              {!hideIndexes && <Text dimColor>{`${i}.`.padEnd(maxIndexWidth + 2)}</Text>}
+              {!hideIndexes && !option.hideIndex && <Text dimColor>{`${i}.`.padEnd(maxIndexWidth + 2)}</Text>}
               <Text
                 dimColor={isOptionDisabled}
                 color={isOptionDisabled ? undefined : isSelected ? 'success' : isFocused ? 'suggestion' : undefined}

@@ -27,7 +27,7 @@ const MIGRATIONS: ((c: GlobalConfig) => Notification | undefined)[] = [
     return {
       key: 'opus-pro-update',
       text: isLegacyRemap
-        ? 'Model updated to Opus 4.6 · Set CLAUDE_CODE_DISABLE_LEGACY_MODEL_REMAP=1 to opt out'
+        ? 'Model updated to Opus 4.6 · Set CLEW_CODE_DISABLE_LEGACY_MODEL_REMAP=1 to opt out'
         : 'Model updated to Opus 4.6',
       color: 'suggestion',
       priority: 'high',

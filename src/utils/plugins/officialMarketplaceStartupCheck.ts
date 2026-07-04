@@ -42,7 +42,7 @@ export type OfficialMarketplaceSkipReason =
  * Check if official marketplace auto-install is disabled via environment variable.
  */
 export function isOfficialMarketplaceAutoInstallDisabled(): boolean {
-  return isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL);
+  return isEnvTruthy(process.env.CLEW_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL);
 }
 
 /**

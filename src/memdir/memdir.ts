@@ -119,7 +119,7 @@ export const DIRS_EXIST_GUIDANCE =
  * (once per session via systemPromptSection cache) so the model can always
  * write without checking existence first. FsOperations.mkdir is recursive
  * by default and already swallows EEXIST, so the full parent chain
- * (~/.claude/projects/<slug>/memory/) is created in one call with no
+ * (~/.clew/projects/<slug>/memory/) is created in one call with no
  * try/catch needed for the happy path.
  */
 export async function ensureMemoryDirExists(memoryDir: string): Promise<void> {
@@ -456,9 +456,9 @@ export async function loadMemoryPrompt(): Promise<string | null> {
   }
 
   logEvent('tengu_memdir_disabled', {
-    disabled_by_env_var: isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_AUTO_MEMORY),
+    disabled_by_env_var: isEnvTruthy(process.env.CLEW_CODE_DISABLE_AUTO_MEMORY),
     disabled_by_setting:
-      !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_AUTO_MEMORY) && getInitialSettings().autoMemoryEnabled === false,
+      !isEnvTruthy(process.env.CLEW_CODE_DISABLE_AUTO_MEMORY) && getInitialSettings().autoMemoryEnabled === false,
   });
   // Gate on the GB flag directly, not isTeamMemoryEnabled() — that function
   // checks isAutoMemoryEnabled() first, which is definitionally false in this

@@ -115,7 +115,7 @@ export const FileEditTool = buildTool({
     const fullFilePath = expandPath(file_path);
 
     // PERFORCE_MODE: Check if file is read-only
-    if (isEnvTruthy(process.env.CLAUDE_CODE_PERFORCE_MODE)) {
+    if (isEnvTruthy(process.env.CLEW_CODE_PERFORCE_MODE)) {
       try {
         // Try to open file for writing to check if it's read-only
         const fd = await open(fullFilePath, 'r+');
@@ -374,7 +374,7 @@ export const FileEditTool = buildTool({
     // Discover skills from this file's path (fire-and-forget, non-blocking)
     // Skip in simple mode - no skills available
     const cwd = getCwd();
-    if (!isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)) {
+    if (!isEnvTruthy(process.env.CLEW_CODE_SIMPLE)) {
       const newSkillDirs = await discoverSkillDirsForPaths([absoluteFilePath], cwd);
       if (newSkillDirs.length > 0) {
         // Store discovered dirs for attachment display
@@ -492,7 +492,7 @@ export const FileEditTool = buildTool({
 
     let gitDiff: ToolUseDiff | undefined;
     if (
-      isEnvTruthy(process.env.CLAUDE_CODE_REMOTE) &&
+      isEnvTruthy(process.env.CLEW_CODE_REMOTE) &&
       getFeatureValue_CACHED_MAY_BE_STALE('tengu_quartz_lantern', false)
     ) {
       const startTime = Date.now();
