@@ -229,9 +229,79 @@ export async function searchBrave(
   }
 }
 
+// Jina Search Integration (Free, no API key, high quality)
+export interface JinaSearchResult {
+  title: string;
+  url: string;
+  content: string;
+  description: string;
+  score?: SourceScore;
+}
+
+export interface JinaSearchResponse {
+  query: string;
+  results: JinaSearchResult[];
+  response_time?: number;
+}
+
+export async function searchJina(
+  query: string,
+  options: {
+    maxResults?: number;
+    timeout?: number;
+  } = {},
+): Promise<JinaSearchResponse | null> {
+  const apiKey = process.env.JINA_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+
+  const { maxResults = 10, timeout = 15000 } = options;
+
+  try {
+    const startTime = performance.now();
+    const response = await fetch(`https://s.jina.ai/${encodeURIComponent(query)}`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'ClewCodeResearchTool/1.0',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      signal: AbortSignal.timeout(timeout),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Jina Search error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as any;
+    const items = Array.isArray(data.data) ? data.data : [];
+
+    const results = items
+      .filter((r: any) => r.title && r.url)
+      .slice(0, maxResults)
+      .map((r: any) => ({
+        title: r.title,
+        url: r.url,
+        content: r.content || '',
+        description: r.description || '',
+        score: calculateSourceScore(r.url, r.title, r.description || ''),
+      }));
+
+    return {
+      query,
+      results,
+      response_time: performance.now() - startTime,
+    };
+  } catch (error) {
+    logError(error as Error);
+    return null;
+  }
+}
+
 // Unified search function that tries multiple providers in priority order
 export interface SearchProviderResult {
-  source: 'duckduckgo' | 'tavily' | 'brave';
+  source: 'duckduckgo' | 'tavily' | 'brave' | 'jina';
   query: string;
   results: Array<{
     title: string;
@@ -249,10 +319,11 @@ export interface SearchProviderResult {
  * Get search providers in priority order:
  * 1. Tavily (if API key available)
  * 2. Brave (if API key available)
- * 3. DuckDuckGo (free, no API key, last resort)
+ * 3. Jina (if API key available)
+ * 4. DuckDuckGo (free, no API key, last resort)
  */
-export function getSearchProviderPriority(): Array<'duckduckgo' | 'tavily' | 'brave'> {
-  const providers: Array<'duckduckgo' | 'tavily' | 'brave'> = [];
+export function getSearchProviderPriority(): Array<'duckduckgo' | 'tavily' | 'brave' | 'jina'> {
+  const providers: Array<'duckduckgo' | 'tavily' | 'brave' | 'jina'> = [];
 
   // API-based providers (if configured) first
   if (process.env.TAVILY_API_KEY) {
@@ -263,7 +334,11 @@ export function getSearchProviderPriority(): Array<'duckduckgo' | 'tavily' | 'br
     providers.push('brave');
   }
 
-  // DuckDuckGo as free fallback
+  if (process.env.JINA_API_KEY) {
+    providers.push('jina');
+  }
+
+  // DuckDuckGo as final free fallback
   providers.push('duckduckgo');
 
   return providers;
@@ -272,7 +347,7 @@ export function getSearchProviderPriority(): Array<'duckduckgo' | 'tavily' | 'br
 export async function searchWithProviders(
   query: string,
   options: {
-    providers?: Array<'duckduckgo' | 'tavily' | 'brave'>;
+    providers?: Array<'duckduckgo' | 'tavily' | 'brave' | 'jina'>;
     maxResults?: number;
     timeout?: number;
   } = {},
@@ -344,6 +419,28 @@ export async function searchWithProviders(
           };
         }
       }
+
+      if (provider === 'jina') {
+        const jinaResult = await searchJina(query, {
+          maxResults,
+          timeout,
+        });
+
+        if (jinaResult && jinaResult.results.length > 0) {
+          return {
+            source: 'jina',
+            query: jinaResult.query,
+            results: jinaResult.results.map(r => ({
+              title: r.title,
+              url: r.url,
+              content: r.content,
+              description: r.description || '',
+              excerpt: (r.description || r.content || '').substring(0, 500),
+            })),
+            responseTime: jinaResult.response_time,
+          };
+        }
+      }
     } catch (error) {
       logError(error as Error);
     }
@@ -358,11 +455,15 @@ export async function searchWithProviders(
 }
 
 // Check which providers are available
-export function getAvailableSearchProviders(): Array<'duckduckgo' | 'tavily' | 'brave'> {
-  const providers: Array<'duckduckgo' | 'tavily' | 'brave'> = [];
+export function getAvailableSearchProviders(): Array<'duckduckgo' | 'tavily' | 'brave' | 'jina'> {
+  const providers: Array<'duckduckgo' | 'tavily' | 'brave' | 'jina'> = [];
 
   // DuckDuckGo is always available (free)
   providers.push('duckduckgo');
+
+  if (process.env.JINA_API_KEY) {
+    providers.push('jina');
+  }
 
   if (process.env.TAVILY_API_KEY) {
     providers.push('tavily');
