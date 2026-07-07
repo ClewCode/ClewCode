@@ -218,55 +218,11 @@ This project has a knowledge graph at `graphify-out/` (24,314 nodes, 56,434 edge
 - Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review or when query/path/explain don't surface enough.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 
-## Key Conventions
+## Project Rules
 
-### Keep Docs in Sync (always)
+Project conventions, code style, and git workflow rules are managed via the `/rule` system and stored in `.clew/rules.json`. Rules are auto-injected into the system prompt.
 
-Whenever you fix, add, remove, or change anything, **update the relevant docs in the same change** — do not defer it. Covers `CLAUDE.md`, `AGENTS.md`, `PLAN.md`, `CHANGELOG.md`, `README.md`, and any affected skill `SKILL.md`. If a code change makes a doc statement stale (a count, path, command, or rule), fix the doc too. "Code changed but docs didn't" = incomplete task.
-
-### Runtime & Style
-
-- **ESM only** (`"type": "module"` in package.json), `NodeNext` module resolution
-- Use `node:` prefixes for Node built-ins: `import { readFile } from 'node:fs/promises'`
-- Use `.js` extensions for relative imports: `import { thing } from './thing.js'`
-- Bun for all dev commands; TypeScript with strict mode
-
-### Formatting (Biome)
-
-Scope: `src/**/*.{ts,tsx,js}`. Style: 2-space indent, single quotes, 120 columns, LF endings.
-
-```bash
-bun run lint      # Lint with auto-fix
-bun run format    # Format with auto-fix
-```
-
-### Source vs Build
-
-Edit `src/` only. `dist/` is generated build output. The build uses `bun build` (not tsc) and externally marks many optional deps (electron, playwright, sharp, etc.) to keep the bundle lean.
-
-### Settings
-
-Shared: `.clew/settings.json`. Private/local: `.clew/settings.local.json`. Never commit secrets, API keys, tokens, or credentials. Use environment variables.
-
-## Git Workflow
-
-### Branch Naming
-
-Use `type/description`: `feat/add-feature`, `fix/resolve-bug`, `docs/update-guide`.
-
-### Commit Style
-
-Use conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`.
-
-### Before Commit
-
-1. Run: `bun run check:ci && bun x tsc --noEmit && bun test --bail`
-2. Read relevant files first, understand existing patterns
-3. Modify source files in `src/`, not `dist/`
-4. Keep imports ESM-compatible
-5. Add or update tests when behavior changes
-6. Update `CHANGELOG.md` under `## [Unreleased]`
-7. Use a conventional commit message
+Use `/rule` to list, `/rule add` to add, `/rule edit` to edit, `/rule remove` to delete rules.
 
 ## Important Notes
 
@@ -361,4 +317,4 @@ Profile and last-used permission mode are saved between sessions.
 
 ## Security Rules
 
-Never commit: provider API keys, npm tokens, OAuth tokens, session cookies, `.env` files, private credentials, local user secrets, billing/subscription data. Prefer `process.env.KEY_NAME` over hardcoded secrets.
+Never commit secrets (API keys, tokens, `.env` files, credentials). Use `process.env` over hardcoded values. This is also enforced via the project rule system.
