@@ -4,23 +4,37 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Changed
-- **Search performance optimizations**: Added LRU eviction (max 500 entries) to in-memory search cache to prevent unbounded memory growth. Debounced session search indexing (30s cooldown) to eliminate redundant `readdirSync` + `statSync` on every search call. Precompiled FTS5 query statement for reuse across searches. Enabled `auto_vacuum=INCREMENTAL` with periodic incremental vacuum every hour to reclaim DB free pages. (`src/utils/searchCache.ts`, `src/services/sessionSearch/sessionSearchDb.ts`)
-- **`.js` shadow cleanup complete**: Removed 401 committed `.js` shadow files that had `.ts`/`.tsx` twins — the final batch of the JS→TS migration. All 148 remaining shadow pairs were reconciled: 130 body-drifted `.ts` pairs (verified TS canonical in all cases), 15 `.tsx` transpiler-noise pairs, and 3 in-sync pairs. `/js-shadow-sync --all` now reports 0 shadows. (`src/`, multiple commits)
+## [0.5.0] — 2026-07-08
 
 ### Added
+- **Context usage HUD**: TokenWarning now renders a segmented context bar with per-category breakdown (system prompt, tools, messages, tool results). Shows `N% until auto-compact` with color-coded segments. (`src/components/TokenWarning.tsx`)
+- **Compact regret detection**: Tracks tool signatures dropped during compaction and flags when the model re-references them within a 3-turn window — measurement-only phase. (`src/services/compact/autoCompact.ts`, `src/query.ts`)
+- **Auto-compact hard threshold**: Added `AUTOCOMPACT_HARD_BUFFER_TOKENS` (20K) for force-compaction mid-tool-chain when `CLEW_CODE_BOUNDARY_COMPACT` is enabled. Includes `isAtNaturalBoundary()` and `estimateCompressibility()` heuristics. (`src/services/compact/autoCompact.ts`)
+- **Streaming retry with backoff**: Changed from single retry to configurable limit (default 3) with exponential backoff before non-streaming fallback. Controlled via `CLEW_CODE_STREAMING_RETRIES`. (`src/services/api/claude.ts`)
+- **MCP url→urls normalization**: `normalizeMcpToolArgsForSchema()` converts single `url` string to `urls` array for tools whose `inputSchema` expects array type — fixes compatibility with web-scraping MCP servers. (`src/services/mcp/client.ts`)
+- **Session search background indexing**: Debounced (30s) async FTS5 indexing, precompiled query statement for reuse, incremental vacuum every hour. (`src/services/sessionSearch/sessionSearchDb.ts`)
+- **Search cache + codegraph integration**: Glob/Grep results cached in-memory with LRU eviction (max 500). FileEdit/FileWrite invalidate cache and schedule codegraph update on write. (`src/utils/searchCache.ts`, `src/utils/codegraphUpdate.ts`, `src/tools/{FileEditTool,FileWriteTool,GlobTool,GrepTool}/`)
 - **Enterprise audit logging**: Added NDJSON audit log writer/service, env-based opt-in, tool execution audit events, command/file access audit events, rotation/filtering, and focused tests. (`src/services/auditLog/`, `src/services/tools/toolExecution.ts`)
 - **README sections**: Added table of contents, prerequisites, use cases, screenshots, configuration reference, FAQ, contributing guide, and star history chart. (`README.md`)
-- **Terminal title utility**: Extracted shared `setTerminalTitle()` to `src/utils/terminalTitle.ts` — handles both `process.title` (Windows) and OSC 0 (POSIX) in one place. (`src/utils/terminalTitle.ts`, `src/utils/terminalTitle.js`)
+- **Terminal title utility**: Extracted shared `setTerminalTitle()` to `src/utils/terminalTitle.ts`. (`src/utils/terminalTitle.ts`)
 - **Screenshot asset**: Added REPL screenshot for README. (`assets/screenshots/`)
 - **Test for media fallback**: Added `AnthropicAdapter` test covering DeepSeek text-only model image stripping. (`src/services/ai/adapter/AnthropicAdapter.test.ts`)
 
 ### Changed
-- **Vision/media graceful degradation**: `modelSupportsVision()` now defaults to `false` (instead of `true`) when registry lookup fails — prevents sending multimodal blocks to APIs that reject them. (`src/services/ai/adapter/AnthropicAdapter.ts`, `src/services/ai/adapter/AnthropicAdapter.js`)
-- **DeepSeek text-only sanitization**: `OpenAICompatibleProvider` now strips `image_url` blocks and replaces with a text notice before sending to DeepSeek's API. (`src/services/ai/providers/OpenAICompatibleProvider.ts`, `src/services/ai/providers/OpenAICompatibleProvider.js`)
-- **Rewind UI improvements**: Refined MessageSelector layout — grouped Rewind header, added "Current point" indicator, extracted `DiffStatsSummary` component, cleaner file history metadata display. (`src/components/MessageSelector.tsx`)
-- **`useTerminalTitle` hook**: Refactored to delegate title-setting to the shared utility. (`src/ink/hooks/use-terminal-title.ts`, `src/ink/hooks/use-terminal-title.js`)
+- **`.js` shadow cleanup complete**: Removed 401 committed `.js` shadow files that had `.ts`/`.tsx` twins — the final batch of the JS→TS migration. All 148 remaining shadow pairs were reconciled: 130 body-drifted `.ts` pairs (verified TS canonical in all cases), 15 `.tsx` transpiler-noise pairs, and 3 in-sync pairs. `/js-shadow-sync --all` now reports 0 shadows. (`src/`, multiple commits)
+- **Search performance optimizations**: Added LRU eviction (max 500 entries) to in-memory search cache. Debounced session search indexing (30s cooldown). Precompiled FTS5 query statement. Enabled `auto_vacuum=INCREMENTAL`. (`src/utils/searchCache.ts`, `src/services/sessionSearch/sessionSearchDb.ts`)
+- **Prompt suggestions always enabled**: Removed growthbook feature flag gate (`tengu_chomp_inflection`) from prompt suggestion toggle. Setting is now unconditionally available in config UI. (`src/services/PromptSuggestion/promptSuggestion.ts`, `src/components/Settings/Config.tsx`)
+- **Colorize ansis API**: Updated from deprecated `ansis.ansi256()`/`ansis.bgAnsi256()` to `ansis.fg()`/`ansis.bg()`. Applied to both `.ts` and `.js` twins. (`src/ink/colorize.ts`, `src/ink/colorize.js`)
+- **Auth error retry**: `withRetry` no longer retries auth errors when provider error info is available — avoids infinite retry loops on bad credentials. (`src/services/api/withRetry.ts`)
+- **REPL tool JSX clearing**: `/resume` picker local JSX now properly cleared before returning to prompt. (`src/screens/REPL.tsx`)
+- **Spinner verbs**: Changed from generic whimsical verbs to Harry Potter-themed phrases. (`src/components/Spinner/whimsy.ts`)
+- **File permission dialog**: Symlink resolution failure now gracefully caught with debug log instead of crashing. (`src/components/permissions/FilePermissionDialog/FilePermissionDialog.tsx`)
+- **Debug logging**: Added debug logs for SIGINT handler, uncaught exceptions, and invalid settings dialog exit in `main.tsx`.
+- **`useTerminalTitle` hook**: Refactored to delegate title-setting to the shared utility. (`src/ink/hooks/use-terminal-title.ts`)
 - **`main.tsx`**: Uses shared `setTerminalTitle` with `DEFAULT_TERMINAL_TITLE` constant instead of inline `process.title`. (`src/main.tsx`)
+- **Vision/media graceful degradation**: `modelSupportsVision()` now defaults to `false` (instead of `true`) when registry lookup fails. (`src/services/ai/adapter/AnthropicAdapter.ts`)
+- **DeepSeek text-only sanitization**: `OpenAICompatibleProvider` now strips `image_url` blocks before sending to DeepSeek's API. (`src/services/ai/providers/OpenAICompatibleProvider.ts`)
+- **Rewind UI improvements**: Refined MessageSelector layout — grouped Rewind header, added "Current point" indicator, extracted `DiffStatsSummary` component. (`src/components/MessageSelector.tsx`)
 
 ## [0.4.8] — 2026-07-04
 
