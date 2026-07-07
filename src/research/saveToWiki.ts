@@ -19,10 +19,13 @@ export async function saveReportToWiki(
   const sanitizedTopic = topic.replace(/[\\/:*?"<>|]/g, '_');
   const wikiFilePath = join(wikiDir, `${sanitizedTopic}.md`);
 
-  const autoBlockStart = '<!-- claude:auto:start -->';
-  const autoBlockEnd = '<!-- claude:auto:end -->';
-  const userBlockStart = '<!-- claude:user:start -->';
-  const userBlockEnd = '<!-- claude:user:end -->';
+  const autoBlockStart = '<!-- clew:auto:start -->';
+  const autoBlockEnd = '<!-- clew:auto:end -->';
+  const userBlockStart = '<!-- clew:user:start -->';
+  const userBlockEnd = '<!-- clew:user:end -->';
+
+  const legacyUserBlockStart = '<!-- claude:user:start -->';
+  const legacyUserBlockEnd = '<!-- claude:user:end -->';
 
   let userNotes =
     '## User Notes\n\n*(Add your custom notes here. This block is preserved during future research updates.)*';
@@ -31,11 +34,18 @@ export async function saveReportToWiki(
   if (fsImpl.existsSync(wikiFilePath)) {
     try {
       const existingContent = await readFile(wikiFilePath, 'utf-8');
-      const userStartIdx = existingContent.indexOf(userBlockStart);
-      const userEndIdx = existingContent.indexOf(userBlockEnd);
+      let userStartIdx = existingContent.indexOf(userBlockStart);
+      let userEndIdx = existingContent.indexOf(userBlockEnd);
+      let tagLength = userBlockStart.length;
+
+      if (userStartIdx === -1) {
+        userStartIdx = existingContent.indexOf(legacyUserBlockStart);
+        userEndIdx = existingContent.indexOf(legacyUserBlockEnd);
+        tagLength = legacyUserBlockStart.length;
+      }
 
       if (userStartIdx !== -1 && userEndIdx !== -1 && userEndIdx > userStartIdx) {
-        userNotes = existingContent.slice(userStartIdx + userBlockStart.length, userEndIdx).trim();
+        userNotes = existingContent.slice(userStartIdx + tagLength, userEndIdx).trim();
       }
     } catch (_err) {
       // Keep default user notes if reading fails

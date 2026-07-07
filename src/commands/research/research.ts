@@ -37,6 +37,8 @@ import type { ResearchMode } from '../../research/types.js';
 import { getResearchWorkspaceStatus, initWorkspace } from '../../research/workspace.js';
 import type { LocalCommandCall } from '../../types/command.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
+import { rankSources } from '../../tools/ResearchTool/smartSourceRanking.js';
+import { assessSourceCredibility, detectConflicts, generateTruthCheckSummary } from '../../tools/ResearchTool/truthChecker.js';
 
 export const call: LocalCommandCall = async (args, _context) => {
   const cwd = process.cwd();
@@ -140,13 +142,40 @@ export const call: LocalCommandCall = async (args, _context) => {
       lines.push(researchHeader(query, mode));
 
       // 1. Source Collection
-      lines.push(stepStart('Collecting sources'));
-      const repoSources = plan.sourceStrategy.includes('local_repo') ? await collectLocalRepo(cwd, query) : [];
-      const wikiSources = plan.sourceStrategy.includes('local_wiki') ? await collectLocalWiki(cwd, query) : [];
-      const memorySources = plan.sourceStrategy.includes('local_memory') ? await collectLocalMemory(cwd, query) : [];
-      const webSources = plan.sourceStrategy.includes('web') ? await collectWebSearch(cwd, query, runDir) : [];
+      lines.push(stepStart('Collecting sources (parallel)'));
+      const collectorPromises = [
+        plan.sourceStrategy.includes('local_repo') ? collectLocalRepo(cwd, query) : Promise.resolve([]),
+        plan.sourceStrategy.includes('local_wiki') ? collectLocalWiki(cwd, query) : Promise.resolve([]),
+        plan.sourceStrategy.includes('local_memory') ? collectLocalMemory(cwd, query) : Promise.resolve([]),
+        plan.sourceStrategy.includes('web') ? collectWebSearch(cwd, query, runDir) : Promise.resolve([]),
+      ];
+      const settled = await Promise.allSettled(collectorPromises);
+      const [repoSources, wikiSources, memorySources, webSources] = settled.map(r =>
+        r.status === 'fulfilled' ? r.value : [],
+      );
 
       const allSources = [...repoSources, ...wikiSources, ...memorySources, ...webSources];
+
+      // Smart ranking: score and filter sources
+      if (allSources.length > 0) {
+        const ranked = rankSources(
+          allSources.map(s => ({
+            url: s.url || s.path || '',
+            title: s.title,
+            excerpt: s.excerpt || '',
+            content: '',
+            type: s.type,
+          })),
+          { preferOfficial: true, excludeSpam: true, minScore: 0 },
+        );
+        const scoreMap = new Map(ranked.map(r => [r.url || r.title, r.score]));
+        allSources.sort((a, b) => {
+          const aKey = a.url || a.path || a.title;
+          const bKey = b.url || b.path || b.title;
+          return (scoreMap.get(bKey) ?? 50) - (scoreMap.get(aKey) ?? 50);
+        });
+      }
+
       for (const source of allSources) {
         await appendSourceToRun(runDir, source);
       }
@@ -184,6 +213,24 @@ export const call: LocalCommandCall = async (args, _context) => {
           gapCount: synthesis.gaps.length,
         }),
       );
+
+      // Truth-check: detect conflicts across sources
+      const webWithUrls = allSources.filter(s => s.url);
+      if (webWithUrls.length > 1) {
+        const credibilityScores = webWithUrls.map(s => assessSourceCredibility(s.url!));
+        const sourcesForConflict = webWithUrls
+          .filter(s => s.excerpt)
+          .map(s => ({ url: s.url!, title: s.title, content: s.excerpt! }));
+        const conflicts = detectConflicts(sourcesForConflict, query);
+        if (conflicts.length > 0) {
+          const truthCheck = generateTruthCheckSummary(conflicts, credibilityScores, query);
+          lines.push('');
+          lines.push(`${C.bold}${C.yellow}╭── Truth Check${C.reset}`);
+          lines.push(`${C.bold}${C.yellow}│${C.reset}  ${truthCheck.summary}`);
+          lines.push(`${C.bold}${C.yellow}│${C.reset}  ${C.yellow}${conflicts.length} potential conflict(s) detected${C.reset}`);
+          lines.push(`${C.bold}${C.yellow}╰${'─'.repeat(40)}${C.reset}`);
+        }
+      }
 
       // 4. Report
       lines.push(stepStart('Building report'));

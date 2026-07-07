@@ -97,6 +97,7 @@ import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackToo
 import { PeerMemorySyncTool } from './tools/PeerMemorySyncTool/PeerMemorySyncTool.js';
 import { ExecAgentTool } from './tools/ProcessDelegateTool/ProcessDelegateTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
+import { ResearchTool } from './tools/ResearchTool/ResearchTool.js';
 
 import { AgentTool } from './tools/AgentTool/AgentTool.js';
 import { LSPTool } from './tools/LSPTool/LSPTool.js';
@@ -209,6 +210,7 @@ export function getAllBaseTools(): Tools {
     AskUserQuestionTool,
     SkillTool,
     EnterPlanModeTool,
+    ResearchTool,
     // ConfigTool, TungstenTool — Anthropic-internal, removed in Clew Code
     ...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
     GoalTool,

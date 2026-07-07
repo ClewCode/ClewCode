@@ -125,4 +125,33 @@ export const BUILTIN_WORKFLOWS: Record<string, WorkflowDefinition> = {
       required: ['typecheck_or_explain', 'relevant_tests_or_explain'],
     },
   },
+  'deep-research': {
+    name: 'deep-research',
+    description: 'Multi-phase deep research: plan -> collect -> extract -> synthesize -> report -> verify',
+    entry: 'planner',
+    agents: {
+      planner: {
+        next: ['collector'],
+      },
+      collector: {
+        next: ['extractor'],
+      },
+      extractor: {
+        next: ['synthesizer'],
+      },
+      synthesizer: {
+        next: ['reporter'],
+      },
+      reporter: {
+        next: ['verifier'],
+      },
+      verifier: {
+        next: [],
+      },
+    },
+    budgets: {
+      maxSteps: 60,
+      maxToolCalls: 200,
+    },
+  },
 };

@@ -424,7 +424,13 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 ## Star History
 
-[View star history on star-history.com](https://star-history.com/#ClewCode/ClewCode&Date)
+<a href="https://www.star-history.com/?repos=ClewCode%2FClewCode&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=ClewCode/ClewCode&type=date&theme=dark&legend=top-left&sealed_token=WOidmKAjTf9NlhzAYdnD299FcNzk3PFmRMroFl8z5CwNew4tB6fhqDAyJqdL3zexXKCpw_12pZ3EOxGEbHT5pMKdM4a2K40Q7Y0ox5ei_IutRqkuUMOdkQ" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=ClewCode/ClewCode&type=date&legend=top-left&sealed_token=WOidmKAjTf9NlhzAYdnD299FcNzk3PFmRMroFl8z5CwNew4tB6fhqDAyJqdL3zexXKCpw_12pZ3EOxGEbHT5pMKdM4a2K40Q7Y0ox5ei_IutRqkuUMOdkQ" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=ClewCode/ClewCode&type=date&legend=top-left&sealed_token=WOidmKAjTf9NlhzAYdnD299FcNzk3PFmRMroFl8z5CwNew4tB6fhqDAyJqdL3zexXKCpw_12pZ3EOxGEbHT5pMKdM4a2K40Q7Y0ox5ei_IutRqkuUMOdkQ" />
+ </picture>
+</a>
 
 ---
 

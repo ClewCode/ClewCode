@@ -212,9 +212,9 @@ describe('Research Agent Pipeline', () => {
     expect(fsImpl.existsSync(wikiPath)).toBe(true);
 
     const firstContent = fsImpl.readFileSync(wikiPath, { encoding: 'utf-8' });
-    expect(firstContent).toContain('<!-- claude:auto:start -->');
+    expect(firstContent).toContain('<!-- clew:auto:start -->');
     expect(firstContent).toContain('Some important facts');
-    expect(firstContent).toContain('<!-- claude:user:start -->');
+    expect(firstContent).toContain('<!-- clew:user:start -->');
     expect(firstContent).toContain(
       '*(Add your custom notes here. This block is preserved during future research updates.)*',
     );
