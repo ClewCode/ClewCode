@@ -697,6 +697,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     let activeIndex: number | null = null;
     const sentMessageDelta = false;
     let hasStartedThinkingBlock = false;
+    let sawFinishReason = false;
     let streamUsage: { prompt_tokens?: number; completion_tokens?: number } | null = null;
 
     try {
@@ -714,6 +715,8 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
           err._providerError = { category: 'content_filter', status: 400 };
           throw err;
         }
+
+        if (finishReason) sawFinishReason = true;
 
         // Tool calls arrived as full array (non-streaming tool mode) — emit start/delta/stop
         if (finishReason === 'tool_calls' && !chunk.choices?.[0]?.delta?.tool_calls) {
@@ -820,9 +823,20 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     // Surface as a structured error instead of letting an empty assistant
     // message render as a bare ▶.
     if (activeIndex === null && !hasStartedThinkingBlock) {
-      const err = new Error(`[${this.label}] Model returned an empty response (no content blocks emitted)`);
-      (err as any)._providerError = { category: 'empty_response', status: 200 };
-      throw err;
+      // If the model sent a finish_reason but no content, emit an empty
+      // text block so the downstream message builder has something to work
+      // with. Some providers (e.g. Free-tier OpenGateway models) only send
+      // a usage/finish chunk without a content delta.
+      if (sawFinishReason) {
+        yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } };
+        yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '' } };
+        yield { type: 'content_block_stop', index: 0 };
+        activeIndex = 0;
+      } else {
+        const err = new Error(`[${this.label}] Model returned an empty response (no content blocks emitted)`);
+        (err as any)._providerError = { category: 'empty_response', status: 200 };
+        throw err;
+      }
     }
 
     if (!sentMessageDelta) {

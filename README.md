@@ -424,7 +424,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ClewCode/ClewCode&type=Date)](https://star-history.com/#ClewCode/ClewCode&Date)
+[View star history on star-history.com](https://star-history.com/#ClewCode/ClewCode&Date)
 
 ---
 
