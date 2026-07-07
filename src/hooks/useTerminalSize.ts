@@ -5,7 +5,10 @@ export function useTerminalSize(): TerminalSize {
   const size = useContext(TerminalSizeContext);
 
   if (!size) {
-    throw new Error('useTerminalSize must be used within an Ink App component');
+    return {
+      columns: process.stdout.columns || 80,
+      rows: process.stdout.rows || 24,
+    };
   }
 
   return size;
