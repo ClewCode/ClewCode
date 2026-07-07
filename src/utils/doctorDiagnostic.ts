@@ -150,6 +150,11 @@ export function getCurrentInstallationType(): Promise<InstallationType> {
         }
       }
 
+      if (getPlatform() === 'windows') {
+        // Skip spawning on Windows to prevent Windows Terminal from opening new tabs
+        return 'unknown';
+      }
+
       let npmConfigStdout = '';
       let npmConfigExitCode = 0;
       try {
