@@ -1,5 +1,4 @@
 import { readFile, realpath } from 'fs/promises';
-import spawn from 'nano-spawn';
 import { homedir } from 'os';
 import { delimiter, join, posix, win32 } from 'path';
 import { checkGlobalInstallPermissions } from './autoUpdater.js';
@@ -150,29 +149,25 @@ export function getCurrentInstallationType(): Promise<InstallationType> {
         }
       }
 
+      // Determine global prefix statically from environment variables or defaults
+      // to prevent spawning slow subprocesses which can trigger Windows Terminal tab popups.
+      let globalPrefix: string | null = null;
       if (getPlatform() === 'windows') {
-        // Skip spawning on Windows to prevent Windows Terminal from opening new tabs
-        return 'unknown';
+        globalPrefix = process.env.PREFIX || (process.env.APPDATA ? join(process.env.APPDATA, 'npm') : null);
+      } else {
+        globalPrefix = process.env.PREFIX || '/usr/local';
       }
 
-      let npmConfigStdout = '';
-      let npmConfigExitCode = 0;
-      try {
-        const npmConfigResult = await spawn('npm config get prefix', {
-          shell: true,
-        });
-        npmConfigStdout = npmConfigResult.stdout;
-      } catch (e) {
-        npmConfigExitCode = e.exitCode ?? 1;
-        npmConfigStdout = e.stdout ?? '';
-      }
-      const globalPrefix = npmConfigExitCode === 0 ? npmConfigStdout.trim() : null;
-
-      if (globalPrefix && invokedPath.startsWith(globalPrefix)) {
-        return 'npm-global';
+      if (globalPrefix) {
+        let normalizedPrefix = globalPrefix;
+        if (getPlatform() === 'windows') {
+          normalizedPrefix = globalPrefix.split(win32.sep).join(posix.sep);
+        }
+        if (invokedPath.startsWith(normalizedPrefix)) {
+          return 'npm-global';
+        }
       }
 
-      // If we can't determine, return unknown
       return 'unknown';
     })();
   }
