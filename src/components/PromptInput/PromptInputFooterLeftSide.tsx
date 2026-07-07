@@ -219,9 +219,11 @@ function ModeIndicator({
 
   // Project rules indicator
   const [ruleCount, setRuleCount] = useState(0);
+  const [rulesDisabled, setRulesDisabled] = useState(false);
   useEffect(() => {
     Promise.all([loadProjectRules(), isProjectRulesDisabled()]).then(([rules, disabled]) => {
-      setRuleCount(disabled ? 0 : rules.length);
+      setRuleCount(rules.length);
+      setRulesDisabled(disabled);
     });
   }, []);
 
@@ -402,13 +404,19 @@ function ModeIndicator({
         ]
       : []),
     // Rule indicator
-    ...(ruleCount > 0
+    ...(rulesDisabled
       ? [
           <Text key="rules" dimColor>
-            {ruleCount}R
+            0R off
           </Text>,
         ]
-      : []),
+      : ruleCount > 0
+        ? [
+            <Text key="rules" dimColor>
+              {ruleCount}R
+            </Text>,
+          ]
+        : []),
     // BackgroundTaskStatus is NOT in parts — it renders as a Box sibling so
     // its click-target Box isn't nested inside the <Text wrap="truncate">
     // wrapper (reconciler throws on Box-in-Text).

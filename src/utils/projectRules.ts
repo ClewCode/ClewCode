@@ -85,6 +85,16 @@ export async function saveProjectRule(rule: string, cwd?: string): Promise<void>
   await writeRulesFile(rulesData, dir);
 }
 
+export async function editProjectRule(index: number, newText: string, cwd?: string): Promise<string | null> {
+  const dir = cwd ?? getOriginalCwd();
+  const data = await readRulesFile(dir);
+  if (!data || index < 0 || index >= data.rules.length) return null;
+  const old = data.rules[index];
+  data.rules[index] = newText;
+  await writeRulesFile(data, dir);
+  return old;
+}
+
 export async function removeProjectRule(index: number, cwd?: string): Promise<string | null> {
   const dir = cwd ?? getOriginalCwd();
   const rulesPath = join(dir, RULES_FILE);
