@@ -2008,11 +2008,51 @@ function expandCompactBoundaryHistory(
   return expanded;
 }
 
+/**
+ * Heal fragmented parent chains before resume reconstruction.
+ *
+ * Two independent recorders write the transcript: QueryEngine.recordTranscript
+ * (prefix-tracked, correct parents) and the incremental useLogMessages effect
+ * (parentHint-tracked). When they race on the same assistant sub-message, the
+ * null-parent write can win via appendEntry's UUID dedup — leaving the FIRST
+ * assistant sub-message after each user/tool_result message with
+ * parentUuid=null. This shatters a session into dozens of tiny islands, so the
+ * leaf→root walk in buildConversationChain recovers only the last island and
+ * resume shows almost nothing (a 155-message session resumed as 2 messages).
+ *
+ * We stitch each orphaned main-thread message to the previous chain participant
+ * in FILE ORDER (the messages Map is insertion-ordered by loadTranscriptFile).
+ * Only null/dangling parents are repaired — valid links (including legitimate
+ * branches) are preserved, so genuinely rewound/dead branches still get pruned
+ * by the leaf walk. Sidechains keep their own chains, and compact boundaries
+ * keep their intentional null parentUuid (they carry logicalParentUuid instead).
+ *
+ * Mutates `messages` in place with fresh entry objects. Only used on the resume
+ * path, where the Map is a throwaway local — never the live in-session cache.
+ */
+function repairFragmentedParentChain(messages: Map<UUID, TranscriptMessage>): Map<UUID, TranscriptMessage> {
+  let prevMainUuid: UUID | null = null;
+  for (const [uuid, msg] of messages) {
+    if (msg.isSidechain || !isChainParticipant(msg)) continue;
+    const parentMissing = msg.parentUuid == null || !messages.has(msg.parentUuid);
+    if (parentMissing && !isCompactBoundaryMessage(msg) && prevMainUuid && prevMainUuid !== uuid) {
+      messages.set(uuid, { ...msg, parentUuid: prevMainUuid });
+    }
+    prevMainUuid = uuid;
+  }
+  return messages;
+}
+
 export function buildResumeConversationChain(
   messages: Map<UUID, TranscriptMessage>,
   leafMessage: TranscriptMessage,
 ): TranscriptMessage[] {
-  return expandCompactBoundaryHistory(messages, buildConversationChain(messages, leafMessage));
+  repairFragmentedParentChain(messages);
+  // repairFragmentedParentChain replaces mutated entries with fresh objects, so
+  // re-fetch the leaf from the map — the caller's reference may be the stale
+  // pre-repair copy whose parentUuid would stop the walk at the leaf itself.
+  const repairedLeaf = messages.get(leafMessage.uuid) ?? leafMessage;
+  return expandCompactBoundaryHistory(messages, buildConversationChain(messages, repairedLeaf));
 }
 
 /**
@@ -3675,7 +3715,10 @@ export async function loadTranscriptFile(
 /**
  * Loads all messages, summaries, file history snapshots, and attribution snapshots from a specific session file.
  */
-async function loadSessionFile(sessionId: UUID): Promise<{
+async function loadSessionFile(
+  sessionId: UUID,
+  opts?: { includePreCompactHistory?: boolean },
+): Promise<{
   messages: Map<UUID, TranscriptMessage>;
   summaries: Map<UUID, string>;
   customTitles: Map<UUID, string>;
@@ -3692,7 +3735,7 @@ async function loadSessionFile(sessionId: UUID): Promise<{
   // for another session, such as "/resume <original-id>" from a fork or
   // cross-project resume, must not inherit the active session's project dir.
   const sessionFile = getTranscriptPathForSession(sessionId);
-  return loadTranscriptFile(sessionFile);
+  return loadTranscriptFile(sessionFile, opts);
 }
 
 /**
@@ -3723,7 +3766,10 @@ export async function doesMessageExistInSession(sessionId: UUID, messageUuid: UU
   return messageSet.has(messageUuid);
 }
 
-export async function getLastSessionLog(sessionId: UUID): Promise<LogOption | null> {
+export async function getLastSessionLog(
+  sessionId: UUID,
+  opts?: { includePreCompactHistory?: boolean },
+): Promise<LogOption | null> {
   // Single read: load all session data at once instead of reading the file twice
   const {
     messages,
@@ -3739,7 +3785,7 @@ export async function getLastSessionLog(sessionId: UUID): Promise<LogOption | nu
     contextCollapseSnapshot,
     pinnedDates,
     pinnedGitStatuses,
-  } = await loadSessionFile(sessionId);
+  } = await loadSessionFile(sessionId, opts);
   if (messages.size === 0) return null;
   // Prime getSessionMessages cache so recordTranscript (called after REPL
   // mount on --resume) skips a second full file load. -170~227ms on large sessions.
@@ -3754,8 +3800,12 @@ export async function getLastSessionLog(sessionId: UUID): Promise<LogOption | nu
   const lastMessage = findLatestMessage(messages.values(), m => !m.isSidechain);
   if (!lastMessage) return null;
 
-  // Build the transcript chain from the last message
-  const transcript = buildConversationChain(messages, lastMessage);
+  // Build the transcript chain from the last message. When resuming we want
+  // the full pre-compaction history, so walk the resume chain that preserves
+  // segments across compact boundaries.
+  const transcript = opts?.includePreCompactHistory
+    ? buildResumeConversationChain(messages, lastMessage)
+    : buildConversationChain(messages, lastMessage);
 
   const summary = summaries.get(lastMessage.uuid);
   const customTitle = customTitles.get(lastMessage.sessionId as UUID);

@@ -470,7 +470,7 @@ export async function loadConversationForResume(
       sessionId = loaded.sessionId;
     } else if (typeof source === 'string') {
       // Load specific session by ID
-      log = await getLastSessionLog(source as UUID);
+      log = await getLastSessionLog(source as UUID, { includePreCompactHistory: true });
       sessionId = source as UUID;
     } else {
       // Already have a LogOption

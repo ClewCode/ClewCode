@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **Resume now restores the full conversation, not just the last message**: A race between the two transcript recorders (`QueryEngine.recordTranscript` and the incremental `useLogMessages` effect) left the first assistant sub-message after each user/tool_result message with `parentUuid: null`, shattering a session into dozens of disconnected islands. Resume's leaf→root chain walk recovered only the final island (a 155-message session resumed as 2). Added `repairFragmentedParentChain()` in `buildResumeConversationChain()` to stitch orphaned main-thread messages to the previous chain participant in file order (sidechains and compact boundaries untouched), and routed the `/resume` slash command + `getLastSessionLog` + `--resume <id>` through `includePreCompactHistory`. (`src/utils/sessionStorage.ts`, `src/commands/resume/resume.tsx`, `src/utils/conversationRecovery.ts`)
+
 ## [0.5.0] — 2026-07-08
 
 ### Added

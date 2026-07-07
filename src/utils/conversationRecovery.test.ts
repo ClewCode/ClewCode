@@ -152,6 +152,42 @@ describe('buildResumeConversationChain', () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  test('stitches fragmented null-parent islands so resume recovers every message', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'clew-resume-frag-'));
+    const file = join(dir, 'session.jsonl');
+
+    try {
+      const sessionId = randomUUID() as UUID;
+      // Simulate the recorder race: the FIRST assistant message of each turn
+      // is orphaned (parentUuid=null) instead of chaining to the preceding
+      // user/tool_result message. Three turns → three disconnected islands.
+      const u1 = userMessage({ sessionId, parentUuid: null, timestamp: '2026-06-20T00:00:00.000Z', text: 'q1' });
+      const a1 = assistantMessage({ sessionId, parentUuid: null, timestamp: '2026-06-20T00:00:01.000Z', text: 'a1' });
+      const u2 = userMessage({ sessionId, parentUuid: a1.uuid, timestamp: '2026-06-20T00:00:02.000Z', text: 'q2' });
+      const a2 = assistantMessage({ sessionId, parentUuid: null, timestamp: '2026-06-20T00:00:03.000Z', text: 'a2' });
+      const u3 = userMessage({ sessionId, parentUuid: a2.uuid, timestamp: '2026-06-20T00:00:04.000Z', text: 'q3' });
+      const a3 = assistantMessage({ sessionId, parentUuid: null, timestamp: '2026-06-20T00:00:05.000Z', text: 'a3' });
+
+      await writeFile(file, [u1, a1, u2, a2, u3, a3].map(entry => JSON.stringify(entry)).join('\n'));
+
+      const { messages, leafUuids } = await loadTranscriptFile(file, { includePreCompactHistory: true });
+      const leaf = [...messages.values()].find(m => leafUuids.has(m.uuid) && m.uuid === a3.uuid);
+      expect(leaf).toBeDefined();
+
+      // Without the repair the leaf→root walk would return just [a3].
+      expect(buildResumeConversationChain(messages, leaf!).map(m => m.uuid)).toEqual([
+        u1.uuid,
+        a1.uuid,
+        u2.uuid,
+        a2.uuid,
+        u3.uuid,
+        a3.uuid,
+      ]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('getTranscriptPathForSession', () => {

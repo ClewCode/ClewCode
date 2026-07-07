@@ -129,8 +129,11 @@ function ResumeCommand({
       return;
     }
 
-    // Load full messages for lite logs
-    const fullLog = isLiteLog(log) ? await loadFullLog(log) : log;
+    // Load full messages for lite logs. includePreCompactHistory keeps the
+    // pre-compaction transcript so resume shows the entire original
+    // conversation, not just the post-compact tail (the startup picker in
+    // ResumeConversation.tsx passes the same flag).
+    const fullLog = isLiteLog(log) ? await loadFullLog(log, { includePreCompactHistory: true }) : log;
 
     // Check if this conversation is from a different directory
     const crossProjectCheck = checkCrossProjectResume(fullLog, showAllProjects, worktreePaths);
@@ -245,7 +248,7 @@ function ResumeWithLimit({
           setLoading(false);
           return;
         }
-        const fullLog = isLiteLog(latest) ? await loadFullLog(latest) : latest;
+        const fullLog = isLiteLog(latest) ? await loadFullLog(latest, { includePreCompactHistory: true }) : latest;
         if (cancelled) return;
         await onResume(sessionId, fullLog, 'slash_command_session_id', limit);
       } catch (err) {
@@ -326,7 +329,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
 
     if (matchingLogs.length > 0) {
       const log = matchingLogs[0]!;
-      const fullLog = isLiteLog(log) ? await loadFullLog(log) : log;
+      const fullLog = isLiteLog(log) ? await loadFullLog(log, { includePreCompactHistory: true }) : log;
       void onResume(maybeSessionId, fullLog, 'slash_command_session_id');
       return null;
     }
@@ -334,7 +337,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
     // Enriched logs didn't find it — try direct file lookup. This handles
     // sessions filtered out by enrichLogs (e.g., first message >16KB makes
     // firstPrompt extraction fail, causing the session to be dropped).
-    const directLog = await getLastSessionLog(maybeSessionId);
+    const directLog = await getLastSessionLog(maybeSessionId, { includePreCompactHistory: true });
     if (directLog) {
       void onResume(maybeSessionId, directLog, 'slash_command_session_id');
       return null;
@@ -350,7 +353,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
       const log = titleMatches[0]!;
       const sessionId = getSessionIdFromLog(log);
       if (sessionId) {
-        const fullLog = isLiteLog(log) ? await loadFullLog(log) : log;
+        const fullLog = isLiteLog(log) ? await loadFullLog(log, { includePreCompactHistory: true }) : log;
         void onResume(sessionId, fullLog, 'slash_command_title');
         return null;
       }
