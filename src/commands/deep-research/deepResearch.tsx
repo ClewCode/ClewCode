@@ -1,4 +1,4 @@
-import * as React from 'react';
+import type * as React from 'react';
 import { useEffect, useState } from 'react';
 import { Box } from '../../ink.js';
 import type { LocalJSXCommandOnDone } from '../../types/command.js';

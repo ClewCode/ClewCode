@@ -75,96 +75,103 @@ function getNormalizedPaths(): [invokedPath: string, execPath: string] {
   return [invokedPath, execPath];
 }
 
-export async function getCurrentInstallationType(): Promise<InstallationType> {
-  if (process.env.NODE_ENV === 'development') {
-    return 'development';
-  }
+let cachedInstallationTypePromise: Promise<InstallationType> | null = null;
 
-  const [invokedPath] = getNormalizedPaths();
+export function getCurrentInstallationType(): Promise<InstallationType> {
+  if (!cachedInstallationTypePromise) {
+    cachedInstallationTypePromise = (async () => {
+      if (process.env.NODE_ENV === 'development') {
+        return 'development';
+      }
 
-  // Check if running in bundled mode first
-  if (isInBundledMode()) {
-    // Check if this bundled instance was installed by a package manager
-    if (
-      detectHomebrew() ||
-      detectWinget() ||
-      detectMise() ||
-      detectAsdf() ||
-      (await detectPacman()) ||
-      (await detectDeb()) ||
-      (await detectRpm()) ||
-      (await detectApk())
-    ) {
-      return 'package-manager';
-    }
-    return 'native';
-  }
+      const [invokedPath] = getNormalizedPaths();
 
-  // Check if running from local npm installation
-  if (isRunningFromLocalInstallation()) {
-    return 'npm-local';
-  }
+      // Check if running in bundled mode first
+      if (isInBundledMode()) {
+        // Check if this bundled instance was installed by a package manager
+        if (
+          detectHomebrew() ||
+          detectWinget() ||
+          detectMise() ||
+          detectAsdf() ||
+          (await detectPacman()) ||
+          (await detectDeb()) ||
+          (await detectRpm()) ||
+          (await detectApk())
+        ) {
+          return 'package-manager';
+        }
+        return 'native';
+      }
 
-  // Check if we're in a typical npm global location
-  const npmGlobalPaths = [
-    '/usr/local/lib/node_modules',
-    '/usr/lib/node_modules',
-    '/opt/homebrew/lib/node_modules',
-    '/opt/homebrew/bin',
-    '/usr/local/bin',
-    '/.nvm/versions/node/', // nvm installations
-  ];
+      // Check if running from local npm installation
+      if (isRunningFromLocalInstallation()) {
+        return 'npm-local';
+      }
 
-  if (npmGlobalPaths.some(path => invokedPath.includes(path))) {
-    return 'npm-global';
-  }
+      // Check if we're in a typical npm global location
+      const npmGlobalPaths = [
+        '/usr/local/lib/node_modules',
+        '/usr/lib/node_modules',
+        '/opt/homebrew/lib/node_modules',
+        '/opt/homebrew/bin',
+        '/usr/local/bin',
+        '/.nvm/versions/node/', // nvm installations
+      ];
 
-  // Also check for npm/nvm in the path even if not in standard locations
-  if (invokedPath.includes('/npm/') || invokedPath.includes('/nvm/')) {
-    return 'npm-global';
-  }
-
-  // On Windows, check for global npm/bun installations
-  // Bun installs global packages at %USERPROFILE%\node_modules\<package>
-  // npm installs global packages at %APPDATA%\npm\node_modules\<package>
-  if (getPlatform() === 'windows') {
-    const userProfile = process.env.USERPROFILE;
-    if (userProfile) {
-      const normalizedUserPath = userProfile.split(win32.sep).join(posix.sep);
-      // Check for bun-style global install: C:/Users/<user>/node_modules/<package>
-      if (invokedPath.startsWith(`${normalizedUserPath}/node_modules/`)) {
+      if (npmGlobalPaths.some(path => invokedPath.includes(path))) {
         return 'npm-global';
       }
-    }
-    // Check for npm-style global install via APPDATA
-    const appData = process.env.APPDATA;
-    if (appData) {
-      const normalizedAppData = appData.split(win32.sep).join(posix.sep);
-      if (invokedPath.startsWith(`${normalizedAppData}/npm/node_modules/`)) {
+
+      // Also check for npm/nvm in the path even if not in standard locations
+      if (invokedPath.includes('/npm/') || invokedPath.includes('/nvm/')) {
         return 'npm-global';
       }
-    }
-  }
 
-  let npmConfigStdout = '';
-  let npmConfigExitCode = 0;
-  try {
-    const npmConfigResult = await spawn('npm config get prefix', {
-      shell: true,
-    });
-    npmConfigStdout = npmConfigResult.stdout;
-  } catch (e) {
-    npmConfigExitCode = e.exitCode ?? 1;
-    npmConfigStdout = e.stdout ?? '';
-  }
-  const globalPrefix = npmConfigExitCode === 0 ? npmConfigStdout.trim() : null;
+      // On Windows, check for global npm/bun installations
+      // Bun installs global packages at %USERPROFILE%\node_modules\<package>
+      // npm installs global packages at %APPDATA%\npm\node_modules\<package>
+      if (getPlatform() === 'windows') {
+        const userProfile = process.env.USERPROFILE;
+        if (userProfile) {
+          const normalizedUserPath = userProfile.split(win32.sep).join(posix.sep);
+          // Check for bun-style global install: C:/Users/<user>/node_modules/<package>
+          if (invokedPath.startsWith(`${normalizedUserPath}/node_modules/`)) {
+            return 'npm-global';
+          }
+        }
+        // Check for npm-style global install via APPDATA
+        const appData = process.env.APPDATA;
+        if (appData) {
+          const normalizedAppData = appData.split(win32.sep).join(posix.sep);
+          if (invokedPath.startsWith(`${normalizedAppData}/npm/node_modules/`)) {
+            return 'npm-global';
+          }
+        }
+      }
 
-  if (globalPrefix && invokedPath.startsWith(globalPrefix)) {
-    return 'npm-global';
-  }
+      let npmConfigStdout = '';
+      let npmConfigExitCode = 0;
+      try {
+        const npmConfigResult = await spawn('npm config get prefix', {
+          shell: true,
+        });
+        npmConfigStdout = npmConfigResult.stdout;
+      } catch (e) {
+        npmConfigExitCode = e.exitCode ?? 1;
+        npmConfigStdout = e.stdout ?? '';
+      }
+      const globalPrefix = npmConfigExitCode === 0 ? npmConfigStdout.trim() : null;
 
-  // If we can't determine, return unknown
-  return 'unknown';
+      if (globalPrefix && invokedPath.startsWith(globalPrefix)) {
+        return 'npm-global';
+      }
+
+      // If we can't determine, return unknown
+      return 'unknown';
+    })();
+  }
+  return cachedInstallationTypePromise;
 }
 
 async function getInstallationPath(): Promise<string> {

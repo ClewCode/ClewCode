@@ -18,9 +18,11 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
 
   const [tavilyKey, setTavilyKey] = useState(env.TAVILY_API_KEY || '');
   const [braveKey, setBraveKey] = useState(env.BRAVE_API_KEY || '');
-  const [focusedField, setFocusedField] = useState<'tavily' | 'brave' | 'buttons'>('tavily');
+  const [jinaKey, setJinaKey] = useState(env.JINA_API_KEY || '');
+  const [focusedField, setFocusedField] = useState<'tavily' | 'brave' | 'jina' | 'buttons'>('tavily');
   const [showTavily, setShowTavily] = useState(false);
   const [showBrave, setShowBrave] = useState(false);
+  const [showJina, setShowJina] = useState(false);
 
   const handleSave = useCallback(() => {
     // Update settings with new API keys and URLs
@@ -28,6 +30,7 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
       ...env,
       ...(tavilyKey.trim() && { TAVILY_API_KEY: tavilyKey.trim() }),
       ...(braveKey.trim() && { BRAVE_API_KEY: braveKey.trim() }),
+      ...(jinaKey.trim() && { JINA_API_KEY: jinaKey.trim() }),
     };
 
     // Remove keys if empty
@@ -36,6 +39,9 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
     }
     if (!braveKey.trim()) {
       delete newEnv.BRAVE_API_KEY;
+    }
+    if (!jinaKey.trim()) {
+      delete newEnv.JINA_API_KEY;
     }
 
     updateSettingsForSource('userSettings', {
@@ -48,7 +54,7 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
     });
 
     onDone();
-  }, [tavilyKey, braveKey, env, onDone]);
+  }, [tavilyKey, braveKey, jinaKey, env, onDone]);
 
   const handleCancel = useCallback(() => {
     logEvent('tengu_search_api_keys_cancelled', {});
@@ -61,6 +67,8 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
       if (focusedField === 'tavily') {
         setFocusedField('brave');
       } else if (focusedField === 'brave') {
+        setFocusedField('jina');
+      } else if (focusedField === 'jina') {
         setFocusedField('buttons');
       } else {
         setFocusedField('tavily');
@@ -79,16 +87,19 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
     }
 
     // Handle character input for text fields
-    if (focusedField === 'tavily' || focusedField === 'brave') {
+    if (focusedField === 'tavily' || focusedField === 'brave' || focusedField === 'jina') {
       let setter: (value: string) => void;
       let current: string;
 
       if (focusedField === 'tavily') {
         setter = setTavilyKey;
         current = tavilyKey;
-      } else {
+      } else if (focusedField === 'brave') {
         setter = setBraveKey;
         current = braveKey;
+      } else {
+        setter = setJinaKey;
+        current = jinaKey;
       }
 
       if (key.backspace || key.delete) {
@@ -108,9 +119,7 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
   return (
     <Dialog title="Search Configuration" onEscape={handleCancel}>
       <Box flexDirection="column" gap={1} paddingX={1}>
-        <Text dimColor>
-          Configure search providers for inResearch. Priority: DuckDuckGo (free) → Tavily → Brave (API keys optional).
-        </Text>
+        <Text dimColor>Configure search providers for inResearch. Priority: Tavily → Brave → Jina → DuckDuckGo.</Text>
 
         <Box flexDirection="column" marginY={1}>
           {/* Tavily API Key */}
@@ -136,7 +145,7 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
           </Box>
 
           {/* Brave API Key */}
-          <Box flexDirection="column">
+          <Box flexDirection="column" marginBottom={1}>
             <Text bold={focusedField === 'brave'} color={focusedField === 'brave' ? 'suggestion' : undefined}>
               {focusedField === 'brave' ? '> ' : '  '}Brave API Key (optional)
               {braveKey && ' (set)'}
@@ -151,6 +160,28 @@ export function SearchApiKeysDialog({ onDone }: Props): React.ReactNode {
               )}
             </Box>
             {focusedField === 'brave' && (
+              <Text dimColor marginLeft={2}>
+                Type to enter key • Backspace to delete • Tab to move
+              </Text>
+            )}
+          </Box>
+
+          {/* Jina API Key */}
+          <Box flexDirection="column">
+            <Text bold={focusedField === 'jina'} color={focusedField === 'jina' ? 'suggestion' : undefined}>
+              {focusedField === 'jina' ? '> ' : '  '}Jina API Key (optional)
+              {jinaKey && ' (set)'}
+            </Text>
+            <Box marginLeft={2}>
+              <Text dimColor={!jinaKey}>{maskKey(jinaKey, showJina)}</Text>
+              {jinaKey && (
+                <Text dimColor onPress={() => setShowJina(!showJina)}>
+                  {' '}
+                  [{showJina ? 'hide' : 'show'}]
+                </Text>
+              )}
+            </Box>
+            {focusedField === 'jina' && (
               <Text dimColor marginLeft={2}>
                 Type to enter key • Backspace to delete • Tab to move
               </Text>
