@@ -8,6 +8,7 @@ import { registerDebugSkill } from './debug.js';
 import { registerKeybindingsSkill } from './keybindings.js';
 import { registerLoremIpsumSkill } from './loremIpsum.js';
 import { registerPersonalDelegateSkill } from './personalDelegate.js';
+import { registerLoopMdSkill } from './loopmd.js';
 import { registerRememberSkill } from './remember.js';
 import { registerScraplingSkill } from './scrapling.js';
 import { registerSkillifySkill } from './skillify.js';
@@ -56,6 +57,7 @@ export function initBundledSkills(): void {
   // /loop's isEnabled delegates to isKairosCronEnabled() — same lazy
   // per-invocation pattern as the cron tools.
   registerLoopSkill();
+  registerLoopMdSkill();
   if (feature('AGENT_TRIGGERS_REMOTE')) {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { registerScheduleRemoteAgentsSkill } = require('./scheduleRemoteAgents.js');
