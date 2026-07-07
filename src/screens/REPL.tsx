@@ -2414,8 +2414,12 @@ export function REPL({
         // Use a callback to ensure we're not dependent on stale state
         setMessages(() => messages);
 
-        // Clear any active tool JSX
-        setToolJSX(null);
+        // Clear the /resume picker local JSX before returning to the prompt.
+        setToolJSX({
+          jsx: null,
+          shouldHidePromptInput: false,
+          clearLocalJSX: true,
+        });
 
         // Clear input to ensure no residual state
         setInputValue('');
@@ -2908,14 +2912,20 @@ export function REPL({
     });
   }, [addNotification]);
 
-  if (SandboxManager.isSandboxingEnabled()) {
+  useEffect(() => {
+    if (!SandboxManager.isSandboxingEnabled()) {
+      return;
+    }
+
     // If sandboxing is enabled (setting.sandbox is defined, initialise the manager)
     SandboxManager.initialize(sandboxAskCallback).catch(err => {
       // Initialization/validation failed - display error and exit
       process.stderr.write(`\n❌ Sandbox Error: ${errorMessage(err)}\n`);
+      const message = errorMessage(err);
+      logForDebugging(`SandboxManager.initialize failed in REPL: ${message}`, { level: 'error' });
       gracefulShutdownSync(1, 'other');
     });
-  }
+  }, [sandboxAskCallback]);
 
   const setToolPermissionContext = useCallback(
     (context: ToolPermissionContext, options?: { preserveMode?: boolean }) => {

@@ -46,6 +46,52 @@ import { lspToolInputSchema } from './schemas.js';
 import { renderToolResultMessage, renderToolUseErrorMessage, renderToolUseMessage, userFacingName } from './UI.js';
 
 const MAX_LSP_FILE_SIZE_BYTES = 10_000_000;
+const SYMBOL_CACHE_TTL_MS = 60_000;
+
+type SymbolCacheEntry = {
+  output: Output;
+  timestamp: number;
+};
+
+const symbolCache = new Map<string, SymbolCacheEntry>();
+
+function getSymbolCacheKey(input: Input, absolutePath: string, cwd: string): string | null {
+  if (input.operation === 'workspaceSymbol') {
+    return JSON.stringify({ operation: input.operation, cwd });
+  }
+  if (input.operation !== 'documentSymbol') {
+    return null;
+  }
+
+  try {
+    const mtimeMs = getFsImplementation().statSync(absolutePath).mtimeMs;
+    return JSON.stringify({ operation: input.operation, absolutePath, mtimeMs });
+  } catch {
+    return null;
+  }
+}
+
+function getCachedSymbolOutput(key: string | null): Output | null {
+  if (!key) return null;
+
+  const entry = symbolCache.get(key);
+  if (!entry) return null;
+
+  if (Date.now() - entry.timestamp > SYMBOL_CACHE_TTL_MS) {
+    symbolCache.delete(key);
+    return null;
+  }
+
+  return entry.output;
+}
+
+function setCachedSymbolOutput(key: string | null, output: Output): void {
+  if (!key) return;
+  symbolCache.set(key, {
+    output,
+    timestamp: Date.now(),
+  });
+}
 
 /**
  * Tool-compatible input schema (regular ZodObject instead of discriminated union)
@@ -196,6 +242,11 @@ export const LSPTool = buildTool({
   async call(input: Input, _context) {
     const absolutePath = expandPath(input.filePath);
     const cwd = getCwd();
+    const symbolCacheKey = getSymbolCacheKey(input, absolutePath, cwd);
+    const cachedSymbolOutput = getCachedSymbolOutput(symbolCacheKey);
+    if (cachedSymbolOutput) {
+      return { data: cachedSymbolOutput };
+    }
 
     // Wait for initialization if it's still pending
     // This prevents returning "no server available" before init completes
@@ -333,6 +384,7 @@ export const LSPTool = buildTool({
         resultCount,
         fileCount,
       };
+      setCachedSymbolOutput(symbolCacheKey, output);
 
       return {
         data: output,

@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **Search performance optimizations**: Added LRU eviction (max 500 entries) to in-memory search cache to prevent unbounded memory growth. Debounced session search indexing (30s cooldown) to eliminate redundant `readdirSync` + `statSync` on every search call. Precompiled FTS5 query statement for reuse across searches. Enabled `auto_vacuum=INCREMENTAL` with periodic incremental vacuum every hour to reclaim DB free pages. (`src/utils/searchCache.ts`, `src/services/sessionSearch/sessionSearchDb.ts`)
+
 ### Added
 - **Enterprise audit logging**: Added NDJSON audit log writer/service, env-based opt-in, tool execution audit events, command/file access audit events, rotation/filtering, and focused tests. (`src/services/auditLog/`, `src/services/tools/toolExecution.ts`)
 - **README sections**: Added table of contents, prerequisites, use cases, screenshots, configuration reference, FAQ, contributing guide, and star history chart. (`README.md`)

@@ -18,6 +18,7 @@ import { SkillTool } from '../../tools/SkillTool/SkillTool.js';
 import { WebFetchTool } from '../../tools/WebFetchTool/WebFetchTool.js';
 import type { AssistantMessage } from '../../types/message.js';
 import type { PermissionDecision } from '../../utils/permissions/PermissionResult.js';
+import { SentryErrorBoundary } from '../SentryErrorBoundary.js';
 import { AskUserQuestionPermissionRequest } from './AskUserQuestionPermissionRequest/AskUserQuestionPermissionRequest.js';
 import { BashPermissionRequest } from './BashPermissionRequest/BashPermissionRequest.js';
 import { EnterPlanModePermissionRequest } from './EnterPlanModePermissionRequest/EnterPlanModePermissionRequest.js';
@@ -210,14 +211,28 @@ export function PermissionRequest({
   const PermissionComponent = permissionComponentForTool(toolUseConfirm.tool);
 
   return (
-    <PermissionComponent
-      toolUseContext={toolUseContext}
-      toolUseConfirm={toolUseConfirm}
-      onDone={onDone}
-      onReject={onReject}
-      verbose={verbose}
-      workerBadge={workerBadge}
-      setStickyFooter={setStickyFooter}
-    />
+    <SentryErrorBoundary
+      fallback={
+        <FallbackPermissionRequest
+          toolUseContext={toolUseContext}
+          toolUseConfirm={toolUseConfirm}
+          onDone={onDone}
+          onReject={onReject}
+          verbose={verbose}
+          workerBadge={workerBadge}
+          setStickyFooter={setStickyFooter}
+        />
+      }
+    >
+      <PermissionComponent
+        toolUseContext={toolUseContext}
+        toolUseConfirm={toolUseConfirm}
+        onDone={onDone}
+        onReject={onReject}
+        verbose={verbose}
+        workerBadge={workerBadge}
+        setStickyFooter={setStickyFooter}
+      />
+    </SentryErrorBoundary>
   );
 }

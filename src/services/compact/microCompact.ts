@@ -14,6 +14,7 @@ import { logForDebugging } from '../../utils/debug.js';
 import { getMainLoopModel } from '../../utils/model/model.js';
 import { SHELL_TOOL_NAMES } from '../../utils/shell/shellToolUtils.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
+import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
 import { notifyCacheDeletion } from '../api/promptCacheBreakDetection.js';
 import { roughTokenCountEstimation } from '../tokenEstimation.js';
@@ -25,8 +26,11 @@ import { getTimeBasedMCConfig, type TimeBasedMCConfig } from './timeBasedMCConfi
 // circular-deps loop back through this file via promptCacheBreakDetection.
 // Drift is caught by a test asserting equality with the source-of-truth.
 export const TIME_BASED_MC_CLEARED_MESSAGE = '[Old tool result content cleared]';
+export const DUPLICATE_TOOL_RESULT_CLEARED_MESSAGE =
+  '[Old duplicate tool result cleared; latest identical tool call result kept]';
 
 const IMAGE_MAX_TOKEN_SIZE = 2000;
+const DUPLICATE_TOOL_RESULT_MIN_CHARS = 800;
 
 // Only compact these tools
 const COMPACTABLE_TOOLS = new Set<string>([
@@ -38,6 +42,13 @@ const COMPACTABLE_TOOLS = new Set<string>([
   WEB_FETCH_TOOL_NAME,
   FILE_EDIT_TOOL_NAME,
   FILE_WRITE_TOOL_NAME,
+]);
+
+const DUPLICATE_COMPACTABLE_TOOLS = new Set<string>([
+  GREP_TOOL_NAME,
+  GLOB_TOOL_NAME,
+  WEB_SEARCH_TOOL_NAME,
+  WEB_FETCH_TOOL_NAME,
 ]);
 
 // --- Cached microcompact state (ant-only, gated by feature('CACHED_MICROCOMPACT')) ---
@@ -245,6 +256,11 @@ export async function microcompactMessages(
   const timeBasedResult = maybeTimeBasedMicrocompact(messages, querySource);
   if (timeBasedResult) {
     return timeBasedResult;
+  }
+
+  const duplicateResult = maybeDuplicateToolResultMicrocompact(messages, querySource);
+  if (duplicateResult) {
+    return duplicateResult;
   }
 
   // Only run cached MC for the main thread to prevent forked agents
@@ -490,6 +506,139 @@ function maybeTimeBasedMicrocompact(
   // Pass the actual querySource: getTrackingKey returns the full source string
   // (e.g. 'repl_main_thread:outputStyle:custom'), not just the prefix.
   if (feature('PROMPT_CACHE_BREAK_DETECTION') && querySource) {
+    notifyCacheDeletion(querySource);
+  }
+
+  return { messages: result };
+}
+
+function stableStringify(value: unknown): string {
+  if (value === undefined) {
+    return 'undefined';
+  }
+  if (value === null || typeof value !== 'object') {
+    return jsonStringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map(key => `${jsonStringify(key)}:${stableStringify(record[key])}`)
+    .join(',')}}`;
+}
+
+function getDuplicateCompactSignature(toolName: string, input: unknown): string | null {
+  if (!DUPLICATE_COMPACTABLE_TOOLS.has(toolName)) {
+    return null;
+  }
+  return `${toolName}:${stableStringify(input ?? {})}`;
+}
+
+function collectDuplicateToolUseState(messages: Message[]): {
+  signatureByToolUseId: Map<string, string>;
+  latestToolUseIdBySignature: Map<string, string>;
+} {
+  const signatureByToolUseId = new Map<string, string>();
+  const latestToolUseIdBySignature = new Map<string, string>();
+
+  for (const message of messages) {
+    if (message.type !== 'assistant' || !Array.isArray(message.message.content)) {
+      continue;
+    }
+    for (const block of message.message.content) {
+      if (block.type !== 'tool_use') {
+        continue;
+      }
+      const signature = getDuplicateCompactSignature(block.name, block.input);
+      if (!signature) {
+        continue;
+      }
+      signatureByToolUseId.set(block.id, signature);
+      latestToolUseIdBySignature.set(signature, block.id);
+    }
+  }
+
+  return { signatureByToolUseId, latestToolUseIdBySignature };
+}
+
+function isDuplicateClearedContent(content: ToolResultBlockParam['content']): boolean {
+  return content === TIME_BASED_MC_CLEARED_MESSAGE || content === DUPLICATE_TOOL_RESULT_CLEARED_MESSAGE;
+}
+
+export function maybeDuplicateToolResultMicrocompact(
+  messages: Message[],
+  querySource: QuerySource | undefined,
+): MicrocompactResult | null {
+  const enabled = getFeatureValue_CACHED_MAY_BE_STALE('tengu_duplicate_tool_microcompact', true);
+  if (!enabled || !querySource || !isMainThreadSource(querySource)) {
+    return null;
+  }
+
+  const { signatureByToolUseId, latestToolUseIdBySignature } = collectDuplicateToolUseState(messages);
+  if (signatureByToolUseId.size === latestToolUseIdBySignature.size) {
+    return null;
+  }
+
+  let toolsCleared = 0;
+  let tokensSaved = 0;
+
+  const result: Message[] = messages.map(message => {
+    if (message.type !== 'user' || !Array.isArray(message.message.content)) {
+      return message;
+    }
+
+    let touched = false;
+    const content = message.message.content.map(block => {
+      if (block.type !== 'tool_result' || isDuplicateClearedContent(block.content)) {
+        return block;
+      }
+
+      const signature = signatureByToolUseId.get(block.tool_use_id);
+      if (!signature || latestToolUseIdBySignature.get(signature) === block.tool_use_id) {
+        return block;
+      }
+
+      const tokenEstimate = calculateToolResultTokens(block);
+      const charEstimate =
+        typeof block.content === 'string' ? block.content.length : jsonStringify(block.content).length;
+      if (charEstimate < DUPLICATE_TOOL_RESULT_MIN_CHARS) {
+        return block;
+      }
+
+      touched = true;
+      toolsCleared++;
+      tokensSaved += tokenEstimate;
+      return { ...block, content: DUPLICATE_TOOL_RESULT_CLEARED_MESSAGE };
+    });
+
+    if (!touched) {
+      return message;
+    }
+
+    return {
+      ...message,
+      message: { ...message.message, content },
+    };
+  });
+
+  if (toolsCleared === 0 || tokensSaved === 0) {
+    return null;
+  }
+
+  logEvent('tengu_duplicate_tool_microcompact', {
+    toolsCleared,
+    tokensSaved,
+  });
+  logForDebugging(
+    `[DUPLICATE MC] cleared ${toolsCleared} duplicate tool results (~${tokensSaved} tokens), kept latest identical results`,
+  );
+
+  suppressCompactWarning();
+  resetMicrocompactState();
+  if (feature('PROMPT_CACHE_BREAK_DETECTION')) {
     notifyCacheDeletion(querySource);
   }
 

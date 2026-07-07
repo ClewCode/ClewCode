@@ -27,7 +27,7 @@
 
 ---
 
-Clew Code is a terminal-native AI coding agent that lives in your repo, works with your API keys, and **doesn't phone home**. It reads your code, writes files, runs commands, and talks to any LLM you bring — all on your machine, no telemetry, no vendor lock-in.
+Clew Code is a terminal-native AI coding agent that lives in your repo, works with your API keys, and **doesn't phone home**. It reads your code, writes files, runs commands, and talks to any LLM you bring — Claude, GPT, Gemini, DeepSeek, local Ollama models, and 20+ others — all on your machine, no telemetry, no vendor lock-in.
 
 If you want a coding assistant that feels local, fast, and doesn't ship your context to a third-party server, this is it.
 
@@ -38,6 +38,7 @@ If you want a coding assistant that feels local, fast, and doesn't ship your con
 - [Prerequisites](#prerequisites)
 - [Quick Install](#quick-install)
 - [Getting Started](#getting-started)
+- [Usage Examples](#usage-examples)
 - [Features](#features)
 - [Use Cases](#use-cases)
 - [CLI Quick Reference](#cli-quick-reference)
@@ -80,6 +81,8 @@ irm https://raw.githubusercontent.com/ClewCode/ClewCode/main/scripts/install.ps1
 npm install -g clew-code
 ```
 
+This installs two equivalent binaries: `clew` and `clewcode`.
+
 ---
 
 ## Getting Started
@@ -88,10 +91,76 @@ npm install -g clew-code
 cd your-project
 clew                      # Launch the REPL
 clew -p "fix the tests"   # One-shot mode
-clew --resume last         # Pick up where you left off
+clew --resume last        # Pick up where you left off
 ```
 
-First launch walks you through provider setup. After that, use `/model` to switch providers mid-session.
+First launch walks you through provider setup — pick a provider (Claude, OpenAI, Gemini, OpenRouter, etc.) and enter an API key. This is saved to your local config, never committed. After that, use `/model` to switch providers mid-session.
+
+---
+
+## Usage Examples
+
+### Ask questions about a codebase
+
+```
+> how does authentication work in this repo?
+> where is the retry logic for API calls defined?
+```
+
+Clew Code searches and reads files on its own — no need to paste code in.
+
+### Make a change
+
+```
+> refactor the UserCard component to use the new Avatar component
+```
+
+It reads the relevant files, edits them, and shows a diff-style summary of what changed. Prompts for permission before writing, unless you've set an auto-approve rule.
+
+### Fix and verify
+
+```
+> fix the bug in src/utils/parser.ts where empty arrays throw
+> run the test suite and fix any failures
+```
+
+Combines file edits with the Bash tool (`npm test` / `bun test`), looping until tests pass or it needs your input.
+
+### Slash commands
+
+```
+/help              # list all commands
+/model             # switch LLM provider/model mid-session
+/code-review       # review the current diff for bugs
+/debug             # structured debugging workflow
+/loop 5m /deploy-checklist   # run a command on a recurring interval
+```
+
+Run `/help` inside the REPL for the full, current list — commands grow over time via skills and plugins.
+
+### Multi-file / multi-step work
+
+```
+> migrate all usages of the old Logger class to the new one across src/
+```
+
+For larger jobs, Clew Code plans the work (`/plan`, or automatically for complex asks), then executes step by step, checking in at natural checkpoints. `/rewind` restores code or conversation to any prior checkpoint if something goes wrong.
+
+### Research a codebase or topic
+
+```
+> /research "How does auth work in this repo?"
+```
+
+Searches code, docs, and the web, then compiles a dossier with source references.
+
+### Connect external tools (MCP)
+
+```
+> list open PRs assigned to me and summarize what's blocking each one
+```
+
+Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://modelcontextprotocol.io) server via `/mcp`, and use it from the same session.
 
 ---
 
@@ -104,7 +173,7 @@ First launch walks you through provider setup. After that, use `/model` to switc
   </tr>
   <tr>
     <td><strong>Persistent Memory</strong></td>
-    <td>SQLite-backed, MiMo-inspired store with importance ranking, confidence scoring, and cross-session persistence. Auto-consolidation via Dream + Distill.</td>
+    <td>SQLite-backed store with importance ranking, confidence scoring, and cross-session persistence. Auto-consolidation via Dream + Distill.</td>
   </tr>
   <tr>
     <td><strong>76+ Tools</strong></td>
@@ -144,7 +213,7 @@ First launch walks you through provider setup. After that, use `/model` to switc
   </tr>
   <tr>
     <td><strong>Multi-Agent Architecture</strong></td>
-    <td>Agents, Subagents, LAN Peers, Process Peers. Personal profile turns Clew into a command center that delegates to Codex workers.</td>
+    <td>Agents, Subagents, LAN Peers, Process Peers. Personal profile turns Clew into a command center that delegates to worker agents.</td>
   </tr>
 </table>
 
@@ -241,7 +310,7 @@ Clew Code runs entirely on your machine. No code or context leaves your network 
 - Prompts for permission before read, write, or terminal execution
 - Fine-tune auto-approve rules per workspace
 - Permission scopes: default, ask, plan, auto
-- Guardian system for auto-review using secondary LLM
+- Guardian system for auto-review using a secondary LLM
 
 ---
 
@@ -292,27 +361,56 @@ Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
 └──────┘└──────────┘└──────────────┘
 ```
 
+- **Entry**: `src/main.tsx` → `src/replLauncher.tsx` boots the Ink/React 19 REPL
+- **REPL screen**: `src/screens/REPL.tsx` routes input to commands or the query engine
+- **Query loop**: `src/QueryEngine.ts` — message construction, tool loop, provider routing, streaming
+- **Providers**: `src/services/ai/` — 29 providers behind one interface, normalized errors/usage
+- **Tools**: `src/tools/<ToolName>/`, each extending `Tool` from `src/Tool.ts`, registered in `src/tools.ts`
+- **Services**: `src/services/` — MCP client, autonomous task queue, memory consolidation, session search, plugin lifecycle hooks, and more
+
+Full detail, including the tool inventory and service list: [AGENTS.md](AGENTS.md).
+
 ---
 
 ## Development
 
 ```bash
-bun run dev               # Live-reload REPL
+git clone https://github.com/ClewCode/ClewCode.git
+cd ClewCode
+bun install
+bun run dev               # Live-reload REPL (with feature flags)
+bun run dev:channels      # Dev with development channels loaded
 bun run build             # Production build to dist/
+bun run start             # Run the compiled build
 bun test                  # Vitest suite
-bun run check:ci          # Biome lint + format check
-bun x tsc --noEmit        # TypeScript check
+bun test --bail           # Stop on first failure
+npx vitest run path/to/file.test.ts    # Single file
+npx vitest run -t "test name"          # By test name
+bun run check:ci          # Biome lint + format check (no autofix)
+bun run lint              # Biome lint with autofix
+bun run check             # Lint + format with autofix
+bun x tsc --noEmit         # TypeScript check only
 ```
 
-### Full Pre-Commit
+### Full Pre-Push Gate
 
 ```bash
 bun run check:ci && bun x tsc --noEmit && bun test --bail
 ```
 
-### Shadow `.js` Files
+Or run the `/clew-verify` skill, which also does a shadow-file check and a real CLI smoke test — green tests alone don't prove an Ink TUI feature actually works.
 
-`src/` has ~410 `.js` files alongside `.ts` twins (leftover from JS → TS migration). Bun resolves `.js` import specifiers to the real `.js` file on disk — it does **not** prefer the `.ts` source. If you're making a runtime fix, check for a `.js` sibling and edit **both** files.
+### ⚠️ Shadow `.js` Files
+
+`src/` has ~400 `.js` files alongside `.ts`/`.tsx` twins (leftover from a JS→TS migration; a first batch was reconciled in [PR #60](https://github.com/ClewCode/ClewCode/pull/60)). Imports use `.js`-suffixed ESM specifiers, and **Bun resolves those to the real `.js` file on disk** — it does not prefer the `.ts` source.
+
+- Before editing a file for a runtime fix, check for a `.js` sibling with the `/js-shadow-sync` skill. If one exists, edit **both** twins, or your fix won't run.
+- Don't bulk-delete `.js` shadows — the pairs have drifted independently and must be reconciled by hand.
+- See [AGENTS.md § Critical](AGENTS.md#critical-js-files-shadow-ts-at-runtime) for the verified reconciliation method.
+
+### Release
+
+Pushing a `v*` tag triggers the GitHub Actions release and npm publish. Before tagging: bump `package.json`, update `CHANGELOG.md`, run the full gate above. See [AGENTS.md § Release](AGENTS.md#release) or run the `/clew-release` skill.
 
 ---
 
@@ -322,7 +420,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 - Report bugs via [GitHub Issues](https://github.com/ClewCode/ClewCode/issues)
 - Discuss ideas in [GitHub Discussions](https://github.com/ClewCode/ClewCode/discussions)
-- Read [AGENTS.md](AGENTS.md) for architecture and code conventions
+- Read [AGENTS.md](AGENTS.md) for full architecture and code conventions
 
 ---
 

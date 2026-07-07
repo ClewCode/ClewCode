@@ -122,7 +122,7 @@ export const colorize = (str: string, color: string | undefined, type: ColorType
 
     const value = Number(matches[1]);
 
-    return type === 'foreground' ? ansis.ansi256(value)(str) : ansis.bgAnsi256(value)(str);
+    return type === 'foreground' ? ansis.fg(value)(str) : ansis.bg(value)(str);
   }
 
   if (color.startsWith('rgb')) {

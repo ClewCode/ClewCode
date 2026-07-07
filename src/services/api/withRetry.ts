@@ -27,7 +27,7 @@ import type { ThinkingConfig } from '../../utils/thinking.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
 import { checkMockRateLimitError, isMockRateLimitError } from '../rateLimitMocking.js';
-import { classifyProviderError, getProviderRetryAfterMs, REPEATED_529_ERROR_MESSAGE } from './errors.js';
+import { classifyProviderError, getProviderErrorInfo, getProviderRetryAfterMs, REPEATED_529_ERROR_MESSAGE } from './errors.js';
 import { extractConnectionErrorDetails } from './errorUtils.js';
 
 const abortError = () => new APIUserAbortError();
@@ -546,7 +546,7 @@ function shouldRetry(error: unknown): boolean {
   // before falling back to Anthropic-specific status-code checks.
   const providerError = classifyProviderError(error);
   if (providerError.category === 'rate_limit') return true;
-  if (providerError.category === 'auth') return true;
+  if (providerError.category === 'auth' && getProviderErrorInfo(error)) return false;
   if (providerError.category === 'network') return true;
   // content_filter errors are never retryable — the same content will be blocked again
   if (providerError.category === 'content_filter') return false;

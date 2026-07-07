@@ -70,6 +70,7 @@ import {
   getSmallFastModel,
   isNonCustomOpusModel,
 } from '../../utils/model/model.js';
+import { sleep } from '../../utils/sleep.js';
 import { asSystemPrompt, type SystemPrompt } from '../../utils/systemPromptType.js';
 import { tokenCountFromLastAPIResponse } from '../../utils/tokens.js';
 import { getDynamicConfig_BLOCKS_ON_INIT } from '../analytics/growthbook.js';
@@ -188,7 +189,7 @@ import {
   type NonNullableUsage,
 } from './logging.js';
 import { CACHE_TTL_1HOUR_MS, checkResponseForCacheBreak, recordPromptState } from './promptCacheBreakDetection.js';
-import { CannotRetryError, FallbackTriggeredError, is529Error, type RetryContext, withRetry } from './withRetry.js';
+import { CannotRetryError, FallbackTriggeredError, getRetryDelay, is529Error, type RetryContext, withRetry } from './withRetry.js';
 
 // Define a type that represents valid JSON values
 type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
@@ -728,6 +729,14 @@ function getNonstreamingFallbackTimeoutMs(): number {
   const override = parseInt(process.env.API_TIMEOUT_MS || '', 10);
   if (override) return override;
   return isEnvTruthy(process.env.CLEW_CODE_REMOTE) ? 120_000 : 300_000;
+}
+
+function getStreamingRetryLimit(): number {
+  const override = parseInt(process.env.CLEW_CODE_STREAMING_RETRIES || '', 10);
+  if (Number.isFinite(override) && override >= 0) {
+    return override;
+  }
+  return 3;
 }
 
 /**
@@ -1876,7 +1885,8 @@ async function* queryModel(
   let costUSD = 0;
   let stopReason: BetaStopReason | null = null;
   let didFallBackToNonStreaming = false;
-  let streamingRetryAttempted = false;
+  let streamingRetryCount = 0;
+  const streamingRetryLimit = getStreamingRetryLimit();
   let fallbackMessage: AssistantMessage | undefined;
   let maxOutputTokens = 0;
   let responseHeaders: globalThis.Headers | undefined;
@@ -2551,19 +2561,25 @@ async function* queryModel(
         throw streamingError;
       }
 
-      // Before falling back to slower non-streaming, retry streaming once.
-      // Pre-response stalls (idle timeout watchdog) are often transient —
-      // a second attempt usually succeeds and avoids the ~2× latency of
-      // non-streaming.
-      if (!streamingRetryAttempted) {
-        streamingRetryAttempted = true;
-        logForDebugging(`Error streaming, retrying once before non-streaming fallback`, { level: 'info' });
+      // Before falling back to slower non-streaming, retry streaming a few times.
+      if (streamingRetryCount < streamingRetryLimit) {
+        streamingRetryCount++;
+        const delayMs = Math.min(getRetryDelay(streamingRetryCount, null, 5_000), 5_000);
+        const roundedDelayMs = Math.round(delayMs);
+        logForDebugging(
+          `Streaming retry ${streamingRetryCount}/${streamingRetryLimit} in ${roundedDelayMs}ms before fallback`,
+          { level: 'info' },
+        );
         logEvent('tengu_streaming_retry_before_fallback', {
           model: options.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+          attempt: streamingRetryCount,
+          retry_limit: streamingRetryLimit,
+          delay_ms: roundedDelayMs,
           fallback_cause: (streamIdleAborted
             ? 'watchdog'
             : 'other') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         });
+        await sleep(delayMs, signal, { abortError: () => new APIUserAbortError() });
         throw streamingError; // Let withRetry handle the retry as a new stream
       }
 

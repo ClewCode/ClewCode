@@ -1,32 +1,32 @@
-// Whimsical present-participle verbs shown in the spinner while the model
-// works (à la Claude Code's "Recombobulating…"). Chosen deterministically
-// from a per-turn seed so the word stays stable within a single turn but
-// varies between turns — no Math.random, so it never flickers mid-render.
+// Harry Potter-themed spinner phrases shown while the model works. Chosen
+// deterministically from a per-turn seed so the phrase stays stable within a
+// single turn but varies between turns; no Math.random, so it never flickers
+// mid-render.
 const WHIMSICAL_VERBS = [
-  'Recombobulating',
-  'Frolicking',
-  'Shimmying',
-  'Percolating',
-  'Ruminating',
-  'Marinating',
-  'Noodling',
-  'Conjuring',
-  'Finagling',
-  'Cogitating',
-  'Puttering',
-  'Wrangling',
-  'Tinkering',
-  'Pondering',
-  'Scheming',
-  'Brewing',
-  'Simmering',
-  'Galivanting',
-  'Bamboozling',
-  'Discombobulating',
-  'Effervescing',
-  'Hornswoggling',
-  'Meandering',
-  'Spelunking',
+  'Casting Accio',
+  'Casting Lumos',
+  'Casting Nox',
+  'Casting Alohomora',
+  'Casting Wingardium Leviosa',
+  'Casting Expelliarmus',
+  'Casting Expecto Patronum',
+  'Transfiguring',
+  'Apparating',
+  'Disapparating',
+  'Floo-traveling',
+  'Portkeying',
+  'Sorting',
+  'Potion-brewing',
+  'Quidditch-practicing',
+  'Snitch-seeking',
+  'Bludger-dodging',
+  'Wand-polishing',
+  'Spell-checking',
+  'Pensieve-diving',
+  'Marauder-mapping',
+  'Mischief-managing',
+  'Horcrux-hunting',
+  'Hogsmeade-visiting',
 ] as const;
 
 /**

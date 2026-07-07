@@ -9,6 +9,8 @@ import {
   isAutoCompactEnabled,
 } from '../services/compact/autoCompact.js';
 import { useCompactWarningSuppression } from '../services/compact/compactWarningHook.js';
+import { estimateContextBreakdown, renderSegmentedBar } from '../utils/contextBar.js';
+import { formatTokens } from '../utils/format.js';
 import { getUpgradeMessage } from '../utils/model/contextWindowUpgradeCheck.js';
 
 type Props = {
@@ -120,5 +122,40 @@ export function TokenWarning({ tokenUsage, model, messages }: Props): React.Reac
     );
   }
 
-  return null;
+  const autocompactLabel = reactiveOnlyMode
+    ? `${100 - displayPercentLeft}% context used`
+    : `${displayPercentLeft}% until auto-compact`;
+
+  // Estimate categories and render the segmented context HUD bar.
+  const breakdown = estimateContextBreakdown(messages || [], tokenUsage);
+  const bar = renderSegmentedBar(
+    breakdown.map(item => ({ tokens: item.tokens, colorHex: item.colorHex })),
+    36,
+  );
+
+  return (
+    <Box flexDirection="column" gap={0} marginTop={1}>
+      <Box flexDirection="row" gap={1} alignItems="center">
+        <Text>{bar}</Text>
+        <Text bold color={isAboveErrorThreshold ? 'red' : 'yellow'}>
+          {showAutoCompactWarning ? autocompactLabel : `Context low (${percentLeft}% left)`}
+        </Text>
+      </Box>
+      <Box flexDirection="row" gap={1} flexWrap="wrap" marginTop={0}>
+        {breakdown.map((item, idx) => (
+          <Box key={item.label} flexDirection="row" gap={0}>
+            {idx > 0 && <Text dimColor> · </Text>}
+            <Text color={item.colorHex}>■</Text>
+            <Text dimColor>{` ${item.label}:`}</Text>
+            <Text bold color={item.colorHex}>{` ${formatTokens(item.tokens)}`}</Text>
+          </Box>
+        ))}
+      </Box>
+      {upgradeMessage ? (
+        <Box marginTop={0}>
+          <Text dimColor>{upgradeMessage}</Text>
+        </Box>
+      ) : null}
+    </Box>
+  );
 }

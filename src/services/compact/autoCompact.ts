@@ -14,6 +14,7 @@ import type { CacheSafeParams } from '../../utils/forkedAgent.js';
 import { logError } from '../../utils/log.js';
 import { tokenCountWithEstimation } from '../../utils/tokens.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
+import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
 import { getMaxOutputTokensForModel } from '../api/claude.js';
 import { notifyCompaction } from '../api/promptCacheBreakDetection.js';
 import { setLastSummarizedMessageId } from '../SessionMemory/sessionMemoryUtils.js';
@@ -61,10 +62,259 @@ export type AutoCompactTrackingState = {
 // Keep enough headroom for the next API request's system prompt, tools, and
 // user context. compact.ts records that this can add roughly 20-40K tokens.
 export const AUTOCOMPACT_BUFFER_TOKENS = 40_000;
+
+// Hard threshold buffer: when soft + this = hard, force-compact even mid-tool-chain.
+// Only applies when CLEW_CODE_BOUNDARY_COMPACT is enabled.
+export const AUTOCOMPACT_HARD_BUFFER_TOKENS = 20_000;
+
 export const WARNING_THRESHOLD_BUFFER_TOKENS = 20_000;
 export const ERROR_THRESHOLD_BUFFER_TOKENS = 20_000;
 export const MANUAL_COMPACT_BUFFER_TOKENS = 3_000;
 export const BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT = 0.65;
+
+// ── #1 Natural-Boundary Timing ──
+
+/**
+ * Check if the conversation is at a natural boundary where compacting is safe.
+ * A natural boundary means we're not mid-tool-chain: the last assistant turn
+ * has no pending tool_use blocks waiting for tool_result.
+ *
+ * Returns true when:
+ * - The last message is an assistant message with NO tool_use blocks (task done)
+ * - The last message is a user message that is NOT a tool_result (new user prompt)
+ *
+ * Returns false when mid-chain:
+ * - The last assistant message has tool_use blocks (waiting for tool results)
+ * - The last user message contains tool_result blocks (tools still running)
+ */
+export function isAtNaturalBoundary(messages: Message[]): boolean {
+  const tail = messages.at(-1);
+  if (!tail) return true; // empty conversation = boundary
+
+  if (tail.type === 'assistant') {
+    const content = tail.message?.content;
+    if (!Array.isArray(content)) return true; // no content blocks = done
+    return !content.some((block: { type?: string }) => block.type === 'tool_use');
+  }
+
+  if (tail.type === 'user') {
+    const content = tail.message?.content;
+    if (!Array.isArray(content)) return true; // string content = user typed text
+    // If the user message contains tool_result blocks, we're mid-chain
+    return !content.some((block: { type?: string }) => block.type === 'tool_result');
+  }
+
+  return true; // system / progress / other = boundary
+}
+
+/**
+ * Check if boundary-aware compact is enabled via env or settings.
+ */
+export function isBoundaryCompactEnabled(): boolean {
+  if (isEnvTruthy(process.env.CLEW_CODE_BOUNDARY_COMPACT)) return true;
+  const userConfig = getGlobalConfig();
+  return (userConfig as Record<string, unknown>)?.boundaryCompact === true;
+}
+
+// ── #2 Adaptive Threshold ──
+
+/**
+ * Estimate compressibility ratio (0..1) of a session.
+ * Tool_result tokens / total tokens. Higher = more compressible.
+ */
+export function estimateCompressibility(messages: Message[]): number {
+  let totalTokens = 0;
+  let toolResultTokens = 0;
+
+  for (const message of messages) {
+    if (message.type !== 'user' && message.type !== 'assistant') continue;
+    const content = message.message?.content;
+    if (!Array.isArray(content)) {
+      if (typeof content === 'string') {
+        const t = Math.ceil(content.length / 4);
+        totalTokens += t;
+      }
+      continue;
+    }
+    for (const block of content) {
+      if (block.type === 'text' && typeof block.text === 'string') {
+        const t = Math.ceil(block.text.length / 4);
+        totalTokens += t;
+      } else if (block.type === 'tool_result') {
+        const blockContent = block.content;
+        let t = 0;
+        if (typeof blockContent === 'string') {
+          t = Math.ceil(blockContent.length / 4);
+        } else if (Array.isArray(blockContent)) {
+          for (const item of blockContent) {
+            if (item.type === 'text') t += Math.ceil(item.text.length / 4);
+            else t += 2000; // image/document
+          }
+        }
+        totalTokens += t;
+        toolResultTokens += t;
+      } else if (block.type === 'tool_use') {
+        totalTokens += Math.ceil((block.name?.length ?? 0) / 4);
+      } else if (block.type === 'image' || block.type === 'document') {
+        totalTokens += 2000;
+      }
+    }
+  }
+
+  if (totalTokens === 0) return 0;
+  return Math.min(1, toolResultTokens / totalTokens);
+}
+
+// ── #3 Compact Quality Feedback Loop (measure-only) ──
+
+type CompactRegretState = {
+  /** Tool signatures (toolName:key) that existed pre-compact and were dropped */
+  droppedSignatures: Set<string>;
+  /** Turns since last compact */
+  turnsSinceCompact: number;
+  /** Regret count for current session */
+  regretCount: number;
+  /** Whether we've logged this session's baseline */
+  hasLoggedBaseline: boolean;
+};
+
+/** Module-level regret state — reset on each new compact. */
+let regretState: CompactRegretState = {
+  droppedSignatures: new Set(),
+  turnsSinceCompact: 0,
+  regretCount: 0,
+  hasLoggedBaseline: false,
+};
+
+export function getCompactRegretState(): Readonly<CompactRegretState> {
+  return regretState;
+}
+
+/**
+ * Collect tool_use signatures from a set of messages.
+ * Used to snapshot the pre-compact set and the surviving (kept) set; the
+ * dropped set is the difference (see computeDroppedToolSignatures).
+ */
+export function collectToolSignatures(messages: Message[]): Set<string> {
+  const sigs = new Set<string>();
+  for (const m of messages) {
+    if (m?.type !== 'assistant') continue;
+    const content = m.message?.content;
+    if (!Array.isArray(content)) continue;
+    for (const block of content) {
+      if (block.type === 'tool_use') {
+        const key = compactToolSignature(block);
+        if (key) sigs.add(key);
+      }
+    }
+  }
+  return sigs;
+}
+
+/**
+ * Signatures present before compaction but absent from the kept messages —
+ * i.e. the tool calls whose context compaction actually dropped. Subtracting
+ * the kept set matters for session-memory compaction, which retains a tail of
+ * recent messages; counting those as dropped would produce false regret.
+ */
+export function computeDroppedToolSignatures(allMessages: Message[], keptMessages: Message[]): Set<string> {
+  const kept = collectToolSignatures(keptMessages);
+  const dropped = new Set<string>();
+  for (const sig of collectToolSignatures(allMessages)) {
+    if (!kept.has(sig)) dropped.add(sig);
+  }
+  return dropped;
+}
+
+function compactToolSignature(block: { name?: string; input?: Record<string, unknown> }): string | null {
+  if (!block.name) return null;
+  // Key by first meaningful input param (usually path, pattern, command)
+  const input = block.input ?? {};
+  const keyParam = input.file_path ?? input.pattern ?? input.command ?? input.url ?? '';
+  return `${block.name}:${String(keyParam).slice(0, 120)}`;
+}
+
+/**
+ * Check if a tool call matches a dropped signature (regret signal).
+ * Called on each tool_use after compaction.
+ */
+export function checkCompactRegret(
+  toolName: string,
+  input: Record<string, unknown> | undefined,
+): boolean {
+  // Only count re-references inside the post-compact window. Outside it, a
+  // repeated tool call is ordinary work, not regret.
+  if (!isWithinRegretWindow()) return false;
+  const candidate = compactToolSignature({ name: toolName, input: input ?? {} });
+  if (!candidate) return false;
+  if (!regretState.droppedSignatures.has(candidate)) return false;
+  // Consume the signature so the same drop isn't counted repeatedly.
+  regretState.droppedSignatures.delete(candidate);
+  return true;
+}
+
+/**
+ * Reset regret state for a new compact cycle.
+ */
+export function resetCompactRegretState(droppedSignatures: Set<string>): void {
+  regretState = {
+    droppedSignatures,
+    turnsSinceCompact: 0,
+    regretCount: 0,
+    hasLoggedBaseline: regretState.hasLoggedBaseline,
+  };
+}
+
+/**
+ * How many turns after a compact we keep watching for regret. Past this window
+ * a re-reference is normal working, not "the compact dropped something I still
+ * needed", so it shouldn't count.
+ */
+export const COMPACT_REGRET_WINDOW_TURNS = 8;
+
+/**
+ * Increment turn counter post-compact. Call once per query loop iteration so
+ * the regret window (COMPACT_REGRET_WINDOW_TURNS) can expire.
+ */
+export function tickCompactRegret(): void {
+  regretState.turnsSinceCompact++;
+}
+
+/** True while still inside the post-compact regret observation window. */
+export function isWithinRegretWindow(): boolean {
+  return regretState.droppedSignatures.size > 0 && regretState.turnsSinceCompact <= COMPACT_REGRET_WINDOW_TURNS;
+}
+
+/**
+ * Non-reversible hash so analytics never receives raw file paths / commands.
+ * djb2 — collisions are irrelevant here, we only need a stable opaque bucket.
+ */
+function hashRegretKey(key: string): string {
+  let h = 5381;
+  for (let i = 0; i < key.length; i++) {
+    h = (h * 33) ^ key.charCodeAt(i);
+  }
+  return (h >>> 0).toString(36);
+}
+
+/**
+ * Log a regret event when detected. Only the tool name (a safe enum-like
+ * identifier) and an opaque hash of the tool signature are logged — never the
+ * raw file path / command, which would be user data. The signature is built
+ * the same way as the match key so the hash is stable.
+ */
+export function logCompactRegret(toolName: string, input: Record<string, unknown> | undefined): void {
+  regretState.regretCount++;
+  const sig = compactToolSignature({ name: toolName, input: input ?? {} }) ?? toolName;
+  logEvent('compact_regret_detected', {
+    toolName: toolName as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    keyHash: hashRegretKey(sig) as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    turnsSinceCompact: regretState.turnsSinceCompact,
+    totalRegrets: regretState.regretCount,
+  });
+}
+
+// ── End Feedback Loop ──
 
 // Stop trying autocompact after this many consecutive failures.
 // BQ 2026-03-10: 1,279 sessions had 50+ consecutive failures (up to 3,272)
@@ -98,10 +348,40 @@ export function getBackgroundAutoCompactStatus(): BackgroundAutoCompactStatus {
   return backgroundAutoCompactStatus;
 }
 
-export function getAutoCompactThreshold(model: string): number {
+// ── Adaptive threshold config ──
+const MIN_ADAPTIVE_BUFFER = 25_000;
+const MAX_ADAPTIVE_BUFFER = 55_000;
+// GrowthBook feature flag for adaptive threshold tuning
+const ADAPTIVE_THRESHOLD_FEATURE = 'tengu_adaptive_compact_threshold';
+
+export function getAutoCompactThreshold(model: string, messages?: Message[]): number {
   const effectiveContextWindow = getEffectiveContextWindowSize(model);
 
-  const autocompactThreshold = effectiveContextWindow - AUTOCOMPACT_BUFFER_TOKENS;
+  let baseBuffer = AUTOCOMPACT_BUFFER_TOKENS;
+
+  // #2 Adaptive threshold: adjust buffer based on session compressibility
+  if (messages && messages.length > 0) {
+    // Gate via GrowthBook for remote tuning
+    const adaptiveConfig = getFeatureValue_CACHED_MAY_BE_STALE<{
+      enabled: boolean;
+      minBuffer?: number;
+      maxBuffer?: number;
+    } | null>(ADAPTIVE_THRESHOLD_FEATURE, null);
+
+    if (adaptiveConfig?.enabled) {
+      const ratio = estimateCompressibility(messages);
+      // High compressibility (tool-heavy) → smaller buffer → grow threshold later
+      // Low compressibility (chat-only) → larger buffer → compact sooner
+      // Interpolate: ratio 0 → maxBuffer, ratio 1 → minBuffer
+      const minB = adaptiveConfig.minBuffer ?? MIN_ADAPTIVE_BUFFER;
+      const maxB = adaptiveConfig.maxBuffer ?? MAX_ADAPTIVE_BUFFER;
+      baseBuffer = Math.round(maxB - ratio * (maxB - minB));
+      // Clamp to safe range
+      baseBuffer = Math.max(minB, Math.min(maxB, baseBuffer));
+    }
+  }
+
+  const autocompactThreshold = effectiveContextWindow - baseBuffer;
 
   // Override for easier testing of autocompact
   const envPercent = process.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE;
@@ -127,6 +407,10 @@ export function getBackgroundAutoCompactThreshold(model: string): number {
 export function calculateTokenWarningState(
   tokenUsage: number,
   model: string,
+  // Pass messages to honor the #2 adaptive threshold. Omitting them (e.g. UI
+  // warning readouts that only know the token count) falls back to the static
+  // buffer — same as before adaptive existed.
+  messages?: Message[],
 ): {
   percentLeft: number;
   isAboveWarningThreshold: boolean;
@@ -134,7 +418,7 @@ export function calculateTokenWarningState(
   isAboveAutoCompactThreshold: boolean;
   isAtBlockingLimit: boolean;
 } {
-  const autoCompactThreshold = getAutoCompactThreshold(model);
+  const autoCompactThreshold = getAutoCompactThreshold(model, messages);
   const threshold = isAutoCompactEnabled() ? autoCompactThreshold : getEffectiveContextWindowSize(model);
 
   const percentLeft = Math.max(0, Math.round(((threshold - tokenUsage) / threshold) * 100));
@@ -177,6 +461,15 @@ export function isAutoCompactEnabled(): boolean {
   // Check if user has disabled auto-compact in their settings
   const userConfig = getGlobalConfig();
   return userConfig.autoCompactEnabled;
+}
+
+/**
+ * Get the hard (force-compact) threshold when boundary-compact is enabled.
+ * Built on the same (adaptive-aware) soft threshold + a fixed buffer so the
+ * soft/hard gap is constant regardless of the #2 adaptive adjustment.
+ */
+export function getAutoCompactHardThreshold(model: string, messages?: Message[]): number {
+  return getAutoCompactThreshold(model, messages) + AUTOCOMPACT_HARD_BUFFER_TOKENS;
 }
 
 export async function shouldAutoCompact(
@@ -245,14 +538,44 @@ export async function shouldAutoCompact(
   }
 
   const tokenCount = tokenCountWithEstimation(messages) - snipTokensFreed;
-  const threshold = getAutoCompactThreshold(model);
+  const threshold = getAutoCompactThreshold(model, messages);
   const effectiveWindow = getEffectiveContextWindowSize(model);
 
   logForDebugging(
     `autocompact: tokens=${tokenCount} threshold=${threshold} effectiveWindow=${effectiveWindow}${snipTokensFreed > 0 ? ` snipFreed=${snipTokensFreed}` : ''}`,
   );
 
-  const { isAboveAutoCompactThreshold } = calculateTokenWarningState(tokenCount, model);
+  const { isAboveAutoCompactThreshold } = calculateTokenWarningState(tokenCount, model, messages);
+
+  // #1 Natural-boundary timing: if boundary-compact is enabled and we're in
+  // the soft zone (above threshold but below hard threshold), wait for a
+  // natural boundary instead of compacting mid-tool-chain.
+  if (isAboveAutoCompactThreshold && isBoundaryCompactEnabled()) {
+    const hardThreshold = getAutoCompactHardThreshold(model, messages);
+    if (tokenCount >= hardThreshold) {
+      // Hard threshold exceeded — force compact even mid-chain
+      logEvent('boundary_compact_forced_at_hard', {
+        tokenCount,
+        softThreshold: threshold,
+        hardThreshold,
+        querySource: (querySource ?? 'unknown') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      });
+      return true;
+    }
+    // Soft zone: defer if not at natural boundary
+    if (!isAtNaturalBoundary(messages)) {
+      logForDebugging(
+        `autocompact: deferred — not at natural boundary (tokens=${tokenCount}, soft=${threshold}, hard=${hardThreshold})`,
+      );
+      logEvent('boundary_compact_deferred', {
+        tokenCount,
+        softThreshold: threshold,
+        hardThreshold,
+        querySource: (querySource ?? 'unknown') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      });
+      return false;
+    }
+  }
 
   return isAboveAutoCompactThreshold;
 }
@@ -288,6 +611,18 @@ export async function shouldStartBackgroundAutoCompact(
   }
 
   const tokenCount = tokenCountWithEstimation(messages) - snipTokensFreed;
+
+  // #1 Natural-boundary: if we deferred compact due to boundary (soft zone),
+  // start background pre-compaction so the result is ready when boundary hits.
+  if (isBoundaryCompactEnabled()) {
+    const softThreshold = getAutoCompactThreshold(model, messages);
+    const hardThreshold = getAutoCompactHardThreshold(model, messages);
+    if (tokenCount >= softThreshold && tokenCount < hardThreshold && !isAtNaturalBoundary(messages)) {
+      return true;
+    }
+  }
+
+  // Normal background threshold check
   return tokenCount >= getBackgroundAutoCompactThreshold(model);
 }
 
@@ -483,6 +818,10 @@ export async function autoCompactIfNeeded(
     return { wasCompacted: false };
   }
 
+  // #3 Feedback loop (measure-only): snapshot tool_use signatures pre-compact
+  // so the dropped set can be computed against each path's kept messages.
+  const preCompactMessages = messages;
+
   // EXPERIMENT: Try session memory compaction first
   const sessionMemoryResult = await trySessionMemoryCompaction(
     messages,
@@ -507,6 +846,20 @@ export async function autoCompactIfNeeded(
     autoExtractFromSession(mem1).catch(() => {
       // Best-effort memory extraction must not block compaction.
     });
+    // #3 Feedback loop: init regret tracking with dropped signatures
+    // (subtract the tail SM-compact keeps so kept tool calls aren't counted).
+    const droppedSM = computeDroppedToolSignatures(
+      preCompactMessages,
+      sessionMemoryResult.messagesToKeep ?? [],
+    );
+    resetCompactRegretState(droppedSM);
+    if (!regretState.hasLoggedBaseline) {
+      logEvent('compact_regret_baseline', {
+        droppedSignatures: droppedSM.size,
+        compactionType: 'session_memory' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      });
+      regretState.hasLoggedBaseline = true;
+    }
     return {
       wasCompacted: true,
       compactionResult: sessionMemoryResult,
@@ -535,6 +888,20 @@ export async function autoCompactIfNeeded(
     autoExtractFromSession(mem2).catch(() => {
       // Best-effort memory extraction must not block compaction.
     });
+
+    // #3 Feedback loop: init regret tracking with dropped signatures
+    // (subtract messagesToKeep so surviving tool calls aren't counted).
+    const kept = compactionResult.messagesToKeep ?? [];
+    const droppedSigs = computeDroppedToolSignatures(preCompactMessages, kept);
+    resetCompactRegretState(droppedSigs);
+    if (!regretState.hasLoggedBaseline) {
+      logEvent('compact_regret_baseline', {
+        droppedSignatures: droppedSigs.size,
+        keptSignatures: collectToolSignatures(kept).size,
+        compactionType: 'full' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      });
+      regretState.hasLoggedBaseline = true;
+    }
 
     return {
       wasCompacted: true,

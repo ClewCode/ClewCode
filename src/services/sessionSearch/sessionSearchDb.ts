@@ -42,6 +42,8 @@ export type IndexedFileState = {
 const DB_FILENAME = '.session_search.db';
 const MAX_RESULT_CHARS = 500; // Truncate per-result content for token budget
 const MAX_RESULTS = 20; // Max results to return per search
+const INDEX_DEBOUNCE_MS = 30_000; // Don't re-check for new session files more often than this
+const VACUUM_INTERVAL_MS = 3_600_000; // Incremental vacuum every 1 hour of uptime
 
 /**
  * Get the session search database path for the current project.
@@ -52,6 +54,13 @@ export function getSessionSearchDbPath(): string {
 }
 
 let _db: Database | null = null;
+let backgroundIndexPromise: Promise<number> | null = null;
+let backgroundIndexScheduled = false;
+let lastIndexCheckAt = 0; // Timestamp of last needsIndexing scan (debounce)
+let startupTime = Date.now(); // For vacuum interval tracking
+
+// Precompiled FTS5 search statement — reused across calls
+let _searchStmt: ReturnType<Database['query']> | null = null;
 
 /**
  * Get or create the session search database.
@@ -66,6 +75,7 @@ export function getSessionSearchDb(): Database {
   _db = new Database(dbPath, { create: true });
   _db.run('PRAGMA journal_mode = WAL');
   _db.run('PRAGMA synchronous = NORMAL');
+  _db.run('PRAGMA auto_vacuum = INCREMENTAL');
 
   runMigrations(_db);
   return _db;
@@ -363,6 +373,47 @@ export function indexNewSessions(): number {
 }
 
 /**
+ * Schedule indexing on the next macrotask so session search can return from the
+ * already-built FTS index instead of blocking on transcript ingestion.
+ *
+ * Debounced: skips the filesystem scan if it ran within INDEX_DEBOUNCE_MS.
+ * Prevents readdirSync + statSync on every single search call.
+ */
+export function scheduleSessionSearchIndexing(): void {
+  const now = Date.now();
+  if (now - lastIndexCheckAt < INDEX_DEBOUNCE_MS) return;
+  if (backgroundIndexPromise || backgroundIndexScheduled) return;
+
+  backgroundIndexScheduled = true;
+  lastIndexCheckAt = now;
+  setTimeout(() => {
+    backgroundIndexScheduled = false;
+    backgroundIndexPromise = Promise.resolve()
+      .then(() => {
+        const indexed = indexNewSessions();
+        // Periodic incremental vacuum — runs every VACUUM_INTERVAL_MS of uptime
+        // to reclaim free pages without blocking (INCREMENTAL mode is per-page).
+        if (Date.now() - startupTime > VACUUM_INTERVAL_MS) {
+          try {
+            getSessionSearchDb().run('PRAGMA incremental_vacuum(100)');
+          } catch {
+            // Non-critical — vacuum is best-effort
+          }
+          startupTime = Date.now(); // Reset timer
+        }
+        return indexed;
+      })
+      .catch(err => {
+        logError(err instanceof Error ? err : new Error(String(err)));
+        return 0;
+      })
+      .finally(() => {
+        backgroundIndexPromise = null;
+      });
+  }, 0);
+}
+
+/**
  * Force re-index all session files from scratch.
  */
 export function reindexAll(): number {
@@ -371,6 +422,8 @@ export function reindexAll(): number {
   db.run('DELETE FROM messages_fts');
   db.run('DELETE FROM sessions');
   db.run('DELETE FROM index_state');
+
+  lastIndexCheckAt = Date.now(); // Reset debounce so next search doesn't re-scan immediately
 
   return indexNewSessions();
 }
@@ -389,8 +442,8 @@ export function searchSessions(
 ): SessionSearchResult[] {
   if (!query?.trim()) return [];
 
-  // Ensure we index any new sessions before searching
-  indexNewSessions();
+  // Refresh in the background. Search uses whatever FTS data is already ready.
+  scheduleSessionSearchIndexing();
 
   const db = getSessionSearchDb();
 
@@ -408,8 +461,9 @@ export function searchSessions(
   if (!sanitized) return [];
 
   try {
-    const rows = db
-      .query(
+    // Precompile the FTS search statement on first use, then reuse
+    if (!_searchStmt) {
+      _searchStmt = db.query(
         `SELECT
           m.session_id,
           m.role,
@@ -421,8 +475,9 @@ export function searchSessions(
         WHERE messages_fts MATCH ?
         ORDER BY rank
         LIMIT ?`,
-      )
-      .all(sanitized, maxResults) as {
+      );
+    }
+    const rows = _searchStmt.all(sanitized, maxResults) as {
       session_id: string;
       role: string;
       content: string;

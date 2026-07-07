@@ -1,9 +1,11 @@
 import { basename, dirname, isAbsolute, join, sep } from 'path';
 import type { ToolPermissionContext } from '../Tool.js';
 import { isEnvTruthy } from './envUtils.js';
+import { fdListFiles, findFd } from './fd.js';
 import { getFileReadIgnorePatterns, normalizePatternsToPath } from './permissions/filesystem.js';
 import { getPlatform } from './platform.js';
 import { getGlobExclusionsForPluginCache } from './plugins/orphanedPluginFilter.js';
+import { logForDebugging } from './debug.js';
 import { ripGrep } from './ripgrep.js';
 
 /**
@@ -79,41 +81,75 @@ export async function glob(
 
   const ignorePatterns = normalizePatternsToPath(getFileReadIgnorePatterns(toolPermissionContext), searchDir);
 
-  // Use ripgrep for better memory performance
-  // --files: list files instead of searching content
-  // --glob: filter by pattern
-  // --sort=modified: sort by modification time (oldest first)
-  // --no-ignore: don't respect .gitignore (default true, set CLEW_CODE_GLOB_NO_IGNORE=false to respect .gitignore)
-  // --hidden: include hidden files (default true, set CLEW_CODE_GLOB_HIDDEN=false to exclude)
-  // Note: use || instead of ?? to treat empty string as unset (defaulting to true)
+  // Try fd first if available (significantly faster for pure file listing)
+  // Use || instead of ?? to treat empty string as unset (defaulting to true)
   const noIgnore = isEnvTruthy(process.env.CLEW_CODE_GLOB_NO_IGNORE || 'true');
   const hidden = isEnvTruthy(process.env.CLEW_CODE_GLOB_HIDDEN || 'true');
-  const args = [
-    '--files',
-    '--glob',
-    searchPattern,
-    '--sort=modified',
-    ...(noIgnore ? ['--no-ignore'] : []),
-    ...(hidden ? ['--hidden'] : []),
-  ];
 
-  // Add ignore patterns
-  for (const pattern of ignorePatterns) {
-    args.push('--glob', `!${pattern}`);
+  const fdAvailable = findFd() !== null;
+  let allPaths: string[] = [];
+  let usedFd = false;
+
+  if (fdAvailable) {
+    // Collect exclude patterns from permissions and plugin cache
+    const excludePatterns: string[] = [
+      ...ignorePatterns,
+    ];
+
+    // Exclude orphaned plugin version directories
+    for (const exclusion of await getGlobExclusionsForPluginCache(searchDir)) {
+      // Convert rg exclusion format (!pattern or pattern) to fd --exclude format
+      // fd uses --exclude which is always an exclusion pattern
+      const clean = exclusion.startsWith('!') ? exclusion.slice(1) : exclusion;
+      excludePatterns.push(clean);
+    }
+
+    try {
+      allPaths = await fdListFiles(searchPattern, searchDir, hidden, noIgnore, excludePatterns, abortSignal);
+      // fdListFiles already returns absolute paths with --absolute-path
+      usedFd = true;
+      logForDebugging(`[fd] glob completed using fd (${allPaths.length} files)`);
+    } catch (err) {
+      // fd failed — fall back to ripgrep
+      logForDebugging(`[fd] fd failed, falling back to ripgrep: ${(err as Error).message}`);
+      usedFd = false;
+    }
   }
 
-  // Exclude orphaned plugin version directories
-  for (const exclusion of await getGlobExclusionsForPluginCache(searchDir)) {
-    args.push('--glob', exclusion);
+  if (!usedFd) {
+    // Fall back to ripgrep
+    // --files: list files instead of searching content
+    // --glob: filter by pattern
+    // --sort=modified: sort by modification time (oldest first)
+    // --no-ignore: don't respect .gitignore (default true)
+    // --hidden: include hidden files (default true)
+    const args = [
+      '--files',
+      '--glob',
+      searchPattern,
+      '--sort=modified',
+      ...(noIgnore ? ['--no-ignore'] : []),
+      ...(hidden ? ['--hidden'] : []),
+    ];
+
+    // Add ignore patterns
+    for (const pattern of ignorePatterns) {
+      args.push('--glob', `!${pattern}`);
+    }
+
+    // Exclude orphaned plugin version directories
+    for (const exclusion of await getGlobExclusionsForPluginCache(searchDir)) {
+      args.push('--glob', exclusion);
+    }
+
+    const rgPaths = await ripGrep(args, searchDir, abortSignal);
+
+    // ripgrep returns relative paths, convert to absolute
+    allPaths = rgPaths.map(p => (isAbsolute(p) ? p : join(searchDir, p)));
   }
 
-  const allPaths = await ripGrep(args, searchDir, abortSignal);
-
-  // ripgrep returns relative paths, convert to absolute
-  const absolutePaths = allPaths.map(p => (isAbsolute(p) ? p : join(searchDir, p)));
-
-  const truncated = absolutePaths.length > offset + limit;
-  const files = absolutePaths.slice(offset, offset + limit);
+  const truncated = allPaths.length > offset + limit;
+  const files = allPaths.slice(offset, offset + limit);
 
   return { files, truncated };
 }

@@ -14,6 +14,7 @@ import {
 } from '../../skills/loadSkillsDir.js';
 import type { ToolUseContext } from '../../Tool.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
+import { scheduleCodegraphUpdate } from '../../utils/codegraphUpdate.js';
 import { getCwd } from '../../utils/cwd.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { countLinesChanged, getPatchForDisplay } from '../../utils/diff.js';
@@ -31,6 +32,7 @@ import { expandPath } from '../../utils/path.js';
 import { checkWritePermissionForTool, matchingRuleForInput } from '../../utils/permissions/filesystem.js';
 import type { PermissionDecision } from '../../utils/permissions/PermissionResult.js';
 import { matchWildcardPattern } from '../../utils/permissions/shellRuleMatching.js';
+import { clearAllCache } from '../../utils/searchCache.js';
 import { FILE_UNEXPECTEDLY_MODIFIED_ERROR } from '../FileEditTool/constants.js';
 import { gitDiffSchema, hunkSchema } from '../FileEditTool/types.js';
 import { FILE_WRITE_TOOL_NAME, getWriteToolDescription } from './prompt.js';
@@ -234,11 +236,11 @@ export const FileWriteTool = buildTool({
     if (meta !== null) {
       const lastWriteTime = getFileModificationTime(fullFilePath);
       const lastRead = readFileState.get(fullFilePath);
-      if (!lastRead || lastWriteTime > lastRead.timestamp) {
+      if (lastRead && lastWriteTime > lastRead.timestamp) {
         // Timestamp indicates modification, but on Windows timestamps can change
         // without content changes (cloud sync, antivirus, etc.). For full reads,
         // compare content as a fallback to avoid false positives.
-        const isFullRead = lastRead && lastRead.offset === undefined && lastRead.limit === undefined;
+        const isFullRead = lastRead.offset === undefined && lastRead.limit === undefined;
         // meta.content is CRLF-normalized — matches readFileState's normalized form.
         if (!isFullRead || meta.content !== lastRead.content) {
           throw new Error(FILE_UNEXPECTEDLY_MODIFIED_ERROR);
@@ -255,6 +257,8 @@ export const FileWriteTool = buildTool({
     // files), which silently corrupted e.g. bash scripts with \r on Linux when
     // overwriting a CRLF file or when binaries in cwd poisoned the repo sample.
     writeTextContent(fullFilePath, content, enc, 'LF');
+    clearAllCache();
+    scheduleCodegraphUpdate(fullFilePath);
 
     // Notify LSP servers about file modification (didChange) and save (didSave)
     const lspManager = getLspServerManager();

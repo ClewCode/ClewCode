@@ -6,6 +6,7 @@ import { Box, Text } from '../../../ink.js';
 import type { ToolUseContext } from '../../../Tool.js';
 import { getLanguageName } from '../../../utils/cliHighlight.js';
 import { getCwd } from '../../../utils/cwd.js';
+import { logForDebugging } from '../../../utils/debug.js';
 import { getFsImplementation, safeResolvePath } from '../../../utils/fsOperations.js';
 import { expandPath } from '../../../utils/path.js';
 import type { CompletionType } from '../../../utils/unaryLogging.js';
@@ -85,9 +86,15 @@ export function FilePermissionDialog<T extends ToolInput = ToolInput>({
     }
     const expandedPath = expandPath(path);
     const fs = getFsImplementation();
-    const { resolvedPath, isSymlink } = safeResolvePath(fs, expandedPath);
-    if (isSymlink) {
-      return resolvedPath;
+    try {
+      const { resolvedPath, isSymlink } = safeResolvePath(fs, expandedPath);
+      if (isSymlink) {
+        return resolvedPath;
+      }
+    } catch (e) {
+      logForDebugging(`File permission prompt could not resolve "${path}": ${String(e)}`, {
+        level: 'warn',
+      });
     }
     return null;
   }, [path, operationType]);
@@ -121,10 +128,20 @@ export function FilePermissionDialog<T extends ToolInput = ToolInput>({
   // (FileWrite's getConfig calls readFileSync for the old-content diff).
   // Keyed on the raw input — parseInput is a pure Zod parse whose result
   // depends only on toolUseConfirm.input.
-  const ideDiffConfig = useMemo(
-    () => (ideDiffSupport ? ideDiffSupport.getConfig(parseInput(toolUseConfirm.input)) : null),
-    [ideDiffSupport, toolUseConfirm.input, parseInput],
-  );
+  const ideDiffConfig = useMemo(() => {
+    if (!ideDiffSupport) {
+      return null;
+    }
+
+    try {
+      return ideDiffSupport.getConfig(parseInput(toolUseConfirm.input));
+    } catch (e) {
+      logForDebugging(`File permission prompt could not prepare IDE diff: ${String(e)}`, {
+        level: 'warn',
+      });
+      return null;
+    }
+  }, [ideDiffSupport, toolUseConfirm.input, parseInput]);
 
   // Create diff params based on whether IDE diff is available
   const diffParams = ideDiffConfig
@@ -153,7 +170,7 @@ export function FilePermissionDialog<T extends ToolInput = ToolInput>({
         editMode: ideDiffConfig.editMode || 'single',
       }
     : {
-        onChange: () => {},
+        onChange: () => undefined,
         toolUseContext,
         filePath: '',
         edits: [],

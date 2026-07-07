@@ -418,19 +418,21 @@ export const GrepTool = buildTool({
 
     // Check cache for files_with_matches mode — identical searches within TTL
     // skip ripgrep entirely.
-    let results: string[] | undefined;
-    if (output_mode === 'files_with_matches') {
-      const cacheKey = searchCacheKey({
-        pattern,
-        absolutePath,
-        glob,
-        type,
-        outputMode: output_mode,
-        multiline,
-        caseInsensitive: case_insensitive,
-      });
-      results = getCachedSearch(cacheKey);
-    }
+    const resolvedContext = output_mode === 'content' ? (context ?? context_c) : undefined;
+    const cacheKey = searchCacheKey({
+      pattern,
+      absolutePath,
+      glob,
+      type,
+      outputMode: output_mode,
+      multiline,
+      caseInsensitive: case_insensitive,
+      contextBefore: output_mode === 'content' ? context_before : undefined,
+      contextAfter: output_mode === 'content' ? context_after : undefined,
+      contextAround: resolvedContext,
+      showLineNumbers: output_mode === 'content' ? show_line_numbers : undefined,
+    });
+    let results = getCachedSearch(cacheKey) ?? undefined;
 
     if (!results) {
       // WSL has severe performance penalty for file reads (3-5x slower on WSL2)
@@ -440,19 +442,7 @@ export const GrepTool = buildTool({
       // so Claude knows the search didn't complete (rather than thinking there were no matches)
       results = await ripGrep(args, absolutePath, abortController.signal);
 
-      // Cache result for files_with_matches mode
-      if (output_mode === 'files_with_matches') {
-        const cacheKey = searchCacheKey({
-          pattern,
-          absolutePath,
-          glob,
-          type,
-          outputMode: output_mode,
-          multiline,
-          caseInsensitive: case_insensitive,
-        });
-        setCachedSearch(cacheKey, results);
-      }
+      setCachedSearch(cacheKey, results);
     }
 
     if (output_mode === 'content') {

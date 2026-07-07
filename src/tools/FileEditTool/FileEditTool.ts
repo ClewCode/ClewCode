@@ -13,6 +13,7 @@ import {
 } from '../../skills/loadSkillsDir.js';
 import type { ToolUseContext } from '../../Tool.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
+import { scheduleCodegraphUpdate } from '../../utils/codegraphUpdate.js';
 import { getCwd } from '../../utils/cwd.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { countLinesChanged } from '../../utils/diff.js';
@@ -36,6 +37,7 @@ import { expandPath } from '../../utils/path.js';
 import { checkWritePermissionForTool, matchingRuleForInput } from '../../utils/permissions/filesystem.js';
 import type { PermissionDecision } from '../../utils/permissions/PermissionResult.js';
 import { matchWildcardPattern } from '../../utils/permissions/shellRuleMatching.js';
+import { clearAllCache } from '../../utils/searchCache.js';
 import { validateInputForSettingsFileEdit } from '../../utils/settings/validateEditTool.js';
 import { NOTEBOOK_EDIT_TOOL_NAME } from '../NotebookEditTool/constants.js';
 import { FILE_EDIT_TOOL_NAME, FILE_UNEXPECTEDLY_MODIFIED_ERROR } from './constants.js';
@@ -443,6 +445,8 @@ export const FileEditTool = buildTool({
 
     // 5. Write to disk
     writeTextContent(absoluteFilePath, updatedFile, encoding, endings);
+    clearAllCache();
+    scheduleCodegraphUpdate(absoluteFilePath);
 
     // Notify LSP servers about file modification (didChange) and save (didSave)
     const lspManager = getLspServerManager();

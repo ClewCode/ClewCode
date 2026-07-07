@@ -1885,6 +1885,35 @@ export function mcpToolInputToAutoClassifierInput(input: Record<string, unknown>
   return keys.length > 0 ? keys.map(k => `${k}=${String(input[k])}`).join(' ') : toolName;
 }
 
+function normalizeMcpToolArgsForSchema(
+  args: Record<string, unknown>,
+  inputSchema: ListToolsResult['tools'][number]['inputSchema'],
+): Record<string, unknown> {
+  const properties = inputSchema?.properties;
+  const urlsSchema =
+    properties && typeof properties === 'object' && !Array.isArray(properties)
+      ? (properties as Record<string, unknown>).urls
+      : undefined;
+
+  if (
+    args.url !== undefined &&
+    args.urls === undefined &&
+    typeof args.url === 'string' &&
+    urlsSchema &&
+    typeof urlsSchema === 'object' &&
+    !Array.isArray(urlsSchema) &&
+    (urlsSchema as Record<string, unknown>).type === 'array'
+  ) {
+    const { url, ...rest } = args;
+    return {
+      ...rest,
+      urls: [url],
+    };
+  }
+
+  return args;
+}
+
 export const fetchToolsForClient = memoizeWithLRU(
   async (client: MCPServerConnection): Promise<Tool[]> => {
     if (client.type !== 'connected') return [];
@@ -2008,11 +2037,12 @@ export const fetchToolsForClient = memoizeWithLRU(
               for (let attempt = 0; ; attempt++) {
                 try {
                   const connectedClient = await ensureConnectedClient(client);
+                  const normalizedArgs = normalizeMcpToolArgsForSchema(args, tool.inputSchema);
                   const mcpResult = await callMCPToolWithUrlElicitationRetry({
                     client: connectedClient,
                     clientConnection: client,
                     tool: tool.name,
-                    args,
+                    args: normalizedArgs,
                     meta,
                     signal: context.abortController.signal,
                     setAppState: context.setAppState,

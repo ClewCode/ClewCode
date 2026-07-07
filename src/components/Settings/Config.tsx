@@ -355,25 +355,21 @@ export function Config({
         logEvent('tengu_thinking_toggled', { enabled });
       },
     },
-    ...(getFeatureValue_CACHED_MAY_BE_STALE('tengu_chomp_inflection', false)
-      ? [
-          {
-            id: 'promptSuggestionEnabled',
-            label: 'Prompt suggestions',
-            value: promptSuggestionEnabled,
-            type: 'boolean' as const,
-            onChange(enabled: boolean) {
-              setAppState(prev => ({
-                ...prev,
-                promptSuggestionEnabled: enabled,
-              }));
-              updateSettingsForSource('userSettings', {
-                promptSuggestionEnabled: enabled ? undefined : false,
-              });
-            },
-          },
-        ]
-      : []),
+    {
+      id: 'promptSuggestionEnabled',
+      label: 'Prompt suggestions',
+      value: promptSuggestionEnabled,
+      type: 'boolean' as const,
+      onChange(enabled: boolean) {
+        setAppState(prev => ({
+          ...prev,
+          promptSuggestionEnabled: enabled,
+        }));
+        updateSettingsForSource('userSettings', {
+          promptSuggestionEnabled: enabled ? undefined : false,
+        });
+      },
+    },
     // Speculation toggle (ant-only)
     ...('external' === 'ant'
       ? [

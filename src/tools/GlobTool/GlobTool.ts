@@ -11,6 +11,7 @@ import { expandPath, toRelativePath } from '../../utils/path.js';
 import { checkReadPermissionForTool } from '../../utils/permissions/filesystem.js';
 import type { PermissionDecision } from '../../utils/permissions/PermissionResult.js';
 import { matchWildcardPattern } from '../../utils/permissions/shellRuleMatching.js';
+import { getCachedSearch, globCacheKey, setCachedSearch } from '../../utils/searchCache.js';
 import { DESCRIPTION, GLOB_TOOL_NAME } from './prompt.js';
 import {
   getToolUseSummary,
@@ -142,13 +143,28 @@ export const GlobTool = buildTool({
     const start = Date.now();
     const appState = getAppState();
     const limit = globLimits?.maxResults ?? 100;
-    const { files, truncated } = await glob(
-      input.pattern,
-      GlobTool.getPath(input),
-      { limit, offset: 0 },
-      abortController.signal,
-      appState.toolPermissionContext,
-    );
+    const absolutePath = GlobTool.getPath(input);
+    const cacheKey = globCacheKey({
+      pattern: input.pattern,
+      absolutePath,
+      limit,
+      offset: 0,
+    });
+    const cached = getCachedSearch(cacheKey);
+    let files = cached?.filter(file => file !== '\0TRUNCATED') ?? undefined;
+    let truncated = cached?.includes('\0TRUNCATED') ?? false;
+    if (!cached) {
+      const result = await glob(
+        input.pattern,
+        absolutePath,
+        { limit, offset: 0 },
+        abortController.signal,
+        appState.toolPermissionContext,
+      );
+      files = result.files;
+      truncated = result.truncated;
+      setCachedSearch(cacheKey, truncated ? [...files, '\0TRUNCATED'] : files);
+    }
     // Relativize paths under cwd to save tokens (same as GrepTool)
     const filenames = files.map(toRelativePath);
     const output: Output = {

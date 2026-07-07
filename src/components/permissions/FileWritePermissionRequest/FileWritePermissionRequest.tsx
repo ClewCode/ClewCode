@@ -5,7 +5,8 @@ import type { z } from 'zod/v4';
 import { Text } from '../../../ink.js';
 import { FileWriteTool } from '../../../tools/FileWriteTool/FileWriteTool.js';
 import { getCwd } from '../../../utils/cwd.js';
-import { isENOENT } from '../../../utils/errors.js';
+import { logForDebugging } from '../../../utils/debug.js';
+import { isFsInaccessible } from '../../../utils/errors.js';
 import { readFileSync } from '../../../utils/fileRead.js';
 import { FilePermissionDialog } from '../FilePermissionDialog/FilePermissionDialog.js';
 import {
@@ -24,7 +25,11 @@ const ideDiffSupport: IDEDiffSupport<FileWriteToolInput> = {
     try {
       oldContent = readFileSync(input.file_path);
     } catch (e) {
-      if (!isENOENT(e)) throw e;
+      if (!isFsInaccessible(e)) {
+        logForDebugging(`FileWrite permission diff could not read "${input.file_path}": ${String(e)}`, {
+          level: 'warn',
+        });
+      }
       oldContent = '';
     }
 
@@ -62,7 +67,11 @@ export function FileWritePermissionRequest(props: PermissionRequestProps): React
     try {
       return { fileExists: true, oldContent: readFileSync(file_path) };
     } catch (e) {
-      if (!isENOENT(e)) throw e;
+      if (!isFsInaccessible(e)) {
+        logForDebugging(`FileWrite permission prompt could not read "${file_path}": ${String(e)}`, {
+          level: 'warn',
+        });
+      }
       return { fileExists: false, oldContent: '' };
     }
   }, [file_path]);

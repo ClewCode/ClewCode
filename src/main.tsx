@@ -973,6 +973,9 @@ export async function main() {
     if (process.argv.includes('-p') || process.argv.includes('--print')) {
       return;
     }
+    logForDebugging(`main SIGINT handler requested graceful shutdown\n${new Error().stack ?? ''}`, {
+      level: 'warn',
+    });
     gracefulShutdown(0);
   });
   // SIGCONT: re-draw fullscreen after sleep/wake or Ctrl+Z (SIGTSTP).
@@ -995,6 +998,9 @@ export async function main() {
   // events (SSH disconnect, terminal close) don't leave the TTY in a broken
   // state. gracefulShutdown sync handles cleanup before exit.
   process.on('uncaughtException', error => {
+    logForDebugging(`Uncaught exception: ${errorMessage(error)}\n${error instanceof Error ? (error.stack ?? '') : ''}`, {
+      level: 'error',
+    });
     // eslint-disable-next-line no-console
     console.error('Uncaught exception:', error);
     gracefulShutdownSync(1);
@@ -3362,7 +3368,10 @@ async function run(): Promise<CommanderCommand> {
         if (nonMcpErrors.length > 0) {
           await launchInvalidSettingsDialog(root, {
             settingsErrors: nonMcpErrors,
-            onExit: () => gracefulShutdownSync(1),
+            onExit: () => {
+              logForDebugging('InvalidSettingsDialog requested exit', { level: 'warn' });
+              gracefulShutdownSync(1);
+            },
           });
         }
       }

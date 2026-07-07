@@ -4,7 +4,10 @@ import type { CanUseToolFn } from './hooks/useCanUseTool.js';
 import { FallbackTriggeredError } from './services/api/withRetry.js';
 import {
   calculateTokenWarningState,
+  checkCompactRegret,
   isAutoCompactEnabled,
+  logCompactRegret,
+  tickCompactRegret,
   type AutoCompactTrackingState,
 } from './services/compact/autoCompact.js';
 import { buildPostCompactMessages } from './services/compact/compact.js';
@@ -388,6 +391,11 @@ async function* queryLoop(
 
     const fullSystemPrompt = asSystemPrompt(appendSystemContext(systemPrompt, systemContext));
 
+    // #3 Feedback loop: advance the post-compact regret window one turn. Runs
+    // before autocompact so that when a compact happens this iteration,
+    // resetCompactRegretState (inside autoCompactIfNeeded) re-zeroes it after.
+    tickCompactRegret();
+
     queryCheckpoint('query_autocompact_start');
     const { compactionResult, consecutiveFailures } = await deps.autocompact(
       messagesForQuery,
@@ -724,6 +732,14 @@ async function* queryLoop(
               if (msgToolUseBlocks.length > 0) {
                 toolUseBlocks.push(...msgToolUseBlocks);
                 needsFollowUp = true;
+                // #3 Feedback loop: detect regret (model re-referencing
+                // recently-dropped context). Measure-only phase.
+                for (const tb of msgToolUseBlocks) {
+                  const tbInput = tb.input as Record<string, unknown> | undefined;
+                  if (checkCompactRegret(tb.name, tbInput)) {
+                    logCompactRegret(tb.name, tbInput);
+                  }
+                }
               }
 
               if (streamingToolExecutor && !toolUseContext.abortController.signal.aborted) {

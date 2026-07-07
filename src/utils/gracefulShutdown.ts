@@ -324,6 +324,10 @@ export function gracefulShutdownSync(
     setAppState?: (f: (prev: AppState) => AppState) => void;
   },
 ): void {
+  logForDebugging(`gracefulShutdownSync requested exitCode=${exitCode} reason=${reason}\n${new Error().stack ?? ''}`, {
+    level: exitCode === 0 ? 'info' : 'warn',
+  });
+
   // Set the exit code that will be used when process naturally exits. Note that we do it
   // here inside the sync version too so that it is possible to determine if
   // gracefulShutdownSync was called by checking process.exitCode.
@@ -381,6 +385,10 @@ export async function gracefulShutdown(
     finalMessage?: string;
   },
 ): Promise<void> {
+  logForDebugging(`gracefulShutdown requested exitCode=${exitCode} reason=${reason}\n${new Error().stack ?? ''}`, {
+    level: exitCode === 0 ? 'info' : 'warn',
+  });
+
   if (shutdownInProgress) {
     return;
   }

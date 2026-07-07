@@ -1,5 +1,4 @@
 import { getIsNonInteractiveSession } from '../../bootstrap/state.js';
-import { DEFAULT_OUTPUT_STYLE_NAME } from '../../constants/outputStyles.js';
 import type { AppState } from '../../state/AppState.js';
 import type { Message } from '../../types/message.js';
 import { isAgentSwarmsEnabled } from '../../utils/agentSwarmsEnabled.js';
@@ -12,7 +11,6 @@ import { logError } from '../../utils/log.js';
 import { createUserMessage, getLastAssistantMessage } from '../../utils/messages.js';
 import { getInitialSettings } from '../../utils/settings/settings.js';
 import { isTeammate } from '../../utils/teammate.js';
-import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
 import { currentLimits } from '../claudeAiLimits.js';
 import { isSpeculationEnabled, startSpeculation } from './speculation.js';
@@ -41,15 +39,6 @@ export function shouldEnablePromptSuggestion(): boolean {
       source: 'env' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     });
     return true;
-  }
-
-  // Keep default in sync with Config.tsx (settings toggle visibility)
-  if (!getFeatureValue_CACHED_MAY_BE_STALE('tengu_chomp_inflection', false)) {
-    logEvent('tengu_prompt_suggestion_init', {
-      enabled: false,
-      source: 'growthbook' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-    });
-    return false;
   }
 
   // Disable in non-interactive mode (print mode, piped input, SDK)
@@ -94,11 +83,6 @@ export function getSuggestionSuppressReason(appState: AppState): string | null {
   if (appState.pendingWorkerRequest || appState.pendingSandboxRequest) return 'pending_permission';
   if (appState.elicitation.queue.length > 0) return 'elicitation_active';
   if (appState.toolPermissionContext.mode === 'plan') return 'plan_mode';
-  // When a non-default output style (e.g. Explanatory, Learning) is active,
-  // the model already gets style-specific instructions in its system prompt.
-  // Prompt suggestions would compete with / contradict those instructions.
-  const outputStyle = getInitialSettings()?.outputStyle;
-  if (outputStyle && outputStyle !== DEFAULT_OUTPUT_STYLE_NAME) return 'output_style';
   if (process.env.USER_TYPE === 'external' && currentLimits.status !== 'allowed') return 'rate_limit';
   return null;
 }
@@ -163,7 +147,7 @@ export async function tryGenerateSuggestion(
 }
 
 export async function executePromptSuggestion(context: REPLHookContext): Promise<void> {
-  if (context.querySource !== 'repl_main_thread') return;
+  if (!context.querySource?.startsWith('repl_main_thread')) return;
 
   currentAbortController = new AbortController();
   const abortController = currentAbortController;
