@@ -404,7 +404,17 @@ export async function getURLMarkdownContent(
     logError(e);
   }
 
-  const response = await getWithPermittedRedirects(upgradedUrl, abortController.signal, isPermittedRedirect);
+  let response;
+  try {
+    response = await getWithPermittedRedirects(upgradedUrl, abortController.signal, isPermittedRedirect);
+  } catch (err) {
+    try {
+      const jinaUrl = `https://r.jina.ai/${upgradedUrl}`;
+      response = await getWithPermittedRedirects(jinaUrl, abortController.signal, isPermittedRedirect);
+    } catch (_) {
+      throw err;
+    }
+  }
 
   // Check if we got a redirect response
   if (isRedirectInfo(response)) {
