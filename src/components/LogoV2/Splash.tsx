@@ -47,12 +47,14 @@ export function Splash({ children, durationMs = 2500 }: { children: ReactNode; d
   return (
     <Box flexDirection="column" alignItems="center" paddingY={1}>
       {PINWHEEL.map((row, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: static pinwheel logo rows
         <Text key={i} color={blade}>
           {row}
         </Text>
       ))}
-      <Box marginTop={1}>
+      <Box marginTop={1} flexDirection="column" alignItems="center">
         <Text bold={true}>Clew Code</Text>
+        <Text dimColor={true}>"A thread through complex code"</Text>
       </Box>
     </Box>
   );
