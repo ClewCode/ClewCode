@@ -5,7 +5,7 @@ import {
   logEvent,
 } from '../../services/analytics/index.js';
 import { queryHaiku } from '../../services/api/claude.js';
-import { AbortError } from '../../utils/errors.js';
+import { AbortError, isFetchError } from '../../utils/errors.js';
 import { getWebFetchUserAgent } from '../../utils/http.js';
 import { logError } from '../../utils/log.js';
 import { isBinaryContentType, persistBinaryContent } from '../../utils/mcpOutputStorage.js';
@@ -274,11 +274,11 @@ export async function getWithPermittedRedirects(
     throw new Error(`Too many redirects (exceeded ${MAX_REDIRECTS})`);
   }
   try {
-    return await ofetch(url, {
+    return await ofetch.raw(url, {
       signal,
       timeout: FETCH_TIMEOUT_MS,
       maxRedirects: 0,
-      responseType: 'arraybuffer',
+      responseType: 'arrayBuffer',
       maxContentLength: MAX_HTTP_CONTENT_LENGTH,
       headers: {
         Accept: 'text/markdown, text/html, */*',
@@ -421,12 +421,14 @@ export async function getURLMarkdownContent(
     return response;
   }
 
-  const rawBuffer = Buffer.from(response.data);
+  const body = response._data ?? (response as any).data;
+  const rawBuffer = Buffer.from(body);
   // Release the axios-held ArrayBuffer copy; rawBuffer owns the bytes now.
   // This lets GC reclaim up to MAX_HTTP_CONTENT_LENGTH (10MB) before Turndown
   // builds its DOM tree (which can be 3-5x the HTML size).
-  (response as { data: unknown }).data = null;
-  const contentType = response.headers['content-type'] ?? '';
+  (response as any)._data = null;
+  (response as any).data = null;
+  const contentType = (typeof response.headers?.get === 'function' ? response.headers.get('content-type') : (response.headers as any)?.['content-type']) ?? '';
 
   // Binary content: save raw bytes to disk with a proper extension so Claude
   // can inspect the file later. We still fall through to the utf-8 decode +
