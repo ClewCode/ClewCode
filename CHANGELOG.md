@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **OpenGateway provider**: Added `opengateway` provider (OpenAI-compatible gateway at `opengateway.gitlawb.com`) with 10 models — smart routing (`auto`/`gitlawb/auto`), MiMo V2.5 Pro, MiniMax M3, Qwen 3.7 Max, GLM 5.2, Gemini 3.1 Flash Lite, Tencent HY3, and Nemotron 3 Ultra (free). Uses `OPEN_GATEWAY_API_KEY` env var. (`src/services/ai/providers.json`, `src/services/ai/providers/ProviderInterface.ts`, `src/services/ai/providerRegistry.ts`)
+
 ### Fixed
+- **WebSearch direct-search fallback**: Replaced the dead DuckDuckGo scraping fallback with a Tavily/Brave/Serper-backed search. It now throws a clear configuration error if none of these API keys are configured, rather than attempting to scrape DuckDuckGo and failing or returning empty results. (`src/tools/WebSearchTool/WebSearchTool.ts`, `src/tools/ResearchTool/searchProviders.ts`)
 - **Resume now restores the full conversation, not just the last message**: A race between the two transcript recorders (`QueryEngine.recordTranscript` and the incremental `useLogMessages` effect) left the first assistant sub-message after each user/tool_result message with `parentUuid: null`, shattering a session into dozens of disconnected islands. Resume's leaf→root chain walk recovered only the final island (a 155-message session resumed as 2). Added `repairFragmentedParentChain()` in `buildResumeConversationChain()` to stitch orphaned main-thread messages to the previous chain participant in file order (sidechains and compact boundaries untouched), and routed the `/resume` slash command + `getLastSessionLog` + `--resume <id>` through `includePreCompactHistory`. (`src/utils/sessionStorage.ts`, `src/commands/resume/resume.tsx`, `src/utils/conversationRecovery.ts`)
 
 ## [0.5.0] — 2026-07-08
@@ -18,7 +22,7 @@ All notable changes to this project will be documented in this file.
 - **Session search background indexing**: Debounced (30s) async FTS5 indexing, precompiled query statement for reuse, incremental vacuum every hour. (`src/services/sessionSearch/sessionSearchDb.ts`)
 - **Search cache + codegraph integration**: Glob/Grep results cached in-memory with LRU eviction (max 500). FileEdit/FileWrite invalidate cache and schedule codegraph update on write. (`src/utils/searchCache.ts`, `src/utils/codegraphUpdate.ts`, `src/tools/{FileEditTool,FileWriteTool,GlobTool,GrepTool}/`)
 - **Enterprise audit logging**: Added NDJSON audit log writer/service, env-based opt-in, tool execution audit events, command/file access audit events, rotation/filtering, and focused tests. (`src/services/auditLog/`, `src/services/tools/toolExecution.ts`)
-- **README sections**: Added table of contents, prerequisites, use cases, screenshots, configuration reference, FAQ, contributing guide, and star history chart. (`README.md`)
+- **README sections**: Added table of contents, prerequisites, use cases, screenshots, configuration reference, FAQ, contributing guide, and star history link. (`README.md`)
 - **Terminal title utility**: Extracted shared `setTerminalTitle()` to `src/utils/terminalTitle.ts`. (`src/utils/terminalTitle.ts`)
 - **Screenshot asset**: Added REPL screenshot for README. (`assets/screenshots/`)
 - **Test for media fallback**: Added `AnthropicAdapter` test covering DeepSeek text-only model image stripping. (`src/services/ai/adapter/AnthropicAdapter.test.ts`)

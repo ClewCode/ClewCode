@@ -68,13 +68,13 @@ import type { WebSearchProgress } from '../../types/tools.js';
 
 /**
  * Select the best available direct search provider.
- * Priority: tavily > brave > serper > duckduckgo
+ * Priority: tavily > brave > serper
  */
-function selectBestDirectProvider(): string {
+function selectBestDirectProvider(): string | null {
   if (isProviderConfigured('tavily')) return 'tavily';
   if (isProviderConfigured('brave')) return 'brave';
   if (isProviderConfigured('serper')) return 'serper';
-  return 'duckduckgo';
+  return null;
 }
 
 /**
@@ -162,10 +162,16 @@ function makeOutputFromSearchResponse(result: BetaContentBlock[], query: string,
 /**
  * Direct search fallback for non-Anthropic providers.
  * Skips the Anthropic server-side web_search model call and goes
- * straight to Tavily/Brave/Serper/DuckDuckGo.
+ * straight to Tavily/Brave/Serper.
  */
 async function directSearchFallback(query: string, startTime: number, onProgress?: any): Promise<{ data: Output }> {
   const fallbackProvider = selectBestDirectProvider();
+
+  if (!fallbackProvider) {
+    throw new Error(
+      'No web search provider API keys are configured (Tavily/Brave/Serper) and DuckDuckGo scraping is disabled/dead. Please configure TAVILY_API_KEY, BRAVE_API_KEY, or SERPER_API_KEY in settings.',
+    );
+  }
 
   if (onProgress) {
     onProgress({
@@ -453,6 +459,9 @@ export const WebSearchTool = buildTool({
     if (useFallback) {
       try {
         const fallbackProvider = selectBestDirectProvider();
+        if (!fallbackProvider) {
+          throw new Error('No search provider API keys configured (Tavily/Brave/Serper) for fallback search.');
+        }
 
         // Report progress so the UI doesn't look stuck
         if (onProgress) {

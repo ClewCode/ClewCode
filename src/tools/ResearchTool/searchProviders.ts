@@ -247,17 +247,14 @@ export interface SearchProviderResult {
 
 /**
  * Get search providers in priority order:
- * 1. DuckDuckGo (free, no API key)
- * 2. Tavily (if API key available)
- * 3. Brave (if API key available)
+ * 1. Tavily (if API key available)
+ * 2. Brave (if API key available)
+ * 3. DuckDuckGo (free, no API key, last resort)
  */
 export function getSearchProviderPriority(): Array<'duckduckgo' | 'tavily' | 'brave'> {
   const providers: Array<'duckduckgo' | 'tavily' | 'brave'> = [];
 
-  // DuckDuckGo as free default (no API key needed)
-  providers.push('duckduckgo');
-
-  // API-based providers (if configured)
+  // API-based providers (if configured) first
   if (process.env.TAVILY_API_KEY) {
     providers.push('tavily');
   }
@@ -265,6 +262,9 @@ export function getSearchProviderPriority(): Array<'duckduckgo' | 'tavily' | 'br
   if (process.env.BRAVE_API_KEY) {
     providers.push('brave');
   }
+
+  // DuckDuckGo as free fallback
+  providers.push('duckduckgo');
 
   return providers;
 }
