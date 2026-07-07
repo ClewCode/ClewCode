@@ -398,15 +398,13 @@ bun x tsc --noEmit         # TypeScript check only
 bun run check:ci && bun x tsc --noEmit && bun test --bail
 ```
 
-Or run the `/clew-verify` skill, which also does a shadow-file check and a real CLI smoke test — green tests alone don't prove an Ink TUI feature actually works.
+Or run the `/clew-verify` skill, which runs the full gate and a real CLI smoke test — green tests alone don't prove an Ink TUI feature actually works.
 
-### ⚠️ Shadow `.js` Files
+### ✅ Shadow `.js` Files — Resolved
 
-`src/` has ~400 `.js` files alongside `.ts`/`.tsx` twins (leftover from a JS→TS migration; a first batch was reconciled in [PR #60](https://github.com/ClewCode/ClewCode/pull/60)). Imports use `.js`-suffixed ESM specifiers, and **Bun resolves those to the real `.js` file on disk** — it does not prefer the `.ts` source.
+The JS→TS migration is complete. All 401 `.js` shadow files that sat alongside `.ts`/`.tsx` twins have been removed. **Zero shadow pairs remain** — the `/js-shadow-sync` skill has been removed.  
 
-- Before editing a file for a runtime fix, check for a `.js` sibling with the `/js-shadow-sync` skill. If one exists, edit **both** twins, or your fix won't run.
-- Don't bulk-delete `.js` shadows — the pairs have drifted independently and must be reconciled by hand.
-- See [AGENTS.md § Critical](AGENTS.md#critical-js-files-shadow-ts-at-runtime) for the verified reconciliation method.
+Any `.js` file still in `src/` is a genuine JS source module (no `.ts` twin exists).
 
 ### Release
 

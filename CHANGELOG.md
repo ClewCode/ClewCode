@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **Search performance optimizations**: Added LRU eviction (max 500 entries) to in-memory search cache to prevent unbounded memory growth. Debounced session search indexing (30s cooldown) to eliminate redundant `readdirSync` + `statSync` on every search call. Precompiled FTS5 query statement for reuse across searches. Enabled `auto_vacuum=INCREMENTAL` with periodic incremental vacuum every hour to reclaim DB free pages. (`src/utils/searchCache.ts`, `src/services/sessionSearch/sessionSearchDb.ts`)
+- **`.js` shadow cleanup complete**: Removed 401 committed `.js` shadow files that had `.ts`/`.tsx` twins — the final batch of the JS→TS migration. All 148 remaining shadow pairs were reconciled: 130 body-drifted `.ts` pairs (verified TS canonical in all cases), 15 `.tsx` transpiler-noise pairs, and 3 in-sync pairs. `/js-shadow-sync --all` now reports 0 shadows. (`src/`, multiple commits)
 
 ### Added
 - **Enterprise audit logging**: Added NDJSON audit log writer/service, env-based opt-in, tool execution audit events, command/file access audit events, rotation/filtering, and focused tests. (`src/services/auditLog/`, `src/services/tools/toolExecution.ts`)
