@@ -86,136 +86,181 @@ function DeepResearchRunnerView({ query, mode, onDone }: DeepResearchRunnerViewP
 
         if (!active) return;
 
-        // 1. Source Collection Phase
-        setState(prev => ({
-          ...prev,
-          phase: 'collecting',
-          phaseIndex: 1,
-          collectors: prev.collectors.map(c => ({
-            ...c,
-            status: plan.sourceStrategy.includes(c.name as any) ? 'running' : 'pending',
-          })),
-        }));
-
-        const collectorPromises = [
-          {
-            name: 'local_repo',
-            fn: plan.sourceStrategy.includes('local_repo') ? collectLocalRepo(cwd, query) : Promise.resolve([]),
-          },
-          {
-            name: 'local_wiki',
-            fn: plan.sourceStrategy.includes('local_wiki') ? collectLocalWiki(cwd, query) : Promise.resolve([]),
-          },
-          {
-            name: 'local_memory',
-            fn: plan.sourceStrategy.includes('local_memory') ? collectLocalMemory(cwd, query) : Promise.resolve([]),
-          },
-          {
-            name: 'web',
-            fn: plan.sourceStrategy.includes('web') ? collectWebSearch(cwd, query, runDir) : Promise.resolve([]),
-          },
-        ];
-
-        const results = await Promise.all(
-          collectorPromises.map(async p => {
-            const colStart = Date.now();
-            try {
-              const res = await p.fn;
-              const duration = Date.now() - colStart;
-              if (active) {
-                setState(prev => ({
-                  ...prev,
-                  collectors: prev.collectors.map(c =>
-                    c.name === p.name ? { ...c, status: 'completed', resultCount: res.length, durationMs: duration } : c
-                  ),
-                }));
-              }
-              return res;
-            } catch (err) {
-              if (active) {
-                setState(prev => ({
-                  ...prev,
-                  collectors: prev.collectors.map(c =>
-                    c.name === p.name ? { ...c, status: 'failed', durationMs: Date.now() - colStart } : c
-                  ),
-                }));
-              }
-              return [];
+        // Wire LLM if available globally
+        const plannerLlm = (globalThis as any).__ultracodePlannerLlm;
+        const ask = plannerLlm
+          ? async (prompt: string) => {
+              return plannerLlm({
+                systemPrompt: 'You are a research assistant synthesizing claims. Return only valid JSON.',
+                userPrompt: prompt,
+              });
             }
-          })
-        );
+          : undefined;
 
-        if (!active) return;
+        let currentQueries = [query];
+        const allSources: any[] = [];
+        const allClaims: any[] = [];
+        const seenUrls = new Set<string>();
 
-        const [repoSources, wikiSources, memorySources, webSources] = results;
-        const allSources = [...repoSources, ...wikiSources, ...memorySources, ...webSources];
+        let round = 1;
+        const maxRounds = 2; // Iterative loop cap (max 2 rounds to be fast but thorough)
+        let synthesis: any = null;
 
-        // Smart ranking
-        if (allSources.length > 0) {
-          const ranked = rankSources(
-            allSources.map(s => ({
-              url: s.url || s.path || '',
-              title: s.title,
-              excerpt: s.excerpt || '',
-              content: '',
-              type: s.type,
-            })),
-            { preferOfficial: true, excludeSpam: true, minScore: 0 }
-          );
-          const scoreMap = new Map(ranked.map(r => [r.url || r.title, r.score]));
-          allSources.sort((a, b) => {
-            const aKey = a.url || a.path || a.title;
-            const bKey = b.url || b.path || b.title;
-            return (scoreMap.get(bKey) ?? 50) - (scoreMap.get(aKey) ?? 50);
-          });
-        }
-
-        for (const source of allSources) {
-          await appendSourceToRun(runDir, source);
-        }
-
-        if (active) {
-          setState(prev => ({
-            ...prev,
-            sourceCount: allSources.length,
-          }));
-        }
-
-        // 2. Claim Extraction Phase
-        if (active) {
-          setState(prev => ({ ...prev, phase: 'extracting', phaseIndex: 2 }));
-        }
-
-        const allClaims = [];
-        for (const source of allSources) {
+        while (round <= maxRounds) {
           if (!active) return;
-          const text = await readSourceDocument(cwd, source);
-          const extracted = extractClaimsFromText(text, source.id);
-          for (const claim of extracted) {
-            await appendClaimToRun(runDir, claim);
-            allClaims.push(claim);
-          }
+
+          // 1. Source Collection Phase
           if (active) {
             setState(prev => ({
               ...prev,
-              claimCount: allClaims.length,
+              phase: 'collecting',
+              phaseIndex: 1,
+              collectors: prev.collectors.map(c => ({
+                ...c,
+                status: plan.sourceStrategy.includes(c.name as any) ? 'running' : 'pending',
+              })),
             }));
           }
-        }
 
-        // 3. Synthesis Phase
-        if (active) {
-          setState(prev => ({ ...prev, phase: 'synthesizing', phaseIndex: 3 }));
-        }
+          const collectorPromises = [];
+          for (const q of currentQueries) {
+            collectorPromises.push(
+              plan.sourceStrategy.includes('local_repo') ? collectLocalRepo(cwd, q) : Promise.resolve([]),
+              plan.sourceStrategy.includes('local_wiki') ? collectLocalWiki(cwd, q) : Promise.resolve([]),
+              plan.sourceStrategy.includes('local_memory') ? collectLocalMemory(cwd, q) : Promise.resolve([]),
+              plan.sourceStrategy.includes('web') ? collectWebSearch(cwd, q, runDir) : Promise.resolve([]),
+            );
+          }
 
-        const synthesis = await synthesizeClaims(allClaims, allSources, query);
+          const results = await Promise.all(
+            collectorPromises.map(async (fn, idx) => {
+              const name = ['local_repo', 'local_wiki', 'local_memory', 'web'][idx % 4]!;
+              const colStart = Date.now();
+              try {
+                const res = await fn;
+                const duration = Date.now() - colStart;
+                if (active) {
+                  setState(prev => ({
+                    ...prev,
+                    collectors: prev.collectors.map(c =>
+                      c.name === name
+                        ? {
+                            ...c,
+                            status: 'completed',
+                            resultCount: c.resultCount + res.length,
+                            durationMs: c.durationMs + duration,
+                          }
+                        : c
+                    ),
+                  }));
+                }
+                return res;
+              } catch (err) {
+                if (active) {
+                  setState(prev => ({
+                    ...prev,
+                    collectors: prev.collectors.map(c =>
+                      c.name === name
+                        ? { ...c, status: 'failed', durationMs: c.durationMs + (Date.now() - colStart) }
+                        : c
+                    ),
+                  }));
+                }
+                return [];
+              }
+            })
+          );
 
-        if (active) {
-          setState(prev => ({
-            ...prev,
-            consensusCount: synthesis.consensusFindings.length,
-            conflictCount: synthesis.conflicts.length,
-          }));
+          if (!active) return;
+
+          const roundSources = results.flat();
+          // Filter duplicates
+          const newSources = [];
+          for (const src of roundSources) {
+            const key = src.url || src.path || src.title;
+            if (!seenUrls.has(key)) {
+              seenUrls.add(key);
+              newSources.push(src);
+            }
+          }
+
+          if (newSources.length > 0) {
+            // Smart ranking
+            const ranked = rankSources(
+              newSources.map(s => ({
+                url: s.url || s.path || '',
+                title: s.title,
+                excerpt: s.excerpt || '',
+                content: '',
+                type: s.type,
+              })),
+              { preferOfficial: true, excludeSpam: true, minScore: 0 }
+            );
+            const scoreMap = new Map(ranked.map(r => [r.url || r.title, r.score]));
+            newSources.sort((a, b) => {
+              const aKey = a.url || a.path || a.title;
+              const bKey = b.url || b.path || b.title;
+              return (scoreMap.get(bKey) ?? 50) - (scoreMap.get(aKey) ?? 50);
+            });
+
+            for (const source of newSources) {
+              await appendSourceToRun(runDir, source);
+              allSources.push(source);
+            }
+          }
+
+          if (active) {
+            setState(prev => ({
+              ...prev,
+              sourceCount: allSources.length,
+            }));
+          }
+
+          // 2. Claim Extraction Phase
+          if (active) {
+            setState(prev => ({ ...prev, phase: 'extracting', phaseIndex: 2 }));
+          }
+
+          const newClaims = [];
+          for (const source of newSources) {
+            if (!active) return;
+            const text = await readSourceDocument(cwd, source);
+            const extracted = extractClaimsFromText(text, source.id);
+            for (const claim of extracted) {
+              await appendClaimToRun(runDir, claim);
+              allClaims.push(claim);
+              newClaims.push(claim);
+            }
+            if (active) {
+              setState(prev => ({
+                ...prev,
+                claimCount: allClaims.length,
+              }));
+            }
+          }
+
+          // 3. Synthesis Phase
+          if (active) {
+            setState(prev => ({ ...prev, phase: 'synthesizing', phaseIndex: 3 }));
+          }
+
+          synthesis = await synthesizeClaims(allClaims, allSources, query, ask);
+
+          if (active) {
+            setState(prev => ({
+              ...prev,
+              consensusCount: synthesis.consensusFindings.length,
+              conflictCount: synthesis.conflicts.length,
+            }));
+          }
+
+          // Gap-filling loop: if synthesis discovers gaps, trigger round 2 with the gaps as queries
+          if (synthesis.gaps && synthesis.gaps.length > 0 && round < maxRounds) {
+            currentQueries = synthesis.gaps.slice(0, 2);
+            round++;
+          } else {
+            break;
+          }
         }
 
         // 4. Report Building Phase
@@ -297,8 +342,8 @@ export async function call(
   if (!trimmed) {
     onDone(
       'Usage:\n' +
-        '  /deep-research <query>                    Run full parallel deep research\n' +
-        '  /deep-research <query> --mode <mode>      Specify mode (quick|deep|compare|security|...)'
+        '  /research deep <query>                    Run full parallel deep research\n' +
+        '  /research deep <query> --mode <mode>      Specify mode (quick|deep|compare|security|...)'
     );
     return null;
   }
