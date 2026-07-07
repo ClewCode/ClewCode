@@ -1,4 +1,5 @@
 import { join } from 'path';
+import * as React from 'react';
 import { buildCitations } from '../../research/citations.js';
 import { extractClaimsFromText } from '../../research/claims.js';
 import { collectLocalMemory } from '../../research/collectors/localMemory.js';
@@ -35,18 +36,17 @@ import { readSourceDocument } from '../../research/sourceReader.js';
 import { synthesizeClaims } from '../../research/synthesizer.js';
 import type { ResearchMode } from '../../research/types.js';
 import { getResearchWorkspaceStatus, initWorkspace } from '../../research/workspace.js';
-import type { LocalCommandCall } from '../../types/command.js';
+import type { LocalJSXCommandCall } from '../../types/command.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import { rankSources } from '../../tools/ResearchTool/smartSourceRanking.js';
 import { assessSourceCredibility, detectConflicts, generateTruthCheckSummary } from '../../tools/ResearchTool/truthChecker.js';
 
-export const call: LocalCommandCall = async (args, _context) => {
+export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
   const cwd = process.cwd();
   const trimmed = args.trim();
   if (!trimmed) {
-    return {
-      type: 'text',
-      value: [
+    onDone(
+      [
         'Usage: /research <query> OR /research <subcommand> [args]',
         '',
         'Quick Search:',
@@ -56,6 +56,7 @@ export const call: LocalCommandCall = async (args, _context) => {
         '  init                            Initialize research folders',
         '  plan <query> [--mode <mode>]    Generate and print a research plan',
         '  run <query> [--mode <mode>]     Execute a complete research run',
+        '  deep <query> [--mode <mode>]    Execute a deep research run with live progress',
         '  sources                         List all collected sources from the latest run',
         '  open <source-id>                Open and view content of a collected source',
         '  claims                          List extracted claims from the latest run',
@@ -63,12 +64,13 @@ export const call: LocalCommandCall = async (args, _context) => {
         '  save [--to-wiki|--to-memory|--to both]  Save the latest report to wiki / memory',
         '  doctor                          Run system diagnostic status check',
       ].join('\n'),
-    };
+    );
+    return null;
   }
 
   const argv = trimmed.split(/\s+/);
   const firstWord = argv[0].toLowerCase();
-  const SUBCOMMANDS = new Set(['init', 'plan', 'run', 'sources', 'open', 'claims', 'report', 'save', 'doctor']);
+  const SUBCOMMANDS = new Set(['init', 'plan', 'run', 'deep', 'sources', 'open', 'claims', 'report', 'save', 'doctor']);
 
   let subcommand = 'run';
   let queryAndFlags = trimmed;
@@ -97,12 +99,14 @@ export const call: LocalCommandCall = async (args, _context) => {
   switch (subcommand) {
     case 'init': {
       await initWorkspace(cwd);
-      return { type: 'text', value: 'Research workspace initialized under `.clew/`' };
+      onDone('Research workspace initialized under `.clew/`', { display: 'system' });
+      return null;
     }
 
     case 'plan': {
       if (!query) {
-        return { type: 'text', value: 'Error: Please specify a research query. Example: `/research plan GrowthBook`.' };
+        onDone('Error: Please specify a research query. Example: `/research plan GrowthBook`.', { display: 'system' });
+        return null;
       }
 
       await initWorkspace(cwd);
@@ -110,9 +114,8 @@ export const call: LocalCommandCall = async (args, _context) => {
       const { runDir } = await createRunStore(cwd, query, mode);
       await writePlanToRun(runDir, plan);
 
-      return {
-        type: 'text',
-        value: [
+      onDone(
+        [
           `Research Plan: "${query}" (Mode: ${mode})`,
           `Saved to: \`${runDir}\``,
           '',
@@ -123,12 +126,24 @@ export const call: LocalCommandCall = async (args, _context) => {
           `**Done criteria:** ${plan.doneCriteria.join(', ')}`,
           `**Risks:** ${plan.risks.join(', ')}`,
         ].join('\n'),
-      };
+        { display: 'system' }
+      );
+      return null;
+    }
+
+    case 'deep': {
+      if (!query) {
+        onDone('Error: Please specify a research query. Example: `/research deep GrowthBook`.', { display: 'system' });
+        return null;
+      }
+      const { call: deepCall } = await import('../deep-research/deepResearch.js');
+      return deepCall(onDone, _context, queryAndFlags);
     }
 
     case 'run': {
       if (!query) {
-        return { type: 'text', value: 'Error: Please specify a research query. Example: `/research run GrowthBook`.' };
+        onDone('Error: Please specify a research query. Example: `/research run GrowthBook`.', { display: 'system' });
+        return null;
       }
 
       await initWorkspace(cwd);
@@ -244,104 +259,117 @@ export const call: LocalCommandCall = async (args, _context) => {
       lines.push('');
       lines.push(reportMarkdown);
 
-      return { type: 'text', value: lines.join('\n') };
+      onDone(lines.join('\n'), { display: 'system' });
+      return null;
     }
 
     case 'sources': {
       const latest = await getLatestRun(cwd);
       if (!latest) {
-        return { type: 'text', value: 'No research runs found. Run a research first: `/research run "Query"`' };
+        onDone('No research runs found. Run a research first: `/research run "Query"`', { display: 'system' });
+        return null;
       }
 
       const sources = await readSourcesFromRun(latest.runDir);
       if (sources.length === 0) {
-        return { type: 'text', value: 'No sources collected in the latest run.' };
+        onDone('No sources collected in the latest run.', { display: 'system' });
+        return null;
       }
 
-      return {
-        type: 'text',
-        value: [
+      onDone(
+        [
           `Sources for ${latest.run.id}:`,
           ...sources.map((s, i) => `${i + 1}. **[${s.id}]** ${s.title} (${s.type}) — ${s.trust} trust`),
         ].join('\n'),
-      };
+        { display: 'system' }
+      );
+      return null;
     }
 
     case 'open': {
       const sourceId = query;
       if (!sourceId) {
-        return {
-          type: 'text',
-          value: 'Error: Please specify a source-id. Example: `/research open source:wiki:Research`.',
-        };
+        onDone('Error: Please specify a source-id. Example: `/research open source:wiki:Research`.', { display: 'system' });
+        return null;
       }
 
       const latest = await getLatestRun(cwd);
       if (!latest) {
-        return { type: 'text', value: 'No research runs found.' };
+        onDone('No research runs found.', { display: 'system' });
+        return null;
       }
 
       const sources = await readSourcesFromRun(latest.runDir);
       const matched = sources.find(s => s.id === sourceId || s.id.endsWith(sourceId));
 
       if (!matched) {
-        return { type: 'text', value: `Source "${sourceId}" not found in latest run.` };
+        onDone(`Source "${sourceId}" not found in latest run.`, { display: 'system' });
+        return null;
       }
 
       const text = await readSourceDocument(cwd, matched);
-      return { type: 'text', value: text };
+      onDone(text, { display: 'system' });
+      return null;
     }
 
     case 'claims': {
       const latest = await getLatestRun(cwd);
       if (!latest) {
-        return { type: 'text', value: 'No research runs found.' };
+        onDone('No research runs found.', { display: 'system' });
+        return null;
       }
 
       const claimsList = await readClaimsFromRun(latest.runDir);
       if (claimsList.length === 0) {
-        return { type: 'text', value: 'No claims extracted in the latest run.' };
+        onDone('No claims extracted in the latest run.', { display: 'system' });
+        return null;
       }
 
-      return {
-        type: 'text',
-        value: [
+      onDone(
+        [
           `Claims for ${latest.run.id}:`,
           ...claimsList.map((c, i) => `${i + 1}. **[${c.id}]** ${c.claim} (${c.type}, ${c.confidence})`),
         ].join('\n'),
-      };
+        { display: 'system' }
+      );
+      return null;
     }
 
     case 'report': {
       const latest = await getLatestRun(cwd);
       if (!latest) {
-        return { type: 'text', value: 'No research runs found.' };
+        onDone('No research runs found.', { display: 'system' });
+        return null;
       }
 
       const fsImpl = getFsImplementation();
       const reportPath = join(latest.runDir, 'report.md');
       if (!fsImpl.existsSync(reportPath)) {
-        return { type: 'text', value: 'Report not generated for the latest run.' };
+        onDone('Report not generated for the latest run.', { display: 'system' });
+        return null;
       }
 
       try {
         const fileContent = fsImpl.readFileSync(reportPath, { encoding: 'utf-8' });
-        return { type: 'text', value: fileContent };
+        onDone(fileContent, { display: 'system' });
       } catch (err: any) {
-        return { type: 'text', value: `Failed to read report: ${err.message}` };
+        onDone(`Failed to read report: ${err.message}`, { display: 'system' });
       }
+      return null;
     }
 
     case 'save': {
       const latest = await getLatestRun(cwd);
       if (!latest) {
-        return { type: 'text', value: 'No research runs found.' };
+        onDone('No research runs found.', { display: 'system' });
+        return null;
       }
 
       const reportPath = join(latest.runDir, 'report.md');
       const fsImpl = getFsImplementation();
       if (!fsImpl.existsSync(reportPath)) {
-        return { type: 'text', value: 'Report not found for the latest run.' };
+        onDone('Report not found for the latest run.', { display: 'system' });
+        return null;
       }
 
       const reportMarkdown = fsImpl.readFileSync(reportPath, { encoding: 'utf-8' });
@@ -367,16 +395,16 @@ export const call: LocalCommandCall = async (args, _context) => {
 
       await completeRunStore(latest.runDir, savedWiki, savedMemory);
 
-      return { type: 'text', value: outputMessage || 'No save targets selected.' };
+      onDone(outputMessage || 'No save targets selected.', { display: 'system' });
+      return null;
     }
 
     case 'doctor': {
       const status = await getResearchWorkspaceStatus(cwd);
       const runs = await listAllRuns(cwd);
 
-      return {
-        type: 'text',
-        value: [
+      onDone(
+        [
           'Research Diagnostics:',
           `  Initialized: ${status.initialized ? 'Yes' : 'No'}`,
           `  Workspace: \`${status.researchDir}\``,
@@ -385,10 +413,13 @@ export const call: LocalCommandCall = async (args, _context) => {
           `  Wiki: \`${status.wikiResearchDir}\``,
           `  Pending Memory: \`${status.pendingMemoryDir}\``,
         ].join('\n'),
-      };
+        { display: 'system' }
+      );
+      return null;
     }
 
     default:
-      return { type: 'text', value: `Unknown subcommand: "${subcommand}". Type "/research" to see valid commands.` };
+      onDone(`Unknown subcommand: "${subcommand}". Type "/research" to see valid commands.`, { display: 'system' });
+      return null;
   }
 };

@@ -1,7 +1,7 @@
 import type { Command } from '../../commands.js';
 
 const research = {
-  type: 'local',
+  type: 'local-jsx',
   name: 'research',
   description: 'Deep source-grounded research across local files, wiki, and memory',
   argumentHint: '<subcommand> [args]',

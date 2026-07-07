@@ -80,7 +80,6 @@ import toolsCmd from './commands/tools/index.js';
 import permissions from './commands/permissions/index.js';
 import plan from './commands/plan/index.js';
 import research from './commands/research/index.js';
-import deepResearch from './commands/deep-research/index.js';
 
 import passes from './commands/passes/index.js';
 import privacySettings from './commands/privacy-settings/index.js';
@@ -269,7 +268,6 @@ const COMMANDS = memoize((): Command[] => [
   permissions,
   plan,
   research,
-  deepResearch,
   remoteCmd,
   guardianCmd,
   approveCmd,
