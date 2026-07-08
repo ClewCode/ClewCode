@@ -14,10 +14,10 @@ Any `.js` file left in `src/` is a genuine JS source module (no `.ts` twin exist
 Run all commands from the repository root using **Bun**.
 
 ```bash
-bun run dev              # Bun --watch live reload (with Voice, Transcript, Chicago flags)
+bun run dev              # Runs `node scripts/bun-run.mjs --watch` (auto version prebuild + Voice/Transcript/Chicago/AwaySummary feature flags)
 bun run dev:channels     # Dev mode with development channels loaded (server:clew-orc)
-bun run build            # Production build to dist/ (bundles with --external deps)
-bun run start            # Run compiled build from dist/
+bun run build            # Production build to dist/ (prebuild-version + bun build with --external deps + postbuild macro injection)
+bun run start            # Runs `node scripts/bun-run.mjs` on the compiled build
 bun test                 # Full test suite via Vitest
 bun test --bail          # Stop on first test failure
 
@@ -217,6 +217,21 @@ This project has a knowledge graph at `graphify-out/` (24,314 nodes, 56,434 edge
 - For codebase questions, run `graphify query "<question>"` first. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts — these return scoped subgraphs, usually much smaller than raw grep output.
 - Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review or when query/path/explain don't surface enough.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- A local, dependency-free generator also exists: `bun run codegraph` writes a structure map to `.clew/CODEGRAPH.md` (ripgrep-based, no API cost). Use this when the graphify skill is unavailable.
+
+## TinyFish (Default Web Toolkit)
+
+**TinyFish is the default web toolkit for this project** — use it for ALL web-related tasks instead of built-in WebSearch/WebFetch/BrowserTool.
+
+| TinyFish Tool | Replaces | When to use |
+|---|---|---|
+| `search` | WebSearch | Any web search, docs lookup, current info, news |
+| `fetch_content` | WebFetch | Reading page content, docs, articles, pricing — up to 10 URLs in parallel |
+| `run_web_automation` | BrowserTool | Interactive website tasks — clicking, forms, login, scraping |
+| `batch_create` | — | Same workflow across 2+ URLs in parallel |
+| `create_browser_session` | — | Direct Playwright/Puppeteer CDP browser session |
+
+**Rules:** For search queries → always use `mcp__tinyfish__search` first. For reading URLs → always use `mcp__tinyfish__fetch_content`. For browser automation → always use `mcp__tinyfish__run_web_automation`. Do NOT use `WebSearch`, `WebFetch`, or `BrowserTool` unless TinyFish is unavailable.
 
 ## Project Rules
 
