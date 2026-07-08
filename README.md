@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/clew-logo-long.png" alt="Clew Code" width="520" />
+<img src="https://raw.githubusercontent.com/ClewCode/ClewCode/main/assets/clew-logo-long.png" alt="Clew Code" width="520" />
 
 ### *The agent that works where you do.*
 
@@ -22,7 +22,7 @@
 ---
 
 <p align="center">
-  <img src="assets/screenshots/clew-code-repl.png" alt="Clew Code REPL" width="680" />
+  <img src="https://raw.githubusercontent.com/ClewCode/ClewCode/main/assets/screenshots/clew-code-repl.png" alt="Clew Code REPL" width="680" />
 </p>
 
 ---
