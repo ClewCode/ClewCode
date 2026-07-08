@@ -91,7 +91,7 @@ export async function call(): Promise<React.ReactNode> {
       ? 'Anthropic'
       : provider === 'openai'
         ? 'OpenAI'
-        : provider === 'gemini'
+        : provider === 'google'
           ? 'Google Gemini'
           : provider.toUpperCase();
   const message = <Text>Successfully logged out / cleared credentials for your {providerLabel} account.</Text>;
