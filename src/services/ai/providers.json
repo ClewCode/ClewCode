@@ -2776,6 +2776,159 @@
       }
     ]
   },
+  "opengateway": {
+    "providerId": "opengateway",
+    "label": "OpenGateway",
+    "envKey": "OPENGATEWAY_API_KEY",
+    "defaultBaseUrl": "https://opengateway.gitlawb.com/v1",
+    "modelsUrl": "https://opengateway.gitlawb.com/v1/models",
+    "defaultModel": "xiaomi/mimo-v2.5-pro",
+    "defaultModelVerified": true,
+    "note": "OpenAI-compatible gateway at opengateway.gitlawb.com. Bearer token (ogw_live_…). Uses full provider/model IDs (e.g. xiaomi/mimo-v2.5-pro). Short form 'mimo-v2.5-pro' also accepted for MiMo. Send 'auto' for smart routing.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": true,
+      "jsonSchema": true,
+      "reasoningEffort": true,
+      "contextLength": "varies",
+      "imageIn": true,
+      "videoIn": false
+    },
+    "models": [
+      {
+        "id": "xiaomi/mimo-v2.5-pro",
+        "label": "MiMo V2.5 Pro",
+        "tags": ["tools", "latest"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "xiaomi/mimo-v2.5",
+        "label": "MiMo V2.5",
+        "tags": ["vision"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "google/gemini-3.1-flash-lite",
+        "label": "Gemini 3.1 Flash Lite",
+        "tags": ["fast", "vision"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": "varies",
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "minimax/minimax-m3",
+        "label": "MiniMax M3",
+        "tags": ["reasoning"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "qwen/qwen3.7-max",
+        "label": "Qwen 3.7 Max",
+        "tags": ["coding"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "z-ai/glm-5.2",
+        "label": "GLM 5.2",
+        "tags": ["reasoning", "coding"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "label": "Nemotron 3 Ultra (Free)",
+        "tags": ["free", "reasoning"],
+        "capabilities": {
+          "toolCalling": false,
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 1000000,
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false,
+          "free": true
+        }
+      },
+      {
+        "id": "tencent/hy3",
+        "label": "Tencent HY3 (Free)",
+        "tags": ["free", "vision"],
+        "capabilities": {
+          "toolCalling": false,
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 262000,
+          "maxOutput": "varies",
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false,
+          "free": true
+        }
+      }
+    ]
+  },
   "custom": {
     "providerId": "custom",
     "label": "Custom (OpenAI-Compatible)",

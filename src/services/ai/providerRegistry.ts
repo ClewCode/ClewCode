@@ -194,6 +194,7 @@ const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
   digitalocean: 'automatic',
   'clew-gateway': 'automatic',
   nvidia: 'automatic',
+  opengateway: 'automatic',
   cohere: 'automatic',
   google: 'none',
   'google-assist': 'none',

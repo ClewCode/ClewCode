@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- **OpenGateway provider**: Added `opengateway` provider (OpenAI-compatible gateway at `opengateway.gitlawb.com`) with 10 models — smart routing (`auto`/`gitlawb/auto`), MiMo V2.5 Pro, MiniMax M3, Qwen 3.7 Max, GLM 5.2, Gemini 3.1 Flash Lite, Tencent HY3, and Nemotron 3 Ultra (free). Uses `OPEN_GATEWAY_API_KEY` env var. (`src/services/ai/providers.json`, `src/services/ai/providers/ProviderInterface.ts`, `src/services/ai/providerRegistry.ts`)
+- **OpenGateway provider**: Added `opengateway` provider (OpenAI-compatible gateway at `opengateway.gitlawb.com`) with 10 models — smart routing (`auto`), MiMo V2.5 Pro / V2.5, MiniMax M3, Qwen 3.7 Max, GLM 5.2, Gemini 3.1 Flash Lite, Tencent HY3 (free), and Nemotron 3 Ultra (free). Uses `OPENGATEWAY_API_KEY` env var. (`src/services/ai/providers.json`, `src/services/ai/providers/ProviderInterface.ts`, `src/services/ai/providerRegistry.ts`, `src/utils/model/validateModel.ts`, `src/utils/stats.ts`)
 
 ### Fixed
 - **WebSearch direct-search fallback**: Replaced the dead DuckDuckGo scraping fallback with a Tavily/Brave/Serper-backed search. It now throws a clear configuration error if none of these API keys are configured, rather than attempting to scrape DuckDuckGo and failing or returning empty results. (`src/tools/WebSearchTool/WebSearchTool.ts`, `src/tools/ResearchTool/searchProviders.ts`)

@@ -79,6 +79,8 @@ function extractProviderFromModel(model: string): string {
   if (lower.startsWith('deepseek')) return 'deepseek';
   if (lower.startsWith('command')) return 'cohere';
   if (lower.startsWith('nemotron')) return 'nvidia';
+  if (lower.startsWith('mimo') || lower.startsWith('xiaomi')) return 'opengateway';
+  if (lower.startsWith('glm') || lower.startsWith('z-ai')) return 'opengateway';
 
   // Default to 'unknown' if can't determine
   return 'unknown';
