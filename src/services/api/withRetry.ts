@@ -550,6 +550,8 @@ function shouldRetry(error: unknown): boolean {
   if (providerError.category === 'network') return true;
   // content_filter errors are never retryable — the same content will be blocked again
   if (providerError.category === 'content_filter') return false;
+  // insufficient_balance errors are never retryable — no point retrying if out of funds
+  if (providerError.category === 'insufficient_balance') return false;
 
   if (!(error instanceof APIError)) {
     return false;

@@ -303,6 +303,18 @@ export const SettingsSchema = lazySchema(() =>
         .describe("Include built-in commit and PR workflow instructions in Claude's system prompt (default: true)"),
       permissions: PermissionsSchema().optional().describe('Tool usage permissions configuration'),
       model: z.string().optional().describe('Override the default model used by Clew Code'),
+      subagentModel: z
+        .string()
+        .optional()
+        .describe('Default model used by Agent subagents. Omit to inherit from the parent conversation'),
+      subagentProvider: z
+        .string()
+        .optional()
+        .describe('Default provider used by Agent subagents. Omit to inherit from the parent conversation'),
+      subagentPermissionMode: z
+        .string()
+        .optional()
+        .describe('Default permission mode used by Agent subagents. Omit to inherit from the parent conversation'),
       // Enterprise allowlist of models
       availableModels: z
         .array(z.string())

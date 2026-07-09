@@ -1,9 +1,14 @@
+import { PROVIDER_REGISTRY } from '../../services/ai/providerRegistry.js';
 import type { PermissionMode } from '../permissions/PermissionMode.js';
+import { getSettings_DEPRECATED } from '../settings/settings.js';
 import { capitalize } from '../stringUtils.js';
 import { MODEL_ALIASES, type ModelAlias } from './aliases.js';
 import { applyBedrockRegionPrefix, getBedrockRegionPrefix } from './bedrock.js';
 import { getCanonicalName, getRuntimeMainLoopModel, parseUserSpecifiedModel } from './model.js';
+import { isModelAllowed } from './modelAllowlist.js';
 import { getAPIProvider } from './providers.js';
+
+// ── Provider-aware defaults for agent subagent model resolution ──
 
 export const AGENT_MODEL_OPTIONS = [...MODEL_ALIASES, 'inherit'] as const;
 export type AgentModelAlias = (typeof AGENT_MODEL_OPTIONS)[number];
@@ -15,15 +20,66 @@ export type AgentModelOption = {
 };
 
 /**
- * Get the default subagent model. Returns 'inherit' so subagents inherit
- * the model from the parent thread.
+ * Resolve the effective default subagent model from a configured value and
+ * optional environment override.
  */
-export function getDefaultSubagentModel(): string {
+export function resolveSubagentDefaultModel(
+  configuredModel?: string,
+  envModel = process.env.CLEW_CODE_SUBAGENT_MODEL,
+): string {
+  if (envModel && isModelAllowed(envModel)) {
+    return envModel;
+  }
+  if (configuredModel && isModelAllowed(configuredModel)) {
+    return configuredModel;
+  }
   return 'inherit';
 }
 
 /**
+ * Get the user-configured default subagent model, if any.
+ * Returns undefined when no explicit default is configured or the configured
+ * value is disallowed by the current model allowlist.
+ */
+export function getUserSpecifiedSubagentModelSetting(): string | undefined {
+  const settings = getSettings_DEPRECATED() || {};
+  const resolved = resolveSubagentDefaultModel(settings.subagentModel, process.env.CLEW_CODE_SUBAGENT_MODEL);
+  return resolved === 'inherit' ? undefined : resolved;
+}
+
+/**
+ * Get the default subagent model. Returns 'inherit' when the user has not set
+ * an explicit subagent default.
+ */
+export function getDefaultSubagentModel(): string {
+  return getUserSpecifiedSubagentModelSetting() ?? 'inherit';
+}
+
+/**
+ * Get the user-configured default subagent provider, if any.
+ * Returns undefined when no explicit default is configured.
+ */
+export function getUserSpecifiedSubagentProvider(): string | undefined {
+  const settings = getSettings_DEPRECATED() || {};
+  return settings.subagentProvider || undefined;
+}
+
+/**
+ * Get the user-configured default subagent permission mode, if any.
+ * Returns undefined when no explicit default is configured.
+ */
+export function getUserSpecifiedSubagentPermissionMode(): string | undefined {
+  const settings = getSettings_DEPRECATED() || {};
+  return settings.subagentPermissionMode || undefined;
+}
+
+/**
  * Get the effective model string for an agent.
+ *
+ * For non-Anthropic providers, alias models (sonnet/opus/haiku) resolve to the
+ * active provider's best/default model instead of a Claude model ID, preventing
+ * "Model claude-sonnet-4-7 is not supported" errors when the active provider
+ * doesn't serve Anthropic models.
  *
  * For Bedrock, if the parent model uses a cross-region inference prefix (e.g., "eu.", "us."),
  * that prefix is inherited by subagents using alias models (e.g., "sonnet", "haiku", "opus").
@@ -36,8 +92,9 @@ export function getAgentModel(
   toolSpecifiedModel?: ModelAlias,
   permissionMode?: PermissionMode,
 ): string {
-  if (process.env.CLEW_CODE_SUBAGENT_MODEL) {
-    return parseUserSpecifiedModel(process.env.CLEW_CODE_SUBAGENT_MODEL);
+  const explicitSubagentModel = getUserSpecifiedSubagentModelSetting();
+  if (explicitSubagentModel) {
+    return parseUserSpecifiedModel(explicitSubagentModel);
   }
 
   // Extract Bedrock region prefix from parent model to inherit for subagents.
@@ -64,6 +121,11 @@ export function getAgentModel(
     if (aliasMatchesParentTier(toolSpecifiedModel, parentModel)) {
       return parentModel;
     }
+    // For non-Anthropic providers, resolve alias to the provider's best/default model
+    const providerModel = resolveAliasForProvider(toolSpecifiedModel);
+    if (providerModel) {
+      return applyParentRegionPrefix(providerModel, toolSpecifiedModel);
+    }
     const model = parseUserSpecifiedModel(toolSpecifiedModel);
     return applyParentRegionPrefix(model, toolSpecifiedModel);
   }
@@ -83,8 +145,41 @@ export function getAgentModel(
   if (aliasMatchesParentTier(agentModelWithExp, parentModel)) {
     return parentModel;
   }
+  // For non-Anthropic providers, resolve alias to the provider's best/default model
+  const providerModel = resolveAliasForProvider(agentModelWithExp);
+  if (providerModel) {
+    return applyParentRegionPrefix(providerModel, agentModelWithExp);
+  }
   const model = parseUserSpecifiedModel(agentModelWithExp);
   return applyParentRegionPrefix(model, agentModelWithExp);
+}
+
+/**
+ * Resolve an alias (sonnet/opus/haiku/best) against the active provider's
+ * model registry when the provider is non-Anthropic. Returns undefined for
+ * Anthropic-class providers so existing alias resolution works unchanged.
+ */
+function resolveAliasForProvider(alias: string): string | undefined {
+  const provider = getAPIProvider();
+  // Only apply for non-Anthropic providers (skip firstParty, bedrock, vertex, foundry)
+  if (provider === 'firstParty' || provider === 'bedrock' || provider === 'vertex' || provider === 'foundry') {
+    return undefined;
+  }
+  const entry = (PROVIDER_REGISTRY as Record<string, any>)[provider];
+  if (!entry) return undefined;
+
+  const lowerAlias = alias.toLowerCase();
+  switch (lowerAlias) {
+    case 'opus':
+    case 'best':
+      return entry.bestModel ?? entry.defaultModel ?? undefined;
+    case 'sonnet':
+      return entry.defaultModel ?? entry.bestModel ?? entry.smallFastModel ?? undefined;
+    case 'haiku':
+      return entry.smallFastModel ?? entry.defaultModel ?? undefined;
+    default:
+      return undefined;
+  }
 }
 
 /**
@@ -115,8 +210,11 @@ function aliasMatchesParentTier(alias: string, parentModel: string): boolean {
 }
 
 export function getAgentModelDisplay(model: string | undefined): string {
-  // When model is omitted, getDefaultSubagentModel() returns 'inherit' at runtime
-  if (!model) return 'Inherit from parent (default)';
+  // When model is omitted, use the configured subagent default for display.
+  if (!model) {
+    const defaultModel = getDefaultSubagentModel();
+    return defaultModel === 'inherit' ? 'Inherit from parent (default)' : `Default subagent model (${defaultModel})`;
+  }
   if (model === 'inherit') return 'Inherit from parent';
   return capitalize(model);
 }

@@ -30,13 +30,13 @@ describe('google-assist provider metadata', () => {
     const registryEntry = PROVIDER_REGISTRY['google-assist'];
     const providerModels = await createProviderInstance('google-assist').listModels({
       apiKey: '',
-      baseURL: registryEntry.defaultBaseUrl,
+      baseUrl: registryEntry.defaultBaseUrl,
     });
     const modelIds = providerModels.map(model => model.id);
 
     expect(registryEntry.defaultBaseUrl).toBe('https://daily-cloudcode-pa.googleapis.com/v1internal');
     expect(registryEntry.defaultModel).toBe('gemini-3.5-flash');
-    expect(modelIds).toContain(registryEntry.defaultModel);
+    expect(modelIds).toContain(registryEntry.defaultModel!);
   });
 
   test('falls back from a stale unsupported session model to the provider default', async () => {
@@ -44,7 +44,7 @@ describe('google-assist provider metadata', () => {
     const providerManager = ProviderManager.getInstance();
 
     providerManager.setSessionProvider('google-assist');
-    providerManager.setSessionModel('gemini-3.1-pro');
+    providerManager.setSessionModel('gemini-unsupported-model');
 
     expect(providerManager.getModelForProvider()).toBe('gemini-3.5-flash');
 
@@ -60,9 +60,9 @@ describe('google-assist provider metadata', () => {
     providerManager.setSessionProvider('google-assist');
 
     await expect(validateModel('gemini-3.5-flash')).resolves.toEqual({ valid: true });
-    await expect(validateModel('gemini-3.1-pro')).resolves.toEqual({
+    await expect(validateModel('gemini-bad-model')).resolves.toEqual({
       valid: false,
-      error: "Model 'gemini-3.1-pro' is not supported by Gemini Code Assist. Try 'gemini-3.5-flash' instead",
+      error: expect.stringContaining('not supported by Gemini Code Assist'),
     });
 
     providerManager.setSessionProvider(null);

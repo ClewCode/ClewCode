@@ -129,6 +129,7 @@ import { isFirstPartyAnthropicBaseUrl } from './utils/model/providers.js';
 import exit from './commands/exit/index.js';
 import exportCommand from './commands/export/index.js';
 import model from './commands/model/index.js';
+import agentConfig from './commands/agent-config/index.js';
 import outputStyle from './commands/output-style/index.js';
 import skill from './commands/skill/index.js';
 import powerup from './commands/powerup/index.js';
@@ -214,6 +215,7 @@ const COMMANDS = memoize((): Command[] => [
   memory,
   memorySearch,
   model,
+  agentConfig,
   outputStyle,
   swarmCmd,
   skill,
