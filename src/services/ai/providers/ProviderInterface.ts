@@ -17,6 +17,7 @@ export type ProviderId =
   | 'together'
   | 'fireworks'
   | 'nvidia'
+  | 'opengateway'
   | 'cohere'
   | 'deepinfra'
   | 'perplexity'

@@ -481,9 +481,21 @@ type KnownTool = {
 
 const KNOWN_AI_TOOLS: KnownTool[] = [
   { id: 'codex', label: 'Codex', command: 'codex' },
-  { id: 'opencode', label: 'OpenCode', command: 'opencode' },
-  { id: 'claude', label: 'Claude Code', command: 'claude' },
-  { id: 'code', label: 'Claude Code', command: 'code' },
+  // opencode run <message> — one-shot non-interactive
+  { id: 'opencode', label: 'OpenCode', command: 'opencode', args: ['run', '--format', 'default'] },
+  // claude -p — print mode (non-interactive)
+  {
+    id: 'claude',
+    label: 'Claude Code',
+    command: 'claude',
+    args: ['-p', '--output-format', 'text', '--max-turns', '8', '--permission-mode', 'dontAsk'],
+  },
+  {
+    id: 'code',
+    label: 'Claude Code',
+    command: 'code',
+    args: ['-p', '--output-format', 'text', '--max-turns', '8', '--permission-mode', 'dontAsk'],
+  },
 ];
 
 function toolExistsOnPath(tool: string): boolean {
@@ -504,14 +516,20 @@ function createProviderForTool(tool: KnownTool): ExecAgentProvider {
   }
 
   const command = resolveWindowsCommand(tool.command);
-  const args = tool.args;
-  // ponytail: args = pass prompt as argument; no args = pipe via stdin
+  const prefixArgs = tool.args ?? [];
+  // prefixArgs + prompt as CLI arg (avoids Windows stdin issues)
   return new ExecAgentProvider({
     id: tool.id,
     label: tool.label,
     command,
-    buildArgs: task => (args ? [...args, task.prompt] : []),
-    buildStdin: task => (args ? undefined : task.prompt),
+    buildArgs: task => {
+      // OpenCode wants --dir for workspace
+      if (tool.id === 'opencode') {
+        return ['run', '--format', 'default', '--dir', task.cwd ?? process.cwd(), task.prompt];
+      }
+      return [...prefixArgs, task.prompt];
+    },
+    buildStdin: () => undefined,
   });
 }
 

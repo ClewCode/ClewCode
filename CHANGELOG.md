@@ -5,11 +5,14 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- **OpenGateway provider**: Added `opengateway` provider (OpenAI-compatible gateway at `opengateway.gitlawb.com`) with 10 models — smart routing (`auto`/`gitlawb/auto`), MiMo V2.5 Pro, MiniMax M3, Qwen 3.7 Max, GLM 5.2, Gemini 3.1 Flash Lite, Tencent HY3, and Nemotron 3 Ultra (free). Uses `OPEN_GATEWAY_API_KEY` env var. (`src/services/ai/providers.json`, `src/services/ai/providers/ProviderInterface.ts`, `src/services/ai/providerRegistry.ts`)
+- **Agent room script**: Multi-agent free-talk room so Claude Code, OpenCode, Clew Code, and Codex can converse with a shared transcript (`round-robin` / `free` / `parallel` modes, dry-run, interactive human inject). Run via `bun run agent-room "<topic>"`. (`scripts/agent-room.ts`, `package.json`)
+- **Exec agent CLI args**: OpenCode and Claude Code process-delegate providers now use proper one-shot flags (`opencode run`, `claude -p`) instead of bare stdin. (`src/peer/ProcessDelegateProvider.ts`)
+- **OpenGateway provider**: Added `opengateway` provider (OpenAI-compatible gateway at `opengateway.gitlawb.com`) with 10 models — smart routing (`auto`), MiMo V2.5 Pro / V2.5, MiniMax M3, Qwen 3.7 Max, GLM 5.2, Gemini 3.1 Flash Lite, Tencent HY3 (free), and Nemotron 3 Ultra (free). Uses `OPENGATEWAY_API_KEY` env var. (`src/services/ai/providers.json`, `src/services/ai/providers/ProviderInterface.ts`, `src/services/ai/providerRegistry.ts`, `src/utils/model/validateModel.ts`, `src/utils/stats.ts`)
 
 ### Fixed
 - **WebSearch direct-search fallback**: Replaced the dead DuckDuckGo scraping fallback with a Tavily/Brave/Serper-backed search. It now throws a clear configuration error if none of these API keys are configured, rather than attempting to scrape DuckDuckGo and failing or returning empty results. (`src/tools/WebSearchTool/WebSearchTool.ts`, `src/tools/ResearchTool/searchProviders.ts`)
 - **Resume now restores the full conversation, not just the last message**: A race between the two transcript recorders (`QueryEngine.recordTranscript` and the incremental `useLogMessages` effect) left the first assistant sub-message after each user/tool_result message with `parentUuid: null`, shattering a session into dozens of disconnected islands. Resume's leaf→root chain walk recovered only the final island (a 155-message session resumed as 2). Added `repairFragmentedParentChain()` in `buildResumeConversationChain()` to stitch orphaned main-thread messages to the previous chain participant in file order (sidechains and compact boundaries untouched), and routed the `/resume` slash command + `getLastSessionLog` + `--resume <id>` through `includePreCompactHistory`. (`src/utils/sessionStorage.ts`, `src/commands/resume/resume.tsx`, `src/utils/conversationRecovery.ts`)
+- **Logout provider label**: Fixed the `/logout` success message to label the Google provider as `Google Gemini` (provider id is `google`, not `gemini`). (`src/commands/logout/logout.tsx`)
 
 ## [0.5.0] — 2026-07-08
 
