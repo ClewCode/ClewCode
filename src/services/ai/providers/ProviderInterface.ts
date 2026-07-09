@@ -3,6 +3,7 @@ import type { ClientOptions } from '@anthropic-ai/sdk';
 export type ProviderId =
   | 'anthropic'
   | 'openai'
+  | 'chatgpt'
   | 'google'
   | 'openrouter'
   | 'opencode'

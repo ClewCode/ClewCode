@@ -91,6 +91,72 @@
       }
     ]
   },
+  "chatgpt": {
+    "providerId": "chatgpt",
+    "label": "ChatGPT (Subscription)",
+    "envKey": "",
+    "defaultBaseUrl": "https://chatgpt.com/backend-api/codex",
+    "modelsUrl": "https://chatgpt.com/backend-api/codex/models",
+    "defaultModel": "gpt-5.5",
+    "defaultModelVerified": true,
+    "isLocal": true,
+    "note": "ChatGPT subscription via Codex OAuth. Uses ~/.codex/auth.json from `codex login`; no OpenAI API key required.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": true,
+      "jsonSchema": false,
+      "reasoningEffort": true,
+      "contextLength": "varies",
+      "imageIn": true,
+      "videoIn": false
+    },
+    "models": [
+      {
+        "id": "gpt-5.5",
+        "label": "GPT-5.5 (ChatGPT)",
+        "tags": [
+          "tools",
+          "vision",
+          "recommended",
+          "latest",
+          "subscription"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gpt-5.4",
+        "label": "GPT-5.4 (ChatGPT)",
+        "tags": [
+          "tools",
+          "vision",
+          "subscription"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      }
+    ]
+  },
   "anthropic": {
     "providerId": "anthropic",
     "label": "Anthropic",

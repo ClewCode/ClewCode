@@ -78,6 +78,7 @@
     "@google/generative-ai": "0.24.1",
     "@growthbook/growthbook": "^1.6.5",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@opencoredev/loginwithchatgpt-core": "^0.2.0",
     "@openrouter/ai-sdk-provider": "^2.9.1",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/exporter-logs-otlp-grpc": "^0.219.0",

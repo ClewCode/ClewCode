@@ -1,4 +1,5 @@
 import { AnthropicProvider } from './providers/AnthropicProvider.js';
+import { ChatGPTProvider } from './providers/ChatGPTProvider.js';
 import { ClewGatewayProvider } from './providers/ClewGatewayProvider.js';
 import { CodeAssistProvider } from './providers/CodeAssistProvider.js';
 import { CohereProvider } from './providers/CohereProvider.js';
@@ -76,6 +77,8 @@ function createProvider(key: string, entry: any): ProviderInterface {
       return new AnthropicProvider();
     case 'openai':
       return new OpenAIProvider();
+    case 'chatgpt':
+      return new ChatGPTProvider();
     case 'google':
       return new GoogleProvider();
     case 'google-assist':
@@ -172,6 +175,7 @@ export function createProviderInstance(provider: ProviderId): ProviderInterface 
 const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
   anthropic: 'explicit',
   openai: 'automatic',
+  chatgpt: 'automatic',
   openrouter: 'automatic',
   deepseek: 'automatic',
   groq: 'automatic',
