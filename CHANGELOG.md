@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Agent room script**: Multi-agent free-talk room so Claude Code, OpenCode, Clew Code, and Codex can converse with a shared transcript (`round-robin` / `free` / `parallel` modes, dry-run, interactive human inject). Run via `bun run agent-room "<topic>"`. (`scripts/agent-room.ts`, `package.json`)
+- **Exec agent CLI args**: OpenCode and Claude Code process-delegate providers now use proper one-shot flags (`opencode run`, `claude -p`) instead of bare stdin. (`src/peer/ProcessDelegateProvider.ts`)
 - **OpenGateway provider**: Added `opengateway` provider (OpenAI-compatible gateway at `opengateway.gitlawb.com`) with 10 models — smart routing (`auto`), MiMo V2.5 Pro / V2.5, MiniMax M3, Qwen 3.7 Max, GLM 5.2, Gemini 3.1 Flash Lite, Tencent HY3 (free), and Nemotron 3 Ultra (free). Uses `OPENGATEWAY_API_KEY` env var. (`src/services/ai/providers.json`, `src/services/ai/providers/ProviderInterface.ts`, `src/services/ai/providerRegistry.ts`, `src/utils/model/validateModel.ts`, `src/utils/stats.ts`)
 
 ### Fixed

@@ -44,6 +44,7 @@
     "docs:watch": "bun --watch run scripts/generate-docs.ts",
     "preload": "bun run scripts/preload.ts",
     "session": "bun run scripts/session.ts",
+    "agent-room": "bun run scripts/agent-room.ts",
     "relay": "bun run src/remote/relay-server.ts",
     "install:unix": "bash scripts/install.sh",
     "install:win": "powershell -ExecutionPolicy Bypass -File scripts/install.ps1"
