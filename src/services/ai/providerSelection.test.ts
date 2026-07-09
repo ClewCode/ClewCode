@@ -91,11 +91,11 @@ describe('provider/model selection validation', () => {
   test('accepts a model from the provider catalog (google-assist static list)', async () => {
     const { validateProviderModelSelection } = await import('./providerSelection.js');
 
-    const result = await validateProviderModelSelection('google-assist', 'gemini-3.5-flash');
+    const result = await validateProviderModelSelection('google-assist', 'gemini-2.5-flash');
     expect(result.valid).toBe(true);
     if (result.valid) {
       expect(result.provider).toBe('google-assist');
-      expect(result.model).toBe('gemini-3.5-flash');
+      expect(result.model).toBe('gemini-2.5-flash');
     }
   });
 

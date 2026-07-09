@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { APIError } from '@anthropic-ai/sdk';
-import { getAssistantMessageFromError, getProviderRetryAfterMs } from './errors.js';
+import { getAssistantMessageFromError, getProviderRetryAfterMs, classifyProviderError } from './errors.js';
 
 describe('getAssistantMessageFromError', () => {
   test('formats Gemini Code Assist rate limits without raw JSON', () => {
@@ -54,5 +54,41 @@ describe('getProviderRetryAfterMs', () => {
     headers.set('retry-after', '15');
     const err = new APIError(429, { error: { message: 'Rate limited' } }, 'Rate limited', headers);
     expect(getProviderRetryAfterMs(err)).toBe(15000);
+  });
+});
+
+describe('classifyProviderError', () => {
+  test('classifies insufficient_quota as insufficient_balance', () => {
+    const err = new Error('Error from provider (Console): insufficient_quota');
+    const classified = classifyProviderError(err);
+    expect(classified.category).toBe('insufficient_balance');
+  });
+
+  test('classifies insufficient balance as insufficient_balance', () => {
+    const err = new Error('Insufficient balance in account');
+    const classified = classifyProviderError(err);
+    expect(classified.category).toBe('insufficient_balance');
+  });
+
+  test('classifies out of balance as insufficient_balance', () => {
+    const err = new Error('Account out of balance');
+    const classified = classifyProviderError(err);
+    expect(classified.category).toBe('insufficient_balance');
+  });
+
+  test('classifies no credits as insufficient_balance', () => {
+    const err = new Error('No credits available');
+    const classified = classifyProviderError(err);
+    expect(classified.category).toBe('insufficient_balance');
+  });
+
+  test('respects provider-attached error classification', () => {
+    const err = new Error('Some error');
+    (err as any)._providerError = {
+      category: 'rate_limit',
+      status: 429,
+    };
+    const classified = classifyProviderError(err);
+    expect(classified.category).toBe('rate_limit');
   });
 });

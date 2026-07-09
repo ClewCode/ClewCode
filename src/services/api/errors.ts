@@ -927,7 +927,7 @@ function get3PModelFallbackSuggestion(model: string): string | undefined {
  * Used by classifyProviderError() and withRetry() for provider-agnostic handling.
  */
 export interface ProviderErrorInfo {
-  category: 'rate_limit' | 'content_filter' | 'auth' | 'server_error' | 'client_error' | 'network';
+  category: 'rate_limit' | 'content_filter' | 'auth' | 'server_error' | 'client_error' | 'network' | 'insufficient_balance';
   status?: number;
   retryAfter?: string | number;
 }
@@ -978,6 +978,28 @@ function formatCodeAssistRateLimitMessage(error: unknown): string | undefined {
 }
 
 /**
+ * Check if an error indicates insufficient balance or funds.
+ * Covers multiple provider error patterns (OpenAI, Claude, Gemini, etc).
+ */
+function isInsufficientBalanceError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  // Common balance/funds error patterns
+  return (
+    msg.includes('insufficient_quota') ||
+    msg.includes('insufficient balance') ||
+    msg.includes('account balance') ||
+    msg.includes('out of balance') ||
+    msg.includes('out of quota') ||
+    msg.includes('credit limit') ||
+    msg.includes('budget exhausted') ||
+    msg.includes('no credits') ||
+    msg.includes('payment required') ||
+    msg.includes('billing') && msg.includes('failed')
+  );
+}
+
+/**
  * Extract the provider error info attached by an adapter's normalizeError().
  */
 export function getProviderErrorInfo(error: unknown): ProviderErrorInfo | undefined {
@@ -992,6 +1014,9 @@ export function getProviderErrorInfo(error: unknown): ProviderErrorInfo | undefi
 export function classifyProviderError(error: unknown): ProviderErrorInfo {
   const attached = getProviderErrorInfo(error);
   if (attached) return attached;
+
+  // Check for insufficient balance errors first — non-retryable
+  if (isInsufficientBalanceError(error)) return { category: 'insufficient_balance' };
 
   // Fallback: Anthropic SDK error patterns
   if (error instanceof APIError) {

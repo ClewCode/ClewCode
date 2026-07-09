@@ -62,6 +62,8 @@ export type Props = {
    * install.ts) and should not leak to the user's global ~/.clew/settings.
    */
   skipSettingsWrite?: boolean;
+  defaultOptionLabel?: string;
+  defaultOptionDescription?: string;
 };
 const NO_PREFERENCE = '__NO_PREFERENCE__';
 export function ModelPicker(t0) {
@@ -75,6 +77,8 @@ export function ModelPicker(t0) {
     isStandaloneCommand,
     headerText,
     skipSettingsWrite,
+    defaultOptionLabel,
+    defaultOptionDescription,
   } = t0;
   const setAppState = useSetAppState();
   const exitState = useExitOnCtrlCDWithKeybindings();
@@ -167,8 +171,15 @@ export function ModelPicker(t0) {
 
   // Compute model options with fetched models
   const modelOptions = useMemo(() => {
-    return getEffectiveModelOptions(currentFetchedModels, providerInfo?.entry, initial, activeProviderId);
-  }, [currentFetchedModels, providerInfo?.entry, initial, activeProviderId]);
+    return getEffectiveModelOptions(
+      currentFetchedModels,
+      providerInfo?.entry,
+      initial,
+      activeProviderId,
+      defaultOptionLabel,
+      defaultOptionDescription,
+    );
+  }, [currentFetchedModels, providerInfo?.entry, initial, activeProviderId, defaultOptionLabel, defaultOptionDescription]);
   let t4;
   bb0: {
     if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {
@@ -609,6 +620,8 @@ function getEffectiveModelOptions(
   entry?: ReturnType<typeof getProviderRegistryEntry>,
   initial?: string | null,
   activeProviderId?: string,
+  defaultOptionLabel?: string,
+  defaultOptionDescription?: string,
 ): ModelOption[] {
   const providerManager = ProviderManager.getInstance();
   const currentProviderId = activeProviderId ?? providerManager.getActiveProviderName();
@@ -622,8 +635,8 @@ function getEffectiveModelOptions(
     return [
       {
         value: null,
-        label: 'Default (recommended)',
-        description: `Use current default (${defaultModel})`,
+        label: defaultOptionLabel ?? 'Default (recommended)',
+        description: defaultOptionDescription ?? `Use current default (${defaultModel})`,
       },
       {
         value: '__CUSTOM_INPUT__',
@@ -675,8 +688,8 @@ function getEffectiveModelOptions(
     providerManager.getModelForProvider(currentProviderId as any) ?? providerEntry.defaultModel ?? 'provider default';
   const defaultModelOption: ModelOption = {
     value: null,
-    label: 'Default (recommended)',
-    description: `Use ${providerEntry.label} default (${defaultModel})`,
+    label: defaultOptionLabel ?? 'Default (recommended)',
+    description: defaultOptionDescription ?? `Use ${providerEntry.label} default (${defaultModel})`,
   };
 
   // Keep recents, but only show recents that belong to the active provider list.

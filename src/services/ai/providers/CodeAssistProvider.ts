@@ -4,12 +4,21 @@ import { join } from 'node:path';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 // --- OAuth constants ---
-// These credentials must come from the Gemini CLI's OAuth creds file
-// (~/.gemini/oauth_creds.json) or be set via environment variables.
-// Obtain them by installing the Gemini CLI and logging in:
+// Token refresh needs the OAuth client_id/secret. The Gemini CLI does NOT
+// store these in ~/.gemini/oauth_creds.json (which holds only the tokens) —
+// it ships them as public constants for its installed-app OAuth client. We
+// default to those same well-known public values so that "install the Gemini
+// CLI and log in" is genuinely all a user needs. They can still be overridden
+// via CODE_ASSIST_CLIENT_ID / CODE_ASSIST_CLIENT_SECRET.
 //   https://cloud.google.com/code-assist/docs/install
-const OAUTH_CLIENT_ID = process.env.CODE_ASSIST_CLIENT_ID?.trim();
-const OAUTH_CLIENT_SECRET = process.env.CODE_ASSIST_CLIENT_SECRET?.trim();
+const DEFAULT_OAUTH_CLIENT_ID =
+  '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
+// This is the public gemini-cli installed-app credential — not confidential for
+// native apps (see RFC 8252). It only identifies the app to Google; each user
+// still authenticates with their own account. Override with CODE_ASSIST_CLIENT_SECRET.
+const DEFAULT_OAUTH_CLIENT_SECRET = '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';
+const OAUTH_CLIENT_ID = process.env.CODE_ASSIST_CLIENT_ID?.trim() || DEFAULT_OAUTH_CLIENT_ID;
+const OAUTH_CLIENT_SECRET = process.env.CODE_ASSIST_CLIENT_SECRET?.trim() || DEFAULT_OAUTH_CLIENT_SECRET;
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const CODE_ASSIST_ENDPOINT = process.env.CODE_ASSIST_ENDPOINT?.trim() || 'https://daily-cloudcode-pa.googleapis.com';
 const CODE_ASSIST_API_VERSION = 'v1internal';
@@ -127,6 +136,13 @@ async function getValidToken(): Promise<string> {
     throw new Error('No Gemini OAuth credentials found. Login with Gemini CLI first (~/.gemini/oauth_creds.json)');
   }
 
+  // Prefer the access token already on disk while it is still valid — avoids a
+  // needless refresh round-trip (and works even if refresh creds are absent).
+  if (creds.access_token && creds.expiry_date > Date.now() + 60_000) {
+    cachedToken = { accessToken: creds.access_token, expiresAt: creds.expiry_date };
+    return cachedToken.accessToken;
+  }
+
   const { accessToken, expiresIn } = await refreshAccessToken(creds.refresh_token);
   cachedToken = {
     accessToken,
@@ -163,38 +179,242 @@ async function discoverProjectId(accessToken: string): Promise<string> {
   return cachedProjectId!;
 }
 
-/**
- * Convert OpenAI-format chat messages to Code Assist API format.
- */
-function toCodeAssistMessages(messages: Array<{ role: string; content: string }>) {
-  // Map standard roles to Code Assist roles
-  const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+// --- Tool-calling type helpers ---
 
-  // Code Assist doesn't support 'system' role — prepend as a user message instruction
-  // or inject as systemInstruction at the top level
+type OpenAIToolCall = { id?: string; function?: { name?: string; arguments?: string } };
+type OpenAIMessage = {
+  role: string;
+  content?: string | Array<{ type: string; text?: string }> | null;
+  tool_calls?: OpenAIToolCall[];
+  tool_call_id?: string;
+};
+type OpenAITool = { type?: string; function?: { name?: string; description?: string; parameters?: unknown } };
+type GeminiPart =
+  | { text: string }
+  | { functionCall: { name: string; args: Record<string, unknown> } }
+  | { functionResponse: { name: string; response: Record<string, unknown> } };
+type OpenAIToolCallOut = { id: string; type: 'function'; function: { name: string; arguments: string } };
+
+/** Extract plain text from an OpenAI message's content (string or content-part array). */
+function messageText(content: OpenAIMessage['content']): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter(p => p.type === 'text')
+      .map(p => p.text ?? '')
+      .join('');
+  }
+  return '';
+}
+
+/**
+ * Convert OpenAI-format chat messages to Code Assist (native Gemini) format,
+ * including tool calls (assistant → functionCall) and tool results
+ * (role "tool" → functionResponse). Gemini uses roles "user" and "model".
+ */
+function toCodeAssistMessages(messages: OpenAIMessage[]) {
+  const contents: Array<{ role: string; parts: GeminiPart[] }> = [];
+
+  // Code Assist has no 'system' role — hoist to top-level systemInstruction.
   let systemInstruction: string | undefined;
 
   for (const msg of messages) {
     if (msg.role === 'system') {
-      systemInstruction = (systemInstruction ? `${systemInstruction}\n` : '') + msg.content;
-    } else if (msg.role === 'assistant' || msg.role === 'user') {
-      contents.push({
-        role: msg.role,
-        parts: [{ text: msg.content }],
-      });
+      const text = messageText(msg.content);
+      systemInstruction = (systemInstruction ? `${systemInstruction}\n` : '') + text;
+      continue;
     }
+
+    // Tool result → Gemini functionResponse (role "user"). The tool_call_id
+    // doubles as the function name (functionCall ids are set to the fn name).
+    if (msg.role === 'tool') {
+      const raw = messageText(msg.content);
+      let response: Record<string, unknown>;
+      try {
+        const parsed = JSON.parse(raw);
+        response = parsed && typeof parsed === 'object' ? parsed : { result: parsed };
+      } catch {
+        response = { result: raw };
+      }
+      contents.push({
+        role: 'user',
+        parts: [{ functionResponse: { name: msg.tool_call_id ?? '', response } }],
+      });
+      continue;
+    }
+
+    if (msg.role === 'assistant') {
+      const parts: GeminiPart[] = [];
+      const text = messageText(msg.content);
+      if (text) parts.push({ text });
+      for (const tc of msg.tool_calls ?? []) {
+        const name = tc.function?.name ?? '';
+        if (!name) continue;
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(tc.function?.arguments || '{}');
+        } catch {
+          args = {};
+        }
+        parts.push({ functionCall: { name, args } });
+      }
+      // Gemini rejects empty parts arrays.
+      if (parts.length === 0) parts.push({ text: '' });
+      contents.push({ role: 'model', parts });
+      continue;
+    }
+
+    // user (and any other role) → user text
+    contents.push({ role: 'user', parts: [{ text: messageText(msg.content) }] });
   }
 
   return { contents, systemInstruction };
 }
 
+// Gemini's functionDeclarations.parameters accepts only a restricted OpenAPI
+// subset — it rejects JSON-Schema-only keywords like `$schema`,
+// `additionalProperties`, `$ref`, `$defs`, etc. with a 400. Whitelist the
+// fields Gemini understands and recurse into nested schemas.
+const GEMINI_SCHEMA_KEYS = new Set([
+  'type',
+  'title',
+  'description',
+  'nullable',
+  'enum',
+  'items',
+  'properties',
+  'required',
+  'minItems',
+  'maxItems',
+  'minimum',
+  'maximum',
+  'minLength',
+  'maxLength',
+  'pattern',
+  'default',
+  'anyOf',
+  'oneOf',
+  'propertyOrdering',
+]);
+
+function sanitizeGeminiSchema(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(sanitizeGeminiSchema);
+  if (!schema || typeof schema !== 'object') return schema;
+
+  const obj = schema as Record<string, unknown>;
+
+  // Gemini requires that when `anyOf` is present it be the ONLY field set —
+  // no sibling `type`/`description`/etc. Collapse `anyOf`/`oneOf` (Gemini has
+  // no `oneOf`) to a bare union of sanitized branches.
+  const union = obj.anyOf ?? obj.oneOf;
+  if (Array.isArray(union)) {
+    return { anyOf: union.map(sanitizeGeminiSchema) };
+  }
+
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (!GEMINI_SCHEMA_KEYS.has(key)) continue;
+    if (key === 'properties' && value && typeof value === 'object') {
+      const props: Record<string, unknown> = {};
+      for (const [propName, propSchema] of Object.entries(value as Record<string, unknown>)) {
+        props[propName] = sanitizeGeminiSchema(propSchema);
+      }
+      out[key] = props;
+    } else if (key === 'items') {
+      out[key] = sanitizeGeminiSchema(value);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+/**
+ * Gemini requires each functionDeclaration's top-level `parameters` to be an
+ * OBJECT schema. Coerce anything that isn't (missing/wrong `type`, or a bare
+ * union) into a well-formed object schema so the whole request isn't rejected.
+ */
+function toGeminiParameters(rawParameters: unknown): Record<string, unknown> {
+  const sanitized = sanitizeGeminiSchema(rawParameters) as Record<string, unknown> | undefined;
+  if (sanitized && sanitized.type === 'object') return sanitized;
+  return {
+    type: 'object',
+    properties: (sanitized?.properties as Record<string, unknown>) ?? {},
+    ...(Array.isArray(sanitized?.required) ? { required: sanitized.required } : {}),
+  };
+}
+
+/**
+ * Convert OpenAI tool definitions to Gemini functionDeclarations.
+ * Returns undefined when no tools are provided.
+ */
+function toGeminiTools(tools: OpenAITool[] | undefined) {
+  if (!tools?.length) return undefined;
+  const functionDeclarations = tools
+    .filter(t => t.function?.name)
+    .map(t => ({
+      name: t.function!.name!,
+      description: t.function!.description ?? '',
+      parameters: toGeminiParameters(t.function!.parameters),
+    }));
+  if (functionDeclarations.length === 0) return undefined;
+  return [{ functionDeclarations }];
+}
+
+/** Map a Gemini finishReason to an OpenAI finish_reason. */
+function toOpenAIFinishReason(reason: unknown, hasToolCall: boolean): string | null {
+  if (hasToolCall) return 'tool_calls';
+  switch (reason) {
+    case 'STOP':
+      return 'stop';
+    case 'MAX_TOKENS':
+      return 'length';
+    case undefined:
+    case null:
+      return null;
+    default:
+      return String(reason).toLowerCase();
+  }
+}
+
+/** Extract OpenAI-shaped tool_calls from a Gemini candidate's parts. */
+function toolCallsFromParts(parts: any[]): OpenAIToolCallOut[] {
+  const calls: OpenAIToolCallOut[] = [];
+  for (const p of parts) {
+    if (p?.functionCall?.name) {
+      calls.push({
+        id: p.functionCall.name,
+        type: 'function',
+        function: { name: p.functionCall.name, arguments: JSON.stringify(p.functionCall.args ?? {}) },
+      });
+    }
+  }
+  return calls;
+}
+
+/** Map Gemini usageMetadata to OpenAI usage. */
+function toOpenAIUsage(usageMetadata: any): Record<string, number> | null {
+  if (!usageMetadata) return null;
+  return {
+    prompt_tokens: usageMetadata.promptTokenCount ?? 0,
+    completion_tokens: usageMetadata.candidatesTokenCount ?? 0,
+    total_tokens: usageMetadata.totalTokenCount ?? 0,
+  };
+}
+
+/** The Code Assist endpoint wraps generateContent payloads under `response`. */
+function unwrapResponse(data: any): any {
+  return data?.response ?? data;
+}
+
 /**
  * Parse Code Assist API response into OpenAI-compatible format.
  */
-function fromCodeAssistResponse(data: any) {
+function fromCodeAssistResponse(raw: any) {
+  const data = unwrapResponse(raw);
   const choices: Array<{
     index: number;
-    message: { role: string; content: string };
+    message: { role: string; content: string | null; tool_calls?: OpenAIToolCallOut[] };
     finish_reason: string | null;
   }> = [];
 
@@ -204,24 +424,26 @@ function fromCodeAssistResponse(data: any) {
       const content = candidate.content ?? {};
       const parts = content.parts ?? [];
       const text = parts.map((p: any) => p.text ?? '').join('');
+      const toolCalls = toolCallsFromParts(parts);
       choices.push({
         index: i,
         message: {
-          role: content.role ?? 'assistant',
-          content: text,
+          role: 'assistant',
+          content: text || null,
+          ...(toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
         },
-        finish_reason: candidate.finishReason ?? null,
+        finish_reason: toOpenAIFinishReason(candidate.finishReason, toolCalls.length > 0),
       });
     }
   }
 
   return {
-    id: data.id ?? `chatcmpl-${Date.now()}`,
+    id: data.responseId ?? `chatcmpl-${Date.now()}`,
     object: 'chat.completion',
     created: Math.floor(Date.now() / 1000),
-    model: data.model ?? '',
+    model: data.modelVersion ?? data.model ?? '',
     choices,
-    usage: data.usage ?? null,
+    usage: toOpenAIUsage(data.usageMetadata),
   };
 }
 
@@ -263,12 +485,14 @@ export class CodeAssistProvider implements ProviderInterface {
             // 2. Discover project ID
             const projectId = await discoverProjectId(token);
 
-            // 3. Convert messages
-            const { contents, systemInstruction } = toCodeAssistMessages(params.messages);
+            // 3. Convert messages + tools
+            const { contents, systemInstruction } = toCodeAssistMessages(params.messages as OpenAIMessage[]);
+            const geminiTools = toGeminiTools(params.tools as OpenAITool[] | undefined);
 
             // 4. Build request body
             const requestBody: Record<string, unknown> = {
               contents,
+              ...(geminiTools ? { tools: geminiTools } : {}),
               ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
               ...(params.max_tokens ? { generationConfig: { maxOutputTokens: params.max_tokens } } : {}),
               ...(params.temperature !== undefined
@@ -353,9 +577,11 @@ export class CodeAssistProvider implements ProviderInterface {
     // known to work through daily-cloudcode-pa.googleapis.com.
     return [
       { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
+      { id: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro (Preview)' },
+      { id: 'gemini-3.0-flash', label: 'Gemini 3.0 Flash (Preview)' },
       { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
       { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-      { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+      { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
     ];
   }
 }
@@ -372,6 +598,9 @@ async function* handleSSEStream(response: Response): AsyncGenerator<unknown, voi
 
   const decoder = new TextDecoder();
   let buffer = '';
+  // Monotonic index shared across chunks so multi-call responses map to
+  // distinct tool_use blocks downstream (AnthropicAdapter keys on tc.index).
+  let toolCallIndex = 0;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -388,22 +617,37 @@ async function* handleSSEStream(response: Response): AsyncGenerator<unknown, voi
       if (jsonStr === '[DONE]') return;
 
       try {
-        const data = JSON.parse(jsonStr);
+        // Code Assist wraps each SSE payload under `response`.
+        const data = unwrapResponse(JSON.parse(jsonStr));
 
-        // Convert Code Assist SSE chunk to OpenAI-compatible chunk
-        const text = extractTextFromChunk(data);
+        // Gemini delivers each functionCall whole (name + full args) in one
+        // chunk, so we emit a single tool_call delta per call with an
+        // incrementing index carried across chunks via toolCallIndex.
+        const parts = data.candidates?.[0]?.content?.parts ?? [];
+        const text = parts.map((p: any) => p.text ?? '').join('');
+        const rawToolCalls = toolCallsFromParts(parts);
+        const hasToolCall = rawToolCalls.length > 0;
+
+        const delta: Record<string, unknown> = {};
+        if (text) delta.content = text;
+        if (hasToolCall) {
+          delta.tool_calls = rawToolCalls.map(tc => ({ index: toolCallIndex++, ...tc }));
+        }
+        if (text || hasToolCall) delta.role = 'assistant';
+
         const chunk = {
-          id: data.id ?? `chatcmpl-${Date.now()}`,
+          id: data.responseId ?? `chatcmpl-${Date.now()}`,
           object: 'chat.completion.chunk',
           created: Math.floor(Date.now() / 1000),
-          model: data.model ?? '',
+          model: data.modelVersion ?? data.model ?? '',
           choices: [
             {
               index: 0,
-              delta: text ? { role: 'assistant', content: text } : {},
-              finish_reason: data.candidates?.[0]?.finishReason ?? null,
+              delta,
+              finish_reason: toOpenAIFinishReason(data.candidates?.[0]?.finishReason, hasToolCall),
             },
           ],
+          ...(data.usageMetadata ? { usage: toOpenAIUsage(data.usageMetadata) } : {}),
         };
 
         yield chunk;
@@ -411,16 +655,5 @@ async function* handleSSEStream(response: Response): AsyncGenerator<unknown, voi
         // Skip invalid JSON
       }
     }
-  }
-}
-
-function extractTextFromChunk(data: any): string {
-  try {
-    const candidate = data.candidates?.[0];
-    if (!candidate) return '';
-    const parts = candidate.content?.parts ?? [];
-    return parts.map((p: any) => p.text ?? '').join('');
-  } catch {
-    return '';
   }
 }

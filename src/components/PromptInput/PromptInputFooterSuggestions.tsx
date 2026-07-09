@@ -37,8 +37,8 @@ function normalizeDescription(description: string): string {
 function getIcon(itemId: string): string {
   if (itemId.startsWith('file-')) return '+';
   if (itemId.startsWith('mcp-resource-')) return '◇';
-  if (itemId.startsWith('agent-')) return '*';
-  return '+';
+  if (itemId.startsWith('agent-') && !itemId.includes(':')) return '*';
+  return '';
 }
 
 /**

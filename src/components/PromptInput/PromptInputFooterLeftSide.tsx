@@ -431,7 +431,8 @@ function ModeIndicator({
   ];
 
   // Check if any agent tasks exist (for hint text cycling)
-  const hasRunningAgentTasks = Object.values(tasks).some(t => t.type === 'local_agent' && t.status === 'running');
+  const runningAgentCount = Object.values(tasks).filter(t => t.type === 'local_agent' && t.status === 'running').length;
+  const hasRunningAgentTasks = runningAgentCount > 0;
 
   // Get hint parts separately for potential second-line rendering
   const hintParts = showHint
@@ -458,6 +459,16 @@ function ModeIndicator({
     parts.push(<ProactiveCountdown key="proactive" />);
   } else if (!hasTeammatePills && showHint) {
     parts.push(...hintParts);
+    // Compact running-agent badge (e.g. "← 1 agent"). The left arrow mirrors
+    // the AgentsList navigation affordance — ctrl+t / the tasks dialog surface
+    // the agents themselves; this is just a running-count indicator.
+    if (runningAgentCount > 0) {
+      parts.push(
+        <Text dimColor key="agent-count">
+          {figures.arrowLeft} {runningAgentCount} {runningAgentCount === 1 ? 'agent' : 'agents'}
+        </Text>,
+      );
+    }
   }
 
   // When we have teammate pills, always render them on their own line above other parts
