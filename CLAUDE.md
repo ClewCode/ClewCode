@@ -2,12 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**For full architectural details, see [AGENTS.md](AGENTS.md).**
+**For full architectural details, see [AGENT.md](AGENT.md).**
 
 ## 📝 Keep Docs in Sync (always)
 
 **Whenever you fix, add, remove, or change anything, update the relevant docs in the SAME change** — do not defer it. This includes:
-- `CLAUDE.md` / `AGENTS.md` — architecture, commands, patterns, conventions
+- `CLAUDE.md` / `AGENT.md` — architecture, commands, patterns, conventions
 - `PLAN.md` — progress/status of ongoing work (e.g. shadow reconciliation counts)
 - `CHANGELOG.md`, `README.md`, and any skill `SKILL.md` affected
 
@@ -45,11 +45,11 @@ npx vitest run -t "test name"          # By name
 bun run check:ci && bun x tsc --noEmit && bun test --bail
 ```
 
-See [AGENTS.md § Build / Test / Lint](AGENTS.md#build--test--lint) for details and feature flags.
+See [AGENT.md § Build / Test / Lint](AGENT.md#build--test--lint-bun-only) for details and feature flags.
 
 ## Architecture Overview
 
-See [AGENTS.md](AGENTS.md) for the full architecture (entry & REPL, query loop & providers, tools, and services).
+See [AGENT.md](AGENT.md) for the full architecture (entry & REPL, query loop & providers, tools, and services).
 
 ## Key Patterns
 
@@ -70,6 +70,6 @@ See [AGENTS.md](AGENTS.md) for the full architecture (entry & REPL, query loop &
 
 ## See Also
 
-- **Full architecture**: [AGENTS.md](AGENTS.md)
-- **Release**: [AGENTS.md § Release](AGENTS.md#release)
-- **Tools inventory**: [AGENTS.md § Tools](AGENTS.md#tools)
+- **Full architecture**: [AGENT.md](AGENT.md)
+- **Release**: [AGENT.md § Release](AGENT.md#release)
+- **Tools inventory**: [AGENT.md § Tools / commands / services](AGENT.md#tools--commands--services)
