@@ -2,11 +2,11 @@ import { describe, expect, test } from 'vitest';
 import { GOOGLE_OAUTH_CONFIG } from './googleOAuth.js';
 
 describe('GOOGLE_OAUTH_CONFIG', () => {
-  test('REDIRECT_URI uses localhost (not 127.0.0.1)', () => {
+  test('REDIRECT_URI uses 127.0.0.1 loopback (not localhost)', () => {
     const uri = GOOGLE_OAUTH_CONFIG.REDIRECT_URI;
     const parsed = new URL(uri);
-    expect(parsed.hostname).toBe('localhost');
-    expect(parsed.pathname).toBe('/auth/callback');
+    expect(parsed.hostname).toBe('127.0.0.1');
+    expect(parsed.pathname).toBe('/oauth2callback');
     expect(parsed.protocol).toBe('http:');
     expect(Number.isInteger(parsed.port ? Number(parsed.port) : 0)).toBe(true);
   });
