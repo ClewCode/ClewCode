@@ -1,3 +1,7 @@
+import { existsSync } from 'node:fs';
+import { readFile, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import type { BetaUsage as Usage } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs';
 import type { AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS } from 'src/services/analytics/index.js';
 import { logEvent } from 'src/services/analytics/index.js';
@@ -22,10 +26,6 @@ import {
   getDefaultMainLoopModelSetting,
   type ModelShortName,
 } from './model/model.js';
-import { readFile, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
 
 // @see https://platform.claude.com/docs/en/about-claude/pricing
 export type ModelCosts = ModelCostRates;
@@ -363,6 +363,20 @@ export const PROVIDER_PRICING: Record<string, ProviderPricing> = {
     },
   },
   xai: {
+    'grok-4.5': {
+      inputTokens: 2,
+      outputTokens: 6,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
+    'grok-build-0.1': {
+      inputTokens: 1,
+      outputTokens: 2,
+      promptCacheWriteTokens: 0,
+      promptCacheReadTokens: 0,
+      webSearchRequests: 0,
+    },
     'grok-2': {
       inputTokens: 2,
       outputTokens: 10,
@@ -1743,7 +1757,9 @@ async function loadOpenRouterPricingCacheFromDisk(): Promise<void> {
         openRouterPricingCache = cached.data;
       }
     }
-  } catch { /* corrupt cache, ignore */ }
+  } catch {
+    /* corrupt cache, ignore */
+  }
 }
 
 async function saveOpenRouterPricingCacheToDisk(): Promise<void> {
@@ -1753,7 +1769,9 @@ async function saveOpenRouterPricingCacheToDisk(): Promise<void> {
       JSON.stringify({ timestamp: Date.now(), data: openRouterPricingCache }),
       'utf8',
     );
-  } catch { /* best-effort */ }
+  } catch {
+    /* best-effort */
+  }
 }
 
 async function fetchOpenRouterPricing(): Promise<void> {
@@ -1779,7 +1797,9 @@ async function fetchOpenRouterPricing(): Promise<void> {
     }
     openRouterPricingCache = cache;
     saveOpenRouterPricingCacheToDisk();
-  } catch { /* network error, probe disk cache fallback */ }
+  } catch {
+    /* network error, probe disk cache fallback */
+  }
 }
 
 function initOpenRouterPricing(): void {

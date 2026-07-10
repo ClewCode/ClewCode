@@ -117,6 +117,17 @@ export function Login(props: {
         );
       }
     }
+    if (provider === 'google-assist') {
+      // Gemini via Code Assist (OAuth) — browser login with the Gemini CLI's
+      // public client; tokens land in ~/.gemini/oauth_creds.json.
+      return (
+        <GoogleOAuthFlow
+          codeAssist
+          onDone={() => props.onDone(true, mainLoopModel)}
+          onCancel={() => props.onDone(false, mainLoopModel)}
+        />
+      );
+    }
     if (provider === 'ollama') {
       return (
         <Box flexDirection="column" gap={1}>

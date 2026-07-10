@@ -1,7 +1,7 @@
 import ansis from 'ansis';
 import type { LocalCommandCall } from '../../types/command.js';
-import { setCwd } from '../../utils/Shell.js';
 import { pwd } from '../../utils/cwd.js';
+import { setCwd } from '../../utils/Shell.js';
 
 export const call: LocalCommandCall = async args => {
   const targetPath = (args ?? '').trim();

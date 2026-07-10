@@ -23,12 +23,14 @@ export class GoogleOAuthService {
   private manualAuthCodeResolver: ((authorizationCode: string) => void) | null = null;
   private clientId: string;
   private clientSecret: string;
+  private scopes: readonly string[];
 
-  constructor(options?: { clientId?: string; clientSecret?: string }) {
+  constructor(options?: { clientId?: string; clientSecret?: string; scopes?: readonly string[] }) {
     this.codeVerifier = crypto.generateCodeVerifier();
     this.clientId = options?.clientId || process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() || GOOGLE_OAUTH_CONFIG.CLIENT_ID;
     this.clientSecret =
       options?.clientSecret || process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() || GOOGLE_OAUTH_CONFIG.CLIENT_SECRET;
+    this.scopes = options?.scopes ?? GOOGLE_OAUTH_CONFIG.SCOPES;
   }
 
   async startOAuthFlow(
@@ -37,8 +39,10 @@ export class GoogleOAuthService {
       skipBrowserOpen?: boolean;
     },
   ): Promise<GoogleOAuthTokens> {
-    // Create OAuth callback listener on /auth/callback path
-    this.authCodeListener = new AuthCodeListener('/auth/callback');
+    // Create OAuth callback listener on the loopback IP + /oauth2callback path.
+    // Google rejects `localhost` and requires `127.0.0.1`; the path must match
+    // the gemini-cli public client's registered redirect (`/oauth2callback`).
+    this.authCodeListener = new AuthCodeListener('/oauth2callback', '127.0.0.1');
 
     // We start the listener on the configured port, or fallback if port is busy
     // To match REDIRECT_URI, we parse the port from GOOGLE_OAUTH_CONFIG.REDIRECT_URI
@@ -148,9 +152,10 @@ export class GoogleOAuthService {
     const authUrl = new URL(GOOGLE_OAUTH_CONFIG.AUTHORIZE_URL);
     authUrl.searchParams.append('client_id', this.clientId);
     authUrl.searchParams.append('response_type', 'code');
-    // For local web callback, standard redirect URI must use local port matched to current server
-    authUrl.searchParams.append('redirect_uri', `http://127.0.0.1:${port}/auth/callback`);
-    authUrl.searchParams.append('scope', GOOGLE_OAUTH_CONFIG.SCOPES.join(' '));
+    // For local web callback, standard redirect URI must use local port matched to current server.
+    // Must be the loopback IP + /oauth2callback path — Google 400s on `localhost`/other paths.
+    authUrl.searchParams.append('redirect_uri', `http://127.0.0.1:${port}/oauth2callback`);
+    authUrl.searchParams.append('scope', this.scopes.join(' '));
     authUrl.searchParams.append('code_challenge', codeChallenge);
     authUrl.searchParams.append('code_challenge_method', CODE_CHALLENGE_METHOD);
     authUrl.searchParams.append('state', state);
@@ -164,7 +169,7 @@ export class GoogleOAuthService {
     const requestBody = new URLSearchParams({
       grant_type: 'authorization_code',
       code: authorizationCode,
-      redirect_uri: `http://127.0.0.1:${this.port}/auth/callback`,
+      redirect_uri: `http://127.0.0.1:${this.port}/oauth2callback`,
       client_id: this.clientId,
       code_verifier: this.codeVerifier,
       state,

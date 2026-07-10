@@ -53,11 +53,7 @@ export function UpdateCallout({ currentVersion, latestVersion, onDone }: Props):
             <Text dimColor>{currentVersion}</Text>).
           </Text>
         </Box>
-        <Select
-          options={options}
-          onChange={value => onDoneRef.current(value)}
-          onCancel={handleKeep}
-        />
+        <Select options={options} onChange={value => onDoneRef.current(value)} onCancel={handleKeep} />
       </Box>
     </PermissionDialog>
   );

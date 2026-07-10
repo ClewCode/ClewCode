@@ -1,5 +1,7 @@
 import { feature } from 'bun:bundle';
 import { stat } from 'fs/promises';
+import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
+import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
 import { getClientType } from '../bootstrap/state.js';
 import { getRemoteSessionUrl, isRemoteSessionLocal, PRODUCT_NAME, PRODUCT_URL } from '../constants/product.js';
 import { TERMINAL_OUTPUT_TAGS } from '../constants/xml.js';
@@ -7,8 +9,6 @@ import type { AppState } from '../state/AppState.js';
 import { FILE_EDIT_TOOL_NAME } from '../tools/FileEditTool/constants.js';
 import { FILE_READ_TOOL_NAME } from '../tools/FileReadTool/prompt.js';
 import { FILE_WRITE_TOOL_NAME } from '../tools/FileWriteTool/prompt.js';
-import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
-import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
 import type { Entry } from '../types/logs.js';
 import {
   type AttributionData,

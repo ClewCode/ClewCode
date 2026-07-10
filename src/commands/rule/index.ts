@@ -1,16 +1,18 @@
 import type { Command } from '../../types/command.js';
 import {
-  loadProjectRules,
+  editProjectRule,
   formatRulesNotification,
   isProjectRulesDisabled,
-  setProjectRulesDisabled,
-  saveProjectRule,
+  loadProjectRules,
   removeProjectRule,
-  editProjectRule,
+  saveProjectRule,
+  setProjectRulesDisabled,
 } from '../../utils/projectRules.js';
 
 function formatRulesList(rules: string[], disabled: boolean): string {
-  const status = disabled ? 'Project Rules — Disabled' : `Project Rules — Active (${rules.length} rule${rules.length !== 1 ? 's' : ''})`;
+  const status = disabled
+    ? 'Project Rules — Disabled'
+    : `Project Rules — Active (${rules.length} rule${rules.length !== 1 ? 's' : ''})`;
   const lines = [status, ''];
 
   if (rules.length === 0) {
@@ -22,10 +24,7 @@ function formatRulesList(rules: string[], disabled: boolean): string {
   }
 
   lines.push('');
-  lines.push(disabled
-    ? 'Use /rule on to re-enable.'
-    : 'Use /rule add | remove | edit to manage.'
-  );
+  lines.push(disabled ? 'Use /rule on to re-enable.' : 'Use /rule add | remove | edit to manage.');
   return lines.join('\n');
 }
 
@@ -76,7 +75,10 @@ const rule: Command = {
             }
             const rulesAfterRemove = await loadProjectRules();
             const disabledAfterRemove = await isProjectRulesDisabled();
-            return { type: 'text' as const, value: `Removed rule ${idx}: "${removed}"\n\n${formatRulesList(rulesAfterRemove, disabledAfterRemove)}` };
+            return {
+              type: 'text' as const,
+              value: `Removed rule ${idx}: "${removed}"\n\n${formatRulesList(rulesAfterRemove, disabledAfterRemove)}`,
+            };
           }
 
           case 'edit': {
@@ -94,11 +96,17 @@ const rule: Command = {
             }
             const rulesAfterEdit = await loadProjectRules();
             const disabledAfterEdit = await isProjectRulesDisabled();
-            return { type: 'text' as const, value: `Edited rule ${idx}:\n  Old: "${old}"\n  New: "${newText}"\n\n${formatRulesList(rulesAfterEdit, disabledAfterEdit)}` };
+            return {
+              type: 'text' as const,
+              value: `Edited rule ${idx}:\n  Old: "${old}"\n  New: "${newText}"\n\n${formatRulesList(rulesAfterEdit, disabledAfterEdit)}`,
+            };
           }
 
           default:
-            return { type: 'text' as const, value: `Unknown subcommand "${subcommand}".\n\nUsage: /rule [add | remove | edit | on | off]` };
+            return {
+              type: 'text' as const,
+              value: `Unknown subcommand "${subcommand}".\n\nUsage: /rule [add | remove | edit | on | off]`,
+            };
         }
       },
     };

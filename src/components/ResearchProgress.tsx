@@ -1,7 +1,7 @@
 import figures from 'figures';
 import type * as React from 'react';
-import { Box, Text } from '../ink.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
+import { Box, Text } from '../ink.js';
 import { formatDuration } from '../utils/format.js';
 
 export type ResearchPhase =
@@ -49,12 +49,7 @@ export function ResearchStatusLine({ state }: { state: ResearchProgressState }):
   const termWidth = useTerminalSize().columns;
   const { percentage, activeCollector, formattedDuration } = useResearchProgress(state);
 
-  const statusGlyph =
-    state.phase === 'completed'
-      ? '✓'
-      : state.phase === 'failed'
-        ? '✗'
-        : '◈';
+  const statusGlyph = state.phase === 'completed' ? '✓' : state.phase === 'failed' ? '✗' : '◈';
 
   const detailStr =
     state.phase === 'collecting'
@@ -168,7 +163,7 @@ export function ResearchProgressPanel({ state }: { state: ResearchProgressState 
         <Text>{state.query}</Text>
       </Box>
       <Box paddingLeft={2}>
-        <Text bold>Mode:  </Text>
+        <Text bold>Mode: </Text>
         <Text>{state.mode}</Text>
       </Box>
       <Text color="cyan">├{borderLine.slice(2)}</Text>

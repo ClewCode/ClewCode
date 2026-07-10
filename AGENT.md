@@ -2,282 +2,191 @@
 
 This file provides guidance to Clew Code when working with code in this repository.
 
-## Build / Test / Lint (use Bun, not npm)
+For a longer architecture deep-dive see `AGENTS.md`. Prefer this file for day-to-day agent operation; keep both in sync when architecture or workflow changes.
+
+## Build / Test / Lint (Bun only)
 
 ```bash
-bun run dev              # Live-reload REPL (with feature flags)
-bun run dev:channels     # Dev with development channels loaded
-bun run build            # Production build to dist/
-bun run start            # Run compiled build from dist/
-bun test                 # Full Vitest suite
+bun run dev              # Live-reload REPL (prebuild-version + feature flags)
+bun run dev:channels     # Dev with development channels (server:clew-orc)
+bun run build            # Production build → dist/ (+ postbuild macro injection)
+bun run start            # Run via scripts/bun-run.mjs
+bun test                 # Full suite
 bun test --bail          # Stop on first failure
-bun ci                   # Lockfile integrity check
 npx vitest run path/to/file.test.ts   # Single test file
 npx vitest run -t "test name"         # Single test by name
-bun run check:ci         # Biome lint + format check (no autofix)
-bun run lint             # Biome lint + autofix
-bun run check            # Biome lint + format + autofix
-bun x tsc --noEmit       # TypeScript type-check only
+bun run check:ci         # Biome CI (lint + format, no autofix)
+bun run lint             # Biome lint --write
+bun run format           # Biome format --write
+bun run check            # Biome check --write
+bun x tsc --noEmit       # Typecheck only
+bun ci                   # Lockfile integrity
+bun run codegraph        # Write structure map to .clew/CODEGRAPH.md
 ```
 
-**Full pre-push gate:**
+**Pre-push gate:**
 ```bash
 bun run check:ci && bun x tsc --noEmit && bun test --bail
 ```
 
-Or use `/clew-verify` (static gate + tests + CLI smoke test).
+Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for version cuts.
 
-## Code Conventions
+`dev` / `build` always run `prebuild-version` and define:
+`TRANSCRIPT_CLASSIFIER`, `CHICAGO_MCP`, `VOICE_MODE` (build also sets `AWAY_SUMMARY`).
 
-- **ESM only** (`"type": "module"`), `NodeNext` module resolution
-- `.js` extensions for relative imports: `import { x } from './thing.js'`
-- `node:` prefix for built-in modules: `import { readFile } from 'node:fs/promises'`
-- **Biome** formatting: 2-space indent, single quotes, 120 columns, LF endings — scope `src/**/*.{ts,tsx,js}`
-- Types in `src/types/` or local; prefer interfaces for objects, type aliases for unions
-- Edit `src/` only — `dist/` is generated build output
-- Export interfaces and factory functions from barrel `index.ts` files
+## Project rules (from `.clew/rules.json`)
 
-## Stats
+- Keep docs in sync — `AGENTS.md`, `CHANGELOG.md`, `README.md` (and this file) when behavior changes
+- Use Bun for all dev commands
+- ESM; `node:` for built-ins; `.js` extension on relative imports
+- Biome: 2-space, single quotes, 120 columns, LF, scope `src/**/*.{ts,tsx,js}`
+- Edit `src/` only — never `dist/`
+- Conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`
+- Branches: `type/description` (e.g. `feat/add-feature`)
+- Before commit: full gate above
+- Update `CHANGELOG.md` under `[Unreleased]` when behavior changes
+- Add/update tests when behavior changes
+- `/graphify` → load the graphify skill first
 
-- **2,340 TypeScript files** (`.ts`/`.tsx`), **9 standalone `.js` files** (no `.ts` twin — genuine JS source)
-- **76 tool directories** under `src/tools/`, **35+ service directories** under `src/services/`
-- **~90 slash commands** registered in `src/commands/`
+## Code conventions
 
-## Architecture Overview
+- `"type": "module"`; tsconfig is `module: ESNext`, `moduleResolution: bundler`, `strict: true`
+- Path alias: `src/*` → `src/*`
+- Export interfaces/factories from barrels where the area already uses them
+- Tool result contract: `{ ok: boolean; summary: string; data?: unknown }`
+- Commands export `{ name, description, type, handler, ... }` (`type`: `prompt` | `local` | `local-jsx`)
+
+## Stats (approx.)
+
+- ~2,350 TS/TSX files under `src/`; 9 genuine `.js` sources (no `.ts` twin — shadows were fully removed)
+- 76 tool packages under `src/tools/`, 35 service packages under `src/services/`, ~99 command dirs under `src/commands/`
+
+## Architecture (big picture)
 
 ```
-src/main.tsx            CLI entrypoint (flag parsing, TTY forcing, Ink REPL boot)
+src/main.tsx            CLI entry (flags, TTY force, version MACRO, feature defines)
 src/replLauncher.tsx    Ink/React 19 REPL bootstrap
-src/commands.ts         Slash command registry (merges built-in + skills + plugins + MCP)
-src/QueryEngine.ts      Streaming LLM loop (messages, tools, provider routing, streaming)
-src/query.ts            Non-streaming query variant
-src/tools.ts            Tool registry (getAllBaseTools())
-src/Tool.ts             Base class for all tools (extends with standard result shape)
-src/Task.ts             Base class for async tasks
-src/state/AppState.tsx  Central AppState store (singleton, drives all Ink UI)
+src/screens/REPL.tsx    Main TUI — input routing, panels, streaming UI
+src/commands.ts         Slash registry: built-in + skills + plugins + MCP + dynamic
+src/QueryEngine.ts      Streaming LLM loop: messages, tools, provider routing
+src/query.ts            Non-streaming query path
+src/tools.ts            getAllBaseTools() registry
+src/Tool.ts             Tool base class
+src/Task.ts             Async task base
+src/state/AppState.tsx  Central AppState (drives Ink UI)
+src/services/ai/        ProviderManager + providers.json + adapters + normalizers
 ```
 
-### Entry Point Flow
+Flow: **REPL input** → command match or **QueryEngine** → **ProviderManager** → model stream → tool calls → tools/services → UI/state.
 
-`src/main.tsx` does more than parse flags:
-1. Forces TTY on stdout/stderr/stdin (workaround for PowerShell)
-2. Loads `version.json` into `globalThis.MACRO`
-3. Starts MDM raw read and keychain prefetch in parallel with module evaluation
-4. Checks feature flags (`bun:bundle` defines): `TRANSCRIPT_CLASSIFIER`, `CHICAGO_MCP`, `VOICE_MODE`, `AWAY_SUMMARY`
-5. Routes to: version display, flag parsing, pipe mode, or Ink REPL
+Settings: `.clew/settings.json` (shared) and `.clew/settings.local.json` (local/private).
 
-### Tools (76)
+### Registration patterns
 
-Each tool is a class in `src/tools/<ToolName>/` extending `Tool` from `src/Tool.ts`. Result shape: `{ ok, summary, data }`. Register in `src/tools.ts::getAllBaseTools()`. Feature-gated tools use lazy `require()` with `bun:bundle` flags. Key categories:
+- **Tool:** class under `src/tools/<Name>/` extending `Tool`; register in `src/tools.ts` → `getAllBaseTools()`. Feature-gated tools: lazy `require()` + `bun:bundle` defines.
+- **Command:** module under `src/commands/`; add to `COMMANDS()` in `src/commands.ts`.
+- **Provider:** declarative entry in `src/services/ai/providers.json` + adapter under `src/services/ai/` / `adapter/` as needed; discovery via `providerRegistry.ts` / `ModelDiscoveryService.ts`.
 
-| Category | Tools |
+### Providers (`src/services/ai/`)
+
+- `ProviderManager.ts` — unified call interface
+- `providers.json` — ~29 provider definitions
+- `providerRegistry.ts` / `providerSelection.ts` — discovery & selection
+- `adapter/`, error/usage normalizers — cross-provider shape
+- Mid-session switch: `/model`, `/provider`
+
+### Tools / commands / services
+
+Tools live one directory per tool under `src/tools/` (I/O, web, tasks, 15+ peer tools, MCP, agents, memory, media, UI, Goal, Monitor, LSP, ComputerUse, etc.).
+
+Commands: ~90–100 under `src/commands/` (not every file is a top-level slash command; `commands.ts` is source of truth).
+
+Services that matter most for product behavior:
+
+| Area | Role |
 |---|---|
-| Core I/O | FileRead, FileWrite, FileEdit, Glob, Grep, Bash, JsonPath |
-| Web | WebSearch, WebFetch, BrowserTool |
-| Tasks | TaskCreate, TaskUpdate, TaskList, TaskGet, TaskOutput, TaskStop |
-| Peer (15+) | PeerDiscover, PeerSendMessage, PeerBroadcast, PeerSwarm, PeerDashboard, etc. |
-| MCP | MCPTool, ListMcpResourcesTool, ReadMcpResourceTool |
-| Agents | AgentTool, EnterPlanMode, ExitPlanMode, SkillTool |
-| Memory | MemoryFeedbackTool, ProjectRuleTool |
-| Media | GenerateImage, GenerateVideo, ReadMediaFile |
-| UI | AskUserQuestionTool, NotebookEditTool |
-| Other | GoalTool, MonitorTool, LSPTool, ComputerUseTool, BriefTool |
+| `ai/` | Multi-provider LLM |
+| `mcp/` | MCP client (stdio/SSE/HTTP/DirectConnect) |
+| `autonomous/` | Task queue, leases (max 3), cron, dead-letter, daemon |
+| `compact/`, `contextCollapse/` | Context compression / collapse |
+| `longTermMemory/`, `autoDream/`, `extractMemories/` | Dream/Distill & extraction |
+| `checkpoint/`, `goal/` | Progress snapshots & goal verification |
+| `plugins/` | Pre/Post tool/bash/prompt/edit hooks |
+| `sessionSearch/`, `SessionLifecycle/`, `SessionMemory/` | Session life & FTS5 search |
+| `voiceInput/` | Voice transcription |
+| `auditLog/` | Opt-in SIEM NDJSON audit trail |
+| `lsp/` | Language server integration |
 
-### Commands (~90)
+Other large surface areas: `src/agentRuntime/` (background orchestration, ultracode, workflows), `src/peer/` (LAN P2P), `src/memory/` (SQLite memory store), `src/remote/` (Bridge v2), `src/bridge/` (legacy CCR — claude.ai-specific; do not mix with `remote/`), `src/plugins/`, `src/skills/`, `src/coordinator/`, `src/tasks/`, `src/vim/`, `src/voice/`, `src/buddy/`.
 
-Each command in `src/commands/<name>/` exports `{ name, description, type, handler }`. The `type` field is `'prompt'` (model-invocable, expands to text), `'local'` (produces text output), or `'local-jsx'` (renders Ink UI). Register in `src/commands.ts::COMMANDS()`.
+### Execution layers (pick by intent)
 
-Key commands: `/model`, `/status`, `/doctor`, `/context`, `/compact`, `/goal`, `/mcp`, `/code-review`, `/peer`, `/agent`, `/tasks`, `/memory`, `/plan`, `/workflow`, `/research`, `/rewind`, `/upgrade`, `/theme`, `/skills`, `/rule`, `/voice`, `/ultracode`, `/workspace`
-
-### Screens & UI (`src/screens/`, `src/components/`, `src/ink/`)
-
-| Path | Purpose |
+| Layer | Use when |
 |---|---|
-| `src/screens/REPL.tsx` | Main TUI screen (6K+ lines) — routes input, manages panels |
-| `src/screens/Doctor.tsx` | Diagnostic/health screen |
-| `src/screens/ResumeConversation.tsx` | Session resume dialog |
-| `src/components/` | Ink/React 19 components organized by feature |
-| `src/ink/` | Custom Ink render helpers (devtools, etc.) |
-| `src/hooks/` | React hooks for UI state and tool permissions |
-| `src/state/` | AppState singleton store + selectors |
+| Agent | Main session or `.clew/agents/*.md` |
+| Subagent (`Agent` tool / Explore) | Short independent work; Explore is read-only |
+| Teammate / swarm | Multi-turn named workers with mailbox/tasks |
+| LAN peer (`/peer`) | Other Clew instances on machine/LAN |
+| Process peer | Local external CLI worker (e.g. Codex via `process_peer`) |
+| Background / daemon | Queue + cron via autonomous + agentRuntime (`/bg`, `/daemon`) |
 
-### Provider System (`src/services/ai/`)
+Also: **plan mode** (`.clew/plans/`), **checkpoints** (20%/45%/70% + `/rewind`), **goal verification**, **Max Mode** (parallel candidates + judge).
 
-- `ProviderManager.ts` — unified LLM interface
-- `providers.json` — 29 provider definitions
-- `adapter/` — per-provider request/response normalization
-- `errorNormalizer.ts` / `usageNormalizer.ts` — cross-provider normalization
-- Model switching mid-session via `/model` or `/provider`
-- Live model discovery via `ModelDiscoveryService.ts`
+### Profiles
 
-### Key Services (`src/services/`)
+**Personal profile** — command-center: plan, split work, delegate coding to process peers, review results. Cross-session memory, skill creation from repeated workflows, cron/loop, daemon queue. Profile + last permission mode persist.
 
-| Service | Purpose |
+## Gateway mode
+
+Default auth path is `api.clew-code.org` (not Anthropic OAuth), unless `CLEW_DISABLE_GATEWAY` is set.
+
+- Impl: `src/utils/gatewayAuth.ts` (`login`, `loginViaBrowser`, token IO, `isGatewayConfigured`)
+- Token: `~/.clew/gateway.json`
+- `/login` / `/logout` are gateway-oriented by default (`gwlogin` / `gwlogout` modules)
+
+## TinyFish (default web toolkit)
+
+Prefer TinyFish MCP for web work over built-in WebSearch / WebFetch / BrowserTool when available:
+
+| TinyFish | Instead of |
 |---|---|
-| `mcp/` | MCP client with stdio/SSE/DirectConnect/StreamableHTTP transports |
-| `autonomous/` | Background agent loop, task queue with leases (max 3), cron, dead-letter retries |
-| `longTermMemory/` | Dream (7d) + Distill (30d) memory consolidation |
-| `checkpoint/` | Structured 20%/45%/70% progress snapshots, rollback via `/rewind` |
-| `plugins/` | Lifecycle hooks (PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit) |
-| `auditLog/` | SIEM-compatible NDJSON trail with rotation, filtering |
-| `sessionSearch/` | FTS5 transcript search |
-| `voiceInput/` | Voice transcription pipeline (Whisper) |
-| `goal/` | Goal verification via independent LLM call |
-| `compact/` | Multi-pass context compaction with automatic memory extraction |
-| `contextCollapse/` | Automatic context collapse detection |
-| `lsp/` | LSP integration (goToDefinition, findReferences, hover) |
-| `search/` | Web search integration |
-| `SessionLifecycle/` | Session state management |
-| `SessionMemory/` | Session-scoped memory |
-| `Supervisor/` | Agent supervisor IPC |
-| `teamMemorySync/` | Cross-machine memory sync |
-| `settingsSync/` | Settings synchronization |
-| `MagicDocs/` | Documentation generation |
-| `googleOAuth/`, `oauth/`, `openaiOAuth/` | OAuth flows |
-| `analytics/` | Usage analytics |
-| `api/` | API service layer |
-| `tools/` | Tool service layer |
-| `PromptSuggestion/` | Prompt suggestions |
-| `tips/` | Tip display service |
-| `policyLimits/` | Rate/policy limits |
-| `toolUseSummary/` | Tool usage tracking |
-| `remoteManagedSettings/` | Remote settings management |
-| `autoDream/` | Dream process scheduling and execution |
-| `extractMemories/` | Extract structured facts during compaction |
-| `AgentSummary/` | Agent result summarization |
-| `AgentPRStatus/` | Agent PR status tracking |
+| `search` | WebSearch |
+| `fetch_content` | WebFetch |
+| `run_web_automation` | BrowserTool |
 
-### Agent Runtime (`src/agentRuntime/`)
+## Graphify & codegraph
 
-Background agent orchestration and specialized runtimes:
-- `orchestrator.ts` — core orchestration loop
-- `ultracode.ts` — ultracode reasoning engine
-- `ultracodeBootstrap.ts` / `ultracodeBridge.ts` — ultracode integration
-- `verifierAgent.ts` — independent verification agent
-- `transcriptClassifier.ts` — transcript classification
-- `dynamicWorkflowRunner.ts` / `dynamicWorkflowCoordinator.ts` — workflow management
-- `agentRegistry.ts` — agent registration
-- `reportBuilder.ts` — agent report construction
-- `workflowRegistry.ts` — workflow definitions
-- `toolGateway.ts` — tool access gateway
-- `runStore.ts` — agent run persistence
+- Knowledge graph: `graphify-out/` — for codebase questions: `graphify query "..."`, relationships: `graphify path "A" "B"`, concepts: `graphify explain "..."`. After structural edits: `graphify update .`
+- Fallback map: `bun run codegraph` → `.clew/CODEGRAPH.md`
+- Project also configures codegraph MCP in `.mcp.json`
 
-### Configuration & Hooks
+## Workspace linking
 
-Configured in `.clew/settings.json` (shared) and `.clew/settings.local.json` (private, never commit secrets). Hooks automate behavior on tool events — see `src/hooks/` for hook type definitions and `.clew/settings.json` for configuration keys (`PostToolUse`, `PreToolUse`, etc.).
+`/workspace link|unlink|load|list` — bidirectional project links in `.clew/workspace.json`. Source: `src/commands/workspace/`, `src/utils/workspace/`.
 
-### Peer / P2P (`src/peer/`)
+## Scripts
 
-UDP multicast discovery, HTTP heartbeats, in-process message broker with correlation IDs, swarm execution, memory sync across LAN agents. 15+ AI-callable peer tools plus `/peer` slash commands. Key files: `PeerServer.ts`, `PeerDiscovery.ts`, `PeerStore.ts`.
-
-### Memory (`src/memory/`)
-
-SQLite-backed with importance × recency × confidence budgeting. `/memory` commands for init/scan/search/dashboard. Auto-consolidation via Dream (7d) and Distill (30d). File hierarchy: `.clew/memory/{MEMORY,DECISIONS,TASTE}.md`.
-
-### Plugins (`src/plugins/`)
-
-Plugin loader, registry, marketplace. Lifecycle hooks at PreToolUse, PostToolUse, PreBash, PostPrompt, PreAcceptEdit. Plugin dirs at `.clew/plugins/`.
-
-### Tasks (`src/tasks/` + `src/autonomous/`)
-
-In-session task management and persistent task queue with lease-based concurrency, cron scheduling, and dead-letter retries. Background agent process in `src/agentRuntime/`.
-
-### Types, Schemas, Constants
-
-| Path | Purpose |
+| Script | Role |
 |---|---|
-| `src/types/` | Shared TypeScript types (command, message, logs, plugin, etc.) |
-| `src/types/command.ts` | Command type definitions (`PromptCommand`, `LocalCommandResult`) |
-| `src/schemas/` | Zod validation schemas (for LLM output validation) |
-| `src/constants/` | Constants including tool allow/deny lists |
-
-### Scripts (`scripts/`)
-
-| Script | Purpose |
-|---|---|
-| `prebuild-version.mjs` | Auto-generates `src/generated/version.json` before build |
-| `postbuild-inject-macro.mjs` | Injects macro values into built output |
-| `bun-run.mjs` | Wrapper for running dev/start with correct flags |
-| `codegraph.ts` | Generates `.clew/CODEGRAPH.md` structure map |
-| `generate-docs.ts` | Documentation generation |
-| `preload.ts` | Preload tasks |
-| `session.ts` | Session management utility |
-| `install.sh` / `install.ps1` | Cross-platform install scripts |
-
-## MCP Configuration
-
-MCP servers defined in `.mcp.json` at project root:
-
-```json
-{
-  "mcpServers": {
-    "codegraph": { "command": "codegraph", "args": ["serve", "--mcp"] },
-    "clew-bus": { "type": "http", "url": "http://127.0.0.1:7333/mcp" },
-    "clew-peer": { "type": "http", "url": "http://127.0.0.1:7334/mcp" }
-  }
-}
-```
-
-## Execution Layers
-
-- **Agent** — main chat session or custom `.clew/agents/*.md`
-- **Subagent** — short-lived child via Agent tool (use for parallel read-only exploration)
-- **Teammate / Swarm** — long-lived named workers with mailbox, task coordination, optional tmux/pane
-- **LAN Peer** — network of Clew instances on LAN, `/peer` for discovery
-- **Process Peer** — local Codex worker via exec/pty (delegate coding work)
-- **Background Agent** — agentRuntime task queue with lease-based concurrency (max 3), cron, daemon mode (`/bg`, `/daemon`)
-
-## Profiles
-
-- **Personal profile** (`profile: "personal"` in `.clew/settings.json`) — command-center mode. Plans, splits tasks, delegates to Codex workers via `process_peer`, reviews and summarizes results. Automatically creates skills from repeatable patterns.
-- **Daemon mode** — background runtime (`src/services/autonomous/daemonMode.ts`) that checks task queue, runs cron tasks, consolidates memory.
-
-## Feature Flags
-
-Codebase uses `bun:bundle` `--define.*` flags (see `package.json` scripts): `TRANSCRIPT_CLASSIFIER`, `CHICAGO_MCP`, `VOICE_MODE`, `AWAY_SUMMARY`. Additional gating via `process.env` (e.g., `ENABLE_COMPUTER_USE`).
-
-## Gateway Mode
-
-Replaces Anthropic OAuth with `api.clew-code.org`. `isGatewayConfigured()` returns true by default. Key file: `src/utils/gatewayAuth.ts`. Login flow opens browser → local HTTP server → saves token to `~/.clew/gateway.json`. `/login` and `/logout` use gateway by default.
-
-## Project Rules
-
-Define auto-observed behavioral rules via `/rule` or `.clew/rules.json`. Rule files auto-injected into system prompt. Key active rules: Keep docs in sync, use Bun for all dev commands, ESM with NodeNext, Biome formatting, conventional commits, branch naming convention.
-
-## Legacy Subsystems (avoid mixing)
-
-- `src/bridge/` — legacy CCR bridge (claude.ai-specific)
-- `src/services/mcp/claudeai.ts` — legacy MCP connectors
-- `src/services/oauth/` — legacy OAuth login
-- Bridge v2 replacement is in `src/remote/` (provider-agnostic WebSocket server, auth tokens, NAT relay)
-
-## Planning, Checkpoints & Goals
-
-- **Plan mode** (`/plan`) — full-access planning with bypass permissions. Plans persist to `.clew/plans/long-term-plan.md`.
-- **Checkpoints** — structured snapshots at 20%/45%/70% progress milestones with `notes.md` scratchpad. `/rewind` restores code or conversation to any prior checkpoint.
-- **Goals** (`/goal`) — goal tracking with independent LLM verification against goal text.
-
-## Workspace Linking
-
-`/workspace link <path>` — link projects bidirectionally, persists in `.clew/workspace.json`. Auto-loads linked dirs on return. Subcommands: `link`, `unlink`, `load`, `list`. Source: `src/commands/workspace/`, `src/utils/workspace/`.
+| `scripts/prebuild-version.mjs` | Writes generated version info |
+| `scripts/postbuild-inject-macro.mjs` | Post-build macro injection |
+| `scripts/bun-run.mjs` | Dev/start runner with defines |
+| `scripts/codegraph.ts` | Structure map generator |
+| `scripts/agent-room.ts` | Agent room helper |
+| `src/remote/relay-server.ts` | Relay (`bun run relay`) |
 
 ## Release
 
-Pushing a `v*` tag triggers GitHub Actions release + npm publish. Before tagging:
-1. Update version in `package.json`
-2. Update `CHANGELOG.md` under `[Unreleased]`
-3. Run full CI gate
+`v*` tag → GitHub Actions release + npm publish. Before tag: bump `package.json`, update `CHANGELOG.md` `[Unreleased]`, run full gate. Use `/clew-release`.
 
-Use `/clew-release` for the full release checklist.
+## Dashboard (cross-repo)
 
-## Dashboard Deployment
+`clew-code.org/app/` is served from **`clew-api/dashboard/index.html`** (Cloudflare Pages on `ClewCode/clew-api`), not from the website repo’s `app/index.html`. Dashboard UI changes go to `clew-api`.
 
-The web dashboard at `clew-code.org/app/` is served from **`clew-api/dashboard/index.html`** (Cloudflare Pages connected to `ClewCode/clew-api` repo), **not** from `clew-code.org/app/index.html`. Push dashboard changes to `ClewCode/clew-api`.
+## Legacy surfaces to avoid mixing
 
-## Graphify
+- `src/bridge/` — legacy CCR
+- `src/services/mcp/claudeai.ts`, `src/services/oauth/`, `src/services/claudeAiLimits.ts` — claude.ai-era paths
+- Prefer provider-agnostic `src/remote/` for new bridge work
 
-Code knowledge graph at `graphify-out/` (24K+ nodes, 56K+ edges). Use `graphify query "<question>"` for codebase questions, `graphify path "<A>" "<B>"` for relationships. Run `graphify update .` after modifying code.
-
-## Security Rules
-
-Never commit: provider API keys, npm tokens, OAuth tokens, session cookies, `.env` files, private credentials, billing/subscription data. Prefer `process.env.KEY_NAME` over hardcoded secrets. Use `.clew/settings.local.json` for private settings.
+`/ant` removed; `/datadog` disabled (`isEnabled: () => false`).

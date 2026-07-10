@@ -32,15 +32,15 @@ const RESERVED_CATEGORY_NAME = 'Autocompact buffer';
 const MANUAL_COMPACT_BUFFER_NAME = 'Manual compact buffer';
 const DISPLAY_NAMES: Record<string, string> = {
   'System prompt': 'System prompt',
-  'System tools': 'Tools',
-  '[ANT-ONLY] System tools': 'Tools',
-  'MCP tools': 'MCP',
+  'System tools': 'System tools',
+  '[ANT-ONLY] System tools': 'System tools',
+  'MCP tools': 'MCP tools',
   'MCP tools (deferred)': 'MCP deferred',
-  'System tools (deferred)': 'Tools deferred',
-  'Custom agents': 'Subagents',
-  'Memory files': 'Rules',
+  'System tools (deferred)': 'System tools deferred',
+  'Custom agents': 'Custom agents',
+  'Memory files': 'Memory files',
   Skills: 'Skills',
-  Messages: 'Conversation',
+  Messages: 'Messages',
 };
 
 function displayName(name: string): string {
@@ -69,21 +69,8 @@ function squareSymbol(square: GridSquare): string {
 export function ContextStats({ data, onClose }: Props): React.ReactNode {
   const [scrollOffset, setScrollOffset] = useState(0);
 
-  const {
-    categories,
-    totalTokens,
-    rawMaxTokens,
-    percentage,
-    gridRows,
-    model,
-    memoryFiles,
-    mcpTools,
-    systemTools = [],
-    systemPromptSections = [],
-    agents,
-    skills,
-    messageBreakdown,
-  } = data;
+  const { categories, totalTokens, rawMaxTokens, percentage, gridRows, model, memoryFiles, mcpTools, agents, skills } =
+    data;
 
   // ── Build usable categories (exclude free/compact buffer) ──
   const usableCategories = useMemo(
@@ -99,41 +86,7 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
     [categories],
   );
 
-  // ── Right-side labels for each row ─────────────────────────
-  const rowRightLabels = useMemo(() => {
-    const labels: Array<
-      | { type: 'text'; text: string; dim?: boolean; italic?: boolean }
-      | { type: 'category'; name: string; tokens: number; color: string }
-      | { type: 'free'; tokens: number }
-      | null
-    > = [];
-
-    labels.push({ type: 'text', text: modelDisplayName(model) });
-    labels.push({ type: 'text', text: model });
-    labels.push({
-      type: 'text',
-      text: `${formatTokens(totalTokens)}/${formatTokens(rawMaxTokens)} tokens (${percentage}%)`,
-    });
-    labels.push(null);
-    labels.push({ type: 'text', text: 'Estimated usage by category', dim: true, italic: true });
-
-    let catIdx = 0;
-    for (let r = 5; r < gridRows.length; r++) {
-      if (catIdx < usableCategories.length) {
-        const cat = usableCategories[catIdx]!;
-        labels.push({ type: 'category', name: cat.name, tokens: cat.tokens, color: cat.color });
-        catIdx++;
-      }
-    }
-
-    const freeCat = categories.find(c => c.name === 'Free space');
-    if (freeCat && freeCat.tokens > 0 && labels.length < gridRows.length) {
-      labels.push({ type: 'free', tokens: freeCat.tokens });
-    }
-    while (labels.length < gridRows.length) labels.push(null);
-
-    return labels;
-  }, [model, totalTokens, rawMaxTokens, percentage, usableCategories, categories, gridRows.length]);
+  const freeCategory = categories.find(c => c.name === 'Free space');
 
   // ── Build detail sections ─────────────────────────────────
   const detailSections = useMemo((): DetailSection[] => {
@@ -150,38 +103,21 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
       });
     }
 
-    if (memoryFiles.length > 0) {
-      const total = memoryFiles.reduce((sum, file) => sum + file.tokens, 0);
-      sections.push({
-        title: 'Memory files',
-        hint: '/memory',
-        items: [{ label: `${memoryFiles.length} files`, value: `${formatTokens(total)} tokens` }],
-      });
-    }
-
-    if (systemPromptSections.length > 0) {
-      const total = systemPromptSections.reduce((sum, section) => sum + section.tokens, 0);
-      sections.push({
-        title: 'System prompt',
-        items: [{ label: `${systemPromptSections.length} sections`, value: `${formatTokens(total)} tokens` }],
-      });
-    }
-
-    const loadedSystem = systemTools.filter(t => !('isLoaded' in t) || (t as any).isLoaded);
-    if (loadedSystem.length > 0) {
-      const total = loadedSystem.reduce((sum, tool) => sum + tool.tokens, 0);
-      sections.push({
-        title: 'System tools',
-        items: [{ label: `${loadedSystem.length} tools`, value: `${formatTokens(total)} tokens` }],
-      });
-    }
-
     if (agents.length > 0) {
       const total = agents.reduce((sum, agent) => sum + agent.tokens, 0);
       sections.push({
         title: 'Custom agents',
         hint: '/agents',
         items: [{ label: `${agents.length} agents`, value: `${formatTokens(total)} tokens` }],
+      });
+    }
+
+    if (memoryFiles.length > 0) {
+      const total = memoryFiles.reduce((sum, file) => sum + file.tokens, 0);
+      sections.push({
+        title: 'Memory files',
+        hint: '/memory',
+        items: [{ label: `${memoryFiles.length} files`, value: `${formatTokens(total)} tokens` }],
       });
     }
 
@@ -194,15 +130,8 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
       });
     }
 
-    if (messageBreakdown) {
-      sections.push({
-        title: 'Messages',
-        items: [{ label: 'Current conversation', value: `${formatTokens(messageBreakdown.totalTokens)} tokens` }],
-      });
-    }
-
     return sections;
-  }, [mcpTools, memoryFiles, systemPromptSections, systemTools, agents, skills, messageBreakdown]);
+  }, [mcpTools, memoryFiles, agents, skills]);
 
   const renderGridRows = useMemo(
     () =>
@@ -258,52 +187,52 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
         <Text bold>└ Context Usage</Text>
       </Box>
 
-      {/* Grid rows */}
-      <Box flexDirection="column" gap={0}>
-        {renderGridRows.map((row, i) => {
-          const rightLabel = rowRightLabels[i];
-          return (
-            <Box key={row.key} flexDirection="row" paddingLeft={2} gap={2}>
-              <Box
-                flexDirection="row"
-                flexShrink={0}
-                width={gridRows[0]?.length ? gridRows[0].length * 2 : GRID_COLS * 2}
-              >
-                {row.cells.map(({ key, square }) => {
-                  const isFree = square.categoryName === 'Free space';
-                  return (
-                    <Text key={key} color={isFree ? undefined : square.color} dimColor={isFree}>
-                      {squareSymbol(square)}{' '}
-                    </Text>
-                  );
-                })}
-              </Box>
-              {rightLabel?.type === 'text' ? (
-                <Text dimColor={rightLabel.dim} italic={rightLabel.italic}>
-                  {rightLabel.text}
-                </Text>
-              ) : rightLabel?.type === 'category' ? (
-                <Box flexDirection="row">
-                  <Text color={rightLabel.color}>⛁</Text>
-                  <Text> {displayName(rightLabel.name)}: </Text>
-                  <Text dimColor>
-                    {formatTokens(rightLabel.tokens)} tokens (
-                    {rawMaxTokens > 0 ? ((rightLabel.tokens / rawMaxTokens) * 100).toFixed(1) : '0.0'}%)
+      {/* The legend is independent of the fixed-height grid so no category is clipped. */}
+      <Box flexDirection="row" paddingLeft={2} gap={2}>
+        <Box flexDirection="column" flexShrink={0} width={gridRows[0]?.length ? gridRows[0].length * 2 : GRID_COLS * 2}>
+          {renderGridRows.map(row => (
+            <Box key={row.key} flexDirection="row">
+              {row.cells.map(({ key, square }) => {
+                const isFree = square.categoryName === 'Free space';
+                return (
+                  <Text key={key} color={isFree ? undefined : square.color} dimColor={isFree}>
+                    {squareSymbol(square)}{' '}
                   </Text>
-                </Box>
-              ) : rightLabel?.type === 'free' ? (
-                <Box flexDirection="row">
-                  <Text dimColor>⛶</Text>
-                  <Text> Free space: </Text>
-                  <Text dimColor>
-                    {formatTokens(rightLabel.tokens)} (
-                    {rawMaxTokens > 0 ? ((rightLabel.tokens / rawMaxTokens) * 100).toFixed(1) : '0.0'}%)
-                  </Text>
-                </Box>
-              ) : null}
+                );
+              })}
             </Box>
-          );
-        })}
+          ))}
+        </Box>
+
+        <Box flexDirection="column">
+          <Text>{modelDisplayName(model)}</Text>
+          <Text dimColor>{model}</Text>
+          <Text dimColor>{`${formatTokens(totalTokens)}/${formatTokens(rawMaxTokens)} tokens (${percentage}%)`}</Text>
+          <Text> </Text>
+          <Text dimColor italic>
+            Estimated usage by category
+          </Text>
+          {usableCategories.map(category => (
+            <Box key={category.name} flexDirection="row">
+              <Text color={category.color}>⛁</Text>
+              <Text> {displayName(category.name)}: </Text>
+              <Text dimColor>
+                {formatTokens(category.tokens)} tokens (
+                {rawMaxTokens > 0 ? ((category.tokens / rawMaxTokens) * 100).toFixed(1) : '0.0'}%)
+              </Text>
+            </Box>
+          ))}
+          {freeCategory && freeCategory.tokens > 0 ? (
+            <Box flexDirection="row">
+              <Text dimColor>⛶</Text>
+              <Text> Free space: </Text>
+              <Text dimColor>
+                {formatTokens(freeCategory.tokens)} (
+                {rawMaxTokens > 0 ? ((freeCategory.tokens / rawMaxTokens) * 100).toFixed(1) : '0.0'}%)
+              </Text>
+            </Box>
+          ) : null}
+        </Box>
       </Box>
 
       {/* Detail sections */}

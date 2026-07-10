@@ -22,7 +22,7 @@ import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAge
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
 import { PeerStatusLine } from '../PeerStatusLine.js';
 
-import { Notifications } from './Notifications.js';
+import { CopiedToast, Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
 import { PromptInputFooterSuggestions, type SuggestionItem } from './PromptInputFooterSuggestions.js';
 import { PromptInputHelpMenu } from './PromptInputHelpMenu.js';
@@ -230,6 +230,9 @@ function PromptInputFooter({
           </Box>
         </Box>
         <Box flexShrink={1} gap={1} justifyContent="flex-end">
+          {/* In fullscreen the copy toast renders in the top notification band
+              (top-right of the prompt); render here only for the inline footer. */}
+          {!isFullscreen && <CopiedToast />}
           {'external' === 'ant' && isUndercover() && <Text dimColor>undercover</Text>}
           <BridgeStatusIndicator bridgeSelected={bridgeSelected} />
         </Box>

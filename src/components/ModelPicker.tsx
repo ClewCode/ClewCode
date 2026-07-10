@@ -179,7 +179,14 @@ export function ModelPicker(t0) {
       defaultOptionLabel,
       defaultOptionDescription,
     );
-  }, [currentFetchedModels, providerInfo?.entry, initial, activeProviderId, defaultOptionLabel, defaultOptionDescription]);
+  }, [
+    currentFetchedModels,
+    providerInfo?.entry,
+    initial,
+    activeProviderId,
+    defaultOptionLabel,
+    defaultOptionDescription,
+  ]);
   let t4;
   bb0: {
     if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {

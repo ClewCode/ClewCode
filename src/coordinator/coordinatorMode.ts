@@ -1,9 +1,3 @@
-import { ASYNC_AGENT_ALLOWED_TOOLS } from '../constants/tools.js';
-import { checkStatsigFeatureGate_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
-import {
-  type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-  logEvent,
-} from '../services/analytics/index.js';
 import { AGENT_TOOL_NAME } from 'src/tools/AgentTool/constants.js';
 import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import { FILE_EDIT_TOOL_NAME } from 'src/tools/FileEditTool/constants.js';
@@ -13,6 +7,12 @@ import { SYNTHETIC_OUTPUT_TOOL_NAME } from 'src/tools/SyntheticOutputTool/Synthe
 import { TASK_STOP_TOOL_NAME } from 'src/tools/TaskStopTool/prompt.js';
 import { TEAM_CREATE_TOOL_NAME } from 'src/tools/TeamCreateTool/constants.js';
 import { TEAM_DELETE_TOOL_NAME } from 'src/tools/TeamDeleteTool/constants.js';
+import { ASYNC_AGENT_ALLOWED_TOOLS } from '../constants/tools.js';
+import { checkStatsigFeatureGate_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
+import {
+  type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+  logEvent,
+} from '../services/analytics/index.js';
 import { isEnvTruthy } from '../utils/envUtils.js';
 
 // Checks the same gate as isScratchpadEnabled() in

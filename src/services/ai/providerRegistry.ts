@@ -110,9 +110,7 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderRegistryEntry> = Obje
   ]),
 ) as any;
 
-export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY).filter(
-  id => id !== 'clew-gateway',
-) as ProviderId[];
+export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY).filter(id => id !== 'clew-gateway') as ProviderId[];
 export const DEFAULT_PROVIDER: ProviderId = 'openai';
 
 /**
@@ -123,6 +121,7 @@ export const DEFAULT_PROVIDER: ProviderId = 'openai';
  */
 export const LEGACY_PROVIDER_ALIASES: Record<string, ProviderId> = {
   gemini: 'google',
+  grok: 'xai',
 };
 
 export function isRegisteredProviderId(id: string): id is ProviderId {
@@ -176,6 +175,7 @@ const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
   anthropic: 'explicit',
   openai: 'automatic',
   chatgpt: 'automatic',
+  'chatgpt-api': 'automatic',
   openrouter: 'automatic',
   deepseek: 'automatic',
   groq: 'automatic',

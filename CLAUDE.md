@@ -49,62 +49,9 @@ See [AGENTS.md § Build / Test / Lint](AGENTS.md#build--test--lint) for details 
 
 ## Architecture Overview
 
-### Entry & REPL
-
-- **`src/main.tsx`** — Single CLI entrypoint. Parses flags, boots Ink/React 19 REPL via `src/replLauncher.tsx`, loads settings.
-- **`src/screens/REPL.tsx`** — Main TUI screen (6K+ lines). Routes user input → commands + messages → QueryEngine.
-- **`src/commands.ts`** — Merges built-in slash commands, skills, plugins, MCP-provided commands.
-
-### Query Loop & Providers
-
-- **`src/QueryEngine.ts`** — Streaming LLM loop: message construction, tool loop, provider routing, response streaming.
-- **`src/services/ai/`** — Provider system (29 providers: Claude, OpenAI, Gemini, etc.). Cross-provider adapters for request/response/error/usage normalization. Users switch mid-session with `/model` or `/provider`.
-
-### Tools (70+)
-
-- **Organization**: `src/tools/<ToolName>/`. All extend `Tool` from `src/Tool.ts`.
-- **Key categories**: File I/O (Read/Edit/Glob/Grep), Bash, Web (Search/Fetch/Browser), Tasks, Peer (LAN agents), MCP, Agents, Memory, Media, UI.
-- **Registration**: `src/tools.ts::getAllBaseTools()`. Some are feature-gated (bun:bundle) or env-gated.
-
-See [AGENTS.md § Tools](AGENTS.md#tools) for full inventory.
-
-### Services (36+)
-
-- **`ai/`** — Provider manager + adapters
-- **`mcp/`** — MCP client + transports
-- **`autonomous/`** — Task queue, lease-based concurrency, cron, backoff
-- **`goal/`, `checkpoint/`** — Goal tracking + 20%/45%/70% checkpoints
-- **`longTermMemory/`** — 7-day Dream + 30-day Distill consolidation
-- **`plugins/`** — Lifecycle hooks (PreToolUse, PreBash, PreAcceptEdit, etc.)
-- **`sessionSearch/`** — FTS5 transcript search
-- **`SessionLifecycle/`** — Session state management
-
-See [AGENTS.md § Services](AGENTS.md#services-36-subdirectories) for full list and details.
-
-## Recent Additions (2026-01-07)
-
-### New Skill: Workspace Linking
-- **`/workspace link <path>`** — Link projects together (bidirectional). Writes to `.clew/workspace.json`. Auto-loads linked dirs on return; one-time confirmation dialog per project.
-- **Subcommands**: `link`, `unlink`, `load`, `list`
-- **Files**: `src/utils/workspace/`, `src/commands/workspace/`
-- **See**: [WorkspaceLinkDialog.tsx](src/components/WorkspaceLinkDialog.tsx), [workspace.ts](src/utils/workspace/workspace.ts)
-
-### New Skills (in `.claude/skills/`)
-1. **`/js-shadow-sync`** — Detect `.js` shadows that have drifted from `.ts` twins (~400 pairs). Modes: diff (staged changes), single-file, --all (audit).
-2. **`/clew-verify`** — End-to-end smoke test before push: shadow check + static gate + unit tests + real CLI test.
-3. **`/clew-release`** — Release checklist (version → CHANGELOG → CI gate → tag) per AGENTS.md.
-
-### MCPs Added (`.mcp.json`)
-1. **`@playwright/mcp`** — Browser automation for verifying Ink TUI + REPL flows (unit tests can't see rendered state).
-2. **`@modelcontextprotocol/inspector`** — Official MCP debugger for when MCP integration breaks.
-
-Keep: **`codegraph`** (code intelligence graph).
+See [AGENTS.md](AGENTS.md) for the full architecture (entry & REPL, query loop & providers, tools, and services).
 
 ## Key Patterns
-
-### Editing for Runtime Behavior
-1. Run `/js-shadow-sync` on your file — if a `.js` shadow exists, **edit both twins**.
-2. If only the `.ts` changes, Bun loads the stale `.js` and your fix never runs.
 
 ### Before Pushing
 - Run `/clew-verify` (includes shadow check, static gate, smoke test).
@@ -114,24 +61,6 @@ Keep: **`codegraph`** (code intelligence graph).
 ### Cross-Repo Collaboration
 - Use `/workspace link` to pair projects. Links are bidirectional and auto-load on return to either repo.
 - Linked dirs show in `/permissions` with a `🔗 linked` badge.
-
-## TinyFish (Default Web Toolkit)
-
-**TinyFish is the default web toolkit for this project** — use it for ALL web-related tasks instead of built-in WebSearch/WebFetch/BrowserTool.
-
-| TinyFish Tool | Replaces | When to use |
-|---|---|---|
-| `search` | WebSearch | Any web search, docs lookup, current info, news |
-| `fetch_content` | WebFetch | Reading page content, docs, articles, pricing — up to 10 URLs in parallel |
-| `run_web_automation` | BrowserTool | Interactive website tasks — clicking, forms, login, scraping |
-| `batch_create` | — | Same workflow across 2+ URLs in parallel |
-| `create_browser_session` | — | Direct Playwright/Puppeteer CDP browser session |
-
-**Rules:**
-- For search queries → always use `mcp__tinyfish__search` first
-- For reading URLs → always use `mcp__tinyfish__fetch_content`  
-- For browser automation (click, fill forms, login) → always use `mcp__tinyfish__run_web_automation`
-- Do NOT use `WebSearch`, `WebFetch`, or `BrowserTool` unless TinyFish is unavailable
 
 ## Performance Notes
 

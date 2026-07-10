@@ -1536,7 +1536,10 @@ export function REPL({
   useEffect(() => {
     Promise.all([loadProjectRules(), isProjectRulesDisabled()]).then(([rules, disabled]) => {
       if (!disabled && rules.length > 0) {
-        setMessages(prev => [...prev, createSystemMessage(`Project rules (${rules.length}): ${formatRulesNotification(rules)}`, 'info')]);
+        setMessages(prev => [
+          ...prev,
+          createSystemMessage(`Project rules (${rules.length}): ${formatRulesNotification(rules)}`, 'info'),
+        ]);
       }
     });
   }, [setMessages]);

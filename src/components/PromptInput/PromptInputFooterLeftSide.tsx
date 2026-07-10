@@ -433,6 +433,14 @@ function ModeIndicator({
   // Check if any agent tasks exist (for hint text cycling)
   const runningAgentCount = Object.values(tasks).filter(t => t.type === 'local_agent' && t.status === 'running').length;
   const hasRunningAgentTasks = runningAgentCount > 0;
+  // When every background task is a local agent, the compact "← N agent" badge
+  // already conveys the count — suppress the redundant "N local agents" pill.
+  // Mixed task sets keep the pill so the other types stay visible.
+  const allTasksAreAgents =
+    hasRunningAgentTasks &&
+    Object.values(tasks)
+      .filter(t => isBackgroundTask(t) && !('external' === 'ant' && isPanelAgentTask(t)))
+      .every(t => t.type === 'local_agent');
 
   // Get hint parts separately for potential second-line rendering
   const hintParts = showHint
@@ -504,7 +512,7 @@ function ModeIndicator({
   // reconciler throws on Box-in-Text. Computed here so the empty-checks
   // below still treat "pill present" as non-empty.
   const tasksPart =
-    hasBackgroundTasks && !hasTeammatePills && !shouldHideTasksFooter(tasks, showSpinnerTree) ? (
+    hasBackgroundTasks && !hasTeammatePills && !allTasksAreAgents && !shouldHideTasksFooter(tasks, showSpinnerTree) ? (
       <BackgroundTaskStatus
         tasksSelected={tasksSelected}
         isViewingTeammate={isViewingTeammate}
@@ -575,7 +583,10 @@ function ModeIndicator({
     );
   }
 
-  if ((tasksPart || hasCoordinatorTasks) && showHint && !hasTeams) {
+  // `allTasksAreAgents` suppresses the verbose pill in favor of the "← N agent"
+  // badge, but the ↓-to-manage affordance should survive — otherwise agent-only
+  // sessions lose the way into the tasks dialog.
+  if ((tasksPart || hasCoordinatorTasks || allTasksAreAgents) && showHint && !hasTeams) {
     parts.push(
       <Text dimColor key="manage-tasks">
         {tasksSelected ? (

@@ -998,9 +998,12 @@ export async function main() {
   // events (SSH disconnect, terminal close) don't leave the TTY in a broken
   // state. gracefulShutdown sync handles cleanup before exit.
   process.on('uncaughtException', error => {
-    logForDebugging(`Uncaught exception: ${errorMessage(error)}\n${error instanceof Error ? (error.stack ?? '') : ''}`, {
-      level: 'error',
-    });
+    logForDebugging(
+      `Uncaught exception: ${errorMessage(error)}\n${error instanceof Error ? (error.stack ?? '') : ''}`,
+      {
+        level: 'error',
+      },
+    );
     // eslint-disable-next-line no-console
     console.error('Uncaught exception:', error);
     gracefulShutdownSync(1);

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { APIError } from '@anthropic-ai/sdk';
-import { getAssistantMessageFromError, getProviderRetryAfterMs, classifyProviderError } from './errors.js';
+import { classifyProviderError, getAssistantMessageFromError, getProviderRetryAfterMs } from './errors.js';
 
 describe('getAssistantMessageFromError', () => {
   test('formats Gemini Code Assist rate limits without raw JSON', () => {

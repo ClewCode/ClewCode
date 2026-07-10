@@ -189,7 +189,14 @@ import {
   type NonNullableUsage,
 } from './logging.js';
 import { CACHE_TTL_1HOUR_MS, checkResponseForCacheBreak, recordPromptState } from './promptCacheBreakDetection.js';
-import { CannotRetryError, FallbackTriggeredError, getRetryDelay, is529Error, type RetryContext, withRetry } from './withRetry.js';
+import {
+  CannotRetryError,
+  FallbackTriggeredError,
+  getRetryDelay,
+  is529Error,
+  type RetryContext,
+  withRetry,
+} from './withRetry.js';
 
 // Define a type that represents valid JSON values
 type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
@@ -1383,9 +1390,11 @@ async function* queryModel(
 
   const useGlobalCacheFeature = shouldUseGlobalCacheScope();
   const willDefer = (t: Tool) => useToolSearch && (deferredToolNames.has(t.name) || shouldDeferLspTool(t));
-  // MCP tools are per-user → dynamic tool section → can't globally cache.
-  // Only gate when an MCP tool will actually render (not defer_loading).
-  const needsToolBasedCacheMarker = useGlobalCacheFeature && filteredTools.some(t => t.isMcp === true && !willDefer(t));
+  // Tool definitions render before system blocks. A globally scoped system
+  // block is therefore only a valid prefix when no narrower-scoped tool is
+  // rendered before it. Deferred tools are stripped by the API and do not
+  // participate in that prefix.
+  const skipGlobalSystemCacheForTools = useGlobalCacheFeature && filteredTools.some(t => !willDefer(t));
 
   // Ensure prompt_caching_scope beta header is present when global cache is enabled.
   if (useGlobalCacheFeature && !betas.includes(PROMPT_CACHING_SCOPE_BETA_HEADER)) {
@@ -1394,7 +1403,7 @@ async function* queryModel(
 
   // Determine global cache strategy for logging
   const globalCacheStrategy: GlobalCacheStrategy = useGlobalCacheFeature
-    ? needsToolBasedCacheMarker
+    ? skipGlobalSystemCacheForTools
       ? 'none'
       : 'system_prompt'
     : 'none';
@@ -1534,7 +1543,7 @@ async function* queryModel(
 
   const enablePromptCaching = options.enablePromptCaching ?? getPromptCachingEnabled(options.model);
   const system = buildSystemPromptBlocks(systemPrompt, enablePromptCaching, {
-    skipGlobalCacheForSystemPrompt: needsToolBasedCacheMarker,
+    skipGlobalCacheForSystemPrompt: skipGlobalSystemCacheForTools,
     querySource: options.querySource,
   });
   const useBetas = betas.length > 0;

@@ -6,6 +6,8 @@ import { getAutoMemPath, isAutoMemoryEnabled } from './paths.js';
 /* eslint-disable @typescript-eslint/no-require-imports */
 const teamMemPaths = feature('TEAMMEM') ? (require('./teamMemPaths.js') as typeof import('./teamMemPaths.js')) : null;
 
+import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
+import { isReplModeEnabled } from 'src/tools/REPLTool/constants.js';
 import { getKairosActive, getOriginalCwd } from '../bootstrap/state.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
 /* eslint-enable @typescript-eslint/no-require-imports */
@@ -13,8 +15,6 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from '../services/analytics/index.js';
-import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
-import { isReplModeEnabled } from 'src/tools/REPLTool/constants.js';
 import { logForDebugging } from '../utils/debug.js';
 import { hasEmbeddedSearchTools } from '../utils/embeddedTools.js';
 import { isEnvTruthy } from '../utils/envUtils.js';

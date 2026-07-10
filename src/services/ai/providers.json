@@ -154,6 +154,188 @@
           "imageIn": true,
           "videoIn": false
         }
+      },
+      {
+        "id": "gpt-5.6-sol",
+        "label": "GPT-5.6-Sol (ChatGPT)",
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "coding",
+          "latest",
+          "subscription"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 372000,
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gpt-5.6-terra",
+        "label": "GPT-5.6-Terra (ChatGPT)",
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "coding",
+          "latest",
+          "subscription"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 372000,
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gpt-5.6-luna",
+        "label": "GPT-5.6-Luna (ChatGPT)",
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "coding",
+          "latest",
+          "subscription"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 372000,
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gpt-5.4-mini",
+        "label": "GPT-5.4 Mini (ChatGPT)",
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "subscription"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 272000,
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gpt-5.2",
+        "label": "GPT-5.2 (ChatGPT)",
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "subscription"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 272000,
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      }
+    ]
+  },
+  "chatgpt-api": {
+    "providerId": "chatgpt-api",
+    "label": "ChatGPT (API)",
+    "envKey": "OPENAI_API_KEY",
+    "defaultBaseUrl": "https://api.openai.com/v1",
+    "modelsUrl": "https://api.openai.com/v1/models",
+    "defaultModel": "gpt-5.5",
+    "defaultModelVerified": true,
+    "note": "ChatGPT models via the OpenAI API. Requires OPENAI_API_KEY; billed separately from ChatGPT subscriptions.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": true,
+      "jsonSchema": true,
+      "reasoningEffort": true,
+      "contextLength": "varies",
+      "imageIn": true,
+      "videoIn": false
+    },
+    "models": [
+      {
+        "id": "gpt-5.5",
+        "label": "GPT-5.5 (API)",
+        "tags": ["tools", "vision", "reasoning", "latest", "recommended"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gpt-5.4",
+        "label": "GPT-5.4 (API)",
+        "tags": ["tools", "vision", "reasoning"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gpt-5.4-mini",
+        "label": "GPT-5.4 Mini (API)",
+        "tags": ["tools", "vision", "reasoning", "fast"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
       }
     ]
   },
@@ -1465,12 +1647,12 @@
     "envKey": "XAI_API_KEY",
     "defaultBaseUrl": "https://api.x.ai/v1",
     "modelsUrl": "https://api.x.ai/v1/models",
-    "defaultModel": "grok-4.3",
+    "defaultModel": "grok-4.5",
     "defaultModelVerified": true,
-    "note": "xAI Grok â€” grok-4.3 is the only current model (old models retired May 15, 2026). Source: docs.x.ai, May 2026.",
+    "note": "xAI Grok — Grok 4.5 is the latest flagship for coding, agentic tasks, and knowledge work. Grok Build 0.1 is optimized for coding agents. Source: docs.x.ai, July 2026.",
     "capabilities": {
       "chat": true,
-      "streaming": "partial",
+      "streaming": "full",
       "toolCalling": true,
       "vision": true,
       "jsonSchema": true,
@@ -1480,6 +1662,38 @@
       "videoIn": false
     },
     "models": [
+      {
+        "id": "grok-4.5",
+        "label": "Grok 4.5",
+        "tags": ["tools", "vision", "reasoning", "latest", "recommended"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": "varies",
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "grok-build-0.1",
+        "label": "Grok Build 0.1",
+        "tags": ["tools", "vision", "reasoning", "coding", "latest"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 256000,
+          "maxOutput": "varies",
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
       {
         "id": "grok-4.3",
         "label": "Grok 4.3",

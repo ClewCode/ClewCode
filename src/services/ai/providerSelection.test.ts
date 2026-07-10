@@ -17,11 +17,41 @@ describe('provider registry', () => {
     expect(getPromptCachingSupport('anthropic')).toBe('explicit');
   });
 
+  test('xAI is a first-class OpenAI-compatible registry entry', async () => {
+    const { PROVIDER_IDS, PROVIDER_REGISTRY, getPromptCachingSupport } = await import('./providerRegistry.js');
+
+    const entry = PROVIDER_REGISTRY.xai;
+    expect(entry).toBeDefined();
+    expect(entry.envKey).toBe('XAI_API_KEY');
+    expect(entry.defaultBaseUrl).toBe('https://api.x.ai/v1');
+    expect(entry.defaultModel).toBe('grok-4.5');
+    expect(entry.provider.getProviderId()).toBe('xai');
+    expect(entry.models.map(m => m.id)).toEqual(expect.arrayContaining(['grok-4.5', 'grok-build-0.1', 'grok-4.3']));
+    expect(PROVIDER_IDS).toContain('xai');
+    expect(getPromptCachingSupport('xai')).toBe('automatic');
+  });
+
+  test('ChatGPT API is a first-class API-key registry entry', async () => {
+    const { PROVIDER_IDS, PROVIDER_REGISTRY, getPromptCachingSupport } = await import('./providerRegistry.js');
+
+    const entry = PROVIDER_REGISTRY['chatgpt-api'];
+    expect(entry).toBeDefined();
+    expect(entry.label).toBe('ChatGPT (API)');
+    expect(entry.envKey).toBe('OPENAI_API_KEY');
+    expect(entry.defaultBaseUrl).toBe('https://api.openai.com/v1');
+    expect(entry.provider.getProviderId()).toBe('chatgpt-api');
+    expect(entry.models.map(m => m.id)).toEqual(expect.arrayContaining(['gpt-5.5', 'gpt-5.4', 'gpt-5.4-mini']));
+    expect(PROVIDER_IDS).toContain('chatgpt-api');
+    expect(getPromptCachingSupport('chatgpt-api')).toBe('automatic');
+  });
+
   test('normalizeProviderId applies legacy aliases and rejects unknown ids', async () => {
     const { normalizeProviderId } = await import('./providerRegistry.js');
 
     expect(normalizeProviderId('gemini')).toBe('google');
     expect(normalizeProviderId('GEMINI')).toBe('google');
+    expect(normalizeProviderId('grok')).toBe('xai');
+    expect(normalizeProviderId('GROK')).toBe('xai');
     expect(normalizeProviderId('google')).toBe('google');
     expect(normalizeProviderId('anthropic')).toBe('anthropic');
     expect(normalizeProviderId('not-a-provider')).toBeUndefined();

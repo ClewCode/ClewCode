@@ -23,25 +23,29 @@ export class AuthCodeListener {
   private expectedState: string | null = null; // State parameter for CSRF protection
   private pendingResponse: ServerResponse | null = null; // Response object for final redirect
   private callbackPath: string; // Configurable callback path
+  private bindHost: string; // Interface to bind the local server to
 
-  constructor(callbackPath: string = '/auth/callback') {
+  constructor(callbackPath: string = '/callback', bindHost: string = 'localhost') {
     this.localServer = createServer();
     this.callbackPath = callbackPath;
+    this.bindHost = bindHost;
   }
 
   /**
-   * Starts listening on an OS-assigned port and returns the port number.
-   * This avoids race conditions by keeping the server open until it's used.
-   * @param port Optional specific port to use. If not provided, uses OS-assigned port.
+   * Starts listening and returns the port number.
+   * Uses OS-assigned port (port 0) when no specific port is requested.
    */
   async start(port?: number): Promise<number> {
+    return this.listenOnPort(port && port > 0 ? port : 0);
+  }
+
+  private listenOnPort(port: number): Promise<number> {
     return new Promise((resolve, reject) => {
       this.localServer.once('error', err => {
         reject(new Error(`Failed to start OAuth callback server: ${err.message}`));
       });
 
-      // Listen on specified port or 0 to let the OS assign an available port
-      this.localServer.listen(port ?? 0, 'localhost', () => {
+      this.localServer.listen(port, this.bindHost, () => {
         const address = this.localServer.address() as AddressInfo;
         this.port = address.port;
         resolve(this.port);

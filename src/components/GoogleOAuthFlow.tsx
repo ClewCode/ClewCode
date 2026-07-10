@@ -4,6 +4,11 @@ import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { useTerminalNotification } from '../ink/useTerminalNotification.js';
 import { Box, Link, Text } from '../ink.js';
 import { useKeybinding } from '../keybindings/useKeybinding.js';
+import {
+  CODE_ASSIST_OAUTH_CLIENT,
+  CODE_ASSIST_SCOPES,
+  saveGeminiOAuthCreds,
+} from '../services/ai/providers/CodeAssistProvider.js';
 import { logEvent } from '../services/analytics/index.js';
 import { GoogleOAuthService, type GoogleOAuthTokens } from '../services/googleOAuth/index.js';
 import { sendNotification } from '../services/notifier.js';
@@ -16,6 +21,13 @@ import TextInput from './TextInput.js';
 type Props = {
   onDone(tokens: GoogleOAuthTokens | null): void;
   onCancel?(): void;
+  /**
+   * Code Assist mode (google-assist provider): authenticates with the Gemini
+   * CLI's public OAuth client + cloud-platform scopes and writes the tokens to
+   * ~/.gemini/oauth_creds.json (shared with the Gemini CLI) instead of the
+   * clew global config. No custom client configuration — the client is fixed.
+   */
+  codeAssist?: boolean;
 };
 
 type LoginMethod = 'browser' | 'headless' | 'reconfigure';
@@ -36,7 +48,15 @@ type OAuthStatus =
 
 const PASTE_HERE_MSG = 'Paste authorization code here > ';
 
-function SelectMethod({ onSelect, onCancel }: { onSelect: (method: LoginMethod) => void; onCancel?: () => void }) {
+function SelectMethod({
+  onSelect,
+  onCancel,
+  codeAssist,
+}: {
+  onSelect: (method: LoginMethod) => void;
+  onCancel?: () => void;
+  codeAssist?: boolean;
+}) {
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
@@ -54,13 +74,18 @@ function SelectMethod({ onSelect, onCancel }: { onSelect: (method: LoginMethod) 
             value: 'headless',
             description: 'Open login page manually, paste authorization code',
           },
-          {
-            label: 'Reconfigure Google OAuth Credentials',
-            value: 'reconfigure',
-            description: 'Change your custom Google Cloud Client ID and Secret',
-          },
+          // Code Assist uses the fixed Gemini CLI public client — nothing to reconfigure
+          ...(codeAssist
+            ? []
+            : [
+                {
+                  label: 'Reconfigure Google OAuth Credentials',
+                  value: 'reconfigure',
+                  description: 'Change your custom Google Cloud Client ID and Secret',
+                },
+              ]),
         ]}
-        visibleOptionCount={3}
+        visibleOptionCount={codeAssist ? 2 : 3}
         onChange={value => onSelect(value as LoginMethod)}
         onCancel={onCancel}
       />
@@ -187,7 +212,7 @@ function WaitingForLogin({
         <Text>Authorization URL:</Text>
       </Box>
       <Box marginTop={1} marginBottom={1}>
-        <Link url={url}>{url}</Link>
+        {url ? <Link url={url}>{url}</Link> : <Text dimColor>Generating authorization URL…</Text>}
       </Box>
       {method === 'headless' && onSubmitCode && (
         <Box marginTop={1}>
@@ -278,7 +303,7 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
-export function GoogleOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
+export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.ReactNode {
   const terminal = useTerminalNotification();
 
   const [clientId, setClientId] = useState(() => {
@@ -293,13 +318,18 @@ export function GoogleOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
 
   const handleSuccess = useCallback(
     (tokens: GoogleOAuthTokens) => {
-      saveGlobalConfig(current => ({
-        ...current,
-        googleOAuthTokens: tokens,
-      }));
+      if (codeAssist) {
+        // Shared with the Gemini CLI — CodeAssistProvider reads this file.
+        saveGeminiOAuthCreds(tokens);
+      } else {
+        saveGlobalConfig(current => ({
+          ...current,
+          googleOAuthTokens: tokens,
+        }));
 
-      if (tokens.accessToken) {
-        process.env.GOOGLE_OAUTH_TOKEN = tokens.accessToken;
+        if (tokens.accessToken) {
+          process.env.GOOGLE_OAUTH_TOKEN = tokens.accessToken;
+        }
       }
 
       logEvent('google_oauth_success', {});
@@ -313,7 +343,7 @@ export function GoogleOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
       );
       onDone(tokens);
     },
-    [onDone, terminal],
+    [onDone, terminal, codeAssist],
   );
 
   const handleManualCodeSubmit = useCallback(async (code: string) => {
@@ -353,8 +383,12 @@ export function GoogleOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
         return;
       }
 
-      const activeClientId = customClientId || clientId;
-      const activeClientSecret = customClientSecret || clientSecret;
+      // Code Assist always uses the fixed Gemini CLI public client + scopes —
+      // never prompt for custom credentials.
+      const activeClientId = codeAssist ? CODE_ASSIST_OAUTH_CLIENT.clientId : customClientId || clientId;
+      const activeClientSecret = codeAssist
+        ? CODE_ASSIST_OAUTH_CLIENT.clientSecret
+        : customClientSecret || clientSecret;
 
       if (!activeClientId) {
         setOAuthStatus({
@@ -365,13 +399,19 @@ export function GoogleOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
         return;
       }
 
-      const svc = new GoogleOAuthService({ clientId: activeClientId, clientSecret: activeClientSecret });
+      const svc = new GoogleOAuthService({
+        clientId: activeClientId,
+        clientSecret: activeClientSecret,
+        ...(codeAssist ? { scopes: CODE_ASSIST_SCOPES } : {}),
+      });
       oauthServiceRef.current = svc;
 
       try {
+        // Empty until the real PKCE auth URL is generated — never show a bare
+        // accounts.google.com link (it has no response_type and Google rejects it).
         setOAuthStatus({
           state: 'waiting_for_login',
-          url: 'https://accounts.google.com/',
+          url: '',
           method,
         });
 
@@ -395,7 +435,7 @@ export function GoogleOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
         }
       }
     },
-    [clientId, clientSecret, handleSuccess],
+    [clientId, clientSecret, handleSuccess, codeAssist],
   );
 
   useKeybinding(
@@ -428,7 +468,7 @@ export function GoogleOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
 
   // Render based on state using separate components
   if (oauthStatus.state === 'select_method') {
-    return <SelectMethod onSelect={startOAuthFlow} onCancel={onCancel} />;
+    return <SelectMethod onSelect={startOAuthFlow} onCancel={onCancel} codeAssist={codeAssist} />;
   }
 
   if (oauthStatus.state === 'configure_credentials') {

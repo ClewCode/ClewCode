@@ -1,12 +1,12 @@
+import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
+import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
+import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
 import { getSubscriptionType } from '../../utils/auth.js';
 import { hasEmbeddedSearchTools } from '../../utils/embeddedTools.js';
 import { isEnvDefinedFalsy, isEnvTruthy } from '../../utils/envUtils.js';
 import { isTeammate } from '../../utils/teammate.js';
 import { isInProcessTeammate } from '../../utils/teammateContext.js';
-import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
-import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
-import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
 import { SEND_MESSAGE_TOOL_NAME } from '../SendMessageTool/constants.js';
 import { AGENT_TOOL_NAME } from './constants.js';
 import { isForkSubagentEnabled } from './forkSubagent.js';

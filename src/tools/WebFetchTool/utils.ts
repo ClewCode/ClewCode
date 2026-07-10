@@ -428,7 +428,10 @@ export async function getURLMarkdownContent(
   // builds its DOM tree (which can be 3-5x the HTML size).
   (response as any)._data = null;
   (response as any).data = null;
-  const contentType = (typeof response.headers?.get === 'function' ? response.headers.get('content-type') : (response.headers as any)?.['content-type']) ?? '';
+  const contentType =
+    (typeof response.headers?.get === 'function'
+      ? response.headers.get('content-type')
+      : (response.headers as any)?.['content-type']) ?? '';
 
   // Binary content: save raw bytes to disk with a proper extension so Claude
   // can inspect the file later. We still fall through to the utf-8 decode +

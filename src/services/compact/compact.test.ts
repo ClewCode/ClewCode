@@ -4,18 +4,18 @@ import {
   AUTOCOMPACT_BUFFER_TOKENS,
   AUTOCOMPACT_HARD_BUFFER_TOKENS,
   COMPACT_REGRET_WINDOW_TURNS,
+  checkCompactRegret,
   collectToolSignatures,
   computeDroppedToolSignatures,
+  estimateCompressibility,
   getAutoCompactHardThreshold,
   getAutoCompactThreshold,
   getBackgroundAutoCompactThreshold,
   getEffectiveContextWindowSize,
   isAtNaturalBoundary,
-  estimateCompressibility,
-  checkCompactRegret,
+  mergeBackgroundAutoCompactDelta,
   resetCompactRegretState,
   tickCompactRegret,
-  mergeBackgroundAutoCompactDelta,
 } from './autoCompact.js';
 import type { CompactionResult } from './compact.js';
 import { DUPLICATE_TOOL_RESULT_CLEARED_MESSAGE, maybeDuplicateToolResultMicrocompact } from './microCompact.js';
@@ -283,10 +283,7 @@ describe('computeDroppedToolSignatures', () => {
   }
 
   test('kept tool calls are excluded from the dropped set', () => {
-    const all = [
-      toolUseMsg('a1', 'Read', { file_path: 'a.ts' }),
-      toolUseMsg('a2', 'Read', { file_path: 'b.ts' }),
-    ];
+    const all = [toolUseMsg('a1', 'Read', { file_path: 'a.ts' }), toolUseMsg('a2', 'Read', { file_path: 'b.ts' })];
     const kept = [all[1]!]; // b.ts survives
     const dropped = computeDroppedToolSignatures(all, kept);
 

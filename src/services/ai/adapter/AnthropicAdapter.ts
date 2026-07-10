@@ -25,6 +25,56 @@ import { getProviderModelInfo, getProviderRegistryEntry } from '../providerRegis
 const DEFAULT_STREAM_TIMEOUT_MS = 30_000;
 
 /**
+ * Detect provider 400 errors that mean "this model can't accept image input".
+ * Covers OpenRouter/OpenAI-style wording plus gateways (opengateway, opencode)
+ * that reply with "The model is not a VLM (Vision Language Model)".
+ *
+ * Gateways expose many text-only models under one provider whose capability
+ * list can't be statically enumerated, so we fall back to matching the wire
+ * error and then retry text-only rather than hard-failing the turn.
+ */
+function isVisionUnsupportedMessage(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes('unknown variant `image_url`') ||
+    m.includes('does not support image input') ||
+    m.includes('no endpoints found that support image') ||
+    m.includes('not a vlm') ||
+    m.includes('vision language model') ||
+    (m.includes('image_url') && m.includes('not supported')) ||
+    (m.includes('image') && m.includes('text-only'))
+  );
+}
+
+/**
+ * Strip image / video content parts from an already-built OpenAI-format
+ * message list, replacing them with a text note. Used to retry text-only
+ * after a provider rejects images for a model that isn't a VLM.
+ */
+function stripImagesFromOpenAIMessages(messages: unknown, model: string): unknown {
+  if (!Array.isArray(messages)) return messages;
+  return messages.map(message => {
+    if (!message || typeof message !== 'object') return message;
+    const record = message as Record<string, unknown>;
+    if (!Array.isArray(record.content)) return message;
+
+    const textParts: string[] = [];
+    let stripped = false;
+    for (const part of record.content) {
+      if (!part || typeof part !== 'object') continue;
+      const p = part as Record<string, unknown>;
+      if (p.type === 'text' && typeof p.text === 'string') textParts.push(p.text);
+      else if (p.type === 'image_url') stripped = true;
+    }
+    if (!stripped) return message;
+    return {
+      ...record,
+      content: [...textParts, `[Image not sent — ${model} does not support vision]`].filter(Boolean).join('\n'),
+    };
+  });
+}
+
+/**
  * Map Anthropic structured output config (output_config.format) to OpenAI
  * response_format. Only applies when the params carry an output_config with
  * a json_schema format — OpenAI uses response_format for the same purpose.
@@ -329,11 +379,27 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
 
   async createMessage(params: BetaMessageStreamParams, options?: { signal?: AbortSignal }): Promise<BetaMessage> {
     const openAIParams = this.convertToOpenAI(params);
-    const response = await this.client.chat.completions.create(
-      { ...openAIParams, stream: false },
-      { signal: options?.signal },
-    );
-    return this.convertToAnthropic(response) as BetaMessage;
+    try {
+      const response = await this.client.chat.completions.create(
+        { ...openAIParams, stream: false },
+        { signal: options?.signal },
+      );
+      return this.convertToAnthropic(response) as BetaMessage;
+    } catch (err) {
+      // Gateway rejected images for a non-VLM model — retry once text-only
+      // instead of failing the turn (opengateway/opencode expose many
+      // text-only models we can't statically flag as vision:false).
+      const normalized = this.normalizeError(err) as any;
+      if (normalized?._providerError?.reason === 'vision_unsupported') {
+        const textOnly = { ...openAIParams, messages: stripImagesFromOpenAIMessages(openAIParams.messages, params.model) };
+        const response = await this.client.chat.completions.create(
+          { ...textOnly, stream: false },
+          { signal: options?.signal },
+        );
+        return this.convertToAnthropic(response) as BetaMessage;
+      }
+      throw err;
+    }
   }
 
   async streamMessage(
@@ -343,8 +409,14 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     const openAIParams = this.convertToOpenAI(params);
     const hadReasoning = !!openAIParams.reasoning_effort;
 
-    const createStream = (withReasoning: boolean) => {
-      const apiParams = { ...openAIParams, stream: true, stream_options: { include_usage: true } };
+    const createStream = (withReasoning: boolean, textOnly = false) => {
+      const messages = textOnly ? stripImagesFromOpenAIMessages(openAIParams.messages, params.model) : openAIParams.messages;
+      const apiParams: Record<string, unknown> = {
+        ...openAIParams,
+        messages,
+        stream: true,
+        stream_options: { include_usage: true },
+      };
       if (!withReasoning) delete apiParams.reasoning_effort;
       return this.client.chat.completions.create(apiParams, { signal: options?.signal });
     };
@@ -356,10 +428,17 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       try {
         yield* withStreamWatchdog(self.wrapStream(firstStream), self.streamTimeoutMs, self.label);
       } catch (err: any) {
-        // ponytail: some models (e.g. minimax-m3 via OpenAI-compatible proxy) return
-        // empty content when reasoning_effort is sent. Retry once without it before
-        // surfacing the error to the user.
-        if (hadReasoning && err?._providerError?.category === 'empty_response') {
+        // Gateway rejected images for a non-VLM model — retry once text-only
+        // instead of failing the turn (opengateway/opencode expose many
+        // text-only models we can't statically flag as vision:false).
+        const normalized = self.normalizeError(err) as any;
+        if (normalized?._providerError?.reason === 'vision_unsupported') {
+          const retryStream = await createStream(hadReasoning, true);
+          yield* withStreamWatchdog(self.wrapStream(retryStream), self.streamTimeoutMs, self.label);
+        } else if (hadReasoning && err?._providerError?.category === 'empty_response') {
+          // ponytail: some models (e.g. minimax-m3 via OpenAI-compatible proxy) return
+          // empty content when reasoning_effort is sent. Retry once without it before
+          // surfacing the error to the user.
           const retryStream = await createStream(false);
           yield* withStreamWatchdog(self.wrapStream(retryStream), self.streamTimeoutMs, self.label);
         } else {
@@ -403,17 +482,11 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       }
 
       // Image not supported — catch provider errors about image_url or vision
-      if (
-        status === 400 &&
-        (message.includes('unknown variant `image_url`') ||
-          message.includes('does not support image input') ||
-          message.includes('No endpoints found that support image') ||
-          (message.includes('image_url') && message.includes('not supported')))
-      ) {
+      if (status === 400 && isVisionUnsupportedMessage(message)) {
         const err = new Error(
           `[${this.label}] Image input is not supported by this model. Remove images or switch to a vision-capable model.`,
         ) as any;
-        err._providerError = { category: 'invalid_request', status };
+        err._providerError = { category: 'invalid_request', status, reason: 'vision_unsupported' };
         return err;
       }
 

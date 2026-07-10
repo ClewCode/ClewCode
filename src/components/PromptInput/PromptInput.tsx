@@ -139,7 +139,7 @@ import { shouldHideTasksFooter } from '../tasks/taskStatusUtils.js';
 import { TeamsDialog } from '../teams/TeamsDialog.js';
 import VimTextInput from '../VimTextInput.js';
 import { getModeFromInput, getValueFromInput } from './inputModes.js';
-import { FOOTER_TEMPORARY_STATUS_TIMEOUT, Notifications } from './Notifications.js';
+import { CopiedToast, FOOTER_TEMPORARY_STATUS_TIMEOUT, Notifications } from './Notifications.js';
 import PromptInputFooter from './PromptInputFooter.js';
 import type { SuggestionItem } from './PromptInputFooterSuggestions.js';
 import { PromptInputModeIndicator } from './PromptInputModeIndicator.js';
@@ -2871,22 +2871,29 @@ function PromptInput({
           width="100%"
           paddingLeft={2}
           paddingRight={1}
-          flexDirection="column"
-          justifyContent="flex-end"
+          flexDirection="row"
+          justifyContent="space-between"
           overflow="hidden"
         >
-          <Notifications
-            apiKeyStatus={apiKeyStatus}
-            autoUpdaterResult={autoUpdaterResult}
-            isAutoUpdating={isAutoUpdating}
-            verbose={verbose}
-            messages={messages}
-            onAutoUpdaterResult={onAutoUpdaterResult}
-            onChangeIsUpdating={setIsAutoUpdating}
-            ideSelection={ideSelection}
-            mcpClients={mcpClients}
-            isInputWrapped={isInputWrapped}
-          />
+          <Box flexDirection="column" flexGrow={1} flexShrink={1} justifyContent="flex-end" overflow="hidden">
+            <Notifications
+              apiKeyStatus={apiKeyStatus}
+              autoUpdaterResult={autoUpdaterResult}
+              isAutoUpdating={isAutoUpdating}
+              verbose={verbose}
+              messages={messages}
+              onAutoUpdaterResult={onAutoUpdaterResult}
+              onChangeIsUpdating={setIsAutoUpdating}
+              ideSelection={ideSelection}
+              mcpClients={mcpClients}
+              isInputWrapped={isInputWrapped}
+            />
+          </Box>
+          {/* Copy-to-clipboard toast, top-right of the prompt (fullscreen). The
+              footer CopiedToast is suppressed in fullscreen to avoid duplication. */}
+          <Box flexShrink={0} justifyContent="flex-end">
+            <CopiedToast />
+          </Box>
         </Box>
       ) : null}
     </Box>

@@ -233,11 +233,7 @@ function computeExpandingPanelColors(
     const wave = Math.sin(dist / 3.4 - frame * 0.045);
     const ring = Math.exp(-((dist - radius * 0.62) ** 2) / 36);
 
-    const lightness = clampNumber(
-      12 + inside * 7 + core * 12 + wave * 3 + ring * (8 + (1 - eased) * 4),
-      10,
-      34,
-    );
+    const lightness = clampNumber(12 + inside * 7 + core * 12 + wave * 3 + ring * (8 + (1 - eased) * 4), 10, 34);
 
     colors.push(hslToHex(baseHue, baseSat, lightness));
   }
@@ -588,14 +584,7 @@ function EffortSlider({
   );
   const panelColorsForRow = (row: number) =>
     isUltra
-      ? computeExpandingPanelColors(
-          totalWidth,
-          row,
-          panelAnimTime,
-          revealProgress,
-          ultraCenterX,
-          ultraCenterY,
-        )
+      ? computeExpandingPanelColors(totalWidth, row, panelAnimTime, revealProgress, ultraCenterX, ultraCenterY)
       : emptyPanelColors;
 
   // Grid lines

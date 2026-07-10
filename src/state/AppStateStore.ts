@@ -1,4 +1,7 @@
 import type { Notification } from 'src/context/notifications.js';
+import type { AgentColorName } from 'src/tools/AgentTool/agentColorManager.js';
+import type { AgentDefinitionsResult } from 'src/tools/AgentTool/loadAgentsDir.js';
+import type { AllowedPrompt } from 'src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.js';
 import type { TodoList } from 'src/utils/todo/types.js';
 import type { BridgePermissionCallbacks } from '../bridge/bridgePermissionCallbacks.js';
 import type { Command } from '../commands.js';
@@ -8,9 +11,6 @@ import type { MCPServerConnection, ServerResource } from '../services/mcp/types.
 import { shouldEnablePromptSuggestion } from '../services/PromptSuggestion/promptSuggestion.js';
 import { getEmptyToolPermissionContext, type Tool, type ToolPermissionContext, type ToolUseConfirm } from '../Tool.js';
 import type { TaskState } from '../tasks/types.js';
-import type { AgentColorName } from 'src/tools/AgentTool/agentColorManager.js';
-import type { AgentDefinitionsResult } from 'src/tools/AgentTool/loadAgentsDir.js';
-import type { AllowedPrompt } from 'src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.js';
 import type { AgentId } from '../types/ids.js';
 import type { Message, UserMessage } from '../types/message.js';
 import type { LoadedPlugin, PluginError } from '../types/plugin.js';

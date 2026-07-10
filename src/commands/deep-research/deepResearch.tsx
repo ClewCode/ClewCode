@@ -1,9 +1,7 @@
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
+import { ResearchProgressPanel, type ResearchProgressState } from '../../components/ResearchProgress.js';
 import { Box } from '../../ink.js';
-import type { LocalJSXCommandOnDone } from '../../types/command.js';
-import { getFsImplementation } from '../../utils/fsOperations.js';
-import { getCwd } from '../../utils/cwd.js';
 import { buildCitations } from '../../research/citations.js';
 import { extractClaimsFromText } from '../../research/claims.js';
 import { collectLocalMemory } from '../../research/collectors/localMemory.js';
@@ -30,10 +28,9 @@ import {
   detectConflicts,
   generateTruthCheckSummary,
 } from '../../tools/ResearchTool/truthChecker.js';
-import {
-  type ResearchProgressState,
-  ResearchProgressPanel,
-} from '../../components/ResearchProgress.js';
+import type { LocalJSXCommandOnDone } from '../../types/command.js';
+import { getCwd } from '../../utils/cwd.js';
+import { getFsImplementation } from '../../utils/fsOperations.js';
 
 interface DeepResearchRunnerViewProps {
   query: string;
@@ -150,7 +147,7 @@ function DeepResearchRunnerView({ query, mode, onDone }: DeepResearchRunnerViewP
                             resultCount: c.resultCount + res.length,
                             durationMs: c.durationMs + duration,
                           }
-                        : c
+                        : c,
                     ),
                   }));
                 }
@@ -162,13 +159,13 @@ function DeepResearchRunnerView({ query, mode, onDone }: DeepResearchRunnerViewP
                     collectors: prev.collectors.map(c =>
                       c.name === name
                         ? { ...c, status: 'failed', durationMs: c.durationMs + (Date.now() - colStart) }
-                        : c
+                        : c,
                     ),
                   }));
                 }
                 return [];
               }
-            })
+            }),
           );
 
           if (!active) return;
@@ -194,7 +191,7 @@ function DeepResearchRunnerView({ query, mode, onDone }: DeepResearchRunnerViewP
                 content: '',
                 type: s.type,
               })),
-              { preferOfficial: true, excludeSpam: true, minScore: 0 }
+              { preferOfficial: true, excludeSpam: true, minScore: 0 },
             );
             const scoreMap = new Map(ranked.map(r => [r.url || r.title, r.score]));
             newSources.sort((a, b) => {
@@ -289,7 +286,10 @@ function DeepResearchRunnerView({ query, mode, onDone }: DeepResearchRunnerViewP
               `> ${truthCheck.summary}`,
               '',
               `**Potential Conflicts Detected:** ${conflicts.length}`,
-              ...conflicts.map((c, i) => `${i + 1}. **Topic:** ${c.topic}\n   - **Opinion A:** ${c.claimA}\n   - **Opinion B:** ${c.claimB}`),
+              ...conflicts.map(
+                (c, i) =>
+                  `${i + 1}. **Topic:** ${c.topic}\n   - **Opinion A:** ${c.claimA}\n   - **Opinion B:** ${c.claimB}`,
+              ),
               '',
             ].join('\n');
             finalReport = reportMarkdown.replace('## Bibliography', `${truthCheckSection}\n\n## Bibliography`);
@@ -332,18 +332,14 @@ function DeepResearchRunnerView({ query, mode, onDone }: DeepResearchRunnerViewP
   );
 }
 
-export async function call(
-  onDone: LocalJSXCommandOnDone,
-  _context: unknown,
-  args?: string
-): Promise<React.ReactNode> {
+export async function call(onDone: LocalJSXCommandOnDone, _context: unknown, args?: string): Promise<React.ReactNode> {
   const trimmed = args?.trim() || '';
 
   if (!trimmed) {
     onDone(
       'Usage:\n' +
         '  /research deep <query>                    Run full parallel deep research\n' +
-        '  /research deep <query> --mode <mode>      Specify mode (quick|deep|compare|security|...)'
+        '  /research deep <query> --mode <mode>      Specify mode (quick|deep|compare|security|...)',
     );
     return null;
   }

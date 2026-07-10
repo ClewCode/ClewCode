@@ -2,6 +2,7 @@ import type { Base64ImageSource } from '@anthropic-ai/sdk/resources/index.mjs';
 import { readdir, readFile as readFileAsync } from 'fs/promises';
 import * as path from 'path';
 import { posix, win32 } from 'path';
+import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import { z } from 'zod/v4';
 import {
   PDF_AT_MENTION_INLINE_THRESHOLD,
@@ -61,7 +62,6 @@ import { matchWildcardPattern } from '../../utils/permissions/shellRuleMatching.
 import { readFileInRange } from '../../utils/readFileInRange.js';
 import { semanticNumber } from '../../utils/semanticNumber.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
-import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import { getDefaultFileReadingLimits } from './limits.js';
 import {
   DESCRIPTION,

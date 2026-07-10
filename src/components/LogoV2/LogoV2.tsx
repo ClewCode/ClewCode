@@ -60,13 +60,13 @@ import { useMainLoopModel } from '../../hooks/useMainLoopModel.js';
 import { useAppState } from '../../state/AppState.js';
 import { getEffortSuffix } from '../../utils/effort.js';
 import { renderModelSetting } from '../../utils/model/model.js';
+import { shouldShowNotificationInLogo } from '../notifications/notificationPlacement.js';
 import { incrementGuestPassesSeenCount, useShowGuestPassesUpsell } from './GuestPassesUpsell.js';
 import {
   createOverageCreditFeed,
   incrementOverageCreditUpsellSeenCount,
   useShowOverageCreditUpsell,
 } from './OverageCreditUpsell.js';
-import { shouldShowNotificationInLogo } from '../notifications/notificationPlacement.js';
 
 const LEFT_PANEL_MAX_WIDTH = 50;
 

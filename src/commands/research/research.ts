@@ -36,10 +36,14 @@ import { readSourceDocument } from '../../research/sourceReader.js';
 import { synthesizeClaims } from '../../research/synthesizer.js';
 import type { ResearchMode } from '../../research/types.js';
 import { getResearchWorkspaceStatus, initWorkspace } from '../../research/workspace.js';
+import { rankSources } from '../../tools/ResearchTool/smartSourceRanking.js';
+import {
+  assessSourceCredibility,
+  detectConflicts,
+  generateTruthCheckSummary,
+} from '../../tools/ResearchTool/truthChecker.js';
 import type { LocalJSXCommandCall } from '../../types/command.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
-import { rankSources } from '../../tools/ResearchTool/smartSourceRanking.js';
-import { assessSourceCredibility, detectConflicts, generateTruthCheckSummary } from '../../tools/ResearchTool/truthChecker.js';
 
 export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
   const cwd = process.cwd();
@@ -126,7 +130,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           `**Done criteria:** ${plan.doneCriteria.join(', ')}`,
           `**Risks:** ${plan.risks.join(', ')}`,
         ].join('\n'),
-        { display: 'system' }
+        { display: 'system' },
       );
       return null;
     }
@@ -242,7 +246,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           lines.push('');
           lines.push(`${C.bold}${C.yellow}╭── Truth Check${C.reset}`);
           lines.push(`${C.bold}${C.yellow}│${C.reset}  ${truthCheck.summary}`);
-          lines.push(`${C.bold}${C.yellow}│${C.reset}  ${C.yellow}${conflicts.length} potential conflict(s) detected${C.reset}`);
+          lines.push(
+            `${C.bold}${C.yellow}│${C.reset}  ${C.yellow}${conflicts.length} potential conflict(s) detected${C.reset}`,
+          );
           lines.push(`${C.bold}${C.yellow}╰${'─'.repeat(40)}${C.reset}`);
         }
       }
@@ -281,7 +287,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           `Sources for ${latest.run.id}:`,
           ...sources.map((s, i) => `${i + 1}. **[${s.id}]** ${s.title} (${s.type}) — ${s.trust} trust`),
         ].join('\n'),
-        { display: 'system' }
+        { display: 'system' },
       );
       return null;
     }
@@ -289,7 +295,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
     case 'open': {
       const sourceId = query;
       if (!sourceId) {
-        onDone('Error: Please specify a source-id. Example: `/research open source:wiki:Research`.', { display: 'system' });
+        onDone('Error: Please specify a source-id. Example: `/research open source:wiki:Research`.', {
+          display: 'system',
+        });
         return null;
       }
 
@@ -330,7 +338,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           `Claims for ${latest.run.id}:`,
           ...claimsList.map((c, i) => `${i + 1}. **[${c.id}]** ${c.claim} (${c.type}, ${c.confidence})`),
         ].join('\n'),
-        { display: 'system' }
+        { display: 'system' },
       );
       return null;
     }
@@ -413,7 +421,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
           `  Wiki: \`${status.wikiResearchDir}\``,
           `  Pending Memory: \`${status.pendingMemoryDir}\``,
         ].join('\n'),
-        { display: 'system' }
+        { display: 'system' },
       );
       return null;
     }

@@ -123,9 +123,12 @@ export async function exchangeCodeForTokens(
     requestBody.expires_in = expiresIn;
   }
 
-  const response = await ofetch(getOauthConfig().TOKEN_URL, requestBody, {
+  const response = await ofetch.raw<OAuthTokenExchangeResponse>(getOauthConfig().TOKEN_URL, {
+    method: 'POST',
+    body: requestBody,
     headers: { 'Content-Type': 'application/json' },
     timeout: 15000,
+    ignoreResponseError: true,
   });
 
   if (response.status !== 200) {
@@ -136,7 +139,7 @@ export async function exchangeCodeForTokens(
     );
   }
   logEvent('tengu_oauth_token_exchange_success', {});
-  return response.data;
+  return response._data as OAuthTokenExchangeResponse;
 }
 
 export async function refreshOAuthToken(
@@ -156,16 +159,19 @@ export async function refreshOAuthToken(
   };
 
   try {
-    const response = await ofetch(getOauthConfig().TOKEN_URL, requestBody, {
+    const response = await ofetch.raw<OAuthTokenExchangeResponse>(getOauthConfig().TOKEN_URL, {
+      method: 'POST',
+      body: requestBody,
       headers: { 'Content-Type': 'application/json' },
       timeout: 15000,
+      ignoreResponseError: true,
     });
 
     if (response.status !== 200) {
       throw new Error(`Token refresh failed: ${response.statusText}`);
     }
 
-    const data = response.data as OAuthTokenExchangeResponse;
+    const data = response._data as OAuthTokenExchangeResponse;
     const { access_token: accessToken, refresh_token: newRefreshToken = refreshToken, expires_in: expiresIn } = data;
 
     const expiresAt = Date.now() + expiresIn * 1000;

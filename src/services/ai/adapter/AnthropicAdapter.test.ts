@@ -96,4 +96,51 @@ describe('AnthropicAdapter media fallback', () => {
     expect(capturedParams.messages[0].content).toContain('Image not sent');
     expect(JSON.stringify(capturedParams.messages)).not.toContain('image_url');
   });
+
+  test('retries text-only when a gateway rejects images with "not a VLM"', async () => {
+    const calls: any[] = [];
+    const client = {
+      chat: {
+        completions: {
+          create: async (params: any) => {
+            calls.push(params);
+            // First attempt (with image) → gateway 400 "not a VLM"
+            if (calls.length === 1) {
+              const err: any = new Error('The model is not a VLM (Vision Language Model). Please use text-only prompts.');
+              err.status = 400;
+              throw err;
+            }
+            return {
+              id: 'msg-test',
+              model: params.model,
+              choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+              usage: { prompt_tokens: 1, completion_tokens: 1 },
+            };
+          },
+        },
+      },
+    };
+
+    const adapter = new AnthropicAdapter(client, 'opengateway');
+    const res = await adapter.beta.messages.create({
+      model: 'tencent/hy3',
+      max_tokens: 16,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'what is in this image' },
+            { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'abc' } },
+          ],
+        },
+      ],
+    } as any);
+
+    // Two attempts: first with image (rejected), retry text-only (succeeds)
+    expect(calls).toHaveLength(2);
+    expect(JSON.stringify(calls[0].messages)).toContain('image_url');
+    expect(JSON.stringify(calls[1].messages)).not.toContain('image_url');
+    expect(calls[1].messages[0].content).toContain('Image not sent');
+    expect((res as any).content?.[0]?.text ?? '').toBe('ok');
+  });
 });

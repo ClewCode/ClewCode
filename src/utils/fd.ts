@@ -12,8 +12,8 @@
 
 import { execFile } from 'child_process';
 import { statSync } from 'fs';
-import { findExecutable } from './findExecutable.js';
 import { logForDebugging } from './debug.js';
+import { findExecutable } from './findExecutable.js';
 
 const MAX_BUFFER_SIZE = 20_000_000; // 20MB
 
@@ -73,9 +73,11 @@ export function fdListFiles(
     }
 
     const args: string[] = [
-      '--type', 'f',          // Only files
-      '--glob', pattern,      // Glob pattern
-      '--absolute-path',      // Always output absolute paths
+      '--type',
+      'f', // Only files
+      '--glob',
+      pattern, // Glob pattern
+      '--absolute-path', // Always output absolute paths
     ];
 
     if (hidden) args.push('--hidden');

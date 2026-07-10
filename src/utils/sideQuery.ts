@@ -6,6 +6,7 @@ import type { QuerySource } from '../constants/querySource.js';
 import { getAttributionHeader, getCLISyspromptPrefix } from '../constants/system.js';
 import { addToTotalSessionCost } from '../cost-tracker.js';
 import { ProviderManager } from '../services/ai/ProviderManager.js';
+import { PROVIDER_REGISTRY } from '../services/ai/providerRegistry.js';
 import { fromGenericUsage } from '../services/ai/usageTypes.js';
 import { logEvent } from '../services/analytics/index.js';
 import type { AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS } from '../services/analytics/metadata.js';
@@ -17,7 +18,6 @@ import { computeFingerprint } from './fingerprint.js';
 import { logError } from './log.js';
 import { normalizeModelStringForAPI } from './model/model.js';
 import { getActiveProviderId, isAnthropicProvider } from './model/providers.js';
-import { PROVIDER_REGISTRY } from '../services/ai/providerRegistry.js';
 import { calculateUSDCostFromProviderUsage } from './modelCost.js';
 
 type MessageParam = Anthropic.MessageParam;

@@ -17,6 +17,60 @@ export type JsonSchema7Type = Record<string, unknown>;
 const cache = new WeakMap<ZodTypeAny, JsonSchema7Type>();
 
 /**
+ * Anthropic requires client-tool schemas to have an object root and rejects
+ * oneOf/anyOf/allOf at that root. Flatten object branches while leaving nested
+ * property schemas untouched; runtime tool validation still enforces the union.
+ */
+export function ensureObjectRootSchema(schema: JsonSchema7Type): JsonSchema7Type {
+  const combinator = (['oneOf', 'anyOf', 'allOf'] as const).find(key => Array.isArray(schema[key]));
+  if (!combinator) {
+    return schema.type === 'object' ? schema : { ...schema, type: 'object' };
+  }
+
+  const { oneOf: _oneOf, anyOf: _anyOf, allOf: _allOf, ...base } = schema;
+  const branches = (schema[combinator] as unknown[])
+    .filter((branch): branch is JsonSchema7Type => branch !== null && typeof branch === 'object')
+    .map(ensureObjectRootSchema);
+  const properties = branches.reduce<Record<string, unknown>>(
+    (merged, branch) => {
+      for (const [name, propertySchema] of Object.entries(
+        (branch.properties as Record<string, unknown> | undefined) ?? {},
+      )) {
+        const existing = merged[name];
+        merged[name] =
+          existing === undefined || JSON.stringify(existing) === JSON.stringify(propertySchema)
+            ? propertySchema
+            : { anyOf: [existing, propertySchema] };
+      }
+      return merged;
+    },
+    { ...((base.properties as Record<string, unknown> | undefined) ?? {}) },
+  );
+  const requiredSets = branches.map(
+    branch => new Set(Array.isArray(branch.required) ? branch.required.filter(item => typeof item === 'string') : []),
+  );
+  const branchRequired =
+    combinator === 'allOf'
+      ? new Set(requiredSets.flatMap(set => [...set]))
+      : new Set(
+          requiredSets.length === 0
+            ? []
+            : [...requiredSets[0]].filter(name => requiredSets.every(set => set.has(name))),
+        );
+  const required = new Set([
+    ...(Array.isArray(base.required) ? base.required.filter(item => typeof item === 'string') : []),
+    ...branchRequired,
+  ]);
+
+  return {
+    ...base,
+    type: 'object',
+    ...(Object.keys(properties).length > 0 ? { properties } : {}),
+    ...(required.size > 0 ? { required: [...required] } : {}),
+  };
+}
+
+/**
  * Strip regex lookahead/lookbehind assertions from JSON Schema pattern strings.
  * JSON Schema uses ECMA-262 regex which does NOT support (?=...), (?!...),
  * (?<=...), or (?<!...). Some providers (DeepSeek, OpenRouter) reject schemas

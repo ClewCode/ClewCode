@@ -4,6 +4,7 @@ export type ProviderId =
   | 'anthropic'
   | 'openai'
   | 'chatgpt'
+  | 'chatgpt-api'
   | 'google'
   | 'openrouter'
   | 'opencode'

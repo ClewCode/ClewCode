@@ -47,7 +47,7 @@ import { jsonStringify } from './slowOperations.js';
 import type { SystemPrompt } from './systemPromptType.js';
 import { getToolSchemaCache } from './toolSchemaCache.js';
 import { windowsPathToPosixPath } from './windowsPaths.js';
-import { zodToJsonSchema } from './zodToJsonSchema.js';
+import { ensureObjectRootSchema, zodToJsonSchema } from './zodToJsonSchema.js';
 
 // Extended BetaTool type with strict mode and defer_loading support
 type BetaToolWithExtras = BetaTool & {
@@ -152,8 +152,8 @@ export async function toolToAPISchema(
   if (!base) {
     const strictToolsEnabled = checkStatsigFeatureGate_CACHED_MAY_BE_STALE('tengu_tool_pear');
     // Use tool's JSON schema directly if provided, otherwise convert Zod schema
-    let input_schema = (
-      'inputJSONSchema' in tool && tool.inputJSONSchema ? tool.inputJSONSchema : zodToJsonSchema(tool.inputSchema)
+    let input_schema = ensureObjectRootSchema(
+      'inputJSONSchema' in tool && tool.inputJSONSchema ? tool.inputJSONSchema : zodToJsonSchema(tool.inputSchema),
     ) as Anthropic.Tool.InputSchema;
 
     // Filter out swarm-related fields when swarms are not enabled

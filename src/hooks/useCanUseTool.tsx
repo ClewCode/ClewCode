@@ -7,14 +7,14 @@ import {
   logEvent,
 } from 'src/services/analytics/index.js';
 import { sanitizeToolNameForAnalytics } from 'src/services/analytics/metadata.js';
-import type { ToolUseConfirm } from '../components/permissions/PermissionRequest.js';
-import { Text } from '../ink.js';
-import type { ToolPermissionContext, Tool as ToolType, ToolUseContext } from '../Tool.js';
 import {
   consumeSpeculativeClassifierCheck,
   peekSpeculativeClassifierCheck,
 } from 'src/tools/BashTool/bashPermissions.js';
 import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
+import type { ToolUseConfirm } from '../components/permissions/PermissionRequest.js';
+import { Text } from '../ink.js';
+import type { ToolPermissionContext, Tool as ToolType, ToolUseContext } from '../Tool.js';
 import type { AssistantMessage } from '../types/message.js';
 import { recordAutoModeDenial } from '../utils/autoModeDenials.js';
 import {

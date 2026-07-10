@@ -91,8 +91,8 @@ function PostGracePeriodContentBody(): React.ReactNode {
         <Box flexDirection="column">
           <Text bold>Help improve Clew Code</Text>
           <Text>
-            Allow the use of your chats and coding sessions to train and improve Clew Code and Anthropic AI models. You can change
-            this anytime in Privacy Settings
+            Allow the use of your chats and coding sessions to train and improve Clew Code and Anthropic AI models. You
+            can change this anytime in Privacy Settings
           </Text>
           <Link url={'https://clew-code.org/settings/privacy'}></Link>
         </Box>
@@ -100,8 +100,8 @@ function PostGracePeriodContentBody(): React.ReactNode {
         <Box flexDirection="column">
           <Text bold>How this affects data retention</Text>
           <Text>
-            Turning ON the improve Clew Code setting extends data retention from 30 days to 5 years. Turning it OFF keeps
-            the default 30-day data retention. Delete data anytime.
+            Turning ON the improve Clew Code setting extends data retention from 30 days to 5 years. Turning it OFF
+            keeps the default 30-day data retention. Delete data anytime.
           </Text>
         </Box>
       </Box>

@@ -50,8 +50,20 @@ export async function openBrowser(url: string): Promise<boolean> {
         if (code === 0) return true;
       }
 
-      // Try start command (most reliable on Windows)
-      const { code: startCode } = await execFileNoThrow('cmd', ['/c', 'start', '', url]);
+      // Try PowerShell Start-Process (most robust for URLs with ampersands and special characters)
+      const psEscapedUrl = url.replace(/'/g, "''");
+      const { code: psCode } = await execFileNoThrow('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        `Start-Process '${psEscapedUrl}'`,
+      ]);
+      if (psCode === 0) return true;
+
+      // Fallback to cmd.exe start command
+      // Escape special characters for cmd.exe command parser (like &) so they are not treated as separators
+      const cmdEscapedUrl = url.replace(/[\^&<>|()]/g, m => `^${m}`);
+      const { code: startCode } = await execFileNoThrow('cmd', ['/c', 'start', '', cmdEscapedUrl]);
       if (startCode === 0) return true;
 
       // Fallback to rundll32

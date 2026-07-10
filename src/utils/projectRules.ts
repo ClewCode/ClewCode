@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getOriginalCwd } from '../bootstrap/state.js';
 
@@ -70,7 +70,11 @@ export async function setProjectRulesDisabled(disabled: boolean, cwd?: string): 
   rulesData.disabled = disabled;
 
   if (rulesData.rules.length === 0 && rulesData.disabled === false) {
-    try { await unlink(rulesPath); } catch { /* ignore */ }
+    try {
+      await unlink(rulesPath);
+    } catch {
+      /* ignore */
+    }
   } else {
     await writeRulesFile(rulesData, dir);
   }
@@ -103,7 +107,11 @@ export async function removeProjectRule(index: number, cwd?: string): Promise<st
   const removed = data.rules[index];
   data.rules.splice(index, 1);
   if (data.rules.length === 0 && !data.disabled) {
-    try { await unlink(rulesPath); } catch { /* ignore */ }
+    try {
+      await unlink(rulesPath);
+    } catch {
+      /* ignore */
+    }
   } else {
     await writeRulesFile(data, dir);
   }

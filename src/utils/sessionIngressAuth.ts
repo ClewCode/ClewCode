@@ -31,10 +31,9 @@ function getTokenFromFileDescriptor(): string | null {
 
   const fd = parseInt(fdEnv, 10);
   if (Number.isNaN(fd)) {
-    logForDebugging(
-      `CLEW_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR must be a valid file descriptor number, got: ${fdEnv}`,
-      { level: 'error' },
-    );
+    logForDebugging(`CLEW_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR must be a valid file descriptor number, got: ${fdEnv}`, {
+      level: 'error',
+    });
     setSessionIngressToken(null);
     return null;
   }

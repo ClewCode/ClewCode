@@ -9,7 +9,6 @@ import {
   isAutoCompactEnabled,
 } from '../services/compact/autoCompact.js';
 import { useCompactWarningSuppression } from '../services/compact/compactWarningHook.js';
-import { estimateContextBreakdown, renderSegmentedBar } from '../utils/contextBar.js';
 import { getUpgradeMessage } from '../utils/model/contextWindowUpgradeCheck.js';
 
 type Props = {
@@ -125,17 +124,9 @@ export function TokenWarning({ tokenUsage, model, messages }: Props): React.Reac
     ? `${100 - displayPercentLeft}% context used`
     : `${displayPercentLeft}% until auto-compact`;
 
-  // Estimate categories and render the segmented context HUD bar.
-  const breakdown = estimateContextBreakdown(messages || [], tokenUsage);
-  const bar = renderSegmentedBar(
-    breakdown.map(item => ({ tokens: item.tokens, colorHex: item.colorHex })),
-    36,
-  );
-
   return (
     <Box flexDirection="column" gap={0} marginTop={1}>
       <Box flexDirection="row" gap={1} alignItems="center">
-        <Text>{bar}</Text>
         <Text bold color={isAboveErrorThreshold ? 'red' : 'yellow'}>
           {showAutoCompactWarning ? autocompactLabel : `Context low (${percentLeft}% left)`}
         </Text>

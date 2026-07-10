@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 // --- OAuth constants ---
@@ -11,8 +11,7 @@ import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface
 // CLI and log in" is genuinely all a user needs. They can still be overridden
 // via CODE_ASSIST_CLIENT_ID / CODE_ASSIST_CLIENT_SECRET.
 //   https://cloud.google.com/code-assist/docs/install
-const DEFAULT_OAUTH_CLIENT_ID =
-  '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
+const DEFAULT_OAUTH_CLIENT_ID = '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
 // This is the public gemini-cli installed-app credential — not confidential for
 // native apps (see RFC 8252). It only identifies the app to Google; each user
 // still authenticates with their own account. Override with CODE_ASSIST_CLIENT_SECRET.
@@ -23,6 +22,57 @@ const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const CODE_ASSIST_ENDPOINT = process.env.CODE_ASSIST_ENDPOINT?.trim() || 'https://daily-cloudcode-pa.googleapis.com';
 const CODE_ASSIST_API_VERSION = 'v1internal';
 const GEMINI_OAUTH_PATH = join(homedir(), '.gemini', 'oauth_creds.json');
+
+// Exported so the in-app browser login (/login on google-assist) can reuse the
+// exact same OAuth client + scopes as the Gemini CLI. Device Authorization Flow
+// is NOT an option here: Google's device flow does not allow the cloud-platform
+// scope, so a loopback/manual-code browser flow is the only path.
+export const CODE_ASSIST_OAUTH_CLIENT = {
+  clientId: OAUTH_CLIENT_ID,
+  clientSecret: OAUTH_CLIENT_SECRET,
+} as const;
+export const CODE_ASSIST_SCOPES = [
+  'https://www.googleapis.com/auth/cloud-platform',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile',
+] as const;
+
+/** True when usable Gemini OAuth creds already exist on disk (any token that
+ *  can be used or refreshed). Lets the UI skip the login prompt. */
+export function hasGeminiOAuthCreds(): boolean {
+  return readOAuthCreds() !== undefined;
+}
+
+/**
+ * Persists tokens to ~/.gemini/oauth_creds.json in the Gemini CLI's format so
+ * both clew and the Gemini CLI can share the same login. Also resets the
+ * in-memory token cache so the next request picks up the fresh credentials.
+ */
+export function saveGeminiOAuthCreds(tokens: {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  scope?: string[];
+}): void {
+  mkdirSync(dirname(GEMINI_OAUTH_PATH), { recursive: true });
+  writeFileSync(
+    GEMINI_OAUTH_PATH,
+    JSON.stringify(
+      {
+        access_token: tokens.accessToken,
+        refresh_token: tokens.refreshToken ?? '',
+        scope: tokens.scope?.join(' ') ?? CODE_ASSIST_SCOPES.join(' '),
+        token_type: 'Bearer',
+        expiry_date: tokens.expiresAt ?? Date.now() + 3600_000,
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
+  cachedToken = tokens.expiresAt ? { accessToken: tokens.accessToken, expiresAt: tokens.expiresAt } : null;
+  cachedProjectId = null;
+}
 
 // --- In-memory caches ---
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
@@ -133,7 +183,9 @@ async function getValidToken(): Promise<string> {
 
   const creds = readOAuthCreds();
   if (!creds) {
-    throw new Error('No Gemini OAuth credentials found. Login with Gemini CLI first (~/.gemini/oauth_creds.json)');
+    throw new Error(
+      'No Gemini OAuth credentials found. Run /login to sign in with Google, or login with the Gemini CLI (~/.gemini/oauth_creds.json)',
+    );
   }
 
   // Prefer the access token already on disk while it is still valid — avoids a

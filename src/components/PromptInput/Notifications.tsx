@@ -256,6 +256,10 @@ function NotificationContent({
       <IdeStatusIndicator ideSelection={ideSelection} mcpClients={mcpClients} />
       {showCurrentNotification &&
         notifications.current &&
+        // The copy-to-clipboard toast is rendered separately at the very
+        // bottom of the prompt layout (see CopiedToast) — skip it here so it
+        // doesn't also appear above the prompt.
+        notifications.current.key !== 'selection-copied' &&
         shouldShowNotificationNearPrompt(notifications.current) &&
         ('jsx' in notifications.current ? (
           <Text wrap="wrap" key={notifications.current.key}>
@@ -324,5 +328,26 @@ function NotificationContent({
       <MemoryUsageIndicator />
       <SandboxPromptFooterHint />
     </>
+  );
+}
+
+/**
+ * Renders the copy-to-clipboard toast ("copied N chars to clipboard") inline
+ * on the right of the footer's existing status row — instead of above the
+ * prompt where the general notification stream lives. Rendering it on an
+ * already-present row (rather than its own line) avoids shifting the whole
+ * layout up by a row when the toast appears/disappears. Only this one
+ * notification key is handled here; all others render via NotificationContent.
+ */
+export function CopiedToast(): ReactNode {
+  const current = useAppState(s => s.notifications.current);
+  if (!current || current.key !== 'selection-copied') return null;
+  if ('jsx' in current) {
+    return <Text wrap="truncate">{current.jsx}</Text>;
+  }
+  return (
+    <Text color={current.color} dimColor={!current.color} wrap="truncate">
+      {current.text}
+    </Text>
   );
 }

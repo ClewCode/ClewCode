@@ -4,6 +4,8 @@
  * Also tracks memdir file access via Read, Grep, Glob, Edit, and Write tools.
  */
 import { feature } from 'bun:bundle';
+import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
+import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
 import { registerHookCallbacks } from '../bootstrap/state.js';
 import type { HookInput, HookJSONOutput } from '../entrypoints/agentSdkTypes.js';
 import {
@@ -17,9 +19,7 @@ import { FILE_READ_TOOL_NAME } from '../tools/FileReadTool/prompt.js';
 import { FileWriteTool } from '../tools/FileWriteTool/FileWriteTool.js';
 import { FILE_WRITE_TOOL_NAME } from '../tools/FileWriteTool/prompt.js';
 import { GlobTool } from '../tools/GlobTool/GlobTool.js';
-import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
 import { GrepTool } from '../tools/GrepTool/GrepTool.js';
-import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
 import type { HookCallback } from '../types/hooks.js';
 import {
   detectSessionFileType,

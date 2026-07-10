@@ -1,19 +1,19 @@
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { APIError } from '@anthropic-ai/sdk';
+import type { BetaMessage, BetaMessageStreamParams } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs';
 import {
+  type ChatGPTTokens,
+  type CodexAuth,
   createCodexFetch,
   deriveAccountId,
   ensureFreshTokens,
   listCodexModels,
-  resolveConfig,
-  type ChatGPTTokens,
-  type CodexAuth,
   type ReasoningEffort,
+  resolveConfig,
 } from '@opencoredev/loginwithchatgpt-core';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-import type { BetaMessage, BetaMessageStreamParams } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs';
-import { registerAdapter, type ProviderAdapter, withStreamWatchdog } from '../adapter/AnthropicAdapter.js';
+import { type ProviderAdapter, registerAdapter, withStreamWatchdog } from '../adapter/AnthropicAdapter.js';
 import type { ProviderClient, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 const CODEX_AUTH_PATH = join(homedir(), '.codex', 'auth.json');
@@ -41,7 +41,8 @@ function normalizeCodexTokens(data: Record<string, unknown>): ChatGPTTokens | un
 
   const refreshToken = source.refresh_token ?? source.refreshToken;
   const idToken = source.id_token ?? source.idToken;
-  const accountId = source.account_id ?? source.accountId ?? deriveAccountId(typeof idToken === 'string' ? idToken : accessToken);
+  const accountId =
+    source.account_id ?? source.accountId ?? deriveAccountId(typeof idToken === 'string' ? idToken : accessToken);
   const expiresAt = source.expires_at ?? source.expiresAt;
 
   return {
@@ -55,10 +56,9 @@ function normalizeCodexTokens(data: Record<string, unknown>): ChatGPTTokens | un
 
 function writeRefreshedTokens(original: Record<string, unknown>, tokens: ChatGPTTokens): void {
   const next = { ...original };
-  const target = (next.tokens && typeof next.tokens === 'object' ? { ...(next.tokens as Record<string, unknown>) } : next) as Record<
-    string,
-    unknown
-  >;
+  const target = (
+    next.tokens && typeof next.tokens === 'object' ? { ...(next.tokens as Record<string, unknown>) } : next
+  ) as Record<string, unknown>;
 
   target.access_token = tokens.accessToken;
   if (tokens.refreshToken) target.refresh_token = tokens.refreshToken;
@@ -228,11 +228,10 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
     params: BetaMessageStreamParams,
     options?: { signal?: AbortSignal },
   ): Promise<AsyncGenerator<unknown, void, undefined>> {
-    const stream = (await this.client.responses.create(this.convertToResponses(params, true), options)) as AsyncGenerator<
-      unknown,
-      void,
-      undefined
-    >;
+    const stream = (await this.client.responses.create(
+      this.convertToResponses(params, true),
+      options,
+    )) as AsyncGenerator<unknown, void, undefined>;
     return withStreamWatchdog(this.convertStreamToAnthropic(stream), this.streamTimeoutMs, this.label);
   }
 
@@ -265,7 +264,8 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
     for (const item of Array.isArray(record.output) ? record.output : []) {
       if (item?.type === 'message') {
         for (const part of Array.isArray(item.content) ? item.content : []) {
-          const text = typeof part?.text === 'string' ? part.text : typeof part?.content === 'string' ? part.content : undefined;
+          const text =
+            typeof part?.text === 'string' ? part.text : typeof part?.content === 'string' ? part.content : undefined;
           if (text) content.push({ type: 'text', text });
         }
       } else if (item?.type === 'function_call') {
@@ -300,7 +300,9 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
     } as any;
   }
 
-  private async *convertStreamToAnthropic(stream: AsyncGenerator<unknown, void, undefined>): AsyncGenerator<unknown, void, undefined> {
+  private async *convertStreamToAnthropic(
+    stream: AsyncGenerator<unknown, void, undefined>,
+  ): AsyncGenerator<unknown, void, undefined> {
     yield {
       type: 'message_start',
       message: {
@@ -410,7 +412,10 @@ function convertMessagesToResponsesInput(messages: BetaMessageStreamParams['mess
   const input: OpenAIResponseInputItem[] = [];
   for (const message of messages) {
     if (typeof message.content === 'string') {
-      input.push({ role: message.role, content: [{ type: message.role === 'assistant' ? 'output_text' : 'input_text', text: message.content }] });
+      input.push({
+        role: message.role,
+        content: [{ type: message.role === 'assistant' ? 'output_text' : 'input_text', text: message.content }],
+      });
       continue;
     }
 
@@ -477,11 +482,17 @@ function mapResponsesStatus(status: unknown): string {
 }
 
 function normalizeReasoningEffort(value: string | undefined): ReasoningEffort | undefined {
-  return value === 'none' || value === 'low' || value === 'medium' || value === 'high' || value === 'xhigh' ? value : undefined;
+  return value === 'none' || value === 'low' || value === 'medium' || value === 'high' || value === 'xhigh'
+    ? value
+    : undefined;
 }
 
-function normalizeServiceTier(value: string | undefined): 'auto' | 'default' | 'flex' | 'priority' | 'fast' | undefined {
-  return value === 'auto' || value === 'default' || value === 'flex' || value === 'priority' || value === 'fast' ? value : undefined;
+function normalizeServiceTier(
+  value: string | undefined,
+): 'auto' | 'default' | 'flex' | 'priority' | 'fast' | undefined {
+  return value === 'auto' || value === 'default' || value === 'flex' || value === 'priority' || value === 'fast'
+    ? value
+    : undefined;
 }
 
 registerAdapter(CHATGPT_PROVIDER_ID, (client: ResponsesClient) => new ChatGPTResponsesAdapter(client));

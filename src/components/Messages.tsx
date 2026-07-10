@@ -4,6 +4,7 @@ import type { UUID } from 'crypto';
 import type { RefObject } from 'react';
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AgentDefinitionsResult } from 'src/tools/AgentTool/loadAgentsDir.js';
 import { every } from 'src/utils/set.js';
 import { getIsRemoteMode } from '../bootstrap/state.js';
 import type { Command } from '../commands.js';
@@ -16,7 +17,6 @@ import { useShortcutDisplay } from '../keybindings/useShortcutDisplay.js';
 import type { Screen } from '../screens/REPL.js';
 import type { Tools } from '../Tool.js';
 import { findToolByName } from '../Tool.js';
-import type { AgentDefinitionsResult } from 'src/tools/AgentTool/loadAgentsDir.js';
 import type {
   Message as MessageType,
   NormalizedMessage,

@@ -505,9 +505,7 @@ function OAuthStatusMessage({
               <Text bold>Documentation:</Text>
               <Text>
                 · Amazon Bedrock:{' '}
-                <Link url="https://clew-code.org/docs/amazon-bedrock">
-                  https://clew-code.org/docs/amazon-bedrock
-                </Link>
+                <Link url="https://clew-code.org/docs/amazon-bedrock">https://clew-code.org/docs/amazon-bedrock</Link>
               </Text>
               <Text>
                 · Microsoft Foundry:{' '}

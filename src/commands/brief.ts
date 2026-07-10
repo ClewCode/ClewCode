@@ -1,4 +1,6 @@
 import { feature } from 'bun:bundle';
+import { isBriefEntitled } from 'src/tools/BriefTool/BriefTool.js';
+import { BRIEF_TOOL_NAME } from 'src/tools/BriefTool/prompt.js';
 import { z } from 'zod/v4';
 import { getKairosActive, setUserMsgOptIn } from '../bootstrap/state.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
@@ -7,8 +9,6 @@ import {
   logEvent,
 } from '../services/analytics/index.js';
 import type { ToolUseContext } from '../Tool.js';
-import { isBriefEntitled } from 'src/tools/BriefTool/BriefTool.js';
-import { BRIEF_TOOL_NAME } from 'src/tools/BriefTool/prompt.js';
 import type { Command, LocalJSXCommandContext, LocalJSXCommandOnDone } from '../types/command.js';
 import { lazySchema } from '../utils/lazySchema.js';
 

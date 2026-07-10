@@ -927,7 +927,14 @@ function get3PModelFallbackSuggestion(model: string): string | undefined {
  * Used by classifyProviderError() and withRetry() for provider-agnostic handling.
  */
 export interface ProviderErrorInfo {
-  category: 'rate_limit' | 'content_filter' | 'auth' | 'server_error' | 'client_error' | 'network' | 'insufficient_balance';
+  category:
+    | 'rate_limit'
+    | 'content_filter'
+    | 'auth'
+    | 'server_error'
+    | 'client_error'
+    | 'network'
+    | 'insufficient_balance';
   status?: number;
   retryAfter?: string | number;
 }
@@ -995,7 +1002,7 @@ function isInsufficientBalanceError(error: unknown): boolean {
     msg.includes('budget exhausted') ||
     msg.includes('no credits') ||
     msg.includes('payment required') ||
-    msg.includes('billing') && msg.includes('failed')
+    (msg.includes('billing') && msg.includes('failed'))
   );
 }
 

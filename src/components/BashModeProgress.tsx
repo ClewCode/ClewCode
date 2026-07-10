@@ -1,6 +1,6 @@
 import type React from 'react';
-import { Box } from '../ink.js';
 import { BashTool } from 'src/tools/BashTool/BashTool.js';
+import { Box } from '../ink.js';
 import type { ShellProgress } from '../types/tools.js';
 import { UserBashInputMessage } from './messages/UserBashInputMessage.js';
 import { ShellProgressMessage } from './shell/ShellProgressMessage.js';

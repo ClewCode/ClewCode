@@ -1,10 +1,10 @@
 import type { StructuredPatchHunk } from 'diff';
 import type * as React from 'react';
 import { Suspense, use, useState } from 'react';
-import { useTerminalSize } from '../hooks/useTerminalSize.js';
-import { Box, Text } from '../ink.js';
 import type { FileEdit } from 'src/tools/FileEditTool/types.js';
 import { findActualString, preserveQuoteStyle } from 'src/tools/FileEditTool/utils.js';
+import { useTerminalSize } from '../hooks/useTerminalSize.js';
+import { Box, Text } from '../ink.js';
 import { adjustHunkLineNumbers, CONTEXT_LINES, getPatchForDisplay } from '../utils/diff.js';
 import { logError } from '../utils/log.js';
 import { CHUNK_SIZE, openForScan, readCapped, scanForContext } from '../utils/readEditContext.js';

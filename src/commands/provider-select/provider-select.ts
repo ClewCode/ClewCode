@@ -1,8 +1,10 @@
 import ansis from 'ansis';
 import { readFile, writeFile } from 'fs/promises';
 import * as React from 'react';
+import { ConsoleOAuthFlow } from '../../components/ConsoleOAuthFlow.js';
 import { type OptionWithDescription, Select } from '../../components/CustomSelect/select.js';
 import { Dialog } from '../../components/design-system/Dialog.js';
+import { GoogleOAuthFlow } from '../../components/GoogleOAuthFlow.js';
 import TextInput from '../../components/TextInput.js';
 import { Box, Text } from '../../ink.js';
 import {
@@ -19,8 +21,10 @@ import {
   type ProviderRegistryEntry,
 } from '../../services/ai/providerRegistry.js';
 import { validateProviderModelSelection } from '../../services/ai/providerSelection.js';
+import { hasGeminiOAuthCreds } from '../../services/ai/providers/CodeAssistProvider.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
 import type { LocalCommandResult, LocalJSXCommandCall, LocalJSXCommandOnDone } from '../../types/command.js';
+import { getClaudeAIOAuthTokens } from '../../utils/auth.js';
 import { readLocalProviderKey } from '../../utils/localProviderKeys.js';
 
 type SerializableProviderRegistryEntry = Omit<ProviderRegistryEntry, 'provider'>;
@@ -38,14 +42,14 @@ type ProviderConfig = {
 const PROVIDER_KEYS = PROVIDER_IDS;
 type ProviderKey = (typeof PROVIDER_KEYS)[number];
 
-// Expanded entries for providers with multiple auth methods (Google, OpenAI)
+// Expanded entries for providers with multiple auth methods (Anthropic, Google, OpenAI)
 type ExpandedEntry = {
   providerId: ProviderKey;
   label: string;
   description: string;
   envKey: string;
   isLocal: boolean;
-  authType?: 'direct' | 'vertex' | 'azure';
+  authType?: 'direct' | 'vertex' | 'azure' | 'api-key' | 'oauth';
   value: string; // compound: "providerId:authType" or just "providerId"
 };
 type ProviderSelectValue = string | '__SECTION_RECENT__' | '__SECTION_PROVIDERS__';
@@ -427,6 +431,9 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   const [apiKeyError, setApiKeyError] = React.useState<string | null>(null);
   const [config, setConfig] = React.useState<ProviderConfig | null>(null);
   const [showChangeKey, setShowChangeKey] = React.useState(false);
+  const [anthropicType, setAnthropicType] = React.useState<'api-key' | 'oauth' | null>(null);
+  const [showAnthropicOAuthLogin, setShowAnthropicOAuthLogin] = React.useState(false);
+  const [showCodeAssistLogin, setShowCodeAssistLogin] = React.useState(false);
   const [googleType, setGoogleType] = React.useState<'direct' | 'vertex' | null>(null);
   const [openaiType, setOpenaiType] = React.useState<'direct' | 'azure' | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -461,10 +468,13 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     if (!provider) return;
 
     const trimmedApiKey = apiKey?.trim();
-    const nextApiKeys = {
+    const nextApiKeys: ProviderConfig['apiKeys'] = {
       ...(config?.apiKeys ?? {}),
       ...(trimmedApiKey ? { [provider]: trimmedApiKey } : {}),
     };
+    if (provider === 'anthropic' && anthropicType === 'oauth') {
+      delete nextApiKeys?.anthropic;
+    }
 
     const info = getProviderInfo(provider);
     // Preserve existing provider/model in the config file so other
@@ -504,6 +514,25 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
 
   // Build expanded list: providers with multiple auth methods get separate entries
   const EXPANDED_ENTRIES: ExpandedEntry[] = [
+    // Anthropic variants
+    {
+      providerId: 'anthropic',
+      label: 'Anthropic (API Key)',
+      authType: 'api-key',
+      envKey: 'ANTHROPIC_API_KEY',
+      isLocal: false,
+      description: 'Use ANTHROPIC_API_KEY',
+      value: 'anthropic:api-key',
+    },
+    {
+      providerId: 'anthropic',
+      label: 'Anthropic (OAuth)',
+      authType: 'oauth',
+      envKey: '',
+      isLocal: false,
+      description: 'Sign in with a Claude subscription',
+      value: 'anthropic:oauth',
+    },
     // Google variants
     {
       providerId: 'google',
@@ -548,7 +577,7 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   function buildAllEntries(): ExpandedEntry[] {
     const entries: ExpandedEntry[] = [];
     for (const k of PROVIDER_KEYS) {
-      if (k === 'google' || k === 'openai') continue; // handled by expanded entries
+      if (k === 'anthropic' || k === 'google' || k === 'openai') continue; // handled by expanded entries
       const info = getProviderInfo(k);
       entries.push({
         providerId: k as ProviderKey,
@@ -576,10 +605,16 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
 
     function createEntryOption(entry: ExpandedEntry): OptionWithDescription<ProviderSelectValue> {
       const hasKey =
-        entry.isLocal && !entry.envKey
-          ? true
-          : Boolean(config?.apiKeys?.[entry.providerId] || process.env[entry.envKey]);
-      const status = hasKey ? ansis.green('configured') : entry.isLocal ? 'not required' : `${entry.envKey} - MISSING`;
+        entry.providerId === 'anthropic' && entry.authType === 'oauth'
+          ? Boolean(getClaudeAIOAuthTokens()?.accessToken)
+          : entry.isLocal && !entry.envKey
+            ? true
+            : Boolean(config?.apiKeys?.[entry.providerId] || process.env[entry.envKey]);
+      const missingStatus =
+        entry.providerId === 'anthropic' && entry.authType === 'oauth'
+          ? 'sign in required'
+          : `${entry.envKey} - MISSING`;
+      const status = hasKey ? ansis.green('configured') : entry.isLocal ? 'not required' : missingStatus;
       const markers = [entry.providerId === activeProvider ? ansis.green('current') : null].filter(Boolean);
       return {
         label: entry.label,
@@ -672,6 +707,9 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
             if (expanded) {
               setProvider(expanded.providerId);
               if (expanded.authType) {
+                if (expanded.providerId === 'anthropic') {
+                  setAnthropicType(expanded.authType as 'api-key' | 'oauth');
+                }
                 if (expanded.providerId === 'google') {
                   setGoogleType(expanded.authType as any);
                 }
@@ -889,6 +927,128 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   // (e.g. "Google (API Key)", "Google Vertex AI", "OpenAI (API Key)", etc.)
   // No sub-menu needed here -- authType is set by the list selection handler above.
 
+  if (provider === 'anthropic' && anthropicType === 'oauth') {
+    const hasOAuthCredentials = Boolean(getClaudeAIOAuthTokens()?.accessToken);
+    if (hasOAuthCredentials && !showAnthropicOAuthLogin) {
+      return React.createElement(
+        Dialog,
+        {
+          title: 'Anthropic OAuth',
+          subtitle: 'OAuth credentials are already configured',
+          onCancel: () => {
+            setProvider(null);
+            setAnthropicType(null);
+          },
+        },
+        React.createElement(Select, {
+          options: [
+            {
+              label: 'Use existing OAuth login',
+              value: 'use_existing',
+              description: 'Keep the saved Anthropic credentials',
+            },
+            {
+              label: 'Sign in again',
+              value: 'sign_in_again',
+              description: 'Replace the saved Anthropic credentials',
+            },
+          ],
+          visibleOptionCount: 2,
+          onChange: value => {
+            if (value === 'sign_in_again') {
+              setShowAnthropicOAuthLogin(true);
+            } else {
+              void saveProviderSelection();
+            }
+          },
+          onCancel: () => {
+            setProvider(null);
+            setAnthropicType(null);
+          },
+        }),
+      );
+    }
+
+    return React.createElement(
+      Dialog,
+      {
+        title: 'Anthropic OAuth',
+        subtitle: 'Sign in with your Claude subscription',
+        onCancel: () => {
+          setProvider(null);
+          setAnthropicType(null);
+          setShowAnthropicOAuthLogin(false);
+        },
+      },
+      React.createElement(ConsoleOAuthFlow, {
+        forceLoginMethod: 'claudeai',
+        onDone: () => {
+          setShowAnthropicOAuthLogin(false);
+          void saveProviderSelection();
+        },
+      }),
+    );
+  }
+
+  // Gemini Code Assist (OAuth): browser login using the Gemini CLI's public
+  // client + cloud-platform scopes; tokens go to ~/.gemini/oauth_creds.json.
+  // Skip the prompt when creds already exist unless the user asks to re-login.
+  if (provider === 'google-assist') {
+    const hasCreds = hasGeminiOAuthCreds();
+    if (hasCreds && !showCodeAssistLogin) {
+      return React.createElement(
+        Dialog,
+        {
+          title: 'Gemini Code Assist (OAuth)',
+          subtitle: 'Google credentials are already configured (~/.gemini/oauth_creds.json)',
+          onCancel: () => {
+            setProvider(null);
+          },
+        },
+        React.createElement(Select, {
+          options: [
+            { label: 'Use existing login', value: 'use_existing', description: 'Keep the saved Google credentials' },
+            { label: 'Sign in again', value: 'sign_in_again', description: 'Replace the saved Google credentials' },
+          ],
+          visibleOptionCount: 2,
+          onChange: (value: string) => {
+            if (value === 'sign_in_again') {
+              setShowCodeAssistLogin(true);
+            } else {
+              void saveProviderSelection();
+            }
+          },
+          onCancel: () => {
+            setProvider(null);
+          },
+        }),
+      );
+    }
+
+    return React.createElement(
+      Dialog,
+      {
+        title: 'Gemini Code Assist (OAuth)',
+        subtitle: 'Sign in with your Google account',
+        onCancel: () => {
+          setProvider(null);
+          setShowCodeAssistLogin(false);
+        },
+      },
+      React.createElement(GoogleOAuthFlow, {
+        codeAssist: true,
+        onDone: () => {
+          setShowCodeAssistLogin(false);
+          void saveProviderSelection();
+        },
+        onCancel: () => {
+          setProvider(null);
+          setShowCodeAssistLogin(false);
+        },
+      }),
+    );
+  }
+
   // Show input field when: (no existing key) OR (user chose to change key)
   if ((!hasExistingKey && !info.isLocal) || (showChangeKey && !info.isLocal)) {
     return React.createElement(
@@ -928,6 +1088,7 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
           setApiKeyCursorOffset(0);
           setApiKeyError(null);
           setShowChangeKey(false);
+          setAnthropicType(null);
           setGoogleType(null);
           setOpenaiType(null);
           setSearchQuery('');
@@ -974,6 +1135,7 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
         onCancel: () => {
           setProvider(null);
           setShowChangeKey(false);
+          setAnthropicType(null);
           setSearchQuery('');
           setSearchCursorOffset(0);
         },

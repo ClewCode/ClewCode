@@ -36,8 +36,12 @@ export const GOOGLE_OAUTH_CONFIG = {
   // Optional Client Secret (only required by Google for certain client types)
   CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() || '',
 
-  // Local browser callback URI
-  REDIRECT_URI: `http://127.0.0.1:${callbackPort}/auth/callback`,
+  // Local browser callback URI. Google now rejects the `localhost` hostname and
+  // requires the loopback IP `127.0.0.1`; the path must match what the gemini-cli
+  // public OAuth client registers (`/oauth2callback`). Using `localhost` or a
+  // different path makes Google return a 400 "malformed request" at the consent
+  // screen. Mirrors gemini-cli's `http://127.0.0.1:{port}/oauth2callback`.
+  REDIRECT_URI: `http://127.0.0.1:${callbackPort}/oauth2callback`,
 
   // Standard manual/headless callback URI
   MANUAL_REDIRECT_URI: envOrDefault('GOOGLE_OAUTH_MANUAL_REDIRECT_URI', 'urn:ietf:wg:oauth:2.0:oob'),

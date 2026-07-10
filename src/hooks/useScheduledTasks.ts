@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
+import { isKairosCronEnabled } from 'src/tools/ScheduleCronTool/prompt.js';
 import { useAppStateStore, useSetAppState } from '../state/AppState.js';
 import { isTerminalTaskStatus } from '../Task.js';
 import {
   findTeammateTaskByAgentId,
   injectUserMessageToTeammate,
 } from '../tasks/InProcessTeammateTask/InProcessTeammateTask.js';
-import { isKairosCronEnabled } from 'src/tools/ScheduleCronTool/prompt.js';
 import type { Message } from '../types/message.js';
 import { getCronJitterConfig } from '../utils/cronJitterConfig.js';
 import { createCronScheduler } from '../utils/cronScheduler.js';

@@ -1,5 +1,7 @@
 import { feature } from 'bun:bundle';
 import { buildTool, type ToolDef, toolMatchesName } from 'src/Tool.js';
+import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
+import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
 import type { Message as MessageType, NormalizedUserMessage } from 'src/types/message.js';
 import { getQuerySourceForAgent } from 'src/utils/promptCategory.js';
 import { z } from 'zod/v4';
@@ -64,9 +66,7 @@ import { teleportToRemote } from '../../utils/teleport.js';
 import { getAssistantMessageContentLength } from '../../utils/tokens.js';
 import { createAgentId } from '../../utils/uuid.js';
 import { createAgentWorktree, hasWorktreeChanges, removeAgentWorktree } from '../../utils/worktree.js';
-import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import { BackgroundHint } from '../BashTool/UI.js';
-import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
 import { spawnTeammate } from '../shared/spawnMultiAgent.js';
 import { setAgentColor } from './agentColorManager.js';
 import {

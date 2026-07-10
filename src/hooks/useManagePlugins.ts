@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import type { AgentDefinition } from 'src/tools/AgentTool/loadAgentsDir.js';
 import type { Command } from '../commands.js';
 import { useNotifications } from '../context/notifications.js';
 import {
@@ -7,7 +8,6 @@ import {
 } from '../services/analytics/index.js';
 import { reinitializeLspServerManager } from '../services/lsp/manager.js';
 import { useAppState, useSetAppState } from '../state/AppState.js';
-import type { AgentDefinition } from 'src/tools/AgentTool/loadAgentsDir.js';
 import { count } from '../utils/array.js';
 import { logForDebugging } from '../utils/debug.js';
 import { logForDiagnosticsNoPII } from '../utils/diagLogs.js';

@@ -1,6 +1,8 @@
 import { feature } from 'bun:bundle';
 import memoize from 'lodash-es/memoize.js';
 import { basename } from 'path';
+import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
+import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
 import type { SettingSource } from 'src/utils/settings/constants.js';
 import { z } from 'zod/v4';
 import { isAutoMemoryEnabled } from '../../memdir/paths.js';
@@ -26,8 +28,6 @@ import { clearPluginAgentCache, loadPluginAgents } from '../../utils/plugins/loa
 import { HooksSchema, type HooksSettings } from '../../utils/settings/types.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
 import { FILE_EDIT_TOOL_NAME } from '../FileEditTool/constants.js';
-import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
-import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
 import { AGENT_COLORS, type AgentColorName, setAgentColor } from './agentColorManager.js';
 import { type AgentMemoryScope, loadAgentMemoryPrompt } from './agentMemory.js';
 import { checkAgentMemorySnapshot, initializeFromSnapshot } from './agentMemorySnapshot.js';

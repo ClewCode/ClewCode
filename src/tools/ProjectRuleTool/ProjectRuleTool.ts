@@ -2,7 +2,13 @@ import { z } from 'zod/v4';
 import type { Tool } from '../../Tool.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { loadProjectRules, saveProjectRule, removeProjectRule, formatRulesNotification, isProjectRulesDisabled } from '../../utils/projectRules.js';
+import {
+  formatRulesNotification,
+  isProjectRulesDisabled,
+  loadProjectRules,
+  removeProjectRule,
+  saveProjectRule,
+} from '../../utils/projectRules.js';
 import { getDescription, getPrompt } from './prompt.js';
 import { renderToolResultMessage, renderToolUseMessage } from './UI.js';
 

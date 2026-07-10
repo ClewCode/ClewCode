@@ -1,11 +1,11 @@
 import { basename, dirname, isAbsolute, join, sep } from 'path';
 import type { ToolPermissionContext } from '../Tool.js';
+import { logForDebugging } from './debug.js';
 import { isEnvTruthy } from './envUtils.js';
 import { fdListFiles, findFd } from './fd.js';
 import { getFileReadIgnorePatterns, normalizePatternsToPath } from './permissions/filesystem.js';
 import { getPlatform } from './platform.js';
 import { getGlobExclusionsForPluginCache } from './plugins/orphanedPluginFilter.js';
-import { logForDebugging } from './debug.js';
 import { ripGrep } from './ripgrep.js';
 
 /**
@@ -92,9 +92,7 @@ export async function glob(
 
   if (fdAvailable) {
     // Collect exclude patterns from permissions and plugin cache
-    const excludePatterns: string[] = [
-      ...ignorePatterns,
-    ];
+    const excludePatterns: string[] = [...ignorePatterns];
 
     // Exclude orphaned plugin version directories
     for (const exclusion of await getGlobExclusionsForPluginCache(searchDir)) {

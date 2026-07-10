@@ -238,10 +238,7 @@ function compactToolSignature(block: { name?: string; input?: Record<string, unk
  * Check if a tool call matches a dropped signature (regret signal).
  * Called on each tool_use after compaction.
  */
-export function checkCompactRegret(
-  toolName: string,
-  input: Record<string, unknown> | undefined,
-): boolean {
+export function checkCompactRegret(toolName: string, input: Record<string, unknown> | undefined): boolean {
   // Only count re-references inside the post-compact window. Outside it, a
   // repeated tool call is ordinary work, not regret.
   if (!isWithinRegretWindow()) return false;
@@ -848,10 +845,7 @@ export async function autoCompactIfNeeded(
     });
     // #3 Feedback loop: init regret tracking with dropped signatures
     // (subtract the tail SM-compact keeps so kept tool calls aren't counted).
-    const droppedSM = computeDroppedToolSignatures(
-      preCompactMessages,
-      sessionMemoryResult.messagesToKeep ?? [],
-    );
+    const droppedSM = computeDroppedToolSignatures(preCompactMessages, sessionMemoryResult.messagesToKeep ?? []);
     resetCompactRegretState(droppedSM);
     if (!regretState.hasLoggedBaseline) {
       logEvent('compact_regret_baseline', {

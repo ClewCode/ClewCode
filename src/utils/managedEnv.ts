@@ -117,8 +117,7 @@ const TRUSTED_SETTING_SOURCES = ['userSettings', 'flagSettings', 'policySettings
 export function applySafeConfigEnvironmentVariables(): void {
   // Capture CCD spawn-env keys before any settings.env is applied (once).
   if (ccdSpawnEnvKeys === undefined) {
-    ccdSpawnEnvKeys =
-      process.env.CLEW_CODE_ENTRYPOINT === 'claude-desktop' ? new Set(Object.keys(process.env)) : null;
+    ccdSpawnEnvKeys = process.env.CLEW_CODE_ENTRYPOINT === 'claude-desktop' ? new Set(Object.keys(process.env)) : null;
   }
 
   // Global config (~/.claude.json) is user-controlled. In CCD mode,
