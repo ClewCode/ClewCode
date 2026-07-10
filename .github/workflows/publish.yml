@@ -130,17 +130,15 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish to npm
-        if: steps.npm_check.outputs.exists == 'false'
-        run: |
-          cat > .npmrc <<'EOF'
-          registry=https://registry.npmjs.org/
-          //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
-          EOF
+      # npm >= 11.5.1 mints a short-lived OIDC token in GitHub Actions when a
+      # Trusted Publisher is configured for the package on npmjs.com, so no
+      # long-lived NPM_TOKEN is needed. Requires `id-token: write` (set above).
+      - name: Update npm CLI for OIDC trusted publishing
+        run: npm install -g npm@latest
 
-          npm publish --access public --registry https://registry.npmjs.org
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm (OIDC trusted publishing)
+        if: steps.npm_check.outputs.exists == 'false'
+        run: npm publish --access public --provenance --registry https://registry.npmjs.org
 
       - name: Publish to GitHub Packages
         run: |
