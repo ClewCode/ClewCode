@@ -16,7 +16,7 @@ import type {
   PlatformAdapter,
   ScreenshotResult,
 } from './adapter.js';
-import { toBase64Jpeg } from './adapter.js';
+import { sanitizeGeometry, toBase64Jpeg } from './adapter.js';
 
 /**
  * Run a CLI tool and return stdout. Throws on failure.
@@ -58,18 +58,19 @@ export function createLinuxAdapter(): PlatformAdapter {
       try {
         const output = await run('xdotool', ['getdisplaygeometry']);
         const [w, h] = output.trim().split(/\s+/).map(Number);
-        return { width: w, height: h, scaleFactor: 1 };
-      } catch {
-        // Try xrandr as fallback
-        try {
-          const output = await run('xrandr', ['--current']);
-          const match = output.match(/(\d+)x(\d+)\s/);
-          if (match) {
-            return { width: Number(match[1]), height: Number(match[2]), scaleFactor: 1 };
-          }
-        } catch {}
-        return { width: 1920, height: 1080, scaleFactor: 1 };
-      }
+        if (Number.isFinite(w) && w > 0 && Number.isFinite(h) && h > 0) {
+          return sanitizeGeometry({ width: w, height: h, scaleFactor: 1 });
+        }
+      } catch {}
+      // Try xrandr as fallback
+      try {
+        const output = await run('xrandr', ['--current']);
+        const match = output.match(/(\d+)x(\d+)\s/);
+        if (match) {
+          return sanitizeGeometry({ width: Number(match[1]), height: Number(match[2]), scaleFactor: 1 });
+        }
+      } catch {}
+      return sanitizeGeometry({});
     },
 
     async listDisplays(): Promise<DisplayGeometry[]> {

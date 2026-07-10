@@ -16,7 +16,7 @@ import type {
   PlatformAdapter,
   ScreenshotResult,
 } from './adapter.js';
-import { toBase64Jpeg } from './adapter.js';
+import { sanitizeGeometry, toBase64Jpeg } from './adapter.js';
 
 /**
  * Run a CLI tool and return stdout. Throws on failure.
@@ -69,10 +69,10 @@ export function createDarwinAdapter(): PlatformAdapter {
         if (display?._spdisplay_pixels) {
           const [w, h] = display._spdisplay_pixels.split('x').map(Number);
           const scale = display._spdisplay_scale_factor ?? 1;
-          return { width: w, height: h, scaleFactor: Number(scale) };
+          return sanitizeGeometry({ width: w, height: h, scaleFactor: Number(scale) });
         }
       } catch {}
-      return { width: 1920, height: 1080, scaleFactor: 1 };
+      return sanitizeGeometry({});
     },
 
     async listDisplays(): Promise<DisplayGeometry[]> {

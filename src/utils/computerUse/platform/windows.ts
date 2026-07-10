@@ -8,7 +8,7 @@ import type {
   PlatformAdapter,
   ScreenshotResult,
 } from './adapter.js';
-import { toBase64Jpeg } from './adapter.js';
+import { sanitizeGeometry, toBase64Jpeg } from './adapter.js';
 
 // PowerShell snippet: capture screen as JPEG base64 (scaled, JPEG quality 75)
 const SCREENSHOT_SCRIPT = `
@@ -244,7 +244,7 @@ $b = [Windows.Forms.Screen]::PrimaryScreen.Bounds
 Write-Output "$($b.Width),$($b.Height)"
 `);
       const [w, h] = output.trim().split(',').map(Number);
-      return { width: w, height: h, scaleFactor: 1 };
+      return sanitizeGeometry({ width: w, height: h, scaleFactor: 1 });
     },
 
     async listDisplays(): Promise<DisplayGeometry[]> {

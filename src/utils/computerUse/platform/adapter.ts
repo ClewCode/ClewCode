@@ -103,6 +103,31 @@ export interface PlatformAdapter {
 const JPEG_QUALITY = 0.75;
 const MAX_DIM = 2048;
 
+/** Fallback display geometry used when detection yields no usable dimensions (e.g. headless CI). */
+export const DEFAULT_DISPLAY_GEOMETRY: DisplayGeometry = { width: 1920, height: 1080, scaleFactor: 1 };
+
+/**
+ * Guarantee a DisplayGeometry with finite, positive width/height. Detection
+ * commands (xdotool, xrandr, PowerShell, system_profiler) can "succeed" with
+ * empty/garbage output in headless environments, producing NaN/undefined
+ * dimensions — this normalizes those to the default geometry.
+ */
+export function sanitizeGeometry(geometry: Partial<DisplayGeometry>): DisplayGeometry {
+  const width = Number(geometry.width);
+  const height = Number(geometry.height);
+  const scaleFactor = Number(geometry.scaleFactor);
+  const valid = Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0;
+  if (!valid) {
+    return { ...DEFAULT_DISPLAY_GEOMETRY };
+  }
+  return {
+    ...geometry,
+    width,
+    height,
+    scaleFactor: Number.isFinite(scaleFactor) && scaleFactor > 0 ? scaleFactor : 1,
+  };
+}
+
 /**
  * Resize and compress image buffer to base64 JPEG using sharp.
  * Maintains aspect ratio, max dimension 2048px (same as Anthropic's API limit).
