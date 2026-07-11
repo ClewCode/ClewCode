@@ -27,7 +27,7 @@
 
 ---
 
-Clew Code is a terminal-native AI coding agent that lives in your repo, works with your API keys, and **doesn't phone home**. It reads your code, writes files, runs commands, and talks to any LLM you bring — Claude, GPT, Gemini, DeepSeek, local Ollama models, and 20+ others — all on your machine, no telemetry, no vendor lock-in.
+Clew Code is a terminal-native AI coding agent that lives in your repo, works with your API keys, and **doesn't phone home**. It reads your code, writes files, runs commands, and talks to any LLM you bring — Claude, GPT, Gemini, DeepSeek, local Ollama models, and 25+ other providers — all on your machine, no telemetry, no vendor lock-in.
 
 If you want a coding assistant that feels local, fast, and doesn't ship your context to a third-party server, this is it.
 
@@ -168,8 +168,8 @@ Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://model
 
 <table>
   <tr>
-    <td><strong>29+ Providers</strong></td>
-    <td>OpenAI, Anthropic, DeepSeek, Groq, Google, Ollama (local), and 22+ more. Switch mid-session with <code>/model</code>. No lock-in.</td>
+    <td><strong>32+ Providers</strong></td>
+    <td>OpenAI, Anthropic, DeepSeek, Groq, Google, Ollama (local), OpenGateway, and 25+ more. Switch mid-session with <code>/model</code>. No lock-in.</td>
   </tr>
   <tr>
     <td><strong>Persistent Memory</strong></td>
@@ -364,7 +364,7 @@ Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
 - **Entry**: `src/main.tsx` → `src/replLauncher.tsx` boots the Ink/React 19 REPL
 - **REPL screen**: `src/screens/REPL.tsx` routes input to commands or the query engine
 - **Query loop**: `src/QueryEngine.ts` — message construction, tool loop, provider routing, streaming
-- **Providers**: `src/services/ai/` — 29 providers behind one interface, normalized errors/usage
+- **Providers**: `src/services/ai/` — 32 providers behind one interface, normalized errors/usage
 - **Tools**: `src/tools/<ToolName>/`, each extending `Tool` from `src/Tool.ts`, registered in `src/tools.ts`
 - **Services**: `src/services/` — MCP client, autonomous task queue, memory consolidation, session search, plugin lifecycle hooks, and more
 

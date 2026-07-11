@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **`/statusline` command**: Set up or update the terminal status line from chat, modeled after Claude Code's `/statusline`. Dispatches the built-in `statusline-setup` agent, which imports an existing shell PS1 config (or asks what to show — directory, git branch, model, context %, rate-limit usage) and writes the `statusLine` command into settings. Accepts an optional argument describing what to show (e.g. `/statusline directory and git branch`). (`src/commands/statusline/`, `src/commands.ts`)
+
+### Changed
+- **`peer_spawn` inherits the spawner's provider and bypasses permissions**: Spawned peers now launch with `--provider <active provider>` (the spawner's active AI provider, in addition to the already-inherited model) and `--dangerously-skip-permissions`, so peers use the same provider/model as the session that spawned them and can work autonomously without permission prompts. (`src/tools/PeerSpawnTool/PeerSpawnTool.ts`)
+
+### Fixed
+- **Provider/model changes no longer leak into other running sessions**: `/providers set` (without `--global`) previously mutated the state-level `mainLoopModel`, which `onChangeAppState` persisted to userSettings + `provider.json`; other sessions' settings watchers then adopted the change AND wiped their own session model override. Now (1) non-global provider/model switches only touch the `*ForSession` fields (nothing written to shared config), and (2) a disk-originated model change no longer clears `mainLoopModelForSession`, so a session that explicitly chose a model keeps it even when another session saves a new default. (`src/commands/provider-select/provider-select.ts`, `src/utils/settings/applySettingsChange.ts`)
+
+### Removed
+- **Hardcoded Gemini OAuth credentials from CodeAssistProvider**: Removed the `DEFAULT_OAUTH_CLIENT_ID` and `DEFAULT_OAUTH_CLIENT_SECRET` hardcoded values. `CODE_ASSIST_CLIENT_ID` and `CODE_ASSIST_CLIENT_SECRET` env vars are now required — no fallback to hardcoded defaults. (`src/services/ai/providers/CodeAssistProvider.ts`)
+
 ## [0.6.0] — 2026-07-10
 
 ### Added

@@ -74,7 +74,14 @@ export function applySettingsChange(
 
     return {
       ...prev,
-      ...(modelChanged ? { mainLoopModel: newModel, mainLoopModelForSession: null } : {}),
+      // Update only the base model — never clear mainLoopModelForSession.
+      // The disk write may come from ANOTHER session persisting its model
+      // (or a global default change); wiping this session's override would
+      // make every running session "follow" the session that saved last.
+      // Sessions with an explicit session model keep it (effective model =
+      // ForSession ?? mainLoopModel), so the IDE picker still works for
+      // sessions that never chose a session-scoped model.
+      ...(modelChanged ? { mainLoopModel: newModel } : {}),
       settings: newSettings,
       toolPermissionContext: newContext,
       // Only propagate a defined new value — when the disk key is absent

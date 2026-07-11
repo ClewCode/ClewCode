@@ -4,20 +4,12 @@ import { dirname, join } from 'node:path';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 // --- OAuth constants ---
-// Token refresh needs the OAuth client_id/secret. The Gemini CLI does NOT
-// store these in ~/.gemini/oauth_creds.json (which holds only the tokens) —
-// it ships them as public constants for its installed-app OAuth client. We
-// default to those same well-known public values so that "install the Gemini
-// CLI and log in" is genuinely all a user needs. They can still be overridden
-// via CODE_ASSIST_CLIENT_ID / CODE_ASSIST_CLIENT_SECRET.
+// Token refresh needs the OAuth client_id/secret set via environment variables.
+// Set CODE_ASSIST_CLIENT_ID and CODE_ASSIST_CLIENT_SECRET to your Google OAuth
+// app credentials, or install the Gemini CLI and run `gcloud auth application-default login`.
 //   https://cloud.google.com/code-assist/docs/install
-const DEFAULT_OAUTH_CLIENT_ID = '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
-// This is the public gemini-cli installed-app credential — not confidential for
-// native apps (see RFC 8252). It only identifies the app to Google; each user
-// still authenticates with their own account. Override with CODE_ASSIST_CLIENT_SECRET.
-const DEFAULT_OAUTH_CLIENT_SECRET = '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';
-const OAUTH_CLIENT_ID = process.env.CODE_ASSIST_CLIENT_ID?.trim() || DEFAULT_OAUTH_CLIENT_ID;
-const OAUTH_CLIENT_SECRET = process.env.CODE_ASSIST_CLIENT_SECRET?.trim() || DEFAULT_OAUTH_CLIENT_SECRET;
+const OAUTH_CLIENT_ID = process.env.CODE_ASSIST_CLIENT_ID?.trim();
+const OAUTH_CLIENT_SECRET = process.env.CODE_ASSIST_CLIENT_SECRET?.trim();
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const CODE_ASSIST_ENDPOINT = process.env.CODE_ASSIST_ENDPOINT?.trim() || 'https://daily-cloudcode-pa.googleapis.com';
 const CODE_ASSIST_API_VERSION = 'v1internal';

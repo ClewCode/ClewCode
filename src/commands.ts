@@ -35,6 +35,7 @@ import review, { ultrareview } from './commands/review.js';
 import session from './commands/session/index.js';
 import skills from './commands/skills/index.js';
 import status from './commands/status/index.js';
+import statusline from './commands/statusline/index.js';
 import tasks from './commands/tasks/index.js';
 import teamOnboarding from './commands/team-onboarding/index.js';
 import teamDashboard from './commands/team/index.js';
@@ -236,6 +237,7 @@ const COMMANDS = memoize((): Command[] => [
   skills,
   stats,
   status,
+  statusline,
   taskCmd,
   stickers,
   theme,

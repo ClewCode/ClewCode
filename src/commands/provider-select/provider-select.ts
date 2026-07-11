@@ -175,9 +175,13 @@ function applyProviderSelectionToSession(
   // Session-only: don't persist provider/model to provider.json.
   // Only --global (handled in runProviderCommand) writes the config file.
   // Always persist the model to settings so it survives across sessions.
+  // Non-global changes must NOT touch mainLoopModel — mutating it triggers
+  // onChangeAppState's persistence to userSettings + provider.json, which
+  // leaks the change into every other running session via their settings
+  // watchers. Session-scoped switches live only in *ForSession fields.
   setAppState(prev => ({
     ...prev,
-    mainLoopModel: config.model || prev.mainLoopModel,
+    mainLoopModel: isGlobal ? config.model || prev.mainLoopModel : prev.mainLoopModel,
     mainLoopModelForSession: isGlobal ? null : config.model,
     mainLoopProvider: isGlobal ? config.provider : prev.mainLoopProvider,
     mainLoopProviderForSession: isGlobal ? null : config.provider,

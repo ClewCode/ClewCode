@@ -6,6 +6,7 @@ import * as React from 'react';
 import { z } from 'zod/v4';
 import { Text } from '../../ink.js';
 import { buildTool } from '../../Tool.js';
+import { ProviderManager } from '../../services/ai/ProviderManager.js';
 import { getCwd } from '../../utils/cwd.js';
 import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
@@ -140,13 +141,26 @@ export const PeerSpawnTool = buildTool({
 
       const effectivePrompt = input.prompt ? `${input.prompt}\n\n${DEFAULT_PEER_PROMPT}` : DEFAULT_PEER_PROMPT;
 
-      // Use same model as the main session
+      // Use same model AND provider as the main session, with permission
+      // prompts bypassed so the peer can work autonomously.
       const spawnModel = input.model || getMainLoopModel();
-      const cliArgs = ['--peer-share', '--peer-name', targetName, '--name', targetName, '--model', spawnModel];
+      const spawnProvider = ProviderManager.getInstance().getActiveProviderName();
+      const baseArgs = [
+        '--peer-share',
+        '--peer-name',
+        targetName,
+        '--name',
+        targetName,
+        '--model',
+        spawnModel,
+        ...(spawnProvider ? ['--provider', spawnProvider] : []),
+        '--dangerously-skip-permissions',
+      ];
+      const cliArgs = [...baseArgs];
       const promptArg = effectivePrompt.replace(/\s*\r?\n\s*/g, ' ').trim();
       if (promptArg) cliArgs.push('--system-prompt', promptArg);
       const cmd = buildPeerSpawnCommand(cliArgs);
-      const previewArgs = ['--peer-share', '--peer-name', targetName, '--name', targetName, '--model', spawnModel];
+      const previewArgs = [...baseArgs];
       previewArgs.push('--system-prompt', '<prompt>');
       const commandPreview = buildPeerSpawnCommand(previewArgs);
 
