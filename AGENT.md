@@ -56,28 +56,48 @@ Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for
 - Tool result contract: `{ ok: boolean; summary: string; data?: unknown }`
 - Commands export `{ name, description, type, handler, ... }` (`type`: `prompt` | `local` | `local-jsx`)
 
-## Stats (approx.)
+## Config files (source of truth for tooling)
 
-- ~2,350 TS/TSX files under `src/`; 9 genuine `.js` sources (no `.ts` twin — shadows were fully removed)
-- 76 tool packages under `src/tools/`, 35 service packages under `src/services/`, ~99 command dirs under `src/commands/`
+| File | Role |
+|---|---|
+| `tsconfig.json` | `module: ESNext`, `moduleResolution: bundler`, `strict: true`, `jsx: react-jsx`, path alias `src/*` |
+| `biome.json` | 2-space, single quotes, 120 columns, LF, VCS-`git`-aware (uses `.gitignore`), includes `src/**/*.{ts,tsx,js}` |
+| `.mcp.json` | MCP server definitions (codegraph, clew-bus, clew-peer, agora-mcp) |
+| `.husky/pre-commit` | Pre-commit hook for shadow pair guard (`scripts/check-shadow-pairs.sh src`) |
+| `.env` | API keys — never committed (in `.gitignore`) |
 
 ## Architecture (big picture)
 
 ```
-src/main.tsx            CLI entry (flags, TTY force, version MACRO, feature defines)
-src/replLauncher.tsx    Ink/React 19 REPL bootstrap
-src/screens/REPL.tsx    Main TUI — input routing, panels, streaming UI
-src/commands.ts         Slash registry: built-in + skills + plugins + MCP + dynamic
-src/QueryEngine.ts      Streaming LLM loop: messages, tools, provider routing
-src/query.ts            Non-streaming query path
-src/tools.ts            getAllBaseTools() registry
-src/Tool.ts             Tool base class
-src/Task.ts             Async task base
-src/state/AppState.tsx  Central AppState (drives Ink UI)
-src/services/ai/        ProviderManager + providers.json + adapters + normalizers
+src/main.tsx                CLI entry (flags, TTY force, version MACRO, feature defines)
+src/replLauncher.tsx        Ink/React 19 REPL bootstrap
+src/screens/REPL.tsx        Main TUI — input routing, panels, streaming UI
+src/commands.ts             Slash registry: built-in + skills + plugins + MCP + dynamic
+src/QueryEngine.ts          Streaming LLM loop: messages, tools, provider routing
+src/query.ts                Non-streaming query path
+src/tools.ts                getAllBaseTools() registry
+src/Tool.ts                 Tool base class
+src/tools/                  76 tool packages (one dir each)
+src/Task.ts                 Async task base
+src/tasks/                  Task definitions (Dream, InProcess, Local/Remote Agent, Shell)
+src/state/AppState.tsx      Central AppState (drives Ink UI)
+src/state/                  State management (slices for UI, session, peers, etc.)
+src/services/ai/            ProviderManager + providers.json + adapters + normalizers
+src/ink/                    Custom Ink/React 19 infrastructure (components, hooks, events, layout, termio)
+src/memdir/                 SQLite-vec semantic memory index (O(log N) vector search)
+src/query/                  Query path utilities and helpers
+src/coordinator/            Cross-component orchestration
+src/migrations/             Database migrations
+src/vim/                    Vim mode implementation
+src/voice/                  Voice input transcription and management
+src/buddy/                  Companion sprite UI and prompts
 ```
 
 Flow: **REPL input** → command match or **QueryEngine** → **ProviderManager** → model stream → tool calls → tools/services → UI/state.
+
+Two query paths exist:
+- **Streaming** (`src/QueryEngine.ts`): tool-loop, context compaction, checkpoints — the main path for interactive sessions
+- **Non-streaming** (`src/query.ts`): one-shot ask (no tool loop) — used by subagents, skills, background tasks
 
 Settings: `.clew/settings.json` (shared) and `.clew/settings.local.json` (local/private).
 
@@ -154,6 +174,14 @@ Prefer TinyFish MCP for web work over built-in WebSearch / WebFetch / BrowserToo
 | `fetch_content` | WebFetch |
 | `run_web_automation` | BrowserTool |
 
+## Semantic memory index (`src/memdir/`)
+
+- **SQLite-vec** vector index for O(log N) semantic memory search — `vectors.db` with vec0 virtual table
+- `semanticIndex.ts`: change detection via mtime vs `indexed_at`; `content_hash` skips re-embedding
+- `semanticSearch.ts`: `syncIndex()` runs before every query (concurrent with embedding) — self-healing
+- Falls back to JS brute-force cosine if native sqlite-vec extension fails to load
+- Commands: `/memory-search`, `/index-admin stats|prune|clear`
+
 ## Graphify & codegraph
 
 - Knowledge graph: `graphify-out/` — for codebase questions: `graphify query "..."`, relationships: `graphify path "A" "B"`, concepts: `graphify explain "..."`. After structural edits: `graphify update .`
@@ -163,6 +191,23 @@ Prefer TinyFish MCP for web work over built-in WebSearch / WebFetch / BrowserToo
 ## Workspace linking
 
 `/workspace link|unlink|load|list` — bidirectional project links in `.clew/workspace.json`. Source: `src/commands/workspace/`, `src/utils/workspace/`.
+
+## Pre-commit hooks (`.husky/`)
+
+| Hook | Action |
+|---|---|
+| `pre-commit` | Runs `bash scripts/check-shadow-pairs.sh src` — blocks commits that create `.ts`/`.js` shadow pairs |
+| Additional | Configured via `.husky/` — check current file for the full list |
+
+## GitHub Actions (`.github/workflows/`)
+
+CI runs typecheck, lint, build, and tests. Pushing a `v*` tag triggers the release workflow (GitHub Release + npm publish).
+
+## Tests (59 test files)
+
+Located across `src/` (co-located `.test.ts`) and `tests/` (integration). Run with Bun's native test runner (`bun test`). Key patterns:
+- **Unit tests**: co-located with source (e.g. `src/tools/GoalTool.test.ts`)
+- **Integration tests**: in `tests/` directory for multi-component scenarios
 
 ## Scripts
 
