@@ -24,9 +24,9 @@ import { DOT_CLEW } from '../../utils/clewPaths.js';
 
 const HELP = `AGENT — dispatch Clew internal background specialists from chat
 
+  /agent                   open the agent dashboard (Needs input / Working / Completed)
   /agent <task>            dispatch a background specialist
   /agent @<agent> <task>   dispatch with a specific specialist
-  /agent view              monitor running agents
   /agent config            manage agent definitions
   /agent run "<task>"      legacy orchestrator workflow
   /agent status [id]       view orchestrator runs
@@ -90,8 +90,9 @@ export async function call(
   const argTokens = trimmedArgs.split(/\s+/).filter(Boolean);
   const subcommand = argTokens[0]?.toLowerCase();
 
-  // Handle view/dashboard — returns JSX
-  if (subcommand === 'view' || subcommand === 'dashboard') {
+  // Bare /agent (no args at all) — open the dashboard directly. Also keep
+  // `view`/`dashboard` as explicit aliases for muscle memory / scripting.
+  if (trimmedArgs.length === 0 || subcommand === 'view' || subcommand === 'dashboard') {
     const cwdMatch = trimmedArgs.match(/--cwd\s+(\S+)/);
     const cwd = cwdMatch ? cwdMatch[1] : undefined;
     return React.createElement(AgentViewDashboard, {

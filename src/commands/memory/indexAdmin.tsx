@@ -1,12 +1,7 @@
 import * as React from 'react';
-import { Box, Text } from '../../ink.js';
 import type { CommandResultDisplay } from '../../commands.js';
-import {
-  getIndexStats,
-  pruneOldVectors,
-  clearAllVectors,
-  closeIndex,
-} from '../../memdir/semanticSearch.js';
+import { Box, Text } from '../../ink.js';
+import { clearAllVectors, closeIndex, getIndexStats, pruneOldVectors } from '../../memdir/semanticSearch.js';
 import type { LocalJSXCommandCall } from '../../types/command.js';
 
 /**
@@ -44,15 +39,14 @@ function IndexAdminComponent({
             const lines = [
               '📊 Semantic Index Statistics:',
               `  Total vectors: ${stats.total}`,
+              `  Engine: ${stats.vecExtensionLoaded ? 'sqlite-vec (KNN)' : 'JS brute-force (extension not loaded)'}`,
               `  Types: ${Object.entries(stats.byType)
                 .map(([type, count]) => `${type} (${count})`)
                 .join(', ')}`,
               stats.oldestIndexedAt
                 ? `  Oldest: ${new Date(stats.oldestIndexedAt).toISOString()}`
                 : '  No vectors indexed',
-              stats.newestIndexedAt
-                ? `  Newest: ${new Date(stats.newestIndexedAt).toISOString()}`
-                : '',
+              stats.newestIndexedAt ? `  Newest: ${new Date(stats.newestIndexedAt).toISOString()}` : '',
             ].filter(Boolean);
 
             setResult(lines.join('\n'));

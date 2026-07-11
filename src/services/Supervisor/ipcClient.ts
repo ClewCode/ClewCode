@@ -224,6 +224,14 @@ export async function listSessions(): Promise<IPCResponse> {
   }
 }
 
+export interface SessionLogsData {
+  sessionId: string;
+  status?: string;
+  isRunning: boolean;
+  pid?: number;
+  logContent: string;
+}
+
 export async function getSessionLogs(sessionId: string): Promise<IPCResponse> {
   try {
     await ensureSupervisor();

@@ -18,7 +18,7 @@ import { useAgentViewSummaries } from '../../hooks/useAgentViewSummaries.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { Box, Text, useInput } from '../../ink.js';
 import { touchSessionAttach } from '../../services/SessionLifecycle/sessionLifecycle.js';
-import { listSessions, pingDaemon } from '../../services/Supervisor/ipcClient.js';
+import { getSessionLogs, listSessions, pingDaemon, type SessionLogsData } from '../../services/Supervisor/ipcClient.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
 import { enterTeammateView } from '../../state/teammateViewHelpers.js';
 import { createTaskStateBase } from '../../Task.js';
@@ -424,6 +424,33 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
         confirm.toolUseContext.agentId === (selectedTask as any).taskId,
     );
   }, [selectedTask, toolUseConfirmQueue]);
+
+  // Live log tail for the peeked session, polled from the supervisor daemon
+  // (only meaningful for daemon-backed sessions — fromSupervisorRoster).
+  const [liveLog, setLiveLog] = React.useState<SessionLogsData | null>(null);
+  const peekedSupervisorSessionId =
+    peekOpen && selectedTask && (selectedTask as any).fromSupervisorRoster ? selectedTask.id : null;
+
+  React.useEffect(() => {
+    if (!peekedSupervisorSessionId) {
+      setLiveLog(null);
+      return;
+    }
+    let cancelled = false;
+
+    const poll = async () => {
+      const result = await getSessionLogs(peekedSupervisorSessionId);
+      if (cancelled || !result.ok) return;
+      setLiveLog(result.data as SessionLogsData);
+    };
+
+    void poll();
+    const interval = setInterval(() => void poll(), 1500);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [peekedSupervisorSessionId]);
 
   const handleReplySubmit = (text: string) => {
     if (!selectedTask) return;
@@ -841,7 +868,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
   };
   const cwdLabel = cwd ? (cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? cwd) : process.cwd().split(/[\\/]/).at(-1);
   const divider = '─'.repeat(contentWidth);
-  const inputPlaceholder = filterText ? 'filter sessions' : 'choose a specialist or describe a task';
+  const inputPlaceholder = filterText ? 'filter sessions' : 'describe a task for a new session';
   return (
     <Pane color="permission">
       <Box flexDirection="column" width={contentWidth} paddingLeft={1}>
@@ -943,6 +970,8 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
               onReplySubmit={handleReplySubmit}
               cursorOffset={cursorOffset}
               onCursorOffsetChange={setCursorOffset}
+              liveLog={peekedSupervisorSessionId ? (liveLog?.logContent ?? '') : undefined}
+              liveLogRunning={liveLog?.isRunning}
             />
           </Box>
         )}
@@ -1003,7 +1032,11 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
           </Box>
         )}
 
-        <Text dimColor>enter:dispatch/open · tab:agents · space:peek · /:dispatch · ?:help · esc:back</Text>
+        <Text dimColor>
+          {mode === 'dispatch' && dispatchText
+            ? 'auto mode · enter to create · esc to clear'
+            : 'enter:dispatch/open · tab:agents · space:peek · /:dispatch · ?:help · esc:back'}
+        </Text>
 
         {shortcutsHelpOpen && <AgentViewShortcutsHelp onClose={() => setShortcutsHelpOpen(false)} />}
       </Box>

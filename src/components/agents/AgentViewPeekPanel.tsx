@@ -21,7 +21,11 @@ type Props = {
   onReplySubmit: (text: string) => void;
   cursorOffset: number;
   onCursorOffsetChange: (offset: number) => void;
+  liveLog?: string;
+  liveLogRunning?: boolean;
 };
+
+const LIVE_LOG_LINES = 12;
 
 export function AgentViewPeekPanel({
   task,
@@ -31,6 +35,8 @@ export function AgentViewPeekPanel({
   onReplySubmit,
   cursorOffset,
   onCursorOffsetChange,
+  liveLog,
+  liveLogRunning,
 }: Props) {
   const activityPreviewLines = React.useMemo(() => {
     const activities = (task.progress as any)?.recentActivities ?? [];
@@ -113,6 +119,26 @@ export function AgentViewPeekPanel({
                 workerBadge={pendingPermissions[0]!.workerBadge}
               />
             </Box>
+          </Box>
+        )}
+
+        {/* Live terminal output tail, polled from the supervisor daemon's log file */}
+        {liveLog !== undefined && (
+          <Box flexDirection="column" marginY={1} paddingX={1} paddingY={1} borderStyle="round" borderColor="bashBorder">
+            <Box marginBottom={1}>
+              <Text bold dimColor>
+                {figures.play} Live output {liveLogRunning === false ? '(stopped)' : ''}
+              </Text>
+            </Box>
+            {liveLog
+              .split('\n')
+              .filter(line => line.length > 0)
+              .slice(-LIVE_LOG_LINES)
+              .map((line, i) => (
+                <Text key={i} dimColor wrap="truncate-end">
+                  {line}
+                </Text>
+              ))}
           </Box>
         )}
 

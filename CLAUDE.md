@@ -52,16 +52,16 @@ bun run check:ci && bun x tsc --noEmit && bun test --bail
 **Latest:** Memory semantic search now uses persistent SQLite vector indexing (sqlite-vec) for O(log N) retrieval instead of linear file-based scanning.
 
 ### Semantic Index (`src/memdir/semanticIndex.ts`)
-- Persistent `.clew/memory/vectors.db` with 768-dimensional Granite embeddings
-- Automatic invalidation on file changes (content_hash tracking)
-- Fallback cosine similarity in JavaScript if sqlite-vec extension unavailable
-- Index management: stats, prune, clear operations
+- Persistent `~/.clew/memory/vectors.db`; vec0 virtual table (KNN via `MATCH`) + `vector_embeddings` metadata table
+- Extension loaded via `sqlite-vec` npm package (`sqliteVec.load(db)`); falls back to JS brute-force cosine if it fails
+- vec0 returns L2 distance; embeddings are normalized, so cosine = 1 − L2²/2
+- Change detection: `needsIndexing()` compares file mtime vs `indexed_at` (no file read); `content_hash` skips re-embedding unchanged content
+- `sqlite-vec` is `--external` in the build (native .dll resolved at runtime)
 
 ### Memory Search (`src/memdir/semanticSearch.ts`)
-- **Fast path:** Vector index query via `searchVectors()` 
-- **Fallback:** Legacy linear scan if index unavailable
-- Migration: `migrateLegacyEmbeddings()` converts `.embedding.json` files to DB
-- Deprecation: File-based `.embedding.json` caches still supported but replaced on next index
+- `searchMemories()` runs `syncIndex()` before every query (concurrent with query embedding): new/changed memories get embedded, deleted ones drop out — the index is self-healing, no manual reindex needed
+- Automatic recall (`findRelevantMemories.ts`) uses this path first, LLM selection as fallback
+- Legacy `.embedding.json` caches are reused during sync (no re-embed) — `migrateLegacyEmbeddings()` syncs then deletes them
 
 ### Commands
 - `/memory-search "query"` — Find memories by semantic similarity (cross-lingual)
