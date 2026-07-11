@@ -541,6 +541,17 @@ export function wrapFetchWithResponseSizeLimit(baseFetch: FetchLike): FetchLike 
 
     const response = await baseFetch(url, init);
 
+    // Skip streaming responses. StreamableHTTP allows a POST to return
+    // `text/event-stream` — a long-lived stream of progress/notification events
+    // that stays open until the final response. Buffering it here would defeat
+    // incremental progress (nothing reaches the caller until the stream closes)
+    // and could appear to hang. Per-event size is handled by the SDK's SSE
+    // parser, same as the GET case above.
+    const contentType = response.headers.get('content-type');
+    if (contentType?.toLowerCase().includes('text/event-stream')) {
+      return response;
+    }
+
     // Fast path: check content-length header
     const contentLength = response.headers.get('content-length');
     if (contentLength !== null) {
@@ -2244,7 +2255,19 @@ export const fetchCommandsForClient = memoizeWithLRU(
           argNames,
           source: 'mcp',
           async getPromptForCommand(args: string) {
-            const argsArray = args.split(' ');
+            // Map whitespace-separated args positionally onto the prompt's
+            // declared argument names. The LAST named argument absorbs any
+            // remaining tokens (so `/cmd a hello world` binds the final arg to
+            // "hello world" instead of silently dropping "world"). Splitting on
+            // /\s+/ also tolerates tab/multi-space separators.
+            const tokens = args.trim().length > 0 ? args.trim().split(/\s+/) : [];
+            let argsArray: string[] = tokens;
+            if (argNames.length > 0 && tokens.length > argNames.length) {
+              argsArray = [
+                ...tokens.slice(0, argNames.length - 1),
+                tokens.slice(argNames.length - 1).join(' '),
+              ];
+            }
             try {
               const connectedClient = await ensureConnectedClient(client);
               const result = await connectedClient.client.getPrompt({
