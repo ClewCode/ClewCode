@@ -24,6 +24,18 @@ env:
   NODE_VERSION: 22
 
 jobs:
+  shadows:
+    name: Shadow Guard
+    timeout-minutes: 2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for .ts/.js shadow pairs
+        run: bash scripts/check-shadow-pairs.sh src
+
   lockfile:
     name: Lockfile Check
     timeout-minutes: 5

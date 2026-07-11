@@ -21,6 +21,8 @@ If a code change makes a doc statement stale (a count, a file path, a command, a
 - Bun's `.js`→`.ts` fallback resolved cleanly — all pairs were verified: exported symbols matched (no runtime bugs hidden), and the `.ts` was canonical in every case.
 - If you see a `.js` file in `src/`, it is **not** a shadow — it's a genuine JS source module (no `.ts` twin exists).
 
+**Shadow Guard:** A pre-commit hook (`bash scripts/check-shadow-pairs.sh src`) and CI job run automatically to prevent regression. If a `.ts`/`.js` pair is detected, commit/push will fail.
+
 ## Commands
 
 ```bash
@@ -54,9 +56,10 @@ See [AGENT.md](AGENT.md) for the full architecture (entry & REPL, query loop & p
 ## Key Patterns
 
 ### Before Pushing
-- Run `/clew-verify` (includes shadow check, static gate, smoke test).
-- Or manually: `bun run check:ci && bun x tsc --noEmit && bun test --bail`
+- Run `/clew-verify` (includes shadow guard, static gate, smoke test).
+- Or manually: `bash scripts/check-shadow-pairs.sh src && bun run check:ci && bun x tsc --noEmit && bun test --bail`
 - Do NOT assume green tests = working feature (Ink TUI state not visible to tests).
+- Pre-commit hook runs shadow guard automatically (configured in `.husky/pre-commit`).
 
 ### Cross-Repo Collaboration
 - Use `/workspace link` to pair projects. Links are bidirectional and auto-load on return to either repo.

@@ -1,0 +1,8 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Shadow pair guard
+bash scripts/check-shadow-pairs.sh src || exit 1
+
+# Lint + format check
+bun run format:check || exit 1
