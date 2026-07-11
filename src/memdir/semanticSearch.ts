@@ -3,19 +3,25 @@
  *
  * Uses @xenova/transformers to create embeddings for memory files
  * and perform semantic search with cross-lingual support.
+ * Embeddings are indexed in sqlite-vec for fast O(log N) ANN retrieval.
  *
  * Model: ibm-granite/granite-embedding-97m-multilingual-r2
  * - 100+ languages supported (including Thai)
  * - 97M params (~25MB quantized)
  * - Fast inference on CPU
+ *
+ * Storage: ~/.clew/memory/vectors.db with sqlite-vec extension
+ * - Persistent across sessions
+ * - Automatic invalidation on file changes (content_hash)
  */
 
 import { env, pipeline } from '@xenova/transformers';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { getClewConfigHomeDir } from '../utils/envUtils.js';
 import { type MemoryHeader, scanMemoryFiles } from './memoryScan.js';
 import { getAutoMemPath } from './paths.js';
+import { indexMemory, searchVectors, type VectorSearchResult, closeIndex } from './semanticIndex.js';
 
 // Configure Xenova
 env.allowLocalModels = false;
@@ -110,10 +116,13 @@ interface EmbeddingCache {
 
 /**
  * Get or create embedding for a memory file.
- * Caches embeddings to avoid recomputing on every search.
+ * Uses sqlite-vec index for persistent storage.
+ * File-based cache (.embedding.json) is kept for backward compat but deprecated.
  */
 async function getOrCreateEmbedding(header: MemoryHeader, content: string): Promise<number[]> {
+  // Try to load from legacy file cache first (backward compat)
   const embedPath = `${header.filePath}.embedding.json`;
+  let embedding: number[] | null = null;
 
   try {
     const embedContent = await readFile(embedPath, 'utf-8');
@@ -121,24 +130,22 @@ async function getOrCreateEmbedding(header: MemoryHeader, content: string): Prom
 
     // Return cached embedding if file hasn't changed
     if (cached.mtimeMs === header.mtimeMs) {
-      return cached.embedding;
+      embedding = cached.embedding;
     }
   } catch {
-    // No cache or invalid cache
+    // No legacy cache, will create new one
   }
 
-  // Create new embedding
-  const embedding = await createEmbedding(content);
+  // If no embedding yet, create it
+  if (!embedding) {
+    embedding = await createEmbedding(content);
+  }
 
-  // Save to cache
-  const cache: EmbeddingCache = {
-    text: content.slice(0, 500), // Store first 500 chars for debugging
-    embedding,
-    mtimeMs: header.mtimeMs,
-    createdAt: Date.now(),
-  };
-
-  await writeFile(embedPath, JSON.stringify(cache));
+  // Index the embedding in sqlite-vec (even if loaded from legacy cache)
+  await indexMemory(header.filePath, header.filename, embedding, {
+    type: header.type,
+    description: header.description,
+  });
 
   return embedding;
 }
@@ -156,36 +163,82 @@ export interface SemanticMemoryResult {
 }
 
 /**
- * Search memories semantically.
+ * Search memories semantically using sqlite-vec index.
+ *
+ * Fast O(log N) approximate nearest neighbor search with fallback to
+ * linear JS-based cosine similarity if sqlite-vec unavailable.
  *
  * @param query - Search query (any language)
  * @param topK - Number of results to return
  * @param threshold - Minimum similarity score (0-1)
- * @returns Sorted list of relevant memories
+ * @returns Sorted list of relevant memories by relevance score
  */
 export async function searchMemories(query: string, topK = 5, threshold = 0.6): Promise<SemanticMemoryResult[]> {
   const memoryDir = getAutoMemPath();
   if (!memoryDir) return [];
 
-  // Create query embedding
-  const queryEmbed = await createEmbedding(query);
+  try {
+    // Create query embedding
+    const queryEmbed = await createEmbedding(query);
 
-  // Scan memory files
+    // Fast vector search using index
+    const vectorResults = await searchVectors(queryEmbed, topK, threshold);
+
+    if (vectorResults.length === 0) return [];
+
+    // Load content for preview from matched files
+    const results = await Promise.allSettled(
+      vectorResults.map(async (vr): Promise<SemanticMemoryResult | null> => {
+        try {
+          const content = await readFile(vr.filePath, 'utf-8');
+          return {
+            file: vr.filename,
+            filePath: vr.filePath,
+            type: vr.type as any,
+            description: vr.description,
+            score: vr.score,
+            content: content.slice(0, 500), // Preview
+          };
+        } catch {
+          return null;
+        }
+      }),
+    );
+
+    return results
+      .filter((r): r is PromiseFulfilledResult<SemanticMemoryResult | null> => r.status === 'fulfilled')
+      .map(r => r.value)
+      .filter((r): r is SemanticMemoryResult => r !== null);
+  } catch (err) {
+    console.error('[memory] semantic search failed, falling back to legacy scan:', err);
+
+    // Fallback: legacy linear scan for recovery
+    return _legacyLinearSearch(query, topK, threshold, memoryDir);
+  }
+}
+
+/**
+ * Fallback linear search when index unavailable.
+ * Scans all memories and computes similarity in JS.
+ */
+async function _legacyLinearSearch(
+  query: string,
+  topK: number,
+  threshold: number,
+  memoryDir: string,
+): Promise<SemanticMemoryResult[]> {
+  const queryEmbed = await createEmbedding(query);
   const headers = await scanMemoryFiles(memoryDir, new AbortController().signal);
+
   if (headers.length === 0) return [];
 
-  // Search in parallel
   const results = await Promise.allSettled(
     headers.map(async (header): Promise<SemanticMemoryResult | null> => {
       try {
-        // Read file content (first 1000 chars for embedding)
         const content = await readFile(header.filePath, 'utf-8');
         const preview = content.slice(0, 1000);
 
-        // Get or create embedding
         const embedding = await getOrCreateEmbedding(header, preview);
-
-        // Calculate similarity
         const score = cosineSimilarity(queryEmbed, embedding);
 
         if (score < threshold) return null;
@@ -196,7 +249,7 @@ export async function searchMemories(query: string, topK = 5, threshold = 0.6): 
           type: header.type,
           description: header.description,
           score,
-          content: content.slice(0, 500), // Preview
+          content: content.slice(0, 500),
         };
       } catch {
         return null;
@@ -204,7 +257,6 @@ export async function searchMemories(query: string, topK = 5, threshold = 0.6): 
     }),
   );
 
-  // Filter, sort, and return top K
   return results
     .filter((r): r is PromiseFulfilledResult<SemanticMemoryResult | null> => r.status === 'fulfilled')
     .map(r => r.value)
@@ -214,8 +266,11 @@ export async function searchMemories(query: string, topK = 5, threshold = 0.6): 
 }
 
 /**
- * Batch embed all memories (pre-compute for faster search).
- * Useful for initial setup or after bulk updates.
+ * Batch index all memories into sqlite-vec.
+ * Scans memory directory and indexes embeddings.
+ * Useful for initial setup or after bulk memory additions.
+ *
+ * @returns Number of memories indexed
  */
 export async function embedAllMemories(): Promise<number> {
   const memoryDir = getAutoMemPath();
@@ -238,16 +293,68 @@ export async function embedAllMemories(): Promise<number> {
 }
 
 /**
- * Clear embedding cache.
- * Useful for forcing re-embedding after model updates.
+ * Migrate legacy .embedding.json files into sqlite-vec index.
+ * One-time operation to transition from file cache to database index.
+ * Preserves embedding data and removes legacy files.
+ *
+ * @returns Number of embeddings migrated
  */
-export async function clearEmbeddingCache(): Promise<number> {
+export async function migrateLegacyEmbeddings(): Promise<number> {
   const memoryDir = getAutoMemPath();
   if (!memoryDir) return 0;
 
-  const { readdir, unlink } = await import('fs/promises');
+  const { readdir } = await import('fs/promises');
   const entries = await readdir(memoryDir, { recursive: true });
-  const embedFiles = entries.filter(f => f.endsWith('.embedding.json'));
+  const embedFiles = entries.filter(f => typeof f === 'string' && f.endsWith('.embedding.json'));
+
+  let count = 0;
+
+  for (const embedFile of embedFiles) {
+    try {
+      const embedPath = join(memoryDir, embedFile);
+      const memPath = embedPath.replace('.embedding.json', '');
+
+      // Load legacy embedding
+      const embedContent = await readFile(embedPath, 'utf-8');
+      const cached: EmbeddingCache = JSON.parse(embedContent);
+
+      // Find matching memory header
+      const headers = await scanMemoryFiles(memoryDir, new AbortController().signal);
+      const header = headers.find(h => h.filePath === memPath);
+
+      if (header) {
+        // Index it
+        await indexMemory(header.filePath, header.filename, cached.embedding, {
+          type: header.type,
+          description: header.description,
+        });
+
+        // Remove legacy file
+        await unlink(embedPath);
+        count++;
+      }
+    } catch {
+      // Skip files that can't be migrated
+    }
+  }
+
+  return count;
+}
+
+/**
+ * Clear legacy embedding files and reinitialize index.
+ * Useful for resetting after model updates or troubleshooting.
+ * Keeps the sqlite-vec index intact.
+ *
+ * @returns Number of legacy files cleared
+ */
+export async function clearLegacyEmbeddingCache(): Promise<number> {
+  const memoryDir = getAutoMemPath();
+  if (!memoryDir) return 0;
+
+  const { readdir } = await import('fs/promises');
+  const entries = await readdir(memoryDir, { recursive: true });
+  const embedFiles = entries.filter(f => typeof f === 'string' && f.endsWith('.embedding.json'));
 
   let count = 0;
   for (const file of embedFiles) {
@@ -261,3 +368,8 @@ export async function clearEmbeddingCache(): Promise<number> {
 
   return count;
 }
+
+/**
+ * Export index management functions for CLI.
+ */
+export { closeIndex, getIndexStats, pruneOldVectors, clearAllVectors } from './semanticIndex.js';

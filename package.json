@@ -144,6 +144,7 @@
     "react-reconciler": "0.33.0",
     "shell-quote": "^1.8.4",
     "signal-exit": "^4.1.0",
+    "sqlite-vec": "^0.1.9",
     "tree-kill": "^1.2.2",
     "turndown": "^7.2.4",
     "usehooks-ts": "^3.1.1",

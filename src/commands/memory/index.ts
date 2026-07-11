@@ -14,4 +14,11 @@ export const memorySearch: Command = {
   load: () => import('./memorySearch.js'),
 };
 
+export const indexAdmin: Command = {
+  type: 'local-jsx',
+  name: 'index-admin',
+  description: 'Manage semantic vector index (stats, prune, clear)',
+  load: () => import('./indexAdmin.js'),
+};
+
 export default memory;

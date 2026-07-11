@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, afterEach } from 'bun:test';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { mkdirSync, rmSync, writeFileSync } from 'fs';
 
 // Test cosine similarity directly to avoid sharp dependency issues
 function cosineSimilarity(a: number[], b: number[]): number {
@@ -47,5 +50,40 @@ describe('semantic search', () => {
 
   it('handles empty vectors', () => {
     expect(cosineSimilarity([], [])).toBe(0);
+  });
+
+  it('serializes and deserializes embeddings correctly', () => {
+    // Test that embeddings survive round-trip serialization
+    const original = new Array(768).fill(0).map(() => Math.random() - 0.5);
+    const arr = new Float32Array(original);
+    const buffer = Buffer.from(arr.buffer);
+    const restored = new Float32Array(buffer.buffer);
+    const result = Array.from(restored);
+
+    // Check dimensions match
+    expect(result.length).toBe(768);
+
+    // Check values are close (float32 precision)
+    for (let i = 0; i < result.length; i++) {
+      expect(result[i]).toBeCloseTo(original[i], 6);
+    }
+  });
+
+  it('handles normalized vectors for similarity', () => {
+    // Test normalized vectors (typical for embeddings)
+    const normalize = (v: number[]) => {
+      const norm = Math.sqrt(v.reduce((sum, x) => sum + x * x, 0));
+      return v.map(x => x / norm);
+    };
+
+    const a = normalize([1, 2, 3, 4, 5]);
+    const b = normalize([1, 2, 3, 4, 5]);
+    const c = normalize([-1, -2, -3, -4, -5]); // Opposite direction
+
+    // Same vector after normalization should have similarity ~1
+    expect(cosineSimilarity(a, b)).toBeCloseTo(1, 5);
+
+    // Opposite vectors should have similarity ~-1
+    expect(cosineSimilarity(a, c)).toBeCloseTo(-1, 5);
   });
 });

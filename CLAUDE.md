@@ -47,6 +47,28 @@ npx vitest run -t "test name"          # By name
 bun run check:ci && bun x tsc --noEmit && bun test --bail
 ```
 
+## Memory System — Semantic Search with sqlite-vec
+
+**Latest:** Memory semantic search now uses persistent SQLite vector indexing (sqlite-vec) for O(log N) retrieval instead of linear file-based scanning.
+
+### Semantic Index (`src/memdir/semanticIndex.ts`)
+- Persistent `.clew/memory/vectors.db` with 768-dimensional Granite embeddings
+- Automatic invalidation on file changes (content_hash tracking)
+- Fallback cosine similarity in JavaScript if sqlite-vec extension unavailable
+- Index management: stats, prune, clear operations
+
+### Memory Search (`src/memdir/semanticSearch.ts`)
+- **Fast path:** Vector index query via `searchVectors()` 
+- **Fallback:** Legacy linear scan if index unavailable
+- Migration: `migrateLegacyEmbeddings()` converts `.embedding.json` files to DB
+- Deprecation: File-based `.embedding.json` caches still supported but replaced on next index
+
+### Commands
+- `/memory-search "query"` — Find memories by semantic similarity (cross-lingual)
+- `/index-admin stats` — View index health and memory stats
+- `/index-admin prune 90` — Remove vectors older than N days
+- `/index-admin clear --confirm` — Clear all vectors (destructive)
+
 See [AGENT.md § Build / Test / Lint](AGENT.md#build--test--lint-bun-only) for details and feature flags.
 
 ## Architecture Overview
