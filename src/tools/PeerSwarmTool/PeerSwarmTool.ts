@@ -2,13 +2,11 @@ import * as React from 'react';
 import { z } from 'zod/v4';
 import { MessageResponse } from '../../components/MessageResponse.js';
 import { Text } from '../../ink.js';
-import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
-import { getGlobalPeerStore } from '../../peer/PeerStore.js';
+import { dispatchSwarmCommand } from '../../peer/swarmDispatch.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
-import { errorMessage } from '../../utils/errors.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { clampTimeout, notifyPeerFeedback, truncateText } from '../peer/peerFeedback.js';
+import { truncateText } from '../peer/peerFeedback.js';
 import { DESCRIPTION, PEER_SWARM_TOOL_NAME, PROMPT } from './prompt.js';
 
 const inputSchema = lazySchema(() =>
@@ -111,158 +109,7 @@ export const PeerSwarmTool = buildTool({
     };
   },
   async call(input: { command: string; filter?: string; timeout?: number }) {
-    const store = getGlobalPeerStore();
-    const allPeers = store.getConnections().filter(p => p.status === 'online' && p.port > 0);
-    notifyPeerFeedback(`running swarm command: ${truncateText(input.command, 100)}`, 'peer-swarm', 'low');
-
-    if (allPeers.length === 0) {
-      notifyPeerFeedback('swarm skipped: no connected peers', 'peer-swarm-result', 'low');
-      return {
-        data: {
-          success: false,
-          totalPeers: 0,
-          succeeded: 0,
-          failed: 0,
-          timedOut: 0,
-          results: [],
-        },
-      };
-    }
-
-    // Apply optional filter
-    let peers = allPeers;
-    if (input.filter) {
-      const f = input.filter.toLowerCase();
-      peers = allPeers.filter(p => {
-        const tags = store.getPeerTags(p.id);
-        const name = p.hostname.toLowerCase();
-        const role = (tags?.role ?? '').toLowerCase();
-        return name.includes(f) || role.includes(f);
-      });
-      if (peers.length === 0) {
-        notifyPeerFeedback(`swarm skipped: no peers match "${input.filter}"`, 'peer-swarm-result', 'high');
-        return {
-          data: {
-            success: false,
-            totalPeers: allPeers.length,
-            succeeded: 0,
-            failed: 0,
-            timedOut: 0,
-            results: [],
-            error: `No peers match filter "${input.filter}"`,
-          },
-        };
-      }
-    }
-
-    const timeoutMs = clampTimeout(input.timeout, 60, 300);
-    const results: Output['results'] = [];
-    let succeeded = 0;
-    let failed = 0;
-    let timedOut = 0;
-    notifyPeerFeedback(`sending swarm command to ${peers.length} peer(s)`, 'peer-swarm-send', 'low');
-
-    const requests = peers.map(async peer => {
-      const start = performance.now();
-      try {
-        notifyPeerFeedback(`running on ${peer.hostname}:${peer.port}`, 'peer-swarm-peer', 'low');
-        const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-exec`;
-
-        // Get the target peer's auth token
-        const discovery = getGlobalDiscovery();
-        const targetToken = store.getPeerToken(peer.id) || discovery.getPeerToken(peer.id) || '';
-
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            command: input.command,
-            priority: 'normal',
-            from: 'ai-agent',
-            fromName: 'Clew AI',
-            token: targetToken,
-          }),
-          signal: AbortSignal.timeout(timeoutMs),
-        });
-
-        const durationMs = Math.round(performance.now() - start);
-
-        if (!response.ok && response.status !== 503) {
-          failed++;
-          results.push({
-            hostname: peer.hostname,
-            success: false,
-            error: `HTTP ${response.status}`,
-            durationMs,
-          });
-          return;
-        }
-
-        const body = await response.json();
-
-        if (body.queued) {
-          failed++;
-          results.push({
-            hostname: peer.hostname,
-            success: false,
-            error: `queued (position ${body.queuePosition})`,
-            durationMs,
-          });
-          return;
-        }
-
-        if (body.result) {
-          const ok = body.result.exitCode === 0;
-          if (ok) succeeded++;
-          else failed++;
-          results.push({
-            hostname: peer.hostname,
-            success: ok,
-            stdout: body.result.stdout ?? '',
-            stderr: body.result.stderr ?? '',
-            exitCode: body.result.exitCode,
-            durationMs,
-          });
-          return;
-        }
-
-        failed++;
-        results.push({
-          hostname: peer.hostname,
-          success: false,
-          error: body.error || 'Unknown response',
-          durationMs,
-        });
-      } catch (err: any) {
-        const durationMs = Math.round(performance.now() - start);
-        const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
-        if (isTimeout) timedOut++;
-        else failed++;
-        results.push({
-          hostname: peer.hostname,
-          success: false,
-          error: isTimeout ? `timed out after ${timeoutMs / 1000}s` : errorMessage(err),
-          durationMs,
-        });
-      }
-    });
-
-    await Promise.allSettled(requests);
-    notifyPeerFeedback(
-      `swarm complete: ${succeeded}/${peers.length} peer(s) succeeded`,
-      'peer-swarm-result',
-      failed > 0 || timedOut > 0 ? 'high' : 'medium',
-    );
-
-    return {
-      data: {
-        success: succeeded > 0,
-        totalPeers: peers.length,
-        succeeded,
-        failed,
-        timedOut,
-        results,
-      },
-    };
+    const data = await dispatchSwarmCommand(input);
+    return { data };
   },
 });

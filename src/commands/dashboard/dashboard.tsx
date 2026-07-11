@@ -3,6 +3,7 @@ import { Orchestrator } from '../../agentRuntime/orchestrator.js';
 import { RunStore } from '../../agentRuntime/runStore.js';
 import type { AgentRun, AgentState } from '../../agentRuntime/types.js';
 import { DashboardMonitor } from '../../components/dashboard/DashboardMonitor.js';
+import { SwarmView } from '../../components/dashboard/SwarmView.js';
 import { Dialog } from '../../components/design-system/Dialog.js';
 import { Divider } from '../../components/design-system/Divider.js';
 import { ProgressBar } from '../../components/design-system/ProgressBar.js';
@@ -601,6 +602,9 @@ export function DashboardComponent({ onDone }: DashboardProps): React.ReactNode 
         <Tab title="Tasks" id="tasks">
           {renderTasks()}
         </Tab>
+        <Tab title="Swarm" id="swarm">
+          <SwarmView workspaceRoot={process.cwd()} />
+        </Tab>
         <Tab title="Monitor" id="monitor">
           <DashboardMonitor onDone={onDone} />
         </Tab>
@@ -619,6 +623,7 @@ export function DashboardComponent({ onDone }: DashboardProps): React.ReactNode 
           Esc close · Tab switch tabs · {selectedTab === 'agents' && '↑↓ select · k kill · '}
           {selectedTab === 'daemons' && 'r restart daemon · '}
           {selectedTab === 'tasks' && '↑↓ select · '}
+          {selectedTab === 'swarm' && '← → select tab · ↑↓ select · k kill · r retry · '}
           Refresh every 1s
         </Text>
       </Box>
