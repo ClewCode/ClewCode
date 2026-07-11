@@ -432,6 +432,7 @@ async function multiPassCompact(
   // compact the summaries themselves (recursive compaction)
   const MAX_RECOMPACT_PASSES = 10;
   let prevTokens = Infinity;
+  let recompactPasses = 0;
 
   for (let pass = 2; pass <= MAX_RECOMPACT_PASSES; pass++) {
     const allMessages = [combinedUserMessage, ...messagesToKeep];
@@ -447,6 +448,7 @@ async function multiPassCompact(
     const reSummary = await compactSingleChunk([combinedUserMessage], context, customInstructions, pass);
     if (!reSummary) break;
 
+    recompactPasses = pass - 1;
     combinedSummary = reSummary;
     combinedUserMessage = createUserMessage({
       content: getCompactUserSummaryMessage(combinedSummary, false, getTranscriptPath()),
@@ -521,7 +523,7 @@ async function multiPassCompact(
     preCompactTokenCount,
     truePostCompactTokenCount,
     numChunks: chunks.length,
-    numRecompactPasses: pass > 1 ? pass - 1 : 0,
+    numRecompactPasses: recompactPasses,
   });
 
   return {

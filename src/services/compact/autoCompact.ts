@@ -728,12 +728,22 @@ function startBackgroundAutoCompact(
       recompactionInfo,
     ),
   };
-  backgroundAutoCompactJob.promise.catch(() => {
-    if (backgroundAutoCompactJob?.tailUuid === tailUuid) {
-      backgroundAutoCompactJob = undefined;
-      backgroundAutoCompactStatus = { running: false };
-    }
-  });
+  backgroundAutoCompactJob.promise
+    .then(() => {
+      // Job finished but may not be consumed for a while (or ever, if the
+      // context shrinks below threshold). The status is display-only — mark
+      // it not-running so the UI doesn't show a stuck background compact.
+      // The job itself stays cached for takeBackgroundAutoCompactResult.
+      if (backgroundAutoCompactJob?.tailUuid === tailUuid) {
+        backgroundAutoCompactStatus = { running: false };
+      }
+    })
+    .catch(() => {
+      if (backgroundAutoCompactJob?.tailUuid === tailUuid) {
+        backgroundAutoCompactJob = undefined;
+        backgroundAutoCompactStatus = { running: false };
+      }
+    });
 }
 
 async function takeBackgroundAutoCompactResult(
