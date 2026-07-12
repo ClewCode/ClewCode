@@ -159,8 +159,10 @@ Examples:
 Important rules:
 - When a skill matches the user's request: invoke the Skill tool FIRST, before responding
 - NEVER mention a skill name without actually calling the tool — just use it
+- You may invoke more than one skill when several are relevant — emit multiple Skill calls in the same turn and they run together
+- The same skill can be invoked again later in the session as many times as needed
 - Available skills appear below in <available-skills> tags
-- Skills may restrict tools or override the model — this is intentional
+- Skills may restrict tools or override the model — this is intentional (when several skills set conflicting model/effort overrides, the last one applies)
 - Do not use this tool for built-in CLI commands (/help, /clear, etc.)
 - If you see a <${COMMAND_NAME_TAG}> tag in the current turn, the skill is already loaded — follow its instructions directly
 `;
