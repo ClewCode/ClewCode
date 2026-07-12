@@ -153,6 +153,7 @@ function ColorPanel({
           clawdEyeColor: eyeColor,
           showClawdHorns: showHorns,
         }));
+        onDone('Clawd colors saved', { display: 'system' });
         return;
       }
     },
@@ -212,9 +213,9 @@ function ColorPanel({
               options={SPINNER_COLORS}
               onFocus={setting => {
                 setSpinnerColor(setting);
-                saveGlobalConfig(prev => ({ ...prev, spinnerColor: setting === 'default' ? undefined : setting }));
               }}
               onChange={async (value: string) => {
+                setSpinnerColor(value);
                 saveGlobalConfig(prev => ({ ...prev, spinnerColor: value === 'default' ? undefined : value }));
                 onDone(value === 'default' ? 'Spinner color reset to default' : `Spinner color set to: ${value}`);
               }}
