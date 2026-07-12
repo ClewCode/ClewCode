@@ -175,9 +175,14 @@ export function renderToolUseErrorMessage(
         </MessageResponse>
       );
     }
+    // Surface the specific reason (string not found / multiple matches / file
+    // modified since read) instead of a generic "Error editing file" — the
+    // detail is already in the tool result the model sees, but the user needs
+    // it too to understand what happened. Keep it to one line to stay tidy.
+    const reason = errorMessage ? firstLineOf(errorMessage).trim() : '';
     return (
       <MessageResponse>
-        <Text color="error">Error editing file</Text>
+        <Text color="error">{reason ? `Error editing file: ${reason}` : 'Error editing file'}</Text>
       </MessageResponse>
     );
   }
