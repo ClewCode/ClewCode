@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { randomUUID, type UUID } from 'node:crypto';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { resetStateForTests, setOriginalCwd, switchSession } from '../bootstrap/state.js';
@@ -12,6 +12,7 @@ import {
   loadTranscriptFile,
   loadTranscriptFromFile,
 } from './sessionStorage.js';
+import { sanitizePath } from './path.js';
 
 function userMessage({
   uuid = randomUUID() as UUID,
@@ -208,5 +209,88 @@ describe('getTranscriptPathForSession', () => {
     );
 
     resetStateForTests();
+  });
+
+  test('falls back to .codex, .opencode, .claude, and .gemini directories when file exists in fallback but not primary', async () => {
+    resetStateForTests();
+
+    const tempCodexDir = join(tmpdir(), `clew-test-codex-${randomUUID()}`);
+    const tempOpencodeDir = join(tmpdir(), `clew-test-opencode-${randomUUID()}`);
+    const tempClaudeDir = join(tmpdir(), `clew-test-claude-${randomUUID()}`);
+    const tempGeminiDir = join(tmpdir(), `clew-test-gemini-${randomUUID()}`);
+    const tempClewDir = join(tmpdir(), `clew-test-clew-${randomUUID()}`);
+
+    // Set config dirs
+    const oldCodexEnv = process.env.CODEX_CONFIG_DIR;
+    const oldOpencodeEnv = process.env.OPENCODE_CONFIG_DIR;
+    const oldClaudeEnv = process.env.CLAUDE_CONFIG_DIR;
+    const oldGeminiEnv = process.env.GEMINI_CONFIG_DIR;
+    const oldClewEnv = process.env.CLEW_CONFIG_DIR;
+
+    process.env.CODEX_CONFIG_DIR = tempCodexDir;
+    process.env.OPENCODE_CONFIG_DIR = tempOpencodeDir;
+    process.env.CLAUDE_CONFIG_DIR = tempClaudeDir;
+    process.env.GEMINI_CONFIG_DIR = tempGeminiDir;
+    process.env.CLEW_CONFIG_DIR = tempClewDir;
+
+    const originalCwd = join(tmpdir(), `clew-original-${randomUUID()}`);
+    setOriginalCwd(originalCwd);
+
+    const sessionId1 = randomUUID() as UUID;
+    const sessionId2 = randomUUID() as UUID;
+    const sessionId3 = randomUUID() as UUID;
+    const sessionId4 = randomUUID() as UUID;
+
+    // Create the fallback folders and files
+    const fallbackCodexProjectDir = join(tempCodexDir, 'projects', sanitizePath(originalCwd));
+    await mkdir(fallbackCodexProjectDir, { recursive: true });
+    const file1 = join(fallbackCodexProjectDir, `${sessionId1}.jsonl`);
+    await writeFile(file1, 'test');
+
+    const fallbackOpencodeProjectDir = join(tempOpencodeDir, 'projects', sanitizePath(originalCwd));
+    await mkdir(fallbackOpencodeProjectDir, { recursive: true });
+    const file2 = join(fallbackOpencodeProjectDir, `${sessionId2}.jsonl`);
+    await writeFile(file2, 'test');
+
+    const fallbackClaudeProjectDir = join(tempClaudeDir, 'projects', sanitizePath(originalCwd));
+    await mkdir(fallbackClaudeProjectDir, { recursive: true });
+    const file3 = join(fallbackClaudeProjectDir, `${sessionId3}.jsonl`);
+    await writeFile(file3, 'test');
+
+    const fallbackGeminiProjectDir = join(tempGeminiDir, 'projects', sanitizePath(originalCwd));
+    await mkdir(fallbackGeminiProjectDir, { recursive: true });
+    const file4 = join(fallbackGeminiProjectDir, `${sessionId4}.jsonl`);
+    await writeFile(file4, 'test');
+
+    try {
+      expect(getTranscriptPathForSession(sessionId1)).toBe(file1);
+      expect(getTranscriptPathForSession(sessionId2)).toBe(file2);
+      expect(getTranscriptPathForSession(sessionId3)).toBe(file3);
+      expect(getTranscriptPathForSession(sessionId4)).toBe(file4);
+    } finally {
+      // Clean up directories
+      await rm(tempCodexDir, { recursive: true, force: true });
+      await rm(tempOpencodeDir, { recursive: true, force: true });
+      await rm(tempClaudeDir, { recursive: true, force: true });
+      await rm(tempGeminiDir, { recursive: true, force: true });
+      await rm(tempClewDir, { recursive: true, force: true });
+
+      // Restore env vars
+      const envRestorers = [
+        { name: 'CODEX_CONFIG_DIR', val: oldCodexEnv },
+        { name: 'OPENCODE_CONFIG_DIR', val: oldOpencodeEnv },
+        { name: 'CLAUDE_CONFIG_DIR', val: oldClaudeEnv },
+        { name: 'GEMINI_CONFIG_DIR', val: oldGeminiEnv },
+        { name: 'CLEW_CONFIG_DIR', val: oldClewEnv },
+      ];
+      for (const r of envRestorers) {
+        if (r.val !== undefined) {
+          process.env[r.name] = r.val;
+        } else {
+          delete process.env[r.name];
+        }
+      }
+      resetStateForTests();
+    }
   });
 });

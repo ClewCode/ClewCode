@@ -27,6 +27,47 @@ export const getClewConfigHomeDir = memoize(
 /** Legacy alias — use getClewConfigHomeDir. */
 export const getClaudeConfigHomeDir = getClewConfigHomeDir;
 
+export const getClaudeConfigHomeDirFallback = memoize(
+  (): string => {
+    const claudeDir = process.env.CLAUDE_CONFIG_DIR;
+    if (claudeDir) {
+      return claudeDir.normalize('NFC');
+    }
+    return join(homedir(), '.claude').normalize('NFC');
+  },
+  () => process.env.CLAUDE_CONFIG_DIR ?? '.claude',
+);
+
+export const getFallbackConfigHomeDirs = memoize(
+  (): string[] => {
+    const dirs: string[] = [];
+    const providers = [
+      { env: 'CODEX_CONFIG_DIR', dir: '.codex' },
+      { env: 'OPENCODE_CONFIG_DIR', dir: '.opencode' },
+      { env: 'CLAUDE_CONFIG_DIR', dir: '.claude' },
+      { env: 'GEMINI_CONFIG_DIR', dir: '.gemini' },
+    ];
+    for (const p of providers) {
+      const val = process.env[p.env];
+      if (val) {
+        dirs.push(val.normalize('NFC'));
+      } else {
+        dirs.push(join(homedir(), p.dir).normalize('NFC'));
+      }
+    }
+    return dirs;
+  },
+  () => {
+    const parts = [
+      process.env.CODEX_CONFIG_DIR ?? '.codex',
+      process.env.OPENCODE_CONFIG_DIR ?? '.opencode',
+      process.env.CLAUDE_CONFIG_DIR ?? '.claude',
+      process.env.GEMINI_CONFIG_DIR ?? '.gemini',
+    ];
+    return parts.join('|');
+  },
+);
+
 export function getTeamsDir(): string {
   return join(getClewConfigHomeDir(), 'teams');
 }

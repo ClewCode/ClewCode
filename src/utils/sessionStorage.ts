@@ -16,7 +16,7 @@ import {
   writeFile,
 } from 'fs/promises';
 import memoize from 'lodash-es/memoize.js';
-import { basename, dirname, join } from 'path';
+import { basename, dirname, join, isAbsolute, relative } from 'path';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -79,7 +79,7 @@ export function getSessionModelForTranscript(): string | undefined {
 
 import { logForDebugging } from './debug.js';
 import { logForDiagnosticsNoPII } from './diagLogs.js';
-import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
+import { getClewConfigHomeDir, getFallbackConfigHomeDirs, isEnvTruthy } from './envUtils.js';
 import { isFsInaccessible } from './errors.js';
 import type { FileHistorySnapshot } from './fileHistory.js';
 import { formatFileSize } from './format.js';
@@ -196,6 +196,19 @@ export function getProjectsDir(): string {
   return join(getClewConfigHomeDir(), 'projects');
 }
 
+export function getFallbackProjectsDirs(): string[] {
+  return getFallbackConfigHomeDirs().map(dir => join(dir, 'projects'));
+}
+
+export function getFallbackCounterpartDirs(projectDir: string): string[] {
+  const primaryProjectsDir = getProjectsDir();
+  const rel = relative(primaryProjectsDir, projectDir);
+  if (rel.startsWith('..') || isAbsolute(rel)) {
+    return [];
+  }
+  return getFallbackProjectsDirs().map(fallbackProjectsDir => join(fallbackProjectsDir, rel));
+}
+
 export function getTranscriptPath(cwd?: string): string {
   const projectDir = getSessionProjectDir() ?? getProjectDir(cwd ?? getOriginalCwd());
   return join(projectDir, `${getSessionId()}.jsonl`);
@@ -218,7 +231,22 @@ export function getTranscriptPathForSession(sessionId: string, cwd?: string): st
     return getTranscriptPath(cwd);
   }
   const projectDir = getProjectDir(cwd ?? getOriginalCwd());
-  return join(projectDir, `${sessionId}.jsonl`);
+  const primaryPath = join(projectDir, `${sessionId}.jsonl`);
+
+  const fs = getFsImplementation();
+  if (fs.existsSync(primaryPath)) {
+    return primaryPath;
+  }
+
+  const fallbackDirs = getFallbackCounterpartDirs(projectDir);
+  for (const fallbackDir of fallbackDirs) {
+    const fallbackPath = join(fallbackDir, `${sessionId}.jsonl`);
+    if (fs.existsSync(fallbackPath)) {
+      return fallbackPath;
+    }
+  }
+
+  return primaryPath;
 }
 
 // 50 MB — session JSONL can grow to multiple GB (inc-3930). Callers that
@@ -3872,17 +3900,38 @@ export async function loadAllProjectsMessageLogs(
   return result.logs;
 }
 
-async function loadAllProjectsMessageLogsFull(limit?: number): Promise<LogOption[]> {
-  const projectsDir = getProjectsDir();
+async function getAllProjectDirs(): Promise<string[]> {
+  const dirs = new Set<string>();
 
-  let dirents: Dirent[];
+  const primary = getProjectsDir();
   try {
-    dirents = await readdir(projectsDir, { withFileTypes: true });
+    const dirents = await readdir(primary, { withFileTypes: true });
+    for (const d of dirents) {
+      if (d.isDirectory()) dirs.add(join(primary, d.name));
+    }
   } catch {
-    return [];
+    // ignore
   }
 
-  const projectDirs = dirents.filter(dirent => dirent.isDirectory()).map(dirent => join(projectsDir, dirent.name));
+  const fallbacks = getFallbackProjectsDirs();
+  for (const fallback of fallbacks) {
+    if (fallback !== primary) {
+      try {
+        const dirents = await readdir(fallback, { withFileTypes: true });
+        for (const d of dirents) {
+          if (d.isDirectory()) dirs.add(join(fallback, d.name));
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  return Array.from(dirs);
+}
+
+async function loadAllProjectsMessageLogsFull(limit?: number): Promise<LogOption[]> {
+  const projectDirs = await getAllProjectDirs();
 
   const logsPerProject = await Promise.all(projectDirs.map(projectDir => getLogsWithoutIndex(projectDir, limit)));
   const allLogs = logsPerProject.flat();
@@ -3910,16 +3959,7 @@ export async function loadAllProjectsMessageLogsProgressive(
   limit?: number,
   initialEnrichCount: number = INITIAL_ENRICH_COUNT,
 ): Promise<SessionLogResult> {
-  const projectsDir = getProjectsDir();
-
-  let dirents: Dirent[];
-  try {
-    dirents = await readdir(projectsDir, { withFileTypes: true });
-  } catch {
-    return { logs: [], allStatLogs: [], nextIndex: 0 };
-  }
-
-  const projectDirs = dirents.filter(dirent => dirent.isDirectory()).map(dirent => join(projectsDir, dirent.name));
+  const projectDirs = await getAllProjectDirs();
 
   const rawLogs: LogOption[] = [];
   for (const projectDir of projectDirs) {
@@ -3991,6 +4031,7 @@ export async function loadSameRepoMessageLogsProgressive(
  */
 async function getStatOnlyLogsForWorktrees(worktreePaths: string[], limit?: number): Promise<LogOption[]> {
   const projectsDir = getProjectsDir();
+  const fallbackProjectsDirs = getFallbackProjectsDirs();
 
   if (worktreePaths.length <= 1) {
     const cwd = getOriginalCwd();
@@ -4019,7 +4060,7 @@ async function getStatOnlyLogsForWorktrees(worktreePaths: string[], limit?: numb
   const allLogs: LogOption[] = [];
   const seenDirs = new Set<string>();
 
-  let allDirents: Dirent[];
+  let allDirents: Dirent[] = [];
   try {
     allDirents = await readdir(projectsDir, { withFileTypes: true });
   } catch (e) {
@@ -4027,6 +4068,18 @@ async function getStatOnlyLogsForWorktrees(worktreePaths: string[], limit?: numb
     logForDebugging(`Failed to read projects dir ${projectsDir}, falling back to current project: ${e}`);
     const projectDir = getProjectDir(getOriginalCwd());
     return getSessionFilesLite(projectDir, limit, getOriginalCwd());
+  }
+
+  const fallbackDirentsList: { fallbackDir: string; dirents: Dirent[] }[] = [];
+  for (const fallbackDir of fallbackProjectsDirs) {
+    if (fallbackDir !== projectsDir) {
+      try {
+        const dirents = await readdir(fallbackDir, { withFileTypes: true });
+        fallbackDirentsList.push({ fallbackDir, dirents });
+      } catch {
+        // ignore
+      }
+    }
   }
 
   for (const dirent of allDirents) {
@@ -4039,6 +4092,22 @@ async function getStatOnlyLogsForWorktrees(worktreePaths: string[], limit?: numb
         seenDirs.add(dirName);
         allLogs.push(...(await getSessionFilesLite(join(projectsDir, dirent.name), undefined, wtPath)));
         break;
+      }
+    }
+  }
+
+  for (const { fallbackDir, dirents } of fallbackDirentsList) {
+    for (const dirent of dirents) {
+      if (!dirent.isDirectory()) continue;
+      const dirName = caseInsensitive ? dirent.name.toLowerCase() : dirent.name;
+      if (seenDirs.has(dirName)) continue;
+
+      for (const { path: wtPath, prefix } of indexed) {
+        if (dirName === prefix || dirName.startsWith(`${prefix}-`)) {
+          seenDirs.add(dirName);
+          allLogs.push(...(await getSessionFilesLite(join(fallbackDir, dirent.name), undefined, wtPath)));
+          break;
+        }
       }
     }
   }
@@ -4344,17 +4413,15 @@ export async function findUnresolvedToolUse(toolUseId: string): Promise<Assistan
  * Returns a map of sessionId → {path, mtime, ctime, size}.
  * Stats are batched via Promise.all to avoid serial syscalls in the hot loop.
  */
-export async function getSessionFilesWithMtime(
-  projectDir: string,
-): Promise<Map<string, { path: string; mtime: number; ctime: number; size: number }>> {
-  const sessionFilesMap = new Map<string, { path: string; mtime: number; ctime: number; size: number }>();
-
+async function populateSessionFilesFromDir(
+  dir: string,
+  sessionFilesMap: Map<string, { path: string; mtime: number; ctime: number; size: number }>,
+): Promise<void> {
   let dirents: Dirent[];
   try {
-    dirents = await readdir(projectDir, { withFileTypes: true });
+    dirents = await readdir(dir, { withFileTypes: true });
   } catch {
-    // Directory doesn't exist - return empty map
-    return sessionFilesMap;
+    return;
   }
 
   const candidates: Array<{ sessionId: string; filePath: string }> = [];
@@ -4362,24 +4429,43 @@ export async function getSessionFilesWithMtime(
     if (!dirent.isFile() || !dirent.name.endsWith('.jsonl')) continue;
     const sessionId = validateUuid(basename(dirent.name, '.jsonl'));
     if (!sessionId) continue;
-    candidates.push({ sessionId, filePath: join(projectDir, dirent.name) });
+    candidates.push({ sessionId, filePath: join(dir, dirent.name) });
   }
 
   await Promise.all(
     candidates.map(async ({ sessionId, filePath }) => {
       try {
         const st = await stat(filePath);
-        sessionFilesMap.set(sessionId, {
-          path: filePath,
-          mtime: st.mtime.getTime(),
-          ctime: st.birthtime.getTime(),
-          size: st.size,
-        });
+        const mtime = st.mtime.getTime();
+        const existing = sessionFilesMap.get(sessionId);
+        if (!existing || mtime > existing.mtime) {
+          sessionFilesMap.set(sessionId, {
+            path: filePath,
+            mtime,
+            ctime: st.birthtime.getTime(),
+            size: st.size,
+          });
+        }
       } catch {
         logForDebugging(`Failed to stat session file: ${filePath}`);
       }
     }),
   );
+}
+
+export async function getSessionFilesWithMtime(
+  projectDir: string,
+): Promise<Map<string, { path: string; mtime: number; ctime: number; size: number }>> {
+  const sessionFilesMap = new Map<string, { path: string; mtime: number; ctime: number; size: number }>();
+
+  await populateSessionFilesFromDir(projectDir, sessionFilesMap);
+
+  const counterpartDirs = getFallbackCounterpartDirs(projectDir);
+  for (const counterpartDir of counterpartDirs) {
+    if (counterpartDir !== projectDir) {
+      await populateSessionFilesFromDir(counterpartDir, sessionFilesMap);
+    }
+  }
 
   return sessionFilesMap;
 }
