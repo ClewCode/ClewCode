@@ -266,6 +266,14 @@ Notable slash commands: `/model`, `/effort`, `/ultracode`, `/memory`, `/rule`, `
 
 All provider keys can also be set via the `/model` provider setup flow or in `.clew/settings.json` under `env`.
 
+### Session Recovery Fallback
+
+Clew Code supports resuming sessions from other rebranded or legacy variants of the CLI tool. If a session is not found in the primary `.clew` configuration home directory, the tool automatically scans and loads sessions from the following directories in your user home:
+- `.codex`
+- `.opencode`
+- `.claude`
+- `.gemini`
+
 ### Project Rules
 
 Create `.clew/rules.json` in your repo to define auto-observed behavioral rules — Clew reads them at session start and follows them without being reminded. Manage them interactively with `/rule`. Disable temporarily with `/rule off`.
