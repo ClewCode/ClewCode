@@ -8,7 +8,7 @@ export const DESCRIPTION =
 
 export const PROMPT =
   'Lists all discovered peer nodes and their assigned metadata (display name, role). ' +
-  'Use peer_set_name to assign custom names and peer_set_role to assign roles to workers. ' +
+  'Use peer_set_name to assign custom names and peer_set_role to assign roles to peers. ' +
   'Use `wait: true` with `timeout` and `minPeers` to wait for peers to appear on the network, ' +
   'instead of polling in a loop.\n\n' +
-  'This helps keep track of which worker does what.';
+  'This helps keep track of which peer does what.';

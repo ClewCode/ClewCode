@@ -278,8 +278,17 @@ export const SkillTool: Tool<InputSchema, Output, Progress> = buildTool({
 
   prompt: async () => getPrompt(getProjectRoot()),
 
-  // Only one skill/command should run at a time, since the tool expands the
-  // command into a full prompt that Claude must process before continuing.
+  // Skills may be invoked several at once and re-invoked across turns. Marking
+  // the tool concurrency-safe lets consecutive Skill calls in a single turn
+  // batch and run together (each still expands into its own prompt/newMessages;
+  // contextModifiers from the batch are applied in sequence by the
+  // orchestrator, so tool allow/deny lists union and model/effort overrides
+  // last-write-win). Forked skills spawn sub-agents, same as AgentTool, which
+  // is likewise concurrency-safe.
+  isConcurrencySafe() {
+    return true;
+  },
+
   // Skill-coach needs the skill name to avoid false-positive "you could have
   // used skill X" suggestions when X was actually invoked. Backseat classifies
   // downstream tool calls from the expanded prompt, not this wrapper, so the

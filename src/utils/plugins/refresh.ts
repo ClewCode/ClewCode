@@ -100,18 +100,30 @@ export async function refreshActivePlugins(setAppState: SetAppState): Promise<Re
   const [mcpCounts, lspCounts] = await Promise.all([
     Promise.all(
       enabled.map(async p => {
-        if (p.mcpServers) return Object.keys(p.mcpServers).length;
-        const servers = await loadPluginMcpServers(p, errors);
-        if (servers) p.mcpServers = servers;
-        return servers ? Object.keys(servers).length : 0;
+        try {
+          if (p.mcpServers) return Object.keys(p.mcpServers).length;
+          const servers = await loadPluginMcpServers(p, errors);
+          if (servers) p.mcpServers = servers;
+          return servers ? Object.keys(servers).length : 0;
+        } catch (e) {
+          logError(e);
+          errors.push({ type: 'generic-error', source: `plugin:${p.name}`, plugin: p.name, error: errorMessage(e) });
+          return 0;
+        }
       }),
     ),
     Promise.all(
       enabled.map(async p => {
-        if (p.lspServers) return Object.keys(p.lspServers).length;
-        const servers = await loadPluginLspServers(p, errors);
-        if (servers) p.lspServers = servers;
-        return servers ? Object.keys(servers).length : 0;
+        try {
+          if (p.lspServers) return Object.keys(p.lspServers).length;
+          const servers = await loadPluginLspServers(p, errors);
+          if (servers) p.lspServers = servers;
+          return servers ? Object.keys(servers).length : 0;
+        } catch (e) {
+          logError(e);
+          errors.push({ type: 'generic-error', source: `plugin:${p.name}`, plugin: p.name, error: errorMessage(e) });
+          return 0;
+        }
       }),
     ),
   ]);

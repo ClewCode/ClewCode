@@ -10,6 +10,31 @@ import { MessageResponse } from './MessageResponse.js';
 
 const MAX_RENDERED_LINES = 10;
 
+/**
+ * Turn a Zod InputValidationError payload into a concise one-line summary
+ * naming the offending field(s). Zod's error.message is a JSON array of issue
+ * objects ({ message, path, ... }). Returns "Invalid tool parameters: <field>:
+ * <message>" for the first issue, or the generic label if anything is off.
+ */
+function summarizeValidationError(trimmed: string): string {
+  const generic = 'Invalid tool parameters';
+  const jsonStart = trimmed.indexOf('[', trimmed.indexOf('InputValidationError: '));
+  if (jsonStart === -1) return generic;
+  try {
+    const issues = JSON.parse(trimmed.slice(jsonStart));
+    if (!Array.isArray(issues) || issues.length === 0) return generic;
+    const first = issues[0];
+    const message = typeof first?.message === 'string' ? first.message : '';
+    const field = Array.isArray(first?.path) && first.path.length > 0 ? first.path.join('.') : '';
+    const detail = field && message ? `${field}: ${message}` : field || message;
+    if (!detail) return generic;
+    const more = issues.length > 1 ? ` (+${issues.length - 1} more)` : '';
+    return `${generic}: ${detail}${more}`;
+  } catch {
+    return generic;
+  }
+}
+
 type Props = {
   result: ToolResultBlockParam['content'];
   verbose: boolean;
@@ -29,7 +54,12 @@ export function FallbackToolUseErrorMessage({ result, verbose }: Props): React.R
     const withoutErrorTags = withoutSandboxViolations.replace(/<\/?error>/g, '');
     const trimmed = withoutErrorTags.trim();
     if (!verbose && trimmed.includes('InputValidationError: ')) {
-      error = 'Invalid tool parameters';
+      // Zod serializes error.message as a JSON array of issues. Surface the
+      // first issue's field + message (e.g. "old_string: Required") so the
+      // user can see WHICH parameter is wrong instead of a bare
+      // "Invalid tool parameters". Fall back to the generic label if the
+      // payload isn't the expected shape.
+      error = summarizeValidationError(trimmed);
     } else if (trimmed.startsWith('Error: ') || trimmed.startsWith('Cancelled: ')) {
       error = trimmed;
     } else {
