@@ -17,4 +17,4 @@ export const PROMPT =
   'file registry, while remote workers are found via UDP multicast on the LAN.\n\n' +
   'For waiting, use `wait: true` with `minPeers` and `waitTimeout`. ' +
   'The tool will re-discover every few seconds until enough peers appear.\n\n' +
-  'Run this first to find available workers, then use peer_send_message or peer_todo to assign tasks.';
+  'Run this first to find available workers, then use peer_send_message or peer_broadcast to assign tasks.';
