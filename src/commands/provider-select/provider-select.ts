@@ -160,14 +160,15 @@ function applyProviderSelectionToSession(
   config: Pick<ProviderConfig, 'model' | 'provider' | 'apiKeys'>,
   isGlobal = false,
 ): void {
+  // Session model & provider are managed by AppState's *ForSession fields
+  // (mainLoopModelForSession / mainLoopProviderForSession). onChangeAppState
+  // syncs these from the session's own AppState into the query pipeline.
+  // ProviderManager is a process-global singleton — calling
+  // setSessionModel/setSessionProvider here leaks the override into every other
+  // in-process session (agents, bg tasks). Session-scoped API keys are okay
+  // since they're just copied into fetch headers, not read by other sessions.
   const providerManager = ProviderManager.getInstance();
 
-  if (config.provider) {
-    providerManager.setSessionProvider(config.provider as any);
-  }
-  if (config.model) {
-    providerManager.setSessionModel(config.model);
-  }
   if (config.apiKeys) {
     providerManager.setSessionApiKeys(config.apiKeys);
   }

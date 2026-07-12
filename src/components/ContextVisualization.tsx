@@ -316,7 +316,6 @@ export function ContextVisualization({ data }: Props): React.ReactNode {
           <Box flexDirection="column" marginTop={1}>
             <Box>
               <Text bold>Custom agents</Text>
-              <Text dimColor> · /agents</Text>
             </Box>
             {Array.from(groupBySource(agents).entries()).map(([sourceDisplay, sourceAgents]) => (
               <Box key={sourceDisplay} flexDirection="column" marginTop={1}>

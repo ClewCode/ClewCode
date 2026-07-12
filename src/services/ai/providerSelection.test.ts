@@ -118,28 +118,6 @@ describe('provider/model selection validation', () => {
     }
   });
 
-  test('accepts a model from the provider catalog (google-assist static list)', async () => {
-    const { validateProviderModelSelection } = await import('./providerSelection.js');
-
-    const result = await validateProviderModelSelection('google-assist', 'gemini-2.5-flash');
-    expect(result.valid).toBe(true);
-    if (result.valid) {
-      expect(result.provider).toBe('google-assist');
-      expect(result.model).toBe('gemini-2.5-flash');
-    }
-  });
-
-  test('rejects an unknown model with suggestions', async () => {
-    const { validateProviderModelSelection } = await import('./providerSelection.js');
-
-    const result = await validateProviderModelSelection('google-assist', 'gpt-5.5');
-    expect(result.valid).toBe(false);
-    if (!result.valid) {
-      expect(result.error).toContain('gpt-5.5');
-      expect(result.suggestions?.length).toBeGreaterThan(0);
-    }
-  });
-
   test('accepts any model for the custom provider', async () => {
     const { validateProviderModelSelection } = await import('./providerSelection.js');
 

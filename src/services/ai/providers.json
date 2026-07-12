@@ -7,7 +7,7 @@
     "modelsUrl": "https://api.openai.com/v1/models",
     "defaultModel": "gpt-5.5",
     "defaultModelVerified": true,
-    "note": "OpenAI â€” GPT-5.5 flagship. Source: developers.openai.com/docs/models, May 2026.",
+    "note": "OpenAI \u00e2\u20ac\u201d GPT-5.5 flagship. Source: developers.openai.com/docs/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -292,7 +292,13 @@
       {
         "id": "gpt-5.5",
         "label": "GPT-5.5 (API)",
-        "tags": ["tools", "vision", "reasoning", "latest", "recommended"],
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "latest",
+          "recommended"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,
@@ -308,7 +314,11 @@
       {
         "id": "gpt-5.4",
         "label": "GPT-5.4 (API)",
-        "tags": ["tools", "vision", "reasoning"],
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,
@@ -324,7 +334,12 @@
       {
         "id": "gpt-5.4-mini",
         "label": "GPT-5.4 Mini (API)",
-        "tags": ["tools", "vision", "reasoning", "fast"],
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "fast"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,
@@ -700,7 +715,7 @@
     "modelsUrl": "https://openrouter.ai/api/v1/models",
     "defaultModel": "anthropic/claude-opus-4.7",
     "defaultModelVerified": true,
-    "note": "OpenRouter â€” 358 models across 56 providers. Source: openrouter.ai/api/v1/models, May 2026.",
+    "note": "OpenRouter \u00e2\u20ac\u201d 358 models across 56 providers. Source: openrouter.ai/api/v1/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -886,7 +901,7 @@
     "modelsUrl": "https://api.deepseek.com/v1/models",
     "defaultModel": "deepseek-v4-pro",
     "defaultModelVerified": true,
-    "note": "DeepSeek V4 family. Released April 24, 2026. Text-only â€” does not support image_url content blocks.",
+    "note": "DeepSeek V4 family. Released April 24, 2026. Text-only \u00e2\u20ac\u201d does not support image_url content blocks.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1417,7 +1432,7 @@
     "modelsUrl": "https://api.groq.com/openai/v1/models",
     "defaultModel": "llama-3.3-70b-versatile",
     "defaultModelVerified": true,
-    "note": "Groq LPU inference â€” fastest tokens/sec. Source: console.groq.com/docs/models, May 2026.",
+    "note": "Groq LPU inference \u00e2\u20ac\u201d fastest tokens/sec. Source: console.groq.com/docs/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1519,7 +1534,7 @@
     "modelsUrl": "https://api.x.ai/v1/models",
     "defaultModel": "grok-4.5",
     "defaultModelVerified": true,
-    "note": "xAI Grok — Grok 4.5 is the latest flagship for coding, agentic tasks, and knowledge work. Grok Build 0.1 is optimized for coding agents. Source: docs.x.ai, July 2026.",
+    "note": "xAI Grok \u2014 Grok 4.5 is the latest flagship for coding, agentic tasks, and knowledge work. Grok Build 0.1 is optimized for coding agents. Source: docs.x.ai, July 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1535,7 +1550,13 @@
       {
         "id": "grok-4.5",
         "label": "Grok 4.5",
-        "tags": ["tools", "vision", "reasoning", "latest", "recommended"],
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "latest",
+          "recommended"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,
@@ -1551,7 +1572,13 @@
       {
         "id": "grok-build-0.1",
         "label": "Grok Build 0.1",
-        "tags": ["tools", "vision", "reasoning", "coding", "latest"],
+        "tags": [
+          "tools",
+          "vision",
+          "reasoning",
+          "coding",
+          "latest"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,
@@ -1596,7 +1623,7 @@
     "modelsUrl": "https://api.mistral.ai/v1/models",
     "defaultModel": "mistral-small-latest",
     "defaultModelVerified": true,
-    "note": "Mistral AI â€” frontier coding (Medium 3.5), hybrid (Small 4). Source: docs.mistral.ai/models, May 2026.",
+    "note": "Mistral AI \u00e2\u20ac\u201d frontier coding (Medium 3.5), hybrid (Small 4). Source: docs.mistral.ai/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1910,7 +1937,7 @@
     "modelsUrl": "https://api.together.xyz/v1/models",
     "defaultModel": "deepseek-ai/DeepSeek-V4-Pro",
     "defaultModelVerified": true,
-    "note": "Together AI â€” 200+ models, function calling. Source: together.ai/models, May 2026.",
+    "note": "Together AI \u00e2\u20ac\u201d 200+ models, function calling. Source: together.ai/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -2054,7 +2081,7 @@
     "modelsUrl": "https://integrate.api.nvidia.com/v1/models",
     "defaultModel": "deepseek-ai/deepseek-v4-pro",
     "defaultModelVerified": true,
-    "note": "NVIDIA NIM ï¿½ optimized inference. Source: build.nvidia.com, May 2026.",
+    "note": "NVIDIA NIM \u00ef\u00bf\u00bd optimized inference. Source: build.nvidia.com, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -2661,7 +2688,7 @@
     "label": "Cline",
     "envKey": "CLINE_API_KEY",
     "defaultBaseUrl": "https://api.cline.bot/api/v1",
-    "note": "Cline API â€” managed multi-provider AI endpoint. Updated June 2026.",
+    "note": "Cline API \u00e2\u20ac\u201d managed multi-provider AI endpoint. Updated June 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -2844,7 +2871,7 @@
     "defaultBaseUrl": "http://localhost:8787/v1",
     "defaultModel": "clew-code",
     "defaultModelVerified": true,
-    "note": "Clew Gateway â€” OpenAI-compatible model router. Set CLEW_GATEWAY_URL and CLEW_GATEWAY_KEY. One key to rule them all.",
+    "note": "Clew Gateway \u00e2\u20ac\u201d OpenAI-compatible model router. Set CLEW_GATEWAY_URL and CLEW_GATEWAY_KEY. One key to rule them all.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -2971,7 +2998,7 @@
     "modelsUrl": "https://opengateway.gitlawb.com/v1/models",
     "defaultModel": "xiaomi/mimo-v2.5-pro",
     "defaultModelVerified": true,
-    "note": "OpenAI-compatible gateway at opengateway.gitlawb.com. Bearer token (ogw_live_…). Uses full provider/model IDs (e.g. xiaomi/mimo-v2.5-pro). Short form 'mimo-v2.5-pro' also accepted for MiMo. Send 'auto' for smart routing.",
+    "note": "OpenAI-compatible gateway at opengateway.gitlawb.com. Bearer token (ogw_live_\u2026). Uses full provider/model IDs (e.g. xiaomi/mimo-v2.5-pro). Short form 'mimo-v2.5-pro' also accepted for MiMo. Send 'auto' for smart routing.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -2987,7 +3014,10 @@
       {
         "id": "xiaomi/mimo-v2.5-pro",
         "label": "MiMo V2.5 Pro",
-        "tags": ["tools", "latest"],
+        "tags": [
+          "tools",
+          "latest"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": false,
@@ -3003,7 +3033,9 @@
       {
         "id": "xiaomi/mimo-v2.5",
         "label": "MiMo V2.5",
-        "tags": ["vision"],
+        "tags": [
+          "vision"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,
@@ -3019,7 +3051,10 @@
       {
         "id": "google/gemini-3.1-flash-lite",
         "label": "Gemini 3.1 Flash Lite",
-        "tags": ["fast", "vision"],
+        "tags": [
+          "fast",
+          "vision"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,
@@ -3035,7 +3070,9 @@
       {
         "id": "minimax/minimax-m3",
         "label": "MiniMax M3",
-        "tags": ["reasoning"],
+        "tags": [
+          "reasoning"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": false,
@@ -3051,7 +3088,9 @@
       {
         "id": "qwen/qwen3.7-max",
         "label": "Qwen 3.7 Max",
-        "tags": ["coding"],
+        "tags": [
+          "coding"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": false,
@@ -3067,7 +3106,10 @@
       {
         "id": "z-ai/glm-5.2",
         "label": "GLM 5.2",
-        "tags": ["reasoning", "coding"],
+        "tags": [
+          "reasoning",
+          "coding"
+        ],
         "capabilities": {
           "toolCalling": "native",
           "vision": false,
@@ -3083,7 +3125,10 @@
       {
         "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
         "label": "Nemotron 3 Ultra (Free)",
-        "tags": ["free", "reasoning"],
+        "tags": [
+          "free",
+          "reasoning"
+        ],
         "capabilities": {
           "toolCalling": false,
           "vision": false,
@@ -3100,7 +3145,10 @@
       {
         "id": "tencent/hy3",
         "label": "Tencent HY3 (Free)",
-        "tags": ["free", "vision"],
+        "tags": [
+          "free",
+          "vision"
+        ],
         "capabilities": {
           "toolCalling": false,
           "vision": true,

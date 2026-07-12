@@ -29,6 +29,7 @@ describe('OpenAICompatibleProvider text-only payload fallback', () => {
       'DEEPSEEK_API_KEY',
       'https://api.deepseek.com/v1',
       false,
+      { supportsVision: false },
     );
     const client = await provider.createClient({});
 

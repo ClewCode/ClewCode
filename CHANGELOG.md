@@ -10,11 +10,11 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **`peer_spawn` inherits the spawner's provider and bypasses permissions**: Spawned peers now launch with `--provider <active provider>` (the spawner's active AI provider, in addition to the already-inherited model) and `--dangerously-skip-permissions`, so peers use the same provider/model as the session that spawned them and can work autonomously without permission prompts. (`src/tools/PeerSpawnTool/PeerSpawnTool.ts`)
 
-### Fixed
-- **Provider/model changes no longer leak into other running sessions**: `/providers set` (without `--global`) previously mutated the state-level `mainLoopModel`, which `onChangeAppState` persisted to userSettings + `provider.json`; other sessions' settings watchers then adopted the change AND wiped their own session model override. Now (1) non-global provider/model switches only touch the `*ForSession` fields (nothing written to shared config), and (2) a disk-originated model change no longer clears `mainLoopModelForSession`, so a session that explicitly chose a model keeps it even when another session saves a new default. (`src/commands/provider-select/provider-select.ts`, `src/utils/settings/applySettingsChange.ts`)
-
 ### Removed
-- **Hardcoded Gemini OAuth credentials from CodeAssistProvider**: Removed the `DEFAULT_OAUTH_CLIENT_ID` and `DEFAULT_OAUTH_CLIENT_SECRET` hardcoded values. `CODE_ASSIST_CLIENT_ID` and `CODE_ASSIST_CLIENT_SECRET` env vars are now required — no fallback to hardcoded defaults. (`src/services/ai/providers/CodeAssistProvider.ts`)
+- **`google-assist` provider from `/providers`**: The Gemini Code Assist (OAuth) entry was removed from `providers.json` — it no longer appears in the `/providers` picker. The provider class, `/login` flow, and OAuth token import remain in the codebase for anyone who wants to re-enable it locally. (`src/services/ai/providers.json`)
+
+### Fixed
+- **Session model/provider no longer leaks across in-process sessions**: `/model` and `/providers set` previously called `ProviderManager.setSessionModel()` / `setSessionProvider()` (`ProviderManager` is a process-global singleton), so the override was inherited by every other in-process session (spawned agents, `/bg` tasks). Now session-scoped model/provider changes flow through AppState's `mainLoopModelForSession` / `mainLoopProviderForSession`, which `onChangeAppState` syncs to `mainLoopModelOverride` (for `getUserSpecifiedModelSetting`) and `ProviderManager.sessionProvider` (for `getActiveProviderName`). `getModelForProvider()` no longer reads `this.sessionModel`, preventing the singleton from overriding the correct on-disk config model for unrelated sessions. (`src/commands/model/model.tsx`, `src/commands/provider-select/provider-select.ts`, `src/services/ai/ProviderManager.ts`, `src/state/onChangeAppState.ts`, `src/services/ai/ProviderManager.test.ts`)
 
 ## [0.6.0] — 2026-07-10
 

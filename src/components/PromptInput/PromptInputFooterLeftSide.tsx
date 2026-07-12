@@ -470,13 +470,7 @@ function ModeIndicator({
     // Compact running-agent badge (e.g. "← 1 agent"). Shown whenever there's
     // at least one background agent session running. Click or type /agents to
     // open the dashboard (Needs input / Working / Completed).
-    if (runningAgentCount > 0) {
-      parts.push(
-        <Text dimColor key="agent-count">
-          {figures.arrowLeft} {runningAgentCount} {runningAgentCount === 1 ? 'agent' : 'agents'} <KeyboardShortcutHint shortcut="/agents" action="view" />
-        </Text>,
-      );
-    }
+    // Agent count badge removed — /agents is deprecated.
   }
 
   // When we have teammate pills, always render them on their own line above other parts

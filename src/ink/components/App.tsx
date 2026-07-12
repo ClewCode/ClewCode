@@ -546,9 +546,8 @@ function processKeysInBatch(app: App, items: ParsedInput[], _unused1: undefined,
     // foregrounded (dialog has focus and ← doesn't work). Otherwise suspend.
     if (item.name === 'z' && item.ctrl) {
       if (getForegroundedSessionActive()) {
-        // Force-detach back to agent view — submit /agents as if ← was pressed
-        // on an empty prompt. This works even when a dialog has focus.
-        app.handleInput('/agents\r');
+        // Force-detach — submit '/detach' as if ← was pressed on an empty prompt.
+        app.handleInput('/detach\r');
         continue;
       }
       if (SUPPORTS_SUSPEND) {

@@ -3,6 +3,19 @@ import { normalizeUsage } from '../usageNormalizer.js';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 const DEFAULT_CHAT_PATH = '/chat/completions';
+const DEFAULT_TIMEOUT_MS = 300_000; // 5 minutes
+const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
+
+export interface OpenAICompatibleOptions {
+  /** Per-request timeout in ms (default: 300000 / 5 min).  Use env OPENAI_COMPATIBLE_TIMEOUT for global override. */
+  timeoutMs?: number;
+  /** Set false when the provider has zero vision-capable models (e.g. DeepSeek). */
+  supportsVision?: boolean;
+  /** Max automatic retries for rate-limit / server errors (default: 2). */
+  maxRetries?: number;
+  /** Extra HTTP headers to include in every request. */
+  extraHeaders?: Record<string, string>;
+}
 
 function safeParseErrorBody(text: string): Record<string, unknown> | undefined {
   try {
@@ -35,10 +48,6 @@ function extractErrorMessage(body: Record<string, unknown> | undefined, fallback
 function getChatCompletionsUrl(baseUrl: string, chatPath: string = DEFAULT_CHAT_PATH): string {
   const normalized = baseUrl.replace(/\/$/, '');
   return normalized.endsWith(chatPath) ? normalized : `${normalized}${chatPath}`;
-}
-
-function shouldForceTextOnlyPayload(providerId: ProviderId): boolean {
-  return providerId === 'deepseek';
 }
 
 function sanitizeMessagesForTextOnlyProvider(messages: unknown, model: string): unknown {
@@ -82,21 +91,37 @@ export class OpenAICompatibleProvider implements ProviderInterface {
   protected requiresApiKey: boolean;
   /** Override in subclass for non-standard endpoints (e.g. Cohere uses /chat) */
   protected chatPath: string = DEFAULT_CHAT_PATH;
+  protected timeoutMs: number;
+  protected maxRetries: number;
+  private supportsVision: boolean;
+  private _extraHeaders: Record<string, string>;
 
-  constructor(providerId: ProviderId, label: string, envKey: string, defaultBaseUrl: string, requiresApiKey = true) {
+  constructor(providerId: ProviderId, label: string, envKey: string, defaultBaseUrl: string, requiresApiKey = true, options?: OpenAICompatibleOptions) {
     this.providerId = providerId;
     this.label = label;
     this.envKey = envKey;
     this.defaultBaseUrl = defaultBaseUrl;
     this.requiresApiKey = requiresApiKey;
+    this.timeoutMs = options?.timeoutMs ?? (Number(process.env.OPENAI_COMPATIBLE_TIMEOUT) || DEFAULT_TIMEOUT_MS);
+    this.supportsVision = options?.supportsVision ?? true;
+    this.maxRetries = options?.maxRetries ?? 2;
+    this._extraHeaders = options?.extraHeaders ?? {};
   }
 
   /**
    * Override to add extra HTTP headers for requests (e.g., HTTP-Referer, X-Title).
-   * Headers are merged into the default Content-Type and Authorization headers.
+   * Constructor-supplied extraHeaders are included automatically.
    */
   protected getExtraHeaders(): Record<string, string> {
-    return {};
+    return { ...this._extraHeaders };
+  }
+
+  /**
+   * Override in subclasses or set via constructor `supportsVision` to strip
+   * image content from messages for text-only providers (e.g. DeepSeek).
+   */
+  protected shouldStripImages(): boolean {
+    return !this.supportsVision;
   }
 
   getProviderId() {
@@ -119,6 +144,7 @@ export class OpenAICompatibleProvider implements ProviderInterface {
     }
 
     const baseUrl = options.baseUrl ?? process.env[`${this.providerId.toUpperCase()}_BASE_URL`] ?? this.defaultBaseUrl;
+    const url = getChatCompletionsUrl(baseUrl, this.chatPath);
 
     return {
       chat: {
@@ -141,39 +167,76 @@ export class OpenAICompatibleProvider implements ProviderInterface {
               headers.Authorization = `Bearer ${apiKey}`;
             }
 
-            const requestParams = shouldForceTextOnlyPayload(this.providerId)
+            const requestParams = this.shouldStripImages()
               ? { ...params, messages: sanitizeMessagesForTextOnlyProvider(params.messages, params.model) }
               : params;
 
-            const response = await fetch(getChatCompletionsUrl(baseUrl, this.chatPath), {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({ ...requestParams, stream: isStreaming }),
-            });
+            const body = JSON.stringify({ ...requestParams, stream: isStreaming });
 
-            if (!response.ok) {
-              const text = await response.text();
-              const body = safeParseErrorBody(text);
-              const message = extractErrorMessage(body, text || `${response.status} ${response.statusText}`);
-              throw APIError.generate(
-                response.status,
-                body ?? {
-                  error: {
+            // Retry loop for rate limits and transient server errors
+            for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+              try {
+                const response = await fetch(url, {
+                  method: 'POST',
+                  headers,
+                  body,
+                  signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                  const text = await response.text();
+                  const errBody = safeParseErrorBody(text);
+                  const message = extractErrorMessage(errBody, text || `${response.status} ${response.statusText}`);
+
+                  // Retry on rate limit (429) and server errors (502, 503, 504)
+                  if (RETRYABLE_STATUSES.has(response.status) && attempt < this.maxRetries) {
+                    const delay = Math.min(1000 * 2 ** attempt + Math.random() * 500, 10000);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                  }
+
+                  throw APIError.generate(
+                    response.status,
+                    errBody ?? {
+                      error: {
+                        message,
+                        type: response.status === 429 ? 'rate_limit_error' : 'api_error',
+                      },
+                    },
                     message,
-                    type: response.status === 429 ? 'rate_limit_error' : 'api_error',
-                  },
-                },
-                message,
-                response.headers,
-              );
+                    response.headers,
+                  );
+                }
+
+                if (isStreaming) {
+                  return this.handleStreamingResponse(response);
+                }
+
+                const data = await response.json();
+                return this.normalizeResponse(data, response);
+              } catch (err) {
+                clearTimeout(timeoutId);
+
+                // Already formatted — not retryable
+                if (err instanceof APIError) throw err;
+
+                // Retry on network / abort errors (timeout, connection reset, DNS)
+                if (attempt < this.maxRetries) {
+                  const delay = Math.min(1000 * 2 ** attempt + Math.random() * 500, 10000);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  continue;
+                }
+
+                throw err;
+              }
             }
 
-            if (isStreaming) {
-              return this.handleStreamingResponse(response);
-            }
-
-            const data = await response.json();
-            return this.normalizeResponse(data, response);
+            throw new Error(`${this.providerId}: all retry attempts exhausted`);
           },
         },
       },

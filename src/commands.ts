@@ -111,7 +111,6 @@ import taskCmd from './commands/task/index.js';
 import scrollSpeed from './commands/scroll-speed/index.js';
 import pluginDetails from './commands/plugin-details/index.js';
 import advisor from './commands/advisor.js';
-import agentCmd from './commands/agent/index.js';
 import capabilities from './commands/capabilities/index.js';
 
 import { logError } from './utils/log.js';
@@ -179,7 +178,6 @@ const COMMANDS = memoize((): Command[] => [
   addDir,
   workspace,
   advisor,
-  agentCmd,
   autofixPr,
   bg,
   branch,

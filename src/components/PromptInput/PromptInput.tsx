@@ -2405,7 +2405,7 @@ function PromptInput({
       }
     }
     if (key.leftArrow && cursorOffset === 0 && input === '' && !isLoading) {
-      void onSubmit('/agents');
+      // /agents navigation removed — dashboard is deprecated.
       return;
     }
 

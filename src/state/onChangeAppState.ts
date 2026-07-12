@@ -94,6 +94,33 @@ export function onChangeAppState({ newState, oldState }: { newState: AppState; o
     }
   }
 
+  // mainLoopModelForSession: sync to mainLoopModelOverride so the query
+  // pipeline (getUserSpecifiedModelSetting → getMainLoopModelOverride) picks
+  // up the session-scoped model. This is the ONLY bridge between AppState's
+  // session model and the model-utility functions — we intentionally do NOT
+  // write to ProviderManager.sessionModel (which is a process-global singleton
+  // that would leak the override into every other in-process session).
+  // When the session model is cleared (null), fall back to mainLoopModel so
+  // agents/tasks that were spawned without an explicit session model inherit
+  // the session's base model rather than the parent's session override.
+  if (newState.mainLoopModelForSession !== oldState.mainLoopModelForSession) {
+    setMainLoopModelOverride(
+      newState.mainLoopModelForSession ?? newState.mainLoopModel,
+    );
+  }
+
+  // mainLoopProviderForSession: sync to ProviderManager's sessionProvider so
+  // getActiveProviderName() returns the session-scoped provider. ProviderManager
+  // is a process-global singleton, so this DOES leak across in-process sessions.
+  // However, unlike the model, the provider is set less frequently and spawned
+  // agents explicitly pass their own provider. The alternative — not syncing —
+  // would break /providers set entirely since getActiveProviderName() reads
+  // this.sessionProvider as its first check.
+  if (newState.mainLoopProviderForSession !== oldState.mainLoopProviderForSession) {
+    const providerManager = ProviderManager.getInstance();
+    providerManager.setSessionProvider(newState.mainLoopProviderForSession as any);
+  }
+
   // expandedView → persist as showExpandedTodos + showSpinnerTree for backwards compat
   if (newState.expandedView !== oldState.expandedView) {
     const showExpandedTodos = newState.expandedView === 'tasks';

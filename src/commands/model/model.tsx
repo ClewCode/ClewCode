@@ -11,7 +11,6 @@ import {
 import { useAppState, useSetAppState } from '../../state/AppState.js';
 import type { LocalJSXCommandCall } from '../../types/command.js';
 import type { EffortLevel } from '../../utils/effort.js';
-import { isBilledAsExtraUsage } from '../../utils/extraUsage.js';
 import { MODEL_ALIASES } from '../../utils/model/aliases.js';
 import { checkOpus1mAccess, checkSonnet1mAccess } from '../../utils/model/check1mAccess.js';
 import {
@@ -75,6 +74,10 @@ function ModelPickerWrapper({
     }
 
     if (targetProvider && model !== null) {
+      // Session model is managed by AppState's mainLoopModelForSession →
+      // onChangeAppState syncs it to the query pipeline. ProviderManager is a
+      // process-global singleton — do NOT call setSessionModel/setSessionProvider
+      // here, or the change leaks into every other in-process session (agents, bg).
       try {
         const pm = ProviderManager.getInstance();
         const cfg = pm.getSelectedProviderConfig(true);
@@ -91,8 +94,6 @@ function ModelPickerWrapper({
           };
           pm.saveSelectedProviderConfig(updatedConfig as any);
         }
-        pm.setSessionProvider(targetProvider as any);
-        pm.setSessionModel(model);
       } catch {
         // Non-critical configuration update error
       }
@@ -242,17 +243,10 @@ function SetModelAndClose({
     }
 
     function setModel(modelValue: string | null): void {
-      if (targetProvider && modelValue !== null) {
-        try {
-          const pm = ProviderManager.getInstance();
-
-          // Session-only: don't persist provider/model to shared config.
-          pm.setSessionProvider(targetProvider as any);
-          pm.setSessionModel(modelValue);
-        } catch {
-          // Non-critical configuration update error
-        }
-      }
+      // Session-only: AppState's mainLoopModelForSession syncs via
+      // onChangeAppState. Do NOT call setSessionModel/setSessionProvider on the
+      // ProviderManager singleton — that leaks the override into every in-process
+      // session (agents, bg tasks).
 
       setAppState(prev => ({
         ...prev,

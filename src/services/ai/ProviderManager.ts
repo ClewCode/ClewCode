@@ -305,15 +305,17 @@ export class ProviderManager {
   getModelForProvider(provider?: ProviderId): string | undefined {
     const providerName = provider ?? this.getActiveProviderName();
     const providerEntry = getProviderRegistryEntry(providerName);
-    const isSupportedModel = (model: string | undefined) =>
-      !model || providerName !== 'google-assist' || providerEntry.models.some(entry => entry.id === model);
+    const modelConfig = this.getSelectedProviderConfig().model;
+    const model = modelConfig?.trim() ? modelConfig : providerEntry.defaultModel;
 
-    if (!provider && this.sessionModel) {
-      return isSupportedModel(this.sessionModel) ? this.sessionModel : providerEntry.defaultModel;
+    // Validate against google-assist model allowlist if applicable.
+    if (model && providerName === 'google-assist') {
+      if (!modelConfig || !providerEntry.models.some(entry => entry.id === model)) {
+        return providerEntry.defaultModel;
+      }
     }
 
-    const config = this.getSelectedProviderConfig();
-    return isSupportedModel(config.model) ? config.model : providerEntry.defaultModel;
+    return model || undefined;
   }
 
   async createClient(provider?: ProviderId, options: ProviderInitOptions = {}): Promise<unknown> {

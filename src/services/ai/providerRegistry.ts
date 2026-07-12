@@ -97,7 +97,9 @@ function createProvider(key: string, entry: any): ProviderInterface {
       return new OpenAICompatibleProvider(entry.providerId, entry.label, entry.envKey, entry.defaultBaseUrl);
     default:
       if (entry.envKey && entry.defaultBaseUrl) {
-        return new OpenAICompatibleProvider(entry.providerId, entry.label, entry.envKey, entry.defaultBaseUrl);
+        return new OpenAICompatibleProvider(entry.providerId, entry.label, entry.envKey, entry.defaultBaseUrl, true, {
+          supportsVision: entry.capabilities?.imageIn !== false,
+        });
       }
       throw new Error(`Unknown provider class for ${key}`);
   }
