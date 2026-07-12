@@ -94,6 +94,8 @@ export type SetToolJSXFn = (
     isImmediate?: boolean;
     /** Set to true to clear a local JSX command (e.g., from its onDone callback) */
     clearLocalJSX?: boolean;
+    /** Render as a centered modal (full-screen takeover) regardless of fullscreen mode */
+    centered?: boolean;
   } | null,
 ) => void;
 

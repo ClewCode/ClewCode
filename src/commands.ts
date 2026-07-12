@@ -30,6 +30,7 @@ import swarmCmd from './commands/peer/index.js';
 import pr_comments from './commands/pr_comments/index.js';
 import releaseNotes from './commands/release-notes/index.js';
 import rename from './commands/rename/index.js';
+import importSession from './commands/importSession/index.js';
 import resume from './commands/resume/index.js';
 import review, { ultrareview } from './commands/review.js';
 import session from './commands/session/index.js';
@@ -234,6 +235,7 @@ const COMMANDS = memoize((): Command[] => [
   reloadPlugins,
   rename,
   resume,
+  importSession,
   session,
   skills,
   stats,

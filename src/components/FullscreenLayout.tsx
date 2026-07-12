@@ -92,6 +92,10 @@ type Props = {
    *  ScrollBox AND bottom slot. Provides ModalContext so Pane/Dialog inside
    *  skip their own frame. Fullscreen only; inline after overlay otherwise. */
   modal?: ReactNode;
+  /** When true and modal is set, the modal covers the full terminal height
+   *  with no transcript peek rows above the divider. Used by full-screen
+   *  takeovers like /agents dashboard. */
+  noTranscriptPeek?: boolean;
   /** Ref passed via ModalContext so Tabs (or any scroll-owning descendant)
    *  can attach it to their own ScrollBox for tall content. */
   modalScrollRef?: React.RefObject<ScrollBoxHandle | null>;
@@ -326,6 +330,7 @@ export function FullscreenLayout({
   overlay,
   bottomFloat,
   modal,
+  noTranscriptPeek = false,
   modalScrollRef,
   scrollRef,
   dividerYRef,
@@ -407,18 +412,33 @@ export function FullscreenLayout({
       <PromptOverlayProvider>
         <IdeShellLayout enabled={isIdeShellEnabled()} columns={columns}>
           <Box flexGrow={1} flexDirection="column" overflow="hidden">
-            {headerPrompt && <StickyPromptHeader text={headerPrompt.text} onClick={headerPrompt.scrollTo} />}
-            <ScrollBox
-              ref={scrollRef}
-              flexGrow={1}
-              flexDirection="column"
-              paddingTop={padCollapsed ? 0 : 1}
-              stickyScroll
-            >
-              <ScrollChromeContext value={chromeCtx}>{scrollable}</ScrollChromeContext>
-              {overlay}
-            </ScrollBox>
-            {!hidePill && pillVisible && overlay == null && (
+            {/* Full-screen takeover (e.g. /agents): render the modal as the main
+                content so the real REPL PromptInput (in the bottom slot below)
+                stays visible and owns input — no bespoke input inside the modal. */}
+            {noTranscriptPeek && modal != null ? (
+              <ModalContext
+                value={{ rows: terminalRows - 1, columns: columns - 4, scrollRef: modalScrollRef ?? null }}
+              >
+                <Box flexDirection="column" flexGrow={1} paddingX={2} paddingTop={1} overflow="hidden">
+                  {modal}
+                </Box>
+              </ModalContext>
+            ) : (
+              <>
+                {headerPrompt && <StickyPromptHeader text={headerPrompt.text} onClick={headerPrompt.scrollTo} />}
+                <ScrollBox
+                  ref={scrollRef}
+                  flexGrow={1}
+                  flexDirection="column"
+                  paddingTop={padCollapsed ? 0 : 1}
+                  stickyScroll
+                >
+                  <ScrollChromeContext value={chromeCtx}>{scrollable}</ScrollChromeContext>
+                  {overlay}
+                </ScrollBox>
+              </>
+            )}
+            {!hidePill && pillVisible && overlay == null && !noTranscriptPeek && (
               <NewMessagesPill
                 count={newMessageCount}
                 onClick={() => {
@@ -444,7 +464,7 @@ export function FullscreenLayout({
             </Box>
           </Box>
         </IdeShellLayout>
-        {modal != null && (
+        {modal != null && !noTranscriptPeek && (
           <ModalContext
             value={{
               rows: terminalRows - MODAL_TRANSCRIPT_PEEK - 1,
@@ -495,6 +515,18 @@ export function FullscreenLayout({
     return mainPanel;
   }
 
+  // Outside fullscreen: if a centered modal is showing, render it instead of
+  // the scrollable content so it appears as a full-terminal takeover (e.g.
+  // /agents dashboard). Inline modal content (from fullscreen-optional commands)
+  // still renders below everything for non-fullscreen users.
+  if (modal) {
+    return (
+      <>
+        {modal}
+        {bottom}
+      </>
+    );
+  }
   return (
     <>
       {scrollable}

@@ -467,14 +467,13 @@ function ModeIndicator({
     parts.push(<ProactiveCountdown key="proactive" />);
   } else if (!hasTeammatePills && showHint) {
     parts.push(...hintParts);
-    // Compact running-agent badge (e.g. "← 2 agents"). Only shown once there's
-    // more than one background session — a single agent is already visible in
-    // the transcript, so the badge would be redundant. Type /agent to open the
-    // dashboard (Needs input / Working / Completed) once it appears.
-    if (runningAgentCount > 1) {
+    // Compact running-agent badge (e.g. "← 1 agent"). Shown whenever there's
+    // at least one background agent session running. Click or type /agents to
+    // open the dashboard (Needs input / Working / Completed).
+    if (runningAgentCount > 0) {
       parts.push(
         <Text dimColor key="agent-count">
-          {figures.arrowLeft} {runningAgentCount} agents <KeyboardShortcutHint shortcut="/agent" action="view" />
+          {figures.arrowLeft} {runningAgentCount} {runningAgentCount === 1 ? 'agent' : 'agents'} <KeyboardShortcutHint shortcut="/agents" action="view" />
         </Text>,
       );
     }

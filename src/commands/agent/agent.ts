@@ -1,15 +1,13 @@
 /**
- * /agent command implementation.
+ * /agents command implementation.
  *
  * Unified agent command: dispatch background agents, monitor sessions,
  * manage agent definitions, and control the agent runtime (orchestrator).
- *
- * /agents is registered as an alias and routes here.
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type * as React from 'react';
+import * as React from 'react';
 import { Orchestrator } from '../../agentRuntime/orchestrator.js';
 import { RunStore } from '../../agentRuntime/runStore.js';
 import { AgentsMenu } from '../../components/agents/AgentsMenu.js';
@@ -24,14 +22,14 @@ import { DOT_CLEW } from '../../utils/clewPaths.js';
 
 const HELP = `AGENT — dispatch Clew internal background specialists from chat
 
-  /agent                   open the agent dashboard (Needs input / Working / Completed)
-  /agent <task>            dispatch a background specialist
-  /agent @<agent> <task>   dispatch with a specific specialist
-  /agent config            manage agent definitions
-  /agent run "<task>"      legacy orchestrator workflow
-  /agent status [id]       view orchestrator runs
-  /agent trace <id>        display execution timeline
-  /agent doctor            verify runtime installation
+  /agents                  open the agent dashboard (Needs input / Working / Completed)
+  /agents <task>           dispatch a background specialist
+  /agents @<agent> <task>  dispatch with a specific specialist
+  /agents config           manage agent definitions
+  /agents run "<task>"     legacy orchestrator workflow
+  /agents status [id]      view orchestrator runs
+  /agents trace <id>       display execution timeline
+  /agents doctor           verify runtime installation
 
   For external CLIs like Codex, use /peer run <provider> <task>`;
 
@@ -90,8 +88,9 @@ export async function call(
   const argTokens = trimmedArgs.split(/\s+/).filter(Boolean);
   const subcommand = argTokens[0]?.toLowerCase();
 
-  // Bare /agent (no args at all) — open the dashboard directly. Also keep
-  // `view`/`dashboard` as explicit aliases for muscle memory / scripting.
+  // Bare /agents (no args at all) — open the full-screen interactive dashboard
+  // (Needs input / Working / Completed), rendered as a centered full-terminal
+  // takeover via the `centered: command.name === 'agents'` plumbing.
   if (trimmedArgs.length === 0 || subcommand === 'view' || subcommand === 'dashboard') {
     const cwdMatch = trimmedArgs.match(/--cwd\s+(\S+)/);
     const cwd = cwdMatch ? cwdMatch[1] : undefined;
@@ -168,7 +167,7 @@ export async function call(
 }
 
 /**
- * Orchestrator subcommand execution (legacy /agent runtime).
+ * Orchestrator subcommand execution (legacy /agents runtime).
  */
 async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: string): Promise<void> {
   const tokens = parseArgs(args || '');
@@ -182,7 +181,7 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
       case 'run': {
         const task = tokens.slice(1).join(' ');
         if (!task) {
-          onDone('Error: Please specify a task. Example: /agent run "Implement login logic"', { display: 'system' });
+          onDone('Error: Please specify a task. Example: /agents run "Implement login logic"', { display: 'system' });
           return;
         }
 
@@ -197,11 +196,11 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
 
         let finalMsg = `\nAgent run loop paused/stopped. Status: **${finalRun.status.toUpperCase()}**\n`;
         if (finalRun.status === 'completed') {
-          finalMsg += `🎉 Success! Summary: ${finalState.taskSummary}\nUse \`/agent report ${runId}\` to see full details.`;
+          finalMsg += `🎉 Success! Summary: ${finalState.taskSummary}\nUse \`/agents report ${runId}\` to see full details.`;
         } else if (finalRun.status === 'failed') {
           finalMsg += `❌ Failed. Reason: ${finalState.taskSummary}`;
         } else if (finalRun.status === 'waiting_approval') {
-          finalMsg += `⚠️ Waiting for user approval on step ${finalState.step}.\nUse \`/agent approvals\` or \`/agent status ${runId}\` to view pending actions.`;
+          finalMsg += `⚠️ Waiting for user approval on step ${finalState.step}.\nUse \`/agents approvals\` or \`/agents status ${runId}\` to view pending actions.`;
         } else {
           finalMsg += `Current step: ${finalState.step}.`;
         }
@@ -235,7 +234,7 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
         } else {
           const runs = await runStore.listRuns();
           if (runs.length === 0) {
-            onDone('No agent runs found. Start one with `/agent run "<task>"`', { display: 'system' });
+            onDone('No agent runs found. Start one with `/agents run "<task>"`', { display: 'system' });
             return;
           }
 
@@ -264,7 +263,7 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
       case 'trace': {
         const targetRunId = tokens[1];
         if (!targetRunId) {
-          onDone('Error: Please specify a Run ID. Usage: /agent trace <run-id>', { display: 'system' });
+          onDone('Error: Please specify a Run ID. Usage: /agents trace <run-id>', { display: 'system' });
           return;
         }
 
@@ -312,7 +311,7 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
       case 'pause': {
         const targetRunId = tokens[1];
         if (!targetRunId) {
-          onDone('Error: Please specify a Run ID. Usage: /agent pause <run-id>', { display: 'system' });
+          onDone('Error: Please specify a Run ID. Usage: /agents pause <run-id>', { display: 'system' });
           return;
         }
 
@@ -324,7 +323,7 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
       case 'resume': {
         const targetRunId = tokens[1];
         if (!targetRunId) {
-          onDone('Error: Please specify a Run ID. Usage: /agent resume <run-id>', { display: 'system' });
+          onDone('Error: Please specify a Run ID. Usage: /agents resume <run-id>', { display: 'system' });
           return;
         }
 
@@ -359,7 +358,7 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
           table += `| Run ID | Approval ID | Risk | Tool | Reason |\n`;
           table += `| --- | --- | --- | --- | --- |\n`;
           table += approvalLines.join('\n');
-          table += `\n\nUse \`/agent approve <run-id> <approval-id>\` or \`/agent deny <run-id> <approval-id>\` to decide.`;
+          table += `\n\nUse \`/agents approve <run-id> <approval-id>\` or \`/agents deny <run-id> <approval-id>\` to decide.`;
           onDone(table, { display: 'system' });
         }
         break;
@@ -369,7 +368,7 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
         const targetRunId = tokens[1];
         const approvalId = tokens[2];
         if (!targetRunId || !approvalId) {
-          onDone('Error: Please specify both Run ID and Approval ID. Usage: /agent approve <run-id> <approval-id>', {
+          onDone('Error: Please specify both Run ID and Approval ID. Usage: /agents approve <run-id> <approval-id>', {
             display: 'system',
           });
           return;
@@ -385,7 +384,7 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
         const targetRunId = tokens[1];
         const approvalId = tokens[2];
         if (!targetRunId || !approvalId) {
-          onDone('Error: Please specify both Run ID and Approval ID. Usage: /agent deny <run-id> <approval-id>', {
+          onDone('Error: Please specify both Run ID and Approval ID. Usage: /agents deny <run-id> <approval-id>', {
             display: 'system',
           });
           return;
@@ -400,7 +399,7 @@ async function executeOrchestratorCommand(onDone: LocalJSXCommandOnDone, args: s
       case 'report': {
         const targetRunId = tokens[1];
         if (!targetRunId) {
-          onDone('Error: Please specify a Run ID. Usage: /agent report <run-id>', { display: 'system' });
+          onDone('Error: Please specify a Run ID. Usage: /agents report <run-id>', { display: 'system' });
           return;
         }
 

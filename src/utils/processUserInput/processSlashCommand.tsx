@@ -760,10 +760,13 @@ async function getMessagesForSlashCommand(
               if (doneWasCalled) return;
               setToolJSX({
                 jsx,
+                // /agents is a self-contained full-screen dashboard that draws
+                // its own input + footer, so hide the REPL PromptInput.
                 shouldHidePromptInput: true,
                 showSpinner: false,
                 isLocalJSXCommand: true,
                 isImmediate: command.immediate === true,
+                centered: command.name === 'agents',
               });
             })
             .catch(e => {

@@ -1315,6 +1315,7 @@ export function REPL({
     showSpinner?: boolean;
     isLocalJSXCommand?: boolean;
     isImmediate?: boolean;
+    centered?: boolean;
   } | null>(null);
 
   // Track local JSX commands separately so tools can't overwrite them.
@@ -1325,6 +1326,7 @@ export function REPL({
     shouldContinueAnimation?: true;
     showSpinner?: boolean;
     isLocalJSXCommand: true;
+    centered?: boolean;
   } | null>(null);
 
   // Wrapper for setToolJSX that preserves local JSX commands (like /btw).
@@ -1345,6 +1347,7 @@ export function REPL({
         showSpinner?: boolean;
         isLocalJSXCommand?: boolean;
         clearLocalJSX?: boolean;
+        centered?: boolean;
       } | null,
     ) => {
       // If setting a local JSX command, store it in the ref
@@ -5737,8 +5740,10 @@ export function REPL({
   // render paths below. Commands that used to route through bottom
   // (immediate: /model, /mcp, /btw, ...) and scrollable (non-immediate:
   // /config, /theme, /diff, ...) both go here now.
-  const toolJsxCentered = isFullscreenEnvEnabled() && toolJSX?.isLocalJSXCommand === true;
+  const toolJsxCentered =
+    (isFullscreenEnvEnabled() && toolJSX?.isLocalJSXCommand === true) || toolJSX?.centered === true;
   const centeredModal: React.ReactNode = toolJsxCentered ? toolJSX!.jsx : null;
+  const noTranscriptPeek = !!toolJSX?.centered;
 
   // <AlternateScreen> at the root: everything below is inside its
   // <Box height={rows}>. Handlers/contexts are zero-height so ScrollBox's
@@ -5793,6 +5798,7 @@ export function REPL({
             ) : undefined
           }
           modal={centeredModal}
+          noTranscriptPeek={noTranscriptPeek}
           modalScrollRef={modalScrollRef}
           dividerYRef={dividerYRef}
           hidePill={!!viewedAgentTask}

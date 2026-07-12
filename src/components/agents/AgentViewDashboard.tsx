@@ -35,7 +35,6 @@ import type { TaskState } from '../../tasks/types.js';
 import { GENERAL_PURPOSE_AGENT } from '../../tools/AgentTool/built-in/generalPurposeAgent.js';
 import { createUserMessage } from '../../utils/messages.js';
 import { Pane } from '../design-system/Pane.js';
-import TextInput from '../TextInput.js';
 import { parseDispatchSyntax } from './AgentViewDispatchInput.js';
 import { AgentViewPeekPanel } from './AgentViewPeekPanel.js';
 import {
@@ -48,6 +47,10 @@ import {
 } from './AgentViewRow.js';
 import { AgentViewShortcutsHelp } from './AgentViewShortcutsHelp.js';
 import { isWaitingForInput } from './utils.js';
+import { CondensedLogo } from '../LogoV2/CondensedLogo.js';
+import { permissionModeSymbol, permissionModeTitle } from '../../utils/permissions/PermissionMode.js';
+import TextInput from '../TextInput.js';
+import { useModalOrTerminalSize } from '../../context/modalContext.js';
 
 type GroupMode = 'state' | 'directory';
 
@@ -139,7 +142,11 @@ function supervisorSessionToTask(session: SupervisorSession): LocalAgentTaskStat
 }
 
 export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
-  const { columns } = useTerminalSize();
+  const { columns, rows: terminalRows } = useTerminalSize();
+  // Available height inside the full-screen modal — used to pin the input row
+  // to the bottom (the flexGrow spacer needs a definite height to expand into).
+  const { rows: availableRows } = useModalOrTerminalSize({ rows: terminalRows, columns });
+  const permissionMode = useAppState(s => s.toolPermissionContext.mode);
   const tasks = useAppState((s: any) => s.tasks) as Record<string, TaskState>;
   const toolUseConfirmQueue = useAppState((s: any) => s.toolUseConfirmQueue) as ToolUseConfirm[];
   const agentDefinitions = useAppState((s: any) => s.agentDefinitions) as { activeAgents: any[]; allAgents: any[] };
@@ -866,50 +873,27 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
     working: backgroundTasks.filter(task => getTaskCategory(task) === 'working').length,
     completed: backgroundTasks.filter(task => getTaskCategory(task) === 'completed').length,
   };
-  const cwdLabel = cwd ? (cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? cwd) : process.cwd().split(/[\\/]/).at(-1);
   const divider = '─'.repeat(contentWidth);
-  const inputPlaceholder = filterText ? 'filter sessions' : 'describe a task for a new session';
   return (
     <Pane color="permission">
-      <Box flexDirection="column" width={contentWidth} paddingLeft={1}>
-        {/* Header */}
+      <Box flexDirection="column" height={availableRows} width={contentWidth} paddingLeft={1}>
+        {/* Header — reuse the shared LogoV2 header (Clawd + Clew Code v · model · cwd) */}
         <Box flexDirection="column" marginBottom={1}>
-          <Text bold color="permission">
-            Clew Code
-          </Text>
-          <Text dimColor>Opus · 1M context · ~/{cwdLabel ?? 'workspace'}</Text>
-          <Box flexDirection="row" gap={1}>
-            {counts.awaiting > 0 && (
-              <Text color="yellow">
-                {figures.bullet} {counts.awaiting} awaiting
-              </Text>
-            )}
-            {counts.working > 0 && (
-              <Text color="blue">
-                {counts.awaiting > 0 ? ' · ' : ''}
-                {figures.circleDotted} {counts.working} working
-              </Text>
-            )}
-            {counts.completed > 0 && (
-              <Text color="green">
-                {counts.awaiting > 0 || counts.working > 0 ? ' · ' : ''}
-                {figures.tick} {counts.completed} completed
-              </Text>
-            )}
-            {counts.awaiting === 0 && counts.working === 0 && counts.completed === 0 && (
-              <Text dimColor>No active sessions · /agent &lt;task&gt; to launch from chat</Text>
-            )}
-          </Box>
+          <CondensedLogo />
+          {(counts.awaiting > 0 || counts.working > 0 || counts.completed > 0) && (
+            <Text dimColor>
+              {[
+                counts.awaiting > 0 ? `${counts.awaiting} awaiting input` : null,
+                counts.working > 0 ? `${counts.working} working` : null,
+                counts.completed > 0 ? `${counts.completed} completed` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+          )}
         </Box>
 
-        {backgroundTasks.length === 0 ? (
-          <Box flexDirection="column" marginY={1} paddingLeft={2} gap={0}>
-            <Text bold>Agent Monitor</Text>
-            <Text dimColor>No agents running. Launch from chat:</Text>
-            <Text dimColor> /agent &lt;task&gt; — quick dispatch with default agent</Text>
-            <Text dimColor> /agent @name &lt;task&gt; — dispatch with a specific agent</Text>
-          </Box>
-        ) : (
+        {backgroundTasks.length === 0 ? null : (
           groupedTasks.map(group => {
             const info = CATEGORY_LABELS[group.key as TaskCategory] ?? { label: group.label, color: 'dim' };
             return (
@@ -984,6 +968,10 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
           </Box>
         )}
 
+        {/* Dashboard-owned input: styled like the REPL PromptInput. While the
+            input is empty the list shortcuts are live (enter opens, space peeks,
+            ctrl+x deletes); once you start typing, keystrokes go to the input
+            and enter dispatches a new session. */}
         <Text dimColor>{divider}</Text>
         <Box flexDirection="row" height={1} alignItems="center">
           <Text bold color="suggestion">
@@ -1007,7 +995,7 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
             columns={Math.max(10, contentWidth - 2)}
             cursorOffset={dispatchCursor}
             onChangeCursorOffset={setDispatchCursor}
-            placeholder={inputPlaceholder}
+            placeholder={filterText ? 'filter sessions' : 'describe a task for a new session'}
           />
         </Box>
         <Text dimColor>{divider}</Text>
@@ -1032,10 +1020,12 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
           </Box>
         )}
 
-        <Text dimColor>
-          {mode === 'dispatch' && dispatchText
-            ? 'auto mode · enter to create · esc to clear'
-            : 'enter:dispatch/open · tab:agents · space:peek · /:dispatch · ?:help · esc:back'}
+        {/* Footer — matches the reference dashboard wording. */}
+        <Text wrap="truncate">
+          <Text color="suggestion">
+            {permissionModeSymbol(permissionMode)} {permissionModeTitle(permissionMode).toLowerCase()}
+          </Text>
+          <Text dimColor> · enter to open · space to reply · ctrl+x to delete · ? for shortcuts</Text>
         </Text>
 
         {shortcutsHelpOpen && <AgentViewShortcutsHelp onClose={() => setShortcutsHelpOpen(false)} />}

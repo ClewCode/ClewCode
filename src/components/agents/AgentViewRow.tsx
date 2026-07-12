@@ -252,26 +252,26 @@ export function AgentViewRow({ task, isSelected, prStatus, prDisplayInfo, width 
 
 export function AgentViewGroupHeader({
   label,
-  count,
   color,
   isCollapsed,
   isSelected,
 }: {
   label: string;
-  count: number;
+  count?: number;
   color: string;
   isCollapsed: boolean;
-  onToggle: () => void;
+  onToggle?: () => void;
   isSelected: boolean;
 }) {
-  const arrow = isCollapsed ? figures.arrowRight : figures.arrowDown;
+  // Match the reference dashboard: plain bold category label, no collapse
+  // arrow and no count suffix. A collapsed group still shows a small marker
+  // so the state stays discoverable.
   return (
     <Box flexDirection="row" height={1} marginTop={1}>
-      <Text dimColor>{arrow} </Text>
       <Text color={isSelected ? 'text' : (color as any)} bold>
         {label}
       </Text>
-      <Text dimColor> · {count}</Text>
+      {isCollapsed && <Text dimColor> {figures.arrowRight}</Text>}
     </Box>
   );
 }

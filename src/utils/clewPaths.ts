@@ -49,6 +49,7 @@ export const JOBS_DIR = 'jobs';
 export const PROJECTS_DIR = 'projects';
 export const TEAMS_DIR = 'teams';
 export const TASKS_DIR = 'tasks';
+export const INSTANCES_DIR = 'instances';
 export const UPLOADS_DIR = 'uploads';
 export const PEERS_DIR = 'peers';
 export const SCHEDULED_TASKS_JSON = 'scheduled_tasks.json';
