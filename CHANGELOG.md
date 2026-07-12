@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Session model/provider no longer leaks across in-process sessions**: `/model` and `/providers set` previously called `ProviderManager.setSessionModel()` / `setSessionProvider()` (`ProviderManager` is a process-global singleton), so the override was inherited by every other in-process session (spawned agents, `/bg` tasks). Now session-scoped model/provider changes flow through AppState's `mainLoopModelForSession` / `mainLoopProviderForSession`, which `onChangeAppState` syncs to `mainLoopModelOverride` (for `getUserSpecifiedModelSetting`) and `ProviderManager.sessionProvider` (for `getActiveProviderName`). `getModelForProvider()` no longer reads `this.sessionModel`, preventing the singleton from overriding the correct on-disk config model for unrelated sessions. (`src/commands/model/model.tsx`, `src/commands/provider-select/provider-select.ts`, `src/services/ai/ProviderManager.ts`, `src/state/onChangeAppState.ts`, `src/services/ai/ProviderManager.test.ts`)
+- **Error handling in `/reload-plugins` and plugin refresh**: The catch block now uses `toError()` + error ID (`E_RELOAD_PLUGINS_FAILED`) for safe error extraction and Sentry tracking. MCP/LSP per-plugin failures no longer short-circuit `Promise.all` — each plugin's loading is wrapped in an individual try-catch, logging the error and continuing. Error IDs added for plugin hook and MCP/LSP load failures. (`src/commands/reload-plugins/reload-plugins.ts`, `src/utils/plugins/refresh.ts`, `src/constants/errorIds.ts`)
+- **Removed dead `@agentclientprotocol/sdk` dependency**: The package had zero imports in `src/` and was a leftover from the MCP SDK rename. (`package.json`)
 
 ## [0.6.0] — 2026-07-10
 

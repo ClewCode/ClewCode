@@ -65,7 +65,6 @@
   "author": "Dek1milliontoken",
   "license": "SEE LICENSE.md",
   "dependencies": {
-    "@agentclientprotocol/sdk": "^1.2.1",
     "@anthropic-ai/sandbox-runtime": "0.0.59",
     "@anthropic-ai/sdk": "^0.111.0",
     "@aws-sdk/client-bedrock": "^3.1085.0",

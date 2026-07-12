@@ -9,7 +9,10 @@
  * ADDING A NEW ERROR TYPE:
  * 1. Add a const based on Next ID.
  * 2. Increment Next ID.
- * Next ID: 346
+ * Next ID: 348
  */
 
 export const E_TOOL_USE_SUMMARY_GENERATION_FAILED = 344;
+export const E_RELOAD_PLUGINS_FAILED = 345;
+export const E_LOAD_PLUGIN_MCP_LSP_FAILED = 346;
+export const E_LOAD_PLUGIN_HOOKS_FAILED = 347;
