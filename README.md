@@ -346,37 +346,43 @@ Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
 ## Architecture
 
 ```
-┌─ REPL ─────────────────────────────┐
-│  Ink + React 19          ┌───────┐ │
-│  Slash commands / skills │ Tools │ │
-│  Streaming / history     └───┬───┘ │
-└────────┬─────────────────────┘     │
-         ▼                           │
-┌─ QueryEngine ──────────────────────┘
-│  Tool loop · Provider routing · Streaming
-│  Context compaction · Checkpoints
-└──┬────┬────┬────┬────┐
-   ▼    ▼    ▼    ▼    ▼
-┌────┐┌────┐┌────┐┌────┐┌──────────┐
-│ MCP││LSP ││Git ││Web ││ Provider │
-│    ││    ││    ││    ││ Manager  │
-└────┘└────┘└────┘└────┘└──────────┘
-   │         LAN            │
-   ▼         ▼              ▼
-┌──────┐┌──────────┐┌──────────────┐
-│ SQLite││ Peer     ││ AgentRuntime │
-│Memory ││ Server   ││ Task Queue   │
-└──────┘└──────────┘└──────────────┘
+┌─ REPL ──────────────────────────────────┐
+│  Ink + React 19               ┌──────┐ │
+│  Slash commands / skills      │Tools │ │
+│  Streaming / history          │ x76  │ │
+│  state/AppState.tsx           └──┬───┘ │
+└────────┬─────────────────────────┘     │
+         │                ▲              │
+         ▼                │              │
+┌─ QueryEngine ───────────┴──────────────┘
+│  Streaming · tool loop · compaction
+│  Checkpoints · Max Mode · /rewind
+│
+│  query.ts (non-streaming: subagents)
+└──┬────┬────┬────┬────┬────┬────┐
+   ▼    ▼    ▼    ▼    ▼    ▼    ▼
+┌────┐┌────┐┌────┐┌────┐┌────┐┌──────────┐
+│ MCP││LSP ││Git ││Web ││Task││ Provider │
+│    ││    ││    ││    ││    ││ Manager  │
+└────┘└────┘└────┘└────┘└────┘└──────────┘
+   │         LAN           │       │
+   ▼         ▼             ▼       ▼
+┌──────┐┌─────────┐┌──────────┐┌──────────┐
+│ vec  ││ Peer    ││ Agent    ││ Agent    │
+│Memory││ Server  ││Runtime   ││ Subagent │
+└──────┘└─────────┘└──────────┘└──────────┘
+│  Autonomous task queue + cron + DA       │
+└──────────────────────────────────────────┘
 ```
 
 - **Entry**: `src/main.tsx` → `src/replLauncher.tsx` boots the Ink/React 19 REPL
 - **REPL screen**: `src/screens/REPL.tsx` routes input to commands or the query engine
-- **Query loop**: `src/QueryEngine.ts` — message construction, tool loop, provider routing, streaming
+- **Query paths**: `src/QueryEngine.ts` (streaming with tool loop) + `src/query.ts` (non-streaming for subagents, background tasks)
 - **Providers**: `src/services/ai/` — 32 providers behind one interface, normalized errors/usage
-- **Tools**: `src/tools/<ToolName>/`, each extending `Tool` from `src/Tool.ts`, registered in `src/tools.ts`
-- **Services**: `src/services/` — MCP client, autonomous task queue, memory consolidation, session search, plugin lifecycle hooks, and more
+- **Tools**: `src/tools/<ToolName>/`, 76 tool packages extending `Tool`, registered in `src/tools.ts`
+- **Services**: `src/services/` — MCP client, autonomous queue, vec memory, session search, plugins, LSP, voice, audit log, and more
 
-Full detail, including the tool inventory and service list: [AGENTS.md](AGENTS.md).
+Full detail, including tool inventory and service list: [AGENT.md](AGENT.md).
 
 ---
 
@@ -390,10 +396,10 @@ bun run dev               # Live-reload REPL (with feature flags)
 bun run dev:channels      # Dev with development channels loaded
 bun run build             # Production build to dist/
 bun run start             # Run the compiled build
-bun test                  # Vitest suite
+bun test                  # Full suite (vitest-compatible runner)
 bun test --bail           # Stop on first failure
-npx vitest run path/to/file.test.ts    # Single file
-npx vitest run -t "test name"          # By test name
+bun test path/to/file.test.ts          # Single file
+bun test -t "test name"                # By test name
 bun run check:ci          # Biome lint + format check (no autofix)
 bun run lint              # Biome lint with autofix
 bun run check             # Lint + format with autofix
@@ -408,15 +414,9 @@ bun run check:ci && bun x tsc --noEmit && bun test --bail
 
 Or run the `/clew-verify` skill, which runs the full gate and a real CLI smoke test — green tests alone don't prove an Ink TUI feature actually works.
 
-### ✅ Shadow `.js` Files — Resolved
-
-The JS→TS migration is complete. All 401 `.js` shadow files that sat alongside `.ts`/`.tsx` twins have been removed. **Zero shadow pairs remain** — the `/js-shadow-sync` skill has been removed.  
-
-Any `.js` file still in `src/` is a genuine JS source module (no `.ts` twin exists).
-
 ### Release
 
-Pushing a `v*` tag triggers the GitHub Actions release and npm publish. Before tagging: bump `package.json`, update `CHANGELOG.md`, run the full gate above. See [AGENTS.md § Release](AGENTS.md#release) or run the `/clew-release` skill.
+Pushing a `v*` tag triggers the GitHub Actions release and npm publish. Before tagging: bump `package.json`, update `CHANGELOG.md`, run the full gate above. See [AGENT.md § Release](AGENT.md#release) or run the `/clew-release` skill.
 
 ---
 
@@ -426,7 +426,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 - Report bugs via [GitHub Issues](https://github.com/ClewCode/ClewCode/issues)
 - Discuss ideas in [GitHub Discussions](https://github.com/ClewCode/ClewCode/discussions)
-- Read [AGENTS.md](AGENTS.md) for full architecture and code conventions
+- Read [AGENT.md](AGENT.md) for full architecture and code conventions
 
 ---
 

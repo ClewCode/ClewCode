@@ -3,7 +3,7 @@ import { getEmptyToolPermissionContext } from '../Tool.js';
 import type { Message } from '../types/message.js';
 import { logForDebugging } from '../utils/debug.js';
 import { createUserMessage, getAssistantMessageText } from '../utils/messages.js';
-import { getSmallFastModel } from '../utils/model/model.js';
+import { getMainLoopModel, getSmallFastModel } from '../utils/model/model.js';
 import { asSystemPrompt } from '../utils/systemPromptType.js';
 import { queryModelWithoutStreaming } from './api/claude.js';
 import { getSessionMemoryContent } from './SessionMemory/sessionMemoryUtils.js';
@@ -42,24 +42,41 @@ export async function generateAwaySummary(messages: readonly Message[], signal: 
     const memory = await getSessionMemoryContent();
     const recent = messages.slice(-RECENT_MESSAGE_WINDOW);
     recent.push(createUserMessage({ content: buildAwaySummaryPrompt(memory) }));
-    const response = await queryModelWithoutStreaming({
-      messages: recent,
-      systemPrompt: asSystemPrompt([]),
-      thinkingConfig: { type: 'disabled' },
-      tools: [],
-      signal,
-      options: {
-        getToolPermissionContext: async () => getEmptyToolPermissionContext(),
-        model: getSmallFastModel(),
-        toolChoice: undefined,
-        isNonInteractiveSession: false,
-        hasAppendSystemPrompt: false,
-        agents: [],
-        querySource: 'away_summary',
-        mcpTools: [],
-        skipCacheWrite: true,
-      },
-    });
+
+    const runWithModel = async (model: string) =>
+      queryModelWithoutStreaming({
+        messages: recent,
+        systemPrompt: asSystemPrompt([]),
+        thinkingConfig: { type: 'disabled' },
+        tools: [],
+        signal,
+        options: {
+          getToolPermissionContext: async () => getEmptyToolPermissionContext(),
+          model,
+          toolChoice: undefined,
+          isNonInteractiveSession: false,
+          hasAppendSystemPrompt: false,
+          agents: [],
+          querySource: 'away_summary',
+          mcpTools: [],
+          skipCacheWrite: true,
+        },
+      });
+
+    // Try the small/fast model first. If it errors (e.g. the provider has no
+    // usable small model, or a free tier rejects the id), fall back to the
+    // main-loop model — the one we already know works this session — so the
+    // recap doesn't silently produce nothing.
+    const smallModel = getSmallFastModel();
+    const mainModel = getMainLoopModel();
+    let response = await runWithModel(smallModel);
+
+    if (response.isApiErrorMessage) {
+      logForDebugging(`[awaySummary] small-fast model error: ${getAssistantMessageText(response)}`);
+      if (!signal.aborted && mainModel !== smallModel) {
+        response = await runWithModel(mainModel);
+      }
+    }
 
     if (response.isApiErrorMessage) {
       logForDebugging(`[awaySummary] API error: ${getAssistantMessageText(response)}`);

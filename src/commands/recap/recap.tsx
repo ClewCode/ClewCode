@@ -41,7 +41,10 @@ type Props = {
 function RecapDashboard({ onDone, context }: Props): React.ReactNode {
   const [_themeName] = useTheme();
   const [loading, setLoading] = useState(true);
-  const [recapText, setRecapText] = useState<string | null>(null);
+  // AI-synthesized summary. null = not (yet) available; we always fall back to
+  // a locally-computed summary so the dashboard never dead-ends on a failed
+  // or slow model call.
+  const [aiText, setAiText] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const messages = context.messages as Message[];
@@ -108,7 +111,23 @@ function RecapDashboard({ onDone, context }: Props): React.ReactNode {
       .filter(t => t.length > 0);
   }, [messages]);
 
-  // Load the recap summary
+  // Locally-computed summary — always available, no model call. Used as the
+  // fallback when the AI synthesis fails (offline, provider error, flaky free
+  // model) so the recap is never empty and never prints "undefined".
+  const localSummary = useMemo(() => {
+    const latest = recentIntents[recentIntents.length - 1];
+    if (latest) {
+      return `Goal: ${latest} Next: continue from where this left off.`;
+    }
+    return `Session with ${userTurnsCount} exchange${userTurnsCount === 1 ? '' : 's'} and ${toolExecutions} tool call${toolExecutions === 1 ? '' : 's'} so far.`;
+  }, [recentIntents, userTurnsCount, toolExecutions]);
+
+  // Whatever we display and hand back on exit — AI synthesis when available,
+  // otherwise the local summary. Guaranteed non-empty.
+  const displayText = aiText ?? localSummary;
+
+  // Best-effort AI synthesis. Failure is expected and non-fatal: we keep the
+  // locally-computed summary and just stop the spinner.
   useEffect(() => {
     const controller = new AbortController();
     let isCancelled = false;
@@ -116,11 +135,12 @@ function RecapDashboard({ onDone, context }: Props): React.ReactNode {
     async function loadSummary() {
       try {
         const text = await generateAwaySummary(messages, controller.signal);
-        if (!isCancelled) {
-          setRecapText(text);
-          setLoading(false);
+        if (!isCancelled && text) {
+          setAiText(text);
         }
-      } catch (_err) {
+      } catch {
+        /* keep local fallback */
+      } finally {
         if (!isCancelled) {
           setLoading(false);
         }
@@ -136,19 +156,20 @@ function RecapDashboard({ onDone, context }: Props): React.ReactNode {
 
   // Copy plain text recap
   const handleCopy = useCallback(async () => {
-    if (!recapText) return;
-    const plainSummary = `SESSION RECAP\n==============\nActive Turns: ${userTurnsCount} exchanges\nDuration: ${durationStr}\nTool Calls: ${toolExecutions} calls\n\nSummary:\n${recapText}`;
+    const plainSummary = `SESSION RECAP\n==============\nActive Turns: ${userTurnsCount} exchanges\nDuration: ${durationStr}\nTool Calls: ${toolExecutions} calls\n\nSummary:\n${displayText}`;
     const success = await copyTextToClipboard(plainSummary);
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [recapText, userTurnsCount, durationStr, toolExecutions]);
+  }, [displayText, userTurnsCount, durationStr, toolExecutions]);
 
   // Handle keyboard inputs
   useInput((input, key) => {
     if (key.escape || input === 'q' || key.return) {
-      onDone(recapText ?? undefined, { display: 'system' });
+      // Always hand back a non-empty summary — never `undefined`, which would
+      // render literally as "undefined" in the transcript.
+      onDone(displayText, { display: 'system' });
     } else if (input === 'c') {
       void handleCopy();
     }
@@ -166,22 +187,6 @@ function RecapDashboard({ onDone, context }: Props): React.ReactNode {
             </Text>
           </Box>
           <Text dimColor>Synthesizing key achievements and outlining next steps...</Text>
-        </Box>
-      </Pane>
-    );
-  }
-
-  if (recapText === null) {
-    return (
-      <Pane color="error">
-        <Box flexDirection="column" paddingY={1}>
-          <Text bold color="error">
-            Could not generate a recap right now.
-          </Text>
-          <Text dimColor>Ensure there is active conversation history, then try again.</Text>
-          <Text marginTop={1} dimColor>
-            Press Esc or q to return.
-          </Text>
         </Box>
       </Pane>
     );
@@ -243,8 +248,11 @@ function RecapDashboard({ onDone, context }: Props): React.ReactNode {
             width="100%"
           >
             <Text wrap="wrap" color="text">
-              {recapText}
+              {displayText}
             </Text>
+            {aiText === null && (
+              <Text dimColor>{figures.pointerSmall} AI synthesis unavailable — showing local summary.</Text>
+            )}
           </ThemedBox>
         </Box>
 

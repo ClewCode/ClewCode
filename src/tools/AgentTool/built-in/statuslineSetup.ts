@@ -90,28 +90,50 @@ How to use the statusLine command:
      }
    }
    
-   You can use this JSON data in your command like:
+   CHOOSING HOW TO PARSE THE JSON — read this before writing anything:
+   - \`jq\` is NOT installed on many machines (notably most Windows setups). Do NOT assume it exists.
+   - Cross-platform default: write a standalone Node script that reads the JSON from stdin and set the
+     statusLine command to \`node <path-to-script>\`. This needs no jq, no bash-vs-node escaping, and runs
+     anywhere Node is available (Clew Code itself runs on Node/Bun, so \`node\` is present).
+   - Only use a \`jq\`/bash one-liner if you have first CONFIRMED jq is installed (e.g. \`command -v jq\`),
+     AND the user is not on Windows. Never embed a regex with backslashes inside a bash-quoted \`node -e "..."\`
+     string — the shell mangles the backslashes and Node throws a SyntaxError, producing an empty status line.
+
+   RECOMMENDED (cross-platform) — a standalone Node script, referenced as \`node <path>\`:
+   Write a file such as ~/.clew/statusline.mjs that reads stdin and prints one line, e.g.:
+   ------------------------------------------------------------------
+   import { readFileSync } from 'node:fs';
+   import { execFileSync } from 'node:child_process';
+   let d = {};
+   try { d = JSON.parse(readFileSync(0, 'utf8')) || {}; } catch {}
+   const cwd = (d.workspace && d.workspace.current_dir) || d.cwd || '';
+   const dir = cwd.split(/[\\\\/]/).filter(Boolean).slice(-3).join('/');
+   const model = (d.model && d.model.display_name) || '';
+   const style = (d.output_style && d.output_style.name) || '';
+   const ctx = d.context_window && d.context_window.used_percentage;
+   let branch = '';
+   try {
+     branch = execFileSync('git', ['--no-optional-locks', 'symbolic-ref', '--short', 'HEAD'],
+       { stdio: ['ignore', 'pipe', 'ignore'], cwd: cwd || process.cwd() }).toString().trim();
+   } catch {}
+   const parts = [];
+   if (dir) parts.push(dir);
+   if (branch) parts.push(branch);
+   if (model) parts.push(model);
+   if (style) parts.push(style);
+   if (ctx !== undefined && ctx !== null && ctx !== '') parts.push('ctx:' + Math.round(Number(ctx)) + '%');
+   process.stdout.write(parts.join(' | ') + '\\n');
+   ------------------------------------------------------------------
+   Then set the command to: \`node ~/.clew/statusline.mjs\` (use an absolute path on Windows, e.g.
+   \`node C:/Users/<name>/.clew/statusline.mjs\`, since ~ may not expand).
+
+   ALTERNATIVE (only when jq is confirmed present and not on Windows):
    - $(cat | jq -r '.model.display_name')
-   - $(cat | jq -r '.workspace.current_dir')
-   - $(cat | jq -r '.output_style.name')
-
-   Or store it in a variable first:
-   - input=$(cat); echo "$(echo "$input" | jq -r '.model.display_name') in $(echo "$input" | jq -r '.workspace.current_dir')"
-
-   To display context remaining percentage (simplest approach using pre-calculated field):
-   - input=$(cat); remaining=$(echo "$input" | jq -r '.context_window.remaining_percentage // empty'); [ -n "$remaining" ] && echo "Context: $remaining% remaining"
-
-   Or to display context used percentage:
    - input=$(cat); used=$(echo "$input" | jq -r '.context_window.used_percentage // empty'); [ -n "$used" ] && echo "Context: $used% used"
-
-   To display Claude.ai subscription rate limit usage (5-hour session limit):
-   - input=$(cat); pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty'); [ -n "$pct" ] && printf "5h: %.0f%%" "$pct"
-
-   To display both 5-hour and 7-day limits when available:
    - input=$(cat); five=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty'); week=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty'); out=""; [ -n "$five" ] && out="5h:$(printf '%.0f' "$five")%"; [ -n "$week" ] && out="$out 7d:$(printf '%.0f' "$week")%"; echo "$out"
 
-2. For longer commands, you can save a new file in the user's ~/.claude directory, e.g.:
-   - ~/.clew/statusline-command.sh and reference that file in the settings.
+2. For longer commands, save a new script file in the user's ~/.clew directory (e.g. ~/.clew/statusline.mjs)
+   and reference that file in the settings. Prefer the Node script above over a shell script.
 
 3. Update the user's ~/.clew/settings.json with:
    {
@@ -134,7 +156,7 @@ Guidelines:
 export const STATUSLINE_SETUP_AGENT: BuiltInAgentDefinition = {
   agentType: 'statusline-setup',
   whenToUse: "Use this agent to configure the user's Clew Code status line setting.",
-  tools: ['Read', 'Edit'],
+  tools: ['Read', 'Edit', 'Write'],
   source: 'built-in',
   baseDir: 'built-in',
   model: 'sonnet',

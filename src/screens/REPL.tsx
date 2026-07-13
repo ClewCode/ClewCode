@@ -262,6 +262,7 @@ import { useManagePlugins } from '../hooks/useManagePlugins.js';
 import { Messages } from '../components/Messages.js';
 import { TaskListV2 } from '../components/TaskListV2.js';
 import { TeammateViewHeader } from '../components/TeammateViewHeader.js';
+import { StatusLine, getLastAssistantMessageId } from '../components/StatusLine.js';
 import { useTasksV2WithCollapseEffect } from '../hooks/useTasksV2.js';
 import { maybeMarkProjectOnboardingComplete } from '../projectOnboardingState.js';
 import type { MCPServerConnection } from '../services/mcp/types.js';
@@ -3831,9 +3832,10 @@ export function REPL({
                 createTurnDurationMessage(turnDurationMs, budgetInfo, count(prev, isLoggableMessage)),
               ]);
               // Long turns often involve many tool calls the user didn't watch
-              // live — recap what happened and what's next. Fire-and-forget;
-              // uses the same abort signal as the turn it summarizes.
-              void appendLongTurnRecap(messagesRef.current, turnDurationMs, setMessages, abortController.signal);
+              // live — recap what happened and what's next. Fire-and-forget with
+              // its OWN controller: reusing the finished turn's signal risks the
+              // recap being aborted the moment the turn's controller is cleared.
+              void appendLongTurnRecap(messagesRef.current, turnDurationMs, setMessages, new AbortController().signal);
             }
           }
           // Clear the controller so CancelRequestHandler's canCancelRunningTask
@@ -6494,6 +6496,11 @@ export function REPL({
                       voiceInterimRange={voice.interimRange}
                     />
                     <SessionBackgroundHint onBackgroundSession={handleBackgroundSession} isLoading={isLoading} />
+                    <StatusLine
+                      messagesRef={messagesRef}
+                      lastAssistantMessageId={getLastAssistantMessageId(messages)}
+                      vimMode={vimMode}
+                    />
                   </>
                 )}
                 {cursor && (

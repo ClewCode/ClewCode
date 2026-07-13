@@ -33,17 +33,17 @@ export function renderToolUseMessage(
   const displayPath = verbose ? notebook_path : getDisplayPath(notebook_path);
   if (verbose) {
     return (
-      <>
+      <Text>
         <FilePathLink filePath={notebook_path}>{displayPath}</FilePathLink>
         {`@${cell_id}, content: ${new_source.slice(0, 30)}…, cell_type: ${cell_type}, edit_mode: ${edit_mode ?? 'replace'}`}
-      </>
+      </Text>
     );
   }
   return (
-    <>
+    <Text>
       <FilePathLink filePath={notebook_path}>{displayPath}</FilePathLink>
       {`@${cell_id}`}
-    </>
+    </Text>
   );
 }
 export function renderToolUseRejectedMessage(

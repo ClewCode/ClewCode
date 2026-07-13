@@ -47,7 +47,7 @@ export function renderToolUseMessage(input: Partial<Input>, { verbose }: { verbo
       const singlePath = verbose ? file_paths[0] : getDisplayPath(file_paths[0]);
       return <FilePathLink filePath={file_paths[0]}>{singlePath}</FilePathLink>;
     }
-    return <>{fileCount} files</>;
+    return <Text>{fileCount} files</Text>;
   }
 
   // Handle single file read (file_path)
@@ -62,20 +62,20 @@ export function renderToolUseMessage(input: Partial<Input>, { verbose }: { verbo
     const displayPath = verbose ? file_path : getDisplayPath(file_path);
     if (pages) {
       return (
-        <>
+        <Text>
           <FilePathLink filePath={file_path}>{displayPath}</FilePathLink>
           {` · pages ${pages}`}
-        </>
+        </Text>
       );
     }
     if (verbose && (offset || limit)) {
       const startLine = offset ?? 1;
       const lineRange = limit ? `lines ${startLine}-${startLine + limit - 1}` : `from line ${startLine}`;
       return (
-        <>
+        <Text>
           <FilePathLink filePath={file_path}>{displayPath}</FilePathLink>
           {` · ${lineRange}`}
-        </>
+        </Text>
       );
     }
     return <FilePathLink filePath={file_path}>{displayPath}</FilePathLink>;

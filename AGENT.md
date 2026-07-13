@@ -32,14 +32,14 @@ bun run check:ci && bun x tsc --noEmit && bun test --bail
 Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for version cuts.
 
 `dev` / `build` always run `prebuild-version` and define:
-`TRANSCRIPT_CLASSIFIER`, `CHICAGO_MCP`, `VOICE_MODE` (build also sets `AWAY_SUMMARY`).
+`TRANSCRIPT_CLASSIFIER`, `CHICAGO_MCP`, `VOICE_MODE`, `AWAY_SUMMARY`.
 
 ## Project rules (from `.clew/rules.json`)
 
 - Keep docs in sync — `AGENTS.md`, `CHANGELOG.md`, `README.md` (and this file) when behavior changes
 - Use Bun for all dev commands
 - ESM; `node:` for built-ins; `.js` extension on relative imports
-- Biome: 2-space, single quotes, 120 columns, LF, scope `src/**/*.{ts,tsx,js}`
+- Biome: 2-space, single quotes, 120 columns, semicolons `always`, trailing commas `all`, LF, VCS-aware (uses `.gitignore`), scope `src/**/*.{ts,tsx,js}`
 - Edit `src/` only — never `dist/`
 - Conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`
 - Branches: `type/description` (e.g. `feat/add-feature`)
@@ -61,36 +61,72 @@ Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for
 | File | Role |
 |---|---|
 | `tsconfig.json` | `module: ESNext`, `moduleResolution: bundler`, `strict: true`, `jsx: react-jsx`, path alias `src/*` |
-| `biome.json` | 2-space, single quotes, 120 columns, LF, VCS-`git`-aware (uses `.gitignore`), includes `src/**/*.{ts,tsx,js}` |
+| `biome.json` | 2-space, single quotes, 120 columns, semicolons `always`, trailing commas `all`, LF, VCS-`git`-aware (uses `.gitignore`), includes `src/**/*.{ts,tsx,js}` |
 | `.mcp.json` | MCP server definitions (codegraph, clew-bus, clew-peer, agora-mcp) |
-| `.husky/pre-commit` | Pre-commit hook for shadow pair guard (`scripts/check-shadow-pairs.sh src`) |
+| `.husky/pre-commit` | Pre-commit hook — shadow pair regression guard (`scripts/check-shadow-pairs.sh src`) |
 | `.env` | API keys — never committed (in `.gitignore`) |
 
 ## Architecture (big picture)
 
 ```
-src/main.tsx                CLI entry (flags, TTY force, version MACRO, feature defines)
-src/replLauncher.tsx        Ink/React 19 REPL bootstrap
-src/screens/REPL.tsx        Main TUI — input routing, panels, streaming UI
-src/commands.ts             Slash registry: built-in + skills + plugins + MCP + dynamic
-src/QueryEngine.ts          Streaming LLM loop: messages, tools, provider routing
-src/query.ts                Non-streaming query path
-src/tools.ts                getAllBaseTools() registry
-src/Tool.ts                 Tool base class
-src/tools/                  76 tool packages (one dir each)
-src/Task.ts                 Async task base
-src/tasks/                  Task definitions (Dream, InProcess, Local/Remote Agent, Shell)
-src/state/AppState.tsx      Central AppState (drives Ink UI)
-src/state/                  State management (slices for UI, session, peers, etc.)
-src/services/ai/            ProviderManager + providers.json + adapters + normalizers
-src/ink/                    Custom Ink/React 19 infrastructure (components, hooks, events, layout, termio)
-src/memdir/                 SQLite-vec semantic memory index (O(log N) vector search)
-src/query/                  Query path utilities and helpers
-src/coordinator/            Cross-component orchestration
-src/migrations/             Database migrations
-src/vim/                    Vim mode implementation
-src/voice/                  Voice input transcription and management
-src/buddy/                  Companion sprite UI and prompts
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                ENTRY                                         │
+│               main.tsx ──► replLauncher.tsx                                 │
+│          (flags, TTY, feature defines → Ink/React 19 bootstrap)             │
+└───────────────────────────────────┬──────────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────▼──────────────────────────────────────────┐
+│                            REPL / TUI                                        │
+│                      screens/REPL.tsx                                        │
+│                (input routing, panels, streaming UI)                        │
+│                                    │                                         │
+│                      state/AppState.tsx                                      │
+│                (central state driving Ink UI)                                │
+│  ink/ (components, hooks, events, layout, termio, buddy/)                   │
+└──────────┬──────────────────────────────────────────────────────────┬────────┘
+           │                                                          │
+┌──────────▼──────────────┐          ┌────────────────────────────────▼───────┐
+│  SLASH COMMANDS         │          │  QUERY ENGINE                          │
+│  commands.ts            │          │                                        │
+│  built-in, skills,      │          │  ┌─ QueryEngine.ts (streaming) ────┐   │
+│  plugins, MCP, dynamic  │          │  │ tool loop, context compaction,   │   │
+│                         │          │  │ checkpoints, Max Mode            │   │
+│  plan mode              │          │  └──────────────────────────────────┘   │
+│  checkpoints /rewind    │          │  ┌─ query.ts (non-streaming) ──────┐   │
+│  goal verification      │          │  │ one-shot ask, no tool loop,      │   │
+│                         │          │  │ used by subagents & bg tasks     │   │
+│                         │          │  └──────────────────────────────────┘   │
+└─────────────────────────┘          └──────────────┬──────────────────────────┘
+                                                     │
+                            ┌────────────────────────▼──────────────────────────┐
+                            │  PROVIDER LAYER                                  │
+                            │  services/ai/                                    │
+                            │  ProviderManager + providers.json (32 providers) │
+                            │  providerRegistry, model selection, /model cmd   │
+                            │  adapters & error normalizers per provider       │
+                            └────────────────────────┬──────────────────────────┘
+                                                     │
+         ┌───────────────────────────────────────────┼──────────────────────────────┐
+         │                                           │                              │
+┌────────▼──────────┐  ┌─────────────────────────────▼────────────┐  ┌──────────────▼───────┐
+│  TOOLS            │  │  SERVICES                                │  │  TASKS               │
+│  tools.ts         │  │  mcp/ (client: stdio/SSE/HTTP/Direct)   │  │  Task.ts             │
+│  78 tool pkgs     │  │  autonomous/ (queue, cron, DA, leases)  │  │  tasks/              │
+│  I/O, web, tasks, │  │  memory/ longTermMemory/ autoDream/     │  │  Dream, InProcess    │
+│  peer (15+), MCP, │  │  compact/ contextCollapse/              │  │  Agent (local/rem)   │
+│  agents, memory,  │  │  plugins/ (pre/post tool/bash/edit)     │  │  Shell               │
+│  media, UI, Goal, │  │  lsp/ sessionSearch/ voiceInput/        │  │                      │
+│  Monitor, LSP,    │  │  auditLog/ checkpoint/ goal/            │  │                      │
+│  ComputerUse, etc │  │  coordinator/ migrations/ vim/          │  │                      │
+└───────────────────┘  └──────────────────────────────────────────┘  └──────────────────────┘
+
+
+                    AGENT EXECUTION LAYERS (pick by intent)
+
+  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌──────────────┐  ┌───────────┐
+  │  Agent   │  │ Subagent │  │ Teammate │  │  LAN Peer    │  │Process Peer  │  │ Background│
+  │ (main)   │  │ (Explore)│  │ (swarm)  │  │  (/peer)     │  │(Codex, etc)  │  │ /daemon   │
+  └──────────┘  └──────────┘  └──────────┘  └──────────────┘  └──────────────┘  └───────────┘
 ```
 
 Flow: **REPL input** → command match or **QueryEngine** → **ProviderManager** → model stream → tool calls → tools/services → UI/state.
@@ -101,6 +137,20 @@ Two query paths exist:
 
 Settings: `.clew/settings.json` (shared) and `.clew/settings.local.json` (local/private).
 
+### Entrypoints (`src/entrypoints/`)
+
+The agent SDK entrypoints layer provides alternative boot paths alongside the main REPL:
+
+| File | Purpose |
+|---|---|
+| `cli.tsx` | Standard CLI bootstrap (flag parsing, profile resumption) |
+| `init.ts` | First-run initialization flow |
+| `mcp.ts` | MCP-server-only mode (headless stdio) |
+| `agentSdkTypes.ts` | SDK type contracts, permission modes, message shapes |
+| `sdk/` | Agent SDK protocol handlers |
+
+Tools/commands are registered in `src/tools.ts` / `src/commands.ts`; entrypoints import those registrations.
+
 ### Registration patterns
 
 - **Tool:** class under `src/tools/<Name>/` extending `Tool`; register in `src/tools.ts` → `getAllBaseTools()`. Feature-gated tools: lazy `require()` + `bun:bundle` defines.
@@ -110,7 +160,7 @@ Settings: `.clew/settings.json` (shared) and `.clew/settings.local.json` (local/
 ### Providers (`src/services/ai/`)
 
 - `ProviderManager.ts` — unified call interface
-- `providers.json` — ~29 provider definitions
+- `providers.json` — ~32 provider definitions (flagged via `capabilities` object with `chat`, `vision`, `toolCalling`, `streaming`; live `models[]` array per provider)
 - `providerRegistry.ts` / `providerSelection.ts` — discovery & selection
 - `adapter/`, error/usage normalizers — cross-provider shape
 - Mid-session switch: `/model`, `/provider`
@@ -119,7 +169,7 @@ Settings: `.clew/settings.json` (shared) and `.clew/settings.local.json` (local/
 
 Tools live one directory per tool under `src/tools/` (I/O, web, tasks, 15+ peer tools, MCP, agents, memory, media, UI, Goal, Monitor, LSP, ComputerUse, etc.).
 
-Commands: ~90–100 under `src/commands/` (not every file is a top-level slash command; `commands.ts` is source of truth).
+Commands: ~114 under `src/commands/` (not every file is a top-level slash command; `commands.ts` is source of truth).
 
 Services that matter most for product behavior:
 
@@ -137,7 +187,7 @@ Services that matter most for product behavior:
 | `auditLog/` | Opt-in SIEM NDJSON audit trail |
 | `lsp/` | Language server integration |
 
-Other large surface areas: `src/agentRuntime/` (background orchestration, ultracode, workflows), `src/peer/` (LAN P2P), `src/memory/` (SQLite memory store), `src/remote/` (Bridge v2), `src/bridge/` (legacy CCR — claude.ai-specific; do not mix with `remote/`), `src/plugins/`, `src/skills/`, `src/coordinator/`, `src/tasks/`, `src/vim/`, `src/voice/`, `src/buddy/`.
+Other large surface areas: `src/agentRuntime/` (background orchestration, ultracode, workflows), `src/peer/` (LAN P2P), `src/memory/` (SQLite memory store), `src/remote/` (Bridge v2), `src/bridge/` (legacy CCR — claude.ai-specific; do not mix with `remote/`), `src/plugins/`, `src/skills/`, `src/coordinator/`, `src/tasks/`, `src/vim/`, `src/voice/`, `src/buddy/`, `src/cli/` (CLI arg parsing), `src/assistant/` (Kairos assistant service), `src/upstreamproxy/` (outbound proxy support), `src/native-ts/` (native TypeScript helpers), `src/moreright/` (UI layout).
 
 ### Execution layers (pick by intent)
 
@@ -196,7 +246,7 @@ Prefer TinyFish MCP for web work over built-in WebSearch / WebFetch / BrowserToo
 
 | Hook | Action |
 |---|---|
-| `pre-commit` | Runs `bash scripts/check-shadow-pairs.sh src` — blocks commits that create `.ts`/`.js` shadow pairs |
+| `pre-commit` | Runs `bash scripts/check-shadow-pairs.sh src` — blocks commits that reintroduce `.ts`/`.js` shadow pairs |
 | Additional | Configured via `.husky/` — check current file for the full list |
 
 ## GitHub Actions (`.github/workflows/`)

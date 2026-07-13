@@ -176,15 +176,7 @@ export function AssistantToolUseMessage({
             renderedToolUseMessage !== 0 &&
             renderedToolUseMessage !== false && (
               <Box flexWrap="nowrap">
-                {typeof renderedToolUseMessage === 'string' || typeof renderedToolUseMessage === 'number' ? (
-                  <Text>({renderedToolUseMessage})</Text>
-                ) : (
-                  <>
-                    <Text>(</Text>
-                    {renderedToolUseMessage}
-                    <Text>)</Text>
-                  </>
-                )}
+                <Text>({renderedToolUseMessage})</Text>
               </Box>
             )}
           {/* Render tool-specific tags (timeout, model, resume ID, etc.) */}
