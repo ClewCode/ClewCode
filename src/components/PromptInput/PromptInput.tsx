@@ -1451,7 +1451,19 @@ function PromptInput({
   // If suggestion was generated but can't be shown due to timing, log suppression.
   // Exclude teammate view: markShown() is gated above, so shownAt stays 0 there —
   // but that's not a timing failure, the suggestion is valid when returning to leader.
-  if (promptSuggestionState.text && !promptSuggestion && promptSuggestionState.shownAt === 0 && !viewingAgentTaskId) {
+  // Exclude the still-loading window: executePromptSuggestion fires from the stop
+  // hook while isLoading may still be true, so the derived promptSuggestion is
+  // transiently null. Discarding here would nuke a valid suggestion before
+  // isLoading flips to false — leaving the ghost text to never appear. Only
+  // suppress once we're idle, where a null derived value means the user has
+  // actually started typing (stale) rather than a transient loading state.
+  if (
+    promptSuggestionState.text &&
+    !promptSuggestion &&
+    !isLoading &&
+    promptSuggestionState.shownAt === 0 &&
+    !viewingAgentTaskId
+  ) {
     logSuggestionSuppressed('timing', promptSuggestionState.text);
     setAppState(prev => ({
       ...prev,

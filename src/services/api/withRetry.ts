@@ -92,6 +92,17 @@ function isTransientCapacityError(error: unknown): boolean {
   return providerError.category === 'rate_limit';
 }
 
+// Whether an error should surface a user-visible "API error · retrying" line.
+// Anthropic errors are APIError instances; third-party providers (OpenAI-
+// compatible gateways etc.) throw a plain Error carrying `_providerError`
+// (see AnthropicAdapter.normalizeError), so `error instanceof APIError` alone
+// silently swallowed all provider-side retries — the user saw only a spinner
+// while 429/5xx retries looped in the background. getProviderErrorInfo() reads
+// that `_providerError` marker, so both error shapes now render.
+function isSurfaceableRetryError(error: unknown): error is Error {
+  return error instanceof APIError || (error instanceof Error && getProviderErrorInfo(error) !== undefined);
+}
+
 function isStaleConnectionError(error: unknown): boolean {
   if (!(error instanceof APIConnectionError)) {
     return false;
@@ -362,7 +373,7 @@ export async function* withRetry<T>(
         let remaining = delayMs;
         while (remaining > 0) {
           if (options.signal?.aborted) throw new APIUserAbortError();
-          if (error instanceof APIError) {
+          if (isSurfaceableRetryError(error)) {
             yield createSystemAPIErrorMessage(error, remaining, reportedAttempt, maxRetries);
           }
           const chunk = Math.min(remaining, HEARTBEAT_INTERVAL_MS);
@@ -373,7 +384,7 @@ export async function* withRetry<T>(
         // persistentAttempt counter which keeps growing to the 5-min cap.
         if (attempt >= maxRetries) attempt = maxRetries;
       } else {
-        if (error instanceof APIError) {
+        if (isSurfaceableRetryError(error)) {
           yield createSystemAPIErrorMessage(error, delayMs, attempt, maxRetries);
         }
         await sleep(delayMs, options.signal, { abortError });

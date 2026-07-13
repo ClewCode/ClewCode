@@ -27,9 +27,11 @@ export function SystemAPIErrorMessage({
   message: { retryAttempt, error, retryInMs, maxRetries },
   verbose,
 }: Props): React.ReactNode {
-  // Hidden for early retries on external builds to avoid noise. Compute before
-  // useInterval so we never register a timer that just drives a null render.
-  const hidden = 'external' === 'external' && retryAttempt < 4;
+  // Hidden for the very first retry on external builds to avoid noise from
+  // transient one-off blips, but surface sustained errors quickly (a silent
+  // spinner for 4 attempts / ~20s reads as a hang). Compute before useInterval
+  // so we never register a timer that just drives a null render.
+  const hidden = 'external' === 'external' && retryAttempt < 2;
 
   const [countdownMs, setCountdownMs] = useState(0);
   const done = countdownMs >= retryInMs;

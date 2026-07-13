@@ -53,6 +53,7 @@ import { isEnvTruthy } from '../../utils/envUtils.js';
 import { errorMessage } from '../../utils/errors.js';
 import { computeFingerprintFromMessages } from '../../utils/fingerprint.js';
 import { captureAPIRequest, logError } from '../../utils/log.js';
+import { stringifyWithRedactedSecrets } from '../../utils/redactSecrets.js';
 import {
   createAssistantAPIErrorMessage,
   createAssistantMessage,
@@ -1852,7 +1853,7 @@ async function* queryModel(
   const providerManager = ProviderManager.getInstance();
   const providerId = providerManager.getActiveProviderName();
   const providerConfig = providerManager.getSelectedProviderConfig();
-  logForDebugging(`[Query] Active provider: ${providerId}, config: ${JSON.stringify(providerConfig)}`);
+  logForDebugging(`[Query] Active provider: ${providerId}, config: ${stringifyWithRedactedSecrets(providerConfig)}`);
 
   // Logic to handle providers is now centralized in getAIProviderClient and AnthropicAdapter
 

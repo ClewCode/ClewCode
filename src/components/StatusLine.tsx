@@ -27,10 +27,8 @@ import {
 } from '../cost-tracker.js';
 import { useMainLoopModel } from '../hooks/useMainLoopModel.js';
 import { type ReadonlySettings, useSettings } from '../hooks/useSettings.js';
-import { Ansi, Box, Text, useAnimationFrame } from '../ink.js';
+import { Ansi, Box, Text } from '../ink.js';
 import { getRawUtilization } from '../services/claudeAiLimits.js';
-import { getBackgroundAutoCompactStatus, isAutoCompactEnabled } from '../services/compact/autoCompact.js';
-import { roughTokenCountEstimationForMessages } from '../services/tokenEstimation.js';
 import type { Message } from '../types/message.js';
 import type { StatusLineCommandInput } from '../types/statusLine.js';
 import type { VimMode } from '../types/textInputTypes.js';
@@ -185,10 +183,6 @@ const _BAR_FREE_HEX = CLAUDE_THEME.surface;
 const _CONTEXT_HEART_COUNT = 6;
 const CLAUDE_DOT = ansis.hex(CLAUDE_THEME.subtle)(' · ');
 
-function claudeMuted(text: string): string {
-  return ansis.hex(CLAUDE_THEME.muted)(text);
-}
-
 function claudeSubtle(text: string): string {
   return ansis.hex(CLAUDE_THEME.subtle)(text);
 }
@@ -207,10 +201,7 @@ function claudePill(text: string): string {
   );
 }
 
-/** Context visualization — currently disabled, returns empty string. */
-function renderContextHearts(_usedPercentage: number | null | undefined): string {
-  return '';
-}
+
 
 interface ToolActivity {
   id: string;
@@ -299,12 +290,6 @@ function formatCompactDuration(ms: number): string {
 function _formatActivityDuration(item: { startedAt?: number; endedAt?: number }): string {
   if (!item.startedAt || !item.endedAt || item.endedAt < item.startedAt) return '';
   return claudeSubtle(` (${formatCompactDuration(item.endedAt - item.startedAt)})`);
-}
-
-function formatContextSize(tokens: number): string {
-  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
-  if (tokens >= 1_000) return `${Math.round(tokens / 1_000)}K`;
-  return String(tokens);
 }
 
 function _countClaudeFiles(cwd: string): number {
@@ -482,11 +467,9 @@ function StatusLineInner({
   const settings = useSettings();
   const { addNotification } = useNotifications();
   const mainLoopModel = useMainLoopModel();
-  const mcpCount = useAppState(s => s.mcp.clients.length) as number;
   const mainLoopProvider = useAppState(s => s.mainLoopProvider);
   const mainLoopProviderForSession = useAppState(s => s.mainLoopProviderForSession);
   const fullscreenEnabled = isFullscreenEnvEnabled();
-  const [, ctxCompactSpinnerTime] = useAnimationFrame(250);
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -517,7 +500,6 @@ function StatusLineInner({
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const logNextResultRef = useRef(true);
-  const lastKnownCtxBarRef = useRef<{ pct: number; bar: string } | null>(null);
 
   const doUpdate = useCallback(async () => {
     abortControllerRef.current?.abort();
@@ -625,68 +607,6 @@ function StatusLineInner({
     decodedStatusLineText && /mode on \([^)]*cycle\)/i.test(decodedStatusLineText) ? undefined : decodedStatusLineText;
 
   const defaultStatusLine = (() => {
-    const runtimeModel = getRuntimeMainLoopModel({
-      permissionMode,
-      mainLoopModel,
-      exceeds200kTokens: previousStateRef.current.exceeds200kTokens,
-    });
-    const currentUsage = getCurrentUsage(messagesRef.current);
-    let inputTokens = currentUsage?.input_tokens ?? 0;
-    let outputTokens = currentUsage?.output_tokens ?? 0;
-
-    if (!currentUsage && messagesRef.current.length > 0) {
-      const estimatedTokens = roughTokenCountEstimationForMessages(messagesRef.current);
-      inputTokens = Math.round(estimatedTokens * 0.7);
-      outputTokens = Math.round(estimatedTokens * 0.3);
-    }
-
-    const usageForContext = currentUsage ?? {
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cache_creation_input_tokens: 0,
-      cache_read_input_tokens: 0,
-    };
-
-    const contextWindowSize = getContextWindowForModel(runtimeModel, getSdkBetas());
-    const contextPercentages = calculateContextPercentages(usageForContext, contextWindowSize);
-    const _duration = getTotalDuration();
-    let usedPercentage = contextPercentages.used ?? 0;
-
-    // During streaming the assistant message has no token usage yet,
-    // so getCurrentUsage returns null → contextPercentages.used = 0.
-    // Cache the last non-zero value so the bar doesn't collapse to 0
-    // while the model is generating, then snap back after the response lands.
-    if (usedPercentage > 0) {
-      lastKnownCtxBarRef.current = { pct: usedPercentage, bar: '' };
-    } else if (usedPercentage === 0 && lastKnownCtxBarRef.current) {
-      // Freeze the bar to the last known usage so it doesn't collapse
-      // when getCurrentUsage returns null (e.g. during thinking, tool runs, or streaming start).
-      usedPercentage = lastKnownCtxBarRef.current.pct;
-    }
-    // Context bar with cache-read · cache-creation · new-input segments
-    // Falls back to estimated input only when getCurrentUsage returns null (streaming start).
-    const bar = (() => {
-      // Freeze the bar to the last known usage so it doesn't collapse
-      // when getCurrentUsage returns null (e.g. during thinking, tool runs, or streaming start).
-      if (!currentUsage && lastKnownCtxBarRef.current) {
-        return renderContextHearts(lastKnownCtxBarRef.current.pct);
-      }
-      return renderContextHearts(usedPercentage);
-    })();
-
-    const percentText =
-      usedPercentage > 85
-        ? ansis.hex(CLAUDE_THEME.danger)(`${usedPercentage.toFixed(0)}%`)
-        : usedPercentage > 70
-          ? ansis.hex(CLAUDE_THEME.warning)(`${usedPercentage.toFixed(0)}%`)
-          : claudeMuted(`${usedPercentage.toFixed(0)}%`);
-    const ctxCompactStatus = getBackgroundAutoCompactStatus();
-    const compactDots = '.'.repeat(Math.floor(ctxCompactSpinnerTime / 400) % 4);
-    const ctxCompactDisplay =
-      ctxCompactStatus.running || (isAutoCompactEnabled() && usedPercentage >= 80)
-        ? CLAUDE_DOT + ansis.hex(CLAUDE_THEME.warning)(`ctx compact${compactDots}`)
-        : '';
-
     let sessionGoalDisplay = '';
     if (sessionGoal) {
       const goalState = getFullGoalState();
@@ -728,22 +648,12 @@ function StatusLineInner({
         sessionGoalDisplay = claudePill(text);
       }
     }
-    // Only show MCPs count (rules/hooks/duration removed from statusline)
-    const mcpStats = mcpCount > 0 ? CLAUDE_DOT + claudeMuted(`${mcpCount} MCPs`) : '';
-
     const leftLine = [sessionGoalDisplay, filteredStatusLineText ? claudeSubtle(filteredStatusLineText) : '']
       .filter(Boolean)
       .join(CLAUDE_DOT);
 
     const rightLine =
-      bar +
-      claudeSubtle(' ') +
-      percentText +
-      ctxCompactDisplay +
-      CLAUDE_DOT +
-      claudeMuted(formatContextSize(contextWindowSize)) +
-      mcpStats +
-      (rightText ? CLAUDE_DOT + ansis.hex('#FFD700')(rightText) : '');
+      (rightText ? ansis.hex('#FFD700')(rightText) : '');
 
     const agentLines: Array<{ key: string; node: React.ReactNode }> = [];
 

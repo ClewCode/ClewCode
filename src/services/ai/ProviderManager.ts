@@ -96,6 +96,12 @@ export class ProviderManager {
   private sessionProvider: ProviderId | null = null;
   private sessionModel: string | null = null;
   private sessionApiKeys: Partial<Record<ProviderId, string>> = {};
+  // Full session-scoped provider config (provider + model + providerConfig such
+  // as a custom endpoint's baseUrl). Held in memory on this process-local
+  // singleton, so a /providers selection in one terminal never touches the
+  // shared provider.json and never leaks into other terminals. Overlaid on top
+  // of the on-disk config by getSelectedProviderConfig().
+  private sessionProviderConfig: Partial<ProviderConfigFile> | null = null;
 
   static getInstance(): ProviderManager {
     if (!ProviderManager.instance) {
@@ -129,7 +135,23 @@ export class ProviderManager {
     this.sessionApiKeys = { ...this.sessionApiKeys, ...apiKeys };
   }
 
-  getSelectedProviderConfig(forceReload = false): ProviderConfigFile {
+  /**
+   * Sets (or clears, with null) a full session-scoped provider config that is
+   * overlaid on top of the on-disk config for THIS process only. Used by the
+   * /providers picker for session-only selections (custom endpoints included)
+   * so nothing is written to the shared provider.json and other terminals are
+   * left untouched.
+   */
+  setSessionProviderConfig(config: Partial<ProviderConfigFile> | null): void {
+    this.sessionProviderConfig = config;
+  }
+
+  /**
+   * Reads the raw on-disk provider config (no session overlay). Use this for
+   * paths that must persist to or compare against the shared file (global
+   * saves), NOT for resolving the active provider for a request.
+   */
+  getOnDiskProviderConfig(forceReload = false): ProviderConfigFile {
     if (this.cachedConfig && !forceReload) {
       return this.cachedConfig;
     }
@@ -144,6 +166,20 @@ export class ProviderManager {
     }
   }
 
+  getSelectedProviderConfig(forceReload = false): ProviderConfigFile {
+    const onDisk = this.getOnDiskProviderConfig(forceReload);
+    if (!this.sessionProviderConfig) {
+      return onDisk;
+    }
+    // Session overlay wins for the active view (provider/model/providerConfig);
+    // apiKeys are merged so on-disk keys stay available to the session.
+    return {
+      ...onDisk,
+      ...this.sessionProviderConfig,
+      apiKeys: { ...onDisk.apiKeys, ...this.sessionProviderConfig.apiKeys },
+    };
+  }
+
   saveSelectedProviderConfig(config: ProviderConfigFile): void {
     // CRITICAL: When session overrides are active, preserve the original
     // on-disk provider and model. This prevents one session's change from
@@ -153,7 +189,7 @@ export class ProviderManager {
     // way to change provider/model per-session. The on-disk config should
     // only be updated via explicit --global flag or initial onboarding.
     if (this.sessionProvider !== null || this.sessionModel !== null) {
-      const onDisk = this.getSelectedProviderConfig(true);
+      const onDisk = this.getOnDiskProviderConfig(true);
       if (this.sessionProvider !== null && onDisk.provider) {
         config.provider = onDisk.provider;
       }

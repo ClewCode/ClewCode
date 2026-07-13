@@ -46,8 +46,11 @@ export async function processBashCommand(
     }),
   });
 
-  // ctrl+b to background indicator
-  let jsx: React.ReactNode;
+  // ctrl+b to background indicator.
+  // NOTE: do NOT name this `jsx` — that shadows the automatic JSX-runtime
+  // factory (jsxImportSource "react"), so every <Component/> in this scope
+  // compiles to a call on this undefined local instead of the runtime.
+  let capturedJsx: React.ReactNode;
 
   // Just show initial UI
   setToolJSX({
@@ -59,7 +62,7 @@ export async function processBashCommand(
       ...context,
       // TODO: Clean up this hack
       setToolJSX: _ => {
-        jsx = _?.jsx;
+        capturedJsx = _?.jsx;
       },
     };
 
@@ -69,7 +72,7 @@ export async function processBashCommand(
         jsx: (
           <>
             <BashModeProgress input={inputString!} progress={progress.data} verbose={context.options.verbose} />
-            {jsx}
+            {capturedJsx}
           </>
         ),
         shouldHidePromptInput: false,

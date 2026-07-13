@@ -496,6 +496,19 @@ export function Config({
       },
     },
     {
+      id: 'recapEnabled',
+      label: 'Automatic recap',
+      value: globalConfig.recapEnabled !== false,
+      type: 'boolean' as const,
+      onChange(recapEnabled: boolean) {
+        saveGlobalConfig(current => ({ ...current, recapEnabled }));
+        setGlobalConfig({ ...getGlobalConfig(), recapEnabled });
+        logEvent('tengu_recap_enabled_setting_changed', {
+          enabled: recapEnabled,
+        });
+      },
+    },
+    {
       id: 'defaultPermissionMode',
       label: 'Default permission mode',
       value: settingsData?.permissions?.defaultMode || 'default',
@@ -1207,6 +1220,9 @@ export function Config({
     }
     if (globalConfig.showTurnDuration !== initialConfig.current.showTurnDuration) {
       formattedChanges.push(`${globalConfig.showTurnDuration ? 'Enabled' : 'Disabled'} turn duration`);
+    }
+    if (globalConfig.recapEnabled !== initialConfig.current.recapEnabled) {
+      formattedChanges.push(`${globalConfig.recapEnabled !== false ? 'Enabled' : 'Disabled'} automatic recap`);
     }
     if (globalConfig.remoteControlAtStartup !== initialConfig.current.remoteControlAtStartup) {
       const remoteLabel =

@@ -85,7 +85,7 @@ export function onChangeAppState({ newState, oldState }: { newState: AppState; o
 
     // Also sync to ProviderManager so it persists in provider.json
     const providerManager = ProviderManager.getInstance();
-    const config = providerManager.getSelectedProviderConfig(true); // force-reload
+    const config = providerManager.getOnDiskProviderConfig(true); // raw on-disk, force-reload
     if (config.model !== newState.mainLoopModel) {
       providerManager.saveSelectedProviderConfig({
         ...config,

@@ -54,7 +54,7 @@ export function Splash({ children, durationMs = 2500 }: { children: ReactNode; d
       ))}
       <Box marginTop={1} flexDirection="row" justifyContent="center">
         <Text bold={true}>Clew Code </Text>
-        <Text dimColor={true}>"A thread through complex code"</Text>
+        <Text dimColor={true}>"Never Broke Limit Again"</Text>
       </Box>
     </Box>
   );

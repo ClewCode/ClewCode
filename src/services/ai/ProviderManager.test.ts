@@ -56,3 +56,45 @@ describe('session model isolation', () => {
     providerManager.setSessionModel(null);
   });
 });
+
+describe('session-scoped provider config overlay', () => {
+  test('overlays session config over on-disk config without mutating the file view', async () => {
+    process.env.CLEW_CONFIG_DIR = mkdtempSync(join(tmpdir(), 'claude-provider-overlay-'));
+    const { ProviderManager } = await import(`./ProviderManager.js?overlay-test=${Date.now()}`);
+    const providerManager = ProviderManager.getInstance();
+    providerManager.invalidateConfigCache();
+    providerManager.setSessionProviderConfig(null);
+
+    // No overlay: raw and active views match (empty config).
+    expect(providerManager.getSelectedProviderConfig()).toEqual(providerManager.getOnDiskProviderConfig());
+
+    // Apply a session-only custom provider overlay.
+    providerManager.setSessionProviderConfig({
+      provider: 'custom',
+      model: 'deepseek-v4-flash-free',
+      providerConfig: { baseUrl: 'https://example.test/v1' },
+    });
+
+    // Active view reflects the session choice...
+    const active = providerManager.getSelectedProviderConfig();
+    expect(active.provider).toBe('custom');
+    expect(active.model).toBe('deepseek-v4-flash-free');
+    expect((active.providerConfig as { baseUrl?: string })?.baseUrl).toBe('https://example.test/v1');
+
+    // ...but the raw on-disk view is untouched (this is what other terminals read).
+    expect(providerManager.getOnDiskProviderConfig().provider).toBeUndefined();
+
+    providerManager.setSessionProviderConfig(null);
+  });
+
+  test('clearing the overlay restores the on-disk view', async () => {
+    const { ProviderManager } = await import('./ProviderManager.js');
+    const providerManager = ProviderManager.getInstance();
+
+    providerManager.setSessionProviderConfig({ provider: 'custom', model: 'x' });
+    expect(providerManager.getSelectedProviderConfig().provider).toBe('custom');
+
+    providerManager.setSessionProviderConfig(null);
+    expect(providerManager.getSelectedProviderConfig()).toEqual(providerManager.getOnDiskProviderConfig());
+  });
+});

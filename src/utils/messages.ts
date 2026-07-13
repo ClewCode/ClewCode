@@ -4216,7 +4216,10 @@ export function createMicrocompactBoundaryMessage(
 }
 
 export function createSystemAPIErrorMessage(
-  error: APIError,
+  // Accepts APIError (Anthropic) or a plain Error (third-party providers throw
+  // Error + `_providerError` — see AnthropicAdapter.normalizeError). formatAPIError
+  // in the renderer only reads `.message`/cause, so both shapes render correctly.
+  error: APIError | Error,
   retryInMs: number,
   retryAttempt: number,
   maxRetries: number,

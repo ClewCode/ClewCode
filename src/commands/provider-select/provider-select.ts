@@ -157,7 +157,7 @@ function getDefaultModelForProvider(provider: ProviderKey): string {
 
 function applyProviderSelectionToSession(
   setAppState: ReturnType<typeof useSetAppState>,
-  config: Pick<ProviderConfig, 'model' | 'provider' | 'apiKeys'>,
+  config: Pick<ProviderConfig, 'model' | 'provider' | 'apiKeys' | 'providerConfig'>,
   isGlobal = false,
 ): void {
   // Session model & provider are managed by AppState's *ForSession fields
@@ -171,6 +171,22 @@ function applyProviderSelectionToSession(
 
   if (config.apiKeys) {
     providerManager.setSessionApiKeys(config.apiKeys);
+  }
+
+  // Session-scoped provider config overlay: for non-global selections we keep
+  // the chosen provider/model (and any custom-endpoint providerConfig such as
+  // baseUrl) in memory on this process's ProviderManager instead of writing
+  // provider.json. This is what makes a custom-provider switch stay local to
+  // THIS terminal — the shared file (and every other terminal) is untouched.
+  // Global selections clear the overlay so the on-disk config takes over.
+  if (isGlobal) {
+    providerManager.setSessionProviderConfig(null);
+  } else {
+    providerManager.setSessionProviderConfig({
+      provider: config.provider as ProviderConfig['provider'],
+      model: config.model,
+      ...(config.providerConfig ? { providerConfig: config.providerConfig } : {}),
+    });
   }
 
   // Session-only: don't persist provider/model to provider.json.
@@ -810,9 +826,13 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
           const baseUrl = customBaseUrl;
           const apiKeyVal = apiKeyInput.trim();
 
-          // Temporarily set the provider config so fetchProviderModels can use it
+          // Temporarily apply the custom provider config so fetchProviderModels
+          // can reach the endpoint — via the session-scoped overlay, NOT a
+          // provider.json write, so probing a custom endpoint never touches the
+          // shared file or other terminals.
           const currentConfig = await loadConfig();
-          const tempConfig: ProviderConfig = {
+          const providerManager = ProviderManager.getInstance();
+          providerManager.setSessionProviderConfig({
             provider: 'custom',
             model: '',
             providerConfig: {
@@ -826,9 +846,8 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
               ...(currentConfig?.apiKeys ?? {}),
               ...(apiKeyVal ? { custom: apiKeyVal } : {}),
             },
-          };
-          await saveConfig(tempConfig);
-          const providerManager = ProviderManager.getInstance();
+          });
+          if (apiKeyVal) providerManager.setSessionApiKeys({ custom: apiKeyVal });
           providerManager.invalidateConfigCache();
 
           try {
@@ -849,28 +868,40 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
         const apiKeyVal = apiKeyInput.trim();
 
         const currentConfig = await loadConfig();
-        const nextConfig: ProviderConfig = {
-          provider: 'custom',
-          model,
-          providerConfig: {
-            ...(getSerializableProviderInfo('custom') as any),
-            providerId: 'custom',
-            label,
-            envKey: 'CUSTOM_API_KEY',
-            baseUrl,
-          } as any,
-          apiKeys: {
-            ...(currentConfig?.apiKeys ?? {}),
-            ...(apiKeyVal ? { custom: apiKeyVal } : {}),
-          },
+        const customProviderConfig = {
+          ...(getSerializableProviderInfo('custom') as any),
+          providerId: 'custom',
+          label,
+          envKey: 'CUSTOM_API_KEY',
+          baseUrl,
+        } as any;
+        const nextApiKeys = {
+          ...(currentConfig?.apiKeys ?? {}),
+          ...(apiKeyVal ? { custom: apiKeyVal } : {}),
         };
 
-        await saveConfig(nextConfig);
+        // Session-only: preserve the on-disk provider/model so other terminals
+        // keep their own selection. Only the API key is persisted to the shared
+        // file (additive, reusable) — and only when a global config already
+        // exists to merge into; the custom provider + model + baseUrl are
+        // applied to THIS session via the session-scoped overlay below.
+        if (currentConfig) {
+          await saveConfig({ ...currentConfig, apiKeys: nextApiKeys });
+        }
         clearProviderModelsCache('custom');
 
         const providerManager = ProviderManager.getInstance();
         providerManager.invalidateConfigCache();
-        applyProviderSelectionToSession(setAppState, { model, provider: 'custom' }, false);
+        applyProviderSelectionToSession(
+          setAppState,
+          {
+            model,
+            provider: 'custom',
+            providerConfig: customProviderConfig,
+            ...(apiKeyVal ? { apiKeys: { custom: apiKeyVal } } : {}),
+          },
+          false,
+        );
 
         setCustomName('');
         setCustomBaseUrl('');
