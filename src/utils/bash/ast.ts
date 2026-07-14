@@ -709,6 +709,7 @@ function collectCommands(
       } else if (child.type === 'do_group') {
         doGroup = child;
       } else if (child.type === 'for' || child.type === 'in' || child.type === 'select' || child.type === ';') {
+        /* noop */
       } else if (child.type === 'command_substitution') {
         // `for i in $(seq 1 3)` — inner cmd IS extracted and rule-checked.
         const err = collectCommandSubstitution(child, commands, varScope);
