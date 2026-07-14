@@ -8,7 +8,8 @@ const REDACTED = '[REDACTED]';
 // Keys whose VALUE is a secret. Matched case-insensitively against the full key
 // name. `apiKeys` is the provider-config map ({ opengateway: '...', xai: '...' });
 // its nested string values are redacted individually by the recursive walk.
-const SECRET_KEY_RE = /^(api[-_]?keys?|authorization|auth[-_]?token|access[-_]?token|refresh[-_]?token|token|secret|password|client[-_]?secret)$/i;
+const SECRET_KEY_RE =
+  /^(api[-_]?keys?|authorization|auth[-_]?token|access[-_]?token|refresh[-_]?token|token|secret|password|client[-_]?secret)$/i;
 
 /**
  * JSON.stringify replacer that masks values under secret-bearing keys, at any

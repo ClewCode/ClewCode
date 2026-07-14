@@ -96,7 +96,14 @@ export class OpenAICompatibleProvider implements ProviderInterface {
   private supportsVision: boolean;
   private _extraHeaders: Record<string, string>;
 
-  constructor(providerId: ProviderId, label: string, envKey: string, defaultBaseUrl: string, requiresApiKey = true, options?: OpenAICompatibleOptions) {
+  constructor(
+    providerId: ProviderId,
+    label: string,
+    envKey: string,
+    defaultBaseUrl: string,
+    requiresApiKey = true,
+    options?: OpenAICompatibleOptions,
+  ) {
     this.providerId = providerId;
     this.label = label;
     this.envKey = envKey;

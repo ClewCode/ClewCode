@@ -98,7 +98,12 @@ async function listSessions(opts?: { cwd?: string }): Promise<ExternalSessionMet
       if (opts?.cwd && cwd && cwd.toLowerCase() !== opts.cwd.toLowerCase()) continue;
       results.push({
         tool: 'codex',
-        externalId: externalId || path.split(/[\\/]/).pop()!.replace(/\.jsonl$/, ''),
+        externalId:
+          externalId ||
+          path
+            .split(/[\\/]/)
+            .pop()!
+            .replace(/\.jsonl$/, ''),
         title: title || '(untitled)',
         cwd,
         modified: stats.mtimeMs,

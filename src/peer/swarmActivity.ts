@@ -46,7 +46,12 @@ class SwarmActivityRegistry {
     return runId;
   }
 
-  updatePeer(runId: string, hostname: string, status: PeerActivityState['status'], data?: Partial<PeerActivityState>): void {
+  updatePeer(
+    runId: string,
+    hostname: string,
+    status: PeerActivityState['status'],
+    data?: Partial<PeerActivityState>,
+  ): void {
     const run = this.activeRuns.get(runId);
     if (!run) return;
     const peer = run.peers.get(hostname) ?? { status: 'pending', startedAt: Date.now() };

@@ -11,8 +11,7 @@ import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface
 // CLI and log in" is genuinely all a user needs. They can still be overridden
 // via CODE_ASSIST_CLIENT_ID / CODE_ASSIST_CLIENT_SECRET.
 //   https://cloud.google.com/code-assist/docs/install
-const DEFAULT_OAUTH_CLIENT_ID =
-  '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
+const DEFAULT_OAUTH_CLIENT_ID = '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
 // This is the public gemini-cli installed-app credential — not confidential for
 // native apps (see RFC 8252). It only identifies the app to Google; each user
 // still authenticates with their own account. Override with CODE_ASSIST_CLIENT_SECRET.

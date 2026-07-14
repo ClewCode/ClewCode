@@ -10,9 +10,12 @@ import {
   deriveAccountId,
   ensureFreshTokens,
   listCodexModels,
+  normalizeResponsesBody,
   type ReasoningEffort,
   resolveConfig,
 } from '@opencoredev/loginwithchatgpt-core';
+import { logError } from '../../../utils/log.js';
+import { type CodexLimitsSnapshot, extractCodexLimitsFromResponse, getCodexLimits } from '../../codexLimits.js';
 import { type ProviderAdapter, registerAdapter, withStreamWatchdog } from '../adapter/AnthropicAdapter.js';
 import type { ProviderClient, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
@@ -192,6 +195,11 @@ export class ChatGPTProvider implements ProviderInterface {
             throw await parseErrorResponse(response);
           }
 
+          // Passive usage capture: rate-limit headers ride along on every
+          // `/responses` reply (both stream and non-stream). Never let a
+          // capture failure break the actual completion.
+          extractCodexLimitsFromResponse(response.headers);
+
           return stream ? parseServerSentEvents(response) : response.json();
         },
       },
@@ -210,6 +218,54 @@ export class ChatGPTProvider implements ProviderInterface {
       console.error('[chatgpt] Failed to list models:', error);
       return [];
     }
+  }
+
+  /**
+   * Best-effort probe to populate Codex usage limits when no snapshot has been
+   * captured from live traffic yet (fresh session, no request made). Fires one
+   * minimal `/responses` request and reads the rate-limit headers / body off
+   * the reply. Never throws; returns whatever snapshot exists afterward.
+   */
+  async fetchUsageSnapshot(options: { baseUrl?: string; model?: string }): Promise<CodexLimitsSnapshot | null> {
+    try {
+      const config = resolveConfig({
+        codexBaseUrl: options.baseUrl || process.env.CHATGPT_CODEX_BASE_URL,
+        clientVersion: process.env.CHATGPT_CODEX_CLIENT_VERSION,
+      });
+      const codexFetch = createCodexFetch({ config, getAuth: createAuthResolver(config) });
+      // Model slugs may be provider-prefixed (e.g. "chatgpt/gpt-5.5").
+      const model = (options.model ?? '').split('/').pop() || 'gpt-5.5';
+      // The Codex backend rejects non-streaming `/responses` ("Stream must be
+      // set to true"), so we must stream. The rate-limit headers arrive on the
+      // initial response — we read them and immediately cancel the body, so the
+      // probe costs a request but not a full generation.
+      const body = normalizeResponsesBody(
+        {
+          model,
+          input: [{ role: 'user', content: [{ type: 'input_text', text: 'hi' }] }],
+          stream: true,
+        },
+        {},
+      );
+
+      const response = await codexFetch(`${config.codexBaseUrl}/responses`, {
+        method: 'POST',
+        headers: { accept: 'text/event-stream', 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(15_000),
+      });
+
+      extractCodexLimitsFromResponse(response.headers);
+      // Abandon the generation — we only needed the headers.
+      try {
+        await response.body?.cancel();
+      } catch {
+        // Best-effort; nothing to do if the stream is already closed.
+      }
+    } catch (error) {
+      logError(error as Error);
+    }
+    return getCodexLimits();
   }
 }
 
@@ -384,6 +440,11 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
 
       if (type === 'response.completed' || type === 'response.incomplete') {
         usage = event.response?.usage;
+        // Secondary usage source: some backend versions carry rate limits on
+        // the completion event rather than the initial response headers.
+        if (event.response?.rate_limits) {
+          extractCodexLimitsFromResponse(undefined, event.response.rate_limits);
+        }
       }
     }
 

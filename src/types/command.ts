@@ -159,7 +159,9 @@ export type CommandAvailability =
   // claude.ai OAuth subscriber (Pro/Max/Team/Enterprise via claude.ai)
   | 'claude-ai'
   // Console API key user (direct api.anthropic.com, not via claude.ai OAuth)
-  | 'console';
+  | 'console'
+  // ChatGPT/Codex OAuth subscriber (active provider = 'chatgpt')
+  | 'chatgpt';
 
 export type CommandBase = {
   availability?: CommandAvailability[];

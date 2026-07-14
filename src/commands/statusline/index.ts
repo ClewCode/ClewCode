@@ -1,7 +1,9 @@
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.js';
 import type { Command } from '../../commands.js';
 
-const STATUSLINE_PROMPT = (args: string) => `Help me set up or update the status line for my Clew Code terminal interface.
+const STATUSLINE_PROMPT = (
+  args: string,
+) => `Help me set up or update the status line for my Clew Code terminal interface.
 
 Use the "statusline-setup" agent (via the Agent/Task tool with subagent_type "statusline-setup") to make the change — that agent owns the statusLine command in my settings and knows how to convert a shell PS1 and build the JSON.
 

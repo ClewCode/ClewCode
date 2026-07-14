@@ -87,7 +87,9 @@ export function SwarmView({ workspaceRoot }: SwarmViewProps): React.ReactElement
 
     // Initial load
     setSwarmRuns([...registry.getActiveRuns(), ...registry.getRecentRuns(5)]);
-    listAllDynamicRuns(workspaceRoot).then(setWorkflowRuns).catch(() => {});
+    listAllDynamicRuns(workspaceRoot)
+      .then(setWorkflowRuns)
+      .catch(() => {});
 
     return () => {
       unsubscribe();
@@ -163,10 +165,14 @@ export function SwarmView({ workspaceRoot }: SwarmViewProps): React.ReactElement
           <Box key={run.runId} flexDirection="column" gap={0} marginTop={0} marginBottom={0}>
             <Box>
               <Text bold>{run.command.slice(0, 50)}</Text>
-              <Text dimColor> ({run.peers.size} peers, {formatAge(Date.now() - run.startedAt)})</Text>
+              <Text dimColor>
+                {' '}
+                ({run.peers.size} peers, {formatAge(Date.now() - run.startedAt)})
+              </Text>
             </Box>
             {Array.from(run.peers.entries()).map(([hostname, state]) => {
-              const isSelected = selection.type === 'peer' && selection.index === idx && selection.hostname === hostname;
+              const isSelected =
+                selection.type === 'peer' && selection.index === idx && selection.hostname === hostname;
               const bg = isSelected ? 'blue' : undefined;
               return (
                 <Box key={hostname} paddingLeft={2} marginBottom={0}>
@@ -196,7 +202,9 @@ export function SwarmView({ workspaceRoot }: SwarmViewProps): React.ReactElement
           const isSelected = selection.type === 'workflow' && selection.index === idx;
           const bg = isSelected ? 'blue' : undefined;
           const done = run.completedSubtaskIds?.length ?? 0;
-          const total = run.completedSubtaskIds ? run.completedSubtaskIds.length + (run.runningSubtaskIds?.length ?? 0) : 0;
+          const total = run.completedSubtaskIds
+            ? run.completedSubtaskIds.length + (run.runningSubtaskIds?.length ?? 0)
+            : 0;
           const progress = total > 0 ? done / total : 0;
 
           return (
@@ -211,9 +219,16 @@ export function SwarmView({ workspaceRoot }: SwarmViewProps): React.ReactElement
               </Box>
               <Box paddingLeft={2} marginBottom={0}>
                 <ProgressBar ratio={progress} width={Math.max(20, termWidth - 30)} />
-                <Text dimColor> {done}/{total}</Text>
+                <Text dimColor>
+                  {' '}
+                  {done}/{total}
+                </Text>
               </Box>
-              {run.status === 'running' && <Text dimColor paddingLeft={2}>(Press k to cancel, r to retry)</Text>}
+              {run.status === 'running' && (
+                <Text dimColor paddingLeft={2}>
+                  (Press k to cancel, r to retry)
+                </Text>
+              )}
               <Divider />
             </Box>
           );

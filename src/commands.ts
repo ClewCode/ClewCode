@@ -45,6 +45,7 @@ import ruleCmd from './commands/rule/index.js';
 import securityReview from './commands/security-review.js';
 import terminalSetup from './commands/terminalSetup/index.js';
 import usage from './commands/usage/index.js';
+import usageCookie from './commands/usage-cookie/index.js';
 import theme from './commands/theme/index.js';
 import workspace from './commands/workspace/index.js';
 import { feature } from 'bun:bundle';
@@ -126,6 +127,7 @@ import {
   clearPluginSkillsCache,
 } from './utils/plugins/loadPluginCommands.js';
 import memoize from 'lodash-es/memoize.js';
+import { ProviderManager } from './services/ai/ProviderManager.js';
 import { isUsing3PServices, isClaudeAISubscriber } from './utils/auth.js';
 import { isFirstPartyAnthropicBaseUrl } from './utils/model/providers.js';
 import exit from './commands/exit/index.js';
@@ -139,6 +141,7 @@ import remoteEnv from './commands/remote-env/index.js';
 import upgrade from './commands/upgrade/index.js';
 import { usageCredits, usageCreditsNonInteractive } from './commands/usage-credits/index.js';
 import rateLimitOptions from './commands/rate-limit-options/index.js';
+import loginCmd from './commands/login/index.js';
 
 import effort from './commands/effort/index.js';
 import stats from './commands/stats/index.js';
@@ -218,6 +221,7 @@ const COMMANDS = memoize((): Command[] => [
   memorySearch,
   indexAdmin,
   model,
+  loginCmd(),
   agentConfig,
   outputStyle,
   swarmCmd,
@@ -256,6 +260,7 @@ const COMMANDS = memoize((): Command[] => [
   usageCreditsNonInteractive,
   rateLimitOptions,
   usage,
+  usageCookie,
   usageReport,
   teamOnboarding,
   teamDashboard,
@@ -359,6 +364,9 @@ export function meetsAvailabilityRequirement(cmd: Command): boolean {
         // Excludes 3P (Bedrock/Vertex/Foundry) who don't set ANTHROPIC_BASE_URL
         // and gateway users who proxy through a custom base URL.
         if (!isClaudeAISubscriber() && !isUsing3PServices() && isFirstPartyAnthropicBaseUrl()) return true;
+        break;
+      case 'chatgpt':
+        if (ProviderManager.getInstance().getActiveProviderName() === 'chatgpt') return true;
         break;
       default: {
         const _exhaustive: never = a;

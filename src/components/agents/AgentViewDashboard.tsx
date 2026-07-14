@@ -893,44 +893,44 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
           )}
         </Box>
 
-        {backgroundTasks.length === 0 ? null : (
-          groupedTasks.map(group => {
-            const info = CATEGORY_LABELS[group.key as TaskCategory] ?? { label: group.label, color: 'dim' };
-            return (
-              <React.Fragment key={group.key}>
-                <AgentViewGroupHeader
-                  label={info.label}
-                  count={group.tasks.length}
-                  color={info.color}
-                  isCollapsed={group.isCollapsed}
-                  onToggle={() => handleGroupToggle(group.key)}
-                  isSelected={false}
-                />
-                {!group.isCollapsed &&
-                  group.tasks.map(task => {
-                    const lt = task as LocalAgentTaskState;
-                    const flatIdx = flatList.findIndex(item => item.task?.id === lt.id);
-                    const isSelected = flatIdx === selectedIndex;
-                    const prInfo = (lt as any)._prInfo as PRDisplayInfo | undefined;
+        {backgroundTasks.length === 0
+          ? null
+          : groupedTasks.map(group => {
+              const info = CATEGORY_LABELS[group.key as TaskCategory] ?? { label: group.label, color: 'dim' };
+              return (
+                <React.Fragment key={group.key}>
+                  <AgentViewGroupHeader
+                    label={info.label}
+                    count={group.tasks.length}
+                    color={info.color}
+                    isCollapsed={group.isCollapsed}
+                    onToggle={() => handleGroupToggle(group.key)}
+                    isSelected={false}
+                  />
+                  {!group.isCollapsed &&
+                    group.tasks.map(task => {
+                      const lt = task as LocalAgentTaskState;
+                      const flatIdx = flatList.findIndex(item => item.task?.id === lt.id);
+                      const isSelected = flatIdx === selectedIndex;
+                      const prInfo = (lt as any)._prInfo as PRDisplayInfo | undefined;
 
-                    return (
-                      <AgentViewRow
-                        key={task.id}
-                        task={lt}
-                        index={flatIdx}
-                        isSelected={isSelected}
-                        prCount={prInfo ? 1 : 0}
-                        prStatus={prInfo?.status as PRStatus | null}
-                        prUrl={prInfo?.url as string | null}
-                        prDisplayInfo={prInfo ?? null}
-                        width={contentWidth}
-                      />
-                    );
-                  })}
-              </React.Fragment>
-            );
-          })
-        )}
+                      return (
+                        <AgentViewRow
+                          key={task.id}
+                          task={lt}
+                          index={flatIdx}
+                          isSelected={isSelected}
+                          prCount={prInfo ? 1 : 0}
+                          prStatus={prInfo?.status as PRStatus | null}
+                          prUrl={prInfo?.url as string | null}
+                          prDisplayInfo={prInfo ?? null}
+                          width={contentWidth}
+                        />
+                      );
+                    })}
+                </React.Fragment>
+              );
+            })}
 
         <Box flexGrow={1} minHeight={2} />
 

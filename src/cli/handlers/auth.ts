@@ -311,7 +311,7 @@ export async function authStatus(opts: { json?: boolean; text?: boolean }): Prom
  * Gateway login: open browser to login via web, exchange for gateway token,
  * save locally so ClewGatewayProvider can use it.
  */
-async function gatewayLogin(): Promise<void> {
+export async function gatewayLogin(): Promise<void> {
   try {
     process.stdout.write('Sign in to Clew Gateway (api.clew-code.org)\n');
 
