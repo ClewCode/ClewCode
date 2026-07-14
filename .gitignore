@@ -130,7 +130,8 @@ peer-perm-proof.txt
 src/generated/
 
 # Scripts
-scripts/
+scripts/*
+!scripts/check-shadow-pairs.sh
 ClewCode.wiki
 
 # Assets
