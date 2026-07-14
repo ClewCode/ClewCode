@@ -51,7 +51,7 @@ async function listSessions(opts?: { cwd?: string }): Promise<ExternalSessionMet
       const cwd = typeof meta.directory === 'string' ? meta.directory : undefined;
       if (opts?.cwd && cwd && cwd.toLowerCase() !== opts.cwd.toLowerCase()) continue;
       const time = meta.time as Record<string, unknown> | undefined;
-      const modified = typeof time?.updated === 'number' ? time.updated : (time?.created as number) ?? Date.now();
+      const modified = typeof time?.updated === 'number' ? time.updated : ((time?.created as number) ?? Date.now());
       const msgDir = join(storageDir(), 'message', meta.id);
       let messageCount = 0;
       try {

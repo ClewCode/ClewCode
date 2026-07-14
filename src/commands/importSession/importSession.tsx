@@ -59,7 +59,10 @@ function ImportPicker({
   }, [toolFilter]);
 
   const maxVisible = Math.max(4, Math.min(rows - 6, 15));
-  const windowStart = Math.max(0, Math.min(selected - Math.floor(maxVisible / 2), (sessions?.length ?? 0) - maxVisible));
+  const windowStart = Math.max(
+    0,
+    Math.min(selected - Math.floor(maxVisible / 2), (sessions?.length ?? 0) - maxVisible),
+  );
 
   useInput((input, key) => {
     if (importing || !sessions || sessions.length === 0) {
@@ -120,7 +123,9 @@ function ImportPicker({
       <Box flexDirection="column">
         <Text>No sessions found from other CLIs.</Text>
         <Text dimColor>
-          {avail.length ? `Detected: ${avail.map(t => EXTERNAL_TOOL_LABELS[t]).join(', ')}` : 'No supported CLIs detected.'}
+          {avail.length
+            ? `Detected: ${avail.map(t => EXTERNAL_TOOL_LABELS[t]).join(', ')}`
+            : 'No supported CLIs detected.'}
         </Text>
       </Box>
     );

@@ -124,7 +124,14 @@ export function AgentViewPeekPanel({
 
         {/* Live terminal output tail, polled from the supervisor daemon's log file */}
         {liveLog !== undefined && (
-          <Box flexDirection="column" marginY={1} paddingX={1} paddingY={1} borderStyle="round" borderColor="bashBorder">
+          <Box
+            flexDirection="column"
+            marginY={1}
+            paddingX={1}
+            paddingY={1}
+            borderStyle="round"
+            borderColor="bashBorder"
+          >
             <Box marginBottom={1}>
               <Text bold dimColor>
                 {figures.play} Live output {liveLogRunning === false ? '(stopped)' : ''}

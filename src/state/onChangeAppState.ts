@@ -104,9 +104,7 @@ export function onChangeAppState({ newState, oldState }: { newState: AppState; o
   // agents/tasks that were spawned without an explicit session model inherit
   // the session's base model rather than the parent's session override.
   if (newState.mainLoopModelForSession !== oldState.mainLoopModelForSession) {
-    setMainLoopModelOverride(
-      newState.mainLoopModelForSession ?? newState.mainLoopModel,
-    );
+    setMainLoopModelOverride(newState.mainLoopModelForSession ?? newState.mainLoopModel);
   }
 
   // mainLoopProviderForSession: sync to ProviderManager's sessionProvider so

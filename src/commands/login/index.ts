@@ -1,19 +1,18 @@
 import type { Command } from '../../commands.js';
 import { hasAnthropicApiKeyAuth } from '../../utils/auth.js';
 import { isEnvTruthy } from '../../utils/envUtils.js';
-import { isGatewayConfigured } from '../../utils/gatewayAuth.js';
-
-const desc = isGatewayConfigured()
-  ? 'Sign in to Clew Gateway (api.clew-code.org)'
-  : hasAnthropicApiKeyAuth()
-    ? 'Switch Anthropic accounts'
-    : 'Sign in with your Anthropic account';
 
 export default () =>
   ({
-    type: isGatewayConfigured() ? 'local' : 'local-jsx',
+    type: 'local-jsx',
     name: 'login',
-    description: desc,
+    get description() {
+      try {
+        return hasAnthropicApiKeyAuth() ? 'Switch Anthropic accounts' : 'Sign in with your Anthropic account';
+      } catch {
+        return 'Sign in with your Anthropic account';
+      }
+    },
     isEnabled: () => !isEnvTruthy(process.env.DISABLE_LOGIN_COMMAND),
-    load: isGatewayConfigured() ? () => import('./gwlogin.js') : () => import('./login.js'),
+    load: () => import('./login.js'),
   }) satisfies Command;

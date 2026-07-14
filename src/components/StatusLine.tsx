@@ -201,8 +201,6 @@ function claudePill(text: string): string {
   );
 }
 
-
-
 interface ToolActivity {
   id: string;
   name: string;
@@ -652,8 +650,7 @@ function StatusLineInner({
       .filter(Boolean)
       .join(CLAUDE_DOT);
 
-    const rightLine =
-      (rightText ? ansis.hex('#FFD700')(rightText) : '');
+    const rightLine = rightText ? ansis.hex('#FFD700')(rightText) : '';
 
     const agentLines: Array<{ key: string; node: React.ReactNode }> = [];
 

@@ -4,7 +4,8 @@ const checkup = {
   type: 'prompt',
   name: 'checkup',
   aliases: ['check', 'health'],
-  description: 'Run a system checkup — the agent scans skills, MCP servers, plugins & system health, then cleans up (asks before deleting)',
+  description:
+    'Run a system checkup — the agent scans skills, MCP servers, plugins & system health, then cleans up (asks before deleting)',
   argumentHint: '[area]',
   contentLength: 0,
   progressMessage: 'running the Clew Code system checkup',

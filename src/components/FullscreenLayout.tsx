@@ -416,9 +416,7 @@ export function FullscreenLayout({
                 content so the real REPL PromptInput (in the bottom slot below)
                 stays visible and owns input — no bespoke input inside the modal. */}
             {noTranscriptPeek && modal != null ? (
-              <ModalContext
-                value={{ rows: terminalRows - 1, columns: columns - 4, scrollRef: modalScrollRef ?? null }}
-              >
+              <ModalContext value={{ rows: terminalRows - 1, columns: columns - 4, scrollRef: modalScrollRef ?? null }}>
                 <Box flexDirection="column" flexGrow={1} paddingX={2} paddingTop={1} overflow="hidden">
                   {modal}
                 </Box>

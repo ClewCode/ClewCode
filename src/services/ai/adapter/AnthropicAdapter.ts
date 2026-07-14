@@ -391,7 +391,10 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       // text-only models we can't statically flag as vision:false).
       const normalized = this.normalizeError(err) as any;
       if (normalized?._providerError?.reason === 'vision_unsupported') {
-        const textOnly = { ...openAIParams, messages: stripImagesFromOpenAIMessages(openAIParams.messages, params.model) };
+        const textOnly = {
+          ...openAIParams,
+          messages: stripImagesFromOpenAIMessages(openAIParams.messages, params.model),
+        };
         const response = await this.client.chat.completions.create(
           { ...textOnly, stream: false },
           { signal: options?.signal },
@@ -410,7 +413,9 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     const hadReasoning = !!openAIParams.reasoning_effort;
 
     const createStream = (withReasoning: boolean, textOnly = false) => {
-      const messages = textOnly ? stripImagesFromOpenAIMessages(openAIParams.messages, params.model) : openAIParams.messages;
+      const messages = textOnly
+        ? stripImagesFromOpenAIMessages(openAIParams.messages, params.model)
+        : openAIParams.messages;
       const apiParams: Record<string, unknown> = {
         ...openAIParams,
         messages,

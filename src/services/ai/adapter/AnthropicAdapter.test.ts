@@ -106,7 +106,9 @@ describe('AnthropicAdapter media fallback', () => {
             calls.push(params);
             // First attempt (with image) → gateway 400 "not a VLM"
             if (calls.length === 1) {
-              const err: any = new Error('The model is not a VLM (Vision Language Model). Please use text-only prompts.');
+              const err: any = new Error(
+                'The model is not a VLM (Vision Language Model). Please use text-only prompts.',
+              );
               err.status = 400;
               throw err;
             }

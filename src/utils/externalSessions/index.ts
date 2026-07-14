@@ -50,9 +50,7 @@ export async function listAllExternalSessions(opts?: {
   const cwd = opts?.scopeToCwd ? getOriginalCwd() : undefined;
   const wanted = opts?.tools;
   const adapters = ADAPTERS.filter(a => a.isAvailable() && (!wanted || wanted.includes(a.tool)));
-  const lists = await Promise.all(
-    adapters.map(a => a.listSessions({ cwd }).catch(() => [] as ExternalSessionMeta[])),
-  );
+  const lists = await Promise.all(adapters.map(a => a.listSessions({ cwd }).catch(() => [] as ExternalSessionMeta[])));
   return lists.flat().sort((a, b) => b.modified - a.modified);
 }
 
@@ -137,7 +135,9 @@ export function buildClewTranscript(
  * transcript into the current repo's project dir, and return the new session
  * id (resumable via `/resume <id>` or the picker).
  */
-export async function importExternalSession(meta: ExternalSessionMeta): Promise<{ sessionId: string; messageCount: number }> {
+export async function importExternalSession(
+  meta: ExternalSessionMeta,
+): Promise<{ sessionId: string; messageCount: number }> {
   const adapter = adapterFor(meta.tool);
   const messages = await adapter.loadMessages(meta);
   if (messages.length === 0) {

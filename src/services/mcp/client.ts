@@ -2263,10 +2263,7 @@ export const fetchCommandsForClient = memoizeWithLRU(
             const tokens = args.trim().length > 0 ? args.trim().split(/\s+/) : [];
             let argsArray: string[] = tokens;
             if (argNames.length > 0 && tokens.length > argNames.length) {
-              argsArray = [
-                ...tokens.slice(0, argNames.length - 1),
-                tokens.slice(argNames.length - 1).join(' '),
-              ];
+              argsArray = [...tokens.slice(0, argNames.length - 1), tokens.slice(argNames.length - 1).join(' ')];
             }
             try {
               const connectedClient = await ensureConnectedClient(client);

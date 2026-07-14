@@ -164,6 +164,7 @@ Tools/commands are registered in `src/tools.ts` / `src/commands.ts`; entrypoints
 - `providerRegistry.ts` / `providerSelection.ts` — discovery & selection
 - `adapter/`, error/usage normalizers — cross-provider shape
 - Mid-session switch: `/model`, `/provider`
+- **Usage/rate limits:** `/usage` is provider-aware. Anthropic path: `services/claudeAiLimits.ts` + `services/api/usage.ts` (OAuth usage endpoint). Codex/ChatGPT path: `services/codexLimits.ts` captures rate limits off live `/responses` traffic (defensive header/`rate_limits` parsing) and `services/api/codexUsage.ts` maps them to the shared `Utilization` shape rendered by `components/Settings/Usage.tsx`.
 
 ### Tools / commands / services
 

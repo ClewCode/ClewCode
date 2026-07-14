@@ -176,7 +176,12 @@ export async function dispatchSwarmCommand(
         error: isTimeout ? `timed out after ${timeoutMs / 1000}s` : errorMessage(err),
         durationMs,
       });
-      options.onProgress?.({ type: 'peer_complete', runId, hostname: peer.hostname, status: isTimeout ? 'timedout' : 'failed' });
+      options.onProgress?.({
+        type: 'peer_complete',
+        runId,
+        hostname: peer.hostname,
+        status: isTimeout ? 'timedout' : 'failed',
+      });
     }
   });
 
