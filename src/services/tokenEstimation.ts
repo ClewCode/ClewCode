@@ -278,7 +278,6 @@ export async function countTokensViaHaikuFallback(
   const filteredBetas =
     getAPIProvider() === 'vertex' ? betas.filter(b => VERTEX_COUNT_TOKENS_ALLOWED_BETAS.has(b)) : betas;
 
-  // biome-ignore lint/plugin: token counting needs specialized parameters (thinking, betas) that sideQuery doesn't support
   console.error(
     `[tokenEstimation] anthropic type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, has messages: ${anthropic?.beta?.messages !== undefined}`,
   );

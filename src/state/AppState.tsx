@@ -66,7 +66,6 @@ export function AppStateProvider({ children, initialState, onChangeAppState }: P
         toolPermissionContext: createDisabledBypassPermissionsContext(prev.toolPermissionContext),
       }));
     }
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
   }, [store.getState, store.setState]);
 
   // Bootstrap dynamic-workflow (ultracode) globals on mount.
@@ -82,7 +81,6 @@ export function AppStateProvider({ children, initialState, onChangeAppState }: P
     } catch {
       // bootstrap is best-effort; the app must work without it.
     }
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
   }, [store]);
 
   // Listen for external settings changes and sync to AppState.

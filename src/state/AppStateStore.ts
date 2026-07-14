@@ -83,6 +83,8 @@ export type AppState = DeepImmutable<{
   statusLineText: string | undefined;
   expandedView: 'none' | 'tasks' | 'teammates';
   isBriefOnly: boolean;
+  // Fast mode (when enabled, reasoning effort is reduced)
+  fastMode?: boolean;
   // Optional - only present when ENABLE_AGENT_SWARMS is true (for dead code elimination)
   showTeammateMessagePreview?: boolean;
   selectedIPAgentIndex: number;

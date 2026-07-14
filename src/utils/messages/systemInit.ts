@@ -27,6 +27,7 @@ export type SystemInitInputs = {
   agents: ReadonlyArray<{ agentType: string }>;
   skills: ReadonlyArray<CommandLike>;
   plugins: ReadonlyArray<{ name: string; path: string; source: string }>;
+  fastMode?: boolean;
 };
 
 /**

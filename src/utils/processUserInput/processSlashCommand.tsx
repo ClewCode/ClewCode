@@ -319,7 +319,6 @@ async function executeForkedSlashCommand(
   logForDebugging(`Forked slash command /${command.name} completed with agent ${agentId}`);
 
   // Prepend debug log for ant users so it appears inside the command output
-  // biome-ignore lint/correctness/noConstantCondition: build-time distribution marker.
   if ('external' === 'ant') {
     resultText = `[ANT-ONLY] API calls: ${getDisplayPath(getDumpPromptsPath(agentId))}\n${resultText}`;
   }

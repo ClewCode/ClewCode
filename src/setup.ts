@@ -67,7 +67,6 @@ export async function setup(
   // Check for Node.js version < 18
   const nodeVersion = process.version.match(/^v(\d+)\./)?.[1];
   if (!nodeVersion || parseInt(nodeVersion, 10) < 18) {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.error(ansis.bold.red('Error: Clew Code requires Node.js version 18 or higher.'));
     process.exit(1);
   }
@@ -108,14 +107,12 @@ export async function setup(
     if (isAgentSwarmsEnabled()) {
       const restoredIterm2Backup = await checkAndRestoreITerm2Backup();
       if (restoredIterm2Backup.status === 'restored') {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(
           ansis.yellow(
             'Detected an interrupted iTerm2 setup. Your original settings have been restored. You may need to restart iTerm2 for the changes to take effect.',
           ),
         );
       } else if (restoredIterm2Backup.status === 'failed') {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(
           ansis.red(
             `Failed to restore iTerm2 settings. Please manually restore your original settings with: defaults import com.googlecode.iterm2 ${restoredIterm2Backup.backupPath}.`,
@@ -128,14 +125,12 @@ export async function setup(
     try {
       const restoredTerminalBackup = await checkAndRestoreTerminalBackup();
       if (restoredTerminalBackup.status === 'restored') {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(
           ansis.yellow(
             'Detected an interrupted Terminal.app setup. Your original settings have been restored. You may need to restart Terminal.app for the changes to take effect.',
           ),
         );
       } else if (restoredTerminalBackup.status === 'failed') {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(
           ansis.red(
             `Failed to restore Terminal.app settings. Please manually restore your original settings with: defaults import com.apple.Terminal ${restoredTerminalBackup.backupPath}.`,
@@ -228,14 +223,12 @@ export async function setup(
     if (tmuxEnabled && tmuxSessionName) {
       const tmuxResult = await createTmuxSessionForWorktree(tmuxSessionName, worktreeSession.worktreePath);
       if (tmuxResult.created) {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(
           ansis.green(
             `Created tmux session: ${ansis.bold(tmuxSessionName)}\nTo attach: ${ansis.bold(`tmux attach -t ${tmuxSessionName}`)}`,
           ),
         );
       } else {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(ansis.yellow(`Warning: Failed to create tmux session: ${tmuxResult.error}`));
       }
     }
@@ -365,7 +358,6 @@ export async function setup(
       process.env.IS_SANDBOX !== '1' &&
       !isEnvTruthy(process.env.CLEW_CODE_BUBBLEWRAP)
     ) {
-      // biome-ignore lint/suspicious/noConsole:: intentional console output
       console.error(`--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons`);
       process.exit(1);
     }
@@ -386,7 +378,6 @@ export async function setup(
       const isSandbox = process.env.IS_SANDBOX === '1';
       const isSandboxed = isDocker || isBubblewrap || isSandbox;
       if (!isSandboxed || hasInternet) {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.error(
           `--dangerously-skip-permissions can only be used in Docker/sandbox containers with no internet access but got Docker: ${isDocker}, Bubblewrap: ${isBubblewrap}, IS_SANDBOX: ${isSandbox}, hasInternet: ${hasInternet}`,
         );

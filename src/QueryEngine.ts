@@ -1,17 +1,21 @@
 import { feature } from 'bun:bundle';
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/messages.mjs';
-import { randomUUID } from 'crypto';
+import { randomUUID, type UUID } from 'crypto';
 import last from 'lodash-es/last.js';
 import { getSessionId, isSessionPersistenceDisabled } from 'src/bootstrap/state.js';
 import { selectableUserMessagesFilter } from 'src/components/MessageSelector.js';
-import type {
-  PermissionMode,
-  SDKCompactBoundaryMessage,
-  SDKMessage,
-  SDKPermissionDenial,
-  SDKStatus,
-  SDKUserMessageReplay,
-} from 'src/entrypoints/agentSdkTypes.js';
+import type { PermissionMode, SDKMessage, SDKStatus, SDKUserMessageReplay } from 'src/entrypoints/sdk/coreTypes.js';
+
+// SDK types that exist only as Zod schemas — define local aliases for type safety
+type SDKPermissionDenial = { tool_name: string; tool_use_id: string; tool_input: unknown };
+type SDKCompactBoundaryMessage = {
+  type: 'system';
+  subtype: 'compact_boundary';
+  session_id: string;
+  uuid: string;
+  compact_metadata: { preservedSegment?: { tailUuid?: string }; sourceLength: number; targetLength: number };
+};
+
 import { accumulateUsage, updateUsage } from 'src/services/api/claude.js';
 import type { NonNullableUsage } from 'src/services/api/logging.js';
 import { EMPTY_USAGE } from 'src/services/api/logging.js';
@@ -274,7 +278,8 @@ export class QueryEngine {
     // When a goal is active, tell the model about the notes scratchpad.
     // This is the main agent's only persistent write channel — notes are
     // read at checkpoint time and routed into structured state fields.
-    const hasActiveGoal = initialAppState.goalState?.goal;
+    const fullGoalState = getFullGoalState();
+    const hasActiveGoal = fullGoalState?.goal;
     const notesPrompt = hasActiveGoal
       ? asSystemPrompt([
           `## Notes Scratchpad\n\nWhen working on long tasks, you can save findings, questions, and things to remember using the Write tool on the notes.md file in the checkpoint directory. Notes are automatically collected at checkpoints to preserve context across session rebuilds. You do not need to manage notes manually — just write down anything worth remembering between turns.`,
@@ -285,7 +290,7 @@ export class QueryEngine {
       ...(customPrompt !== undefined ? [customPrompt] : defaultSystemPrompt),
       profilePrompt,
       goalPrompt,
-      ...(notesPrompt ? [notesPrompt] : []),
+      ...(notesPrompt ? [...notesPrompt] : []),
       ...(memoryMechanicsPrompt ? [memoryMechanicsPrompt] : []),
       ...(appendSystemPrompt ? [appendSystemPrompt] : []),
     ]);
@@ -396,7 +401,9 @@ export class QueryEngine {
     });
 
     // Push new messages, including user input and any attachments
-    this.mutableMessages.push(...messagesFromUserInput);
+    for (const m of messagesFromUserInput) {
+      this.mutableMessages.push(m);
+    }
 
     // Update params to reflect updates from processing /slash commands
     const messages = [...this.mutableMessages];
@@ -429,12 +436,12 @@ export class QueryEngine {
 
     // Filter messages that should be acknowledged after transcript
     const replayableMessages = messagesFromUserInput.filter(
-      msg =>
+      (msg): boolean =>
         (msg.type === 'user' &&
-          !msg.isMeta && // Skip synthetic caveat messages
-          !msg.toolUseResult && // Skip tool results (they'll be acked from query)
-          selectableUserMessagesFilter(msg)) || // Skip non-user-authored messages (task notifications, etc.)
-        (msg.type === 'system' && msg.subtype === 'compact_boundary'), // Always ack compact boundaries
+          !(msg as unknown as Message).isMeta && // Skip synthetic caveat messages
+          !(msg as unknown as Message).toolUseResult && // Skip tool results (they'll be acked from query)
+          selectableUserMessagesFilter(msg as unknown as Message)) || // Skip non-user-authored messages (task notifications, etc.)
+        (msg.type === 'system' && (msg as unknown as Message).subtype === 'compact_boundary'), // Always ack compact boundaries
     );
     const messagesToAck = replayUserMessages ? replayableMessages : [];
 
@@ -549,7 +556,7 @@ export class QueryEngine {
             timestamp: msg.timestamp,
             isReplay: !msg.isCompactSummary,
             isSynthetic: msg.isMeta || msg.isVisibleInTranscriptOnly,
-          } as SDKUserMessageReplay;
+          } as unknown as SDKMessage;
         }
 
         // Local command output — yield as a synthetic assistant message so
@@ -563,7 +570,7 @@ export class QueryEngine {
           (msg.content.includes(`<${LOCAL_COMMAND_STDOUT_TAG}>`) ||
             msg.content.includes(`<${LOCAL_COMMAND_STDERR_TAG}>`))
         ) {
-          yield localCommandOutputToSDKAssistantMessage(msg.content, msg.uuid);
+          yield localCommandOutputToSDKAssistantMessage(msg.content, msg.uuid as UUID);
         }
 
         if (msg.type === 'system' && msg.subtype === 'compact_boundary') {
@@ -573,7 +580,7 @@ export class QueryEngine {
             session_id: getSessionId(),
             uuid: msg.uuid,
             compact_metadata: toSDKCompactMetadata(msg.compactMetadata),
-          } as SDKCompactBoundaryMessage;
+          } as unknown as SDKMessage;
         }
       }
 
@@ -600,7 +607,7 @@ export class QueryEngine {
         permission_denials: this.permissionDenials,
         fast_mode_state: 'off',
         uuid: randomUUID(),
-      };
+      } as unknown as SDKMessage;
       return;
     }
 
@@ -611,7 +618,7 @@ export class QueryEngine {
             ...prev,
             fileHistory: updater(prev.fileHistory),
           }));
-        }, message.uuid);
+        }, message.uuid as UUID);
       });
     }
 
@@ -757,7 +764,7 @@ export class QueryEngine {
                 uuid: msgToAck.uuid,
                 timestamp: msgToAck.timestamp,
                 isReplay: true,
-              } as SDKUserMessageReplay;
+              } as unknown as SDKMessage;
             }
           }
         }
@@ -896,7 +903,7 @@ export class QueryEngine {
               session_id: getSessionId(),
               parent_tool_use_id: null,
               uuid: randomUUID(),
-            };
+            } as unknown as SDKMessage;
           }
 
           break;
@@ -935,7 +942,7 @@ export class QueryEngine {
               fast_mode_state: 'off',
               uuid: randomUUID(),
               errors: [`Reached maximum number of turns (${message.attachment.maxTurns})`],
-            };
+            } as unknown as SDKMessage;
             return;
           }
           // Yield queued_command attachments as SDK user message replays
@@ -951,7 +958,7 @@ export class QueryEngine {
               uuid: message.attachment.source_uuid || message.uuid,
               timestamp: message.timestamp,
               isReplay: true,
-            } as SDKUserMessageReplay;
+            } as unknown as SDKMessage;
           }
           break;
         case 'stream_request_start':
@@ -995,7 +1002,7 @@ export class QueryEngine {
               session_id: getSessionId(),
               uuid: message.uuid,
               compact_metadata: toSDKCompactMetadata(message.compactMetadata),
-            };
+            } as unknown as SDKMessage;
           }
           if (message.subtype === 'api_error') {
             yield {
@@ -1008,7 +1015,7 @@ export class QueryEngine {
               error: categorizeRetryableAPIError(message.error),
               session_id: getSessionId(),
               uuid: message.uuid,
-            };
+            } as unknown as SDKMessage;
           }
           // Don't yield other system messages in headless mode
           break;
@@ -1021,7 +1028,7 @@ export class QueryEngine {
             preceding_tool_use_ids: message.precedingToolUseIds,
             session_id: getSessionId(),
             uuid: message.uuid,
-          };
+          } as unknown as SDKMessage;
           break;
       }
 
@@ -1048,7 +1055,7 @@ export class QueryEngine {
           fast_mode_state: 'off',
           uuid: randomUUID(),
           errors: [`Reached maximum budget ($${maxBudgetUsd})`],
-        };
+        } as unknown as SDKMessage;
         return;
       }
 
@@ -1079,7 +1086,7 @@ export class QueryEngine {
             fast_mode_state: 'off',
             uuid: randomUUID(),
             errors: [`Failed to provide valid structured output after ${maxRetries} attempts`],
-          };
+          } as unknown as SDKMessage;
           return;
         }
       }
@@ -1137,7 +1144,7 @@ export class QueryEngine {
             ...all.slice(start).map(_ => _.error),
           ];
         })(),
-      };
+      } as unknown as SDKMessage;
       return;
     }
 
@@ -1194,7 +1201,7 @@ export class QueryEngine {
       structured_output: structuredOutputFromTool,
       fast_mode_state: 'off',
       uuid: randomUUID(),
-    };
+    } as unknown as SDKMessage;
   }
 
   interrupt(): void {

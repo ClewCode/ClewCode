@@ -1137,7 +1137,9 @@ export async function runInProcessTeammate(config: InProcessRunnerConfig): Promi
         taskId,
         task => {
           // Call any registered idle callbacks
-          task.onIdleCallbacks?.forEach(cb => cb());
+          task.onIdleCallbacks?.forEach(cb => {
+            cb();
+          });
           return { ...task, isIdle: true, onIdleCallbacks: [] };
         },
         setAppState,
@@ -1222,7 +1224,9 @@ export async function runInProcessTeammate(config: InProcessRunnerConfig): Promi
           return task;
         }
         toolUseId = task.toolUseId;
-        task.onIdleCallbacks?.forEach(cb => cb());
+        task.onIdleCallbacks?.forEach(cb => {
+          cb();
+        });
         task.unregisterCleanup?.();
         return {
           ...task,
@@ -1270,7 +1274,9 @@ export async function runInProcessTeammate(config: InProcessRunnerConfig): Promi
           return task;
         }
         toolUseId = task.toolUseId;
-        task.onIdleCallbacks?.forEach(cb => cb());
+        task.onIdleCallbacks?.forEach(cb => {
+          cb();
+        });
         task.unregisterCleanup?.();
         return {
           ...task,

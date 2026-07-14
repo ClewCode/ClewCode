@@ -178,22 +178,17 @@ export async function mcpListHandler(): Promise<void> {
     }
   }
   if (parseErrors.length > 0) {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log('MCP configuration errors:\n');
     for (const err of parseErrors) {
-      // biome-ignore lint/suspicious/noConsole:: intentional console output
       console.log(`  ✗ ${err}`);
     }
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log('');
   }
 
   const { servers: configs } = await getAllMcpConfigs();
   if (Object.keys(configs).length === 0) {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log('No MCP servers configured. Use `clew mcp add` to add a server.');
   } else {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log('Checking MCP server health...\n');
 
     // Check servers concurrently
@@ -212,17 +207,13 @@ export async function mcpListHandler(): Promise<void> {
     for (const { name, server, status } of results) {
       // Intentionally excluding sse-ide servers here since they're internal
       if (server.type === 'sse') {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(`${name}: ${server.url} (SSE) - ${status}`);
       } else if (server.type === 'http') {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(`${name}: ${server.url} (HTTP) - ${status}`);
       } else if (server.type === 'claudeai-proxy') {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(`${name}: ${server.url} - ${status}`);
       } else if (!server.type || server.type === 'stdio') {
         const args = Array.isArray(server.args) ? server.args : [];
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(`${name}: ${server.command} ${args.join(' ')} - ${status}`);
       }
     }
@@ -242,27 +233,20 @@ export async function mcpGetHandler(name: string): Promise<void> {
     cliError(`No MCP server found with name: ${name}`);
   }
 
-  // biome-ignore lint/suspicious/noConsole:: intentional console output
   console.log(`${name}:`);
-  // biome-ignore lint/suspicious/noConsole:: intentional console output
   console.log(`  Scope: ${getScopeLabel(server.scope)}`);
 
   // Check server health
   const status = await checkMcpServerHealth(name, server);
-  // biome-ignore lint/suspicious/noConsole:: intentional console output
   console.log(`  Status: ${status}`);
 
   // Intentionally excluding sse-ide servers here since they're internal
   if (server.type === 'sse') {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  Type: sse`);
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  URL: ${server.url}`);
     if (server.headers) {
-      // biome-ignore lint/suspicious/noConsole:: intentional console output
       console.log('  Headers:');
       for (const [key, value] of Object.entries(server.headers)) {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(`    ${key}: ${value}`);
       }
     }
@@ -274,19 +258,14 @@ export async function mcpGetHandler(name: string): Promise<void> {
         if (clientConfig?.clientSecret) parts.push('client_secret configured');
       }
       if (server.oauth.callbackPort) parts.push(`callback_port ${server.oauth.callbackPort}`);
-      // biome-ignore lint/suspicious/noConsole:: intentional console output
       console.log(`  OAuth: ${parts.join(', ')}`);
     }
   } else if (server.type === 'http') {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  Type: http`);
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  URL: ${server.url}`);
     if (server.headers) {
-      // biome-ignore lint/suspicious/noConsole:: intentional console output
       console.log('  Headers:');
       for (const [key, value] of Object.entries(server.headers)) {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(`    ${key}: ${value}`);
       }
     }
@@ -298,27 +277,20 @@ export async function mcpGetHandler(name: string): Promise<void> {
         if (clientConfig?.clientSecret) parts.push('client_secret configured');
       }
       if (server.oauth.callbackPort) parts.push(`callback_port ${server.oauth.callbackPort}`);
-      // biome-ignore lint/suspicious/noConsole:: intentional console output
       console.log(`  OAuth: ${parts.join(', ')}`);
     }
   } else if (server.type === 'stdio') {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  Type: stdio`);
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  Command: ${server.command}`);
     const args = Array.isArray(server.args) ? server.args : [];
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(`  Args: ${args.join(' ')}`);
     if (server.env) {
-      // biome-ignore lint/suspicious/noConsole:: intentional console output
       console.log('  Environment:');
       for (const [key, value] of Object.entries(server.env)) {
-        // biome-ignore lint/suspicious/noConsole:: intentional console output
         console.log(`    ${key}=${value}`);
       }
     }
   }
-  // biome-ignore lint/suspicious/noConsole:: intentional console output
   console.log(`\nTo remove this server, run: claude mcp remove "${name}" -s ${server.scope}`);
   // Use gracefulShutdown to properly clean up MCP server connections
   // (process.exit bypasses cleanup handlers, leaving child processes orphaned)

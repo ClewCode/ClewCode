@@ -118,7 +118,6 @@ export function AddMarketplace({
       void handleAdd();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   }, [result, inputValue, handleAdd, error]); // Only run once on mount
 
   return (

@@ -64,7 +64,6 @@ function SpeechBubble({
   const bubble = (
     <Box flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX={1} width={34}>
       {lines.map((l, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: stable list, no unique id
         <Text key={i} italic dimColor={!fading} color={fading ? 'inactive' : undefined}>
           {l}
         </Text>
@@ -220,7 +219,6 @@ export function CompanionSprite(): React.ReactNode {
   const spriteColumn = (
     <Box flexDirection="column" flexShrink={0} alignItems="center" width={colWidth}>
       {sprite.map((line, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: stable list, no unique id
         <Text key={i} color={i === 0 && heartFrame ? 'autoAccept' : color}>
           {line}
         </Text>

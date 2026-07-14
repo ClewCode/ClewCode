@@ -2880,7 +2880,9 @@ export function REPL({
               setSandboxPermissionRequestQueue(queue => {
                 queue
                   .filter(item => item.hostPattern.host === hostPattern.host)
-                  .forEach(item => item.resolvePromise(allow));
+                  .forEach(item => {
+                    item.resolvePromise(allow);
+                  });
                 return queue.filter(item => item.hostPattern.host !== hostPattern.host);
               });
               // Clean up all sibling bridge subscriptions for this host
@@ -5203,7 +5205,6 @@ export function REPL({
     // useScheduledTasks's effect (not here) since wrapping a hook call in a dynamic
     // condition would break rules-of-hooks.
     const assistantMode = store.getState().kairosEnabled;
-    // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
     useScheduledTasks!({ isLoading, assistantMode, setMessages });
   }
 
@@ -6034,7 +6035,9 @@ export function REPL({
                       setSandboxPermissionRequestQueue(queue => {
                         queue
                           .filter(item => item.hostPattern.host === approvedHost)
-                          .forEach(item => item.resolvePromise(allow));
+                          .forEach(item => {
+                            item.resolvePromise(allow);
+                          });
                         return queue.filter(item => item.hostPattern.host !== approvedHost);
                       });
 

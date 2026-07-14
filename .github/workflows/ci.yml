@@ -232,7 +232,6 @@ jobs:
     name: Coverage
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    continue-on-error: true
     needs:
       - test
     if: always()

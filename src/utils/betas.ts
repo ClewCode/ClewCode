@@ -69,14 +69,12 @@ export function filterAllowedSdkBetas(sdkBetas: string[] | undefined): string[] 
   }
 
   if (isClaudeAISubscriber()) {
-    // biome-ignore lint/suspicious/noConsole: intentional warning
     console.warn('Warning: Custom betas are only available for API key users. Ignoring provided betas.');
     return undefined;
   }
 
   const { allowed, disallowed } = partitionBetasByAllowlist(sdkBetas);
   for (const beta of disallowed) {
-    // biome-ignore lint/suspicious/noConsole: intentional warning
     console.warn(
       `Warning: Beta header '${beta}' is not allowed. Only the following betas are supported: ${ALLOWED_SDK_BETAS.join(', ')}`,
     );
@@ -422,7 +420,6 @@ export function warnIfPromptCachingDisabled(): void {
   }
 
   if (disabledVars.length > 0) {
-    // biome-ignore lint/suspicious/noConsole: intentional warning
     console.warn(
       `Warning: Prompt caching is disabled via ${disabledVars.join(', ')}. This may reduce performance and increase API costs.`,
     );

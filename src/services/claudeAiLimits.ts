@@ -197,7 +197,6 @@ async function makeTestQuery() {
   // 15s timeout so startup doesn't hang for 75s when api.anthropic.com
   // is unreachable (captive portal, firewall, VPN issues).
   const signal = AbortSignal.timeout(15_000);
-  // biome-ignore lint/plugin: quota check needs raw response access via asResponse()
   return anthropic.beta.messages
     .create(
       {

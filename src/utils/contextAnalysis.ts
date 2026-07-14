@@ -56,9 +56,9 @@ export function analyzeContext(messages: Message[]): TokenStats {
         stats[msg.type === 'user' ? 'humanMessages' : 'assistantMessages'] += tokens;
       }
     } else {
-      content.forEach(block =>
-        processBlock(block, msg, stats, toolIdsToToolNames, readToolIdToFilePath, fileReadStats),
-      );
+      content.forEach(block => {
+        processBlock(block, msg, stats, toolIdsToToolNames, readToolIdToFilePath, fileReadStats);
+      });
     }
   });
 

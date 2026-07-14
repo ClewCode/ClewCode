@@ -7,23 +7,42 @@ export interface Message {
   [key: string]: unknown;
 }
 
-export interface AssistantMessage {
+export interface AssistantMessage extends Message {
   type: 'assistant';
-  message: unknown;
+  message: {
+    content: unknown[];
+    stop_reason?: string | null;
+    usage?: unknown;
+  };
   uuid: string;
   session_id: string;
   error?: string;
   parent_tool_use_id?: string | null;
+  isApiErrorMessage?: boolean;
 }
 
-export interface UserMessage {
+export interface UserMessage extends Message {
   type: 'user';
-  text: string;
   uuid: string;
   session_id?: string;
+  message: { role: string; content: unknown };
+  text?: string;
+  isMeta?: true;
+  isVisibleInTranscriptOnly?: true;
+  isVirtual?: true;
+  isCompactSummary?: true;
+  summarizeMetadata?: Record<string, unknown>;
+  timestamp?: string;
+  toolUseResult?: unknown;
+  mcpMeta?: Record<string, unknown>;
+  imagePasteIds?: number[];
+  videoPasteIds?: number[];
+  sourceToolAssistantUUID?: string;
+  permissionMode?: string;
+  origin?: string;
 }
 
-export interface AttachmentMessage {
+export interface AttachmentMessage extends Message {
   type: 'attachment';
   uuid: string;
   name: string;
@@ -31,26 +50,32 @@ export interface AttachmentMessage {
   session_id?: string;
 }
 
-export interface SystemMessage {
+export interface SystemMessage extends Message {
   type: 'system';
   content: unknown;
   uuid: string;
+  subtype?: string;
+  compactMetadata?: CompactMetadata;
+  error?: unknown;
+  retryAttempt?: number;
+  maxRetries?: number;
+  retryInMs?: number;
 }
 
-export interface SystemAPIErrorMessage {
+export interface SystemAPIErrorMessage extends Message {
   type: 'system_api_error';
   error: string;
   uuid: string;
 }
 
-export interface SystemFileSnapshotMessage {
+export interface SystemFileSnapshotMessage extends Message {
   type: 'system_file_snapshot';
   uuid: string;
   session_id?: string;
   files?: string[];
 }
 
-export interface SystemLocalCommandMessage {
+export interface SystemLocalCommandMessage extends Message {
   type: 'system_local_command';
   uuid: string;
   command: string;
@@ -58,7 +83,7 @@ export interface SystemLocalCommandMessage {
   exit_code: number;
 }
 
-export interface ProgressMessage {
+export interface ProgressMessage extends Message {
   type: 'progress';
   uuid: string;
   label: string;
@@ -66,7 +91,7 @@ export interface ProgressMessage {
   total?: number;
 }
 
-export interface StreamEvent {
+export interface StreamEvent extends Message {
   type: 'stream_event';
   event: string;
   data: unknown;
@@ -78,4 +103,11 @@ export interface CompactMetadata {
   targetLength: number;
   originalTokens?: number;
   compactedTokens?: number;
+  trigger?: string;
+  preTokens?: number;
+  preservedSegment?: {
+    tailUuid?: string;
+    headUuid?: string;
+    anchorUuid?: string;
+  };
 }

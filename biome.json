@@ -81,6 +81,7 @@
         "noAssignInExpressions": "off",
         "noControlCharactersInRegex": "off",
         "noRedeclare": "off",
+        "noConsole": "off",
         "useIterableCallbackReturn": "off",
         "noTemplateCurlyInString": "off",
         "noConfusingLabels": "off",

@@ -10,14 +10,12 @@ import { getRainbowColor } from '../utils/thinking.js';
 // buzz instead of a single UTC-midnight spike, gentler on soul-gen load.
 // Teaser window: April 1-7, 2026 only. Command stays live forever after.
 export function isBuddyTeaserWindow(): boolean {
-  // biome-ignore lint/correctness/noConstantCondition: intentional Ant-only gate
   if ('external' === 'ant') return true;
   const d = new Date();
   return d.getFullYear() === 2026 && d.getMonth() === 3 && d.getDate() <= 7;
 }
 
 export function isBuddyLive(): boolean {
-  // biome-ignore lint/correctness/noConstantCondition: intentional Ant-only gate
   if ('external' === 'ant') return true;
   const d = new Date();
   return d.getFullYear() > 2026 || (d.getFullYear() === 2026 && d.getMonth() >= 3);
@@ -27,7 +25,6 @@ function RainbowText({ text }: { text: string }): React.ReactNode {
   return (
     <>
       {[...text].map((ch, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: stable list, no unique id
         <Text key={i} color={getRainbowColor(i)}>
           {ch}
         </Text>
@@ -60,7 +57,6 @@ export function findBuddyTriggerPositions(text: string): Array<{ start: number; 
   const triggers: Array<{ start: number; end: number }> = [];
   const re = /\/buddy\b/g;
   let m: RegExpExecArray | null;
-  // biome-ignore lint/suspicious/noAssignInExpressions: intentional regex loop
   while ((m = re.exec(text)) !== null) {
     triggers.push({ start: m.index, end: m.index + m[0].length });
   }

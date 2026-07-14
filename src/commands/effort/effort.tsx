@@ -376,7 +376,6 @@ function renderLineWithPanel(
   return (
     <Box flexDirection="row" width={totalWidth} height={1}>
       {segments.map((segment, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: stable index is safe for rendering text columns
         <Box key={i} width={segment.text.length} height={1} backgroundColor={segment.bgColor as any}>
           <Text color={segment.color as any} bold={segment.bold} dimColor={segment.dim}>
             {segment.text}
@@ -406,7 +405,6 @@ function EffortSlider({
   const isUltra = selected === 'ultracode';
   const [ultraEnterAnimTime, setUltraEnterAnimTime] = React.useState<number | null>(isUltra ? animTime : null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: animTime is intentionally omitted to avoid resetting the entrance animation
   React.useEffect(() => {
     setUltraEnterAnimTime(isUltra ? animTime : null);
     // Only reset when entering/leaving ultracode. Including animTime would restart

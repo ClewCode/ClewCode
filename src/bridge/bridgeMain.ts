@@ -2018,7 +2018,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
   // Only reachable via explicit --spawn=worktree (default is same-dir);
   // saved worktree pref was already guarded above.
   if (spawnMode === 'worktree' && !worktreeAvailable) {
-    // biome-ignore lint/suspicious/noConsole: intentional error output
     console.error(
       `Error: Worktree mode requires a git repository or WorktreeCreate hooks configured. Use --spawn=session for single-session mode.`,
     );
@@ -2160,7 +2159,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
           `Bridge resume env mismatch: requested ${reuseEnvironmentId}, backend returned ${environmentId}. Falling back to fresh session.`,
         ),
       );
-      // biome-ignore lint/suspicious/noConsole: intentional warning output
       console.warn(
         `Warning: Could not resume session ${resumeSessionId} — its environment has expired. Creating a fresh session instead.`,
       );
@@ -2205,7 +2203,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
           const { clearBridgePointer } = await import('./bridgePointer.js');
           await clearBridgePointer(resumePointerDir);
         }
-        // biome-ignore lint/suspicious/noConsole: intentional error output
         console.error(
           isFatal
             ? `Error: ${errorMessage(err)}`
