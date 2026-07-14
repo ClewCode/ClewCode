@@ -105,7 +105,9 @@ class SwarmActivityRegistry {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(cb => cb());
+    this.listeners.forEach(cb => {
+      cb();
+    });
   }
 }
 

@@ -188,7 +188,7 @@ export function ModelPicker(t0) {
     defaultOptionDescription,
   ]);
   let t4;
-  bb0: {
+  block0: {
     if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {
       let t5;
       if ($[4] !== initial) {
@@ -221,7 +221,7 @@ export function ModelPicker(t0) {
         t7 = $[11];
       }
       t4 = t7;
-      break bb0;
+      break block0;
     }
     t4 = modelOptions;
   }

@@ -108,7 +108,9 @@ export function OAuthFlowStep({ onSuccess, onCancel }: OAuthFlowStepProps): Reac
   }
   const startOAuth = useCallback(async () => {
     // Clear any existing timers when starting new OAuth flow
-    timersRef.current.forEach(timer => clearTimeout(timer));
+    timersRef.current.forEach(timer => {
+      clearTimeout(timer);
+    });
     timersRef.current.clear();
     try {
       const result = await oauthService.startOAuthFlow(
@@ -212,7 +214,9 @@ export function OAuthFlowStep({ onSuccess, onCancel }: OAuthFlowStepProps): Reac
     return () => {
       oauthService.cleanup();
       // Clear all timers
-      timers.forEach(timer_2 => clearTimeout(timer_2));
+      timers.forEach(timer_2 => {
+        clearTimeout(timer_2);
+      });
       timers.clear();
       clearTimeout(urlCopiedTimerRef.current);
     };

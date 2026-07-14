@@ -1865,7 +1865,7 @@ function walkVariableAssignment(
     if (!/^[A-Za-z0-9 _+:./=[\]-]*$/.test(value.replace(/\$\{[A-Za-z_][A-Za-z0-9_]*\}/g, ''))) {
       return {
         kind: 'too-complex',
-        reason: 'PS4 value outside safe charset — only ${VAR} refs and [A-Za-z0-9 _+:.=/[]-] allowed',
+        reason: 'PS4 value outside safe charset — only \${VAR} refs and [A-Za-z0-9 _+:.=/[]-] allowed',
         nodeType: 'variable_assignment',
       };
     }

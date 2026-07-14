@@ -898,6 +898,8 @@ function filterRulesByContentsMatchingInput(
             }
             // In prefix mode (after splitting), wildcards can safely match subcommands
             return matchWildcardPattern(bashRule.pattern, cmdToMatch);
+          default:
+            return false;
         }
       });
     })

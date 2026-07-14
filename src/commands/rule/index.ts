@@ -66,7 +66,7 @@ const rule: Command = {
           case 'remove':
           case 'rm': {
             const idx = parseInt(parts[1], 10);
-            if (isNaN(idx) || idx < 1) {
+            if (Number.isNaN(idx) || idx < 1) {
               return { type: 'text' as const, value: 'Usage: /rule remove <index>  (1-based)' };
             }
             const removed = await removeProjectRule(idx - 1);
@@ -83,7 +83,7 @@ const rule: Command = {
 
           case 'edit': {
             const idx = parseInt(parts[1], 10);
-            if (isNaN(idx) || idx < 1) {
+            if (Number.isNaN(idx) || idx < 1) {
               return { type: 'text' as const, value: 'Usage: /rule edit <index> <new text>' };
             }
             const newText = parts.slice(2).join(' ').trim();

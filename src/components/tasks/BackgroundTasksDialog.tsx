@@ -343,7 +343,7 @@ export function BackgroundTasksDialog({ onDone, toolUseContext, initialDetailTas
 
   useEffect(() => {
     if (viewState.mode !== 'list') {
-      const task = (typedTasks ?? {})[viewState.itemId];
+      const task = typedTasks?.[viewState.itemId];
       // Workflow tasks get a grace: their detail view stays open through
       // completion so the user sees the final state before eviction.
       if (!task || (task.type !== 'local_workflow' && !isBackgroundTask(task))) {
@@ -561,7 +561,7 @@ export function BackgroundTasksDialog({ onDone, toolUseContext, initialDetailTas
     <Box flexDirection="column" tabIndex={0} autoFocus onKeyDown={handleKeyDown}>
       <Dialog
         title="Background tasks"
-        subtitle={<>{subtitle}</>}
+        subtitle={subtitle}
         onCancel={handleCancel}
         color="background"
         inputGuide={renderInputGuide}

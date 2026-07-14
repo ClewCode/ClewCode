@@ -341,7 +341,7 @@ function NotificationContent({
  */
 export function CopiedToast(): ReactNode {
   const current = useAppState(s => s.notifications.current);
-  if (!current || current.key !== 'selection-copied') return null;
+  if (current?.key !== 'selection-copied') return null;
   if ('jsx' in current) {
     return <Text wrap="truncate">{current.jsx}</Text>;
   }

@@ -1586,7 +1586,7 @@ export function getPipelineSegments(parsed: ParsedPowerShellCommand): ParsedStat
  */
 export function isNullRedirectionTarget(target: string): boolean {
   const t = target.trim().toLowerCase();
-  return t === '$null' || t === '${null}';
+  return t === '$null' || t === '\${null}';
 }
 
 /**

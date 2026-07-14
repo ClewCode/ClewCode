@@ -55,7 +55,7 @@ function IndexAdminComponent({
 
           case 'prune': {
             const days = parseInt(param || '90', 10);
-            if (isNaN(days) || days < 0) {
+            if (Number.isNaN(days) || days < 0) {
               setError('Invalid day count. Use: /index-admin prune 90');
               break;
             }

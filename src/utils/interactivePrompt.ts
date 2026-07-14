@@ -157,7 +157,7 @@ export async function runInteractiveCommand(
     onPromptDetected?: (prompt: string) => Promise<string>;
   } = {},
 ): Promise<{ output: string; exitCode: number }> {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let output = '';
 
     const shell = pty.spawn(command, args, {

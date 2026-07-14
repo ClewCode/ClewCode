@@ -188,7 +188,12 @@ export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
         }
       }
 
-      const result = await (providerClient.chat?.completions?.create ?? providerClient.beta?.messages?.create)({
+      const createFn = providerClient.chat?.completions?.create ?? providerClient.beta?.messages?.create;
+      if (typeof createFn !== 'function') {
+        throw new Error('No completion/create function available on the provider client');
+      }
+
+      const result = await createFn({
         model: normalizedModel,
         max_tokens: max_tokens,
         messages: messagesForProvider,

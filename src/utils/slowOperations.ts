@@ -65,7 +65,7 @@ export function callerFrame(stack: string | undefined): string {
  *
  * args[0] = TemplateStringsArray, args[1..n] = interpolated values
  */
-function buildDescription(args: IArguments): string {
+function buildDescription(args: ArrayLike<unknown>): string {
   const strings = args[0] as TemplateStringsArray;
   let result = '';
   for (let i = 0; i < strings.length; i++) {
@@ -88,10 +88,10 @@ function buildDescription(args: IArguments): string {
 
 class AntSlowLogger {
   startTime: number;
-  args: IArguments;
+  args: ArrayLike<unknown>;
   err: Error;
 
-  constructor(args: IArguments) {
+  constructor(args: ArrayLike<unknown>) {
     this.startTime = performance.now();
     this.args = args;
     // V8/JSC capture the stack at construction but defer the expensive string
@@ -122,8 +122,7 @@ const NOOP_LOGGER: Disposable = {
 
 // Must be regular functions (not arrows) to access `arguments`
 function slowLoggingAnt(_strings: TemplateStringsArray, ..._values: unknown[]): AntSlowLogger {
-  // eslint-disable-next-line prefer-rest-params
-  return new AntSlowLogger(arguments);
+  return new AntSlowLogger([_strings, ..._values]);
 }
 
 function slowLoggingExternal(): Disposable {

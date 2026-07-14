@@ -93,16 +93,16 @@ export function OverageCreditUpsell(t0) {
   let t2;
   if ($[0] !== maxWidth || $[1] !== twoLine) {
     t2 = Symbol.for('react.early_return_sentinel');
-    bb0: {
+    block0: {
       const info = getCachedOverageCreditGrant();
       if (!info) {
         t2 = null;
-        break bb0;
+        break block0;
       }
       const amount = formatGrantAmount(info);
       if (!amount) {
         t2 = null;
-        break bb0;
+        break block0;
       }
       if (twoLine) {
         const title = getFeedTitle(amount);
@@ -128,7 +128,7 @@ export function OverageCreditUpsell(t0) {
             {t4}
           </>
         );
-        break bb0;
+        break block0;
       }
       const text = getUsageText(amount);
       const display = maxWidth ? truncate(text, maxWidth) : text;

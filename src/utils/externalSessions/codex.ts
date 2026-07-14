@@ -124,7 +124,7 @@ async function loadMessages(meta: ExternalSessionMeta): Promise<NormalizedMessag
   for (const e of entries) {
     if (e.type !== 'response_item') continue;
     const payload = e.payload as Record<string, unknown> | undefined;
-    if (!payload || payload.type !== 'message' || !includeRole(payload.role)) continue;
+    if (payload?.type !== 'message' || !includeRole(payload.role)) continue;
     const text = textFromCodexContent(payload.content);
     if (!text) continue;
     const ts = typeof e.timestamp === 'string' ? Date.parse(e.timestamp) : undefined;

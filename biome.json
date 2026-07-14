@@ -80,7 +80,11 @@
         "noArrayIndexKey": "off",
         "noAssignInExpressions": "off",
         "noControlCharactersInRegex": "off",
-        "noRedeclare": "off"
+        "noRedeclare": "off",
+        "useIterableCallbackReturn": "off",
+        "noTemplateCurlyInString": "off",
+        "noConfusingLabels": "off",
+        "noUselessEscapeInString": "off"
       }
     }
   },

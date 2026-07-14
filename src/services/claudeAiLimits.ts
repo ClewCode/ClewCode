@@ -173,7 +173,9 @@ export const statusListeners: Set<StatusChangeListener> = new Set();
 
 export function emitStatusChange(limits: ClaudeAILimits) {
   currentLimits = limits;
-  statusListeners.forEach(listener => listener(limits));
+  statusListeners.forEach(listener => {
+    listener(limits);
+  });
   const hoursTillReset = Math.round((limits.resetsAt ? limits.resetsAt - Date.now() / 1000 : 0) / (60 * 60));
 
   logEvent('tengu_claudeai_limits_status_changed', {

@@ -1681,7 +1681,6 @@ NOTES
   - You must be logged in with a Clew account that has a subscription
   - Run \`clew\` first in the directory to accept the workspace trust dialog
 ${serverNote}`;
-  // biome-ignore lint/suspicious/noConsole: intentional help output
   console.log(help);
 }
 
@@ -1717,7 +1716,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
     return;
   }
   if (parsed.error) {
-    // biome-ignore lint/suspicious/noConsole: intentional error output
     console.error(`Error: ${parsed.error}`);
     // eslint-disable-next-line custom-rules/no-process-exit
     process.exit(1);
@@ -1755,7 +1753,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
     const { PERMISSION_MODES } = await import('../types/permissions.js');
     const valid: readonly string[] = PERMISSION_MODES;
     if (!valid.includes(permissionMode)) {
-      // biome-ignore lint/suspicious/noConsole: intentional error output
       console.error(`Error: Invalid permission mode '${permissionMode}'. Valid modes: ${valid.join(', ')}`);
       // eslint-disable-next-line custom-rules/no-process-exit
       process.exit(1);
@@ -1796,7 +1793,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
     ]).catch(() => {
       /* noop */
     });
-    // biome-ignore lint/suspicious/noConsole: intentional error output
     console.error('Error: Multi-session Remote Control is not enabled for your account yet.');
     // eslint-disable-next-line custom-rules/no-process-exit
     process.exit(1);
@@ -1811,7 +1807,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
   // The bridge bypasses main.tsx (which renders the interactive TrustDialog via showSetupScreens),
   // so we must verify trust was previously established by a normal `claude` session.
   if (!checkHasTrustDialogAccepted()) {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.error(
       `Error: Workspace not trusted. Please run \`clew\` in ${dir} first to review and accept the workspace trust dialog.`,
     );
@@ -1825,7 +1820,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
 
   const bridgeToken = getBridgeAccessToken();
   if (!bridgeToken) {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.error(BRIDGE_LOGIN_ERROR);
     // eslint-disable-next-line custom-rules/no-process-exit
     process.exit(1);
@@ -1841,7 +1835,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
       input: process.stdin,
       output: process.stdout,
     });
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.log(
       '\nRemote Control lets you access this CLI session from the web (claude.ai/code)\nor the Clew app, so you can pick up where you left off on any device.\n\nYou can disconnect remote access anytime by running /remote-control again.\n',
     );
@@ -1871,7 +1864,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
     const { readBridgePointerAcrossWorktrees } = await import('./bridgePointer.js');
     const found = await readBridgePointerAcrossWorktrees(dir);
     if (!found) {
-      // biome-ignore lint/suspicious/noConsole: intentional error output
       console.error(
         `Error: No recent session found in this directory or its worktrees. Run \`clew remote-control\` to start a new one.`,
       );
@@ -1882,7 +1874,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
     const ageMin = Math.round(pointer.ageMs / 60_000);
     const ageStr = ageMin < 60 ? `${ageMin}m` : `${Math.round(ageMin / 60)}h`;
     const fromWt = pointerDir !== dir ? ` from worktree ${pointerDir}` : '';
-    // biome-ignore lint/suspicious/noConsole: intentional info output
     console.error(`Resuming session ${pointer.sessionId} (${ageStr} ago)${fromWt}\u2026`);
     resumeSessionId = pointer.sessionId;
     // Track where the pointer came from so the #20460 exit(1) paths below
@@ -1897,7 +1888,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
 
   // For non-localhost targets, require HTTPS to protect credentials.
   if (baseUrl.startsWith('http://') && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.error('Error: Remote Control base URL uses HTTP. Only HTTPS or localhost HTTP is allowed.');
     // eslint-disable-next-line custom-rules/no-process-exit
     process.exit(1);
@@ -1929,7 +1919,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
   // doesn't repeat on every launch.
   let savedSpawnMode = multiSessionEnabled ? getCurrentProjectConfig().remoteControlSpawnMode : undefined;
   if (savedSpawnMode === 'worktree' && !worktreeAvailable) {
-    // biome-ignore lint/suspicious/noConsole: intentional warning output
     console.error(
       'Warning: Saved spawn mode is worktree but this directory is not a git repository. Falling back to same-dir.',
     );
@@ -1956,7 +1945,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
       input: process.stdin,
       output: process.stdout,
     });
-    // biome-ignore lint/suspicious/noConsole: intentional dialog output
     console.log(
       `\nClew Remote Control is launching in spawn mode which lets you create new sessions in this project from Clew Code on Web or your Mobile app. Learn more here: https://code.claude.com/docs/en/remote-control\n\n` +
         `Spawn mode for this project:\n` +
@@ -2067,7 +2055,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
     try {
       validateBridgeId(resumeSessionId, 'sessionId');
     } catch {
-      // biome-ignore lint/suspicious/noConsole: intentional error output
       console.error(`Error: Invalid session ID "${resumeSessionId}". Session IDs must not contain unsafe characters.`);
       // eslint-disable-next-line custom-rules/no-process-exit
       process.exit(1);
@@ -2091,7 +2078,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
         const { clearBridgePointer } = await import('./bridgePointer.js');
         await clearBridgePointer(resumePointerDir);
       }
-      // biome-ignore lint/suspicious/noConsole: intentional error output
       console.error(
         `Error: Session ${resumeSessionId} not found. It may have been archived or expired, or your login may have lapsed (run \`clew /login\`).`,
       );
@@ -2103,7 +2089,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
         const { clearBridgePointer } = await import('./bridgePointer.js');
         await clearBridgePointer(resumePointerDir);
       }
-      // biome-ignore lint/suspicious/noConsole: intentional error output
       console.error(
         `Error: Session ${resumeSessionId} has no environment_id. It may never have been attached to a bridge.`,
       );
@@ -2151,7 +2136,6 @@ export async function bridgeMain(args: string[]): Promise<void> {
       status: err instanceof BridgeFatalError ? err.status : undefined,
     });
     // Registration failures are fatal — print a clean message instead of a stack trace.
-    // biome-ignore lint/suspicious/noConsole:: intentional console output
     console.error(
       err instanceof BridgeFatalError && err.status === 404
         ? 'Remote Control environments are not available for your account.'

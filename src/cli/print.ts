@@ -4061,14 +4061,16 @@ function handleChannelEnable(
     });
 
   if (!(feature('KAIROS') || feature('KAIROS_CHANNELS'))) {
-    return respondError('channels feature not available in this build');
+    respondError('channels feature not available in this build');
+    return;
   }
 
   // Only a 'connected' client has .capabilities and .client to register the
   // handler on. The pool spread at the call site matches mcp_status.
   const connection = connectionPool.find(c => c.name === serverName && c.type === 'connected');
   if (connection?.type !== 'connected') {
-    return respondError(`server ${serverName} is not connected`);
+    respondError(`server ${serverName} is not connected`);
+    return;
   }
 
   const pluginSource = connection.config.pluginSource;
@@ -4077,7 +4079,8 @@ function handleChannelEnable(
     // No pluginSource or @-less source — can never pass the {plugin,
     // marketplace}-keyed allowlist. Short-circuit with the same reason the
     // gate would produce.
-    return respondError(`server ${serverName} is not plugin-sourced; channel_enable requires a marketplace plugin`);
+    respondError(`server ${serverName} is not plugin-sourced; channel_enable requires a marketplace plugin`);
+    return;
   }
 
   const entry: ChannelEntry = {
@@ -4094,7 +4097,8 @@ function handleChannelEnable(
   if (gate.action === 'skip') {
     // Rollback — only remove the entry we appended.
     if (!already) setAllowedChannels(prior);
-    return respondError(gate.reason);
+    respondError(gate.reason);
+    return;
   }
 
   const pluginId = `${entry.name}@${entry.marketplace}` as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS;

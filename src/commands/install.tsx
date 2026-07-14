@@ -109,7 +109,9 @@ function Install({ onDone, force, target }: InstallProps): React.ReactNode {
 
         logForDebugging(`Install: Setup launcher completed with ${setupMessages.length} messages`);
         if (setupMessages.length > 0) {
-          setupMessages.forEach(msg => logForDebugging(`Install: Setup message: ${msg.message}`));
+          setupMessages.forEach(msg => {
+            logForDebugging(`Install: Setup message: ${msg.message}`);
+          });
         }
 
         // Now that native installation succeeded, clean up old npm installations

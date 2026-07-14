@@ -78,15 +78,16 @@ export async function showInvalidConfigDialog({ error }: InvalidConfigHandlerPro
     theme: SAFE_ERROR_THEME_NAME,
   };
 
-  await new Promise<void>(async resolve => {
-    const { unmount } = await render(
+  let unmount: (() => void) | undefined;
+  await new Promise<void>(resolve => {
+    render(
       <AppStateProvider>
         <KeybindingSetup>
           <InvalidConfigDialog
             filePath={error.filePath}
             errorDescription={error.message}
             onExit={() => {
-              unmount();
+              unmount?.();
               void resolve();
               process.exit(1);
             }}
@@ -95,7 +96,7 @@ export async function showInvalidConfigDialog({ error }: InvalidConfigHandlerPro
                 flush: false,
                 encoding: 'utf8',
               });
-              unmount();
+              unmount?.();
               void resolve();
               process.exit(0);
             }}
@@ -103,6 +104,8 @@ export async function showInvalidConfigDialog({ error }: InvalidConfigHandlerPro
         </KeybindingSetup>
       </AppStateProvider>,
       renderOptions,
-    );
+    ).then(result => {
+      unmount = result.unmount;
+    });
   });
 }

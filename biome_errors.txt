@@ -1,0 +1,2660 @@
+src\components\tasks\BackgroundTasksDialog.tsx:564:19 ]8;;https://biomejs.dev/linter/rules/no-useless-fragments\lint/complexity/noUselessFragments]8;;\  FIXABLE  ━━━━━━━━━━
+
+  i This fragment is unnecessary.
+  
+    562 │       <Dialog
+    563 │         title="Background tasks"
+  > 564 │         subtitle={<>{subtitle}</>}
+        │                   ^^^^^^^^^^^^^^^
+    565 │         onCancel={handleCancel}
+    566 │         color="background"
+  
+  i A fragment is redundant if it contains only one child, or if it is the child of a html element, and is not a keyed ]8;;https://legacy.reactjs.org/docs/fragments.html#keyed-fragments\fragment]8;;\.
+  
+  i Unsafe fix: Remove the Fragment
+  
+    564 │ ········subtitle={<>{subtitle}</>}
+        │                   ---        ---- 
+
+src\bridge\bridgeMain.ts:1684:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1682 │   - Run \`clew\` first in the directory to accept the workspace trust dialog
+    1683 │ ${serverNote}`;
+  > 1684 │   // biome-ignore lint/suspicious/noConsole: intentional help output
+         │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1685 │   console.log(help);
+    1686 │ }
+  
+
+src\bridge\bridgeMain.ts:1720:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1718 │   }
+    1719 │   if (parsed.error) {
+  > 1720 │     // biome-ignore lint/suspicious/noConsole: intentional error output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1721 │     console.error(`Error: ${parsed.error}`);
+    1722 │     // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\bridge\bridgeMain.ts:1758:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1756 │     const valid: readonly string[] = PERMISSION_MODES;
+    1757 │     if (!valid.includes(permissionMode)) {
+  > 1758 │       // biome-ignore lint/suspicious/noConsole: intentional error output
+         │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1759 │       console.error(`Error: Invalid permission mode '${permissionMode}'. Valid modes: ${valid.join(', ')}`);
+    1760 │       // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\bridge\bridgeMain.ts:1799:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1797 │       /* noop */
+    1798 │     });
+  > 1799 │     // biome-ignore lint/suspicious/noConsole: intentional error output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1800 │     console.error('Error: Multi-session Remote Control is not enabled for your account yet.');
+    1801 │     // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\bridge\bridgeMain.ts:1814:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1812 │   // so we must verify trust was previously established by a normal `claude` session.
+    1813 │   if (!checkHasTrustDialogAccepted()) {
+  > 1814 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1815 │     console.error(
+    1816 │       `Error: Workspace not trusted. Please run \`clew\` in ${dir} first to review and accept the workspace trust dialog.`,
+  
+
+src\bridge\bridgeMain.ts:1828:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1826 │   const bridgeToken = getBridgeAccessToken();
+    1827 │   if (!bridgeToken) {
+  > 1828 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1829 │     console.error(BRIDGE_LOGIN_ERROR);
+    1830 │     // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\bridge\bridgeMain.ts:1844:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1842 │       output: process.stdout,
+    1843 │     });
+  > 1844 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1845 │     console.log(
+    1846 │       '\nRemote Control lets you access this CLI session from the web (claude.ai/code)\nor the Clew app, so you can pick up where you left off on any device.\n\nYou can disconnect remote access anytime by running /remote-control again.\n',
+  
+
+src\bridge\bridgeMain.ts:1874:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1872 │     const found = await readBridgePointerAcrossWorktrees(dir);
+    1873 │     if (!found) {
+  > 1874 │       // biome-ignore lint/suspicious/noConsole: intentional error output
+         │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1875 │       console.error(
+    1876 │         `Error: No recent session found in this directory or its worktrees. Run \`clew remote-control\` to start a new one.`,
+  
+
+src\bridge\bridgeMain.ts:1885:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1883 │     const ageStr = ageMin < 60 ? `${ageMin}m` : `${Math.round(ageMin / 60)}h`;
+    1884 │     const fromWt = pointerDir !== dir ? ` from worktree ${pointerDir}` : '';
+  > 1885 │     // biome-ignore lint/suspicious/noConsole: intentional info output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1886 │     console.error(`Resuming session ${pointer.sessionId} (${ageStr} ago)${fromWt}\u2026`);
+    1887 │     resumeSessionId = pointer.sessionId;
+  
+
+src\bridge\bridgeMain.ts:1900:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1898 │   // For non-localhost targets, require HTTPS to protect credentials.
+    1899 │   if (baseUrl.startsWith('http://') && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
+  > 1900 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1901 │     console.error('Error: Remote Control base URL uses HTTP. Only HTTPS or localhost HTTP is allowed.');
+    1902 │     // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\bridge\bridgeMain.ts:1932:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1930 │   let savedSpawnMode = multiSessionEnabled ? getCurrentProjectConfig().remoteControlSpawnMode : undefined;
+    1931 │   if (savedSpawnMode === 'worktree' && !worktreeAvailable) {
+  > 1932 │     // biome-ignore lint/suspicious/noConsole: intentional warning output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1933 │     console.error(
+    1934 │       'Warning: Saved spawn mode is worktree but this directory is not a git repository. Falling back to same-dir.',
+  
+
+src\bridge\bridgeMain.ts:1959:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1957 │       output: process.stdout,
+    1958 │     });
+  > 1959 │     // biome-ignore lint/suspicious/noConsole: intentional dialog output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1960 │     console.log(
+    1961 │       `\nClew Remote Control is launching in spawn mode which lets you create new sessions in this project from Clew Code on Web or your Mobile app. Learn more here: https://code.claude.com/docs/en/remote-control\n\n` +
+  
+
+src\bridge\bridgeMain.ts:2033:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2031 │   // saved worktree pref was already guarded above.
+    2032 │   if (spawnMode === 'worktree' && !worktreeAvailable) {
+  > 2033 │     // biome-ignore lint/suspicious/noConsole: intentional error output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2034 │     console.error(
+    2035 │       `Error: Worktree mode requires a git repository or WorktreeCreate hooks configured. Use --spawn=session for single-session mode.`,
+  
+
+src\bridge\bridgeMain.ts:2070:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2068 │       validateBridgeId(resumeSessionId, 'sessionId');
+    2069 │     } catch {
+  > 2070 │       // biome-ignore lint/suspicious/noConsole: intentional error output
+         │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2071 │       console.error(`Error: Invalid session ID "${resumeSessionId}". Session IDs must not contain unsafe characters.`);
+    2072 │       // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\bridge\bridgeMain.ts:2094:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2092 │         await clearBridgePointer(resumePointerDir);
+    2093 │       }
+  > 2094 │       // biome-ignore lint/suspicious/noConsole: intentional error output
+         │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2095 │       console.error(
+    2096 │         `Error: Session ${resumeSessionId} not found. It may have been archived or expired, or your login may have lapsed (run \`clew /login\`).`,
+  
+
+src\bridge\bridgeMain.ts:2106:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2104 │         await clearBridgePointer(resumePointerDir);
+    2105 │       }
+  > 2106 │       // biome-ignore lint/suspicious/noConsole: intentional error output
+         │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2107 │       console.error(
+    2108 │         `Error: Session ${resumeSessionId} has no environment_id. It may never have been attached to a bridge.`,
+  
+
+src\bridge\bridgeMain.ts:2154:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2152 │     });
+    2153 │     // Registration failures are fatal — print a clean message instead of a stack trace.
+  > 2154 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2155 │     console.error(
+    2156 │       err instanceof BridgeFatalError && err.status === 404
+  
+
+src\bridge\bridgeMain.ts:2179:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2177 │         ),
+    2178 │       );
+  > 2179 │       // biome-ignore lint/suspicious/noConsole: intentional warning output
+         │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2180 │       console.warn(
+    2181 │         `Warning: Could not resume session ${resumeSessionId} — its environment has expired. Creating a fresh session instead.`,
+  
+
+src\bridge\bridgeMain.ts:2224:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2222 │           await clearBridgePointer(resumePointerDir);
+    2223 │         }
+  > 2224 │         // biome-ignore lint/suspicious/noConsole: intentional error output
+         │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2225 │         console.error(
+    2226 │           isFatal
+  
+
+src\buddy\CompanionSprite.tsx:67:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    65 │     <Box flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX={1} width={34}>
+    66 │       {lines.map((l, i) => (
+  > 67 │         // biome-ignore lint/suspicious/noArrayIndexKey: stable list, no unique id
+       │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    68 │         <Text key={i} italic dimColor={!fading} color={fading ? 'inactive' : undefined}>
+    69 │           {l}
+  
+
+src\buddy\CompanionSprite.tsx:223:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    221 │     <Box flexDirection="column" flexShrink={0} alignItems="center" width={colWidth}>
+    222 │       {sprite.map((line, i) => (
+  > 223 │         // biome-ignore lint/suspicious/noArrayIndexKey: stable list, no unique id
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    224 │         <Text key={i} color={i === 0 && heartFrame ? 'autoAccept' : color}>
+    225 │           {line}
+  
+
+src\buddy\useBuddyNotification.tsx:20:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    19 │ export function isBuddyLive(): boolean {
+  > 20 │   // biome-ignore lint/correctness/noConstantCondition: intentional Ant-only gate
+       │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    21 │   if ('external' === 'ant') return true;
+    22 │   const d = new Date();
+  
+
+src\buddy\useBuddyNotification.tsx:63:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    61 │   const re = /\/buddy\b/g;
+    62 │   let m: RegExpExecArray | null;
+  > 63 │   // biome-ignore lint/suspicious/noAssignInExpressions: intentional regex loop
+       │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    64 │   while ((m = re.exec(text)) !== null) {
+    65 │     triggers.push({ start: m.index, end: m.index + m[0].length });
+  
+
+src\buddy\useBuddyNotification.tsx:30:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    28 │     <>
+    29 │       {[...text].map((ch, i) => (
+  > 30 │         // biome-ignore lint/suspicious/noArrayIndexKey: stable list, no unique id
+       │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    31 │         <Text key={i} color={getRainbowColor(i)}>
+    32 │           {ch}
+  
+
+src\buddy\useBuddyNotification.tsx:13:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    11 │ // Teaser window: April 1-7, 2026 only. Command stays live forever after.
+    12 │ export function isBuddyTeaserWindow(): boolean {
+  > 13 │   // biome-ignore lint/correctness/noConstantCondition: intentional Ant-only gate
+       │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    14 │   if ('external' === 'ant') return true;
+    15 │   const d = new Date();
+  
+
+src\cli\exit.ts:20:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    18 │ /** Write an error message to stderr (if given) and exit with code 1. */
+    19 │ export function cliError(msg?: string): never {
+  > 20 │   // biome-ignore lint/suspicious/noConsole: centralized CLI error output
+       │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    21 │   if (msg) console.error(msg);
+    22 │   process.exit(1);
+  
+
+src\cli\handlers\agents.ts:91:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    90 │   if (lines.length === 0) {
+  > 91 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    92 │     console.log('No agents found.');
+    93 │   } else {
+  
+
+src\cli\handlers\agents.ts:94:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    92 │     console.log('No agents found.');
+    93 │   } else {
+  > 94 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    95 │     console.log(`${totalActive} active agents\n`);
+    96 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\handlers\agents.ts:96:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    94 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+    95 │     console.log(`${totalActive} active agents\n`);
+  > 96 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    97 │     console.log(lines.join('\n').trimEnd());
+    98 │   }
+  
+
+src\cli\handlers\mcp.tsx:262:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    260 │     console.log(`  URL: ${server.url}`);
+    261 │     if (server.headers) {
+  > 262 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    263 │       console.log('  Headers:');
+    264 │       for (const [key, value] of Object.entries(server.headers)) {
+  
+
+src\cli\handlers\mcp.tsx:265:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    263 │       console.log('  Headers:');
+    264 │       for (const [key, value] of Object.entries(server.headers)) {
+  > 265 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    266 │         console.log(`    ${key}: ${value}`);
+    267 │       }
+  
+
+src\cli\handlers\mcp.tsx:281:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    279 │     }
+    280 │   } else if (server.type === 'http') {
+  > 281 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    282 │     console.log(`  Type: http`);
+    283 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\handlers\mcp.tsx:283:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    281 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+    282 │     console.log(`  Type: http`);
+  > 283 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    284 │     console.log(`  URL: ${server.url}`);
+    285 │     if (server.headers) {
+  
+
+src\cli\handlers\mcp.tsx:286:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    284 │     console.log(`  URL: ${server.url}`);
+    285 │     if (server.headers) {
+  > 286 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    287 │       console.log('  Headers:');
+    288 │       for (const [key, value] of Object.entries(server.headers)) {
+  
+
+src\cli\handlers\mcp.tsx:289:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    287 │       console.log('  Headers:');
+    288 │       for (const [key, value] of Object.entries(server.headers)) {
+  > 289 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    290 │         console.log(`    ${key}: ${value}`);
+    291 │       }
+  
+
+src\cli\handlers\mcp.tsx:181:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    179 │   }
+    180 │   if (parseErrors.length > 0) {
+  > 181 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    182 │     console.log('MCP configuration errors:\n');
+    183 │     for (const err of parseErrors) {
+  
+
+src\cli\handlers\mcp.tsx:184:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    182 │     console.log('MCP configuration errors:\n');
+    183 │     for (const err of parseErrors) {
+  > 184 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    185 │       console.log(`  ✗ ${err}`);
+    186 │     }
+  
+
+src\cli\handlers\mcp.tsx:187:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    185 │       console.log(`  ✗ ${err}`);
+    186 │     }
+  > 187 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    188 │     console.log('');
+    189 │   }
+  
+
+src\cli\handlers\mcp.tsx:193:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    191 │   const { servers: configs } = await getAllMcpConfigs();
+    192 │   if (Object.keys(configs).length === 0) {
+  > 193 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    194 │     console.log('No MCP servers configured. Use `clew mcp add` to add a server.');
+    195 │   } else {
+  
+
+src\cli\handlers\mcp.tsx:196:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    194 │     console.log('No MCP servers configured. Use `clew mcp add` to add a server.');
+    195 │   } else {
+  > 196 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    197 │     console.log('Checking MCP server health...\n');
+    198 │ 
+  
+
+src\cli\handlers\mcp.tsx:215:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    213 │       // Intentionally excluding sse-ide servers here since they're internal
+    214 │       if (server.type === 'sse') {
+  > 215 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    216 │         console.log(`${name}: ${server.url} (SSE) - ${status}`);
+    217 │       } else if (server.type === 'http') {
+  
+
+src\cli\handlers\mcp.tsx:218:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    216 │         console.log(`${name}: ${server.url} (SSE) - ${status}`);
+    217 │       } else if (server.type === 'http') {
+  > 218 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    219 │         console.log(`${name}: ${server.url} (HTTP) - ${status}`);
+    220 │       } else if (server.type === 'claudeai-proxy') {
+  
+
+src\cli\handlers\mcp.tsx:221:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    219 │         console.log(`${name}: ${server.url} (HTTP) - ${status}`);
+    220 │       } else if (server.type === 'claudeai-proxy') {
+  > 221 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    222 │         console.log(`${name}: ${server.url} - ${status}`);
+    223 │       } else if (!server.type || server.type === 'stdio') {
+  
+
+src\cli\handlers\mcp.tsx:225:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    223 │       } else if (!server.type || server.type === 'stdio') {
+    224 │         const args = Array.isArray(server.args) ? server.args : [];
+  > 225 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    226 │         console.log(`${name}: ${server.command} ${args.join(' ')} - ${status}`);
+    227 │       }
+  
+
+src\cli\handlers\mcp.tsx:245:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    243 │   }
+    244 │ 
+  > 245 │   // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    246 │   console.log(`${name}:`);
+    247 │   // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\handlers\mcp.tsx:247:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    245 │   // biome-ignore lint/suspicious/noConsole:: intentional console output
+    246 │   console.log(`${name}:`);
+  > 247 │   // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    248 │   console.log(`  Scope: ${getScopeLabel(server.scope)}`);
+    249 │ 
+  
+
+src\cli\handlers\mcp.tsx:252:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    250 │   // Check server health
+    251 │   const status = await checkMcpServerHealth(name, server);
+  > 252 │   // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    253 │   console.log(`  Status: ${status}`);
+    254 │ 
+  
+
+src\cli\handlers\mcp.tsx:257:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    255 │   // Intentionally excluding sse-ide servers here since they're internal
+    256 │   if (server.type === 'sse') {
+  > 257 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    258 │     console.log(`  Type: sse`);
+    259 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\handlers\mcp.tsx:259:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    257 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+    258 │     console.log(`  Type: sse`);
+  > 259 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    260 │     console.log(`  URL: ${server.url}`);
+    261 │     if (server.headers) {
+  
+
+src\cli\handlers\mcp.tsx:277:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    275 │       }
+    276 │       if (server.oauth.callbackPort) parts.push(`callback_port ${server.oauth.callbackPort}`);
+  > 277 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    278 │       console.log(`  OAuth: ${parts.join(', ')}`);
+    279 │     }
+  
+
+src\cli\handlers\plugins.ts:62:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    60 │ function printValidationResult(result: ValidationResult): void {
+    61 │   if (result.errors.length > 0) {
+  > 62 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    63 │     console.log(`${figures.cross} Found ${result.errors.length} ${plural(result.errors.length, 'error')}:\n`);
+    64 │     result.errors.forEach(error => {
+  
+
+src\cli\handlers\plugins.ts:356:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    354 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+    355 │       console.log(`    Version: ${p.manifest.version ?? 'unknown'}`);
+  > 356 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    357 │       console.log(`    Path: ${p.path}`);
+    358 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\handlers\plugins.ts:65:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    63 │     console.log(`${figures.cross} Found ${result.errors.length} ${plural(result.errors.length, 'error')}:\n`);
+    64 │     result.errors.forEach(error => {
+  > 65 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    66 │       console.log(`  ${figures.pointer} ${error.path}: ${error.message}`);
+    67 │     });
+  
+
+src\cli\handlers\plugins.ts:68:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    66 │       console.log(`  ${figures.pointer} ${error.path}: ${error.message}`);
+    67 │     });
+  > 68 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    69 │     console.log('');
+    70 │   }
+  
+
+src\cli\handlers\plugins.ts:72:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    70 │   }
+    71 │   if (result.warnings.length > 0) {
+  > 72 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    73 │     console.log(`${figures.warning} Found ${result.warnings.length} ${plural(result.warnings.length, 'warning')}:\n`);
+    74 │     result.warnings.forEach(warning => {
+  
+
+src\cli\handlers\plugins.ts:75:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    73 │     console.log(`${figures.warning} Found ${result.warnings.length} ${plural(result.warnings.length, 'warning')}:\n`);
+    74 │     result.warnings.forEach(warning => {
+  > 75 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    76 │       console.log(`  ${figures.pointer} ${warning.path}: ${warning.message}`);
+    77 │     });
+  
+
+src\cli\handlers\plugins.ts:78:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    76 │       console.log(`  ${figures.pointer} ${warning.path}: ${warning.message}`);
+    77 │     });
+  > 78 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    79 │     console.log('');
+    80 │   }
+  
+
+src\cli\handlers\plugins.ts:89:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    87 │     const result = await validateManifest(manifestPath);
+    88 │ 
+  > 89 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    90 │     console.log(`Validating ${result.fileType} manifest: ${result.filePath}\n`);
+    91 │     printValidationResult(result);
+  
+
+src\cli\handlers\plugins.ts:103:11 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    101 │         contentResults = await validatePluginContents(dirname(manifestDir));
+    102 │         for (const r of contentResults) {
+  > 103 │           // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    104 │           console.log(`Validating ${r.fileType}: ${r.filePath}\n`);
+    105 │           printValidationResult(r);
+  
+
+src\cli\handlers\plugins.ts:116:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    114 │       cliOk(hasWarnings ? `${figures.tick} Validation passed with warnings` : `${figures.tick} Validation passed`);
+    115 │     } else {
+  > 116 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    117 │       console.log(`${figures.cross} Validation failed`);
+    118 │       process.exit(1);
+  
+
+src\cli\handlers\plugins.ts:122:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    120 │   } catch (error) {
+    121 │     logError(error);
+  > 122 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    123 │     console.error(`${figures.cross} Unexpected error during validation: ${errorMessage(error)}`);
+    124 │     process.exit(2);
+  
+
+src\cli\handlers\plugins.ts:304:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    303 │   if (pluginIds.length > 0) {
+  > 304 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    305 │     console.log('Installed plugins:\n');
+    306 │   }
+  
+
+src\cli\handlers\plugins.ts:327:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    325 │       const scope = installation.scope;
+    326 │ 
+  > 327 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    328 │       console.log(`  ${figures.pointer} ${pluginId}`);
+    329 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\handlers\plugins.ts:329:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    327 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+    328 │       console.log(`  ${figures.pointer} ${pluginId}`);
+  > 329 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    330 │       console.log(`    Version: ${version}`);
+    331 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\handlers\plugins.ts:331:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    329 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+    330 │       console.log(`    Version: ${version}`);
+  > 331 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    332 │       console.log(`    Scope: ${scope}`);
+    333 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\handlers\plugins.ts:333:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    331 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+    332 │       console.log(`    Scope: ${scope}`);
+  > 333 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    334 │       console.log(`    Status: ${status}`);
+    335 │       for (const error of pluginErrors) {
+  
+
+src\cli\handlers\plugins.ts:336:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    334 │       console.log(`    Status: ${status}`);
+    335 │       for (const error of pluginErrors) {
+  > 336 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    337 │         console.log(`    Error: ${getPluginErrorMessage(error)}`);
+    338 │       }
+  
+
+src\cli\handlers\plugins.ts:339:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    337 │         console.log(`    Error: ${getPluginErrorMessage(error)}`);
+    338 │       }
+  > 339 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    340 │       console.log('');
+    341 │     }
+  
+
+src\cli\handlers\plugins.ts:345:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    344 │   if (inlinePlugins.length > 0 || inlineLoadErrors.length > 0) {
+  > 345 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    346 │     console.log('Session-only plugins (--plugin-dir):\n');
+    347 │     for (const p of inlinePlugins) {
+  
+
+src\cli\handlers\plugins.ts:352:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    350 │       const pErrors = inlineLoadErrors.filter(e => e.source === p.source || ('plugin' in e && e.plugin === p.name));
+    351 │       const status = pErrors.length > 0 ? `${figures.cross} loaded with errors` : `${figures.tick} loaded`;
+  > 352 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    353 │       console.log(`  ${figures.pointer} ${p.source}`);
+    354 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\handlers\plugins.ts:354:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    352 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+    353 │       console.log(`  ${figures.pointer} ${p.source}`);
+  > 354 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    355 │       console.log(`    Version: ${p.manifest.version ?? 'unknown'}`);
+    356 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+  
+
+src\cli\structuredIO.ts:410:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    408 │       return message;
+    409 │     } catch (error) {
+  > 410 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    411 │       console.error(`Error parsing streaming input line: ${line}: ${error}`);
+    412 │       // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\cli\structuredIO.ts:611:11 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    609 │           return result;
+    610 │         } catch (error) {
+  > 611 │           // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    612 │           console.error(`Error in hook callback ${callbackId}:`, error);
+    613 │           return {};
+  
+
+src\cli\structuredIO.ts:699:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    698 │ function exitWithMessage(message: string): never {
+  > 699 │   // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    700 │   console.error(message);
+    701 │   // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\commands\bridge\bridge.tsx:48:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    46 │   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
+    47 │ 
+  > 48 │   // biome-ignore lint/correctness/useExhaustiveDependencies: bridge starts once, should not restart on state changes
+       │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    49 │   useEffect(() => {
+    50 │     // If already connected or enabled in full bidirectional mode, show
+  
+
+src\commands\effort\effort.tsx:379:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    377 │     <Box flexDirection="row" width={totalWidth} height={1}>
+    378 │       {segments.map((segment, i) => (
+  > 379 │         // biome-ignore lint/suspicious/noArrayIndexKey: stable index is safe for rendering text columns
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    380 │         <Box key={i} width={segment.text.length} height={1} backgroundColor={segment.bgColor as any}>
+    381 │           <Text color={segment.color as any} bold={segment.bold} dimColor={segment.dim}>
+  
+
+src\commands\effort\effort.tsx:409:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    407 │   const [ultraEnterAnimTime, setUltraEnterAnimTime] = React.useState<number | null>(isUltra ? animTime : null);
+    408 │ 
+  > 409 │   // biome-ignore lint/correctness/useExhaustiveDependencies: animTime is intentionally omitted to avoid resetting the entrance animation
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    410 │   React.useEffect(() => {
+    411 │     setUltraEnterAnimTime(isUltra ? animTime : null);
+  
+
+src\commands\insights.ts:2961:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2959 │       // Show collection message if collecting
+    2960 │       if (collectRemote && hasRemoteHosts) {
+  > 2961 │         // biome-ignore lint/suspicious/noConsole: intentional
+         │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2962 │         console.error(`Collecting sessions from ${remoteHosts.length} homespace(s): ${remoteHosts.join(', ')}...`);
+    2963 │       }
+  
+
+src\commands\memory\indexAdmin.tsx:58:17 ]8;;https://biomejs.dev/linter/rules/no-global-is-nan\lint/suspicious/noGlobalIsNan]8;;\  FIXABLE  ━━━━━━━━━━━━━━━━━━━
+
+  ! isNaN is unsafe. It attempts a type coercion. Use Number.isNaN instead.
+  
+    56 │           case 'prune': {
+    57 │             const days = parseInt(param || '90', 10);
+  > 58 │             if (isNaN(days) || days < 0) {
+       │                 ^^^^^
+    59 │               setError('Invalid day count. Use: /index-admin prune 90');
+    60 │               break;
+  
+  i See ]8;;https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isNaN#description\the MDN documentation]8;;\ for more details.
+  
+  i Unsafe fix: Use Number.isNaN instead.
+  
+     56  56 │             case 'prune': {
+     57  57 │               const days = parseInt(param || '90', 10);
+     58     │ - ············if·(isNaN(days)·||·days·<·0)·{
+         58 │ + ············if·(Number.isNaN(days)·||·days·<·0)·{
+     59  59 │                 setError('Invalid day count. Use: /index-admin prune 90');
+     60  60 │                 break;
+  
+
+src\commands\plugin\AddMarketplace.tsx:121:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    119 │     }
+    120 │     // eslint-disable-next-line react-hooks/exhaustive-deps
+  > 121 │     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    122 │   }, [result, inputValue, handleAdd, error]); // Only run once on mount
+    123 │ 
+  
+
+src\commands\plugin\ManageMarketplaces.tsx:327:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    325 │     void loadMarketplaces();
+    326 │     // eslint-disable-next-line react-hooks/exhaustive-deps
+  > 327 │     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    328 │   }, [targetMarketplace, action, error, setError, applyChanges]);
+    329 │ 
+  
+
+src\commands\rule\index.ts:86:17 ]8;;https://biomejs.dev/linter/rules/no-global-is-nan\lint/suspicious/noGlobalIsNan]8;;\  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! isNaN is unsafe. It attempts a type coercion. Use Number.isNaN instead.
+  
+    84 │           case 'edit': {
+    85 │             const idx = parseInt(parts[1], 10);
+  > 86 │             if (isNaN(idx) || idx < 1) {
+       │                 ^^^^^
+    87 │               return { type: 'text' as const, value: 'Usage: /rule edit <index> <new text>' };
+    88 │             }
+  
+  i See ]8;;https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isNaN#description\the MDN documentation]8;;\ for more details.
+  
+  i Unsafe fix: Use Number.isNaN instead.
+  
+     84  84 │             case 'edit': {
+     85  85 │               const idx = parseInt(parts[1], 10);
+     86     │ - ············if·(isNaN(idx)·||·idx·<·1)·{
+         86 │ + ············if·(Number.isNaN(idx)·||·idx·<·1)·{
+     87  87 │                 return { type: 'text' as const, value: 'Usage: /rule edit <index> <new text>' };
+     88  88 │               }
+  
+
+src\commands\rule\index.ts:69:17 ]8;;https://biomejs.dev/linter/rules/no-global-is-nan\lint/suspicious/noGlobalIsNan]8;;\  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! isNaN is unsafe. It attempts a type coercion. Use Number.isNaN instead.
+  
+    67 │           case 'rm': {
+    68 │             const idx = parseInt(parts[1], 10);
+  > 69 │             if (isNaN(idx) || idx < 1) {
+       │                 ^^^^^
+    70 │               return { type: 'text' as const, value: 'Usage: /rule remove <index>  (1-based)' };
+    71 │             }
+  
+  i See ]8;;https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isNaN#description\the MDN documentation]8;;\ for more details.
+  
+  i Unsafe fix: Use Number.isNaN instead.
+  
+     67  67 │             case 'rm': {
+     68  68 │               const idx = parseInt(parts[1], 10);
+     69     │ - ············if·(isNaN(idx)·||·idx·<·1)·{
+         69 │ + ············if·(Number.isNaN(idx)·||·idx·<·1)·{
+     70  70 │                 return { type: 'text' as const, value: 'Usage: /rule remove <index>  (1-based)' };
+     71  71 │               }
+  
+
+src\components\LogoV2\OverageCreditUpsell.tsx:96:5 ]8;;https://biomejs.dev/linter/rules/no-confusing-labels\lint/suspicious/noConfusingLabels]8;;\ ━━━━━━━━━━━━━━━
+
+  ! Unexpected label.
+  
+    94 │   if ($[0] !== maxWidth || $[1] !== twoLine) {
+    95 │     t2 = Symbol.for('react.early_return_sentinel');
+  > 96 │     bb0: {
+       │     ^^^
+    97 │       const info = getCachedOverageCreditGrant();
+    98 │       if (!info) {
+  
+  i Only loops should be labeled.
+    The use of labels for other statements is suspicious and unfamiliar.
+  
+
+src\components\LogoV2\Splash.tsx:50:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    48 │     <Box flexDirection="column" alignItems="center" paddingY={1}>
+    49 │       {PINWHEEL.map((row, i) => (
+  > 50 │         // biome-ignore lint/suspicious/noArrayIndexKey: static pinwheel logo rows
+       │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    51 │         <Text key={i} color={blade}>
+    52 │           {row}
+  
+
+src\components\ModelPicker.tsx:191:3 ]8;;https://biomejs.dev/linter/rules/no-confusing-labels\lint/suspicious/noConfusingLabels]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected label.
+  
+    189 │   ]);
+    190 │   let t4;
+  > 191 │   bb0: {
+        │   ^^^
+    192 │     if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {
+    193 │       let t5;
+  
+  i Only loops should be labeled.
+    The use of labels for other statements is suspicious and unfamiliar.
+  
+
+src\components\PromptInput\Notifications.tsx:344:7 ]8;;https://biomejs.dev/linter/rules/use-optional-chain\lint/complexity/useOptionalChain]8;;\  FIXABLE  ━━━━━━━━━━
+
+  ! Change to an optional chain.
+  
+    342 │ export function CopiedToast(): ReactNode {
+    343 │   const current = useAppState(s => s.notifications.current);
+  > 344 │   if (!current || current.key !== 'selection-copied') return null;
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    345 │   if ('jsx' in current) {
+    346 │     return <Text wrap="truncate">{current.jsx}</Text>;
+  
+  i Unsafe fix: Change to an optional chain.
+  
+    342 342 │   export function CopiedToast(): ReactNode {
+    343 343 │     const current = useAppState(s => s.notifications.current);
+    344     │ - ··if·(!current·||·current.key·!==·'selection-copied')·return·null;
+        344 │ + ··if·(current?.key·!==·'selection-copied')·return·null;
+    345 345 │     if ('jsx' in current) {
+    346 346 │       return <Text wrap="truncate">{current.jsx}</Text>;
+  
+
+src\components\WorktreeExitDialog.tsx:100:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+     98 │     void loadChanges();
+     99 │     // eslint-disable-next-line react-hooks/exhaustive-deps
+  > 100 │     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    101 │   }, [worktreeSession]);
+    102 │   useEffect(() => {
+  
+
+src\components\messageActions.tsx:46:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    44 │     }
+    45 │     case 'system':
+  > 46 │       // biome-ignore lint/nursery/useExhaustiveSwitchCases: blocklist — fallthrough return-true is the design
+       │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    47 │       switch (msg.subtype) {
+    48 │         case 'api_metrics':
+  
+
+src\components\tasks\BackgroundTasksDialog.tsx:346:20 ]8;;https://biomejs.dev/linter/rules/use-optional-chain\lint/complexity/useOptionalChain]8;;\  FIXABLE  ━━━━━━━━━━
+
+  ! Change to an optional chain.
+  
+    344 │   useEffect(() => {
+    345 │     if (viewState.mode !== 'list') {
+  > 346 │       const task = (typedTasks ?? {})[viewState.itemId];
+        │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    347 │       // Workflow tasks get a grace: their detail view stays open through
+    348 │       // completion so the user sees the final state before eviction.
+  
+  i Unsafe fix: Change to an optional chain.
+  
+    344 344 │     useEffect(() => {
+    345 345 │       if (viewState.mode !== 'list') {
+    346     │ - ······const·task·=·(typedTasks·??·{})[viewState.itemId];
+        346 │ + ······const·task·=·typedTasks?.[viewState.itemId];
+    347 347 │         // Workflow tasks get a grace: their detail view stays open through
+    348 348 │         // completion so the user sees the final state before eviction.
+  
+
+src\components\teams\TeamsDialog.tsx:75:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    73 │     return getTeammateStatuses(dialogLevel.teamName);
+    74 │     // eslint-disable-next-line react-hooks/exhaustive-deps
+  > 75 │     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    76 │   }, [dialogLevel.teamName]);
+    77 │ 
+  
+
+src\context\notifications.tsx:252:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    250 │   // effect would be vestigial and make every caller re-render on queue changes.
+    251 │   // eslint-disable-next-line react-hooks/exhaustive-deps
+  > 252 │   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only effect, store is a stable context ref
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    253 │   useEffect(() => {
+    254 │     if (store.getState().notifications.queue.length > 0) {
+  
+
+src\hooks\useTypeahead.tsx:630:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    629 │   // Handle immediate suggestion logic (cheap operations)
+  > 630 │   // biome-ignore lint/correctness/useExhaustiveDependencies: store is a stable context ref, read imperatively at call-time
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    631 │   const updateSuggestions = useCallback(
+    632 │     async (value: string, inputCursorOffset?: number): Promise<void> => {
+  
+
+src\ink\ink.tsx:1757:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1755 │   }
+    1756 │   patchConsole(): () => void {
+  > 1757 │     // biome-ignore lint/suspicious/noConsole: intentionally patching global console
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1758 │     const con = console;
+    1759 │     const originals: Partial<Record<keyof Console, Console[keyof Console]>> = {};
+  
+
+src\ink\reconciler.ts:40:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    38 │   } catch (error: any) {
+    39 │     if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  > 40 │       // biome-ignore lint/suspicious/noConsole: intentional warning
+       │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    41 │       console.warn(
+    42 │         `${`
+  
+
+src\main.tsx:1742:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1740 │       if (prompt === 'code') {
+    1741 │         logEvent('tengu_code_prompt_ignored', {});
+  > 1742 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1743 │         console.warn(ansis.yellow('Tip: You can launch Clew Code with just `clew`'));
+    1744 │         prompt = undefined;
+  
+
+src\main.tsx:1826:11 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1824 │       ) {
+    1825 │         if (!checkHasTrustDialogAccepted()) {
+  > 1826 │           // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1827 │           console.warn(
+    1828 │             ansis.yellow('Assistant mode disabled: directory is not trusted. Accept the trust dialog and restart.'),
+  
+
+src\main.tsx:2506:11 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2504 │           logForDebugging(`[Clew in Chrome] Error: ${error}`);
+    2505 │           logError(error);
+  > 2506 │           // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2507 │           console.error(`Error: Failed to run with Clew in Chrome.`);
+    2508 │           process.exit(1);
+  
+
+src\main.tsx:2729:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2727 │       // Print any warnings from initialization
+    2728 │       warnings.forEach(warning => {
+  > 2729 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2730 │         console.error(warning);
+    2731 │       });
+  
+
+src\main.tsx:2781:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2780 │       if (inputFormat && inputFormat !== 'text' && inputFormat !== 'stream-json') {
+  > 2781 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2782 │         console.error(`Error: Invalid input format "${inputFormat}".`);
+    2783 │         process.exit(1);
+  
+
+src\main.tsx:2786:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2784 │       }
+    2785 │       if (inputFormat === 'stream-json' && outputFormat !== 'stream-json') {
+  > 2786 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2787 │         console.error(`Error: --input-format=stream-json requires output-format=stream-json.`);
+    2788 │         process.exit(1);
+  
+
+src\main.tsx:2794:11 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2792 │       if (sdkUrl) {
+    2793 │         if (inputFormat !== 'stream-json' || outputFormat !== 'stream-json') {
+  > 2794 │           // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2795 │           console.error(`Error: --sdk-url requires both --input-format=stream-json and --output-format=stream-json.`);
+    2796 │           process.exit(1);
+  
+
+src\main.tsx:2803:11 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2801 │       if (options.replayUserMessages) {
+    2802 │         if (inputFormat !== 'stream-json' || outputFormat !== 'stream-json') {
+  > 2803 │           // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2804 │           console.error(
+    2805 │             `Error: --replay-user-messages requires both --input-format=stream-json and --output-format=stream-json.`,
+  
+
+src\main.tsx:5528:13 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    5526 │             connectConfig = session.config;
+    5527 │           } catch (err) {
+  > 5528 │             // biome-ignore lint/suspicious/noConsole: intentional error output
+         │             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    5529 │             console.error(err instanceof DirectConnectError ? err.message : String(err));
+    5530 │             process.exit(1);
+  
+
+src\schemas\hooks.ts:90:118 ]8;;https://biomejs.dev/linter/rules/no-template-curly-in-string\lint/suspicious/noTemplateCurlyInString]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected template string placeholder.
+  
+    88 │       .optional()
+    89 │       .describe(
+  > 90 │         'Additional headers to include in the request. Values may reference environment variables using $VAR_NAME or ${VAR_NAME} syntax (e.g., "Authorization": "Bearer $MY_TOKEN"). Only variables listed in allowedEnvVars will be interpolated.',
+       │                                                                                                                      ^^^^^^^^^^^
+    91 │       ),
+    92 │     allowedEnvVars: z
+  
+  i Turn the string into a template string.
+  
+
+src\screens\REPL.tsx:5206:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    5204 │     // condition would break rules-of-hooks.
+    5205 │     const assistantMode = store.getState().kairosEnabled;
+  > 5206 │     // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    5207 │     useScheduledTasks!({ isLoading, assistantMode, setMessages });
+    5208 │   }
+  
+
+src\services\claudeAiLimits.ts:198:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    196 │   // is unreachable (captive portal, firewall, VPN issues).
+    197 │   const signal = AbortSignal.timeout(15_000);
+  > 198 │   // biome-ignore lint/plugin: quota check needs raw response access via asResponse()
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    199 │   return anthropic.beta.messages
+    200 │     .create(
+  
+
+src\services\plugins\pluginCliCommands.ts:82:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    80 │ export async function installPlugin(plugin: string, scope: InstallableScope = 'user'): Promise<void> {
+    81 │   try {
+  > 82 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    83 │     console.log(`Installing plugin "${plugin}"...`);
+    84 │ 
+  
+
+src\services\plugins\pluginCliCommands.ts:91:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    89 │     }
+    90 │ 
+  > 91 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    92 │     console.log(`${figures.tick} ${result.message}`);
+    93 │ 
+  
+
+src\services\plugins\pluginCliCommands.ts:138:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    136 │     }
+    137 │ 
+  > 138 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    139 │     console.log(`${figures.tick} ${result.message}`);
+    140 │ 
+  
+
+src\services\plugins\pluginCliCommands.ts:171:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    169 │     }
+    170 │ 
+  > 171 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    172 │     console.log(`${figures.tick} ${result.message}`);
+    173 │ 
+  
+
+src\services\plugins\pluginCliCommands.ts:204:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    202 │     }
+    203 │ 
+  > 204 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    205 │     console.log(`${figures.tick} ${result.message}`);
+    206 │ 
+  
+
+src\services\plugins\pluginCliCommands.ts:235:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    233 │     }
+    234 │ 
+  > 235 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    236 │     console.log(`${figures.tick} ${result.message}`);
+    237 │ 
+  
+
+src\services\plugins\pluginCliCommands.ts:52:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    50 │       ? 'disable all plugins'
+    51 │       : `${command} plugins`;
+  > 52 │   // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    53 │   console.error(`${figures.cross} Failed to ${operation}: ${errorMessage(error)}`);
+    54 │   const telemetryFields = plugin
+  
+
+src\services\tokenEstimation.ts:281:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    279 │     getAPIProvider() === 'vertex' ? betas.filter(b => VERTEX_COUNT_TOKENS_ALLOWED_BETAS.has(b)) : betas;
+    280 │ 
+  > 281 │   // biome-ignore lint/plugin: token counting needs specialized parameters (thinking, betas) that sideQuery doesn't support
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    282 │   console.error(
+    283 │     `[tokenEstimation] anthropic type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, has messages: ${anthropic?.beta?.messages !== undefined}`,
+  
+
+src\setup.ts:70:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    68 │   const nodeVersion = process.version.match(/^v(\d+)\./)?.[1];
+    69 │   if (!nodeVersion || parseInt(nodeVersion, 10) < 18) {
+  > 70 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    71 │     console.error(ansis.bold.red('Error: Clew Code requires Node.js version 18 or higher.'));
+    72 │     process.exit(1);
+  
+
+src\setup.ts:111:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    109 │       const restoredIterm2Backup = await checkAndRestoreITerm2Backup();
+    110 │       if (restoredIterm2Backup.status === 'restored') {
+  > 111 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    112 │         console.log(
+    113 │           ansis.yellow(
+  
+
+src\setup.ts:118:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    116 │         );
+    117 │       } else if (restoredIterm2Backup.status === 'failed') {
+  > 118 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    119 │         console.error(
+    120 │           ansis.red(
+  
+
+src\setup.ts:131:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    129 │       const restoredTerminalBackup = await checkAndRestoreTerminalBackup();
+    130 │       if (restoredTerminalBackup.status === 'restored') {
+  > 131 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    132 │         console.log(
+    133 │           ansis.yellow(
+  
+
+src\setup.ts:138:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    136 │         );
+    137 │       } else if (restoredTerminalBackup.status === 'failed') {
+  > 138 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    139 │         console.error(
+    140 │           ansis.red(
+  
+
+src\setup.ts:231:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    229 │       const tmuxResult = await createTmuxSessionForWorktree(tmuxSessionName, worktreeSession.worktreePath);
+    230 │       if (tmuxResult.created) {
+  > 231 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    232 │         console.log(
+    233 │           ansis.green(
+  
+
+src\setup.ts:238:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    236 │         );
+    237 │       } else {
+  > 238 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    239 │         console.error(ansis.yellow(`Warning: Failed to create tmux session: ${tmuxResult.error}`));
+    240 │       }
+  
+
+src\setup.ts:368:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    366 │       !isEnvTruthy(process.env.CLEW_CODE_BUBBLEWRAP)
+    367 │     ) {
+  > 368 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    369 │       console.error(`--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons`);
+    370 │       process.exit(1);
+  
+
+src\setup.ts:389:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    387 │       const isSandboxed = isDocker || isBubblewrap || isSandbox;
+    388 │       if (!isSandboxed || hasInternet) {
+  > 389 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    390 │         console.error(
+    391 │           `--dangerously-skip-permissions can only be used in Docker/sandbox containers with no internet access but got Docker: ${isDocker}, Bubblewrap: ${isBubblewrap}, IS_SANDBOX: ${isSandbox}, hasInternet: ${hasInternet}`,
+  
+
+src\state\AppState.tsx:69:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    67 │       }));
+    68 │     }
+  > 69 │     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    70 │   }, [store.getState, store.setState]);
+    71 │ 
+  
+
+src\state\AppState.tsx:85:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    83 │       // bootstrap is best-effort; the app must work without it.
+    84 │     }
+  > 85 │     // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    86 │   }, [store]);
+    87 │ 
+  
+
+src\tools\BashTool\bashSecurity.ts:25:32 ]8;;https://biomejs.dev/linter/rules/no-template-curly-in-string\lint/suspicious/noTemplateCurlyInString]8;;\ ━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected template string placeholder.
+  
+    23 │   },
+    24 │   { pattern: /\$\(/, message: '$() command substitution' },
+  > 25 │   { pattern: /\$\{/, message: '${} parameter substitution' },
+       │                                ^^^
+    26 │   { pattern: /\$\[/, message: '$[] legacy arithmetic expansion' },
+    27 │   { pattern: /~\[/, message: 'Zsh-style parameter expansion' },
+  
+  i Turn the string into a template string.
+  
+
+src\tools\FileReadTool\imageProcessor.ts:44:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    42 │     } catch {
+    43 │       // Fall back to sharp if native module is not available
+  > 44 │       // biome-ignore lint/suspicious/noConsole: intentional warning
+       │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    45 │       console.warn('Native image processor not available, falling back to sharp');
+    46 │     }
+  
+
+src\utils\auth.ts:481:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    479 │     if (epoch !== _apiKeyHelperEpoch) return ' ';
+    480 │     const detail = e instanceof Error ? e.message : String(e);
+  > 481 │     // biome-ignore lint/suspicious/noConsole: user-configured script failed; must be visible without --debug
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    482 │     console.error(ansis.red(`apiKeyHelper failed: ${detail}`));
+    483 │     logForDebugging(`Error getting API key from apiKeyHelper: ${detail}`, {
+  
+
+src\utils\auth.ts:647:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    645 │             )
+    646 │           : ansis.red('Error running awsAuthRefresh (in settings or ~/.claude.json):');
+  > 647 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    648 │         console.error(message);
+    649 │         authStatusManager.endAuthentication(false);
+  
+
+src\utils\auth.ts:721:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    719 │     );
+    720 │     if (e instanceof Error) {
+  > 721 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    722 │       console.error(message, e.message);
+    723 │     } else {
+  
+
+src\utils\auth.ts:724:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    722 │       console.error(message, e.message);
+    723 │     } else {
+  > 724 │       // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    725 │       console.error(message, e);
+    726 │     }
+  
+
+src\utils\auth.ts:902:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    900 │             )
+    901 │           : ansis.red('Error running gcpAuthRefresh (in settings or ~/.claude.json):');
+  > 902 │         // biome-ignore lint/suspicious/noConsole:: intentional console output
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    903 │         console.error(message);
+    904 │         authStatusManager.endAuthentication(false);
+  
+
+src\utils\bash\ast.ts:1868:56 ]8;;https://biomejs.dev/linter/rules/no-template-curly-in-string\lint/suspicious/noTemplateCurlyInString]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected template string placeholder.
+  
+    1866 │       return {
+    1867 │         kind: 'too-complex',
+  > 1868 │         reason: 'PS4 value outside safe charset — only ${VAR} refs and [A-Za-z0-9 _+:.=/[]-] allowed',
+         │                                                        ^^^^^^
+    1869 │         nodeType: 'variable_assignment',
+    1870 │       };
+  
+  i Turn the string into a template string.
+  
+
+src\utils\betas.ts:72:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    71 │   if (isClaudeAISubscriber()) {
+  > 72 │     // biome-ignore lint/suspicious/noConsole: intentional warning
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    73 │     console.warn('Warning: Custom betas are only available for API key users. Ignoring provided betas.');
+    74 │     return undefined;
+  
+
+src\utils\betas.ts:79:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    77 │   const { allowed, disallowed } = partitionBetasByAllowlist(sdkBetas);
+    78 │   for (const beta of disallowed) {
+  > 79 │     // biome-ignore lint/suspicious/noConsole: intentional warning
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    80 │     console.warn(
+    81 │       `Warning: Beta header '${beta}' is not allowed. Only the following betas are supported: ${ALLOWED_SDK_BETAS.join(', ')}`,
+  
+
+src\utils\betas.ts:425:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    424 │   if (disabledVars.length > 0) {
+  > 425 │     // biome-ignore lint/suspicious/noConsole: intentional warning
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    426 │     console.warn(
+    427 │       `Warning: Prompt caching is disabled via ${disabledVars.join(', ')}. This may reduce performance and increase API costs.`,
+  
+
+src\utils\deepLink\protocolHandler.ts:41:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    39 │   } catch (error) {
+    40 │     const message = error instanceof Error ? error.message : String(error);
+  > 41 │     // biome-ignore lint/suspicious/noConsole: intentional error output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    42 │     console.error(`Deep link error: ${message}`);
+    43 │     return 1;
+  
+
+src\utils\deepLink\protocolHandler.ts:64:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    62 │   });
+    63 │   if (!launched) {
+  > 64 │     // biome-ignore lint/suspicious/noConsole: intentional error output
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    65 │     console.error('Failed to open a terminal. Make sure a supported terminal emulator is installed.');
+    66 │     return 1;
+  
+
+src\utils\externalSessions\codex.ts:127:9 ]8;;https://biomejs.dev/linter/rules/use-optional-chain\lint/complexity/useOptionalChain]8;;\  FIXABLE  ━━━━━━━━━━━━━━━
+
+  ! Change to an optional chain.
+  
+    125 │     if (e.type !== 'response_item') continue;
+    126 │     const payload = e.payload as Record<string, unknown> | undefined;
+  > 127 │     if (!payload || payload.type !== 'message' || !includeRole(payload.role)) continue;
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    128 │     const text = textFromCodexContent(payload.content);
+    129 │     if (!text) continue;
+  
+  i Unsafe fix: Change to an optional chain.
+  
+    125 125 │       if (e.type !== 'response_item') continue;
+    126 126 │       const payload = e.payload as Record<string, unknown> | undefined;
+    127     │ - ····if·(!payload·||·payload.type·!==·'message'·||·!includeRole(payload.role))·continue;
+        127 │ + ····if·(payload?.type·!==·'message'·||·!includeRole(payload.role))·continue;
+    128 128 │       const text = textFromCodexContent(payload.content);
+    129 129 │       if (!text) continue;
+  
+
+src\utils\fileHistory.ts:1040:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1038 │ function maybeDumpStateForDebug(state: FileHistoryState): void {
+    1039 │   if (ENABLE_DUMP_STATE) {
+  > 1040 │     // biome-ignore lint/suspicious/noConsole:: intentional console output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1041 │     console.error(inspect(state, false, 5));
+    1042 │   }
+  
+
+src\utils\log.ts:138:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    136 │   const err = toError(error);
+    137 │   if (feature('HARD_FAIL') && isHardFailMode()) {
+  > 138 │     // biome-ignore lint/suspicious/noConsole:: intentional crash output
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    139 │     console.error('[HARD FAIL] logError called with:', err.stack || err.message);
+    140 │     // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\utils\messages.ts:3239:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    3238 │   // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check -- teammate_mailbox/team_context/skill_discovery/bagel_console handled above
+  > 3239 │   // biome-ignore lint/nursery/useExhaustiveSwitchCases: teammate_mailbox/team_context/max_turns_reached/skill_discovery/bagel_console handled above, can't add case for dead code elimination
+         │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3240 │   switch (attachment.type) {
+    3241 │     case 'directory': {
+  
+
+src\utils\plugins\schemas.ts:562:64 ]8;;https://biomejs.dev/linter/rules/no-template-curly-in-string\lint/suspicious/noTemplateCurlyInString]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected template string placeholder.
+  
+    560 │         'User-configurable values this plugin needs. Prompted at enable time. ' +
+    561 │           'Non-sensitive values saved to settings.json; sensitive values to secure storage ' +
+  > 562 │           '(macOS keychain or .credentials.json). Available as ${user_config.KEY} in ' +
+        │                                                                ^^^^^^^^^^^^^^^^^^
+    563 │           'MCP/LSP server config, hook commands, and (non-sensitive only) skill/agent content. ' +
+    564 │           'Note: sensitive values share a single keychain entry with OAuth tokens — keep ' +
+  
+  i Turn the string into a template string.
+  
+
+src\utils\plugins\schemas.ts:605:54 ]8;;https://biomejs.dev/linter/rules/no-template-curly-in-string\lint/suspicious/noTemplateCurlyInString]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected template string placeholder.
+  
+    603 │               .describe(
+    604 │                 'Fields to prompt the user for when enabling this plugin in assistant mode. ' +
+  > 605 │                   'Saved values are substituted into ${user_config.KEY} references in the mcpServers env.',
+        │                                                      ^^^^^^^^^^^^^^^^^^
+    606 │               ),
+    607 │           })
+  
+  i Turn the string into a template string.
+  
+
+src\utils\powershell\parser.ts:1589:34 ]8;;https://biomejs.dev/linter/rules/no-template-curly-in-string\lint/suspicious/noTemplateCurlyInString]8;;\ ━━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected template string placeholder.
+  
+    1587 │ export function isNullRedirectionTarget(target: string): boolean {
+    1588 │   const t = target.trim().toLowerCase();
+  > 1589 │   return t === '$null' || t === '${null}';
+         │                                  ^^^^^^^
+    1590 │ }
+    1591 │ 
+  
+  i Turn the string into a template string.
+  
+
+src\utils\process.ts:37:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    35 │ // console.error + process.exit(1) pattern used in entrypoint fast-paths.
+    36 │ export function exitWithError(message: string): never {
+  > 37 │   // biome-ignore lint/suspicious/noConsole:: intentional console output
+       │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    38 │   console.error(message);
+    39 │   // eslint-disable-next-line custom-rules/no-process-exit
+  
+
+src\utils\processUserInput\processSlashCommand.tsx:322:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    321 │   // Prepend debug log for ant users so it appears inside the command output
+  > 322 │   // biome-ignore lint/correctness/noConstantCondition: build-time distribution marker.
+        │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    323 │   if ('external' === 'ant') {
+    324 │     resultText = `[ANT-ONLY] API calls: ${getDisplayPath(getDumpPromptsPath(agentId))}\n${resultText}`;
+  
+
+src\utils\secureStorage\keychainPrefetch.ts:55:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    53 │         // prime as null. But timeout (err.killed) means the keychain MAY have
+    54 │         // a key we couldn't fetch — don't prime, let sync spawn retry.
+  > 55 │         // biome-ignore lint/nursery/noFloatingPromises: resolve() is not a floating promise
+       │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    56 │         resolve({
+    57 │           stdout: err ? null : stdout?.trim() || null,
+  
+
+src\utils\settings\mdm\rawRead.ts:35:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    33 │   return new Promise(resolve => {
+    34 │     execFile(cmd, args, { encoding: 'utf-8', timeout: MDM_SUBPROCESS_TIMEOUT_MS }, (err, stdout) => {
+  > 35 │       // biome-ignore lint/nursery/noFloatingPromises: resolve() is not a floating promise
+       │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    36 │       resolve({ stdout: stdout ?? '', code: err ? 1 : 0 });
+    37 │     });
+  
+
+src\utils\shell\prefix.ts:206:11 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    204 │           process.stderr.write(`${jsonStringify({ level: 'warn', message })}\n`);
+    205 │         } else {
+  > 206 │           // biome-ignore lint/suspicious/noConsole: intentional warning
+        │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    207 │           console.warn(ansis.yellow(`!�  ${message}`));
+    208 │         }
+  
+
+src\utils\slowOperations.ts:126:28 ]8;;https://biomejs.dev/linter/rules/no-arguments\lint/complexity/noArguments]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Use the rest parameters instead of arguments.
+  
+    124 │ function slowLoggingAnt(_strings: TemplateStringsArray, ..._values: unknown[]): AntSlowLogger {
+    125 │   // eslint-disable-next-line prefer-rest-params
+  > 126 │   return new AntSlowLogger(arguments);
+        │                            ^^^^^^^^^
+    127 │ }
+    128 │ 
+  
+  i arguments does not have Array.prototype methods and can be inconvenient to use.
+  
+
+src\utils\slowOperations.ts:4:1 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    2 │ import type { WriteFileOptions } from 'fs';
+    3 │ import { closeSync, writeFileSync as fsWriteFileSync, fsyncSync, openSync } from 'fs';
+  > 4 │ // biome-ignore lint: This file IS the cloneDeep wrapper - it must import the original
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    5 │ import lodashCloneDeep from 'lodash-es/cloneDeep.js';
+    6 │ import { addSlowOperation } from '../bootstrap/state.js';
+  
+
+src\utils\teammate.ts:255:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    253 │       remaining--;
+    254 │       if (remaining === 0) {
+  > 255 │         // biome-ignore lint/nursery/noFloatingPromises: resolve is a callback, not a Promise
+        │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    256 │         resolve();
+    257 │       }
+  
+
+src\utils\worktree.ts:1267:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1265 │   if (useControlMode && !sessionExists) {
+    1266 │     const y = ansis.yellow;
+  > 1267 │     // biome-ignore lint/suspicious/noConsole: intentional user guidance
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1268 │     console.log(
+    1269 │       `\n${y('╭─ iTerm2 Tip ────────────────────────────────────────────────────────╮')}\n` +
+  
+
+src\utils\worktree.ts:1173:5 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1171 │     }
+    1172 │     repoName = basename(findCanonicalGitRoot(getCwd()) ?? getCwd());
+  > 1173 │     // biome-ignore lint/suspicious/noConsole: intentional console output
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1174 │     console.log(`Using worktree via hook: ${worktreeDir}`);
+    1175 │   } else {
+  
+
+src\utils\worktree.ts:1192:9 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    1190 │       const result = await getOrCreateWorktree(repoRoot, worktreeName, prNumber !== null ? { prNumber } : undefined);
+    1191 │       if (!result.existed) {
+  > 1192 │         // biome-ignore lint/suspicious/noConsole: intentional console output
+         │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    1193 │         console.log(`Created worktree: ${worktreeDir} (based on ${result.baseBranch})`);
+    1194 │         await performPostCreationSetup(repoRoot, worktreeDir);
+  
+
+src\cli\print.ts:4080:5 ]8;;https://biomejs.dev/linter/rules/no-void-type-return\lint/correctness/noVoidTypeReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × The function should not return a value because its return type is void.
+  
+    4078 │     // marketplace}-keyed allowlist. Short-circuit with the same reason the
+    4079 │     // gate would produce.
+  > 4080 │     return respondError(`server ${serverName} is not plugin-sourced; channel_enable requires a marketplace plugin`);
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    4081 │   }
+    4082 │ 
+  
+  i The function is here:
+  
+    4049 │  * interactive either.)
+    4050 │  */
+  > 4051 │ function handleChannelEnable(
+         │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 4052 │   requestId: string,
+          ...
+  > 4135 │   });
+  > 4136 │ }
+         │ ^
+    4137 │ 
+    4138 │ /**
+  
+  i 'void' signals the absence of value. The returned value is likely to be ignored by the caller.
+  
+
+src\cli\print.ts:4064:5 ]8;;https://biomejs.dev/linter/rules/no-void-type-return\lint/correctness/noVoidTypeReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × The function should not return a value because its return type is void.
+  
+    4063 │   if (!(feature('KAIROS') || feature('KAIROS_CHANNELS'))) {
+  > 4064 │     return respondError('channels feature not available in this build');
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    4065 │   }
+    4066 │ 
+  
+  i The function is here:
+  
+    4049 │  * interactive either.)
+    4050 │  */
+  > 4051 │ function handleChannelEnable(
+         │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 4052 │   requestId: string,
+          ...
+  > 4135 │   });
+  > 4136 │ }
+         │ ^
+    4137 │ 
+    4138 │ /**
+  
+  i 'void' signals the absence of value. The returned value is likely to be ignored by the caller.
+  
+
+src\cli\print.ts:4071:5 ]8;;https://biomejs.dev/linter/rules/no-void-type-return\lint/correctness/noVoidTypeReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × The function should not return a value because its return type is void.
+  
+    4069 │   const connection = connectionPool.find(c => c.name === serverName && c.type === 'connected');
+    4070 │   if (connection?.type !== 'connected') {
+  > 4071 │     return respondError(`server ${serverName} is not connected`);
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    4072 │   }
+    4073 │ 
+  
+  i The function is here:
+  
+    4049 │  * interactive either.)
+    4050 │  */
+  > 4051 │ function handleChannelEnable(
+         │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 4052 │   requestId: string,
+          ...
+  > 4135 │   });
+  > 4136 │ }
+         │ ^
+    4137 │ 
+    4138 │ /**
+  
+  i 'void' signals the absence of value. The returned value is likely to be ignored by the caller.
+  
+
+src\cli\print.ts:4097:5 ]8;;https://biomejs.dev/linter/rules/no-void-type-return\lint/correctness/noVoidTypeReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × The function should not return a value because its return type is void.
+  
+    4095 │     // Rollback — only remove the entry we appended.
+    4096 │     if (!already) setAllowedChannels(prior);
+  > 4097 │     return respondError(gate.reason);
+         │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    4098 │   }
+    4099 │ 
+  
+  i The function is here:
+  
+    4049 │  * interactive either.)
+    4050 │  */
+  > 4051 │ function handleChannelEnable(
+         │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 4052 │   requestId: string,
+          ...
+  > 4135 │   });
+  > 4136 │ }
+         │ ^
+    4137 │ 
+    4138 │ /**
+  
+  i 'void' signals the absence of value. The returned value is likely to be ignored by the caller.
+  
+
+src\commands\install-github-app\OAuthFlowStep.tsx:111:23 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    109 │   const startOAuth = useCallback(async () => {
+    110 │     // Clear any existing timers when starting new OAuth flow
+  > 111 │     timersRef.current.forEach(timer => clearTimeout(timer));
+        │                       ^^^^^^^
+    112 │     timersRef.current.clear();
+    113 │     try {
+  
+  i Either remove this return or remove the returned value.
+  
+    109 │   const startOAuth = useCallback(async () => {
+    110 │     // Clear any existing timers when starting new OAuth flow
+  > 111 │     timersRef.current.forEach(timer => clearTimeout(timer));
+        │                                        ^^^^^^^^^^^^^^^^^^^
+    112 │     timersRef.current.clear();
+    113 │     try {
+  
+
+src\commands\install-github-app\OAuthFlowStep.tsx:215:14 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    213 │       oauthService.cleanup();
+    214 │       // Clear all timers
+  > 215 │       timers.forEach(timer_2 => clearTimeout(timer_2));
+        │              ^^^^^^^
+    216 │       timers.clear();
+    217 │       clearTimeout(urlCopiedTimerRef.current);
+  
+  i Either remove this return or remove the returned value.
+  
+    213 │       oauthService.cleanup();
+    214 │       // Clear all timers
+  > 215 │       timers.forEach(timer_2 => clearTimeout(timer_2));
+        │                                 ^^^^^^^^^^^^^^^^^^^^^
+    216 │       timers.clear();
+    217 │       clearTimeout(urlCopiedTimerRef.current);
+  
+
+src\commands\install.tsx:112:25 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    110 │         logForDebugging(`Install: Setup launcher completed with ${setupMessages.length} messages`);
+    111 │         if (setupMessages.length > 0) {
+  > 112 │           setupMessages.forEach(msg => logForDebugging(`Install: Setup message: ${msg.message}`));
+        │                         ^^^^^^^
+    113 │         }
+    114 │ 
+  
+  i Either remove this return or remove the returned value.
+  
+    110 │         logForDebugging(`Install: Setup launcher completed with ${setupMessages.length} messages`);
+    111 │         if (setupMessages.length > 0) {
+  > 112 │           setupMessages.forEach(msg => logForDebugging(`Install: Setup message: ${msg.message}`));
+        │                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    113 │         }
+    114 │ 
+  
+
+src\components\InvalidConfigDialog.tsx:81:27 ]8;;https://biomejs.dev/linter/rules/no-async-promise-executor\lint/suspicious/noAsyncPromiseExecutor]8;;\ ━━━━━━━━━━━━━━━━
+
+  × Promise executor functions should not be `async`.
+  
+     79 │   };
+     80 │ 
+   > 81 │   await new Promise<void>(async resolve => {
+        │                           ^^^^^^^^^^^^^^^^^^
+   > 82 │     const { unmount } = await render(
+         ...
+  > 106 │     );
+  > 107 │   });
+        │   ^
+    108 │ }
+    109 │ 
+  
+
+src\components\messages\SystemAPIErrorMessage.tsx:34:18 ]8;;https://biomejs.dev/linter/rules/no-self-compare\lint/suspicious/noSelfCompare]8;;\ ━━━━━━━━━━━━━━
+
+  × This comparison uses the same expression on both sides.
+  
+    32 │   // spinner for 4 attempts / ~20s reads as a hang). Compute before useInterval
+    33 │   // so we never register a timer that just drives a null render.
+  > 34 │   const hidden = 'external' === 'external' && retryAttempt < 2;
+       │                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+    35 │ 
+    36 │   const [countdownMs, setCountdownMs] = useState(0);
+  
+  i Self-comparisons are usually redundant or a sign that the wrong value is being compared.
+  
+  i Compare two different values instead, or use Number.isNaN() if you are checking for NaN.
+  
+
+src\native-ts\yoga-layout\index.ts:2197:9 ]8;;https://biomejs.dev/linter/rules/no-self-compare\lint/suspicious/noSelfCompare]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This comparison uses the same expression on both sides.
+  
+    2195 │   } else if (minU === 2) {
+    2196 │     const m = (minV.value * owner) / 100;
+  > 2197 │     if (m === m && v < m) v = m;
+         │         ^^^^^^^
+    2198 │   }
+    2199 │   return v;
+  
+  i Self-comparisons are usually redundant or a sign that the wrong value is being compared.
+  
+  i Compare two different values instead, or use Number.isNaN() if you are checking for NaN.
+  
+
+src\native-ts\yoga-layout\index.ts:114:22 ]8;;https://biomejs.dev/linter/rules/no-self-compare\lint/suspicious/noSelfCompare]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This comparison uses the same expression on both sides.
+  
+    112 │ // NaN-safe equality for layout-cache input comparison
+    113 │ function sameFloat(a: number, b: number): boolean {
+  > 114 │   return a === b || (a !== a && b !== b);
+        │                      ^^^^^^^
+    115 │ }
+    116 │ 
+  
+  i Self-comparisons are usually redundant or a sign that the wrong value is being compared.
+  
+  i Compare two different values instead, or use Number.isNaN() if you are checking for NaN.
+  
+
+src\native-ts\yoga-layout\index.ts:114:33 ]8;;https://biomejs.dev/linter/rules/no-self-compare\lint/suspicious/noSelfCompare]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This comparison uses the same expression on both sides.
+  
+    112 │ // NaN-safe equality for layout-cache input comparison
+    113 │ function sameFloat(a: number, b: number): boolean {
+  > 114 │   return a === b || (a !== a && b !== b);
+        │                                 ^^^^^^^
+    115 │ }
+    116 │ 
+  
+  i Self-comparisons are usually redundant or a sign that the wrong value is being compared.
+  
+  i Compare two different values instead, or use Number.isNaN() if you are checking for NaN.
+  
+
+src\native-ts\yoga-layout\index.ts:2191:9 ]8;;https://biomejs.dev/linter/rules/no-self-compare\lint/suspicious/noSelfCompare]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This comparison uses the same expression on both sides.
+  
+    2189 │   } else if (maxU === 2) {
+    2190 │     const m = (maxV.value * owner) / 100;
+  > 2191 │     if (m === m && v > m) v = m;
+         │         ^^^^^^^
+    2192 │   }
+    2193 │   if (minU === 1) {
+  
+  i Self-comparisons are usually redundant or a sign that the wrong value is being compared.
+  
+  i Compare two different values instead, or use Number.isNaN() if you are checking for NaN.
+  
+
+src\peer\swarmActivity.ts:108:20 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    107 │   private notifyListeners(): void {
+  > 108 │     this.listeners.forEach(cb => cb());
+        │                    ^^^^^^^
+    109 │   }
+    110 │ }
+  
+  i Either remove this return or remove the returned value.
+  
+    107 │   private notifyListeners(): void {
+  > 108 │     this.listeners.forEach(cb => cb());
+        │                                  ^^^^
+    109 │   }
+    110 │ }
+  
+
+src\screens\REPL.tsx:2883:20 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    2881 │                 queue
+    2882 │                   .filter(item => item.hostPattern.host === hostPattern.host)
+  > 2883 │                   .forEach(item => item.resolvePromise(allow));
+         │                    ^^^^^^^
+    2884 │                 return queue.filter(item => item.hostPattern.host !== hostPattern.host);
+    2885 │               });
+  
+  i Either remove this return or remove the returned value.
+  
+    2881 │                 queue
+    2882 │                   .filter(item => item.hostPattern.host === hostPattern.host)
+  > 2883 │                   .forEach(item => item.resolvePromise(allow));
+         │                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    2884 │                 return queue.filter(item => item.hostPattern.host !== hostPattern.host);
+    2885 │               });
+  
+
+src\screens\REPL.tsx:6037:28 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    6035 │                         queue
+    6036 │                           .filter(item => item.hostPattern.host === approvedHost)
+  > 6037 │                           .forEach(item => item.resolvePromise(allow));
+         │                            ^^^^^^^
+    6038 │                         return queue.filter(item => item.hostPattern.host !== approvedHost);
+    6039 │                       });
+  
+  i Either remove this return or remove the returned value.
+  
+    6035 │                         queue
+    6036 │                           .filter(item => item.hostPattern.host === approvedHost)
+  > 6037 │                           .forEach(item => item.resolvePromise(allow));
+         │                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    6038 │                         return queue.filter(item => item.hostPattern.host !== approvedHost);
+    6039 │                       });
+  
+
+src\services\api\logging.ts:94:13 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    92 │     // Header names are already lowercase from the Headers API
+    93 │     const headerNames: string[] = [];
+  > 94 │     headers.forEach((_, key) => headerNames.push(key));
+       │             ^^^^^^^
+    95 │     for (const [gw, { prefixes }] of Object.entries(GATEWAY_FINGERPRINTS)) {
+    96 │       if (prefixes.some(p => headerNames.some(h => h.startsWith(p)))) {
+  
+  i Either remove this return or remove the returned value.
+  
+    92 │     // Header names are already lowercase from the Headers API
+    93 │     const headerNames: string[] = [];
+  > 94 │     headers.forEach((_, key) => headerNames.push(key));
+       │                                 ^^^^^^^^^^^^^^^^^^^^^
+    95 │     for (const [gw, { prefixes }] of Object.entries(GATEWAY_FINGERPRINTS)) {
+    96 │       if (prefixes.some(p => headerNames.some(h => h.startsWith(p)))) {
+  
+
+src\services\claudeAiLimits.ts:176:19 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    174 │ export function emitStatusChange(limits: ClaudeAILimits) {
+    175 │   currentLimits = limits;
+  > 176 │   statusListeners.forEach(listener => listener(limits));
+        │                   ^^^^^^^
+    177 │   const hoursTillReset = Math.round((limits.resetsAt ? limits.resetsAt - Date.now() / 1000 : 0) / (60 * 60));
+    178 │ 
+  
+  i Either remove this return or remove the returned value.
+  
+    174 │ export function emitStatusChange(limits: ClaudeAILimits) {
+    175 │   currentLimits = limits;
+  > 176 │   statusListeners.forEach(listener => listener(limits));
+        │                                       ^^^^^^^^^^^^^^^^
+    177 │   const hoursTillReset = Math.round((limits.resetsAt ? limits.resetsAt - Date.now() / 1000 : 0) / (60 * 60));
+    178 │ 
+  
+
+src\services\mcp\client.ts:1617:41 ]8;;https://biomejs.dev/linter/rules/no-async-promise-executor\lint/suspicious/noAsyncPromiseExecutor]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Promise executor functions should not be `async`.
+  
+    1616 │                 // Wait for graceful shutdown with rapid escalation (total 500ms to keep CLI responsive)
+  > 1617 │                 await new Promise<void>(async resolve => {
+         │                                         ^^^^^^^^^^^^^^^^^^
+  > 1618 │                   let resolved = false;
+          ...
+  > 1715 │                   }
+  > 1716 │                 });
+         │                 ^
+    1717 │               }
+    1718 │             } catch (processError) {
+  
+
+src\tools\BashTool\bashPermissions.ts:828:28 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━
+
+  × This callback passed to some() iterable method should always return a value.
+  
+    826 │       const bashRule = bashPermissionRule(ruleContent);
+    827 │ 
+  > 828 │       return commandsToTry.some(cmdToMatch => {
+        │                            ^^^^
+    829 │         switch (bashRule.type) {
+    830 │           case 'exact':
+  
+  i Add missing return statements so that this callback returns a value on all execution paths.
+  
+
+src\utils\bash\ShellSnapshot.ts:396:22 ]8;;https://biomejs.dev/linter/rules/no-async-promise-executor\lint/suspicious/noAsyncPromiseExecutor]8;;\ ━━━━━━━━━━━━━━━━━━━━━━
+
+  × Promise executor functions should not be `async`.
+  
+    394 │   logForDebugging(`Creating shell snapshot for ${shellType} (${binShell})`);
+    395 │ 
+  > 396 │   return new Promise(async resolve => {
+        │                      ^^^^^^^^^^^^^^^^^^
+  > 397 │     try {
+         ...
+  > 518 │     }
+  > 519 │   });
+        │   ^
+    520 │ };
+    521 │ 
+  
+
+src\utils\contextAnalysis.ts:59:15 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    57 │       }
+    58 │     } else {
+  > 59 │       content.forEach(block =>
+       │               ^^^^^^^
+    60 │         processBlock(block, msg, stats, toolIdsToToolNames, readToolIdToFilePath, fileReadStats),
+    61 │       );
+  
+  i Either remove this return or remove the returned value.
+  
+    58 │     } else {
+    59 │       content.forEach(block =>
+  > 60 │         processBlock(block, msg, stats, toolIdsToToolNames, readToolIdToFilePath, fileReadStats),
+       │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    61 │       );
+    62 │     }
+  
+
+src\utils\interactivePrompt.ts:160:22 ]8;;https://biomejs.dev/linter/rules/no-async-promise-executor\lint/suspicious/noAsyncPromiseExecutor]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Promise executor functions should not be `async`.
+  
+    158 │   } = {},
+    159 │ ): Promise<{ output: string; exitCode: number }> {
+  > 160 │   return new Promise(async (resolve, reject) => {
+        │                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 161 │     let output = '';
+         ...
+  > 190 │     }, 30000);
+  > 191 │   });
+        │   ^
+    192 │ }
+    193 │ 
+  
+
+src\utils\messages.ts:726:19 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to flatMap() iterable method should always return a value.
+  
+    724 │   // and remains true for all subsequent messages in the normalization process.
+    725 │   let isNewChain = false;
+  > 726 │   return messages.flatMap(message => {
+        │                   ^^^^^^^
+    727 │     switch (message.type) {
+    728 │       case 'assistant': {
+  
+  i Add missing return statements so that this callback returns a value on all execution paths.
+  
+
+src\utils\sideQuery.ts:191:102 ]8;;https://biomejs.dev/linter/rules/no-unsafe-optional-chaining\lint/correctness/noUnsafeOptionalChaining]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Unsafe usage of optional chaining.
+  
+    189 │       }
+    190 │ 
+  > 191 │       const result = await (providerClient.chat?.completions?.create ?? providerClient.beta?.messages?.create)({
+        │                                                                                                      ^^
+    192 │         model: normalizedModel,
+    193 │         max_tokens: max_tokens,
+  
+  i If it short-circuits with 'undefined' the evaluation will throw TypeError here:
+  
+    189 │       }
+    190 │ 
+  > 191 │       const result = await (providerClient.chat?.completions?.create ?? providerClient.beta?.messages?.create)({
+        │                                                                                                               ^^
+  > 192 │         model: normalizedModel,
+         ...
+  > 198 │         ...(openaiToolChoice !== undefined && { tool_choice: openaiToolChoice }),
+  > 199 │       });
+        │       ^^
+    200 │ 
+    201 │       const choice = result.choices?.[0] ?? result.content?.[0] ?? {};
+  
+
+src\utils\staticRender.tsx:54:22 ]8;;https://biomejs.dev/linter/rules/no-async-promise-executor\lint/suspicious/noAsyncPromiseExecutor]8;;\ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Promise executor functions should not be `async`.
+  
+    52 │  */
+    53 │ export function renderToAnsiString(node: React.ReactNode, columns?: number): Promise<string> {
+  > 54 │   return new Promise(async resolve => {
+       │                      ^^^^^^^^^^^^^^^^^^
+  > 55 │     let output = '';
+        ...
+  > 81 │     await resolve(extractFirstFrame(output));
+  > 82 │   });
+       │   ^
+    83 │ }
+    84 │ 
+  
+
+src\utils\swarm\inProcessRunner.ts:1225:31 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    1223 │         }
+    1224 │         toolUseId = task.toolUseId;
+  > 1225 │         task.onIdleCallbacks?.forEach(cb => cb());
+         │                               ^^^^^^^
+    1226 │         task.unregisterCleanup?.();
+    1227 │         return {
+  
+  i Either remove this return or remove the returned value.
+  
+    1223 │         }
+    1224 │         toolUseId = task.toolUseId;
+  > 1225 │         task.onIdleCallbacks?.forEach(cb => cb());
+         │                                             ^^^^
+    1226 │         task.unregisterCleanup?.();
+    1227 │         return {
+  
+
+src\utils\swarm\inProcessRunner.ts:1273:31 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    1271 │         }
+    1272 │         toolUseId = task.toolUseId;
+  > 1273 │         task.onIdleCallbacks?.forEach(cb => cb());
+         │                               ^^^^^^^
+    1274 │         task.unregisterCleanup?.();
+    1275 │         return {
+  
+  i Either remove this return or remove the returned value.
+  
+    1271 │         }
+    1272 │         toolUseId = task.toolUseId;
+  > 1273 │         task.onIdleCallbacks?.forEach(cb => cb());
+         │                                             ^^^^
+    1274 │         task.unregisterCleanup?.();
+    1275 │         return {
+  
+
+src\utils\swarm\inProcessRunner.ts:1140:33 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    1138 │         task => {
+    1139 │           // Call any registered idle callbacks
+  > 1140 │           task.onIdleCallbacks?.forEach(cb => cb());
+         │                                 ^^^^^^^
+    1141 │           return { ...task, isIdle: true, onIdleCallbacks: [] };
+    1142 │         },
+  
+  i Either remove this return or remove the returned value.
+  
+    1138 │         task => {
+    1139 │           // Call any registered idle callbacks
+  > 1140 │           task.onIdleCallbacks?.forEach(cb => cb());
+         │                                               ^^^^
+    1141 │           return { ...task, isIdle: true, onIdleCallbacks: [] };
+    1142 │         },
+  
+
+src\utils\swarm\spawnInProcess.ts:243:35 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    242 │     // Call pending idle callbacks to unblock any waiters (e.g., engine.waitForIdle)
+  > 243 │     teammateTask.onIdleCallbacks?.forEach(cb => cb());
+        │                                   ^^^^^^^
+    244 │ 
+    245 │     // Remove from teamContext.teammates using the agentId
+  
+  i Either remove this return or remove the returned value.
+  
+    242 │     // Call pending idle callbacks to unblock any waiters (e.g., engine.waitForIdle)
+  > 243 │     teammateTask.onIdleCallbacks?.forEach(cb => cb());
+        │                                                 ^^^^
+    244 │ 
+    245 │     // Remove from teamContext.teammates using the agentId
+  
+
+src\utils\toolResultStorage.ts:775:59 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    773 │     // full content while the main thread sends the preview → cache miss.
+    774 │     const selectedIds = new Set(selected.map(c => c.toolUseId));
+  > 775 │     candidates.filter(c => !selectedIds.has(c.toolUseId)).forEach(c => state.seenIds.add(c.toolUseId));
+        │                                                           ^^^^^^^
+    776 │ 
+    777 │     if (selected.length === 0) continue;
+  
+  i Either remove this return or remove the returned value.
+  
+    773 │     // full content while the main thread sends the preview → cache miss.
+    774 │     const selectedIds = new Set(selected.map(c => c.toolUseId));
+  > 775 │     candidates.filter(c => !selectedIds.has(c.toolUseId)).forEach(c => state.seenIds.add(c.toolUseId));
+        │                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    776 │ 
+    777 │     if (selected.length === 0) continue;
+  
+
+src\utils\toolResultStorage.ts:750:18 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    748 │       // mustReapply/frozen are already in seenIds from their first pass —
+    749 │       // re-adding is a no-op but keeps the invariant explicit.
+  > 750 │       candidates.forEach(c => state.seenIds.add(c.toolUseId));
+        │                  ^^^^^^^
+    751 │       continue;
+    752 │     }
+  
+  i Either remove this return or remove the returned value.
+  
+    748 │       // mustReapply/frozen are already in seenIds from their first pass —
+    749 │       // re-adding is a no-op but keeps the invariant explicit.
+  > 750 │       candidates.forEach(c => state.seenIds.add(c.toolUseId));
+        │                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    751 │       continue;
+    752 │     }
+  
+
+src\utils\toolResultStorage.ts:760:13 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    758 │     // maxTokens is the bound, not this wrapper.
+    759 │     const skipped = fresh.filter(c => shouldSkip(c.toolUseId));
+  > 760 │     skipped.forEach(c => state.seenIds.add(c.toolUseId));
+        │             ^^^^^^^
+    761 │     const eligible = fresh.filter(c => !shouldSkip(c.toolUseId));
+    762 │ 
+  
+  i Either remove this return or remove the returned value.
+  
+    758 │     // maxTokens is the bound, not this wrapper.
+    759 │     const skipped = fresh.filter(c => shouldSkip(c.toolUseId));
+  > 760 │     skipped.forEach(c => state.seenIds.add(c.toolUseId));
+        │                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    761 │     const eligible = fresh.filter(c => !shouldSkip(c.toolUseId));
+    762 │ 
+  
+
+src\utils\toolResultStorage.ts:741:17 ]8;;https://biomejs.dev/linter/rules/use-iterable-callback-return\lint/suspicious/useIterableCallbackReturn]8;;\ ━━━━━━━━━━━━━━━━━━━━
+
+  × This callback passed to forEach() iterable method should not return a value.
+  
+    740 │     // Re-apply: pure Map lookups. No file I/O, byte-identical, cannot fail.
+  > 741 │     mustReapply.forEach(c => replacementMap.set(c.toolUseId, c.replacement));
+        │                 ^^^^^^^
+    742 │     reappliedCount += mustReapply.length;
+    743 │ 
+  
+  i Either remove this return or remove the returned value.
+  
+    740 │     // Re-apply: pure Map lookups. No file I/O, byte-identical, cannot fail.
+  > 741 │     mustReapply.forEach(c => replacementMap.set(c.toolUseId, c.replacement));
+        │                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    742 │     reappliedCount += mustReapply.length;
+    743 │ 
+  
+
+Checked 2373 files in 6s. No fixes applied.
+Found 34 errors.
+Found 181 warnings.
+Found 1 info.
+ci ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
