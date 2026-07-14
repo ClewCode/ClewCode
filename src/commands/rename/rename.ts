@@ -53,7 +53,9 @@ export async function call(
       updateBridgeSessionTitle(bridgeSessionId, newName, {
         baseUrl: getBridgeBaseUrlOverride(),
         getAccessToken: tokenOverride ? () => tokenOverride : undefined,
-      }).catch(() => {}),
+      }).catch(() => {
+        /* noop */
+      }),
     );
   }
 

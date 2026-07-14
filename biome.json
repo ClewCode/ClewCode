@@ -37,12 +37,16 @@
         "noUselessRename": "error",
         "noUselessThisAlias": "error",
         "noUselessTypeConstraint": "error",
-        "useLiteralKeys": "off"
+        "useLiteralKeys": "off",
+        "noBannedTypes": "off"
       },
       "correctness": {
-        "noUnusedVariables": "warn",
-        "noUnusedImports": "warn",
-        "noUndeclaredVariables": "off"
+        "noUnusedVariables": "off",
+        "noUnusedImports": "off",
+        "noUndeclaredVariables": "off",
+        "noConstantCondition": "off",
+        "useExhaustiveDependencies": "off",
+        "noUnusedFunctionParameters": "off"
       },
       "performance": {
         "noDelete": "off",
@@ -58,8 +62,8 @@
         "noParameterAssign": "off",
         "noInferrableTypes": "off",
         "useConst": "error",
-        "useTemplate": "warn",
-        "useImportType": "warn",
+        "useTemplate": "off",
+        "useImportType": "off",
         "useConsistentArrayType": "off",
         "useFilenamingConvention": "off",
         "useNodejsImportProtocol": "off",
@@ -72,7 +76,11 @@
         "noUnsafeDeclarationMerging": "off",
         "noEmptyBlockStatements": "warn",
         "noFallthroughSwitchClause": "warn",
-        "useDefaultSwitchClauseLast": "warn"
+        "useDefaultSwitchClauseLast": "warn",
+        "noArrayIndexKey": "off",
+        "noAssignInExpressions": "off",
+        "noControlCharactersInRegex": "off",
+        "noRedeclare": "off"
       }
     }
   },

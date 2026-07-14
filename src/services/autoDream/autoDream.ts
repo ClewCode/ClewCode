@@ -207,7 +207,9 @@ ${sessionIds.map(id => `- ${id}`).join('\n')}`;
         } catch {
           /* skip */
         }
-      })().catch(() => {});
+      })().catch(() => {
+        /* noop */
+      });
 
       // Sync Dream's file-based output into MemoryDB
       syncDreamToMemoryDB(memoryRoot)
@@ -216,7 +218,9 @@ ${sessionIds.map(id => `- ${id}`).join('\n')}`;
             logForDebugging(`[autoDream] synced ${count} memories into MemoryDB`);
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          /* noop */
+        });
 
       // Inline completion summary in the main transcript (same surface as
       // extractMemories's "Saved N memories" message).

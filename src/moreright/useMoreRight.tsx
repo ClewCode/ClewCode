@@ -19,7 +19,9 @@ export function useMoreRight(_args: {
 } {
   return {
     onBeforeQuery: async () => true,
-    onTurnComplete: async () => {},
+    onTurnComplete: async () => {
+      /* noop */
+    },
     render: () => null,
   };
 }

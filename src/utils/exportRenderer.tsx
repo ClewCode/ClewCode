@@ -25,10 +25,16 @@ function StaticKeybindingProvider({ children }: { children: React.ReactNode }): 
       bindings={bindings}
       pendingChordRef={pendingChordRef}
       pendingChord={null}
-      setPendingChord={() => {}}
+      setPendingChord={() => {
+        /* noop */
+      }}
       activeContexts={activeContexts}
-      registerActiveContext={() => {}}
-      unregisterActiveContext={() => {}}
+      registerActiveContext={() => {
+        /* noop */
+      }}
+      unregisterActiveContext={() => {
+        /* noop */
+      }}
       handlerRegistryRef={handlerRegistryRef}
     >
       {children}

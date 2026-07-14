@@ -241,7 +241,9 @@ export const setupGracefulShutdown = memoize(() => {
   // unload() never runs and removeListener is never called. Harmless under
   // Node.js — the pin also ensures signal-exit's process.exit hook stays
   // active for Ink cleanup.
-  onExit(() => {});
+  onExit(() => {
+    /* noop */
+  });
 
   process.on('SIGINT', () => {
     // In print mode, print.ts registers its own SIGINT handler that aborts
@@ -342,7 +344,9 @@ export function gracefulShutdownSync(
     })
     // Prevent unhandled rejection: forceExit re-throws in test mode,
     // which would escape the .catch() handler above as a new rejection.
-    .catch(() => {});
+    .catch(() => {
+      /* noop */
+    });
 }
 
 let shutdownInProgress = false;

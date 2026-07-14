@@ -308,7 +308,9 @@ export class QueryEngine {
       setMessages: fn => {
         this.mutableMessages = fn(this.mutableMessages);
       },
-      onChangeAPIKey: () => {},
+      onChangeAPIKey: () => {
+        /* noop */
+      },
       handleElicitation: this.config.handleElicitation,
       options: {
         commands,
@@ -335,8 +337,12 @@ export class QueryEngine {
       loadedNestedMemoryPaths: this.loadedNestedMemoryPaths,
       dynamicSkillDirTriggers: new Set<string>(),
       discoveredSkillNames: this.discoveredSkillNames,
-      setInProgressToolUseIDs: () => {},
-      setResponseLength: () => {},
+      setInProgressToolUseIDs: () => {
+        /* noop */
+      },
+      setResponseLength: () => {
+        /* noop */
+      },
       updateFileHistoryState: (updater: (prev: FileHistoryState) => FileHistoryState) => {
         setAppState(prev => {
           const updated = updater(prev.fileHistory);
@@ -376,7 +382,9 @@ export class QueryEngine {
     } = await processUserInput({
       input: prompt,
       mode: 'prompt',
-      setToolJSX: () => {},
+      setToolJSX: () => {
+        /* noop */
+      },
       context: {
         ...processUserInputContext,
         messages: this.mutableMessages,
@@ -448,8 +456,12 @@ export class QueryEngine {
     // model (from slash commands).
     processUserInputContext = {
       messages,
-      setMessages: () => {},
-      onChangeAPIKey: () => {},
+      setMessages: () => {
+        /* noop */
+      },
+      onChangeAPIKey: () => {
+        /* noop */
+      },
       handleElicitation: this.config.handleElicitation,
       options: {
         commands,
@@ -476,8 +488,12 @@ export class QueryEngine {
       loadedNestedMemoryPaths: this.loadedNestedMemoryPaths,
       dynamicSkillDirTriggers: new Set<string>(),
       discoveredSkillNames: this.discoveredSkillNames,
-      setInProgressToolUseIDs: () => {},
-      setResponseLength: () => {},
+      setInProgressToolUseIDs: () => {
+        /* noop */
+      },
+      setResponseLength: () => {
+        /* noop */
+      },
       updateFileHistoryState: processUserInputContext.updateFileHistoryState,
       updateAttributionState: processUserInputContext.updateAttributionState,
       setSDKStatus,
@@ -806,10 +822,14 @@ export class QueryEngine {
                 cycle,
                 notes,
               };
-              writeCheckpoint(checkpoint).catch(() => {});
+              writeCheckpoint(checkpoint).catch(() => {
+                /* noop */
+              });
               // Promote to MEMORY.md at 70% checkpoint (project memory layer)
               if (threshold === 70) {
-                promoteCheckpoints(goalState.goal).catch(() => {});
+                promoteCheckpoints(goalState.goal).catch(() => {
+                  /* noop */
+                });
               }
               break; // Only write one checkpoint per turn
             }

@@ -113,8 +113,12 @@ export function AgentViewPeekPanel({
               <PermissionRequest
                 toolUseConfirm={pendingPermissions[0]!}
                 toolUseContext={pendingPermissions[0]!.toolUseContext}
-                onDone={() => {}}
-                onReject={() => {}}
+                onDone={() => {
+                  /* noop */
+                }}
+                onReject={() => {
+                  /* noop */
+                }}
                 verbose={true}
                 workerBadge={pendingPermissions[0]!.workerBadge}
               />

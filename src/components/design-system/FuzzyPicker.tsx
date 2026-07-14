@@ -113,7 +113,9 @@ export function FuzzyPicker<T>({
   // a held backspace doesn't eject the user from the dialog.
   const { query, cursorOffset } = useSearchInput({
     isActive: true,
-    onExit: () => {},
+    onExit: () => {
+      /* noop */
+    },
     onCancel,
     initialQuery,
     backspaceExitsOnEmpty: false,

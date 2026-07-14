@@ -55,8 +55,14 @@ export function createDarwinAdapter(): PlatformAdapter {
         const buffer = await readFile(tmpPath);
         return toBase64Jpeg(buffer);
       } finally {
-        await unlink(tmpPath).catch(() => {});
-        await import('node:fs/promises').then(fs => fs.rmdir(tmpDir).catch(() => {}));
+        await unlink(tmpPath).catch(() => {
+          /* noop */
+        });
+        await import('node:fs/promises').then(fs =>
+          fs.rmdir(tmpDir).catch(() => {
+            /* noop */
+          }),
+        );
       }
     },
 
@@ -71,7 +77,9 @@ export function createDarwinAdapter(): PlatformAdapter {
           const scale = display._spdisplay_scale_factor ?? 1;
           return sanitizeGeometry({ width: w, height: h, scaleFactor: Number(scale) });
         }
-      } catch {}
+      } catch {
+        /* ignore */
+      }
       return sanitizeGeometry({});
     },
 
@@ -168,7 +176,9 @@ export function createDarwinAdapter(): PlatformAdapter {
         }
       } finally {
         if (saved) {
-          await writeClipboard(saved).catch(() => {});
+          await writeClipboard(saved).catch(() => {
+            /* noop */
+          });
         }
       }
     },

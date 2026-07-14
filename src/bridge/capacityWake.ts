@@ -38,7 +38,12 @@ export function createCapacityWake(outerSignal: AbortSignal): CapacityWake {
     const abort = (): void => merged.abort();
     if (outerSignal.aborted || wakeController.signal.aborted) {
       merged.abort();
-      return { signal: merged.signal, cleanup: () => {} };
+      return {
+        signal: merged.signal,
+        cleanup: () => {
+          /* noop */
+        },
+      };
     }
     outerSignal.addEventListener('abort', abort, { once: true });
     const capSig = wakeController.signal;

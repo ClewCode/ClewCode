@@ -87,7 +87,9 @@ function DirectoryInput({
           onSubmit={onSubmit}
           columns={80}
           cursorOffset={value.length}
-          onChangeCursorOffset={() => {}}
+          onChangeCursorOffset={() => {
+            /* noop */
+          }}
         />
       </Box>
       {suggestions.length > 0 && (

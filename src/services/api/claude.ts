@@ -53,7 +53,6 @@ import { isEnvTruthy } from '../../utils/envUtils.js';
 import { errorMessage } from '../../utils/errors.js';
 import { computeFingerprintFromMessages } from '../../utils/fingerprint.js';
 import { captureAPIRequest, logError } from '../../utils/log.js';
-import { stringifyWithRedactedSecrets } from '../../utils/redactSecrets.js';
 import {
   createAssistantAPIErrorMessage,
   createAssistantMessage,
@@ -71,6 +70,7 @@ import {
   getSmallFastModel,
   isNonCustomOpusModel,
 } from '../../utils/model/model.js';
+import { stringifyWithRedactedSecrets } from '../../utils/redactSecrets.js';
 import { sleep } from '../../utils/sleep.js';
 import { asSystemPrompt, type SystemPrompt } from '../../utils/systemPromptType.js';
 import { tokenCountFromLastAPIResponse } from '../../utils/tokens.js';
@@ -1689,7 +1689,9 @@ async function* queryModel(
     cleanupStream(stream);
     stream = undefined;
     if (streamResponse) {
-      streamResponse.body?.cancel().catch(() => {});
+      streamResponse.body?.cancel().catch(() => {
+        /* noop */
+      });
       streamResponse = undefined;
     }
   }

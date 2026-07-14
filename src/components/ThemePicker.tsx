@@ -68,7 +68,13 @@ export function ThemePicker({
     { context: 'ThemePicker' },
   );
   // Always call the hook to follow React rules, but conditionally assign the exit handler
-  const exitState = useExitOnCtrlCDWithKeybindings(skipExitHandling ? () => {} : undefined);
+  const exitState = useExitOnCtrlCDWithKeybindings(
+    skipExitHandling
+      ? () => {
+          /* noop */
+        }
+      : undefined,
+  );
 
   const themeOptions: { label: string; value: ThemeSetting }[] = [
     ...(feature('AUTO_THEME') ? [{ label: 'Auto (match terminal)', value: 'auto' as const }] : []),

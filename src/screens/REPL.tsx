@@ -166,8 +166,12 @@ const useVoiceIntegration: typeof import('../hooks/useVoiceIntegration.js').useV
   ? require('../hooks/useVoiceIntegration.js').useVoiceIntegration
   : () => ({
       stripTrailing: () => 0,
-      handleKeyEvent: () => {},
-      resetAnchor: () => {},
+      handleKeyEvent: () => {
+        /* noop */
+      },
+      resetAnchor: () => {
+        /* noop */
+      },
     });
 const VoiceKeybindingHandler: typeof import('../hooks/useVoiceIntegration.js').VoiceKeybindingHandler = feature(
   'VOICE_MODE',
@@ -180,13 +184,20 @@ const VoiceKeybindingHandler: typeof import('../hooks/useVoiceIntegration.js').V
 const useFrustrationDetection: typeof import('../components/FeedbackSurvey/useFrustrationDetection.js').useFrustrationDetection =
   'external' === 'ant'
     ? require('../components/FeedbackSurvey/useFrustrationDetection.js').useFrustrationDetection
-    : () => ({ state: 'closed', handleTranscriptSelect: () => {} });
+    : () => ({
+        state: 'closed',
+        handleTranscriptSelect: () => {
+          /* noop */
+        },
+      });
 // Ant-only org warning. Conditional require so the org UUID list is
 // eliminated from external builds (one UUID is on excluded-strings).
 const useAntOrgWarningNotification: typeof import('../hooks/notifs/useAntOrgWarningNotification.js').useAntOrgWarningNotification =
   'external' === 'ant'
     ? require('../hooks/notifs/useAntOrgWarningNotification.js').useAntOrgWarningNotification
-    : () => {};
+    : () => {
+        /* noop */
+      };
 // Dead code elimination: conditional import for coordinator mode
 const getCoordinatorUserContext: (
   mcpClients: ReadonlyArray<{ name: string }>,
@@ -331,7 +342,9 @@ import { useInboxPoller } from '../hooks/useInboxPoller.js';
 // Dead code elimination: conditional import for loop mode
 /* eslint-disable @typescript-eslint/no-require-imports */
 const proactiveModule = feature('PROACTIVE') || feature('KAIROS') ? require('../proactive/index.js') : null;
-const PROACTIVE_NO_OP_SUBSCRIBE = (_cb: () => void) => () => {};
+const PROACTIVE_NO_OP_SUBSCRIBE = (_cb: () => void) => () => {
+  /* noop */
+};
 const PROACTIVE_FALSE = () => false;
 const SUGGEST_BG_PR_NOOP = (_p: string, _n: string): boolean => false;
 const useProactive =
@@ -487,7 +500,11 @@ const EMPTY_MCP_CLIENTS: MCPServerConnection[] = [];
 
 // Stable stub for useAssistantHistory's non-KAIROS branch — avoids a new
 // function identity each render, which would break composedOnScroll's memo.
-const HISTORY_STUB = { maybeLoadOlder: (_: ScrollBoxHandle) => {} };
+const HISTORY_STUB = {
+  maybeLoadOlder: (_: ScrollBoxHandle) => {
+    /* noop */
+  },
+};
 // Window after a user-initiated scroll during which type-into-empty does NOT
 // repin to bottom. Josh Rosen's workflow: Claude emits long output → scroll
 // up to read the start → start typing → before this fix, snapped to bottom.
@@ -1134,11 +1151,15 @@ export function REPL({
 
   // Ref for the bridge result callback — set after useReplBridge initializes,
   // read in the onQuery finally block to notify mobile clients that a turn ended.
-  const sendBridgeResultRef = useRef<() => void>(() => {});
+  const sendBridgeResultRef = useRef<() => void>(() => {
+    /* noop */
+  });
 
   // Ref for the synchronous restore callback — set after restoreMessageSync is
   // defined, read in the onQuery finally block for auto-restore on interrupt.
-  const restoreMessageSyncRef = useRef<(m: UserMessage) => void>(() => {});
+  const restoreMessageSyncRef = useRef<(m: UserMessage) => void>(() => {
+    /* noop */
+  });
 
   // Ref to the fullscreen layout's scroll box for keyboard scrolling.
   // Null when fullscreen mode is disabled (ref never attached).
@@ -4492,9 +4513,15 @@ export function REPL({
       if (typeof content === 'string' && !initialMsg.message.planContent) {
         // Route through onSubmit for proper processing including UserPromptSubmit hooks
         void onSubmit(content, {
-          setCursorOffset: () => {},
-          clearBuffer: () => {},
-          resetHistory: () => {},
+          setCursorOffset: () => {
+            /* noop */
+          },
+          clearBuffer: () => {
+            /* noop */
+          },
+          resetHistory: () => {
+            /* noop */
+          },
         });
       } else {
         // Plan messages or complex content (images, etc.) - send directly to model
@@ -4572,9 +4599,15 @@ export function REPL({
     const command = autoRunIssueReason ? getAutoRunCommand(autoRunIssueReason) : '/issue';
     setAutoRunIssueReason(null); // Clear the state
     onSubmit(command, {
-      setCursorOffset: () => {},
-      clearBuffer: () => {},
-      resetHistory: () => {},
+      setCursorOffset: () => {
+        /* noop */
+      },
+      clearBuffer: () => {
+        /* noop */
+      },
+      resetHistory: () => {
+        /* noop */
+      },
     }).catch(err => {
       logForDebugging(`Auto-run ${command} failed: ${errorMessage(err)}`);
     });
@@ -4588,9 +4621,15 @@ export function REPL({
   const handleSurveyRequestFeedback = useCallback(() => {
     const command = 'external' === 'ant' ? '/issue' : '/feedback';
     onSubmit(command, {
-      setCursorOffset: () => {},
-      clearBuffer: () => {},
-      resetHistory: () => {},
+      setCursorOffset: () => {
+        /* noop */
+      },
+      clearBuffer: () => {
+        /* noop */
+      },
+      resetHistory: () => {
+        /* noop */
+      },
     }).catch(err => {
       logForDebugging(`Survey feedback request failed: ${err instanceof Error ? err.message : String(err)}`);
     });
@@ -4605,9 +4644,15 @@ export function REPL({
   onSubmitRef.current = onSubmit;
   const handleOpenRateLimitOptions = useCallback(() => {
     void onSubmitRef.current('/rate-limit-options', {
-      setCursorOffset: () => {},
-      clearBuffer: () => {},
-      resetHistory: () => {},
+      setCursorOffset: () => {
+        /* noop */
+      },
+      clearBuffer: () => {
+        /* noop */
+      },
+      resetHistory: () => {
+        /* noop */
+      },
     });
   }, []);
 
@@ -4626,7 +4671,9 @@ export function REPL({
       setExitFlow(
         <ExitFlow
           showWorktree
-          onDone={() => {}}
+          onDone={() => {
+            /* noop */
+          }}
           onCancel={() => {
             setExitFlow(null);
             setIsExiting(false);
@@ -4636,7 +4683,9 @@ export function REPL({
       return;
     }
     const exitMod = await exit.load();
-    const exitFlowResult = await exitMod.call(() => {});
+    const exitFlowResult = await exitMod.call(() => {
+      /* noop */
+    });
     setExitFlow(exitFlowResult);
     // If call() returned without killing the process (bg session detach),
     // clear isExiting so the UI is usable on reattach. No-op on the normal
@@ -4900,14 +4949,24 @@ export function REPL({
     async (queuedCommands: QueuedCommand[]) => {
       await handlePromptSubmit({
         helpers: {
-          setCursorOffset: () => {},
-          clearBuffer: () => {},
-          resetHistory: () => {},
+          setCursorOffset: () => {
+            /* noop */
+          },
+          clearBuffer: () => {
+            /* noop */
+          },
+          resetHistory: () => {
+            /* noop */
+          },
         },
         queryGuard,
         commands,
-        onInputChange: () => {},
-        setPastedContents: () => {},
+        onInputChange: () => {
+          /* noop */
+        },
+        setPastedContents: () => {
+          /* noop */
+        },
         setToolJSX,
         getToolUseContext,
         messages,
@@ -5117,8 +5176,12 @@ export function REPL({
       useVoiceIntegration({ setInputValueRaw, inputValueRef, insertTextRef })
     : {
         stripTrailing: () => 0,
-        handleKeyEvent: () => {},
-        resetAnchor: () => {},
+        handleKeyEvent: () => {
+          /* noop */
+        },
+        resetAnchor: () => {
+          /* noop */
+        },
         interimRange: null,
       };
 
@@ -6170,9 +6233,15 @@ export function REPL({
                       }
                       skipIdleCheckRef.current = true;
                       void onSubmitRef.current(pending.input, {
-                        setCursorOffset: () => {},
-                        clearBuffer: () => {},
-                        resetHistory: () => {},
+                        setCursorOffset: () => {
+                          /* noop */
+                        },
+                        clearBuffer: () => {
+                          /* noop */
+                        },
+                        resetHistory: () => {
+                          /* noop */
+                        },
                       });
                     }}
                   />
@@ -6428,7 +6497,9 @@ export function REPL({
                       <FeedbackSurvey
                         state={frustrationDetection.state}
                         lastResponse={null}
-                        handleSelect={() => {}}
+                        handleSelect={() => {
+                          /* noop */
+                        }}
                         handleTranscriptSelect={frustrationDetection.handleTranscriptSelect}
                         inputValue={inputValue}
                         setInputValue={setInputValue}

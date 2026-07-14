@@ -300,7 +300,9 @@ export async function ensureDeepLinkProtocolRegistered(): Promise<void> {
     await registerProtocolHandler(claudePath);
     logEvent('tengu_deep_link_registered', { success: true });
     logForDebugging('Auto-registered claude-cli:// deep link protocol handler');
-    await fs.rm(failureMarkerPath, { force: true }).catch(() => {});
+    await fs.rm(failureMarkerPath, { force: true }).catch(() => {
+      /* noop */
+    });
   } catch (error) {
     const code = getErrnoCode(error);
     logEvent('tengu_deep_link_registered', {
@@ -312,7 +314,9 @@ export async function ensureDeepLinkProtocolRegistered(): Promise<void> {
       { level: 'warn' },
     );
     if (code === 'EACCES' || code === 'ENOSPC') {
-      await fs.writeFile(failureMarkerPath, '').catch(() => {});
+      await fs.writeFile(failureMarkerPath, '').catch(() => {
+        /* noop */
+      });
     }
   }
 }

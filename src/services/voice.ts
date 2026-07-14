@@ -235,8 +235,12 @@ export async function requestMicrophonePermission(): Promise<boolean> {
   }
 
   const started = await startRecording(
-    _chunk => {}, // discard audio data — this is a permission probe only
-    () => {}, // ignore silence-detection end signal
+    _chunk => {
+      /* noop */
+    }, // discard audio data — this is a permission probe only
+    () => {
+      /* noop */
+    }, // ignore silence-detection end signal
     { silenceDetection: false },
   );
   if (started) {
@@ -433,7 +437,9 @@ function startSoxRecording(
   });
 
   // Consume stderr to prevent backpressure
-  child.stderr?.on('data', () => {});
+  child.stderr?.on('data', () => {
+    /* noop */
+  });
 
   child.on('close', () => {
     activeRecorder = null;
@@ -477,7 +483,9 @@ function startArecordRecording(onData: (chunk: Buffer) => void, onEnd: () => voi
   });
 
   // Consume stderr to prevent backpressure
-  child.stderr?.on('data', () => {});
+  child.stderr?.on('data', () => {
+    /* noop */
+  });
 
   child.on('close', () => {
     activeRecorder = null;

@@ -921,7 +921,9 @@ export async function performMCPOAuthFlow(
       if (server) {
         server.removeAllListeners();
         // Defensive: removeAllListeners() strips the error handler, so swallow any late error during close
-        server.on('error', () => {});
+        server.on('error', () => {
+          /* noop */
+        });
         server.close();
         server = null;
       }

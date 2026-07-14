@@ -446,7 +446,9 @@ function IDECommandFlow({
         // Close the MCP transport and remove the client from state
         if (ideClient && ideClient.type === 'connected' && currentIDE) {
           // Null out onclose to prevent auto-reconnection
-          ideClient.client.onclose = () => {};
+          ideClient.client.onclose = () => {
+            /* noop */
+          };
           void clearServerCache('ide', ideClient.config);
           setAppState(prev => ({
             ...prev,

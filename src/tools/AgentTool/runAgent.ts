@@ -87,7 +87,9 @@ async function initializeAgentMcpServers(
     return {
       clients: parentClients,
       tools: [],
-      cleanup: async () => {},
+      cleanup: async () => {
+        /* noop */
+      },
     };
   }
 
@@ -104,7 +106,9 @@ async function initializeAgentMcpServers(
     return {
       clients: parentClients,
       tools: [],
-      cleanup: async () => {},
+      cleanup: async () => {
+        /* noop */
+      },
     };
   }
 

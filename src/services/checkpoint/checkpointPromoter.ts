@@ -93,5 +93,7 @@ function buildPromotionEntries(
 
 async function ensureDir(dir: string): Promise<void> {
   const { mkdir } = await import('node:fs/promises');
-  await mkdir(dir, { recursive: true }).catch(() => {});
+  await mkdir(dir, { recursive: true }).catch(() => {
+    /* noop */
+  });
 }

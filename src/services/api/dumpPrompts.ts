@@ -64,7 +64,9 @@ function appendToFile(filePath: string, entries: string[]): void {
   if (entries.length === 0) return;
   fs.mkdir(dirname(filePath), { recursive: true })
     .then(() => fs.appendFile(filePath, `${entries.join('\n')}\n`))
-    .catch(() => {});
+    .catch(() => {
+      /* noop */
+    });
 }
 
 function initFingerprint(req: Record<string, unknown>): string {

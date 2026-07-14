@@ -61,7 +61,9 @@ export async function drainRunLoop<T>(fn: () => Promise<T>): Promise<T> {
     // fn() sits inside try so a synchronous throw (e.g. NAPI argument
     // validation) still reaches release() — otherwise the pump leaks.
     const work = fn();
-    work.catch(() => {});
+    work.catch(() => {
+      /* noop */
+    });
     const timeout = withResolvers<never>();
     timer = setTimeout(timeoutReject, TIMEOUT_MS, timeout.reject);
     return await Promise.race([work, timeout.promise]);

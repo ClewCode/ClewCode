@@ -275,7 +275,9 @@ export async function getImageFromClipboard(): Promise<ImageWithDimensions | nul
     const mediaType = detectImageFormatFromBase64(base64Image);
 
     // Cleanup (fire-and-forget, don't await)
-    void spawn(commands.deleteFile, { shell: true }).catch(() => {});
+    void spawn(commands.deleteFile, { shell: true }).catch(() => {
+      /* noop */
+    });
 
     return {
       base64: base64Image,

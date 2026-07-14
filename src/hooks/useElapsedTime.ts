@@ -25,7 +25,10 @@ export function useElapsedTime(
 
   const subscribe = useCallback(
     (notify: () => void) => {
-      if (!isRunning) return () => {};
+      if (!isRunning)
+        return () => {
+          /* noop */
+        };
       const interval = setInterval(notify, ms);
       return () => clearInterval(interval);
     },

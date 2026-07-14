@@ -66,7 +66,9 @@ export class SdkControlClientTransport implements Transport {
     private sendMcpMessage: SendMcpMessageCallback,
   ) {}
 
-  async start(): Promise<void> {}
+  async start(): Promise<void> {
+    /* noop */
+  }
 
   async send(message: JSONRPCMessage): Promise<void> {
     if (this.isClosed) {
@@ -112,7 +114,9 @@ export class SdkControlServerTransport implements Transport {
   onerror?: (error: Error) => void;
   onmessage?: (message: JSONRPCMessage) => void;
 
-  async start(): Promise<void> {}
+  async start(): Promise<void> {
+    /* noop */
+  }
 
   async send(message: JSONRPCMessage): Promise<void> {
     if (this.isClosed) {

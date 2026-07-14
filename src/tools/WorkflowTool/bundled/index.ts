@@ -1,1 +1,3 @@
-export function initBundledWorkflows(): void {}
+export function initBundledWorkflows(): void {
+  /* noop */
+}

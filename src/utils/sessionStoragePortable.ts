@@ -178,7 +178,9 @@ export function extractFirstPromptFromHead(head: string): string {
         }
         return result;
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
   if (commandFallback) return commandFallback;
   return '';

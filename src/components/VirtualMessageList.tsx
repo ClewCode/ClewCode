@@ -414,8 +414,12 @@ export function VirtualMessageList({
   const pendingStepRef = useRef<1 | -1 | 0>(0);
   // step + highlight via ref so the seek effect reads latest without
   // closure-capture or deps churn.
-  const stepRef = useRef<(d: 1 | -1) => void>(() => {});
-  const highlightRef = useRef<(ord: number) => void>(() => {});
+  const stepRef = useRef<(d: 1 | -1) => void>(() => {
+    /* noop */
+  });
+  const highlightRef = useRef<(ord: number) => void>(() => {
+    /* noop */
+  });
   const searchState = useRef({
     matches: [] as number[], // deduplicated msg indices
     ptr: 0,
@@ -840,7 +844,9 @@ export function VirtualMessageList({
   );
 }
 
-const NOOP_UNSUB = () => {};
+const NOOP_UNSUB = () => {
+  /* noop */
+};
 
 /**
  * Effect-only child that tracks the last user-prompt scrolled above the

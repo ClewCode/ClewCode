@@ -351,7 +351,9 @@ const reconciler = createReconciler<
 
     return createTextNode(text);
   },
-  resetTextContent() {},
+  resetTextContent() {
+    /* noop */
+  },
   hideTextInstance(node) {
     setTextNodeValue(node, '');
   },
@@ -386,11 +388,19 @@ const reconciler = createReconciler<
   cancelTimeout: clearTimeout,
   noTimeout: -1,
   getCurrentUpdatePriority: () => dispatcher.currentUpdatePriority,
-  beforeActiveInstanceBlur() {},
-  afterActiveInstanceBlur() {},
-  detachDeletedInstance() {},
+  beforeActiveInstanceBlur() {
+    /* noop */
+  },
+  afterActiveInstanceBlur() {
+    /* noop */
+  },
+  detachDeletedInstance() {
+    /* noop */
+  },
   getInstanceFromNode: () => null,
-  prepareScopeUpdate() {},
+  prepareScopeUpdate() {
+    /* noop */
+  },
   getInstanceFromScope: () => null,
   appendChildToContainer: appendChildNode,
   insertInContainerBefore: insertBeforeNode,
@@ -447,8 +457,12 @@ const reconciler = createReconciler<
   preloadInstance(): boolean {
     return true;
   },
-  startSuspendingCommit(): void {},
-  suspendInstance(): void {},
+  startSuspendingCommit(): void {
+    /* noop */
+  },
+  suspendInstance(): void {
+    /* noop */
+  },
   waitForCommitToBeReady(): null {
     return null;
   },
@@ -463,12 +477,18 @@ const reconciler = createReconciler<
   resolveUpdatePriority(): number {
     return dispatcher.resolveEventPriority();
   },
-  resetFormInstance(): void {},
-  requestPostPaintCallback(): void {},
+  resetFormInstance(): void {
+    /* noop */
+  },
+  requestPostPaintCallback(): void {
+    /* noop */
+  },
   shouldAttemptEagerTransition(): boolean {
     return false;
   },
-  trackSchedulerEvent(): void {},
+  trackSchedulerEvent(): void {
+    /* noop */
+  },
   resolveEventType(): string | null {
     return dispatcher.currentEvent?.type ?? null;
   },

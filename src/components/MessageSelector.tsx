@@ -778,7 +778,9 @@ function computeDiffStatsBetweenMessages(
           deletions += removals;
         }
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
 
   return {

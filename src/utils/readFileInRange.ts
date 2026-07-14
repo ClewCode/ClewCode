@@ -334,7 +334,9 @@ function readFileInRangeStreaming(
       selectedLines: [],
       partial: '',
       isFirstChunk: true,
-      resolveMtime: () => {},
+      resolveMtime: () => {
+        /* noop */
+      },
       mtimeReady: null as unknown as Promise<number>,
     };
     state.mtimeReady = new Promise<number>(r => {

@@ -54,7 +54,9 @@ import { loadProjectRules, isProjectRulesDisabled } from '../../utils/projectRul
 /* eslint-disable @typescript-eslint/no-require-imports */
 const proactiveModule = feature('PROACTIVE') || feature('KAIROS') ? require('../../proactive/index.js') : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
-const NO_OP_SUBSCRIBE = (_cb: () => void) => () => {};
+const NO_OP_SUBSCRIBE = (_cb: () => void) => () => {
+  /* noop */
+};
 const NULL = () => null;
 const MAX_VOICE_HINT_SHOWS = 3;
 

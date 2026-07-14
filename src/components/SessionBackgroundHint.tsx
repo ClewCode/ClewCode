@@ -33,7 +33,9 @@ export function SessionBackgroundHint({ onBackgroundSession, isLoading }: Props)
   const handleDoublePress = useDoublePress(
     setShowSessionHint,
     onBackgroundSession,
-    () => {}, // First press just shows the hint
+    () => {
+      /* noop */
+    }, // First press just shows the hint
   );
 
   // Handler for task:background - prioritizes foreground tasks, falls back to session backgrounding

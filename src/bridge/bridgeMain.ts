@@ -1793,7 +1793,9 @@ export async function bridgeMain(args: string[]): Promise<void> {
     await Promise.race([
       Promise.all([shutdown1PEventLogging(), shutdownDatadog()]),
       sleep(500, undefined, { unref: true }),
-    ]).catch(() => {});
+    ]).catch(() => {
+      /* noop */
+    });
     // biome-ignore lint/suspicious/noConsole: intentional error output
     console.error('Error: Multi-session Remote Control is not enabled for your account yet.');
     // eslint-disable-next-line custom-rules/no-process-exit
@@ -2620,7 +2622,9 @@ export async function runBridgeHeadless(opts: HeadlessBridgeOpts, signal: AbortS
 
 /** BridgeLogger adapter that routes everything to a single line-log fn. */
 function createHeadlessBridgeLogger(log: (s: string) => void): BridgeLogger {
-  const noop = (): void => {};
+  const noop = (): void => {
+    /* noop */
+  };
   return {
     printBanner: (cfg, envId) =>
       log(`registered environmentId=${envId} dir=${cfg.dir} spawnMode=${cfg.spawnMode} capacity=${cfg.maxSessions}`),

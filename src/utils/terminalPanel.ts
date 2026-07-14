@@ -114,7 +114,9 @@ class TerminalPanel {
           detached: true,
           stdio: 'ignore',
         })
-          .on('error', () => {})
+          .on('error', () => {
+            /* noop */
+          })
           .unref();
       });
     }

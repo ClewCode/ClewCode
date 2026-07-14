@@ -40,7 +40,9 @@ export function DesktopHandoff({ onDone }: Props): React.ReactNode {
     }
     if (state === 'prompt-download') {
       if (input === 'y' || input === 'Y') {
-        openBrowser(getDownloadUrl()).catch(() => {});
+        openBrowser(getDownloadUrl()).catch(() => {
+          /* noop */
+        });
         onDone(
           `Starting download. Re-run /desktop once you\u2019ve installed the app.\nLearn more at ${DESKTOP_DOCS_URL}`,
           { display: 'system' },

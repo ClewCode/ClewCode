@@ -134,7 +134,9 @@ When done, return your result using the ${SYNTHETIC_OUTPUT_TOOL_NAME} tool with:
           isNonInteractiveSession: true,
           thinkingConfig: { type: 'disabled' as const },
         },
-        setInProgressToolUseIDs: () => {},
+        setInProgressToolUseIDs: () => {
+          /* noop */
+        },
         getAppState() {
           const appState = toolUseContext.getAppState();
           // Add session rule to allow reading transcript file
@@ -173,10 +175,17 @@ When done, return your result using the ${SYNTHETIC_OUTPUT_TOOL_NAME} tool with:
         // Process stream events to update response length in the spinner
         handleMessageFromStream(
           message,
-          () => {}, // onMessage - we handle messages below
+          () => {
+            /* noop */
+          }, // onMessage - we handle messages below
           newContent => toolUseContext.setResponseLength(length => length + newContent.length),
-          toolUseContext.setStreamMode ?? (() => {}),
-          () => {}, // onStreamingToolUses - not needed for hooks
+          toolUseContext.setStreamMode ??
+            (() => {
+              /* noop */
+            }),
+          () => {
+            /* noop */
+          }, // onStreamingToolUses - not needed for hooks
         );
 
         // Skip streaming events for further processing

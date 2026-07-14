@@ -24,7 +24,9 @@ import { useDoublePress } from './useDoublePress.js';
 type MaybeCursor = undefined | Cursor;
 type InputHandler = (input: string) => MaybeCursor;
 type InputMapper = (input: string) => MaybeCursor;
-const NOOP_HANDLER: InputHandler = () => {};
+const NOOP_HANDLER: InputHandler = () => {
+  /* noop */
+};
 function mapInput(input_map: Array<[string, InputHandler]>): InputMapper {
   const map = new Map(input_map);
   return (input: string): MaybeCursor => (map.get(input) ?? NOOP_HANDLER)(input);

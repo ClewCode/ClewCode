@@ -600,7 +600,9 @@ export function wrapFetchWithResponseSizeLimit(baseFetch: FetchLike): FetchLike 
       if (error instanceof Error && error.message.includes('exceeded maximum')) {
         throw error;
       }
-      await reader.cancel().catch(() => {});
+      await reader.cancel().catch(() => {
+        /* noop */
+      });
       throw error;
     }
 
@@ -797,7 +799,9 @@ export const connectToServer = memoize(
 
       // Clean up any in-process server from a previous attempt
       if (lastInProcessServer) {
-        lastInProcessServer.close().catch(() => {});
+        lastInProcessServer.close().catch(() => {
+          /* noop */
+        });
         lastInProcessServer = undefined;
       }
 
@@ -1211,9 +1215,13 @@ export const connectToServer = memoize(
             const elapsed = Date.now() - connectStartTime;
             logMCPDebug(name, `Connection timeout triggered after ${elapsed}ms (limit: ${getConnectionTimeoutMs()}ms)`);
             if (inProcessServer) {
-              inProcessServer.close().catch(() => {});
+              inProcessServer.close().catch(() => {
+                /* noop */
+              });
             }
-            transport.close().catch(() => {});
+            transport.close().catch(() => {
+              /* noop */
+            });
             reject(
               new TelemetrySafeError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS(
                 `MCP server "${name}" connection timed out after ${getConnectionTimeoutMs()}ms`,
@@ -1329,9 +1337,13 @@ export const connectToServer = memoize(
             });
           }
           if (inProcessServer) {
-            inProcessServer.close().catch(() => {});
+            inProcessServer.close().catch(() => {
+              /* noop */
+            });
           }
-          transport.close().catch(() => {});
+          transport.close().catch(() => {
+            /* noop */
+          });
           if (stderrOutput) {
             logMCPError(name, `Server stderr: ${stderrOutput}`);
           }
@@ -1780,7 +1792,9 @@ export const connectToServer = memoize(
         logMCPError(name, `Connection failed: ${errorMessage(error)}`);
 
         if (inProcessServer) {
-          inProcessServer.close().catch(() => {});
+          inProcessServer.close().catch(() => {
+            /* noop */
+          });
         }
         return {
           name,

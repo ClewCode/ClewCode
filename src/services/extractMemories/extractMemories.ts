@@ -236,7 +236,9 @@ type AppendSystemMessageFn = (msg: Exclude<SystemMessage, SystemLocalCommandMess
 let extractor: ((context: REPLHookContext, appendSystemMessage?: AppendSystemMessageFn) => Promise<void>) | null = null;
 
 /** The active drain function, set by initExtractMemories(). No-op until init. */
-let drainer: (timeoutMs?: number) => Promise<void> = async () => {};
+let drainer: (timeoutMs?: number) => Promise<void> = async () => {
+  /* noop */
+};
 
 /**
  * Initialize the memory extraction system.
@@ -489,7 +491,9 @@ export function initExtractMemories(): void {
   drainer = async (timeoutMs = 60_000) => {
     if (inFlightExtractions.size === 0) return;
     await Promise.race([
-      Promise.all(inFlightExtractions).catch(() => {}),
+      Promise.all(inFlightExtractions).catch(() => {
+        /* noop */
+      }),
       // eslint-disable-next-line no-restricted-syntax -- sleep() has no .unref(); timer must not block exit
       new Promise<void>(r => setTimeout(r, timeoutMs).unref()),
     ]);

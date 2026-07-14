@@ -239,7 +239,9 @@ export class BrowserAgent {
           const parsedDOM = JSON.parse(domData.content);
           if (parsedDOM.interactive?.length > 0) elementsList = parsedDOM.interactive.join('\\n');
           if (parsedDOM.text) pageText = parsedDOM.text;
-        } catch (_e) {}
+        } catch (_e) {
+          /* ignore */
+        }
       }
 
       // --- CAPTCHA DETECTION ---

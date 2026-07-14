@@ -98,7 +98,9 @@ export class TerminalEvent extends Event {
    * Hook for subclasses to do per-node setup before each handler fires.
    * Default is a no-op.
    */
-  _prepareForTarget(_target: EventTarget): void {}
+  _prepareForTarget(_target: EventTarget): void {
+    /* noop */
+  }
 }
 
 export type EventTarget = {

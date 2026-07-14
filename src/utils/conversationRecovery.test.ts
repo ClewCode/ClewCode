@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { randomUUID, type UUID } from 'node:crypto';
-import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { resetStateForTests, setOriginalCwd, switchSession } from '../bootstrap/state.js';
 import { asSessionId } from '../types/ids.js';
+import { sanitizePath } from './path.js';
 import {
   buildResumeConversationChain,
   getProjectDir,
@@ -12,7 +13,6 @@ import {
   loadTranscriptFile,
   loadTranscriptFromFile,
 } from './sessionStorage.js';
-import { sanitizePath } from './path.js';
 
 function userMessage({
   uuid = randomUUID() as UUID,

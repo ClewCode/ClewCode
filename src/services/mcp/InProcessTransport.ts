@@ -21,7 +21,9 @@ class InProcessTransport implements Transport {
     this.peer = peer;
   }
 
-  async start(): Promise<void> {}
+  async start(): Promise<void> {
+    /* noop */
+  }
 
   async send(message: JSONRPCMessage): Promise<void> {
     if (this.closed) {

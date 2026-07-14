@@ -2178,7 +2178,9 @@ async function loadPluginFromMarketplaceEntry(
     } catch (error) {
       // Corrupt ZIP: delete it so next install attempt re-creates it
       logForDebugging(`Failed to extract plugin ZIP ${pluginPath}, deleting corrupt file: ${error}`);
-      await rm(pluginPath, { force: true }).catch(() => {});
+      await rm(pluginPath, { force: true }).catch(() => {
+        /* noop */
+      });
       throw error;
     }
   }

@@ -22,6 +22,8 @@ export type CursorDeclaration = {
  */
 export type CursorDeclarationSetter = (declaration: CursorDeclaration | null, clearIfNode?: DOMElement | null) => void;
 
-const CursorDeclarationContext = createContext<CursorDeclarationSetter>(() => {});
+const CursorDeclarationContext = createContext<CursorDeclarationSetter>(() => {
+  /* noop */
+});
 
 export default CursorDeclarationContext;

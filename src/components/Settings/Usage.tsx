@@ -9,11 +9,6 @@ import { useKeybinding } from '../../keybindings/useKeybinding.js';
 import { ProviderManager } from '../../services/ai/ProviderManager.js';
 import { fetchCodexUtilization } from '../../services/api/codexUsage.js';
 import {
-  type LocalContributionGroup,
-  type LocalUsageAnalytics,
-  loadLocalUsageAnalytics,
-} from '../../services/localUsageAnalytics.js';
-import {
   type ContributingFactor,
   type ExtraUsage,
   fetchClaudeWebUsage,
@@ -22,6 +17,11 @@ import {
   type RateLimit,
   type Utilization,
 } from '../../services/api/usage.js';
+import {
+  type LocalContributionGroup,
+  type LocalUsageAnalytics,
+  loadLocalUsageAnalytics,
+} from '../../services/localUsageAnalytics.js';
 import { formatDuration, formatNumber, formatResetText } from '../../utils/format.js';
 import { logError } from '../../utils/log.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
@@ -319,7 +319,9 @@ export function Usage(): React.ReactNode {
   useEffect(() => {
     loadLocalUsageAnalytics()
       .then(setLocalAnalytics)
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
   }, []);
 
   useKeybinding(

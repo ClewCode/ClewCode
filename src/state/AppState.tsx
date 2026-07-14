@@ -162,7 +162,9 @@ export function useAppStateStore(): AppStateStore {
   return useAppStore();
 }
 
-const NOOP_SUBSCRIBE = () => () => {};
+const NOOP_SUBSCRIBE = () => () => {
+  /* noop */
+};
 
 /**
  * Safe version of useAppState that returns undefined if called outside of AppStateProvider.

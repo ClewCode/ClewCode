@@ -22,10 +22,18 @@ const DEFAULT_THEME: ThemeName = 'dark';
 
 const ThemeContext = createContext<ThemeContextValue>({
   themeSetting: DEFAULT_THEME,
-  setThemeSetting: () => {},
-  setPreviewTheme: () => {},
-  savePreview: () => {},
-  cancelPreview: () => {},
+  setThemeSetting: () => {
+    /* noop */
+  },
+  setPreviewTheme: () => {
+    /* noop */
+  },
+  savePreview: () => {
+    /* noop */
+  },
+  cancelPreview: () => {
+    /* noop */
+  },
   currentTheme: DEFAULT_THEME,
 });
 

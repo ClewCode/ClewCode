@@ -89,7 +89,9 @@ export function SwarmView({ workspaceRoot }: SwarmViewProps): React.ReactElement
     setSwarmRuns([...registry.getActiveRuns(), ...registry.getRecentRuns(5)]);
     listAllDynamicRuns(workspaceRoot)
       .then(setWorkflowRuns)
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
 
     return () => {
       unsubscribe();

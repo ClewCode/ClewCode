@@ -37,7 +37,9 @@ function shouldTrackDatadog(): boolean {
     if (config.datadogDisabled) {
       return false;
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   if (isDatadogGateEnabled !== undefined) {
     return isDatadogGateEnabled;
   }

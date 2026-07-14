@@ -1,1 +1,3 @@
-export function initDevtools() {}
+export function initDevtools() {
+  /* noop */
+}

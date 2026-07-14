@@ -1,1 +1,3 @@
-export default function assistant() {}
+export default function assistant() {
+  /* noop */
+}

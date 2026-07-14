@@ -23,7 +23,9 @@ export function isAnalyticsDisabled(): boolean {
     if (config.telemetryDisabled) {
       return true;
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   return (
     process.env.NODE_ENV === 'test' ||
     isEnvTruthy(process.env.CLEW_CODE_USE_BEDROCK) ||
@@ -46,6 +48,8 @@ export function isFeedbackSurveyDisabled(): boolean {
     if (config.telemetryDisabled) {
       return true;
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   return process.env.NODE_ENV === 'test' || isTelemetryDisabled();
 }

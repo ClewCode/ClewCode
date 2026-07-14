@@ -110,7 +110,9 @@ async function detectPluginDirectories(ideName: string): Promise<string[]> {
           }
         }
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
 
   return foundDirectories.filter((dir, index) => foundDirectories.indexOf(dir) === index);

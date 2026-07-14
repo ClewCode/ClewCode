@@ -58,7 +58,9 @@ export const call: import('../../types/command.js').LocalCommandCall = async arg
           try {
             const data = JSON.parse(body);
             if (data.text && activeServer) activeServer.transcript = data.text;
-          } catch {}
+          } catch {
+            /* ignore */
+          }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: true }));
         });
@@ -94,7 +96,15 @@ export const call: import('../../types/command.js').LocalCommandCall = async arg
       const url = `http://127.0.0.1:${port}`;
       activeServer = { server, url, transcript: '' };
 
-      import('open').then(({ default: open }) => open(url).catch(() => {})).catch(() => {});
+      import('open')
+        .then(({ default: open }) =>
+          open(url).catch(() => {
+            /* noop */
+          }),
+        )
+        .catch(() => {
+          /* noop */
+        });
 
       resolve({
         type: 'text' as const,

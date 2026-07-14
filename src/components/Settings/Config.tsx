@@ -644,7 +644,9 @@ export function Config({
           label: 'Auto-update channel',
           value: 'disabled',
           type: 'managedEnum' as const,
-          onChange() {},
+          onChange() {
+            /* noop */
+          },
         }
       : {
           id: 'autoUpdatesChannel',
@@ -736,7 +738,9 @@ export function Config({
       label: 'Output style',
       value: currentOutputStyle,
       type: 'managedEnum' as const,
-      onChange: () => {}, // handled by OutputStylePicker submenu
+      onChange: () => {
+        /* noop */
+      }, // handled by OutputStylePicker submenu
     },
     ...(showDefaultViewPicker
       ? [
@@ -776,7 +780,9 @@ export function Config({
       label: 'Language',
       value: currentLanguage ?? 'Default (English)',
       type: 'managedEnum' as const,
-      onChange: () => {}, // handled by LanguagePicker submenu
+      onChange: () => {
+        /* noop */
+      }, // handled by LanguagePicker submenu
     },
     {
       id: 'editorMode',
@@ -952,7 +958,9 @@ export function Config({
               label: 'Default teammate model',
               value: teammateModelDisplayString(globalConfig.teammateDefaultModel),
               type: 'managedEnum' as const,
-              onChange() {},
+              onChange() {
+                /* noop */
+              },
             },
           ];
         })()

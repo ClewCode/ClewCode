@@ -94,7 +94,9 @@ class StreamWrapper {
     // the TaskOutput can be GC'd independently of this wrapper.
     this.#stream = null;
     this.#taskOutput = null;
-    this.#onData = () => {};
+    this.#onData = () => {
+      /* noop */
+    };
   }
 }
 
@@ -393,9 +395,13 @@ class AbortedShellCommand implements ShellCommand {
     return false;
   }
 
-  kill(): void {}
+  kill(): void {
+    /* noop */
+  }
 
-  cleanup(): void {}
+  cleanup(): void {
+    /* noop */
+  }
 }
 
 export function createAbortedCommand(
@@ -423,7 +429,11 @@ export function createFailedCommand(preSpawnError: string): ShellCommand {
     background(): boolean {
       return false;
     },
-    kill(): void {},
-    cleanup(): void {},
+    kill(): void {
+      /* noop */
+    },
+    cleanup(): void {
+      /* noop */
+    },
   };
 }

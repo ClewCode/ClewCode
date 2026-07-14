@@ -57,7 +57,11 @@ type IdeFileEntry = {
  *  consuming this context never causes re-renders. */
 export const ScrollChromeContext = createContext<{
   setStickyPrompt: (p: StickyPrompt | null) => void;
-}>({ setStickyPrompt: () => {} });
+}>({
+  setStickyPrompt: () => {
+    /* noop */
+  },
+});
 
 /** Context for IDE shell actions — allows sidebar buttons to trigger app-level
  *  commands (Settings, model picker, permission mode cycling, file references). */
@@ -68,10 +72,18 @@ export type IdeActions = {
   addFileReference: () => void;
 };
 export const IdeActionContext = createContext<IdeActions>({
-  openSettings: () => {},
-  openModelPicker: () => {},
-  cyclePermissionMode: () => {},
-  addFileReference: () => {},
+  openSettings: () => {
+    /* noop */
+  },
+  openModelPicker: () => {
+    /* noop */
+  },
+  cyclePermissionMode: () => {
+    /* noop */
+  },
+  addFileReference: () => {
+    /* noop */
+  },
 });
 
 type Props = {
@@ -352,7 +364,11 @@ export function FullscreenLayout({
   // above the divider y?" — Object.is on a boolean → FullscreenLayout only
   // re-renders when the pill should actually flip, not per-frame.
   const subscribe = useCallback(
-    (listener: () => void) => scrollRef?.current?.subscribe(listener) ?? (() => {}),
+    (listener: () => void) =>
+      scrollRef?.current?.subscribe(listener) ??
+      (() => {
+        /* noop */
+      }),
     [scrollRef],
   );
   const pillVisible = useSyncExternalStore(subscribe, () => {
@@ -611,7 +627,9 @@ function IdeShellLayout({
           onToggleSearch={() => setSessionsSearchVisible(v => !v)}
           filter={sessionsFilter}
           onFilterChange={setSessionsFilter}
-          onRefresh={() => {}}
+          onRefresh={() => {
+            /* noop */
+          }}
         />
       )}
       {/* Center — chat transcript */}

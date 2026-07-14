@@ -561,7 +561,9 @@ export const FileReadTool = buildTool({
         for (const dir of newSkillDirs) {
           context.dynamicSkillDirTriggers?.add(dir);
         }
-        addSkillDirectories(newSkillDirs).catch(() => {});
+        addSkillDirectories(newSkillDirs).catch(() => {
+          /* noop */
+        });
       }
       activateConditionalSkillsForPaths([fullFilePath], cwd);
     }

@@ -386,7 +386,9 @@ Add-Type -AssemblyName System.Windows.Forms
       }
     } finally {
       if (saved) {
-        await writeClipboard(saved).catch(() => {});
+        await writeClipboard(saved).catch(() => {
+          /* noop */
+        });
       }
     }
     return;

@@ -18,7 +18,9 @@ function HistorySearchInput({ value, onChange, historyFailedMatch }: Props): Rea
         onChange={onChange}
         // Force cursor to end of search input since navigation should cancel search
         cursorOffset={value.length}
-        onChangeCursorOffset={() => {}}
+        onChangeCursorOffset={() => {
+          /* noop */
+        }}
         columns={stringWidth(value) + 1}
         focus={true}
         showCursor={true}

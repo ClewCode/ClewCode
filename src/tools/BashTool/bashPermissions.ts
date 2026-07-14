@@ -1427,7 +1427,9 @@ export function startSpeculativeClassifierCheck(
   const promise = classifyBashCommand(command, cwd, allowDescriptions, 'allow', signal, isNonInteractiveSession);
   // Prevent unhandled rejection if the signal aborts before this promise is consumed.
   // The original promise (which may reject) is still stored in the Map for consumers to await.
-  promise.catch(() => {});
+  promise.catch(() => {
+    /* noop */
+  });
   speculativeChecks.set(command, promise);
   return true;
 }

@@ -153,9 +153,13 @@ function log(...args: unknown[]): void {
         .then(fs => {
           fs.appendFileSync(LOG_PATH, line);
         })
-        .catch(() => {});
+        .catch(() => {
+          /* noop */
+        });
     })
-    .catch(() => {});
+    .catch(() => {
+      /* noop */
+    });
 }
 
 // ─── Session Process Management ───────────────────────────────
@@ -198,7 +202,9 @@ function spawnSessionProcess(entry: SessionEntry): ChildProcess {
 
   // Ensure log directory exists
   const logDir = join(DAEMON_DIR, 'jobs', entry.id);
-  mkdir(logDir, { recursive: true }).catch(() => {});
+  mkdir(logDir, { recursive: true }).catch(() => {
+    /* noop */
+  });
 
   const child = spawn(process.execPath, args, {
     cwd: entry.cwd,
@@ -220,7 +226,9 @@ function spawnSessionProcess(entry: SessionEntry): ChildProcess {
         const logStream = fs.createWriteStream(entry.logPath!, { flags: 'a' });
         child.stdout!.pipe(logStream);
       })
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
   }
   if (child.stderr) {
     import('fs')
@@ -228,7 +236,9 @@ function spawnSessionProcess(entry: SessionEntry): ChildProcess {
         const logStream = fs.createWriteStream(entry.logPath!, { flags: 'a' });
         child.stderr!.pipe(logStream);
       })
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
   }
 
   child.on('exit', code => {
@@ -422,9 +432,13 @@ function handleRm(req: IPCRequest): IPCResponse {
     const logDir = join(DAEMON_DIR, 'jobs', req.sessionId);
     import('fs/promises')
       .then(fs => {
-        fs.rm(logDir, { recursive: true, force: true }).catch(() => {});
+        fs.rm(logDir, { recursive: true, force: true }).catch(() => {
+          /* noop */
+        });
       })
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
   }
 
   // Remove transcript file so deleting from agent view also cleans up transcripts.
@@ -433,9 +447,13 @@ function handleRm(req: IPCRequest): IPCResponse {
     const transcriptPath = join(projectDir, `${req.sessionId}.jsonl`);
     import('fs/promises')
       .then(fs => {
-        fs.rm(transcriptPath, { force: true }).catch(() => {});
+        fs.rm(transcriptPath, { force: true }).catch(() => {
+          /* noop */
+        });
       })
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
   }
 
   log(`Removed session ${req.sessionId.slice(0, 8)}`);
@@ -691,9 +709,13 @@ async function start(): Promise<void> {
     // Write PID file for discovery
     mkdir(DAEMON_DIR, { recursive: true })
       .then(() => {
-        writeFile(join(DAEMON_DIR, 'supervisor.pid'), String(process.pid), 'utf-8').catch(() => {});
+        writeFile(join(DAEMON_DIR, 'supervisor.pid'), String(process.pid), 'utf-8').catch(() => {
+          /* noop */
+        });
       })
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
   });
 
   // Start idle timer
@@ -765,7 +787,9 @@ async function start(): Promise<void> {
     log('Received SIGTERM, shutting down...');
     shuttingDown = true;
     // Stop autonomous agent first
-    stopAutonomousAgent().catch(() => {});
+    stopAutonomousAgent().catch(() => {
+      /* noop */
+    });
     for (const [_id, child] of childProcesses) {
       if (!child.killed) {
         child.kill('SIGTERM');

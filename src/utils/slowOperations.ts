@@ -114,7 +114,11 @@ class AntSlowLogger {
   }
 }
 
-const NOOP_LOGGER: Disposable = { [Symbol.dispose]() {} };
+const NOOP_LOGGER: Disposable = {
+  [Symbol.dispose]() {
+    /* noop */
+  },
+};
 
 // Must be regular functions (not arrows) to access `arguments`
 function slowLoggingAnt(_strings: TemplateStringsArray, ..._values: unknown[]): AntSlowLogger {

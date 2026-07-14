@@ -48,15 +48,29 @@ export function useSelection(): {
       return {
         copySelection: () => '',
         copySelectionNoClear: () => '',
-        clearSelection: () => {},
+        clearSelection: () => {
+          /* noop */
+        },
         hasSelection: () => false,
         getState: () => null,
-        subscribe: () => () => {},
-        shiftAnchor: () => {},
-        shiftSelection: () => {},
-        moveFocus: () => {},
-        captureScrolledRows: () => {},
-        setSelectionBgColor: () => {},
+        subscribe: () => () => {
+          /* noop */
+        },
+        shiftAnchor: () => {
+          /* noop */
+        },
+        shiftSelection: () => {
+          /* noop */
+        },
+        moveFocus: () => {
+          /* noop */
+        },
+        captureScrolledRows: () => {
+          /* noop */
+        },
+        setSelectionBgColor: () => {
+          /* noop */
+        },
       };
     }
     return {
@@ -75,7 +89,9 @@ export function useSelection(): {
   }, [ink]);
 }
 
-const NO_SUBSCRIBE = () => () => {};
+const NO_SUBSCRIBE = () => () => {
+  /* noop */
+};
 const ALWAYS_FALSE = () => false;
 
 /**

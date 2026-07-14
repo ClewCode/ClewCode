@@ -90,7 +90,9 @@ export function TeleportProgress({ currentStep, sessionId }: Props): React.React
  */
 export async function teleportWithProgress(root: Root, sessionId: string): Promise<TeleportResult> {
   // Capture the setState function from the rendered component
-  let setStep: (step: TeleportProgressStep) => void = () => {};
+  let setStep: (step: TeleportProgressStep) => void = () => {
+    /* noop */
+  };
 
   function TeleportProgressWrapper(): React.ReactNode {
     const [step, _setStep] = useState<TeleportProgressStep>('validating');

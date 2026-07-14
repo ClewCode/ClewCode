@@ -1122,7 +1122,12 @@ export const AgentTool = buildTool({
                       // (releases MCP connections, session hooks, prompt cache tracking, etc.)
                       // Timeout prevents blocking if MCP server cleanup hangs.
                       // .catch() prevents unhandled rejection if timeout wins the race.
-                      await Promise.race([agentIterator.return(undefined).catch(() => {}), sleep(1000)]);
+                      await Promise.race([
+                        agentIterator.return(undefined).catch(() => {
+                          /* noop */
+                        }),
+                        sleep(1000),
+                      ]);
                       // Initialize progress tracking from existing messages
                       const tracker = createProgressTracker();
                       const resolveActivity2 = createActivityDescriptionResolver(toolUseContext.options.tools);

@@ -111,13 +111,23 @@ export async function startMCPServer(cwd: string, debug: boolean, verbose: boole
           agentDefinitions: { activeAgents: [], allAgents: [] },
         },
         getAppState: () => getDefaultAppState(),
-        setAppState: () => {},
+        setAppState: () => {
+          /* noop */
+        },
         messages: [],
         readFileState: readFileStateCache,
-        setInProgressToolUseIDs: () => {},
-        setResponseLength: () => {},
-        updateFileHistoryState: () => {},
-        updateAttributionState: () => {},
+        setInProgressToolUseIDs: () => {
+          /* noop */
+        },
+        setResponseLength: () => {
+          /* noop */
+        },
+        updateFileHistoryState: () => {
+          /* noop */
+        },
+        updateAttributionState: () => {
+          /* noop */
+        },
       };
 
       // TODO: validate input types with zod

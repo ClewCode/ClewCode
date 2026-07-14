@@ -245,9 +245,13 @@ export function createLSPServerInstance(name: string, config: ScopedLspServerCon
       logForDebugging(`LSP server instance started: ${name}`);
     } catch (error) {
       // Clean up the spawned child process on timeout/error
-      client.stop().catch(() => {});
+      client.stop().catch(() => {
+        /* noop */
+      });
       // Prevent unhandled rejection from abandoned initialize promise
-      initPromise?.catch(() => {});
+      initPromise?.catch(() => {
+        /* noop */
+      });
       state = 'error';
       lastError = error as Error;
       logError(error);

@@ -348,7 +348,9 @@ Add-Type -AssemblyName System.Windows.Forms
         }
       } finally {
         if (saved) {
-          await this.clipboardWrite(saved).catch(() => {});
+          await this.clipboardWrite(saved).catch(() => {
+            /* noop */
+          });
         }
       }
     },

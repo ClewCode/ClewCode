@@ -77,7 +77,10 @@ export function KeybindingProvider({
     // Register a handler for an action
     const registerHandler = (registration: HandlerRegistration) => {
       const registry = handlerRegistryRef.current;
-      if (!registry) return () => {};
+      if (!registry)
+        return () => {
+          /* noop */
+        };
 
       if (!registry.has(registration.action)) {
         registry.set(registration.action, new Set());

@@ -228,7 +228,9 @@ export function logEventTo1P(eventName: string, metadata: Record<string, number 
     if (config.firstPartyDisabled) {
       return;
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
 
   // Queue event if logger hasn't initialized yet — prevents early startup
   // events from being silently dropped between sink attachment and logger init.
@@ -453,5 +455,7 @@ export async function reinitialize1PEventLoggingIfConfigChanged(): Promise<void>
     return;
   }
 
-  void oldProvider.shutdown().catch(() => {});
+  void oldProvider.shutdown().catch(() => {
+    /* noop */
+  });
 }

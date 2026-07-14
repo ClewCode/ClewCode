@@ -283,7 +283,9 @@ export function MemoryFileSelector({ onSelect, onCancel }: Props): React.ReactNo
             // Ensure folder exists before opening (idempotent; swallow
             // permission errors to match previous behavior)
             void mkdir(folderPath, { recursive: true })
-              .catch(() => {})
+              .catch(() => {
+                /* noop */
+              })
               .then(() => openPath(folderPath));
             return;
           }

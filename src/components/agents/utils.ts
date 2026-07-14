@@ -27,6 +27,8 @@ export function isWaitingForInput(task: {
     if (isLocalAgentTask(task as any)) {
       return task.status === 'running' && (task as any).progress?.lastActivity?.toolName === 'AskUserQuestionTool';
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   return false;
 }

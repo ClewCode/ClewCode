@@ -29,7 +29,9 @@ export async function performLogout({ clearOnboarding = false }): Promise<void> 
       delete cfg.apiKeys[provider];
       pm.saveSelectedProviderConfig(cfg);
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
 
   // Wipe all secure storage data on logout
   const secureStorage = getSecureStorage();

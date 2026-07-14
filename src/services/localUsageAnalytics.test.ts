@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { aggregateLocalUsageRecords, parseLocalUsageJsonl, type LocalUsageRecord } from './localUsageAnalytics.js';
+import { aggregateLocalUsageRecords, type LocalUsageRecord, parseLocalUsageJsonl } from './localUsageAnalytics.js';
 
 const NOW = new Date('2026-07-14T10:00:00.000Z');
 

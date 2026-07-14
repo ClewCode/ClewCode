@@ -49,7 +49,9 @@ const MAX_MOUNTED_ITEMS = 300;
  */
 const SLIDE_STEP = 25;
 
-const NOOP_UNSUB = () => {};
+const NOOP_UNSUB = () => {
+  /* noop */
+};
 
 export type VirtualScrollResult = {
   /** [startIndex, endIndex) half-open slice of items to render. */

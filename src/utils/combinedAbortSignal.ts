@@ -21,7 +21,12 @@ export function createCombinedAbortSignal(
 
   if (signal?.aborted || signalB?.aborted) {
     combined.abort();
-    return { signal: combined.signal, cleanup: () => {} };
+    return {
+      signal: combined.signal,
+      cleanup: () => {
+        /* noop */
+      },
+    };
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined;

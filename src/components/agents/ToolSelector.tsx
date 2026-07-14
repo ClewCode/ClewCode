@@ -297,7 +297,9 @@ export function ToolSelector({ tools, initialTools, onComplete, onCancel }: Prop
       navigableItems.push({
         id: 'mcp-servers-header',
         label: 'MCP Servers:',
-        action: () => {}, // No action - just a header
+        action: () => {
+          /* noop */
+        }, // No action - just a header
         isHeader: true,
       });
 
@@ -319,7 +321,9 @@ export function ToolSelector({ tools, initialTools, onComplete, onCancel }: Prop
       navigableItems.push({
         id: 'tools-header',
         label: 'Individual Tools:',
-        action: () => {},
+        action: () => {
+          /* noop */
+        },
         isHeader: true,
       });
     }

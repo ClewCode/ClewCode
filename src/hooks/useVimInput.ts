@@ -94,7 +94,9 @@ export function useVimInput(props: UseVimInputProps): VimInputState {
         persistentRef.current.lastFind = { type, char };
       },
       recordChange: isReplay
-        ? () => {}
+        ? () => {
+            /* noop */
+          }
         : (change: RecordedChange) => {
             persistentRef.current.lastChange = change;
           },

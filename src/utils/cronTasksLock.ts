@@ -152,7 +152,9 @@ export async function tryAcquireSchedulerLock(opts?: SchedulerLockOptions): Prom
   if (existing) {
     logForDebugging(`[ScheduledTasks] recovering stale scheduler lock from PID ${existing.pid}`);
   }
-  await unlink(getLockPath(dir)).catch(() => {});
+  await unlink(getLockPath(dir)).catch(() => {
+    /* noop */
+  });
   if (await tryCreateExclusive(lock, dir)) {
     lastBlockedBy = undefined;
     registerLockCleanup(opts);

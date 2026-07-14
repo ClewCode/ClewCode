@@ -105,7 +105,9 @@ export function useSSHSession({
           toolUseID: request.tool_use_id,
           permissionResult,
           permissionPromptStartTimeMs: Date.now(),
-          onUserInteraction() {},
+          onUserInteraction() {
+            /* noop */
+          },
           onAbort() {
             manager.respondToPermissionRequest(requestId, {
               behavior: 'deny',
@@ -128,7 +130,9 @@ export function useSSHSession({
             });
             setToolUseConfirmQueue(q => q.filter(i => i.toolUseID !== request.tool_use_id));
           },
-          async recheckPermission() {},
+          async recheckPermission() {
+            /* noop */
+          },
         };
 
         setToolUseConfirmQueue(q => [...q, toolUseConfirm]);

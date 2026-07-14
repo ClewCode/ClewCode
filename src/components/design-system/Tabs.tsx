@@ -62,9 +62,15 @@ const TabsContext = createContext<TabsContextValue>({
   // Default for components rendered outside a Tabs (tests, standalone):
   // content has focus, focusHeader is a no-op.
   headerFocused: false,
-  focusHeader: () => {},
-  blurHeader: () => {},
-  registerOptIn: () => () => {},
+  focusHeader: () => {
+    /* noop */
+  },
+  blurHeader: () => {
+    /* noop */
+  },
+  registerOptIn: () => () => {
+    /* noop */
+  },
 });
 
 export function Tabs({

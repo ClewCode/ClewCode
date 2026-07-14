@@ -165,7 +165,9 @@ function BashPermissionRequestInner({
           setInitialClassifierDescriptionEmpty(false);
         }
       })
-      .catch(() => {}); // Keep original on error
+      .catch(() => {
+        /* noop */
+      }); // Keep original on error
     return () => abortController.abort();
   }, [command, description]);
 
@@ -226,7 +228,9 @@ function BashPermissionRequestInner({
           setEditablePrefix(`${prefixes[0]}:*`);
         }
       })
-      .catch(() => {}); // Keep sync prefix on tree-sitter failure
+      .catch(() => {
+        /* noop */
+      }); // Keep sync prefix on tree-sitter failure
     return () => {
       cancelled = true;
     };

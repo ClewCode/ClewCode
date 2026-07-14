@@ -1001,7 +1001,9 @@ async function detectRunningIDEsImpl(): Promise<IdeType[]> {
           { shell: true },
         );
         stdout = result.stdout ?? '';
-      } catch {}
+      } catch {
+        /* ignore */
+      }
       for (const [ide, config] of Object.entries(supportedIdeConfigs)) {
         for (const keyword of config.processKeywordsMac) {
           if (stdout.includes(keyword)) {
@@ -1019,7 +1021,9 @@ async function detectRunningIDEsImpl(): Promise<IdeType[]> {
           { shell: true },
         );
         stdout = result.stdout ?? '';
-      } catch {}
+      } catch {
+        /* ignore */
+      }
 
       const normalizedStdout = stdout.toLowerCase();
 
@@ -1040,7 +1044,9 @@ async function detectRunningIDEsImpl(): Promise<IdeType[]> {
           { shell: true },
         );
         stdout = result.stdout ?? '';
-      } catch {}
+      } catch {
+        /* ignore */
+      }
 
       const normalizedStdout = stdout.toLowerCase();
 

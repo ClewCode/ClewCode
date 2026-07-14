@@ -27,9 +27,15 @@ type Props = {
 };
 
 const NOOP_HELPERS: PromptInputHelpers = {
-  setCursorOffset: () => {},
-  clearBuffer: () => {},
-  resetHistory: () => {},
+  setCursorOffset: () => {
+    /* noop */
+  },
+  clearBuffer: () => {
+    /* noop */
+  },
+  resetHistory: () => {
+    /* noop */
+  },
 };
 
 /**

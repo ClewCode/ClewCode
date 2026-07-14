@@ -1056,7 +1056,9 @@ function startGlobalConfigFreshnessWatcher(): void {
         };
         lastReadFileStats = { mtime: curr.mtimeMs, size: curr.size };
       })
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
   });
   registerCleanup(async () => {
     unwatchFile(file);

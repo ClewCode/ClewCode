@@ -39,9 +39,13 @@ export function useSearchHighlight(): {
   return useMemo(() => {
     if (!ink) {
       return {
-        setQuery: () => {},
+        setQuery: () => {
+          /* noop */
+        },
         scanElement: () => [],
-        setPositions: () => {},
+        setPositions: () => {
+          /* noop */
+        },
       };
     }
     return {

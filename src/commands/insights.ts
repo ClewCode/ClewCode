@@ -2785,7 +2785,9 @@ export async function generateUsageReport(options?: { collectRemote?: boolean })
           metasToSave.push(meta);
           // Keep the log around for potential facet extraction
           logsForFacets.set(meta.session_id, log);
-        } catch {}
+        } catch {
+          /* ignore */
+        }
       }
     }
     await Promise.all(metasToSave.map(meta => saveSessionMeta(meta)));

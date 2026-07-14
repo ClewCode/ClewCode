@@ -578,7 +578,9 @@ export function ModelPicker(t0) {
   }
   return <Pane color="permission">{content}</Pane>;
 }
-function _temp4() {}
+function _temp4() {
+  /* noop */
+}
 function _temp3(opt_0) {
   return {
     ...opt_0,

@@ -170,7 +170,9 @@ export function GlobalSearchDialog({ onDone, onInsert }: Props): React.ReactNode
             }
           },
         )
-          .catch(() => {})
+          .catch(() => {
+            /* noop */
+          })
           // Stream closed with zero chunks — clear stale results so
           // "No matches" renders instead of the previous query's list.
           .finally(() => {

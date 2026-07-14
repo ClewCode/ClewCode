@@ -151,7 +151,9 @@ export function setSessionGoal(goal: string | null): void {
   if (goal === null) {
     currentGoalState = null;
   }
-  persistGoal(currentGoalState).catch(() => {});
+  persistGoal(currentGoalState).catch(() => {
+    /* noop */
+  });
 }
 
 /** Set the full goal state with all metadata */
@@ -167,14 +169,18 @@ export function setFullGoalState(state: GoalState | null): void {
   currentGoal = state?.goal ?? null;
   currentGoalState = state;
   restoredSessionId = sessionId;
-  persistGoal(state).catch(() => {});
+  persistGoal(state).catch(() => {
+    /* noop */
+  });
 }
 
 /** Update specific fields in the goal state */
 export function updateGoalState(updates: Partial<GoalState>): void {
   if (!currentGoalState) return;
   currentGoalState = { ...currentGoalState, ...updates };
-  persistGoal(currentGoalState).catch(() => {});
+  persistGoal(currentGoalState).catch(() => {
+    /* noop */
+  });
 }
 
 export function blockGoal(reason: string): void {
@@ -186,7 +192,9 @@ export function blockGoal(reason: string): void {
     blockedReason: reason,
     lastReason: reason,
   };
-  persistGoal(currentGoalState).catch(() => {});
+  persistGoal(currentGoalState).catch(() => {
+    /* noop */
+  });
 }
 
 export function isGoalBlocked(): boolean {
@@ -207,7 +215,9 @@ export function linkWorkflowToActiveGoal(runId: string): void {
     ...currentGoalState,
     linkedWorkflowRunIds: [...linked, runId],
   };
-  persistGoal(currentGoalState).catch(() => {});
+  persistGoal(currentGoalState).catch(() => {
+    /* noop */
+  });
 }
 
 async function persistGoal(state: GoalState | null): Promise<void> {

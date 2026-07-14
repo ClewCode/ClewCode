@@ -36,7 +36,9 @@ const StdinContext = createContext<Props>({
   stdin: process.stdin,
 
   internal_eventEmitter: new EventEmitter(),
-  setRawMode() {},
+  setRawMode() {
+    /* noop */
+  },
   isRawModeSupported: false,
 
   internal_exitOnCtrlC: true,

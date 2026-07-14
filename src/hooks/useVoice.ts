@@ -402,7 +402,9 @@ export function useVoice({ onTranscript, onError, enabled, focusMode }: UseVoice
                   }
                 },
                 onError: () => resolve(),
-                onClose: () => {},
+                onClose: () => {
+                  /* noop */
+                },
                 onReady: conn => {
                   if (isStale()) {
                     conn.close();

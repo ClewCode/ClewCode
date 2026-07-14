@@ -372,11 +372,15 @@ function createConfig(): Config {
     pointScaleFactor: 1,
     errata: Errata.None,
     useWebDefaults: false,
-    free() {},
+    free() {
+      /* noop */
+    },
     isExperimentalFeatureEnabled() {
       return false;
     },
-    setExperimentalFeatureEnabled() {},
+    setExperimentalFeatureEnabled() {
+      /* noop */
+    },
     setPointScaleFactor(f) {
       config.pointScaleFactor = f;
     },
@@ -580,7 +584,9 @@ export class Node {
   hasNewLayout(): boolean {
     return true;
   }
-  markLayoutSeen(): void {}
+  markLayoutSeen(): void {
+    /* noop */
+  }
 
   // -- Measure function
 
@@ -901,9 +907,15 @@ export class Node {
 
   // -- Unused API stubs (present for API parity)
 
-  copyStyle(_: Node): void {}
-  setDirtiedFunc(_: unknown): void {}
-  unsetDirtiedFunc(): void {}
+  copyStyle(_: Node): void {
+    /* noop */
+  }
+  setDirtiedFunc(_: unknown): void {
+    /* noop */
+  }
+  unsetDirtiedFunc(): void {
+    /* noop */
+  }
   setIsReferenceBaseline(v: boolean): void {
     this.isReferenceBaseline_ = v;
     this.markDirty();
@@ -911,11 +923,15 @@ export class Node {
   isReferenceBaseline(): boolean {
     return this.isReferenceBaseline_;
   }
-  setAspectRatio(_: number | undefined): void {}
+  setAspectRatio(_: number | undefined): void {
+    /* noop */
+  }
   getAspectRatio(): number {
     return NaN;
   }
-  setAlwaysFormsContainingBlock(_: boolean): void {}
+  setAlwaysFormsContainingBlock(_: boolean): void {
+    /* noop */
+  }
 
   // -- Layout entry point
 
@@ -2351,13 +2367,17 @@ export type Yoga = {
 const YOGA_INSTANCE: Yoga = {
   Config: {
     create: createConfig,
-    destroy() {},
+    destroy() {
+      /* noop */
+    },
   },
   Node: {
     create: (config?: Config) => new Node(config),
     createDefault: () => new Node(),
     createWithConfig: (config: Config) => new Node(config),
-    destroy() {},
+    destroy() {
+      /* noop */
+    },
   },
 };
 

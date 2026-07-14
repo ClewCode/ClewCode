@@ -358,7 +358,9 @@ export async function installPluginOp(
             marketplaceInstallLocation = mktConfig.installLocation;
             break;
           }
-        } catch {}
+        } catch {
+          /* ignore */
+        }
       }
     }
 
@@ -722,7 +724,9 @@ export async function setPluginEnabledOp(
           const mkt = await getMarketplace(mktName);
           const entry = mkt.plugins.find(p => p.name === name);
           if (entry) return { dependencies: entry.dependencies };
-        } catch {}
+        } catch {
+          /* ignore */
+        }
       }
       return null;
     };

@@ -286,7 +286,9 @@ export async function initReplBridge(options?: InitBridgeOptions): Promise<ReplB
     void updateBridgeSessionTitle(bridgeSessionId, derived, {
       baseUrl,
       getAccessToken: getBridgeAccessToken,
-    }).catch(() => {});
+    }).catch(() => {
+      /* noop */
+    });
   };
   // Fire-and-forget Haiku generation with post-await guards. Re-checks /rename
   // (sessionStorage), v1 env-lost (lastBridgeSessionId), and same-session

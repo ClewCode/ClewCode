@@ -377,7 +377,11 @@ export function createSubagentContext(
 
     // AppState access
     getAppState,
-    setAppState: overrides?.shareSetAppState ? parentContext.setAppState : () => {},
+    setAppState: overrides?.shareSetAppState
+      ? parentContext.setAppState
+      : () => {
+          /* noop */
+        },
     // Task registration/kill must always reach the root store, even when
     // setAppState is a no-op — otherwise async agents' background bash tasks
     // are never registered and never killed (PPID=1 zombie).
@@ -387,10 +391,18 @@ export function createSubagentContext(
     localDenialTracking: overrides?.shareSetAppState ? parentContext.localDenialTracking : createDenialTrackingState(),
 
     // Mutation callbacks - no-op by default
-    setInProgressToolUseIDs: () => {},
-    setResponseLength: overrides?.shareSetResponseLength ? parentContext.setResponseLength : () => {},
+    setInProgressToolUseIDs: () => {
+      /* noop */
+    },
+    setResponseLength: overrides?.shareSetResponseLength
+      ? parentContext.setResponseLength
+      : () => {
+          /* noop */
+        },
     pushApiMetricsEntry: overrides?.shareSetResponseLength ? parentContext.pushApiMetricsEntry : undefined,
-    updateFileHistoryState: () => {},
+    updateFileHistoryState: () => {
+      /* noop */
+    },
     // Attribution is scoped and functional (prev => next) — safe to share even
     // when setAppState is stubbed. Concurrent calls compose via React's state queue.
     updateAttributionState: parentContext.updateAttributionState,

@@ -489,7 +489,9 @@ export async function cleanupNpmCacheForAnthropicPackages(): Promise<void> {
       durationMs: Date.now() - startTime,
     });
   } finally {
-    await lockfile.unlock(markerPath, { realpath: false }).catch(() => {});
+    await lockfile.unlock(markerPath, { realpath: false }).catch(() => {
+      /* noop */
+    });
   }
 }
 
@@ -527,7 +529,9 @@ export async function cleanupOldVersionsThrottled(): Promise<void> {
   } catch (error) {
     logError(error as Error);
   } finally {
-    await lockfile.unlock(markerPath, { realpath: false }).catch(() => {});
+    await lockfile.unlock(markerPath, { realpath: false }).catch(() => {
+      /* noop */
+    });
   }
 }
 

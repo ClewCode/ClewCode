@@ -51,7 +51,9 @@ const WRITE_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit']);
 const SAFE_READ_ONLY_TOOLS = new Set(['Read', 'Glob', 'Grep', 'ToolSearch', 'LSP', 'TaskGet', 'TaskList']);
 
 function safeRemoveOverlay(overlayPath: string): void {
-  rm(overlayPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }, () => {});
+  rm(overlayPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }, () => {
+    /* noop */
+  });
 }
 
 function getOverlayPath(id: string): string {

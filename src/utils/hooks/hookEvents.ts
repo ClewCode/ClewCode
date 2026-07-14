@@ -116,7 +116,10 @@ export function startHookProgressInterval(params: {
   getOutput: () => Promise<{ stdout: string; stderr: string; output: string }>;
   intervalMs?: number;
 }): () => void {
-  if (!shouldEmit(params.hookEvent)) return () => {};
+  if (!shouldEmit(params.hookEvent))
+    return () => {
+      /* noop */
+    };
 
   let lastEmittedOutput = '';
   const interval = setInterval(() => {

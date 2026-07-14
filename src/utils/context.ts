@@ -284,7 +284,9 @@ function getContextWindowFromRegistry(model: string): number | null {
       if (modelInfo?.capabilities.maxContext && typeof modelInfo.capabilities.maxContext === 'number') {
         return modelInfo.capabilities.maxContext;
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
 
   return null;

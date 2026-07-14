@@ -1,7 +1,7 @@
-import { describe, expect, it, afterEach } from 'bun:test';
+import { afterEach, describe, expect, it } from 'bun:test';
+import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { mkdirSync, rmSync, writeFileSync } from 'fs';
 
 // Test cosine similarity directly to avoid sharp dependency issues
 function cosineSimilarity(a: number[], b: number[]): number {

@@ -330,7 +330,9 @@ export async function extractZipToDirectory(zipPath: string, targetDir: string):
     if (mode && mode & 0o111) {
       // Swallow EPERM/ENOTSUP (NFS root_squash, some FUSE mounts) — losing +x
       // is the pre-PR behavior and better than aborting mid-extraction.
-      await chmod(fullPath, mode & 0o777).catch(() => {});
+      await chmod(fullPath, mode & 0o777).catch(() => {
+        /* noop */
+      });
     }
   }
 

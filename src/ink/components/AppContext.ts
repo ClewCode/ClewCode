@@ -12,7 +12,9 @@ export type Props = {
  */
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const AppContext = createContext<Props>({
-  exit() {},
+  exit() {
+    /* noop */
+  },
 });
 
 // eslint-disable-next-line custom-rules/no-top-level-side-effects

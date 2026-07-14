@@ -122,7 +122,9 @@ export async function saveStatus(): Promise<void> {
 
 function updateStatus(partial: Partial<AutonomousStatus>): void {
   Object.assign(status, partial);
-  saveStatus().catch(() => {});
+  saveStatus().catch(() => {
+    /* noop */
+  });
 }
 
 // ─── Task Log Persistence ─────────────────────────────────────
@@ -368,7 +370,9 @@ export async function startLoop(): Promise<void> {
 
   // Start heartbeat
   heartbeatInterval = setInterval(() => {
-    saveStatus().catch(() => {});
+    saveStatus().catch(() => {
+      /* noop */
+    });
   }, 60_000);
 
   await saveStatus();

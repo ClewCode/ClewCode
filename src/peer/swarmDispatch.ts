@@ -3,12 +3,12 @@
  * Handles fetching to peers, tracking progress via SwarmActivityRegistry, and collecting results.
  */
 
+import type { Output } from '../tools/PeerSwarmTool/PeerSwarmTool.js';
+import { clampTimeout, notifyPeerFeedback } from '../tools/peer/peerFeedback.js';
+import { errorMessage } from '../utils/errors.js';
 import { getGlobalDiscovery } from './PeerDiscovery.js';
 import { getGlobalPeerStore } from './PeerStore.js';
 import { getSwarmActivityRegistry } from './swarmActivity.js';
-import { clampTimeout, notifyPeerFeedback } from '../tools/peer/peerFeedback.js';
-import { errorMessage } from '../utils/errors.js';
-import type { Output } from '../tools/PeerSwarmTool/PeerSwarmTool.js';
 
 export interface DispatchOptions {
   onProgress?: (event: DispatchProgressEvent) => void;

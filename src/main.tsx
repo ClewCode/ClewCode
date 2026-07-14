@@ -4,7 +4,9 @@ Object.defineProperty(process.stderr, 'isTTY', { value: true, writable: true, co
 const startupArgs = process.argv.slice(2);
 let windowsInteractiveKeepAlive: ReturnType<typeof setInterval> | undefined;
 if (process.platform === 'win32' && startupArgs.length === 0) {
-  windowsInteractiveKeepAlive = setInterval(() => {}, 60_000);
+  windowsInteractiveKeepAlive = setInterval(() => {
+    /* noop */
+  }, 60_000);
 }
 // Force stdin to be TTY for Ink raw mode (workaround for PowerShell)
 try {
@@ -13,7 +15,9 @@ try {
   if (typeof process.stdin.ref !== 'function') {
     let stdinKeepAlive: ReturnType<typeof setInterval> | undefined;
     process.stdin.ref = () => {
-      stdinKeepAlive ??= setInterval(() => {}, 60_000);
+      stdinKeepAlive ??= setInterval(() => {
+        /* noop */
+      }, 60_000);
       return process.stdin;
     };
     process.stdin.unref = () => {
@@ -29,9 +33,13 @@ try {
     };
   }
   if (typeof process.stdin.setRawMode !== 'function') {
-    process.stdin.setRawMode = (_mode: boolean) => {};
+    process.stdin.setRawMode = (_mode: boolean) => {
+      /* noop */
+    };
   }
-} catch (_e) {}
+} catch (_e) {
+  /* ignore */
+}
 
 const macroPkg = JSON.parse(readFileSync(new URL('./generated/version.json', import.meta.url), 'utf8')) as {
   BUILD_VERSION: string;
@@ -493,7 +501,9 @@ function applyProviderOption(provider: string | undefined, model: string | undef
   let currentConfig: Record<string, unknown> = {};
   try {
     currentConfig = jsonParse(readFileSync(PROVIDER_CONFIG_PATH, 'utf8')) as Record<string, unknown>;
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   writeFileSync_DEPRECATED(
     PROVIDER_CONFIG_PATH,
     JSON.stringify(
@@ -985,7 +995,9 @@ export async function main() {
   process.on('SIGCONT', () => {
     try {
       if (process.stdin.setRawMode) process.stdin.setRawMode(true);
-    } catch {}
+    } catch {
+      /* ignore */
+    }
     process.stdout.write('\x1b[2J\x1b[1;1H');
   });
   // SIGTSTP (Ctrl+Z): save terminal state before suspending. Node default
@@ -2898,8 +2910,12 @@ async function run(): Promise<CommanderCommand> {
       const agentDefsPromise = worktreeEnabled ? null : getAgentDefinitionsWithOverrides(preSetupCwd);
       // Suppress transient unhandledRejection if these reject during the
       // ~28ms setupPromise await before Promise.all joins them below.
-      commandsPromise?.catch(() => {});
-      agentDefsPromise?.catch(() => {});
+      commandsPromise?.catch(() => {
+        /* noop */
+      });
+      agentDefsPromise?.catch(() => {
+        /* noop */
+      });
       await setupPromise;
       logForDebugging(`[STARTUP] setup() completed in ${Date.now() - setupStart}ms`);
       profileCheckpoint('action_after_setup');
@@ -3497,7 +3513,9 @@ async function run(): Promise<CommanderCommand> {
       const hookMessages: Awaited<NonNullable<typeof hooksPromise>> = [];
       // Suppress transient unhandledRejection — the prefetch warms the
       // memoized connectToServer cache but nobody awaits it in interactive.
-      mcpPromise.catch(() => {});
+      mcpPromise.catch(() => {
+        /* noop */
+      });
       const mcpClients: Awaited<typeof mcpPromise>['clients'] = [];
       const mcpTools: Awaited<typeof mcpPromise>['tools'] = [];
       const mcpCommands: Awaited<typeof mcpPromise>['commands'] = [];
@@ -3665,7 +3683,9 @@ async function run(): Promise<CommanderCommand> {
         // Suppress transient unhandledRejection if this rejects before
         // loadInitialMessages awaits it. Downstream await still observes the
         // rejection — this just prevents the spurious global handler fire.
-        sessionStartHooksPromise?.catch(() => {});
+        sessionStartHooksPromise?.catch(() => {
+          /* noop */
+        });
         profileCheckpoint('before_validateForceLoginOrg');
         // Validate org restriction for non-interactive sessions
         const orgValidation = await validateForceLoginOrg();
@@ -3840,7 +3860,9 @@ async function run(): Promise<CommanderCommand> {
               for (const c of headlessStore.getState().mcp.clients) {
                 if (!suppressed.has(c.name) || c.type !== 'connected') continue;
                 c.client.onclose = undefined;
-                void clearServerCache(c.name, c.config).catch(() => {});
+                void clearServerCache(c.name, c.config).catch(() => {
+                  /* noop */
+                });
               }
               headlessStore.setState(prev => {
                 let { clients, tools, commands, resources } = prev.mcp;

@@ -1625,7 +1625,9 @@ function PromptInput({
     setCursorOffset(cursorOffset + text.length);
   }
   const doublePressEscFromEmpty = useDoublePress(
-    () => {},
+    () => {
+      /* noop */
+    },
     () => onShowMessageSelector(),
   );
 

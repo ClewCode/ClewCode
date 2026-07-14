@@ -13,6 +13,7 @@
 
 import figures from 'figures';
 import * as React from 'react';
+import { useModalOrTerminalSize } from '../../context/modalContext.js';
 import { useAgentDispatchAutocomplete } from '../../hooks/useAgentDispatchAutocomplete.js';
 import { useAgentViewSummaries } from '../../hooks/useAgentViewSummaries.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
@@ -34,7 +35,10 @@ import {
 import type { TaskState } from '../../tasks/types.js';
 import { GENERAL_PURPOSE_AGENT } from '../../tools/AgentTool/built-in/generalPurposeAgent.js';
 import { createUserMessage } from '../../utils/messages.js';
+import { permissionModeSymbol, permissionModeTitle } from '../../utils/permissions/PermissionMode.js';
 import { Pane } from '../design-system/Pane.js';
+import { CondensedLogo } from '../LogoV2/CondensedLogo.js';
+import TextInput from '../TextInput.js';
 import { parseDispatchSyntax } from './AgentViewDispatchInput.js';
 import { AgentViewPeekPanel } from './AgentViewPeekPanel.js';
 import {
@@ -47,10 +51,6 @@ import {
 } from './AgentViewRow.js';
 import { AgentViewShortcutsHelp } from './AgentViewShortcutsHelp.js';
 import { isWaitingForInput } from './utils.js';
-import { CondensedLogo } from '../LogoV2/CondensedLogo.js';
-import { permissionModeSymbol, permissionModeTitle } from '../../utils/permissions/PermissionMode.js';
-import TextInput from '../TextInput.js';
-import { useModalOrTerminalSize } from '../../context/modalContext.js';
 
 type GroupMode = 'state' | 'directory';
 
@@ -621,7 +621,9 @@ export function AgentViewDashboard({ onBack, onDispatch, cwd }: Props) {
     try {
       const edited = await (await import('fs/promises')).readFile(tmpFile, 'utf-8');
       setDispatchText(edited.trim());
-      await (await import('fs/promises')).unlink(tmpFile).catch(() => {});
+      await (await import('fs/promises')).unlink(tmpFile).catch(() => {
+        /* noop */
+      });
     } catch {
       // editor not found or file read error — silently ignore
     }

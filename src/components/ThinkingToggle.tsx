@@ -91,7 +91,12 @@ export function ThinkingToggle({ currentValue, onSelect, onCancel, isMidConversa
               defaultFocusValue={currentValue ? 'true' : 'false'}
               options={options}
               onChange={handleSelectChange}
-              onCancel={onCancel ?? (() => {})}
+              onCancel={
+                onCancel ??
+                (() => {
+                  /* noop */
+                })
+              }
               visibleOptionCount={2}
             />
           </Box>

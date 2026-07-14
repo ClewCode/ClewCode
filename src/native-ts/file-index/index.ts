@@ -84,7 +84,9 @@ export class FileIndex {
     queryable: Promise<void>;
     done: Promise<void>;
   } {
-    let markQueryable: () => void = () => {};
+    let markQueryable: () => void = () => {
+      /* noop */
+    };
     const queryable = new Promise<void>(resolve => {
       markQueryable = resolve;
     });

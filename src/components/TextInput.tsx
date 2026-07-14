@@ -56,7 +56,12 @@ export default function TextInput(props: Props): React.ReactNode {
   const [animRef, animTime] = feature('VOICE_MODE')
     ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
       useAnimationFrame(needsAnimation ? 50 : null)
-    : [() => {}, 0];
+    : [
+        () => {
+          /* noop */
+        },
+        0,
+      ];
 
   // Show hint when terminal regains focus and clipboard has an image
   useClipboardImageHint(isTerminalFocused, !!props.onImagePaste);

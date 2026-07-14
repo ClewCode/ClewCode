@@ -433,9 +433,15 @@ export default class Ink {
       this.render(this.currentNode);
     }
   };
-  resolveExitPromise: () => void = () => {};
-  rejectExitPromise: (reason?: Error) => void = () => {};
-  unsubscribeExit: () => void = () => {};
+  resolveExitPromise: () => void = () => {
+    /* noop */
+  };
+  rejectExitPromise: (reason?: Error) => void = () => {
+    /* noop */
+  };
+  unsubscribeExit: () => void = () => {
+    /* noop */
+  };
 
   /**
    * Pause Ink and hand the terminal over to an external TUI (e.g. git

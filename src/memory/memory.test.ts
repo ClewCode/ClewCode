@@ -419,7 +419,9 @@ describe('MemoryDB', () => {
     });
 
     const memDir = getMemoryDirPath();
-    await mkdir(memDir, { recursive: true }).catch(() => {});
+    await mkdir(memDir, { recursive: true }).catch(() => {
+      /* noop */
+    });
     await writeMemoryFile('TASTE.md', '# Coding Style & Preferences\n\n');
     await initMemoryHierarchy();
 

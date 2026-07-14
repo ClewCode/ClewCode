@@ -87,7 +87,9 @@ export function Login(props: {
         const cfg = pm.getSelectedProviderConfig(true);
         const apiKeys = { ...cfg.apiKeys, [provider]: value.trim() };
         pm.saveSelectedProviderConfig({ ...cfg, apiKeys });
-      } catch {}
+      } catch {
+        /* ignore */
+      }
       props.onDone(true, mainLoopModel);
     }
   };

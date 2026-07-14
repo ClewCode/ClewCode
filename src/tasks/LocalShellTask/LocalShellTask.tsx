@@ -61,7 +61,10 @@ function startStallWatchdog(
   toolUseId?: string,
   agentId?: AgentId,
 ): () => void {
-  if (kind === 'monitor') return () => {};
+  if (kind === 'monitor')
+    return () => {
+      /* noop */
+    };
   const outputPath = getTaskOutputPath(taskId);
   let lastSize = 0;
   let lastGrowth = Date.now();
@@ -110,10 +113,14 @@ The command is likely blocked on an interactive prompt. Kill this task and re-ru
               agentId,
             });
           },
-          () => {},
+          () => {
+            /* noop */
+          },
         );
       },
-      () => {}, // File may not exist yet
+      () => {
+        /* noop */
+      }, // File may not exist yet
     );
   }, STALL_CHECK_INTERVAL_MS);
   timer.unref();

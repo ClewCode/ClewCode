@@ -130,7 +130,9 @@ export const MESSAGE_ACTIONS = [
     types: ['grouped_tool_use', 'collapsed_read_search', 'attachment', 'system'],
     stays: true,
     // Empty — `stays` handled inline by dispatch.
-    run: () => {},
+    run: () => {
+      /* noop */
+    },
   }),
   action({
     key: 'enter',

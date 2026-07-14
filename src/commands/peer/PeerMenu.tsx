@@ -69,7 +69,9 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
     update();
     const iv = setInterval(update, 3000);
     // Auto-trigger discovery on mount so user sees peers immediately
-    discovery.discoverPeers(5000).catch(() => {});
+    discovery.discoverPeers(5000).catch(() => {
+      /* noop */
+    });
     return () => clearInterval(iv);
   }, [store, discovery]);
 

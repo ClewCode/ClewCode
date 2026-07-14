@@ -198,7 +198,9 @@ function getStore(): TasksV2Store {
 
 // Stable no-ops for the disabled path so useSyncExternalStore doesn't
 // churn its subscription on every render.
-const NOOP = (): void => {};
+const NOOP = (): void => {
+  /* noop */
+};
 const NOOP_SUBSCRIBE = (): (() => void) => NOOP;
 const NOOP_SNAPSHOT = (): undefined => undefined;
 

@@ -83,7 +83,9 @@ export function PowerShellPermissionRequest(props: PermissionRequestProps): Reac
           setEditablePrefix(`${prefixes[0]}:*`);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
     return () => {
       cancelled = true;
     };

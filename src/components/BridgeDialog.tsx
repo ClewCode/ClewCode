@@ -48,7 +48,9 @@ export function BridgeDialog({ onDone }: Props): React.ReactNode {
   useEffect(() => {
     getBranch()
       .then(setBranchName)
-      .catch(() => {});
+      .catch(() => {
+        /* noop */
+      });
   }, []);
 
   // The URL to display/QR: session URL when connected, connect URL when ready

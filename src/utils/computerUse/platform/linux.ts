@@ -49,8 +49,14 @@ export function createLinuxAdapter(): PlatformAdapter {
         const buffer = await readFile(tmpPath);
         return toBase64Jpeg(buffer);
       } finally {
-        await unlink(tmpPath).catch(() => {});
-        await import('node:fs/promises').then(fs => fs.rmdir(tmpDir).catch(() => {}));
+        await unlink(tmpPath).catch(() => {
+          /* noop */
+        });
+        await import('node:fs/promises').then(fs =>
+          fs.rmdir(tmpDir).catch(() => {
+            /* noop */
+          }),
+        );
       }
     },
 
@@ -61,7 +67,9 @@ export function createLinuxAdapter(): PlatformAdapter {
         if (Number.isFinite(w) && w > 0 && Number.isFinite(h) && h > 0) {
           return sanitizeGeometry({ width: w, height: h, scaleFactor: 1 });
         }
-      } catch {}
+      } catch {
+        /* ignore */
+      }
       // Try xrandr as fallback
       try {
         const output = await run('xrandr', ['--current']);
@@ -69,7 +77,9 @@ export function createLinuxAdapter(): PlatformAdapter {
         if (match) {
           return sanitizeGeometry({ width: Number(match[1]), height: Number(match[2]), scaleFactor: 1 });
         }
-      } catch {}
+      } catch {
+        /* ignore */
+      }
       return sanitizeGeometry({});
     },
 
@@ -157,7 +167,9 @@ export function createLinuxAdapter(): PlatformAdapter {
         }
       } finally {
         if (saved) {
-          await this.clipboardWrite(saved).catch(() => {});
+          await this.clipboardWrite(saved).catch(() => {
+            /* noop */
+          });
         }
       }
     },
@@ -226,7 +238,9 @@ export function createLinuxAdapter(): PlatformAdapter {
             await run('xdotool', ['windowactivate', winId]);
             return true;
           }
-        } catch {}
+        } catch {
+          /* ignore */
+        }
         return false;
       }
     },

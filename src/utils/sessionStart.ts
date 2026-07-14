@@ -143,7 +143,9 @@ export async function processSessionStartHooks(
         isMeta: true,
       });
     }
-  } catch {}
+  } catch {
+    /* ignore */
+  }
 
   // Execute SessionStart hooks, ignoring blocking errors
   // Use the provided agentType or fall back to the one stored in bootstrap state

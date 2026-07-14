@@ -31,7 +31,6 @@ export async function killHandler(sessionId?: string): Promise<void> {
 export async function handleBgFlag(args: string[]): Promise<void> {
   // Parse --bg flag: prompt comes after the flag
   const bgIndex = args.findIndex(a => a === '--bg' || a === '--background');
-  let prompt: string | undefined;
   let agent: string | undefined;
   let model: string | undefined;
   let name: string | undefined;
@@ -77,7 +76,7 @@ export async function handleBgFlag(args: string[]): Promise<void> {
     }
   }
 
-  prompt = nonFlagArgs.join(' ') || undefined;
+  const prompt = nonFlagArgs.join(' ') || undefined;
 
   const _id = await createBgSession(prompt ?? '(interactive)', agent, model, permissionMode, {
     name,

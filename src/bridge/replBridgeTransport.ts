@@ -93,9 +93,15 @@ export function createV1ReplTransport(hybrid: HybridTransport): ReplBridgeTransp
     get droppedBatchCount() {
       return hybrid.droppedBatchCount;
     },
-    reportState: () => {},
-    reportMetadata: () => {},
-    reportDelivery: () => {},
+    reportState: () => {
+      /* noop */
+    },
+    reportMetadata: () => {
+      /* noop */
+    },
+    reportDelivery: () => {
+      /* noop */
+    },
     flush: () => Promise.resolve(),
   };
 }

@@ -52,7 +52,9 @@ export function useTaskListWatcher({ taskListId, isLoading, onSubmitTask }: Prop
   // up-to-date, no stale closure, and doesn't force a new function identity
   // per render. Stored in a ref so the watcher effect can call it without
   // depending on it.
-  const checkForTasksRef = useRef<() => Promise<void>>(async () => {});
+  const checkForTasksRef = useRef<() => Promise<void>>(async () => {
+    /* noop */
+  });
   const isDisposedRef = useRef(false);
   checkForTasksRef.current = async () => {
     if (!enabled) {
@@ -121,7 +123,9 @@ export function useTaskListWatcher({ taskListId, isLoading, onSubmitTask }: Prop
 
   // Schedules a check after DEBOUNCE_MS, collapsing rapid fs events.
   // Shared between the watcher callback and the idle-trigger effect below.
-  const scheduleCheckRef = useRef<() => void>(() => {});
+  const scheduleCheckRef = useRef<() => void>(() => {
+    /* noop */
+  });
 
   useEffect(() => {
     if (!enabled) return;
@@ -157,7 +161,9 @@ export function useTaskListWatcher({ taskListId, isLoading, onSubmitTask }: Prop
       // never per-turn. That keeps watcher.close() out of the Bun
       // PathWatcherManager deadlock window.
       isDisposedRef.current = true;
-      scheduleCheckRef.current = () => {};
+      scheduleCheckRef.current = () => {
+        /* noop */
+      };
       if (watcher) {
         watcher.close();
       }

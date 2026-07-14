@@ -25,7 +25,9 @@ const voiceNs: {
   : {
       useVoice: ({ enabled: _e }: { onTranscript: (t: string) => void; enabled: boolean }) => ({
         state: 'idle' as const,
-        handleKeyEvent: (_fallbackMs?: number) => {},
+        handleKeyEvent: (_fallbackMs?: number) => {
+          /* noop */
+        },
       }),
     };
 /* eslint-enable @typescript-eslint/no-require-imports */

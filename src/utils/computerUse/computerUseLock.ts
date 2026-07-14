@@ -110,7 +110,9 @@ export async function checkComputerUseLock(): Promise<CheckResult> {
     return { kind: 'blocked', by: existing.sessionId };
   }
   logForDebugging(`Recovering stale computer-use lock from session ${existing.sessionId} (PID ${existing.pid})`);
-  await unlink(getLockPath()).catch(() => {});
+  await unlink(getLockPath()).catch(() => {
+    /* noop */
+  });
   return { kind: 'free' };
 }
 
@@ -158,7 +160,9 @@ export async function tryAcquireComputerUseLock(): Promise<AcquireResult> {
 
   // Corrupt/unparseable — treat as stale (can't extract a blocking ID).
   if (!existing) {
-    await unlink(getLockPath()).catch(() => {});
+    await unlink(getLockPath()).catch(() => {
+      /* noop */
+    });
     if (await tryCreateExclusive(lock)) {
       registerLockCleanup();
       return FRESH;
@@ -177,7 +181,9 @@ export async function tryAcquireComputerUseLock(): Promise<AcquireResult> {
   // Stale lock — recover. Unlink then retry the exclusive create.
   // If another session is also recovering, one EEXISTs and reads the winner.
   logForDebugging(`Recovering stale computer-use lock from session ${existing.sessionId} (PID ${existing.pid})`);
-  await unlink(getLockPath()).catch(() => {});
+  await unlink(getLockPath()).catch(() => {
+    /* noop */
+  });
   if (await tryCreateExclusive(lock)) {
     registerLockCleanup();
     return FRESH;

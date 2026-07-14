@@ -167,7 +167,7 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
-        if: runner.os == 'Linux'
+        if: runner.os != 'macos-latest'
 
       - name: Run tests
         run: bun test --bail

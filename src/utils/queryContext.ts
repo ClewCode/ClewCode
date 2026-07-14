@@ -145,10 +145,18 @@ export async function buildSideQuestionFallbackParams({
     getAppState,
     setAppState,
     messages: forkContextMessages,
-    setInProgressToolUseIDs: () => {},
-    setResponseLength: () => {},
-    updateFileHistoryState: () => {},
-    updateAttributionState: () => {},
+    setInProgressToolUseIDs: () => {
+      /* noop */
+    },
+    setResponseLength: () => {
+      /* noop */
+    },
+    updateFileHistoryState: () => {
+      /* noop */
+    },
+    updateAttributionState: () => {
+      /* noop */
+    },
   };
 
   return {

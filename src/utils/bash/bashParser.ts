@@ -837,6 +837,7 @@ function parseStatements(P: ParseState, terminator: string | null): TsNode[] {
             after.value === 'done' ||
             after.value === 'esac'))
       ) {
+        /* noop */
       }
     } else if (sep.type === 'NEWLINE') {
       if (P.L.heredocs.length > 0) {

@@ -133,13 +133,17 @@ let pendingWrite: Promise<void> = Promise.resolve();
 // writeFn closure's parent scope (Jarred, #22257).
 async function appendAsync(needMkdir: boolean, dir: string, path: string, content: string): Promise<void> {
   if (needMkdir) {
-    await mkdir(dir, { recursive: true }).catch(() => {});
+    await mkdir(dir, { recursive: true }).catch(() => {
+      /* noop */
+    });
   }
   await appendFile(path, content);
   void updateLatestDebugLogSymlink();
 }
 
-function noop(): void {}
+function noop(): void {
+  /* noop */
+}
 
 function getDebugWriter(): BufferedWriter {
   if (!debugWriter) {
@@ -232,7 +236,9 @@ const updateLatestDebugLogSymlink = memoize(async (): Promise<void> => {
     const debugLogsDir = dirname(debugLogPath);
     const latestSymlinkPath = join(debugLogsDir, 'latest');
 
-    await unlink(latestSymlinkPath).catch(() => {});
+    await unlink(latestSymlinkPath).catch(() => {
+      /* noop */
+    });
     await symlink(debugLogPath, latestSymlinkPath);
   } catch {
     // Silently fail if symlink creation fails

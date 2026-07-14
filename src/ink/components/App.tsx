@@ -193,7 +193,14 @@ export default class App extends PureComponent<Props, State> {
           >
             <TerminalFocusProvider>
               <ClockProvider>
-                <CursorDeclarationContext.Provider value={this.props.onCursorDeclaration ?? (() => {})}>
+                <CursorDeclarationContext.Provider
+                  value={
+                    this.props.onCursorDeclaration ??
+                    (() => {
+                      /* noop */
+                    })
+                  }
+                >
                   {this.state.error ? <ErrorOverview error={this.state.error as Error} /> : this.props.children}
                 </CursorDeclarationContext.Provider>
               </ClockProvider>

@@ -132,7 +132,9 @@ export function SelectMulti<T>({
                   onInputChange={value => {
                     state.updateInputValue(option.value, value);
                   }}
-                  onSubmit={() => {}} /* We handle submit higher up */
+                  onSubmit={() => {
+                    /* noop */
+                  }} /* We handle submit higher up */
                   onExit={() => {
                     onCancel();
                   }}

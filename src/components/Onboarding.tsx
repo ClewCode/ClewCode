@@ -6,9 +6,9 @@ import { Box, Link, Newline, Text, useTheme } from '../ink.js';
 import { useKeybindings } from '../keybindings/useKeybinding.js';
 import { env } from '../utils/env.js';
 import type { ThemeSetting } from '../utils/theme.js';
+import { Select } from './CustomSelect/select.js';
 import { LogoV2 } from './LogoV2/LogoV2.js';
 import { PressEnterToContinue } from './PressEnterToContinue.js';
-import { Select } from './CustomSelect/select.js';
 import { ThemePicker } from './ThemePicker.js';
 import { OrderedList } from './ui/OrderedList.js';
 
@@ -171,7 +171,9 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
           onChange={value => {
             if (value === 'install') {
               void setupTerminal(theme)
-                .catch(() => {})
+                .catch(() => {
+                  /* noop */
+                })
                 .finally(goToNextStep);
             } else {
               goToNextStep();

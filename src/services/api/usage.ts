@@ -1,8 +1,8 @@
 import { ofetch } from 'ofetch';
 import { getOauthConfig, OAUTH_BETA_HEADER } from '../../constants/oauth.js';
 import { getClaudeAIOAuthTokens } from '../../utils/auth.js';
-import { getClaudeCodeUserAgent } from '../../utils/userAgent.js';
 import { getSecureStorage } from '../../utils/secureStorage/index.js';
+import { getClaudeCodeUserAgent } from '../../utils/userAgent.js';
 import { getRawUtilization } from '../claudeAiLimits.js';
 import { isOAuthTokenExpired } from '../oauth/client.js';
 

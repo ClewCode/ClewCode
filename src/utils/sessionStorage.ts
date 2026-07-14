@@ -16,7 +16,7 @@ import {
   writeFile,
 } from 'fs/promises';
 import memoize from 'lodash-es/memoize.js';
-import { basename, dirname, join, isAbsolute, relative } from 'path';
+import { basename, dirname, isAbsolute, join, relative } from 'path';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -4777,7 +4777,9 @@ function extractFirstPromptFromChunk(chunk: string): string {
         }
         return result;
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
   // Session started with a slash command but had no subsequent real message —
   // use the clean command name so the session still appears in the resume picker
