@@ -22,7 +22,6 @@ import { getProjectRoot } from '../../bootstrap/state.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
-import { getExecAgentProvider, getExecAgentProviderIds } from '../../peer/ProcessDelegateProvider.js';
 import { formatPeerTaskDashboard, formatPeerTaskSummary } from '../../peer/peerDashboard.js';
 import type { PeerInfo } from '../../peer/types.js';
 import { errorMessage } from '../../utils/errors.js';
@@ -307,94 +306,6 @@ async function sendTask(peerQuery: string, text: string, onDone: (msg: string) =
     onDone(ansis.green(`✓ Task sent to ${peer.hostname}`));
   } catch {
     onDone(ansis.red(`✗ Could not reach ${peer?.hostname ?? peerQuery} after several tries`));
-  }
-}
-
-type ExecAgentRunArgs = {
-  providerId: string;
-  prompt: string;
-  cwd?: string;
-  model?: string;
-  timeoutMs?: number;
-};
-
-function parseExecAgentRunArgs(rest: string): ExecAgentRunArgs | { error: string } {
-  const tokens = parseArgs(rest);
-  const providerId = tokens.shift();
-  if (!providerId) {
-    return { error: `Usage: /peer run <${getExecAgentProviderIds().join('|')}> [options] <task>` };
-  }
-
-  const promptTokens: string[] = [];
-  let cwd: string | undefined;
-  let model: string | undefined;
-  let timeoutMs: number | undefined;
-
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i]!;
-    if (token === '--cwd' || token === '-C') {
-      cwd = tokens[++i];
-      continue;
-    }
-    if (token === '--model' || token === '-m') {
-      model = tokens[++i];
-      continue;
-    }
-    if (token === '--timeout' || token === '-t') {
-      const raw = tokens[++i];
-      const seconds = Number(raw);
-      if (!Number.isFinite(seconds) || seconds <= 0) {
-        return { error: '--timeout must be a positive number of seconds' };
-      }
-      timeoutMs = Math.round(seconds * 1000);
-      continue;
-    }
-    promptTokens.push(token);
-  }
-
-  const prompt = promptTokens.join(' ').trim();
-  if (!prompt) {
-    return { error: `Usage: /peer run ${providerId} [options] <task>` };
-  }
-
-  return { providerId, prompt, cwd, model, timeoutMs };
-}
-
-async function runExecAgent(rest: string, onDone: (msg: string) => void): Promise<void> {
-  const parsed = parseExecAgentRunArgs(rest);
-  if ('error' in parsed) {
-    onDone(ansis.yellow(parsed.error));
-    return;
-  }
-
-  const provider = getExecAgentProvider(parsed.providerId);
-  if (!provider) {
-    onDone(
-      ansis.red(
-        `Unknown exec agent provider "${parsed.providerId}". Available: ${getExecAgentProviderIds().join(', ')}`,
-      ),
-    );
-    return;
-  }
-
-  try {
-    const result = await provider.runTask({
-      prompt: parsed.prompt,
-      cwd: parsed.cwd,
-      model: parsed.model,
-      timeoutMs: parsed.timeoutMs,
-    });
-    const output = result.stdout.trim() || result.stderr.trim() || '(no output)';
-    const status =
-      result.exitCode === 0 && !result.timedOut
-        ? ansis.dim(`${provider.label} peer finished in ${(result.durationMs / 1000).toFixed(1)}s`)
-        : ansis.red(
-            `${provider.label} peer failed${result.timedOut ? ' (timed out)' : ''}: exit ${result.exitCode ?? result.signal ?? 'unknown'}`,
-          );
-
-    onDone([status, '', output].join('\n'));
-  } catch (err) {
-    onDone(ansis.red(`Failed to run ${provider.label} peer: ${errorMessage(err)}`));
   }
 }
 
@@ -962,11 +873,6 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
   if (args.startsWith('memory auto')) {
     const rest = args.slice(11).trim();
     await runMemoryAuto(rest, msg => onDone(msg, { display: 'system' }));
-    return;
-  }
-
-  if (args.startsWith('run ')) {
-    await runExecAgent(args.slice(4).trim(), msg => onDone(msg, { display: 'system' }));
     return;
   }
 

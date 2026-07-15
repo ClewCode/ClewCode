@@ -1,12 +1,11 @@
 import { getDirectConnectServerUrl, getSessionId } from '../bootstrap/state.js';
 import { stringWidth } from '../ink/stringWidth.js';
 import type { LogOption } from '../types/logs.js';
-import { getSubscriptionName, isClaudeAISubscriber } from './auth.js';
+import { getSubscriptionName } from './auth.js';
 import { getCwd } from './cwd.js';
 import { isEnvTruthy } from './envUtils.js';
 import { getDisplayPath } from './file.js';
 import { truncate, truncateToWidth, truncateToWidthNoEllipsis } from './format.js';
-import { getActiveProviderId, getAPIProvider } from './model/providers.js';
 import { getStoredChangelogFromMemory, parseChangelog } from './releaseNotes.js';
 import { gt } from './semver.js';
 import { loadMessageLogs } from './sessionStorage.js';
@@ -207,26 +206,6 @@ export function getRecentActivitySync(): LogOption[] {
 }
 
 /**
- * Returns a billing/provider label for the welcome banner.
- * Shows the provider name for third-party providers (Bedrock, Vertex, Foundry)
- * instead of the generic "API Usage Billing" label.
- */
-function getProviderBillingLabel(): string {
-  const provider = getActiveProviderId();
-  if (provider === 'anthropic') {
-    const type = getAPIProvider();
-    if (type === 'bedrock') return 'Bedrock';
-    if (type === 'vertex') return 'Vertex';
-    if (type === 'foundry') return 'Foundry';
-    return 'API Usage Billing';
-  }
-  if (provider === 'openai') return 'OpenAI';
-  if (provider === 'deepseek') return 'DeepSeek';
-  // Show the active provider ID as label (openai, google, deepseek, etc.)
-  return provider.charAt(0).toUpperCase() + provider.slice(1);
-}
-
-/**
  * Formats release notes for display, with smart truncation
  */
 export function formatReleaseNoteForDisplay(note: string, maxWidth: number): string {
@@ -252,7 +231,7 @@ export function getLogoDisplayData(): {
       ? `Remote session in ${serverUrl.replace(/^https?:\/\//, '')}`
       : `${displayPath} in ${serverUrl.replace(/^https?:\/\//, '')}`
     : displayPath;
-  const billingType = isClaudeAISubscriber() ? getSubscriptionName() : getProviderBillingLabel();
+  const billingType = getSubscriptionName();
   const agentName = getInitialSettings().agent;
 
   return {

@@ -33,7 +33,6 @@ import type { AdditionalWorkingDirectory, PermissionMode, PermissionResult } fro
 import type {
   AgentToolProgress,
   BashProgress,
-  ExecAgentProgress,
   MCPProgress,
   REPLToolProgress,
   SkillToolProgress,
@@ -50,7 +49,6 @@ import type { ContentReplacementState } from './utils/toolResultStorage.js';
 export type {
   AgentToolProgress,
   BashProgress,
-  ExecAgentProgress,
   MCPProgress,
   REPLToolProgress,
   SkillToolProgress,

@@ -739,6 +739,18 @@ function getNonstreamingFallbackTimeoutMs(): number {
   return isEnvTruthy(process.env.CLEW_CODE_REMOTE) ? 120_000 : 300_000;
 }
 
+export function createIncompleteStreamWarning(model: string, streamRequestId?: string): AssistantMessage {
+  logForDebugging('Stream closed mid-response — no stop_reason after content was emitted', { level: 'warn' });
+  logEvent('tengu_stream_closed_mid_response', {
+    model: model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    request_id: (streamRequestId ?? 'unknown') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+  });
+  return createAssistantAPIErrorMessage({
+    content: `${API_ERROR_MESSAGE_PREFIX}: Connection closed mid-response. The response above may be incomplete.`,
+    apiError: 'connection_closed_mid_response',
+  });
+}
+
 function getStreamingRetryLimit(): number {
   const override = parseInt(process.env.CLEW_CODE_STREAMING_RETRIES || '', 10);
   if (Number.isFinite(override) && override >= 0) {
@@ -2459,6 +2471,18 @@ async function* queryModel(
           request_id: (streamRequestId ?? 'unknown') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         });
         throw new Error('Stream ended without receiving any events');
+      }
+
+      // Content streamed, then the connection dropped before any terminal
+      // stop_reason arrived. The check above deliberately only covers the
+      // produced-nothing case; this is the complement — there IS a partial
+      // answer on screen, so retrying the whole turn would discard it and
+      // double-bill. Warn instead, and let the user decide to continue.
+      // stopReason is the terminal signal (message_delta sets it for every
+      // real ending, including end_turn/max_tokens), so its absence after
+      // content means truncation rather than a legitimately empty response.
+      if (newMessages.length > 0 && !stopReason) {
+        yield createIncompleteStreamWarning(options.model, streamRequestId);
       }
 
       // Log summary if any stalls occurred during streaming

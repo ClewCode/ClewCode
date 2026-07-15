@@ -32,15 +32,3 @@ export interface WebSearchProgress {
   status: 'searching' | 'fetching' | 'complete';
   urlsFound?: number;
 }
-
-export interface ExecAgentProgress {
-  type: 'execAgent';
-  provider: string;
-  mode: 'exec' | 'pty';
-  command: string;
-  displayCommand: string;
-  cwd: string;
-  elapsedMs: number;
-  outputTail?: string;
-  status: 'starting' | 'running' | 'complete' | 'failed';
-}

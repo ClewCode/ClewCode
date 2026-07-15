@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AgentDefinition } from 'src/tools/AgentTool/loadAgentsDir.js';
 import type { Command } from '../commands.js';
 import { useNotifications } from '../context/notifications.js';
@@ -257,10 +257,17 @@ export function useManagePlugins({ enabled = true, isIdle = true }: { enabled?: 
     }
   }, [setAppState, addNotification]);
 
+  // Gates auto-reload until the mount load has landed. performStartupChecks()
+  // can set needsRefresh while initialPluginLoad() is still in flight; without
+  // this, both would write AppState.plugins concurrently and the later writer
+  // would win at random.
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+
   // Load plugins on mount and emit telemetry
   useEffect(() => {
     if (!enabled) return;
     void initialPluginLoad().then(metrics => {
+      setInitialLoadDone(true);
       const { ant_enabled_names, ...baseMetrics } = metrics;
       const allMetrics = {
         ...baseMetrics,
@@ -284,16 +291,26 @@ export function useManagePlugins({ enabled = true, isIdle = true }: { enabled?: 
   // A failed refresh leaves needsRefresh true, which would re-trigger this
   // effect forever. Latch the failure and hand the user back the manual path.
   const refreshFailedRef = useRef(false);
+  // Guards the post-refresh notification against a late arrival after unmount.
+  // Deliberately not a per-effect `cancelled` flag: deps like isIdle flip
+  // whenever the user starts typing, and a refresh that lands during that
+  // shouldn't silently drop its report.
+  const mountedRef = useRef(true);
   useEffect(() => {
-    if (!enabled || !needsRefresh || !isIdle) return;
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!enabled || !needsRefresh || !isIdle || !initialLoadDone) return;
     if (refreshInFlightRef.current || refreshFailedRef.current) return;
     refreshInFlightRef.current = true;
 
-    let cancelled = false;
     void (async () => {
       try {
         const result = await refreshActivePlugins(setAppState);
-        if (cancelled) return;
+        if (!mountedRef.current) return;
         addNotification({
           key: 'plugins-reloaded',
           text: `Plugins reloaded: ${result.command_count} commands, ${result.agent_count} agents`,
@@ -304,8 +321,8 @@ export function useManagePlugins({ enabled = true, isIdle = true }: { enabled?: 
         logForDebugging(`useManagePlugins: auto-reloaded ${result.enabled_count} plugin(s)`);
       } catch (e) {
         logError(e);
-        if (cancelled) return;
         refreshFailedRef.current = true;
+        if (!mountedRef.current) return;
         addNotification({
           key: 'plugin-reload-pending',
           text: 'Plugins changed but auto-reload failed. Run /reload-plugins to activate.',
@@ -316,9 +333,5 @@ export function useManagePlugins({ enabled = true, isIdle = true }: { enabled?: 
         refreshInFlightRef.current = false;
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, needsRefresh, isIdle, setAppState, addNotification]);
+  }, [enabled, needsRefresh, isIdle, initialLoadDone, setAppState, addNotification]);
 }

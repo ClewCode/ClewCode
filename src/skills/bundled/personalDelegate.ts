@@ -36,24 +36,16 @@ Each message must contain a self-contained task prompt:
 ### 5. Summarize & report
 Tell the user what was done, what passed/failed, what's blocked, next steps.
 
-## Codex (ONLY when user explicitly says)
-Never auto-select Codex. Only use the \`ExecAgent\` tool if the user says "ใช้ Codex" or "use Codex":
-- \`provider\`: leave empty (auto-selects codex)
-- \`mode\`: "exec" or "pty"
-- \`cwd\`: project root
-- \`prompt\`: structured task description
-
 ## Rules
 - Do NOT edit files directly
-- ALWAYS use peer flow above, never default to Codex
-- Only use Codex when the user explicitly says so
+- ALWAYS use the peer flow above
 `;
 
 export function registerPersonalDelegateSkill(): void {
   registerBundledSkill({
     name: 'delegate',
     description:
-      'Delegate coding work to LAN peer nodes or a local Codex worker. Use when you need coding done in personal profile — discovers peers for parallel work, falls back to local process, and reports results.',
+      'Delegate coding work to LAN peer nodes. Use when you need coding done in personal profile — discovers peers for parallel work and reports results.',
     aliases: ['code', 'worker'],
     whenToUse: 'Personal profile: any coding task should be delegated instead of done directly.',
     userInvocable: true,

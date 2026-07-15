@@ -9,7 +9,7 @@ import {
   logEvent,
 } from 'src/services/analytics/index.js';
 import { getModelStrings } from 'src/utils/model/modelStrings.js';
-import { getAPIProvider } from 'src/utils/model/providers.js';
+import { getActiveProviderId, getAPIProvider } from 'src/utils/model/providers.js';
 import { getIsNonInteractiveSession, preferThirdPartyAuthentication } from '../bootstrap/state.js';
 import { getMockSubscriptionType, shouldUseMockSubscription } from '../services/mockRateLimits.js';
 import { isOAuthTokenExpired, refreshOAuthToken, shouldUseClaudeAIAuth } from '../services/oauth/client.js';
@@ -1633,30 +1633,37 @@ export function getRateLimitTier(): string | null {
   return oauthTokens.rateLimitTier ?? null;
 }
 
+/** Providers whose ID does not capitalize cleanly (openai -> Openai). */
+const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  openai: 'OpenAI',
+  deepseek: 'DeepSeek',
+  xai: 'xAI',
+  openrouter: 'OpenRouter',
+};
+
 /**
- * @[MULTI_PROVIDER] Returns the subscription/product name based on active provider.
- * For non-Anthropic providers, returns the provider's display name.
+ * @[MULTI_PROVIDER] The single source of truth for the billing/plan label shown
+ * in the welcome banner (LogoV2 + CondensedLogo) and /status.
+ *
+ * Order matters: provider is checked before subscription type, because
+ * getSubscriptionType() returns null for every non-Anthropic provider (via
+ * isAnthropicAuthEnabled) and would otherwise label OpenAI as "Claude API".
+ *
+ * For first-party Anthropic, the plan is not inferred — subscriptionType comes
+ * from the OAuth token exchange, so no token (API key auth) means "Claude API".
  */
 export function getSubscriptionName(): string {
-  if (!isActiveProviderAnthropic()) {
-    try {
-      const { ProviderManager } =
-        require('../services/ai/ProviderManager.js') as typeof import('../services/ai/ProviderManager.js');
-      const config = ProviderManager.getInstance().getSelectedProviderConfig();
-      if (config?.provider) {
-        // Capitalize provider name for display
-        const name = config.provider.charAt(0).toUpperCase() + config.provider.slice(1);
-        return `${name} API`;
-      }
-    } catch {
-      // Fall through to defaults
-    }
-    return 'External Provider';
+  const provider = getActiveProviderId();
+  if (provider !== 'anthropic') {
+    return `${PROVIDER_DISPLAY_NAMES[provider] ?? provider.charAt(0).toUpperCase() + provider.slice(1)} API`;
   }
 
-  const subscriptionType = getSubscriptionType();
+  const apiProvider = getAPIProvider();
+  if (apiProvider === 'bedrock') return 'Bedrock';
+  if (apiProvider === 'vertex') return 'Vertex';
+  if (apiProvider === 'foundry') return 'Foundry';
 
-  switch (subscriptionType) {
+  switch (getSubscriptionType()) {
     case 'enterprise':
       return 'Claude Enterprise';
     case 'team':

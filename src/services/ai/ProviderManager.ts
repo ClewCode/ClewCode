@@ -192,6 +192,12 @@ export class ProviderManager {
       const onDisk = this.getOnDiskProviderConfig(true);
       if (this.sessionProvider !== null && onDisk.provider) {
         config.provider = onDisk.provider;
+        // providerConfig describes `provider` (endpoints, labels, capabilities),
+        // so it has to be reverted with it. Reverting one but not the other
+        // leaves provider.json self-contradictory — e.g. provider: 'opencode'
+        // next to a chatgpt providerConfig — and getActiveProviderName() then
+        // keeps resolving the stale provider on every new session.
+        config.providerConfig = onDisk.providerConfig;
       }
       if (this.sessionModel !== null && onDisk.model) {
         config.model = onDisk.model;

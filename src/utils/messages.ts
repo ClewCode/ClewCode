@@ -676,6 +676,16 @@ export function isNotEmptyMessage(message: Message | undefined | null): boolean 
     return true;
   }
 
+  // Not every message carries a `.message` envelope — system_api_error,
+  // system_file_snapshot, system_local_command and stream_event don't, and
+  // normalizeMessages' `default` branch passes them through untouched. Keep
+  // them (they have no content to be empty) rather than reading through to
+  // content. Checked structurally, not by listing types: the type whitelist
+  // above is what went stale as new envelope-less types were added.
+  if (!message.message) {
+    return true;
+  }
+
   if (typeof message.message.content === 'string') {
     return message.message.content.trim().length > 0;
   }
