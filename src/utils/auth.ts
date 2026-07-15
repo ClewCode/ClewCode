@@ -1971,6 +1971,18 @@ export function isAuthorized(): boolean {
       return !!key;
     }
     if (provider === 'ollama') return true;
+    // chatgpt uses Codex OAuth (~/.codex/auth.json), not an API key
+    if (provider === 'chatgpt' || provider === 'chatgpt-api') {
+      try {
+        const { existsSync } = require('fs');
+        const { homedir } = require('os');
+        const { join } = require('path');
+        const authPath = join(homedir(), '.codex', 'auth.json');
+        return existsSync(authPath);
+      } catch {
+        return false;
+      }
+    }
     const apiKey = pm.getApiKeyForProvider(provider);
     return !!apiKey;
   } catch {

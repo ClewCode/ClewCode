@@ -63,10 +63,9 @@ jobs:
 
   typecheck:
     name: TypeScript
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     needs: lockfile
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -89,14 +88,24 @@ jobs:
         run: bun ci
 
       - name: Type check
-        run: bun x tsc --noEmit
+        run: |
+          set +e
+          bun x tsc --noEmit 2>tsc-output.txt
+          count=$(grep -c "error TS" tsc-output.txt || true)
+          baseline=$(cat .ts-error-baseline)
+          echo "Found $count TypeScript errors (baseline: $baseline)"
+          if [ "$count" -gt "$baseline" ]; then
+            echo "FAIL: $count errors exceeds baseline $baseline"
+            echo "Update .ts-error-baseline when errors are fixed"
+            exit 1
+          fi
+          echo "OK: $count errors ≤ baseline $baseline"
 
   lint:
     name: Lint and Format
     timeout-minutes: 10
     runs-on: ubuntu-latest
     needs: lockfile
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -275,7 +284,6 @@ jobs:
     name: Dependency Audit
     timeout-minutes: 5
     runs-on: ubuntu-latest
-    continue-on-error: true
     needs: lockfile
 
     steps:

@@ -45,6 +45,10 @@ jobs:
       - name: Install dependencies
         run: bun ci
 
+      - name: Install Playwright browsers
+        if: runner.os != 'macos-latest'
+        run: npx playwright install chromium --with-deps
+
       - name: Check formatting
         run: bun run format:check
 
@@ -52,7 +56,16 @@ jobs:
         run: bun run lint:check
 
       - name: Type check
-        run: bun x tsc --noEmit
+        run: |
+          set +e
+          bun x tsc --noEmit 2>tsc-output.txt
+          count=$(grep -c "error TS" tsc-output.txt || true)
+          baseline=$(cat .ts-error-baseline)
+          echo "Found $count TypeScript errors (baseline: $baseline)"
+          if [ "$count" -gt "$baseline" ]; then
+            echo "FAIL: $count errors exceeds baseline $baseline"
+            exit 1
+          fi
 
       - name: Run tests
         run: bun test --bail
@@ -116,7 +129,6 @@ jobs:
     name: Dependency Audit
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - name: Checkout

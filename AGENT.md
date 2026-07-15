@@ -123,10 +123,10 @@ Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for
 
                     AGENT EXECUTION LAYERS (pick by intent)
 
-  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌──────────────┐  ┌───────────┐
-  │  Agent   │  │ Subagent │  │ Teammate │  │  LAN Peer    │  │Process Peer  │  │ Background│
-  │ (main)   │  │ (Explore)│  │ (swarm)  │  │  (/peer)     │  │(Codex, etc)  │  │ /daemon   │
-  └──────────┘  └──────────┘  └──────────┘  └──────────────┘  └──────────────┘  └───────────┘
+  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌───────────┐
+  │  Agent   │  │ Subagent │  │ Teammate │  │  LAN Peer    │  │ Background│
+  │ (main)   │  │ (Explore)│  │ (swarm)  │  │  (/peer)     │  │ /daemon   │
+  └──────────┘  └──────────┘  └──────────┘  └──────────────┘  └───────────┘
 ```
 
 Flow: **REPL input** → command match or **QueryEngine** → **ProviderManager** → model stream → tool calls → tools/services → UI/state.
@@ -198,14 +198,9 @@ Other large surface areas: `src/agentRuntime/` (background orchestration, ultrac
 | Subagent (`Agent` tool / Explore) | Short independent work; Explore is read-only |
 | Teammate / swarm | Multi-turn named workers with mailbox/tasks |
 | LAN peer (`/peer`) | Other Clew instances on machine/LAN |
-| Process peer | Local external CLI worker (e.g. Codex via `process_peer`) |
 | Background / daemon | Queue + cron via autonomous + agentRuntime (`/bg`, `/daemon`) |
 
 Also: **plan mode** (`.clew/plans/`), **checkpoints** (20%/45%/70% + `/rewind`), **goal verification**, **Max Mode** (parallel candidates + judge).
-
-### Profiles
-
-**Personal profile** — command-center: plan, split work, delegate coding to process peers, review results. Cross-session memory, skill creation from repeated workflows, cron/loop, daemon queue. Profile + last permission mode persist.
 
 ## Gateway mode
 
@@ -253,6 +248,8 @@ Prefer TinyFish MCP for web work over built-in WebSearch / WebFetch / BrowserToo
 ## GitHub Actions (`.github/workflows/`)
 
 CI runs typecheck, lint, build, and tests. Pushing a `v*` tag triggers the release workflow (GitHub Release + npm publish).
+
+TypeScript errors use an error budget stored in `.ts-error-baseline` (current: 3065). CI fails only on regression (count > baseline), not on the existing debt. Update the baseline when errors are fixed.
 
 ## Tests (59 test files)
 
