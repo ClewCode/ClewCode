@@ -18,6 +18,7 @@ import { count } from '../../utils/array.js';
 import { createCacheSafeParams, createSubagentContext, runForkedAgent } from '../../utils/forkedAgent.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import { type REPLHookContext, registerPostSamplingHook } from '../../utils/hooks/postSamplingHooks.js';
+import { logError } from '../../utils/log.js';
 import { createUserMessage, hasToolCallsInLastAssistantTurn } from '../../utils/messages.js';
 import { getSessionMemoryDir, getSessionMemoryPath } from '../../utils/permissions/filesystem.js';
 import { sequential } from '../../utils/sequential.js';

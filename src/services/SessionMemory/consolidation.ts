@@ -4,6 +4,7 @@ import { getAutoMemPath } from '../../memdir/paths.js';
 import { proposeMemory } from '../../memory/pending.js';
 import { getMemoryWorkspaceStatus } from '../../memory/workspace.js';
 import { logForDebugging } from '../../utils/debug.js';
+import { errorMessage } from '../../utils/errors.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import { logError } from '../../utils/log.js';
 import { getDefaultSonnetModel } from '../../utils/model/model.js';

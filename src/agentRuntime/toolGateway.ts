@@ -1,6 +1,7 @@
 import { exec } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { DOT_CLEW } from '../utils/clewPaths.js';
 import type { RunStore } from './runStore.js';
 import type { AgentDefinition } from './types.js';
 

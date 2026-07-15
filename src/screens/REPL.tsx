@@ -1061,8 +1061,8 @@ export function REPL({
     return [...localTools, ...initialTools];
   }, [localTools, initialTools]);
 
-  // Initialize plugin management
-  useManagePlugins({ enabled: !isRemoteSession });
+  // Plugin management is initialized below, once sessionStatus exists — it
+  // gates auto-reload on an idle session.
 
   const tasksV2 = useTasksV2WithCollapseEffect();
 
@@ -1476,6 +1476,11 @@ export function REPL({
 
   const sessionStatus: TabStatusKind =
     isWaitingForApproval || isShowingLocalJSXCommand ? 'waiting' : isLoading ? 'busy' : 'idle';
+
+  // Initialize plugin management. Deferred to here (rather than alongside the
+  // other startup hooks) because auto-reload must not swap plugin components
+  // out from under an in-flight query — sessionStatus is the idle signal.
+  useManagePlugins({ enabled: !isRemoteSession, isIdle: sessionStatus === 'idle' });
 
   const waitingFor =
     sessionStatus !== 'waiting'

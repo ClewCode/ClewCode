@@ -1,4 +1,4 @@
-import type { ToolResultBlockParam, ToolUseBlockParam } from '@anthropic-ai/sdk/resources/index.mjs';
+import type { ContentBlockParam, ToolResultBlockParam, ToolUseBlockParam } from '@anthropic-ai/sdk/resources/index.mjs';
 import type { ElicitRequestURLParams, ElicitResult } from '@modelcontextprotocol/sdk/types.js';
 import type { UUID } from 'crypto';
 import type { z } from 'zod/v4';

@@ -28,9 +28,11 @@ import {
 import { useMainLoopModel } from '../hooks/useMainLoopModel.js';
 import { type ReadonlySettings, useSettings } from '../hooks/useSettings.js';
 import { Ansi, Box, Text } from '../ink.js';
+import { getCodexUtilization } from '../services/api/codexUsage.js';
+import type { RateLimit } from '../services/api/usage.js';
 import { getRawUtilization } from '../services/claudeAiLimits.js';
 import type { Message } from '../types/message.js';
-import type { StatusLineCommandInput } from '../types/statusLine.js';
+import type { StatusLineCommandInput, StatusLineRateLimits } from '../types/statusLine.js';
 import type { VimMode } from '../types/textInputTypes.js';
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { checkHasTrustDialogAccepted, getGlobalConfig } from '../utils/config.js';
@@ -53,6 +55,23 @@ export function statusLineShouldDisplay(settings: ReadonlySettings): boolean {
   if (getGlobalConfig().statusLineEnabled === false) return false;
   if (settings.statusLine?.enabled === false) return false;
   return true;
+}
+
+/**
+ * Codex windows mapped onto the statusline shape. Codex reports utilization as
+ * 0-100 already (unlike Anthropic's 0-1 fraction), so no rescaling here.
+ */
+function buildCodexRateLimits(): StatusLineRateLimits | undefined {
+  const util = getCodexUtilization();
+  if (!util) return undefined;
+  const toWindow = (limit: RateLimit | null | undefined) =>
+    limit && limit.utilization !== null
+      ? { used_percentage: limit.utilization, resets_at: limit.resets_at ?? '' }
+      : undefined;
+  const five_hour = toWindow(util.five_hour);
+  const seven_day = toWindow(util.seven_day);
+  if (!five_hour && !seven_day) return undefined;
+  return { ...(five_hour && { five_hour }), ...(seven_day && { seven_day }) };
 }
 
 function buildStatusLineCommandInput(
@@ -79,7 +98,7 @@ function buildStatusLineCommandInput(
   const sessionId = getSessionId();
   const sessionName = getCurrentSessionTitle(sessionId);
   const rawUtil = getRawUtilization();
-  const rateLimits: StatusLineCommandInput['rate_limits'] = {
+  const rateLimits: StatusLineRateLimits = {
     ...(rawUtil.five_hour && {
       five_hour: {
         used_percentage: rawUtil.five_hour.utilization * 100,
@@ -93,6 +112,7 @@ function buildStatusLineCommandInput(
       },
     }),
   };
+  const codexRateLimits = buildCodexRateLimits();
   return {
     ...createBaseHookInput(),
     ...(sessionName && {
@@ -130,6 +150,9 @@ function buildStatusLineCommandInput(
     exceeds_200k_tokens: exceeds200kTokens,
     ...((rateLimits.five_hour || rateLimits.seven_day) && {
       rate_limits: rateLimits,
+    }),
+    ...(codexRateLimits && {
+      codex_rate_limits: codexRateLimits,
     }),
     ...(isVimModeEnabled() && {
       vim: {

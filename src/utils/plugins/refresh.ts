@@ -10,11 +10,11 @@
  * - /reload-plugins command (interactive, user-initiated)
  * - print.ts refreshPluginState() (headless, auto before first query with SYNC_PLUGIN_INSTALL)
  * - performBackgroundPluginInstallations() (background, auto after new marketplace install)
- *
- * NOT called from:
- * - useManagePlugins needsRefresh effect — interactive mode shows a notification;
- *   user explicitly runs /reload-plugins (PR 5c)
- * - /plugin menu — sets needsRefresh, user runs /reload-plugins (PR 5b)
+ * - useManagePlugins needsRefresh effect (interactive, auto once the session is
+ *   idle). PR 5c had routed this through a user-typed /reload-plugins because
+ *   the auto-refresh of the day was buggy and incomplete; this function fixed
+ *   both, so the effect calls it directly again. Anything that sets
+ *   needsRefresh — /plugin menu, background reconcile, autoupdate — lands here.
  */
 
 import { getOriginalCwd } from '../../bootstrap/state.js';

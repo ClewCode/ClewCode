@@ -29,7 +29,11 @@ function toRateLimit(window: CodexWindow | undefined): RateLimit | null {
 // ~6h is the session window; anything longer is the weekly window.
 const SESSION_WINDOW_MAX_MINUTES = 6 * 60;
 
-function snapshotToUtilization(): Utilization | null {
+/**
+ * Codex utilization from the passive snapshot only — synchronous, never probes.
+ * Returns null when no `/responses` traffic has been seen this session.
+ */
+export function getCodexUtilization(): Utilization | null {
   const snapshot = getCodexLimits();
   if (!snapshot) return null;
 
@@ -60,7 +64,7 @@ function snapshotToUtilization(): Utilization | null {
  */
 export async function fetchCodexUtilization(): Promise<Utilization | null> {
   // Passive snapshot from normal traffic — use it if present.
-  const existing = snapshotToUtilization();
+  const existing = getCodexUtilization();
   if (existing) return existing;
 
   // Active fallback: one minimal probe request to populate the snapshot.
@@ -79,5 +83,5 @@ export async function fetchCodexUtilization(): Promise<Utilization | null> {
     // Probe is best-effort; fall through to whatever snapshot exists (if any).
   }
 
-  return snapshotToUtilization() ?? {};
+  return getCodexUtilization() ?? {};
 }

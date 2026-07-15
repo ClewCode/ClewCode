@@ -3,6 +3,7 @@
  * Wraps the PlatformAdapter for use by the MCP server and tool dispatcher.
  */
 
+import { logForDebugging } from '../debug.js';
 import type { PlatformAdapter } from './platform/index.js';
 
 // ============================================================================

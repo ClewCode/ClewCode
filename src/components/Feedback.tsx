@@ -20,7 +20,7 @@ import { checkAndRefreshOAuthTokenIfNeeded } from '../utils/auth.js';
 import { openBrowser } from '../utils/browser.js';
 import { logForDebugging } from '../utils/debug.js';
 import { env } from '../utils/env.js';
-import { isFetchError } from '../utils/errors.js';
+import { isCancelError, isFetchError } from '../utils/errors.js';
 import { type GitRepoState, getGitState, getIsGit } from '../utils/git.js';
 import { getAuthHeaders, getUserAgent } from '../utils/http.js';
 import { getInMemoryErrors, logError } from '../utils/log.js';

@@ -1,3 +1,13 @@
+type StatusLineWindow = {
+  used_percentage: number;
+  resets_at: string | number;
+};
+
+export type StatusLineRateLimits = {
+  five_hour?: StatusLineWindow;
+  seven_day?: StatusLineWindow;
+};
+
 export type StatusLineCommandInput = {
   session_id: string;
   transcript_path: string;
@@ -36,16 +46,13 @@ export type StatusLineCommandInput = {
     remaining_percentage: number;
   };
   exceeds_200k_tokens: boolean;
-  rate_limits?: {
-    five_hour?: {
-      used_percentage: number;
-      resets_at: string | number;
-    };
-    seven_day?: {
-      used_percentage: number;
-      resets_at: string | number;
-    };
-  };
+  /** Anthropic subscription limits, from response headers. */
+  rate_limits?: StatusLineRateLimits;
+  /**
+   * Codex (ChatGPT subscription) limits, captured off live `/responses` traffic.
+   * Absent until the chatgpt provider has been used this session.
+   */
+  codex_rate_limits?: StatusLineRateLimits;
   vim?: {
     mode: string;
   };

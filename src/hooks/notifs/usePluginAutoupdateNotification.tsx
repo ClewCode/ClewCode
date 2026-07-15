@@ -2,15 +2,23 @@ import { useEffect, useState } from 'react';
 import { getIsRemoteMode } from '../../bootstrap/state.js';
 import { useNotifications } from '../../context/notifications.js';
 import { Text } from '../../ink.js';
+import { useSetAppState } from '../../state/AppState.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { onPluginsAutoUpdated } from '../../utils/plugins/pluginAutoupdate.js';
 
 /**
- * Hook that displays a notification when plugins have been auto-updated.
- * The notification tells the user to run /reload-plugins to apply the updates.
+ * Hook that displays a notification when plugins have been auto-updated, and
+ * flags plugins.needsRefresh so useManagePlugins applies the update once the
+ * session goes idle.
+ *
+ * Autoupdate reaches the UI through onPluginsAutoUpdated (a plain module
+ * callback) rather than needsRefresh, because pluginAutoupdate.ts is a util
+ * with no AppState access. Setting the flag here is what merges autoupdate
+ * into the same reload path as every other plugin change.
  */
 export function usePluginAutoupdateNotification(): void {
   const { addNotification } = useNotifications();
+  const setAppState = useSetAppState();
   const [updatedPlugins, setUpdatedPlugins] = useState<string[]>([]);
 
   // Register for autoupdate notifications
@@ -46,13 +54,17 @@ export function usePluginAutoupdateNotification(): void {
           <Text color="success">
             {pluginNames.length === 1 ? 'Plugin' : 'Plugins'} updated: {displayNames}
           </Text>
-          <Text dimColor> · Run /reload-plugins to apply</Text>
+          <Text dimColor> · applying automatically</Text>
         </>
       ),
       priority: 'low',
       timeoutMs: 10000,
     });
 
+    // Hand off to useManagePlugins, which swaps the new versions in once the
+    // session is idle and reports the result.
+    setAppState(prev => ({ ...prev, plugins: { ...prev.plugins, needsRefresh: true } }));
+
     logForDebugging(`Showing plugin autoupdate notification for: ${pluginNames.join(', ')}`);
-  }, [updatedPlugins, addNotification]);
+  }, [updatedPlugins, addNotification, setAppState]);
 }

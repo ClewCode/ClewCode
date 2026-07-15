@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { AgentDefinition } from 'src/tools/AgentTool/loadAgentsDir.js';
 import type { Command } from '../commands.js';
 import { useNotifications } from '../context/notifications.js';
@@ -21,6 +21,7 @@ import { loadPluginMcpServers } from '../utils/plugins/mcpPluginIntegration.js';
 import { detectAndUninstallDelistedPlugins } from '../utils/plugins/pluginBlocklist.js';
 import { getFlaggedPlugins } from '../utils/plugins/pluginFlagging.js';
 import { loadAllPlugins } from '../utils/plugins/pluginLoader.js';
+import { refreshActivePlugins } from '../utils/plugins/refresh.js';
 
 /**
  * Hook to manage plugin state and synchronize with AppState.
@@ -29,12 +30,18 @@ import { loadAllPlugins } from '../utils/plugins/pluginLoader.js';
  * plugin notifications, populates AppState.plugins. This is the initial
  * Layer-3 load — subsequent refresh goes through /reload-plugins.
  *
- * On needsRefresh: shows a notification directing the user to /reload-plugins.
- * Does NOT auto-refresh. All Layer-3 swap (commands, agents, hooks, MCP)
- * goes through refreshActivePlugins() via /reload-plugins for one consistent
- * mental model. See Outline: declarative-settings-hXHBMDIf4b PR 5c.
+ * On needsRefresh: auto-applies the Layer-3 swap via refreshActivePlugins(),
+ * but only while the session is idle — swapping commands/agents/hooks/MCP
+ * under an in-flight query could strand a tool call the model is mid-way
+ * through. When busy, the effect no-ops and re-runs once isIdle flips true.
+ *
+ * PR 5c removed the auto-refresh that used to live here because it was buggy
+ * (cleared only loadAllPlugins' cache, so downstream memoized loaders returned
+ * stale data) and incomplete (no MCP, no agentDefinitions). refreshActivePlugins()
+ * has since fixed both, so auto-refresh is safe again — hence its return.
+ * /reload-plugins remains for headless, remote, and forced reloads.
  */
-export function useManagePlugins({ enabled = true }: { enabled?: boolean } = {}) {
+export function useManagePlugins({ enabled = true, isIdle = true }: { enabled?: boolean; isIdle?: boolean } = {}) {
   const setAppState = useSetAppState();
   const needsRefresh = useAppState(s => s.plugins.needsRefresh);
   const { addNotification } = useNotifications();
@@ -269,21 +276,49 @@ export function useManagePlugins({ enabled = true }: { enabled?: boolean } = {})
     });
   }, [initialPluginLoad, enabled]);
 
-  // Plugin state changed on disk (background reconcile, /plugin menu,
-  // external settings edit). Show a notification; user runs /reload-plugins
-  // to apply. The previous auto-refresh here had a stale-cache bug (only
-  // cleared loadAllPlugins, downstream memoized loaders returned old data)
-  // and was incomplete (no MCP, no agentDefinitions). /reload-plugins
-  // handles all of that correctly via refreshActivePlugins().
+  // Plugin state changed on disk (background reconcile, autoupdate, /plugin
+  // menu, external settings edit) — apply it as soon as the session is idle.
+  // refreshActivePlugins() consumes needsRefresh (sets false), so this settles
+  // after one pass rather than re-firing.
+  const refreshInFlightRef = useRef(false);
+  // A failed refresh leaves needsRefresh true, which would re-trigger this
+  // effect forever. Latch the failure and hand the user back the manual path.
+  const refreshFailedRef = useRef(false);
   useEffect(() => {
-    if (!enabled || !needsRefresh) return;
-    addNotification({
-      key: 'plugin-reload-pending',
-      text: 'Plugins changed. Run /reload-plugins to activate.',
-      color: 'suggestion',
-      priority: 'low',
-    });
-    // Do NOT auto-refresh. Do NOT reset needsRefresh — /reload-plugins
-    // consumes it via refreshActivePlugins().
-  }, [enabled, needsRefresh, addNotification]);
+    if (!enabled || !needsRefresh || !isIdle) return;
+    if (refreshInFlightRef.current || refreshFailedRef.current) return;
+    refreshInFlightRef.current = true;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await refreshActivePlugins(setAppState);
+        if (cancelled) return;
+        addNotification({
+          key: 'plugins-reloaded',
+          text: `Plugins reloaded: ${result.command_count} commands, ${result.agent_count} agents`,
+          color: 'success',
+          priority: 'low',
+          timeoutMs: 10000,
+        });
+        logForDebugging(`useManagePlugins: auto-reloaded ${result.enabled_count} plugin(s)`);
+      } catch (e) {
+        logError(e);
+        if (cancelled) return;
+        refreshFailedRef.current = true;
+        addNotification({
+          key: 'plugin-reload-pending',
+          text: 'Plugins changed but auto-reload failed. Run /reload-plugins to activate.',
+          color: 'warning',
+          priority: 'low',
+        });
+      } finally {
+        refreshInFlightRef.current = false;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, needsRefresh, isIdle, setAppState, addNotification]);
 }

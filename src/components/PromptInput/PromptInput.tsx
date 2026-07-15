@@ -40,6 +40,7 @@ import { useMainLoopModel } from '../../hooks/useMainLoopModel.js';
 import { usePromptSuggestion } from '../../hooks/usePromptSuggestion.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { useTypeahead } from '../../hooks/useTypeahead.js';
+import { Ansi } from '../../ink/Ansi.js';
 import type { BorderTextOptions } from '../../ink/render-border.js';
 import { stringWidth } from '../../ink/stringWidth.js';
 import { Box, type ClickEvent, type Key, Text, useInput } from '../../ink.js';
