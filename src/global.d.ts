@@ -11,6 +11,7 @@ declare global {
     FEEDBACK_CHANNEL: string;
     ISSUES_EXPLAINER: string;
   };
+  var BUDDY: unknown;
 }
 
 export {};

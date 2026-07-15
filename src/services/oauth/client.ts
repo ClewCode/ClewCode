@@ -20,6 +20,7 @@ import {
 import type { AccountInfo } from '../../utils/config.js';
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { logForDebugging } from '../../utils/debug.js';
+import { isFetchError } from '../../utils/errors.js';
 import { getOauthProfileFromOauthToken } from './getOauthProfile.js';
 import type {
   BillingType,

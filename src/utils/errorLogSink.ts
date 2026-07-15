@@ -17,6 +17,7 @@ import { createBufferedWriter } from './bufferedWriter.js';
 import { CACHE_PATHS } from './cachePaths.js';
 import { registerCleanup } from './cleanupRegistry.js';
 import { logForDebugging } from './debug.js';
+import { isFetchError } from './errors.js';
 import { getFsImplementation } from './fsOperations.js';
 import { attachErrorLogSink, dateToFilename } from './log.js';
 import { jsonStringify } from './slowOperations.js';

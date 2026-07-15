@@ -30,7 +30,7 @@ const ideOnboardingDialog = (): typeof import('src/components/IdeOnboardingDialo
 import { createAbortController } from './abortController.js';
 import { logForDebugging } from './debug.js';
 import { envDynamic } from './envDynamic.js';
-import { errorMessage, isFsInaccessible } from './errors.js';
+import { errorMessage, isFetchError, isFsInaccessible } from './errors.js';
 /* eslint-enable @typescript-eslint/no-require-imports */
 import { checkWSLDistroMatch, WindowsToWSLConverter } from './idePathConversion.js';
 import { sleep } from './sleep.js';

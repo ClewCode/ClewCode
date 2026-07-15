@@ -32,6 +32,7 @@ import { feature } from 'bun:bundle';
 import { ofetch } from 'ofetch';
 import { createV2ReplTransport, type ReplBridgeTransport } from './replBridgeTransport.js';
 import { buildCCRv2SdkUrl } from './workSecret.js';
+import { isFetchError } from '../utils/errors.js';
 import { toCompatSessionId } from './sessionIdCompat.js';
 import { FlushGate } from './flushGate.js';
 import { createTokenRefreshScheduler } from './jwtUtils.js';

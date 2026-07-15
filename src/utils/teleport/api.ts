@@ -6,7 +6,7 @@ import z from 'zod/v4';
 import { getClaudeAIOAuthTokens } from '../auth.js';
 import { logForDebugging } from '../debug.js';
 import { parseGitHubRepository } from '../detectRepository.js';
-import { errorMessage, toError } from '../errors.js';
+import { errorMessage, isFetchError, toError } from '../errors.js';
 import { lazySchema } from '../lazySchema.js';
 import { logError } from '../log.js';
 import { sleep } from '../sleep.js';

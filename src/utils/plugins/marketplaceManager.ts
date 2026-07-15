@@ -26,7 +26,7 @@ import { basename, dirname, isAbsolute, join, resolve, sep } from 'path';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
 import { logForDebugging } from '../debug.js';
 import { isEnvTruthy } from '../envUtils.js';
-import { ConfigParseError, errorMessage, getErrnoCode, isENOENT, toError } from '../errors.js';
+import { ConfigParseError, errorMessage, getErrnoCode, isENOENT, isFetchError, toError } from '../errors.js';
 import { execFileNoThrow, execFileNoThrowWithCwd } from '../execFileNoThrow.js';
 import { getFsImplementation } from '../fsOperations.js';
 import { gitExe, isGitHubSshLikelyConfigured } from '../git.js';

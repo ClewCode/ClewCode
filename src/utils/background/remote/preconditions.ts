@@ -6,7 +6,7 @@ import { checkAndRefreshOAuthTokenIfNeeded, getClaudeAIOAuthTokens, isClaudeAISu
 import { getCwd } from '../../cwd.js';
 import { logForDebugging } from '../../debug.js';
 import { detectCurrentRepository } from '../../detectRepository.js';
-import { errorMessage } from '../../errors.js';
+import { errorMessage, isFetchError } from '../../errors.js';
 import { findGitRoot, getIsClean } from '../../git.js';
 import { getOAuthHeaders } from '../../teleport/api.js';
 import { fetchEnvironments } from '../../teleport/environments.js';

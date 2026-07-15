@@ -34,7 +34,7 @@ import xss from 'xss';
 import { MCP_CLIENT_METADATA_URL } from '../../constants/oauth.js';
 import { openBrowser } from '../../utils/browser.js';
 import { getClewConfigHomeDir } from '../../utils/envUtils.js';
-import { errorMessage, getErrnoCode } from '../../utils/errors.js';
+import { errorMessage, getErrnoCode, isFetchError } from '../../utils/errors.js';
 import * as lockfile from '../../utils/lockfile.js';
 import { logMCPDebug } from '../../utils/log.js';
 import { getPlatform } from '../../utils/platform.js';

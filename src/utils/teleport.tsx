@@ -27,7 +27,7 @@ import { getCwd } from './cwd.js';
 import { logForDebugging } from './debug.js';
 import { detectCurrentRepositoryWithHost, parseGitHubRepository, parseGitRemote } from './detectRepository.js';
 import { isEnvTruthy } from './envUtils.js';
-import { TeleportOperationError, toError } from './errors.js';
+import { isFetchError, TeleportOperationError, toError } from './errors.js';
 import { execFileNoThrow } from './execFileNoThrow.js';
 import { truncateToWidth } from './format.js';
 import { findGitRoot, getDefaultBranch, getIsClean, gitExe } from './git.js';
