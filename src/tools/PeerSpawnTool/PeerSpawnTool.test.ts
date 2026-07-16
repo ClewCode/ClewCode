@@ -84,14 +84,30 @@ describe('PeerSpawnTool', () => {
     expect(spawnCalls[0]?.options.stdio).toBe('ignore');
   });
 
-  test('reports a meaningful error when no terminal can be spawned', async () => {
-    spawnBehavior = 'error';
+  test.skipIf(process.platform !== 'linux')(
+    'treats a terminal that stays open as spawned, and opens only one',
+    async () => {
+      // A launched terminal emits no 'exit'. Requiring one made the loop open a
+      // window per emulator and still report "No terminal emulator found".
+      const result = await PeerSpawnTool.call({});
 
-    const result = await PeerSpawnTool.call({});
+      expect(result.data.success).toBe(true);
+      expect(spawnCalls).toHaveLength(1);
+      expect(spawnCalls[0]?.command).toBe('x-terminal-emulator');
+    },
+  );
 
-    if (!result.data.success) {
+  test.skipIf(process.platform !== 'linux')(
+    'falls through every emulator, then reports a meaningful error',
+    async () => {
+      spawnBehavior = 'error';
+
+      const result = await PeerSpawnTool.call({});
+
+      expect(spawnCalls.map(c => c.command)).toEqual(['x-terminal-emulator', 'gnome-terminal', 'xterm']);
+      expect(result.data.success).toBe(false);
       expect(result.data.error).toBeTruthy();
       expect(result.data.error).not.toContain('undefined');
-    }
-  });
+    },
+  );
 });

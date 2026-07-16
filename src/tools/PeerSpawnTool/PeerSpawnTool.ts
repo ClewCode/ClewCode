@@ -282,24 +282,23 @@ export const PeerSpawnTool = buildTool({
               ? ['--', 'sh', '-c', `${cmd}; exec sh`]
               : ['-e', 'sh', '-c', `${cmd}; exec sh`];
 
-          await new Promise<void>(resolve => {
+          // A terminal that launches successfully stays open, so it emits no
+          // 'exit' — surviving the grace period without an 'error' is what
+          // success looks like here. Keying off 'exit' instead meant a working
+          // emulator was never recorded as spawned: the loop went on to open a
+          // window per emulator and then reported "No terminal emulator found".
+          spawned = await new Promise<boolean>(resolve => {
             const proc = childSpawn(emulator, args, {
               detached: true,
               stdio: 'ignore',
               env: childEnv,
-            })
-              .on('error', (err: Error) => {
-                lastError = err;
-                resolve();
-              })
-              .on('exit', () => {
-                spawned = true;
-                resolve();
-              });
+            }).on('error', (err: Error) => {
+              lastError = err;
+              resolve(false);
+            });
 
             proc.unref();
-            // Give the process a moment to initialize; if it fails it will error
-            setTimeout(() => resolve(), 200);
+            setTimeout(() => resolve(true), 200);
           });
 
           if (spawned) break;
