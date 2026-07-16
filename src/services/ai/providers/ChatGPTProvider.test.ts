@@ -1,9 +1,4 @@
-import { expect, mock, test } from 'bun:test';
-
-mock.module('../providerRegistry.js', () => ({
-  getProviderModelInfo: () => undefined,
-  getProviderRegistryEntry: () => undefined,
-}));
+import { expect, test } from 'bun:test';
 
 test('omits temperature from Responses API requests', async () => {
   const { getAdapter } = await import('../adapter/AnthropicAdapter.js');
