@@ -218,6 +218,7 @@ import { stripDangerousPermissionsForAutoMode } from '../utils/permissions/permi
 import { allWorkingDirectories, getScratchpadDir, isScratchpadEnabled } from '../utils/permissions/filesystem.js';
 import { WEB_FETCH_TOOL_NAME } from '../tools/WebFetchTool/prompt.js';
 import { SLEEP_TOOL_NAME } from '../tools/SleepTool/prompt.js';
+import { getActiveToolSpinnerVerb } from '../utils/activeToolSpinnerVerb.js';
 import { clearSpeculativeChecks } from '../tools/BashTool/bashPermissions.js';
 import type { AutoUpdaterResult } from '../utils/autoUpdater.js';
 import { getGlobalConfig, saveGlobalConfig, getGlobalConfigWriteCount } from '../utils/config.js';
@@ -2061,6 +2062,18 @@ export function REPL({
       inProgressToolUses.length > 0 &&
       inProgressToolUses.every(b => b.type === 'tool_use' && b.name === SLEEP_TOOL_NAME)
     );
+  }, [messages, inProgressToolUseIDs]);
+
+  // Aggregated verb describing in-flight tool calls, e.g.
+  // "Making 1 scratchpad edit +25, running 3 shell commands". Null when the
+  // active tools don't warrant a custom verb (spinner falls back to default).
+  const activeToolVerb = useMemo(() => {
+    const lastAssistant = messages.findLast(m => m.type === 'assistant');
+    if (lastAssistant?.type !== 'assistant') return null;
+    const activeTools = lastAssistant.message.content
+      .filter(b => b.type === 'tool_use' && inProgressToolUseIDs.has(b.id))
+      .map(b => ({ name: (b as { name: string }).name, input: (b as { input?: Record<string, unknown> }).input }));
+    return getActiveToolSpinnerVerb(activeTools);
   }, [messages, inProgressToolUseIDs]);
 
   const {
@@ -5940,7 +5953,7 @@ export function REPL({
                   spinnerTip={spinnerTip}
                   responseLengthRef={responseLengthRef}
                   apiMetricsRef={apiMetricsRef}
-                  overrideMessage={spinnerMessage}
+                  overrideMessage={spinnerMessage ?? activeToolVerb}
                   spinnerSuffix={stopHookSpinnerSuffix}
                   verbose={verbose}
                   loadingStartTimeRef={loadingStartTimeRef}

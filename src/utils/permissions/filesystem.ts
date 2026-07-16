@@ -373,7 +373,7 @@ export async function ensureScratchpadDir(): Promise<string> {
 }
 
 // Check if file is within the scratchpad directory
-function isScratchpadPath(absolutePath: string): boolean {
+export function isScratchpadPath(absolutePath: string): boolean {
   if (!isScratchpadEnabled()) {
     return false;
   }

@@ -19,6 +19,7 @@ import { getCwd } from '../../utils/cwd.js';
 import { getPatchForDisplay } from '../../utils/diff.js';
 import { getDisplayPath } from '../../utils/file.js';
 import { logError } from '../../utils/log.js';
+import { isScratchpadPath } from '../../utils/permissions/filesystem.js';
 import { getPlansDirectory } from '../../utils/plans.js';
 import { openForScan, readCapped } from '../../utils/readEditContext.js';
 import type { Output } from './FileWriteTool.js';
@@ -73,6 +74,21 @@ function FileWriteToolCreatedMessage({
           </Text>
         )}
       </Box>
+    </MessageResponse>
+  );
+}
+
+/**
+ * Condensed one-line message for writes into the per-session scratchpad.
+ * Mirrors Claude Code's "Made 1 scratchpad edit +N" — hides the long temp
+ * path and the content preview, showing only the count of lines added.
+ */
+function ScratchpadEditMessage({ addedLines }: { addedLines: number }): React.ReactNode {
+  return (
+    <MessageResponse>
+      <Text>
+        Made <Text bold>1</Text> scratchpad edit <Text color="success">+{addedLines}</Text>
+      </Text>
     </MessageResponse>
   );
 }
@@ -256,6 +272,15 @@ export function renderToolResultMessage(
   _progressMessagesForMessage: ProgressMessage<ToolProgressData>[],
   { style, verbose }: { style?: 'condensed'; verbose: boolean },
 ): React.ReactNode {
+  // Scratchpad writes get a condensed one-liner (no long temp path / preview).
+  if (isScratchpadPath(filePath)) {
+    const addedLines =
+      type === 'create'
+        ? countLines(content)
+        : structuredPatch.reduce((sum, hunk) => sum + hunk.lines.filter(line => line.startsWith('+')).length, 0);
+    return <ScratchpadEditMessage addedLines={addedLines} />;
+  }
+
   switch (type) {
     case 'create': {
       const isPlanFile = filePath.startsWith(getPlansDirectory());
