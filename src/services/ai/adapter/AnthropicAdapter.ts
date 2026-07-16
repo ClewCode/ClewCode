@@ -19,7 +19,11 @@
 
 import type { BetaMessage, BetaMessageStreamParams } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs';
 import type { ProviderContentBlock } from '../../../types/common.js';
-import { getProviderModelInfo, getProviderRegistryEntry } from '../providerRegistry.js';
+// Data-only import: going through providerRegistry.js instead would pull in
+// every provider class, and those import this module back (adapter ->
+// providerRegistry -> ChatGPTProvider -> adapter), so registerAdapter() ran
+// against an uninitialized adapterRegistry depending on load order.
+import { getProviderCapabilityEntry, getProviderModelInfo } from '../providerCapabilities.js';
 
 /** Per-provider stream watchdog defaults (seconds). Override per adapter. */
 const DEFAULT_STREAM_TIMEOUT_MS = 30_000;
@@ -113,7 +117,7 @@ function getOpenAIReasoningEffort(params: BetaMessageStreamParams, providerId: s
 
   // Check provider-level capability first
   try {
-    const entry = getProviderRegistryEntry(providerId as any);
+    const entry = getProviderCapabilityEntry(providerId as any);
     if (!entry.capabilities.reasoningEffort) return {};
 
     // Check model-level reasoning support
@@ -343,7 +347,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
    */
   private modelSupportsVision(modelId: string): boolean {
     try {
-      const entry = getProviderRegistryEntry(this.providerId as any);
+      const entry = getProviderCapabilityEntry(this.providerId as any);
 
       // Check model-level imageIn first
       const modelInfo = getProviderModelInfo(this.providerId as any, modelId);
@@ -367,7 +371,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
    */
   private modelSupportsVideo(modelId: string): boolean {
     try {
-      const entry = getProviderRegistryEntry(this.providerId as any);
+      const entry = getProviderCapabilityEntry(this.providerId as any);
       const modelInfo = getProviderModelInfo(this.providerId as any, modelId);
       if (modelInfo?.capabilities.videoIn !== undefined) return modelInfo.capabilities.videoIn;
       if (entry.capabilities.videoIn !== undefined) return entry.capabilities.videoIn;
