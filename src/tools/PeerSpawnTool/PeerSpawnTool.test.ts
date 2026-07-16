@@ -1,64 +1,113 @@
-import { describe, expect, test, beforeEach } from 'bun:test';
-import { PeerSpawnTool } from './PeerSpawnTool.js';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import * as realChildProcess from 'node:child_process';
+
+// PeerSpawnTool.call() opens a real terminal window and writes real temp files.
+// Without this mock the suite spawns terminals on the developer's desktop, and
+// asserts on whether the host happens to have an emulator installed — which is
+// why it passed on Windows and failed on Linux/macOS CI.
+type SpawnCall = { command: string; args: string[]; options: Record<string, unknown> };
+const spawnCalls: SpawnCall[] = [];
+let spawnBehavior: 'ok' | 'error' = 'ok';
+
+function fakeChild() {
+  const child: Record<string, unknown> = {
+    pid: 4242,
+    unref: () => child,
+    on: (event: string, handler: (err: Error) => void) => {
+      if (event === 'error' && spawnBehavior === 'error') {
+        // Emulate node's async 'error' emission for a missing executable.
+        queueMicrotask(() => handler(new Error('spawn ENOENT')));
+      }
+      return child;
+    },
+  };
+  return child;
+}
+
+// Spread the real module: mock.module replaces the whole module, and other
+// code in the suite imports execSync/exec from here.
+mock.module('node:child_process', () => ({
+  ...realChildProcess,
+  spawn: (command: string, args: string[], options: Record<string, unknown>) => {
+    spawnCalls.push({ command, args, options });
+    return fakeChild();
+  },
+}));
+
+const { PeerSpawnTool } = await import('./PeerSpawnTool.js');
+
+beforeEach(() => {
+  spawnCalls.length = 0;
+  spawnBehavior = 'ok';
+});
+
+afterEach(() => {
+  spawnBehavior = 'ok';
+});
 
 describe('PeerSpawnTool', () => {
-  beforeEach(() => {
-    // Reset mocks between tests
-  });
-
-  test('does not include port or joined status in response', async () => {
+  test('spawns a terminal without reporting port or joined status', async () => {
     const result = await PeerSpawnTool.call({});
+
     expect(result.data.success).toBe(true);
-    expect('port' in result.data).toBe(false); // Should not exist
-    expect('joined' in result.data).toBe(false); // Should not exist
+    expect(spawnCalls.length).toBeGreaterThan(0);
+    // Both fields were hardcoded and never updated, so they lied; they must stay gone.
+    expect('port' in result.data).toBe(false);
+    expect('joined' in result.data).toBe(false);
   });
 
-  test('does not inherit sensitive env vars from parent to peer', async () => {
-    const origApiKey = process.env.OPENAI_API_KEY;
+  test('does not leak sensitive env vars from parent to peer', async () => {
+    const original = process.env.OPENAI_API_KEY;
     process.env.OPENAI_API_KEY = 'secret-key-12345';
 
     try {
       const result = await PeerSpawnTool.call({});
       expect(result.data.success).toBe(true);
-      // The peer environment should not include OPENAI_API_KEY
-      // (This is verified by checking that the spawned command doesn't pass it)
+
+      const env = spawnCalls[0]?.options.env as Record<string, string> | undefined;
+      expect(env).toBeDefined();
+      expect(env).not.toHaveProperty('OPENAI_API_KEY');
+      expect(JSON.stringify(spawnCalls)).not.toContain('secret-key-12345');
     } finally {
-      if (origApiKey) {
-        process.env.OPENAI_API_KEY = origApiKey;
-      } else {
+      if (original === undefined) {
         delete process.env.OPENAI_API_KEY;
+      } else {
+        process.env.OPENAI_API_KEY = original;
       }
     }
   });
 
-  test('handles Linux terminal spawn failure gracefully', async () => {
-    if (process.platform === 'linux') {
-      const result = await PeerSpawnTool.call({});
-      // Should not throw, should report error or success gracefully
-      expect(result.data).toBeDefined();
-    }
+  test('detaches the child so the peer outlives this process', async () => {
+    await PeerSpawnTool.call({});
+
+    expect(spawnCalls[0]?.options.detached).toBe(true);
+    expect(spawnCalls[0]?.options.stdio).toBe('ignore');
   });
 
-  test('validates mainScript path before building command', async () => {
-    const result = await PeerSpawnTool.call({});
-    expect(result.data.success).toBe(true);
-    // Should not create ps1/scripts with invalid paths
-  });
-
-  test('cleans up temp files on Windows', async () => {
-    if (process.platform === 'win32') {
+  test.skipIf(process.platform !== 'linux')(
+    'treats a terminal that stays open as spawned, and opens only one',
+    async () => {
+      // A launched terminal emits no 'exit'. Requiring one made the loop open a
+      // window per emulator and still report "No terminal emulator found".
       const result = await PeerSpawnTool.call({});
+
       expect(result.data.success).toBe(true);
-      // Temp files should be cleaned up after spawn
-    }
-  });
+      expect(spawnCalls).toHaveLength(1);
+      expect(spawnCalls[0]?.command).toBe('x-terminal-emulator');
+    },
+  );
 
-  test('reports meaningful error on spawn failure', async () => {
-    // If terminal emulator doesn't exist, should report error
-    const result = await PeerSpawnTool.call({});
-    if (!result.data.success) {
+  test.skipIf(process.platform !== 'linux')(
+    'falls through every emulator, then reports a meaningful error',
+    async () => {
+      spawnBehavior = 'error';
+
+      const result = await PeerSpawnTool.call({});
+
+      expect(spawnCalls.map(c => c.command)).toEqual(['x-terminal-emulator', 'gnome-terminal', 'xterm']);
+      expect(result.data.success).toBe(false);
       expect(result.data.error).toBeTruthy();
       expect(result.data.error).not.toContain('undefined');
-    }
-  });
+    },
+  );
 });
