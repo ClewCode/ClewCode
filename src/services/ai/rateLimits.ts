@@ -71,7 +71,7 @@ function parseResetTime(value: string): number {
 export function parseRetryAfter(value: string): number {
   // Try parsing as seconds (numeric)
   const seconds = Number(value);
-  if (!Number.isNaN(seconds) && isFinite(seconds)) {
+  if (Number.isFinite(seconds)) {
     return Math.max(1000, seconds * 1000);
   }
 

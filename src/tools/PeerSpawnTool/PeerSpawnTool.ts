@@ -1,5 +1,5 @@
 import { spawn as childSpawn } from 'node:child_process';
-import { writeFileSync, unlinkSync } from 'node:fs';
+import { unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as React from 'react';

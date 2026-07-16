@@ -1,6 +1,6 @@
 import { APIError } from '@anthropic-ai/sdk';
-import { normalizeUsage } from '../usageNormalizer.js';
 import { extractRateLimitsFromHeaders, parseRetryAfter } from '../rateLimits.js';
+import { normalizeUsage } from '../usageNormalizer.js';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 const DEFAULT_CHAT_PATH = '/chat/completions';
