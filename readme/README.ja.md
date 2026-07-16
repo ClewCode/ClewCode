@@ -241,7 +241,6 @@ bun run check:ci         # Biome CI 検証を実行
 ```bash
 bun run preload <module>     # モジュールコンテキストをプリロード
 bun run session <command>    # セッションコンテキストを保存、一覧表示、復元
-bun run codegraph            # モジュール依存関係グラフを生成
 bun run ast-grep -- <args>   # 構造的 AST 検索または書き換えを実行
 ```
 

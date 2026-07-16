@@ -243,7 +243,6 @@ bun run check:ci         # 运行 Biome CI validation
 bun run preload <module>     # preload module context
 bun run session <command>    # save、list 或 restore session context
 bun run codeindex <command>  # index 并搜索 codebase
-bun run codegraph            # 生成 module dependency graph
 bun run ast-grep -- <args>   # 使用 AST 搜索或 rewrite
 ```
 

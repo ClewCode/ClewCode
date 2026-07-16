@@ -241,7 +241,6 @@ Utilitaires de développement :
 ```bash
 bun run preload <module>     # Précharger le contexte du module
 bun run session <command>    # Sauvegarder, lister ou restaurer le contexte de session
-bun run codegraph            # Générer des graphes de dépendances de modules
 bun run ast-grep -- <args>   # Exécuter une recherche ou réécriture AST structurelle
 ```
 

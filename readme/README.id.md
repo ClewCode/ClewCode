@@ -241,7 +241,6 @@ Utilitas pengembangan:
 ```bash
 bun run preload <module>     # Muat awal konteks modul
 bun run session <command>    # Simpan, daftar, atau pulihkan konteks sesi
-bun run codegraph            # Hasilkan grafik dependensi modul
 bun run ast-grep -- <args>   # Jalankan pencarian atau penulisan ulang AST struktural
 ```
 

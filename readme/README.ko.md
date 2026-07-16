@@ -241,7 +241,6 @@ bun run check:ci         # Biome CI 검증 실행
 ```bash
 bun run preload <module>     # 모듈 컨텍스트 사전 로드
 bun run session <command>    # 세션 컨텍스트 저장, 목록 또는 복원
-bun run codegraph            # 모듈 의존성 그래프 생성
 bun run ast-grep -- <args>   # 구조적 AST 검색 또는 재작성 실행
 ```
 

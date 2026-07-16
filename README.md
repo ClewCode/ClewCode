@@ -213,7 +213,7 @@ Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://model
   </tr>
   <tr>
     <td><strong>Multi-Agent Architecture</strong></td>
-    <td>Agents, Subagents, Teammate swarms, and LAN Peers for parallel and distributed execution.</td>
+    <td>Agents, Subagents, Teammate swarms, and LAN Peers for parallel and distributed execution. Peers spawned with <code>peer_spawn</code> inherit the current session's exact provider and model.</td>
   </tr>
 </table>
 

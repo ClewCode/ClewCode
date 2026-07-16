@@ -260,7 +260,6 @@ Developer utilities:
 bun run preload <module>     # preload module context
 bun run session <command>    # save, list หรือ restore session context
 bun run codeindex <command>  # index และค้นหา codebase
-bun run codegraph            # สร้าง module dependency graph
 bun run ast-grep -- <args>   # ค้นหาหรือ rewrite ด้วย AST
 ```
 

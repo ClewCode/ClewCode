@@ -712,9 +712,9 @@ export const AgentTool = buildTool({
     // dependency issues during test module loading.
     const isCoordinator = isEnvTruthy(process.env.CLEW_CODE_COORDINATOR_MODE);
 
-    // Fork subagent experiment: force ALL spawns async for a unified
-    // <task-notification> interaction model (not just fork spawns — all of them).
-    const forceAsync = isForkSubagentEnabled();
+    // Fork subagent experiment defaults spawns to async, but an explicit
+    // run_in_background=false must preserve the Agent tool contract.
+    const forceAsync = isForkSubagentEnabled() && run_in_background !== false;
 
     // Assistant mode: force all agents async. Synchronous subagents hold the
     // main loop's turn open until they complete — the daemon's inputQueue

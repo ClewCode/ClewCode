@@ -241,7 +241,6 @@ bun run check:ci         # Biome CI सत्यापन चलाएँ
 ```bash
 bun run preload <module>     # मॉड्यूल संदर्भ प्रीलोड करें
 bun run session <command>    # सत्र संदर्भ सहेजें, सूचीबद्ध करें या पुनर्स्थापित करें
-bun run codegraph            # मॉड्यूल निर्भरता ग्राफ़ उत्पन्न करें
 bun run ast-grep -- <args>   # संरचनात्मक AST खोज या पुनर्लेखन चलाएँ
 ```
 

@@ -2,7 +2,7 @@
 
 This file provides guidance to Clew Code when working with code in this repository.
 
-For a longer architecture deep-dive see `AGENTS.md`. Prefer this file for day-to-day agent operation; keep both in sync when architecture or workflow changes.
+This is the canonical architecture and day-to-day development guide for this repository.
 
 ## Build / Test / Lint (Bun only)
 
@@ -21,7 +21,6 @@ bun run format           # Biome format --write
 bun run check            # Biome check --write
 bun x tsc --noEmit       # Typecheck only
 bun ci                   # Lockfile integrity
-bun run codegraph        # Write structure map to .clew/CODEGRAPH.md
 ```
 
 **Pre-push gate:**
@@ -36,7 +35,7 @@ Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for
 
 ## Project rules (from `.clew/rules.json`)
 
-- Keep docs in sync — `AGENTS.md`, `CHANGELOG.md`, `README.md` (and this file) when behavior changes
+- Keep docs in sync — `AGENT.md`, `CHANGELOG.md`, and `README.md` when behavior changes
 - Use Bun for all dev commands
 - ESM; `node:` for built-ins; `.js` extension on relative imports
 - Biome: 2-space, single quotes, 120 columns, semicolons `always`, trailing commas `all`, LF, VCS-aware (uses `.gitignore`), scope `src/**/*.{ts,tsx,js}`
@@ -46,7 +45,6 @@ Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for
 - Before commit: full gate above
 - Update `CHANGELOG.md` under `[Unreleased]` when behavior changes
 - Add/update tests when behavior changes
-- `/graphify` → load the graphify skill first
 
 ## Code conventions
 
@@ -62,7 +60,7 @@ Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for
 |---|---|
 | `tsconfig.json` | `module: ESNext`, `moduleResolution: bundler`, `strict: true`, `jsx: react-jsx`, path alias `src/*` |
 | `biome.json` | 2-space, single quotes, 120 columns, semicolons `always`, trailing commas `all`, LF, VCS-`git`-aware (uses `.gitignore`), includes `src/**/*.{ts,tsx,js}` |
-| `.mcp.json` | MCP server definitions (codegraph, clew-bus, clew-peer, agora-mcp) |
+| `.mcp.json` | MCP server definitions (clew-bus, clew-peer, agora-mcp) |
 | `.husky/pre-commit` | Pre-commit hook — shadow pair regression guard (`scripts/check-shadow-pairs.sh src`) |
 | `.env` | API keys — never committed (in `.gitignore`) |
 
@@ -197,7 +195,7 @@ Other large surface areas: `src/agentRuntime/` (background orchestration, ultrac
 | Agent | Main session or `.clew/agents/*.md` |
 | Subagent (`Agent` tool / Explore) | Short independent work; Explore is read-only |
 | Teammate / swarm | Multi-turn named workers with mailbox/tasks |
-| LAN peer (`/peer`) | Other Clew instances on machine/LAN |
+| LAN peer (`/peer`) | Other Clew instances on machine/LAN; `peer_spawn` inherits the current session's exact provider and model |
 | Background / daemon | Queue + cron via autonomous + agentRuntime (`/bg`, `/daemon`) |
 
 Also: **plan mode** (`.clew/plans/`), **checkpoints** (20%/45%/70% + `/rewind`), **goal verification**, **Max Mode** (parallel candidates + judge).
@@ -227,12 +225,6 @@ Prefer TinyFish MCP for web work over built-in WebSearch / WebFetch / BrowserToo
 - `semanticSearch.ts`: `syncIndex()` runs before every query (concurrent with embedding) — self-healing
 - Falls back to JS brute-force cosine if native sqlite-vec extension fails to load
 - Commands: `/memory-search`, `/index-admin stats|prune|clear`
-
-## Graphify & codegraph
-
-- Knowledge graph: `graphify-out/` — for codebase questions: `graphify query "..."`, relationships: `graphify path "A" "B"`, concepts: `graphify explain "..."`. After structural edits: `graphify update .`
-- Fallback map: `bun run codegraph` → `.clew/CODEGRAPH.md`
-- Project also configures codegraph MCP in `.mcp.json`
 
 ## Workspace linking
 
@@ -264,7 +256,6 @@ Located across `src/` (co-located `.test.ts`) and `tests/` (integration). Run wi
 | `scripts/prebuild-version.mjs` | Writes generated version info |
 | `scripts/postbuild-inject-macro.mjs` | Post-build macro injection |
 | `scripts/bun-run.mjs` | Dev/start runner with defines |
-| `scripts/codegraph.ts` | Structure map generator |
 | `scripts/agent-room.ts` | Agent room helper |
 | `src/remote/relay-server.ts` | Relay (`bun run relay`) |
 

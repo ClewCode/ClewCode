@@ -13,7 +13,6 @@ import {
 } from '../../skills/loadSkillsDir.js';
 import type { ToolUseContext } from '../../Tool.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
-import { scheduleCodegraphUpdate } from '../../utils/codegraphUpdate.js';
 import { getCwd } from '../../utils/cwd.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { countLinesChanged } from '../../utils/diff.js';
@@ -446,7 +445,6 @@ export const FileEditTool = buildTool({
     // 5. Write to disk
     writeTextContent(absoluteFilePath, updatedFile, encoding, endings);
     clearAllCache();
-    scheduleCodegraphUpdate(absoluteFilePath);
 
     // Notify LSP servers about file modification (didChange) and save (didSave)
     const lspManager = getLspServerManager();

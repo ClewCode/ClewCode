@@ -241,7 +241,6 @@ bun run check:ci         # Запустить валидацию Biome CI
 ```bash
 bun run preload <module>     # Предзагрузить контекст модуля
 bun run session <command>    # Сохранить, вывести список или восстановить контекст сессии
-bun run codegraph            # Создать графы зависимостей модулей
 bun run ast-grep -- <args>   # Выполнить структурный поиск или перезапись AST
 ```
 

@@ -241,7 +241,6 @@ Tiện ích phát triển:
 ```bash
 bun run preload <module>     # Tải trước ngữ cảnh module
 bun run session <command>    # Lưu, liệt kê hoặc khôi phục ngữ cảnh phiên
-bun run codegraph            # Tạo biểu đồ phụ thuộc module
 bun run ast-grep -- <args>   # Chạy tìm kiếm hoặc viết lại AST cấu trúc
 ```
 

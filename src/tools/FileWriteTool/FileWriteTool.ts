@@ -14,7 +14,6 @@ import {
 } from '../../skills/loadSkillsDir.js';
 import type { ToolUseContext } from '../../Tool.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
-import { scheduleCodegraphUpdate } from '../../utils/codegraphUpdate.js';
 import { getCwd } from '../../utils/cwd.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { countLinesChanged, getPatchForDisplay } from '../../utils/diff.js';
@@ -258,7 +257,6 @@ export const FileWriteTool = buildTool({
     // overwriting a CRLF file or when binaries in cwd poisoned the repo sample.
     writeTextContent(fullFilePath, content, enc, 'LF');
     clearAllCache();
-    scheduleCodegraphUpdate(fullFilePath);
 
     // Notify LSP servers about file modification (didChange) and save (didSave)
     const lspManager = getLspServerManager();

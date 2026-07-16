@@ -39,7 +39,6 @@
     "check": "biome check --write src/",
     "check:ci": "biome ci src/",
     "ast-grep": "bun x ast-grep",
-    "codegraph": "bun run scripts/codegraph.ts",
     "docs:generate": "bun run scripts/generate-docs.ts",
     "docs:watch": "bun --watch run scripts/generate-docs.ts",
     "preload": "bun run scripts/preload.ts",

@@ -35,6 +35,7 @@ mock.module('node:child_process', () => ({
 }));
 
 const { PeerSpawnTool } = await import('./PeerSpawnTool.js');
+const { getMainLoopModel } = await import('../../utils/model/model.js');
 
 beforeEach(() => {
   spawnCalls.length = 0;
@@ -54,6 +55,10 @@ describe('PeerSpawnTool', () => {
     // Both fields were hardcoded and never updated, so they lied; they must stay gone.
     expect('port' in result.data).toBe(false);
     expect('joined' in result.data).toBe(false);
+
+    const block = PeerSpawnTool.mapToolResultToToolResultBlockParam(result.data, 'spawn-1');
+    expect(block.content).not.toContain('undefined');
+    expect(block.content).toContain('peer_discover');
   });
 
   test('does not leak sensitive env vars from parent to peer', async () => {
@@ -75,6 +80,15 @@ describe('PeerSpawnTool', () => {
         process.env.OPENAI_API_KEY = original;
       }
     }
+  });
+
+  test('inherits the active provider and exact user session model', async () => {
+    const result = await PeerSpawnTool.call({});
+
+    const env = spawnCalls[0]?.options.env as Record<string, string> | undefined;
+    expect(env?.AI_PROVIDER).toBeTruthy();
+    expect(result.data.command).not.toContain('--provider');
+    expect(result.data.command).toContain(getMainLoopModel());
   });
 
   test('detaches the child so the peer outlives this process', async () => {

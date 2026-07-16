@@ -241,7 +241,6 @@ Entwicklungsdienstprogramme:
 ```bash
 bun run preload <module>     # Modulkontext vorladen
 bun run session <command>    # Sitzungskontext speichern, auflisten oder wiederherstellen
-bun run codegraph            # Modulabhängigkeitsgraphen generieren
 bun run ast-grep -- <args>   # Strukturelle AST-Suche oder -Umschreibung ausführen
 ```
 

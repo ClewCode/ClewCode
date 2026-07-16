@@ -1,5 +1,5 @@
 import { spawn as childSpawn } from 'node:child_process';
-import { unlinkSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as React from 'react';
@@ -20,7 +20,6 @@ const inputSchema = lazySchema(() =>
       .optional()
       .describe('Display name for the peer node. If not provided, a random name is generated.'),
     role: z.string().optional().describe('Agent role for the peer node (e.g. builder, tester, reviewer)'),
-    model: z.string().optional().describe('Model for the peer node session (e.g. sonnet)'),
     prompt: z.string().optional().describe('Custom system prompt for the peer node session'),
   }),
 );
@@ -122,10 +121,10 @@ export const PeerSpawnTool = buildTool({
   mapToolResultToToolResultBlockParam(output, toolUseID) {
     if (!output.success)
       return { tool_use_id: toolUseID, type: 'tool_result', content: `[Peer Spawn] Failed: ${output.error}` };
-    const result = `Spawned peer "${output.name}"${output.role ? ` (${output.role})` : ''} on port ${output.port}`;
+    const result = `Spawned peer terminal for "${output.name}"${output.role ? ` (${output.role})` : ''}. Use peer_discover to find it once startup completes.`;
     return { tool_use_id: toolUseID, type: 'tool_result', content: result };
   },
-  async call(input: { name?: string; role?: string; model?: string; prompt?: string }) {
+  async call(input: { name?: string; role?: string; prompt?: string }) {
     const randomId = Math.random().toString(36).substring(2, 7);
     const targetName = input.name || `peer-${randomId}`;
 
@@ -168,8 +167,9 @@ export const PeerSpawnTool = buildTool({
 
       // Use same model AND provider as the main session, with permission
       // prompts bypassed so the peer can work autonomously.
-      const spawnModel = input.model || getMainLoopModel();
+      const spawnModel = getMainLoopModel();
       const spawnProvider = ProviderManager.getInstance().getActiveProviderName();
+      childEnv.AI_PROVIDER = spawnProvider;
       const baseArgs = [
         '--peer-share',
         '--peer-name',
@@ -178,7 +178,6 @@ export const PeerSpawnTool = buildTool({
         targetName,
         '--model',
         spawnModel,
-        ...(spawnProvider ? ['--provider', spawnProvider] : []),
         '--dangerously-skip-permissions',
       ];
       const cliArgs = [...baseArgs];
@@ -252,6 +251,8 @@ export const PeerSpawnTool = buildTool({
           `Set-Location '${ps1q(cwd)}'`,
           `$clewArgs = @(${argsArrayPs1})`,
           `& '${ps1q(execPath)}' @clewArgs`,
+          `Remove-Item -LiteralPath '${ps1q(promptFilePath)}' -Force -ErrorAction SilentlyContinue`,
+          `Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue`,
           ``,
         ].join('\r\n');
 
@@ -309,25 +310,6 @@ export const PeerSpawnTool = buildTool({
             `No terminal emulator found. Tried: x-terminal-emulator, gnome-terminal, xterm. ${lastError?.message || ''}`,
           );
         }
-      }
-
-      // Clean up temp files on Windows (schedule async to not block return)
-      if (platform === 'win32') {
-        const safeName = targetName.replace(/[^a-zA-Z0-9_-]/g, '_');
-        const ps1Path = join(tmpdir(), `clew-peer-${safeName}-${randomId}.ps1`);
-        const promptFilePath = join(tmpdir(), `clew-peer-${safeName}-${randomId}.prompt.txt`);
-        setImmediate(() => {
-          try {
-            unlinkSync(ps1Path);
-          } catch {
-            // Already deleted or doesn't exist
-          }
-          try {
-            unlinkSync(promptFilePath);
-          } catch {
-            // Already deleted or doesn't exist
-          }
-        });
       }
 
       return {
