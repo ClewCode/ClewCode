@@ -7,7 +7,7 @@ import type { PermissionResult } from 'src/utils/permissions/PermissionResult.js
 import { z } from 'zod/v4';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
 import { queryModelWithStreaming } from '../../services/api/claude.js';
-import { isProviderConfigured, searchWithProvider } from '../../services/search/index.js';
+import { getConfiguredProviders, searchWithFallback } from '../../services/search/index.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { logError } from '../../utils/log.js';
@@ -65,17 +65,6 @@ export type Output = z.infer<OutputSchema>;
 export type { WebSearchProgress } from '../../types/tools.js';
 
 import type { WebSearchProgress } from '../../types/tools.js';
-
-/**
- * Select the best available direct search provider.
- * Priority: tavily > brave > serper
- */
-function selectBestDirectProvider(): string | null {
-  if (isProviderConfigured('tavily')) return 'tavily';
-  if (isProviderConfigured('brave')) return 'brave';
-  if (isProviderConfigured('serper')) return 'serper';
-  return null;
-}
 
 /**
  * Check whether the Anthropic server-side web_search returned any
@@ -164,47 +153,44 @@ function makeOutputFromSearchResponse(result: BetaContentBlock[], query: string,
  * Skips the Anthropic server-side web_search model call and goes
  * straight to Tavily/Brave/Serper.
  */
-async function directSearchFallback(query: string, startTime: number, onProgress?: any): Promise<{ data: Output }> {
-  const fallbackProvider = selectBestDirectProvider();
-
-  if (!fallbackProvider) {
+async function directSearchFallback(
+  query: string,
+  startTime: number,
+  signal?: AbortSignal,
+  onProgress?: any,
+): Promise<{ data: Output }> {
+  if (getConfiguredProviders().length === 0) {
     throw new Error(
       'No web search provider API keys are configured (Tavily/Brave/Serper) and DuckDuckGo scraping is disabled/dead. Please configure TAVILY_API_KEY, BRAVE_API_KEY, or SERPER_API_KEY in settings.',
     );
   }
 
-  if (onProgress) {
-    onProgress({
+  const response = await searchWithFallback(query, { num: 10, signal }, providerName => {
+    onProgress?.({
       toolUseID: 'search-direct',
-      data: { type: 'query_update', query: `[${fallbackProvider}] ${query}` },
+      data: { type: 'query_update', query: `[${providerName}] ${query}` },
     });
-  }
+  });
 
-  const response = await searchWithProvider(fallbackProvider, query, { num: 10 });
-
-  if (onProgress) {
-    onProgress({
-      toolUseID: 'search-direct-results',
-      data: {
-        type: 'search_results_received',
-        resultCount: response.results.length,
-        query: `[${fallbackProvider}] ${query}`,
-      },
-    });
-  }
+  onProgress?.({
+    toolUseID: 'search-direct-results',
+    data: {
+      type: 'search_results_received',
+      resultCount: response.results.length,
+      query: `[${response.provider}] ${query}`,
+    },
+  });
 
   const durationSeconds = (performance.now() - startTime) / 1000;
-  const results: (SearchResult | string)[] = [];
-
-  if (response.results.length > 0) {
-    results.push({
-      tool_use_id: `direct-${fallbackProvider}`,
+  const results: (SearchResult | string)[] = [
+    {
+      tool_use_id: `direct-${response.provider}`,
       content: response.results.map(r => ({
         title: r.title,
         url: r.url,
       })),
-    });
-  }
+    },
+  ];
 
   return {
     data: {
@@ -253,7 +239,7 @@ export const WebSearchTool = buildTool({
     // provider (Tavily/Brave/Serper) is configured — DuckDuckGo alone
     // gives too-poor results. When disabled, the model will use MCP
     // search tools (tinyfish, firecrawl) which return richer results.
-    return isProviderConfigured('tavily') || isProviderConfigured('brave') || isProviderConfigured('serper');
+    return getConfiguredProviders().length > 0;
   },
   get inputSchema(): InputSchema {
     return inputSchema();
@@ -324,7 +310,7 @@ export const WebSearchTool = buildTool({
     // direct-search fallback instead of making an expensive model API
     // call that will inevitably fail or hang.
     if (!isAnthropicProvider()) {
-      return directSearchFallback(query, startTime, onProgress);
+      return directSearchFallback(query, startTime, context.abortController.signal, onProgress);
     }
 
     const userMessage = createUserMessage({
@@ -458,26 +444,26 @@ export const WebSearchTool = buildTool({
     const useFallback = streamError !== null || !hasWebSearchResults(allContentBlocks);
     if (useFallback) {
       try {
-        const fallbackProvider = selectBestDirectProvider();
-        if (!fallbackProvider) {
+        if (getConfiguredProviders().length === 0) {
           throw new Error('No search provider API keys configured (Tavily/Brave/Serper) for fallback search.');
         }
 
-        // Report progress so the UI doesn't look stuck
-        if (onProgress) {
-          onProgress({
-            toolUseID: `search-progress-${progressCounter + 1}`,
-            data: {
-              type: 'query_update',
-              query: `[${fallbackProvider}] ${query}`,
-            },
-          });
-        }
-
         const fallbackStart = performance.now();
-        const response = await searchWithProvider(fallbackProvider, query, {
-          num: 10,
-        });
+        const response = await searchWithFallback(
+          query,
+          { num: 10, signal: context.abortController.signal },
+          providerName => {
+            // Report progress so the UI doesn't look stuck
+            progressCounter++;
+            onProgress?.({
+              toolUseID: `search-progress-${progressCounter}`,
+              data: {
+                type: 'query_update',
+                query: `[${providerName}] ${query}`,
+              },
+            });
+          },
+        );
         const fallbackDuration = (performance.now() - fallbackStart) / 1000 + durationSeconds;
 
         progressCounter++;
@@ -487,7 +473,7 @@ export const WebSearchTool = buildTool({
             data: {
               type: 'search_results_received',
               resultCount: response.results.length,
-              query: `[${fallbackProvider}] ${query}`,
+              query: `[${response.provider}] ${query}`,
             },
           });
         }
@@ -502,7 +488,7 @@ export const WebSearchTool = buildTool({
 
           // Build a search result from the direct provider response
           results.push({
-            tool_use_id: `direct-${fallbackProvider}`,
+            tool_use_id: `direct-${response.provider}`,
             content: response.results.map(r => ({
               title: r.title,
               url: r.url,

@@ -261,7 +261,10 @@ Notable slash commands: `/model`, `/effort`, `/ultracode`, `/memory`, `/rule`, `
 | `DEEPSEEK_API_KEY` | No | DeepSeek models |
 | `GOOGLE_API_KEY` | No | Google Gemini models |
 | `GROQ_API_KEY` | No | Groq-hosted models |
-| `TAVILY_API_KEY` | No | Enhanced web search provider |
+| `TAVILY_API_KEY` | No | Web search provider (first choice) |
+| `BRAVE_API_KEY` | No | Web search fallback if Tavily fails |
+| `SERPER_API_KEY` | No | Web search fallback if Tavily and Brave fail |
+| `JINA_API_KEY` | No | Web search fallback, tried last of the keyed providers |
 | `CLEW_DISABLE_TELEMETRY` | No | Disable anonymous usage stats (`1`) |
 
 All provider keys can also be set via the `/model` provider setup flow or in `.clew/settings.json` under `env`.

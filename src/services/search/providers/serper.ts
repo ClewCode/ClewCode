@@ -1,4 +1,5 @@
 import { getSettings_DEPRECATED } from '../../../utils/settings/settings.js';
+import { rateLimitErrorFromResponse } from '../errors.js';
 import type { SearchOptions, SearchProvider, SearchResponse, SearchResult } from '../types.js';
 
 interface SerperSearchResponse {
@@ -48,7 +49,12 @@ export class SerperProvider implements SearchProvider {
         start: start,
         type: 'search',
       }),
+      signal: options?.signal,
     });
+
+    if (response.status === 429) {
+      throw rateLimitErrorFromResponse(this.name, response);
+    }
 
     if (!response.ok) {
       throw new Error(`Serper API error: ${response.status} ${response.statusText}`);

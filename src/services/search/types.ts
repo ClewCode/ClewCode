@@ -24,6 +24,7 @@ export interface SearchOptions {
   language?: string;
   region?: string;
   safeSearch?: 'off' | 'moderate' | 'strict';
+  signal?: AbortSignal;
 }
 
 export interface SearchResponse {
@@ -32,6 +33,8 @@ export interface SearchResponse {
   query: string;
   provider: string;
   creditsLeft?: number;
+  /** Provider-generated summary of the results, when the provider offers one. */
+  answer?: string;
 }
 
 export interface SearchProviderConfig {
