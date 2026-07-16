@@ -10,61 +10,25 @@ import { OpenAIProvider } from './providers/OpenAIProvider.js';
 import { OpenRouterProvider } from './providers/OpenRouterProvider.js';
 import type { ProviderId, ProviderInterface } from './providers/ProviderInterface.js';
 
+// Capability shapes and lookups live in providerCapabilities.ts, which has no
+// runtime imports — importing them from here would drag in every provider
+// class and close an import cycle. Re-exported so this module's public API is
+// unchanged.
+export type {
+  ModelCapabilities,
+  PromptCachingSupport,
+  ProviderCapabilities,
+  ProviderCapabilityEntry,
+  ProviderModelInfo,
+  ProviderStreamingSupport,
+  ToolCallingSupport,
+} from './providerCapabilities.js';
+export { getProviderModelInfo } from './providerCapabilities.js';
 export type { ProviderId, ProviderInterface };
 
-export type ToolCallingSupport = 'native' | 'json-text' | 'none';
-export type ProviderStreamingSupport = 'full' | 'partial' | 'none';
-export type PromptCachingSupport = 'explicit' | 'automatic' | 'none';
+import type { ProviderCapabilities, ProviderCapabilityEntry, ProviderModelInfo } from './providerCapabilities.js';
 
-export interface ModelCapabilities {
-  toolCalling: ToolCallingSupport;
-  vision: boolean;
-  /** @since 0.2.8 — whether the model accepts image (base64/URL) in user messages */
-  imageIn?: boolean;
-  /** @since 0.2.8 — whether the model accepts video (base64/URL) in user messages */
-  videoIn?: boolean;
-  streaming: ProviderStreamingSupport;
-  maxContext: number | 'varies';
-  maxOutput?: number | 'varies';
-  reasoning: boolean;
-  supportsSystemPrompt: boolean;
-  free?: boolean;
-  rateLimited?: boolean;
-}
-
-export interface ProviderCapabilities {
-  chat: boolean;
-  streaming: ProviderStreamingSupport;
-  toolCalling: boolean;
-  vision: boolean;
-  imageIn?: boolean;
-  videoIn?: boolean;
-  jsonSchema: boolean;
-  reasoningEffort: boolean;
-  contextLength: string;
-  promptCaching?: PromptCachingSupport;
-}
-
-export interface ProviderModelInfo {
-  id: string;
-  label?: string;
-  capabilities: ModelCapabilities;
-  tags?: string[];
-  supportedTypes?: string[];
-}
-
-export interface ProviderRegistryEntry {
-  providerId: ProviderId;
-  label: string;
-  envKey: string;
-  defaultBaseUrl: string;
-  modelsUrl?: string;
-  defaultModel?: string;
-  defaultModelVerified?: boolean;
-  note?: string;
-  isLocal?: boolean;
-  capabilities: ProviderCapabilities;
-  models: ProviderModelInfo[];
+export interface ProviderRegistryEntry extends ProviderCapabilityEntry {
   provider: ProviderInterface;
 }
 
@@ -141,10 +105,6 @@ export function normalizeProviderId(id: string | null | undefined): ProviderId |
 
 export function getProviderRegistryEntry(provider: ProviderId): ProviderRegistryEntry {
   return PROVIDER_REGISTRY[provider];
-}
-
-export function getProviderModelInfo(provider: ProviderId, model: string): ProviderModelInfo | undefined {
-  return PROVIDER_REGISTRY[provider]?.models.find(entry => entry.id === model);
 }
 
 export function getProviderOptions(provider: ProviderId) {
