@@ -131,9 +131,6 @@ export function PromptInputFooterLeftSide({
   historyFailedMatch,
   onOpenTasksDialog,
 }: Props): React.ReactNode {
-  // ponytail: hooks must be top-level (React rules of hooks), computed early
-  const currentProfile = useAppState(s => s.profile);
-
   if (exitMessage.show) {
     return (
       <Text dimColor key="exit-message">
@@ -147,11 +144,6 @@ export function PromptInputFooterLeftSide({
         Pasting text…
       </Text>
     );
-  }
-
-  // Personal profile: hide statusline and hints (persona shown on right by PromptInputFooter)
-  if (currentProfile === 'personal') {
-    return null;
   }
 
   const showVim = isVimModeEnabled() && vimMode === 'INSERT' && !isSearching;
@@ -285,7 +277,6 @@ function ModeIndicator({
     }
   }, [voiceEnabled, voiceHintUnderCap, voiceHintIncrementedRef?.current, voiceHintIncrementedRef]);
   const isKillAgentsConfirmShowing = useAppState(s => s.notifications.current?.key === 'kill-agents-confirm');
-  const currentProfile = useAppState(s => s.profile);
 
   // Derive team info from teamContext (no filesystem I/O needed)
   // Match the same logic as TeamStatus to avoid trailing separator
@@ -375,20 +366,9 @@ function ModeIndicator({
     ? Object.values(tasks).filter(t => t.type === 'in_process_teammate' && t.status === 'running').length
     : 0;
 
-  // Short profile label displayed before task/teammate indicators
-  const profileLabel = currentProfile === 'personal' ? 'P' : '';
-
   // Build parts array - exclude BackgroundTaskStatus when we have teammate pills
   // (teammate pills get their own row)
   const parts = [
-    // Profile indicator (dimColor, only shown when personal)
-    ...(profileLabel
-      ? [
-          <Text key="profile" dimColor>
-            {profileLabel}
-          </Text>,
-        ]
-      : []),
     // Running teammates badge
     ...(runningTeammateCount > 0
       ? [

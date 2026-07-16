@@ -213,7 +213,7 @@ Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://model
   </tr>
   <tr>
     <td><strong>Multi-Agent Architecture</strong></td>
-    <td>Agents, Subagents, LAN Peers, Process Peers. Personal profile turns Clew into a command center that delegates to worker agents.</td>
+    <td>Agents, Subagents, Teammate swarms, and LAN Peers for parallel and distributed execution.</td>
   </tr>
 </table>
 

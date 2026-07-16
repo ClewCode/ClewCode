@@ -122,14 +122,7 @@ function PromptInputFooter({
     return () => clearInterval(timer);
   }, [sessionGoal]);
 
-  // Personal profile: hide statusline and hints, show persona name on right
-  const currentProfile = useAppState(s => s.profile);
-  const isPersonalProfile = currentProfile === 'personal';
-  const settingsSnapshot = useAppState(s => s.settings);
-  const personalPersonaName =
-    ((settingsSnapshot as Record<string, unknown>).personalPersonaName as string | undefined) || 'Clew Personal';
-
-  const suppressHint = suppressHintFromProps || isSearching || isPersonalProfile;
+  const suppressHint = suppressHintFromProps || isSearching;
   const goalState = getFullGoalState();
   const goalBlocked = goalState?.blocked ?? false;
   const goalStopped = /(?:turn|time) limit reached/i.test(goalState?.blockedReason ?? goalState?.lastReason ?? '');
@@ -220,7 +213,6 @@ function PromptInputFooter({
               {footerLeftSide}
             </Box>
             <Box flexDirection="row" flexShrink={0} gap={1}>
-              {isPersonalProfile ? <Text bold>{personalPersonaName}</Text> : null}
               {goalActiveText ? (
                 <Text color="ide" wrap="truncate">
                   {goalActiveText}

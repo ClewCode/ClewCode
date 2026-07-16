@@ -1,5 +1,6 @@
 import { APIError } from '@anthropic-ai/sdk';
 import { normalizeUsage } from '../usageNormalizer.js';
+import { extractRateLimitsFromHeaders, parseRetryAfter } from '../rateLimits.js';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 const DEFAULT_CHAT_PATH = '/chat/completions';
@@ -15,6 +16,8 @@ export interface OpenAICompatibleOptions {
   maxRetries?: number;
   /** Extra HTTP headers to include in every request. */
   extraHeaders?: Record<string, string>;
+  /** Callback for invalid streaming chunks (for logging/monitoring). */
+  onStreamingWarning?: (chunk: string, error: Error) => void;
 }
 
 function safeParseErrorBody(text: string): Record<string, unknown> | undefined {
@@ -45,6 +48,10 @@ function extractErrorMessage(body: Record<string, unknown> | undefined, fallback
   return fallback;
 }
 
+function baseUrlEnvVar(providerId: string): string {
+  return `${providerId.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_BASE_URL`;
+}
+
 function getChatCompletionsUrl(baseUrl: string, chatPath: string = DEFAULT_CHAT_PATH): string {
   const normalized = baseUrl.replace(/\/$/, '');
   return normalized.endsWith(chatPath) ? normalized : `${normalized}${chatPath}`;
@@ -60,26 +67,17 @@ function sanitizeMessagesForTextOnlyProvider(messages: unknown, model: string): 
     const content = record.content;
     if (!Array.isArray(content)) return message;
 
-    const textParts: string[] = [];
-    let strippedMedia = false;
+    const hasImage = content.some(
+      part => part && typeof part === 'object' && (part as Record<string, unknown>).type === 'image_url',
+    );
+    if (!hasImage) return message;
 
-    for (const part of content) {
-      if (!part || typeof part !== 'object') continue;
+    // Replace image parts with a text notice; keep all other parts intact.
+    const sanitized = content
+      .filter(part => !(part && typeof part === 'object' && (part as Record<string, unknown>).type === 'image_url'))
+      .concat([{ type: 'text', text: `[Image not sent - ${model} does not support vision]` }]);
 
-      const partRecord = part as Record<string, unknown>;
-      if (partRecord.type === 'text' && typeof partRecord.text === 'string') {
-        textParts.push(partRecord.text);
-      } else if (partRecord.type === 'image_url') {
-        strippedMedia = true;
-      }
-    }
-
-    if (!strippedMedia) return message;
-
-    return {
-      ...record,
-      content: [...textParts, `[Image not sent - ${model} does not support vision]`].filter(Boolean).join('\n'),
-    };
+    return { ...record, content: sanitized };
   });
 }
 
@@ -95,6 +93,7 @@ export class OpenAICompatibleProvider implements ProviderInterface {
   protected maxRetries: number;
   private supportsVision: boolean;
   private _extraHeaders: Record<string, string>;
+  private _onStreamingWarning?: (chunk: string, error: Error) => void;
 
   constructor(
     providerId: ProviderId,
@@ -113,6 +112,7 @@ export class OpenAICompatibleProvider implements ProviderInterface {
     this.supportsVision = options?.supportsVision ?? true;
     this.maxRetries = options?.maxRetries ?? 2;
     this._extraHeaders = options?.extraHeaders ?? {};
+    this._onStreamingWarning = options?.onStreamingWarning;
   }
 
   /**
@@ -150,7 +150,7 @@ export class OpenAICompatibleProvider implements ProviderInterface {
       throw new Error(`Missing API key for provider ${this.providerId}. Set ${this.envKey}.`);
     }
 
-    const baseUrl = options.baseUrl ?? process.env[`${this.providerId.toUpperCase()}_BASE_URL`] ?? this.defaultBaseUrl;
+    const baseUrl = options.baseUrl ?? process.env[baseUrlEnvVar(this.providerId)] ?? this.defaultBaseUrl;
     const url = getChatCompletionsUrl(baseUrl, this.chatPath);
 
     return {
@@ -178,12 +178,22 @@ export class OpenAICompatibleProvider implements ProviderInterface {
               ? { ...params, messages: sanitizeMessagesForTextOnlyProvider(params.messages, params.model) }
               : params;
 
-            const body = JSON.stringify({ ...requestParams, stream: isStreaming });
+            // Add response_format if structured outputs are requested
+            const finalParams = {
+              ...requestParams,
+              stream: isStreaming,
+              ...(options.responseFormat ? { response_format: options.responseFormat } : {}),
+            };
+
+            const body = JSON.stringify(finalParams);
 
             // Retry loop for rate limits and transient server errors
             for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
               const controller = new AbortController();
               const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+              // Once a 2xx response is received the request has been consumed
+              // server-side; re-POSTing on a body-parse failure would double-bill.
+              let receivedOk = false;
 
               try {
                 const response = await fetch(url, {
@@ -202,7 +212,14 @@ export class OpenAICompatibleProvider implements ProviderInterface {
 
                   // Retry on rate limit (429) and server errors (502, 503, 504)
                   if (RETRYABLE_STATUSES.has(response.status) && attempt < this.maxRetries) {
-                    const delay = Math.min(1000 * 2 ** attempt + Math.random() * 500, 10000);
+                    // Respect Retry-After header on 429 responses (in seconds or HTTP-date format)
+                    let delay = Math.min(1000 * 2 ** attempt + Math.random() * 500, 10000);
+                    if (response.status === 429) {
+                      const retryAfter = response.headers.get('Retry-After');
+                      if (retryAfter) {
+                        delay = parseRetryAfter(retryAfter);
+                      }
+                    }
                     await new Promise(resolve => setTimeout(resolve, delay));
                     continue;
                   }
@@ -220,6 +237,8 @@ export class OpenAICompatibleProvider implements ProviderInterface {
                   );
                 }
 
+                receivedOk = true;
+
                 if (isStreaming) {
                   return this.handleStreamingResponse(response);
                 }
@@ -229,8 +248,9 @@ export class OpenAICompatibleProvider implements ProviderInterface {
               } catch (err) {
                 clearTimeout(timeoutId);
 
-                // Already formatted — not retryable
-                if (err instanceof APIError) throw err;
+                // Already formatted, or the server already accepted the
+                // request (2xx) — not retryable
+                if (err instanceof APIError || receivedOk) throw err;
 
                 // Retry on network / abort errors (timeout, connection reset, DNS)
                 if (attempt < this.maxRetries) {
@@ -252,7 +272,7 @@ export class OpenAICompatibleProvider implements ProviderInterface {
 
   async listModels(options: ProviderInitOptions): Promise<Array<{ id: string; label: string }>> {
     const apiKey = options.apiKey ?? process.env[this.envKey];
-    const baseUrl = options.baseUrl ?? process.env[`${this.providerId.toUpperCase()}_BASE_URL`] ?? this.defaultBaseUrl;
+    const baseUrl = options.baseUrl ?? process.env[baseUrlEnvVar(this.providerId)] ?? this.defaultBaseUrl;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -317,8 +337,11 @@ export class OpenAICompatibleProvider implements ProviderInterface {
         try {
           const parsed = JSON.parse(data);
           yield this.normalizeStreamChunk(parsed);
-        } catch {
-          // Skip invalid JSON
+        } catch (error) {
+          // Log invalid chunks for monitoring, but don't break the stream
+          if (this._onStreamingWarning) {
+            this._onStreamingWarning(data, error instanceof Error ? error : new Error(String(error)));
+          }
         }
       }
     }

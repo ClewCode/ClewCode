@@ -307,7 +307,6 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
       input: convertMessagesToResponsesInput(params.messages),
       instructions: convertSystemPrompt(params.system),
       ...(params.tools?.length ? { tools: convertTools(params.tools) } : {}),
-      ...(params.temperature !== undefined ? { temperature: params.temperature } : {}),
       ...(params.top_p !== undefined ? { top_p: params.top_p } : {}),
       stream,
     };

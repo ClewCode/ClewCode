@@ -2,7 +2,7 @@ import { PROVIDER_REGISTRY } from '../../services/ai/providerRegistry.js';
 import type { PermissionMode } from '../permissions/PermissionMode.js';
 import { getSettings_DEPRECATED } from '../settings/settings.js';
 import { capitalize } from '../stringUtils.js';
-import { MODEL_ALIASES, type ModelAlias } from './aliases.js';
+import { MODEL_ALIASES } from './aliases.js';
 import { applyBedrockRegionPrefix, getBedrockRegionPrefix } from './bedrock.js';
 import { getCanonicalName, getRuntimeMainLoopModel, parseUserSpecifiedModel } from './model.js';
 import { isModelAllowed } from './modelAllowlist.js';
@@ -89,9 +89,11 @@ export function getUserSpecifiedSubagentPermissionMode(): string | undefined {
 export function getAgentModel(
   agentModel: string | undefined,
   parentModel: string,
-  toolSpecifiedModel?: ModelAlias,
+  toolSpecifiedModel?: AgentModelAlias,
   permissionMode?: PermissionMode,
 ): string {
+  if (toolSpecifiedModel === 'inherit') return parentModel;
+
   const explicitSubagentModel = getUserSpecifiedSubagentModelSetting();
   if (explicitSubagentModel) {
     return parseUserSpecifiedModel(explicitSubagentModel);

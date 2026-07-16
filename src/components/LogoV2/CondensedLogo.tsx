@@ -19,7 +19,7 @@ import {
   OverageCreditUpsell,
   useShowOverageCreditUpsell,
 } from './OverageCreditUpsell.js';
-export function CondensedLogo({ isPersonal = false }: { isPersonal?: boolean }) {
+export function CondensedLogo() {
   const $ = _c(33);
   const { columns } = useTerminalSize();
   const agent = useAppState(_temp);
@@ -83,25 +83,21 @@ export function CondensedLogo({ isPersonal = false }: { isPersonal?: boolean }) 
     t4 = $[7];
   }
   let t5;
-  if ($[8] !== isPersonal) {
-    t5 = <Text bold={true}>{isPersonal ? 'Clew Personal' : 'Clew Code'}</Text>;
-    $[8] = isPersonal;
-    $[29] = t5;
+  if ($[8] === Symbol.for('react.memo_cache_sentinel')) {
+    t5 = <Text bold={true}>Clew Code</Text>;
+    $[8] = t5;
   } else {
-    t5 = $[29];
+    t5 = $[8];
   }
   let t6;
-  if ($[9] !== truncatedVersion || $[30] !== t5 || $[31] !== isPersonal) {
-    t6 = isPersonal ? (
-      t5
-    ) : (
+  if ($[9] !== truncatedVersion || $[30] !== t5) {
+    t6 = (
       <Text>
         {t5} <Text dimColor={true}>v{truncatedVersion}</Text>
       </Text>
     );
     $[9] = truncatedVersion;
     $[30] = t5;
-    $[31] = isPersonal;
     $[10] = t6;
   } else {
     t6 = $[10];
@@ -127,10 +123,9 @@ export function CondensedLogo({ isPersonal = false }: { isPersonal?: boolean }) 
   }
   const t8 = agentName ? `@${agentName} · ${truncatedCwd}` : truncatedCwd;
   let t9;
-  if ($[15] !== t8 || $[32] !== isPersonal) {
-    t9 = isPersonal ? null : <Text dimColor={true}>{t8}</Text>;
+  if ($[15] !== t8) {
+    t9 = <Text dimColor={true}>{t8}</Text>;
     $[15] = t8;
-    $[32] = isPersonal;
     $[16] = t9;
   } else {
     t9 = $[16];
@@ -158,7 +153,7 @@ export function CondensedLogo({ isPersonal = false }: { isPersonal?: boolean }) 
   let t12;
   if ($[23] !== t10 || $[24] !== t11 || $[25] !== t6 || $[26] !== t7 || $[27] !== t9) {
     t12 = (
-      <OffscreenFreeze freezeKey={isPersonal}>
+      <OffscreenFreeze freezeKey="logo">
         <Box flexDirection="row" gap={2} alignItems="flex-start">
           {t4}
           <Box flexDirection="column" marginTop={1}>

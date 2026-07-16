@@ -171,6 +171,18 @@ export function parseSettingsFile(path: string): {
   };
 }
 
+export function normalizeLegacyProfile(settings: unknown): unknown {
+  if (typeof settings !== 'object' || settings === null || Array.isArray(settings)) {
+    return settings;
+  }
+  const record = settings as Record<string, unknown>;
+  if (!('profile' in record)) {
+    return record;
+  }
+  const { profile: _profile, ...rest } = record;
+  return rest;
+}
+
 function parseSettingsFileUncached(path: string): {
   settings: SettingsJson | null;
   errors: ValidationError[];
@@ -183,7 +195,8 @@ function parseSettingsFileUncached(path: string): {
       return { settings: {}, errors: [] };
     }
 
-    const data = safeParseJSON(content, false);
+    const parsedData = safeParseJSON(content, false);
+    const data = normalizeLegacyProfile(parsedData);
 
     // Filter invalid permission rules before schema validation so one bad
     // rule doesn't cause the entire settings file to be rejected.

@@ -1,6 +1,5 @@
 import { AnthropicProvider } from './providers/AnthropicProvider.js';
 import { ChatGPTProvider } from './providers/ChatGPTProvider.js';
-import { ClewGatewayProvider } from './providers/ClewGatewayProvider.js';
 import { CodeAssistProvider } from './providers/CodeAssistProvider.js';
 import { CohereProvider } from './providers/CohereProvider.js';
 import { GoogleProvider } from './providers/GoogleProvider.js';
@@ -91,8 +90,6 @@ function createProvider(key: string, entry: any): ProviderInterface {
       return new KiloCodeProvider();
     case 'ollama':
       return new OllamaProvider();
-    case 'clew-gateway':
-      return new ClewGatewayProvider();
     case 'custom':
       return new OpenAICompatibleProvider(entry.providerId, entry.label, entry.envKey, entry.defaultBaseUrl);
     default:
@@ -112,7 +109,7 @@ export const PROVIDER_REGISTRY: Record<ProviderId, ProviderRegistryEntry> = Obje
   ]),
 ) as any;
 
-export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY).filter(id => id !== 'clew-gateway') as ProviderId[];
+export const PROVIDER_IDS = Object.keys(PROVIDER_REGISTRY) as ProviderId[];
 export const DEFAULT_PROVIDER: ProviderId = 'openai';
 
 /**
@@ -198,7 +195,6 @@ const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
   huggingface: 'automatic',
   poe: 'automatic',
   digitalocean: 'automatic',
-  'clew-gateway': 'automatic',
   nvidia: 'automatic',
   opengateway: 'automatic',
   cohere: 'automatic',

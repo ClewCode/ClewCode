@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Message } from '../types/message.js';
-import { isNotEmptyMessage, normalizeMessages } from './messages.js';
+import { hasMessageUuid, isNotEmptyMessage, normalizeMessages } from './messages.js';
 
 // Several message types defined in types/message.ts carry no `.message`
 // envelope. normalizeMessages() passes them through via its `default` branch,
@@ -26,6 +26,20 @@ describe('isNotEmptyMessage with envelope-less message types', () => {
   }
 
   test('survives the Messages.tsx render chain', () => {
-    expect(() => normalizeMessages(envelopeLess).filter(isNotEmptyMessage)).not.toThrow();
+    expect(() => normalizeMessages(envelopeLess).filter(isNotEmptyMessage).filter(hasMessageUuid)).not.toThrow();
+  });
+});
+
+describe('hasMessageUuid', () => {
+  test('rejects malformed transcript messages without a uuid', () => {
+    const malformed: Message = { type: 'system_api_error', error: 'boom' };
+
+    expect(hasMessageUuid(malformed)).toBe(false);
+  });
+
+  test('keeps messages with a non-empty uuid', () => {
+    const message: Message = { type: 'system_api_error', error: 'boom', uuid: 'u1' };
+
+    expect(hasMessageUuid(message)).toBe(true);
   });
 });

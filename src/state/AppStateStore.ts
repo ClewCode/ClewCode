@@ -14,7 +14,6 @@ import type { TaskState } from '../tasks/types.js';
 import type { AgentId } from '../types/ids.js';
 import type { Message, UserMessage } from '../types/message.js';
 import type { LoadedPlugin, PluginError } from '../types/plugin.js';
-import type { ClewProfile } from '../types/profile.js';
 import type { DeepImmutable } from '../types/utils.js';
 import { type AttributionState, createEmptyAttributionState } from '../utils/commitAttribution.js';
 import type { EffortValue } from '../utils/effort.js';
@@ -72,8 +71,6 @@ export const IDLE_SPECULATION_STATE: SpeculationState = { status: 'idle' };
 export type FooterItem = 'tasks' | 'tmux' | 'bagel' | 'teams' | 'bridge' | 'companion';
 
 export type AppState = DeepImmutable<{
-  profile: ClewProfile;
-  lastProfileModes: { [P in ClewProfile]?: PermissionMode };
   settings: SettingsJson;
   verbose: boolean;
   mainLoopModel: ModelSetting;
@@ -485,14 +482,8 @@ export function getDefaultAppState(): AppState {
     teammateUtils.isTeammate() && teammateUtils.isPlanModeRequired() ? 'plan' : 'default';
 
   const initialSettings = getInitialSettings();
-  // SettingsJson.profile may be narrowed to {} by Zod; coerce safely
-  const savedProfile: ClewProfile | undefined = initialSettings?.['profile' as keyof typeof initialSettings] as
-    | ClewProfile
-    | undefined;
 
   return {
-    profile: savedProfile ?? 'coding',
-    lastProfileModes: {},
     settings: initialSettings,
     tasks: {},
     toolUseConfirmQueue: [],

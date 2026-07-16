@@ -22,7 +22,7 @@ import { EMPTY_USAGE } from 'src/services/api/logging.js';
 import stripAnsi from 'strip-ansi';
 import type { Command } from './commands.js';
 import { getSlashCommandToolSkills } from './commands.js';
-import { getProfilePrompt } from './constants/profilePrompts.js';
+import { CODING_SYSTEM_PROMPT } from './constants/codingSystemPrompt.js';
 import { LOCAL_COMMAND_STDERR_TAG, LOCAL_COMMAND_STDOUT_TAG } from './constants/xml.js';
 import { getModelUsage, getTotalAPIDuration, getTotalCost } from './cost-tracker.js';
 import type { CanUseToolFn } from './hooks/useCanUseTool.js';
@@ -272,7 +272,7 @@ export class QueryEngine {
     const memoryMechanicsPrompt =
       customPrompt !== undefined && hasAutoMemPathOverride() ? await loadMemoryPrompt() : null;
 
-    const profilePrompt = getProfilePrompt(initialAppState.profile);
+    const profilePrompt = CODING_SYSTEM_PROMPT;
     const goalPrompt = getGoalPrompt();
 
     // When a goal is active, tell the model about the notes scratchpad.

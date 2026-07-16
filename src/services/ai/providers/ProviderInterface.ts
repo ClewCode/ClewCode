@@ -30,7 +30,6 @@ export type ProviderId =
   | 'huggingface'
   | 'poe'
   | 'digitalocean'
-  | 'clew-gateway'
   | 'google-assist'
   | 'sakana'
   | 'custom';
@@ -42,6 +41,15 @@ export interface ProviderInitOptions {
   fetchOverride?: ClientOptions['fetch'];
   source?: string;
   maxRetries?: number;
+  responseFormat?: {
+    type: 'text' | 'json_object' | 'json_schema';
+    jsonSchema?: {
+      name: string;
+      description?: string;
+      schema: Record<string, unknown>;
+      strict?: boolean;
+    };
+  };
 }
 
 export type ProviderClient = unknown;

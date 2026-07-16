@@ -12,7 +12,7 @@ function normalizeTokenCount(value: unknown): number | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return Math.max(0, Math.round(value));
   }
-  if (typeof value === 'string' && /^\\d+$/.test(value)) {
+  if (typeof value === 'string' && /^\d+$/.test(value)) {
     return Number(value);
   }
   return undefined;

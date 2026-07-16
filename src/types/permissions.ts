@@ -35,11 +35,6 @@ export const INTERNAL_PERMISSION_MODES = [
 export const PERMISSION_MODES = INTERNAL_PERMISSION_MODES;
 
 // ============================================================================
-// Profiles
-// (ClewProfile moved to src/commands/profile/profile.tsx — Bun transpiler bug)
-// ============================================================================
-
-// ============================================================================
 // Permission Behaviors
 // ============================================================================
 

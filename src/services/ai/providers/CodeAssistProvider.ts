@@ -105,8 +105,9 @@ function readOAuthCreds(): { access_token: string; refresh_token: string; expiry
   return undefined;
 }
 
-function parseResetTimeMs(body: string): number | undefined {
-  const match = body.match(/reset after\s+(\d+)(s|m|h|ms)?/i);
+export function parseResetTimeMs(body: string): number | undefined {
+  // 'ms' must precede 'm' in the alternation or "500ms" parses as 500 minutes.
+  const match = body.match(/reset after\s+(\d+)(ms|s|m|h)?/i);
   if (!match) return undefined;
   const val = parseInt(match[1], 10);
   if (Number.isNaN(val)) return undefined;
@@ -279,7 +280,7 @@ function messageText(content: OpenAIMessage['content']): string {
  * including tool calls (assistant → functionCall) and tool results
  * (role "tool" → functionResponse). Gemini uses roles "user" and "model".
  */
-function toCodeAssistMessages(messages: OpenAIMessage[]) {
+export function toCodeAssistMessages(messages: OpenAIMessage[]) {
   const contents: Array<{ role: string; parts: GeminiPart[] }> = [];
 
   // Code Assist has no 'system' role — hoist to top-level systemInstruction.
@@ -293,7 +294,8 @@ function toCodeAssistMessages(messages: OpenAIMessage[]) {
     }
 
     // Tool result → Gemini functionResponse (role "user"). The tool_call_id
-    // doubles as the function name (functionCall ids are set to the fn name).
+    // is "<fnName>:<counter>" (see toolCallsFromParts) — strip the counter to
+    // recover the function name.
     if (msg.role === 'tool') {
       const raw = messageText(msg.content);
       let response: Record<string, unknown>;
@@ -305,7 +307,7 @@ function toCodeAssistMessages(messages: OpenAIMessage[]) {
       }
       contents.push({
         role: 'user',
-        parts: [{ functionResponse: { name: msg.tool_call_id ?? '', response } }],
+        parts: [{ functionResponse: { name: (msg.tool_call_id ?? '').split(':')[0], response } }],
       });
       continue;
     }
@@ -331,8 +333,15 @@ function toCodeAssistMessages(messages: OpenAIMessage[]) {
       continue;
     }
 
-    // user (and any other role) → user text
-    contents.push({ role: 'user', parts: [{ text: messageText(msg.content) }] });
+    // user (and any other role) → user text. Image parts are not forwarded
+    // (this provider sends text-only requests) — say so instead of dropping
+    // them silently.
+    const hasImage =
+      Array.isArray(msg.content) && msg.content.some(p => (p as { type?: string })?.type === 'image_url');
+    const userText =
+      messageText(msg.content) +
+      (hasImage ? '\n[Image not sent - the Gemini Code Assist provider does not support image input]' : '');
+    contents.push({ role: 'user', parts: [{ text: userText }] });
   }
 
   return { contents, systemInstruction };
@@ -445,12 +454,15 @@ function toOpenAIFinishReason(reason: unknown, hasToolCall: boolean): string | n
 }
 
 /** Extract OpenAI-shaped tool_calls from a Gemini candidate's parts. */
-function toolCallsFromParts(parts: any[]): OpenAIToolCallOut[] {
+export function toolCallsFromParts(parts: any[], startIndex = 0): OpenAIToolCallOut[] {
   const calls: OpenAIToolCallOut[] = [];
   for (const p of parts) {
     if (p?.functionCall?.name) {
+      // Suffix with a counter (':' is invalid in Gemini function names, so the
+      // original name is recoverable) — two calls to the same function in one
+      // turn must not share a tool_call_id.
       calls.push({
-        id: p.functionCall.name,
+        id: `${p.functionCall.name}:${startIndex + calls.length}`,
         type: 'function',
         function: { name: p.functionCall.name, arguments: JSON.stringify(p.functionCall.args ?? {}) },
       });
@@ -692,7 +704,7 @@ async function* handleSSEStream(response: Response): AsyncGenerator<unknown, voi
         // incrementing index carried across chunks via toolCallIndex.
         const parts = data.candidates?.[0]?.content?.parts ?? [];
         const text = parts.map((p: any) => p.text ?? '').join('');
-        const rawToolCalls = toolCallsFromParts(parts);
+        const rawToolCalls = toolCallsFromParts(parts, toolCallIndex);
         const hasToolCall = rawToolCalls.length > 0;
 
         const delta: Record<string, unknown> = {};

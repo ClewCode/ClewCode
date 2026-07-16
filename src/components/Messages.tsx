@@ -39,6 +39,7 @@ import {
   getMessagesAfterCompactBoundary,
   getToolUseID,
   getToolUseIDs,
+  hasMessageUuid,
   hasUnresolvedHooksFromLookup,
   isNotEmptyMessage,
   normalizeMessages,
@@ -77,18 +78,16 @@ import type { JumpHandle } from './VirtualMessageList.js';
 // subscribe to useAppState/useSettings for their own updates.
 const LogoHeader = React.memo(function LogoHeader({
   agentDefinitions,
-  profile,
 }: {
   agentDefinitions: AgentDefinitionsResult | undefined;
-  profile: 'coding' | 'personal';
 }): React.ReactNode {
   // LogoV2 has its own internal OffscreenFreeze (catches its useAppState
   // re-renders). This outer freeze catches agentDefinitions changes and any
   // future StatusNotices subscriptions while the header is in scrollback.
   return (
-    <OffscreenFreeze freezeKey={profile}>
+    <OffscreenFreeze freezeKey="logo">
       <Box flexDirection="column" gap={1}>
-        <LogoV2 isPersonal={profile === 'personal'} />
+        <LogoV2 />
         <React.Suspense fallback={null}>
           <StatusNotices agentDefinitions={agentDefinitions} />
         </React.Suspense>
@@ -248,7 +247,6 @@ type Props = {
   streamingToolUses: StreamingToolUse[];
   showAllInTranscript?: boolean;
   agentDefinitions?: AgentDefinitionsResult;
-  profile?: 'coding' | 'personal';
   onOpenRateLimitOptions?: () => void;
   /** Hide the logo/header - used for subagent zoom view */
   hideLogo?: boolean;
@@ -384,7 +382,6 @@ const MessagesImpl = ({
   streamingToolUses,
   showAllInTranscript = false,
   agentDefinitions,
-  profile = 'coding',
   onOpenRateLimitOptions,
   hideLogo = false,
   isLoading,
@@ -413,7 +410,10 @@ const MessagesImpl = ({
   // MessageDisplay hook — track per-message transforms from hook callbacks
   const messageDisplayTransformsRef = useRef<Map<string, { hide?: boolean; text?: string }>>(new Map());
 
-  const normalizedMessages = useMemo(() => normalizeMessages(messages).filter(isNotEmptyMessage), [messages]);
+  const normalizedMessages = useMemo(
+    () => normalizeMessages(messages).filter(isNotEmptyMessage).filter(hasMessageUuid),
+    [messages],
+  );
 
   // Check if streaming thinking should be visible (streaming or within 30s timeout)
   const isStreamingThinkingVisible = useMemo(() => {
@@ -855,9 +855,7 @@ const MessagesImpl = ({
   return (
     <>
       {/* Logo */}
-      {!hideLogo && !(renderRange && renderRange[0] > 0) && (
-        <LogoHeader agentDefinitions={agentDefinitions} profile={profile} />
-      )}
+      {!hideLogo && !(renderRange && renderRange[0] > 0) && <LogoHeader agentDefinitions={agentDefinitions} />}
 
       {/* Truncation indicator */}
       {hasTruncatedMessages && hiddenMessageCount > 0 && (

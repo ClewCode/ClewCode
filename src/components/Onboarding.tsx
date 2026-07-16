@@ -7,7 +7,7 @@ import { useKeybindings } from '../keybindings/useKeybinding.js';
 import { env } from '../utils/env.js';
 import type { ThemeSetting } from '../utils/theme.js';
 import { Select } from './CustomSelect/select.js';
-import { LogoV2 } from './LogoV2/LogoV2.js';
+import { WelcomeV2 } from './LogoV2/WelcomeV2.js';
 import { PressEnterToContinue } from './PressEnterToContinue.js';
 import { ThemePicker } from './ThemePicker.js';
 import { OrderedList } from './ui/OrderedList.js';
@@ -245,7 +245,7 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
 
   return (
     <Box flexDirection="column">
-      <LogoV2 isPersonal />
+      <WelcomeV2 />
       <Box flexDirection="column" marginTop={1}>
         {showProgress && (
           <Box paddingLeft={1} marginBottom={1}>

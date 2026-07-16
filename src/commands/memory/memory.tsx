@@ -630,19 +630,6 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
         try {
           const lines: string[] = [ansis.bold('🧠 Memory System Dashboard'), ''];
 
-          // ── Profile ────────────────────────────────────────────
-          try {
-            const appState = _context?.getAppState?.();
-            if (appState?.profile) {
-              const mode = appState.toolPermissionContext?.mode ?? 'default';
-              const modeIcon = mode === 'bypassPermissions' ? ansis.yellow('⚡') : ansis.dim('●');
-              lines.push(ansis.bold('  Profile'));
-              lines.push(`    Personal  ${modeIcon} ${mode}`);
-            }
-          } catch {
-            /* profile unavailable */
-          }
-
           // ── MemoryDB ─────────────────────────────────────────
           const { MemoryDB } = await import('../../memory/database.js');
           const { initMemoryHierarchy, getMemoryDbPath } = await import('../../memory/hierarchy.js');

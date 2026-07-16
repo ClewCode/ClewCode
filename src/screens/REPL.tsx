@@ -243,6 +243,7 @@ import {
   createSystemMessage,
   createCommandInputMessage,
   formatCommandInputTags,
+  hasMessageUuid,
   limitMessagesToLastNExchanges,
 } from '../utils/messages.js';
 import { generateSessionTitle } from '../utils/sessionTitle.js';
@@ -937,7 +938,6 @@ export function REPL({
   // /brief mid-session leaves the stale tool list (no SendUserMessage) and
   // the model emits plain text the brief filter hides.
   const isBriefOnly = useAppState(s => s.isBriefOnly);
-  const currentProfile = useAppState(s => s.profile);
 
   const localTools = useMemo(() => getTools(toolPermissionContext), [toolPermissionContext]);
 
@@ -4831,7 +4831,7 @@ export function REPL({
   // 24-char prefix: deriveUUID preserves first 24, renderable uuid prefix-matches raw source.
   const findRawIndex = (uuid: string) => {
     const prefix = uuid.slice(0, 24);
-    return messages.findIndex(m => m.uuid.slice(0, 24) === prefix);
+    return messages.findIndex(m => hasMessageUuid(m) && m.uuid.slice(0, 24) === prefix);
   };
   const messageActionCaps: MessageActionCaps = {
     copy: text =>
@@ -5572,7 +5572,6 @@ export function REPL({
     const transcriptScrollRef = isFullscreenEnvEnabled() && !disableVirtualScroll && !dumpMode ? scrollRef : undefined;
     const transcriptMessagesElement = (
       <Messages
-        key={`transcript-messages-${currentProfile}`}
         messages={transcriptMessages}
         tools={tools}
         commands={commands}
@@ -5584,7 +5583,6 @@ export function REPL({
         conversationId={conversationId}
         screen={screen}
         agentDefinitions={agentDefinitions}
-        profile={currentProfile}
         streamingToolUses={transcriptStreamingToolUses}
         showAllInTranscript={showAllInTranscript}
         onOpenRateLimitOptions={handleOpenRateLimitOptions}
@@ -5883,7 +5881,6 @@ export function REPL({
             <>
               <TeammateViewHeader />
               <Messages
-                key={`messages-${currentProfile}`}
                 messages={displayedMessages}
                 tools={tools}
                 commands={commands}
@@ -5899,7 +5896,6 @@ export function REPL({
                 streamingToolUses={streamingToolUses}
                 showAllInTranscript={showAllInTranscript}
                 agentDefinitions={agentDefinitions}
-                profile={currentProfile}
                 onOpenRateLimitOptions={handleOpenRateLimitOptions}
                 isLoading={isLoading}
                 streamingText={isLoading && !viewedAgentTask ? visibleStreamingText : null}

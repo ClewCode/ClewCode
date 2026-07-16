@@ -668,6 +668,10 @@ export function extractTag(html: string, tagName: string): string | null {
   return null;
 }
 
+export function hasMessageUuid(message: Message): message is Message & { uuid: string } {
+  return typeof message.uuid === 'string' && message.uuid.length > 0;
+}
+
 export function isNotEmptyMessage(message: Message | undefined | null): boolean {
   if (!message) {
     return false;

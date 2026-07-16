@@ -90,8 +90,7 @@ function LogoNotifications() {
   );
 }
 
-export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean }) {
-  const isPersonal = propIsPersonal ?? (getInitialSettings() as any).profile === 'personal';
+export function LogoV2() {
   const $ = _c(95);
   const activities = getRecentActivitySync();
   const username = getGlobalConfig().oauthAccount?.displayName ?? '';
@@ -224,8 +223,8 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
     let t15;
     let t16;
     let t17;
-    if ($[15] !== isPersonal) {
-      t11 = <CondensedLogo isPersonal={isPersonal} />;
+    if ($[15] === Symbol.for('react.memo_cache_sentinel')) {
+      t11 = <CondensedLogo />;
       t12 = <VoiceModeNotice />;
       t13 = <Opus1mMergeNotice />;
       t14 = ChannelsNoticeModule && <ChannelsNoticeModule.ChannelsNotice />;
@@ -246,7 +245,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
           </Text>
         </Box>
       );
-      $[15] = isPersonal;
+      $[15] = true;
       $[94] = t11;
       $[16] = t12;
       $[17] = t13;
@@ -339,8 +338,8 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
   }
   const layoutMode = getLayoutMode(columns);
   const userTheme = resolveThemeSetting(getGlobalConfig().theme);
-  const borderTitle = ` ${color('claude', userTheme)(isPersonal ? 'Clew Personal' : 'Clew Code')} ${isPersonal ? '' : color('inactive', userTheme)(`v${version}`)} `;
-  const compactBorderTitle = color('claude', userTheme)(isPersonal ? ' Clew Personal ' : ' Clew Code ');
+  const borderTitle = ` ${color('claude', userTheme)('Clew Code')} ${color('inactive', userTheme)(`v${version}`)} `;
+  const compactBorderTitle = color('claude', userTheme)(' Clew Code ');
   if (layoutMode === 'compact') {
     let welcomeMessage = formatWelcomeMessage(username);
     if (stringWidth(welcomeMessage) > columns - 4) {
@@ -427,7 +426,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
     }
     return (
       <>
-        <OffscreenFreeze freezeKey={isPersonal}>
+        <OffscreenFreeze freezeKey="logo">
           <Box
             flexDirection="column"
             borderStyle="round"
@@ -442,7 +441,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
             {t12}
             {t13}
             <Text dimColor={true}>{billingType}</Text>
-            {!isPersonal && <Text dimColor={true}>{agentName ? `@${agentName} · ${truncatedCwd}` : truncatedCwd}</Text>}
+            <Text dimColor={true}>{agentName ? `@${agentName} · ${truncatedCwd}` : truncatedCwd}</Text>
           </Box>
         </OffscreenFreeze>
         <LogoNotifications />
@@ -516,7 +515,7 @@ export function LogoV2({ isPersonal: propIsPersonal }: { isPersonal?: boolean })
   }
   let t21;
   if ($[51] !== cwdLine) {
-    t21 = isPersonal ? null : <Text dimColor={true}>{cwdLine}</Text>;
+    t21 = <Text dimColor={true}>{cwdLine}</Text>;
     $[51] = cwdLine;
     $[52] = t21;
   } else {

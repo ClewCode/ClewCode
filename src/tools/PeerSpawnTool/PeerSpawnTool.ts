@@ -1,5 +1,5 @@
 import { spawn as childSpawn } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as React from 'react';
@@ -30,8 +30,6 @@ const outputSchema = lazySchema(() =>
     success: z.boolean(),
     name: z.string().optional(),
     role: z.string().optional(),
-    port: z.number().optional(),
-    joined: z.boolean().optional(),
     command: z.string().optional(),
     diagnostics: z.string().optional(),
     error: z.string().optional(),
@@ -47,6 +45,32 @@ function quoteArg(value: string): string {
 
 function isWin32(): boolean {
   return process.platform === 'win32';
+}
+
+// Sensitive env vars that should not be inherited by spawned peers
+const SENSITIVE_ENV_KEYS = new Set([
+  'OPENAI_API_KEY',
+  'ANTHROPIC_API_KEY',
+  'GOOGLE_API_KEY',
+  'COHERE_API_KEY',
+  'OPENROUTER_API_KEY',
+  'GROQ_API_KEY',
+  'XAI_API_KEY',
+  'CLAUDE_CLAUDE_API_KEY',
+  'CHATGPT_API_KEY',
+  'HOME',
+  'USER',
+  'USERNAME',
+  'SSH_AUTH_SOCK',
+  'SSH_AGENT_PID',
+]);
+
+function filterSensitiveEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const filtered: NodeJS.ProcessEnv = { ...env };
+  for (const key of SENSITIVE_ENV_KEYS) {
+    delete filtered[key];
+  }
+  return filtered;
 }
 
 function buildPeerSpawnCommand(args: string[]): string {
@@ -110,7 +134,8 @@ export const PeerSpawnTool = buildTool({
       const platform = process.platform;
 
       // Environment passed to the spawned peer.
-      const childEnv: NodeJS.ProcessEnv = { ...process.env };
+      // Filter sensitive keys (API keys, SSH keys, etc.) to prevent credential leaks.
+      const childEnv: NodeJS.ProcessEnv = filterSensitiveEnv(process.env);
 
       // Default peer behavior: share → receive task → reply back to sender
       const DEFAULT_PEER_PROMPT =
@@ -168,6 +193,9 @@ export const PeerSpawnTool = buildTool({
       // source as the parent so code changes apply to both; in prod use the
       // installed clew binary.
       const mainScript = process.argv[1] ?? '';
+      if (!mainScript && process.platform === 'win32') {
+        throw new Error('Cannot determine clew script path for spawning peer');
+      }
       const isDev = mainScript.endsWith('.tsx') || mainScript.endsWith('.ts');
 
       if (platform === 'win32') {
@@ -244,19 +272,63 @@ export const PeerSpawnTool = buildTool({
           env: childEnv,
         }).unref();
       } else {
-        childSpawn('x-terminal-emulator', ['-e', 'sh', '-c', `${cmd}; exec sh`], {
-          detached: true,
-          stdio: 'ignore',
-          env: childEnv,
-        })
-          .on('error', () => {
-            childSpawn('gnome-terminal', ['--', 'sh', '-c', `${cmd}; exec sh`], {
+        // Linux: try x-terminal-emulator, then gnome-terminal, then xterm
+        let lastError: Error | undefined;
+        let spawned = false;
+
+        for (const emulator of ['x-terminal-emulator', 'gnome-terminal', 'xterm']) {
+          const args =
+            emulator === 'gnome-terminal'
+              ? ['--', 'sh', '-c', `${cmd}; exec sh`]
+              : ['-e', 'sh', '-c', `${cmd}; exec sh`];
+
+          await new Promise<void>(resolve => {
+            const proc = childSpawn(emulator, args, {
               detached: true,
               stdio: 'ignore',
               env: childEnv,
-            });
-          })
-          .unref();
+            })
+              .on('error', (err: Error) => {
+                lastError = err;
+                resolve();
+              })
+              .on('exit', () => {
+                spawned = true;
+                resolve();
+              });
+
+            proc.unref();
+            // Give the process a moment to initialize; if it fails it will error
+            setTimeout(() => resolve(), 200);
+          });
+
+          if (spawned) break;
+        }
+
+        if (!spawned) {
+          throw new Error(
+            `No terminal emulator found. Tried: x-terminal-emulator, gnome-terminal, xterm. ${lastError?.message || ''}`,
+          );
+        }
+      }
+
+      // Clean up temp files on Windows (schedule async to not block return)
+      if (platform === 'win32') {
+        const safeName = targetName.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const ps1Path = join(tmpdir(), `clew-peer-${safeName}-${randomId}.ps1`);
+        const promptFilePath = join(tmpdir(), `clew-peer-${safeName}-${randomId}.prompt.txt`);
+        setImmediate(() => {
+          try {
+            unlinkSync(ps1Path);
+          } catch {
+            // Already deleted or doesn't exist
+          }
+          try {
+            unlinkSync(promptFilePath);
+          } catch {
+            // Already deleted or doesn't exist
+          }
+        });
       }
 
       return {
@@ -264,8 +336,6 @@ export const PeerSpawnTool = buildTool({
           success: true,
           name: targetName,
           role: input.role,
-          port: 0,
-          joined: false,
           command: commandPreview,
           diagnostics: `Terminal spawned for peer "${targetName}". Use peer_discover to find it.`,
         },

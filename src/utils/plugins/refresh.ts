@@ -28,6 +28,7 @@ import { logForDebugging } from '../debug.js';
 import { errorMessage } from '../errors.js';
 import { logError } from '../log.js';
 import { clearAllCaches } from './cacheUtils.js';
+import { clearInstalledPluginsCache } from './installedPluginsManager.js';
 import { getPluginCommands } from './loadPluginCommands.js';
 import { loadPluginHooks } from './loadPluginHooks.js';
 import { loadPluginLspServers } from './lspPluginIntegration.js';
@@ -72,6 +73,7 @@ export type RefreshActivePluginsResult = {
 export async function refreshActivePlugins(setAppState: SetAppState): Promise<RefreshActivePluginsResult> {
   logForDebugging('refreshActivePlugins: clearing all plugin caches');
   clearAllCaches();
+  clearInstalledPluginsCache();
   // Orphan exclusions are session-frozen by default, but /reload-plugins is
   // an explicit "disk changed, re-read it" signal — recompute them too.
   clearPluginCacheExclusions();

@@ -154,7 +154,6 @@
     "protobufjs": "8.7.1",
     "qs": "6.15.3",
     "react-reconciler": "0.33.0",
-    "shell-quote": "1.10.0",
     "uuid": "11.1.1",
     "ws": "8.21.1"
   },

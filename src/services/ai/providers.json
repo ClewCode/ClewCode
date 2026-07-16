@@ -7,7 +7,7 @@
     "modelsUrl": "https://api.openai.com/v1/models",
     "defaultModel": "gpt-5.5",
     "defaultModelVerified": true,
-    "note": "OpenAI \u00e2\u20ac\u201d GPT-5.5 flagship. Source: developers.openai.com/docs/models, May 2026.",
+    "note": "OpenAI â€” GPT-5.5 flagship. Source: developers.openai.com/docs/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -715,7 +715,7 @@
     "modelsUrl": "https://openrouter.ai/api/v1/models",
     "defaultModel": "anthropic/claude-opus-4.7",
     "defaultModelVerified": true,
-    "note": "OpenRouter \u00e2\u20ac\u201d 358 models across 56 providers. Source: openrouter.ai/api/v1/models, May 2026.",
+    "note": "OpenRouter â€” 358 models across 56 providers. Source: openrouter.ai/api/v1/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -901,7 +901,7 @@
     "modelsUrl": "https://api.deepseek.com/v1/models",
     "defaultModel": "deepseek-v4-pro",
     "defaultModelVerified": true,
-    "note": "DeepSeek V4 family. Released April 24, 2026. Text-only \u00e2\u20ac\u201d does not support image_url content blocks.",
+    "note": "DeepSeek V4 family. Released April 24, 2026. Text-only â€” does not support image_url content blocks.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1432,7 +1432,7 @@
     "modelsUrl": "https://api.groq.com/openai/v1/models",
     "defaultModel": "llama-3.3-70b-versatile",
     "defaultModelVerified": true,
-    "note": "Groq LPU inference \u00e2\u20ac\u201d fastest tokens/sec. Source: console.groq.com/docs/models, May 2026.",
+    "note": "Groq LPU inference â€” fastest tokens/sec. Source: console.groq.com/docs/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1534,7 +1534,7 @@
     "modelsUrl": "https://api.x.ai/v1/models",
     "defaultModel": "grok-4.5",
     "defaultModelVerified": true,
-    "note": "xAI Grok \u2014 Grok 4.5 is the latest flagship for coding, agentic tasks, and knowledge work. Grok Build 0.1 is optimized for coding agents. Source: docs.x.ai, July 2026.",
+    "note": "xAI Grok — Grok 4.5 is the latest flagship for coding, agentic tasks, and knowledge work. Grok Build 0.1 is optimized for coding agents. Source: docs.x.ai, July 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1623,7 +1623,7 @@
     "modelsUrl": "https://api.mistral.ai/v1/models",
     "defaultModel": "mistral-small-latest",
     "defaultModelVerified": true,
-    "note": "Mistral AI \u00e2\u20ac\u201d frontier coding (Medium 3.5), hybrid (Small 4). Source: docs.mistral.ai/models, May 2026.",
+    "note": "Mistral AI â€” frontier coding (Medium 3.5), hybrid (Small 4). Source: docs.mistral.ai/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -1937,7 +1937,7 @@
     "modelsUrl": "https://api.together.xyz/v1/models",
     "defaultModel": "deepseek-ai/DeepSeek-V4-Pro",
     "defaultModelVerified": true,
-    "note": "Together AI \u00e2\u20ac\u201d 200+ models, function calling. Source: together.ai/models, May 2026.",
+    "note": "Together AI â€” 200+ models, function calling. Source: together.ai/models, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -2081,7 +2081,7 @@
     "modelsUrl": "https://integrate.api.nvidia.com/v1/models",
     "defaultModel": "deepseek-ai/deepseek-v4-pro",
     "defaultModelVerified": true,
-    "note": "NVIDIA NIM \u00ef\u00bf\u00bd optimized inference. Source: build.nvidia.com, May 2026.",
+    "note": "NVIDIA NIM ï¿½ optimized inference. Source: build.nvidia.com, May 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -2688,7 +2688,7 @@
     "label": "Cline",
     "envKey": "CLINE_API_KEY",
     "defaultBaseUrl": "https://api.cline.bot/api/v1",
-    "note": "Cline API \u00e2\u20ac\u201d managed multi-provider AI endpoint. Updated June 2026.",
+    "note": "Cline API â€” managed multi-provider AI endpoint. Updated June 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
@@ -2864,132 +2864,6 @@
     "defaultModel": "anthropic/claude-sonnet-4.6",
     "defaultModelVerified": true
   },
-  "clew-gateway": {
-    "providerId": "clew-gateway",
-    "label": "Clew Gateway",
-    "envKey": "CLEW_GATEWAY_KEY",
-    "defaultBaseUrl": "http://localhost:8787/v1",
-    "defaultModel": "clew-code",
-    "defaultModelVerified": true,
-    "note": "Clew Gateway \u00e2\u20ac\u201d OpenAI-compatible model router. Set CLEW_GATEWAY_URL and CLEW_GATEWAY_KEY. One key to rule them all.",
-    "capabilities": {
-      "chat": true,
-      "streaming": "full",
-      "toolCalling": true,
-      "vision": true,
-      "jsonSchema": true,
-      "reasoningEffort": true,
-      "contextLength": "1M",
-      "imageIn": true,
-      "videoIn": false
-    },
-    "models": [
-      {
-        "id": "clew-code",
-        "label": "Clew Code (gateway)",
-        "tags": [
-          "tools",
-          "vision",
-          "recommended",
-          "verified",
-          "gateway"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 1000000,
-          "maxOutput": 128000,
-          "reasoning": true,
-          "supportsSystemPrompt": true,
-          "imageIn": true,
-          "videoIn": false
-        }
-      },
-      {
-        "id": "clew-fast",
-        "label": "Clew Fast (gateway)",
-        "tags": [
-          "tools",
-          "fast",
-          "gateway"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": false,
-          "streaming": "full",
-          "maxContext": 128000,
-          "maxOutput": 16000,
-          "reasoning": false,
-          "supportsSystemPrompt": true,
-          "imageIn": false,
-          "videoIn": false
-        }
-      },
-      {
-        "id": "clew-cheap",
-        "label": "Clew Cheap (gateway)",
-        "tags": [
-          "tools",
-          "cheap",
-          "gateway"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": false,
-          "streaming": "full",
-          "maxContext": 128000,
-          "maxOutput": 16000,
-          "reasoning": false,
-          "supportsSystemPrompt": true,
-          "imageIn": false,
-          "videoIn": false
-        }
-      },
-      {
-        "id": "clew-reasoning",
-        "label": "Clew Reasoning (gateway)",
-        "tags": [
-          "tools",
-          "vision",
-          "reasoning",
-          "gateway"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": true,
-          "streaming": "full",
-          "maxContext": 1000000,
-          "maxOutput": 128000,
-          "reasoning": true,
-          "supportsSystemPrompt": true,
-          "imageIn": true,
-          "videoIn": false
-        }
-      },
-      {
-        "id": "clew-local",
-        "label": "Clew Local (gateway)",
-        "tags": [
-          "tools",
-          "local",
-          "free",
-          "gateway"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": false,
-          "streaming": "full",
-          "maxContext": 32768,
-          "maxOutput": 8192,
-          "reasoning": false,
-          "supportsSystemPrompt": true,
-          "imageIn": false,
-          "videoIn": false
-        }
-      }
-    ]
-  },
   "opengateway": {
     "providerId": "opengateway",
     "label": "OpenGateway",
@@ -2998,7 +2872,7 @@
     "modelsUrl": "https://opengateway.gitlawb.com/v1/models",
     "defaultModel": "xiaomi/mimo-v2.5-pro",
     "defaultModelVerified": true,
-    "note": "OpenAI-compatible gateway at opengateway.gitlawb.com. Bearer token (ogw_live_\u2026). Uses full provider/model IDs (e.g. xiaomi/mimo-v2.5-pro). Short form 'mimo-v2.5-pro' also accepted for MiMo. Send 'auto' for smart routing.",
+    "note": "OpenAI-compatible gateway at opengateway.gitlawb.com. Bearer token (ogw_live_…). Uses full provider/model IDs (e.g. xiaomi/mimo-v2.5-pro). Short form 'mimo-v2.5-pro' also accepted for MiMo. Send 'auto' for smart routing.",
     "capabilities": {
       "chat": true,
       "streaming": "full",
