@@ -1,8 +1,9 @@
 import { getSettings_DEPRECATED } from '../../../utils/settings/settings.js';
+import { rateLimitErrorFromResponse } from '../errors.js';
 import type { SearchOptions, SearchProvider, SearchResponse, SearchResult } from '../types.js';
 
 interface TavilySearchResponse {
-  results: Array<{
+  results?: Array<{
     title: string;
     url: string;
     content: string;
@@ -34,15 +35,20 @@ export class TavilyProvider implements SearchProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        api_key: apiKey,
         query,
         max_results: num,
         include_answer: true,
         include_raw_content: false,
       }),
+      signal: options?.signal,
     });
+
+    if (response.status === 429) {
+      throw rateLimitErrorFromResponse(this.name, response);
+    }
 
     if (!response.ok) {
       throw new Error(`Tavily API error: ${response.status} ${response.statusText}`);
@@ -50,7 +56,7 @@ export class TavilyProvider implements SearchProvider {
 
     const data: TavilySearchResponse = await response.json();
 
-    const results: SearchResult[] = data.results.map(r => ({
+    const results: SearchResult[] = (data.results || []).map(r => ({
       title: r.title,
       url: r.url,
       snippet: r.content.slice(0, 300),
@@ -61,6 +67,7 @@ export class TavilyProvider implements SearchProvider {
       results,
       query,
       provider: this.name,
+      answer: data.answer,
     };
   }
 }

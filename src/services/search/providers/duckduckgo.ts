@@ -77,6 +77,7 @@ export class DuckDuckGoProvider implements SearchProvider {
         accept: 'text/html',
         'user-agent': 'Mozilla/5.0',
       },
+      signal: options?.signal,
     });
 
     if (!response.ok) {
@@ -99,7 +100,7 @@ export class DuckDuckGoProvider implements SearchProvider {
     instantAnswerUrl.searchParams.set('no_html', '1');
     instantAnswerUrl.searchParams.set('skip_disambig', '1');
 
-    const instantAnswerResponse = await fetch(instantAnswerUrl.toString());
+    const instantAnswerResponse = await fetch(instantAnswerUrl.toString(), { signal: options?.signal });
     if (!instantAnswerResponse.ok) {
       throw new Error(`DuckDuckGo fallback error: ${instantAnswerResponse.status} ${instantAnswerResponse.statusText}`);
     }

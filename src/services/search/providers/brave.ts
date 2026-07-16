@@ -1,4 +1,5 @@
 import { getSettings_DEPRECATED } from '../../../utils/settings/settings.js';
+import { rateLimitErrorFromResponse } from '../errors.js';
 import type { SearchOptions, SearchProvider, SearchResponse, SearchResult } from '../types.js';
 
 interface BraveWebSearchResponse {
@@ -46,7 +47,12 @@ export class BraveProvider implements SearchProvider {
         Accept: 'application/json',
         'X-Subscription-Token': apiKey,
       },
+      signal: options?.signal,
     });
+
+    if (response.status === 429) {
+      throw rateLimitErrorFromResponse(this.name, response);
+    }
 
     if (!response.ok) {
       throw new Error(`Brave Search API error: ${response.status} ${response.statusText}`);
