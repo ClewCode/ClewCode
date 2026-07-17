@@ -3152,7 +3152,7 @@ export function REPL({
               break;
             case 'compact_start':
               setIsCompacting(true);
-              setSpinnerMessage('Compacting conversation');
+              setSpinnerMessage('Compacting conversation…');
               break;
             case 'compact_end':
               setIsCompacting(false);

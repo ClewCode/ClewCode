@@ -5,7 +5,7 @@ import { getCwdState } from '../../bootstrap/state.js';
 import type { LocalJSXCommandContext } from '../../commands.js';
 import { MessageResponse } from '../../components/MessageResponse.js';
 import { Text } from '../../ink.js';
-import { listProjectSkills } from '../../skills/loadProjectSkills.js';
+import { loadProjectSkills as listProjectSkills } from '../../skills/loadProjectSkills.js';
 import type { LocalJSXCommandOnDone } from '../../types/command.js';
 
 export async function call(

@@ -2,6 +2,7 @@ import { BASH_TOOL_NAME } from '../tools/BashTool/toolName.js';
 import { FILE_EDIT_TOOL_NAME } from '../tools/FileEditTool/constants.js';
 import { FILE_WRITE_TOOL_NAME } from '../tools/FileWriteTool/prompt.js';
 import { POWERSHELL_TOOL_NAME } from '../tools/PowerShellTool/toolName.js';
+import { pluralize } from './format.js';
 import { isScratchpadPath } from './permissions/filesystem.js';
 
 /** Minimal in-progress tool_use shape needed to describe active work. */
@@ -22,10 +23,6 @@ function addedLinesForEdit(input: Record<string, unknown> | undefined): number {
   if (typeof input?.content === 'string') return countLines(input.content); // Write
   if (typeof input?.new_string === 'string') return countLines(input.new_string); // Edit
   return 0;
-}
-
-function pluralize(count: number, word: string): string {
-  return `${count} ${word}${count === 1 ? '' : 's'}`;
 }
 
 /**

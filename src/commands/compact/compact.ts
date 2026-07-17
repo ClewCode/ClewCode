@@ -25,6 +25,7 @@ import type { ToolUseContext } from '../../Tool.js';
 import type { LocalCommandCall } from '../../types/command.js';
 import type { Message } from '../../types/message.js';
 import { hasExactErrorMessage } from '../../utils/errors.js';
+import { pluralize } from '../../utils/format.js';
 import { executePreCompactHooks } from '../../utils/hooks.js';
 import { logError } from '../../utils/log.js';
 import { getMessagesAfterCompactBoundary } from '../../utils/messages.js';
@@ -229,15 +230,16 @@ function buildDisplayText(
 ): string {
   const upgradeMessage = getUpgradeMessage('tip');
   const expandShortcut = getShortcutDisplay('app:toggleTranscript', 'Global', 'ctrl+o');
+  const memoriesExtracted = extractResult ? extractResult.created + extractResult.updated : 0;
   const dimmed = [
     ...(context.options.verbose ? [] : [`(${expandShortcut} to see full summary)`]),
     ...(userDisplayMessage ? [userDisplayMessage] : []),
-    ...(extractResult && extractResult.created + extractResult.updated > 0
-      ? [`${extractResult.created + extractResult.updated} memories extracted`]
-      : []),
+    ...(memoriesExtracted > 0 ? [`${pluralize(memoriesExtracted, 'memory', 'memories')} extracted`] : []),
     ...(upgradeMessage ? [upgradeMessage] : []),
   ];
-  return ansis.dim(`Compacted ${dimmed.join('\n')}`);
+  // Guard the empty case (verbose + nothing extracted) so we don't emit
+  // "Compacted " with a dangling trailing space.
+  return ansis.dim(dimmed.length > 0 ? `Compacted ${dimmed.join('\n')}` : 'Compacted');
 }
 
 async function getCacheSharingParams(

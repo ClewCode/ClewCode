@@ -43,6 +43,14 @@ export type CronTask = {
   /** When true, the task reschedules after firing instead of being deleted. */
   recurring?: boolean;
   /**
+   * Optional human-facing label shown in the "task fired" banner instead of
+   * the generic "Running scheduled task" text. Set by tools that want the
+   * fire to read meaningfully — e.g. ScheduleFollowup passes "Resuming: <what
+   * you were doing>" so the user sees why the agent woke itself up. Persisted
+   * verbatim (survives restart for durable tasks); purely cosmetic.
+   */
+  label?: string;
+  /**
    * When true, the task is exempt from recurringMaxAgeMs auto-expiry.
    * System escape hatch for assistant mode's built-in tasks (catch-up/
    * morning-checkin/dream) — the installer's writeIfMissing() skips existing
@@ -125,6 +133,7 @@ export async function readCronTasks(dir?: string): Promise<CronTask[]> {
       ...(typeof t.lastFiredAt === 'number' ? { lastFiredAt: t.lastFiredAt } : {}),
       ...(t.recurring ? { recurring: true } : {}),
       ...(t.permanent ? { permanent: true } : {}),
+      ...(typeof t.label === 'string' ? { label: t.label } : {}),
     });
   }
   return out;
@@ -181,6 +190,7 @@ export async function addCronTask(
   recurring: boolean,
   durable: boolean,
   agentId?: string,
+  label?: string,
 ): Promise<string> {
   // Short ID — 8 hex chars is plenty for MAX_JOBS=50, avoids slice/prefix
   // juggling between the tool layer (shows short IDs) and disk.
@@ -191,6 +201,7 @@ export async function addCronTask(
     prompt,
     createdAt: Date.now(),
     ...(recurring ? { recurring: true } : {}),
+    ...(label ? { label } : {}),
   };
   if (!durable) {
     addSessionCronTask({ ...task, ...(agentId ? { agentId } : {}) });

@@ -98,7 +98,13 @@ export function useScheduledTasks({ isLoading, assistantMode = false, setMessage
           void removeCronTasks([task.id]);
           return;
         }
-        const msg = createScheduledTaskFireMessage(`Running scheduled task (${formatCronFireTime(new Date())})`);
+        // A labeled task (e.g. ScheduleFollowup) reads as what it is —
+        // "Resuming: wiring the retry queue (Jul 17 2:32pm)" — instead of the
+        // generic banner. Unlabeled crons keep the plain wording.
+        const when = formatCronFireTime(new Date());
+        const msg = createScheduledTaskFireMessage(
+          task.label ? `${task.label} (${when})` : `Running scheduled task (${when})`,
+        );
         setMessages(prev => [...prev, msg]);
         enqueueForLead(task.prompt);
       },

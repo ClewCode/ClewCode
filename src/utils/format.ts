@@ -119,6 +119,15 @@ const getNumberFormatter = (useConsistentDecimals: boolean): Intl.NumberFormat =
   }
 };
 
+/**
+ * "1 message" / "2 messages" — count plus its word, pluralized with a trailing
+ * "s" unless the count is exactly 1. Pass `plural` for irregular words
+ * (e.g. pluralize(n, 'entry', 'entries')).
+ */
+export function pluralize(count: number, word: string, plural?: string): string {
+  return `${count} ${count === 1 ? word : (plural ?? `${word}s`)}`;
+}
+
 export function formatNumber(number: number): string {
   // Only use minimumFractionDigits for numbers that will be shown in compact notation
   const shouldUseConsistentDecimals = number >= 1000;

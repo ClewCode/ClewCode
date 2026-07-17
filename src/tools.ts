@@ -19,6 +19,7 @@ const getCronTools = () => [
   require('./tools/ScheduleCronTool/CronCreateTool.js').CronCreateTool,
   require('./tools/ScheduleCronTool/CronDeleteTool.js').CronDeleteTool,
   require('./tools/ScheduleCronTool/CronListTool.js').CronListTool,
+  require('./tools/ScheduleFollowupTool/ScheduleFollowupTool.js').ScheduleFollowupTool,
 ];
 const getRemoteTriggerTool = () =>
   feature('AGENT_TRIGGERS_REMOTE') ? require('./tools/RemoteTriggerTool/RemoteTriggerTool.js').RemoteTriggerTool : null;

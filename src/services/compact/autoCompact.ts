@@ -67,8 +67,13 @@ export const AUTOCOMPACT_BUFFER_TOKENS = 40_000;
 // Only applies when CLEW_CODE_BOUNDARY_COMPACT is enabled.
 export const AUTOCOMPACT_HARD_BUFFER_TOKENS = 20_000;
 
+// Two-band context warning: yellow (approaching) then red (critical). The
+// warning surfaces when usage crosses `threshold - WARNING_BUFFER`; it escalates
+// to red at `threshold - ERROR_BUFFER`. ERROR_BUFFER must be < WARNING_BUFFER or
+// the two thresholds collapse and the yellow band becomes unreachable (the
+// warning would render red the instant it appears — see TokenWarning.tsx).
 export const WARNING_THRESHOLD_BUFFER_TOKENS = 20_000;
-export const ERROR_THRESHOLD_BUFFER_TOKENS = 20_000;
+export const ERROR_THRESHOLD_BUFFER_TOKENS = 10_000;
 export const MANUAL_COMPACT_BUFFER_TOKENS = 3_000;
 export const BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT = 0.65;
 

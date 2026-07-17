@@ -168,6 +168,8 @@ Tools/commands are registered in `src/tools.ts` / `src/commands.ts`; entrypoints
 
 Tools live one directory per tool under `src/tools/` (I/O, web, tasks, 15+ peer tools, MCP, agents, memory, media, UI, Goal, Monitor, LSP, ComputerUse, etc.).
 
+Scheduling tools (gated by `isKairosCronEnabled()`): `ScheduleCronTool/` (`CronCreate`/`CronDelete`/`CronList` — recurring or one-shot prompts) and `ScheduleFollowupTool/` (`ScheduleFollowup` — the agent parks unfinished work with a summary + remaining steps and a `delayMinutes`; it re-enqueues those notes to itself as a one-shot cron so it can resume). All ride the same `cronScheduler`/`cronTasks` machinery and fire only while the REPL is idle.
+
 Commands: ~114 under `src/commands/` (not every file is a top-level slash command; `commands.ts` is source of truth).
 
 Services that matter most for product behavior:
