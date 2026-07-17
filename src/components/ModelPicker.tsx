@@ -47,9 +47,9 @@ import { SearchBox } from './SearchBox.js';
 export type Props = {
   initial: string | null;
   sessionModel?: ModelSetting;
-  /** Press `s` in the picker to use the focused model for this session only. */
+  /** Press Enter (or `s`) to use the focused model for this session only. */
   onSelect?: (model: string | null, effort: EffortLevel | undefined) => void;
-  /** Press Enter to persist the focused model as the default for new sessions. Falls back to onSelect if not provided. */
+  /** Press `d` to persist the focused model as the default for new sessions. Enter falls back to this if onSelect is not provided. */
   onSetDefault?: (model: string | null, effort: EffortLevel | undefined) => void;
   onCancel?: () => void;
   isStandaloneCommand?: boolean;
@@ -300,6 +300,32 @@ export function ModelPicker(t0) {
     t11 = $[31];
   }
   const handleCycleEffort = t11;
+
+  // Applies the focused effort to the running session. `persist` also writes it
+  // to userSettings, which every future session reads — so it is only ever true
+  // on the explicit set-as-default path, never on a session-scoped selection.
+  const applyEffort = (value: string, persist: boolean): EffortLevel | undefined => {
+    const selectedModel = resolveOptionModel(value, activeProviderId);
+    const selectedEffort = hasToggledEffort && selectedModel && modelSupportsEffort(selectedModel) ? effort : undefined;
+    if (skipSettingsWrite) {
+      return selectedEffort;
+    }
+    const effortLevel = resolvePickerEffortPersistence(
+      effort,
+      getDefaultEffortLevelForOption(value, activeProviderId),
+      getSettingsForSource('userSettings')?.effortLevel,
+      hasToggledEffort,
+    );
+    if (persist) {
+      const persistable = toPersistableEffort(effortLevel);
+      if (persistable !== undefined) {
+        updateSettingsForSource('userSettings', { effortLevel: persistable });
+      }
+    }
+    setAppState(prev => ({ ...prev, effortValue: effortLevel }));
+    return selectedEffort;
+  };
+
   // Search is now focused by default, no need for / trigger.
   // We keep a small useInput to re-focus search if the user starts typing while in the list.
   useInput(
@@ -354,6 +380,15 @@ export function ModelPicker(t0) {
         setIsSearchActive(true);
       }
 
+      const selectedValue = (): string | null =>
+        effectiveFocusedValue === NO_PREFERENCE
+          ? `${activeProviderId}/default`
+          : effectiveFocusedValue
+            ? formatProviderModelSetting(activeProviderId, effectiveFocusedValue)
+            : null;
+
+      // `s` is kept as an alias for Enter (session-only) so existing muscle
+      // memory still does the safe thing after Enter stopped persisting.
       if (
         !isSearchActive &&
         isStandaloneCommand &&
@@ -362,15 +397,19 @@ export function ModelPicker(t0) {
         !key.ctrl &&
         !key.meta
       ) {
-        const modelValue = resolveOptionModel(effectiveFocusedValue, activeProviderId);
-        const selectedEffort = hasToggledEffort && modelValue && modelSupportsEffort(modelValue) ? effort : undefined;
-        const selectedValue =
-          effectiveFocusedValue === NO_PREFERENCE
-            ? `${activeProviderId}/default`
-            : effectiveFocusedValue
-              ? formatProviderModelSetting(activeProviderId, effectiveFocusedValue)
-              : null;
-        onSelect(selectedValue, selectedEffort);
+        onSelect(selectedValue(), applyEffort(effectiveFocusedValue, false));
+      }
+
+      // `d` is the only in-picker path that writes to disk.
+      if (
+        !isSearchActive &&
+        isStandaloneCommand &&
+        onSetDefault &&
+        (input === 'd' || input === 'D') &&
+        !key.ctrl &&
+        !key.meta
+      ) {
+        onSetDefault(selectedValue(), applyEffort(effectiveFocusedValue, true));
       }
     },
     {
@@ -418,28 +457,11 @@ export function ModelPicker(t0) {
       logEvent('tengu_model_command_menu_effort', {
         effort: effort as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       });
-      if (!skipSettingsWrite) {
-        const effortLevel = resolvePickerEffortPersistence(
-          effort,
-          getDefaultEffortLevelForOption(value_0, activeProviderId),
-          getSettingsForSource('userSettings')?.effortLevel,
-          hasToggledEffort,
-        );
-        const persistable = toPersistableEffort(effortLevel);
-        if (persistable !== undefined) {
-          updateSettingsForSource('userSettings', {
-            effortLevel: persistable,
-          });
-        }
-        setAppState(prev_0 => ({
-          ...prev_0,
-          effortValue: effortLevel,
-        }));
-      }
-      const selectedModel = resolveOptionModel(value_0, activeProviderId);
-      const selectedEffort =
-        hasToggledEffort && selectedModel && modelSupportsEffort(selectedModel) ? effort : undefined;
-      const handler = onSetDefault ?? onSelect;
+      // Enter is session-scoped. It used to prefer onSetDefault, which wrote the
+      // model to userSettings/provider.json and so changed every other terminal's
+      // session too. Persisting is now opt-in via `d`.
+      const selectedEffort = applyEffort(value_0, false);
+      const handler = onSelect ?? onSetDefault;
       if (handler) {
         if (value_0 === NO_PREFERENCE) {
           handler(`${activeProviderId}/default`, selectedEffort);
@@ -564,8 +586,8 @@ export function ModelPicker(t0) {
             <>Press {exitState.keyName} again to exit</>
           ) : (
             <Byline>
-              <KeyboardShortcutHint shortcut="Enter" action="confirm" />
-              {onSelect && <KeyboardShortcutHint shortcut="s" action="use for this session only" />}
+              <KeyboardShortcutHint shortcut="Enter" action="use for this session" />
+              {onSetDefault && <KeyboardShortcutHint shortcut="d" action="set as default for new sessions" />}
               <ConfigurableShortcutHint action="select:cancel" context="Select" fallback="Esc" description="exit" />
             </Byline>
           )}

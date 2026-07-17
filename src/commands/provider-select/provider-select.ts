@@ -23,9 +23,15 @@ import {
 import { validateProviderModelSelection } from '../../services/ai/providerSelection.js';
 import { hasGeminiOAuthCreds } from '../../services/ai/providers/CodeAssistProvider.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
-import type { LocalCommandResult, LocalJSXCommandCall, LocalJSXCommandOnDone } from '../../types/command.js';
+import type {
+  LocalCommandResult,
+  LocalJSXCommandCall,
+  LocalJSXCommandContext,
+  LocalJSXCommandOnDone,
+} from '../../types/command.js';
 import { getClaudeAIOAuthTokens } from '../../utils/auth.js';
 import { readLocalProviderKey } from '../../utils/localProviderKeys.js';
+import { stripSignatureBlocks } from '../../utils/messages.js';
 
 type SerializableProviderRegistryEntry = Omit<ProviderRegistryEntry, 'provider'>;
 
@@ -159,6 +165,7 @@ function applyProviderSelectionToSession(
   setAppState: ReturnType<typeof useSetAppState>,
   config: Pick<ProviderConfig, 'model' | 'provider' | 'apiKeys' | 'providerConfig'>,
   isGlobal = false,
+  setMessages?: LocalJSXCommandContext['setMessages'],
 ): void {
   // Session model & provider are managed by AppState's *ForSession fields
   // (mainLoopModelForSession / mainLoopProviderForSession). onChangeAppState
@@ -203,6 +210,12 @@ function applyProviderSelectionToSession(
     mainLoopProvider: isGlobal ? config.provider : prev.mainLoopProvider,
     mainLoopProviderForSession: isGlobal ? null : config.provider,
   }));
+
+  // A provider switch is also a model switch, and thinking-block signatures are
+  // bound to the model that produced them — replaying them to the new model 400s
+  // with "Invalid `signature` in `thinking` block". Same reason /login strips on
+  // a credential change.
+  setMessages?.(stripSignatureBlocks);
 }
 
 async function runProviderCommand(args: string): Promise<ProviderCommandRunResult> {
@@ -445,7 +458,13 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
   };
 }
 
-function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.ReactNode {
+function ProviderPicker({
+  onDone,
+  setMessages,
+}: {
+  onDone: LocalJSXCommandOnDone;
+  setMessages?: LocalJSXCommandContext['setMessages'];
+}): React.ReactNode {
   const [provider, setProvider] = React.useState<ProviderKey | null>(null);
   const [apiKeyInput, setApiKeyInput] = React.useState('');
   const [apiKeyCursorOffset, setApiKeyCursorOffset] = React.useState(0);
@@ -528,7 +547,7 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
     const currentModel = isProviderSwitching
       ? info.defaultModel || ''
       : existingConfig?.model || (currentSessionModel as string) || info.defaultModel || '';
-    applyProviderSelectionToSession(setAppState, { model: currentModel, provider }, false);
+    applyProviderSelectionToSession(setAppState, { model: currentModel, provider }, false, setMessages);
 
     onDone(`Set provider to ${provider}\nModel: ${currentModel}\n(Session only)`, { display: 'system' });
   }
@@ -901,6 +920,7 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
             ...(apiKeyVal ? { apiKeys: { custom: apiKeyVal } } : {}),
           },
           false,
+          setMessages,
         );
 
         setCustomName('');
@@ -1183,7 +1203,15 @@ function ProviderPicker({ onDone }: { onDone: LocalJSXCommandOnDone }): React.Re
   return null;
 }
 
-function ProviderCommandRunner({ args, onDone }: { args: string; onDone: LocalJSXCommandOnDone }): React.ReactNode {
+function ProviderCommandRunner({
+  args,
+  onDone,
+  setMessages,
+}: {
+  args: string;
+  onDone: LocalJSXCommandOnDone;
+  setMessages?: LocalJSXCommandContext['setMessages'];
+}): React.ReactNode {
   const setAppState = useSetAppState();
 
   React.useEffect(() => {
@@ -1192,7 +1220,7 @@ function ProviderCommandRunner({ args, onDone }: { args: string; onDone: LocalJS
         if (appliedConfig) {
           const parts = args.trim().split(/\s+/);
           const isGlobal = parts.includes('--global') || parts.includes('-g');
-          applyProviderSelectionToSession(setAppState, appliedConfig, isGlobal);
+          applyProviderSelectionToSession(setAppState, appliedConfig, isGlobal, setMessages);
         }
         if (result.type === 'text') {
           onDone(result.value);
@@ -1205,15 +1233,17 @@ function ProviderCommandRunner({ args, onDone }: { args: string; onDone: LocalJS
           display: 'system',
         });
       });
-  }, [args, onDone, setAppState]);
+  }, [args, onDone, setAppState, setMessages]);
 
   return null;
 }
 
-export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
+export const call: LocalJSXCommandCall = async (onDone, context, args) => {
+  const setMessages = context?.setMessages;
+
   if (args.trim()) {
-    return React.createElement(ProviderCommandRunner, { args, onDone });
+    return React.createElement(ProviderCommandRunner, { args, onDone, setMessages });
   }
 
-  return React.createElement(ProviderPicker, { onDone });
+  return React.createElement(ProviderPicker, { onDone, setMessages });
 };
