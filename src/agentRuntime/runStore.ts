@@ -3,7 +3,7 @@ import path from 'node:path';
 import { resolveRuntimePath } from './config.js';
 import type { AgentRun, AgentState, ApprovalRequest, RuntimeEvent } from './types.js';
 
-function scrubSecrets(input: string): string {
+export function scrubSecrets(input: string): string {
   if (!input) return input;
   let scrubbed = input;
   // Regex pattern for typical API keys, tokens, auth headers

@@ -18,7 +18,7 @@ interface LLMAdapter {
 }
 
 // Highly robust Mock LLM Adapter for deterministic offline tests and fallback
-class MockLLMAdapter implements LLMAdapter {
+export class MockLLMAdapter implements LLMAdapter {
   private presetActions: Record<string, AgentAction[]> = {};
   private actionIndex: Record<string, number> = {};
 
