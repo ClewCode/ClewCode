@@ -14,11 +14,11 @@ import { fetchProviderModels } from './providerModels.js';
 import { getProviderRegistryEntry, normalizeProviderId, PROVIDER_IDS } from './providerRegistry.js';
 import type { ProviderId } from './providers/ProviderInterface.js';
 
-export type ProviderModelValidation =
+type ProviderModelValidation =
   | { valid: true; provider: ProviderId; model?: string }
   | { valid: false; error: string; suggestions?: string[] };
 
-export function validateProviderSelection(providerInput: string | null | undefined): ProviderModelValidation {
+function validateProviderSelection(providerInput: string | null | undefined): ProviderModelValidation {
   const provider = normalizeProviderId(providerInput);
   if (!provider) {
     return {

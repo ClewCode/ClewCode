@@ -129,6 +129,6 @@ export function revokeToken(id: string): boolean {
 /**
  * Get a single token entry by ID.
  */
-export function getToken(id: string): TokenEntry | undefined {
+function getToken(id: string): TokenEntry | undefined {
   return readStore().find(e => e.id === id);
 }

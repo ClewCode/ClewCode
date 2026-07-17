@@ -106,15 +106,6 @@ export async function flushPeerStateSave(statePath = getPeerStatePath()): Promis
   if (snap) await savePeerState(snap(), statePath);
 }
 
-/** Ensure the peer dir exists (sync, safe to call from constructors). */
-export function ensurePeerDirSync(): void {
-  try {
-    mkdirSync(dirname(getPeerStatePath()), { recursive: true });
-  } catch {
-    // Non-fatal
-  }
-}
-
 // ── SwarmTask persistence ──────────────────────────────────────
 //
 // Stored in a separate file from state.json (own debounce timer, own atomic

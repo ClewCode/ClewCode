@@ -26,7 +26,7 @@ import {
   peerColorFromId,
 } from './types.js';
 
-export type PeerStoreCallbacks = {
+type PeerStoreCallbacks = {
   onPeerAdded?: (peer: PeerInfo) => void;
   onPeerUpdated?: (peer: PeerInfo) => void;
   onPeerRemoved?: (peerId: string) => void;
@@ -35,7 +35,7 @@ export type PeerStoreCallbacks = {
   onTodoReceived?: (todo: MeshTodo) => void;
 };
 
-export type SwarmTags = {
+type SwarmTags = {
   displayName?: string;
   role?: string;
 };
@@ -447,16 +447,6 @@ export class PeerStore {
    */
   getReply(replyTo: string): BrokerMessage | undefined {
     return this.outbox.find(m => m.replyTo === replyTo && m.delivered === false);
-  }
-
-  /**
-   * Mark a message as delivered by ID.
-   */
-  markDelivered(id: string): boolean {
-    const msg = this.outbox.find(m => m.id === id);
-    if (!msg) return false;
-    msg.delivered = true;
-    return true;
   }
 
   /**

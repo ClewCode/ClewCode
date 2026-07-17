@@ -60,7 +60,7 @@ export function getLargeOutputInstructions(
  * proper extension; unknown types get 'bin'. The extension matters because
  * the Read tool dispatches on it (PDFs, images, etc. need the right ext).
  */
-export function extensionForMimeType(mimeType: string | undefined): string {
+function extensionForMimeType(mimeType: string | undefined): string {
   if (!mimeType) return 'bin';
   // Strip any charset/boundary parameter
   const mt = (mimeType.split(';')[0] ?? '').trim().toLowerCase();
@@ -132,7 +132,7 @@ export function isBinaryContentType(contentType: string): boolean {
   return true;
 }
 
-export type PersistBinaryResult = { filepath: string; size: number; ext: string } | { error: string };
+type PersistBinaryResult = { filepath: string; size: number; ext: string } | { error: string };
 
 /**
  * Write raw binary bytes to the tool-results directory with a mime-derived

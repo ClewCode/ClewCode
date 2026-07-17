@@ -261,7 +261,7 @@ function parseJsonEntries(
  * small nested object, flatten it to [key, displayValue] pairs. Nested
  * objects get one-line JSON. Returns null if content doesn't qualify.
  */
-export function tryFlattenJson(content: string): [string, string][] | null {
+function tryFlattenJson(content: string): [string, string][] | null {
   const entries = parseJsonEntries(content, {
     maxChars: MAX_FLAT_JSON_CHARS,
     maxKeys: MAX_FLAT_JSON_KEYS,
@@ -290,7 +290,7 @@ export function tryFlattenJson(content: string): [string, string][] | null {
  * handles the common MCP pattern of {"messages":"line1\nline2..."} where
  * pretty-printing keeps \n escaped but we want real line breaks + truncation.
  */
-export function tryUnwrapTextPayload(content: string): { body: string; extras: [string, string][] } | null {
+function tryUnwrapTextPayload(content: string): { body: string; extras: [string, string][] } | null {
   const entries = parseJsonEntries(content, {
     maxChars: MAX_JSON_PARSE_CHARS,
     maxKeys: 4,
@@ -330,10 +330,7 @@ const SLACK_ARCHIVES_RE = /^https:\/\/[a-z0-9-]+\.slack\.com\/archives\/([A-Z0-9
  * tool input (may be a name like "#foo" or an ID like "C09EVDAN1NK") and
  * falls back to the ID parsed from the archives URL.
  */
-export function trySlackSendCompact(
-  output: string | MCPToolResult,
-  input: unknown,
-): { channel: string; url: string } | null {
+function trySlackSendCompact(output: string | MCPToolResult, input: unknown): { channel: string; url: string } | null {
   let text: unknown = output;
   if (Array.isArray(output)) {
     const block = output.find(b => b.type === 'text');

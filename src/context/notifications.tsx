@@ -265,7 +265,7 @@ const PRIORITIES: Record<Priority, number> = {
   medium: 2,
   low: 3,
 };
-export function getNext(queue: Notification[]): Notification | undefined {
+function getNext(queue: Notification[]): Notification | undefined {
   if (queue.length === 0) return undefined;
   return queue.reduce((min, n) => (PRIORITIES[n.priority] < PRIORITIES[min.priority] ? n : min));
 }

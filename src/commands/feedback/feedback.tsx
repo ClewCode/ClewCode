@@ -5,7 +5,7 @@ import type { LocalJSXCommandOnDone } from '../../types/command.js';
 import type { Message } from '../../types/message.js';
 
 // Shared function to render the Feedback component
-export function renderFeedbackComponent(
+function renderFeedbackComponent(
   onDone: (
     result?: string,
     options?: {

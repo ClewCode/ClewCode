@@ -36,7 +36,7 @@ const BLOCKED_DOMAINS = [
   'kasada.io',
 ];
 
-export interface TabInfo {
+interface TabInfo {
   index: number;
   title: string;
   url: string;

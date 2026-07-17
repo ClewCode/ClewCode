@@ -24,6 +24,7 @@ import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { formatPeerTaskDashboard, formatPeerTaskSummary } from '../../peer/peerDashboard.js';
 import type { PeerInfo } from '../../peer/types.js';
+import { notifyPeerFeedback } from '../../tools/peer/peerFeedback.js';
 import { errorMessage } from '../../utils/errors.js';
 import { formatPeerList } from './PeerList.js';
 import PeerMenu from './PeerMenu.js';
@@ -93,28 +94,45 @@ function spawnPeerTerminal(options: { name?: string; prompt?: string; model?: st
   const fullCommand = `"${execPath}" ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(' ')}`;
 
   const platform = process.platform;
+  // Detached children MUST attach an 'error' listener and be unref'd. An
+  // unhandled async 'error' event (e.g. EMFILE/EAGAIN when spawning many
+  // peers at once) is otherwise re-thrown as an uncaughtException and kills
+  // this parent process mid-swarm — leaving the terminal in mouse/focus
+  // tracking mode because cleanup can't run in time. unref() keeps a
+  // successful detached child from pinning the parent's event loop.
+  const onSpawnError = (err: Error): void => {
+    notifyPeerFeedback(`failed to open peer terminal: ${errorMessage(err)}`, 'peer-spawn', 'high');
+  };
   if (platform === 'win32') {
-    childSpawn('cmd.exe', ['/c', 'start', 'cmd.exe', '/k', fullCommand], {
+    const child = childSpawn('cmd.exe', ['/c', 'start', 'cmd.exe', '/k', fullCommand], {
       detached: true,
       stdio: 'ignore',
       shell: true,
     });
+    child.on('error', onSpawnError);
+    child.unref();
   } else if (platform === 'darwin') {
     const appleScript = `tell application "Terminal" to do script "${fullCommand.replace(/"/g, '\\"')}"`;
-    childSpawn('osascript', ['-e', appleScript], {
+    const child = childSpawn('osascript', ['-e', appleScript], {
       detached: true,
       stdio: 'ignore',
     });
+    child.on('error', onSpawnError);
+    child.unref();
   } else {
-    childSpawn('x-terminal-emulator', ['-e', fullCommand], {
+    const child = childSpawn('x-terminal-emulator', ['-e', fullCommand], {
       detached: true,
       stdio: 'ignore',
-    }).on('error', () => {
-      childSpawn('gnome-terminal', ['--', 'sh', '-c', `${fullCommand}; exec sh`], {
+    });
+    child.on('error', () => {
+      const fallback = childSpawn('gnome-terminal', ['--', 'sh', '-c', `${fullCommand}; exec sh`], {
         detached: true,
         stdio: 'ignore',
       });
+      fallback.on('error', onSpawnError);
+      fallback.unref();
     });
+    child.unref();
   }
 }
 

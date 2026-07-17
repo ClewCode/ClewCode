@@ -68,7 +68,7 @@ export interface ProviderCapabilityEntry {
   models: ProviderModelInfo[];
 }
 
-export const PROVIDER_CAPABILITIES = providersConfig as unknown as Record<ProviderId, ProviderCapabilityEntry>;
+const PROVIDER_CAPABILITIES = providersConfig as unknown as Record<ProviderId, ProviderCapabilityEntry>;
 
 export function getProviderCapabilityEntry(provider: ProviderId): ProviderCapabilityEntry {
   return PROVIDER_CAPABILITIES[provider];

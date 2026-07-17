@@ -45,7 +45,7 @@ const inputSchema = lazySchema(() =>
       .optional()
       .default(600)
       .describe(
-        'Absolute max total seconds to wait when `trackMesh` is true (default: 600 = 10 minutes). Prevents indefinite hang.',
+        'Absolute max total seconds to wait when `trackPeer` is true (default: 600 = 10 minutes). Prevents indefinite hang.',
       ),
   }),
 );
@@ -146,7 +146,7 @@ export const PeerListMessagesTool = buildTool({
     wait?: boolean;
     timeout?: number;
     from?: string;
-    trackMesh?: boolean;
+    trackPeer?: boolean;
     maxTotalWait?: number;
   }) {
     const store = getGlobalPeerStore();
@@ -175,7 +175,7 @@ export const PeerListMessagesTool = buildTool({
       const cycleTimeoutMs = clampTimeout(input.timeout, 30, 120);
       const maxTotalMs = clampTimeout(input.maxTotalWait, 600, 3600);
       const deadline = Date.now() + maxTotalMs;
-      const trackMesh = input.trackMesh && input.from;
+      const trackPeer = input.trackPeer && input.from;
 
       while (Date.now() < deadline) {
         const remaining = deadline - Date.now();
@@ -192,7 +192,7 @@ export const PeerListMessagesTool = buildTool({
         }
 
         // If tracking peer liveness, check if the peer node is still reachable
-        if (trackMesh) {
+        if (trackPeer) {
           const alive = await this.pingMesh(input.from!);
           if (!alive) {
             peerStatus = 'offline';
@@ -231,7 +231,7 @@ export const PeerListMessagesTool = buildTool({
         count: dataMessages.length,
         waited,
         timedOut,
-        peerStatus: peerStatus ?? (input.trackMesh ? 'unknown' : undefined),
+        peerStatus: peerStatus ?? (input.trackPeer ? 'unknown' : undefined),
       },
     };
   },

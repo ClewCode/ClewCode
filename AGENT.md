@@ -13,8 +13,8 @@ bun run build            # Production build → dist/ (+ postbuild macro injecti
 bun run start            # Run via scripts/bun-run.mjs
 bun test                 # Full suite
 bun test --bail          # Stop on first failure
-npx vitest run path/to/file.test.ts   # Single test file
-npx vitest run -t "test name"         # Single test by name
+bun test path/to/file.test.ts         # Single test file
+bun test -t "test name"               # Single test by name
 bun run check:ci         # Biome CI (lint + format, no autofix)
 bun run lint             # Biome lint --write
 bun run format           # Biome format --write
@@ -241,7 +241,7 @@ Prefer TinyFish MCP for web work over built-in WebSearch / WebFetch / BrowserToo
 
 CI runs typecheck, lint, build, and tests. Pushing a `v*` tag triggers the release workflow (GitHub Release + npm publish).
 
-TypeScript errors use an error budget stored in `.ts-error-baseline` (current: 3065). CI fails only on regression (count > baseline), not on the existing debt. Update the baseline when errors are fixed.
+TypeScript errors use an error budget stored in `.ts-error-baseline` (current: 3070). CI fails only on regression (count > baseline), not on the existing debt. Update the baseline when errors are fixed.
 
 ## Tests (59 test files)
 

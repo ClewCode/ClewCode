@@ -2,7 +2,7 @@ import type React from 'react';
 import { createContext, useContext, useState, useSyncExternalStore } from 'react';
 import { createStore, type Store } from '../state/store.js';
 
-export type VoiceState = {
+type VoiceState = {
   voiceState: 'idle' | 'recording' | 'processing';
   voiceError: string | null;
   voiceInterimTranscript: string;

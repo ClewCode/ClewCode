@@ -22,7 +22,7 @@ export type OutputStyleConfig = {
   forceForPlugin?: boolean;
 };
 
-export type OutputStyles = {
+type OutputStyles = {
   readonly [K in OutputStyle]: OutputStyleConfig | null;
 };
 
@@ -196,7 +196,7 @@ export async function getOutputStyleConfig(): Promise<OutputStyleConfig | null> 
   return allStyles[outputStyle] ?? null;
 }
 
-export function hasCustomOutputStyle(): boolean {
+function hasCustomOutputStyle(): boolean {
   const style = getSettings_DEPRECATED()?.outputStyle;
   return style !== undefined && style !== DEFAULT_OUTPUT_STYLE_NAME;
 }

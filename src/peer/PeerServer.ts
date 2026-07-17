@@ -44,13 +44,11 @@ export type PeerServerCallbacks = {
   onTodo?: (todo: MeshTodo) => void;
   /** cwd is the task's isolated worktree path when worktree isolation is enabled. */
   onExec?: (command: string, cwd?: string) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
-  onChatConnected?: (meshName: string, color: PeerColor) => void;
-  onChatDisconnected?: (meshName: string) => void;
   /** Called when a queued task starts or completes */
   onQueueUpdate?: (queue: SwarmTask[], currentTask: SwarmTask | null) => void;
 };
 
-export type PeerServerOptions = {
+type PeerServerOptions = {
   /** How many tasks this server executes at once. Default 1 (matches legacy behavior). */
   maxConcurrentTasks?: number;
   /**
@@ -67,9 +65,9 @@ export type PeerServerOptions = {
   persist?: boolean;
 };
 
-export type MeshEventType = 'new_message' | 'new_todo' | 'swarm_online' | 'swarm_offline' | 'queue_update';
+type MeshEventType = 'new_message' | 'new_todo' | 'swarm_online' | 'swarm_offline' | 'queue_update';
 
-export type MeshEvent = {
+type MeshEvent = {
   type: MeshEventType;
   data: any;
   timestamp: number;

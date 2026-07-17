@@ -16,7 +16,7 @@ function readAutoModeEnabledState(): AutoModeEnabledState | undefined {
   return v === 'enabled' || v === 'disabled' || v === 'opt-in' ? v : undefined;
 }
 
-export const LogEventNotificationSchema = lazySchema(() =>
+const LogEventNotificationSchema = lazySchema(() =>
   z.object({
     method: z.literal('log_event'),
     params: z.object({

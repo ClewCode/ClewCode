@@ -24,21 +24,9 @@ export function truncateText(text: string | undefined, maxLength = 160): string 
   return `${value.slice(0, maxLength - 1)}\u2026`;
 }
 
-export function formatPeerTarget(peer: PeerInfo | undefined, fallback: string): string {
-  if (!peer) return fallback;
-  const name = peer.hostname || fallback;
-  return `${name}:${peer.port}`;
-}
-
 export function formatPeerDetails(worker: PeerInfo): string {
   const role = (worker as any).role || (worker as any).tags?.join(', ');
   return `${worker.hostname ?? 'peer'}:${worker.port ?? '?'}${role ? ` [${role}]` : ''}`;
-}
-
-export function formatPeerList(peers: Array<{ hostname?: string; port?: number }>, limit = 6): string {
-  if (peers.length === 0) return 'none';
-  const visible = peers.slice(0, limit).map(peer => `${peer.hostname ?? 'peer'}:${peer.port ?? '?'}`);
-  return `${visible.join(', ')}${peers.length > limit ? `, +${peers.length - limit} more` : ''}`;
 }
 
 /**

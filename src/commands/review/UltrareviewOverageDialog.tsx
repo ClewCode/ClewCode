@@ -9,7 +9,7 @@ type Props = {
   onCancel: () => void;
 };
 
-export function UltrareviewOverageDialog({ onProceed, onCancel }: Props): React.ReactNode {
+function UltrareviewOverageDialog({ onProceed, onCancel }: Props): React.ReactNode {
   const [isLaunching, setIsLaunching] = useState(false);
   const abortControllerRef = useRef(new AbortController());
 

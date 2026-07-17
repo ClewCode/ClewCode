@@ -34,7 +34,7 @@ function timeAgo(ts: number): string {
   return `${Math.floor(sec / 3600)}h ago`;
 }
 
-export function PeerList({ isSharing, myPeerId: _myPeerId, onRefresh, onConnect, onClose }: Props): React.ReactNode {
+function PeerList({ isSharing, myPeerId: _myPeerId, onRefresh, onConnect, onClose }: Props): React.ReactNode {
   const [peers, setPeers] = React.useState<PeerInfo[]>([]);
   const store = getGlobalPeerStore();
   const [selectedIndex, setSelectedIndex] = React.useState(0);

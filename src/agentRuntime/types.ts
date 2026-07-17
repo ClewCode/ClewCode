@@ -17,7 +17,7 @@ export type AgentDefinition = {
   systemPrompt?: string;
 };
 
-export type WorkflowAgentSpec = {
+type WorkflowAgentSpec = {
   next: string[];
 };
 
@@ -135,26 +135,26 @@ export type AgentState = {
   lastCheckpoint?: string;
 };
 
-export type RetrievedMemory = {
+type RetrievedMemory = {
   id: string;
   content: string;
   score: number;
 };
 
-export type ResearchFinding = {
+type ResearchFinding = {
   sourceId: string;
   url?: string;
   title?: string;
   snippet: string;
 };
 
-export type ToolSpec = {
+type ToolSpec = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
 };
 
-export type BudgetRemaining = {
+type BudgetRemaining = {
   steps: number;
   toolCalls: number;
   llmCalls: number;

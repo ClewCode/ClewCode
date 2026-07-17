@@ -20,7 +20,7 @@ const SENSITIVE_COMMAND_SUBSTRINGS = [
   'bun publish',
 ];
 
-export type ToolDecision =
+type ToolDecision =
   | { action: 'allow' }
   | { action: 'deny'; reason: string }
   | { action: 'ask_user'; approvalId: string; reason: string; risk: 'low' | 'medium' | 'high' | 'critical' };

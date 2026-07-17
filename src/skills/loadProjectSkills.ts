@@ -86,25 +86,3 @@ export async function loadProjectSkills(cwd: string): Promise<Command[]> {
     return [];
   }
 }
-
-/**
- * List all available skills
- */
-export async function listProjectSkills(
-  cwd: string,
-): Promise<Array<{ name: string; description: string; whenToUse?: string }>> {
-  const skills = await loadProjectSkills(cwd);
-  return skills.map(skill => ({
-    name: skill.name,
-    description: skill.description,
-    whenToUse: skill.whenToUse,
-  }));
-}
-
-/**
- * Get a specific skill by name
- */
-export async function getProjectSkill(cwd: string, skillName: string): Promise<Command | undefined> {
-  const skills = await loadProjectSkills(cwd);
-  return skills.find(skill => skill.name === skillName);
-}

@@ -26,7 +26,12 @@ export type {
 export { getProviderModelInfo } from './providerCapabilities.js';
 export type { ProviderId, ProviderInterface };
 
-import type { ProviderCapabilities, ProviderCapabilityEntry, ProviderModelInfo } from './providerCapabilities.js';
+import type {
+  PromptCachingSupport,
+  ProviderCapabilities,
+  ProviderCapabilityEntry,
+  ProviderModelInfo,
+} from './providerCapabilities.js';
 
 export interface ProviderRegistryEntry extends ProviderCapabilityEntry {
   provider: ProviderInterface;
@@ -82,12 +87,12 @@ export const DEFAULT_PROVIDER: ProviderId = 'openai';
  * registry ID so old configs keep working instead of silently falling back to
  * DEFAULT_PROVIDER.
  */
-export const LEGACY_PROVIDER_ALIASES: Record<string, ProviderId> = {
+const LEGACY_PROVIDER_ALIASES: Record<string, ProviderId> = {
   gemini: 'google',
   grok: 'xai',
 };
 
-export function isRegisteredProviderId(id: string): id is ProviderId {
+function isRegisteredProviderId(id: string): id is ProviderId {
   return Boolean(PROVIDER_REGISTRY[id as ProviderId]);
 }
 
@@ -117,10 +122,6 @@ export function getProviderOptions(provider: ProviderId) {
     note: providerEntry.note,
     capabilities: providerEntry.capabilities,
   };
-}
-
-export function createProviderInstance(provider: ProviderId): ProviderInterface {
-  return getProviderRegistryEntry(provider).provider;
 }
 
 /**

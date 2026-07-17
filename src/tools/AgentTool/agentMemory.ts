@@ -96,13 +96,6 @@ export function isAgentMemoryPath(absolutePath: string): boolean {
   return false;
 }
 
-/**
- * Returns the agent memory file path for a given agent type and scope.
- */
-export function getAgentMemoryEntrypoint(agentType: string, scope: AgentMemoryScope): string {
-  return join(getAgentMemoryDir(agentType, scope), 'MEMORY.md');
-}
-
 export function getMemoryScopeDisplay(memory: AgentMemoryScope | undefined): string {
   switch (memory) {
     case 'user':

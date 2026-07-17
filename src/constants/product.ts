@@ -16,14 +16,14 @@ export const PRODUCT_NAME = process.env.CLEW_CODE_PRODUCT_NAME || 'Clew Code';
  * @see CLAUDE_AI_BASE_URL, CLAUDE_AI_STAGING_BASE_URL, CLAUDE_AI_LOCAL_BASE_URL
  */
 export const CLAUDE_AI_BASE_URL = process.env.CLAUDE_AI_BASE_URL || 'https://clew-code.org';
-export const CLAUDE_AI_STAGING_BASE_URL = process.env.CLAUDE_AI_STAGING_BASE_URL || 'https://clew-code.org';
-export const CLAUDE_AI_LOCAL_BASE_URL = process.env.CLAUDE_AI_LOCAL_BASE_URL || 'http://localhost:4000';
+const CLAUDE_AI_STAGING_BASE_URL = process.env.CLAUDE_AI_STAGING_BASE_URL || 'https://clew-code.org';
+const CLAUDE_AI_LOCAL_BASE_URL = process.env.CLAUDE_AI_LOCAL_BASE_URL || 'http://localhost:4000';
 
 /**
  * Determine if we're in a staging environment for remote sessions.
  * Checks session ID format and ingress URL.
  */
-export function isRemoteSessionStaging(sessionId?: string, ingressUrl?: string): boolean {
+function isRemoteSessionStaging(sessionId?: string, ingressUrl?: string): boolean {
   return sessionId?.includes('_staging_') === true || ingressUrl?.includes('staging') === true;
 }
 

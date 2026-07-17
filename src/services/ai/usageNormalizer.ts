@@ -1,6 +1,6 @@
 import type { ProviderId } from './providers/ProviderInterface.js';
 
-export interface NormalizedUsage {
+interface NormalizedUsage {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;

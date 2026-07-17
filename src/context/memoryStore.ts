@@ -53,7 +53,7 @@ function getDb(): Database {
   return _db;
 }
 
-export function closeMemoryStore(): void {
+function closeMemoryStore(): void {
   if (_db) {
     _db.close();
     _db = null;
@@ -61,7 +61,7 @@ export function closeMemoryStore(): void {
 }
 
 /** Store a context entry (upsert). */
-export function storeContext(
+function storeContext(
   key: string,
   value: string,
   opts: {
@@ -100,7 +100,7 @@ export function storeContext(
 }
 
 /** Retrieve a context entry by key. */
-export function queryContext(key: string): ContextEntry | null {
+function queryContext(key: string): ContextEntry | null {
   const db = getDb();
   const row = db.prepare('SELECT * FROM context WHERE key = ?').get(key) as ContextEntry | undefined;
   if (!row) return null;
@@ -139,7 +139,7 @@ export function listContexts(type?: string): ContextEntry[] {
 }
 
 /** Delete a context entry. */
-export function deleteContext(key: string): void {
+function deleteContext(key: string): void {
   const db = getDb();
   db.prepare('DELETE FROM context WHERE key = ?').run(key);
 }

@@ -1,6 +1,6 @@
 import { safeParseJSON } from '../../utils/json.js';
 
-export type ParsedToolCall = {
+type ParsedToolCall = {
   name: string;
   input: unknown;
   source: 'native' | 'json' | 'repaired';
@@ -66,8 +66,4 @@ export function parseToolCalls(payload: unknown): ParsedToolCall[] {
   }
 
   return [];
-}
-
-export function isValidToolName(toolName: unknown, validToolNames: string[]): boolean {
-  return typeof toolName === 'string' && validToolNames.includes(toolName);
 }

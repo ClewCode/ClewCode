@@ -5,7 +5,7 @@
  */
 
 /** Status of a discovered swarm */
-export type SwarmStatus = 'online' | 'offline';
+type SwarmStatus = 'online' | 'offline';
 
 /** Info about a discovered swarm on the LAN */
 export interface PeerInfo {
@@ -142,7 +142,7 @@ export interface MeshTodo {
 export type PeerColor = 'cyan' | 'green' | 'yellow' | 'magenta' | 'blue' | 'red' | 'white' | 'grey';
 
 /** All available swarm colors */
-export const PEER_COLORS: PeerColor[] = ['cyan', 'green', 'yellow', 'magenta', 'blue', 'red', 'white', 'grey'];
+const PEER_COLORS: PeerColor[] = ['cyan', 'green', 'yellow', 'magenta', 'blue', 'red', 'white', 'grey'];
 
 /** Discovery protocol message types */
 export type DiscoveryMessage =
@@ -163,13 +163,6 @@ export type DiscoveryMessage =
       term?: string;
       status: SwarmStatus;
     };
-
-/** Chat WebSocket message types */
-export type ChatMessage =
-  | { type: 'chat-open'; peerId: string; meshName: string; color: PeerColor }
-  | { type: 'chat-msg'; peerId: string; meshName: string; text: string; color: PeerColor; timestamp: number }
-  | { type: 'chat-close'; peerId: string }
-  | { type: 'chat-ack'; msgId: string };
 
 /** Default UDP discovery port */
 export const PEER_DISCOVERY_PORT = 42069;

@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, unlink, writeFile } from 'fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { z } from 'zod/v4';
 import { DOT_CLEW } from '../../utils/clewPaths.js';
@@ -29,7 +29,7 @@ type SyncedMeta = z.infer<ReturnType<typeof syncedMetaSchema>>;
  * Returns the path to the snapshot directory for an agent in the current project.
  * e.g., <cwd>/.claude/agent-memory-snapshots/<agentType>/
  */
-export function getSnapshotDirForAgent(agentType: string): string {
+function getSnapshotDirForAgent(agentType: string): string {
   return join(getCwd(), DOT_CLEW, SNAPSHOT_BASE, agentType);
 }
 
@@ -135,41 +135,5 @@ export async function initializeFromSnapshot(
 ): Promise<void> {
   logForDebugging(`Initializing agent memory for ${agentType} from project snapshot`);
   await copySnapshotToLocal(agentType, scope);
-  await saveSyncedMeta(agentType, scope, snapshotTimestamp);
-}
-
-/**
- * Replace local agent memory with the snapshot.
- */
-export async function replaceFromSnapshot(
-  agentType: string,
-  scope: AgentMemoryScope,
-  snapshotTimestamp: string,
-): Promise<void> {
-  logForDebugging(`Replacing agent memory for ${agentType} with project snapshot`);
-  // Remove existing .md files before copying to avoid orphans
-  const localMemDir = getAgentMemoryDir(agentType, scope);
-  try {
-    const existing = await readdir(localMemDir, { withFileTypes: true });
-    for (const dirent of existing) {
-      if (dirent.isFile() && dirent.name.endsWith('.md')) {
-        await unlink(join(localMemDir, dirent.name));
-      }
-    }
-  } catch {
-    // Directory may not exist yet
-  }
-  await copySnapshotToLocal(agentType, scope);
-  await saveSyncedMeta(agentType, scope, snapshotTimestamp);
-}
-
-/**
- * Mark the current snapshot as synced without changing local memory.
- */
-export async function markSnapshotSynced(
-  agentType: string,
-  scope: AgentMemoryScope,
-  snapshotTimestamp: string,
-): Promise<void> {
   await saveSyncedMeta(agentType, scope, snapshotTimestamp);
 }

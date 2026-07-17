@@ -7,13 +7,13 @@ import { DESCRIPTION, PROMPT } from './prompt.js';
 import { renderToolResultMessage, renderToolUseMessage, renderToolUseProgressMessage } from './UI.js';
 
 // Allow any input object since MCP tools define their own schemas
-export const inputSchema = lazySchema(() => z.looseObject({}));
+const inputSchema = lazySchema(() => z.looseObject({}));
 type InputSchema = ReturnType<typeof inputSchema>;
 
-export const outputSchema = lazySchema(() => z.string().describe('MCP tool execution result'));
+const outputSchema = lazySchema(() => z.string().describe('MCP tool execution result'));
 type OutputSchema = ReturnType<typeof outputSchema>;
 
-export type Output = z.infer<OutputSchema>;
+type Output = z.infer<OutputSchema>;
 
 // Re-export MCPProgress from centralized types to break import cycles
 export type { MCPProgress } from '../../types/tools.js';

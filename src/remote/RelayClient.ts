@@ -15,9 +15,9 @@
 import { logForDebugging } from '../utils/debug.js';
 import { errorMessage } from '../utils/errors.js';
 
-export type RelayRole = 'listener' | 'connector';
+type RelayRole = 'listener' | 'connector';
 
-export type RelayCallbacks = {
+type RelayCallbacks = {
   onMessage: (data: string) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;

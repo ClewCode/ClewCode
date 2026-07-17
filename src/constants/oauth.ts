@@ -36,7 +36,7 @@ const CONSOLE_SCOPE = 'org:create_api_key' as const;
 export const OAUTH_BETA_HEADER = 'oauth-2025-04-20' as const;
 
 // Console OAuth scopes - for API key creation via Console
-export const CONSOLE_OAUTH_SCOPES = [CONSOLE_SCOPE, CLAUDE_AI_PROFILE_SCOPE] as const;
+const CONSOLE_OAUTH_SCOPES = [CONSOLE_SCOPE, CLAUDE_AI_PROFILE_SCOPE] as const;
 
 // Claude.ai OAuth scopes - for Claude.ai subscribers (Pro/Max/Team/Enterprise)
 export const CLAUDE_AI_OAUTH_SCOPES = [

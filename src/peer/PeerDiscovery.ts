@@ -47,7 +47,7 @@ interface SwarmFile {
   token?: string;
 }
 
-export type PeerDiscoveryCallbacks = {
+type PeerDiscoveryCallbacks = {
   onPeerDiscovered?: (peer: PeerInfo) => void;
   onPeerLost?: (peerId: string) => void;
 };

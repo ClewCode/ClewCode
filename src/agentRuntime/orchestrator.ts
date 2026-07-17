@@ -13,12 +13,12 @@ import type {
 } from './types.js';
 import { WorkflowRegistry } from './workflowRegistry.js';
 
-export interface LLMAdapter {
+interface LLMAdapter {
   nextAction(agent: AgentDefinition, contextText: string, history: RuntimeEvent[]): Promise<AgentAction>;
 }
 
 // Highly robust Mock LLM Adapter for deterministic offline tests and fallback
-export class MockLLMAdapter implements LLMAdapter {
+class MockLLMAdapter implements LLMAdapter {
   private presetActions: Record<string, AgentAction[]> = {};
   private actionIndex: Record<string, number> = {};
 

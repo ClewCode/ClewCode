@@ -27,58 +27,6 @@ export interface ProviderUsage {
 // ── Conversion helpers ───────────────────────────────────────────────────────
 
 /**
- * Convert an Anthropic `BetaUsage` (or duck-typed equivalent) to `ProviderUsage`.
- */
-export function fromAnthropicUsage(usage: {
-  input_tokens: number;
-  output_tokens: number;
-  cache_read_input_tokens?: number | null;
-  cache_creation_input_tokens?: number | null;
-  server_tool_use?: { web_search_requests?: number } | null;
-}): ProviderUsage {
-  return {
-    inputTokens: usage.input_tokens,
-    outputTokens: usage.output_tokens,
-    cacheReadInputTokens: usage.cache_read_input_tokens ?? undefined,
-    cacheCreationInputTokens: usage.cache_creation_input_tokens ?? undefined,
-    webSearchRequests: usage.server_tool_use?.web_search_requests ?? undefined,
-  };
-}
-
-/**
- * Convert an OpenAI usage object to `ProviderUsage`.
- * OpenAI `create()` returns `{ prompt_tokens, completion_tokens, ... }`.
- */
-export function fromOpenAIUsage(usage: {
-  prompt_tokens?: number;
-  completion_tokens?: number;
-  /** OpenAI may send cached tokens under different keys depending on the model. */
-  prompt_tokens_details?: { cached_tokens?: number };
-}): ProviderUsage {
-  return {
-    inputTokens: usage.prompt_tokens ?? 0,
-    outputTokens: usage.completion_tokens ?? 0,
-    cacheReadInputTokens: usage.prompt_tokens_details?.cached_tokens ?? undefined,
-  };
-}
-
-/**
- * Convert a Google Gemini usage object to `ProviderUsage`.
- * Gemini returns `{ promptTokenCount, candidatesTokenCount, ... }`.
- */
-export function fromGoogleUsage(usage: {
-  promptTokenCount?: number;
-  candidatesTokenCount?: number;
-  cachedContentTokenCount?: number;
-}): ProviderUsage {
-  return {
-    inputTokens: usage.promptTokenCount ?? 0,
-    outputTokens: usage.candidatesTokenCount ?? 0,
-    cacheReadInputTokens: usage.cachedContentTokenCount ?? undefined,
-  };
-}
-
-/**
  * Convert a generic usage bag (loose keys, e.g. OpenRouter, Ollama) to
  * `ProviderUsage`. Handles both snake_case and camelCase.
  */

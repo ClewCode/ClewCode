@@ -350,7 +350,7 @@ import { getCwd } from 'src/utils/cwd.js';
 import { logForDebugging, setHasFormattedOutput } from 'src/utils/debug.js';
 import { errorMessage, getErrnoCode, isENOENT, TeleportOperationError, toError } from 'src/utils/errors.js';
 import { getFsImplementation, safeResolvePath } from 'src/utils/fsOperations.js';
-import { gracefulShutdown, gracefulShutdownSync } from 'src/utils/gracefulShutdown.js';
+import { cleanupTerminalModes, gracefulShutdown, gracefulShutdownSync } from 'src/utils/gracefulShutdown.js';
 import { setAllHookEventsEnabled } from 'src/utils/hooks/hookEvents.js';
 import { refreshModelCapabilities } from 'src/utils/model/modelCapabilities.js';
 import { peekForStdinData, writeToStderr } from 'src/utils/process.js';
@@ -1016,6 +1016,11 @@ export async function main() {
         level: 'error',
       },
     );
+    // Restore terminal modes synchronously and immediately: gracefulShutdownSync
+    // runs its own cleanup, but async, so a hard crash (e.g. a spawn storm) can
+    // exit before it lands — leaving the TTY stuck in mouse/focus tracking mode
+    // that leaks escape sequences to the shell. This sync call is idempotent.
+    cleanupTerminalModes();
     // eslint-disable-next-line no-console
     console.error('Uncaught exception:', error);
     gracefulShutdownSync(1);

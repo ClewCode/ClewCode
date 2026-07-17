@@ -47,7 +47,7 @@ function extractCodeBlocks(markdown: string): CodeBlock[] {
  * actually said something (skips tool-use-only turns and API errors).
  * Index 0 = latest, 1 = second-to-latest, etc. Caps at MAX_LOOKBACK.
  */
-export function collectRecentAssistantTexts(messages: Message[]): string[] {
+function collectRecentAssistantTexts(messages: Message[]): string[] {
   const texts: string[] = [];
   for (let i = messages.length - 1; i >= 0 && texts.length < MAX_LOOKBACK; i--) {
     const msg = messages[i];
@@ -60,7 +60,7 @@ export function collectRecentAssistantTexts(messages: Message[]): string[] {
   return texts;
 }
 
-export function fileExtension(lang: string | undefined): string {
+function fileExtension(lang: string | undefined): string {
   if (lang) {
     // Sanitize to prevent path traversal (e.g. ```../../etc/passwd)
     // Language identifiers are alphanumeric: python, tsx, jsonc, etc.

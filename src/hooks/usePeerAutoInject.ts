@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef } from 'react';
 import { getGlobalPeerStore } from '../peer/PeerStore.js';
-import type { PeerChatMessage, PeerInfo } from '../peer/types.js';
+import type { MeshChatMessage, PeerInfo } from '../peer/types.js';
 import type { Message } from '../types/message.js';
 import { createAssistantMessage } from '../utils/messages.js';
 
@@ -26,7 +26,7 @@ export function usePeerAutoInject(setMessages: SetMessagesFn, options?: { enable
     const store = getGlobalPeerStore();
 
     store.setCallbacks({
-      onMessageReceived(msg: PeerChatMessage) {
+      onMessageReceived(msg: MeshChatMessage) {
         // Skip own messages (from === 'local')
         if (msg.from === 'local') return;
 
