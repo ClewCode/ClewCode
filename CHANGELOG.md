@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-07-17
+
 - **Removed local Graphify and codegraph integrations**: Deleted generated graph artifacts, local Graphify skill copies, automatic graph updates, the structure-map script, and the codegraph MCP configuration. (`src/tools/{FileEditTool,FileWriteTool}/`, `AGENT.md`, `.mcp.json`, `package.json`)
 
 - **Standardized runtime identity as Clew Code**: Non-interactive sessions and built-in agents no longer identify Clew Code as a generic Claude agent or Anthropic's official CLI. (`src/constants/system.ts`, `src/tools/AgentTool/built-in/`)
