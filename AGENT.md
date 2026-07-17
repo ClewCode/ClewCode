@@ -162,6 +162,7 @@ Tools/commands are registered in `src/tools.ts` / `src/commands.ts`; entrypoints
 - `providerRegistry.ts` / `providerSelection.ts` — discovery & selection
 - `adapter/`, error/usage normalizers — cross-provider shape
 - Mid-session switch: `/model`, `/provider`
+- **Model scope:** every `/model` path is session-scoped by default — it sets AppState's `mainLoopModelForSession`, which `onChangeAppState` bridges to `setMainLoopModelOverride()` for the query pipeline. Only the picker's `d` (set as default) writes to `userSettings`/`provider.json`; `Enter` and `s` do not. When adding a model path, do NOT call `ProviderManager.setSessionModel`/`setSessionProvider` (a process-global singleton — leaks into agents and bg tasks) and do not write provider config unless the user explicitly asked for a default.
 - **Usage/rate limits:** `/usage` is provider-aware. Anthropic path: `services/claudeAiLimits.ts` + `services/api/usage.ts` (OAuth usage endpoint). Codex/ChatGPT path: `services/codexLimits.ts` captures rate limits off live `/responses` traffic (defensive header/`rate_limits` parsing) and `services/api/codexUsage.ts` maps them to the shared `Utilization` shape rendered by `components/Settings/Usage.tsx`. Both paths also feed custom statusline scripts via `StatusLineCommandInput`: Anthropic as `rate_limits` (from `getRawUtilization()`), Codex as `codex_rate_limits` (from `getCodexUtilization()` — snapshot-only, never probes).
 
 ### Tools / commands / services

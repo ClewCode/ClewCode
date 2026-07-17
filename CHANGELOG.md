@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-07-17
+
+### Fixed
+- **`/model` no longer changes other sessions**: In the model picker, `Enter` confirmed the focused model by calling the set-as-default path, which wrote the choice to `userSettings` and `provider.json` — so switching model in one terminal changed every other session, including new ones. `Enter` is now session-scoped (as is `s`, kept as an alias), and persisting a default is opt-in via the new `d` shortcut. Effort follows the same rule: selecting a model always applies effort to the running session, but only `d` writes `effortLevel` to `userSettings`. Also fixes a `ReferenceError` on an undeclared `isFastMode` in the `/model <name>` effect deps, which broke the inline form outright, and threads the picker's effort through to the set-as-default handler instead of dropping it. (`src/components/ModelPicker.tsx`, `src/commands/model/model.tsx`)
+
+- **Switching model or provider mid-session no longer 400s with "Invalid `signature` in `thinking` block"**: Thinking-block signatures are bound to the model that produced them, so replaying history written by the previous model made the next request fail outright. `/model` and `/providers` now strip signature-bearing blocks from history on a model change, the same way `/login` already did on a credential change — via the existing `stripSignatureBlocks()`, whose own docstring in `query.ts` already noted signatures are model-bound. (`src/commands/model/model.tsx`, `src/commands/provider-select/provider-select.ts`)
+
 ## [0.6.4] - 2026-07-17
 
 - **Removed local Graphify and codegraph integrations**: Deleted generated graph artifacts, local Graphify skill copies, automatic graph updates, the structure-map script, and the codegraph MCP configuration. (`src/tools/{FileEditTool,FileWriteTool}/`, `AGENT.md`, `.mcp.json`, `package.json`)

@@ -130,7 +130,7 @@ Combines file edits with the Bash tool (`npm test` / `bun test`), looping until 
 
 ```
 /help              # list all commands
-/model             # switch LLM provider/model mid-session
+/model             # switch LLM provider/model for this session (d = save as default)
 /code-review       # review the current diff for bugs
 /debug             # structured debugging workflow
 /loop 5m /deploy-checklist   # run a command on a recurring interval

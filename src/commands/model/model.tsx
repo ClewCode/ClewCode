@@ -9,8 +9,9 @@ import {
   logEvent,
 } from '../../services/analytics/index.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
-import type { LocalJSXCommandCall } from '../../types/command.js';
+import type { LocalJSXCommandCall, LocalJSXCommandContext } from '../../types/command.js';
 import type { EffortLevel } from '../../utils/effort.js';
+import { stripSignatureBlocks } from '../../utils/messages.js';
 import { MODEL_ALIASES } from '../../utils/model/aliases.js';
 import { checkOpus1mAccess, checkSonnet1mAccess } from '../../utils/model/check1mAccess.js';
 import {
@@ -24,10 +25,22 @@ import { addRecentModel } from '../../utils/model/recentModels.js';
 import { validateModel } from '../../utils/model/validateModel.js';
 import { setSessionModelForTranscript } from '../../utils/sessionStorage.js';
 
+/**
+ * Thinking-block signatures are bound to the model that produced them, so
+ * replaying history written by the previous model 400s the moment the next
+ * request goes out ("Invalid `signature` in `thinking` block"). Strip them on
+ * every model change, exactly as /login does on a credential change.
+ */
+function stripStaleThinkingOnModelChange(setMessages: LocalJSXCommandContext['setMessages'] | undefined): void {
+  setMessages?.(stripSignatureBlocks);
+}
+
 function ModelPickerWrapper({
   onDone,
+  setMessages,
 }: {
   onDone: (result?: string, options?: { display?: CommandResultDisplay }) => void;
+  setMessages?: LocalJSXCommandContext['setMessages'];
 }): React.ReactNode {
   const mainLoopModel = useAppState(s => s.mainLoopModel);
   const mainLoopModelForSession = useAppState(s => s.mainLoopModelForSession);
@@ -131,6 +144,8 @@ function ModelPickerWrapper({
       setSessionModelForTranscript(model ?? undefined);
     }
 
+    stripStaleThinkingOnModelChange(setMessages);
+
     let message = options?.persistAsDefault
       ? `Set default model to ${ansis.bold(renderModelLabel(model))}`
       : `Set model to ${ansis.bold(renderModelLabel(model))} for this session`;
@@ -148,7 +163,9 @@ function ModelPickerWrapper({
       initial={activeModel}
       sessionModel={mainLoopModelForSession}
       onSelect={handleSelect}
-      onSetDefault={model => handleSelect(model, undefined, { persistAsDefault: true })}
+      onSetDefault={(model: string | null, effort: EffortLevel | undefined) =>
+        handleSelect(model, effort, { persistAsDefault: true })
+      }
       onCancel={handleCancel}
       isStandaloneCommand
     />
@@ -158,9 +175,11 @@ function ModelPickerWrapper({
 function SetModelAndClose({
   args,
   onDone,
+  setMessages,
 }: {
   args: string;
   onDone: (result?: string, options?: { display?: CommandResultDisplay }) => void;
+  setMessages?: LocalJSXCommandContext['setMessages'];
 }): React.ReactNode {
   const setAppState = useSetAppState();
 
@@ -260,13 +279,15 @@ function SetModelAndClose({
       // Persist the session model choice to transcript for resume restore
       setSessionModelForTranscript(modelValue ?? undefined);
 
+      stripStaleThinkingOnModelChange(setMessages);
+
       const message = `Set model to ${ansis.bold(renderModelLabel(modelValue))} for this session`;
 
       onDone(message);
     }
 
     void handleModelChange();
-  }, [model, onDone, setAppState, isFastMode, targetProvider]);
+  }, [model, onDone, setAppState, targetProvider, setMessages]);
 
   return null;
 }
@@ -454,8 +475,9 @@ function buildFetchedEntries(
   });
 }
 
-export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
+export const call: LocalJSXCommandCall = async (onDone, context, args) => {
   args = args?.trim() || '';
+  const setMessages = context?.setMessages;
 
   // /model list — fetch live models from the active provider API
   if (args === 'list') {
@@ -477,10 +499,10 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
     logEvent('tengu_model_command_inline', {
       args: args as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     });
-    return <SetModelAndClose args={args} onDone={onDone} />;
+    return <SetModelAndClose args={args} onDone={onDone} setMessages={setMessages} />;
   }
 
-  return <ModelPickerWrapper onDone={onDone} />;
+  return <ModelPickerWrapper onDone={onDone} setMessages={setMessages} />;
 };
 
 function renderModelLabel(model: string | null): string {
