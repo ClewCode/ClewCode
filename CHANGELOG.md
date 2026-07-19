@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **`/compact` now shows its real in-progress lifecycle, including session-memory compaction**: The REPL set `isCompacting` on progress events but its spinner visibility condition explicitly required `!isCompacting`, hiding the current phase and elapsed time. Compaction now keeps the spinner visible (and takes precedence over streaming text), reports actual lifecycle phases such as hooks and conversation compaction without a fabricated percentage, and reliably clears the same progress lifecycle for session-memory and traditional compaction. (`src/screens/REPL.tsx`, `src/commands/compact/compact.ts`)
+
 ## [0.6.5] - 2026-07-17
 
 ### Fixed

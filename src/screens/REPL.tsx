@@ -2094,7 +2094,8 @@ export function REPL({
     promptQueue.length === 0 &&
     // Show spinner during input processing, API call, while teammates are running,
     // or while pending task notifications are queued (prevents spinner bounce between consecutive notifications)
-    (isLoading ||
+    (isCompacting ||
+      isLoading ||
       userInputOnProcessing ||
       hasRunningTeammates ||
       // Keep spinner visible while task notifications are queued for processing.
@@ -2107,8 +2108,7 @@ export function REPL({
     !onlySleepToolActive &&
     // Hide spinner when streaming text is visible (the text IS the feedback),
     // but keep it when isBriefOnly suppresses the streaming text display
-    (!visibleStreamingText || isBriefOnly) &&
-    !isCompacting;
+    (!visibleStreamingText || isBriefOnly || isCompacting);
 
   // Check if any permission or ask question prompt is currently visible
   // This is used to prevent the survey from opening while prompts are active

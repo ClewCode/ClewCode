@@ -145,7 +145,10 @@ export const FileEditTool = buildTool({
       return {
         result: false,
         behavior: 'ask',
-        message: 'No changes to make: old_string and new_string are exactly the same.',
+        message:
+          'No changes to make: old_string and new_string are exactly the same. ' +
+          'This usually means the edit was already applied in a previous tool call — ' +
+          're-read the file to check its current contents before retrying, rather than resubmitting the same edit.',
         errorCode: 1,
       };
     }
