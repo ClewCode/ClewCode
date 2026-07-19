@@ -51,32 +51,11 @@ import workspace from './commands/workspace/index.js';
 import { feature } from 'bun:bundle';
 // Dead code elimination: conditional imports
 /* eslint-disable @typescript-eslint/no-require-imports */
-// Feature-gated commands (enable via env vars/defines: KAIROS=1 VOICE_MODE=1 BRIDGE_MODE=1)
-// Default commands (always available):
 const buddy = require('./commands/buddy/index.js').default;
 
-// Feature-gated (require env var):
-const _hasFeature = (name: string): boolean => process.env[name] === '1';
-
-const proactive = null;
-const briefCommand = _hasFeature('KAIROS')
-  ? (require('./commands/brief.ts') as typeof import('./commands/brief.ts')).default
-  : null;
-const assistantCommand = _hasFeature('KAIROS')
-  ? (require('./commands/assistant/assistant.js') as typeof import('./commands/assistant/assistant.js')).default
-  : null;
-const bridge = _hasFeature('BRIDGE_MODE')
-  ? (require('./commands/bridge/index.ts') as typeof import('./commands/bridge/index.ts')).default
-  : null;
-const remoteControlServerCommand = null;
 const voiceCommand = (require('./commands/voice/index.ts') as typeof import('./commands/voice/index.ts')).default;
-const webCmd = null;
-const clearSkillIndexCache = null;
 const ultracode = (require('./commands/ultracode/index.ts') as typeof import('./commands/ultracode/index.ts')).default;
 const workflow = (require('./commands/workflow/index.ts') as typeof import('./commands/workflow/index.ts')).default;
-const torch = null;
-const workflowsCmd = null;
-const forkCmd = null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 import thinkback from './commands/thinkback/index.js';
 import thinkbackPlay from './commands/thinkback-play/index.js';
@@ -265,15 +244,8 @@ const COMMANDS = memoize((): Command[] => [
   teamOnboarding,
   teamDashboard,
   workflow,
-  ...(webCmd ? [webCmd] : []),
-  ...(forkCmd ? [forkCmd] : []),
   buddy,
-  ...(proactive ? [proactive] : []),
-  ...(briefCommand ? [briefCommand] : []),
-  ...(assistantCommand ? [assistantCommand] : []),
-  ...(bridge ? [bridge] : []),
-  ...(remoteControlServerCommand ? [remoteControlServerCommand] : []),
-  ...(voiceCommand ? [voiceCommand] : []),
+  voiceCommand,
   thinkback,
   thinkbackPlay,
   toolsCmd,
@@ -290,8 +262,6 @@ const COMMANDS = memoize((): Command[] => [
   sandboxToggle,
   passes,
   tasks,
-  ...(workflowsCmd ? [workflowsCmd] : []),
-  ...(torch ? [torch] : []),
 ]);
 
 export const builtInCommandNames = memoize(
@@ -448,11 +418,6 @@ export function clearCommandMemoizationCaches(): void {
   loadAllCommands.cache?.clear?.();
   getSkillToolCommands.cache?.clear?.();
   getSlashCommandToolSkills.cache?.clear?.();
-  // getSkillIndex in skillSearch/localSearch.ts is a separate memoization layer
-  // built ON TOP of getSkillToolCommands/getCommands. Clearing only the inner
-  // caches is a no-op for the outer — lodash memoize returns the cached result
-  // without ever reaching the cleared inners. Must clear it explicitly.
-  clearSkillIndexCache?.();
 }
 
 export function clearCommandsCache(): void {

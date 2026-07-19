@@ -12,9 +12,6 @@ import { BriefTool } from './tools/BriefTool/BriefTool.js';
 
 // Lazy loading for feature-gated or potentially absent tools
 /* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
-const getREPLTool = () => null;
-const getSleepTool = () =>
-  feature('PROACTIVE') || feature('KAIROS') ? require('./tools/SleepTool/SleepTool.js').SleepTool : null;
 const getCronTools = () => [
   require('./tools/ScheduleCronTool/CronCreateTool.js').CronCreateTool,
   require('./tools/ScheduleCronTool/CronDeleteTool.js').CronDeleteTool,
@@ -31,27 +28,10 @@ const getMonitorTool = () => {
     return null;
   }
 };
-const getSendUserFileTool = () =>
-  feature('KAIROS') ? require('./tools/SendUserFileTool/SendUserFileTool.js').SendUserFileTool : null;
-const getPushNotificationTool = () =>
-  feature('KAIROS') || feature('KAIROS_PUSH_NOTIFICATION')
-    ? require('./tools/PushNotificationTool/PushNotificationTool.js').PushNotificationTool
-    : null;
-const getSubscribePRTool = () =>
-  feature('KAIROS_GITHUB_WEBHOOKS') ? require('./tools/SubscribePRTool/SubscribePRTool.js').SubscribePRTool : null;
 const getVerifyPlanExecutionTool = () =>
   process.env.CLEW_CODE_VERIFY_PLAN === 'true'
     ? require('./tools/VerifyPlanExecutionTool/VerifyPlanExecutionTool.js').VerifyPlanExecutionTool
     : null;
-const getOverflowTestTool = () =>
-  feature('OVERFLOW_TEST_TOOL') ? require('./tools/OverflowTestTool/OverflowTestTool.js').OverflowTestTool : null;
-const getCtxInspectTool = () =>
-  feature('CONTEXT_COLLAPSE') ? require('./tools/CtxInspectTool/CtxInspectTool.js').CtxInspectTool : null;
-const getTerminalCaptureTool = () =>
-  feature('TERMINAL_PANEL') ? require('./tools/TerminalCaptureTool/TerminalCaptureTool.js').TerminalCaptureTool : null;
-const getSnipTool = () => (feature('HISTORY_SNIP') ? require('./tools/SnipTool/SnipTool.js').SnipTool : null);
-const getListPeersTool = () =>
-  feature('UDS_INBOX') ? require('./tools/ListPeersTool/ListPeersTool.js').ListPeersTool : null;
 const getWorkflowTool = () => {
   if (feature('WORKFLOW_SCRIPTS')) {
     require('./tools/WorkflowTool/bundled/index.js').initBundledWorkflows();
@@ -173,20 +153,10 @@ export function getToolsForDefaultPreset(): string[] {
 }
 
 export function getAllBaseTools(): Tools {
-  const replTool = getREPLTool();
-  const sleepTool = getSleepTool();
   const cronTools = getCronTools();
   const remoteTriggerTool = getRemoteTriggerTool();
   const monitorTool = getMonitorTool();
-  const sendUserFileTool = getSendUserFileTool();
-  const pushNotificationTool = getPushNotificationTool();
-  const subscribePRTool = getSubscribePRTool();
   const verifyPlanExecutionTool = getVerifyPlanExecutionTool();
-  const overflowTestTool = getOverflowTestTool();
-  const ctxInspectTool = getCtxInspectTool();
-  const terminalCaptureTool = getTerminalCaptureTool();
-  const snipTool = getSnipTool();
-  const listPeersTool = getListPeersTool();
   const workflowTool = getWorkflowTool();
 
   return [
@@ -214,9 +184,6 @@ export function getAllBaseTools(): Tools {
     // ConfigTool, TungstenTool — Anthropic-internal, removed in Clew Code
     ...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
     GoalTool,
-    ...(overflowTestTool ? [overflowTestTool] : []),
-    ...(ctxInspectTool ? [ctxInspectTool] : []),
-    ...(terminalCaptureTool ? [terminalCaptureTool] : []),
     LSPTool,
     AgentTool,
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
@@ -241,22 +208,15 @@ export function getAllBaseTools(): Tools {
     PeerHelpTool,
     PeerMemorySyncTool,
 
-    ...(listPeersTool ? [listPeersTool] : []),
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),
     ...(isAgentSwarmsEnabled() ? [SubscribePrActivityTool, UnsubscribePrActivityTool] : []),
     ...(verifyPlanExecutionTool ? [verifyPlanExecutionTool] : []),
-    ...(process.env.USER_TYPE === 'ant' && replTool ? [replTool] : []),
     ...(workflowTool ? [workflowTool] : []),
-    ...(sleepTool ? [sleepTool] : []),
     ...cronTools,
     ...(remoteTriggerTool ? [remoteTriggerTool] : []),
     ...(monitorTool ? [monitorTool] : []),
     BriefTool,
-    ...(sendUserFileTool ? [sendUserFileTool] : []),
-    ...(pushNotificationTool ? [pushNotificationTool] : []),
-    ...(subscribePRTool ? [subscribePRTool] : []),
     ...(getPowerShellTool() ? [getPowerShellTool()] : []),
-    ...(snipTool ? [snipTool] : []),
     ...(process.env.NODE_ENV === 'test' ? [TestingPermissionTool] : []),
     ListMcpResourcesTool,
     ReadMcpResourceTool,
@@ -278,15 +238,7 @@ export function filterToolsByDenyRules<
 }
 
 export const getTools = (permissionContext: ToolPermissionContext): Tools => {
-  const replTool = getREPLTool();
   if (isEnvTruthy(process.env.CLEW_CODE_SIMPLE)) {
-    if (isReplModeEnabled() && replTool) {
-      const replSimple: Tool[] = [replTool];
-      if (feature('COORDINATOR_MODE') && isCoordinatorMode()) {
-        replSimple.push(TaskStopTool, SendMessageTool);
-      }
-      return filterToolsByDenyRules(replSimple, permissionContext);
-    }
     const simpleTools: Tool[] = [BashTool, FileReadTool, FileEditTool];
     if (feature('COORDINATOR_MODE') && isCoordinatorMode()) {
       simpleTools.push(TaskStopTool, SendMessageTool);
