@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **Restored 8 packages the dead-code cleanup broke as transitive deps**: `marked`, `yaml`, `supports-hyperlinks`, `cli-highlight`, `plist`, `cacache`, `undici`, and `@aws-sdk/credential-providers` are all imported directly by `src/` but were only present in the tree as transitive dependencies of packages removed in the dead-code cleanup (e.g. `marked` via `ink-markdown`), so CI Build/Test failed with unresolved imports. They are now direct dependencies. (`package.json`, `bun.lock`)
+
 ### Removed
 - **Removed dead code — unused dependencies, always-null variables, dead tool factories**: 11 unused npm dependencies removed (ink-divider, ink-markdown, ink-select-input, ink-spinner, ink-text-input, is-docker, is-wsl, lucide-react, react-markdown, @opentelemetry/sdk-node, @opentelemetry/sdk-trace-node, @ast-grep/cli). Removed 7 always-null variables and their dead conditional branches from `src/commands.ts`. Removed 9 feature-gated tool factories referencing non-existent directories from `src/tools.ts`. (`package.json`, `src/commands.ts`, `src/tools.ts`)
 
