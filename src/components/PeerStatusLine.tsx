@@ -38,7 +38,7 @@ export function PeerStatusLine(): React.ReactNode {
 
   logForDebugging(`[PeerStatusLine] Render: peers=${peers.length}, sharing=${sharing}`);
 
-  if (peers.length === 0 && !sharing) return null;
+  if (!sharing) return null;
 
   const summary = summarizePeers(peers);
   const peerText =
@@ -49,9 +49,7 @@ export function PeerStatusLine(): React.ReactNode {
   return (
     <Box paddingLeft={1}>
       <Text dimColor>
-        {sharing
-          ? `⬡ sharing: ${myName}${myRole ? ` (${myRole})` : ''}`
-          : `⬡ me: ${myName}${myRole ? ` (${myRole})` : ''}`}
+        {`⬡ sharing: ${myName}${myRole ? ` (${myRole})` : ''}`}
         {peerText}
       </Text>
     </Box>

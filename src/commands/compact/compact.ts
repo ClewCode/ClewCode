@@ -56,7 +56,15 @@ export const call: LocalCommandCall = async (args, context) => {
     // Try session memory compaction first if no custom instructions
     // (session memory compaction doesn't support custom instructions)
     if (!customInstructions) {
-      const sessionMemoryResult = await trySessionMemoryCompaction(messages, context.agentId);
+      context.onCompactProgress?.({ type: 'compact_start' });
+      context.setSDKStatus?.('compacting');
+      let sessionMemoryResult: CompactionResult | null;
+      try {
+        sessionMemoryResult = await trySessionMemoryCompaction(messages, context.agentId);
+      } finally {
+        context.onCompactProgress?.({ type: 'compact_end' });
+        context.setSDKStatus?.(null);
+      }
       if (sessionMemoryResult) {
         getUserContext.cache.clear?.();
         runPostCompactCleanup();
