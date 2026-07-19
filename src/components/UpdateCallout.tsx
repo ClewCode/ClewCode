@@ -39,21 +39,29 @@ export function UpdateCallout({ currentVersion, latestVersion, onDone }: Props):
   }, [handleKeep]);
 
   const options: OptionWithDescription<UpdateCalloutSelection>[] = [
-    { label: `Update now to ${latestVersion}`, value: 'update' },
-    { label: `Keep current version (${currentVersion})`, value: 'keep' },
-    { label: "I'll update myself later", value: 'manual' },
+    { label: 'Update now (runs `npm install -g clew-code`)', value: 'update' },
+    { label: 'Skip', value: 'keep' },
+    { label: 'Skip until next version', value: 'manual' },
   ];
 
   return (
-    <PermissionDialog title="Update available">
+    <PermissionDialog title="✨ Update available!">
       <Box flexDirection="column" paddingX={2} paddingY={1}>
         <Box marginBottom={1}>
           <Text>
-            A new version <Text bold>{latestVersion}</Text> is available (you have{' '}
-            <Text dimColor>{currentVersion}</Text>).
+            <Text bold>{currentVersion}</Text> →{' '}
+            <Text bold color="success">
+              {latestVersion}
+            </Text>
           </Text>
         </Box>
+        <Box marginBottom={1}>
+          <Text dimColor>Release notes: https://github.com/ClewCode/ClewCode/releases/latest</Text>
+        </Box>
         <Select options={options} onChange={value => onDoneRef.current(value)} onCancel={handleKeep} />
+        <Box marginTop={1}>
+          <Text dimColor>Press enter to continue</Text>
+        </Box>
       </Box>
     </PermissionDialog>
   );
