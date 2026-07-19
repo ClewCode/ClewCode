@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- **Removed dead code — unused dependencies, always-null variables, dead tool factories**: 11 unused npm dependencies removed (ink-divider, ink-markdown, ink-select-input, ink-spinner, ink-text-input, is-docker, is-wsl, lucide-react, react-markdown, @opentelemetry/sdk-node, @opentelemetry/sdk-trace-node, @ast-grep/cli). Removed 7 always-null variables and their dead conditional branches from `src/commands.ts`. Removed 9 feature-gated tool factories referencing non-existent directories from `src/tools.ts`. (`package.json`, `src/commands.ts`, `src/tools.ts`)
+
 ## [0.6.6] - 2026-07-19
 
 ### Fixed
