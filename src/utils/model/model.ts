@@ -1,6 +1,7 @@
 import { getMainLoopModelOverride } from '../../bootstrap/state.js';
 import { LIGHTNING_BOLT } from '../../constants/figures.js';
 import { ProviderManager } from '../../services/ai/ProviderManager.js';
+import { resolveProviderModelInfo } from '../../services/ai/providerCapabilities.js';
 import { PROVIDER_REGISTRY } from '../../services/ai/providerRegistry.js';
 import {
   getSubscriptionType,
@@ -19,7 +20,7 @@ import { isModelAlias, type ModelAlias } from './aliases.js';
 import { getAntModelOverrideConfig, resolveAntModel } from './antModels.js';
 import { isModelAllowed } from './modelAllowlist.js';
 import { getModelStrings, resolveOverriddenModel } from './modelStrings.js';
-import { getAPIProvider, isFirstPartyAnthropicBaseUrl } from './providers.js';
+import { getActiveProviderId, getAPIProvider, isFirstPartyAnthropicBaseUrl } from './providers.js';
 
 export type ModelShortName = string;
 export type ModelName = string;
@@ -316,6 +317,9 @@ export function firstPartyNameToCanonical(name: ModelName): ModelShortName {
   if (name.includes('claude-opus-4-7')) {
     return 'claude-opus-4-7';
   }
+  if (name.includes('claude-opus-4-8')) {
+    return 'claude-opus-4-8';
+  }
   if (name.includes('claude-opus-4-6')) {
     return 'claude-opus-4-7';
   }
@@ -330,6 +334,9 @@ export function firstPartyNameToCanonical(name: ModelName): ModelShortName {
   }
   if (name.includes('claude-sonnet-4-7')) {
     return 'claude-sonnet-4-7';
+  }
+  if (name.includes('claude-sonnet-5')) {
+    return 'claude-sonnet-5';
   }
   if (name.includes('claude-sonnet-4-6')) {
     return 'claude-sonnet-4-7';
@@ -750,7 +757,27 @@ export function getMarketingNameForModel(modelId: string): string | undefined {
     return 'Claude 3.5 Haiku';
   }
 
-  return undefined;
+  // Non-Anthropic models: the registry already carries a human label for all
+  // 115 of them ("GPT-5.5", "Gemini 3 Pro"). Without this the system prompt
+  // fell back to the raw id, telling the model it was "gpt-5.5".
+  return getRegistryModelLabel(modelId);
+}
+
+/**
+ * Human label for a model from providers.json, or undefined when the active
+ * provider doesn't list it. Never returns the raw id — callers already fall
+ * back to that themselves, and returning it here would mask "not found".
+ */
+function getRegistryModelLabel(modelId: string): string | undefined {
+  try {
+    const info = resolveProviderModelInfo(getActiveProviderId(), modelId);
+    const label = info?.label?.trim();
+    return label && label.toLowerCase() !== modelId.toLowerCase() ? label : undefined;
+  } catch {
+    // Registry lookup is best-effort decoration for the system prompt; a
+    // misconfigured provider must not break prompt construction.
+    return undefined;
+  }
 }
 
 export function normalizeModelStringForAPI(model: string): string {

@@ -20,7 +20,9 @@ import { BASH_TOOL_NAME } from '../tools/BashTool/toolName.js';
 import { getCanonicalName, getMarketingNameForModel } from '../utils/model/model.js';
 import { getAntModelOverrideConfig } from '../utils/model/antModels.js';
 import { ProviderManager } from '../services/ai/ProviderManager.js';
+import { resolveProviderModelInfo } from '../services/ai/providerCapabilities.js';
 import { getProviderRegistryEntry } from '../services/ai/providerRegistry.js';
+import { getActiveProviderId } from '../utils/model/providers.js';
 import { getSkillToolCommands } from 'src/commands.js';
 import { SKILL_TOOL_NAME } from '../tools/SkillTool/constants.js';
 import { getOutputStyleConfig } from './outputStyles.js';
@@ -460,7 +462,12 @@ export async function getSystemPrompt(
     systemPromptSection('budgeted_memory', () => loadBudgetedMemory()),
     systemPromptSection('session_goal', () => loadGoalPrompt()),
     systemPromptSection('ant_model_override', () => getAntModelOverrideSection()),
-    systemPromptSection('env_info_simple', () => computeSimpleEnvInfo(model, additionalWorkingDirectories)),
+    // deps: this section states the model name, id, knowledge cutoff and
+    // capabilities — all of which change under a mid-session /model switch.
+    systemPromptSection('env_info_simple', () => computeSimpleEnvInfo(model, additionalWorkingDirectories), [
+      model,
+      ...(additionalWorkingDirectories ?? []),
+    ]),
     systemPromptSection('language', () => getLanguageSection(settings.language)),
     systemPromptSection('output_style', () => getOutputStyleSection(outputStyleConfig)),
     // When delta enabled, instructions are announced via persisted
@@ -474,7 +481,8 @@ export async function getSystemPrompt(
       'MCP servers connect/disconnect between turns',
     ),
     systemPromptSection('scratchpad', () => getScratchpadInstructions()),
-    systemPromptSection('frc', () => getFunctionResultClearingSection(model)),
+    // deps: gated on config.supportedModels matching the active model.
+    systemPromptSection('frc', () => getFunctionResultClearingSection(model), [model]),
     systemPromptSection('summarize_tool_results', () => SUMMARIZE_TOOL_RESULTS_SECTION),
     // Numeric length anchors — research shows ~1.2% output token reduction vs
     // qualitative "be concise". Ant-only to measure quality impact first.
@@ -712,7 +720,16 @@ export async function computeSimpleEnvInfo(modelId: string, additionalWorkingDir
 }
 
 // @[MODEL LAUNCH]: Add a knowledge cutoff date for the new model.
+//
+// Anthropic models are matched below; every other provider's models declare
+// `knowledgeCutoff` in providers.json (see getRegistryKnowledgeCutoff). The
+// data is intentionally sparse — an unknown cutoff drops the line entirely,
+// which is correct, whereas guessing makes the model misstate its own
+// knowledge horizon. Populate only from provider documentation.
 function getKnowledgeCutoff(modelId: string): string | null {
+  const fromRegistry = getRegistryKnowledgeCutoff(modelId);
+  if (fromRegistry) return fromRegistry;
+
   const canonical = getCanonicalName(modelId);
   if (canonical.includes('claude-sonnet-4-6')) {
     return 'August 2025';
@@ -726,6 +743,21 @@ function getKnowledgeCutoff(modelId: string): string | null {
     return 'January 2025';
   }
   return null;
+}
+
+/**
+ * Knowledge cutoff declared by the active provider's registry entry, or null
+ * when this model doesn't declare one (the common case today — the field is
+ * new and populated on demand). Best-effort: never let a registry miss break
+ * prompt construction.
+ */
+function getRegistryKnowledgeCutoff(modelId: string): string | null {
+  try {
+    const info = resolveProviderModelInfo(getActiveProviderId(), modelId);
+    return info?.knowledgeCutoff?.trim() || null;
+  } catch {
+    return null;
+  }
 }
 
 function getShellInfoLine(): string {

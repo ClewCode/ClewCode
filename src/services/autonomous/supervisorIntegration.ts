@@ -101,6 +101,15 @@ export async function startAutonomousAgent(): Promise<boolean> {
   console.log(`[SupervisorIntegration] Starting autonomous agent: ${script}`);
 
   try {
+    // BUG #1: Clean up old process listeners before spawning new one
+    // BUG #14: Save reference to prevent race condition with exit handler
+    const oldProcess = agentProcess;
+    if (oldProcess && !oldProcess.killed) {
+      oldProcess.removeAllListeners();
+      if (oldProcess.stdout) oldProcess.stdout.removeAllListeners();
+      if (oldProcess.stderr) oldProcess.stderr.removeAllListeners();
+    }
+
     agentProcess = spawn(process.execPath, ['run', script], {
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -178,7 +187,8 @@ export async function stopAutonomousAgent(): Promise<boolean> {
       }, 5000);
 
       if (agentProcess) {
-        agentProcess.on('exit', () => {
+        // BUG #2: Use .once() to ensure listener is removed after firing or timeout
+        agentProcess.once('exit', () => {
           clearTimeout(timeout);
           resolve();
         });

@@ -1,6 +1,6 @@
 import { AnthropicProvider } from './providers/AnthropicProvider.js';
 import { ChatGPTProvider } from './providers/ChatGPTProvider.js';
-import { CodeAssistProvider } from './providers/CodeAssistProvider.js';
+import { AntigravityProvider } from './providers/CodeAssistProvider.js';
 import { CohereProvider } from './providers/CohereProvider.js';
 import { GoogleProvider } from './providers/GoogleProvider.js';
 import { KiloCodeProvider } from './providers/KiloCodeProvider.js';
@@ -50,7 +50,7 @@ function createProvider(key: string, entry: any): ProviderInterface {
     case 'google':
       return new GoogleProvider();
     case 'google-assist':
-      return new CodeAssistProvider();
+      return new AntigravityProvider();
     case 'cohere':
       return new CohereProvider();
     case 'openrouter':

@@ -12,6 +12,7 @@
 
 import type { CanUseToolFn } from '../../hooks/useCanUseTool.js';
 import type { Message } from '../../types/message.js';
+import { logForDiagnosticsNoPII } from '../../utils/diagLogs.js';
 import { type CacheSafeParams, runForkedAgent } from '../../utils/forkedAgent.js';
 import { createUserMessage, getAssistantMessageText, getLastAssistantMessage } from '../../utils/messages.js';
 
@@ -83,8 +84,16 @@ export async function verifyGoalCompletion(
       isImpossible: !!impossibleMatch?.[1],
       ...(impossibleMatch?.[1] ? { isImpossible: true, gap: impossibleMatch[1].trim() } : {}),
     };
-  } catch {
-    // Verifier failure is non-fatal — allow normal termination
+  } catch (error) {
+    // BUG #30: This fail-open path (treating a broken verifier as "goal complete")
+    // is deliberate — a hung/erroring verifier shouldn't block the agent from
+    // terminating. But it was completely silent, making it indistinguishable
+    // from a genuine verified-complete result. Log so a spike in verifier
+    // errors (e.g. during a provider outage) is observable instead of masquerading
+    // as successful goal verification.
+    logForDiagnosticsNoPII('warn', 'goal_verifier_failed_fail_open', {
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+    });
     return { isComplete: true };
   }
 }

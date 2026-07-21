@@ -278,9 +278,6 @@ export async function countTokensViaHaikuFallback(
   const filteredBetas =
     getAPIProvider() === 'vertex' ? betas.filter(b => VERTEX_COUNT_TOKENS_ALLOWED_BETAS.has(b)) : betas;
 
-  console.error(
-    `[tokenEstimation] anthropic type: ${typeof anthropic}, has beta: ${anthropic?.beta !== undefined}, has messages: ${anthropic?.beta?.messages !== undefined}`,
-  );
   const response = await anthropic.beta.messages.create({
     model: normalizeModelStringForAPI(model),
     max_tokens: containsThinking ? TOKEN_COUNT_MAX_TOKENS : 1,
@@ -363,7 +360,7 @@ function roughTokenCountEstimationForContent(
   return totalTokens;
 }
 
-function roughTokenCountEstimationForBlock(
+export function roughTokenCountEstimationForBlock(
   block: string | Anthropic.ContentBlock | Anthropic.ContentBlockParam,
 ): number {
   if (typeof block === 'string') {

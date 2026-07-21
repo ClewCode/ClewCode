@@ -49,6 +49,7 @@ import { createAbortController } from './utils/abortController.js';
 import type { AttributionState } from './utils/commitAttribution.js';
 import { getGlobalConfig } from './utils/config.js';
 import { getCwd } from './utils/cwd.js';
+import { logForDiagnosticsNoPII } from './utils/diagLogs.js';
 import { isBareMode, isEnvTruthy } from './utils/envUtils.js';
 import { type FileHistoryState, fileHistoryEnabled, fileHistoryMakeSnapshot } from './utils/fileHistory.js';
 import { cloneFileStateCache, type FileStateCache } from './utils/fileStateCache.js';
@@ -613,12 +614,16 @@ export class QueryEngine {
 
     if (fileHistoryEnabled() && persistSession) {
       messagesFromUserInput.filter(selectableUserMessagesFilter).forEach(message => {
-        void fileHistoryMakeSnapshot((updater: (prev: FileHistoryState) => FileHistoryState) => {
+        fileHistoryMakeSnapshot((updater: (prev: FileHistoryState) => FileHistoryState) => {
           setAppState(prev => ({
             ...prev,
             fileHistory: updater(prev.fileHistory),
           }));
-        }, message.uuid as UUID);
+        }, message.uuid as UUID).catch(error => {
+          logForDiagnosticsNoPII('error', 'file_history_snapshot_error', {
+            errorType: error instanceof Error ? error.constructor.name : typeof error,
+          });
+        });
       });
     }
 
@@ -745,7 +750,11 @@ export class QueryEngine {
           // useLogMessages.ts fire-and-forgets. enqueueWrite is
           // order-preserving so fire-and-forget here is safe.
           if (message.type === 'assistant') {
-            void recordTranscript(messages);
+            recordTranscript(messages).catch(error => {
+              logForDiagnosticsNoPII('error', 'transcript_recording_failed', {
+                errorType: error instanceof Error ? error.constructor.name : typeof error,
+              });
+            });
           } else {
             await recordTranscript(messages);
           }
@@ -867,7 +876,11 @@ export class QueryEngine {
           // forking the chain and orphaning the conversation on resume.
           if (persistSession) {
             messages.push(message);
-            void recordTranscript(messages);
+            recordTranscript(messages).catch(error => {
+              logForDiagnosticsNoPII('error', 'transcript_recording_failed_progress', {
+                errorType: error instanceof Error ? error.constructor.name : typeof error,
+              });
+            });
           }
           yield* normalizeMessage(message);
           break;
@@ -912,7 +925,11 @@ export class QueryEngine {
           // Record inline (same reason as progress above).
           if (persistSession) {
             messages.push(message);
-            void recordTranscript(messages);
+            recordTranscript(messages).catch(error => {
+              logForDiagnosticsNoPII('error', 'transcript_recording_failed_attachment', {
+                errorType: error instanceof Error ? error.constructor.name : typeof error,
+              });
+            });
           }
 
           // Extract structured output from StructuredOutput tool calls
@@ -1338,6 +1355,13 @@ export async function* ask({
       isMeta,
     });
   } finally {
-    setReadFileCache(engine.getReadFileState());
+    // BUG #9: Ensure file cache state is saved even if generator exits early
+    try {
+      setReadFileCache(engine.getReadFileState());
+    } catch (error) {
+      logForDiagnosticsNoPII('error', 'read_file_cache_save_error', {
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+      });
+    }
   }
 }

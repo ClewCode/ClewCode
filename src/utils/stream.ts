@@ -36,6 +36,10 @@ export class Stream<T> implements AsyncIterator<T> {
   }
 
   enqueue(value: T): void {
+    // BUG #7: Don't allow enqueue after error to maintain FIFO ordering
+    if (this.hasError) {
+      throw new Error('Cannot enqueue value after error');
+    }
     if (this.readResolve) {
       const resolve = this.readResolve;
       this.readResolve = undefined;
@@ -58,6 +62,7 @@ export class Stream<T> implements AsyncIterator<T> {
 
   error(error: unknown) {
     this.hasError = error;
+    this.isDone = false; // BUG #1: Clear isDone to prevent state contradiction
     if (this.readReject) {
       const reject = this.readReject;
       this.readResolve = undefined;

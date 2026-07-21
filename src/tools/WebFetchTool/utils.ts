@@ -5,6 +5,7 @@ import {
   logEvent,
 } from '../../services/analytics/index.js';
 import { queryHaiku } from '../../services/api/claude.js';
+import { logForDiagnosticsNoPII } from '../../utils/diagLogs.js';
 import { AbortError, isFetchError } from '../../utils/errors.js';
 import { getWebFetchUserAgent } from '../../utils/http.js';
 import { logError } from '../../utils/log.js';
@@ -149,6 +150,37 @@ export function isPreapprovedUrl(url: string): boolean {
   }
 }
 
+// BUG (SSRF): private/reserved IPv4 ranges and the cloud metadata endpoint.
+// A bare IP literal like 169.254.169.254 or 127.0.0.1 has >= 2 dot-separated
+// parts, so it previously passed the "publicly resolvable"-looking check
+// below undetected. This does NOT protect against DNS rebinding (a hostname
+// that resolves to a private IP at connect time) — that requires resolving
+// and pinning the IP before the request, which is a larger change — but it
+// closes the direct IP-literal bypass.
+function isPrivateOrReservedIPv4(hostname: string): boolean {
+  const match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!match) return false;
+  const octets = match.slice(1, 5).map(Number);
+  if (octets.some(o => o > 255)) return false;
+  const [a, b] = octets;
+  if (a === 10) return true; // 10.0.0.0/8
+  if (a === 127) return true; // 127.0.0.0/8 (loopback)
+  if (a === 169 && b === 254) return true; // 169.254.0.0/16 (link-local, cloud metadata)
+  if (a === 172 && b! >= 16 && b! <= 31) return true; // 172.16.0.0/12
+  if (a === 192 && b === 168) return true; // 192.168.0.0/16
+  if (a === 0) return true; // 0.0.0.0/8
+  return false;
+}
+
+function isPrivateOrReservedHostname(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  if (lower === 'localhost' || lower.endsWith('.localhost')) return true;
+  if (lower === '[::1]' || lower === '::1') return true; // IPv6 loopback
+  if (lower.startsWith('[fe80:') || lower.startsWith('fe80:')) return true; // IPv6 link-local
+  if (lower.startsWith('[fc') || lower.startsWith('[fd')) return true; // IPv6 unique local
+  return isPrivateOrReservedIPv4(hostname);
+}
+
 export function validateURL(url: string): boolean {
   if (url.length > MAX_URL_LENGTH) {
     return false;
@@ -173,6 +205,9 @@ export function validateURL(url: string): boolean {
   // Initial filter that this isn't a privileged, company-internal URL
   // by checking that the hostname is publicly resolvable
   const hostname = parsed.hostname;
+  if (isPrivateOrReservedHostname(hostname)) {
+    return false;
+  }
   const parts = hostname.split('.');
   if (parts.length < 2) {
     return false;
@@ -274,20 +309,39 @@ export async function getWithPermittedRedirects(
     throw new Error(`Too many redirects (exceeded ${MAX_REDIRECTS})`);
   }
   try {
-    return await ofetch.raw(url, {
+    // BUG (SSRF): `maxRedirects` is not a real fetch/ofetch option — ofetch
+    // spreads unrecognized options straight into native fetch(), which
+    // silently ignores it and defaults to redirect: 'follow'. That made the
+    // redirectChecker below unreachable dead code: every redirect (including
+    // ones pointing at 169.254.169.254 or other private/internal addresses)
+    // was auto-followed by the runtime before ofetch ever saw a 3xx status.
+    // `redirect: 'manual'` is the real native-fetch option that prevents
+    // auto-following.
+    const response = await ofetch.raw(url, {
       signal,
       timeout: FETCH_TIMEOUT_MS,
-      maxRedirects: 0,
+      redirect: 'manual',
       responseType: 'arrayBuffer',
-      maxContentLength: MAX_HTTP_CONTENT_LENGTH,
       headers: {
         Accept: 'text/markdown, text/html, */*',
         'User-Agent': getWebFetchUserAgent(),
       },
     });
-  } catch (error) {
-    if (isFetchError(error) && error.response && [301, 302, 307, 308].includes(error.response.status)) {
-      const redirectLocation = error.response.headers.location;
+
+    // BUG (resource exhaustion): `maxContentLength` is likewise not a real
+    // fetch/ofetch option and was silently ignored — the entire body was
+    // buffered via arrayBuffer() with no cap. Enforce the limit manually
+    // now that the response has been read.
+    const bodyLength = (response as unknown as { _data?: ArrayBuffer })._data?.byteLength ?? 0;
+    if (bodyLength > MAX_HTTP_CONTENT_LENGTH) {
+      throw new Error(`Response body exceeded maximum content length (${MAX_HTTP_CONTENT_LENGTH} bytes)`);
+    }
+
+    // With redirect: 'manual', a 3xx response is returned as a normal
+    // (non-throwing) Response — ofetch only throws for 400-599 — so redirect
+    // handling now happens on the success path rather than in the catch block.
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const redirectLocation = response.headers.get('location');
       if (!redirectLocation) {
         throw new Error('Redirect missing Location header');
       }
@@ -304,11 +358,13 @@ export async function getWithPermittedRedirects(
           type: 'redirect',
           originalUrl: url,
           redirectUrl,
-          statusCode: error.response.status,
+          statusCode: response.status,
         };
       }
     }
 
+    return response;
+  } catch (error) {
     // Detect egress proxy blocks: the proxy returns 403 with
     // X-Proxy-Error: blocked-by-allowlist when egress is restricted
     if (
@@ -401,13 +457,43 @@ export async function getURLMarkdownContent(
       // Expected user-facing failures - re-throw without logging as internal error
       throw e;
     }
+    // BUG (fail-open security boundary): any *other* exception here (e.g.
+    // getSettings_DEPRECATED() or logEvent() throwing) previously fell
+    // through silently and let the fetch below proceed as if the domain
+    // safety check had passed. This block is the primary SSRF/blocklist
+    // gate, so an unexpected error must fail closed, not open.
     logError(e);
+    const failedHostname = (() => {
+      try {
+        return new URL(url).hostname;
+      } catch {
+        return url;
+      }
+    })();
+    throw new DomainCheckFailedError(failedHostname);
   }
 
   let response;
   try {
     response = await getWithPermittedRedirects(upgradedUrl, abortController.signal, isPermittedRedirect);
   } catch (err) {
+    // BUG (exfiltration): falling back to a third-party proxy (r.jina.ai) on
+    // *any* primary-fetch failure sends the full URL — including any
+    // query-string tokens/secrets in signed URLs — to an uncontrolled third
+    // party, with no logging and no opt-out. Don't do this when the primary
+    // fetch was deliberately blocked by network policy (egress proxy) or by
+    // our own domain safety check — those are decisions the fallback would
+    // silently defeat.
+    if (
+      err instanceof EgressBlockedError ||
+      err instanceof DomainBlockedError ||
+      err instanceof DomainCheckFailedError
+    ) {
+      throw err;
+    }
+    logForDiagnosticsNoPII('warn', 'web_fetch_jina_fallback_used', {
+      errorType: err instanceof Error ? err.constructor.name : typeof err,
+    });
     try {
       const jinaUrl = `https://r.jina.ai/${upgradedUrl}`;
       response = await getWithPermittedRedirects(jinaUrl, abortController.signal, isPermittedRedirect);

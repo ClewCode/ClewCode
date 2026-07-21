@@ -32,9 +32,19 @@ export function scrubSecrets(input: string): string {
 
 export class RunStore {
   private workspaceRoot: string;
+  // BUG #26: Per-run lock chain serializes appendApproval/updateApprovalStatus so a
+  // read-modify-write update can't race with a concurrent append and lose it.
+  private approvalLocks = new Map<string, Promise<unknown>>();
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
+  }
+
+  private withApprovalLock<T>(runId: string, fn: () => Promise<T>): Promise<T> {
+    const previous = this.approvalLocks.get(runId) ?? Promise.resolve();
+    const next = previous.then(fn, fn);
+    this.approvalLocks.set(runId, next);
+    return next;
   }
 
   private getRunsDir(): string {
@@ -209,9 +219,13 @@ export class RunStore {
   }
 
   async appendApproval(runId: string, approval: ApprovalRequest): Promise<void> {
-    const approvalsPath = path.join(this.getRunDir(runId), 'approvals.jsonl');
-    const sanitizedApproval = scrubSecrets(JSON.stringify(approval));
-    await fs.appendFile(approvalsPath, `${sanitizedApproval}\n`, 'utf-8');
+    // BUG #26: Serialize against updateApprovalStatus so this append can't be
+    // lost if it lands between that call's read and its rename.
+    return this.withApprovalLock(runId, async () => {
+      const approvalsPath = path.join(this.getRunDir(runId), 'approvals.jsonl');
+      const sanitizedApproval = scrubSecrets(JSON.stringify(approval));
+      await fs.appendFile(approvalsPath, `${sanitizedApproval}\n`, 'utf-8');
+    });
   }
 
   async loadApprovals(runId: string): Promise<ApprovalRequest[]> {
@@ -228,16 +242,26 @@ export class RunStore {
   }
 
   async updateApprovalStatus(runId: string, approvalId: string, status: ApprovalRequest['status']): Promise<void> {
-    const approvals = await this.loadApprovals(runId);
-    const updated = approvals.map(app => {
-      if (app.id === approvalId) {
-        return { ...app, status };
-      }
-      return app;
-    });
+    // BUG #17 + #26: Atomic rename plus per-run lock — serializes against
+    // appendApproval so a concurrent append can't be read-then-overwritten.
+    return this.withApprovalLock(runId, async () => {
+      const approvalsPath = path.join(this.getRunDir(runId), 'approvals.jsonl');
+      const tempPath = `${approvalsPath}.tmp`;
 
-    const approvalsPath = path.join(this.getRunDir(runId), 'approvals.jsonl');
-    const lines = `${updated.map(app => JSON.stringify(app)).join('\n')}\n`;
-    await fs.writeFile(approvalsPath, lines, 'utf-8');
+      // Read current approvals
+      const approvals = await this.loadApprovals(runId);
+      const updated = approvals.map(app => {
+        if (app.id === approvalId) {
+          return { ...app, status };
+        }
+        return app;
+      });
+
+      const lines = `${updated.map(app => JSON.stringify(app)).join('\n')}\n`;
+      // Write to temp file first
+      await fs.writeFile(tempPath, lines, 'utf-8');
+      // Atomically replace original file
+      await fs.rename(tempPath, approvalsPath);
+    });
   }
 }

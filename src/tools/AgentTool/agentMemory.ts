@@ -101,11 +101,11 @@ export function getMemoryScopeDisplay(memory: AgentMemoryScope | undefined): str
     case 'user':
       return `User (${join(getMemoryBaseDir(), 'agent-memory')}/)`;
     case 'project':
-      return 'Project (.claude/agent-memory/)';
+      return 'Project (.clew/agent-memory/)';
     case 'local':
       return `Local (${getLocalAgentMemoryDir('...')})`;
     case 'team':
-      return 'Team (.claude/agent-memory/__team__/)';
+      return 'Team (.clew/agent-memory/__team__/)';
     default:
       return 'None';
   }

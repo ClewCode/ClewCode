@@ -1548,9 +1548,14 @@ function runHeadlessStreaming(
   // Subscribe to skill changes for hot reloading
   const unsubscribeSkillChanges = skillChangeDetector.subscribe(() => {
     clearCommandsCache();
-    void getCommands(cwd()).then(newCommands => {
-      currentCommands = newCommands;
-    });
+    void getCommands(cwd())
+      .then(newCommands => {
+        currentCommands = newCommands;
+      })
+      .catch(error => {
+        // Log command refresh failure to prevent stale cache (BUG #2)
+        logForDebugging(`Failed to refresh commands on skill change: ${errorMessage(error)}`);
+      });
   });
 
   // Proactive mode: schedule a tick to keep the model looping autonomously.
@@ -2414,1178 +2419,1189 @@ function runHeadlessStreaming(
   // The process is complete when the input stream completes and
   // the last generation of the queue has complete.
   void (async () => {
-    let initialized = false;
-    logForDiagnosticsNoPII('info', 'cli_message_loop_started');
-    for await (const message of structuredIO.structuredInput) {
-      // Non-user events are handled inline (no queue). started→completed in
-      // the same tick carries no information, so only fire completed.
-      // control_response is reported by StructuredIO.processLine (which also
-      // sees orphans that never yield here).
-      const eventId = 'uuid' in message ? message.uuid : undefined;
-      if (eventId && message.type !== 'user' && message.type !== 'control_response') {
-        notifyCommandLifecycle(eventId, 'completed');
-      }
+    try {
+      let initialized = false;
+      logForDiagnosticsNoPII('info', 'cli_message_loop_started');
+      for await (const message of structuredIO.structuredInput) {
+        // Non-user events are handled inline (no queue). started→completed in
+        // the same tick carries no information, so only fire completed.
+        // control_response is reported by StructuredIO.processLine (which also
+        // sees orphans that never yield here).
+        const eventId = 'uuid' in message ? message.uuid : undefined;
+        if (eventId && message.type !== 'user' && message.type !== 'control_response') {
+          notifyCommandLifecycle(eventId, 'completed');
+        }
 
-      if (message.type === 'control_request') {
-        if (message.request.subtype === 'interrupt') {
-          // Track escapes for attribution (ant-only feature)
-          if (feature('COMMIT_ATTRIBUTION')) {
+        if (message.type === 'control_request') {
+          if (message.request.subtype === 'interrupt') {
+            // Track escapes for attribution (ant-only feature)
+            if (feature('COMMIT_ATTRIBUTION')) {
+              setAppState(prev => ({
+                ...prev,
+                attribution: {
+                  ...prev.attribution,
+                  escapeCount: prev.attribution.escapeCount + 1,
+                },
+              }));
+            }
+            if (abortController) {
+              abortController.abort();
+            }
+            suggestionState.abortController?.abort();
+            suggestionState.abortController = null;
+            suggestionState.lastEmitted = null;
+            suggestionState.pendingSuggestion = null;
+            sendControlResponseSuccess(message);
+          } else if (message.request.subtype === 'end_session') {
+            logForDebugging(`[print.ts] end_session received, reason=${message.request.reason ?? 'unspecified'}`);
+            if (abortController) {
+              abortController.abort();
+            }
+            suggestionState.abortController?.abort();
+            suggestionState.abortController = null;
+            suggestionState.lastEmitted = null;
+            suggestionState.pendingSuggestion = null;
+            sendControlResponseSuccess(message);
+            break; // exits for-await → falls through to inputClosed=true drain below
+          } else if (message.request.subtype === 'initialize') {
+            // SDK MCP server names from the initialize message
+            // Populated by both browser and ProcessTransport sessions
+            if (message.request.sdkMcpServers && message.request.sdkMcpServers.length > 0) {
+              for (const serverName of message.request.sdkMcpServers) {
+                // Create placeholder config for SDK MCP servers
+                // The actual server connection is managed by the SDK Query class
+                sdkMcpConfigs[serverName] = {
+                  type: 'sdk',
+                  name: serverName,
+                };
+              }
+            }
+
+            await handleInitializeRequest(
+              message.request,
+              message.request_id,
+              initialized,
+              output,
+              commands,
+              modelInfos,
+              structuredIO,
+              !!options.enableAuthStatus,
+              options,
+              agents,
+              getAppState,
+            );
+
+            // Enable prompt suggestions in AppState when SDK consumer opts in.
+            // shouldEnablePromptSuggestion() returns false for non-interactive
+            // sessions, but the SDK consumer explicitly requested suggestions.
+            if (message.request.promptSuggestions) {
+              setAppState(prev => {
+                if (prev.promptSuggestionEnabled) return prev;
+                return { ...prev, promptSuggestionEnabled: true };
+              });
+            }
+
+            if (
+              message.request.agentProgressSummaries &&
+              getFeatureValue_CACHED_MAY_BE_STALE('tengu_slate_prism', true)
+            ) {
+              setSdkAgentProgressSummariesEnabled(true);
+            }
+
+            initialized = true;
+
+            // If the auto-resume logic pre-enqueued a command, drain it now
+            // that initialize has set up systemPrompt, agents, hooks, etc.
+            if (hasCommandsInQueue()) {
+              void run();
+            }
+          } else if (message.request.subtype === 'set_permission_mode') {
+            const m = message.request; // for typescript (TODO: use readonly types to avoid this)
             setAppState(prev => ({
               ...prev,
-              attribution: {
-                ...prev.attribution,
-                escapeCount: prev.attribution.escapeCount + 1,
-              },
+              toolPermissionContext: handleSetPermissionMode(m, message.request_id, prev.toolPermissionContext, output),
+              isUltraplanMode: m.ultraplan ?? prev.isUltraplanMode,
             }));
-          }
-          if (abortController) {
-            abortController.abort();
-          }
-          suggestionState.abortController?.abort();
-          suggestionState.abortController = null;
-          suggestionState.lastEmitted = null;
-          suggestionState.pendingSuggestion = null;
-          sendControlResponseSuccess(message);
-        } else if (message.request.subtype === 'end_session') {
-          logForDebugging(`[print.ts] end_session received, reason=${message.request.reason ?? 'unspecified'}`);
-          if (abortController) {
-            abortController.abort();
-          }
-          suggestionState.abortController?.abort();
-          suggestionState.abortController = null;
-          suggestionState.lastEmitted = null;
-          suggestionState.pendingSuggestion = null;
-          sendControlResponseSuccess(message);
-          break; // exits for-await → falls through to inputClosed=true drain below
-        } else if (message.request.subtype === 'initialize') {
-          // SDK MCP server names from the initialize message
-          // Populated by both browser and ProcessTransport sessions
-          if (message.request.sdkMcpServers && message.request.sdkMcpServers.length > 0) {
-            for (const serverName of message.request.sdkMcpServers) {
-              // Create placeholder config for SDK MCP servers
-              // The actual server connection is managed by the SDK Query class
-              sdkMcpConfigs[serverName] = {
-                type: 'sdk',
-                name: serverName,
+            // handleSetPermissionMode sends the control_response; the
+            // notifySessionMetadataChanged that used to follow here is
+            // now fired by onChangeAppState (with externalized mode name).
+          } else if (message.request.subtype === 'set_model') {
+            const requestedModel = message.request.model ?? 'default';
+            const model = requestedModel === 'default' ? getDefaultMainLoopModel() : requestedModel;
+            activeUserSpecifiedModel = model;
+            setMainLoopModelOverride(model);
+            notifySessionMetadataChanged({ model });
+            injectModelSwitchBreadcrumbs(requestedModel, model);
+
+            sendControlResponseSuccess(message);
+          } else if (message.request.subtype === 'set_max_thinking_tokens') {
+            if (message.request.max_thinking_tokens === null) {
+              options.thinkingConfig = undefined;
+            } else if (message.request.max_thinking_tokens === 0) {
+              options.thinkingConfig = { type: 'disabled' };
+            } else {
+              options.thinkingConfig = {
+                type: 'enabled',
+                budgetTokens: message.request.max_thinking_tokens,
               };
             }
-          }
-
-          await handleInitializeRequest(
-            message.request,
-            message.request_id,
-            initialized,
-            output,
-            commands,
-            modelInfos,
-            structuredIO,
-            !!options.enableAuthStatus,
-            options,
-            agents,
-            getAppState,
-          );
-
-          // Enable prompt suggestions in AppState when SDK consumer opts in.
-          // shouldEnablePromptSuggestion() returns false for non-interactive
-          // sessions, but the SDK consumer explicitly requested suggestions.
-          if (message.request.promptSuggestions) {
-            setAppState(prev => {
-              if (prev.promptSuggestionEnabled) return prev;
-              return { ...prev, promptSuggestionEnabled: true };
-            });
-          }
-
-          if (
-            message.request.agentProgressSummaries &&
-            getFeatureValue_CACHED_MAY_BE_STALE('tengu_slate_prism', true)
-          ) {
-            setSdkAgentProgressSummariesEnabled(true);
-          }
-
-          initialized = true;
-
-          // If the auto-resume logic pre-enqueued a command, drain it now
-          // that initialize has set up systemPrompt, agents, hooks, etc.
-          if (hasCommandsInQueue()) {
-            void run();
-          }
-        } else if (message.request.subtype === 'set_permission_mode') {
-          const m = message.request; // for typescript (TODO: use readonly types to avoid this)
-          setAppState(prev => ({
-            ...prev,
-            toolPermissionContext: handleSetPermissionMode(m, message.request_id, prev.toolPermissionContext, output),
-            isUltraplanMode: m.ultraplan ?? prev.isUltraplanMode,
-          }));
-          // handleSetPermissionMode sends the control_response; the
-          // notifySessionMetadataChanged that used to follow here is
-          // now fired by onChangeAppState (with externalized mode name).
-        } else if (message.request.subtype === 'set_model') {
-          const requestedModel = message.request.model ?? 'default';
-          const model = requestedModel === 'default' ? getDefaultMainLoopModel() : requestedModel;
-          activeUserSpecifiedModel = model;
-          setMainLoopModelOverride(model);
-          notifySessionMetadataChanged({ model });
-          injectModelSwitchBreadcrumbs(requestedModel, model);
-
-          sendControlResponseSuccess(message);
-        } else if (message.request.subtype === 'set_max_thinking_tokens') {
-          if (message.request.max_thinking_tokens === null) {
-            options.thinkingConfig = undefined;
-          } else if (message.request.max_thinking_tokens === 0) {
-            options.thinkingConfig = { type: 'disabled' };
-          } else {
-            options.thinkingConfig = {
-              type: 'enabled',
-              budgetTokens: message.request.max_thinking_tokens,
-            };
-          }
-          sendControlResponseSuccess(message);
-        } else if (message.request.subtype === 'mcp_status') {
-          sendControlResponseSuccess(message, {
-            mcpServers: buildMcpServerStatuses(),
-          });
-        } else if (message.request.subtype === 'get_context_usage') {
-          try {
-            const appState = getAppState();
-            const data = await collectContextData({
-              messages: mutableMessages,
-              getAppState,
-              options: {
-                mainLoopModel: getMainLoopModel(),
-                tools: buildAllTools(appState),
-                agentDefinitions: appState.agentDefinitions,
-                customSystemPrompt: options.systemPrompt,
-                appendSystemPrompt: options.appendSystemPrompt,
-              },
-            });
-            sendControlResponseSuccess(message, { ...data });
-          } catch (error) {
-            sendControlResponseError(message, errorMessage(error));
-          }
-        } else if (message.request.subtype === 'mcp_message') {
-          // Handle MCP notifications from SDK servers
-          const mcpRequest = message.request;
-          const sdkClient = sdkClients.find(client => client.name === mcpRequest.server_name);
-          // Check client exists - dynamically added SDK servers may have
-          // placeholder clients with null client until updateSdkMcp() runs
-          if (sdkClient && sdkClient.type === 'connected' && sdkClient.client?.transport?.onmessage) {
-            sdkClient.client.transport.onmessage(mcpRequest.message);
-          }
-          sendControlResponseSuccess(message);
-        } else if (message.request.subtype === 'rewind_files') {
-          const appState = getAppState();
-          const result = await handleRewindFiles(
-            message.request.user_message_id as UUID,
-            appState,
-            setAppState,
-            message.request.dry_run ?? false,
-          );
-          if (result.canRewind || message.request.dry_run) {
-            sendControlResponseSuccess(message, result);
-          } else {
-            sendControlResponseError(message, result.error ?? 'Unexpected error');
-          }
-        } else if (message.request.subtype === 'cancel_async_message') {
-          const targetUuid = message.request.message_uuid;
-          const removed = dequeueAllMatching(cmd => cmd.uuid === targetUuid);
-          sendControlResponseSuccess(message, {
-            cancelled: removed.length > 0,
-          });
-        } else if (message.request.subtype === 'seed_read_state') {
-          // Client observed a Read that was later removed from context (e.g.
-          // by snip), so transcript-based seeding missed it. Queued into
-          // pendingSeeds; applied at the next clone-replace boundary.
-          try {
-            // expandPath: all other readFileState writers normalize (~, relative,
-            // session cwd vs process cwd). FileEditTool looks up by expandPath'd
-            // key — a verbatim client path would miss.
-            const normalizedPath = expandPath(message.request.path);
-            // Check disk mtime before reading content. If the file changed
-            // since the client's observation, readFile would return C_current
-            // but we'd store it with the client's M_observed — getChangedFiles
-            // then sees disk > cache.timestamp, re-reads, diffs C_current vs
-            // C_current = empty, emits no attachment, and the model is never
-            // told about the C_observed → C_current change. Skipping the seed
-            // makes Edit fail "file not read yet" → forces a fresh Read.
-            // Math.floor matches FileReadTool and getFileModificationTime.
-            const diskMtime = Math.floor((await stat(normalizedPath)).mtimeMs);
-            if (diskMtime <= message.request.mtime) {
-              const raw = await readFile(normalizedPath, 'utf-8');
-              // Strip BOM + normalize CRLF→LF to match readFileInRange and
-              // readFileSyncWithMetadata. FileEditTool's content-compare
-              // fallback (for Windows mtime bumps without content change)
-              // compares against LF-normalized disk reads.
-              const content = (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).replaceAll('\r\n', '\n');
-              pendingSeeds.set(normalizedPath, {
-                content,
-                timestamp: diskMtime,
-                offset: undefined,
-                limit: undefined,
-              });
-            }
-          } catch {
-            // ENOENT etc — skip seeding but still succeed
-          }
-          sendControlResponseSuccess(message);
-        } else if (message.request.subtype === 'mcp_set_servers') {
-          const { response, sdkServersChanged } = await applyMcpServerChanges(message.request.servers);
-          sendControlResponseSuccess(message, response);
-
-          // Connect SDK servers AFTER response to avoid deadlock
-          if (sdkServersChanged) {
-            void updateSdkMcp();
-          }
-        } else if (message.request.subtype === 'reload_plugins') {
-          try {
-            if (feature('DOWNLOAD_USER_SETTINGS') && (isEnvTruthy(process.env.CLEW_CODE_REMOTE) || getIsRemoteMode())) {
-              // Re-pull user settings so enabledPlugins pushed from the
-              // user's local CLI take effect before the cache sweep.
-              const applied = await redownloadUserSettings();
-              if (applied) {
-                settingsChangeDetector.notifyChange('userSettings');
-              }
-            }
-
-            const r = await refreshActivePlugins(setAppState);
-
-            const sdkAgents = currentAgents.filter(a => a.source === 'flagSettings');
-            currentAgents = [...r.agentDefinitions.allAgents, ...sdkAgents];
-
-            // Reload succeeded — gather response data best-effort so a
-            // read failure doesn't mask the successful state change.
-            // allSettled so one failure doesn't discard the others.
-            let plugins: SDKControlReloadPluginsResponse['plugins'] = [];
-            const [cmdsR, mcpR, pluginsR] = await Promise.allSettled([
-              getCommands(cwd()),
-              applyPluginMcpDiff(),
-              loadAllPluginsCacheOnly(),
-            ]);
-            if (cmdsR.status === 'fulfilled') {
-              currentCommands = cmdsR.value;
-            } else {
-              logError(cmdsR.reason);
-            }
-            if (mcpR.status === 'rejected') {
-              logError(mcpR.reason);
-            }
-            if (pluginsR.status === 'fulfilled') {
-              plugins = pluginsR.value.enabled.map(p => ({
-                name: p.name,
-                path: p.path,
-                source: p.source,
-              }));
-            } else {
-              logError(pluginsR.reason);
-            }
-
-            sendControlResponseSuccess(message, {
-              commands: currentCommands
-                .filter(cmd => cmd.userInvocable !== false)
-                .map(cmd => ({
-                  name: getCommandName(cmd),
-                  description: formatDescriptionWithSource(cmd),
-                  argumentHint: cmd.argumentHint || '',
-                })),
-              agents: currentAgents.map(a => ({
-                name: a.agentType,
-                description: a.whenToUse,
-                model: a.model === 'inherit' ? undefined : a.model,
-              })),
-              plugins,
-              mcpServers: buildMcpServerStatuses(),
-              error_count: r.error_count,
-            } satisfies SDKControlReloadPluginsResponse);
-          } catch (error) {
-            sendControlResponseError(message, errorMessage(error));
-          }
-        } else if (message.request.subtype === 'mcp_reconnect') {
-          const currentAppState = getAppState();
-          const { serverName } = message.request;
-          elicitationRegistered.delete(serverName);
-          // Config-existence gate must cover the SAME sources as the
-          // operations below. SDK-injected servers (query({mcpServers:{...}}))
-          // and dynamically-added servers were missing here, so
-          // toggleMcpServer/reconnect returned "Server not found" even though
-          // the disconnect/reconnect would have worked (gh-31339 / CC-314).
-          const config =
-            getMcpConfigByName(serverName) ??
-            mcpClients.find(c => c.name === serverName)?.config ??
-            sdkClients.find(c => c.name === serverName)?.config ??
-            dynamicMcpState.clients.find(c => c.name === serverName)?.config ??
-            currentAppState.mcp.clients.find(c => c.name === serverName)?.config ??
-            null;
-          if (!config) {
-            sendControlResponseError(message, `Server not found: ${serverName}`);
-          } else {
-            const result = await reconnectMcpServerImpl(serverName, config);
-            // Update appState.mcp with the new client, tools, commands, and resources
-            const prefix = getMcpPrefix(serverName);
-            setAppState(prev => ({
-              ...prev,
-              mcp: {
-                ...prev.mcp,
-                clients: prev.mcp.clients.map(c => (c.name === serverName ? result.client : c)),
-                tools: [...reject(prev.mcp.tools, t => t.name?.startsWith(prefix)), ...result.tools],
-                commands: [
-                  ...reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
-                  ...result.commands,
-                ],
-                resources:
-                  result.resources && result.resources.length > 0
-                    ? { ...prev.mcp.resources, [serverName]: result.resources }
-                    : omit(prev.mcp.resources, serverName),
-              },
-            }));
-            // Also update dynamicMcpState so run() picks up the new tools
-            // on the next turn (run() reads dynamicMcpState, not appState)
-            dynamicMcpState = {
-              ...dynamicMcpState,
-              clients: [...dynamicMcpState.clients.filter(c => c.name !== serverName), result.client],
-              tools: [...dynamicMcpState.tools.filter(t => !t.name?.startsWith(prefix)), ...result.tools],
-            };
-            if (result.client.type === 'connected') {
-              registerElicitationHandlers([result.client]);
-              reregisterChannelHandlerAfterReconnect(result.client);
-              sendControlResponseSuccess(message);
-            } else {
-              const errorMessage =
-                result.client.type === 'failed'
-                  ? (result.client.error ?? 'Connection failed')
-                  : `Server status: ${result.client.type}`;
-              sendControlResponseError(message, errorMessage);
-            }
-          }
-        } else if (message.request.subtype === 'mcp_toggle') {
-          const currentAppState = getAppState();
-          const { serverName, enabled } = message.request;
-          elicitationRegistered.delete(serverName);
-          // Gate must match the client-lookup spread below (which
-          // includes sdkClients and dynamicMcpState.clients). Same fix as
-          // mcp_reconnect above (gh-31339 / CC-314).
-          const config =
-            getMcpConfigByName(serverName) ??
-            mcpClients.find(c => c.name === serverName)?.config ??
-            sdkClients.find(c => c.name === serverName)?.config ??
-            dynamicMcpState.clients.find(c => c.name === serverName)?.config ??
-            currentAppState.mcp.clients.find(c => c.name === serverName)?.config ??
-            null;
-
-          if (!config) {
-            sendControlResponseError(message, `Server not found: ${serverName}`);
-          } else if (!enabled) {
-            // Disabling: persist + disconnect (matches TUI toggleMcpServer behavior)
-            setMcpServerEnabled(serverName, false);
-            const client = [
-              ...mcpClients,
-              ...sdkClients,
-              ...dynamicMcpState.clients,
-              ...currentAppState.mcp.clients,
-            ].find(c => c.name === serverName);
-            if (client && client.type === 'connected') {
-              await clearServerCache(serverName, config);
-            }
-            // Update appState.mcp to reflect disabled status and remove tools/commands/resources
-            const prefix = getMcpPrefix(serverName);
-            setAppState(prev => ({
-              ...prev,
-              mcp: {
-                ...prev.mcp,
-                clients: prev.mcp.clients.map(c =>
-                  c.name === serverName ? { name: serverName, type: 'disabled' as const, config } : c,
-                ),
-                tools: reject(prev.mcp.tools, t => t.name?.startsWith(prefix)),
-                commands: reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
-                resources: omit(prev.mcp.resources, serverName),
-              },
-            }));
             sendControlResponseSuccess(message);
-          } else {
-            // Enabling: persist + reconnect
-            setMcpServerEnabled(serverName, true);
-            const result = await reconnectMcpServerImpl(serverName, config);
-            // Update appState.mcp with the new client, tools, commands, and resources
-            // This ensures the LLM sees updated tools after enabling the server
-            const prefix = getMcpPrefix(serverName);
-            setAppState(prev => ({
-              ...prev,
-              mcp: {
-                ...prev.mcp,
-                clients: prev.mcp.clients.map(c => (c.name === serverName ? result.client : c)),
-                tools: [...reject(prev.mcp.tools, t => t.name?.startsWith(prefix)), ...result.tools],
-                commands: [
-                  ...reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
-                  ...result.commands,
-                ],
-                resources:
-                  result.resources && result.resources.length > 0
-                    ? { ...prev.mcp.resources, [serverName]: result.resources }
-                    : omit(prev.mcp.resources, serverName),
-              },
-            }));
-            if (result.client.type === 'connected') {
-              registerElicitationHandlers([result.client]);
-              reregisterChannelHandlerAfterReconnect(result.client);
-              sendControlResponseSuccess(message);
-            } else {
-              const errorMessage =
-                result.client.type === 'failed'
-                  ? (result.client.error ?? 'Connection failed')
-                  : `Server status: ${result.client.type}`;
-              sendControlResponseError(message, errorMessage);
-            }
-          }
-        } else if (message.request.subtype === 'channel_enable') {
-          const currentAppState = getAppState();
-          handleChannelEnable(
-            message.request_id,
-            message.request.serverName,
-            // Pool spread matches mcp_status — all three client sources.
-            [...currentAppState.mcp.clients, ...sdkClients, ...dynamicMcpState.clients],
-            output,
-          );
-        } else if (message.request.subtype === 'mcp_authenticate') {
-          const { serverName } = message.request;
-          const currentAppState = getAppState();
-          const config =
-            getMcpConfigByName(serverName) ??
-            mcpClients.find(c => c.name === serverName)?.config ??
-            currentAppState.mcp.clients.find(c => c.name === serverName)?.config ??
-            null;
-          if (!config) {
-            sendControlResponseError(message, `Server not found: ${serverName}`);
-          } else if (config.type !== 'sse' && config.type !== 'http') {
-            sendControlResponseError(message, `Server type "${config.type}" does not support OAuth authentication`);
-          } else {
+          } else if (message.request.subtype === 'mcp_status') {
+            sendControlResponseSuccess(message, {
+              mcpServers: buildMcpServerStatuses(),
+            });
+          } else if (message.request.subtype === 'get_context_usage') {
             try {
-              // Abort any previous in-flight OAuth flow for this server
-              activeOAuthFlows.get(serverName)?.abort();
-              const controller = new AbortController();
-              activeOAuthFlows.set(serverName, controller);
-
-              // Capture the auth URL from the callback
-              let resolveAuthUrl: (url: string) => void;
-              const authUrlPromise = new Promise<string>(resolve => {
-                resolveAuthUrl = resolve;
-              });
-
-              // Start the OAuth flow in the background
-              const oauthPromise = performMCPOAuthFlow(
-                serverName,
-                config,
-                url => resolveAuthUrl!(url),
-                controller.signal,
-                {
-                  skipBrowserOpen: true,
-                  onWaitingForCallback: submit => {
-                    oauthCallbackSubmitters.set(serverName, submit);
-                  },
+              const appState = getAppState();
+              const data = await collectContextData({
+                messages: mutableMessages,
+                getAppState,
+                options: {
+                  mainLoopModel: getMainLoopModel(),
+                  tools: buildAllTools(appState),
+                  agentDefinitions: appState.agentDefinitions,
+                  customSystemPrompt: options.systemPrompt,
+                  appendSystemPrompt: options.appendSystemPrompt,
                 },
-              );
-
-              // Wait for the auth URL (or the flow to complete without needing redirect)
-              const authUrl = await Promise.race([
-                authUrlPromise,
-                oauthPromise.then(() => null as string | null).catch(() => null as string | null),
-              ]);
-
-              if (authUrl) {
-                sendControlResponseSuccess(message, {
-                  authUrl,
-                  requiresUserAction: true,
-                });
-              } else {
-                sendControlResponseSuccess(message, {
-                  requiresUserAction: false,
-                });
-              }
-
-              // Store auth-only promise for mcp_oauth_callback_url handler.
-              // Don't swallow errors — the callback handler needs to detect
-              // auth failures and report them to the caller.
-              oauthAuthPromises.set(serverName, oauthPromise);
-
-              // Handle background completion — reconnect after auth.
-              // When manual callback is used, skip the reconnect here;
-              // the extension's handleAuthDone → mcp_reconnect handles it
-              // (which also updates dynamicMcpState for tool registration).
-              const fullFlowPromise = oauthPromise
-                .then(async () => {
-                  // Don't reconnect if the server was disabled during the OAuth flow
-                  if (isMcpServerDisabled(serverName)) {
-                    return;
-                  }
-                  // Skip reconnect if the manual callback path was used —
-                  // handleAuthDone will do it via mcp_reconnect (which
-                  // updates dynamicMcpState for tool registration).
-                  if (oauthManualCallbackUsed.has(serverName)) {
-                    return;
-                  }
-                  // Reconnect the server after successful auth
-                  const result = await reconnectMcpServerImpl(serverName, config);
-                  const prefix = getMcpPrefix(serverName);
-                  setAppState(prev => ({
-                    ...prev,
-                    mcp: {
-                      ...prev.mcp,
-                      clients: prev.mcp.clients.map(c => (c.name === serverName ? result.client : c)),
-                      tools: [...reject(prev.mcp.tools, t => t.name?.startsWith(prefix)), ...result.tools],
-                      commands: [
-                        ...reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
-                        ...result.commands,
-                      ],
-                      resources:
-                        result.resources && result.resources.length > 0
-                          ? {
-                              ...prev.mcp.resources,
-                              [serverName]: result.resources,
-                            }
-                          : omit(prev.mcp.resources, serverName),
-                    },
-                  }));
-                  // Also update dynamicMcpState so run() picks up the new tools
-                  // on the next turn (run() reads dynamicMcpState, not appState)
-                  dynamicMcpState = {
-                    ...dynamicMcpState,
-                    clients: [...dynamicMcpState.clients.filter(c => c.name !== serverName), result.client],
-                    tools: [...dynamicMcpState.tools.filter(t => !t.name?.startsWith(prefix)), ...result.tools],
-                  };
-                })
-                .catch(error => {
-                  logForDebugging(`MCP OAuth failed for ${serverName}: ${error}`, { level: 'error' });
-                })
-                .finally(() => {
-                  // Clean up only if this is still the active flow
-                  if (activeOAuthFlows.get(serverName) === controller) {
-                    activeOAuthFlows.delete(serverName);
-                    oauthCallbackSubmitters.delete(serverName);
-                    oauthManualCallbackUsed.delete(serverName);
-                    oauthAuthPromises.delete(serverName);
-                  }
-                });
-              void fullFlowPromise;
+              });
+              sendControlResponseSuccess(message, { ...data });
             } catch (error) {
               sendControlResponseError(message, errorMessage(error));
             }
-          }
-        } else if (message.request.subtype === 'mcp_oauth_callback_url') {
-          const { serverName, callbackUrl } = message.request;
-          const submit = oauthCallbackSubmitters.get(serverName);
-          if (submit) {
-            // Validate the callback URL before submitting. The submit
-            // callback in auth.ts silently ignores URLs missing a code
-            // param, which would leave the auth promise unresolved and
-            // block the control message loop until timeout.
-            let hasCodeOrError = false;
-            try {
-              const parsed = new URL(callbackUrl);
-              hasCodeOrError = parsed.searchParams.has('code') || parsed.searchParams.has('error');
-            } catch {
-              // Invalid URL
-            }
-            if (!hasCodeOrError) {
-              sendControlResponseError(
-                message,
-                'Invalid callback URL: missing authorization code. Please paste the full redirect URL including the code parameter.',
-              );
-            } else {
-              oauthManualCallbackUsed.add(serverName);
-              submit(callbackUrl);
-              // Wait for auth (token exchange) to complete before responding.
-              // Reconnect is handled by the extension via handleAuthDone →
-              // mcp_reconnect (which updates dynamicMcpState for tools).
-              const authPromise = oauthAuthPromises.get(serverName);
-              if (authPromise) {
-                try {
-                  await authPromise;
-                  sendControlResponseSuccess(message);
-                } catch (error) {
-                  sendControlResponseError(
-                    message,
-                    error instanceof Error ? error.message : 'OAuth authentication failed',
-                  );
-                }
-              } else {
-                sendControlResponseSuccess(message);
-              }
-            }
-          } else {
-            sendControlResponseError(message, `No active OAuth flow for server: ${serverName}`);
-          }
-        } else if (message.request.subtype === 'claude_authenticate') {
-          // Anthropic OAuth over the control channel. The SDK client owns
-          // the user's browser (we're headless in -p mode); we hand back
-          // both URLs and wait. Automatic URL → localhost listener catches
-          // the redirect if the browser is on this host; manual URL → the
-          // success page shows "code#state" for claude_oauth_callback.
-          const { loginWithClaudeAi } = message.request;
-
-          // Clean up any prior flow. cleanup() closes the localhost listener
-          // and nulls the manual resolver. The prior `flow` promise is left
-          // pending (AuthCodeListener.close() does not reject) but its object
-          // graph becomes unreachable once the server handle is released and
-          // is GC'd — no fd or port is held.
-          claudeOAuth?.service.cleanup();
-
-          logEvent('tengu_oauth_flow_start', {
-            loginWithClaudeAi: loginWithClaudeAi ?? true,
-          });
-
-          const service = new OAuthService();
-          let urlResolver!: (urls: { manualUrl: string; automaticUrl: string }) => void;
-          const urlPromise = new Promise<{
-            manualUrl: string;
-            automaticUrl: string;
-          }>(resolve => {
-            urlResolver = resolve;
-          });
-
-          const flow = service
-            .startOAuthFlow(
-              async (manualUrl, automaticUrl) => {
-                // automaticUrl is always defined when skipBrowserOpen is set;
-                // the signature is optional only for the existing single-arg callers.
-                urlResolver({ manualUrl, automaticUrl: automaticUrl! });
-              },
-              {
-                loginWithClaudeAi: loginWithClaudeAi ?? true,
-                skipBrowserOpen: true,
-              },
-            )
-            .then(async tokens => {
-              // installOAuthTokens: performLogout (clear stale state) →
-              // store profile → saveOAuthTokensIfNeeded → clearOAuthTokenCache
-              // → clearAuthRelatedCaches. After this resolves, the memoized
-              // getClaudeAIOAuthTokens in this process is invalidated; the
-              // next API call re-reads keychain/file and works. No respawn.
-              await installOAuthTokens(tokens);
-              logEvent('tengu_oauth_success', {
-                loginWithClaudeAi: loginWithClaudeAi ?? true,
-              });
-            })
-            .finally(() => {
-              service.cleanup();
-              if (claudeOAuth?.service === service) {
-                claudeOAuth = null;
-              }
-            });
-
-          claudeOAuth = { service, flow };
-
-          // Attach the rejection handler before awaiting so a synchronous
-          // startOAuthFlow failure doesn't surface as an unhandled rejection.
-          // The claude_oauth_callback handler re-awaits flow for the manual
-          // path and surfaces the real error to the client.
-          void flow.catch(err =>
-            logForDebugging(`claude_authenticate flow ended: ${err}`, {
-              level: 'info',
-            }),
-          );
-
-          try {
-            // Race against flow: if startOAuthFlow rejects before calling
-            // the authURLHandler (e.g. AuthCodeListener.start() fails with
-            // EACCES or fd exhaustion), urlPromise would pend forever and
-            // wedge the stdin loop. flow resolving first is unreachable in
-            // practice (it's suspended on the same urls we're waiting for).
-            const { manualUrl, automaticUrl } = await Promise.race([
-              urlPromise,
-              flow.then(() => {
-                throw new Error('OAuth flow completed without producing auth URLs');
-              }),
-            ]);
-            sendControlResponseSuccess(message, {
-              manualUrl,
-              automaticUrl,
-            });
-          } catch (error) {
-            sendControlResponseError(message, errorMessage(error));
-          }
-        } else if (
-          message.request.subtype === 'claude_oauth_callback' ||
-          message.request.subtype === 'claude_oauth_wait_for_completion'
-        ) {
-          if (!claudeOAuth) {
-            sendControlResponseError(message, 'No active claude_authenticate flow');
-          } else {
-            // Inject the manual code synchronously — must happen in stdin
-            // message order so a subsequent claude_authenticate doesn't
-            // replace the service before this code lands.
-            if (message.request.subtype === 'claude_oauth_callback') {
-              claudeOAuth.service.handleManualAuthCodeInput({
-                authorizationCode: message.request.authorizationCode,
-                state: message.request.state,
-              });
-            }
-            // Detach the await — the stdin reader is serial and blocking
-            // here deadlocks claude_oauth_wait_for_completion: flow may
-            // only resolve via a future claude_oauth_callback on stdin,
-            // which can't be read while we're parked. Capture the binding;
-            // claudeOAuth is nulled in flow's own .finally.
-            const { flow } = claudeOAuth;
-            void flow.then(
-              () => {
-                const accountInfo = getAccountInformation();
-                sendControlResponseSuccess(message, {
-                  account: {
-                    email: accountInfo?.email,
-                    organization: accountInfo?.organization,
-                    subscriptionType: accountInfo?.subscription,
-                    tokenSource: accountInfo?.tokenSource,
-                    apiKeySource: accountInfo?.apiKeySource,
-                    apiProvider: getAPIProvider(),
-                  },
-                });
-              },
-              (error: unknown) => sendControlResponseError(message, errorMessage(error)),
-            );
-          }
-        } else if (message.request.subtype === 'mcp_clear_auth') {
-          const { serverName } = message.request;
-          const currentAppState = getAppState();
-          const config =
-            getMcpConfigByName(serverName) ??
-            mcpClients.find(c => c.name === serverName)?.config ??
-            currentAppState.mcp.clients.find(c => c.name === serverName)?.config ??
-            null;
-          if (!config) {
-            sendControlResponseError(message, `Server not found: ${serverName}`);
-          } else if (config.type !== 'sse' && config.type !== 'http') {
-            sendControlResponseError(message, `Cannot clear auth for server type "${config.type}"`);
-          } else {
-            await revokeServerTokens(serverName, config);
-            const result = await reconnectMcpServerImpl(serverName, config);
-            const prefix = getMcpPrefix(serverName);
-            setAppState(prev => ({
-              ...prev,
-              mcp: {
-                ...prev.mcp,
-                clients: prev.mcp.clients.map(c => (c.name === serverName ? result.client : c)),
-                tools: [...reject(prev.mcp.tools, t => t.name?.startsWith(prefix)), ...result.tools],
-                commands: [
-                  ...reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
-                  ...result.commands,
-                ],
-                resources:
-                  result.resources && result.resources.length > 0
-                    ? {
-                        ...prev.mcp.resources,
-                        [serverName]: result.resources,
-                      }
-                    : omit(prev.mcp.resources, serverName),
-              },
-            }));
-            sendControlResponseSuccess(message, {});
-          }
-        } else if (message.request.subtype === 'apply_flag_settings') {
-          // Snapshot the current model before applying — we need to detect
-          // model switches so we can inject breadcrumbs and notify listeners.
-          const prevModel = getMainLoopModel();
-
-          // Merge the provided settings into the in-memory flag settings
-          const existing = getFlagSettingsInline() ?? {};
-          const incoming = message.request.settings;
-          // Shallow-merge top-level keys; getSettingsForSource handles
-          // the deep merge with file-based flag settings via mergeWith.
-          // JSON serialization drops `undefined`, so callers use `null`
-          // to signal "clear this key". Convert nulls to deletions so
-          // SettingsSchema().safeParse() doesn't reject the whole object
-          // (z.string().optional() accepts string | undefined, not null).
-          const merged = { ...existing, ...incoming };
-          for (const key of Object.keys(merged)) {
-            if (merged[key as keyof typeof merged] === null) {
-              delete merged[key as keyof typeof merged];
-            }
-          }
-          setFlagSettingsInline(merged);
-          // Route through notifyChange so fanOut() resets the settings cache
-          // before listeners run. The subscriber at :392 calls
-          // applySettingsChange for us. Pre-#20625 this was a direct
-          // applySettingsChange() call that relied on its own internal reset —
-          // now that the reset is centralized in fanOut, a direct call here
-          // would read stale cached settings and silently drop the update.
-          // Bonus: going through notifyChange also tells the other subscribers
-          // (loadPluginHooks, sandbox-adapter) about the change, which the
-          // previous direct call skipped.
-          settingsChangeDetector.notifyChange('flagSettings');
-
-          // If the incoming settings include a model change, update the
-          // override so getMainLoopModel() reflects it. The override has
-          // higher priority than the settings cascade in
-          // getUserSpecifiedModelSetting(), so without this update,
-          // getMainLoopModel() returns the stale override and the model
-          // change is silently ignored (matching set_model at :2811).
-          if ('model' in incoming) {
-            if (incoming.model != null) {
-              setMainLoopModelOverride(String(incoming.model));
-            } else {
-              setMainLoopModelOverride(undefined);
-            }
-          }
-
-          // If the model changed, inject breadcrumbs so the model sees the
-          // mid-conversation switch, and notify metadata listeners (CCR).
-          const newModel = getMainLoopModel();
-          if (newModel !== prevModel) {
-            activeUserSpecifiedModel = newModel;
-            const modelArg = incoming.model ? String(incoming.model) : 'default';
-            notifySessionMetadataChanged({ model: newModel });
-            injectModelSwitchBreadcrumbs(modelArg, newModel);
-          }
-
-          sendControlResponseSuccess(message);
-        } else if (message.request.subtype === 'get_settings') {
-          const currentAppState = getAppState();
-          const model = getMainLoopModel();
-          // modelSupportsEffort gate matches claude.ts — applied.effort must
-          // mirror what actually goes to the API, not just what's configured.
-          const effort = modelSupportsEffort(model)
-            ? resolveAppliedEffort(model, currentAppState.effortValue)
-            : undefined;
-          sendControlResponseSuccess(message, {
-            ...getSettingsWithSources(),
-            applied: {
-              model,
-              // Numeric effort (ant-only) → null; SDK schema is string-level only.
-              effort: typeof effort === 'string' ? effort : null,
-            },
-          });
-        } else if (message.request.subtype === 'stop_task') {
-          const { task_id: taskId } = message.request;
-          try {
-            await stopTask(taskId, {
-              getAppState,
-              setAppState,
-            });
-            sendControlResponseSuccess(message, {});
-          } catch (error) {
-            sendControlResponseError(message, errorMessage(error));
-          }
-        } else if (message.request.subtype === 'generate_session_title') {
-          // Fire-and-forget so the Haiku call does not block the stdin loop
-          // (which would delay processing of subsequent user messages /
-          // interrupts for the duration of the API roundtrip).
-          const { description, persist } = message.request;
-          // Reuse the live controller only if it has not already been aborted
-          // (e.g. by interrupt()); an aborted signal would cause queryHaiku to
-          // immediately throw APIUserAbortError → {title: null}.
-          const titleSignal = (
-            abortController && !abortController.signal.aborted ? abortController : createAbortController()
-          ).signal;
-          void (async () => {
-            try {
-              const title = await generateSessionTitle(description, titleSignal);
-              if (title && persist) {
-                try {
-                  saveAiGeneratedTitle(getSessionId() as UUID, title);
-                } catch (e) {
-                  logError(e);
-                }
-              }
-              sendControlResponseSuccess(message, { title });
-            } catch (e) {
-              // Unreachable in practice — generateSessionTitle wraps its
-              // own body and returns null, saveAiGeneratedTitle is wrapped
-              // above. Propagate (not swallow) so unexpected failures are
-              // visible to the SDK caller (hostComms.ts catches and logs).
-              sendControlResponseError(message, errorMessage(e));
-            }
-          })();
-        } else if (message.request.subtype === 'side_question') {
-          // Same fire-and-forget pattern as generate_session_title above —
-          // the forked agent's API roundtrip must not block the stdin loop.
-          //
-          // The snapshot captured by stopHooks (for querySource === 'sdk')
-          // holds the exact systemPrompt/userContext/systemContext/messages
-          // sent on the last main-thread turn. Reusing them gives a byte-
-          // identical prefix → prompt cache hit.
-          //
-          // Fallback (resume before first turn completes — no snapshot yet):
-          // rebuild from scratch. buildSideQuestionFallbackParams mirrors
-          // QueryEngine.ts:ask()'s system prompt assembly (including
-          // --system-prompt / --append-system-prompt) so the rebuilt prefix
-          // matches in the common case. May still miss the cache for
-          // coordinator mode or memory-mechanics extras — acceptable, the
-          // alternative is the side question failing entirely.
-          const { question } = message.request;
-          void (async () => {
-            try {
-              const saved = getLastCacheSafeParams();
-              const cacheSafeParams = saved
-                ? {
-                    ...saved,
-                    // If the last turn was interrupted, the snapshot holds an
-                    // already-aborted controller; createChildAbortController in
-                    // createSubagentContext would propagate it and the fork
-                    // would die before sending a request. The controller is
-                    // not part of the cache key — swapping in a fresh one is
-                    // safe. Same guard as generate_session_title above.
-                    toolUseContext: {
-                      ...saved.toolUseContext,
-                      abortController: createAbortController(),
-                    },
-                  }
-                : await buildSideQuestionFallbackParams({
-                    tools: buildAllTools(getAppState()),
-                    commands: currentCommands,
-                    mcpClients: [...getAppState().mcp.clients, ...sdkClients, ...dynamicMcpState.clients],
-                    messages: mutableMessages,
-                    readFileState,
-                    getAppState,
-                    setAppState,
-                    customSystemPrompt: options.systemPrompt,
-                    appendSystemPrompt: options.appendSystemPrompt,
-                    thinkingConfig: options.thinkingConfig,
-                    agents: currentAgents,
-                  });
-              const result = await runSideQuestion({
-                question,
-                cacheSafeParams,
-              });
-              sendControlResponseSuccess(message, { response: result.response });
-            } catch (e) {
-              sendControlResponseError(message, errorMessage(e));
-            }
-          })();
-        } else if (
-          (feature('PROACTIVE') || feature('KAIROS')) &&
-          (message.request as { subtype: string }).subtype === 'set_proactive'
-        ) {
-          const req = message.request as unknown as {
-            subtype: string;
-            enabled: boolean;
-          };
-          if (req.enabled) {
-            if (!proactiveModule!.isProactiveActive()) {
-              proactiveModule!.activateProactive('command');
-              scheduleProactiveTick!();
-            }
-          } else {
-            proactiveModule!.deactivateProactive();
-          }
-          sendControlResponseSuccess(message);
-        } else if (message.request.subtype === 'remote_control') {
-          if (message.request.enabled) {
-            if (bridgeHandle) {
-              // Already connected
-              sendControlResponseSuccess(message, {
-                session_url: getRemoteSessionUrl(bridgeHandle.bridgeSessionId, bridgeHandle.sessionIngressUrl),
-                connect_url: buildBridgeConnectUrl(bridgeHandle.environmentId, bridgeHandle.sessionIngressUrl),
-                environment_id: bridgeHandle.environmentId,
-              });
-            } else {
-              // initReplBridge surfaces gate-failure reasons via
-              // onStateChange('failed', detail) before returning null.
-              // Capture so the control-response error is actionable
-              // ("/login", "disabled by your organization's policy", etc.)
-              // instead of a generic "initialization failed".
-              let bridgeFailureDetail: string | undefined;
-              try {
-                const { initReplBridge } = await import('src/bridge/initReplBridge.js');
-                const handle = await initReplBridge({
-                  onInboundMessage(msg) {
-                    const fields = extractInboundMessageFields(msg);
-                    if (!fields) return;
-                    const { content, uuid } = fields;
-                    enqueue({
-                      value: content,
-                      mode: 'prompt' as const,
-                      uuid,
-                      skipSlashCommands: true,
-                    });
-                    void run();
-                  },
-                  onPermissionResponse(response) {
-                    // Forward bridge permission responses into the
-                    // stdin processing loop so they resolve pending
-                    // permission requests from the SDK consumer.
-                    structuredIO.injectControlResponse(response);
-                  },
-                  onInterrupt() {
-                    abortController?.abort();
-                  },
-                  onSetModel(model) {
-                    const resolved = model === 'default' ? getDefaultMainLoopModel() : model;
-                    activeUserSpecifiedModel = resolved;
-                    setMainLoopModelOverride(resolved);
-                  },
-                  onSetMaxThinkingTokens(maxTokens) {
-                    if (maxTokens === null) {
-                      options.thinkingConfig = undefined;
-                    } else if (maxTokens === 0) {
-                      options.thinkingConfig = { type: 'disabled' };
-                    } else {
-                      options.thinkingConfig = {
-                        type: 'enabled',
-                        budgetTokens: maxTokens,
-                      };
-                    }
-                  },
-                  onStateChange(state, detail) {
-                    if (state === 'failed') {
-                      bridgeFailureDetail = detail;
-                    }
-                    logForDebugging(`[bridge:sdk] State change: ${state}${detail ? ` — ${detail}` : ''}`);
-                    output.enqueue({
-                      type: 'system' as StdoutMessage['type'],
-                      subtype: 'bridge_state' as string,
-                      state,
-                      detail,
-                      uuid: randomUUID(),
-                      session_id: getSessionId(),
-                    } as StdoutMessage);
-                  },
-                  initialMessages: mutableMessages.length > 0 ? mutableMessages : undefined,
-                });
-                if (!handle) {
-                  sendControlResponseError(message, bridgeFailureDetail ?? 'Remote Control initialization failed');
-                } else {
-                  bridgeHandle = handle;
-                  bridgeLastForwardedIndex = mutableMessages.length;
-                  // Forward permission requests to the bridge
-                  structuredIO.setOnControlRequestSent(request => {
-                    handle.sendControlRequest(request);
-                  });
-                  // Cancel stale bridge permission prompts when the SDK
-                  // consumer resolves a can_use_tool request first.
-                  structuredIO.setOnControlRequestResolved(requestId => {
-                    handle.sendControlCancelRequest(requestId);
-                  });
-                  sendControlResponseSuccess(message, {
-                    session_url: getRemoteSessionUrl(handle.bridgeSessionId, handle.sessionIngressUrl),
-                    connect_url: buildBridgeConnectUrl(handle.environmentId, handle.sessionIngressUrl),
-                    environment_id: handle.environmentId,
-                  });
-                }
-              } catch (err) {
-                sendControlResponseError(message, errorMessage(err));
-              }
-            }
-          } else {
-            // Disable
-            if (bridgeHandle) {
-              structuredIO.setOnControlRequestSent(undefined);
-              structuredIO.setOnControlRequestResolved(undefined);
-              await bridgeHandle.teardown();
-              bridgeHandle = null;
+          } else if (message.request.subtype === 'mcp_message') {
+            // Handle MCP notifications from SDK servers
+            const mcpRequest = message.request;
+            const sdkClient = sdkClients.find(client => client.name === mcpRequest.server_name);
+            // Check client exists - dynamically added SDK servers may have
+            // placeholder clients with null client until updateSdkMcp() runs
+            if (sdkClient && sdkClient.type === 'connected' && sdkClient.client?.transport?.onmessage) {
+              sdkClient.client.transport.onmessage(mcpRequest.message);
             }
             sendControlResponseSuccess(message);
+          } else if (message.request.subtype === 'rewind_files') {
+            const appState = getAppState();
+            const result = await handleRewindFiles(
+              message.request.user_message_id as UUID,
+              appState,
+              setAppState,
+              message.request.dry_run ?? false,
+            );
+            if (result.canRewind || message.request.dry_run) {
+              sendControlResponseSuccess(message, result);
+            } else {
+              sendControlResponseError(message, result.error ?? 'Unexpected error');
+            }
+          } else if (message.request.subtype === 'cancel_async_message') {
+            const targetUuid = message.request.message_uuid;
+            const removed = dequeueAllMatching(cmd => cmd.uuid === targetUuid);
+            sendControlResponseSuccess(message, {
+              cancelled: removed.length > 0,
+            });
+          } else if (message.request.subtype === 'seed_read_state') {
+            // Client observed a Read that was later removed from context (e.g.
+            // by snip), so transcript-based seeding missed it. Queued into
+            // pendingSeeds; applied at the next clone-replace boundary.
+            try {
+              // expandPath: all other readFileState writers normalize (~, relative,
+              // session cwd vs process cwd). FileEditTool looks up by expandPath'd
+              // key — a verbatim client path would miss.
+              const normalizedPath = expandPath(message.request.path);
+              // Check disk mtime before reading content. If the file changed
+              // since the client's observation, readFile would return C_current
+              // but we'd store it with the client's M_observed — getChangedFiles
+              // then sees disk > cache.timestamp, re-reads, diffs C_current vs
+              // C_current = empty, emits no attachment, and the model is never
+              // told about the C_observed → C_current change. Skipping the seed
+              // makes Edit fail "file not read yet" → forces a fresh Read.
+              // Math.floor matches FileReadTool and getFileModificationTime.
+              const diskMtime = Math.floor((await stat(normalizedPath)).mtimeMs);
+              if (diskMtime <= message.request.mtime) {
+                const raw = await readFile(normalizedPath, 'utf-8');
+                // Strip BOM + normalize CRLF→LF to match readFileInRange and
+                // readFileSyncWithMetadata. FileEditTool's content-compare
+                // fallback (for Windows mtime bumps without content change)
+                // compares against LF-normalized disk reads.
+                const content = (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).replaceAll('\r\n', '\n');
+                pendingSeeds.set(normalizedPath, {
+                  content,
+                  timestamp: diskMtime,
+                  offset: undefined,
+                  limit: undefined,
+                });
+              }
+            } catch {
+              // ENOENT etc — skip seeding but still succeed
+            }
+            sendControlResponseSuccess(message);
+          } else if (message.request.subtype === 'mcp_set_servers') {
+            const { response, sdkServersChanged } = await applyMcpServerChanges(message.request.servers);
+            sendControlResponseSuccess(message, response);
+
+            // Connect SDK servers AFTER response to avoid deadlock
+            if (sdkServersChanged) {
+              void updateSdkMcp();
+            }
+          } else if (message.request.subtype === 'reload_plugins') {
+            try {
+              if (
+                feature('DOWNLOAD_USER_SETTINGS') &&
+                (isEnvTruthy(process.env.CLEW_CODE_REMOTE) || getIsRemoteMode())
+              ) {
+                // Re-pull user settings so enabledPlugins pushed from the
+                // user's local CLI take effect before the cache sweep.
+                const applied = await redownloadUserSettings();
+                if (applied) {
+                  settingsChangeDetector.notifyChange('userSettings');
+                }
+              }
+
+              const r = await refreshActivePlugins(setAppState);
+
+              const sdkAgents = currentAgents.filter(a => a.source === 'flagSettings');
+              currentAgents = [...r.agentDefinitions.allAgents, ...sdkAgents];
+
+              // Reload succeeded — gather response data best-effort so a
+              // read failure doesn't mask the successful state change.
+              // allSettled so one failure doesn't discard the others.
+              let plugins: SDKControlReloadPluginsResponse['plugins'] = [];
+              const [cmdsR, mcpR, pluginsR] = await Promise.allSettled([
+                getCommands(cwd()),
+                applyPluginMcpDiff(),
+                loadAllPluginsCacheOnly(),
+              ]);
+              if (cmdsR.status === 'fulfilled') {
+                currentCommands = cmdsR.value;
+              } else {
+                logError(cmdsR.reason);
+              }
+              if (mcpR.status === 'rejected') {
+                logError(mcpR.reason);
+              }
+              if (pluginsR.status === 'fulfilled') {
+                plugins = pluginsR.value.enabled.map(p => ({
+                  name: p.name,
+                  path: p.path,
+                  source: p.source,
+                }));
+              } else {
+                logError(pluginsR.reason);
+              }
+
+              sendControlResponseSuccess(message, {
+                commands: currentCommands
+                  .filter(cmd => cmd.userInvocable !== false)
+                  .map(cmd => ({
+                    name: getCommandName(cmd),
+                    description: formatDescriptionWithSource(cmd),
+                    argumentHint: cmd.argumentHint || '',
+                  })),
+                agents: currentAgents.map(a => ({
+                  name: a.agentType,
+                  description: a.whenToUse,
+                  model: a.model === 'inherit' ? undefined : a.model,
+                })),
+                plugins,
+                mcpServers: buildMcpServerStatuses(),
+                error_count: r.error_count,
+              } satisfies SDKControlReloadPluginsResponse);
+            } catch (error) {
+              sendControlResponseError(message, errorMessage(error));
+            }
+          } else if (message.request.subtype === 'mcp_reconnect') {
+            const currentAppState = getAppState();
+            const { serverName } = message.request;
+            elicitationRegistered.delete(serverName);
+            // Config-existence gate must cover the SAME sources as the
+            // operations below. SDK-injected servers (query({mcpServers:{...}}))
+            // and dynamically-added servers were missing here, so
+            // toggleMcpServer/reconnect returned "Server not found" even though
+            // the disconnect/reconnect would have worked (gh-31339 / CC-314).
+            const config =
+              getMcpConfigByName(serverName) ??
+              mcpClients.find(c => c.name === serverName)?.config ??
+              sdkClients.find(c => c.name === serverName)?.config ??
+              dynamicMcpState.clients.find(c => c.name === serverName)?.config ??
+              currentAppState.mcp.clients.find(c => c.name === serverName)?.config ??
+              null;
+            if (!config) {
+              sendControlResponseError(message, `Server not found: ${serverName}`);
+            } else {
+              const result = await reconnectMcpServerImpl(serverName, config);
+              // Update appState.mcp with the new client, tools, commands, and resources
+              const prefix = getMcpPrefix(serverName);
+              setAppState(prev => ({
+                ...prev,
+                mcp: {
+                  ...prev.mcp,
+                  clients: prev.mcp.clients.map(c => (c.name === serverName ? result.client : c)),
+                  tools: [...reject(prev.mcp.tools, t => t.name?.startsWith(prefix)), ...result.tools],
+                  commands: [
+                    ...reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
+                    ...result.commands,
+                  ],
+                  resources:
+                    result.resources && result.resources.length > 0
+                      ? { ...prev.mcp.resources, [serverName]: result.resources }
+                      : omit(prev.mcp.resources, serverName),
+                },
+              }));
+              // Also update dynamicMcpState so run() picks up the new tools
+              // on the next turn (run() reads dynamicMcpState, not appState)
+              dynamicMcpState = {
+                ...dynamicMcpState,
+                clients: [...dynamicMcpState.clients.filter(c => c.name !== serverName), result.client],
+                tools: [...dynamicMcpState.tools.filter(t => !t.name?.startsWith(prefix)), ...result.tools],
+              };
+              if (result.client.type === 'connected') {
+                registerElicitationHandlers([result.client]);
+                reregisterChannelHandlerAfterReconnect(result.client);
+                sendControlResponseSuccess(message);
+              } else {
+                const errorMessage =
+                  result.client.type === 'failed'
+                    ? (result.client.error ?? 'Connection failed')
+                    : `Server status: ${result.client.type}`;
+                sendControlResponseError(message, errorMessage);
+              }
+            }
+          } else if (message.request.subtype === 'mcp_toggle') {
+            const currentAppState = getAppState();
+            const { serverName, enabled } = message.request;
+            elicitationRegistered.delete(serverName);
+            // Gate must match the client-lookup spread below (which
+            // includes sdkClients and dynamicMcpState.clients). Same fix as
+            // mcp_reconnect above (gh-31339 / CC-314).
+            const config =
+              getMcpConfigByName(serverName) ??
+              mcpClients.find(c => c.name === serverName)?.config ??
+              sdkClients.find(c => c.name === serverName)?.config ??
+              dynamicMcpState.clients.find(c => c.name === serverName)?.config ??
+              currentAppState.mcp.clients.find(c => c.name === serverName)?.config ??
+              null;
+
+            if (!config) {
+              sendControlResponseError(message, `Server not found: ${serverName}`);
+            } else if (!enabled) {
+              // Disabling: persist + disconnect (matches TUI toggleMcpServer behavior)
+              setMcpServerEnabled(serverName, false);
+              const client = [
+                ...mcpClients,
+                ...sdkClients,
+                ...dynamicMcpState.clients,
+                ...currentAppState.mcp.clients,
+              ].find(c => c.name === serverName);
+              if (client && client.type === 'connected') {
+                await clearServerCache(serverName, config);
+              }
+              // Update appState.mcp to reflect disabled status and remove tools/commands/resources
+              const prefix = getMcpPrefix(serverName);
+              setAppState(prev => ({
+                ...prev,
+                mcp: {
+                  ...prev.mcp,
+                  clients: prev.mcp.clients.map(c =>
+                    c.name === serverName ? { name: serverName, type: 'disabled' as const, config } : c,
+                  ),
+                  tools: reject(prev.mcp.tools, t => t.name?.startsWith(prefix)),
+                  commands: reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
+                  resources: omit(prev.mcp.resources, serverName),
+                },
+              }));
+              sendControlResponseSuccess(message);
+            } else {
+              // Enabling: persist + reconnect
+              setMcpServerEnabled(serverName, true);
+              const result = await reconnectMcpServerImpl(serverName, config);
+              // Update appState.mcp with the new client, tools, commands, and resources
+              // This ensures the LLM sees updated tools after enabling the server
+              const prefix = getMcpPrefix(serverName);
+              setAppState(prev => ({
+                ...prev,
+                mcp: {
+                  ...prev.mcp,
+                  clients: prev.mcp.clients.map(c => (c.name === serverName ? result.client : c)),
+                  tools: [...reject(prev.mcp.tools, t => t.name?.startsWith(prefix)), ...result.tools],
+                  commands: [
+                    ...reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
+                    ...result.commands,
+                  ],
+                  resources:
+                    result.resources && result.resources.length > 0
+                      ? { ...prev.mcp.resources, [serverName]: result.resources }
+                      : omit(prev.mcp.resources, serverName),
+                },
+              }));
+              if (result.client.type === 'connected') {
+                registerElicitationHandlers([result.client]);
+                reregisterChannelHandlerAfterReconnect(result.client);
+                sendControlResponseSuccess(message);
+              } else {
+                const errorMessage =
+                  result.client.type === 'failed'
+                    ? (result.client.error ?? 'Connection failed')
+                    : `Server status: ${result.client.type}`;
+                sendControlResponseError(message, errorMessage);
+              }
+            }
+          } else if (message.request.subtype === 'channel_enable') {
+            const currentAppState = getAppState();
+            handleChannelEnable(
+              message.request_id,
+              message.request.serverName,
+              // Pool spread matches mcp_status — all three client sources.
+              [...currentAppState.mcp.clients, ...sdkClients, ...dynamicMcpState.clients],
+              output,
+            );
+          } else if (message.request.subtype === 'mcp_authenticate') {
+            const { serverName } = message.request;
+            const currentAppState = getAppState();
+            const config =
+              getMcpConfigByName(serverName) ??
+              mcpClients.find(c => c.name === serverName)?.config ??
+              currentAppState.mcp.clients.find(c => c.name === serverName)?.config ??
+              null;
+            if (!config) {
+              sendControlResponseError(message, `Server not found: ${serverName}`);
+            } else if (config.type !== 'sse' && config.type !== 'http') {
+              sendControlResponseError(message, `Server type "${config.type}" does not support OAuth authentication`);
+            } else {
+              try {
+                // Abort any previous in-flight OAuth flow for this server
+                activeOAuthFlows.get(serverName)?.abort();
+                const controller = new AbortController();
+                activeOAuthFlows.set(serverName, controller);
+
+                // Capture the auth URL from the callback
+                let resolveAuthUrl: (url: string) => void;
+                const authUrlPromise = new Promise<string>(resolve => {
+                  resolveAuthUrl = resolve;
+                });
+
+                // Start the OAuth flow in the background
+                const oauthPromise = performMCPOAuthFlow(
+                  serverName,
+                  config,
+                  url => resolveAuthUrl!(url),
+                  controller.signal,
+                  {
+                    skipBrowserOpen: true,
+                    onWaitingForCallback: submit => {
+                      oauthCallbackSubmitters.set(serverName, submit);
+                    },
+                  },
+                );
+
+                // Wait for the auth URL (or the flow to complete without needing redirect)
+                const authUrl = await Promise.race([
+                  authUrlPromise,
+                  oauthPromise.then(() => null as string | null).catch(() => null as string | null),
+                ]);
+
+                if (authUrl) {
+                  sendControlResponseSuccess(message, {
+                    authUrl,
+                    requiresUserAction: true,
+                  });
+                } else {
+                  sendControlResponseSuccess(message, {
+                    requiresUserAction: false,
+                  });
+                }
+
+                // Store auth-only promise for mcp_oauth_callback_url handler.
+                // Don't swallow errors — the callback handler needs to detect
+                // auth failures and report them to the caller.
+                oauthAuthPromises.set(serverName, oauthPromise);
+
+                // Handle background completion — reconnect after auth.
+                // When manual callback is used, skip the reconnect here;
+                // the extension's handleAuthDone → mcp_reconnect handles it
+                // (which also updates dynamicMcpState for tool registration).
+                const fullFlowPromise = oauthPromise
+                  .then(async () => {
+                    // Don't reconnect if the server was disabled during the OAuth flow
+                    if (isMcpServerDisabled(serverName)) {
+                      return;
+                    }
+                    // Skip reconnect if the manual callback path was used —
+                    // handleAuthDone will do it via mcp_reconnect (which
+                    // updates dynamicMcpState for tool registration).
+                    if (oauthManualCallbackUsed.has(serverName)) {
+                      return;
+                    }
+                    // Reconnect the server after successful auth
+                    const result = await reconnectMcpServerImpl(serverName, config);
+                    const prefix = getMcpPrefix(serverName);
+                    setAppState(prev => ({
+                      ...prev,
+                      mcp: {
+                        ...prev.mcp,
+                        clients: prev.mcp.clients.map(c => (c.name === serverName ? result.client : c)),
+                        tools: [...reject(prev.mcp.tools, t => t.name?.startsWith(prefix)), ...result.tools],
+                        commands: [
+                          ...reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
+                          ...result.commands,
+                        ],
+                        resources:
+                          result.resources && result.resources.length > 0
+                            ? {
+                                ...prev.mcp.resources,
+                                [serverName]: result.resources,
+                              }
+                            : omit(prev.mcp.resources, serverName),
+                      },
+                    }));
+                    // Also update dynamicMcpState so run() picks up the new tools
+                    // on the next turn (run() reads dynamicMcpState, not appState)
+                    dynamicMcpState = {
+                      ...dynamicMcpState,
+                      clients: [...dynamicMcpState.clients.filter(c => c.name !== serverName), result.client],
+                      tools: [...dynamicMcpState.tools.filter(t => !t.name?.startsWith(prefix)), ...result.tools],
+                    };
+                  })
+                  .catch(error => {
+                    logForDebugging(`MCP OAuth failed for ${serverName}: ${error}`, { level: 'error' });
+                  })
+                  .finally(() => {
+                    // Clean up only if this is still the active flow
+                    if (activeOAuthFlows.get(serverName) === controller) {
+                      activeOAuthFlows.delete(serverName);
+                      oauthCallbackSubmitters.delete(serverName);
+                      oauthManualCallbackUsed.delete(serverName);
+                      oauthAuthPromises.delete(serverName);
+                    }
+                  });
+                void fullFlowPromise;
+              } catch (error) {
+                sendControlResponseError(message, errorMessage(error));
+              }
+            }
+          } else if (message.request.subtype === 'mcp_oauth_callback_url') {
+            const { serverName, callbackUrl } = message.request;
+            const submit = oauthCallbackSubmitters.get(serverName);
+            if (submit) {
+              // Validate the callback URL before submitting. The submit
+              // callback in auth.ts silently ignores URLs missing a code
+              // param, which would leave the auth promise unresolved and
+              // block the control message loop until timeout.
+              let hasCodeOrError = false;
+              try {
+                const parsed = new URL(callbackUrl);
+                hasCodeOrError = parsed.searchParams.has('code') || parsed.searchParams.has('error');
+              } catch {
+                // Invalid URL
+              }
+              if (!hasCodeOrError) {
+                sendControlResponseError(
+                  message,
+                  'Invalid callback URL: missing authorization code. Please paste the full redirect URL including the code parameter.',
+                );
+              } else {
+                oauthManualCallbackUsed.add(serverName);
+                submit(callbackUrl);
+                // Wait for auth (token exchange) to complete before responding.
+                // Reconnect is handled by the extension via handleAuthDone →
+                // mcp_reconnect (which updates dynamicMcpState for tools).
+                const authPromise = oauthAuthPromises.get(serverName);
+                if (authPromise) {
+                  try {
+                    await authPromise;
+                    sendControlResponseSuccess(message);
+                  } catch (error) {
+                    sendControlResponseError(
+                      message,
+                      error instanceof Error ? error.message : 'OAuth authentication failed',
+                    );
+                  }
+                } else {
+                  sendControlResponseSuccess(message);
+                }
+              }
+            } else {
+              sendControlResponseError(message, `No active OAuth flow for server: ${serverName}`);
+            }
+          } else if (message.request.subtype === 'claude_authenticate') {
+            // Anthropic OAuth over the control channel. The SDK client owns
+            // the user's browser (we're headless in -p mode); we hand back
+            // both URLs and wait. Automatic URL → localhost listener catches
+            // the redirect if the browser is on this host; manual URL → the
+            // success page shows "code#state" for claude_oauth_callback.
+            const { loginWithClaudeAi } = message.request;
+
+            // Clean up any prior flow. cleanup() closes the localhost listener
+            // and nulls the manual resolver. The prior `flow` promise is left
+            // pending (AuthCodeListener.close() does not reject) but its object
+            // graph becomes unreachable once the server handle is released and
+            // is GC'd — no fd or port is held.
+            claudeOAuth?.service.cleanup();
+
+            logEvent('tengu_oauth_flow_start', {
+              loginWithClaudeAi: loginWithClaudeAi ?? true,
+            });
+
+            const service = new OAuthService();
+            let urlResolver!: (urls: { manualUrl: string; automaticUrl: string }) => void;
+            const urlPromise = new Promise<{
+              manualUrl: string;
+              automaticUrl: string;
+            }>(resolve => {
+              urlResolver = resolve;
+            });
+
+            const flow = service
+              .startOAuthFlow(
+                async (manualUrl, automaticUrl) => {
+                  // automaticUrl is always defined when skipBrowserOpen is set;
+                  // the signature is optional only for the existing single-arg callers.
+                  urlResolver({ manualUrl, automaticUrl: automaticUrl! });
+                },
+                {
+                  loginWithClaudeAi: loginWithClaudeAi ?? true,
+                  skipBrowserOpen: true,
+                },
+              )
+              .then(async tokens => {
+                // installOAuthTokens: performLogout (clear stale state) →
+                // store profile → saveOAuthTokensIfNeeded → clearOAuthTokenCache
+                // → clearAuthRelatedCaches. After this resolves, the memoized
+                // getClaudeAIOAuthTokens in this process is invalidated; the
+                // next API call re-reads keychain/file and works. No respawn.
+                await installOAuthTokens(tokens);
+                logEvent('tengu_oauth_success', {
+                  loginWithClaudeAi: loginWithClaudeAi ?? true,
+                });
+              })
+              .finally(() => {
+                service.cleanup();
+                if (claudeOAuth?.service === service) {
+                  claudeOAuth = null;
+                }
+              });
+
+            claudeOAuth = { service, flow };
+
+            // Attach the rejection handler before awaiting so a synchronous
+            // startOAuthFlow failure doesn't surface as an unhandled rejection.
+            // The claude_oauth_callback handler re-awaits flow for the manual
+            // path and surfaces the real error to the client.
+            void flow.catch(err =>
+              logForDebugging(`claude_authenticate flow ended: ${err}`, {
+                level: 'info',
+              }),
+            );
+
+            try {
+              // Race against flow: if startOAuthFlow rejects before calling
+              // the authURLHandler (e.g. AuthCodeListener.start() fails with
+              // EACCES or fd exhaustion), urlPromise would pend forever and
+              // wedge the stdin loop. flow resolving first is unreachable in
+              // practice (it's suspended on the same urls we're waiting for).
+              const { manualUrl, automaticUrl } = await Promise.race([
+                urlPromise,
+                flow.then(() => {
+                  throw new Error('OAuth flow completed without producing auth URLs');
+                }),
+              ]);
+              sendControlResponseSuccess(message, {
+                manualUrl,
+                automaticUrl,
+              });
+            } catch (error) {
+              sendControlResponseError(message, errorMessage(error));
+            }
+          } else if (
+            message.request.subtype === 'claude_oauth_callback' ||
+            message.request.subtype === 'claude_oauth_wait_for_completion'
+          ) {
+            if (!claudeOAuth) {
+              sendControlResponseError(message, 'No active claude_authenticate flow');
+            } else {
+              // Inject the manual code synchronously — must happen in stdin
+              // message order so a subsequent claude_authenticate doesn't
+              // replace the service before this code lands.
+              if (message.request.subtype === 'claude_oauth_callback') {
+                claudeOAuth.service.handleManualAuthCodeInput({
+                  authorizationCode: message.request.authorizationCode,
+                  state: message.request.state,
+                });
+              }
+              // Detach the await — the stdin reader is serial and blocking
+              // here deadlocks claude_oauth_wait_for_completion: flow may
+              // only resolve via a future claude_oauth_callback on stdin,
+              // which can't be read while we're parked. Capture the binding;
+              // claudeOAuth is nulled in flow's own .finally.
+              const { flow } = claudeOAuth;
+              void flow.then(
+                () => {
+                  const accountInfo = getAccountInformation();
+                  sendControlResponseSuccess(message, {
+                    account: {
+                      email: accountInfo?.email,
+                      organization: accountInfo?.organization,
+                      subscriptionType: accountInfo?.subscription,
+                      tokenSource: accountInfo?.tokenSource,
+                      apiKeySource: accountInfo?.apiKeySource,
+                      apiProvider: getAPIProvider(),
+                    },
+                  });
+                },
+                (error: unknown) => sendControlResponseError(message, errorMessage(error)),
+              );
+            }
+          } else if (message.request.subtype === 'mcp_clear_auth') {
+            const { serverName } = message.request;
+            const currentAppState = getAppState();
+            const config =
+              getMcpConfigByName(serverName) ??
+              mcpClients.find(c => c.name === serverName)?.config ??
+              currentAppState.mcp.clients.find(c => c.name === serverName)?.config ??
+              null;
+            if (!config) {
+              sendControlResponseError(message, `Server not found: ${serverName}`);
+            } else if (config.type !== 'sse' && config.type !== 'http') {
+              sendControlResponseError(message, `Cannot clear auth for server type "${config.type}"`);
+            } else {
+              await revokeServerTokens(serverName, config);
+              const result = await reconnectMcpServerImpl(serverName, config);
+              const prefix = getMcpPrefix(serverName);
+              setAppState(prev => ({
+                ...prev,
+                mcp: {
+                  ...prev.mcp,
+                  clients: prev.mcp.clients.map(c => (c.name === serverName ? result.client : c)),
+                  tools: [...reject(prev.mcp.tools, t => t.name?.startsWith(prefix)), ...result.tools],
+                  commands: [
+                    ...reject(prev.mcp.commands, c => commandBelongsToServer(c, serverName)),
+                    ...result.commands,
+                  ],
+                  resources:
+                    result.resources && result.resources.length > 0
+                      ? {
+                          ...prev.mcp.resources,
+                          [serverName]: result.resources,
+                        }
+                      : omit(prev.mcp.resources, serverName),
+                },
+              }));
+              sendControlResponseSuccess(message, {});
+            }
+          } else if (message.request.subtype === 'apply_flag_settings') {
+            // Snapshot the current model before applying — we need to detect
+            // model switches so we can inject breadcrumbs and notify listeners.
+            const prevModel = getMainLoopModel();
+
+            // Merge the provided settings into the in-memory flag settings
+            const existing = getFlagSettingsInline() ?? {};
+            const incoming = message.request.settings;
+            // Shallow-merge top-level keys; getSettingsForSource handles
+            // the deep merge with file-based flag settings via mergeWith.
+            // JSON serialization drops `undefined`, so callers use `null`
+            // to signal "clear this key". Convert nulls to deletions so
+            // SettingsSchema().safeParse() doesn't reject the whole object
+            // (z.string().optional() accepts string | undefined, not null).
+            const merged = { ...existing, ...incoming };
+            for (const key of Object.keys(merged)) {
+              if (merged[key as keyof typeof merged] === null) {
+                delete merged[key as keyof typeof merged];
+              }
+            }
+            setFlagSettingsInline(merged);
+            // Route through notifyChange so fanOut() resets the settings cache
+            // before listeners run. The subscriber at :392 calls
+            // applySettingsChange for us. Pre-#20625 this was a direct
+            // applySettingsChange() call that relied on its own internal reset —
+            // now that the reset is centralized in fanOut, a direct call here
+            // would read stale cached settings and silently drop the update.
+            // Bonus: going through notifyChange also tells the other subscribers
+            // (loadPluginHooks, sandbox-adapter) about the change, which the
+            // previous direct call skipped.
+            settingsChangeDetector.notifyChange('flagSettings');
+
+            // If the incoming settings include a model change, update the
+            // override so getMainLoopModel() reflects it. The override has
+            // higher priority than the settings cascade in
+            // getUserSpecifiedModelSetting(), so without this update,
+            // getMainLoopModel() returns the stale override and the model
+            // change is silently ignored (matching set_model at :2811).
+            if ('model' in incoming) {
+              if (incoming.model != null) {
+                setMainLoopModelOverride(String(incoming.model));
+              } else {
+                setMainLoopModelOverride(undefined);
+              }
+            }
+
+            // If the model changed, inject breadcrumbs so the model sees the
+            // mid-conversation switch, and notify metadata listeners (CCR).
+            const newModel = getMainLoopModel();
+            if (newModel !== prevModel) {
+              activeUserSpecifiedModel = newModel;
+              const modelArg = incoming.model ? String(incoming.model) : 'default';
+              notifySessionMetadataChanged({ model: newModel });
+              injectModelSwitchBreadcrumbs(modelArg, newModel);
+            }
+
+            sendControlResponseSuccess(message);
+          } else if (message.request.subtype === 'get_settings') {
+            const currentAppState = getAppState();
+            const model = getMainLoopModel();
+            // modelSupportsEffort gate matches claude.ts — applied.effort must
+            // mirror what actually goes to the API, not just what's configured.
+            const effort = modelSupportsEffort(model)
+              ? resolveAppliedEffort(model, currentAppState.effortValue)
+              : undefined;
+            sendControlResponseSuccess(message, {
+              ...getSettingsWithSources(),
+              applied: {
+                model,
+                // Numeric effort (ant-only) → null; SDK schema is string-level only.
+                effort: typeof effort === 'string' ? effort : null,
+              },
+            });
+          } else if (message.request.subtype === 'stop_task') {
+            const { task_id: taskId } = message.request;
+            try {
+              await stopTask(taskId, {
+                getAppState,
+                setAppState,
+              });
+              sendControlResponseSuccess(message, {});
+            } catch (error) {
+              sendControlResponseError(message, errorMessage(error));
+            }
+          } else if (message.request.subtype === 'generate_session_title') {
+            // Fire-and-forget so the Haiku call does not block the stdin loop
+            // (which would delay processing of subsequent user messages /
+            // interrupts for the duration of the API roundtrip).
+            const { description, persist } = message.request;
+            // Reuse the live controller only if it has not already been aborted
+            // (e.g. by interrupt()); an aborted signal would cause queryHaiku to
+            // immediately throw APIUserAbortError → {title: null}.
+            const titleSignal = (
+              abortController && !abortController.signal.aborted ? abortController : createAbortController()
+            ).signal;
+            void (async () => {
+              try {
+                const title = await generateSessionTitle(description, titleSignal);
+                if (title && persist) {
+                  try {
+                    saveAiGeneratedTitle(getSessionId() as UUID, title);
+                  } catch (e) {
+                    logError(e);
+                  }
+                }
+                sendControlResponseSuccess(message, { title });
+              } catch (e) {
+                // Unreachable in practice — generateSessionTitle wraps its
+                // own body and returns null, saveAiGeneratedTitle is wrapped
+                // above. Propagate (not swallow) so unexpected failures are
+                // visible to the SDK caller (hostComms.ts catches and logs).
+                sendControlResponseError(message, errorMessage(e));
+              }
+            })();
+          } else if (message.request.subtype === 'side_question') {
+            // Same fire-and-forget pattern as generate_session_title above —
+            // the forked agent's API roundtrip must not block the stdin loop.
+            //
+            // The snapshot captured by stopHooks (for querySource === 'sdk')
+            // holds the exact systemPrompt/userContext/systemContext/messages
+            // sent on the last main-thread turn. Reusing them gives a byte-
+            // identical prefix → prompt cache hit.
+            //
+            // Fallback (resume before first turn completes — no snapshot yet):
+            // rebuild from scratch. buildSideQuestionFallbackParams mirrors
+            // QueryEngine.ts:ask()'s system prompt assembly (including
+            // --system-prompt / --append-system-prompt) so the rebuilt prefix
+            // matches in the common case. May still miss the cache for
+            // coordinator mode or memory-mechanics extras — acceptable, the
+            // alternative is the side question failing entirely.
+            const { question } = message.request;
+            void (async () => {
+              try {
+                const saved = getLastCacheSafeParams();
+                const cacheSafeParams = saved
+                  ? {
+                      ...saved,
+                      // If the last turn was interrupted, the snapshot holds an
+                      // already-aborted controller; createChildAbortController in
+                      // createSubagentContext would propagate it and the fork
+                      // would die before sending a request. The controller is
+                      // not part of the cache key — swapping in a fresh one is
+                      // safe. Same guard as generate_session_title above.
+                      toolUseContext: {
+                        ...saved.toolUseContext,
+                        abortController: createAbortController(),
+                      },
+                    }
+                  : await buildSideQuestionFallbackParams({
+                      tools: buildAllTools(getAppState()),
+                      commands: currentCommands,
+                      mcpClients: [...getAppState().mcp.clients, ...sdkClients, ...dynamicMcpState.clients],
+                      messages: mutableMessages,
+                      readFileState,
+                      getAppState,
+                      setAppState,
+                      customSystemPrompt: options.systemPrompt,
+                      appendSystemPrompt: options.appendSystemPrompt,
+                      thinkingConfig: options.thinkingConfig,
+                      agents: currentAgents,
+                    });
+                const result = await runSideQuestion({
+                  question,
+                  cacheSafeParams,
+                });
+                sendControlResponseSuccess(message, { response: result.response });
+              } catch (e) {
+                sendControlResponseError(message, errorMessage(e));
+              }
+            })();
+          } else if (
+            (feature('PROACTIVE') || feature('KAIROS')) &&
+            (message.request as { subtype: string }).subtype === 'set_proactive'
+          ) {
+            const req = message.request as unknown as {
+              subtype: string;
+              enabled: boolean;
+            };
+            if (req.enabled) {
+              if (!proactiveModule!.isProactiveActive()) {
+                proactiveModule!.activateProactive('command');
+                scheduleProactiveTick!();
+              }
+            } else {
+              proactiveModule!.deactivateProactive();
+            }
+            sendControlResponseSuccess(message);
+          } else if (message.request.subtype === 'remote_control') {
+            if (message.request.enabled) {
+              if (bridgeHandle) {
+                // Already connected
+                sendControlResponseSuccess(message, {
+                  session_url: getRemoteSessionUrl(bridgeHandle.bridgeSessionId, bridgeHandle.sessionIngressUrl),
+                  connect_url: buildBridgeConnectUrl(bridgeHandle.environmentId, bridgeHandle.sessionIngressUrl),
+                  environment_id: bridgeHandle.environmentId,
+                });
+              } else {
+                // initReplBridge surfaces gate-failure reasons via
+                // onStateChange('failed', detail) before returning null.
+                // Capture so the control-response error is actionable
+                // ("/login", "disabled by your organization's policy", etc.)
+                // instead of a generic "initialization failed".
+                let bridgeFailureDetail: string | undefined;
+                try {
+                  const { initReplBridge } = await import('src/bridge/initReplBridge.js');
+                  const handle = await initReplBridge({
+                    onInboundMessage(msg) {
+                      const fields = extractInboundMessageFields(msg);
+                      if (!fields) return;
+                      const { content, uuid } = fields;
+                      enqueue({
+                        value: content,
+                        mode: 'prompt' as const,
+                        uuid,
+                        skipSlashCommands: true,
+                      });
+                      void run();
+                    },
+                    onPermissionResponse(response) {
+                      // Forward bridge permission responses into the
+                      // stdin processing loop so they resolve pending
+                      // permission requests from the SDK consumer.
+                      structuredIO.injectControlResponse(response);
+                    },
+                    onInterrupt() {
+                      abortController?.abort();
+                    },
+                    onSetModel(model) {
+                      const resolved = model === 'default' ? getDefaultMainLoopModel() : model;
+                      activeUserSpecifiedModel = resolved;
+                      setMainLoopModelOverride(resolved);
+                    },
+                    onSetMaxThinkingTokens(maxTokens) {
+                      if (maxTokens === null) {
+                        options.thinkingConfig = undefined;
+                      } else if (maxTokens === 0) {
+                        options.thinkingConfig = { type: 'disabled' };
+                      } else {
+                        options.thinkingConfig = {
+                          type: 'enabled',
+                          budgetTokens: maxTokens,
+                        };
+                      }
+                    },
+                    onStateChange(state, detail) {
+                      if (state === 'failed') {
+                        bridgeFailureDetail = detail;
+                      }
+                      logForDebugging(`[bridge:sdk] State change: ${state}${detail ? ` — ${detail}` : ''}`);
+                      output.enqueue({
+                        type: 'system' as StdoutMessage['type'],
+                        subtype: 'bridge_state' as string,
+                        state,
+                        detail,
+                        uuid: randomUUID(),
+                        session_id: getSessionId(),
+                      } as StdoutMessage);
+                    },
+                    initialMessages: mutableMessages.length > 0 ? mutableMessages : undefined,
+                  });
+                  if (!handle) {
+                    sendControlResponseError(message, bridgeFailureDetail ?? 'Remote Control initialization failed');
+                  } else {
+                    bridgeHandle = handle;
+                    bridgeLastForwardedIndex = mutableMessages.length;
+                    // Forward permission requests to the bridge
+                    structuredIO.setOnControlRequestSent(request => {
+                      handle.sendControlRequest(request);
+                    });
+                    // Cancel stale bridge permission prompts when the SDK
+                    // consumer resolves a can_use_tool request first.
+                    structuredIO.setOnControlRequestResolved(requestId => {
+                      handle.sendControlCancelRequest(requestId);
+                    });
+                    sendControlResponseSuccess(message, {
+                      session_url: getRemoteSessionUrl(handle.bridgeSessionId, handle.sessionIngressUrl),
+                      connect_url: buildBridgeConnectUrl(handle.environmentId, handle.sessionIngressUrl),
+                      environment_id: handle.environmentId,
+                    });
+                  }
+                } catch (err) {
+                  sendControlResponseError(message, errorMessage(err));
+                }
+              }
+            } else {
+              // Disable
+              if (bridgeHandle) {
+                structuredIO.setOnControlRequestSent(undefined);
+                structuredIO.setOnControlRequestResolved(undefined);
+                await bridgeHandle.teardown();
+                bridgeHandle = null;
+              }
+              sendControlResponseSuccess(message);
+            }
+          } else {
+            // Unknown control request subtype — send an error response so
+            // the caller doesn't hang waiting for a reply that never comes.
+            sendControlResponseError(
+              message,
+              `Unsupported control request subtype: ${(message.request as { subtype: string }).subtype}`,
+            );
           }
-        } else {
-          // Unknown control request subtype — send an error response so
-          // the caller doesn't hang waiting for a reply that never comes.
-          sendControlResponseError(
-            message,
-            `Unsupported control request subtype: ${(message.request as { subtype: string }).subtype}`,
-          );
-        }
-        continue;
-      } else if (message.type === 'control_response') {
-        // Replay control_response messages when replay mode is enabled
-        if (options.replayUserMessages) {
-          output.enqueue(message);
-        }
-        continue;
-      } else if (message.type === 'keep_alive') {
-        // Silently ignore keep-alive messages
-        continue;
-      } else if (message.type === 'update_environment_variables') {
-        // Handled in structuredIO.ts, but TypeScript needs the type guard
-        continue;
-      } else if (message.type === 'assistant' || message.type === 'system') {
-        // History replay from bridge: inject into mutableMessages as
-        // conversation context so the model sees prior turns.
-        const internalMsgs = toInternalMessages([message]);
-        mutableMessages.push(...internalMsgs);
-        // Echo assistant messages back so CCR displays them
-        if (message.type === 'assistant' && options.replayUserMessages) {
-          output.enqueue(message);
-        }
-        continue;
-      }
-      // After handling control, keep-alive, env-var, assistant, and system
-      // messages above, only user messages should remain.
-      if (message.type !== 'user') {
-        continue;
-      }
-
-      // First prompt message implicitly initializes if not already done.
-      initialized = true;
-
-      // Check for duplicate user message - skip if already processed
-      if (message.uuid) {
-        const sessionId = getSessionId() as UUID;
-        const existsInSession = await doesMessageExistInSession(sessionId, message.uuid);
-
-        // Check both historical duplicates (from file) and runtime duplicates (this session)
-        if (existsInSession || receivedMessageUuids.has(message.uuid)) {
-          logForDebugging(`Skipping duplicate user message: ${message.uuid}`);
-          // Send acknowledgment for duplicate message if replay mode is enabled
+          continue;
+        } else if (message.type === 'control_response') {
+          // Replay control_response messages when replay mode is enabled
           if (options.replayUserMessages) {
-            logForDebugging(`Sending acknowledgment for duplicate user message: ${message.uuid}`);
-            output.enqueue({
-              type: 'user',
-              message: message.message,
-              session_id: sessionId,
-              parent_tool_use_id: null,
-              uuid: message.uuid,
-              timestamp: message.timestamp,
-              isReplay: true,
-            } as SDKUserMessageReplay);
+            output.enqueue(message);
           }
-          // Historical dup = transcript already has this turn's output, so it
-          // ran but its lifecycle was never closed (interrupted before ack).
-          // Runtime dups don't need this — the original enqueue path closes them.
-          if (existsInSession) {
-            notifyCommandLifecycle(message.uuid, 'completed');
+          continue;
+        } else if (message.type === 'keep_alive') {
+          // Silently ignore keep-alive messages
+          continue;
+        } else if (message.type === 'update_environment_variables') {
+          // Handled in structuredIO.ts, but TypeScript needs the type guard
+          continue;
+        } else if (message.type === 'assistant' || message.type === 'system') {
+          // History replay from bridge: inject into mutableMessages as
+          // conversation context so the model sees prior turns.
+          const internalMsgs = toInternalMessages([message]);
+          mutableMessages.push(...internalMsgs);
+          // Echo assistant messages back so CCR displays them
+          if (message.type === 'assistant' && options.replayUserMessages) {
+            output.enqueue(message);
           }
-          // Don't enqueue duplicate messages for execution
+          continue;
+        }
+        // After handling control, keep-alive, env-var, assistant, and system
+        // messages above, only user messages should remain.
+        if (message.type !== 'user') {
           continue;
         }
 
-        // Track this UUID to prevent runtime duplicates
-        trackReceivedMessageUuid(message.uuid);
-      }
+        // First prompt message implicitly initializes if not already done.
+        initialized = true;
 
-      enqueue({
-        mode: 'prompt' as const,
-        // file_attachments rides the protobuf catchall from the web composer.
-        // Same-ref no-op when absent (no 'file_attachments' key).
-        value: await resolveAndPrepend(message, message.message.content),
-        uuid: message.uuid,
-        priority: message.priority,
+        // Check for duplicate user message - skip if already processed
+        if (message.uuid) {
+          const sessionId = getSessionId() as UUID;
+          const existsInSession = await doesMessageExistInSession(sessionId, message.uuid);
+
+          // Check both historical duplicates (from file) and runtime duplicates (this session)
+          if (existsInSession || receivedMessageUuids.has(message.uuid)) {
+            logForDebugging(`Skipping duplicate user message: ${message.uuid}`);
+            // Send acknowledgment for duplicate message if replay mode is enabled
+            if (options.replayUserMessages) {
+              logForDebugging(`Sending acknowledgment for duplicate user message: ${message.uuid}`);
+              output.enqueue({
+                type: 'user',
+                message: message.message,
+                session_id: sessionId,
+                parent_tool_use_id: null,
+                uuid: message.uuid,
+                timestamp: message.timestamp,
+                isReplay: true,
+              } as SDKUserMessageReplay);
+            }
+            // Historical dup = transcript already has this turn's output, so it
+            // ran but its lifecycle was never closed (interrupted before ack).
+            // Runtime dups don't need this — the original enqueue path closes them.
+            if (existsInSession) {
+              notifyCommandLifecycle(message.uuid, 'completed');
+            }
+            // Don't enqueue duplicate messages for execution
+            continue;
+          }
+
+          // Track this UUID to prevent runtime duplicates
+          trackReceivedMessageUuid(message.uuid);
+        }
+
+        enqueue({
+          mode: 'prompt' as const,
+          // file_attachments rides the protobuf catchall from the web composer.
+          // Same-ref no-op when absent (no 'file_attachments' key).
+          value: await resolveAndPrepend(message, message.message.content),
+          uuid: message.uuid,
+          priority: message.priority,
+        });
+        // Increment prompt count for attribution tracking and save snapshot
+        // The snapshot persists promptCount so it survives compaction
+        if (feature('COMMIT_ATTRIBUTION')) {
+          setAppState(prev => ({
+            ...prev,
+            attribution: incrementPromptCount(prev.attribution, snapshot => {
+              void recordAttributionSnapshot(snapshot).catch(error => {
+                logForDebugging(`Attribution: Failed to save snapshot: ${error}`);
+              });
+            }),
+          }));
+        }
+        void run();
+      }
+      inputClosed = true;
+      cronScheduler?.stop();
+      if (!running) {
+        // If a push-suggestion is in-flight, wait for it to emit before closing
+        // the output stream (5 s safety timeout to prevent hanging).
+        if (suggestionState.inflightPromise) {
+          await Promise.race([suggestionState.inflightPromise, sleep(5000)]);
+        }
+        suggestionState.abortController?.abort();
+        suggestionState.abortController = null;
+        await finalizePendingAsyncHooks();
+        // Flush OTEL meter (active_time.total) before exit — Process will exit
+        // right after output.done() without going through gracefulShutdown.
+        const { runCleanupFunctions } = await import('../utils/cleanupRegistry.js');
+        await runCleanupFunctions();
+        unsubscribeSkillChanges();
+        unsubscribeAuthStatus?.();
+        statusListeners.delete(rateLimitListener);
+        output.done();
+      }
+    } catch (error) {
+      // Log message loop crash to prevent silent failures (BUG #1)
+      logForDiagnosticsNoPII('error', 'cli_message_loop_crashed', {
+        error: errorMessage(error),
       });
-      // Increment prompt count for attribution tracking and save snapshot
-      // The snapshot persists promptCount so it survives compaction
-      if (feature('COMMIT_ATTRIBUTION')) {
-        setAppState(prev => ({
-          ...prev,
-          attribution: incrementPromptCount(prev.attribution, snapshot => {
-            void recordAttributionSnapshot(snapshot).catch(error => {
-              logForDebugging(`Attribution: Failed to save snapshot: ${error}`);
-            });
-          }),
-        }));
-      }
-      void run();
-    }
-    inputClosed = true;
-    cronScheduler?.stop();
-    if (!running) {
-      // If a push-suggestion is in-flight, wait for it to emit before closing
-      // the output stream (5 s safety timeout to prevent hanging).
-      if (suggestionState.inflightPromise) {
-        await Promise.race([suggestionState.inflightPromise, sleep(5000)]);
-      }
-      suggestionState.abortController?.abort();
-      suggestionState.abortController = null;
-      await finalizePendingAsyncHooks();
-      // Flush OTEL meter (active_time.total) before exit — Process will exit
-      // right after output.done() without going through gracefulShutdown.
-      const { runCleanupFunctions } = await import('../utils/cleanupRegistry.js');
-      await runCleanupFunctions();
-      unsubscribeSkillChanges();
-      unsubscribeAuthStatus?.();
-      statusListeners.delete(rateLimitListener);
       output.done();
     }
   })();

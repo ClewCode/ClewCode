@@ -303,7 +303,7 @@ export const FileEditTool = buildTool({
       return {
         result: false,
         behavior: 'ask',
-        message: `String to replace not found in file.\nString: ${truncateForError(old_string)}`,
+        message: `String to replace not found in file. Read the file again, then retry with a short old_string copied exactly from the current contents.\nString: ${truncateForError(old_string)}`,
         meta: {
           isFilePathAbsolute: String(isAbsolute(file_path)),
         },

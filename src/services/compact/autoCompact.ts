@@ -8,7 +8,7 @@ import type { Message } from '../../types/message.js';
 import { getGlobalConfig } from '../../utils/config.js';
 import { getContextWindowForModel } from '../../utils/context.js';
 import { logForDebugging } from '../../utils/debug.js';
-import { isEnvTruthy } from '../../utils/envUtils.js';
+import { isEnvDefinedFalsy, isEnvTruthy } from '../../utils/envUtils.js';
 import { hasExactErrorMessage } from '../../utils/errors.js';
 import type { CacheSafeParams } from '../../utils/forkedAgent.js';
 import { logError } from '../../utils/log.js';
@@ -18,6 +18,7 @@ import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEve
 import { getMaxOutputTokensForModel } from '../api/claude.js';
 import { notifyCompaction } from '../api/promptCacheBreakDetection.js';
 import { setLastSummarizedMessageId } from '../SessionMemory/sessionMemoryUtils.js';
+import { roughTokenCountEstimationForBlock } from '../tokenEstimation.js';
 import {
   type CompactionResult,
   compactConversation,
@@ -113,12 +114,22 @@ export function isAtNaturalBoundary(messages: Message[]): boolean {
 }
 
 /**
- * Check if boundary-aware compact is enabled via env or settings.
+ * Check if boundary-aware compact is enabled.
+ *
+ * Defaults ON: compacting mid-tool-chain summarizes away a tool_use whose
+ * tool_result hasn't arrived yet, which is the main source of "the model forgot
+ * what it was doing" right after an auto-compact. Deferring to a natural
+ * boundary costs at most a few turns of extra context (bounded by the hard
+ * threshold, which still force-compacts), and background pre-compaction means
+ * the summary is usually already built when the boundary lands.
+ *
+ * Opt out with CLEW_CODE_BOUNDARY_COMPACT=0 or `boundaryCompact: false`.
  */
 export function isBoundaryCompactEnabled(): boolean {
   if (isEnvTruthy(process.env.CLEW_CODE_BOUNDARY_COMPACT)) return true;
-  const userConfig = getGlobalConfig();
-  return (userConfig as Record<string, unknown>)?.boundaryCompact === true;
+  if (isEnvDefinedFalsy(process.env.CLEW_CODE_BOUNDARY_COMPACT)) return false;
+  const setting = (getGlobalConfig() as Record<string, unknown>)?.boundaryCompact;
+  return typeof setting === 'boolean' ? setting : true;
 }
 
 // ── #2 Adaptive Threshold ──
@@ -142,26 +153,17 @@ export function estimateCompressibility(messages: Message[]): number {
       continue;
     }
     for (const block of content) {
-      if (block.type === 'text' && typeof block.text === 'string') {
-        const t = Math.ceil(block.text.length / 4);
-        totalTokens += t;
-      } else if (block.type === 'tool_result') {
-        const blockContent = block.content;
-        let t = 0;
-        if (typeof blockContent === 'string') {
-          t = Math.ceil(blockContent.length / 4);
-        } else if (Array.isArray(blockContent)) {
-          for (const item of blockContent) {
-            if (item.type === 'text') t += Math.ceil(item.text.length / 4);
-            else t += 2000; // image/document
-          }
-        }
-        totalTokens += t;
+      // Delegate to the canonical estimator rather than re-deriving per-block
+      // sizes here. The previous hand-rolled version counted a tool_use as just
+      // its *name* (dropping `input`, which carries bash commands and Edit
+      // diffs) and ignored thinking blocks entirely. Both undercounts landed on
+      // totalTokens only, never on toolResultTokens, so the ratio was pushed
+      // toward 1 — selecting the smallest buffer and pushing auto-compact
+      // dangerously close to the context ceiling.
+      const t = roughTokenCountEstimationForBlock(block);
+      totalTokens += t;
+      if (block.type === 'tool_result') {
         toolResultTokens += t;
-      } else if (block.type === 'tool_use') {
-        totalTokens += Math.ceil((block.name?.length ?? 0) / 4);
-      } else if (block.type === 'image' || block.type === 'document') {
-        totalTokens += 2000;
       }
     }
   }
@@ -353,6 +355,8 @@ export function getBackgroundAutoCompactStatus(): BackgroundAutoCompactStatus {
 // ── Adaptive threshold config ──
 const MIN_ADAPTIVE_BUFFER = 25_000;
 const MAX_ADAPTIVE_BUFFER = 55_000;
+/** Per-regret buffer reduction, clamped into [MIN,MAX]_ADAPTIVE_BUFFER. */
+const REGRET_BUFFER_STEP_TOKENS = 5_000;
 // GrowthBook feature flag for adaptive threshold tuning
 const ADAPTIVE_THRESHOLD_FEATURE = 'tengu_adaptive_compact_threshold';
 
@@ -361,23 +365,36 @@ export function getAutoCompactThreshold(model: string, messages?: Message[]): nu
 
   let baseBuffer = AUTOCOMPACT_BUFFER_TOKENS;
 
-  // #2 Adaptive threshold: adjust buffer based on session compressibility
+  // #2 Adaptive threshold: adjust buffer based on session compressibility.
+  // GrowthBook is consulted for remote *tuning*, but absence of a flag no
+  // longer disables the feature — the previous `adaptiveConfig?.enabled` gate
+  // defaulted to null, so adaptive sizing never ran outside experiments.
   if (messages && messages.length > 0) {
-    // Gate via GrowthBook for remote tuning
     const adaptiveConfig = getFeatureValue_CACHED_MAY_BE_STALE<{
-      enabled: boolean;
+      enabled?: boolean;
       minBuffer?: number;
       maxBuffer?: number;
     } | null>(ADAPTIVE_THRESHOLD_FEATURE, null);
 
-    if (adaptiveConfig?.enabled) {
+    if (adaptiveConfig?.enabled !== false) {
       const ratio = estimateCompressibility(messages);
       // High compressibility (tool-heavy) → smaller buffer → grow threshold later
       // Low compressibility (chat-only) → larger buffer → compact sooner
       // Interpolate: ratio 0 → maxBuffer, ratio 1 → minBuffer
-      const minB = adaptiveConfig.minBuffer ?? MIN_ADAPTIVE_BUFFER;
-      const maxB = adaptiveConfig.maxBuffer ?? MAX_ADAPTIVE_BUFFER;
+      const minB = adaptiveConfig?.minBuffer ?? MIN_ADAPTIVE_BUFFER;
+      const maxB = adaptiveConfig?.maxBuffer ?? MAX_ADAPTIVE_BUFFER;
       baseBuffer = Math.round(maxB - ratio * (maxB - minB));
+
+      // #3 Feedback: when the last compaction dropped tool context the model
+      // then had to re-fetch, shrink the buffer so the next compaction fires
+      // later — the summarizer sees a longer, more complete tail and is less
+      // likely to drop still-live work. Bounded to one step so a noisy session
+      // can't walk the threshold into the danger zone.
+      const regrets = regretState.regretCount;
+      if (regrets > 0) {
+        baseBuffer -= Math.min(regrets, 3) * REGRET_BUFFER_STEP_TOKENS;
+      }
+
       // Clamp to safe range
       baseBuffer = Math.max(minB, Math.min(maxB, baseBuffer));
     }

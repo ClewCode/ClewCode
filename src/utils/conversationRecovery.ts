@@ -15,6 +15,7 @@ import type {
 import type { Message, NormalizedMessage, NormalizedUserMessage } from '../types/message.js';
 import { PERMISSION_MODES } from '../types/permissions.js';
 import { suppressNextSkillListing } from './attachments.js';
+import { errorMessage } from './errors.js';
 import { copyFileHistoryForResume, type FileHistorySnapshot } from './fileHistory.js';
 import { logError } from './log.js';
 import {
@@ -544,7 +545,8 @@ export async function loadConversationForResume(
       fullPath: log?.fullPath,
     };
   } catch (error) {
-    logError(error as Error);
-    throw error;
+    // BUG #3: Log error and return null instead of re-throwing to avoid unhandled rejection chains
+    logError(new Error(`Failed to load conversation for resume: ${errorMessage(error as Error)}`));
+    return null;
   }
 }

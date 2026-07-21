@@ -116,6 +116,44 @@ describe('OpenAICompatibleProvider retry behavior', () => {
     await expect(client.chat.completions.create({ model: 'm', messages: [], stream: false })).rejects.toThrow();
     expect(fetchCalls).toBe(1);
   });
+
+  test('retries a gateway 400 when the upstream provider failed', async () => {
+    let fetchCalls = 0;
+    globalThis.fetch = (async () => {
+      fetchCalls++;
+      if (fetchCalls === 1) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: 'Error from provider (Console): Upstream request failed',
+              type: 'invalid_request_error',
+              code: 'invalid_request_error',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }], usage: {} }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as typeof fetch;
+
+    const provider = new OpenAICompatibleProvider(
+      'opencode' as any,
+      'OpenCode',
+      'OPENCODE_API_KEY',
+      'https://opencode.ai/zen/v1',
+      false,
+      { maxRetries: 1 },
+    );
+    const client: any = await provider.createClient({});
+
+    const result = await client.chat.completions.create({ model: 'deepseek-v4-flash-free', messages: [] });
+
+    expect(fetchCalls).toBe(2);
+    expect(result.choices[0].message.content).toBe('ok');
+  });
 });
 
 describe('OpenAICompatibleProvider base URL env override', () => {

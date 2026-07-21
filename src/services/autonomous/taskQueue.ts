@@ -15,6 +15,7 @@
 import { existsSync, readFileSync, watch } from 'fs';
 import { appendFile, mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { logForDiagnosticsNoPII } from '../../utils/diagLogs.js';
 import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
 import { createAgentId } from '../../utils/uuid.js';
@@ -91,7 +92,8 @@ let loaded = false;
 let watcher: ReturnType<typeof watch> | null = null;
 let watcherTimer: ReturnType<typeof setTimeout> | null = null;
 const watchCallbacks: Array<(tasks: Record<string, TaskQueueEntry>) => void> = [];
-let ourWriteInProgress = false;
+let ourWriteInProgress = false; // BUG #1: Must be mutable to track write state
+let watcherInitPromise: Promise<void> | null = null; // BUG #5: Mutex to prevent concurrent watcher init
 
 // ─── Persistence ──────────────────────────────────────────────
 
@@ -130,18 +132,35 @@ export async function loadQueue(): Promise<TaskQueueFile> {
   return queue;
 }
 
+// Promise-based lock for atomic file writes (BUG #2)
+let writeQueueLock: Promise<void> = Promise.resolve();
+
 export async function saveQueue(): Promise<void> {
   queue.updatedAt = Date.now();
   await ensureDir();
-  ourWriteInProgress = true;
-  try {
-    await writeFile(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf-8');
-  } finally {
-    // Reset flag after write completes — debounce in watcher uses this
-    setTimeout(() => {
-      ourWriteInProgress = false;
-    }, WATCH_DEBOUNCE_MS);
-  }
+
+  // BUG #8: Serialize writes with timeout + rejection handling to prevent deadlock
+  writeQueueLock = writeQueueLock
+    .then(async () => {
+      ourWriteInProgress = true; // BUG #1: Signal that we're writing
+      try {
+        // Timeout to prevent hanging on slow file systems (5s)
+        await Promise.race([
+          writeFile(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf-8'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Task queue write timeout')), 5000)),
+        ]);
+      } finally {
+        ourWriteInProgress = false; // Always clear flag, even on error
+      }
+    })
+    .catch(error => {
+      // Log the error but don't re-throw, so future writes aren't blocked
+      logForDiagnosticsNoPII('error', 'task_queue_write_error', {
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+      });
+    });
+
+  await writeQueueLock;
 }
 
 // ─── File Watcher (debounced) ─────────────────────────────────
@@ -149,37 +168,17 @@ export async function saveQueue(): Promise<void> {
 export function watchQueue(callback: (tasks: Record<string, TaskQueueEntry>) => void): () => void {
   watchCallbacks.push(callback);
 
+  // BUG #5: Use Promise-based mutex to prevent concurrent watcher initialization
   if (!watcher) {
-    try {
-      if (existsSync(QUEUE_PATH)) {
-        watcher = watch(QUEUE_PATH, () => {
-          // Debounce: ignore rapid fire events
-          if (watcherTimer) clearTimeout(watcherTimer);
-          watcherTimer = setTimeout(() => {
-            // Ignore self-triggered writes
-            if (ourWriteInProgress) return;
-            try {
-              const raw = readFileSync(QUEUE_PATH, 'utf-8');
-              const parsed = jsonParse(raw) as TaskQueueFile;
-              if (parsed.version && parsed.tasks) {
-                queue = parsed;
-                for (const cb of watchCallbacks) {
-                  try {
-                    cb(queue.tasks);
-                  } catch {
-                    /* ignore callback errors */
-                  }
-                }
-              }
-            } catch {
-              /* ignore file read errors */
-            }
-          }, WATCH_DEBOUNCE_MS);
-        });
-      }
-    } catch {
-      /* watcher not supported on all platforms */
+    if (!watcherInitPromise) {
+      watcherInitPromise = initializeWatcher();
     }
+    // BUG #16: Log watcher init failures to prevent silent callback registration failure
+    watcherInitPromise.catch(error => {
+      logForDiagnosticsNoPII('warn', 'task_queue_watcher_init_failed', {
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+      });
+    });
   }
 
   return () => {
@@ -190,8 +189,48 @@ export function watchQueue(callback: (tasks: Record<string, TaskQueueEntry>) => 
       watcher.close();
       watcher = null;
       watcherTimer = null;
+      watcherInitPromise = null;
     }
   };
+}
+
+async function initializeWatcher(): Promise<void> {
+  try {
+    if (existsSync(QUEUE_PATH)) {
+      watcher = watch(QUEUE_PATH, () => {
+        // Debounce: ignore rapid fire events
+        if (watcherTimer) clearTimeout(watcherTimer);
+        watcherTimer = setTimeout(() => {
+          // Ignore self-triggered writes
+          if (ourWriteInProgress) return;
+          try {
+            const raw = readFileSync(QUEUE_PATH, 'utf-8');
+            const parsed = jsonParse(raw) as TaskQueueFile;
+            if (parsed.version && parsed.tasks) {
+              queue = parsed;
+              for (const cb of watchCallbacks) {
+                try {
+                  cb(queue.tasks);
+                } catch (error) {
+                  logForDiagnosticsNoPII('error', 'task_queue_callback_error', {
+                    errorType: error instanceof Error ? error.constructor.name : typeof error,
+                  });
+                }
+              }
+            }
+          } catch (error) {
+            logForDiagnosticsNoPII('error', 'task_queue_watcher_read_error', {
+              errorType: error instanceof Error ? error.constructor.name : typeof error,
+            });
+          }
+        }, WATCH_DEBOUNCE_MS);
+      });
+      // Unref watcher to prevent blocking process exit
+      watcher.unref?.();
+    }
+  } catch {
+    /* watcher not supported on all platforms */
+  }
 }
 
 export function closeWatcher(): void {

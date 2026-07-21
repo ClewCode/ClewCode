@@ -49,7 +49,7 @@ Settings load in order: user → project → local (later overrides earlier).
 \`\`\`json
 {
   "permissions": {
-    "allow": ["Bash(npm:*)", "Edit(.claude)", "Read"],
+    "allow": ["Bash(npm:*)", "Edit(.clew)", "Read"],
     "deny": ["Bash(rm -rf:*)"],
     "ask": ["Write(/etc/*)"],
     "defaultMode": "default" | "plan" | "acceptEdits" | "dontAsk",
@@ -76,7 +76,7 @@ Settings load in order: user → project → local (later overrides earlier).
 ### Model & Agent
 \`\`\`json
 {
-  "model": "sonnet",  // or "opus", "haiku", full model ID
+  "model": "sonnet",  // or "opus", "deepseek-v4-flash-free", full model ID
   "agent": "agent-name",
   "alwaysThinkingEnabled": true
 }
@@ -387,7 +387,7 @@ When adding to permission arrays or hook arrays, **merge with existing**, don't 
   "permissions": {
     "allow": [
       "Bash(git:*)",      // existing
-      "Edit(.claude)",    // existing
+      "Edit(.clew)",    // existing
       "Bash(npm:*)"       // new
     ]
   }
@@ -407,7 +407,7 @@ ${HOOK_VERIFICATION_FLOW}
 User: "Format my code after Claude writes it"
 
 1. **Clarify**: Which formatter? (prettier, gofmt, etc.)
-2. **Read**: \`.claude/settings.json\` (or create if missing)
+2. **Read**: \`.clew/settings.json\` (or create if missing)
 3. **Merge**: Add to existing hooks, don't replace
 4. **Result**:
 \`\`\`json

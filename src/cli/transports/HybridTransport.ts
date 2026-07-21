@@ -171,6 +171,7 @@ export class HybridTransport extends WebSocketTransport {
     // uploader.close() so any remaining queue gets a chance to finish.
     const uploader = this.uploader;
     let graceTimer: ReturnType<typeof setTimeout> | undefined;
+    let isClosed = false; // BUG #6: Track if already closed to prevent double-close
     void Promise.race([
       uploader.flush(),
       new Promise<void>(r => {
@@ -178,8 +179,13 @@ export class HybridTransport extends WebSocketTransport {
         graceTimer = setTimeout(r, CLOSE_GRACE_MS);
       }),
     ]).finally(() => {
-      clearTimeout(graceTimer);
-      uploader.close();
+      if (graceTimer) {
+        clearTimeout(graceTimer);
+      }
+      if (!isClosed) {
+        isClosed = true;
+        uploader.close();
+      }
     });
     super.close();
   }

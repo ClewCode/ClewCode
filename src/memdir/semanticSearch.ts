@@ -198,7 +198,9 @@ export async function searchMemories(query: string, topK = 5, threshold = 0.6): 
   const memoryDir = getAutoMemPath();
   if (!memoryDir) return [];
 
-  const [queryEmbed] = await Promise.all([createEmbedding(query), syncIndex(memoryDir)]);
+  // BUG #7: Ensure syncIndex completes before search (serialize to guarantee memory is indexed first)
+  await syncIndex(memoryDir);
+  const queryEmbed = await createEmbedding(query);
 
   const vectorResults = searchVectors(queryEmbed, topK, threshold);
   if (vectorResults.length === 0) return [];

@@ -423,15 +423,24 @@ export const hasPermissionsToUseTool: CanUseToolFn = async (
   if (result.behavior === 'allow') {
     const appState = context.getAppState();
     if (feature('TRANSCRIPT_CLASSIFIER')) {
-      const currentDenialState = context.localDenialTracking ?? appState.denialTracking;
-      if (
-        appState.toolPermissionContext.mode === 'auto' &&
-        currentDenialState &&
-        currentDenialState.consecutiveDenials > 0
-      ) {
-        const newDenialState = recordSuccess(currentDenialState);
-        persistDenialState(context, newDenialState);
-      }
+      // Use atomic update to prevent TOCTOU race: read current state INSIDE
+      // the setAppState callback to ensure we operate on the latest state (BUG #3)
+      context.setAppState(prev => {
+        const currentDenialState = context.localDenialTracking ?? prev.denialTracking;
+        if (
+          prev.toolPermissionContext.mode === 'auto' &&
+          currentDenialState &&
+          currentDenialState.consecutiveDenials > 0
+        ) {
+          const newDenialState = recordSuccess(currentDenialState);
+          if (context.localDenialTracking) {
+            Object.assign(context.localDenialTracking, newDenialState);
+          } else if (prev.denialTracking !== newDenialState) {
+            return { ...prev, denialTracking: newDenialState };
+          }
+        }
+        return prev;
+      });
     }
     return result;
   }

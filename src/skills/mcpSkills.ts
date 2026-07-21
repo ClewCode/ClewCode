@@ -84,7 +84,12 @@ export const fetchMcpSkillsForClient = memoizeWithLRU(
 
             if (!textContent) return null;
 
-            return buildMcpSkillCommand(client.name, skillName, textContent);
+            const skillCommand = buildMcpSkillCommand(client.name, skillName, textContent);
+            if (!skillCommand) {
+              // Log when skill fails to build to catch silent failures (BUG #5)
+              logForDebugging(`[mcpSkills] Failed to build command for skill ${skillName} from ${client.name}`);
+            }
+            return skillCommand;
           } catch (error) {
             logForDebugging(`[mcpSkills] Failed to read skill resource ${resource.uri}: ${error}`);
             return null;

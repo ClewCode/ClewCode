@@ -143,6 +143,14 @@ export const call: LocalCommandCall = async (args, context) => {
       logError(error);
       throw new Error(`Error during compaction: ${error}`);
     }
+  } finally {
+    // BUG #4: Ensure progress callbacks are always reset, even on error paths
+    if (customInstructions === '') {
+      // If we started with empty customInstructions, session memory path would have set these
+      // Clean up in case an error occurred between setting and clearing them
+      context.onCompactProgress?.({ type: 'compact_end' });
+      context.setSDKStatus?.(null);
+    }
   }
 };
 

@@ -2021,6 +2021,8 @@ function expandCompactBoundaryHistory(
     if (message.type === 'system' && message.subtype === 'compact_boundary') {
       const logicalParentUuid = message.logicalParentUuid;
       const logicalParent = logicalParentUuid ? messages.get(logicalParentUuid) : undefined;
+      // Only expand if we have a valid logical parent. If logicalParentUuid is null/missing,
+      // repairFragmentedParentChain should have fixed it before this function is called.
       if (logicalParent && !seen.has(logicalParent.uuid)) {
         const prefix = expandCompactBoundaryHistory(messages, buildConversationChain(messages, logicalParent), seen);
         expanded.push(...prefix);
@@ -2065,6 +2067,14 @@ function repairFragmentedParentChain(messages: Map<UUID, TranscriptMessage>): Ma
     const parentMissing = msg.parentUuid == null || !messages.has(msg.parentUuid);
     if (parentMissing && !isCompactBoundaryMessage(msg) && prevMainUuid && prevMainUuid !== uuid) {
       messages.set(uuid, { ...msg, parentUuid: prevMainUuid });
+    }
+    // Also repair compact boundaries' logicalParentUuid if it's missing.
+    // Without this, resume only shows the summary after /compact, not the full history.
+    if (isCompactBoundaryMessage(msg)) {
+      const logicalParentMissing = msg.logicalParentUuid == null || !messages.has(msg.logicalParentUuid);
+      if (logicalParentMissing && prevMainUuid && prevMainUuid !== uuid) {
+        messages.set(uuid, { ...msg, logicalParentUuid: prevMainUuid });
+      }
     }
     prevMainUuid = uuid;
   }
@@ -2525,16 +2535,44 @@ export async function fetchLogs(limit?: number): Promise<LogOption[]> {
 
 /**
  * Append an entry to a session file. Creates the parent dir if missing.
+ * Uses a lock directory to prevent concurrent-write races (BUG #5).
  */
 /* eslint-disable custom-rules/no-sync-fs -- sync callers (exit cleanup, materialize) */
 function appendEntryToFile(fullPath: string, entry: Record<string, unknown>): void {
   const fs = getFsImplementation();
   const line = `${jsonStringify(entry)}\n`;
+  const lockDir = `${fullPath}.lock`;
+
+  // Acquire exclusive lock via lock directory (mkdir is atomic)
+  const maxAttempts = 100;
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    try {
+      fs.mkdirSync(lockDir, { mode: 0o700 });
+      break;
+    } catch (e) {
+      attempt++;
+      if (attempt >= maxAttempts) throw e;
+      // Spin-wait with exponential backoff (max 50ms)
+      const backoffMs = Math.min(50, 1 << Math.min(attempt / 10, 5));
+      const start = Date.now();
+      while (Date.now() - start < backoffMs) {
+        // Busy-wait (unavoidable in sync context, but brief)
+      }
+    }
+  }
+
   try {
     fs.appendFileSync(fullPath, line, { mode: 0o600 });
   } catch {
     fs.mkdirSync(dirname(fullPath), { mode: 0o700 });
     fs.appendFileSync(fullPath, line, { mode: 0o600 });
+  } finally {
+    try {
+      fs.rmdirSync(lockDir);
+    } catch {
+      // Ignore lock cleanup errors
+    }
   }
 }
 

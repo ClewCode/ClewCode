@@ -1230,8 +1230,8 @@ export const connectToServer = memoize(
             );
           }, getConnectionTimeoutMs());
 
-          // Clean up timeout if connect resolves or rejects
-          connectPromise.then(
+          // Clean up timeout if connect resolves or rejects (BUG #4: ensure no dangling promises)
+          void connectPromise.then(
             () => {
               clearTimeout(timeoutId);
             },
@@ -1346,6 +1346,11 @@ export const connectToServer = memoize(
           });
           if (stderrOutput) {
             logMCPError(name, `Server stderr: ${stderrOutput}`);
+          }
+          // BUG #1: Remove stderr listener on connection failure to prevent memory leak
+          if (stderrHandler && (serverRef.type === 'stdio' || !serverRef.type)) {
+            const stdioTransport = transport as StdioClientTransport;
+            stdioTransport.stderr?.off('data', stderrHandler);
           }
           throw error;
         }
@@ -1610,7 +1615,7 @@ export const connectToServer = memoize(
                   process.kill(childPid, 'SIGINT');
                 } catch (error) {
                   logMCPDebug(name, `Error sending SIGINT: ${error}`);
-                  return;
+                  // Continue with cleanup instead of early return to avoid leaving Promise unresolved (BUG #3)
                 }
 
                 // Wait for graceful shutdown with rapid escalation (total 500ms to keep CLI responsive)

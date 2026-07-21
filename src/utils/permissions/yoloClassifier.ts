@@ -32,7 +32,7 @@ import { jsonStringify } from '../slowOperations.js';
 import { tokenCountWithEstimation } from '../tokens.js';
 import { getBashPromptAllowDescriptions, getBashPromptDenyDescriptions } from './bashClassifier.js';
 import { extractToolUseBlock, parseClassifierResponse } from './classifierShared.js';
-import { getClaudeTempDir } from './filesystem.js';
+import { getClewTempDir } from './filesystem.js';
 
 // Dead code elimination: conditional imports for auto mode classifier prompts.
 // At build time, the bundler inlines .txt files as string literals. At test
@@ -128,7 +128,7 @@ export function buildDefaultExternalSystemPrompt(): string {
 }
 
 function getAutoModeDumpDir(): string {
-  return join(getClaudeTempDir(), 'auto-mode');
+  return join(getClewTempDir(), 'auto-mode');
 }
 
 /**
@@ -160,7 +160,7 @@ async function maybeDumpAutoMode(
  * error so users can share via /share without needing to repro with env var.
  */
 export function getAutoModeClassifierErrorDumpPath(): string {
-  return join(getClaudeTempDir(), 'auto-mode-classifier-errors', `${getSessionId()}.txt`);
+  return join(getClewTempDir(), 'auto-mode-classifier-errors', `${getSessionId()}.txt`);
 }
 
 /**

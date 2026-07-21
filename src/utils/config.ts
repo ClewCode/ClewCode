@@ -194,6 +194,8 @@ export type GlobalConfig = {
   autoUpdatesProtectedForNative?: boolean;
   // Session count when Doctor was last shown
   doctorShownAtSession?: number;
+  // Suppresses the large/old-session prompt shown before resuming ("Don't ask me again")
+  skipResumeSizeWarning?: boolean;
   userID?: string;
   theme: ThemeSetting;
   hasCompletedOnboarding?: boolean;
@@ -646,6 +648,7 @@ export const GLOBAL_CONFIG_KEYS = [
   'installMethod',
   'autoUpdates',
   'autoUpdatesProtectedForNative',
+  'skipResumeSizeWarning',
   'theme',
   'verbose',
   'preferredNotifChannel',
@@ -1245,7 +1248,7 @@ function saveConfigWithLock<A extends object>(
         : getConfig(readFileForCurrentConfig, createDefault);
     if (file === getGlobalClaudeFile() && wouldLoseAuthState(currentConfig)) {
       logForDebugging(
-        'saveConfigWithLock: re-read config is missing auth that cache has; refusing to write to avoid wiping ~/.claude.json. See GH #3117.',
+        'saveConfigWithLock: re-read config is missing auth that cache has; refusing to write to avoid wiping ~/.clew.json. See GH #3117.',
         { level: 'error' },
       );
       logEvent('tengu_config_auth_loss_prevented', {});

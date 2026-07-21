@@ -21,7 +21,7 @@ import {
   type ProviderRegistryEntry,
 } from '../../services/ai/providerRegistry.js';
 import { validateProviderModelSelection } from '../../services/ai/providerSelection.js';
-import { hasGeminiOAuthCreds } from '../../services/ai/providers/CodeAssistProvider.js';
+import { hasAntigravityOAuthCreds } from '../../services/ai/providers/CodeAssistProvider.js';
 import { useAppState, useSetAppState } from '../../state/AppState.js';
 import type {
   LocalCommandResult,
@@ -1050,7 +1050,7 @@ function ProviderPicker({
   // client + cloud-platform scopes; tokens go to ~/.gemini/oauth_creds.json.
   // Skip the prompt when creds already exist unless the user asks to re-login.
   if (provider === 'google-assist') {
-    const hasCreds = hasGeminiOAuthCreds();
+    const hasCreds = hasAntigravityOAuthCreds();
     if (hasCreds && !showCodeAssistLogin) {
       return React.createElement(
         Dialog,

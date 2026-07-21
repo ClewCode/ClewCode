@@ -72,7 +72,7 @@ function buildHookSchemas() {
       .string()
       .optional()
       .describe(
-        'Model to use for this prompt hook (e.g., "claude-sonnet-4-6"). If not specified, uses the default small fast model.',
+        'Model to use for this prompt hook (e.g., "Free models in Provides"). If not specified, uses the default small fast model.',
       ),
     statusMessage: z.string().optional().describe('Custom status message to display in spinner while hook runs'),
     once: z.boolean().optional().describe('If true, hook runs once and is removed after execution'),
@@ -119,7 +119,7 @@ function buildHookSchemas() {
     model: z
       .string()
       .optional()
-      .describe('Model to use for this agent hook (e.g., "claude-sonnet-4-6"). If not specified, uses Haiku.'),
+      .describe('Model to use for this agent hook (e.g., "Free models in Provides"). If not specified, uses Haiku.'),
     statusMessage: z.string().optional().describe('Custom status message to display in spinner while hook runs'),
     once: z.boolean().optional().describe('If true, hook runs once and is removed after execution'),
   });

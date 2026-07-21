@@ -5,6 +5,8 @@ import type { CanUseToolFn } from '../../hooks/useCanUseTool.js';
 import { findToolByName, type Tools, type ToolUseContext } from '../../Tool.js';
 import type { AssistantMessage, Message } from '../../types/message.js';
 import { createChildAbortController } from '../../utils/abortController.js';
+import { logForDiagnosticsNoPII } from '../../utils/diagLogs.js';
+import { errorMessage } from '../../utils/errors.js';
 import { runToolUse } from './toolExecution.js';
 
 type MessageUpdate = {
@@ -326,10 +328,11 @@ export class StreamingToolExecutor {
           // Progress messages go to pendingProgress for immediate yielding
           if (update.message.type === 'progress') {
             tool.pendingProgress.push(update.message);
-            // Signal that progress is available
+            // Signal that progress is available (BUG #3: call before clear to prevent race)
             if (this.progressAvailableResolve) {
-              this.progressAvailableResolve();
+              const resolve = this.progressAvailableResolve;
               this.progressAvailableResolve = undefined;
+              resolve();
             }
           } else {
             messages.push(update.message);
@@ -357,10 +360,21 @@ export class StreamingToolExecutor {
     const promise = collectResults();
     tool.promise = promise;
 
-    // Process more queue when done
-    void promise.finally(() => {
-      void this.processQueue();
-    });
+    // Process more queue when done (BUG #2, #6: ensure processQueue always runs)
+    void promise
+      .finally(() => {
+        void this.processQueue().catch(error => {
+          // BUG #2: Don't let processQueue() errors prevent the chain from completing
+          logForDiagnosticsNoPII('error', 'tool_executor_queue_process_error', {
+            error: errorMessage(error),
+          });
+        });
+      })
+      .catch(error => {
+        logForDiagnosticsNoPII('error', 'tool_executor_queue_error', {
+          error: errorMessage(error),
+        });
+      });
   }
 
   /**

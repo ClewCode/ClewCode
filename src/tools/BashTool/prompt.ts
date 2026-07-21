@@ -7,7 +7,7 @@ import { getAttributionTexts } from '../../utils/attribution.js';
 import { hasEmbeddedSearchTools } from '../../utils/embeddedTools.js';
 import { isEnvTruthy } from '../../utils/envUtils.js';
 import { shouldIncludeGitInstructions } from '../../utils/gitSettings.js';
-import { getClaudeTempDir } from '../../utils/permissions/filesystem.js';
+import { getClewTempDir } from '../../utils/permissions/filesystem.js';
 import { SandboxManager } from '../../utils/sandbox/sandbox-adapter.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
 import { getDefaultBashTimeoutMs, getMaxBashTimeoutMs } from '../../utils/timeouts.js';
@@ -173,9 +173,9 @@ function getSimpleSandboxSection(): string {
   // Replace the per-UID temp dir literal (e.g. /private/tmp/claude-1001/) with
   // "$TMPDIR" so the prompt is identical across users — avoids busting the
   // cross-user global prompt cache. The sandbox already sets $TMPDIR at runtime.
-  const claudeTempDir = getClaudeTempDir();
+  const clewTempDir = getClewTempDir();
   const normalizeAllowOnly = (paths: string[]): string[] =>
-    [...new Set(paths)].map(p => (p === claudeTempDir ? '$TMPDIR' : p));
+    [...new Set(paths)].map(p => (p === clewTempDir ? '$TMPDIR' : p));
 
   const filesystemConfig = {
     read: {

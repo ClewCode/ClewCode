@@ -51,7 +51,7 @@ import { BASH_TOOL_NAME } from '../../tools/BashTool/toolName.js';
 import { FILE_READ_TOOL_NAME } from '../../tools/FileReadTool/prompt.js';
 import { DOT_CLEW } from '../clewPaths.js';
 import { errorMessage } from '../errors.js';
-import { getClaudeTempDir } from '../permissions/filesystem.js';
+import { getClewTempDir } from '../permissions/filesystem.js';
 import type { PermissionRuleValue } from '../permissions/PermissionRule.js';
 import { ripgrepCommand } from '../ripgrep.js';
 
@@ -193,7 +193,7 @@ export function convertToSandboxRuntimeConfig(settings: SettingsJson): SandboxRu
   // Extract filesystem paths from Edit and Read rules
   // Always include current directory and Claude temp directory as writable
   // The temp directory is needed for Shell.ts cwd tracking files
-  const allowWrite: string[] = ['.', getClaudeTempDir()];
+  const allowWrite: string[] = ['.', getClewTempDir()];
   const denyWrite: string[] = [];
   const denyRead: string[] = [];
   const allowRead: string[] = [];

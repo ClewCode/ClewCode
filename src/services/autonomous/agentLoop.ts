@@ -219,133 +219,144 @@ async function processTask(task: TaskQueueEntry): Promise<void> {
     workerStatus: 'spawning',
   });
 
-  // Acquire lease first — prevents duplicate execution
-  const leased = await leaseTask(task.id, AGENT_ID);
-  if (!leased) {
-    console.log(`[Autonomous] Could not acquire lease for ${task.id}, skipping`);
-    updateStatus({ currentTaskId: undefined, currentTaskTitle: undefined, workerStatus: undefined });
-    return;
-  }
-
-  // Spawn worker
-  const worker = await spawnWorker(task);
-  if (!worker) {
-    console.error(`[Autonomous] Failed to spawn worker for task ${task.id}`);
-    await releaseLease(task.id, AGENT_ID);
-    const retryResult = await retryTask(task.id);
-    if (retryResult === 'dead_letter') {
-      console.log(`[Autonomous] Task ${task.id} moved to dead-letter (spawn failed, max retries exceeded)`);
-      updateStatus({ tasksDeadLettered: status.tasksDeadLettered + 1 });
-    } else if (!retryResult) {
-      await markTaskFailed(task.id, 'Failed to spawn worker session');
-      updateStatus({ tasksFailed: status.tasksFailed + 1 });
-    }
-    updateStatus({ currentTaskId: undefined, currentTaskTitle: undefined, workerStatus: undefined });
-    return;
-  }
-
-  console.log(`[Autonomous] Worker spawned: ${worker.sessionId} (pid ${worker.pid})`);
-  updateStatus({
-    workerSessionId: worker.sessionId,
-    workerPid: worker.pid,
-    workerStatus: 'running',
-  });
-
-  // Monitor worker until done
-  const startTime = Date.now();
-  let lastStatus: string | undefined;
-  let completed = false;
-  let failed = false;
-
-  while (running) {
-    // Check timeout
-    if (Date.now() - startTime > TASK_TIMEOUT_MS) {
-      console.log(`[Autonomous] Task ${task.id} timed out after 30m`);
-      await stopWorker(worker);
-      await releaseLease(task.id, AGENT_ID);
-      failed = true;
-      break;
-    }
-
-    const workerStatus = await checkWorker(worker);
-    if (workerStatus !== lastStatus) {
-      console.log(`[Autonomous] Worker status for ${task.id}: ${workerStatus}`);
-      lastStatus = workerStatus;
-    }
-
-    if (workerStatus === 'completed') {
-      await releaseLease(task.id, AGENT_ID);
-      await markTaskCompleted(task.id);
-      updateStatus({ tasksProcessed: status.tasksProcessed + 1 });
-      completed = true;
-      break;
-    }
-
-    if (workerStatus === 'failed') {
-      await stopWorker(worker);
-      await releaseLease(task.id, AGENT_ID);
-      failed = true;
-      break;
-    }
-
-    // Sleep before next poll
-    await sleep(WORKER_POLL_MS);
-  }
-
-  // ── Persist worker output to per-task log file ─────────────────
-  // The supervisor captures worker stdout+stderr to a per-session log.
-  // We copy the last 500 lines into the task-specific log at
-  // ~/.clew/daemon/logs/{taskId}.log for easy retrieval via /task log.
-  // Never throw here — log failures must not crash the daemon.
+  // Wrap entire processing in try-finally to ensure cleanup (BUG #3)
+  let leased = false;
   try {
-    const workerOutput = await getWorkerOutput(worker.sessionId);
-    if (workerOutput) {
-      await writeTaskLog(task.id, workerOutput);
+    // Acquire lease first — prevents duplicate execution
+    leased = await leaseTask(task.id, AGENT_ID);
+    if (!leased) {
+      console.log(`[Autonomous] Could not acquire lease for ${task.id}, skipping`);
+      updateStatus({ currentTaskId: undefined, currentTaskTitle: undefined, workerStatus: undefined });
+      return;
     }
 
-    // Persist worker exit status and any structured error lines collected from output
-    const exitCode = completed ? 0 : 1;
-    await updateTask(task.id, {
-      workerExitCode: exitCode,
-      // Derive errorLog: last 20 non-noise lines when failed, empty array otherwise
-      ...(!completed && workerOutput
-        ? {
-            errorLog: workerOutput
-              .split('\n')
-              .filter(l => !l.startsWith('[Autonomous] ') && l.trim().length > 0)
-              .slice(-20),
-          }
-        : { errorLog: [] }),
+    // Spawn worker
+    const worker = await spawnWorker(task);
+    if (!worker) {
+      console.error(`[Autonomous] Failed to spawn worker for task ${task.id}`);
+      await releaseLease(task.id, AGENT_ID);
+      leased = false; // Mark as released
+      const retryResult = await retryTask(task.id);
+      if (retryResult === 'dead_letter') {
+        console.log(`[Autonomous] Task ${task.id} moved to dead-letter (spawn failed, max retries exceeded)`);
+        updateStatus({ tasksDeadLettered: status.tasksDeadLettered + 1 });
+      } else if (!retryResult) {
+        await markTaskFailed(task.id, 'Failed to spawn worker session');
+        updateStatus({ tasksFailed: status.tasksFailed + 1 });
+      }
+      updateStatus({ currentTaskId: undefined, currentTaskTitle: undefined, workerStatus: undefined });
+      return;
+    }
+
+    console.log(`[Autonomous] Worker spawned: ${worker.sessionId} (pid ${worker.pid})`);
+    updateStatus({
+      workerSessionId: worker.sessionId,
+      workerPid: worker.pid,
+      workerStatus: 'running',
     });
-  } catch (err) {
-    console.error(`[Autonomous] Failed to persist worker log for task ${task.id}:`, err);
-  }
 
-  // Handle failure with dead-letter aware retry
-  if (failed) {
-    await markTaskFailed(task.id, 'Worker failed');
-    const retryResult = await retryTask(task.id);
-    if (retryResult === 'dead_letter') {
-      console.log(`[Autonomous] Task ${task.id} moved to dead-letter (max retries)`);
-      updateStatus({ tasksDeadLettered: status.tasksDeadLettered + 1 });
-    } else if (retryResult === 'pending') {
-      const taskState = (await import('./taskQueue.js')).getTask(task.id);
-      const waitSec = taskState?.retryAfter ? Math.round((taskState.retryAfter - Date.now()) / 1000) : 30;
-      console.log(`[Autonomous] Task ${task.id} will retry in ~${waitSec}s (backoff)`);
-    } else {
-      updateStatus({ tasksFailed: status.tasksFailed + 1 });
+    // Monitor worker until done
+    const startTime = Date.now();
+    let lastStatus: string | undefined;
+    let completed = false;
+    let failed = false;
+
+    while (running) {
+      // Check timeout
+      if (Date.now() - startTime > TASK_TIMEOUT_MS) {
+        console.log(`[Autonomous] Task ${task.id} timed out after 30m`);
+        await stopWorker(worker);
+        await releaseLease(task.id, AGENT_ID);
+        failed = true;
+        break;
+      }
+
+      const workerStatus = await checkWorker(worker);
+      if (workerStatus !== lastStatus) {
+        console.log(`[Autonomous] Worker status for ${task.id}: ${workerStatus}`);
+        lastStatus = workerStatus;
+      }
+
+      if (workerStatus === 'completed') {
+        await releaseLease(task.id, AGENT_ID);
+        await markTaskCompleted(task.id);
+        updateStatus({ tasksProcessed: status.tasksProcessed + 1 });
+        completed = true;
+        break;
+      }
+
+      if (workerStatus === 'failed') {
+        await stopWorker(worker);
+        await releaseLease(task.id, AGENT_ID);
+        failed = true;
+        break;
+      }
+
+      // Sleep before next poll
+      await sleep(WORKER_POLL_MS);
     }
-  }
 
-  // Cleanup
-  activeWorkers.delete(task.id);
-  updateStatus({
-    currentTaskId: undefined,
-    currentTaskTitle: undefined,
-    workerSessionId: undefined,
-    workerPid: undefined,
-    workerStatus: undefined,
-  });
+    // ── Persist worker output to per-task log file ─────────────────
+    // The supervisor captures worker stdout+stderr to a per-session log.
+    // We copy the last 500 lines into the task-specific log at
+    // ~/.clew/daemon/logs/{taskId}.log for easy retrieval via /task log.
+    // Never throw here — log failures must not crash the daemon.
+    try {
+      const workerOutput = await getWorkerOutput(worker.sessionId);
+      if (workerOutput) {
+        await writeTaskLog(task.id, workerOutput);
+      }
+
+      // Persist worker exit status and any structured error lines collected from output
+      const exitCode = completed ? 0 : 1;
+      await updateTask(task.id, {
+        workerExitCode: exitCode,
+        // Derive errorLog: last 20 non-noise lines when failed, empty array otherwise
+        ...(!completed && workerOutput
+          ? {
+              errorLog: workerOutput
+                .split('\n')
+                .filter(l => !l.startsWith('[Autonomous] ') && l.trim().length > 0)
+                .slice(-20),
+            }
+          : { errorLog: [] }),
+      });
+    } catch (err) {
+      console.error(`[Autonomous] Failed to persist worker log for task ${task.id}:`, err);
+    }
+
+    // Handle failure with dead-letter aware retry
+    if (failed) {
+      await markTaskFailed(task.id, 'Worker failed');
+      const retryResult = await retryTask(task.id);
+      if (retryResult === 'dead_letter') {
+        console.log(`[Autonomous] Task ${task.id} moved to dead-letter (max retries)`);
+        updateStatus({ tasksDeadLettered: status.tasksDeadLettered + 1 });
+      } else if (retryResult === 'pending') {
+        const taskState = (await import('./taskQueue.js')).getTask(task.id);
+        const waitSec = taskState?.retryAfter ? Math.round((taskState.retryAfter - Date.now()) / 1000) : 30;
+        console.log(`[Autonomous] Task ${task.id} will retry in ~${waitSec}s (backoff)`);
+      } else {
+        updateStatus({ tasksFailed: status.tasksFailed + 1 });
+      }
+    }
+  } finally {
+    // Ensure lease is released even if exception thrown (BUG #6)
+    if (leased) {
+      await releaseLease(task.id, AGENT_ID).catch(err => {
+        console.error(`[Autonomous] Failed to release lease for ${task.id}:`, err);
+      });
+    }
+    // Ensure cleanup always runs, even if exception thrown (BUG #3)
+    activeWorkers.delete(task.id);
+    updateStatus({
+      currentTaskId: undefined,
+      currentTaskTitle: undefined,
+      workerSessionId: undefined,
+      workerPid: undefined,
+      workerStatus: undefined,
+    });
+  }
 }
 
 // ─── Public API ───────────────────────────────────────────────

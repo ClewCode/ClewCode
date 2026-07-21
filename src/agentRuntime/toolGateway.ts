@@ -258,15 +258,35 @@ export class ToolGateway {
   }
 
   private async executeShellRun(command: string, timeoutMs?: number): Promise<Record<string, unknown>> {
-    return new Promise((resolve, _reject) => {
+    return new Promise((resolve, reject) => {
       const timeout = timeoutMs || 60000;
-      const _child = exec(command, { cwd: this.workspaceRoot, timeout }, (error, stdout, stderr) => {
-        resolve({
-          exitCode: error ? error.code || 1 : 0,
-          stdout: stdout.trim(),
-          stderr: stderr.trim(),
-          failed: !!error,
-        });
+      const child = exec(command, { cwd: this.workspaceRoot, timeout }, (error, stdout, stderr) => {
+        // BUG #2: Use reject for shell errors instead of resolving with failed:true
+        if (error) {
+          // Timeout errors should be rejected, not resolved
+          if (error.killed) {
+            reject(new Error(`Command timeout after ${timeout}ms: ${command}`));
+          } else {
+            reject(error);
+          }
+        } else {
+          resolve({
+            exitCode: 0,
+            stdout: stdout.trim(),
+            stderr: stderr.trim(),
+            failed: false,
+          });
+        }
+      });
+      // BUG #10: Explicitly kill child process on timeout (timeout option alone may not fully clean up)
+      const timeoutHandle = setTimeout(() => {
+        if (child && child.exitCode === null) {
+          child.kill('SIGKILL');
+        }
+      }, timeout);
+      // Clear timeout if command completes before timeout
+      child.on('exit', () => {
+        clearTimeout(timeoutHandle);
       });
     });
   }

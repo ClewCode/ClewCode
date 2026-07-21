@@ -1,12 +1,13 @@
 import { feature } from 'bun:bundle';
 import { dirname } from 'path';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTerminalSize } from 'src/hooks/useTerminalSize.js';
 import type { AgentColorName } from 'src/tools/AgentTool/agentColorManager.js';
 import type { AgentDefinition } from 'src/tools/AgentTool/loadAgentsDir.js';
 import { getOriginalCwd, switchSession } from '../bootstrap/state.js';
 import type { Command } from '../commands.js';
 import { LogSelector } from '../components/LogSelector.js';
+import { type ResumeSizeChoice, ResumeSizeWarning } from '../components/ResumeSizeWarning.js';
 import { Spinner } from '../components/Spinner.js';
 import { restoreCostStateForSession } from '../cost-tracker.js';
 import { setClipboard } from '../ink/termio/osc.js';
@@ -27,9 +28,16 @@ import { renameRecordingForSession } from '../utils/asciicast.js';
 import { updateSessionName } from '../utils/concurrentSessions.js';
 import { loadConversationForResume } from '../utils/conversationRecovery.js';
 import { checkCrossProjectResume } from '../utils/crossProjectResume.js';
+import { errorMessage } from '../utils/errors.js';
 import type { FileHistorySnapshot } from '../utils/fileHistory.js';
 import { logError } from '../utils/log.js';
-import { createSystemMessage } from '../utils/messages.js';
+import { createSystemMessage, createUserMessage } from '../utils/messages.js';
+import {
+  getResumeSizeInfo,
+  type ResumeSizeInfo,
+  shouldWarnBeforeResume,
+  suppressResumeSizeWarning,
+} from '../utils/resumeSizeWarning.js';
 import {
   computeStandaloneAgentContext,
   restoreAgentFromSession,
@@ -120,6 +128,11 @@ export function ResumeConversation({
     mainThreadAgentDefinition?: AgentDefinition;
   } | null>(null);
   const [crossProjectCommand, setCrossProjectCommand] = React.useState<string | null>(null);
+  // Large/old session picked but not yet confirmed — awaiting the summary/full choice.
+  const [pendingResume, setPendingResume] = React.useState<{
+    data: NonNullable<typeof resumeData>;
+    info: ResumeSizeInfo;
+  } | null>(null);
   const sessionLogResultRef = React.useRef<SessionLogResult | null>(null);
   // Mirror of logs.length so loadMoreLogs can compute value indices outside
   // the setLogs updater (keeping it pure per React's contract).
@@ -142,41 +155,64 @@ export function ResumeConversation({
     return result;
   }, [logs, filterByPr]);
   const isResumeWithRenameEnabled = isCustomTitleEnabled();
+  const [abortController] = useState(() => new AbortController()); // BUG #4, #5
 
   React.useEffect(() => {
+    // BUG #5: Add cancellation logic for initial logs load
+    const controller = new AbortController();
+    let isMounted = true;
+
     loadSameRepoMessageLogsProgressive(worktreePaths)
       .then(result => {
+        if (!isMounted || controller.signal.aborted) return;
         sessionLogResultRef.current = result;
         logCountRef.current = result.logs.length;
         setLogs(result.logs);
         setLoading(false);
       })
       .catch(error => {
-        logError(error);
-        setLoading(false);
+        if (isMounted && !controller.signal.aborted) {
+          logError(error);
+          setLoading(false);
+        }
       });
+
+    return () => {
+      isMounted = false;
+      controller.abort(); // Cancel pending operations on unmount
+    };
   }, [worktreePaths]);
 
-  const loadMoreLogs = React.useCallback((count: number) => {
-    const ref = sessionLogResultRef.current;
-    if (!ref || ref.nextIndex >= ref.allStatLogs.length) return;
+  const loadMoreLogs = React.useCallback(
+    (count: number) => {
+      const ref = sessionLogResultRef.current;
+      if (!ref || ref.nextIndex >= ref.allStatLogs.length) return;
 
-    void enrichLogs(ref.allStatLogs, ref.nextIndex, count).then(result => {
-      ref.nextIndex = result.nextIndex;
-      if (result.logs.length > 0) {
-        // enrichLogs returns fresh unshared objects — safe to mutate in place.
-        // Offset comes from logCountRef so the setLogs updater stays pure.
-        const offset = logCountRef.current;
-        result.logs.forEach((log, i) => {
-          log.value = offset + i;
-        });
-        setLogs(prev => prev.concat(result.logs));
-        logCountRef.current += result.logs.length;
-      } else if (ref.nextIndex < ref.allStatLogs.length) {
-        loadMoreLogs(count);
-      }
-    });
-  }, []);
+      void enrichLogs(ref.allStatLogs, ref.nextIndex, count).then(result => {
+        // BUG #4: Check abort signal before updating state
+        if (abortController.signal.aborted) return;
+
+        ref.nextIndex = result.nextIndex;
+        if (result.logs.length > 0) {
+          // enrichLogs returns fresh unshared objects — safe to mutate in place.
+          // Offset comes from logCountRef so the setLogs updater stays pure.
+          const offset = logCountRef.current;
+          result.logs.forEach((log, i) => {
+            log.value = offset + i;
+          });
+          setLogs(prev => prev.concat(result.logs));
+          logCountRef.current += result.logs.length;
+        } else if (ref.nextIndex < ref.allStatLogs.length) {
+          // BUG #4: Prevent unbounded recursion with depth limit
+          const depth = (result as any).depth ?? 0;
+          if (depth < 10) {
+            loadMoreLogs(count);
+          }
+        }
+      });
+    },
+    [abortController],
+  );
 
   const loadLogs = React.useCallback(
     (allProjects: boolean) => {
@@ -211,8 +247,11 @@ export function ResumeConversation({
     process.exit(1);
   }
 
+  const [resumeError, setResumeError] = useState<string | null>(null);
+
   async function onSelect(log: LogOption) {
     setResuming(true);
+    setResumeError(null); // Clear any previous error (BUG #1, #2)
     const resumeStart = performance.now();
 
     const crossProjectCheck = checkCrossProjectResume(log, showAllProjects, worktreePaths);
@@ -221,6 +260,7 @@ export function ResumeConversation({
         const raw = await setClipboard(crossProjectCheck.command);
         if (raw) process.stdout.write(raw);
         setCrossProjectCommand(crossProjectCheck.command);
+        setResuming(false);
         return;
       }
     }
@@ -321,26 +361,64 @@ export function ResumeConversation({
       });
 
       setLogs([]);
-      setResumeData({
+      const data = {
         messages: result.messages,
         fileHistorySnapshots: result.fileHistorySnapshots,
         contentReplacements: result.contentReplacements,
         agentName: result.agentName,
         agentColor: (result.agentColor === 'default' ? undefined : result.agentColor) as AgentColorName | undefined,
         mainThreadAgentDefinition: resolvedAgentDef,
-      });
+      };
+
+      // Offer summarization before replaying an expensive session. The
+      // transcript is already loaded from disk here — nothing has been sent to
+      // the API yet, so declining costs the user nothing.
+      const info = getResumeSizeInfo(result.messages, log.modified, Date.now());
+      if (shouldWarnBeforeResume(info)) {
+        setPendingResume({ data, info });
+        return;
+      }
+      setResumeData(data);
     } catch (e) {
       logEvent('tengu_session_resumed', {
         entrypoint: 'picker' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         success: false,
       });
-      logError(e as Error);
-      throw e;
+      const errorMsg = errorMessage(e as Error);
+      logError(new Error(`Resume failed: ${errorMsg}`));
+      setResumeError(`Failed to resume: ${errorMsg}`); // BUG #1, #2: Show error instead of throwing
+    } finally {
+      setResuming(false); // BUG #2: Always reset spinner, even on error
     }
+  }
+
+  function onResumeSizeChoice(choice: ResumeSizeChoice) {
+    if (!pendingResume) return;
+    if (choice === 'never-ask') {
+      suppressResumeSizeWarning();
+    }
+    if (choice === 'summary') {
+      // REPL auto-submits initialMessage on mount, and string content routes
+      // through the normal prompt path — so /compact runs as a real command
+      // against the restored transcript.
+      setAppState(prev => ({
+        ...prev,
+        initialMessage: { message: createUserMessage({ content: '/compact' }) },
+      }));
+    }
+    logEvent('tengu_resume_size_warning_choice', {
+      choice: choice as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    });
+    setResumeData(pendingResume.data);
+    setPendingResume(null);
   }
 
   if (crossProjectCommand) {
     return <CrossProjectMessage command={crossProjectCommand} />;
+  }
+
+  if (pendingResume) {
+    return <ResumeSizeWarning info={pendingResume.info} onChange={onResumeSizeChoice} onCancel={onCancel} />;
   }
 
   if (resumeData) {
@@ -383,6 +461,15 @@ export function ResumeConversation({
       <Box>
         <Spinner />
         <Text> Resuming conversation…</Text>
+      </Box>
+    );
+  }
+
+  if (resumeError) {
+    return (
+      <Box flexDirection="column" marginBottom={1}>
+        <Text color="red">✗ {resumeError}</Text>
+        <Text dimColor>Press Ctrl+C to exit or select another conversation</Text>
       </Box>
     );
   }

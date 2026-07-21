@@ -16,10 +16,17 @@ const MAX_RENDERED_LINES = 10;
  * objects ({ message, path, ... }). Returns "Invalid tool parameters: <field>:
  * <message>" for the first issue, or the generic label if anything is off.
  */
-function summarizeValidationError(trimmed: string): string {
+export function summarizeValidationError(trimmed: string): string {
   const generic = 'Invalid tool parameters';
   const jsonStart = trimmed.indexOf('[', trimmed.indexOf('InputValidationError: '));
-  if (jsonStart === -1) return generic;
+  if (jsonStart === -1) {
+    const detail = trimmed
+      .slice(trimmed.indexOf('InputValidationError: ') + 'InputValidationError: '.length)
+      .split('\n')
+      .map(line => line.trim())
+      .find(line => /parameter|expected|invalid|unrecognized/i.test(line));
+    return detail ? `${generic}: ${detail}` : generic;
+  }
   try {
     const issues = JSON.parse(trimmed.slice(jsonStart));
     if (!Array.isArray(issues) || issues.length === 0) return generic;

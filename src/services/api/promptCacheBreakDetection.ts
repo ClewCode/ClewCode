@@ -8,7 +8,7 @@ import type { Message } from 'src/types/message.js';
 import { logForDebugging } from 'src/utils/debug.js';
 import { djb2Hash } from 'src/utils/hash.js';
 import { logError } from 'src/utils/log.js';
-import { getClaudeTempDir } from 'src/utils/permissions/filesystem.js';
+import { getClewTempDir } from 'src/utils/permissions/filesystem.js';
 import { jsonStringify } from 'src/utils/slowOperations.js';
 import type { QuerySource } from '../../constants/querySource.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
@@ -19,7 +19,7 @@ function getCacheBreakDiffPath(): string {
   for (let i = 0; i < 4; i++) {
     suffix += chars[Math.floor(Math.random() * chars.length)];
   }
-  return join(getClaudeTempDir(), `cache-break-${suffix}.diff`);
+  return join(getClewTempDir(), `cache-break-${suffix}.diff`);
 }
 
 type PreviousState = {
@@ -635,7 +635,7 @@ export function resetPromptCacheBreakDetection(): void {
 async function writeCacheBreakDiff(prevContent: string, newContent: string): Promise<string | undefined> {
   try {
     const diffPath = getCacheBreakDiffPath();
-    await mkdir(getClaudeTempDir(), { recursive: true });
+    await mkdir(getClewTempDir(), { recursive: true });
     const patch = createPatch('prompt-state', prevContent, newContent, 'before', 'after');
     await writeFile(diffPath, patch);
     return diffPath;

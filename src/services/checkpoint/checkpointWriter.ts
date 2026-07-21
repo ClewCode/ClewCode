@@ -67,6 +67,9 @@ export async function hasCheckpoint(progressPercent: number): Promise<boolean> {
   return checkpoints.some(c => c.progressPercent === progressPercent);
 }
 
+// BUG #20: Serialize index read-modify-write to prevent lost updates from concurrent writeCheckpoint calls
+let checkpointIndexLock: Promise<void> = Promise.resolve();
+
 /** Write a checkpoint to disk */
 export async function writeCheckpoint(checkpoint: TaskCheckpoint): Promise<void> {
   const dir = getCheckpointsDir();
@@ -75,20 +78,26 @@ export async function writeCheckpoint(checkpoint: TaskCheckpoint): Promise<void>
   // Write checkpoint file
   await writeFile(getCheckpointFilePath(checkpoint.id), JSON.stringify(checkpoint, null, 2), 'utf-8');
 
-  // Update index
-  const index = await loadCheckpointIndex();
-  const existing = index.findIndex(c => c.id === checkpoint.id);
-  if (existing >= 0) {
-    index[existing] = {
-      id: checkpoint.id,
-      progressPercent: checkpoint.progressPercent,
-      timestamp: checkpoint.timestamp,
-    };
-  } else {
-    index.push({ id: checkpoint.id, progressPercent: checkpoint.progressPercent, timestamp: checkpoint.timestamp });
-  }
-  index.sort((a, b) => a.progressPercent - b.progressPercent);
-  await writeFile(getCheckpointIndexPath(), JSON.stringify(index), 'utf-8');
+  // BUG #20: Serialize the index read-modify-write so concurrent checkpoint
+  // writes (e.g. multiple thresholds firing close together) don't clobber
+  // each other's index entries.
+  const previousLock = checkpointIndexLock;
+  checkpointIndexLock = previousLock.then(async () => {
+    const index = await loadCheckpointIndex();
+    const existing = index.findIndex(c => c.id === checkpoint.id);
+    if (existing >= 0) {
+      index[existing] = {
+        id: checkpoint.id,
+        progressPercent: checkpoint.progressPercent,
+        timestamp: checkpoint.timestamp,
+      };
+    } else {
+      index.push({ id: checkpoint.id, progressPercent: checkpoint.progressPercent, timestamp: checkpoint.timestamp });
+    }
+    index.sort((a, b) => a.progressPercent - b.progressPercent);
+    await writeFile(getCheckpointIndexPath(), JSON.stringify(index), 'utf-8');
+  });
+  await checkpointIndexLock;
 }
 
 /** Load all checkpoints for the current session */

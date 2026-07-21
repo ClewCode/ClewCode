@@ -100,12 +100,16 @@ export function updateWatchPaths(paths: string[]): void {
   }
   dynamicWatchPaths = paths;
   dynamicWatchPathsSorted = sorted;
-  restartWatching();
+  // BUG #18: Fire and forget is OK here since we set watcher=null immediately
+  restartWatching().catch(() => {
+    /* ignore close errors */
+  });
 }
 
-function restartWatching(): void {
+// BUG #18: Make async to properly await watcher.close() and prevent FD leak
+async function restartWatching(): Promise<void> {
   if (watcher) {
-    void watcher.close();
+    await watcher.close();
     watcher = null;
   }
   const paths = resolveWatchPaths();
@@ -149,13 +153,14 @@ export async function onCwdChangedForHooks(oldCwd: string, newCwd: string): Prom
 
   // Re-resolve matcher paths against the new cwd
   if (initialized) {
-    restartWatching();
+    await restartWatching();
   }
 }
 
-function dispose(): void {
+// BUG #18: Make async to properly await watcher.close()
+async function dispose(): Promise<void> {
   if (watcher) {
-    void watcher.close();
+    await watcher.close();
     watcher = null;
   }
   dynamicWatchPaths = [];
@@ -165,6 +170,6 @@ function dispose(): void {
   notifyCallback = null;
 }
 
-export function resetFileChangedWatcherForTesting(): void {
-  dispose();
+export async function resetFileChangedWatcherForTesting(): Promise<void> {
+  await dispose();
 }

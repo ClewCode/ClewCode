@@ -486,7 +486,7 @@ export async function uninstallPluginOp(
       if (actualScope === 'project') {
         return {
           success: false,
-          message: `Plugin "${plugin}" is enabled at project scope (.claude/settings.json, shared with your team). To disable just for you: claude plugin disable ${plugin} --scope local`,
+          message: `Plugin "${plugin}" is enabled at project scope (.clew/settings.json, shared with your team). To disable just for you: claude plugin disable ${plugin} --scope local`,
         };
       }
       return {
@@ -1023,7 +1023,7 @@ async function performPluginUpdate({
 
     // Try to load manifest from plugin directory (for version info)
     let pluginManifest: PluginManifest | undefined;
-    const manifestPath = join(sourcePath, '.claude-plugin', 'plugin.json');
+    const manifestPath = join(sourcePath, '.clew-plugin', 'plugin.json');
     try {
       pluginManifest = await loadPluginManifest(manifestPath, entry.name, entry.source);
     } catch {

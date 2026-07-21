@@ -260,54 +260,61 @@ const extractSessionMemory = sequential(async (context: REPLHookContext): Promis
 
   markExtractionStarted();
 
-  // Create isolated context for setup to avoid polluting parent's cache
-  const setupContext = createSubagentContext(toolUseContext);
+  try {
+    // Create isolated context for setup to avoid polluting parent's cache
+    const setupContext = createSubagentContext(toolUseContext);
 
-  // Set up file system and read current state with isolated context
-  const { memoryPath, currentMemory } = await setupSessionMemoryFile(setupContext);
+    // Set up file system and read current state with isolated context
+    const { memoryPath, currentMemory } = await setupSessionMemoryFile(setupContext);
 
-  // Create extraction message
-  const userPrompt = await buildSessionMemoryUpdatePrompt(currentMemory, memoryPath);
+    // Create extraction message
+    const userPrompt = await buildSessionMemoryUpdatePrompt(currentMemory, memoryPath);
 
-  // Run session memory extraction using runForkedAgent for prompt caching
-  // runForkedAgent creates an isolated context to prevent mutation of parent state
-  // Pass setupContext.readFileState so the forked agent can edit the memory file
-  await runForkedAgent({
-    promptMessages: [createUserMessage({ content: userPrompt })],
-    cacheSafeParams: createCacheSafeParams(context),
-    canUseTool: createMemoryFileCanUseTool(memoryPath),
-    querySource: 'session_memory',
-    forkLabel: 'session_memory',
-    overrides: { readFileState: setupContext.readFileState },
-  });
+    // Run session memory extraction using runForkedAgent for prompt caching
+    // runForkedAgent creates an isolated context to prevent mutation of parent state
+    // Pass setupContext.readFileState so the forked agent can edit the memory file
+    await runForkedAgent({
+      promptMessages: [createUserMessage({ content: userPrompt })],
+      cacheSafeParams: createCacheSafeParams(context),
+      canUseTool: createMemoryFileCanUseTool(memoryPath),
+      querySource: 'session_memory',
+      forkLabel: 'session_memory',
+      overrides: { readFileState: setupContext.readFileState },
+    });
 
-  // Log extraction event for tracking frequency
-  // Use the token usage from the last message in the conversation
-  const lastMessage = messages[messages.length - 1];
-  const usage = lastMessage ? getTokenUsage(lastMessage) : undefined;
-  const config = getSessionMemoryConfig();
-  logEvent('tengu_session_memory_extraction', {
-    input_tokens: usage?.input_tokens,
-    output_tokens: usage?.output_tokens,
-    cache_read_input_tokens: usage?.cache_read_input_tokens ?? undefined,
-    cache_creation_input_tokens: usage?.cache_creation_input_tokens ?? undefined,
-    config_min_message_tokens_to_init: config.minimumMessageTokensToInit,
-    config_min_tokens_between_update: config.minimumTokensBetweenUpdate,
-    config_tool_calls_between_updates: config.toolCallsBetweenUpdates,
-  });
+    // Log extraction event for tracking frequency
+    // Use the token usage from the last message in the conversation
+    const lastMessage = messages[messages.length - 1];
+    const usage = lastMessage ? getTokenUsage(lastMessage) : undefined;
+    const config = getSessionMemoryConfig();
+    logEvent('tengu_session_memory_extraction', {
+      input_tokens: usage?.input_tokens,
+      output_tokens: usage?.output_tokens,
+      cache_read_input_tokens: usage?.cache_read_input_tokens ?? undefined,
+      cache_creation_input_tokens: usage?.cache_creation_input_tokens ?? undefined,
+      config_min_message_tokens_to_init: config.minimumMessageTokensToInit,
+      config_min_tokens_between_update: config.minimumTokensBetweenUpdate,
+      config_tool_calls_between_updates: config.toolCallsBetweenUpdates,
+    });
 
-  // Record the context size at extraction for tracking minimumTokensBetweenUpdate
-  recordExtractionTokenCount(tokenCountWithEstimation(messages));
+    // Record the context size at extraction for tracking minimumTokensBetweenUpdate
+    recordExtractionTokenCount(tokenCountWithEstimation(messages));
 
-  // Update lastSummarizedMessageId after successful completion
-  updateLastSummarizedMessageIdIfSafe(messages);
+    // Update lastSummarizedMessageId after successful completion
+    updateLastSummarizedMessageIdIfSafe(messages);
 
-  // Consolidate session notes into long-term memories
-  void consolidateSessionMemory().catch(err => {
-    logError(new Error(`Session memory consolidation failed: ${errorMessage(err)}`));
-  });
-
-  markExtractionCompleted();
+    try {
+      // Consolidate session notes into long-term memories (BUG #1: wait for completion before marking done)
+      await consolidateSessionMemory();
+    } catch (err) {
+      logError(new Error(`Session memory consolidation failed: ${errorMessage(err)}`));
+    }
+  } catch (error) {
+    // BUG #2: Reset extraction state even if setup/extraction fails
+    logError(new Error(`Session memory extraction failed: ${errorMessage(error)}`));
+  } finally {
+    markExtractionCompleted();
+  }
 });
 
 /**

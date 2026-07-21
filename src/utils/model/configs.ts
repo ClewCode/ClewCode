@@ -76,11 +76,25 @@ export const CLAUDE_OPUS_4_7_CONFIG = {
   foundry: 'claude-opus-4-7',
 } as const satisfies ModelConfig;
 
+export const CLAUDE_OPUS_4_8_CONFIG = {
+  firstParty: 'claude-opus-4-8',
+  bedrock: 'us.anthropic.claude-opus-4-8-v1',
+  vertex: 'claude-opus-4-8',
+  foundry: 'claude-opus-4-8',
+} as const satisfies ModelConfig;
+
 export const CLAUDE_SONNET_4_7_CONFIG = {
   firstParty: 'claude-sonnet-4-7',
   bedrock: 'us.anthropic.claude-sonnet-4-7',
   vertex: 'claude-sonnet-4-7',
   foundry: 'claude-sonnet-4-7',
+} as const satisfies ModelConfig;
+
+export const CLAUDE_SONNET_5_CONFIG = {
+  firstParty: 'claude-sonnet-5',
+  bedrock: 'us.anthropic.claude-sonnet-5-v1',
+  vertex: 'claude-sonnet-5',
+  foundry: 'claude-sonnet-5',
 } as const satisfies ModelConfig;
 
 // @[MODEL LAUNCH]: Register the new config here.

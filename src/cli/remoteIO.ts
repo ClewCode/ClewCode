@@ -167,7 +167,16 @@ export class RemoteIO extends StructuredIO {
       this.keepAliveTimer = setInterval(() => {
         logForDebugging('[remote-io] keep_alive sent');
         void this.write({ type: 'keep_alive' }).catch(err => {
+          // BUG #8: Log warning and stop keep-alive if write fails (connection lost)
           logForDebugging(`[remote-io] keep_alive write failed: ${errorMessage(err)}`);
+          logForDiagnosticsNoPII('warn', 'remote_io_keep_alive_failed', {
+            error: errorMessage(err as Error),
+          });
+          // Clear timer to avoid repeated failures
+          if (this.keepAliveTimer) {
+            clearInterval(this.keepAliveTimer);
+            this.keepAliveTimer = undefined;
+          }
         });
       }, keepAliveIntervalMs);
       this.keepAliveTimer.unref?.();

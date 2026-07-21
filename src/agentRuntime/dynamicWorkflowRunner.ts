@@ -201,16 +201,25 @@ export async function runDynamicWorkflow(params: {
       allResults.push(result);
 
       // Persist after each subtask so we never lose work to a crash.
-      if (params.persist && runState) {
-        const persisted: PersistedSubtaskResult = {
-          subtaskId: result.subtaskId,
-          output: result.output,
-          durationMs: result.durationMs,
-          verification: result.verification,
-          verificationReason: result.verificationReason,
-          completedAt: new Date().toISOString(),
-        };
-        runState = await params.persist({ runState, result: persisted, waveIndex: i });
+      // BUG #19: persist requires runState (for runId/workflowId) — warn instead of
+      // silently no-op'ing when persist is supplied without initialState, since that
+      // combination means the caller's intent (durable progress) can never be honored.
+      if (params.persist) {
+        if (runState) {
+          const persisted: PersistedSubtaskResult = {
+            subtaskId: result.subtaskId,
+            output: result.output,
+            durationMs: result.durationMs,
+            verification: result.verification,
+            verificationReason: result.verificationReason,
+            completedAt: new Date().toISOString(),
+          };
+          runState = await params.persist({ runState, result: persisted, waveIndex: i });
+        } else {
+          console.warn(
+            '[dynamicWorkflowRunner] persist hook provided without initialState — progress will not be persisted',
+          );
+        }
       }
     }
 

@@ -51,7 +51,6 @@ export const DANGEROUS_FILES = [
   '.profile',
   '.ripgreprc',
   '.mcp.json',
-  '.claude.json',
   '.clew.json',
 ] as const;
 
@@ -59,12 +58,12 @@ export const DANGEROUS_FILES = [
  * Dangerous directories that should be protected from auto-editing.
  * These directories contain sensitive configuration or executable files.
  */
-export const DANGEROUS_DIRECTORIES = ['.git', '.vscode', '.idea', '.clew', '.claude', '.husky'] as const;
+export const DANGEROUS_DIRECTORIES = ['.git', '.vscode', '.idea', '.clew', '.husky'] as const;
 
 /**
  * Normalizes a path for case-insensitive comparison.
  * This prevents bypassing security checks using mixed-case paths on case-insensitive
- * filesystems (macOS/Windows) like `.cLauDe/Settings.locaL.json`.
+ * filesystems (macOS/Windows) like `.cLeW/Settings.locaL.json`.
  *
  * We always normalize to lowercase regardless of platform for consistent security.
  * @param path The path to normalize
@@ -75,13 +74,13 @@ export function normalizeCaseForComparison(path: string): string {
 }
 
 /**
- * If filePath is inside a .claude/skills/{name}/ directory (project or global),
+ * If filePath is inside a .clew/skills/{name}/ directory (project or global),
  * return the skill name and a session-allow pattern scoped to just that skill.
  * Used to offer a narrower "allow edits to this skill only" option in the
  * permission dialog and SDK suggestions, so iterating on one skill doesn't
- * require granting session access to all of .claude/ (settings.json, hooks/, etc.).
+ * require granting session access to all of .clew/ (settings.json, hooks/, etc.).
  */
-export function getClaudeSkillScope(filePath: string): { skillName: string; pattern: string } | null {
+export function getClewSkillScope(filePath: string): { skillName: string; pattern: string } | null {
   const absolutePath = expandPath(filePath);
   const absolutePathLower = normalizeCaseForComparison(absolutePath);
 
@@ -171,23 +170,21 @@ function getSettingsPaths(): string[] {
   return SETTING_SOURCES.map(source => getSettingsFilePathForSource(source)).filter(path => path !== undefined);
 }
 
-export function isClaudeSettingsPath(filePath: string): boolean {
+export function isClewSettingsPath(filePath: string): boolean {
   // SECURITY: Normalize path structure first to prevent bypass via redundant ./
-  // sequences like `./.claude/./settings.json` which would evade the endsWith() check
+  // sequences like `./.clew/./settings.json` which would evade the endsWith() check
   const expandedPath = expandPath(filePath);
 
   // Normalize for case-insensitive comparison to prevent bypassing security
-  // with paths like .cLauDe/Settings.locaL.json
+  // with paths like .cLeW/Settings.locaL.json
   const normalizedPath = normalizeCaseForComparison(expandedPath);
 
   // Use platform separator so endsWith checks work on both Unix (/) and Windows (\)
   if (
-    normalizedPath.endsWith(`${sep}.claude${sep}settings.json`) ||
-    normalizedPath.endsWith(`${sep}.claude${sep}settings.local.json`) ||
     normalizedPath.endsWith(`${sep}.clew${sep}settings.json`) ||
     normalizedPath.endsWith(`${sep}.clew${sep}settings.local.json`)
   ) {
-    // Include .claude/settings.json or .clew/settings.json even for other projects
+    // Include .clew/settings.json even for other projects
     return true;
   }
   // Check for current project's settings files (including managed settings and CLI args)
@@ -196,12 +193,12 @@ export function isClaudeSettingsPath(filePath: string): boolean {
 }
 
 // Always ask when Clew Code tries to edit its own config files
-function isClaudeConfigFilePath(filePath: string): boolean {
-  if (isClaudeSettingsPath(filePath)) {
+function isClewConfigFilePath(filePath: string): boolean {
+  if (isClewSettingsPath(filePath)) {
     return true;
   }
 
-  // Check if file is within .claude/commands or .claude/agents directories
+  // Check if file is within .clew/commands or .clew/agents directories
   // using proper path segment validation (not string matching with includes())
   // pathInWorkingPath now handles case-insensitive comparison to prevent bypasses
   const commandsDir = join(getOriginalCwd(), DOT_CLEW, 'commands');
@@ -262,7 +259,7 @@ function isProjectDirPath(absolutePath: string): boolean {
 
 /**
  * Checks if the scratchpad directory feature is enabled.
- * The scratchpad is a per-session directory for Claude to write temporary files.
+ * The scratchpad is a per-session directory for Clew to write temporary files.
  * Controlled by the tengu_scratch Statsig gate.
  */
 export function isScratchpadEnabled(): boolean {
@@ -270,35 +267,35 @@ export function isScratchpadEnabled(): boolean {
 }
 
 /**
- * Returns the user-specific Claude temp directory name.
- * On Unix: 'claude-{uid}' to prevent multi-user permission conflicts
- * On Windows: 'claude' (tmpdir() is already per-user)
+ * Returns the user-specific Clew temp directory name.
+ * On Unix: 'clew-{uid}' to prevent multi-user permission conflicts
+ * On Windows: 'clew' (tmpdir() is already per-user)
  */
-export function getClaudeTempDirName(): string {
+export function getClewTempDirName(): string {
   if (getPlatform() === 'windows') {
-    return 'claude';
+    return 'clew';
   }
   // Use UID to create per-user directories, preventing permission conflicts
   // when multiple users share the same /tmp directory
   const uid = process.getuid?.() ?? 0;
-  return `claude-${uid}`;
+  return `clew-${uid}`;
 }
 
 /**
- * Returns the Claude temp directory path with symlinks resolved.
+ * Returns the Clew temp directory path with symlinks resolved.
  * Uses TMPDIR env var if set, otherwise:
- * - On Unix: /tmp/claude-{uid}/ (resolved to /private/tmp/claude-{uid}/ on macOS)
- * - On Windows: {tmpdir}/claude/ (e.g., C:\Users\{user}\AppData\Local\Temp\claude\)
+ * - On Unix: /tmp/clew-{uid}/ (resolved to /private/tmp/clew-{uid}/ on macOS)
+ * - On Windows: {tmpdir}/clew/ (e.g., C:\Users\{user}\AppData\Local\Temp\clew\)
  * This is a per-user temporary directory used by Clew Code for all temp files.
  *
  * NOTE: We resolve symlinks to ensure this path matches the resolved paths used
  * in permission checks. On macOS, /tmp is a symlink to /private/tmp, so without
- * resolution, paths like /tmp/claude-{uid}/... wouldn't match /private/tmp/claude-{uid}/...
+ * resolution, paths like /tmp/clew-{uid}/... wouldn't match /private/tmp/clew-{uid}/...
  */
 // Memoized: called per-tool from permission checks (yoloClassifier, sandbox-adapter)
 // and per-turn from BashTool prompt. Inputs (CLEW_CODE_TMPDIR env + platform) are
 // fixed at startup, and the realpath of the system tmp dir does not change mid-session.
-export const getClaudeTempDir = memoize(function getClaudeTempDir(): string {
+export const getClewTempDir = memoize(function getClewTempDir(): string {
   const baseTmpDir = process.env.CLEW_CODE_TMPDIR || (getPlatform() === 'windows' ? tmpdir() : '/tmp');
 
   // Resolve symlinks in the base temp directory (e.g., /tmp -> /private/tmp on macOS)
@@ -311,7 +308,7 @@ export const getClaudeTempDir = memoize(function getClaudeTempDir(): string {
     // If resolution fails, use the original path
   }
 
-  return join(resolvedBaseTmpDir, getClaudeTempDirName()) + sep;
+  return join(resolvedBaseTmpDir, getClewTempDirName()) + sep;
 });
 
 /**
@@ -332,20 +329,20 @@ export const getClaudeTempDir = memoize(function getClaudeTempDir(): string {
  */
 export const getBundledSkillsRoot = memoize(function getBundledSkillsRoot(): string {
   const nonce = randomBytes(16).toString('hex');
-  return join(getClaudeTempDir(), 'bundled-skills', MACRO.VERSION, nonce);
+  return join(getClewTempDir(), 'bundled-skills', MACRO.VERSION, nonce);
 });
 
 /**
  * Returns the project temp directory path with trailing separator.
- * Path format: /tmp/claude-{uid}/{sanitized-cwd}/
+ * Path format: /tmp/clew-{uid}/{sanitized-cwd}/
  */
 export function getProjectTempDir(): string {
-  return join(getClaudeTempDir(), sanitizePath(getOriginalCwd())) + sep;
+  return join(getClewTempDir(), sanitizePath(getOriginalCwd())) + sep;
 }
 
 /**
  * Returns the scratchpad directory path for the current session.
- * Path format: /tmp/claude-{uid}/{sanitized-cwd}/{sessionId}/scratchpad/
+ * Path format: /tmp/clew-{uid}/{sanitized-cwd}/{sessionId}/scratchpad/
  */
 export function getScratchpadDir(): string {
   return join(getProjectTempDir(), getSessionId(), 'scratchpad');
@@ -380,7 +377,7 @@ export function isScratchpadPath(absolutePath: string): boolean {
   const scratchpadDir = getScratchpadDir();
   // SECURITY: Normalize the path to resolve .. segments before checking
   // This prevents path traversal bypasses like:
-  //   echo "malicious" > /tmp/claude-0/proj/session/scratchpad/../../../etc/passwd
+  //   echo "malicious" > /tmp/clew-0/proj/session/scratchpad/../../../etc/passwd
   // Without normalization, the path would pass the startsWith check but write to /etc/passwd
   const normalizedPath = normalize(absolutePath);
   return normalizedPath === scratchpadDir || normalizedPath.startsWith(scratchpadDir + sep);
@@ -416,15 +413,15 @@ function isDangerousFilePathToAutoEdit(path: string): boolean {
         continue;
       }
 
-      // Special case: .claude/worktrees/ or .clew/worktrees/ is a structural path
+      // Special case: .clew/worktrees/ is a structural path
       // (where Clew stores git worktrees), not a user-created dangerous directory.
-      // Skip the .claude/.clew segment when it's followed by 'worktrees'.
-      // Any nested .claude/.clew directories within the worktree (not followed
+      // Skip the .clew segment when it's followed by 'worktrees'.
+      // Any nested .clew directories within the worktree (not followed
       // by 'worktrees') are still blocked.
-      if (dir === '.claude' || dir === '.clew') {
+      if (dir === '.clew') {
         const nextSegment = pathSegments[i + 1];
         if (nextSegment && normalizeCaseForComparison(nextSegment) === 'worktrees') {
-          break; // Skip this .claude/.clew, continue checking other segments
+          break; // Skip this .clew, continue checking other segments
         }
       }
 
@@ -451,9 +448,9 @@ function isDangerousFilePathToAutoEdit(path: string): boolean {
  * Detects suspicious Windows path patterns that could bypass security checks.
  * These patterns include:
  * - NTFS Alternate Data Streams (e.g., file.txt::$DATA or file.txt:stream)
- * - 8.3 short names (e.g., GIT~1, CLAUDE~1, SETTIN~1.JSON)
+ * - 8.3 short names (e.g., GIT~1, CLEW~1, SETTIN~1.JSON)
  * - Long path prefixes (e.g., \\?\C:\..., \\.\C:\..., //?/C:/..., //./C:/...)
- * - Trailing dots and spaces (e.g., .git., .claude , .bashrc...)
+ * - Trailing dots and spaces (e.g., .git., .clew , .bashrc...)
  * - DOS device names (e.g., .git.CON, settings.json.PRN, .bashrc.AUX)
  * - Three or more consecutive dots (e.g., .../file.txt, path/.../file, file...txt)
  *
@@ -512,7 +509,7 @@ function hasSuspiciousWindowsPathPattern(path: string): boolean {
 
   // Check for 8.3 short names
   // Look for '~' followed by a digit
-  // Examples: GIT~1, CLAUDE~1, SETTIN~1.JSON, BASHRC~1
+  // Examples: GIT~1, CLEW~1, SETTIN~1.JSON, BASHRC~1
   if (/~\d/.test(path)) {
     return true;
   }
@@ -524,7 +521,7 @@ function hasSuspiciousWindowsPathPattern(path: string): boolean {
   }
 
   // Check for trailing dots and spaces that Windows strips during path resolution
-  // Examples: .git., .claude , .bashrc..., settings.json.
+  // Examples: .git., .clew , .bashrc..., settings.json.
   // This can bypass string matching if ".git" is blocked but ".git." is used
   if (/[.\s]+$/.test(path)) {
     return true;
@@ -562,7 +559,7 @@ function hasSuspiciousWindowsPathPattern(path: string): boolean {
  *
  * This function performs comprehensive safety checks including:
  * - Suspicious Windows path patterns (NTFS streams, 8.3 names, long path prefixes, etc.)
- * - Claude config files (.claude/settings.json, .claude/commands/, .claude/agents/)
+ * - Clew config files (.clew/settings.json, .clew/commands/, .clew/agents/)
  * - MCP CLI state files (managed internally by Clew Code)
  * - Dangerous files (.bashrc, .gitconfig, .git/, .vscode/, .idea/, etc.)
  *
@@ -584,18 +581,18 @@ export function checkPathSafetyForAutoEdit(
     if (hasSuspiciousWindowsPathPattern(pathToCheck)) {
       return {
         safe: false,
-        message: `Claude requested permissions to write to ${path}, which contains a suspicious Windows path pattern that requires manual approval.`,
+        message: `Clew requested permissions to write to ${path}, which contains a suspicious Windows path pattern that requires manual approval.`,
         classifierApprovable: false,
       };
     }
   }
 
-  // Check for Claude config files on all paths
+  // Check for Clew config files on all paths
   for (const pathToCheck of pathsToCheck) {
-    if (isClaudeConfigFilePath(pathToCheck)) {
+    if (isClewConfigFilePath(pathToCheck)) {
       return {
         safe: false,
-        message: `Claude requested permissions to write to ${path}, but you haven't granted it yet.`,
+        message: `Clew requested permissions to write to ${path}, but you haven't granted it yet.`,
         classifierApprovable: true,
       };
     }
@@ -606,7 +603,7 @@ export function checkPathSafetyForAutoEdit(
     if (isDangerousFilePathToAutoEdit(pathToCheck)) {
       return {
         safe: false,
-        message: `Claude requested permissions to edit ${path} which is a sensitive file.`,
+        message: `Clew requested permissions to edit ${path} which is a sensitive file.`,
         classifierApprovable: true,
       };
     }
@@ -663,7 +660,7 @@ export function pathInWorkingPath(path: string, workingPath: string): boolean {
     .replace(/^\/private\/tmp(\/|$)/, '/tmp$1');
 
   // Normalize case for case-insensitive comparison to prevent bypassing security
-  // checks on case-insensitive filesystems (macOS/Windows) like .cLauDe/CoMmAnDs
+  // checks on case-insensitive filesystems (macOS/Windows) like .cLeW/CoMmAnDs
   const caseNormalizedPath = normalizeCaseForComparison(normalizedPath);
   const caseNormalizedWorkingPath = normalizeCaseForComparison(normalizedWorkingPath);
 
@@ -819,7 +816,7 @@ function patternWithRoot(
       root: homedir().normalize('NFC'),
     };
   } else if (pattern.startsWith(DIR_SEP)) {
-    // Patterns starting with / resolve relative to the directory where settings are stored (without .claude/)
+    // Patterns starting with / resolve relative to the directory where settings are stored (without .clew/)
     return {
       relativePattern: pattern,
       root: rootPathForSource(source),
@@ -946,7 +943,7 @@ export function checkReadPermissionForTool(
   if (typeof tool.getPath !== 'function') {
     return {
       behavior: 'ask',
-      message: `Claude requested permissions to use ${tool.name}, but you haven't granted it yet.`,
+      message: `Clew requested permissions to use ${tool.name}, but you haven't granted it yet.`,
     };
   }
   const path = tool.getPath(input);
@@ -967,7 +964,7 @@ export function checkReadPermissionForTool(
   if (path.startsWith('\\\\') || path.startsWith('//')) {
     return {
       behavior: 'ask',
-      message: `Claude requested permissions to read from ${path}, which appears to be a UNC path that could access network resources.`,
+      message: `Clew requested permissions to read from ${path}, which appears to be a UNC path that could access network resources.`,
       decisionReason: {
         type: 'other',
         reason: 'UNC path detected (defense-in-depth check)',
@@ -980,7 +977,7 @@ export function checkReadPermissionForTool(
     if (hasSuspiciousWindowsPathPattern(pathToCheck)) {
       return {
         behavior: 'ask',
-        message: `Claude requested permissions to read from ${path}, which contains a suspicious Windows path pattern that requires manual approval.`,
+        message: `Clew requested permissions to read from ${path}, which contains a suspicious Windows path pattern that requires manual approval.`,
         decisionReason: {
           type: 'other',
           reason:
@@ -1014,7 +1011,7 @@ export function checkReadPermissionForTool(
     if (askRule) {
       return {
         behavior: 'ask',
-        message: `Claude requested permissions to read from ${path}, but you haven't granted it yet.`,
+        message: `Clew requested permissions to read from ${path}, but you haven't granted it yet.`,
         decisionReason: {
           type: 'rule',
           rule: askRule,
@@ -1067,7 +1064,7 @@ export function checkReadPermissionForTool(
   // At this point, isInWorkingDir is false (from step #6), so path is outside working directories
   return {
     behavior: 'ask',
-    message: `Claude requested permissions to read from ${path}, but you haven't granted it yet.`,
+    message: `Clew requested permissions to read from ${path}, but you haven't granted it yet.`,
     suggestions: generateSuggestions(path, 'read', toolPermissionContext, pathsToCheck),
     decisionReason: {
       type: 'workingDir',
@@ -1094,7 +1091,7 @@ export function checkWritePermissionForTool<Input extends AnyObject>(
   if (typeof tool.getPath !== 'function') {
     return {
       behavior: 'ask',
-      message: `Claude requested permissions to use ${tool.name}, but you haven't granted it yet.`,
+      message: `Clew requested permissions to use ${tool.name}, but you haven't granted it yet.`,
     };
   }
   const path = tool.getPath(input);
@@ -1116,24 +1113,24 @@ export function checkWritePermissionForTool<Input extends AnyObject>(
   }
 
   // 1.5. Allow writes to internal editable paths (plan files, scratchpad)
-  // This MUST come before isDangerousFilePathToAutoEdit check since .claude is a dangerous directory
+  // This MUST come before isDangerousFilePathToAutoEdit check since .clew is a dangerous directory
   const absolutePathForEdit = expandPath(path);
   const internalEditResult = checkEditableInternalPath(absolutePathForEdit, input);
   if (internalEditResult.behavior !== 'passthrough') {
     return internalEditResult;
   }
 
-  // 1.6. Check for .claude/** allow rules BEFORE safety checks
-  // This allows session-level permissions to bypass the safety blocks for .claude/
+  // 1.6. Check for .clew/** allow rules BEFORE safety checks
+  // This allows session-level permissions to bypass the safety blocks for .clew/
   // We only allow this for session-level rules to prevent users from accidentally
-  // permanently granting broad access to their .claude/ folder.
+  // permanently granting broad access to their .clew/ folder.
   //
   // matchingRuleForInput returns the first match across all sources. If the user
-  // also has a broader Edit(.claude) rule in userSettings (e.g. from sandbox
+  // also has a broader Edit(.clew) rule in userSettings (e.g. from sandbox
   // write-allow conversion), that rule would be found first and its source check
   // below would fail. Scope the search to session-only rules so the dialog's
-  // "allow Claude to edit its own settings for this session" option actually works.
-  const claudeFolderAllowRule = matchingRuleForInput(
+  // "allow Clew to edit its own settings for this session" option actually works.
+  const clewFolderAllowRule = matchingRuleForInput(
     path,
     {
       ...toolPermissionContext,
@@ -1144,15 +1141,15 @@ export function checkWritePermissionForTool<Input extends AnyObject>(
     'edit',
     'allow',
   );
-  if (claudeFolderAllowRule) {
-    // Check if this rule is scoped under .claude/ (project or global).
+  if (clewFolderAllowRule) {
+    // Check if this rule is scoped under .clew/ (project or global).
     // Accepts both the broad patterns ('/.clew/**', '~/.clew/**') and
     // narrowed ones like '/.clew/skills/my-skill/**' so users can grant
     // session access to a single skill without also exposing settings.json
     // or hooks/. The rule already matched the path via matchingRuleForInput;
     // this is an additional scope check. Reject '..' to prevent a rule like
     // '/.clew/../**' from leaking this bypass outside .clew/.
-    const ruleContent = claudeFolderAllowRule.ruleValue.ruleContent;
+    const ruleContent = clewFolderAllowRule.ruleValue.ruleContent;
     if (
       ruleContent &&
       (ruleContent.startsWith(CLEW_FOLDER_PERMISSION_PATTERN.slice(0, -2)) ||
@@ -1165,23 +1162,23 @@ export function checkWritePermissionForTool<Input extends AnyObject>(
         updatedInput: input,
         decisionReason: {
           type: 'rule',
-          rule: claudeFolderAllowRule,
+          rule: clewFolderAllowRule,
         },
       };
     }
   }
 
-  // 1.7. Check comprehensive safety validations (Windows patterns, Claude config, dangerous files)
+  // 1.7. Check comprehensive safety validations (Windows patterns, Clew config, dangerous files)
   // This MUST come before checking allow rules to prevent users from accidentally granting
   // permission to edit protected files
   const safetyCheck = checkPathSafetyForAutoEdit(path, pathsToCheck);
   if (safetyCheck.safe === false) {
-    // SDK suggestion: if under .claude/skills/{name}/, emit the narrowed
+    // SDK suggestion: if under .clew/skills/{name}/, emit the narrowed
     // session-scoped addRules that step 1.6 will honor on the next call.
-    // Everything else (.claude/settings.json, .git/, .vscode/, .idea/) falls
+    // Everything else (.clew/settings.json, .git/, .vscode/, .idea/) falls
     // back to generateSuggestions — its setMode suggestion doesn't bypass
     // this check, but preserving it avoids a surprising empty array.
-    const skillScope = getClaudeSkillScope(path);
+    const skillScope = getClewSkillScope(path);
     const safetySuggestions: PermissionUpdate[] = skillScope
       ? [
           {
@@ -1215,7 +1212,7 @@ export function checkWritePermissionForTool<Input extends AnyObject>(
     if (askRule) {
       return {
         behavior: 'ask',
-        message: `Claude requested permissions to write to ${path}, but you haven't granted it yet.`,
+        message: `Clew requested permissions to write to ${path}, but you haven't granted it yet.`,
         decisionReason: {
           type: 'rule',
           rule: askRule,
@@ -1253,7 +1250,7 @@ export function checkWritePermissionForTool<Input extends AnyObject>(
   // 5. Default to asking for permission
   return {
     behavior: 'ask',
-    message: `Claude requested permissions to write to ${path}, but you haven't granted it yet.`,
+    message: `Clew requested permissions to write to ${path}, but you haven't granted it yet.`,
     suggestions: generateSuggestions(path, 'write', toolPermissionContext, pathsToCheck),
     decisionReason: !isInWorkingDir
       ? {
@@ -1360,14 +1357,14 @@ export function checkEditableInternalPath(absolutePath: string, input: { [key: s
   // sides handles the macOS /tmp → /private/tmp case where the config dir
   // lives under a symlinked root.
   if (feature('TEMPLATES')) {
-    const jobDir = process.env.CLAUDE_JOB_DIR;
+    const jobDir = process.env.CLEW_JOB_DIR;
     if (jobDir) {
       const jobsRoot = join(getClewConfigHomeDir(), 'jobs');
       const jobDirForms = getPathsForPermissionCheck(jobDir).map(normalize);
       const jobsRootForms = getPathsForPermissionCheck(jobsRoot).map(normalize);
       // Hijack guard: every resolved form of the job dir must sit under
       // some resolved form of the jobs root. Resolving both sides handles
-      // the case where ~/.claude is a symlink (e.g. to /data/claude-config).
+      // the case where ~/.clew is a symlink (e.g. to /data/clew-config).
       const isUnderJobsRoot = jobDirForms.every(jd => jobsRootForms.some(jr => jd.startsWith(jr + sep)));
       if (isUnderJobsRoot) {
         const targetForms = getPathsForPermissionCheck(absolutePath);
@@ -1403,7 +1400,7 @@ export function checkEditableInternalPath(absolutePath: string, input: { [key: s
 
   // Memdir directory (persistent memory for cross-session learning)
   // This pre-safety-check carve-out exists because the default path is under
-  // ~/.clew/, which is in DANGEROUS_DIRECTORIES. The CLAUDE_COWORK_MEMORY_PATH_OVERRIDE
+  // ~/.clew/, which is in DANGEROUS_DIRECTORIES. The CLEW_COWORK_MEMORY_PATH_OVERRIDE
   // override is an arbitrary caller-designated directory with no such conflict,
   // so it gets NO special permission treatment here — writes go through normal
   // permission flow (step 5 → ask). SDK callers who want silent memory should
@@ -1420,7 +1417,7 @@ export function checkEditableInternalPath(absolutePath: string, input: { [key: s
   }
 
   // .clew/launch.json — desktop preview config (dev server command + port).
-  // The desktop's preview_start MCP tool instructs Claude to create/update
+  // The desktop's preview_start MCP tool instructs Clew to create/update
   // this file as part of the preview workflow. Without this carve-out the
   // .clew/ DANGEROUS_DIRECTORIES check prompts for it, which in SDK mode
   // cascades: user clicks "Always allow" → setMode:acceptEdits suggestion
@@ -1516,7 +1513,7 @@ export function checkReadableInternalPath(absolutePath: string, input: { [key: s
     };
   }
 
-  // Project temp directory (/tmp/claude/{sanitized-cwd}/)
+  // Project temp directory (/tmp/clew/{sanitized-cwd}/)
   // Intentionally allows reading files from all sessions in this project, not just the current session.
   // This enables cross-session file access within the same project's temp space.
   const projectTempDir = getProjectTempDir();

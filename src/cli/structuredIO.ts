@@ -258,9 +258,20 @@ export class StructuredIO {
    */
   injectControlResponse(response: SDKControlResponse): void {
     const requestId = response.response?.request_id;
-    if (!requestId) return;
+    if (!requestId) {
+      // BUG #36: Previously dropped silently — a caller awaiting this response
+      // (e.g. a permission prompt) would hang until its own timeout with no
+      // diagnostic pointing at the real cause (malformed bridge payload).
+      logForDebugging('Dropping control_response with missing request_id', { level: 'warn' });
+      return;
+    }
     const request = this.pendingRequests.get(requestId);
-    if (!request) return;
+    if (!request) {
+      logForDebugging(`Dropping control_response for unknown/already-resolved request_id: ${requestId}`, {
+        level: 'warn',
+      });
+      return;
+    }
     this.trackResolvedToolUseId(request.request);
     this.pendingRequests.delete(requestId);
     // Cancel the SDK consumer's canUseTool callback — the bridge won.
@@ -349,6 +360,10 @@ export class StructuredIO {
             );
             return undefined;
           }
+          // BUG #10: Track orphan toolUseID to prevent duplicate processing
+          if (typeof toolUseID === 'string') {
+            this.resolvedToolUseIds.add(toolUseID);
+          }
           if (this.unexpectedResponseCallback) {
             await this.unexpectedResponseCallback(message);
           }
@@ -407,9 +422,15 @@ export class StructuredIO {
       }
       return message;
     } catch (error) {
+      // BUG #33: A single malformed/unexpected stdin line used to hard-exit
+      // the whole process via process.exit(1), abandoning every in-flight
+      // tool execution and pending permission request. Log and skip the
+      // bad line instead — matches the "ignore unknown message type" path
+      // above, which already treats an unrecognized-but-parseable message
+      // as non-fatal.
       console.error(`Error parsing streaming input line: ${line}: ${error}`);
-      // eslint-disable-next-line custom-rules/no-process-exit
-      process.exit(1);
+      logForDebugging(`Skipping malformed stdin line: ${error}`, { level: 'error' });
+      return undefined;
     }
   }
 
@@ -477,7 +498,11 @@ export class StructuredIO {
       if (signal) {
         signal.removeEventListener('abort', aborted);
       }
-      this.pendingRequests.delete(requestId);
+      // BUG #5: Only delete from pendingRequests after promise truly settles
+      // Ensure response handler has completed before cleanup
+      Promise.resolve().then(() => {
+        this.pendingRequests.delete(requestId);
+      });
     }
   }
 
@@ -543,15 +568,18 @@ export class StructuredIO {
         // Race: hook completion vs SDK prompt response.
         // The hook promise always resolves (never rejects), returning
         // undefined if no hook made a decision.
+        // BUG #4: Register catch handler BEFORE race to prevent rejection race
+        const sdkCatchHandler = sdkPromise.catch(() => {
+          /* noop */
+        });
+
         const winner = await Promise.race([hookPromise, sdkPromise]);
 
         if (winner.source === 'hook') {
           if (winner.decision) {
             // Hook decided — abort the pending SDK request.
             // Suppress the expected AbortError rejection from sdkPromise.
-            sdkPromise.catch(() => {
-              /* noop */
-            });
+            void sdkCatchHandler;
             hookAbortController.abort();
             return winner.decision;
           }

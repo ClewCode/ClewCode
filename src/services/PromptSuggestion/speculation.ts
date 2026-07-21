@@ -31,7 +31,7 @@ import {
   INTERRUPT_MESSAGE,
   INTERRUPT_MESSAGE_FOR_TOOL_USE,
 } from '../../utils/messages.js';
-import { getClaudeTempDir } from '../../utils/permissions/filesystem.js';
+import { getClewTempDir } from '../../utils/permissions/filesystem.js';
 import { extractReadFilesFromMessages } from '../../utils/queryHelpers.js';
 import { getTranscriptPath } from '../../utils/sessionStorage.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
@@ -57,7 +57,7 @@ function safeRemoveOverlay(overlayPath: string): void {
 }
 
 function getOverlayPath(id: string): string {
-  return join(getClaudeTempDir(), 'speculation', String(process.pid), id);
+  return join(getClewTempDir(), 'speculation', String(process.pid), id);
 }
 
 function denySpeculation(

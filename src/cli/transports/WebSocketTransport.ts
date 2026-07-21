@@ -573,6 +573,11 @@ export class WebSocketTransport implements Transport {
       const line = `${jsonStringify(message)}\n`;
       const success = this.sendLine(line);
       if (!success) {
+        // BUG #9: Log which messages failed to send before reconnecting
+        logForDiagnosticsNoPII('error', 'cli_websocket_replay_failed', {
+          sent: messagesToReplay.indexOf(message),
+          total: messagesToReplay.length,
+        });
         this.handleConnectionError();
         break;
       }

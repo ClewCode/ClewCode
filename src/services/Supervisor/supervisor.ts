@@ -39,8 +39,8 @@ const LOG_PATH = join(getClewConfigHomeDir(), 'daemon.log');
 // Named pipe path (Windows) or Unix socket path
 const PIPE_NAME =
   process.platform === 'win32'
-    ? `\\\\.\\pipe\\claude-supervisor-${process.env.USER ?? 'default'}`
-    : `/tmp/claude-supervisor-${process.env.USER ?? 'default'}.sock`;
+    ? `\\\\.\\pipe\\clew-supervisor-${process.env.USER ?? 'default'}`
+    : `/tmp/clew-supervisor-${process.env.USER ?? 'default'}.sock`;
 
 // How long to wait before auto-exiting after last session finishes
 const IDLE_EXIT_MS = 60 * 60 * 1000; // 1 hour
@@ -241,11 +241,26 @@ function spawnSessionProcess(entry: SessionEntry): ChildProcess {
       });
   }
 
-  child.on('exit', code => {
+  // Health check: if the process exits very soon after spawn (before the
+  // health timeout), it was unhealthy.
+  const healthTimer = setTimeout(() => {
+    // Process survived long enough — consider it healthy
+  }, SPAWN_HEALTH_TIMEOUT_MS);
+
+  // BUG #24: Combine exit handlers into single .once() to prevent double state modification
+  child.once('exit', code => {
+    clearTimeout(healthTimer);
     log(`Session ${shortId} process exited with code ${code}`);
     const session = roster.sessions[entry.id];
     if (session) {
-      session.status = code === 0 ? 'completed' : 'failed';
+      // Check health: if exited early, mark as failed regardless of exit code
+      const exitedEarly = code !== null && Date.now() - entry.startedAt < SPAWN_HEALTH_TIMEOUT_MS;
+      if (exitedEarly) {
+        log(`Session ${shortId} exited early (code ${code}) — marking as failed for health fallback`);
+        session.status = 'failed';
+      } else {
+        session.status = code === 0 ? 'completed' : 'failed';
+      }
       session.updatedAt = Date.now();
       saveRoster();
     }
@@ -263,25 +278,6 @@ function spawnSessionProcess(entry: SessionEntry): ChildProcess {
     }
     childProcesses.delete(entry.id);
     checkIdleExit();
-  });
-
-  // Health check: if the process exits very soon after spawn (before the
-  // health timeout), it was unhealthy. Mark as failed so callers can
-  // fall back to a fresh spawn rather than hanging on a dead worker.
-  const healthTimer = setTimeout(() => {
-    // Process survived long enough — consider it healthy
-  }, SPAWN_HEALTH_TIMEOUT_MS);
-  child.once('exit', code => {
-    clearTimeout(healthTimer);
-    if (code !== null && Date.now() - entry.startedAt < SPAWN_HEALTH_TIMEOUT_MS) {
-      log(`Session ${shortId} exited early (code ${code}) — marking as failed for health fallback`);
-      const session = roster.sessions[entry.id];
-      if (session) {
-        session.status = 'failed';
-        session.updatedAt = Date.now();
-        saveRoster();
-      }
-    }
   });
 
   return child;

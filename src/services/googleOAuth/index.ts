@@ -12,6 +12,12 @@ export interface GoogleOAuthTokens {
   scope?: string[];
 }
 
+export function buildLoopbackRedirectUri(redirectUri: string, port: number | null): string {
+  const uri = new URL(redirectUri);
+  if (port) uri.port = String(port);
+  return uri.toString().replace(/\/$/, '');
+}
+
 /**
  * Google OAuth service for handling Google Gemini browser login.
  * Implements OAuth 2.0 authorization code flow with PKCE.
@@ -24,13 +30,20 @@ export class GoogleOAuthService {
   private clientId: string;
   private clientSecret: string;
   private scopes: readonly string[];
+  private redirectUri: URL;
 
-  constructor(options?: { clientId?: string; clientSecret?: string; scopes?: readonly string[] }) {
+  constructor(options?: {
+    clientId?: string;
+    clientSecret?: string;
+    scopes?: readonly string[];
+    redirectUri?: string;
+  }) {
     this.codeVerifier = crypto.generateCodeVerifier();
     this.clientId = options?.clientId || process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() || GOOGLE_OAUTH_CONFIG.CLIENT_ID;
     this.clientSecret =
       options?.clientSecret || process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() || GOOGLE_OAUTH_CONFIG.CLIENT_SECRET;
     this.scopes = options?.scopes ?? GOOGLE_OAUTH_CONFIG.SCOPES;
+    this.redirectUri = new URL(options?.redirectUri ?? GOOGLE_OAUTH_CONFIG.REDIRECT_URI);
   }
 
   async startOAuthFlow(
@@ -39,15 +52,11 @@ export class GoogleOAuthService {
       skipBrowserOpen?: boolean;
     },
   ): Promise<GoogleOAuthTokens> {
-    // Create OAuth callback listener on the loopback IP + /oauth2callback path.
-    // Google rejects `localhost` and requires `127.0.0.1`; the path must match
-    // the gemini-cli public client's registered redirect (`/oauth2callback`).
-    this.authCodeListener = new AuthCodeListener('/oauth2callback', '127.0.0.1');
+    this.authCodeListener = new AuthCodeListener(this.redirectUri.pathname, this.redirectUri.hostname);
 
     // We start the listener on the configured port, or fallback if port is busy
     // To match REDIRECT_URI, we parse the port from GOOGLE_OAUTH_CONFIG.REDIRECT_URI
-    const url = new URL(GOOGLE_OAUTH_CONFIG.REDIRECT_URI);
-    const configuredPort = Number.parseInt(url.port || '1456', 10);
+    const configuredPort = Number.parseInt(this.redirectUri.port || '1456', 10);
 
     this.port = await this.authCodeListener.start(configuredPort);
 
@@ -152,9 +161,7 @@ export class GoogleOAuthService {
     const authUrl = new URL(GOOGLE_OAUTH_CONFIG.AUTHORIZE_URL);
     authUrl.searchParams.append('client_id', this.clientId);
     authUrl.searchParams.append('response_type', 'code');
-    // For local web callback, standard redirect URI must use local port matched to current server.
-    // Must be the loopback IP + /oauth2callback path — Google 400s on `localhost`/other paths.
-    authUrl.searchParams.append('redirect_uri', `http://127.0.0.1:${port}/oauth2callback`);
+    authUrl.searchParams.append('redirect_uri', this.callbackUri(port));
     authUrl.searchParams.append('scope', this.scopes.join(' '));
     authUrl.searchParams.append('code_challenge', codeChallenge);
     authUrl.searchParams.append('code_challenge_method', CODE_CHALLENGE_METHOD);
@@ -169,7 +176,7 @@ export class GoogleOAuthService {
     const requestBody = new URLSearchParams({
       grant_type: 'authorization_code',
       code: authorizationCode,
-      redirect_uri: `http://127.0.0.1:${this.port}/oauth2callback`,
+      redirect_uri: this.callbackUri(this.port),
       client_id: this.clientId,
       code_verifier: this.codeVerifier,
       state,
@@ -179,11 +186,26 @@ export class GoogleOAuthService {
       requestBody.append('client_secret', this.clientSecret);
     }
 
-    const response = await fetch(GOOGLE_OAUTH_CONFIG.TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: requestBody.toString(),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    let response: Response;
+    try {
+      response = await fetch(GOOGLE_OAUTH_CONFIG.TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: requestBody.toString(),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(
+          'Google OAuth token exchange timed out after 30 seconds. Check your network connection and try again.',
+        );
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       const error = await response.text();
@@ -199,6 +221,10 @@ export class GoogleOAuthService {
       expiresAt: data.expires_in ? Date.now() + data.expires_in * 1000 : undefined,
       scope: data.scope?.split(' ').filter(Boolean),
     };
+  }
+
+  private callbackUri(port: number | null): string {
+    return buildLoopbackRedirectUri(this.redirectUri.toString(), port);
   }
 
   private async waitForAuthorizationCode(state: string, onReady: () => Promise<void>): Promise<string> {

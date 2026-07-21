@@ -5,9 +5,9 @@ import { useTerminalNotification } from '../ink/useTerminalNotification.js';
 import { Box, Link, Text } from '../ink.js';
 import { useKeybinding } from '../keybindings/useKeybinding.js';
 import {
-  CODE_ASSIST_OAUTH_CLIENT,
-  CODE_ASSIST_SCOPES,
-  saveGeminiOAuthCreds,
+  ANTIGRAVITY_OAUTH_CLIENT,
+  ANTIGRAVITY_SCOPES,
+  saveAntigravityOAuthCreds,
 } from '../services/ai/providers/CodeAssistProvider.js';
 import { logEvent } from '../services/analytics/index.js';
 import { GoogleOAuthService, type GoogleOAuthTokens } from '../services/googleOAuth/index.js';
@@ -319,8 +319,8 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
   const handleSuccess = useCallback(
     (tokens: GoogleOAuthTokens) => {
       if (codeAssist) {
-        // Shared with the Gemini CLI — CodeAssistProvider reads this file.
-        saveGeminiOAuthCreds(tokens);
+        // Shared with the Gemini CLI — AntigravityProvider reads this file.
+        saveAntigravityOAuthCreds(tokens);
       } else {
         saveGlobalConfig(current => ({
           ...current,
@@ -383,11 +383,11 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
         return;
       }
 
-      // Code Assist always uses the fixed Gemini CLI public client + scopes —
+      // Code Assist always uses the fixed Antigravity public client + scopes —
       // never prompt for custom credentials.
-      const activeClientId = codeAssist ? CODE_ASSIST_OAUTH_CLIENT.clientId : customClientId || clientId;
+      const activeClientId = codeAssist ? ANTIGRAVITY_OAUTH_CLIENT.clientId : customClientId || clientId;
       const activeClientSecret = codeAssist
-        ? CODE_ASSIST_OAUTH_CLIENT.clientSecret
+        ? ANTIGRAVITY_OAUTH_CLIENT.clientSecret
         : customClientSecret || clientSecret;
 
       if (!activeClientId) {
@@ -402,7 +402,7 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
       const svc = new GoogleOAuthService({
         clientId: activeClientId,
         clientSecret: activeClientSecret,
-        ...(codeAssist ? { scopes: CODE_ASSIST_SCOPES } : {}),
+        ...(codeAssist ? { scopes: [...ANTIGRAVITY_SCOPES] } : {}),
       });
       oauthServiceRef.current = svc;
 

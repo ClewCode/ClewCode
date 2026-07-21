@@ -263,6 +263,19 @@ export const NotebookEditTool = buildTool({
       // detectFileEncoding + readFile + detectLineEndings chain (each of
       // which redid safeResolvePath and/or a 4KB readSync).
       const { content, encoding, lineEndings } = readFileSyncWithMetadata(fullPath);
+
+      // BUG: validateInput() checks readTimestamp vs mtime once, but there's
+      // an async gap afterward (permission prompt, scheduling) during which
+      // the file can be modified externally. Re-check here, matching
+      // FileEditTool/FileWriteTool's TOCTOU guard, so a concurrent edit
+      // (another tool call, a linter, a hand-edit) isn't silently overwritten.
+      const lastRead = readFileState.get(fullPath);
+      if (lastRead && getFileModificationTime(fullPath) > lastRead.timestamp) {
+        throw new Error(
+          'File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.',
+        );
+      }
+
       // Must use non-memoized jsonParse here: safeParseJSON caches by content
       // string and returns a shared object reference, but we mutate the
       // notebook in place below (cells.splice, targetCell.source = ...).
@@ -299,6 +312,15 @@ export const NotebookEditTool = buildTool({
           const parsedCellIndex = parseCellId(cell_id);
           if (parsedCellIndex !== undefined) {
             cellIndex = parsedCellIndex;
+          } else {
+            // BUG: unlike validateInput (which errors on this same condition),
+            // cellIndex previously stayed at -1 here uncorrected. In delete
+            // mode, splice(-1, 1) silently removes the LAST cell of the
+            // notebook instead of the intended one — data loss with no error
+            // reported. This can only be reached if the cell was removed by
+            // a concurrent edit between validateInput and call(); that race
+            // is now closed above, but fail loudly here too as defense in depth.
+            throw new Error(`Cell with ID "${cell_id}" not found in notebook.`);
           }
         }
 

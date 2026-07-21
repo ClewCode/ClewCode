@@ -1,67 +1,71 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { execFileNoThrow } from '../../../utils/execFileNoThrow.js';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 // --- OAuth constants ---
-// Token refresh needs the OAuth client_id/secret. The Gemini CLI does NOT
-// store these in ~/.gemini/oauth_creds.json (which holds only the tokens) —
-// it ships them as public constants for its installed-app OAuth client. We
-// default to those same well-known public values so that "install the Gemini
-// CLI and log in" is genuinely all a user needs. They can still be overridden
-// via CODE_ASSIST_CLIENT_ID / CODE_ASSIST_CLIENT_SECRET.
-//   https://cloud.google.com/code-assist/docs/install
-const DEFAULT_OAUTH_CLIENT_ID = '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
-// This is the public gemini-cli installed-app credential — not confidential for
-// native apps (see RFC 8252). It only identifies the app to Google; each user
-// still authenticates with their own account. Override with CODE_ASSIST_CLIENT_SECRET.
-const DEFAULT_OAUTH_CLIENT_SECRET = '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';
-const OAUTH_CLIENT_ID = process.env.CODE_ASSIST_CLIENT_ID?.trim() || DEFAULT_OAUTH_CLIENT_ID;
-const OAUTH_CLIENT_SECRET = process.env.CODE_ASSIST_CLIENT_SECRET?.trim() || DEFAULT_OAUTH_CLIENT_SECRET;
+// Public installed-app credentials identify Antigravity's native OAuth client;
+// user authorization is still required (RFC 8252). Environment overrides make
+// it possible to rotate the public client without shipping a new Clew build.
+// Note: Credentials must be configured via environment variables ANTIGRAVITY_CLIENT_ID and ANTIGRAVITY_CLIENT_SECRET
+const OAUTH_CLIENT_ID = process.env.ANTIGRAVITY_CLIENT_ID?.trim();
+const OAUTH_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET?.trim();
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-const CODE_ASSIST_ENDPOINT = process.env.CODE_ASSIST_ENDPOINT?.trim() || 'https://daily-cloudcode-pa.googleapis.com';
+const CODE_ASSIST_ENDPOINT = process.env.ANTIGRAVITY_ENDPOINT?.trim() || 'https://daily-cloudcode-pa.googleapis.com';
 const CODE_ASSIST_API_VERSION = 'v1internal';
-const GEMINI_OAUTH_PATH = join(homedir(), '.gemini', 'oauth_creds.json');
+const ANTIGRAVITY_OAUTH_PATH = join(homedir(), '.antigravity', 'oauth_creds.json');
+const AGY_PATH =
+  process.env.AGY_PATH?.trim() ||
+  (process.platform === 'win32'
+    ? join(process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'agy', 'bin', 'agy.exe')
+    : join(homedir(), '.local', 'bin', 'agy'));
+const ANTIGRAVITY_HEADERS = {
+  'User-Agent': 'antigravity/1.18.3 windows/amd64',
+  'X-Goog-Api-Client': 'google-cloud-sdk vscode_cloudshelleditor/0.1',
+  'Client-Metadata': `{"ideType":"ANTIGRAVITY","platform":"${process.platform === 'win32' ? 'WINDOWS' : 'MACOS'}","pluginType":"GEMINI"}`,
+} as const;
 
-// Exported so the in-app browser login (/login on google-assist) can reuse the
-// exact same OAuth client + scopes as the Gemini CLI. Device Authorization Flow
+// Exported so `/login antigravity` can reuse Antigravity's OAuth client and
+// scopes. Device Authorization Flow
 // is NOT an option here: Google's device flow does not allow the cloud-platform
 // scope, so a loopback/manual-code browser flow is the only path.
-export const CODE_ASSIST_OAUTH_CLIENT = {
+export const ANTIGRAVITY_OAUTH_CLIENT = {
   clientId: OAUTH_CLIENT_ID,
   clientSecret: OAUTH_CLIENT_SECRET,
 } as const;
-export const CODE_ASSIST_SCOPES = [
+export const ANTIGRAVITY_REDIRECT_URI = 'http://localhost:51121/oauth-callback';
+export const ANTIGRAVITY_SCOPES = [
   'https://www.googleapis.com/auth/cloud-platform',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
 ] as const;
 
-/** True when usable Gemini OAuth creds already exist on disk (any token that
+/** True when usable Antigravity OAuth creds already exist on disk (any token that
  *  can be used or refreshed). Lets the UI skip the login prompt. */
-export function hasGeminiOAuthCreds(): boolean {
-  return readOAuthCreds() !== undefined;
+export function hasAntigravityOAuthCreds(): boolean {
+  return existsSync(AGY_PATH);
 }
 
 /**
- * Persists tokens to ~/.gemini/oauth_creds.json in the Gemini CLI's format so
- * both clew and the Gemini CLI can share the same login. Also resets the
- * in-memory token cache so the next request picks up the fresh credentials.
+ * Persists Antigravity OAuth tokens separately from Gemini API credentials and
+ * resets the in-memory caches so the next request uses the fresh login.
  */
-export function saveGeminiOAuthCreds(tokens: {
+export function saveAntigravityOAuthCreds(tokens: {
   accessToken: string;
   refreshToken?: string;
   expiresAt?: number;
   scope?: string[];
 }): void {
-  mkdirSync(dirname(GEMINI_OAUTH_PATH), { recursive: true });
+  mkdirSync(dirname(ANTIGRAVITY_OAUTH_PATH), { recursive: true });
   writeFileSync(
-    GEMINI_OAUTH_PATH,
+    ANTIGRAVITY_OAUTH_PATH,
     JSON.stringify(
       {
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken ?? '',
-        scope: tokens.scope?.join(' ') ?? CODE_ASSIST_SCOPES.join(' '),
+        scope: tokens.scope?.join(' ') ?? ANTIGRAVITY_SCOPES.join(' '),
         token_type: 'Bearer',
         expiry_date: tokens.expiresAt ?? Date.now() + 3600_000,
       },
@@ -77,12 +81,41 @@ export function saveGeminiOAuthCreds(tokens: {
 // --- In-memory caches ---
 let cachedToken: { accessToken: string; expiresAt: number } | null = null;
 let cachedProjectId: string | null = null;
+let tokenRefreshPromise: Promise<string> | null = null;
+
+const WINDOWS_CREDENTIAL_SCRIPT = `
+$src='using System;using System.Runtime.InteropServices;public static class ClewCredRead{[StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)]public struct C{public uint Flags,Type;public string TargetName,Comment;public System.Runtime.InteropServices.ComTypes.FILETIME LastWritten;public uint BlobSize;public IntPtr Blob;public uint Persist,AttrCount;public IntPtr Attrs;public string Alias,User;}[DllImport("advapi32",EntryPoint="CredReadW",CharSet=CharSet.Unicode,SetLastError=true)]public static extern bool Read(string t,uint y,uint f,out IntPtr p);[DllImport("advapi32")]public static extern void CredFree(IntPtr p);}';
+Add-Type $src;$p=[IntPtr]::Zero;if(-not[ClewCredRead]::Read('gemini:antigravity',1,0,[ref]$p)){exit 1};try{$c=[Runtime.InteropServices.Marshal]::PtrToStructure($p,[type][ClewCredRead+C]);$b=New-Object byte[] $c.BlobSize;[Runtime.InteropServices.Marshal]::Copy($c.Blob,$b,0,$b.Length);[Console]::Out.Write([Text.Encoding]::UTF8.GetString($b))}finally{[ClewCredRead]::CredFree($p)}
+`;
+
+async function readAgyKeyringCreds(): Promise<
+  { access_token: string; refresh_token: string; expiry_date: number } | undefined
+> {
+  if (process.platform !== 'win32') return undefined;
+  const result = await execFileNoThrow(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_CREDENTIAL_SCRIPT],
+    { timeout: 10_000, preserveOutputOnError: false, useCwd: false },
+  );
+  if (result.code !== 0 || !result.stdout) return undefined;
+  try {
+    const data = JSON.parse(result.stdout) as {
+      token?: { access_token?: string; refresh_token?: string; expiry?: string };
+    };
+    const token = data.token;
+    if (!token?.access_token || !token.refresh_token) return undefined;
+    const expiry = token.expiry ? Date.parse(token.expiry) : 0;
+    return { access_token: token.access_token, refresh_token: token.refresh_token, expiry_date: expiry };
+  } catch {
+    return undefined;
+  }
+}
 
 // --- Helpers ---
 
 function readOAuthCreds(): { access_token: string; refresh_token: string; expiry_date: number } | undefined {
   try {
-    const raw = readFileSync(GEMINI_OAUTH_PATH, 'utf8');
+    const raw = readFileSync(ANTIGRAVITY_OAUTH_PATH, 'utf8');
     const d = JSON.parse(raw) as {
       access_token?: string;
       refresh_token?: string;
@@ -119,7 +152,7 @@ export function parseResetTimeMs(body: string): number | undefined {
 }
 
 function createCodeAssistError(status: number, body: string): Error {
-  const err = new Error(`Code Assist API error (${status}): ${body}`);
+  const err = new Error(`Antigravity API error (${status}): ${body}`);
   (err as any).status = status;
   (err as any).body = body;
 
@@ -143,8 +176,7 @@ function createCodeAssistError(status: number, body: string): Error {
 async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
   if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
     throw new Error(
-      'Code Assist OAuth credentials not configured. Set CODE_ASSIST_CLIENT_ID and CODE_ASSIST_CLIENT_SECRET ' +
-        'environment variables, or install the Gemini CLI and run `gcloud auth application-default login`.',
+      'Antigravity OAuth client is not configured. Set ANTIGRAVITY_CLIENT_ID and ANTIGRAVITY_CLIENT_SECRET.',
     );
   }
   const params = new URLSearchParams({
@@ -164,14 +196,13 @@ async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: 
     const text = await response.text();
     // invalid_client almost always means the stored refresh_token was minted for
     // a *different* OAuth client (e.g. the VS Code Google extension) than the one
-    // Clew uses. A fresh login via `/login google-assist` re-mints a compatible
+    // Clew uses. A fresh login via `/login antigravity` re-mints a compatible
     // token and is the only fix.
     if (text.includes('invalid_client')) {
       throw new Error(
         'Google OAuth refresh failed: the stored refresh token belongs to a different ' +
-          'OAuth client (e.g. the VS Code Gemini extension) and cannot be refreshed by ' +
-          'Clew. Fix: run `/login google-assist` and sign in again, or log in with the ' +
-          'Gemini CLI (`gemini` then `gemini init`). This overwrites ~/.gemini/oauth_creds.json ' +
+          'OAuth client and cannot be refreshed by Clew. Fix: run `/login antigravity` ' +
+          'and sign in again. This overwrites ~/.antigravity/oauth_creds.json ' +
           'with a token Clew can refresh. (original: ' +
           text +
           ')',
@@ -197,11 +228,14 @@ async function getValidToken(): Promise<string> {
     return cachedToken.accessToken;
   }
 
-  const creds = readOAuthCreds();
+  // If refresh is already in progress, wait for it instead of starting another
+  if (tokenRefreshPromise) {
+    return tokenRefreshPromise;
+  }
+
+  const creds = (await readAgyKeyringCreds()) ?? readOAuthCreds();
   if (!creds) {
-    throw new Error(
-      'No Gemini OAuth credentials found. Run /login to sign in with Google, or login with the Gemini CLI (~/.gemini/oauth_creds.json)',
-    );
+    throw new Error('No Antigravity OAuth credentials found. Run `/login antigravity` to sign in with Google.');
   }
 
   // Prefer the access token already on disk while it is still valid — avoids a
@@ -211,12 +245,28 @@ async function getValidToken(): Promise<string> {
     return cachedToken.accessToken;
   }
 
-  const { accessToken, expiresIn } = await refreshAccessToken(creds.refresh_token);
-  cachedToken = {
-    accessToken,
-    expiresAt: Date.now() + expiresIn * 1000,
-  };
-  return cachedToken.accessToken;
+  // Guard against concurrent refresh attempts (BUG #1)
+  if (!creds.refresh_token) {
+    throw new Error(
+      'Antigravity OAuth token expired and cannot be refreshed. Run `/login antigravity` to sign in again.',
+    );
+  }
+
+  tokenRefreshPromise = refreshAccessToken(creds.refresh_token)
+    .then(({ accessToken, expiresIn }) => {
+      cachedToken = {
+        accessToken,
+        expiresAt: Date.now() + expiresIn * 1000,
+      };
+      // Clear projectId cache when token refreshes to ensure it's rediscovered (BUG #5)
+      cachedProjectId = null;
+      return accessToken;
+    })
+    .finally(() => {
+      tokenRefreshPromise = null;
+    });
+
+  return tokenRefreshPromise;
 }
 
 async function discoverProjectId(accessToken: string): Promise<string> {
@@ -227,6 +277,7 @@ async function discoverProjectId(accessToken: string): Promise<string> {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
+      ...ANTIGRAVITY_HEADERS,
     },
     body: '{}',
   });
@@ -259,7 +310,11 @@ type OpenAIMessage = {
 type OpenAITool = { type?: string; function?: { name?: string; description?: string; parameters?: unknown } };
 type GeminiPart =
   | { text: string }
-  | { functionCall: { name: string; args: Record<string, unknown> } }
+  | {
+      functionCall: { name: string; args: Record<string, unknown> };
+      thoughtSignature: string;
+      thought_signature: string;
+    }
   | { functionResponse: { name: string; response: Record<string, unknown> } };
 type OpenAIToolCallOut = { id: string; type: 'function'; function: { name: string; arguments: string } };
 
@@ -325,7 +380,11 @@ export function toCodeAssistMessages(messages: OpenAIMessage[]) {
         } catch {
           args = {};
         }
-        parts.push({ functionCall: { name, args } });
+        // Google documents this sentinel for replayed tool calls where the
+        // original provider signature is unavailable (for example after an
+        // OpenAI-compatible adapter round trip).
+        const signature = 'skip_thought_signature_validator';
+        parts.push({ functionCall: { name, args }, thoughtSignature: signature, thought_signature: signature });
       }
       // Gemini rejects empty parts arrays.
       if (parts.length === 0) parts.push({ text: '' });
@@ -438,23 +497,23 @@ function toGeminiTools(tools: OpenAITool[] | undefined) {
 }
 
 /** Map a Gemini finishReason to an OpenAI finish_reason. */
-function toOpenAIFinishReason(reason: unknown, hasToolCall: boolean): string | null {
+export function toOpenAIFinishReason(reason: unknown, hasToolCall: boolean): string | null {
+  // Function calls can arrive across several SSE events. Do not terminate the
+  // downstream stream until Gemini explicitly marks the candidate complete.
+  if (reason === undefined || reason === null) return null;
   if (hasToolCall) return 'tool_calls';
   switch (reason) {
     case 'STOP':
       return 'stop';
     case 'MAX_TOKENS':
       return 'length';
-    case undefined:
-    case null:
-      return null;
     default:
       return String(reason).toLowerCase();
   }
 }
 
 /** Extract OpenAI-shaped tool_calls from a Gemini candidate's parts. */
-export function toolCallsFromParts(parts: any[], startIndex = 0): OpenAIToolCallOut[] {
+export function toolCallsFromParts(parts: any[], startIndex = 0, idPrefix = randomUUID()): OpenAIToolCallOut[] {
   const calls: OpenAIToolCallOut[] = [];
   for (const p of parts) {
     if (p?.functionCall?.name) {
@@ -462,7 +521,7 @@ export function toolCallsFromParts(parts: any[], startIndex = 0): OpenAIToolCall
       // original name is recoverable) — two calls to the same function in one
       // turn must not share a tool_call_id.
       calls.push({
-        id: `${p.functionCall.name}:${startIndex + calls.length}`,
+        id: `${p.functionCall.name}:${idPrefix}:${startIndex + calls.length}`,
         type: 'function',
         function: { name: p.functionCall.name, arguments: JSON.stringify(p.functionCall.args ?? {}) },
       });
@@ -503,7 +562,7 @@ function fromCodeAssistResponse(raw: any) {
       const content = candidate.content ?? {};
       const parts = content.parts ?? [];
       const text = parts.map((p: any) => p.text ?? '').join('');
-      const toolCalls = toolCallsFromParts(parts);
+      const toolCalls = toolCallsFromParts(parts, 0, data.responseId ?? randomUUID());
       choices.push({
         index: i,
         message: {
@@ -526,11 +585,82 @@ function fromCodeAssistResponse(raw: any) {
   };
 }
 
+const AGY_MODEL_NAMES: Record<string, string> = {
+  'gemini-3.5-flash-medium': 'Gemini 3.5 Flash (Medium)',
+  'gemini-3.5-flash-high': 'Gemini 3.5 Flash (High)',
+  'gemini-3.5-flash-low': 'Gemini 3.5 Flash (Low)',
+  'gemini-3.1-pro-low': 'Gemini 3.1 Pro (Low)',
+  'gemini-3.1-pro-high': 'Gemini 3.1 Pro (High)',
+  'claude-sonnet-4-6-thinking': 'Claude Sonnet 4.6 (Thinking)',
+  'claude-opus-4-6-thinking': 'Claude Opus 4.6 (Thinking)',
+  'gpt-oss-120b-medium': 'GPT-OSS 120B (Medium)',
+};
+
+function toAgyModelName(model: string): string {
+  return AGY_MODEL_NAMES[model] ?? model;
+}
+
+function toDirectModelName(model: string): string {
+  const names: Record<string, string> = {
+    'gemini-3.5-flash-low': 'gemini-3.5-flash-extra-low',
+    'gemini-3.5-flash-medium': 'gemini-3.5-flash-low',
+    'gemini-3.5-flash-high': 'gemini-3-flash-agent',
+    'gemini-3.1-pro-high': 'gemini-pro-agent',
+  };
+  return names[model] ?? model;
+}
+
+export function buildAgyPrompt(messages: OpenAIMessage[]): string {
+  return messages.map(message => `${message.role.toUpperCase()}: ${messageText(message.content)}`).join('\n\n');
+}
+
+async function* singleChunkStream(text: string, model: string): AsyncGenerator<Record<string, unknown>> {
+  const common = {
+    id: `agy-${Date.now()}`,
+    object: 'chat.completion.chunk',
+    created: Math.floor(Date.now() / 1000),
+    model,
+  };
+  yield { ...common, choices: [{ index: 0, delta: { role: 'assistant', content: text }, finish_reason: null }] };
+  yield { ...common, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] };
+}
+
+function createAgyClient(): ProviderClient {
+  return {
+    chat: {
+      completions: {
+        create: async (params: { model: string; messages: OpenAIMessage[]; stream?: boolean }) => {
+          if (!existsSync(AGY_PATH)) throw new Error('Antigravity CLI was not found. Install `agy` or set AGY_PATH.');
+          const prompt = buildAgyPrompt(params.messages);
+          const result = await execFileNoThrow(
+            AGY_PATH,
+            ['--print', prompt, '--model', toAgyModelName(params.model), '--print-timeout', '10m'],
+            { timeout: 11 * 60_000, preserveOutputOnError: true, useCwd: true },
+          );
+          if (result.code !== 0) {
+            throw new Error(result.stderr.trim() || result.error || `agy exited with code ${result.code}`);
+          }
+          const text = result.stdout.trim();
+          if (params.stream) return singleChunkStream(text, params.model);
+          return {
+            id: `agy-${Date.now()}`,
+            object: 'chat.completion',
+            created: Math.floor(Date.now() / 1000),
+            model: params.model,
+            choices: [{ index: 0, message: { role: 'assistant', content: text }, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+          };
+        },
+      },
+    },
+  } as ProviderClient;
+}
+
 // --- Provider ---
 
-export class CodeAssistProvider implements ProviderInterface {
-  readonly providerId: ProviderId = 'google-assist';
-  readonly label = 'Gemini Code Assist (OAuth)';
+export class AntigravityProvider implements ProviderInterface {
+  readonly providerId: ProviderId = 'antigravity';
+  readonly label = 'Google Antigravity CLI';
 
   getProviderId() {
     return this.providerId;
@@ -541,10 +671,11 @@ export class CodeAssistProvider implements ProviderInterface {
   }
 
   getProviderApiKeyEnvVar() {
-    return 'GEMINI_API_KEY'; // Fallback env var, but OAuth is primary
+    return '';
   }
 
   async createClient(_options: ProviderInitOptions): Promise<ProviderClient> {
+    if (process.env.ANTIGRAVITY_USE_AGY === '1') return createAgyClient();
     return {
       chat: {
         completions: {
@@ -592,7 +723,7 @@ export class CodeAssistProvider implements ProviderInterface {
             }
 
             const codeAssistBody = {
-              model: params.model,
+              model: toDirectModelName(params.model),
               project: projectId,
               request: requestBody,
             };
@@ -603,6 +734,7 @@ export class CodeAssistProvider implements ProviderInterface {
             const headers: Record<string, string> = {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
+              ...ANTIGRAVITY_HEADERS,
             };
 
             if (isStreaming) {
@@ -652,15 +784,17 @@ export class CodeAssistProvider implements ProviderInterface {
   }
 
   async listModels(_options: ProviderInitOptions): Promise<Array<{ id: string; label: string }>> {
-    // The Code Assist OAuth endpoint is not the public Gemini API; keep this list to IDs
-    // known to work through daily-cloudcode-pa.googleapis.com.
+    // Antigravity has no public model-list endpoint; keep this allowlist aligned
+    // with the models exposed by the CLI service.
     return [
-      { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
-      { id: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro (Preview)' },
-      { id: 'gemini-3.0-flash', label: 'Gemini 3.0 Flash (Preview)' },
-      { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-      { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-      { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
+      { id: 'gemini-3.5-flash-medium', label: 'Gemini 3.5 Flash (Medium)' },
+      { id: 'gemini-3.5-flash-high', label: 'Gemini 3.5 Flash (High)' },
+      { id: 'gemini-3.5-flash-low', label: 'Gemini 3.5 Flash (Low)' },
+      { id: 'gemini-3.1-pro-high', label: 'Gemini 3.1 Pro (High)' },
+      { id: 'gemini-3.1-pro-low', label: 'Gemini 3.1 Pro (Low)' },
+      { id: 'claude-sonnet-4-6-thinking', label: 'Claude Sonnet 4.6 (Thinking)' },
+      { id: 'claude-opus-4-6-thinking', label: 'Claude Opus 4.6 Thinking' },
+      { id: 'gpt-oss-120b-medium', label: 'GPT-OSS 120B (Medium)' },
     ];
   }
 }
@@ -669,7 +803,7 @@ export class CodeAssistProvider implements ProviderInterface {
  * Handle SSE streaming from Code Assist API.
  * Returns an async generator that yields OpenAI-compatible chunks.
  */
-async function* handleSSEStream(response: Response): AsyncGenerator<unknown, void, unknown> {
+export async function* handleSSEStream(response: Response): AsyncGenerator<unknown, void, unknown> {
   const reader = response.body?.getReader();
   if (!reader) {
     throw new Error('No response body for streaming');
@@ -680,6 +814,8 @@ async function* handleSSEStream(response: Response): AsyncGenerator<unknown, voi
   // Monotonic index shared across chunks so multi-call responses map to
   // distinct tool_use blocks downstream (AnthropicAdapter keys on tc.index).
   let toolCallIndex = 0;
+  let sawToolCall = false;
+  const toolCallIdPrefix = randomUUID();
 
   while (true) {
     const { done, value } = await reader.read();
@@ -704,8 +840,9 @@ async function* handleSSEStream(response: Response): AsyncGenerator<unknown, voi
         // incrementing index carried across chunks via toolCallIndex.
         const parts = data.candidates?.[0]?.content?.parts ?? [];
         const text = parts.map((p: any) => p.text ?? '').join('');
-        const rawToolCalls = toolCallsFromParts(parts, toolCallIndex);
+        const rawToolCalls = toolCallsFromParts(parts, toolCallIndex, toolCallIdPrefix);
         const hasToolCall = rawToolCalls.length > 0;
+        if (hasToolCall) sawToolCall = true;
 
         const delta: Record<string, unknown> = {};
         if (text) delta.content = text;
@@ -723,7 +860,7 @@ async function* handleSSEStream(response: Response): AsyncGenerator<unknown, voi
             {
               index: 0,
               delta,
-              finish_reason: toOpenAIFinishReason(data.candidates?.[0]?.finishReason, hasToolCall),
+              finish_reason: toOpenAIFinishReason(data.candidates?.[0]?.finishReason, sawToolCall),
             },
           ],
           ...(data.usageMetadata ? { usage: toOpenAIUsage(data.usageMetadata) } : {}),

@@ -385,6 +385,8 @@ export function createCronScheduler(options: CronSchedulerOptions): CronSchedule
             if (owned) {
               isOwner = true;
               if (lockProbeTimer) {
+                // Restore ref before clearing to ensure consistent state (BUG #4)
+                lockProbeTimer.ref?.();
                 clearInterval(lockProbeTimer);
                 lockProbeTimer = null;
               }
@@ -392,6 +394,7 @@ export function createCronScheduler(options: CronSchedulerOptions): CronSchedule
           })
           .catch(e => logForDebugging(String(e), { level: 'error' }));
       }, LOCK_PROBE_INTERVAL_MS);
+      // Unref immediately to prevent hanging (BUG #1) — must be before any async code
       lockProbeTimer.unref?.();
     }
 

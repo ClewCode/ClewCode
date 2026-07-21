@@ -1907,6 +1907,10 @@ async function* queryModel(
   const contentBlocks: (BetaContentBlock | ConnectorTextBlock)[] = [];
   let usage: NonNullableUsage = EMPTY_USAGE;
   let costUSD = 0;
+  // BUG #35: Tracks cost already added from partial streaming usage before a
+  // fallback to non-streaming, so the fallback's finally block can avoid
+  // double-counting the same turn's cost (see usage at the fallback site).
+  let streamingCostAlreadyAdded = 0;
   let stopReason: BetaStopReason | null = null;
   let didFallBackToNonStreaming = false;
   let streamingRetryCount = 0;
@@ -2373,6 +2377,9 @@ async function* queryModel(
             // Update cost
             const costUSDForPart = calculateUSDCost(resolvedModel, usage);
             costUSD += addToTotalSessionCost(costUSDForPart, usage, options.model, providerId);
+            // BUG #35: Remember how much we've already added in case this
+            // partial stream later falls back to a non-streaming retry.
+            streamingCostAlreadyAdded += costUSDForPart;
 
             const refusalMessage = getErrorMessageIfRefusal(part.delta.stop_reason, options.model);
             if (refusalMessage) {
@@ -2917,7 +2924,14 @@ async function* queryModel(
       usage = updateUsage(EMPTY_USAGE, fallbackUsage);
       stopReason = fallbackMessage.message.stop_reason;
       const fallbackCost = calculateUSDCost(resolvedModel, fallbackUsage);
-      costUSD += addToTotalSessionCost(fallbackCost, fallbackUsage, options.model, providerId);
+      // BUG #35: The fallback response's cost covers the whole turn — if a
+      // partial stream already added cost via message_delta before failing
+      // over to this non-streaming retry, only add the difference so the
+      // turn isn't billed/tracked twice. Clamp at 0 in case the fallback
+      // (e.g. shorter due to a lower max_tokens retry) costs less than the
+      // partial stream already did.
+      const netFallbackCost = Math.max(0, fallbackCost - streamingCostAlreadyAdded);
+      costUSD += addToTotalSessionCost(netFallbackCost, fallbackUsage, options.model, providerId);
     }
   }
 
@@ -3026,7 +3040,12 @@ export function updateUsage(
       partUsage.cache_read_input_tokens !== null && partUsage.cache_read_input_tokens > 0
         ? partUsage.cache_read_input_tokens
         : usage.cache_read_input_tokens,
-    output_tokens: partUsage.output_tokens ?? usage.output_tokens,
+    // BUG #37: Apply the same "ignore spurious zero" guard used for the
+    // sibling token fields above — a duplicated/replayed delta reporting
+    // output_tokens: 0 after a prior nonzero value would otherwise reset
+    // the accumulated count, silently undercounting cost for the turn.
+    output_tokens:
+      partUsage.output_tokens !== null && partUsage.output_tokens > 0 ? partUsage.output_tokens : usage.output_tokens,
     server_tool_use: {
       web_search_requests: partUsage.server_tool_use?.web_search_requests ?? usage.server_tool_use.web_search_requests,
       web_fetch_requests: partUsage.server_tool_use?.web_fetch_requests ?? usage.server_tool_use.web_fetch_requests,

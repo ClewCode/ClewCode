@@ -39,6 +39,8 @@ import {
 import { updateSessionName } from './concurrentSessions.js';
 import { getCwd } from './cwd.js';
 import { logForDebugging } from './debug.js';
+import { logForDiagnosticsNoPII } from './diagLogs.js';
+import { errorMessage } from './errors.js';
 import type { FileHistorySnapshot } from './fileHistory.js';
 import { fileHistoryRestoreStateFromLog } from './fileHistory.js';
 import { createSystemMessage } from './messages.js';
@@ -314,7 +316,12 @@ export function restoreWorktreeForResume(worktreeSession: PersistedWorktreeSessi
 
   try {
     process.chdir(worktreeSession.worktreePath);
-  } catch {
+  } catch (error) {
+    // BUG #6: Log directory change failure instead of silently failing
+    logForDiagnosticsNoPII('warn', 'worktree_restore_failed', {
+      error: errorMessage(error as Error),
+      path: worktreeSession.worktreePath,
+    });
     // Directory is gone. Override the stale cache so the next
     // reAppendSessionMetadata records "exited" instead of re-persisting
     // a path that no longer exists.

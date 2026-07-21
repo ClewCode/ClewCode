@@ -323,6 +323,7 @@ export async function checkRecordingAvailability(): Promise<RecordingAvailabilit
 // ─── Recording (native audio on macOS/Linux/Windows, SoX/arecord fallback on Linux) ─────────────
 
 let activeRecorder: ChildProcess | null = null;
+let activeRecorderPid: number | null = null; // BUG #11: Track process instance to prevent race conditions
 let nativeRecordingActive = false;
 
 export async function startRecording(
@@ -431,6 +432,7 @@ function startSoxRecording(
   });
 
   activeRecorder = child;
+  activeRecorderPid = child.pid ?? null; // BUG #11: Store process ID for instance tracking
 
   child.stdout?.on('data', (chunk: Buffer) => {
     onData(chunk);
@@ -442,13 +444,21 @@ function startSoxRecording(
   });
 
   child.on('close', () => {
-    activeRecorder = null;
+    // BUG #11: Only null activeRecorder if this is still the same process
+    if (child.pid === activeRecorderPid) {
+      activeRecorder = null;
+      activeRecorderPid = null;
+    }
     onEnd();
   });
 
   child.on('error', err => {
     logError(err);
-    activeRecorder = null;
+    // BUG #11: Only null activeRecorder if this is still the same process
+    if (child.pid === activeRecorderPid) {
+      activeRecorder = null;
+      activeRecorderPid = null;
+    }
     onEnd();
   });
 
@@ -477,6 +487,7 @@ function startArecordRecording(onData: (chunk: Buffer) => void, onEnd: () => voi
   });
 
   activeRecorder = child;
+  activeRecorderPid = child.pid ?? null; // BUG #11: Store process ID for instance tracking
 
   child.stdout?.on('data', (chunk: Buffer) => {
     onData(chunk);
@@ -488,13 +499,21 @@ function startArecordRecording(onData: (chunk: Buffer) => void, onEnd: () => voi
   });
 
   child.on('close', () => {
-    activeRecorder = null;
+    // BUG #11: Only null activeRecorder if this is still the same process
+    if (child.pid === activeRecorderPid) {
+      activeRecorder = null;
+      activeRecorderPid = null;
+    }
     onEnd();
   });
 
   child.on('error', err => {
     logError(err);
-    activeRecorder = null;
+    // BUG #11: Only null activeRecorder if this is still the same process
+    if (child.pid === activeRecorderPid) {
+      activeRecorder = null;
+      activeRecorderPid = null;
+    }
     onEnd();
   });
 
@@ -508,7 +527,14 @@ export function stopRecording(): void {
     return;
   }
   if (activeRecorder) {
+    // BUG #12: Remove event listeners to prevent memory leak and stale callbacks
+    activeRecorder.stdout?.removeAllListeners('data');
+    activeRecorder.stderr?.removeAllListeners('data');
+    activeRecorder.removeAllListeners('close');
+    activeRecorder.removeAllListeners('error');
+
     activeRecorder.kill('SIGTERM');
     activeRecorder = null;
+    activeRecorderPid = null;
   }
 }

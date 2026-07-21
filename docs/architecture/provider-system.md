@@ -96,3 +96,8 @@ the user changes them (`/providers set <provider> <model>`, `clew provider`):
   the model is accepted unverified
 - `custom` provider models are never validated (arbitrary endpoints)
 
+ChatGPT can also report request failures inside an otherwise successful SSE
+connection. The ChatGPT adapter converts those `response.failed`/error events
+into normal provider errors so the REPL displays the backend message instead of
+dropping an empty assistant turn.
+

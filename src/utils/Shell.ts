@@ -21,7 +21,7 @@ export type { ExecResult } from './ShellCommand.js';
 
 import { accessSync } from 'fs';
 import { onCwdChangedForHooks } from './hooks/fileChangedWatcher.js';
-import { getClaudeTempDirName } from './permissions/filesystem.js';
+import { getClewTempDirName } from './permissions/filesystem.js';
 import { getPlatform } from './platform.js';
 import { SandboxManager } from './sandbox/sandbox-adapter.js';
 import { invalidateSessionEnvCache } from './sessionEnvironment.js';
@@ -186,7 +186,7 @@ export async function exec(
     .padStart(4, '0');
 
   // Sandbox temp directory - use per-user directory name to prevent multi-user permission conflicts
-  const sandboxTmpDir = posixJoin(process.env.CLEW_CODE_TMPDIR || '/tmp', getClaudeTempDirName());
+  const sandboxTmpDir = posixJoin(process.env.CLEW_CODE_TMPDIR || '/tmp', getClewTempDirName());
 
   const { commandString: builtCommand, cwdFilePath } = await provider.buildExecCommand(command, {
     id,

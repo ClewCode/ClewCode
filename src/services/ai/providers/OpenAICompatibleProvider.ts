@@ -7,6 +7,12 @@ const DEFAULT_CHAT_PATH = '/chat/completions';
 const DEFAULT_TIMEOUT_MS = 300_000; // 5 minutes
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 
+function isRetryableUpstreamFailure(status: number, message: string): boolean {
+  if (status !== 400) return false;
+  const normalized = message.toLowerCase();
+  return normalized.includes('upstream request failed') || normalized.includes('error from provider (console)');
+}
+
 export interface OpenAICompatibleOptions {
   /** Per-request timeout in ms (default: 300000 / 5 min).  Use env OPENAI_COMPATIBLE_TIMEOUT for global override. */
   timeoutMs?: number;
@@ -144,7 +150,12 @@ export class OpenAICompatibleProvider implements ProviderInterface {
   }
 
   async createClient(options: ProviderInitOptions): Promise<ProviderClient> {
-    const apiKey = this.requiresApiKey ? (options.apiKey ?? process.env[this.envKey]) : undefined;
+    let apiKey = this.requiresApiKey ? (options.apiKey ?? process.env[this.envKey]) : undefined;
+
+    // Trim whitespace from API key to catch common mistakes (spaces, tabs, newlines)
+    if (typeof apiKey === 'string') {
+      apiKey = apiKey.trim();
+    }
 
     if (this.requiresApiKey && !apiKey) {
       throw new Error(`Missing API key for provider ${this.providerId}. Set ${this.envKey}.`);
@@ -211,7 +222,10 @@ export class OpenAICompatibleProvider implements ProviderInterface {
                   const message = extractErrorMessage(errBody, text || `${response.status} ${response.statusText}`);
 
                   // Retry on rate limit (429) and server errors (502, 503, 504)
-                  if (RETRYABLE_STATUSES.has(response.status) && attempt < this.maxRetries) {
+                  if (
+                    (RETRYABLE_STATUSES.has(response.status) || isRetryableUpstreamFailure(response.status, message)) &&
+                    attempt < this.maxRetries
+                  ) {
                     // Respect Retry-After header on 429 responses (in seconds or HTTP-date format)
                     let delay = Math.min(1000 * 2 ** attempt + Math.random() * 500, 10000);
                     if (response.status === 429) {
@@ -319,31 +333,61 @@ export class OpenAICompatibleProvider implements ProviderInterface {
 
     const decoder = new TextDecoder();
     let buffer = '';
+    // BUG #28: Enforce a per-chunk stall timeout so a server that opens a
+    // stream and then goes silent doesn't hang the request forever — the
+    // original fetch() AbortController is cleared as soon as headers arrive.
+    let stallTimer: ReturnType<typeof setTimeout> | undefined;
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const stallPromise = new Promise<{ done: true; value: undefined; timedOut: true }>(resolve => {
+          stallTimer = setTimeout(() => resolve({ done: true, value: undefined, timedOut: true }), this.timeoutMs);
+        });
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+        const result = await Promise.race([
+          reader.read().then(r => ({ ...r, timedOut: false as const })),
+          stallPromise,
+        ]);
+        clearTimeout(stallTimer);
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed?.startsWith('data: ')) continue;
-        const data = trimmed.slice(6);
-        if (data === '[DONE]') return;
+        if ('timedOut' in result && result.timedOut) {
+          throw new Error(`Streaming response stalled after ${this.timeoutMs}ms with no data`);
+        }
+        if (result.done) break;
 
-        try {
-          const parsed = JSON.parse(data);
-          yield this.normalizeStreamChunk(parsed);
-        } catch (error) {
-          // Log invalid chunks for monitoring, but don't break the stream
-          if (this._onStreamingWarning) {
-            this._onStreamingWarning(data, error instanceof Error ? error : new Error(String(error)));
+        buffer += decoder.decode(result.value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed?.startsWith('data: ')) continue;
+          const data = trimmed.slice(6);
+          if (data === '[DONE]') return;
+
+          try {
+            const parsed = JSON.parse(data);
+            yield this.normalizeStreamChunk(parsed);
+          } catch (error) {
+            // Log invalid chunks for monitoring, but don't break the stream
+            if (this._onStreamingWarning) {
+              this._onStreamingWarning(data, error instanceof Error ? error : new Error(String(error)));
+            }
           }
         }
       }
+    } finally {
+      // BUG #29: Release the reader lock (and cancel the underlying stream)
+      // whenever this generator exits — including early `.return()` on a
+      // `break` in the consumer's `for await` loop — to avoid leaking the
+      // TCP connection and the lock on response.body.
+      clearTimeout(stallTimer);
+      try {
+        await reader.cancel();
+      } catch {
+        // Ignore cancel errors — stream may already be closed/errored
+      }
+      reader.releaseLock();
     }
   }
 

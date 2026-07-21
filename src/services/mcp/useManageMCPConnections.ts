@@ -344,6 +344,8 @@ export function useManageMCPConnections(
                 clearTimeout(existingTimer);
                 reconnectTimersRef.current.delete(client.name);
               }
+              // BUG #13: Clean up orphaned reconnect Promise from previous attempts
+              reconnectTimersRef.current.delete(`${client.name}:reconnect`);
 
               // Attempt reconnection with exponential backoff
               const reconnectWithBackoff = async () => {
@@ -352,6 +354,7 @@ export function useManageMCPConnections(
                   if (isMcpServerDisabled(client.name)) {
                     logMCPDebug(client.name, `Server disabled during reconnection, stopping retry`);
                     reconnectTimersRef.current.delete(client.name);
+                    reconnectTimersRef.current.delete(`${client.name}:reconnect`); // BUG #13: Clean up Promise
                     return;
                   }
 
@@ -373,6 +376,7 @@ export function useManageMCPConnections(
                         `${transportType} reconnection successful after ${elapsed}ms (attempt ${attempt})`,
                       );
                       reconnectTimersRef.current.delete(client.name);
+                      reconnectTimersRef.current.delete(`${client.name}:reconnect`); // BUG #13: Clean up Promise
                       onConnectionAttempt(result);
                       return;
                     }
@@ -389,6 +393,7 @@ export function useManageMCPConnections(
                         `Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up`,
                       );
                       reconnectTimersRef.current.delete(client.name);
+                      reconnectTimersRef.current.delete(`${client.name}:reconnect`); // BUG #13: Clean up Promise
                       onConnectionAttempt(result);
                       return;
                     }
@@ -423,7 +428,9 @@ export function useManageMCPConnections(
                 }
               };
 
-              void reconnectWithBackoff();
+              // Store reconnection promise to prevent orphaned timers if component unmounts
+              const reconnectPromise = reconnectWithBackoff();
+              reconnectTimersRef.current.set(`${client.name}:reconnect`, reconnectPromise as any);
             } else {
               // G3: Clear stale tools/commands/resources for servers that don't reconnect
               updateServer({ ...client, type: 'failed', tools: [], commands: [], resources: [] });

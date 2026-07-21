@@ -314,6 +314,19 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
 
   private convertResponseToAnthropic(response: unknown, fallbackModel: string): BetaMessage {
     const record = (response && typeof response === 'object' ? response : {}) as Record<string, any>;
+
+    // BUG #34: A failed/cancelled Responses API reply with an empty output
+    // array was previously converted into a normal successful assistant turn
+    // (stop_reason: 'end_turn', content: []). isResultSuccessful() treats
+    // exactly that shape as "model chose not to respond", so a genuine
+    // backend failure (content policy rejection, upstream error) was silently
+    // swallowed instead of surfacing to the user. Throw so it's handled like
+    // any other API error.
+    if (record.status === 'failed' || record.status === 'cancelled') {
+      const errMessage = typeof record.error?.message === 'string' ? record.error.message : `Response ${record.status}`;
+      throw APIError.generate(undefined, { error: { message: errMessage, type: 'api_error' } }, errMessage, undefined);
+    }
+
     const content: any[] = [];
 
     for (const item of Array.isArray(record.output) ? record.output : []) {
@@ -379,6 +392,15 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
     for await (const rawEvent of stream) {
       const event = (rawEvent && typeof rawEvent === 'object' ? rawEvent : {}) as Record<string, any>;
       const type = String(event.type ?? '');
+
+      if (type === 'response.failed' || type === 'error' || type === 'response.error') {
+        const error = event.response?.error ?? event.error ?? event;
+        const message =
+          (typeof error?.message === 'string' && error.message) ||
+          (typeof error?.code === 'string' && error.code) ||
+          'ChatGPT response stream failed';
+        throw new Error(message);
+      }
 
       if (type === 'response.output_item.added' && event.item?.type === 'function_call') {
         if (activeIndex !== null) yield { type: 'content_block_stop', index: activeIndex };

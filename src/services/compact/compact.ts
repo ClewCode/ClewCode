@@ -46,7 +46,8 @@ import { COMPACT_MAX_OUTPUT_TOKENS, getContextWindowForModel } from '../../utils
 import { analyzeContext, tokenStatsToStatsigMetrics } from '../../utils/contextAnalysis.js';
 import { readCronTasks } from '../../utils/cronTasks.js';
 import { logForDebugging } from '../../utils/debug.js';
-import { hasExactErrorMessage } from '../../utils/errors.js';
+import { logForDiagnosticsNoPII } from '../../utils/diagLogs.js';
+import { errorMessage, hasExactErrorMessage } from '../../utils/errors.js';
 import { cacheToObject } from '../../utils/fileStateCache.js';
 import { type CacheSafeParams, runForkedAgent } from '../../utils/forkedAgent.js';
 import { executePostCompactHooks, executePreCompactHooks } from '../../utils/hooks.js';
@@ -850,8 +851,8 @@ export async function compactConversation(
     // with EXPERIMENTAL_SKILL_SEARCH already skip re-injection via the
     // early-return in getSkillListingAttachments.
 
-    // Run async attachment generation in parallel
-    const [fileAttachments, asyncAgentAttachments] = await Promise.all([
+    // Run async attachment generation in parallel (BUG #3: use allSettled to prevent single-file error from killing entire compaction)
+    const attachmentResults = await Promise.allSettled([
       createPostCompactFileAttachments(
         preCompactReadFileState,
         context,
@@ -860,6 +861,19 @@ export async function compactConversation(
       ),
       createAsyncAgentAttachmentsIfNeeded(context),
     ]);
+
+    const fileAttachments = attachmentResults[0]?.status === 'fulfilled' ? attachmentResults[0].value : [];
+    const asyncAgentAttachments = attachmentResults[1]?.status === 'fulfilled' ? attachmentResults[1].value : [];
+    if (attachmentResults[0]?.status === 'rejected') {
+      logForDiagnosticsNoPII('warn', 'post_compact_file_attachments_failed', {
+        error: errorMessage(attachmentResults[0].reason),
+      });
+    }
+    if (attachmentResults[1]?.status === 'rejected') {
+      logForDiagnosticsNoPII('warn', 'post_compact_async_agent_attachments_failed', {
+        error: errorMessage(attachmentResults[1].reason),
+      });
+    }
 
     const postCompactFileAttachments: AttachmentMessage[] = [...fileAttachments, ...asyncAgentAttachments];
     const planAttachment = createPlanAttachmentIfNeeded(context.agentId);
@@ -1438,11 +1452,18 @@ async function streamCompactSummary({
   // Two signals: (1) PUT /worker heartbeat via sessionActivity, and
   // (2) re-emit 'compacting' status so the SDK event stream stays active
   // and the server doesn't consider the session stale.
+  // BUG #3: Add error handling to setInterval callback to prevent unhandled errors during compaction
   const activityInterval = isSessionActivityTrackingActive()
     ? setInterval(
         (statusSetter?: (status: 'compacting' | null) => void) => {
-          sendSessionActivitySignal();
-          statusSetter?.('compacting');
+          try {
+            sendSessionActivitySignal();
+            statusSetter?.('compacting');
+          } catch (error) {
+            logForDiagnosticsNoPII('warn', 'compaction_keep_alive_failed', {
+              errorType: error instanceof Error ? error.constructor.name : typeof error,
+            });
+          }
         },
         30_000,
         context.setSDKStatus,

@@ -198,9 +198,20 @@ Extract the new long-term facts/observations that should be added.`;
     let projectFacts = '';
     let feedbackFacts = '';
     let agentFacts = '';
+    const MAX_OBSERVATIONS = 1000; // BUG #7: Cap total observations to prevent memory growth
+    const MAX_FACT_BYTES = 50_000_000; // 50MB cap on total content
+
+    let totalBytes = 0;
+    let observationCount = 0;
 
     for (const obs of observations) {
+      if (observationCount >= MAX_OBSERVATIONS) break;
       const formatted = `- ${obs.fact}\n`;
+      const addedBytes = new TextEncoder().encode(formatted).length;
+      if (totalBytes + addedBytes > MAX_FACT_BYTES) break;
+
+      totalBytes += addedBytes;
+      observationCount++;
       if (obs.category === 'user') userFacts += formatted;
       else if (obs.category === 'project') projectFacts += formatted;
       else if (obs.category === 'feedback') feedbackFacts += formatted;

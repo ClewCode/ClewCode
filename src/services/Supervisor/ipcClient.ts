@@ -16,8 +16,8 @@ const _DAEMON_DIR = join(getClewConfigHomeDir(), 'daemon');
 
 const PIPE_NAME =
   process.platform === 'win32'
-    ? `\\\\.\\pipe\\claude-supervisor-${process.env.USER ?? 'default'}`
-    : `/tmp/claude-supervisor-${process.env.USER ?? 'default'}.sock`;
+    ? `\\\\.\\pipe\\clew-supervisor-${process.env.USER ?? 'default'}`
+    : `/tmp/clew-supervisor-${process.env.USER ?? 'default'}.sock`;
 
 interface IPCRequest {
   type: string;
@@ -77,6 +77,8 @@ async function startSupervisor(): Promise<boolean> {
         resolve(true);
       });
       socket.on('error', () => {
+        // BUG #3: Destroy failed socket before retrying to prevent resource leak
+        socket.destroy();
         if (attempts < maxAttempts) {
           setTimeout(tryConnect, 100);
         } else {
