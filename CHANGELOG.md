@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-07-22
+
 ### Fixed
 - **`claude-opus-4-8` and `claude-opus-4-7` reported a knowledge cutoff a year early; `claude-sonnet-5` reported none**: `getKnowledgeCutoff`'s fallback branch tests `canonical.includes('claude-opus-4')`, which also matches `claude-opus-4-8`/`4-7`, so both returned `'January 2025'` instead of January 2026. `claude-sonnet-5` matched no branch and fell through to `null`, emitting no cutoff line at all. Both are now supplied by providers.json, which takes precedence over the prefix chain. Values are the "Reliable knowledge cutoff" column from platform.claude.com, matching the convention the existing hardcoded dates already used. (`src/services/ai/providers.json`)
 
