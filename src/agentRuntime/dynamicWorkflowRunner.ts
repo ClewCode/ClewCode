@@ -130,8 +130,9 @@ export async function runDynamicWorkflow(params: {
       try {
         const { recordRunningSubtasks } = await import('./dynamicWorkflowPersistence.js');
         await recordRunningSubtasks((params as any).workspaceRoot, pendingRunState);
-      } catch {
-        /* non-critical */
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn(`[dynamicWorkflowRunner] failed to record running subtasks: ${msg}`);
       }
     }
 

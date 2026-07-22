@@ -1,5 +1,6 @@
 import { createServer } from 'http';
 import { speechPageHtml } from '../../services/voiceInput/speechPage.js';
+import { logForDebugging } from '../../utils/debug.js';
 
 let activeServer: { server: ReturnType<typeof createServer>; url: string; transcript: string } | null = null;
 
@@ -98,12 +99,12 @@ export const call: import('../../types/command.js').LocalCommandCall = async arg
 
       import('open')
         .then(({ default: open }) =>
-          open(url).catch(() => {
-            /* noop */
+          open(url).catch(err => {
+            logForDebugging('voice: failed to open browser', err);
           }),
         )
-        .catch(() => {
-          /* noop */
+        .catch(err => {
+          logForDebugging('voice: failed to import open module', err);
         });
 
       resolve({

@@ -78,7 +78,9 @@ export async function searchMemories(cwd: string, query: string, limit: number =
     }>;
     for (const r of embRows) {
       try {
-        const arr = Array.from(new Float32Array(r.embedding.buffer));
+        const arr = Array.from(
+          new Float32Array(r.embedding.buffer, r.embedding.byteOffset, r.embedding.byteLength / 4),
+        );
         chunkEmbeddings.set(r.chunk_id, arr);
       } catch {
         /* skip corrupted */

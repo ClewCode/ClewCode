@@ -292,7 +292,7 @@ export async function fetchAndStoreUserRoles(accessToken: string): Promise<void>
 
 export async function createAndStoreApiKey(accessToken: string): Promise<string | null> {
   try {
-    const response = await ofetch(getOauthConfig().API_KEY_URL, null, {
+    const response = await ofetch(getOauthConfig().API_KEY_URL, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 

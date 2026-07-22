@@ -198,10 +198,11 @@ async function fetchTeamMemoryOnce(
     }
 
     const endpoint = getTeamMemorySyncEndpoint(repoSlug);
-    const response = await ofetch(endpoint, {
+    const response = await ofetch.raw(endpoint, {
+      method: 'GET',
       headers,
       timeout: TEAM_MEMORY_SYNC_TIMEOUT_MS,
-      validateStatus: status => status === 200 || status === 304 || status === 404,
+      ignoreResponseError: true,
     });
 
     if (response.status === 304) {
@@ -219,7 +220,7 @@ async function fetchTeamMemoryOnce(
       return { success: true, isEmpty: true };
     }
 
-    const parsed = TeamMemoryDataSchema().safeParse(response.data);
+    const parsed = TeamMemoryDataSchema().safeParse(response._data);
     if (!parsed.success) {
       logForDebugging('team-memory-sync: invalid response format', {
         level: 'warn',
@@ -233,7 +234,7 @@ async function fetchTeamMemoryOnce(
     }
 
     // Extract checksum from response data or ETag header
-    const responseChecksum = parsed.data.checksum || response.headers['etag']?.replace(/^"|"$/g, '') || undefined;
+    const responseChecksum = parsed.data.checksum || response.headers?.get('etag')?.replace(/^"|"$/g, '') || undefined;
     if (responseChecksum) {
       state.lastKnownChecksum = responseChecksum;
     }
@@ -303,10 +304,11 @@ async function fetchTeamMemoryHashes(state: SyncState, repoSlug: string): Promis
     }
 
     const endpoint = `${getTeamMemorySyncEndpoint(repoSlug)}&view=hashes`;
-    const response = await ofetch(endpoint, {
+    const response = await ofetch.raw(endpoint, {
+      method: 'GET',
       headers: auth.headers,
       timeout: TEAM_MEMORY_SYNC_TIMEOUT_MS,
-      validateStatus: status => status === 200 || status === 404,
+      ignoreResponseError: true,
     });
 
     if (response.status === 404) {
@@ -314,8 +316,8 @@ async function fetchTeamMemoryHashes(state: SyncState, repoSlug: string): Promis
       return { success: true, entryChecksums: {} };
     }
 
-    const checksum = response.data?.checksum || response.headers['etag']?.replace(/^"|"$/g, '');
-    const entryChecksums = response.data?.entryChecksums;
+    const checksum = response._data?.checksum || response.headers?.get('etag')?.replace(/^"|"$/g, '');
+    const entryChecksums = response._data?.entryChecksums;
 
     // Requires anthropic/anthropic#283027. If entryChecksums is missing,
     // treat as a probe failure — caller fails the push; watcher retries.
@@ -332,7 +334,7 @@ async function fetchTeamMemoryHashes(state: SyncState, repoSlug: string): Promis
     }
     return {
       success: true,
-      version: response.data?.version,
+      version: response._data?.version,
       checksum,
       entryChecksums,
     };
@@ -452,15 +454,13 @@ async function uploadTeamMemory(
     }
 
     const endpoint = getTeamMemorySyncEndpoint(repoSlug);
-    const response = await ofetch(
-      endpoint,
-      { entries },
-      {
-        headers,
-        timeout: TEAM_MEMORY_SYNC_TIMEOUT_MS,
-        validateStatus: status => status === 200 || status === 412,
-      },
-    );
+    const response = await ofetch.raw(endpoint, {
+      method: 'PUT',
+      body: { entries },
+      headers,
+      timeout: TEAM_MEMORY_SYNC_TIMEOUT_MS,
+      ignoreResponseError: true,
+    });
 
     if (response.status === 412) {
       logForDebugging('team-memory-sync: conflict (412 Precondition Failed)', {
@@ -469,7 +469,7 @@ async function uploadTeamMemory(
       return { success: false, conflict: true, error: 'ETag mismatch' };
     }
 
-    const responseChecksum = response.data?.checksum;
+    const responseChecksum = response._data?.checksum;
     if (responseChecksum) {
       state.lastKnownChecksum = responseChecksum;
     }
@@ -481,7 +481,7 @@ async function uploadTeamMemory(
     return {
       success: true,
       checksum: responseChecksum,
-      lastModified: response.data?.lastModified,
+      lastModified: response._data?.lastModified,
     };
   } catch (error) {
     const body = isFetchError(error) ? JSON.stringify(error.response?.data ?? '') : '';

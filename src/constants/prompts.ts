@@ -712,7 +712,7 @@ export async function computeSimpleEnvInfo(modelId: string, additionalWorkingDir
     !isAnthropic || (process.env.USER_TYPE === 'ant' && isUndercover())
       ? null
       : `Clew Code is available as a CLI in the terminal, desktop app (Mac/Windows), web app (clew-code.org), and IDE extensions (VS Code, JetBrains).`,
-  ].filter(item => item !== null);
+  ].filter((item): item is string | string[] => item != null);
 
   return [`# Environment`, `You have been invoked in the following environment: `, ...prependBullets(envItems)].join(
     `\n`,

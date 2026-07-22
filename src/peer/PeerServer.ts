@@ -33,7 +33,6 @@ import {
   type MeshChatMessage,
   type MeshTaskPriority,
   type MeshTodo,
-  type PeerColor,
   type PeerInfo,
   peerColorFromId,
   type SwarmTask,
@@ -744,26 +743,40 @@ export class PeerServer {
 
             // If waiting for a reply
             if (replyTo) {
-              store.waitForReply(replyTo, timeoutSec * 1000).then(reply => {
-                if (res.destroyed) return;
-                if (reply) {
-                  reply.delivered = true;
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ messages: [reply] }));
-                } else {
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ messages: [] }));
-                }
-              });
+              store
+                .waitForReply(replyTo, timeoutSec * 1000)
+                .then(reply => {
+                  if (res.destroyed) return;
+                  if (reply) {
+                    reply.delivered = true;
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ messages: [reply] }));
+                  } else {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ messages: [] }));
+                  }
+                })
+                .catch(err => {
+                  if (res.destroyed) return;
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ error: errorMessage(err) }));
+                });
               return;
             }
 
             // Long-poll for new messages
-            store.waitForBrokerMessages(targets, timeoutSec * 1000).then(msgs => {
-              if (res.destroyed) return;
-              res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ messages: msgs }));
-            });
+            store
+              .waitForBrokerMessages(targets, timeoutSec * 1000)
+              .then(msgs => {
+                if (res.destroyed) return;
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ messages: msgs }));
+              })
+              .catch(err => {
+                if (res.destroyed) return;
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: errorMessage(err) }));
+              });
             return;
           }
 

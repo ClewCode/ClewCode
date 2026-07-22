@@ -96,7 +96,7 @@ export class RelayClient {
         logForDebugging(`[RelayClient] Connected to relay as ${this.role}`);
 
         // Register with the relay
-        this.ws!.send(
+        this.ws?.send(
           JSON.stringify({
             type: 'register',
             role: this.role,

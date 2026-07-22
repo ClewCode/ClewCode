@@ -516,11 +516,18 @@ export class FirstPartyEventLoggingExporter implements LogRecordExporter {
     const headers = useAuth ? { ...baseHeaders, ...authResult.headers } : baseHeaders;
 
     try {
-      const response = await ofetch(this.endpoint, payload, {
+      const rawResponse = await ofetch.raw(this.endpoint, {
+        body: payload,
         timeout: this.timeout,
         headers,
+        ignoreResponseError: true,
       });
-      this.logSuccess(payload.events.length, useAuth, response.data);
+      if (!rawResponse.ok) {
+        throw Object.assign(new Error(`HTTP ${rawResponse.status}`), {
+          response: { status: rawResponse.status, data: rawResponse._data, _data: rawResponse._data },
+        });
+      }
+      this.logSuccess(payload.events.length, useAuth, rawResponse._data);
       return;
     } catch (error) {
       // Handle 401 by retrying without auth
@@ -528,11 +535,18 @@ export class FirstPartyEventLoggingExporter implements LogRecordExporter {
         if (process.env.USER_TYPE === 'ant') {
           logForDebugging('1P event logging: 401 auth error, retrying without auth');
         }
-        const response = await ofetch(this.endpoint, payload, {
+        const retryResponse = await ofetch.raw(this.endpoint, {
+          body: payload,
           timeout: this.timeout,
           headers: baseHeaders,
+          ignoreResponseError: true,
         });
-        this.logSuccess(payload.events.length, false, response.data);
+        if (!retryResponse.ok) {
+          throw Object.assign(new Error(`HTTP ${retryResponse.status}`), {
+            response: { status: retryResponse.status, data: retryResponse._data, _data: retryResponse._data },
+          });
+        }
+        this.logSuccess(payload.events.length, false, retryResponse._data);
         return;
       }
 
@@ -674,7 +688,7 @@ function getAxiosErrorContext(error: unknown): string {
 
   const parts: string[] = [];
 
-  const requestId = error.response?.headers?.['request-id'];
+  const requestId = (error.response as { headers?: Record<string, string> } | undefined)?.headers?.['request-id'];
   if (requestId) {
     parts.push(`request-id=${requestId}`);
   }

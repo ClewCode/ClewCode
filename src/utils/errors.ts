@@ -195,9 +195,12 @@ export type AxiosErrorKind =
  * Check if an error is a fetch/HTTP error with a response property.
  * Works with both FetchError (ofetch) and AxiosError shapes.
  */
-export function isFetchError(
-  e: unknown,
-): e is { response?: { status?: number; data?: unknown }; code?: string; message: string } {
+export function isFetchError(e: unknown): e is {
+  response?: { status?: number; data?: unknown; _data?: unknown };
+  config?: { url?: string };
+  code?: string;
+  message: string;
+} {
   if (!e || typeof e !== 'object') return false;
   // ofetch FetchError
   if ('name' in e && (e as { name: string }).name === 'FetchError') return true;

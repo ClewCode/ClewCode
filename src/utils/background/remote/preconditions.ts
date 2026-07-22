@@ -93,7 +93,7 @@ export async function checkGithubAppInstalled(owner: string, repo: string, signa
 
     logForDebugging(`Checking GitHub app installation for ${owner}/${repo}`);
 
-    const response = await ofetch<{
+    const response = await ofetch.raw<{
       repo: {
         name: string;
         owner: { login: string };
@@ -110,8 +110,8 @@ export async function checkGithubAppInstalled(owner: string, repo: string, signa
     });
 
     if (response.status === 200) {
-      if (response.data.status) {
-        const installed = response.data.status.app_installed;
+      if (response._data?.status) {
+        const installed = response._data.status.app_installed;
         logForDebugging(`GitHub app ${installed ? 'is' : 'is not'} installed on ${owner}/${repo}`);
         return installed;
       }
@@ -163,14 +163,14 @@ export async function checkGithubTokenSynced(): Promise<boolean> {
 
     logForDebugging('Checking if GitHub token is synced via web-setup');
 
-    const response = await ofetch(url, {
+    const response = await ofetch.raw(url, {
       headers,
       timeout: 15000,
     });
 
-    const synced = response.status === 200 && response.data?.is_authenticated === true;
+    const synced = response.status === 200 && response._data?.is_authenticated === true;
     logForDebugging(
-      `GitHub token synced: ${synced} (status=${response.status}, data=${JSON.stringify(response.data)})`,
+      `GitHub token synced: ${synced} (status=${response.status}, data=${JSON.stringify(response._data)})`,
     );
     return synced;
   } catch (error) {

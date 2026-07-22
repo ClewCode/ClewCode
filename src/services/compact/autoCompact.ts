@@ -98,16 +98,16 @@ export function isAtNaturalBoundary(messages: Message[]): boolean {
   if (!tail) return true; // empty conversation = boundary
 
   if (tail.type === 'assistant') {
-    const content = tail.message?.content;
+    const content = (tail as import('../../types/message.js').AssistantMessage).message?.content;
     if (!Array.isArray(content)) return true; // no content blocks = done
-    return !content.some((block: { type?: string }) => block.type === 'tool_use');
+    return !(content as { type?: string }[]).some(block => block.type === 'tool_use');
   }
 
   if (tail.type === 'user') {
-    const content = tail.message?.content;
+    const content = (tail as import('../../types/message.js').UserMessage).message?.content;
     if (!Array.isArray(content)) return true; // string content = user typed text
     // If the user message contains tool_result blocks, we're mid-chain
-    return !content.some((block: { type?: string }) => block.type === 'tool_result');
+    return !(content as { type?: string }[]).some(block => block.type === 'tool_result');
   }
 
   return true; // system / progress / other = boundary
@@ -144,7 +144,9 @@ export function estimateCompressibility(messages: Message[]): number {
 
   for (const message of messages) {
     if (message.type !== 'user' && message.type !== 'assistant') continue;
-    const content = message.message?.content;
+    const content = (
+      message as import('../../types/message.js').AssistantMessage | import('../../types/message.js').UserMessage
+    ).message?.content;
     if (!Array.isArray(content)) {
       if (typeof content === 'string') {
         const t = Math.ceil(content.length / 4);
@@ -152,7 +154,7 @@ export function estimateCompressibility(messages: Message[]): number {
       }
       continue;
     }
-    for (const block of content) {
+    for (const block of content as { type?: string }[]) {
       // Delegate to the canonical estimator rather than re-deriving per-block
       // sizes here. The previous hand-rolled version counted a tool_use as just
       // its *name* (dropping `input`, which carries bash commands and Edit
@@ -160,7 +162,7 @@ export function estimateCompressibility(messages: Message[]): number {
       // totalTokens only, never on toolResultTokens, so the ratio was pushed
       // toward 1 — selecting the smallest buffer and pushing auto-compact
       // dangerously close to the context ceiling.
-      const t = roughTokenCountEstimationForBlock(block);
+      const t = roughTokenCountEstimationForBlock(block as import('../tokenEstimation.js').ContentBlockParam);
       totalTokens += t;
       if (block.type === 'tool_result') {
         toolResultTokens += t;
@@ -206,9 +208,9 @@ export function collectToolSignatures(messages: Message[]): Set<string> {
   const sigs = new Set<string>();
   for (const m of messages) {
     if (m?.type !== 'assistant') continue;
-    const content = m.message?.content;
+    const content = (m as import('../../types/message.js').AssistantMessage).message?.content;
     if (!Array.isArray(content)) continue;
-    for (const block of content) {
+    for (const block of content as { type?: string; name?: string; input?: Record<string, unknown> }[]) {
       if (block.type === 'tool_use') {
         const key = compactToolSignature(block);
         if (key) sigs.add(key);
@@ -760,7 +762,8 @@ function startBackgroundAutoCompact(
         backgroundAutoCompactStatus = { running: false };
       }
     })
-    .catch(() => {
+    .catch(err => {
+      logError(err);
       if (backgroundAutoCompactJob?.tailUuid === tailUuid) {
         backgroundAutoCompactJob = undefined;
         backgroundAutoCompactStatus = { running: false };
@@ -872,7 +875,8 @@ export async function autoCompactIfNeeded(
     markPostCompaction();
     const raw1 = getLastRawCompactResponse();
     const mem1 = raw1 ? parseCompactMemories(raw1) : undefined;
-    autoExtractFromSession(mem1).catch(() => {
+    autoExtractFromSession(mem1).catch(err => {
+      logError(err);
       // Best-effort memory extraction must not block compaction.
     });
     // #3 Feedback loop: init regret tracking with dropped signatures
@@ -911,7 +915,8 @@ export async function autoCompactIfNeeded(
     runPostCompactCleanup(querySource);
     const raw2 = getLastRawCompactResponse();
     const mem2 = raw2 ? parseCompactMemories(raw2) : undefined;
-    autoExtractFromSession(mem2).catch(() => {
+    autoExtractFromSession(mem2).catch(err => {
+      logError(err);
       // Best-effort memory extraction must not block compaction.
     });
 

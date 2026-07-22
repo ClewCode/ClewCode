@@ -113,7 +113,8 @@ export class BigQueryMetricsExporter implements PushMetricExporter {
         ...authResult.headers,
       };
 
-      const response = await ofetch(this.endpoint, payload, {
+      const response = await ofetch(this.endpoint, {
+        body: payload,
         timeout: this.timeout,
         headers,
       });

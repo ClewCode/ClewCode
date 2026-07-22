@@ -84,7 +84,11 @@ export function clearSessionCaches(preservedAgentIds: ReadonlySet<string> = new 
   // Clear attribution caches (file content cache, pending bash states)
   // Dynamic import to preserve dead code elimination for COMMIT_ATTRIBUTION feature flag
   if (feature('COMMIT_ATTRIBUTION')) {
-    void import('../../utils/attributionHooks.js').then(({ clearAttributionCaches }) => clearAttributionCaches());
+    void import('../../utils/attributionHooks.js')
+      .then(({ clearAttributionCaches }) => clearAttributionCaches())
+      .catch(e => {
+        console.error('Failed to clear attribution caches:', e);
+      });
   }
   // Clear repository detection caches
   clearRepositoryCaches();
@@ -105,15 +109,27 @@ export function clearSessionCaches(preservedAgentIds: ReadonlySet<string> = new 
   // Clear session environment variables
   clearSessionEnvVars();
   // Clear WebFetch URL cache (up to 50MB of cached page content)
-  void import('../../tools/WebFetchTool/utils.js').then(({ clearWebFetchCache }) => clearWebFetchCache());
+  void import('../../tools/WebFetchTool/utils.js')
+    .then(({ clearWebFetchCache }) => clearWebFetchCache())
+    .catch(e => {
+      console.error('Failed to clear WebFetch cache:', e);
+    });
   // Clear ToolSearch description cache (full tool prompts, ~500KB for 50 MCP tools)
-  void import('../../tools/ToolSearchTool/ToolSearchTool.js').then(({ clearToolSearchDescriptionCache }) =>
-    clearToolSearchDescriptionCache(),
-  );
+  void import('../../tools/ToolSearchTool/ToolSearchTool.js')
+    .then(({ clearToolSearchDescriptionCache }) => clearToolSearchDescriptionCache())
+    .catch(e => {
+      console.error('Failed to clear ToolSearch cache:', e);
+    });
   // Clear agent definitions cache (accumulates per-cwd via EnterWorktreeTool)
-  void import('../../tools/AgentTool/loadAgentsDir.js').then(({ clearAgentDefinitionsCache }) =>
-    clearAgentDefinitionsCache(),
-  );
+  void import('../../tools/AgentTool/loadAgentsDir.js')
+    .then(({ clearAgentDefinitionsCache }) => clearAgentDefinitionsCache())
+    .catch(e => {
+      console.error('Failed to clear agent definitions cache:', e);
+    });
   // Clear SkillTool prompt cache (accumulates per project root)
-  void import('../../tools/SkillTool/prompt.js').then(({ clearPromptCache }) => clearPromptCache());
+  void import('../../tools/SkillTool/prompt.js')
+    .then(({ clearPromptCache }) => clearPromptCache())
+    .catch(e => {
+      console.error('Failed to clear SkillTool prompt cache:', e);
+    });
 }

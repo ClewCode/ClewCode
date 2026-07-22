@@ -10,7 +10,6 @@
  * log.ts has NO heavy dependencies - events are queued until this sink is attached.
  */
 
-import { ofetch } from 'ofetch';
 import { dirname, join } from 'path';
 import { getSessionId } from '../bootstrap/state.js';
 import { createBufferedWriter } from './bufferedWriter.js';
@@ -153,14 +152,17 @@ function extractServerMessage(data: unknown): string | undefined {
 function logErrorImpl(error: Error): void {
   const errorStr = error.stack || error.message;
 
-  // Enrich axios errors with request URL, status, and server message for debugging
+  // Enrich ofetch/FetchError with request URL and server message for debugging
   let context = '';
-  if (isFetchError(error) && error.config?.url) {
-    const parts = [`url=${error.config.url}`];
-    if (error.response?.status !== undefined) {
-      parts.push(`status=${error.response.status}`);
+  const fe = isFetchError(error)
+    ? (error as { config?: { url?: string }; response?: { status?: number; _data?: unknown } })
+    : null;
+  if (fe?.config?.url) {
+    const parts = [`url=${fe.config.url}`];
+    if (fe.response?.status !== undefined) {
+      parts.push(`status=${fe.response.status}`);
     }
-    const serverMessage = extractServerMessage(error.response?.data);
+    const serverMessage = extractServerMessage(fe.response?._data);
     if (serverMessage) {
       parts.push(`body=${serverMessage}`);
     }

@@ -52,7 +52,10 @@ async function fetchPage(
       timeout: 15000,
       ignoreResponseError: true,
     })
-    .catch(() => null)) as { status: number; _data: SessionEventsResponse } | null;
+    .catch(err => {
+      logForDebugging(`[${label}] ofetch error: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    })) as { status: number; _data: SessionEventsResponse } | null;
   if (resp?.status !== 200) {
     logForDebugging(`[${label}] HTTP ${resp?.status ?? 'error'}`);
     return null;

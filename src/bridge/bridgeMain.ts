@@ -1790,8 +1790,8 @@ export async function bridgeMain(args: string[]): Promise<void> {
     await Promise.race([
       Promise.all([shutdown1PEventLogging(), shutdownDatadog()]),
       sleep(500, undefined, { unref: true }),
-    ]).catch(() => {
-      /* noop */
+    ]).catch((err: unknown) => {
+      logForDebugging(`[bridge:main] shutdown sequence error: ${errorMessage(err)}`);
     });
     console.error('Error: Multi-session Remote Control is not enabled for your account yet.');
     // eslint-disable-next-line custom-rules/no-process-exit

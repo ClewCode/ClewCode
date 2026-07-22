@@ -238,10 +238,11 @@ async function fetchUserSettingsOnce(): Promise<SettingsSyncFetchResult> {
     };
 
     const endpoint = getSettingsSyncEndpoint();
-    const response = await ofetch(endpoint, {
+    const response = await ofetch.raw(endpoint, {
+      method: 'GET',
       headers,
       timeout: SETTINGS_SYNC_TIMEOUT_MS,
-      validateStatus: status => status === 200 || status === 404,
+      ignoreResponseError: true,
     });
 
     // 404 means no settings exist yet
@@ -253,7 +254,7 @@ async function fetchUserSettingsOnce(): Promise<SettingsSyncFetchResult> {
       };
     }
 
-    const parsed = UserSyncDataSchema().safeParse(response.data);
+    const parsed = UserSyncDataSchema().safeParse(response._data);
     if (!parsed.success) {
       logForDiagnosticsNoPII('warn', 'settings_sync_fetch_invalid_format');
       return {

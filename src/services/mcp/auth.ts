@@ -415,7 +415,11 @@ async function revokeToken({
   }
 
   try {
-    await ofetch(endpoint, params, { headers });
+    await ofetch(endpoint, {
+      method: 'POST',
+      body: params.toString(),
+      headers,
+    });
     logMCPDebug(serverName, `Successfully revoked ${tokenTypeHint}`);
   } catch (error: unknown) {
     // Fallback for non-RFC-7009-compliant servers that require Bearer auth
@@ -425,7 +429,9 @@ async function revokeToken({
       // switches to Bearer — clear any client creds from the body.
       params.delete('client_id');
       params.delete('client_secret');
-      await ofetch(endpoint, params, {
+      await ofetch(endpoint, {
+        method: 'POST',
+        body: params.toString(),
         headers: { ...headers, Authorization: `Bearer ${accessToken}` },
       });
       logMCPDebug(serverName, `Successfully revoked ${tokenTypeHint} with Bearer auth`);

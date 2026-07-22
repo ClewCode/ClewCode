@@ -467,8 +467,25 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       const code = e.code ?? e.type;
       const message = e.message ?? String(error);
 
+      // An exhausted quota is often returned as HTTP 429, but is not a
+      // temporary rate limit. Retrying it indefinitely leaves the UI spinner
+      // running even though the user must add credit or change provider.
+      const normalizedMessage = message.toLowerCase();
+      if (
+        code === 'insufficient_quota' ||
+        normalizedMessage.includes('insufficient_quota') ||
+        normalizedMessage.includes('creditserror') ||
+        normalizedMessage.includes('no payment method') ||
+        normalizedMessage.includes('insufficient balance') ||
+        normalizedMessage.includes('payment required')
+      ) {
+        const err = new Error(`[${this.label}] Insufficient balance: ${message}`) as any;
+        err._providerError = { category: 'insufficient_balance', status };
+        return err;
+      }
+
       // Rate limit
-      if (status === 429 || code === 'rate_limit_exceeded' || code === 'insufficient_quota') {
+      if (status === 429 || code === 'rate_limit_exceeded') {
         const retryAfter = e.headers?.['retry-after'] ?? e.retryAfter;
         const err = new Error(`[${this.label}] Rate limited: ${message}`) as any;
         err._providerError = { category: 'rate_limit', retryAfter, status };

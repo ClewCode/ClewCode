@@ -7,6 +7,8 @@
  * After connecting, type commands. They'll be executed on the host.
  */
 
+import { logForDebugging } from '../utils/debug.js';
+import { errorMessage } from '../utils/errors.js';
 import { RelayClient } from './RelayClient.js';
 import type { RemoteMessage } from './types.js';
 
@@ -41,8 +43,8 @@ export class RemoteConnector {
           } else if (msg.type === 'system' && msg.message) {
             // Status update (e.g., "executing")
           }
-        } catch {
-          /* ignore */
+        } catch (err) {
+          logForDebugging(`[RemoteConnector] Failed to parse message: ${errorMessage(err)}`);
         }
       },
       onConnected: () => {

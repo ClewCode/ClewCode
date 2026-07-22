@@ -1,4 +1,6 @@
 import { updateSessionBridgeId } from '../utils/concurrentSessions.js';
+import { logForDebugging } from '../utils/debug.js';
+import { errorMessage } from '../utils/errors.js';
 import type { ReplBridgeHandle } from './replBridge.js';
 import { toCompatSessionId } from './sessionIdCompat.js';
 
@@ -19,8 +21,8 @@ export function setReplBridgeHandle(h: ReplBridgeHandle | null): void {
   handle = h;
   // Publish (or clear) our bridge session ID in the session record so other
   // local peers can dedup us out of their bridge list — local is preferred.
-  void updateSessionBridgeId(getSelfBridgeCompatId() ?? null).catch(() => {
-    /* noop */
+  void updateSessionBridgeId(getSelfBridgeCompatId() ?? null).catch((err: unknown) => {
+    logForDebugging(`[bridge:handle] updateSessionBridgeId failed: ${errorMessage(err)}`);
   });
 }
 

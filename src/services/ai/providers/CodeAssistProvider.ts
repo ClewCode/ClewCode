@@ -659,7 +659,7 @@ function createAgyClient(): ProviderClient {
 // --- Provider ---
 
 export class AntigravityProvider implements ProviderInterface {
-  readonly providerId: ProviderId = 'antigravity';
+  readonly providerId: ProviderId = 'google-assist';
   readonly label = 'Google Antigravity CLI';
 
   getProviderId() {

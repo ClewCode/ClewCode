@@ -26,11 +26,6 @@ const DEFAULT_HEARTBEAT_INTERVAL_MS = 20_000;
  */
 const STREAM_EVENT_FLUSH_INTERVAL_MS = 100;
 
-/** Hoisted axios validateStatus callback to avoid per-request closure allocation. */
-function alwaysValidStatus(): boolean {
-  return true;
-}
-
 export type CCRInitFailReason = 'no_auth_headers' | 'missing_epoch' | 'worker_register_failed';
 
 /** Thrown by initialize(); carries a typed reason for the diag classifier. */
@@ -529,14 +524,16 @@ export class CCRClient {
     if (Object.keys(authHeaders).length === 0) return { ok: false };
 
     try {
-      const response = await this.http[method](`${this.sessionBaseUrl}${path}`, body, {
+      const response = await this.http.raw(`${this.sessionBaseUrl}${path}`, {
+        method: method.toUpperCase(),
+        body: body as Record<string, unknown>,
         headers: {
           ...authHeaders,
           'Content-Type': 'application/json',
           'anthropic-version': '2023-06-01',
           'User-Agent': getClaudeCodeUserAgent(),
         },
-        validateStatus: alwaysValidStatus,
+        ignoreResponseError: true,
         timeout,
       });
 
@@ -582,7 +579,7 @@ export class CCRClient {
         status: response.status,
       });
       if (response.status === 429) {
-        const raw = response.headers?.['retry-after'];
+        const raw = response.headers?.get('retry-after');
         const seconds = typeof raw === 'string' ? parseInt(raw, 10) : NaN;
         if (!Number.isNaN(seconds) && seconds >= 0) {
           return { ok: false, retryAfterMs: seconds * 1000 };
@@ -848,13 +845,14 @@ export class CCRClient {
     for (let attempt = 1; attempt <= 10; attempt++) {
       let response;
       try {
-        response = await this.http.get<T>(url, {
+        response = await this.http.raw<T>(url, {
+          method: 'GET',
           headers: {
             ...authHeaders,
             'anthropic-version': '2023-06-01',
             'User-Agent': getClaudeCodeUserAgent(),
           },
-          validateStatus: alwaysValidStatus,
+          ignoreResponseError: true,
           timeout: 30_000,
         });
       } catch (error) {
@@ -869,7 +867,7 @@ export class CCRClient {
       }
 
       if (response.status >= 200 && response.status < 300) {
-        return response.data;
+        return response._data as T;
       }
       if (response.status === 409) {
         this.handleEpochMismatch();

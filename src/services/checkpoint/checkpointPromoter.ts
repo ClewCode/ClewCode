@@ -17,6 +17,7 @@
 import { appendFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getAutoMemEntrypoint, getAutoMemPath } from '../../memdir/paths.js';
+import { logError } from '../../utils/log.js';
 import { loadCheckpoints } from './checkpointWriter.js';
 
 /**
@@ -93,7 +94,7 @@ function buildPromotionEntries(
 
 async function ensureDir(dir: string): Promise<void> {
   const { mkdir } = await import('node:fs/promises');
-  await mkdir(dir, { recursive: true }).catch(() => {
-    /* noop */
+  await mkdir(dir, { recursive: true }).catch(err => {
+    logError(err);
   });
 }

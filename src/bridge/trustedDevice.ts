@@ -134,21 +134,19 @@ export async function enrollTrustedDevice(): Promise<void> {
     const baseUrl = getOauthConfig().BASE_API_URL;
     let response;
     try {
-      response = await ofetch<{
+      response = await ofetch.raw<{
         device_token?: string;
         device_id?: string;
-      }>(
-        `${baseUrl}/api/auth/trusted_devices`,
-        { display_name: `Clew Code on ${hostname()} · ${process.platform}` },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          timeout: 10_000,
-          validateStatus: s => s < 500,
+      }>(`${baseUrl}/api/auth/trusted_devices`, {
+        method: 'POST',
+        body: { display_name: `Clew Code on ${hostname()} · ${process.platform}` },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
         },
-      );
+        timeout: 10_000,
+        ignoreResponseError: true,
+      });
     } catch (err: unknown) {
       logForDebugging(`[trusted-device] Enrollment request failed: ${errorMessage(err)}`);
       return;
@@ -156,12 +154,12 @@ export async function enrollTrustedDevice(): Promise<void> {
 
     if (response.status !== 200 && response.status !== 201) {
       logForDebugging(
-        `[trusted-device] Enrollment failed ${response.status}: ${jsonStringify(response.data).slice(0, 200)}`,
+        `[trusted-device] Enrollment failed ${response.status}: ${jsonStringify(response._data).slice(0, 200)}`,
       );
       return;
     }
 
-    const token = response.data?.device_token;
+    const token = response._data?.device_token;
     if (!token || typeof token !== 'string') {
       logForDebugging('[trusted-device] Enrollment response missing device_token field');
       return;

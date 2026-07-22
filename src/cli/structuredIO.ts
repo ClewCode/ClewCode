@@ -573,7 +573,20 @@ export class StructuredIO {
           /* noop */
         });
 
-        const winner = await Promise.race([hookPromise, sdkPromise]);
+        const winner = await Promise.race([hookPromise, sdkCatchHandler]);
+
+        if (!winner) {
+          // SDK connection failed first — wait for the hook to decide.
+          const hookResult: { source: 'hook'; decision: PermissionDecision | undefined } | undefined =
+            await hookPromise.catch(() => undefined);
+          return (
+            hookResult?.decision ?? {
+              behavior: 'deny' as const,
+              message: 'Tool permission request failed',
+              toolUseID,
+            }
+          );
+        }
 
         if (winner.source === 'hook') {
           if (winner.decision) {

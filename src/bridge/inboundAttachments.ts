@@ -79,17 +79,11 @@ async function resolveOne(att: InboundAttachment): Promise<string | undefined> {
     // FedStart URL degrades to "no @path" instead of crashing print.ts's
     // reader loop (which has no catch around the await).
     const url = `${getBridgeBaseUrl()}/api/oauth/files/${encodeURIComponent(att.file_uuid)}/content`;
-    const response = await ofetch(url, {
+    const response = await ofetch.raw(url, {
       headers: { Authorization: `Bearer ${token}` },
-      responseType: 'arraybuffer',
       timeout: DOWNLOAD_TIMEOUT_MS,
-      validateStatus: () => true,
     });
-    if (response.status !== 200) {
-      debug(`fetch ${att.file_uuid} failed: status=${response.status}`);
-      return undefined;
-    }
-    data = Buffer.from(response.data);
+    data = Buffer.from(response._data);
   } catch (e) {
     debug(`fetch ${att.file_uuid} threw: ${e}`);
     return undefined;

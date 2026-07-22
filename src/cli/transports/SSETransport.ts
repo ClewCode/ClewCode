@@ -34,11 +34,6 @@ const POST_MAX_DELAY_MS = 8000;
 /** Hoisted TextDecoder options to avoid per-chunk allocation in readStream. */
 const STREAM_DECODE_OPTS: TextDecodeOptions = { stream: true };
 
-/** Hoisted axios validateStatus callback to avoid per-request closure allocation. */
-function alwaysValidStatus(): boolean {
-  return true;
-}
-
 // ---------------------------------------------------------------------------
 // SSE Frame Parser
 // ---------------------------------------------------------------------------
@@ -552,9 +547,11 @@ export class SSETransport implements Transport {
 
     for (let attempt = 1; attempt <= POST_MAX_RETRIES; attempt++) {
       try {
-        const response = await ofetch(this.postUrl, message, {
+        const response = await ofetch.raw(this.postUrl, {
+          method: 'POST',
+          body: message,
           headers,
-          validateStatus: alwaysValidStatus,
+          ignoreResponseError: true,
         });
 
         if (response.status === 200 || response.status === 201) {
@@ -562,7 +559,7 @@ export class SSETransport implements Transport {
           return;
         }
 
-        logForDebugging(`SSETransport: POST ${response.status} body=${jsonStringify(response.data).slice(0, 200)}`);
+        logForDebugging(`SSETransport: POST ${response.status} body=${jsonStringify(response._data).slice(0, 200)}`);
         // 4xx errors (except 429) are permanent - don't retry
         if (response.status >= 400 && response.status < 500 && response.status !== 429) {
           logForDebugging(`SSETransport: POST returned ${response.status} (client error), not retrying`);

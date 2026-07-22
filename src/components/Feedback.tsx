@@ -667,20 +667,17 @@ async function submitFeedback(
       'User-Agent': getUserAgent(),
       ...authResult.headers,
     };
-    const response = await ofetch(
-      'https://api.anthropic.com/api/claude_cli_feedback',
-      {
-        content: redactSensitiveJSON(jsonStringify(data)),
-      },
-      {
-        headers,
-        timeout: 30000,
-        // 30 second timeout to prevent hanging
-        signal,
-      },
-    );
+    const response = await ofetch.raw('https://api.anthropic.com/api/claude_cli_feedback', {
+      method: 'POST',
+      body: { content: redactSensitiveJSON(jsonStringify(data)) },
+      headers,
+      timeout: 30000,
+      // 30 second timeout to prevent hanging
+      signal,
+      ignoreResponseError: true,
+    });
     if (response.status === 200) {
-      const result = response.data;
+      const result = response._data;
       if (result?.feedback_id) {
         return {
           success: true,

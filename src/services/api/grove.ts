@@ -85,16 +85,13 @@ export async function markGroveNoticeViewed(): Promise<void> {
       if (authHeaders.error) {
         throw new Error(`Failed to get auth headers: ${authHeaders.error}`);
       }
-      return ofetch(
-        `${getOauthConfig().BASE_API_URL}/api/oauth/account/grove_notice_viewed`,
-        {},
-        {
-          headers: {
-            ...authHeaders.headers,
-            'User-Agent': getClaudeCodeUserAgent(),
-          },
+      return ofetch(`${getOauthConfig().BASE_API_URL}/api/oauth/account/grove_notice_viewed`, {
+        method: 'POST',
+        headers: {
+          ...authHeaders.headers,
+          'User-Agent': getClaudeCodeUserAgent(),
         },
-      );
+      });
     });
     // This mutates grove_notice_viewed_at server-side — Grove.tsx:87 reads it
     // to decide whether to show the dialog. Without invalidation a same-session
@@ -115,18 +112,14 @@ export async function updateGroveSettings(groveEnabled: boolean): Promise<void> 
       if (authHeaders.error) {
         throw new Error(`Failed to get auth headers: ${authHeaders.error}`);
       }
-      return ofetch(
-        `${getOauthConfig().BASE_API_URL}/api/oauth/account/settings`,
-        {
-          grove_enabled: groveEnabled,
+      return ofetch(`${getOauthConfig().BASE_API_URL}/api/oauth/account/settings`, {
+        method: 'POST',
+        body: { grove_enabled: groveEnabled },
+        headers: {
+          ...authHeaders.headers,
+          'User-Agent': getClaudeCodeUserAgent(),
         },
-        {
-          headers: {
-            ...authHeaders.headers,
-            'User-Agent': getClaudeCodeUserAgent(),
-          },
-        },
-      );
+      });
     });
     // Invalidate memoized settings so the post-toggle confirmation
     // read in privacy-settings.tsx picks up the new value.

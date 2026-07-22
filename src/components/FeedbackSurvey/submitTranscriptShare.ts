@@ -74,21 +74,20 @@ export async function submitTranscriptShare(
       ...authResult.headers,
     };
 
-    const response = await ofetch(
-      'https://api.anthropic.com/api/claude_code_shared_session_transcripts',
-      { content, appearance_id: appearanceId },
-      {
-        headers,
-        timeout: 30000,
-      },
-    );
+    const response = await ofetch.raw('https://api.anthropic.com/api/claude_code_shared_session_transcripts', {
+      method: 'POST',
+      body: { content, appearance_id: appearanceId },
+      headers,
+      timeout: 30000,
+      ignoreResponseError: true,
+    });
 
     if (response.status === 200 || response.status === 201) {
-      const result = response.data;
+      const result = response._data;
       logForDebugging('Transcript shared successfully', { level: 'info' });
       return {
         success: true,
-        transcriptId: result?.transcript_id,
+        transcriptId: (result as any)?.transcript_id,
       };
     }
 

@@ -81,18 +81,14 @@ export function buildCCRv2SdkUrl(apiBaseUrl: string, sessionId: string): string 
  * (api-go/environment-manager/cmd/cmd_task_run.go RegisterWorker).
  */
 export async function registerWorker(sessionUrl: string, accessToken: string): Promise<number> {
-  const response = await ofetch(
-    `${sessionUrl}/worker/register`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
-      timeout: 10_000,
+  const response = await ofetch(`${sessionUrl}/worker/register`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
     },
-  );
+    timeout: 10_000,
+  });
   // protojson serializes int64 as a string to avoid JS number precision loss;
   // the Go side may also return a number depending on encoder settings.
   const raw = response.data?.worker_epoch;

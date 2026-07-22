@@ -35,6 +35,48 @@ function stripStaleThinkingOnModelChange(setMessages: LocalJSXCommandContext['se
   setMessages?.(stripSignatureBlocks);
 }
 
+/**
+ * Split a `/model` argument into an optional provider switch and the model id.
+ *
+ * The provider-switch syntax is `<provider>/<model>` (e.g. `openai/gpt-5.5`),
+ * but several providers — notably Cline — expose OpenRouter-style model ids that
+ * ALSO contain a slash whose first segment collides with a real provider id
+ * (`deepseek/deepseek-v4-flash`, `minimax/minimax-m3`). Blindly splitting those
+ * strips the vendor prefix and sends a bare, invalid model id — the gateway then
+ * rejects it with "invalid model format. Expected format: modelType/model".
+ *
+ * Disambiguation: if the CURRENT provider already exposes the full input as a
+ * model id, keep it whole. Only otherwise, when the first segment is a known
+ * provider id, treat it as a provider switch.
+ */
+function resolveModelSelection(modelInput: string): { targetProvider?: string; model: string } {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const { PROVIDER_IDS } = require('../../services/ai/providerRegistry.js');
+  const { getProviderModelInfo } = require('../../services/ai/providerCapabilities.js');
+  /* eslint-enable @typescript-eslint/no-require-imports */
+
+  let currentProvider: string | undefined;
+  try {
+    currentProvider = ProviderManager.getInstance().getSelectedProviderConfig(true).provider;
+  } catch {
+    // ProviderManager may not be initialized in every context — fall through
+    // to the prefix-splitting heuristic below.
+  }
+
+  // Current provider already owns this exact id (vendor-prefixed model like
+  // Cline's `deepseek/deepseek-v4-flash`) → keep it whole, do NOT strip.
+  if (currentProvider && getProviderModelInfo(currentProvider, modelInput)) {
+    return { model: modelInput };
+  }
+
+  const parts = modelInput.split('/');
+  const firstSegment = parts[0];
+  if (firstSegment && PROVIDER_IDS.includes(firstSegment)) {
+    return { targetProvider: firstSegment, model: parts.slice(1).join('/') };
+  }
+  return { model: modelInput };
+}
+
 function ModelPickerWrapper({
   onDone,
   setMessages,
@@ -65,13 +107,9 @@ function ModelPickerWrapper({
     let targetProvider: string | undefined;
 
     if (modelInput) {
-      const { PROVIDER_IDS } = require('../../services/ai/providerRegistry.js');
-      const parts = modelInput.split('/');
-      const firstSegment = parts[0];
-      if (firstSegment && PROVIDER_IDS.includes(firstSegment)) {
-        targetProvider = firstSegment;
-        model = parts.slice(1).join('/');
-      }
+      const resolved = resolveModelSelection(modelInput);
+      targetProvider = resolved.targetProvider;
+      model = resolved.model;
     }
 
     logEvent('tengu_model_command_menu', {
@@ -188,13 +226,9 @@ function SetModelAndClose({
   let model = initialModel;
 
   if (initialModel) {
-    const { PROVIDER_IDS } = require('../../services/ai/providerRegistry.js');
-    const parts = initialModel.split('/');
-    const firstSegment = parts[0];
-    if (firstSegment && PROVIDER_IDS.includes(firstSegment)) {
-      targetProvider = firstSegment;
-      model = parts.slice(1).join('/');
-    }
+    const resolved = resolveModelSelection(initialModel);
+    targetProvider = resolved.targetProvider;
+    model = resolved.model;
   }
 
   React.useEffect(() => {

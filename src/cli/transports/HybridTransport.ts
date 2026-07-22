@@ -210,15 +210,13 @@ export class HybridTransport extends WebSocketTransport {
 
     let response;
     try {
-      response = await ofetch(
-        this.postUrl,
-        { events },
-        {
-          headers,
-          validateStatus: () => true,
-          timeout: POST_TIMEOUT_MS,
-        },
-      );
+      response = await ofetch.raw(this.postUrl, {
+        method: 'POST',
+        body: { events },
+        headers,
+        ignoreResponseError: true,
+        timeout: POST_TIMEOUT_MS,
+      });
     } catch (error) {
       const fetchError = error as Error;
       logForDebugging(`HybridTransport: POST error: ${fetchError.message}`);

@@ -57,6 +57,17 @@ function cacheAndReturn(provider: ProviderId, data: ProviderModelInfo[]): Provid
   return data;
 }
 
+function parseContextLength(raw: string): number {
+  const s = raw.toLowerCase().replace(/\+$/, '').trim();
+  const m = s.match(/^(\d+)(k|m)?$/);
+  if (!m) return 200_000; // 'varies' and other non-numeric → default
+  const num = parseInt(m[1], 10);
+  const unit = m[2];
+  if (unit === 'm') return num * 1_000_000;
+  if (unit === 'k') return num * 1_000;
+  return num;
+}
+
 function getFallbackModels(provider: ProviderId): ProviderModelInfo[] {
   const info = getProviderRegistryEntry(provider);
   if (info.models.length > 0) {
@@ -77,9 +88,7 @@ function getFallbackModels(provider: ProviderId): ProviderModelInfo[] {
         streaming: info.capabilities.streaming,
         maxContext:
           typeof info.capabilities.contextLength === 'string'
-            ? info.capabilities.contextLength === '1M'
-              ? 1_000_000
-              : 200_000
+            ? parseContextLength(info.capabilities.contextLength)
             : 200_000,
         maxOutput: 'varies',
         reasoning: info.capabilities.reasoningEffort,

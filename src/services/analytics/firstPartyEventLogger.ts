@@ -376,7 +376,8 @@ export function initialize1PEventLogging(): void {
   firstPartyEventLoggerProvider = new LoggerProvider({
     resource,
     processors: [
-      new BatchLogRecordProcessor(eventLoggingExporter, {
+      new BatchLogRecordProcessor({
+        exporter: eventLoggingExporter,
         scheduledDelayMillis,
         maxExportBatchSize,
         maxQueueSize,
@@ -455,7 +456,7 @@ export async function reinitialize1PEventLoggingIfConfigChanged(): Promise<void>
     return;
   }
 
-  void oldProvider.shutdown().catch(() => {
-    /* noop */
+  void oldProvider.shutdown().catch(err => {
+    logError(err);
   });
 }

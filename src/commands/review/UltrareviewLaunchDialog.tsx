@@ -50,7 +50,10 @@ export function UltrareviewLaunchDialog({ scope, onProceed, onChangeScope, onCan
     (value: string) => {
       if (value === 'run') {
         setIsLaunching(true);
-        void onProceed(abortControllerRef.current.signal).catch(() => setIsLaunching(false));
+        void onProceed(abortControllerRef.current.signal).catch(err => {
+          console.error('Ultrareview launch failed:', err);
+          setIsLaunching(false);
+        });
       } else if (value === 'scope') {
         onChangeScope();
       } else {

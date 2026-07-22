@@ -418,8 +418,8 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
     if (!createdSessionId) {
       logForDebugging('[bridge:repl] Session creation failed, deregistering environment');
       logEvent('tengu_bridge_repl_session_failed', {});
-      await api.deregisterEnvironment(environmentId).catch(() => {
-        /* noop */
+      await api.deregisterEnvironment(environmentId).catch((err: unknown) => {
+        logForDebugging(`[bridge:repl] deregisterEnvironment after session create failure: ${errorMessage(err)}`);
       });
       onStateChange?.('failed', 'Session creation failed');
       return null;
@@ -605,8 +605,8 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
     // back). Best-effort: the env is probably gone, so this likely 404s.
     if (currentWorkId) {
       const workIdBeingCleared = currentWorkId;
-      await api.stopWork(environmentId, workIdBeingCleared, false).catch(() => {
-        /* noop */
+      await api.stopWork(environmentId, workIdBeingCleared, false).catch((err: unknown) => {
+        logForDebugging(`[bridge:repl] stopWork during reconnect: ${errorMessage(err)}`);
       });
       // When doReconnect runs concurrently with the poll loop (ws_closed
       // handler case — void-called, unlike the awaited onEnvironmentLost
@@ -654,8 +654,8 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
     // Bail out if teardown started while we were registering
     if (pollController.signal.aborted) {
       logForDebugging('[bridge:repl] Reconnect aborted after env registration, cleaning up');
-      await api.deregisterEnvironment(environmentId).catch(() => {
-        /* noop */
+      await api.deregisterEnvironment(environmentId).catch((err: unknown) => {
+        logForDebugging(`[bridge:repl] deregisterEnvironment after reconnect abort: ${errorMessage(err)}`);
       });
       return false;
     }
@@ -692,8 +692,8 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
     // Bail out if teardown started while we were archiving
     if (pollController.signal.aborted) {
       logForDebugging('[bridge:repl] Reconnect aborted after archive, cleaning up');
-      await api.deregisterEnvironment(environmentId).catch(() => {
-        /* noop */
+      await api.deregisterEnvironment(environmentId).catch((err: unknown) => {
+        logForDebugging(`[bridge:repl] deregisterEnvironment after archive abort: ${errorMessage(err)}`);
       });
       return false;
     }
@@ -727,8 +727,8 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
     currentSessionId = newSessionId;
     // Re-publish to the PID file so peer dedup (peerRegistry.ts) picks up the
     // new ID — setReplBridgeHandle only fires at init/teardown, not reconnect.
-    void updateSessionBridgeId(toCompatSessionId(newSessionId)).catch(() => {
-      /* noop */
+    void updateSessionBridgeId(toCompatSessionId(newSessionId)).catch((err: unknown) => {
+      logForDebugging(`[bridge:repl] updateSessionBridgeId on reconnect: ${errorMessage(err)}`);
     });
     // Reset per-session transport state IMMEDIATELY after the session swap,
     // before any await. If this runs after `await writeBridgePointer` below,
@@ -1954,8 +1954,8 @@ async function startWorkPollLoop({
         logEvent('tengu_bridge_repl_work_secret_failed', {});
         // Can't ack (needs the JWT we failed to decode). stopWork uses OAuth.
         // Prevents XAUTOCLAIM re-delivering this poisoned item every cycle.
-        await api.stopWork(envId, work.id, false).catch(() => {
-          /* noop */
+        await api.stopWork(envId, work.id, false).catch((err: unknown) => {
+          logForDebugging(`[bridge:repl] stopWork after decode failure: ${errorMessage(err)}`);
         });
         continue;
       }

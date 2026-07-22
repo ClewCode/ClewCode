@@ -33,30 +33,25 @@ export async function createCodeSession(
   const url = `${baseUrl}/v1/code/sessions`;
   let response;
   try {
-    response = await ofetch(
-      url,
-      // bridge: {} is the positive signal for the oneof runner — omitting it
-      // (or sending environment_id: "") now 400s. BridgeRunner is an empty
-      // message today; it's a placeholder for future bridge-specific options.
-      { title, bridge: {}, ...(tags?.length ? { tags } : {}) },
-      {
-        headers: oauthHeaders(accessToken),
-        timeout: timeoutMs,
-        validateStatus: s => s < 500,
-      },
-    );
+    response = await ofetch.raw(url, {
+      method: 'POST',
+      body: { title, bridge: {}, ...(tags?.length ? { tags } : {}) },
+      headers: oauthHeaders(accessToken),
+      timeout: timeoutMs,
+      ignoreResponseError: true,
+    });
   } catch (err: unknown) {
     logForDebugging(`[code-session] Session create request failed: ${errorMessage(err)}`);
     return null;
   }
 
   if (response.status !== 200 && response.status !== 201) {
-    const detail = extractErrorDetail(response.data);
+    const detail = extractErrorDetail(response._data);
     logForDebugging(`[code-session] Session create failed ${response.status}${detail ? `: ${detail}` : ''}`);
     return null;
   }
 
-  const data: unknown = response.data;
+  const data: unknown = response._data;
   if (
     !data ||
     typeof data !== 'object' ||
@@ -98,27 +93,23 @@ export async function fetchRemoteCredentials(
   }
   let response;
   try {
-    response = await ofetch(
-      url,
-      {},
-      {
-        headers,
-        timeout: timeoutMs,
-        validateStatus: s => s < 500,
-      },
-    );
+    response = await ofetch.raw(url, {
+      headers,
+      timeout: timeoutMs,
+      ignoreResponseError: true,
+    });
   } catch (err: unknown) {
     logForDebugging(`[code-session] /bridge request failed: ${errorMessage(err)}`);
     return null;
   }
 
   if (response.status !== 200) {
-    const detail = extractErrorDetail(response.data);
+    const detail = extractErrorDetail(response._data);
     logForDebugging(`[code-session] /bridge failed ${response.status}${detail ? `: ${detail}` : ''}`);
     return null;
   }
 
-  const data: unknown = response.data;
+  const data: unknown = response._data;
   if (
     data === null ||
     typeof data !== 'object' ||

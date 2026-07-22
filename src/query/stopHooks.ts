@@ -138,10 +138,16 @@ export async function* handleStopHooks(
       // Fire-and-forget in both interactive and non-interactive. For -p/SDK,
       // print.ts drains the in-flight promise after flushing the response
       // but before gracefulShutdownSync (see drainPendingExtraction).
-      void extractMemoriesModule!.executeExtractMemories(stopHookContext, toolUseContext.appendSystemMessage);
+      void extractMemoriesModule!
+        .executeExtractMemories(stopHookContext, toolUseContext.appendSystemMessage)
+        .catch(err => {
+          logForDebugging(`[memory] extraction error: ${errorMessage(err)}`, { level: 'error' });
+        });
     }
     if (!toolUseContext.agentId) {
-      void executeAutoDream(stopHookContext, toolUseContext.appendSystemMessage);
+      void executeAutoDream(stopHookContext, toolUseContext.appendSystemMessage).catch(err => {
+        logForDebugging(`[autoDream] error: ${errorMessage(err)}`, { level: 'error' });
+      });
     }
   }
 
@@ -154,8 +160,8 @@ export async function* handleStopHooks(
     try {
       const { cleanupComputerUseAfterTurn } = await import('../utils/computerUse/cleanup.js');
       await cleanupComputerUseAfterTurn(toolUseContext);
-    } catch {
-      // Failures are silent — this is dogfooding cleanup, not critical path
+    } catch (err) {
+      logForDebugging(`[computerUse] cleanup error: ${errorMessage(err)}`, { level: 'error' });
     }
   }
 

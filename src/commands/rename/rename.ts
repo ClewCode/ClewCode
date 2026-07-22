@@ -3,6 +3,7 @@ import { getSessionId } from '../../bootstrap/state.js';
 import { getBridgeBaseUrlOverride, getBridgeTokenOverride } from '../../bridge/bridgeConfig.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
+import { logForDebugging } from '../../utils/debug.js';
 import { getMessagesAfterCompactBoundary } from '../../utils/messages.js';
 import { getTranscriptPath, saveAgentName, saveCustomTitle } from '../../utils/sessionStorage.js';
 import { isTeammate } from '../../utils/teammate.js';
@@ -53,8 +54,8 @@ export async function call(
       updateBridgeSessionTitle(bridgeSessionId, newName, {
         baseUrl: getBridgeBaseUrlOverride(),
         getAccessToken: tokenOverride ? () => tokenOverride : undefined,
-      }).catch(() => {
-        /* noop */
+      }).catch(err => {
+        logForDebugging('rename: failed to update bridge session title', err);
       }),
     );
   }

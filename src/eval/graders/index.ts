@@ -1,5 +1,4 @@
 import { readFile } from 'fs/promises';
-import { relative } from 'path';
 import type { EvalGrader, EvalTask, GraderContext, GraderResult } from '../types.js';
 
 function result(
@@ -83,5 +82,5 @@ export async function gradeWithGrader(
     return failures.length === 0 ? result(grader.id, 'pass', 1) : result(grader.id, 'fail', 0, failures);
   }
 
-  return result(grader.id, 'pass', 1, [relative(context.workspaceDir, context.workspaceDir)]);
+  return result(grader.id, 'pass', 1);
 }

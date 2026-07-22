@@ -105,7 +105,8 @@ async function flushLogs(): Promise<void> {
   logBatch = [];
 
   try {
-    await ofetch(DATADOG_LOGS_ENDPOINT, logsToSend, {
+    await ofetch(DATADOG_LOGS_ENDPOINT, {
+      body: logsToSend,
       headers: {
         'Content-Type': 'application/json',
         'DD-API-KEY': DATADOG_CLIENT_TOKEN,

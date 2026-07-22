@@ -1,7 +1,7 @@
 // biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
 import { MODEL_ALIASES } from './aliases.js';
 import { isModelAllowed } from './modelAllowlist.js';
-import { getAPIProvider } from './providers.js';
+import { getAPIProvider, isAnthropicProvider } from './providers.js';
 import { sideQuery } from '../sideQuery.js';
 import { NotFoundError, APIError, APIConnectionError, AuthenticationError } from '@anthropic-ai/sdk';
 import { getModelStrings } from './modelStrings.js';
@@ -63,29 +63,9 @@ export async function validateModel(model: string): Promise<{ valid: boolean; er
     return { valid: true };
   }
 
-  // For non-Anthropic providers (cline, openrouter, etc.), skip API validation
-  // since they use different authentication methods and API formats
-  const nonAnthropicProviders = [
-    'cline',
-    'openrouter',
-    'openai',
-    'gemini',
-    'groq',
-    'xai',
-    'sakana',
-    'mistral',
-    'deepseek',
-    'kilocode',
-    'opencode',
-    'opencode-go',
-    'ollama',
-    'nvidia',
-    'opengateway',
-    'google',
-  ];
-  if (nonAnthropicProviders.includes(activeProvider)) {
-    // For non-Anthropic providers, accept any model ID that is in the allowlist
-    // or matches the provider's model format (e.g., provider/model for Cline/OpenRouter)
+  // Skip API-side validation for non-Anthropic providers — they use different
+  // auth methods and API formats that the Anthropic SDK's sideQuery can't call.
+  if (!isAnthropicProvider()) {
     validModelCache.set(cacheKey, true);
     return { valid: true };
   }

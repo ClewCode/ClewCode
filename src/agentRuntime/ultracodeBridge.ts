@@ -220,8 +220,9 @@ async function tryAutoRunInner(params: {
   try {
     const { linkWorkflowToActiveGoal } = await import('../utils/sessionGoalState.js');
     linkWorkflowToActiveGoal(plan.id);
-  } catch {
-    // best-effort linkage; not worth blocking the workflow on
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(`[ultracodeBridge] failed to link workflow to active goal: ${msg}`);
   }
 
   writeUltracodeState(hooks, {

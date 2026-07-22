@@ -150,7 +150,7 @@ export function CompanionSprite(): React.ReactNode {
     );
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tick intentionally captured at reaction-change, not tracked
-  }, [reaction, setAppState, tick]);
+  }, [reaction, setAppState]);
 
   const companion = getCompanion();
   if (!companion || getGlobalConfig().companionMuted || companion.visible === false) return null;

@@ -726,6 +726,158 @@
       }
     ]
   },
+  "google-assist": {
+    "providerId": "google-assist",
+    "label": "Google Antigravity CLI",
+    "envKey": "",
+    "defaultBaseUrl": "https://daily-cloudcode-pa.googleapis.com/v1internal",
+    "defaultModel": "gemini-3.5-flash-medium",
+    "defaultModelVerified": true,
+    "isLocal": true,
+    "note": "Google Gemini Code Assist (OAuth). Uses ~/.antigravity/oauth_creds.json from `/login`; no API key required.",
+    "capabilities": {
+      "chat": true,
+      "streaming": "full",
+      "toolCalling": true,
+      "vision": true,
+      "imageIn": true,
+      "videoIn": false,
+      "jsonSchema": false,
+      "reasoningEffort": false,
+      "contextLength": "varies",
+      "promptCaching": "none"
+    },
+    "models": [
+      {
+        "id": "gemini-3.5-flash-medium",
+        "label": "Gemini 3.5 Flash (Medium)",
+        "tags": ["tools", "vision", "recommended", "latest"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gemini-3.5-flash-high",
+        "label": "Gemini 3.5 Flash (High)",
+        "tags": ["tools", "vision", "latest"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gemini-3.5-flash-low",
+        "label": "Gemini 3.5 Flash (Low)",
+        "tags": ["tools", "vision", "fast"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gemini-3.1-pro-high",
+        "label": "Gemini 3.1 Pro (High)",
+        "tags": ["tools", "vision", "reasoning"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gemini-3.1-pro-low",
+        "label": "Gemini 3.1 Pro (Low)",
+        "tags": ["tools", "vision", "reasoning"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "claude-sonnet-4-6-thinking",
+        "label": "Claude Sonnet 4.6 (Thinking)",
+        "tags": ["tools", "reasoning"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 200000,
+          "maxOutput": 64000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "claude-opus-4-6-thinking",
+        "label": "Claude Opus 4.6 (Thinking)",
+        "tags": ["tools", "reasoning"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 200000,
+          "maxOutput": 64000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gpt-oss-120b-medium",
+        "label": "GPT-OSS 120B (Medium)",
+        "tags": ["tools", "reasoning"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 131072,
+          "maxOutput": 65536,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      }
+    ]
+  },
   "openrouter": {
     "providerId": "openrouter",
     "label": "OpenRouter",
@@ -2752,26 +2904,7 @@
         }
       },
       {
-        "id": "minimax/minimax-m3",
-        "label": "MiniMax M3 (Free)",
-        "tags": [
-          "tools",
-          "free"
-        ],
-        "capabilities": {
-          "toolCalling": "native",
-          "vision": false,
-          "streaming": "full",
-          "maxContext": 1048576,
-          "maxOutput": 128000,
-          "reasoning": true,
-          "supportsSystemPrompt": true,
-          "imageIn": false,
-          "videoIn": false
-        }
-      },
-      {
-        "id": "nvidia/nemotron-3-ultra-550b-a55b",
+        "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
         "label": "Nvidia Nemotron 3 Ultra 550b (Free)",
         "tags": [
           "tools",
@@ -2790,11 +2923,46 @@
         }
       },
       {
-        "id": "xiaomi/mimo-v2.5",
-        "label": "Xiaomi Mimo v2.5 (Free)",
+        "id": "minimax/minimax-m3",
+        "label": "MiniMax M3 (needs credit)",
         "tags": [
-          "tools",
-          "free"
+          "tools"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "nvidia/nemotron-3-ultra-550b-a55b",
+        "label": "Nvidia Nemotron 3 Ultra 550b (needs credit)",
+        "tags": [
+          "tools"
+        ],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": false,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 128000,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": false,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "xiaomi/mimo-v2.5",
+        "label": "Xiaomi Mimo v2.5 (needs credit)",
+        "tags": [
+          "tools"
         ],
         "capabilities": {
           "toolCalling": "native",

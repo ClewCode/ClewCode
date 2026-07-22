@@ -839,19 +839,16 @@ async function archiveSession(
   // cse_* and we correctly send it.
   const compatId = toCompatSessionId(sessionId);
   try {
-    const response = await ofetch(
-      `${baseUrl}/v1/sessions/${compatId}/archive`,
-      {},
-      {
-        headers: {
-          ...oauthHeaders(accessToken),
-          'anthropic-beta': 'ccr-byoc-2025-07-29',
-          'x-organization-uuid': orgUUID,
-        },
-        timeout: timeoutMs,
-        validateStatus: () => true,
+    const response = await ofetch.raw(`${baseUrl}/v1/sessions/${compatId}/archive`, {
+      method: 'POST',
+      headers: {
+        ...oauthHeaders(accessToken),
+        'anthropic-beta': 'ccr-byoc-2025-07-29',
+        'x-organization-uuid': orgUUID,
       },
-    );
+      timeout: timeoutMs,
+      ignoreResponseError: true,
+    });
     logForDebugging(`[remote-bridge] Archive ${compatId} status=${response.status}`);
     return response.status;
   } catch (err) {

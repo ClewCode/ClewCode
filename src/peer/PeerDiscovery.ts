@@ -181,8 +181,8 @@ export class PeerDiscovery {
       .then(({ getGlobalPeerServer }) => {
         getGlobalPeerServer().updatePeerInfo({ hostname: name, id: this.localId });
       })
-      .catch(() => {
-        /* peer server not yet started */
+      .catch(err => {
+        logForDebugging(`[PeerDiscovery] PeerServer not yet started: ${errorMessage(err)}`);
       });
   }
 

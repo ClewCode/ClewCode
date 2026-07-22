@@ -146,3 +146,48 @@ describe('AnthropicAdapter media fallback', () => {
     expect((res as any).content?.[0]?.text ?? '').toBe('ok');
   });
 });
+
+describe('AnthropicAdapter provider error normalization', () => {
+  async function normalizeProviderError(sourceError: Error & { status?: number; code?: string }) {
+    const adapter = new AnthropicAdapter(
+      {
+        chat: {
+          completions: {
+            create: async () => {
+              throw sourceError;
+            },
+          },
+        },
+      },
+      'opencode',
+    );
+
+    return adapter.beta.messages.create({ model: 'deepseek-v4-flash-free', max_tokens: 16, messages: [] } as any).catch(
+      (err: Error) =>
+        err as Error & {
+          _providerError?: { category?: string; status?: number };
+        },
+    );
+  }
+
+  test('does not classify exhausted provider credit as a retryable rate limit', async () => {
+    const error = await normalizeProviderError(
+      Object.assign(new Error('Your account has insufficient_quota'), {
+        status: 429,
+        code: 'insufficient_quota',
+      }),
+    );
+
+    expect(error.message).toContain('Insufficient balance');
+    expect(error._providerError).toEqual({ category: 'insufficient_balance', status: 429 });
+  });
+
+  test('classifies OpenCode missing-payment errors as insufficient balance instead of authentication', async () => {
+    const error = await normalizeProviderError(
+      Object.assign(new Error('CreditsError: No payment method. Add a payment method.'), { status: 401 }),
+    );
+
+    expect(error.message).toContain('Insufficient balance');
+    expect(error._providerError).toEqual({ category: 'insufficient_balance', status: 401 });
+  });
+});

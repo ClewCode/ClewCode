@@ -965,7 +965,9 @@ export async function teleportToRemote(options: {
       logForDebugging(
         `[teleportToRemote] explicit env ${options.environmentId}, ${Object.keys(envVars).length} env vars, ${seedBundleFileId ? `bundle=${seedBundleFileId}` : `source=${gitSource?.url ?? 'none'}@${options.branchName ?? 'default'}`}`,
       );
-      const response = await ofetch(url, requestBody, {
+      const response = await ofetch(url, {
+        method: 'POST',
+        body: requestBody,
         headers,
         signal,
       });
@@ -1292,7 +1294,9 @@ export async function teleportToRemote(options: {
     logForDebugging(`Creating session with payload: ${jsonStringify(requestBody, null, 2)}`);
 
     // Make API call
-    const response = await ofetch(url, requestBody, {
+    const response = await ofetch(url, {
+      method: 'POST',
+      body: requestBody,
       headers,
       signal,
     });
@@ -1344,19 +1348,17 @@ export async function archiveRemoteSession(sessionId: string): Promise<void> {
   };
   const url = `${getOauthConfig().BASE_API_URL}/v1/sessions/${sessionId}/archive`;
   try {
-    const resp = await ofetch(
-      url,
-      {},
-      {
-        headers,
-        timeout: 10000,
-        validateStatus: s => s < 500,
-      },
-    );
+    const resp = await ofetch.raw(url, {
+      method: 'POST',
+      body: {},
+      headers,
+      timeout: 10000,
+      ignoreResponseError: true,
+    });
     if (resp.status === 200 || resp.status === 409) {
       logForDebugging(`[archiveRemoteSession] archived ${sessionId}`);
     } else {
-      logForDebugging(`[archiveRemoteSession] ${sessionId} failed ${resp.status}: ${jsonStringify(resp.data)}`);
+      logForDebugging(`[archiveRemoteSession] ${sessionId} failed ${resp.status}: ${jsonStringify(resp._data)}`);
     }
   } catch (err) {
     logError(err);

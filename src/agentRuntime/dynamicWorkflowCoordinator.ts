@@ -24,6 +24,7 @@ import {
   type DynamicRunState,
   loadDynamicRun,
   type PersistedSubtaskResult,
+  updateDynamicRun,
 } from './dynamicWorkflowPersistence.js';
 import { runDynamicWorkflow, type SubtaskResult } from './dynamicWorkflowRunner.js';
 import { verifyFinding } from './verifierAgent.js';
@@ -81,8 +82,8 @@ export async function runDynamicWorkflowAsCoordinator(params: {
         results: [...s.results, result],
         lastCompletedWave: waveIndex,
       };
-      // Persist via the same call so the file is fresh on every subtask
-      return next;
+      // Persist to disk so an interrupted run can resume from this wave
+      return updateDynamicRun(params.workspaceRoot, next);
     },
     onWaveProgress: async ({ waveIndex, totalWaves, completed }) => {
       if (params.onProgress) {

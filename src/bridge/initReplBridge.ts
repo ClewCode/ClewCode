@@ -286,8 +286,8 @@ export async function initReplBridge(options?: InitBridgeOptions): Promise<ReplB
     void updateBridgeSessionTitle(bridgeSessionId, derived, {
       baseUrl,
       getAccessToken: getBridgeAccessToken,
-    }).catch(() => {
-      /* noop */
+    }).catch((err: unknown) => {
+      logForDebugging(`[bridge:repl] updateBridgeSessionTitle failed: ${errorMessage(err)}`);
     });
   };
   // Fire-and-forget Haiku generation with post-await guards. Re-checks /rename
@@ -297,16 +297,20 @@ export async function initReplBridge(options?: InitBridgeOptions): Promise<ReplB
   const generateAndPatch = (input: string, bridgeSessionId: string): void => {
     const gen = ++genSeq;
     const atCount = userMessageCount;
-    void generateSessionTitle(input, AbortSignal.timeout(15_000)).then(generated => {
-      if (
-        generated &&
-        gen === genSeq &&
-        lastBridgeSessionId === bridgeSessionId &&
-        !getCurrentSessionTitle(getSessionId())
-      ) {
-        patch(generated, bridgeSessionId, atCount);
-      }
-    });
+    void generateSessionTitle(input, AbortSignal.timeout(15_000))
+      .then(generated => {
+        if (
+          generated &&
+          gen === genSeq &&
+          lastBridgeSessionId === bridgeSessionId &&
+          !getCurrentSessionTitle(getSessionId())
+        ) {
+          patch(generated, bridgeSessionId, atCount);
+        }
+      })
+      .catch((err: unknown) => {
+        logForDebugging(`[bridge:repl] generateSessionTitle failed: ${errorMessage(err)}`);
+      });
   };
   const onUserMessage = (text: string, bridgeSessionId: string): boolean => {
     if (hasExplicitTitle || getCurrentSessionTitle(getSessionId())) {

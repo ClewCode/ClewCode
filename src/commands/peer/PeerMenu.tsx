@@ -17,6 +17,7 @@ import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
 import { formatPeerLatency, formatPeerLoad, getPeerHealth, summarizePeers } from '../../peer/peerHealth.js';
 import type { PeerInfo } from '../../peer/types.js';
+import { logForDebugging } from '../../utils/debug.js';
 
 type View = 'main' | 'peers';
 
@@ -69,8 +70,8 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
     update();
     const iv = setInterval(update, 3000);
     // Auto-trigger discovery on mount so user sees peers immediately
-    discovery.discoverPeers(5000).catch(() => {
-      /* noop */
+    discovery.discoverPeers(5000).catch(err => {
+      logForDebugging('peer: discovery failed', err);
     });
     return () => clearInterval(iv);
   }, [store, discovery]);

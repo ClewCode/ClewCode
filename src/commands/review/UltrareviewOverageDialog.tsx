@@ -20,7 +20,10 @@ function UltrareviewOverageDialog({ onProceed, onCancel }: Props): React.ReactNo
         // If onProceed rejects (e.g. launchRemoteReview throws), onDone is
         // never called and the dialog stays mounted — restore the Select so
         // the user can retry or cancel instead of staring at "Launching…".
-        void onProceed(abortControllerRef.current.signal).catch(() => setIsLaunching(false));
+        void onProceed(abortControllerRef.current.signal).catch(err => {
+          console.error('Ultrareview launch failed:', err);
+          setIsLaunching(false);
+        });
       } else {
         onCancel();
       }

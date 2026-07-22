@@ -281,15 +281,16 @@ export async function fetchSession(sessionId: string): Promise<SessionResource> 
     'x-organization-uuid': orgUUID,
   };
 
-  const response = await ofetch<SessionResource>(url, {
+  const response = await ofetch.raw<SessionResource>(url, {
+    method: 'GET',
     headers,
     timeout: 15000,
-    validateStatus: status => status < 500,
+    ignoreResponseError: true,
   });
 
   if (response.status !== 200) {
     // Extract error message from response if available
-    const errorData = response.data as { error?: { message?: string } };
+    const errorData = response._data as { error?: { message?: string } };
     const apiMessage = errorData?.error?.message;
 
     if (response.status === 404) {
@@ -303,7 +304,7 @@ export async function fetchSession(sessionId: string): Promise<SessionResource> 
     throw new Error(apiMessage || `Failed to fetch session: ${response.status} ${response.statusText}`);
   }
 
-  return response.data;
+  return response._data as SessionResource;
 }
 
 /**
@@ -366,9 +367,11 @@ export async function sendEventToRemoteSession(
     logForDebugging(`[sendEventToRemoteSession] Sending event to session ${sessionId}`);
     // The endpoint may block until the CCR worker is ready. Observed ~2.6s
     // in normal cases; allow a generous margin for cold-start containers.
-    const response = await ofetch(url, requestBody, {
+    const response = await ofetch.raw(url, {
+      method: 'POST',
+      body: requestBody,
       headers,
-      validateStatus: status => status < 500,
+      ignoreResponseError: true,
       timeout: 30000,
     });
 
@@ -378,7 +381,7 @@ export async function sendEventToRemoteSession(
     }
 
     logForDebugging(
-      `[sendEventToRemoteSession] Failed with status ${response.status}: ${jsonStringify(response.data)}`,
+      `[sendEventToRemoteSession] Failed with status ${response.status}: ${jsonStringify(response._data)}`,
     );
     return false;
   } catch (error) {
@@ -405,21 +408,19 @@ export async function updateSessionTitle(sessionId: string, title: string): Prom
     };
 
     logForDebugging(`[updateSessionTitle] Updating title for session ${sessionId}: "${title}"`);
-    const response = await ofetch(
-      url,
-      { title },
-      {
-        headers,
-        validateStatus: status => status < 500,
-      },
-    );
+    const response = await ofetch.raw(url, {
+      method: 'POST',
+      body: { title },
+      headers,
+      ignoreResponseError: true,
+    });
 
     if (response.status === 200) {
       logForDebugging(`[updateSessionTitle] Successfully updated title for session ${sessionId}`);
       return true;
     }
 
-    logForDebugging(`[updateSessionTitle] Failed with status ${response.status}: ${jsonStringify(response.data)}`);
+    logForDebugging(`[updateSessionTitle] Failed with status ${response.status}: ${jsonStringify(response._data)}`);
     return false;
   } catch (error) {
     logForDebugging(`[updateSessionTitle] Error: ${errorMessage(error)}`);

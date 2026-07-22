@@ -162,6 +162,23 @@ export type DiscoveryMessage =
       platform?: string;
       term?: string;
       status: SwarmStatus;
+    }
+  | { type: 'clew-peer-query'; version: 1 }
+  | {
+      type: 'clew-peer-info';
+      version: 1;
+      id: string;
+      hostname: string;
+      ip: string;
+      port: number;
+      cwd: string;
+      sessionId?: string;
+      /** Clew Code version string */
+      appVersion: string;
+      shell?: string;
+      platform?: string;
+      term?: string;
+      status: SwarmStatus;
     };
 
 /** Default UDP discovery port */

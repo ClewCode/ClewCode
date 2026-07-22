@@ -80,7 +80,7 @@ export async function playAnimation(skillDir: string): Promise<{
   //
   // Non-ENOENT errors (EACCES etc) are logged and returned as failures rather
   // than thrown — the old pathExists-based code never threw, and one caller
-  // (handleSelect) uses `void playAnimation().then(...)` without a .catch().
+  // (handleSelect) uses `void playAnimation().then(...)` with a .catch().
   try {
     await readFile(dataPath);
   } catch (e: unknown) {
@@ -331,9 +331,14 @@ function ThinkbackMenu({
     setHasSelected(true);
     if (value === 'play') {
       // Play runs the terminal-takeover animation, then signal done with skip
-      void playAnimation(skillDir).then(() => {
-        onDone(undefined, { display: 'skip' });
-      });
+      void playAnimation(skillDir)
+        .then(() => {
+          onDone(undefined, { display: 'skip' });
+        })
+        .catch(err => {
+          logForDebugging('thinkback: playAnimation failed', err);
+          onDone(undefined, { display: 'skip' });
+        });
     } else {
       onAction(value);
     }

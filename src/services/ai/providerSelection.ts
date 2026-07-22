@@ -74,13 +74,22 @@ export async function validateProviderModelSelection(
     return { valid: true, provider, model };
   }
 
-  const match = knownIds.get(model.toLowerCase());
-  if (match) {
-    return { valid: true, provider, model: match };
+  // Exact match first (fast path)
+  const exact = knownIds.get(model.toLowerCase());
+  if (exact) {
+    return { valid: true, provider, model: exact };
   }
 
-  const allIds = [...knownIds.values()];
+  // Substring match, consistent with toProviderModelInfo() in providerModels.ts
+  // so a model that works at runtime (e.g. deepseek-v4-flash:free) is not
+  // rejected by validation.
   const needle = model.toLowerCase();
+  const allIds = [...knownIds.values()];
+  const substring = allIds.find(id => id.toLowerCase().includes(needle) || needle.includes(id.toLowerCase()));
+  if (substring) {
+    return { valid: true, provider, model: substring };
+  }
+
   const related = allIds.filter(id => id.toLowerCase().includes(needle) || needle.includes(id.toLowerCase()));
   return {
     valid: false,

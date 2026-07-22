@@ -121,20 +121,19 @@ export const RemoteTriggerTool = buildTool({
         break;
     }
 
-    const res = await ofetch({
+    const res = await ofetch.raw(url, {
       method,
-      url,
       headers,
-      data,
+      body: data as Record<string, unknown> | undefined,
       timeout: 20_000,
       signal: context.abortController.signal,
-      validateStatus: () => true,
+      ignoreResponseError: true,
     });
 
     return {
       data: {
         status: res.status,
-        json: jsonStringify(res.data),
+        json: jsonStringify(res._data),
       },
     };
   },

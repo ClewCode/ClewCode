@@ -14,6 +14,7 @@ import { basename, join, relative } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
 import { MemoryDB } from './database.js';
 import { writeMemoryFile } from './hierarchy.js';
+import type { MemoryType } from './schema.js';
 
 export type ScanResult = {
   projectName: string;
@@ -136,7 +137,6 @@ export async function scanRepo(): Promise<ScanResult> {
     hasSrcDir: false,
     hasProviderSystem: false,
     hasCliEntrypoint: false,
-    seedsCreated: 0,
     warnings: [],
   };
 

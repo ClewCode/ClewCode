@@ -264,7 +264,6 @@ export class RemoteServer {
 
     // Validate the token (don't consume — it was consumed at /v1/sessions)
     // For /ws we just check the session_id exists in our map
-    const _sessionId = queryToken; // actually not — we need session_id from the URL path
     // Parse session_id from path: /ws?session_id=xxx&token=yyy
     const sessionIdFromUrl = url.searchParams.get('session_id');
 
