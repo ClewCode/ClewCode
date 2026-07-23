@@ -5,7 +5,7 @@ import memoize from 'lodash-es/memoize.js';
 import { join } from 'path';
 import { z } from 'zod/v4';
 import { OAUTH_BETA_HEADER } from '../../constants/oauth.js';
-import { getCachedModelContext } from '../../services/ai/providerModels.js';
+import { getCachedModelLimits } from '../../services/ai/providerModels.js';
 import { getProviderRegistryEntry } from '../../services/ai/providerRegistry.js';
 import { getAnthropicClient } from '../../services/api/client.js';
 import { isClaudeAISubscriber } from '../auth.js';
@@ -90,9 +90,9 @@ export function getModelCapability(model: string): ModelCapability | undefined {
   // registry when the live cache is cold.
   const providerId = getActiveProviderId();
   if (providerId !== 'anthropic') {
-    const liveContext = getCachedModelContext(providerId, model);
-    if (liveContext !== undefined) {
-      return { id: model, max_input_tokens: liveContext };
+    const liveLimits = getCachedModelLimits(providerId, model);
+    if (liveLimits?.maxContext !== undefined) {
+      return { id: model, max_input_tokens: liveLimits.maxContext, max_tokens: liveLimits.maxOutput };
     }
     const entry = getProviderRegistryEntry(providerId);
     if (entry) {

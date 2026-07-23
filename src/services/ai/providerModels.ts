@@ -26,13 +26,17 @@ export function clearProviderModelsCache(provider?: ProviderId): void {
 }
 
 /**
- * Synchronous read of a model's context window from the live-fetched models
- * cache (populated by fetchProviderModels, which prefers the provider's real
- * /models values over the static providers.json). Returns undefined when the
- * cache is cold/expired or the model isn't found, so callers fall back to the
- * static registry. Never triggers a network request.
+ * Synchronous read of a model's context/output limits from the live-fetched
+ * models cache (populated by fetchProviderModels, which prefers the provider's
+ * real /models values over the static providers.json). Returns undefined when
+ * the cache is cold/expired or the model isn't found, so callers fall back to
+ * the static registry. Only numeric limits are returned (never 'varies').
+ * Never triggers a network request.
  */
-export function getCachedModelContext(provider: ProviderId, modelId: string): number | undefined {
+export function getCachedModelLimits(
+  provider: ProviderId,
+  modelId: string,
+): { maxContext?: number; maxOutput?: number } | undefined {
   const cached = MODELS_CACHE.get(provider);
   if (!cached || Date.now() - cached.timestamp >= MODELS_CACHE_TTL_MS) {
     return undefined;
@@ -41,8 +45,13 @@ export function getCachedModelContext(provider: ProviderId, modelId: string): nu
   const match =
     cached.data.find(m => m.id.toLowerCase() === lowerId) ??
     cached.data.find(m => lowerId.includes(m.id.toLowerCase()) || m.id.toLowerCase().includes(lowerId));
-  const maxContext = match?.capabilities?.maxContext;
-  return typeof maxContext === 'number' ? maxContext : undefined;
+  if (!match) return undefined;
+  const maxContext = match.capabilities?.maxContext;
+  const maxOutput = match.capabilities?.maxOutput;
+  return {
+    maxContext: typeof maxContext === 'number' ? maxContext : undefined,
+    maxOutput: typeof maxOutput === 'number' ? maxOutput : undefined,
+  };
 }
 
 export async function fetchProviderModels(provider: ProviderId): Promise<ProviderModelInfo[]> {
