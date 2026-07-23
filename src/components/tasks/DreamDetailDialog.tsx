@@ -33,7 +33,7 @@ export function DreamDetailDialog({ task, onDone, onBack, onKill }: Props): Reac
     } else if (e.key === 'left' && onBack) {
       e.preventDefault();
       onBack();
-    } else if (e.key === 'x' && task.status === 'running' && onKill) {
+    } else if (e.key === 'x' && !e.ctrl && !e.meta && task.status === 'running' && onKill) {
       e.preventDefault();
       onKill();
     }

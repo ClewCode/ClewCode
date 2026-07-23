@@ -277,7 +277,11 @@ export function BackgroundTasksDialog({ onDone, toolUseContext, initialDetailTas
     const currentSelection = allSelectableItems[selectedIndex];
     if (!currentSelection) return; // everything below requires a selection
 
-    if (e.key === 'x') {
+    // Bare `x` only — a ctrl/meta modifier means this is the start of the
+    // `ctrl+x ctrl+k` (killAgents) chord, which is handled by useCancelRequest.
+    // Consuming it here (with preventDefault) would break the chord and stop
+    // the single selected task instead of all agents.
+    if (e.key === 'x' && !e.ctrl && !e.meta) {
       e.preventDefault();
       if (currentSelection.type === 'local_bash' && currentSelection.status === 'running') {
         void killShellTask(currentSelection.id);
@@ -304,7 +308,7 @@ export function BackgroundTasksDialog({ onDone, toolUseContext, initialDetailTas
       }
     }
 
-    if (e.key === 'f') {
+    if (e.key === 'f' && !e.ctrl && !e.meta) {
       if (currentSelection.type === 'in_process_teammate' && currentSelection.status === 'running') {
         e.preventDefault();
         enterTeammateView(currentSelection.id, setAppState);

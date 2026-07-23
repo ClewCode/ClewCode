@@ -158,8 +158,9 @@ Tools/commands are registered in `src/tools.ts` / `src/commands.ts`; entrypoints
 ### Providers (`src/services/ai/`)
 
 - `ProviderManager.ts` — unified call interface
-- `providers.json` — ~32 provider definitions (flagged via `capabilities` object with `chat`, `vision`, `toolCalling`, `streaming`; live `models[]` array per provider)
+- `providers.json` — ~32 provider definitions (flagged via `capabilities` object with `chat`, `vision`, `toolCalling`, `streaming`; live `models[]` array per provider). Per-model `maxContext` is the static fallback for the ctx% / auto-compact limit.
 - `providerRegistry.ts` / `providerSelection.ts` — discovery & selection
+- Context-window resolution (`getContextWindowForModel` → `getModelCapability`): for non-Anthropic providers, the live `/models` value (cached by `fetchProviderModels`, read synchronously via `getCachedModelContext`) is preferred over `providers.json`'s `maxContext`; the static value is the fallback when the live cache is cold. Anthropic first-party uses its own capability cache (`refreshModelCapabilities`).
 - `adapter/`, error/usage normalizers — cross-provider shape
 - Mid-session switch: `/model`, `/provider`
 - **Model scope:** every `/model` path is session-scoped by default — it sets AppState's `mainLoopModelForSession`, which `onChangeAppState` bridges to `setMainLoopModelOverride()` for the query pipeline. Only the picker's `d` (set as default) writes to `userSettings`/`provider.json`; `Enter` and `s` do not. When adding a model path, do NOT call `ProviderManager.setSessionModel`/`setSessionProvider` (a process-global singleton — leaks into agents and bg tasks) and do not write provider config unless the user explicitly asked for a default.

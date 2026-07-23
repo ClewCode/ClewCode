@@ -25,6 +25,26 @@ export function clearProviderModelsCache(provider?: ProviderId): void {
   MODELS_CACHE.clear();
 }
 
+/**
+ * Synchronous read of a model's context window from the live-fetched models
+ * cache (populated by fetchProviderModels, which prefers the provider's real
+ * /models values over the static providers.json). Returns undefined when the
+ * cache is cold/expired or the model isn't found, so callers fall back to the
+ * static registry. Never triggers a network request.
+ */
+export function getCachedModelContext(provider: ProviderId, modelId: string): number | undefined {
+  const cached = MODELS_CACHE.get(provider);
+  if (!cached || Date.now() - cached.timestamp >= MODELS_CACHE_TTL_MS) {
+    return undefined;
+  }
+  const lowerId = modelId.toLowerCase();
+  const match =
+    cached.data.find(m => m.id.toLowerCase() === lowerId) ??
+    cached.data.find(m => lowerId.includes(m.id.toLowerCase()) || m.id.toLowerCase().includes(lowerId));
+  const maxContext = match?.capabilities?.maxContext;
+  return typeof maxContext === 'number' ? maxContext : undefined;
+}
+
 export async function fetchProviderModels(provider: ProviderId): Promise<ProviderModelInfo[]> {
   const cached = MODELS_CACHE.get(provider);
   if (cached && Date.now() - cached.timestamp < MODELS_CACHE_TTL_MS) {

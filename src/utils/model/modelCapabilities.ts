@@ -5,6 +5,7 @@ import memoize from 'lodash-es/memoize.js';
 import { join } from 'path';
 import { z } from 'zod/v4';
 import { OAUTH_BETA_HEADER } from '../../constants/oauth.js';
+import { getCachedModelContext } from '../../services/ai/providerModels.js';
 import { getProviderRegistryEntry } from '../../services/ai/providerRegistry.js';
 import { getAnthropicClient } from '../../services/api/client.js';
 import { isClaudeAISubscriber } from '../auth.js';
@@ -83,9 +84,16 @@ export function getModelCapability(model: string): ModelCapability | undefined {
     }
   }
 
-  // Non-Anthropic providers: look up capabilities from providers.json
+  // Non-Anthropic providers: prefer the live-fetched context window (from the
+  // provider's own /models response) over the hand-maintained providers.json,
+  // so ctx% / auto-compact track the real limit. Falls back to the static
+  // registry when the live cache is cold.
   const providerId = getActiveProviderId();
   if (providerId !== 'anthropic') {
+    const liveContext = getCachedModelContext(providerId, model);
+    if (liveContext !== undefined) {
+      return { id: model, max_input_tokens: liveContext };
+    }
     const entry = getProviderRegistryEntry(providerId);
     if (entry) {
       const modelLower = model.toLowerCase();

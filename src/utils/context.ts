@@ -68,7 +68,13 @@ export function getContextWindowForModel(model: string, betas?: string[]): numbe
   }
 
   const cap = getModelCapability(model);
-  if (cap?.max_input_tokens && cap.max_input_tokens >= 100_000) {
+  // Trust any positive reported context window — including small ones (e.g.
+  // local Ollama or free models at 8k–64k). The previous `>= 100_000` gate
+  // discarded those and fell through to the 200k default, making auto-compact
+  // fire too late and risk a context overflow. Under-reporting only compacts
+  // early (safe); over-reporting overflows (an API error), so we bias toward
+  // the value the model/provider actually reports.
+  if (cap?.max_input_tokens && cap.max_input_tokens > 0) {
     if (cap.max_input_tokens > MODEL_CONTEXT_WINDOW_DEFAULT && is1mContextDisabled()) {
       return MODEL_CONTEXT_WINDOW_DEFAULT;
     }
