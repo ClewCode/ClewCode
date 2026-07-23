@@ -289,6 +289,11 @@ export type GlobalConfig = {
   // Transcript share prompt tracking ("Don't ask again")
   transcriptShareDismissed?: boolean;
 
+  // npm→native installer deprecation notice: the app version it was last shown
+  // for. Shown at most once per version to npm installs, then suppressed (see
+  // useNpmDeprecationNotification).
+  npmDeprecationNoticeSeenVersion?: string;
+
   // Memory usage tracking
   memoryUsageCount: number; // Number of times user has added to memory
 

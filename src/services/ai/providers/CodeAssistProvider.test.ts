@@ -55,3 +55,73 @@ describe('toCodeAssistMessages', () => {
     expect(text).toContain('Image not sent');
   });
 });
+
+describe('hasAntigravityOAuthCreds', () => {
+  test('returns a boolean value without throwing', () => {
+    const { hasAntigravityOAuthCreds } = require('./CodeAssistProvider.js');
+    expect(typeof hasAntigravityOAuthCreds()).toBe('boolean');
+  });
+});
+
+describe('ANTIGRAVITY_OAUTH_CLIENT', () => {
+  test('returns client ID from fallback when environment is empty', () => {
+    const { ANTIGRAVITY_OAUTH_CLIENT } = require('./CodeAssistProvider.js');
+    expect(ANTIGRAVITY_OAUTH_CLIENT.clientId).toContain('apps.googleusercontent.com');
+  });
+
+  test('redirect URI uses official antigravity.google redirect URI', () => {
+    const { ANTIGRAVITY_REDIRECT_URI } = require('./CodeAssistProvider.js');
+    const uri = new URL(ANTIGRAVITY_REDIRECT_URI);
+    expect(uri.hostname).toBe('antigravity.google');
+    expect(uri.pathname).toBe('/oauth-callback');
+  });
+});
+
+describe('handleSSEStream', () => {
+  test('parses thinking parts and text parts into reasoning_content and content', async () => {
+    const { handleSSEStream } = require('./CodeAssistProvider.js');
+    const payload = JSON.stringify({
+      response: {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: 'Let me think...', thought: true }, { text: 'Here is the answer.' }],
+            },
+            finishReason: 'STOP',
+          },
+        ],
+      },
+    });
+
+    const bodyText = `data: ${payload}\n\n`;
+    const response = new Response(bodyText);
+    const chunks: any[] = [];
+    for await (const chunk of handleSSEStream(response)) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks.length).toBe(1);
+    expect(chunks[0].choices[0].delta.reasoning_content).toBe('Let me think...');
+    expect(chunks[0].choices[0].delta.content).toBe('Here is the answer.');
+  });
+
+  test('flushes remaining buffer text when stream finishes', async () => {
+    const { handleSSEStream } = require('./CodeAssistProvider.js');
+    const payload = JSON.stringify({
+      response: {
+        candidates: [{ content: { parts: [{ text: 'Final text without newline' }] } }],
+      },
+    });
+
+    // Stream ends without trailing newline
+    const bodyText = `data: ${payload}`;
+    const response = new Response(bodyText);
+    const chunks: any[] = [];
+    for await (const chunk of handleSSEStream(response)) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks.length).toBe(1);
+    expect(chunks[0].choices[0].delta.content).toBe('Final text without newline');
+  });
+});

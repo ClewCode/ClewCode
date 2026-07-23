@@ -90,6 +90,9 @@ export const DEFAULT_PROVIDER: ProviderId = 'openai';
 const LEGACY_PROVIDER_ALIASES: Record<string, ProviderId> = {
   gemini: 'google',
   grok: 'xai',
+  antigravity: 'google-assist',
+  'code-assist': 'google-assist',
+  codeassist: 'google-assist',
 };
 
 function isRegisteredProviderId(id: string): id is ProviderId {

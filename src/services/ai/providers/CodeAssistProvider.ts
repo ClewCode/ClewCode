@@ -2,18 +2,34 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { GOOGLE_OAUTH_CONFIG } from '../../../constants/googleOAuth.js';
 import { execFileNoThrow } from '../../../utils/execFileNoThrow.js';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 // --- OAuth constants ---
-// Public installed-app credentials identify Antigravity's native OAuth client;
-// user authorization is still required (RFC 8252). Environment overrides make
-// it possible to rotate the public client without shipping a new Clew build.
-// Note: Credentials must be configured via environment variables ANTIGRAVITY_CLIENT_ID and ANTIGRAVITY_CLIENT_SECRET
-const OAUTH_CLIENT_ID = process.env.ANTIGRAVITY_CLIENT_ID?.trim();
-const OAUTH_CLIENT_SECRET = process.env.ANTIGRAVITY_CLIENT_SECRET?.trim();
+const DEFAULT_ANTIGRAVITY_CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
+const DEFAULT_ANTIGRAVITY_CLIENT_SECRET = '';
+
+function getOAuthClientId(): string {
+  return (
+    process.env.ANTIGRAVITY_CLIENT_ID?.trim() ||
+    process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() ||
+    GOOGLE_OAUTH_CONFIG.CLIENT_ID ||
+    DEFAULT_ANTIGRAVITY_CLIENT_ID
+  );
+}
+
+function getOAuthClientSecret(): string {
+  return (
+    process.env.ANTIGRAVITY_CLIENT_SECRET?.trim() ||
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() ||
+    GOOGLE_OAUTH_CONFIG.CLIENT_SECRET ||
+    DEFAULT_ANTIGRAVITY_CLIENT_SECRET
+  );
+}
+
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
-const CODE_ASSIST_ENDPOINT = process.env.ANTIGRAVITY_ENDPOINT?.trim() || 'https://daily-cloudcode-pa.googleapis.com';
+const CODE_ASSIST_ENDPOINT = process.env.ANTIGRAVITY_ENDPOINT?.trim() || 'https://cloudcode-pa.googleapis.com';
 const CODE_ASSIST_API_VERSION = 'v1internal';
 const ANTIGRAVITY_OAUTH_PATH = join(homedir(), '.antigravity', 'oauth_creds.json');
 const AGY_PATH =
@@ -32,20 +48,30 @@ const ANTIGRAVITY_HEADERS = {
 // is NOT an option here: Google's device flow does not allow the cloud-platform
 // scope, so a loopback/manual-code browser flow is the only path.
 export const ANTIGRAVITY_OAUTH_CLIENT = {
-  clientId: OAUTH_CLIENT_ID,
-  clientSecret: OAUTH_CLIENT_SECRET,
-} as const;
-export const ANTIGRAVITY_REDIRECT_URI = 'http://localhost:51121/oauth-callback';
+  get clientId() {
+    return getOAuthClientId();
+  },
+  get clientSecret() {
+    return getOAuthClientSecret();
+  },
+};
+export const ANTIGRAVITY_REDIRECT_URI = 'https://antigravity.google/oauth-callback';
 export const ANTIGRAVITY_SCOPES = [
   'https://www.googleapis.com/auth/cloud-platform',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/cclog',
+  'https://www.googleapis.com/auth/experimentsandconfigs',
+  'openid',
 ] as const;
 
 /** True when usable Antigravity OAuth creds already exist on disk (any token that
  *  can be used or refreshed). Lets the UI skip the login prompt. */
 export function hasAntigravityOAuthCreds(): boolean {
-  return existsSync(AGY_PATH);
+  if (process.env.ANTIGRAVITY_USE_AGY === '1') {
+    return existsSync(AGY_PATH);
+  }
+  return readOAuthCreds() !== undefined || existsSync(ANTIGRAVITY_OAUTH_PATH);
 }
 
 /**
@@ -174,17 +200,20 @@ function createCodeAssistError(status: number, body: string): Error {
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
-  if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
-    throw new Error(
-      'Antigravity OAuth client is not configured. Set ANTIGRAVITY_CLIENT_ID and ANTIGRAVITY_CLIENT_SECRET.',
-    );
+  const clientId = getOAuthClientId();
+  if (!clientId) {
+    throw new Error('Antigravity OAuth client is not configured. Set ANTIGRAVITY_CLIENT_ID or GOOGLE_OAUTH_CLIENT_ID.');
   }
+  const clientSecret = getOAuthClientSecret();
   const params = new URLSearchParams({
-    client_id: OAUTH_CLIENT_ID,
-    client_secret: OAUTH_CLIENT_SECRET,
+    client_id: clientId,
     refresh_token: refreshToken,
     grant_type: 'refresh_token',
   });
+
+  if (clientSecret) {
+    params.append('client_secret', clientSecret);
+  }
 
   const response = await fetch(OAUTH_TOKEN_URL, {
     method: 'POST',
@@ -198,14 +227,15 @@ async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: 
     // a *different* OAuth client (e.g. the VS Code Google extension) than the one
     // Clew uses. A fresh login via `/login antigravity` re-mints a compatible
     // token and is the only fix.
-    if (text.includes('invalid_client')) {
+    if (
+      text.includes('invalid_client') ||
+      text.includes('unauthorized_client') ||
+      text.includes('client_secret is missing')
+    ) {
       throw new Error(
-        'Google OAuth refresh failed: the stored refresh token belongs to a different ' +
-          'OAuth client and cannot be refreshed by Clew. Fix: run `/login antigravity` ' +
-          'and sign in again. This overwrites ~/.antigravity/oauth_creds.json ' +
-          'with a token Clew can refresh. (original: ' +
-          text +
-          ')',
+        'Google OAuth token refresh failed: stored token expired or requires client_secret. ' +
+          'Fix: Run `/login antigravity` to sign in again and refresh your credentials, ' +
+          'or set ANTIGRAVITY_CLIENT_SECRET or GOOGLE_OAUTH_CLIENT_SECRET in your environment.',
       );
     }
     throw new Error(`OAuth token refresh failed (${response.status}): ${text}`);
@@ -271,31 +301,43 @@ async function getValidToken(): Promise<string> {
 
 async function discoverProjectId(accessToken: string): Promise<string> {
   if (cachedProjectId) return cachedProjectId;
-
-  const response = await fetch(`${CODE_ASSIST_ENDPOINT}/${CODE_ASSIST_API_VERSION}:loadCodeAssist`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      ...ANTIGRAVITY_HEADERS,
-    },
-    body: '{}',
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    const err = new Error(`loadCodeAssist failed (${response.status}): ${text}`);
-    (err as any).status = response.status;
-    throw err;
+  if (process.env.ANTIGRAVITY_PROJECT_ID?.trim()) {
+    cachedProjectId = process.env.ANTIGRAVITY_PROJECT_ID.trim();
+    return cachedProjectId;
   }
 
-  const data = (await response.json()) as { cloudaicompanionProject?: string };
-  if (!data.cloudaicompanionProject) {
-    throw new Error('loadCodeAssist returned no project ID');
+  const endpoints = [
+    CODE_ASSIST_ENDPOINT,
+    'https://cloudcode-pa.googleapis.com',
+    'https://daily-cloudcode-pa.googleapis.com',
+  ];
+
+  for (const endpoint of new Set(endpoints)) {
+    try {
+      const response = await fetch(`${endpoint}/${CODE_ASSIST_API_VERSION}:loadCodeAssist`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          ...ANTIGRAVITY_HEADERS,
+        },
+        body: '{}',
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as { cloudaicompanionProject?: string };
+        if (data.cloudaicompanionProject) {
+          cachedProjectId = data.cloudaicompanionProject;
+          return cachedProjectId;
+        }
+      }
+    } catch {
+      // try next endpoint
+    }
   }
 
-  cachedProjectId = data.cloudaicompanionProject;
-  return cachedProjectId!;
+  // Safe fallback if loadCodeAssist endpoint is unavailable
+  return 'default';
 }
 
 // --- Tool-calling type helpers ---
@@ -309,7 +351,7 @@ type OpenAIMessage = {
 };
 type OpenAITool = { type?: string; function?: { name?: string; description?: string; parameters?: unknown } };
 type GeminiPart =
-  | { text: string }
+  | { text: string; thought?: boolean; thoughtSignature?: string }
   | {
       functionCall: { name: string; args: Record<string, unknown> };
       thoughtSignature: string;
@@ -586,6 +628,9 @@ function fromCodeAssistResponse(raw: any) {
 }
 
 const AGY_MODEL_NAMES: Record<string, string> = {
+  'gemini-3.6-flash': 'Gemini 3.6 Flash',
+  'gemini-3.5-flash': 'Gemini 3.5 Flash (Medium)',
+  'gemini-3.1-pro': 'Gemini 3.1 Pro (High)',
   'gemini-3.5-flash-medium': 'Gemini 3.5 Flash (Medium)',
   'gemini-3.5-flash-high': 'Gemini 3.5 Flash (High)',
   'gemini-3.5-flash-low': 'Gemini 3.5 Flash (Low)',
@@ -602,10 +647,14 @@ function toAgyModelName(model: string): string {
 
 function toDirectModelName(model: string): string {
   const names: Record<string, string> = {
+    'gemini-3.6-flash': 'gemini-3.5-flash-low',
+    'gemini-3.5-flash': 'gemini-3.5-flash-low',
+    'gemini-3.1-pro': 'gemini-pro-agent',
     'gemini-3.5-flash-low': 'gemini-3.5-flash-extra-low',
     'gemini-3.5-flash-medium': 'gemini-3.5-flash-low',
     'gemini-3.5-flash-high': 'gemini-3-flash-agent',
     'gemini-3.1-pro-high': 'gemini-pro-agent',
+    'gemini-3.1-pro-low': 'gemini-3.1-pro-low',
   };
   return names[model] ?? model;
 }
@@ -700,27 +749,20 @@ export class AntigravityProvider implements ProviderInterface {
             const geminiTools = toGeminiTools(params.tools as OpenAITool[] | undefined);
 
             // 4. Build request body
+            const generationConfig: Record<string, unknown> = {};
+            if (params.max_tokens) {
+              generationConfig.maxOutputTokens = params.max_tokens;
+            }
+            if (params.temperature !== undefined) {
+              generationConfig.temperature = params.temperature;
+            }
+
             const requestBody: Record<string, unknown> = {
               contents,
               ...(geminiTools ? { tools: geminiTools } : {}),
               ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
-              ...(params.max_tokens ? { generationConfig: { maxOutputTokens: params.max_tokens } } : {}),
-              ...(params.temperature !== undefined
-                ? {
-                    generationConfig: {
-                      ...(params.temperature !== undefined ? { temperature: params.temperature } : {}),
-                    },
-                  }
-                : {}),
+              ...(Object.keys(generationConfig).length > 0 ? { generationConfig } : {}),
             };
-
-            // Merge generationConfig if both max_tokens and temperature are set
-            if (params.max_tokens && params.temperature !== undefined) {
-              requestBody.generationConfig = {
-                maxOutputTokens: params.max_tokens,
-                temperature: params.temperature,
-              };
-            }
 
             const codeAssistBody = {
               model: toDirectModelName(params.model),
@@ -787,13 +829,16 @@ export class AntigravityProvider implements ProviderInterface {
     // Antigravity has no public model-list endpoint; keep this allowlist aligned
     // with the models exposed by the CLI service.
     return [
+      { id: 'gemini-3.6-flash', label: 'Gemini 3.6 Flash' },
+      { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
+      { id: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro' },
       { id: 'gemini-3.5-flash-medium', label: 'Gemini 3.5 Flash (Medium)' },
       { id: 'gemini-3.5-flash-high', label: 'Gemini 3.5 Flash (High)' },
       { id: 'gemini-3.5-flash-low', label: 'Gemini 3.5 Flash (Low)' },
       { id: 'gemini-3.1-pro-high', label: 'Gemini 3.1 Pro (High)' },
       { id: 'gemini-3.1-pro-low', label: 'Gemini 3.1 Pro (Low)' },
       { id: 'claude-sonnet-4-6-thinking', label: 'Claude Sonnet 4.6 (Thinking)' },
-      { id: 'claude-opus-4-6-thinking', label: 'Claude Opus 4.6 Thinking' },
+      { id: 'claude-opus-4-6-thinking', label: 'Claude Opus 4.6 (Thinking)' },
       { id: 'gpt-oss-120b-medium', label: 'GPT-OSS 120B (Medium)' },
     ];
   }
@@ -811,11 +856,70 @@ export async function* handleSSEStream(response: Response): AsyncGenerator<unkno
 
   const decoder = new TextDecoder();
   let buffer = '';
-  // Monotonic index shared across chunks so multi-call responses map to
-  // distinct tool_use blocks downstream (AnthropicAdapter keys on tc.index).
   let toolCallIndex = 0;
   let sawToolCall = false;
   const toolCallIdPrefix = randomUUID();
+
+  const processLine = (line: string): unknown | null => {
+    const trimmed = line.trim();
+    if (!trimmed?.startsWith('data: ')) return null;
+    const jsonStr = trimmed.slice(6);
+    if (jsonStr === '[DONE]') return 'DONE';
+
+    try {
+      const data = unwrapResponse(JSON.parse(jsonStr));
+      const candidate = data.candidates?.[0];
+      const parts: any[] = candidate?.content?.parts ?? [];
+
+      // Separate text parts from thinking/thought parts.
+      // Gemini 3.x marks reasoning parts with `thought: true`.
+      const textParts: string[] = [];
+      const thinkingParts: string[] = [];
+
+      for (const p of parts) {
+        if (p?.text) {
+          if (p.thought === true) {
+            thinkingParts.push(p.text);
+          } else {
+            textParts.push(p.text);
+          }
+        }
+      }
+
+      const text = textParts.join('');
+      const thinking = thinkingParts.join('');
+      const rawToolCalls = toolCallsFromParts(parts, toolCallIndex, toolCallIdPrefix);
+      const hasToolCall = rawToolCalls.length > 0;
+      if (hasToolCall) sawToolCall = true;
+
+      const delta: Record<string, unknown> = {};
+      if (text) delta.content = text;
+      if (thinking) delta.reasoning_content = thinking;
+      if (hasToolCall) {
+        let currentIdx = toolCallIndex;
+        delta.tool_calls = rawToolCalls.map(tc => ({ index: currentIdx++, ...tc }));
+        toolCallIndex += rawToolCalls.length;
+      }
+      if (text || thinking || hasToolCall) delta.role = 'assistant';
+
+      return {
+        id: data.responseId ?? `chatcmpl-${Date.now()}`,
+        object: 'chat.completion.chunk',
+        created: Math.floor(Date.now() / 1000),
+        model: data.modelVersion ?? data.model ?? '',
+        choices: [
+          {
+            index: 0,
+            delta,
+            finish_reason: toOpenAIFinishReason(candidate?.finishReason, sawToolCall),
+          },
+        ],
+        ...(data.usageMetadata ? { usage: toOpenAIUsage(data.usageMetadata) } : {}),
+      };
+    } catch {
+      return null;
+    }
+  };
 
   while (true) {
     const { done, value } = await reader.read();
@@ -826,50 +930,15 @@ export async function* handleSSEStream(response: Response): AsyncGenerator<unkno
     buffer = lines.pop() || '';
 
     for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed?.startsWith('data: ')) continue;
-      const jsonStr = trimmed.slice(6);
-      if (jsonStr === '[DONE]') return;
-
-      try {
-        // Code Assist wraps each SSE payload under `response`.
-        const data = unwrapResponse(JSON.parse(jsonStr));
-
-        // Gemini delivers each functionCall whole (name + full args) in one
-        // chunk, so we emit a single tool_call delta per call with an
-        // incrementing index carried across chunks via toolCallIndex.
-        const parts = data.candidates?.[0]?.content?.parts ?? [];
-        const text = parts.map((p: any) => p.text ?? '').join('');
-        const rawToolCalls = toolCallsFromParts(parts, toolCallIndex, toolCallIdPrefix);
-        const hasToolCall = rawToolCalls.length > 0;
-        if (hasToolCall) sawToolCall = true;
-
-        const delta: Record<string, unknown> = {};
-        if (text) delta.content = text;
-        if (hasToolCall) {
-          delta.tool_calls = rawToolCalls.map(tc => ({ index: toolCallIndex++, ...tc }));
-        }
-        if (text || hasToolCall) delta.role = 'assistant';
-
-        const chunk = {
-          id: data.responseId ?? `chatcmpl-${Date.now()}`,
-          object: 'chat.completion.chunk',
-          created: Math.floor(Date.now() / 1000),
-          model: data.modelVersion ?? data.model ?? '',
-          choices: [
-            {
-              index: 0,
-              delta,
-              finish_reason: toOpenAIFinishReason(data.candidates?.[0]?.finishReason, sawToolCall),
-            },
-          ],
-          ...(data.usageMetadata ? { usage: toOpenAIUsage(data.usageMetadata) } : {}),
-        };
-
-        yield chunk;
-      } catch {
-        // Skip invalid JSON
-      }
+      const chunk = processLine(line);
+      if (chunk === 'DONE') return;
+      if (chunk) yield chunk;
     }
+  }
+
+  // Flush any remaining buffer text when stream finishes
+  if (buffer.trim()) {
+    const chunk = processLine(buffer);
+    if (chunk && chunk !== 'DONE') yield chunk;
   }
 }

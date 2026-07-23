@@ -50,25 +50,26 @@ export async function openBrowser(url: string): Promise<boolean> {
         if (code === 0) return true;
       }
 
-      // Try PowerShell Start-Process (most robust for URLs with ampersands and special characters)
-      const psEscapedUrl = url.replace(/'/g, "''");
+      // Use Base64 -EncodedCommand in PowerShell so ampersands (&) in query parameters
+      // are passed intact without being interpreted as command separators.
+      const script = `[System.Diagnostics.Process]::Start('${url.replace(/'/g, "''")}')`;
+      const encodedScript = Buffer.from(script, 'utf16le').toString('base64');
       const { code: psCode } = await execFileNoThrow('powershell', [
         '-NoProfile',
         '-NonInteractive',
-        '-Command',
-        `Start-Process '${psEscapedUrl}'`,
+        '-EncodedCommand',
+        encodedScript,
       ]);
       if (psCode === 0) return true;
 
+      // Fallback to rundll32 url.dll,FileProtocolHandler
+      const { code: rundllCode } = await execFileNoThrow('rundll32', ['url.dll,FileProtocolHandler', url], {});
+      if (rundllCode === 0) return true;
+
       // Fallback to cmd.exe start command
-      // Escape special characters for cmd.exe command parser (like &) so they are not treated as separators
       const cmdEscapedUrl = url.replace(/[\^&<>|()]/g, m => `^${m}`);
       const { code: startCode } = await execFileNoThrow('cmd', ['/c', 'start', '', cmdEscapedUrl]);
-      if (startCode === 0) return true;
-
-      // Fallback to rundll32
-      const { code: rundllCode } = await execFileNoThrow('rundll32', ['url,OpenURL', url], {});
-      return rundllCode === 0;
+      return startCode === 0;
     } else {
       const command = browserEnv || (platform === 'darwin' ? 'open' : 'xdg-open');
       const { code } = await execFileNoThrow(command, [url]);

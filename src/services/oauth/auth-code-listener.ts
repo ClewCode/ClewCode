@@ -36,7 +36,19 @@ export class AuthCodeListener {
    * Uses OS-assigned port (port 0) when no specific port is requested.
    */
   async start(port?: number): Promise<number> {
-    return this.listenOnPort(port && port > 0 ? port : 0);
+    const requestedPort = port && port > 0 ? port : 0;
+    try {
+      return await this.listenOnPort(requestedPort);
+    } catch (err) {
+      // If a specific port was requested and it failed (e.g. EADDRINUSE),
+      // retry with port 0 so the OS assigns a free port.
+      if (requestedPort > 0) {
+        // Need a fresh server instance because the previous one is in an error state
+        this.localServer = createServer();
+        return this.listenOnPort(0);
+      }
+      throw err;
+    }
   }
 
   private listenOnPort(port: number): Promise<number> {

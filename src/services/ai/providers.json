@@ -730,8 +730,8 @@
     "providerId": "google-assist",
     "label": "Google Antigravity CLI",
     "envKey": "",
-    "defaultBaseUrl": "https://daily-cloudcode-pa.googleapis.com/v1internal",
-    "defaultModel": "gemini-3.5-flash-medium",
+    "defaultBaseUrl": "https://cloudcode-pa.googleapis.com/v1internal",
+    "defaultModel": "gemini-3.5-flash",
     "defaultModelVerified": true,
     "isLocal": true,
     "note": "Google Gemini Code Assist (OAuth). Uses ~/.antigravity/oauth_creds.json from `/login`; no API key required.",
@@ -749,9 +749,57 @@
     },
     "models": [
       {
+        "id": "gemini-3.6-flash",
+        "label": "Gemini 3.6 Flash",
+        "tags": ["tools", "vision", "recommended", "latest"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 65536,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gemini-3.5-flash",
+        "label": "Gemini 3.5 Flash",
+        "tags": ["tools", "vision", "recommended"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": false,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
+        "id": "gemini-3.1-pro",
+        "label": "Gemini 3.1 Pro",
+        "tags": ["tools", "vision", "reasoning", "latest"],
+        "capabilities": {
+          "toolCalling": "native",
+          "vision": true,
+          "streaming": "full",
+          "maxContext": 1048576,
+          "maxOutput": 8192,
+          "reasoning": true,
+          "supportsSystemPrompt": true,
+          "imageIn": true,
+          "videoIn": false
+        }
+      },
+      {
         "id": "gemini-3.5-flash-medium",
         "label": "Gemini 3.5 Flash (Medium)",
-        "tags": ["tools", "vision", "recommended", "latest"],
+        "tags": ["tools", "vision", "recommended"],
         "capabilities": {
           "toolCalling": "native",
           "vision": true,

@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **`/model vendor/model` silently dropped the vendor prefix and sent an invalid model id**: `/model deepseek/deepseek-v4-flash` confirmed "Set model to `deepseek-v4-flash`" and then every request failed with `400 invalid model format. Expected format: modelType/model`. The `/model` arg parser treated the first `/`-segment as a provider switch whenever it matched a registered provider id (`deepseek`, `openai`, `minimax`, `google`, …), stripping it — but Cline uses OpenRouter-style ids where `vendor/` is part of the model name. Both parse sites now share `resolveModelSelection`, which keeps the input whole when the current provider already exposes that exact id, and only treats the prefix as a provider switch otherwise. (`src/commands/model/model.tsx`)
+- **npm→native deprecation notice nagged on every launch, including native installs**: The startup banner had no "seen" persistence, so it re-showed for its full 15s every session, and its only gate was `installationType === 'development'` — meaning `native` and `package-manager` installs got told to "switch from npm" despite already having done so. It now shows at most once per version (persisted as `npmDeprecationNoticeSeenVersion` in global config) and only to genuine `npm-global`/`npm-local` installs. (`src/hooks/notifs/useNpmDeprecationNotification.tsx`, `src/utils/config.ts`)
+- **Google Antigravity OAuth login / browser improvements**:
+  - Exchanged `localhost` redirect URI for the official `https://antigravity.google/oauth-callback` to prevent 400 Bad Request errors on the Google consent page.
+  - Automatically handles manual auth code pasting when redirecting to a remote endpoint.
+  - Corrected percent-encoding for Google OAuth authorize endpoint parameter query string, resolving malformed request issues.
+  - Improved PowerShell and cmd browser opener utilities to properly escape URLs containing ampersands (`&`) in query parameters.
+- **Empty streaming response fallback**: Prevented crashes when third-party gateways (e.g. Free-tier OpenGateway models) return empty assistant chunks with only usage stats, yielding a fallback empty content block instead.
+
+### Changed
+- **Corrected Cline provider model catalog against the live API**: Verified model ids via `api.cline.bot`; only `deepseek/deepseek-v4-flash` and `nvidia/nemotron-3-ultra-550b-a55b:free` are actually free. Added the missing `nvidia/…:free` entry and relabeled `minimax/minimax-m3`, `nvidia/nemotron-3-ultra-550b-a55b`, and `xiaomi/mimo-v2.5` from "(Free)" to "(needs credit)" since they return 402 without credit. (`src/services/ai/providers.json`)
+- **Updated Google Antigravity provider endpoint and credentials path**: Replaced `daily-` staging endpoint with production `https://cloudcode-pa.googleapis.com` and moved configuration to the `.antigravity` config directory (`~/.antigravity/oauth_creds.json`).
+- **Added Gemini 3.6 Flash, Gemini 3.5 Flash, and Gemini 3.1 Pro to Google Antigravity CLI provider**: Added the latest models to the native catalog with proper capabilities and tags.
+
 ## [0.6.7] - 2026-07-22
 
 ### Fixed

@@ -46,19 +46,37 @@ export class GoogleOAuthService {
     this.redirectUri = new URL(options?.redirectUri ?? GOOGLE_OAUTH_CONFIG.REDIRECT_URI);
   }
 
+  /**
+   * Returns true when the redirect URI points to a remote server (e.g.
+   * https://antigravity.google/oauth-callback) rather than a local loopback
+   * address. In that case there is no point starting a local HTTP listener —
+   * the browser will redirect to the remote URL and the user must paste the
+   * authorization code manually.
+   */
+  private isRemoteRedirect(): boolean {
+    return this.redirectUri.protocol === 'https:' || this.redirectUri.hostname === 'antigravity.google';
+  }
+
   async startOAuthFlow(
     authURLHandler: (url: string) => Promise<void>,
     options?: {
       skipBrowserOpen?: boolean;
     },
   ): Promise<GoogleOAuthTokens> {
-    this.authCodeListener = new AuthCodeListener(this.redirectUri.pathname, this.redirectUri.hostname);
+    const remoteRedirect = this.isRemoteRedirect();
 
-    // We start the listener on the configured port, or fallback if port is busy
-    // To match REDIRECT_URI, we parse the port from GOOGLE_OAUTH_CONFIG.REDIRECT_URI
-    const configuredPort = Number.parseInt(this.redirectUri.port || '1456', 10);
+    // Only start a local callback server when the redirect URI is a loopback
+    // address. Remote redirect URIs (e.g. antigravity.google) don't route back
+    // to localhost, so a local listener would just fail with EADDRNOTAVAIL.
+    if (!remoteRedirect) {
+      this.authCodeListener = new AuthCodeListener(this.redirectUri.pathname, this.redirectUri.hostname);
 
-    this.port = await this.authCodeListener.start(configuredPort);
+      // We start the listener on the configured port, or fallback if port is busy
+      // To match REDIRECT_URI, we parse the port from GOOGLE_OAUTH_CONFIG.REDIRECT_URI
+      const configuredPort = Number.parseInt(this.redirectUri.port || '1456', 10);
+
+      this.port = await this.authCodeListener.start(configuredPort);
+    }
 
     // Generate PKCE values and state
     const codeChallenge = crypto.generateCodeChallenge(this.codeVerifier);
@@ -157,19 +175,34 @@ export class GoogleOAuthService {
     }
   }
 
-  private buildAuthUrl({ codeChallenge, state, port }: { codeChallenge: string; state: string; port: number }): string {
-    const authUrl = new URL(GOOGLE_OAUTH_CONFIG.AUTHORIZE_URL);
-    authUrl.searchParams.append('client_id', this.clientId);
-    authUrl.searchParams.append('response_type', 'code');
-    authUrl.searchParams.append('redirect_uri', this.callbackUri(port));
-    authUrl.searchParams.append('scope', this.scopes.join(' '));
-    authUrl.searchParams.append('code_challenge', codeChallenge);
-    authUrl.searchParams.append('code_challenge_method', CODE_CHALLENGE_METHOD);
-    authUrl.searchParams.append('state', state);
-    authUrl.searchParams.append('access_type', 'offline');
-    authUrl.searchParams.append('prompt', 'consent');
+  private buildAuthUrl({
+    codeChallenge,
+    state,
+    port,
+  }: {
+    codeChallenge: string;
+    state: string;
+    port: number | null;
+  }): string {
+    const redirectUri = this.callbackUri(port);
+    const scopeStr = this.scopes.join(' ');
 
-    return authUrl.toString();
+    // Google OAuth authorize endpoint requires redirect_uri and scope parameters to be
+    // percent-encoded (e.g. https%3A%2F%2F). URLSearchParams leaves colons and slashes unencoded,
+    // which causes Google to return 400 Bad Request (Malformed Request).
+    const query = [
+      `access_type=offline`,
+      `client_id=${encodeURIComponent(this.clientId)}`,
+      `code_challenge=${encodeURIComponent(codeChallenge)}`,
+      `code_challenge_method=${encodeURIComponent(CODE_CHALLENGE_METHOD)}`,
+      `prompt=consent`,
+      `redirect_uri=${encodeURIComponent(redirectUri)}`,
+      `response_type=code`,
+      `scope=${encodeURIComponent(scopeStr).replace(/%20/g, '+')}`,
+      `state=${encodeURIComponent(state)}`,
+    ].join('&');
+
+    return `${GOOGLE_OAUTH_CONFIG.AUTHORIZE_URL}?${query}`;
   }
 
   private async exchangeCodeForTokens(authorizationCode: string, state: string): Promise<GoogleOAuthTokens> {
@@ -224,6 +257,9 @@ export class GoogleOAuthService {
   }
 
   private callbackUri(port: number | null): string {
+    if (this.redirectUri.protocol === 'https:' || this.redirectUri.hostname === 'antigravity.google') {
+      return this.redirectUri.toString();
+    }
     return buildLoopbackRedirectUri(this.redirectUri.toString(), port);
   }
 
@@ -231,16 +267,23 @@ export class GoogleOAuthService {
     return new Promise((resolve, reject) => {
       this.manualAuthCodeResolver = resolve;
 
-      this.authCodeListener
-        ?.waitForAuthorization(state, onReady)
-        .then(authorizationCode => {
-          this.manualAuthCodeResolver = null;
-          resolve(authorizationCode);
-        })
-        .catch(error => {
-          this.manualAuthCodeResolver = null;
-          reject(error);
-        });
+      if (this.authCodeListener) {
+        this.authCodeListener
+          .waitForAuthorization(state, onReady)
+          .then(authorizationCode => {
+            this.manualAuthCodeResolver = null;
+            resolve(authorizationCode);
+          })
+          .catch(error => {
+            this.manualAuthCodeResolver = null;
+            reject(error);
+          });
+      } else {
+        // No local listener (remote redirect URI) — fire onReady so the auth
+        // URL is displayed / browser is opened, then wait for manual code input
+        // via handleManualAuthCodeInput().
+        void onReady();
+      }
     });
   }
 

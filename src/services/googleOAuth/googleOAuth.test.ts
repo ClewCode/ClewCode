@@ -38,7 +38,7 @@ describe('Google OAuth Config', () => {
     const parsed = new URL(urlStr);
 
     expect(parsed.hostname).toBe('accounts.google.com');
-    expect(parsed.pathname).toBe('/o/oauth2/v2/auth');
+    expect(parsed.pathname).toBe('/o/oauth2/auth');
     expect(parsed.searchParams.get('client_id')).toBe('test-client-id');
     expect(parsed.searchParams.get('response_type')).toBe('code');
     expect(parsed.searchParams.get('redirect_uri')).toBe('http://127.0.0.1:1456/oauth2callback');

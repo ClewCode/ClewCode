@@ -169,7 +169,7 @@ Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://model
 <table>
   <tr>
     <td><strong>32+ Providers</strong></td>
-    <td>OpenAI, Anthropic, DeepSeek, Groq, Google, Ollama (local), OpenGateway, and 25+ more. Switch mid-session with <code>/model</code>. No lock-in.</td>
+    <td>OpenAI, Anthropic, DeepSeek, Groq, Google, Google Antigravity CLI, Ollama (local), OpenGateway, and 25+ more. Switch mid-session with <code>/model</code>. No lock-in.</td>
   </tr>
   <tr>
     <td><strong>Persistent Memory</strong></td>
@@ -265,6 +265,10 @@ Notable slash commands: `/model`, `/effort`, `/ultracode`, `/memory`, `/rule`, `
 | `BRAVE_API_KEY` | No | Web search fallback if Tavily fails |
 | `SERPER_API_KEY` | No | Web search fallback if Tavily and Brave fail |
 | `JINA_API_KEY` | No | Web search fallback, tried last of the keyed providers |
+| `ANTIGRAVITY_CLIENT_ID` | No | Custom Google OAuth client ID for Antigravity/google-assist |
+| `ANTIGRAVITY_CLIENT_SECRET` | No | Custom Google OAuth client secret for Antigravity/google-assist |
+| `ANTIGRAVITY_PROJECT_ID` | No | Google Cloud project ID for Antigravity/google-assist |
+| `ANTIGRAVITY_ENDPOINT` | No | Custom endpoint URL for Antigravity/google-assist |
 | `CLEW_DISABLE_TELEMETRY` | No | Disable anonymous usage stats (`1`) |
 
 All provider keys can also be set via the `/model` provider setup flow or in `.clew/settings.json` under `env`.
@@ -276,6 +280,7 @@ Clew Code supports resuming sessions from other rebranded or legacy variants of 
 - `.opencode`
 - `.claude`
 - `.gemini`
+- `.antigravity`
 
 ### Project Rules
 

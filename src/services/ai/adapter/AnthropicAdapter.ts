@@ -532,8 +532,10 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     }
 
     if (error instanceof Error) {
-      // If the error already has _providerError (from a nested call), keep it
-      const enriched = new Error(`[${this.label}] ${error.message}`) as any;
+      // If the error already has _providerError or label prefix, avoid duplicating the label
+      const hasLabel = error.message.startsWith(`[${this.label}]`);
+      const msg = hasLabel ? error.message : `[${this.label}] ${error.message}`;
+      const enriched = new Error(msg) as any;
       if ((error as any)._providerError) enriched._providerError = (error as any)._providerError;
       return enriched;
     }
@@ -922,20 +924,12 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     // Surface as a structured error instead of letting an empty assistant
     // message render as a bare ▶.
     if (activeIndex === null && !hasStartedThinkingBlock) {
-      // If the model sent a finish_reason but no content, emit an empty
-      // text block so the downstream message builder has something to work
-      // with. Some providers (e.g. Free-tier OpenGateway models) only send
-      // a usage/finish chunk without a content delta.
-      if (sawFinishReason) {
-        yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } };
-        yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '' } };
-        yield { type: 'content_block_stop', index: 0 };
-        activeIndex = 0;
-      } else {
-        const err = new Error(`[${this.label}] Model returned an empty response (no content blocks emitted)`);
-        (err as any)._providerError = { category: 'empty_response', status: 200 };
-        throw err;
-      }
+      // If the model sent no content blocks, emit a fallback empty text block
+      // so the downstream message builder has a valid content block to process.
+      yield { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } };
+      yield { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '' } };
+      yield { type: 'content_block_stop', index: 0 };
+      activeIndex = 0;
     }
 
     if (!sentMessageDelta) {

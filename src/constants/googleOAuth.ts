@@ -27,7 +27,7 @@ function readCallbackPort(): number {
 const callbackPort = readCallbackPort();
 
 export const GOOGLE_OAUTH_CONFIG = {
-  AUTHORIZE_URL: 'https://accounts.google.com/o/oauth2/v2/auth',
+  AUTHORIZE_URL: 'https://accounts.google.com/o/oauth2/auth',
   TOKEN_URL: 'https://oauth2.googleapis.com/token',
 
   // Google OAuth client id used for sign-in.

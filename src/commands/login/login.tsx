@@ -121,7 +121,7 @@ export function Login(props: {
     }
     if (provider === 'google-assist') {
       // Gemini via Code Assist (OAuth) — browser login with the Gemini CLI's
-      // public client; tokens land in ~/.gemini/oauth_creds.json.
+      // public client; tokens land in ~/.antigravity/oauth_creds.json.
       return (
         <GoogleOAuthFlow
           codeAssist

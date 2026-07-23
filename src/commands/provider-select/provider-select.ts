@@ -1047,7 +1047,7 @@ function ProviderPicker({
   }
 
   // Gemini Code Assist (OAuth): browser login using the Gemini CLI's public
-  // client + cloud-platform scopes; tokens go to ~/.gemini/oauth_creds.json.
+  // client + cloud-platform scopes; tokens go to ~/.antigravity/oauth_creds.json.
   // Skip the prompt when creds already exist unless the user asks to re-login.
   if (provider === 'google-assist') {
     const hasCreds = hasAntigravityOAuthCreds();
@@ -1056,7 +1056,7 @@ function ProviderPicker({
         Dialog,
         {
           title: 'Gemini Code Assist (OAuth)',
-          subtitle: 'Google credentials are already configured (~/.gemini/oauth_creds.json)',
+          subtitle: 'Google credentials are already configured (~/.antigravity/oauth_creds.json)',
           onCancel: () => {
             setProvider(null);
           },

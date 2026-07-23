@@ -12,7 +12,7 @@ describe('GOOGLE_OAUTH_CONFIG', () => {
   });
 
   test('AUTHORIZE_URL is Google OAuth endpoint', () => {
-    expect(GOOGLE_OAUTH_CONFIG.AUTHORIZE_URL).toBe('https://accounts.google.com/o/oauth2/v2/auth');
+    expect(GOOGLE_OAUTH_CONFIG.AUTHORIZE_URL).toBe('https://accounts.google.com/o/oauth2/auth');
   });
 
   test('TOKEN_URL is Google token endpoint', () => {

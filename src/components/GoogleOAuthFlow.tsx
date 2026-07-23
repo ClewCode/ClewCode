@@ -6,6 +6,7 @@ import { Box, Link, Text } from '../ink.js';
 import { useKeybinding } from '../keybindings/useKeybinding.js';
 import {
   ANTIGRAVITY_OAUTH_CLIENT,
+  ANTIGRAVITY_REDIRECT_URI,
   ANTIGRAVITY_SCOPES,
   saveAntigravityOAuthCreds,
 } from '../services/ai/providers/CodeAssistProvider.js';
@@ -24,7 +25,7 @@ type Props = {
   /**
    * Code Assist mode (google-assist provider): authenticates with the Gemini
    * CLI's public OAuth client + cloud-platform scopes and writes the tokens to
-   * ~/.gemini/oauth_creds.json (shared with the Gemini CLI) instead of the
+   * ~/.antigravity/oauth_creds.json (shared with the Gemini CLI) instead of the
    * clew global config. No custom client configuration — the client is fixed.
    */
   codeAssist?: boolean;
@@ -41,7 +42,7 @@ type OAuthStatus =
       tempMethod: LoginMethod;
     }
   | { state: 'waiting_for_login'; url: string; method: LoginMethod }
-  | { state: 'enter_auth_code' }
+  | { state: 'enter_auth_code'; url?: string }
   | { state: 'exchanging_token' }
   | { state: 'success'; tokens: GoogleOAuthTokens }
   | { state: 'error'; message: string };
@@ -74,18 +75,13 @@ function SelectMethod({
             value: 'headless',
             description: 'Open login page manually, paste authorization code',
           },
-          // Code Assist uses the fixed Gemini CLI public client — nothing to reconfigure
-          ...(codeAssist
-            ? []
-            : [
-                {
-                  label: 'Reconfigure Google OAuth Credentials',
-                  value: 'reconfigure',
-                  description: 'Change your custom Google Cloud Client ID and Secret',
-                },
-              ]),
+          {
+            label: 'Reconfigure Google OAuth Credentials',
+            value: 'reconfigure',
+            description: 'Change your custom Google Cloud Client ID and Secret',
+          },
         ]}
-        visibleOptionCount={codeAssist ? 2 : 3}
+        visibleOptionCount={3}
         onChange={value => onSelect(value as LoginMethod)}
         onCancel={onCancel}
       />
@@ -194,27 +190,34 @@ function WaitingForLogin({
   url,
   method,
   onSubmitCode,
+  remoteRedirect,
 }: {
   url: string;
   method: LoginMethod;
   onSubmitCode?: (code: string) => void;
+  /** True when the redirect URI is remote (e.g. antigravity.google) and there
+   *  is no local callback server — manual code entry is always required. */
+  remoteRedirect?: boolean;
 }) {
+  const showManualEntry = (method === 'headless' || remoteRedirect) && onSubmitCode;
   return (
     <Box flexDirection="column">
       <Text color="warning">Waiting for Google authorization...</Text>
       <Box marginTop={1}>
         <Text dimColor>Please complete authorization in your browser.</Text>
       </Box>
-      <Box marginTop={1}>
-        <Text dimColor>This window will close automatically after login.</Text>
-      </Box>
+      {!remoteRedirect && (
+        <Box marginTop={1}>
+          <Text dimColor>This window will close automatically after login.</Text>
+        </Box>
+      )}
       <Box marginTop={1}>
         <Text>Authorization URL:</Text>
       </Box>
       <Box marginTop={1} marginBottom={1}>
         {url ? <Link url={url}>{url}</Link> : <Text dimColor>Generating authorization URL…</Text>}
       </Box>
-      {method === 'headless' && onSubmitCode && (
+      {showManualEntry && (
         <Box marginTop={1}>
           <Text color="suggestion">
             After authenticating in your browser, copy the code from the success page or redirect URL and enter it.
@@ -225,7 +228,7 @@ function WaitingForLogin({
         <Spinner />
         <Text dimColor> Waiting for authorization...</Text>
       </Box>
-      {method === 'headless' && onSubmitCode && (
+      {showManualEntry && (
         <Box marginTop={1}>
           <KeyboardShortcutHint shortcut="Enter" action="manually enter code" />
         </Box>
@@ -234,37 +237,59 @@ function WaitingForLogin({
   );
 }
 
-function EnterAuthCode({ onSubmit, onCancel }: { onSubmit: (code: string) => void; onCancel?: () => void }) {
+function EnterAuthCode({
+  url,
+  onSubmit,
+  onCancel,
+}: {
+  url?: string;
+  onSubmit: (code: string) => void;
+  onCancel?: () => void;
+}) {
   const [authCode, setAuthCode] = useState('');
   const [cursorOffset, setCursorOffset] = useState(0);
   const terminalSize = useTerminalSize();
-  const textInputColumns = terminalSize.columns - PASTE_HERE_MSG.length - 1;
+  const textInputColumns = Math.max(30, terminalSize.columns - 10);
 
   return (
     <Box flexDirection="column">
+      {url && (
+        <>
+          <Box marginBottom={1}>
+            <Text dimColor>Please complete authorization in your browser:</Text>
+          </Box>
+          <Box marginBottom={1}>
+            <Link url={url}>{url}</Link>
+          </Box>
+        </>
+      )}
       <Box marginBottom={1}>
-        <Text>Enter Google OAuth Authorization Code:</Text>
+        <Text color="suggestion" bold>
+          Enter Google OAuth Authorization Code:
+        </Text>
       </Box>
       <Box marginBottom={1}>
-        <Text dimColor>Paste the "code" parameter from the redirect page URL</Text>
+        <Text dimColor>Copy the code from the Google Antigravity page in your browser and paste it below:</Text>
       </Box>
-      <TextInput
-        value={authCode}
-        onChange={value => {
-          setAuthCode(value);
-          setCursorOffset(value.length);
-        }}
-        onSubmit={onSubmit}
-        onExit={onCancel}
-        placeholder="Paste authorization code here"
-        focus
-        showCursor
-        columns={textInputColumns}
-        cursorOffset={cursorOffset}
-        onChangeCursorOffset={setCursorOffset}
-      />
+      <Box borderStyle="round" paddingX={1} marginBottom={1}>
+        <TextInput
+          value={authCode}
+          onChange={value => {
+            setAuthCode(value);
+            setCursorOffset(value.length);
+          }}
+          onSubmit={onSubmit}
+          onExit={onCancel}
+          placeholder="Paste authorization code here"
+          focus
+          showCursor
+          columns={textInputColumns}
+          cursorOffset={cursorOffset}
+          onChangeCursorOffset={setCursorOffset}
+        />
+      </Box>
       <Box marginTop={1} flexDirection="column">
-        <KeyboardShortcutHint shortcut="Enter" action="submit" />
+        <KeyboardShortcutHint shortcut="Enter" action="submit authorization code" />
         <KeyboardShortcutHint shortcut="Esc" action="cancel" />
       </Box>
     </Box>
@@ -346,11 +371,24 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
     [onDone, terminal, codeAssist],
   );
 
-  const handleManualCodeSubmit = useCallback(async (code: string) => {
-    const trimmed = code.trim();
+  const handleManualCodeSubmit = useCallback(async (input: string) => {
+    let trimmed = input.trim();
     if (!trimmed) {
       setOAuthStatus({ state: 'error', message: 'Authorization code is required' });
       return;
+    }
+
+    // If user pasted full callback URL, extract `code` query parameter
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      try {
+        const parsed = new URL(trimmed);
+        const codeParam = parsed.searchParams.get('code');
+        if (codeParam) {
+          trimmed = codeParam;
+        }
+      } catch {
+        /* use raw input */
+      }
     }
 
     setOAuthStatus({ state: 'exchanging_token' });
@@ -383,12 +421,9 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
         return;
       }
 
-      // Code Assist always uses the fixed Antigravity public client + scopes —
-      // never prompt for custom credentials.
-      const activeClientId = codeAssist ? ANTIGRAVITY_OAUTH_CLIENT.clientId : customClientId || clientId;
-      const activeClientSecret = codeAssist
-        ? ANTIGRAVITY_OAUTH_CLIENT.clientSecret
-        : customClientSecret || clientSecret;
+      const activeClientId = customClientId || (codeAssist ? ANTIGRAVITY_OAUTH_CLIENT.clientId : clientId);
+      const activeClientSecret =
+        customClientSecret || (codeAssist ? ANTIGRAVITY_OAUTH_CLIENT.clientSecret : clientSecret);
 
       if (!activeClientId) {
         setOAuthStatus({
@@ -402,7 +437,7 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
       const svc = new GoogleOAuthService({
         clientId: activeClientId,
         clientSecret: activeClientSecret,
-        ...(codeAssist ? { scopes: [...ANTIGRAVITY_SCOPES] } : {}),
+        ...(codeAssist ? { scopes: [...ANTIGRAVITY_SCOPES], redirectUri: ANTIGRAVITY_REDIRECT_URI } : {}),
       });
       oauthServiceRef.current = svc;
 
@@ -417,7 +452,11 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
 
         const tokens = await svc.startOAuthFlow(
           async url => {
-            setOAuthStatus({ state: 'waiting_for_login', url, method });
+            setOAuthStatus({
+              state: codeAssist || method === 'headless' ? 'enter_auth_code' : 'waiting_for_login',
+              url,
+              method,
+            });
           },
           { skipBrowserOpen: method === 'headless' },
         );
@@ -458,11 +497,16 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
         setOAuthStatus({ state: 'select_method' });
       } else if (oauthStatus.state === 'success') {
         onDone(oauthStatus.tokens);
+      } else if (oauthStatus.state === 'waiting_for_login') {
+        setOAuthStatus({ state: 'enter_auth_code' });
       }
     },
     {
       context: 'Confirmation',
-      isActive: oauthStatus.state === 'error' || oauthStatus.state === 'success',
+      isActive:
+        oauthStatus.state === 'error' ||
+        oauthStatus.state === 'success' ||
+        (oauthStatus.state === 'waiting_for_login' && (oauthStatus.method === 'headless' || Boolean(codeAssist))),
     },
   );
 
@@ -512,12 +556,13 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
         url={oauthStatus.url}
         method={oauthStatus.method}
         onSubmitCode={() => setOAuthStatus({ state: 'enter_auth_code' })}
+        remoteRedirect={codeAssist}
       />
     );
   }
 
   if (oauthStatus.state === 'enter_auth_code') {
-    return <EnterAuthCode onSubmit={handleManualCodeSubmit} onCancel={onCancel} />;
+    return <EnterAuthCode url={oauthStatus.url} onSubmit={handleManualCodeSubmit} onCancel={onCancel} />;
   }
 
   if (oauthStatus.state === 'exchanging_token') {
