@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.8] - 2026-07-25
+
 ### Fixed
 - **`/model vendor/model` silently dropped the vendor prefix and sent an invalid model id**: `/model deepseek/deepseek-v4-flash` confirmed "Set model to `deepseek-v4-flash`" and then every request failed with `400 invalid model format. Expected format: modelType/model`. The `/model` arg parser treated the first `/`-segment as a provider switch whenever it matched a registered provider id (`deepseek`, `openai`, `minimax`, `google`, …), stripping it — but Cline uses OpenRouter-style ids where `vendor/` is part of the model name. Both parse sites now share `resolveModelSelection`, which keeps the input whole when the current provider already exposes that exact id, and only treats the prefix as a provider switch otherwise. (`src/commands/model/model.tsx`)
 - **npm→native deprecation notice nagged on every launch, including native installs**: The startup banner had no "seen" persistence, so it re-showed for its full 15s every session, and its only gate was `installationType === 'development'` — meaning `native` and `package-manager` installs got told to "switch from npm" despite already having done so. It now shows at most once per version (persisted as `npmDeprecationNoticeSeenVersion` in global config) and only to genuine `npm-global`/`npm-local` installs. (`src/hooks/notifs/useNpmDeprecationNotification.tsx`, `src/utils/config.ts`)
