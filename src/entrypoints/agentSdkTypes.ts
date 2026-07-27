@@ -11,15 +11,16 @@
 
 import type { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
+// Re-export settings types
+export type { SettingsJson as Settings } from '../utils/settings/types.js';
 // Control protocol types for SDK builders (bridge subpath consumers)
 /** @alpha */
 export type {
   SDKControlRequest,
   SDKControlResponse,
 } from './sdk/controlTypes.js';
+export type * from './sdk/coreTypes.js';
 export { HOOK_EVENTS } from './sdk/coreTypes.js';
-// Re-export settings types (generated from settings JSON schema)
-export type { Settings } from './sdk/settingsTypes.generated.js';
 // Re-export tool types (all marked @internal until SDK API stabilizes)
 export * from './sdk/toolTypes.js';
 

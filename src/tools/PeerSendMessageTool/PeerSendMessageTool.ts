@@ -5,7 +5,7 @@ import { Box, Text } from '../../ink.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
-import type { PeerInfo } from '../../peer/types.js';
+import type { BrokerMessage, PeerInfo } from '../../peer/types.js';
 import type { ValidationResult } from '../../Tool.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
@@ -36,8 +36,8 @@ const inputSchema = lazySchema(() =>
       .optional()
       .default(false)
       .describe(
-        'If true, auto-split long messages into chunks and send sequentially. ' +
-          'The receiver will see them as one reassembled message.',
+        'If true, auto-split long direct messages into chunks and send sequentially. ' +
+          'The receiver will see them as one reassembled message. Ignored in broker mode.',
       ),
     chunkSize: z
       .number()
@@ -82,6 +82,8 @@ const outputSchema = lazySchema(() =>
 );
 
 export type Output = z.infer<ReturnType<typeof outputSchema>>;
+
+type PeerResponse = Pick<BrokerMessage, 'from' | 'fromName' | 'text' | 'timestamp'>;
 
 export const PeerSendMessageTool = buildTool({
   isConcurrencySafe() {
@@ -222,6 +224,7 @@ export const PeerSendMessageTool = buildTool({
     responseTimeout?: number;
     chunk?: boolean;
     chunkSize?: number;
+    useBroker?: boolean;
   }) {
     const store = getGlobalPeerStore();
     const discovery = getGlobalDiscovery();
@@ -300,7 +303,8 @@ export const PeerSendMessageTool = buildTool({
     };
 
     const sendTimestamp = Date.now();
-    const url = `http://${peer.ip || '127.0.0.1'}:${peer.port}/peer-msg`;
+    const peerUrl = `http://${peer.ip || '127.0.0.1'}:${peer.port}`;
+    const sendPath = input.useBroker ? '/broker/send' : '/peer-msg';
 
     // Helper to POST a single message (or chunk) to the peer node
     const postMessage = async (
@@ -308,10 +312,10 @@ export const PeerSendMessageTool = buildTool({
     ): Promise<{ ok: boolean; id?: string; error?: string }> => {
       try {
         notifyPeerFeedback('posting message to peer', 'peer-send-post', 'low');
-        const res = await fetch(url, {
+        const res = await fetch(`${peerUrl}${sendPath}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify(input.useBroker ? { ...body, to: peer.hostname } : body),
         });
         if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
         const data = await res.json();
@@ -321,8 +325,23 @@ export const PeerSendMessageTool = buildTool({
       }
     };
 
+    const waitForResponse = async (messageId: string | undefined, timeoutMs: number): Promise<PeerResponse[]> => {
+      if (!input.useBroker) return store.waitForMessageFrom(sendTimestamp, timeoutMs, peer.hostname);
+      if (!messageId) throw new Error('Broker did not return a message ID');
+
+      const params = new URLSearchParams({
+        token: targetToken,
+        replyTo: messageId,
+        timeout: String(Math.ceil(timeoutMs / 1000)),
+      });
+      const res = await fetch(`${peerUrl}/broker/recv?${params}`);
+      if (!res.ok) throw new Error(`Broker reply wait failed with HTTP ${res.status}`);
+      const data = (await res.json()) as { messages?: BrokerMessage[] };
+      return data.messages ?? [];
+    };
+
     // ── Chunked send ──────────────────────────────────────
-    if (input.chunk && input.message.length > (input.chunkSize ?? 1000)) {
+    if (!input.useBroker && input.chunk && input.message.length > (input.chunkSize ?? 1000)) {
       const chunkSize = Math.max(100, input.chunkSize ?? 1000);
       const totalChars = input.message.length;
       const chunks: string[] = [];
@@ -447,7 +466,7 @@ export const PeerSendMessageTool = buildTool({
     if (input.waitResponse) {
       const timeoutMs = clampTimeout(input.responseTimeout, 60, 300);
       notifyPeerFeedback(`waiting up to ${Math.round(timeoutMs / 1000)}s for a response`, 'peer-send-wait', 'low');
-      const responses = await store.waitForMessageFrom(sendTimestamp, timeoutMs, peer.hostname);
+      const responses = await waitForResponse(result.id, timeoutMs);
       if (responses.length > 0) {
         const resp = responses[0]!;
         return {

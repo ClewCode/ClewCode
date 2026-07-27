@@ -19,9 +19,9 @@ export const PROMPT =
   'The `message` parameter is the text to send.\n\n' +
   'For request-response patterns, set `waitResponse: true` with a `responseTimeout` (default 60s). ' +
   'Instead of send-then-poll, the tool blocks until the peer node replies or timeout expires.\n\n' +
-  'For long messages (research reports, code, etc.), set `chunk: true` to auto-split into chunks. ' +
+  'For long direct messages (research reports, code, etc.), set `chunk: true` to auto-split into chunks. ' +
   'The receiver will see the chunks automatically reassembled into one message when using peer_list_messages. ' +
-  'Chunks are sent sequentially, so this works best without waitResponse.\n\n' +
+  'Direct chunks are sent sequentially, so this works best without waitResponse. The `chunk` option is ignored in broker mode.\n\n' +
   '**Sender identity in task messages**: When sending a task to a spawned peer, always include ' +
   'your own peer name and port number in the message text. ' +
   'Example: "I am {your_name} (port {your_port}). Do X and send the result back to me." ' +

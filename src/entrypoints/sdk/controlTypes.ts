@@ -8,26 +8,34 @@
  * SDK consumers should use coreTypes.ts instead.
  */
 
-/**
- * A control request sent from an SDK consumer to the CLI process.
- */
-export type SDKControlRequest = {
-  type: 'control_request';
-  request_id: string;
-  request: {
-    subtype: string;
-    [key: string]: unknown;
-  };
-};
+import type { z } from 'zod/v4';
 
-/**
- * A control response sent from the CLI process back to the SDK consumer.
- */
-export type SDKControlResponse = {
-  type: 'control_response';
-  response: {
-    subtype: 'success' | 'error';
-    request_id: string;
-    [key: string]: unknown;
-  };
-};
+export type { SDKPartialAssistantMessage } from './coreTypes.js';
+
+import type {
+  SDKControlCancelRequestSchema,
+  SDKControlInitializeRequestSchema,
+  SDKControlInitializeResponseSchema,
+  SDKControlMcpSetServersResponseSchema,
+  SDKControlPermissionRequestSchema,
+  SDKControlReloadPluginsResponseSchema,
+  SDKControlRequestInnerSchema,
+  SDKControlRequestSchema,
+  SDKControlResponseSchema,
+  StdinMessageSchema,
+  StdoutMessageSchema,
+} from './controlSchemas.js';
+
+type InferLazy<T extends () => z.ZodType> = z.infer<ReturnType<T>>;
+
+export type SDKControlRequest = InferLazy<typeof SDKControlRequestSchema>;
+export type SDKControlResponse = InferLazy<typeof SDKControlResponseSchema>;
+export type SDKControlCancelRequest = InferLazy<typeof SDKControlCancelRequestSchema>;
+export type SDKControlInitializeRequest = InferLazy<typeof SDKControlInitializeRequestSchema>;
+export type SDKControlInitializeResponse = InferLazy<typeof SDKControlInitializeResponseSchema>;
+export type SDKControlMcpSetServersResponse = InferLazy<typeof SDKControlMcpSetServersResponseSchema>;
+export type SDKControlPermissionRequest = InferLazy<typeof SDKControlPermissionRequestSchema>;
+export type SDKControlReloadPluginsResponse = InferLazy<typeof SDKControlReloadPluginsResponseSchema>;
+export type SDKControlRequestInner = InferLazy<typeof SDKControlRequestInnerSchema>;
+export type StdinMessage = InferLazy<typeof StdinMessageSchema>;
+export type StdoutMessage = InferLazy<typeof StdoutMessageSchema>;

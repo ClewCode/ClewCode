@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **`peer_send_message` ignored `useBroker`**: Explicit broker sends now use the existing broker queue and correlated reply endpoint instead of silently falling back to direct `/peer-msg` delivery. (`src/tools/PeerSendMessageTool/PeerSendMessageTool.ts`)
+- **Shared SDK type barrels omitted schema-backed exports**: Restored SDK/control type exports from their Zod schemas and the missing GitHub App installer state types, reducing repository type debt without changing runtime behavior. (`src/entrypoints/agentSdkTypes.ts`, `src/entrypoints/sdk/`, `src/commands/install-github-app/types.ts`)
+
 ## [0.6.8] - 2026-07-25
 
 ### Fixed
