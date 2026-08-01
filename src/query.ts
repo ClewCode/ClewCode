@@ -15,9 +15,6 @@ import { buildPostCompactMessages } from './services/compact/compact.js';
 const reactiveCompact = feature('REACTIVE_COMPACT')
   ? (require('./services/compact/reactiveCompact.js') as typeof import('./services/compact/reactiveCompact.js'))
   : null;
-const contextCollapse = feature('CONTEXT_COLLAPSE')
-  ? (require('./services/contextCollapse/index.js') as typeof import('./services/contextCollapse/index.js'))
-  : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 import {
   logEvent,
@@ -48,7 +45,6 @@ import {
   createAssistantAPIErrorMessage,
   getMessagesAfterCompactBoundary,
   createToolUseSummaryMessage,
-  createMicrocompactBoundaryMessage,
   stripSignatureBlocks,
 } from './utils/messages.js';
 import { generateToolUseSummary } from './services/toolUseSummary/toolUseSummaryGenerator.js';
@@ -360,12 +356,6 @@ async function* queryLoop(
     queryCheckpoint('query_microcompact_start');
     const microcompactResult = await deps.microcompact(messagesForQuery, toolUseContext, querySource);
     messagesForQuery = microcompactResult.messages;
-    // For cached microcompact (cache editing), defer boundary message until after
-    // the API response so we can use actual cache_deleted_input_tokens.
-    // Gated behind feature() so the string is eliminated from external builds.
-    const pendingCacheEdits = feature('CACHED_MICROCOMPACT')
-      ? microcompactResult.compactionInfo?.pendingCacheEdits
-      : undefined;
     queryCheckpoint('query_microcompact_end');
 
     // Project the collapsed context view and maybe commit more collapses.
@@ -380,15 +370,6 @@ async function* queryLoop(
     // Within a turn, the view flows forward via state.messages at the
     // continue site (query.ts:1192), and the next projectView() no-ops
     // because the archived messages are already gone from its input.
-    if (feature('CONTEXT_COLLAPSE') && contextCollapse) {
-      const collapseResult = await contextCollapse.applyCollapsesIfNeeded(
-        messagesForQuery,
-        toolUseContext,
-        querySource,
-      );
-      messagesForQuery = collapseResult.messages;
-    }
-
     const fullSystemPrompt = asSystemPrompt(appendSystemContext(systemPrompt, systemContext));
 
     // #3 Feedback loop: advance the post-compact regret window one turn. Runs
@@ -535,17 +516,6 @@ async function* queryLoop(
     // allowed — the preempt's synthetic error returns before the API call,
     // so reactive compact would never see a prompt-too-long to react to.
     // Widened to walrus so RC can act as fallback when proactive fails.
-    //
-    // Same skip for context-collapse: its recoverFromOverflow drains
-    // staged collapses on a REAL API 413, then falls through to
-    // reactiveCompact. A synthetic preempt here would return before the
-    // API call and starve both recovery paths. The isAutoCompactEnabled()
-    // conjunct preserves the user's explicit "no automatic anything"
-    // config — if they set DISABLE_AUTO_COMPACT, they get the preempt.
-    let collapseOwnsIt = false;
-    if (feature('CONTEXT_COLLAPSE')) {
-      collapseOwnsIt = (contextCollapse?.isContextCollapseEnabled() ?? false) && isAutoCompactEnabled();
-    }
     // Hoist media-recovery gate once per turn. Withholding (inside the
     // stream loop) and recovery (after) must agree; CACHED_MAY_BE_STALE can
     // flip during the 5-30s stream, and withhold-without-recover would eat
@@ -556,8 +526,7 @@ async function* queryLoop(
       !compactionResult &&
       querySource !== 'compact' &&
       querySource !== 'session_memory' &&
-      !(reactiveCompact?.isReactiveCompactEnabled() && isAutoCompactEnabled()) &&
-      !collapseOwnsIt
+      !(reactiveCompact?.isReactiveCompactEnabled() && isAutoCompactEnabled())
     ) {
       const { isAtBlockingLimit } = calculateTokenWarningState(
         tokenCountWithEstimation(messagesForQuery) - snipTokensFreed,
@@ -695,22 +664,10 @@ async function* queryLoop(
               }
             }
             // Withhold recoverable errors (prompt-too-long, max-output-tokens)
-            // until we know whether recovery (collapse drain / reactive
-            // compact / truncation retry) can succeed. Still pushed to
-            // assistantMessages so the recovery checks below find them.
-            // Either subsystem's withhold is sufficient — they're
-            // independent so turning one off doesn't break the other's
-            // recovery path.
-            //
-            // feature() only works in if/ternary conditions (bun:bundle
-            // tree-shaking constraint), so the collapse check is nested
-            // rather than composed.
+            // until we know whether recovery (reactive compact / truncation
+            // retry) can succeed. Still pushed to assistantMessages so the
+            // recovery checks below find them.
             let withheld = false;
-            if (feature('CONTEXT_COLLAPSE')) {
-              if (contextCollapse?.isWithheldPromptTooLong(message, isPromptTooLongMessage, querySource)) {
-                withheld = true;
-              }
-            }
             if (reactiveCompact?.isWithheldPromptTooLong(message)) {
               withheld = true;
             }
@@ -763,30 +720,6 @@ async function* queryLoop(
             }
           }
           queryCheckpoint('query_api_streaming_end');
-
-          // Yield deferred microcompact boundary message using actual API-reported
-          // token deletion count instead of client-side estimates.
-          // Entire block gated behind feature() so the excluded string
-          // is eliminated from external builds.
-          if (feature('CACHED_MICROCOMPACT') && pendingCacheEdits) {
-            const lastAssistant = assistantMessages.at(-1);
-            // The API field is cumulative/sticky across requests, so we
-            // subtract the baseline captured before this request to get the delta.
-            const usage = lastAssistant?.message.usage;
-            const cumulativeDeleted = usage
-              ? ((usage as unknown as Record<string, number>).cache_deleted_input_tokens ?? 0)
-              : 0;
-            const deletedTokens = Math.max(0, cumulativeDeleted - pendingCacheEdits.baselineCacheDeletedTokens);
-            if (deletedTokens > 0) {
-              yield createMicrocompactBoundaryMessage(
-                pendingCacheEdits.trigger,
-                0,
-                deletedTokens,
-                pendingCacheEdits.deletedToolIds,
-                [],
-              );
-            }
-          }
         } catch (innerError) {
           if (innerError instanceof FallbackTriggeredError && fallbackModel) {
             // Fallback was triggered - switch model and retry
@@ -951,42 +884,13 @@ async function* queryLoop(
       const isWithheld413 =
         lastMessage?.type === 'assistant' && lastMessage.isApiErrorMessage && isPromptTooLongMessage(lastMessage);
       // Media-size rejections (image/PDF/many-image) are recoverable via
-      // reactive compact's strip-retry. Unlike PTL, media errors skip the
-      // collapse drain — collapse doesn't strip images. mediaRecoveryEnabled
-      // is the hoisted gate from before the stream loop (same value as the
-      // withholding check — these two must agree or a withheld message is
-      // lost). If the oversized media is in the preserved tail, the
-      // post-compact turn will media-error again; hasAttemptedReactiveCompact
-      // prevents a spiral and the error surfaces.
+      // reactive compact's strip-retry. mediaRecoveryEnabled is the hoisted
+      // gate from before the stream loop (same value as the withholding
+      // check — these two must agree or a withheld message is lost). If the
+      // oversized media is in the preserved tail, the post-compact turn will
+      // media-error again; hasAttemptedReactiveCompact prevents a spiral and
+      // the error surfaces.
       const isWithheldMedia = mediaRecoveryEnabled && reactiveCompact?.isWithheldMediaSizeError(lastMessage);
-      if (isWithheld413) {
-        // First: drain all staged context-collapses. Gated on the PREVIOUS
-        // transition not being collapse_drain_retry — if we already drained
-        // and the retry still 413'd, fall through to reactive compact.
-        if (feature('CONTEXT_COLLAPSE') && contextCollapse && state.transition?.reason !== 'collapse_drain_retry') {
-          const drained = contextCollapse.recoverFromOverflow(messagesForQuery, querySource);
-          if (drained.committed > 0) {
-            const next: State = {
-              messages: drained.messages,
-              toolUseContext,
-              autoCompactTracking: tracking,
-              maxOutputTokensRecoveryCount,
-              hasAttemptedReactiveCompact,
-              maxOutputTokensOverride: undefined,
-              pendingToolUseSummary: undefined,
-              stopHookActive: undefined,
-              turnCount,
-              transition: {
-                reason: 'collapse_drain_retry',
-                committed: drained.committed,
-              },
-              briefModeRetryCount: state.briefModeRetryCount,
-            };
-            state = next;
-            continue;
-          }
-        }
-      }
       if ((isWithheld413 || isWithheldMedia) && reactiveCompact) {
         const compacted = await reactiveCompact.tryReactiveCompact({
           hasAttempted: hasAttemptedReactiveCompact,
@@ -1040,13 +944,6 @@ async function* queryLoop(
         yield lastMessage;
         void executeStopFailureHooks(lastMessage, toolUseContext);
         return { reason: isWithheldMedia ? 'image_error' : 'prompt_too_long' };
-      } else if (feature('CONTEXT_COLLAPSE') && isWithheld413) {
-        // reactiveCompact compiled out but contextCollapse withheld and
-        // couldn't recover (staged queue empty/stale). Surface. Same
-        // early-return rationale — don't fall through to stop hooks.
-        yield lastMessage;
-        void executeStopFailureHooks(lastMessage, toolUseContext);
-        return { reason: 'prompt_too_long' };
       }
 
       // Check for max_output_tokens and inject recovery message. The error

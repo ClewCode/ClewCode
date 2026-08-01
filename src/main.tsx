@@ -217,11 +217,8 @@ import {
 import { filterCommandsForRemoteMode, getCommands } from './commands.js';
 import type { StatsStore } from './context/stats.js';
 import {
-  launchAssistantInstallWizard,
-  launchAssistantSessionChooser,
   launchInvalidSettingsDialog,
   launchResumeChooser,
-  launchSnapshotUpdateDialog,
   launchTeleportRepoMismatchDialog,
   launchTeleportResumeWrapper,
 } from './dialogLaunchers.js';
@@ -244,7 +241,6 @@ import {
   getActiveAgentsFromList,
   getAgentDefinitionsWithOverrides,
   isBuiltInAgent,
-  isCustomAgent,
   parseAgentsFromJson,
 } from './tools/AgentTool/loadAgentsDir.js';
 import type { LogOption } from './types/logs.js';
@@ -3301,28 +3297,6 @@ async function run(): Promise<CommanderCommand> {
           }
         }
 
-        // Check for pending agent memory snapshot updates (only for --agent mode, ant-only)
-        if (
-          feature('AGENT_MEMORY_SNAPSHOT') &&
-          mainThreadAgentDefinition &&
-          isCustomAgent(mainThreadAgentDefinition) &&
-          mainThreadAgentDefinition.memory &&
-          mainThreadAgentDefinition.pendingSnapshotUpdate
-        ) {
-          const agentDef = mainThreadAgentDefinition;
-          const choice = await launchSnapshotUpdateDialog(root, {
-            agentType: agentDef.agentType,
-            scope: agentDef.memory!,
-            snapshotTimestamp: agentDef.pendingSnapshotUpdate!.snapshotTimestamp,
-          });
-          if (choice === 'merge') {
-            const { buildMergePrompt } = await import('./components/agents/SnapshotUpdateDialog.js');
-            const mergePrompt = buildMergePrompt(agentDef.agentType, agentDef.memory!);
-            inputPrompt = inputPrompt ? `${mergePrompt}\n\n${inputPrompt}` : mergePrompt;
-          }
-          agentDef.pendingSnapshotUpdate = undefined;
-        }
-
         // Skip executing /login if we just completed onboarding for it
         if (onboardingShown && prompt?.trim().toLowerCase() === '/login') {
           prompt = '';
@@ -4475,127 +4449,6 @@ async function run(): Promise<CommanderCommand> {
             mainThreadAgentDefinition,
             disableSlashCommands,
             sshSession,
-            thinkingConfig,
-          },
-          renderAndRun,
-        );
-        return;
-      } else if (
-        feature('KAIROS') &&
-        _pendingAssistantChat &&
-        (_pendingAssistantChat.sessionId || _pendingAssistantChat.discover)
-      ) {
-        // `claude assistant [sessionId]` — REPL as a pure viewer client
-        // of a remote assistant session. The agentic loop runs remotely; this
-        // process streams live events and POSTs messages. History is lazy-
-        // loaded by useAssistantHistory on scroll-up (no blocking fetch here).
-        const { discoverAssistantSessions } = await import('./assistant/sessionDiscovery.js');
-        let targetSessionId = _pendingAssistantChat.sessionId;
-
-        // Discovery flow — list bridge environments, filter sessions
-        if (!targetSessionId) {
-          let sessions;
-          try {
-            sessions = await discoverAssistantSessions();
-          } catch (e) {
-            return await exitWithError(root, `Failed to discover sessions: ${e instanceof Error ? e.message : e}`, () =>
-              gracefulShutdown(1),
-            );
-          }
-          if (sessions.length === 0) {
-            let installedDir: string | null;
-            try {
-              installedDir = await launchAssistantInstallWizard(root);
-            } catch (e) {
-              return await exitWithError(
-                root,
-                `Assistant installation failed: ${e instanceof Error ? e.message : e}`,
-                () => gracefulShutdown(1),
-              );
-            }
-            if (installedDir === null) {
-              await gracefulShutdown(0);
-              process.exit(0);
-            }
-            // The daemon needs a few seconds to spin up its worker and
-            // establish a bridge session before discovery will find it.
-            return await exitWithMessage(
-              root,
-              `Assistant installed in ${installedDir}. The daemon is starting up — run \`claude assistant\` again in a few seconds to connect.`,
-              {
-                exitCode: 0,
-                beforeExit: () => gracefulShutdown(0),
-              },
-            );
-          }
-          if (sessions.length === 1) {
-            targetSessionId = sessions[0]!.id;
-          } else {
-            const picked = await launchAssistantSessionChooser(root, {
-              sessions,
-            });
-            if (!picked) {
-              await gracefulShutdown(0);
-              process.exit(0);
-            }
-            targetSessionId = picked;
-          }
-        }
-
-        // Auth — call prepareApiRequest() once for orgUUID, but use a
-        // getAccessToken closure for the token so reconnects get fresh tokens.
-        const { checkAndRefreshOAuthTokenIfNeeded, getClaudeAIOAuthTokens } = await import('./utils/auth.js');
-        await checkAndRefreshOAuthTokenIfNeeded();
-        let apiCreds;
-        try {
-          apiCreds = await prepareApiRequest();
-        } catch (e) {
-          return await exitWithError(root, `Error: ${e instanceof Error ? e.message : 'Failed to authenticate'}`, () =>
-            gracefulShutdown(1),
-          );
-        }
-        const getAccessToken = (): string => getClaudeAIOAuthTokens()?.accessToken ?? apiCreds.accessToken;
-
-        // Brief mode activation: setKairosActive(true) satisfies BOTH opt-in
-        // and entitlement for isBriefEnabled() (BriefTool.ts:124-132).
-        setKairosActive(true);
-        setUserMsgOptIn(true);
-        setIsRemoteMode(true);
-        const remoteSessionConfig = createRemoteSessionConfig(
-          targetSessionId,
-          getAccessToken,
-          apiCreds.orgUUID,
-          /* hasInitialPrompt */ false,
-          /* viewerOnly */ true,
-        );
-        const infoMessage = createSystemMessage(
-          `Attached to assistant session ${targetSessionId.slice(0, 8)}…`,
-          'info',
-        );
-        const assistantInitialState: AppState = {
-          ...initialState,
-          isBriefOnly: true,
-          kairosEnabled: false,
-          replBridgeEnabled: false,
-        };
-        const remoteCommands = filterCommandsForRemoteMode(commands);
-        await launchRepl(
-          root,
-          {
-            getFpsMetrics,
-            stats,
-            initialState: assistantInitialState,
-          },
-          {
-            debug: debug || debugToStderr,
-            commands: remoteCommands,
-            initialTools: [],
-            initialMessages: [infoMessage],
-            mcpClients: [],
-            autoConnectIdeFlag: ide,
-            mainThreadAgentDefinition,
-            disableSlashCommands,
-            remoteSessionConfig,
             thinkingConfig,
           },
           renderAndRun,

@@ -232,7 +232,6 @@ type State = {
   // Sticky-on latch for the cache-editing beta header. Once cached
   // microcompact is first enabled, keep sending the header so mid-session
   // GrowthBook/settings toggles don't bust the prompt cache.
-  cacheEditingHeaderLatched: boolean | null;
   // Sticky-on latch for clearing thinking from prior tool loops. Triggered
   // when >1h since last API call (confirmed cache miss — no cache-hit
   // benefit to keeping thinking). Once latched, stays on so the newly-warmed
@@ -402,7 +401,6 @@ function getInitialState(): State {
     promptCache1hEligible: null,
     // Beta header latches (null = not yet triggered)
     afkModeHeaderLatched: null,
-    cacheEditingHeaderLatched: null,
     thinkingClearLatched: null,
     // Current prompt ID
     promptId: null,
@@ -1645,14 +1643,6 @@ export function setAfkModeHeaderLatched(v: boolean): void {
   STATE.afkModeHeaderLatched = v;
 }
 
-export function getCacheEditingHeaderLatched(): boolean | null {
-  return STATE.cacheEditingHeaderLatched;
-}
-
-export function setCacheEditingHeaderLatched(v: boolean): void {
-  STATE.cacheEditingHeaderLatched = v;
-}
-
 export function getThinkingClearLatched(): boolean | null {
   return STATE.thinkingClearLatched;
 }
@@ -1667,7 +1657,6 @@ export function setThinkingClearLatched(v: boolean): void {
  */
 export function clearBetaHeaderLatches(): void {
   STATE.afkModeHeaderLatched = null;
-  STATE.cacheEditingHeaderLatched = null;
   STATE.thinkingClearLatched = null;
 }
 

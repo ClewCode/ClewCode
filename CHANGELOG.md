@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- **Ant-only stubs and dead scaffolding removed**: Deleted placeholder `.js` modules (`cachedMicrocompact.js`, `contextCollapse/index.js`, `protectedNamespace.js`, `AssistantSessionChooser.js`, `SnapshotUpdateDialog.js`, `ink/devtools.js`, `commands/assistant/assistant.js`) and their feature-gated call paths (`CACHED_MICROCOMPACT` cache-editing layer in `microCompact.ts`/`claude.ts`/`query.ts`, `CONTEXT_COLLAPSE` drain/recovery in `query.ts`/`autoCompact.ts`/`TokenWarning.tsx`/`ContextVisualization.tsx`, KAIROS assistant viewer block in `main.tsx`, `resetMicrocompactState` call sites). These features were gated off in external builds and their real implementations were never in this repo, so the stubs were dead code that would crash if the flags were ever enabled. Also removed a stale inline sourcemap from `dialogLaunchers.tsx` and the dead `cacheEditingHeaderLatched` state. `.ts-error-baseline` restored (was deleted in 7f79c59a, breaking the CI typecheck comparison).
+
 ### Fixed
 - **`peer_send_message` ignored `useBroker`**: Explicit broker sends now use the existing broker queue and correlated reply endpoint instead of silently falling back to direct `/peer-msg` delivery. (`src/tools/PeerSendMessageTool/PeerSendMessageTool.ts`)
 - **Shared SDK type barrels omitted schema-backed exports**: Restored SDK/control type exports from their Zod schemas and the missing GitHub App installer state types, reducing repository type debt without changing runtime behavior. (`src/entrypoints/agentSdkTypes.ts`, `src/entrypoints/sdk/`, `src/commands/install-github-app/types.ts`)

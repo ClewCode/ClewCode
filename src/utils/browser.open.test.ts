@@ -31,11 +31,15 @@ describe('openBrowser on Windows', () => {
 
     await expect(openBrowser(url)).resolves.toBe(true);
     expect(execFileNoThrowMock.mock.calls[0]?.[0]).toBe('powershell');
+    // Base64 -EncodedCommand keeps ampersands (&) in query params intact —
+    // they would otherwise be interpreted as PowerShell command separators.
+    const script = `[System.Diagnostics.Process]::Start('${url.replace(/'/g, "''")}')`;
+    const encodedScript = Buffer.from(script, 'utf16le').toString('base64');
     expect(execFileNoThrowMock.mock.calls[0]?.[1]).toEqual([
       '-NoProfile',
       '-NonInteractive',
-      '-Command',
-      `Start-Process '${url}'`,
+      '-EncodedCommand',
+      encodedScript,
     ]);
   });
 });
