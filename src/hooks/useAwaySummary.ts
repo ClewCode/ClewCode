@@ -7,7 +7,7 @@ import { getGlobalConfig } from '../utils/config.js';
 import { isEnvDefinedFalsy } from '../utils/envUtils.js';
 import { createAwaySummaryMessage } from '../utils/messages.js';
 
-const BLUR_DELAY_MS = 5 * 60_000;
+const BLUR_DELAY_MS = 3 * 60_000;
 
 type SetMessages = (updater: (prev: Message[]) => Message[]) => void;
 

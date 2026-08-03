@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Set automatic away and long-turn recap defaults to 3 minutes.
+
+
 ### Fixed
 - **Rebuilt `src/types/message.ts` message type system**: `Message` is now a proper discriminated union (was an interface with `[key: string]: unknown`, which made every field access `unknown`). Added the ~25 missing exported types (`NormalizedMessage`/`NormalizedUserMessage`/`NormalizedAssistantMessage`, `MessageOrigin`, `HookResultMessage`, `RenderableMessage`, `TombstoneMessage`, `ToolUseSummaryMessage`, `RequestStartEvent`, `GroupedToolUseMessage`, `CollapsedReadSearchGroup`, the `System*` subtype messages, `ShellProgress`, bridge/control protocol messages, etc.) with shapes derived from their construction sites in `src/utils/messages.ts`. Fixed `ProgressMessage` to be generic with a required `data` field, allowed user message `content` to be `string | ContentBlock[]`, and corrected `isMedia` to accept any typed block. Reduces the tsc error baseline by ~516 errors.
 

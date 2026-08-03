@@ -13,7 +13,7 @@ import { isEnvDefinedFalsy } from '../utils/envUtils.js';
 import { createAwaySummaryMessage } from '../utils/messages.js';
 import { generateAwaySummary } from './awaySummary.js';
 
-const DEFAULT_THRESHOLD_MS = 5 * 60_000;
+const DEFAULT_THRESHOLD_MS = 3 * 60_000;
 
 /**
  * Decide whether the turn that just completed is long enough to warrant an
