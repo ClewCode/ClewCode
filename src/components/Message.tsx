@@ -421,6 +421,7 @@ function AssistantMessageBlock({
           verbose={verbose}
           width={width}
           onOpenRateLimitOptions={onOpenRateLimitOptions}
+          timestamp={timestamp}
         />
       );
     case 'redacted_thinking':

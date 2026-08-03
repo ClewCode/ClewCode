@@ -89,11 +89,7 @@ export function UserPromptMessage({ addMargin, param: { text }, isTranscriptMode
       backgroundColor={isSelected ? 'messageActionsBackground' : useBriefLayout ? undefined : 'userMessageBackground'}
       paddingRight={useBriefLayout ? 0 : 1}
     >
-      <HighlightedThinkingText
-        text={displayText}
-        useBriefLayout={useBriefLayout}
-        timestamp={useBriefLayout ? timestamp : undefined}
-      />
+      <HighlightedThinkingText text={displayText} useBriefLayout={useBriefLayout} timestamp={timestamp} />
     </Box>
   );
 }
