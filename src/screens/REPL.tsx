@@ -4778,11 +4778,17 @@ export function REPL({
 
       // Restore pasted images and videos
       if (Array.isArray(message.message.content)) {
-        const hasMedia = message.message.content.some(block => block.type === 'image' || block.type === 'video');
+        // Pasted videos live in content at runtime but aren't part of the
+        // API-typed MessageContentBlock union — treat the array loosely here.
+        const mediaContent = message.message.content as Array<{
+          type: string;
+          source: { type?: string; data: string; media_type?: string };
+        }>;
+        const hasMedia = mediaContent.some(block => block.type === 'image' || block.type === 'video');
         if (hasMedia) {
           const newPastedContents: Record<number, PastedContent> = {};
-          const imageBlocks = message.message.content.filter(block => block.type === 'image');
-          const videoBlocks = message.message.content.filter(block => block.type === 'video');
+          const imageBlocks = mediaContent.filter(block => block.type === 'image');
+          const videoBlocks = mediaContent.filter(block => block.type === 'video');
           imageBlocks.forEach((block, index) => {
             if (block.source.type === 'base64') {
               const id = message.imagePasteIds?.[index] ?? index + 1;

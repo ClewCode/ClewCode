@@ -1,14 +1,12 @@
 import type {
   BetaContentBlock,
   BetaContentBlockParam,
-  BetaImageBlockParam,
   BetaJSONOutputFormat,
   BetaMessage,
   BetaMessageDeltaUsage,
   BetaMessageStreamParams,
   BetaOutputConfig,
   BetaRawMessageStreamEvent,
-  BetaRequestDocumentBlock,
   BetaStopReason,
   BetaToolChoiceAuto,
   BetaToolChoiceTool,
@@ -606,7 +604,7 @@ export function assistantMessageToMessageParam(
   }
   return {
     role: 'assistant',
-    content: message.message.content,
+    content: Array.isArray(message.message.content) ? [...message.message.content] : message.message.content,
   };
 }
 
@@ -892,7 +890,7 @@ function getPreviousRequestIdFromMessages(messages: Message[]): string | undefin
   return undefined;
 }
 
-function isMedia(block: BetaContentBlockParam): block is BetaImageBlockParam | BetaRequestDocumentBlock {
+function isMedia(block: { type: string }): boolean {
   return block.type === 'image' || block.type === 'document';
 }
 
