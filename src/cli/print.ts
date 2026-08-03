@@ -1372,7 +1372,7 @@ function runHeadlessStreaming(
 
   // Build McpServerStatus[] for control responses. Shared by mcp_status and
   // reload_plugins handlers. Reads closure state: sdkClients, dynamicMcpState.
-  function buildMcpServerStatuses(): McpServerStatus[] {
+  function buildMcpServerStatuses(): SDKControlReloadPluginsResponse['mcpServers'] {
     const currentAppState = getAppState();
     const currentMcpClients = currentAppState.mcp.clients;
     const allMcpTools = uniqBy([...currentAppState.mcp.tools, ...dynamicMcpState.tools], 'name');
@@ -1435,14 +1435,7 @@ function runHeadlessStreaming(
       }
       return {
         name: connection.name,
-        status:
-          connection.type === 'connected'
-            ? 'connected'
-            : connection.type === 'pending'
-              ? 'connecting'
-              : connection.type === 'failed' || connection.type === 'needs-auth'
-                ? 'error'
-                : 'disconnected',
+        status: connection.type,
         error: connection.type === 'failed' ? connection.error : undefined,
         config,
         scope: connection.config.scope,
@@ -1540,15 +1533,12 @@ function runHeadlessStreaming(
     const supportedConfigs: Record<string, McpServerConfigForProcessTransport> = {};
     for (const [name, config] of Object.entries(newConfigs)) {
       const type = config.type;
-      if (type === undefined || type === 'stdio' || type === 'sse' || type === 'http' || type === 'sdk') {
-        supportedConfigs[name] = config;
+      if (type === undefined || type === 'stdio') {
+        supportedConfigs[name] = config as McpServerConfigForProcessTransport;
       }
     }
-    for (const [name, config] of Object.entries(sdkMcpConfigs)) {
-      if (config.type === 'sdk' && !(name in supportedConfigs)) {
-        supportedConfigs[name] = config;
-      }
-    }
+    // SDK servers are maintained separately from process transports.
+    void sdkMcpConfigs;
     const { response, sdkServersChanged } = await applyMcpServerChanges(supportedConfigs);
     if (sdkServersChanged) {
       void updateSdkMcp();
@@ -1883,7 +1873,7 @@ function runHeadlessStreaming(
                 output.enqueue({
                   type: 'system',
                   subtype: 'status',
-                  status,
+                  status: 'compacting',
                   session_id: getSessionId(),
                   uuid: randomUUID(),
                 });
@@ -2463,8 +2453,10 @@ function runHeadlessStreaming(
             suggestionState.lastEmitted = null;
             suggestionState.pendingSuggestion = null;
             sendControlResponseSuccess(message);
-          } else if (message.request.subtype === 'end_session') {
-            logForDebugging(`[print.ts] end_session received, reason=${message.request.reason ?? 'unspecified'}`);
+          } else if ((message.request as { subtype: string; reason?: string }).subtype === 'end_session') {
+            logForDebugging(
+              `[print.ts] end_session received, reason=${(message.request as { reason?: string }).reason ?? 'unspecified'}`,
+            );
             if (abortController) {
               abortController.abort();
             }
