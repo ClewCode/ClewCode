@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import type { PeerStore as PeerStoreType } from './PeerStore.js';
 import { PeerStore } from './PeerStore.js';
+import type { MeshChatMessage, MeshTodo, PeerInfo } from './types.js';
 
-function mp(o) {
+// Test fixtures intentionally model complete protocol payloads.
+
+function mp(o: Partial<PeerInfo> = {}): PeerInfo {
   return {
     id: 'peer-1',
     hostname: 'w',
@@ -14,15 +18,15 @@ function mp(o) {
     ...o,
   };
 }
-function mm(o) {
+function mm(o: Partial<MeshChatMessage> = {}): MeshChatMessage {
   return { id: 'msg-1', from: 'peer-1', fromName: 'w', text: 'hello', color: 'cyan', timestamp: Date.now(), ...o };
 }
-function mt(o) {
+function mt(o: Partial<MeshTodo> = {}): MeshTodo {
   return { id: 'todo-1', from: 'peer-1', fromName: 'w', message: 'do', createdAt: Date.now(), status: 'pending', ...o };
 }
 
 describe('PeerStore', () => {
-  let store;
+  let store: PeerStoreType;
   beforeEach(() => {
     store = new PeerStore();
   });
@@ -106,7 +110,7 @@ describe('PeerStore', () => {
     expect(store.getChunkGroupStatus('n')).toBeNull();
     store.addMessage(mm({ chunkGroup: 'g', chunkIndex: 0, chunkTotal: 3 }));
     store.addMessage(mm({ chunkGroup: 'g', chunkIndex: 2, chunkTotal: 3 }));
-    expect(store.getChunkGroupStatus('g').received).toBe(2);
+    expect(store.getChunkGroupStatus('g')!.received).toBe(2);
   });
 
   test('waitForNewMessage', async () => {
@@ -171,7 +175,7 @@ describe('PeerStore', () => {
       },
     });
     s.addPeer(mp());
-    s.addPeer(mp({ status: 'off' }));
+    s.addPeer(mp({ status: 'offline' }));
     s.removePeer('peer-1');
     expect(a).toBeTrue();
     expect(u).toBeTrue();

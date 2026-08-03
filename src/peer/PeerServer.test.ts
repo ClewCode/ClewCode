@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { getGlobalPeerServer, PeerServer } from './PeerServer.js';
+import type { PeerInfo } from './types.js';
 
 const noop = () => undefined;
 
-function mi(o) {
+function mi(o: Partial<PeerInfo> = {}): PeerInfo {
   return {
     id: 'tp',
     hostname: 'th',
@@ -18,7 +19,7 @@ function mi(o) {
 }
 
 describe('PeerServer', () => {
-  let server;
+  let server: PeerServer;
   beforeEach(() => {
     server = new PeerServer();
   });
@@ -92,7 +93,7 @@ describe('PeerServer', () => {
   });
 
   test('POST /peer-msg fires callback', async () => {
-    let m = null;
+    let m: { from: string; chunkGroup?: string } | null = null;
     server.setCallbacks({
       onMessage: msg => {
         m = msg;
@@ -106,11 +107,11 @@ describe('PeerServer', () => {
     });
     expect(r.status).toBe(200);
     expect((await r.json()).ok).toBeTrue();
-    expect(m.from).toBe('p2');
+    expect(m!.from).toBe('p2');
   });
 
   test('POST /peer-msg chunk info', async () => {
-    let m = null;
+    let m: { from: string; chunkGroup?: string } | null = null;
     server.setCallbacks({
       onMessage: msg => {
         m = msg;
@@ -122,11 +123,11 @@ describe('PeerServer', () => {
       method: 'POST',
       body: JSON.stringify({ from: 'p2', chunkGroup: 'g1', chunkIndex: 0, token }),
     });
-    expect(m.chunkGroup).toBe('g1');
+    expect(m!.chunkGroup).toBe('g1');
   });
 
   test('POST /peer-msg defaults', async () => {
-    let m = null;
+    let m: { from: string; chunkGroup?: string } | null = null;
     server.setCallbacks({
       onMessage: msg => {
         m = msg;
@@ -135,7 +136,7 @@ describe('PeerServer', () => {
     const port = await server.start(mi());
     const token = server.token;
     await fetch(`http://127.0.0.1:${port}/peer-msg`, { method: 'POST', body: JSON.stringify({ token }) });
-    expect(m.from).toBe('unknown');
+    expect(m!.from).toBe('unknown');
   });
 
   test('POST /peer-todo fires callback and returns ok', async () => {
@@ -154,8 +155,8 @@ describe('PeerServer', () => {
     expect(r.status).toBe(200);
     const body = await r.json();
     expect(body.ok).toBeTrue();
-    expect(t.message).toBe('do it');
-    expect(t.from).toBe('p2');
+    expect(t!.message).toBe('do it');
+    expect(t!.from).toBe('p2');
   });
 
   test('POST /peer-exec without onExec returns 501', async () => {
@@ -351,7 +352,7 @@ describe('PeerServer', () => {
 });
 
 describe('PeerServer — concurrency', () => {
-  let server;
+  let server: PeerServer;
   afterEach(() => {
     server.stop();
   });
@@ -421,7 +422,7 @@ describe('PeerServer — concurrency', () => {
 });
 
 describe('PeerServer — task dependencies', () => {
-  let server;
+  let server: PeerServer;
   afterEach(() => {
     server.stop();
   });
