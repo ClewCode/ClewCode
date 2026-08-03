@@ -210,7 +210,7 @@ export async function incrementCycle(): Promise<number> {
 
 type MessageLike = {
   type?: string;
-  message?: { content?: unknown };
+  message?: { content?: unknown } | MessageLike;
 };
 
 /** Extract decision statements, shell commands, and modified files from message tail. */
@@ -224,7 +224,7 @@ export function extractCheckpointSignals(
 
   for (const msg of messages.slice(-tail)) {
     if (msg.type !== 'assistant' || !msg.message) continue;
-    const content = msg.message.content;
+    const content = 'content' in msg.message ? msg.message.content : undefined;
     if (!Array.isArray(content)) continue;
     for (const block of content) {
       if (block?.type === 'text' && typeof block.text === 'string') {

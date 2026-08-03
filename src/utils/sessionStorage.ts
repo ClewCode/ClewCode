@@ -4590,7 +4590,7 @@ export async function loadAllLogsFromSessionFile(
     if (chain.length === 0) continue;
 
     // Append trailing messages that are children of the leaf
-    const trailingMessages = childrenByParent.get(leafMessage.uuid);
+    const trailingMessages = childrenByParent.get(leafMessage.uuid as UUID);
     if (trailingMessages) {
       // ISO-8601 UTC timestamps are lexically sortable
       trailingMessages.sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0));

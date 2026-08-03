@@ -612,7 +612,7 @@ export function annotateBoundaryWithPreservedSegment(
       preservedSegment: {
         headUuid: keep[0]!.uuid,
         anchorUuid,
-        tailUuid: keep.at(-1)!.uuid,
+        tailUuid: keep.at(-1)!.uuid as UUID,
       },
     },
   };
