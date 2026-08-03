@@ -37,13 +37,11 @@ export function HighlightedThinkingText({ text, useBriefLayout, timestamp }: Pro
 
   if (triggers.length === 0) {
     return (
-      <Box flexDirection="column">
-        <Text>
-          <Text color={pointerColor}>{figures.pointer} </Text>
-          <Text color="text">{text}</Text>
-        </Text>
-        {timestamp ? <Text dimColor>{formatBriefTimestamp(timestamp)}</Text> : null}
-      </Box>
+      <Text>
+        <Text color={pointerColor}>{figures.pointer} </Text>
+        <Text color="text">{text}</Text>
+        {timestamp ? <Text dimColor> {formatBriefTimestamp(timestamp)}</Text> : null}
+      </Text>
     );
   }
 

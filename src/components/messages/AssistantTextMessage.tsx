@@ -18,6 +18,7 @@ import {
   startsWithApiErrorPrefix,
   TOKEN_REVOKED_ERROR_MESSAGE,
 } from '../../services/api/errors.js';
+import { formatBriefTimestamp } from '../../utils/formatBriefTimestamp.js';
 import { isEmptyMessageText, NO_RESPONSE_REQUESTED } from '../../utils/messages.js';
 import { getUpgradeMessage } from '../../utils/model/contextWindowUpgradeCheck.js';
 import { getDefaultSonnetModel, renderModelName } from '../../utils/model/model.js';
@@ -205,7 +206,10 @@ export function AssistantTextMessage({
               </NoSelect>
             )}
             <Box flexDirection="column">
-              <Markdown>{renderText}</Markdown>
+              <Box flexDirection="row">
+                <Markdown>{renderText}</Markdown>
+                {timestamp ? <Text dimColor> {formatBriefTimestamp(timestamp)}</Text> : null}
+              </Box>
             </Box>
           </Box>
         </Box>
