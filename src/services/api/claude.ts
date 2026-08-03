@@ -815,7 +815,7 @@ export async function* executeNonStreamingRequest(
         const nsAgentHeaders = buildAgentHeaders(clientOptions.agentId, clientOptions.parentAgentId);
         // Filter Anthropic-specific params for non-Anthropic providers
         const nsFilteredParams = filterParamsForProvider(
-          adjustedParams as Record<string, unknown>,
+          adjustedParams as unknown as Record<string, unknown>,
           ProviderManager.getInstance().getActiveProviderName(),
         );
         return await anthropic.beta.messages.create(
