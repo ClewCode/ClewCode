@@ -33,9 +33,7 @@ try {
     };
   }
   if (typeof process.stdin.setRawMode !== 'function') {
-    process.stdin.setRawMode = (_mode: boolean) => {
-      /* noop */
-    };
+    process.stdin.setRawMode = (_mode: boolean) => process.stdin;
   }
 } catch (_e) {
   /* ignore */
@@ -193,9 +191,18 @@ const coordinatorModeModule =
 // Dead code elimination: conditional import for KAIROS (assistant mode)
 /* eslint-disable @typescript-eslint/no-require-imports */
 const assistantModule = feature('KAIROS')
-  ? (require('./assistant/index.js') as typeof import('./assistant/index.js'))
-  : null;
-const kairosGate = feature('KAIROS') ? (require('./assistant/gate.js') as typeof import('./assistant/gate.js')) : null;
+  ? (require('./assistant/index.js') as {
+      markAssistantForced: () => void;
+      isAssistantForced: () => boolean;
+      initializeAssistantTeam: () => Promise<unknown>;
+      getAssistantSystemPromptAddendum: () => string;
+      getAssistantActivationPath: () => string | undefined;
+      isAssistantMode: () => boolean;
+    })
+  : null; // ponytail: external-only assistant integration; absent from this port by design.
+const kairosGate = feature('KAIROS')
+  ? (require('./assistant/gate.js') as { isKairosEnabled: () => Promise<boolean> })
+  : null; // ponytail: external-only assistant gate; absent from this port by design.
 
 import { relative, resolve } from 'path';
 import { isAnalyticsDisabled } from 'src/services/analytics/config.js';
@@ -488,7 +495,11 @@ const CLI_PROVIDER_DEFAULTS = {
 function applyProviderOption(provider: string | undefined, model: string | undefined): void {
   if (!provider) return;
   const providerKey = provider.toLowerCase() as keyof typeof CLI_PROVIDER_DEFAULTS;
-  const providerConfig = CLI_PROVIDER_DEFAULTS[providerKey];
+  const providerConfig = CLI_PROVIDER_DEFAULTS[
+    providerKey
+  ] as (typeof CLI_PROVIDER_DEFAULTS)[keyof typeof CLI_PROVIDER_DEFAULTS] & {
+    defaultModel?: string;
+  };
   if (!providerConfig) {
     throw new InvalidArgumentError(
       `Unknown provider: ${provider}. Use one of: ${Object.keys(CLI_PROVIDER_DEFAULTS).join(', ')}`,
@@ -1902,6 +1913,7 @@ async function run(): Promise<CommanderCommand> {
 
           // Auto-start PeerServer on all peers (so they can receive messages)
           // unless --peer-share is used (which handles it separately)
+          const peerShareOpt = (options as { peerShare?: boolean }).peerShare;
           if (!peerShareOpt) {
             const discovery = getGlobalDiscovery();
             const myPeerId = discovery.peerId;
@@ -1927,8 +1939,7 @@ async function run(): Promise<CommanderCommand> {
       })();
 
       // Handle peer sharing on startup
-      const peerShareOpt = (options as { peerShare?: boolean }).peerShare;
-      if (peerShareOpt) {
+      if ((options as { peerShare?: boolean }).peerShare) {
         (async () => {
           try {
             const { getGlobalDiscovery } = await import('./peer/PeerDiscovery.js');
@@ -4054,6 +4065,7 @@ async function run(): Promise<CommanderCommand> {
             marketplaces: [],
             plugins: [],
           },
+          warnings: [],
           needsRefresh: false,
         },
         statusLineText: undefined,
@@ -4133,9 +4145,7 @@ async function run(): Promise<CommanderCommand> {
         // KAIROS block so Agent(name: "foo") can spawn in-process teammates
         // without TeamCreate. computeInitialTeamContext() is for tmux-spawned
         // teammates reading their own identity, not the assistant-mode leader.
-        teamContext: feature('KAIROS')
-          ? (assistantTeamContext ?? computeInitialTeamContext?.())
-          : computeInitialTeamContext?.(),
+        teamContext: feature('KAIROS') ? assistantTeamContext : undefined,
       };
 
       // Add CLI initial prompt to history
@@ -4409,7 +4419,7 @@ async function run(): Promise<CommanderCommand> {
               },
               isTTY
                 ? {
-                    onProgress: msg => {
+                    onProgress: (msg: string) => {
                       hadProgress = true;
                       process.stderr.write(`\r  ${msg}\x1b[K`);
                     },
