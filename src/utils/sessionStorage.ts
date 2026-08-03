@@ -46,6 +46,7 @@ import {
   type LogOption,
   type PersistedWorktreeSession,
   type SerializedMessage,
+  type SessionContextEntry,
   sortLogs,
   type TranscriptMessage,
 } from '../types/logs.js';
@@ -142,6 +143,10 @@ const SKIP_FIRST_PROMPT_PATTERN = /^(?:\s*<[a-z][\w-]*[\s>]|\[Request interrupte
  */
 export function isTranscriptMessage(entry: Entry): entry is TranscriptMessage {
   return entry.type === 'user' || entry.type === 'assistant' || entry.type === 'attachment' || entry.type === 'system';
+}
+
+function isSessionContextEntry(entry: Entry): entry is SessionContextEntry {
+  return entry.type === 'session-context';
 }
 
 /**
@@ -1023,7 +1028,7 @@ class Project {
         // if available (set at creation time), otherwise fall back to sequential parent
         let effectiveParentUuid = parentUuid;
         if (message.type === 'user' && 'sourceToolAssistantUUID' in message && message.sourceToolAssistantUUID) {
-          effectiveParentUuid = message.sourceToolAssistantUUID;
+          effectiveParentUuid = message.sourceToolAssistantUUID as UUID;
         }
 
         const transcriptMessage: TranscriptMessage = {
@@ -1054,7 +1059,7 @@ class Project {
         };
         await this.appendEntry(transcriptMessage);
         if (isChainParticipant(message)) {
-          parentUuid = message.uuid;
+          parentUuid = message.uuid as UUID;
         }
       }
 
@@ -1207,6 +1212,8 @@ class Project {
       const messageSet = await getSessionMessages(sessionId);
       if (entry.type === 'queue-operation') {
         // Queue operations are always appended to the session file
+        void this.enqueueWrite(sessionFile, entry);
+      } else if (isSessionContextEntry(entry)) {
         void this.enqueueWrite(sessionFile, entry);
       } else {
         // At this point, entry must be a TranscriptMessage (user/assistant/attachment/system)

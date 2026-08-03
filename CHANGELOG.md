@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- Restored queue-operation type contracts and narrowed session context handling in session persistence, reducing the TypeScript baseline by five errors.
 - Narrowed message helper types for normalized assistant messages and typed attachment variants, reducing the TypeScript baseline by 55 errors without changing runtime behavior.
 - Added missing metadata to stream, API error, and normalized user message variants, reducing the TypeScript baseline by 7 additional errors.
 - Reduced provider/API type debt by restoring connector-text delta types, carrying abort signals through retry contexts, and typing streamed events and normalized usage boundaries.

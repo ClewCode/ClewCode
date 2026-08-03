@@ -549,9 +549,9 @@ export interface CompactMetadata {
   trigger?: string;
   preTokens?: number;
   preservedSegment?: {
-    tailUuid?: string;
-    headUuid?: string;
-    anchorUuid?: string;
+    tailUuid: string;
+    headUuid: string;
+    anchorUuid: string;
   };
   preCompactDiscoveredTools?: unknown;
 }
