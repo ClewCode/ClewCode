@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- Narrowed message helper types for normalized assistant messages and typed attachment variants, reducing the TypeScript baseline by 55 errors without changing runtime behavior.
 - Reduced provider/API type debt by restoring connector-text delta types, carrying abort signals through retry contexts, and typing streamed events and normalized usage boundaries.
 
 ### Changed

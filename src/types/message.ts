@@ -53,6 +53,7 @@ export interface AssistantMessage {
   type: 'assistant';
   message: {
     id?: string;
+    provider?: string;
     container?: unknown;
     model?: string;
     role: 'assistant';
@@ -65,13 +66,14 @@ export interface AssistantMessage {
   };
   timestamp?: string;
   uuid: string;
-  session_id: string;
+  session_id?: string;
   parent_tool_use_id?: string | null;
   requestId?: string;
   apiError?: string;
   error?: string;
   errorDetails?: unknown;
   isApiErrorMessage?: boolean;
+  advisorModel?: string;
   isMeta?: boolean;
   isVirtual?: true;
 }
@@ -102,10 +104,10 @@ export interface UserMessage {
   isReplay?: boolean;
 }
 
-export interface AttachmentMessage {
+export interface AttachmentMessage<T extends Record<string, unknown> = Record<string, unknown>> {
   type: 'attachment';
   uuid: string;
-  attachment: {
+  attachment: T & {
     name?: string;
     content?: unknown;
     session_id?: string;

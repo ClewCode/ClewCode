@@ -306,15 +306,19 @@ export const SYNTHETIC_MESSAGES = new Set([
   NO_RESPONSE_REQUESTED,
 ]);
 
-export function isSyntheticMessage(message: Message): boolean {
+function hasMessageContent(message: Message): message is Extract<Message, { message: { content: unknown } }> {
   return (
-    message.type !== 'progress' &&
-    message.type !== 'attachment' &&
-    message.type !== 'system' &&
-    Array.isArray(message.message.content) &&
-    message.message.content[0]?.type === 'text' &&
-    SYNTHETIC_MESSAGES.has(message.message.content[0].text)
+    'message' in message &&
+    typeof message.message === 'object' &&
+    message.message !== null &&
+    'content' in message.message
   );
+}
+
+export function isSyntheticMessage(message: Message): boolean {
+  if (!hasMessageContent(message) || !Array.isArray(message.message.content)) return false;
+  const firstBlock = message.message.content[0];
+  return firstBlock?.type === 'text' && SYNTHETIC_MESSAGES.has(firstBlock.text);
 }
 
 function isSyntheticApiErrorMessage(message: Message): message is AssistantMessage & { isApiErrorMessage: true } {
@@ -687,7 +691,7 @@ export function isNotEmptyMessage(message: Message | undefined | null): boolean 
   // them (they have no content to be empty) rather than reading through to
   // content. Checked structurally, not by listing types: the type whitelist
   // above is what went stale as new envelope-less types were added.
-  if (!message.message) {
+  if (!hasMessageContent(message)) {
     return true;
   }
 
