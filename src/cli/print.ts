@@ -96,8 +96,8 @@ import type {
   SDKControlMcpSetServersResponse,
   SDKControlReloadPluginsResponse,
 } from 'src/entrypoints/sdk/controlTypes.js';
-import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk';
 import type { PermissionMode as InternalPermissionMode } from 'src/types/permissions.js';
+type PermissionMode = Exclude<InternalPermissionMode, 'ask' | 'auto' | 'bubble' | 'guardian'>;
 import { cwd } from 'process';
 import { getCwd } from 'src/utils/cwd.js';
 import omit from 'lodash-es/omit.js';
@@ -271,8 +271,13 @@ const coordinatorModeModule =
   require('../coordinator/coordinatorMode.js') as typeof import('../coordinator/coordinatorMode.js');
 const proactiveModule =
   feature('PROACTIVE') || feature('KAIROS')
-    ? (require('../proactive/index.js') as typeof import('../proactive/index.js'))
-    : null;
+    ? (require('../proactive/index.js') as {
+        isProactiveActive: () => boolean;
+        isProactivePaused: () => boolean;
+        activateProactive: (source: string) => void;
+        deactivateProactive: () => void;
+      })
+    : null; // ponytail: external-only proactive module; absent from this port by design.
 const cronSchedulerModule = feature('AGENT_TRIGGERS')
   ? (require('../utils/cronScheduler.js') as typeof import('../utils/cronScheduler.js'))
   : null;
@@ -1430,8 +1435,14 @@ function runHeadlessStreaming(
       }
       return {
         name: connection.name,
-        status: connection.type,
-        serverInfo: connection.type === 'connected' ? connection.serverInfo : undefined,
+        status:
+          connection.type === 'connected'
+            ? 'connected'
+            : connection.type === 'pending'
+              ? 'connecting'
+              : connection.type === 'failed' || connection.type === 'needs-auth'
+                ? 'error'
+                : 'disconnected',
         error: connection.type === 'failed' ? connection.error : undefined,
         config,
         scope: connection.config.scope,
