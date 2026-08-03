@@ -38,6 +38,7 @@ type Props = {
   verbose: boolean;
   width?: number | string;
   onOpenRateLimitOptions?: () => void;
+  timestamp?: string;
 };
 
 export function stripLeadingBlankLines(text: string): string {
@@ -63,6 +64,7 @@ export function AssistantTextMessage({
   shouldShowDot,
   verbose,
   onOpenRateLimitOptions,
+  timestamp,
 }: Props): React.ReactNode {
   const isSelected = useContext(MessageActionsSelectedContext);
   // Defensive null guard — some providers return null/undefined for content

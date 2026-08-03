@@ -130,6 +130,7 @@ function MessageImpl({
               thinkingBlockId={`${message.uuid}:${index}`}
               lastThinkingBlockId={lastThinkingBlockId}
               advisorModel={message.advisorModel}
+              timestamp={message.timestamp}
             />
           ))}
         </Box>
@@ -348,6 +349,7 @@ function AssistantMessageBlock({
   thinkingBlockId,
   lastThinkingBlockId,
   advisorModel,
+  timestamp,
 }: {
   param:
     | BetaContentBlock
@@ -376,6 +378,7 @@ function AssistantMessageBlock({
   /** ID of the last thinking block to show, null means show all */
   lastThinkingBlockId?: string | null;
   advisorModel?: string;
+  timestamp?: string;
 }): React.ReactNode {
   if (feature('CONNECTOR_TEXT')) {
     if (isConnectorTextBlock(param)) {
