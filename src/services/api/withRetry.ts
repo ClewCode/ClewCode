@@ -115,6 +115,7 @@ export interface RetryContext {
   maxTokensOverride?: number;
   model: string;
   thinkingConfig: ThinkingConfig;
+  signal?: AbortSignal;
 }
 
 interface RetryOptions {
@@ -168,6 +169,7 @@ export async function* withRetry<T>(
   const retryContext: RetryContext = {
     model: options.model,
     thinkingConfig: options.thinkingConfig,
+    signal: options.signal,
   };
   let client: Anthropic | null = null;
   let consecutive529Errors = options.initialConsecutive529Errors ?? 0;

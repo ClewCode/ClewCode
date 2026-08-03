@@ -6,6 +6,7 @@
  * baseCreateAssistantMessage, createUserMessage, createSystemMessage, ...).
  */
 
+import type { BetaRawMessageStreamEvent } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs';
 import type {
   ContentBlock,
   ContentBlockParam,
@@ -289,8 +290,8 @@ export interface ProgressMessage<T = unknown> extends SystemMessageBase {
 
 export interface StreamEvent extends SystemMessageBase {
   type: 'stream_event';
-  event: string;
-  data: unknown;
+  event: BetaRawMessageStreamEvent;
+  data: BetaRawMessageStreamEvent;
 }
 
 export interface ToolUseSummaryMessage {

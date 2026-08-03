@@ -779,6 +779,7 @@ export async function* executeNonStreamingRequest(
     fastMode?: boolean;
     initialConsecutive529Errors?: number;
     querySource?: QuerySource;
+    signal?: AbortSignal;
   },
   paramsFromContext: (context: RetryContext) => BetaMessageStreamParams,
   onAttempt: (attempt: number, start: number, maxOutputTokens: number) => void,
@@ -961,9 +962,9 @@ function collectNativeOpenAIToolCalls(message: any): TextToolCall[] {
         id: typeof call?.id === 'string' ? call.id : undefined,
         name,
         input: parseOpenAIArguments(fn.arguments ?? fn.input ?? {}),
-      };
+      } satisfies TextToolCall;
     })
-    .filter((call): call is TextToolCall => Boolean(call));
+    .filter((call): call is NonNullable<typeof call> => Boolean(call));
 }
 
 function parseJSONToolPayload(payload: unknown): TextToolCall[] {
@@ -1004,7 +1005,7 @@ function parseJSONToolPayload(payload: unknown): TextToolCall[] {
         input: parseOpenAIArguments(input),
       };
     })
-    .filter((call): call is TextToolCall => Boolean(call));
+    .filter((call): call is NonNullable<typeof call> => Boolean(call));
 }
 
 function parseRepairedJSON(candidate: string): unknown | null {
@@ -1624,7 +1625,6 @@ async function* queryModel(
     options.model,
     newContext,
     messagesForAPI,
-    false,
     options.agentId,
     options.parentAgentId,
   );
@@ -2359,6 +2359,8 @@ async function* queryModel(
         yield {
           type: 'stream_event',
           event: part,
+          data: part,
+          uuid: randomUUID(),
           ...(part.type === 'message_start' ? { ttftMs } : undefined),
         };
       }

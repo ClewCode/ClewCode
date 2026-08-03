@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Reduced provider/API type debt by restoring connector-text delta types, carrying abort signals through retry contexts, and typing streamed events and normalized usage boundaries.
+
 ### Changed
 - Set automatic away and long-turn recap defaults to 3 minutes.
 
