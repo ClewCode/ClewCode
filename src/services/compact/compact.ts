@@ -4,8 +4,10 @@ import uniqBy from 'lodash-es/uniqBy.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const sessionTranscriptModule = feature('KAIROS')
-  ? (require('../sessionTranscript/sessionTranscript.js') as typeof import('../sessionTranscript/sessionTranscript.js'))
-  : null;
+  ? (require('../sessionTranscript/sessionTranscript.js') as {
+      writeSessionTranscriptSegment: (messages: Message[]) => void;
+    })
+  : null; // ponytail: external-only transcript hook; absent from this port by design.
 
 /**
  * @[MULTI_PROVIDER] APIUserAbortError is from Anthropic SDK — used for abort
