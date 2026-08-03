@@ -265,7 +265,7 @@ export interface SystemMicrocompactBoundaryMessage extends SystemMessageBase {
 
 export interface SystemAPIErrorMessage extends SystemMessageBase {
   type: 'system_api_error';
-  error: string;
+  error: string | Error;
 }
 
 export interface SystemFileSnapshotMessage extends SystemMessageBase {
@@ -294,6 +294,7 @@ export interface StreamEvent extends SystemMessageBase {
   type: 'stream_event';
   event: BetaRawMessageStreamEvent;
   data: BetaRawMessageStreamEvent;
+  ttftMs?: number;
 }
 
 export interface ToolUseSummaryMessage {
@@ -384,6 +385,7 @@ export type NormalizedAssistantMessage<T = MessageContentBlockWithThinking> = {
 export interface NormalizedUserMessage {
   type: 'user';
   uuid: string;
+  sourceToolUseID?: string;
   message: { role: 'user'; content: string | MessageContentBlock[] };
   isMeta?: true;
   isVisibleInTranscriptOnly?: true;
