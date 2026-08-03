@@ -366,7 +366,13 @@ export function renderToolResultMessage(
 
   const finalAssistantMessage = createAssistantMessage({
     content: completionMessage,
-    usage: { ...usage, inference_geo: null, iterations: null, speed: null },
+    usage: {
+      ...usage,
+      inference_geo: null,
+      iterations: null,
+      speed: null,
+      output_tokens_details: { thinking_tokens: 0 },
+    },
   });
 
   return (

@@ -364,6 +364,7 @@ function baseCreateAssistantMessage({
     inference_geo: null,
     iterations: null,
     speed: null,
+    output_tokens_details: { thinking_tokens: 0 },
   },
 }: {
   content: BetaContentBlock[];

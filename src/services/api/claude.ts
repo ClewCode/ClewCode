@@ -1070,7 +1070,14 @@ function extractOpenAIUsage(response: any): Usage | undefined {
     output_tokens: Number(completionTokens) || 0,
     cache_creation_input_tokens: cacheMissTokens !== null ? Number(cacheMissTokens) || 0 : null,
     cache_read_input_tokens: cacheHitTokens !== null ? Number(cacheHitTokens) || 0 : null,
-  };
+    server_tool_use: { web_search_requests: 0, web_fetch_requests: 0 },
+    service_tier: null,
+    cache_creation: { ephemeral_1h_input_tokens: 0, ephemeral_5m_input_tokens: 0 },
+    inference_geo: null,
+    iterations: null,
+    speed: null,
+    output_tokens_details: { thinking_tokens: 0 },
+  }; /* ponytail: normalize foreign usage once at the boundary */
 }
 
 function _createAssistantMessageFromOpenAIResponse(
@@ -2997,6 +3004,7 @@ export function updateUsage(
     inference_geo: usage.inference_geo,
     iterations: partUsage.iterations ?? usage.iterations,
     speed: (partUsage as BetaUsage).speed ?? usage.speed,
+    output_tokens_details: usage.output_tokens_details,
   };
 }
 
@@ -3038,6 +3046,7 @@ export function accumulateUsage(
     inference_geo: messageUsage.inference_geo, // Use the most recent
     iterations: messageUsage.iterations, // Use the most recent
     speed: messageUsage.speed, // Use the most recent
+    output_tokens_details: messageUsage.output_tokens_details,
   };
 }
 

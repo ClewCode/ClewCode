@@ -2,8 +2,6 @@
  * SDK Utility Types — utility types that can't be expressed as Zod schemas.
  */
 
-import type { ModelUsage } from './coreTypes.generated.js';
-
-export type NonNullableUsage = {
-  [K in keyof ModelUsage]: NonNullable<ModelUsage[K]>;
-};
+// NonNullableUsage is defined alongside the generated types because it maps
+// over the SDK's BetaUsage shape (snake_case API fields).
+export type { NonNullableUsage } from './coreTypes.generated.js';

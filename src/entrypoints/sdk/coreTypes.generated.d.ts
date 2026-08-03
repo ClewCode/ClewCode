@@ -11,6 +11,8 @@
 // Usage & Model Types
 // ============================================================================
 
+import type { BetaUsage } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs';
+
 export type ModelUsage = {
   inputTokens: number;
   outputTokens: number;
@@ -23,8 +25,12 @@ export type ModelUsage = {
   provider?: string;
 };
 
+/**
+ * All usage fields made required, keyed by the SDK's snake_case API field
+ * names (matches what the provider returns, not ModelUsage's camelCase).
+ */
 export type NonNullableUsage = {
-  [K in keyof ModelUsage]: NonNullable<ModelUsage[K]>;
+  [K in keyof BetaUsage]-?: NonNullable<BetaUsage[K]>;
 };
 
 export type ModelInfo = {
