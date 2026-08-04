@@ -97,6 +97,7 @@ import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEve
 import { type ElicitationWaitingState, runElicitationHooks, runElicitationResultHooks } from './elicitationHandler.js';
 import { buildMcpToolName } from './mcpStringUtils.js';
 import { normalizeNameForMCP } from './normalization.js';
+import { callToolAsTask, clearToolTaskSupport, getToolTaskSupport, recordToolTaskSupport } from './tasks.js';
 import { getLoggingSafeMcpBaseUrl } from './utils.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -1163,10 +1164,15 @@ export const connectToServer = memoize(
           {
             capabilities: {
               roots: {},
-              // Empty object declares the capability. Sending {form:{},url:{}}
-              // breaks Java MCP SDK servers (Spring AI) whose Elicitation class
-              // has zero fields and fails on unknown properties.
-              elicitation: {},
+              // Spec revision 2025-11-25 splits elicitation into form and URL
+              // mode, and an empty object means form-only — which left the URL
+              // handler in elicitationHandler.ts unreachable. Both modes are
+              // implemented, so both are declared.
+              //
+              // Known incompatibility: older Java MCP SDK servers (Spring AI)
+              // model Elicitation as a zero-field class that rejects unknown
+              // properties, and will fail to initialize against this.
+              elicitation: { form: {}, url: {} },
             },
           },
         );
@@ -1852,6 +1858,8 @@ export async function clearServerCache(name: string, serverRef: ScopedMcpServerC
   // fetches fresh tools/resources/commands instead of stale ones)
   connectToServer.cache.delete(key);
   fetchToolsForClient.cache.delete(name);
+  // Task metadata is derived from tools/list, so it goes stale with the tools.
+  clearToolTaskSupport(name);
   fetchResourcesForClient.cache.delete(name);
   fetchCommandsForClient.cache.delete(name);
   if (feature('MCP_SKILLS')) {
@@ -1968,6 +1976,10 @@ export const fetchToolsForClient = memoizeWithLRU(
         allTools.push(...result.tools);
         cursor = result.nextCursor;
       } while (cursor);
+
+      // Remember which tools are task-augmented. The SDK only learns this from
+      // its own client.listTools(), which the pagination loop above bypasses.
+      recordToolTaskSupport(client.name, allTools);
 
       // Sanitize tool data from MCP server
       const toolsToProcess = recursivelySanitizeUnicode(allTools);
@@ -3233,6 +3245,35 @@ async function callMCPTool({
       tool,
     );
 
+    // Task-augmented tools (spec 2025-11-25) hand back a task id immediately and
+    // the SDK polls for the real result, so none of the timeout machinery below
+    // applies — outliving a normal request is the entire point of a task. The
+    // caller's signal stays the only way to cancel.
+    const taskSupport = getToolTaskSupport(name, tool);
+    if (taskSupport) {
+      logMCPDebug(name, `Tool '${tool}' is task-augmented (${taskSupport}), using task execution`);
+      const taskResult = await callToolAsTask({
+        client,
+        serverName: name,
+        toolName: tool,
+        args,
+        meta,
+        signal,
+        onTaskUpdate: onProgress
+          ? update => {
+              onProgress({
+                type: 'mcp_progress',
+                status: 'progress',
+                serverName: name,
+                toolName: tool,
+                progressMessage: update.statusMessage ?? `task ${update.status}`,
+              });
+            }
+          : undefined,
+      });
+      return finalizeToolResult(taskResult, { name, tool, toolStartTime });
+    }
+
     // Use Promise.race with our own timeout instead of relying on the SDK's
     // internal timeout. The SDK's timeout tracks via a single instance variable
     // (`_timeoutId`), so when concurrent tool calls race on the same Client, one
@@ -3309,50 +3350,7 @@ async function callMCPTool({
       signal?.removeEventListener('abort', onParentAbort);
     });
 
-    if ('isError' in result && result.isError) {
-      let errorDetails = 'Unknown error';
-      if ('content' in result && Array.isArray(result.content) && result.content.length > 0) {
-        const firstContent = result.content[0];
-        if (firstContent && typeof firstContent === 'object' && 'text' in firstContent) {
-          errorDetails = firstContent.text;
-        }
-      } else if ('error' in result) {
-        // Fallback for legacy error format
-        errorDetails = String(result.error);
-      }
-      logMCPError(name, errorDetails);
-      throw new McpToolCallError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS(
-        errorDetails,
-        'MCP tool returned error',
-        '_meta' in result && result._meta ? { _meta: result._meta } : undefined,
-      );
-    }
-    const elapsed = Date.now() - toolStartTime;
-    const duration =
-      elapsed < 1000
-        ? `${elapsed}ms`
-        : elapsed < 60000
-          ? `${Math.floor(elapsed / 1000)}s`
-          : `${Math.floor(elapsed / 60000)}m ${Math.floor((elapsed % 60000) / 1000)}s`;
-
-    logMCPDebug(name, `Tool '${tool}' completed successfully in ${duration}`);
-
-    // Log code indexing tool usage
-    const codeIndexingTool = detectCodeIndexingFromMcpServerName(name);
-    if (codeIndexingTool) {
-      logEvent('tengu_code_indexing_tool_used', {
-        tool: codeIndexingTool as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-        source: 'mcp' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-        success: true,
-      });
-    }
-
-    const content = await processMCPResult(result, tool, name);
-    return {
-      content,
-      _meta: result._meta as Record<string, unknown> | undefined,
-      structuredContent: result.structuredContent as Record<string, unknown> | undefined,
-    };
+    return await finalizeToolResult(result, { name, tool, toolStartTime });
   } catch (e) {
     // Clear intervals on error
     if (progressInterval !== undefined) {
@@ -3410,6 +3408,68 @@ async function callMCPTool({
       clearInterval(progressInterval);
     }
   }
+}
+
+/**
+ * Shared tail of a tool call: surface server-reported errors, log timing, and
+ * unpack the result. Both the plain and the task-augmented paths land here so a
+ * task result is treated exactly like an immediate one.
+ */
+async function finalizeToolResult(
+  // Exactly what client.callTool() resolves to — a union that still includes
+  // the legacy `{toolResult}` shape, which the structural checks below handle.
+  result: Awaited<ReturnType<Client['callTool']>>,
+  { name, tool, toolStartTime }: { name: string; tool: string; toolStartTime: number },
+): Promise<{
+  content: MCPToolResult;
+  _meta?: Record<string, unknown>;
+  structuredContent?: Record<string, unknown>;
+}> {
+  if ('isError' in result && result.isError) {
+    let errorDetails = 'Unknown error';
+    if ('content' in result && Array.isArray(result.content) && result.content.length > 0) {
+      const firstContent = result.content[0];
+      if (firstContent && typeof firstContent === 'object' && 'text' in firstContent) {
+        errorDetails = firstContent.text;
+      }
+    } else if ('error' in result) {
+      // Fallback for legacy error format
+      errorDetails = String(result.error);
+    }
+    logMCPError(name, errorDetails);
+    throw new McpToolCallError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS(
+      errorDetails,
+      'MCP tool returned error',
+      '_meta' in result && result._meta ? { _meta: result._meta } : undefined,
+    );
+  }
+
+  const elapsed = Date.now() - toolStartTime;
+  const duration =
+    elapsed < 1000
+      ? `${elapsed}ms`
+      : elapsed < 60000
+        ? `${Math.floor(elapsed / 1000)}s`
+        : `${Math.floor(elapsed / 60000)}m ${Math.floor((elapsed % 60000) / 1000)}s`;
+
+  logMCPDebug(name, `Tool '${tool}' completed successfully in ${duration}`);
+
+  // Log code indexing tool usage
+  const codeIndexingTool = detectCodeIndexingFromMcpServerName(name);
+  if (codeIndexingTool) {
+    logEvent('tengu_code_indexing_tool_used', {
+      tool: codeIndexingTool as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      source: 'mcp' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      success: true,
+    });
+  }
+
+  const content = await processMCPResult(result, tool, name);
+  return {
+    content,
+    _meta: result._meta as Record<string, unknown> | undefined,
+    structuredContent: result.structuredContent as Record<string, unknown> | undefined,
+  };
 }
 
 function extractToolUseId(message: AssistantMessage): string | undefined {

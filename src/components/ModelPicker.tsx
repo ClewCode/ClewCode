@@ -2,16 +2,10 @@ import ansis from 'ansis';
 import capitalize from 'lodash-es/capitalize.js';
 import type * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { c as _c } from 'react/compiler-runtime';
 import { useExitOnCtrlCDWithKeybindings } from 'src/hooks/useExitOnCtrlCDWithKeybindings.js';
 import { useSearchInput } from 'src/hooks/useSearchInput.js';
 import { ProviderManager } from 'src/services/ai/ProviderManager.js';
-import {
-  getProviderRegistryEntry,
-  PROVIDER_IDS,
-  PROVIDER_REGISTRY,
-  type ProviderModelInfo,
-} from 'src/services/ai/providerRegistry.js';
+import { getProviderRegistryEntry, PROVIDER_IDS, type ProviderModelInfo } from 'src/services/ai/providerRegistry.js';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
@@ -37,13 +31,11 @@ import {
 } from '../utils/model/model.js';
 import { mergeRecentModels } from '../utils/model/recentModels.js';
 import { getSettingsForSource, updateSettingsForSource } from '../utils/settings/settings.js';
-import { ConfigurableShortcutHint } from './ConfigurableShortcutHint.js';
-import { Select } from './CustomSelect/index.js';
-import { Byline } from './design-system/Byline.js';
-import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js';
+import { type OptionWithDescription, Select } from './CustomSelect/index.js';
 import { Pane } from './design-system/Pane.js';
 import { effortLevelToSymbol } from './EffortIndicator.js';
 import { SearchBox } from './SearchBox.js';
+
 export type Props = {
   initial: string | null;
   sessionModel?: ModelSetting;
@@ -65,269 +57,210 @@ export type Props = {
   defaultOptionLabel?: string;
   defaultOptionDescription?: string;
 };
+
 const NO_PREFERENCE = '__NO_PREFERENCE__';
-export function ModelPicker(t0) {
-  const $ = _c(82);
-  const {
-    initial,
-    sessionModel,
-    onSelect,
-    onSetDefault,
-    onCancel,
-    isStandaloneCommand,
-    headerText,
-    skipSettingsWrite,
-    defaultOptionLabel,
-    defaultOptionDescription,
-  } = t0;
+const CUSTOM_INPUT = '__CUSTOM_INPUT__';
+const SECTION_PREFIX = '__SECTION_';
+
+/**
+ * One row in the unified list. `providerId`/`modelId` are carried on the option
+ * itself so selection never has to re-parse the value — provider-routed ids like
+ * `openrouter/deepseek/deepseek-chat` contain slashes of their own.
+ */
+type ModelOption = {
+  value: string;
+  label: string;
+  description: string;
+  descriptionForModel?: string;
+  providerId?: string;
+  modelId?: string;
+  type?: 'text' | 'section';
+  disabled?: boolean;
+  hideIndex?: boolean;
+};
+
+export function ModelPicker({
+  initial,
+  sessionModel,
+  onSelect,
+  onSetDefault,
+  onCancel,
+  isStandaloneCommand,
+  headerText,
+  skipSettingsWrite,
+  defaultOptionLabel,
+  defaultOptionDescription,
+}: Props): React.ReactNode {
   const setAppState = useSetAppState();
   const exitState = useExitOnCtrlCDWithKeybindings();
-  const initialValue = initial === null ? NO_PREFERENCE : initial;
-  const [focusedValue, setFocusedValue] = useState(initialValue);
+  const [focusedValue, setFocusedValue] = useState<string | undefined>(undefined);
+  const [hasToggledEffort, setHasToggledEffort] = useState(false);
+  const [customModelId, setCustomModelId] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [isSearchActive, setIsSearchActive] = useState(true);
+  // Bumped by Tab/Shift+Tab to remount Select so it re-reads defaultFocusValue.
+  const [jumpToken, setJumpToken] = useState(0);
+  const [jumpTarget, setJumpTarget] = useState<string | undefined>(undefined);
+
+  const effortValue = useAppState(s => s.effortValue);
+  const [effort, setEffort] = useState<EffortLevel | undefined>(
+    effortValue !== undefined ? convertEffortValueToLevel(effortValue) : undefined,
+  );
+
   const fetchedModelsData = useAppState(
     (s: { fetchedModels?: { provider: string; models: FetchedModel[]; fetchedAt: number } }) => s.fetchedModels,
   );
   const [isFetchingModels, setIsFetchingModels] = useState(false);
-  const [hasToggledEffort, setHasToggledEffort] = useState(false);
-  const effortValue = useAppState(_temp2);
-  let t1;
-  if ($[0] !== effortValue) {
-    t1 = effortValue !== undefined ? convertEffortValueToLevel(effortValue) : undefined;
-    $[0] = effortValue;
-    $[1] = t1;
-  } else {
-    t1 = $[1];
-  }
-  const [effort, setEffort] = useState(t1);
-  const [customModelId, setCustomModelId] = useState('');
-  const [showCustomInput, setShowCustomInput] = useState(false);
-  const [isSearchActive, setIsSearchActive] = useState(true);
+
   const { query: searchQuery, cursorOffset: searchCursorOffset } = useSearchInput({
     isActive: isSearchActive,
     onExit: () => setIsSearchActive(false),
     backspaceExitsOnEmpty: false,
   });
-  const selectableProviderIds = useMemo(() => getSelectableProviderIds(), []);
-  const [activeProviderId, setActiveProviderId] = useState(() => {
-    const current = ProviderManager.getInstance().getActiveProviderName();
-    return selectableProviderIds.includes(current as any) ? current : (selectableProviderIds[0] ?? current);
-  });
 
-  const providerInfo = useMemo(() => {
-    const entry = getProviderRegistryEntry(activeProviderId as any);
-    if (!entry) return null;
-    return {
-      entry,
-      selectedModel: ProviderManager.getInstance().getModelForProvider(activeProviderId as any),
-      providerId: activeProviderId,
-    };
-  }, [activeProviderId]);
+  const activeProviderId = useMemo(() => ProviderManager.getInstance().getActiveProviderName(), []);
 
-  // Fetch models from provider on mount
+  // Only the active provider's models are fetched live; the rest come from the
+  // static registry, which is what makes a single cross-provider list cheap.
   useEffect(() => {
     const loadModels = async () => {
-      if (!providerInfo) return;
-
-      // Check if we already have fresh fetched models for this provider
-      const currentFetched = fetchedModelsData as { provider?: string; models?: FetchedModel[] } | undefined;
-      if (currentFetched?.provider === providerInfo.providerId) {
-        // Models already fetched for this provider
-        return;
-      }
-
-      if (!supportsModelFetching(providerInfo.providerId as any)) {
-        return;
-      }
+      const currentFetched = fetchedModelsData as { provider?: string } | undefined;
+      if (currentFetched?.provider === activeProviderId) return;
+      if (!supportsModelFetching(activeProviderId as any)) return;
 
       setIsFetchingModels(true);
       try {
-        const models = await fetchProviderModels(providerInfo.providerId as any);
+        const models = await fetchProviderModels(activeProviderId as any);
         if (models && models.length > 0) {
           setAppState(prev => ({
             ...prev,
-            fetchedModels: {
-              provider: providerInfo.providerId,
-              models,
-              fetchedAt: Date.now(),
-            },
+            fetchedModels: { provider: activeProviderId, models, fetchedAt: Date.now() },
           }));
         }
       } finally {
         setIsFetchingModels(false);
       }
     };
-
     loadModels();
-  }, [setAppState, fetchedModelsData, providerInfo?.providerId, providerInfo]);
+  }, [setAppState, fetchedModelsData, activeProviderId]);
 
-  // Get fetched models for current provider
   const currentFetchedModels = useMemo(() => {
     const data = fetchedModelsData as { provider?: string; models?: FetchedModel[] } | undefined;
-    if (!data || data.provider !== providerInfo?.providerId) {
-      return null;
-    }
+    if (!data || data.provider !== activeProviderId) return null;
     return data.models ?? null;
-  }, [fetchedModelsData, providerInfo?.providerId]);
+  }, [fetchedModelsData, activeProviderId]);
 
-  // Compute model options with fetched models
-  const modelOptions = useMemo(() => {
-    return getEffectiveModelOptions(
-      currentFetchedModels,
-      providerInfo?.entry,
-      initial,
-      activeProviderId,
-      defaultOptionLabel,
-      defaultOptionDescription,
-    );
-  }, [
-    currentFetchedModels,
-    providerInfo?.entry,
-    initial,
-    activeProviderId,
-    defaultOptionLabel,
-    defaultOptionDescription,
-  ]);
-  let t4;
-  block0: {
-    if (initial !== null && !modelOptions.some(opt => opt.value === initial)) {
-      let t5;
-      if ($[4] !== initial) {
-        t5 = modelDisplayString(initial);
-        $[4] = initial;
-        $[5] = t5;
-      } else {
-        t5 = $[5];
-      }
-      let t6;
-      if ($[6] !== initial || $[7] !== t5) {
-        t6 = {
-          value: initial,
-          label: t5,
-          description: 'Current model',
-        };
-        $[6] = initial;
-        $[7] = t5;
-        $[8] = t6;
-      } else {
-        t6 = $[8];
-      }
-      let t7;
-      if ($[9] !== modelOptions || $[10] !== t6) {
-        t7 = [...modelOptions, t6];
-        $[9] = modelOptions;
-        $[10] = t6;
-        $[11] = t7;
-      } else {
-        t7 = $[11];
-      }
-      t4 = t7;
-      break block0;
-    }
-    t4 = modelOptions;
-  }
-  const optionsWithInitial = t4;
-  let t5;
-  if ($[12] !== optionsWithInitial) {
-    t5 = optionsWithInitial.map(_temp3);
-    $[12] = optionsWithInitial;
-    $[13] = t5;
-  } else {
-    t5 = $[13];
-  }
-  const selectOptions = t5;
-  const filteredSelectOptions = useMemo(
-    () => filterModelOptions(selectOptions, searchQuery),
-    [selectOptions, searchQuery],
+  const allOptions = useMemo(
+    () =>
+      buildUnifiedModelOptions({
+        fetchedModels: currentFetchedModels,
+        activeProviderId,
+        initial,
+        defaultOptionLabel,
+        defaultOptionDescription,
+      }),
+    [currentFetchedModels, activeProviderId, initial, defaultOptionLabel, defaultOptionDescription],
   );
-  const totalModelCount = countRealModelOptions(selectOptions);
-  const matchedModelCount = countRealModelOptions(filteredSelectOptions);
-  let t6;
-  if ($[14] !== initialValue || $[15] !== filteredSelectOptions || $[1] !== searchQuery) {
-    // If searching, focus the first result. Otherwise, prefer the current model (initialValue).
-    t6 = searchQuery
-      ? filteredSelectOptions[0]?.value
-      : filteredSelectOptions.some(_ => _.value === initialValue)
-        ? initialValue
-        : (filteredSelectOptions[0]?.value ?? undefined);
-    $[14] = initialValue;
-    $[15] = filteredSelectOptions;
-    $[1] = searchQuery;
-    $[16] = t6;
-  } else {
-    t6 = $[16];
-  }
-  const initialFocusValue = t6;
-  const visibleCount = Math.min(10, filteredSelectOptions.length);
-  const hiddenCount = Math.max(0, filteredSelectOptions.length - visibleCount);
-  let t7;
-  const effectiveFocusedValue = filteredSelectOptions.some(opt => opt.value === focusedValue)
+
+  const optionsByValue = useMemo(() => new Map(allOptions.map(opt => [opt.value, opt])), [allOptions]);
+
+  const filteredOptions = useMemo(() => filterModelOptions(allOptions, searchQuery), [allOptions, searchQuery]);
+
+  const totalModelCount = countRealModelOptions(allOptions);
+  const matchedModelCount = countRealModelOptions(filteredOptions);
+
+  // `initial` is a bare model id, but rows are keyed by `provider/model` — find
+  // the row it belongs to so the current model still shows as selected.
+  const initialValue =
+    initial === null ? NO_PREFERENCE : (allOptions.find(opt => opt.modelId === initial)?.value ?? initial);
+
+  // While searching, focus the first hit; otherwise prefer the current model.
+  const initialFocusValue = searchQuery
+    ? filteredOptions.find(isRealModelOption)?.value
+    : filteredOptions.some(opt => opt.value === initialValue)
+      ? initialValue
+      : (filteredOptions.find(isRealModelOption)?.value ?? undefined);
+
+  const visibleCount = Math.min(12, filteredOptions.length);
+  const hiddenCount = Math.max(0, filteredOptions.length - visibleCount);
+
+  const effectiveFocusedValue = filteredOptions.some(opt => opt.value === focusedValue)
     ? focusedValue
     : initialFocusValue;
-  if ($[17] !== effectiveFocusedValue || $[18] !== filteredSelectOptions) {
-    t7 = filteredSelectOptions.find(opt_1 => opt_1.value === effectiveFocusedValue)?.label;
-    $[17] = effectiveFocusedValue;
-    $[18] = filteredSelectOptions;
-    $[19] = t7;
-  } else {
-    t7 = $[19];
-  }
-  const focusedModelName = t7;
-  const focusedModel = resolveOptionModel(effectiveFocusedValue, activeProviderId);
+  const focusedOption = effectiveFocusedValue ? optionsByValue.get(effectiveFocusedValue) : undefined;
+  const focusedModelName = focusedOption?.label;
+
+  const focusedModel = resolveOptionModel(focusedOption, activeProviderId);
   const focusedSupportsEffort = focusedModel ? modelSupportsEffort(focusedModel) : false;
   const focusedSupportsMax = focusedModel ? modelSupportsMaxEffort(focusedModel) : false;
-  const focusedDefaultEffort = getDefaultEffortLevelForOption(effectiveFocusedValue, activeProviderId);
+  const focusedDefaultEffort = getDefaultEffortLevelForOption(focusedOption, activeProviderId);
   const displayEffort = effort === 'max' && !focusedSupportsMax ? 'high' : effort;
-  const handleFocus = (value: string) => {
+
+  function handleFocus(value: string): void {
     setFocusedValue(value);
     if (!hasToggledEffort && effortValue === undefined) {
-      setEffort(getDefaultEffortLevelForOption(value, activeProviderId));
+      setEffort(getDefaultEffortLevelForOption(optionsByValue.get(value), activeProviderId));
     }
-  };
-  let t11;
-  if ($[28] !== focusedDefaultEffort || $[29] !== focusedSupportsEffort || $[30] !== focusedSupportsMax) {
-    t11 = direction => {
-      if (!focusedSupportsEffort) {
-        return;
-      }
-      setEffort(prev => cycleEffortLevel(prev ?? focusedDefaultEffort, direction, focusedSupportsMax));
-      setHasToggledEffort(true);
-    };
-    $[28] = focusedDefaultEffort;
-    $[29] = focusedSupportsEffort;
-    $[30] = focusedSupportsMax;
-    $[31] = t11;
-  } else {
-    t11 = $[31];
   }
-  const handleCycleEffort = t11;
+
+  function handleCycleEffort(direction: 'left' | 'right'): void {
+    if (!focusedSupportsEffort) return;
+    setEffort(prev => cycleEffortLevel(prev ?? focusedDefaultEffort, direction, focusedSupportsMax));
+    setHasToggledEffort(true);
+  }
 
   // Applies the focused effort to the running session. `persist` also writes it
   // to userSettings, which every future session reads — so it is only ever true
   // on the explicit set-as-default path, never on a session-scoped selection.
-  const applyEffort = (value: string, persist: boolean): EffortLevel | undefined => {
-    const selectedModel = resolveOptionModel(value, activeProviderId);
+  function applyEffort(option: ModelOption | undefined, persist: boolean): EffortLevel | undefined {
+    const selectedModel = resolveOptionModel(option, activeProviderId);
     const selectedEffort = hasToggledEffort && selectedModel && modelSupportsEffort(selectedModel) ? effort : undefined;
     if (skipSettingsWrite) {
       return selectedEffort;
     }
     const effortLevel = resolvePickerEffortPersistence(
       effort,
-      getDefaultEffortLevelForOption(value, activeProviderId),
+      getDefaultEffortLevelForOption(option, activeProviderId),
       getSettingsForSource('userSettings')?.effortLevel,
       hasToggledEffort,
     );
     if (persist) {
       const persistable = toPersistableEffort(effortLevel);
-      if (persistable !== undefined) {
+      // 'xhigh' isn't in the settings schema — writing it would be dropped on
+      // the next read, so leave the stored level alone instead.
+      if (persistable !== undefined && persistable !== 'xhigh') {
         updateSettingsForSource('userSettings', { effortLevel: persistable });
       }
     }
     setAppState(prev => ({ ...prev, effortValue: effortLevel }));
     return selectedEffort;
-  };
+  }
 
-  // Search is now focused by default, no need for / trigger.
-  // We keep a small useInput to re-focus search if the user starts typing while in the list.
+  /** The `provider/model` string handed back to the caller. */
+  function modelSettingFor(option: ModelOption | undefined): string | null {
+    if (!option || option.value === NO_PREFERENCE) return `${activeProviderId}/default`;
+    if (option.providerId && option.modelId) return `${option.providerId}/${option.modelId}`;
+    return option.value;
+  }
+
+  function jumpProviderSection(direction: 1 | -1): void {
+    const sections = filteredOptions.filter(opt => opt.type === 'section');
+    if (sections.length === 0) return;
+    const currentIndex = effectiveFocusedValue
+      ? filteredOptions.findIndex(opt => opt.value === effectiveFocusedValue)
+      : -1;
+    const sectionIndexes = sections.map(s => filteredOptions.indexOf(s));
+    const target =
+      direction === 1
+        ? (sectionIndexes.find(i => i > currentIndex) ?? sectionIndexes[0]!)
+        : (sectionIndexes.filter(i => i < currentIndex).pop() ?? sectionIndexes[sectionIndexes.length - 1]!);
+    const firstModel = filteredOptions.slice(target + 1).find(isRealModelOption);
+    if (!firstModel) return;
+    setFocusedValue(firstModel.value);
+    setJumpTarget(firstModel.value);
+    setJumpToken(t => t + 1);
+  }
+
   useInput(
     (input, key) => {
       if (showCustomInput) {
@@ -338,7 +271,7 @@ export function ModelPicker(t0) {
         }
         if (key.return) {
           if (customModelId.trim()) {
-            onSelect?.(formatProviderModelSetting(activeProviderId, customModelId.trim()), effort);
+            onSelect?.(`${activeProviderId}/${customModelId.trim()}`, effort);
           }
           return;
         }
@@ -352,18 +285,10 @@ export function ModelPicker(t0) {
         return;
       }
 
+      // Tab jumps between provider groups instead of swapping the whole list —
+      // every provider is already on screen.
       if (key.tab) {
-        if (selectableProviderIds.length > 1) {
-          setActiveProviderId(prev => {
-            const currentIndex = selectableProviderIds.indexOf(prev as any);
-            const safeIndex = currentIndex === -1 ? 0 : currentIndex;
-            const direction = key.shift ? -1 : 1;
-            const nextIndex = (safeIndex + direction + selectableProviderIds.length) % selectableProviderIds.length;
-            return selectableProviderIds[nextIndex] ?? prev;
-          });
-          setFocusedValue(NO_PREFERENCE);
-          setIsSearchActive(true);
-        }
+        jumpProviderSection(key.shift ? -1 : 1);
         return;
       }
 
@@ -380,13 +305,6 @@ export function ModelPicker(t0) {
         setIsSearchActive(true);
       }
 
-      const selectedValue = (): string | null =>
-        effectiveFocusedValue === NO_PREFERENCE
-          ? `${activeProviderId}/default`
-          : effectiveFocusedValue
-            ? formatProviderModelSetting(activeProviderId, effectiveFocusedValue)
-            : null;
-
       // `s` is kept as an alias for Enter (session-only) so existing muscle
       // memory still does the safe thing after Enter stopped persisting.
       if (
@@ -397,7 +315,7 @@ export function ModelPicker(t0) {
         !key.ctrl &&
         !key.meta
       ) {
-        onSelect(selectedValue(), applyEffort(effectiveFocusedValue, false));
+        onSelect(modelSettingFor(focusedOption), applyEffort(focusedOption, false));
       }
 
       // `d` is the only in-picker path that writes to disk.
@@ -409,82 +327,40 @@ export function ModelPicker(t0) {
         !key.ctrl &&
         !key.meta
       ) {
-        onSetDefault(selectedValue(), applyEffort(effectiveFocusedValue, true));
+        onSetDefault(modelSettingFor(focusedOption), applyEffort(focusedOption, true));
       }
     },
-    {
-      isActive: true,
-    },
+    { isActive: true },
   );
-  let t12;
-  if ($[32] !== handleCycleEffort) {
-    t12 = {
+
+  useKeybindings(
+    {
       'modelPicker:decreaseEffort': () => handleCycleEffort('left'),
       'modelPicker:increaseEffort': () => handleCycleEffort('right'),
-    };
-    $[32] = handleCycleEffort;
-    $[33] = t12;
-  } else {
-    t12 = $[33];
-  }
-  let t13;
-  if ($[34] === Symbol.for('react.memo_cache_sentinel')) {
-    t13 = {
-      context: 'ModelPicker',
-    };
-    $[34] = t13;
-  } else {
-    t13 = $[34];
-  }
-  useKeybindings(t12, t13);
-  let t14;
-  if (
-    $[35] !== effort ||
-    $[36] !== hasToggledEffort ||
-    $[37] !== onSetDefault ||
-    $[38] !== onSelect ||
-    $[39] !== setAppState ||
-    $[40] !== skipSettingsWrite ||
-    $[41] !== activeProviderId
-  ) {
-    t14 = function handleSelect(value_0) {
-      if (value_0 === '__CUSTOM_INPUT__') {
-        setShowCustomInput(true);
-        setIsSearchActive(false); // Deactivate model search to focus on custom input
-        return;
-      }
+    },
+    { context: 'ModelPicker' },
+  );
 
-      logEvent('tengu_model_command_menu_effort', {
-        effort: effort as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-      });
-      // Enter is session-scoped. It used to prefer onSetDefault, which wrote the
-      // model to userSettings/provider.json and so changed every other terminal's
-      // session too. Persisting is now opt-in via `d`.
-      const selectedEffort = applyEffort(value_0, false);
-      const handler = onSelect ?? onSetDefault;
-      if (handler) {
-        if (value_0 === NO_PREFERENCE) {
-          handler(`${activeProviderId}/default`, selectedEffort);
-          return;
-        }
-        handler(formatProviderModelSetting(activeProviderId, value_0), selectedEffort);
-      }
-    };
-    $[35] = effort;
-    $[36] = hasToggledEffort;
-    $[37] = onSetDefault;
-    $[38] = onSelect;
-    $[39] = setAppState;
-    $[40] = skipSettingsWrite;
-    $[41] = activeProviderId;
-    $[42] = t14;
-  } else {
-    t14 = $[42];
+  function handleSelect(value: string): void {
+    if (value === CUSTOM_INPUT) {
+      setShowCustomInput(true);
+      setIsSearchActive(false); // Deactivate model search to focus on custom input
+      return;
+    }
+
+    logEvent('tengu_model_command_menu_effort', {
+      effort: effort as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    });
+
+    const option = optionsByValue.get(value);
+    // Enter is session-scoped. Persisting is opt-in via `d`.
+    const selectedEffort = applyEffort(option, false);
+    const handler = onSelect ?? onSetDefault;
+    handler?.(modelSettingFor(option), selectedEffort);
   }
-  const handleSelect = t14;
-  const baseHeaderText = headerText ?? getDefaultHeaderText(providerInfo);
+
+  const baseHeaderText = headerText ?? 'Switch between models from any provider. Applies to this session.';
   const displayHeaderText = isFetchingModels ? `${baseHeaderText} (fetching models...)` : baseHeaderText;
-  const t20 = onCancel ?? _temp4;
 
   if (showCustomInput) {
     return (
@@ -513,183 +389,124 @@ export function ModelPicker(t0) {
 
   const content = (
     <Box flexDirection="column">
-      <Box flexDirection="column">
-        <Box marginBottom={1} flexDirection="column">
-          <Text color="remember" bold={true}>
-            Select model
+      <Box marginBottom={1} flexDirection="column">
+        <Text color="remember" bold={true}>
+          Select model
+        </Text>
+        <Text dimColor={true}>{displayHeaderText}</Text>
+        {sessionModel && (
+          <Text dimColor={true}>
+            Currently using {modelDisplayString(sessionModel)} for this session (set by plan mode). Selecting a model
+            will undo this.
           </Text>
-          <Text dimColor={true}>{displayHeaderText}</Text>
-          {sessionModel && (
-            <Text dimColor={true}>
-              Currently using {modelDisplayString(sessionModel)} for this session (set by plan mode). Selecting a model
-              will undo this.
-            </Text>
-          )}
-          <ProviderTabs
-            providerIds={selectableProviderIds}
-            activeProviderId={activeProviderId}
-            modelCount={totalModelCount}
-            matchedModelCount={matchedModelCount}
-            isFiltering={Boolean(searchQuery.trim())}
+        )}
+      </Box>
+      <ModelSearchBar
+        isActive={isSearchActive}
+        query={searchQuery}
+        cursorOffset={searchCursorOffset}
+        matchCount={matchedModelCount}
+        totalCount={totalModelCount}
+      />
+      <Box flexDirection="column" marginBottom={1}>
+        {filteredOptions.length > 0 ? (
+          <Select
+            key={`models-${jumpToken}`}
+            isDisabled={isSearchActive}
+            defaultValue={initialValue}
+            defaultFocusValue={jumpTarget ?? initialFocusValue}
+            options={filteredOptions as OptionWithDescription<string>[]}
+            onChange={handleSelect}
+            onFocus={handleFocus}
+            onCancel={onCancel ?? noop}
+            visibleOptionCount={visibleCount}
+            highlightText={searchQuery}
+            hideIndexes={true}
           />
-        </Box>
-        <ModelSearchBar
-          isActive={isSearchActive}
-          query={searchQuery}
-          cursorOffset={searchCursorOffset}
-          matchCount={matchedModelCount}
-          totalCount={totalModelCount}
-        />
-        <Box flexDirection="column" marginBottom={1}>
-          <Box flexDirection="column">
-            {filteredSelectOptions.length > 0 ? (
-              <Select
-                isDisabled={isSearchActive}
-                defaultValue={initialValue}
-                defaultFocusValue={initialFocusValue}
-                options={filteredSelectOptions}
-                onChange={handleSelect}
-                onFocus={handleFocus}
-                onCancel={t20}
-                visibleOptionCount={visibleCount}
-                highlightText={searchQuery}
-              />
-            ) : (
-              <Box paddingLeft={3}>
-                <Text color="error">No matching models</Text>
-              </Box>
-            )}
+        ) : (
+          <Box paddingLeft={3}>
+            <Text color="error">No matching models</Text>
           </Box>
-          {hiddenCount > 0 && (
-            <Box paddingLeft={3}>
-              <Text dimColor={true}>and {hiddenCount} more…</Text>
-            </Box>
-          )}
-        </Box>
-        <Box marginBottom={1} flexDirection="column">
-          {focusedSupportsEffort ? (
-            <Text dimColor={true}>
-              <EffortLevelIndicator effort={displayEffort} /> {capitalize(displayEffort)} effort
-              {displayEffort === focusedDefaultEffort ? ' (default)' : ''} <Text color="subtle">← → to adjust</Text>
-            </Text>
-          ) : (
-            <Text color="subtle">
-              <EffortLevelIndicator effort={undefined} /> Effort not supported
-              {focusedModelName ? ` for ${focusedModelName}` : ''}
-            </Text>
-          )}
-        </Box>
+        )}
+        {hiddenCount > 0 && (
+          <Box paddingLeft={3}>
+            <Text dimColor={true}>and {hiddenCount} more…</Text>
+          </Box>
+        )}
+      </Box>
+      <Box marginBottom={1} flexDirection="column">
+        {focusedSupportsEffort ? (
+          <Text dimColor={true}>
+            <EffortLevelIndicator effort={displayEffort} /> {capitalize(displayEffort)} effort
+            {displayEffort === focusedDefaultEffort ? ' (default)' : ''} <Text color="subtle">← → to adjust</Text>
+          </Text>
+        ) : (
+          <Text color="subtle">
+            <EffortLevelIndicator effort={undefined} /> Effort not supported
+            {focusedModelName ? ` for ${focusedModelName}` : ''}
+          </Text>
+        )}
       </Box>
       {isStandaloneCommand && (
-        <Text dimColor={true} italic={true}>
+        <Text color="subtle" italic={true}>
           {exitState.pending ? (
             <>Press {exitState.keyName} again to exit</>
           ) : (
-            <Byline>
-              <KeyboardShortcutHint shortcut="Enter" action="use for this session" />
-              {onSetDefault && <KeyboardShortcutHint shortcut="d" action="set as default for new sessions" />}
-              <ConfigurableShortcutHint action="select:cancel" context="Select" fallback="Esc" description="exit" />
-            </Byline>
+            <>
+              type to search · ↑/↓ navigate · tab next provider · enter to select
+              {onSetDefault ? ' · d set as default' : ''} · esc to clear
+            </>
           )}
         </Text>
       )}
     </Box>
   );
+
   if (!isStandaloneCommand) {
     return content;
   }
   return <Pane color="permission">{content}</Pane>;
 }
-function _temp4() {
+
+function noop(): void {
   /* noop */
 }
-function _temp3(opt_0) {
-  return {
-    ...opt_0,
-    value: opt_0.value === null ? NO_PREFERENCE : opt_0.value,
-  };
-}
-function _temp2(s_0) {
-  return s_0.effortValue;
-}
-function _temp(_s) {
-  return false;
-}
-function getDefaultHeaderText(
-  providerInfo?: {
-    entry: ReturnType<typeof getProviderRegistryEntry>;
-    selectedModel: string | undefined;
-    providerId: string;
-  } | null,
-): string {
-  const info = providerInfo ?? getActiveProviderInfo();
-  if (!info) {
-    return 'Switch between models. Applies to this session.';
-  }
-  return `Switch to ${info.entry.label} model. Press Tab to change provider.`;
-}
 
-function getActiveProviderInfo(): {
-  entry: ReturnType<typeof getProviderRegistryEntry>;
-  selectedModel: string | undefined;
-  providerId: string;
-} | null {
+/**
+ * Every provider's models in one list, grouped by provider. The active provider
+ * leads so the models you can use right now are the first thing on screen; the
+ * rest follow in registry order.
+ */
+export function buildUnifiedModelOptions({
+  fetchedModels,
+  activeProviderId,
+  initial,
+  defaultOptionLabel,
+  defaultOptionDescription,
+}: {
+  fetchedModels?: FetchedModel[] | null;
+  activeProviderId: string;
+  initial?: string | null;
+  defaultOptionLabel?: string;
+  defaultOptionDescription?: string;
+}): ModelOption[] {
   const providerManager = ProviderManager.getInstance();
-  const providerId = providerManager.getActiveProviderName();
-  const entry = getProviderRegistryEntry(providerId);
-  if (!entry) return null;
-
-  return {
-    entry,
-    selectedModel: providerManager.getModelForProvider(providerId),
-    providerId,
-  };
-}
-
-function getEffectiveModelOptions(
-  fetchedModels?: FetchedModel[] | null,
-  entry?: ReturnType<typeof getProviderRegistryEntry>,
-  initial?: string | null,
-  activeProviderId?: string,
-  defaultOptionLabel?: string,
-  defaultOptionDescription?: string,
-): ModelOption[] {
-  const providerManager = ProviderManager.getInstance();
-  const currentProviderId = activeProviderId ?? providerManager.getActiveProviderName();
-  const providerEntry = entry ?? getProviderRegistryEntry(currentProviderId as any);
-
-  // When no provider registry entry found, return minimal options instead of
-  // falling back to hardcoded Claude models (getModelOptions()). Show the
-  // default option and a custom model input so users can type any model ID.
-  if (!providerEntry) {
-    const defaultModel = providerManager.getModelForProvider(currentProviderId as any) ?? 'custom';
-    return [
-      {
-        value: null,
-        label: defaultOptionLabel ?? 'Default (recommended)',
-        description: defaultOptionDescription ?? `Use current default (${defaultModel})`,
-      },
-      {
-        value: '__CUSTOM_INPUT__',
-        label: '✏️  Type custom model ID',
-        description: 'Use: /model your-model-id',
-      },
-    ] as any;
-  }
-
   const implementationType = providerManager.getImplementationType();
 
-  // Merge API-fetched models with static providers.json models.
-  // Fetched models are preferred (they're the live source of truth), but
-  // static models backfill any gaps — some provider APIs return partial lists
-  // or are temporarily unreachable.
-  const staticModels: ModelOption[] = (providerEntry.models ?? [])
-    .filter(m => !m.supportedTypes || m.supportedTypes.includes(implementationType))
-    .map(m => toProviderModelOption(m));
-  let providerModels: ModelOption[];
-  if (fetchedModels && fetchedModels.length > 0) {
-    // Map fetched models to ModelOption format
-    providerModels = fetchedModels.map(m => {
+  const modelsForProvider = (providerId: string): ModelOption[] => {
+    const entry = getProviderRegistryEntry(providerId as any);
+    if (!entry) return [];
+    const staticModels = (entry.models ?? [])
+      .filter(m => !m.supportedTypes || m.supportedTypes.includes(implementationType))
+      .map(m => toProviderModelOption(providerId, m));
+
+    if (providerId !== activeProviderId || !fetchedModels || fetchedModels.length === 0) {
+      return staticModels;
+    }
+
+    // Live models win for the active provider, but static entries backfill:
+    // some provider APIs return partial lists or are temporarily unreachable.
+    const live: ModelOption[] = fetchedModels.map(m => {
       const parts: string[] = [];
       if (m.contextWindow) parts.push(`${formatContext(m.contextWindow)} ctx`);
       if (m.supportsVision) parts.push('vision');
@@ -698,109 +515,99 @@ function getEffectiveModelOptions(
       if (m.free) parts.push('free');
       if (m.maxOutput) parts.push(`${formatContext(m.maxOutput)} out`);
       return {
-        value: m.id,
+        value: `${providerId}/${m.id}`,
         label: m.label,
         description: parts.length > 0 ? parts.join(' · ') : (m.description ?? m.id),
         descriptionForModel: m.id,
+        providerId,
+        modelId: m.id,
       };
     });
-    // Backfill any static models not returned by the API
-    const fetchedIds = new Set(providerModels.map(m => m.value));
-    for (const sm of staticModels) {
-      if (!fetchedIds.has(sm.value)) {
-        providerModels.push(sm);
-      }
-    }
-  } else {
-    providerModels = staticModels;
-  }
-
-  const defaultModel =
-    providerManager.getModelForProvider(currentProviderId as any) ?? providerEntry.defaultModel ?? 'provider default';
-  const defaultModelOption: ModelOption = {
-    value: null,
-    label: defaultOptionLabel ?? 'Default (recommended)',
-    description: defaultOptionDescription ?? `Use ${providerEntry.label} default (${defaultModel})`,
+    const liveIds = new Set(live.map(m => m.modelId));
+    return [...live, ...staticModels.filter(sm => !liveIds.has(sm.modelId))];
   };
 
-  // Keep recents, but only show recents that belong to the active provider list.
-  const providerModelIds = new Set(providerModels.map(model => model.value));
-  const recentModels = mergeRecentModels([
-    initial,
-    providerManager.getModelForProvider(currentProviderId as any),
-  ]).filter((id): id is string => Boolean(id && providerModelIds.has(id)));
+  const orderedProviderIds = [activeProviderId, ...PROVIDER_IDS.filter(id => id !== activeProviderId)];
+  const modelsByProvider = new Map(orderedProviderIds.map(id => [id, modelsForProvider(id)] as const));
+  const allModels = [...modelsByProvider.values()].flat();
 
   const options: ModelOption[] = [];
 
+  // Recents first — these are matched against the fully-qualified value so a
+  // bare model id from settings still resolves to its provider's row.
+  const byModelId = new Map(allModels.map(m => [m.modelId!, m] as const));
+  const recentModels = mergeRecentModels([initial, providerManager.getModelForProvider(activeProviderId as any)])
+    .map(id => (id ? byModelId.get(id) : undefined))
+    .filter((m): m is ModelOption => Boolean(m));
+
   if (recentModels.length > 0) {
-    options.push({
-      value: '__SECTION_RECENT__',
-      label: 'Recent',
-      description: '',
-      type: 'section',
-      disabled: true,
-    });
-    for (const id of recentModels) {
-      const found = providerModels.find(model => model.value === id);
-      options.push({
-        value: id,
-        label: found?.label ?? id,
-        description: 'Recently used',
-        descriptionForModel: found?.descriptionForModel ?? id,
-        hideIndex: true,
-      });
+    options.push(sectionOption('recent', 'Recent'));
+    for (const model of recentModels) {
+      options.push({ ...model, description: 'Recently used' });
     }
   }
 
-  options.push(defaultModelOption);
+  const activeEntry = getProviderRegistryEntry(activeProviderId as any);
+  const activeDefaultModel =
+    providerManager.getModelForProvider(activeProviderId as any) ?? activeEntry?.defaultModel ?? 'provider default';
+  options.push({
+    value: NO_PREFERENCE,
+    label: defaultOptionLabel ?? 'Default (recommended)',
+    description:
+      defaultOptionDescription ?? `Use ${activeEntry?.label ?? activeProviderId} default (${activeDefaultModel})`,
+  });
 
-  const recentModelSet = new Set(recentModels);
-  const sectionModels = providerModels.filter(model => !recentModelSet.has(model.value));
-  if (sectionModels.length > 0) {
-    options.push({
-      value: `__SECTION_${currentProviderId}__`,
-      label: providerEntry.label,
-      description: '',
-      type: 'section',
-      disabled: true,
-    });
-    options.push(...sectionModels);
+  const recentValues = new Set(recentModels.map(m => m.value));
+  for (const providerId of orderedProviderIds) {
+    const models = (modelsByProvider.get(providerId) ?? []).filter(m => !recentValues.has(m.value));
+    if (models.length === 0) continue;
+    const entry = getProviderRegistryEntry(providerId as any);
+    options.push(sectionOption(providerId, entry?.label ?? providerId));
+    options.push(...models);
   }
 
   options.push({
-    value: '__CUSTOM_INPUT__',
+    value: CUSTOM_INPUT,
     label: '✏️  Type custom model ID',
     description: 'Use: /model your-model-id',
   });
 
-  return options as any;
+  return options;
 }
-function toProviderModelOption(model: ProviderModelInfo) {
+
+function sectionOption(id: string, label: string): ModelOption {
+  return {
+    value: `${SECTION_PREFIX}${id}__`,
+    label,
+    description: '',
+    type: 'section',
+    disabled: true,
+  };
+}
+
+function toProviderModelOption(providerId: string, model: ProviderModelInfo): ModelOption {
   const label = model.label ?? model.id;
   const parts: string[] = [];
   const cap = model.capabilities;
 
-  // Context window
   if (cap.maxContext) {
     const ctx = typeof cap.maxContext === 'number' ? formatContext(cap.maxContext) : 'varies';
     parts.push(`${ctx} ctx`);
   }
-  // Vision
   if (cap.vision) parts.push('vision');
-  // Tool calling
   if (cap.toolCalling && cap.toolCalling !== 'none') parts.push('tools');
-  // Reasoning
   if (cap.reasoning) parts.push('reasoning');
-  // Free
   if (cap.free) parts.push('free');
 
   const description = parts.length > 0 ? parts.join(' · ') : model.tags?.slice(0, 3).join(' · ') || model.id;
 
   return {
-    value: model.id,
+    value: `${providerId}/${model.id}`,
     label,
     description,
     descriptionForModel: model.id,
+    providerId,
+    modelId: model.id,
   };
 }
 
@@ -810,53 +617,45 @@ function formatContext(ctx: number): string {
   return String(ctx);
 }
 
-type ModelSelectOption = {
-  value: string;
-  label: React.ReactNode;
-  description?: string;
-  descriptionForModel?: string;
-  type?: 'text' | 'section';
-  disabled?: boolean;
-  hideIndex?: boolean;
-};
-
-type ModelOption = {
-  value: ModelSetting;
-  label: string;
-  description: string;
-  descriptionForModel?: string;
-  type?: 'text' | 'section';
-  disabled?: boolean;
-  hideIndex?: boolean;
-};
-
-function countRealModelOptions(options: ModelSelectOption[]): number {
-  return options.filter(option => isRealModelOption(option)).length;
+function countRealModelOptions(options: ModelOption[]): number {
+  return options.filter(isRealModelOption).length;
 }
 
-function isRealModelOption(option: ModelSelectOption): boolean {
+function isRealModelOption(option: ModelOption): boolean {
   if (option.type === 'section') return false;
   if (!option.value) return false;
   if (option.value === NO_PREFERENCE) return false;
-  if (option.value === '__CUSTOM_INPUT__') return false;
-  return !option.value.startsWith('__SECTION_');
+  if (option.value === CUSTOM_INPUT) return false;
+  return !option.value.startsWith(SECTION_PREFIX);
 }
 
-function filterModelOptions(options: ModelSelectOption[], query: string): ModelSelectOption[] {
+/**
+ * Filtering drops section headers, then puts back any header that still has at
+ * least one match under it — otherwise results lose their provider grouping.
+ */
+function filterModelOptions(options: ModelOption[], query: string): ModelOption[] {
   const trimmedQuery = query.trim().toLowerCase();
-  if (!trimmedQuery) {
-    return options;
+  if (!trimmedQuery) return options;
+
+  const result: ModelOption[] = [];
+  let pendingSection: ModelOption | undefined;
+  for (const option of options) {
+    if (option.type === 'section') {
+      pendingSection = option;
+      continue;
+    }
+    if (!getModelOptionSearchText(option).includes(trimmedQuery)) continue;
+    if (pendingSection) {
+      result.push(pendingSection);
+      pendingSection = undefined;
+    }
+    result.push(option);
   }
-  return options.filter(option => option.type !== 'section' && getModelOptionSearchText(option).includes(trimmedQuery));
+  return result;
 }
 
-function getModelOptionSearchText(option: ModelSelectOption): string {
-  return [
-    typeof option.label === 'string' ? option.label : '',
-    option.value,
-    option.description,
-    option.descriptionForModel,
-  ]
+function getModelOptionSearchText(option: ModelOption): string {
+  return [option.label, option.value, option.description, option.descriptionForModel, option.providerId]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -895,42 +694,24 @@ function ModelSearchBar({
     </Box>
   );
 }
-function resolveOptionModel(value?: string, providerId?: string): string | undefined {
-  if (!value) return undefined;
-  if (value === NO_PREFERENCE) {
-    if (providerId) {
-      const providerManager = ProviderManager.getInstance();
-      const entry = getProviderRegistryEntry(providerId as any);
-      return providerManager.getModelForProvider(providerId as any) ?? entry?.defaultModel ?? getDefaultMainLoopModel();
-    }
-    return getDefaultMainLoopModel();
+
+function resolveOptionModel(option: ModelOption | undefined, activeProviderId: string): string | undefined {
+  if (!option) return undefined;
+  if (option.value === NO_PREFERENCE) {
+    const providerManager = ProviderManager.getInstance();
+    const entry = getProviderRegistryEntry(activeProviderId as any);
+    return (
+      providerManager.getModelForProvider(activeProviderId as any) ?? entry?.defaultModel ?? getDefaultMainLoopModel()
+    );
   }
-  return parseUserSpecifiedModel(value);
+  if (option.modelId) return parseUserSpecifiedModel(option.modelId);
+  return parseUserSpecifiedModel(option.value);
 }
-function EffortLevelIndicator(t0) {
-  const $ = _c(5);
-  const { effort } = t0;
-  const t1 = effort ? 'claude' : 'subtle';
-  const t2 = effort ?? 'low';
-  let t3;
-  if ($[0] !== t2) {
-    t3 = effortLevelToSymbol(t2);
-    $[0] = t2;
-    $[1] = t3;
-  } else {
-    t3 = $[1];
-  }
-  let t4;
-  if ($[2] !== t1 || $[3] !== t3) {
-    t4 = <Text color={t1}>{t3}</Text>;
-    $[2] = t1;
-    $[3] = t3;
-    $[4] = t4;
-  } else {
-    t4 = $[4];
-  }
-  return t4;
+
+function EffortLevelIndicator({ effort }: { effort: EffortLevel | undefined }): React.ReactNode {
+  return <Text color={effort ? 'claude' : 'subtle'}>{effortLevelToSymbol(effort ?? 'low')}</Text>;
 }
+
 function cycleEffortLevel(current: EffortLevel, direction: 'left' | 'right', includeMax: boolean): EffortLevel {
   const levels: EffortLevel[] = includeMax ? ['low', 'medium', 'high', 'max'] : ['low', 'medium', 'high'];
   // If the current level isn't in the cycle (e.g. 'max' after switching to a
@@ -939,59 +720,12 @@ function cycleEffortLevel(current: EffortLevel, direction: 'left' | 'right', inc
   const currentIndex = idx !== -1 ? idx : levels.indexOf('high');
   if (direction === 'right') {
     return levels[(currentIndex + 1) % levels.length]!;
-  } else {
-    return levels[(currentIndex - 1 + levels.length) % levels.length]!;
   }
+  return levels[(currentIndex - 1 + levels.length) % levels.length]!;
 }
-function getDefaultEffortLevelForOption(value?: string, providerId?: string): EffortLevel {
-  const resolved = resolveOptionModel(value, providerId) ?? getDefaultMainLoopModel();
+
+function getDefaultEffortLevelForOption(option: ModelOption | undefined, activeProviderId: string): EffortLevel {
+  const resolved = resolveOptionModel(option, activeProviderId) ?? getDefaultMainLoopModel();
   const defaultValue = getDefaultEffortForModel(resolved);
   return defaultValue !== undefined ? convertEffortValueToLevel(defaultValue) : 'high';
-}
-
-function formatProviderModelSetting(providerId: string, modelId: string): string {
-  return modelId.includes('/') ? modelId : `${providerId}/${modelId}`;
-}
-
-function getSelectableProviderIds(): string[] {
-  // Show all registered providers so users can browse models across all providers
-  return [...PROVIDER_IDS];
-}
-
-function ProviderTabs({
-  providerIds,
-  activeProviderId,
-  modelCount,
-  matchedModelCount,
-  isFiltering,
-}: {
-  providerIds: string[];
-  activeProviderId: string;
-  modelCount: number;
-  matchedModelCount: number;
-  isFiltering: boolean;
-}) {
-  if (providerIds.length <= 1) return null;
-
-  const activeIndex = Math.max(0, providerIds.indexOf(activeProviderId));
-  const activeLabel = truncateProviderLabel(PROVIDER_REGISTRY[activeProviderId]?.label ?? activeProviderId, 24);
-  const modelCountLabel = isFiltering ? `${matchedModelCount}/${modelCount}` : String(modelCount);
-
-  return (
-    <Box marginTop={1}>
-      <Text dimColor={true}>Provider: </Text>
-      <Text color="remember" bold={true}>
-        [{activeLabel}]
-      </Text>
-      <Text color="subtle">
-        {' '}
-        {activeIndex + 1}/{providerIds.length} · Models {modelCountLabel} · Tab next · Shift+Tab prev
-      </Text>
-    </Box>
-  );
-}
-
-function truncateProviderLabel(label: string, maxLength: number): string {
-  if (label.length <= maxLength) return label;
-  return `${label.slice(0, Math.max(0, maxLength - 1))}…`;
 }

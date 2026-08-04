@@ -78,13 +78,11 @@ import { registerCleanup } from 'src/utils/cleanupRegistry.js';
 import { createIdleTimeoutManager } from 'src/utils/idleTimeout.js';
 import type {
   SDKStatus,
-  ModelInfo,
   SDKMessage,
   SDKUserMessage,
   SDKUserMessageReplay,
   PermissionResult,
   McpServerConfigForProcessTransport,
-  McpServerStatus,
   RewindFilesResult,
 } from 'src/entrypoints/agentSdkTypes.js';
 import type {
@@ -3526,10 +3524,10 @@ function runHeadlessStreaming(
         // Check for duplicate user message - skip if already processed
         if (message.uuid) {
           const sessionId = getSessionId() as UUID;
-          const existsInSession = await doesMessageExistInSession(sessionId, message.uuid);
+          const existsInSession = await doesMessageExistInSession(sessionId, message.uuid as UUID);
 
           // Check both historical duplicates (from file) and runtime duplicates (this session)
-          if (existsInSession || receivedMessageUuids.has(message.uuid)) {
+          if (existsInSession || receivedMessageUuids.has(message.uuid as UUID)) {
             logForDebugging(`Skipping duplicate user message: ${message.uuid}`);
             // Send acknowledgment for duplicate message if replay mode is enabled
             if (options.replayUserMessages) {
@@ -3555,7 +3553,7 @@ function runHeadlessStreaming(
           }
 
           // Track this UUID to prevent runtime duplicates
-          trackReceivedMessageUuid(message.uuid);
+          trackReceivedMessageUuid(message.uuid as UUID);
         }
 
         enqueue({
@@ -3563,7 +3561,7 @@ function runHeadlessStreaming(
           // file_attachments rides the protobuf catchall from the web composer.
           // Same-ref no-op when absent (no 'file_attachments' key).
           value: await resolveAndPrepend(message, message.message.content),
-          uuid: message.uuid,
+          uuid: message.uuid as UUID,
           priority: message.priority,
         });
         // Increment prompt count for attribution tracking and save snapshot
@@ -3772,7 +3770,7 @@ async function handleInitializeRequest(
   initialized: boolean,
   output: Stream<StdoutMessage>,
   commands: Command[],
-  modelInfos: ModelInfo[],
+  modelInfos: SDKControlInitializeResponse['models'],
   structuredIO: StructuredIO,
   enableAuthStatus: boolean,
   options: {
