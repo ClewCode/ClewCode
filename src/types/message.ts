@@ -207,6 +207,22 @@ export interface SystemMemorySavedMessage extends SystemMessageBase {
   verb?: string;
 }
 
+export interface SystemTasteLearnedMessage extends SystemMessageBase {
+  type: 'system';
+  subtype: 'taste_learned';
+  /** The preference, as written to TASTE.md. Also the key for confirm/reject. */
+  text: string;
+  scope: 'global' | 'project';
+  /** Domain bucket (cli, typescript, architecture, general). */
+  category: 'cli' | 'typescript' | 'architecture' | 'general';
+  /** 0–1. Rendered as a percentage. */
+  confidence: number;
+  /** Absolute path of the TASTE.md the entry landed in. */
+  path: string;
+  /** Set once the user answers, which freezes the card's prompt. */
+  resolution?: 'confirmed' | 'rejected';
+}
+
 export interface SystemAgentsKilledMessage extends SystemMessageBase {
   type: 'system';
   subtype: 'agents_killed';

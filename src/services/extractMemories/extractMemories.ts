@@ -34,10 +34,13 @@ import { count, uniq } from '../../utils/array.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { createCacheSafeParams, runForkedAgent } from '../../utils/forkedAgent.js';
 import type { REPLHookContext } from '../../utils/hooks/postSamplingHooks.js';
-import { createMemorySavedMessage, createUserMessage } from '../../utils/messages.js';
+import { createMemorySavedMessage, createTasteLearnedMessage, createUserMessage } from '../../utils/messages.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
 import { logEvent } from '../analytics/index.js';
 import { sanitizeToolNameForAnalytics } from '../analytics/metadata.js';
+import { buildTastePromptSection } from '../taste/prompt.js';
+import { getTastePath } from '../taste/store.js';
+import { isTasteEnabled, learnTasteFromText, listKnownTasteText } from '../taste/taste.js';
 import { buildExtractAutoOnlyPrompt, buildExtractCombinedPrompt } from './prompts.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -206,6 +209,25 @@ function getWrittenFilePath(block: { type: string; name?: string; input?: unknow
   return undefined;
 }
 
+/**
+ * Concatenated text of the agent's final assistant message — where the taste
+ * block lives. Only the last message is considered: an earlier turn restating
+ * the format from the prompt would otherwise read as a report.
+ */
+function finalAssistantText(agentMessages: Message[]): string {
+  for (let i = agentMessages.length - 1; i >= 0; i--) {
+    const message = agentMessages[i];
+    if (message?.type !== 'assistant') continue;
+    const content = (message as AssistantMessage).message.content;
+    if (!Array.isArray(content)) return '';
+    return content
+      .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+      .map(block => block.text)
+      .join('\n');
+  }
+  return '';
+}
+
 function extractWrittenPaths(agentMessages: Message[]): string[] {
   const paths: string[] = [];
   for (const message of agentMessages) {
@@ -335,10 +357,17 @@ export function initExtractMemories(): void {
       // Placed after the throttle gate so skipped turns don't pay the scan cost.
       const existingMemories = formatMemoryManifest(await scanMemoryFiles(memoryDir, createAbortController().signal));
 
-      const userPrompt =
+      const basePrompt =
         feature('TEAMMEM') && teamMemoryEnabled
           ? buildExtractCombinedPrompt(newMessageCount, existingMemories, skipIndex)
           : buildExtractAutoOnlyPrompt(newMessageCount, existingMemories, skipIndex);
+
+      // Taste rides along on this fork rather than paying for its own — the
+      // messages it needs are already in this context.
+      const tasteOn = isTasteEnabled();
+      const userPrompt = tasteOn
+        ? [basePrompt, ...buildTastePromptSection(await listKnownTasteText())].join('\n')
+        : basePrompt;
 
       const result = await runForkedAgent({
         promptMessages: [createUserMessage({ content: userPrompt })],
@@ -409,6 +438,32 @@ export function initExtractMemories(): void {
           msg.teamCount = teamCount;
         }
         appendSystemMessage?.(msg);
+      }
+
+      // Taste is reported in the final message text, not written as a file, so
+      // it is persisted here rather than showing up in writtenPaths.
+      if (tasteOn) {
+        try {
+          const learned = await learnTasteFromText(finalAssistantText(result.messages));
+          for (const entry of learned) {
+            appendSystemMessage?.(
+              createTasteLearnedMessage({
+                text: entry.text,
+                scope: entry.scope,
+                category: entry.category,
+                confidence: entry.confidence,
+                path: getTastePath(entry.scope),
+              }),
+            );
+          }
+          if (learned.length > 0) {
+            logEvent('tengu_taste_learned', { count: learned.length });
+          }
+        } catch (error) {
+          // Never let taste break memory extraction — it is the cheaper half
+          // of this fork and the one the user asked for.
+          logForDebugging(`[taste] failed to record: ${error}`);
+        }
       }
     } catch (error) {
       // Extraction is best-effort — log but don't notify on error

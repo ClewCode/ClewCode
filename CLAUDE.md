@@ -61,6 +61,36 @@ bun run check:ci && bun x tsc --noEmit && bun test --bail
 
 See [AGENT.md § Build / Test / Lint](AGENT.md#build--test--lint-bun-only) for details and feature flags.
 
+## Taste — learned standing preferences (`src/services/taste/`)
+
+Memory records *what you know*; taste records *how to behave*. Taste is injected into
+every turn as instructions, so it is deliberately narrower and higher-bar than memory.
+
+- **Learned on the extraction fork.** `extractMemories` already forks the conversation
+  at turn end with a shared prompt cache; `buildTastePromptSection()` appends a taste
+  question to that same prompt, so the marginal cost is a few hundred tokens, not a
+  second fork.
+- **Reported as a fenced ` ```taste ` block**, not a file write — the extraction fork's
+  write allowlist covers only the auto-memory directory, and neither TASTE.md lives
+  there. `parseTasteBlock()` validates every line; malformed lines are dropped, never
+  guessed at.
+- **Two files, two scopes.** `project` → `<projectRoot>/.clew/memory/TASTE.md` (the file
+  the manual `preferred` feedback signal already writes). `global` →
+`<memoryBaseDir>/memory/TASTE.md`.
+- **Line format** `- [2026-08-04] (80%) [cli] text`. A line with no `(n%)` marker reads as 100%
+  — a human wrote it, so it is not a guess. The `[category]` bracket is optional;
+  entries without one fall back to `general`.
+- **Categories** — `cli`, `typescript`, `architecture`, `general`. The injected `# Taste`
+  block groups entries by category so the model sees domain-specific preferences together.
+- **Applied above `TASTE_APPLY_THRESHOLD` (0.6)** only. Below that an entry is recorded
+  so a later observation can raise it, but not injected.
+- **Enablement** follows auto-memory (`isTasteEnabled()`), since taste rides on the
+  extraction fork. `tasteEnabled: false` in settings forces it off independently.
+- `/taste` lists entries, `/taste on|off`, `/taste forget <n>`, `/taste push [cat]`
+  (project→global), `/taste pull [cat]` (global→project), `/taste lint` (validate files).
+  The TASTE card in the transcript offers confirm (raise to 100%) / reject (delete).
+  Push and pull skip entries that already exist in the target scope (matched by category + text).
+
 ## Architecture Overview
 
 See [AGENT.md](AGENT.md) for the full architecture (entry & REPL, query loop & providers, tools, and services).
