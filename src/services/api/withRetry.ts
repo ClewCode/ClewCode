@@ -270,12 +270,12 @@ export async function* withRetry<T>(
             const chain = getModelFallbackChain();
             const nextIndex = (options.fallbackChainIndex ?? -1) + 1;
             const next = resolveNextFallback(chain, nextIndex, options.activeProvider);
-            if (next && next.isSameProvider) {
+            if (next?.isSameProvider) {
               logEvent('tengu_api_chain_fallback_triggered', {
                 original_model: options.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
                 fallback_model: next.entry.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-                fallback_effort:
-                  (next.entry.effort ?? 'unset') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+                fallback_effort: (next.entry.effort ??
+                  'unset') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
                 chain_index: nextIndex,
                 provider: getAPIProviderForStatsig(),
               });
