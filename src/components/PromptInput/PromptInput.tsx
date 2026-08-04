@@ -50,6 +50,7 @@ import { useKeybinding, useKeybindings } from '../../keybindings/useKeybinding.j
 import type { MCPServerConnection } from '../../services/mcp/types.js';
 import { abortPromptSuggestion, logSuggestionSuppressed } from '../../services/PromptSuggestion/promptSuggestion.js';
 import { type ActiveSpeculationState, abortSpeculation } from '../../services/PromptSuggestion/speculation.js';
+import { enhancePrompt } from '../../services/promptEnhancement.js';
 import { getActiveAgentForInput, getViewedTeammateTask } from '../../state/selectors.js';
 import { enterTeammateView, exitTeammateView, stopOrDismissAgent } from '../../state/teammateViewHelpers.js';
 import type { ToolPermissionContext } from '../../Tool.js';
@@ -141,6 +142,7 @@ import { TeamsDialog } from '../teams/TeamsDialog.js';
 import VimTextInput from '../VimTextInput.js';
 import { getModeFromInput, getValueFromInput } from './inputModes.js';
 import { CopiedToast, FOOTER_TEMPORARY_STATUS_TIMEOUT, Notifications } from './Notifications.js';
+import { PromptEnhancementDialog } from '../PromptEnhancementDialog.js';
 import PromptInputFooter from './PromptInputFooter.js';
 import type { SuggestionItem } from './PromptInputFooterSuggestions.js';
 import { PromptInputModeIndicator } from './PromptInputModeIndicator.js';
@@ -481,6 +483,12 @@ function PromptInput({
   const [showAutoModeOptIn, setShowAutoModeOptIn] = useState(false);
   const [previousModeBeforeAuto, setPreviousModeBeforeAuto] = useState<PermissionMode | null>(null);
   const autoModeOptInTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Prompt enhancement
+  const [showEnhancementDialog, setShowEnhancementDialog] = useState(false);
+  const [enhancementLoading, setEnhancementLoading] = useState(false);
+  const [enhancedPrompt, setEnhancedPrompt] = useState<string>('');
+  const enhancementAbortRef = useRef<AbortController | null>(null);
 
   // Check if cursor is on the first line of input
   const isCursorOnFirstLine = useMemo(() => {
@@ -2068,6 +2076,45 @@ function PromptInput({
     });
   }, [keybindingContext, isModalOverlayActive, onSubmit, input]);
 
+  // Prompt enhancement handlers
+  const handleEnhancePrompt = useCallback(async () => {
+    if (!input.trim() || enhancementLoading || showEnhancementDialog) return;
+
+    enhancementAbortRef.current = new AbortController();
+    setEnhancementLoading(true);
+    setShowEnhancementDialog(true);
+
+    try {
+      const enhanced = await enhancePrompt(input, enhancementAbortRef.current.signal);
+      setEnhancedPrompt(enhanced);
+      setEnhancementLoading(false);
+    } catch (err) {
+      if (err instanceof Error && err.message !== 'The operation was aborted') {
+        logError(err);
+      }
+      setShowEnhancementDialog(false);
+      setEnhancementLoading(false);
+    }
+  }, [input, enhancementLoading, showEnhancementDialog]);
+
+  const handleEnhancementApply = useCallback(() => {
+    if (enhancedPrompt) {
+      trackAndSetInput(enhancedPrompt);
+      setCursorOffset(enhancedPrompt.length);
+      setShowEnhancementDialog(false);
+      setEnhancedPrompt('');
+    }
+  }, [enhancedPrompt, trackAndSetInput]);
+
+  const handleEnhancementCancel = useCallback(() => {
+    if (enhancementAbortRef.current) {
+      enhancementAbortRef.current.abort();
+    }
+    setShowEnhancementDialog(false);
+    setEnhancementLoading(false);
+    setEnhancedPrompt('');
+  }, []);
+
   // Chat context keybindings for editing shortcuts
   // Note: history:previous/history:next are NOT handled here. They are passed as
   // onHistoryUp/onHistoryDown props to TextInput, so that useTextInput's
@@ -2177,6 +2224,31 @@ function PromptInput({
     {
       context: 'Global',
       isActive: !isLoading && speculation.status === 'active',
+    },
+  );
+
+  // Ctrl+E to enhance prompt
+  useInput(
+    (inputChar: string, key: Key) => {
+      if (key.ctrl && !key.shift && !key.meta && inputChar === 'e') {
+        handleEnhancePrompt();
+      }
+    },
+    { isActive: !isModalOverlayActive && !isLoading && input.trim().length > 0 && !showEnhancementDialog },
+  );
+
+  // Enter to apply enhancement, Esc to cancel
+  useKeybinding(
+    'chat:submit',
+    () => {
+      if (showEnhancementDialog && !enhancementLoading) {
+        handleEnhancementApply();
+        return false;
+      }
+    },
+    {
+      context: 'Chat',
+      isActive: showEnhancementDialog && !enhancementLoading,
     },
   );
 
@@ -2911,6 +2983,14 @@ function PromptInput({
           </Box>
         </Box>
       ) : null}
+      <PromptEnhancementDialog
+        isOpen={showEnhancementDialog}
+        isLoading={enhancementLoading}
+        originalPrompt={input}
+        enhancedPrompt={enhancedPrompt}
+        onApply={handleEnhancementApply}
+        onCancel={handleEnhancementCancel}
+      />
     </Box>
   );
 }

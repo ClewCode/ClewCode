@@ -7,6 +7,7 @@ import { isAwsCredentialsProviderError } from 'src/utils/aws.js';
 import { logForDebugging } from 'src/utils/debug.js';
 import { logError } from 'src/utils/log.js';
 import { createSystemAPIErrorMessage } from 'src/utils/messages.js';
+import { getModelFallbackChain, resolveNextFallback } from 'src/utils/model/fallbackChain.js';
 import { getAPIProviderForStatsig } from 'src/utils/model/providers.js';
 import { getIsNonInteractiveSession } from '../../bootstrap/state.js';
 import {
@@ -122,6 +123,8 @@ interface RetryOptions {
   maxRetries?: number;
   model: string;
   fallbackModel?: string;
+  fallbackChainIndex?: number; // Current position in the fallback chain (0-based)
+  activeProvider?: string; // Active provider at fallback trigger time
   thinkingConfig: ThinkingConfig;
   signal?: AbortSignal;
   querySource?: QuerySource;
@@ -154,6 +157,7 @@ export class FallbackTriggeredError extends Error {
   constructor(
     public readonly originalModel: string,
     public readonly fallbackModel: string,
+    public readonly fallbackEffort?: string,
   ) {
     super(`Model fallback triggered: ${originalModel} -> ${fallbackModel}`);
     this.name = 'FallbackTriggeredError';
@@ -248,16 +252,39 @@ export async function* withRetry<T>(
       }
 
       // Track consecutive 529 errors
+      const isCapacityError = isTransientCapacityError(error);
+      const hasConfiguredFallbackChain = getModelFallbackChain().length > 0;
+
       if (
-        is529Error(error) &&
-        // If FALLBACK_FOR_ALL_PRIMARY_MODELS is not set, fall through only if the primary model is a non-custom Opus model.
-        // TODO: Revisit if the isNonCustomOpusModel check should still exist, or if isNonCustomOpusModel is a stale artifact of when Clew Code was hardcoded on Opus.
-        (process.env.FALLBACK_FOR_ALL_PRIMARY_MODELS ||
-          (!isClaudeAISubscriber() && isNonCustomOpusModel(options.model)))
+        isCapacityError &&
+        (hasConfiguredFallbackChain ||
+          (is529Error(error) &&
+            // If FALLBACK_FOR_ALL_PRIMARY_MODELS is not set, fall through only if the primary model is a non-custom Opus model.
+            (process.env.FALLBACK_FOR_ALL_PRIMARY_MODELS ||
+              (!isClaudeAISubscriber() && isNonCustomOpusModel(options.model)))))
       ) {
         consecutive529Errors++;
         if (consecutive529Errors >= MAX_529_RETRIES) {
-          // Check if fallback model is specified
+          // Check if fallback chain is configured
+          if (hasConfiguredFallbackChain && options.activeProvider) {
+            const chain = getModelFallbackChain();
+            const nextIndex = (options.fallbackChainIndex ?? -1) + 1;
+            const next = resolveNextFallback(chain, nextIndex, options.activeProvider);
+            if (next && next.isSameProvider) {
+              logEvent('tengu_api_chain_fallback_triggered', {
+                original_model: options.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+                fallback_model: next.entry.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+                fallback_effort:
+                  (next.entry.effort ?? 'unset') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+                chain_index: nextIndex,
+                provider: getAPIProviderForStatsig(),
+              });
+
+              throw new FallbackTriggeredError(options.model, next.entry.model, next.entry.effort);
+            }
+          }
+
+          // Legacy fallback: single hardcoded fallbackModel
           if (options.fallbackModel) {
             logEvent('tengu_api_opus_fallback_triggered', {
               original_model: options.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -265,7 +292,6 @@ export async function* withRetry<T>(
               provider: getAPIProviderForStatsig(),
             });
 
-            // Throw special error to indicate fallback was triggered
             throw new FallbackTriggeredError(options.model, options.fallbackModel);
           }
 
