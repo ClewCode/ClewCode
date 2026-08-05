@@ -54,6 +54,7 @@ export interface AssistantMessage {
   message: {
     id?: string;
     provider?: string;
+    reasoning_content?: string;
     container?: unknown;
     model?: string;
     role: 'assistant';
@@ -205,6 +206,7 @@ export interface SystemMemorySavedMessage extends SystemMessageBase {
   subtype: 'memory_saved';
   writtenPaths: string[];
   verb?: string;
+  teamCount?: number;
 }
 
 export interface SystemTasteLearnedMessage extends SystemMessageBase {

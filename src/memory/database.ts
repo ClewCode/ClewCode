@@ -260,7 +260,7 @@ export class MemoryDB {
     minImportance?: number;
   }): MemoryRecord[] {
     const conditions: string[] = ['project_path = ?'];
-    const params: unknown[] = [opts.projectPath];
+    const params: (string | number | null)[] = [opts.projectPath];
 
     if (opts.type) {
       conditions.push('type = ?');
@@ -386,7 +386,7 @@ export class MemoryDB {
     verbose?: boolean;
   }): Array<MemoryRecord & { score: number; scoreBreakdown?: Record<string, number> }> {
     const conditions = ['project_path = ?'];
-    const params: unknown[] = [opts.projectPath];
+    const params: (string | number | null)[] = [opts.projectPath];
     if (opts.minImportance !== undefined) {
       conditions.push('importance >= ?');
       params.push(opts.minImportance);
@@ -481,7 +481,7 @@ export class MemoryDB {
    */
   exportMemories(limit = 50, projectPath?: string): MemoryRecord[] {
     let query = 'SELECT * FROM memories';
-    const params: unknown[] = [];
+    const params: (string | number)[] = [];
     if (projectPath) {
       query += ' WHERE project_path = ?';
       params.push(projectPath);

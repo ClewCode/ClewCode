@@ -248,10 +248,10 @@ export async function createAnthropicClient({
 
 function createStderrLogger(): any {
   return {
-    error: (msg, ...args) => console.error('[Anthropic SDK ERROR]', msg, ...args),
-    warn: (msg, ...args) => console.error('[Anthropic SDK WARN]', msg, ...args),
-    info: (msg, ...args) => console.error('[Anthropic SDK INFO]', msg, ...args),
-    debug: (msg, ...args) => console.error('[Anthropic SDK DEBUG]', msg, ...args),
+    error: (msg: string, ...args: unknown[]) => console.error('[Anthropic SDK ERROR]', msg, ...args),
+    warn: (msg: string, ...args: unknown[]) => console.error('[Anthropic SDK WARN]', msg, ...args),
+    info: (msg: string, ...args: unknown[]) => console.error('[Anthropic SDK INFO]', msg, ...args),
+    debug: (msg: string, ...args: unknown[]) => console.error('[Anthropic SDK DEBUG]', msg, ...args),
   };
 }
 

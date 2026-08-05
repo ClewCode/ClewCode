@@ -39,9 +39,9 @@ export function MemoryStats({ onClose }: Props) {
   const sparkline = () => {
     const days = density.byDay.slice(0, 14).reverse();
     if (!days.length) return '(no data)';
-    const max = Math.max(...days.map(d => d.count), 1);
+    const max = Math.max(...days.map((d: { count: number }) => d.count), 1);
     return days
-      .map(d => {
+      .map((d: { count: number }) => {
         const h = Math.max(1, Math.round((d.count / max) * 4));
         return ['▁', '▂', '▃', '▄', '▅'][h - 1] || '▁';
       })

@@ -42,7 +42,7 @@ async function _temp2() {
     priority: 'low',
   };
 }
-function _temp(current) {
+function _temp(current: { subscriptionNoticeCount?: number }) {
   return {
     ...current,
     subscriptionNoticeCount: (current.subscriptionNoticeCount ?? 0) + 1,

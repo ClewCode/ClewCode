@@ -1,6 +1,6 @@
 import type { UUID } from 'node:crypto';
 
-export type QueueOperation = 'enqueue' | 'dequeue';
+export type QueueOperation = 'enqueue' | 'dequeue' | 'remove' | 'popAll';
 
 export type QueueOperationMessage = {
   type: 'queue-operation';

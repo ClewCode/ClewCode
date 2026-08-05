@@ -228,8 +228,8 @@ export async function initEnvLessBridgeCore(params: EnvLessBridgeParams): Promis
   const initialMessageUUIDs = new Set<string>();
   if (initialMessages) {
     for (const msg of initialMessages) {
-      initialMessageUUIDs.add(msg.uuid);
-      recentPostedUUIDs.add(msg.uuid);
+      initialMessageUUIDs.add(msg.uuid!);
+      recentPostedUUIDs.add(msg.uuid!);
     }
   }
 
@@ -525,7 +525,7 @@ export async function initEnvLessBridgeCore(params: EnvLessBridgeParams): Promis
   function drainFlushGate(): void {
     const msgs = flushGate.end();
     if (msgs.length === 0) return;
-    for (const msg of msgs) recentPostedUUIDs.add(msg.uuid);
+    for (const msg of msgs) recentPostedUUIDs.add(msg.uuid!);
     const events = toSDKMessages(msgs).map(m => ({
       ...m,
       session_id: sessionId,
@@ -659,7 +659,7 @@ export async function initEnvLessBridgeCore(params: EnvLessBridgeParams): Promis
     sessionIngressUrl: credentials.api_base_url,
     writeMessages(messages) {
       const filtered = messages.filter(
-        m => isEligibleBridgeMessage(m) && !initialMessageUUIDs.has(m.uuid) && !recentPostedUUIDs.has(m.uuid),
+        m => isEligibleBridgeMessage(m) && !initialMessageUUIDs.has(m.uuid!) && !recentPostedUUIDs.has(m.uuid!),
       );
       if (filtered.length === 0) return;
 
@@ -682,7 +682,7 @@ export async function initEnvLessBridgeCore(params: EnvLessBridgeParams): Promis
         return;
       }
 
-      for (const msg of filtered) recentPostedUUIDs.add(msg.uuid);
+      for (const msg of filtered) recentPostedUUIDs.add(msg.uuid!);
       const events = toSDKMessages(filtered).map(m => ({
         ...m,
         session_id: sessionId,

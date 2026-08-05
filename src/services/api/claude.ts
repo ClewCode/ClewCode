@@ -571,9 +571,20 @@ export function assistantMessageToMessageParam(
   enablePromptCaching: boolean,
   querySource?: QuerySource,
 ): MessageParam {
+  const reasoningContent =
+    message.message.reasoning_content ??
+    (Array.isArray(message.message.content)
+      ? message.message.content
+          .filter(block => block.type === 'thinking')
+          .map(block => block.thinking)
+          .join('')
+      : '');
+  const withReasoningContent = (param: MessageParam): MessageParam & { reasoning_content?: string } =>
+    reasoningContent ? { ...param, reasoning_content: reasoningContent } : param;
+
   if (addCache) {
     if (typeof message.message.content === 'string') {
-      return {
+      return withReasoningContent({
         role: 'assistant',
         content: [
           {
@@ -584,9 +595,9 @@ export function assistantMessageToMessageParam(
             }),
           },
         ],
-      };
+      });
     } else {
-      return {
+      return withReasoningContent({
         role: 'assistant',
         content: message.message.content.map((_, i) => ({
           ..._,
@@ -599,13 +610,13 @@ export function assistantMessageToMessageParam(
               : {}
             : {}),
         })),
-      };
+      });
     }
   }
-  return {
+  return withReasoningContent({
     role: 'assistant',
     content: Array.isArray(message.message.content) ? [...message.message.content] : message.message.content,
-  };
+  });
 }
 
 export type Options = {
@@ -616,6 +627,10 @@ export type Options = {
   extraToolSchemas?: BetaToolUnion[];
   maxOutputTokensOverride?: number;
   fallbackModel?: string;
+  /** Position in the configured fallback chain; -1 = primary model. */
+  fallbackChainIndex?: number;
+  /** Active provider, so the chain can skip cross-provider entries mid-retry. */
+  activeProvider?: string;
   onStreamingFallback?: () => void;
   querySource: QuerySource;
   agents: AgentDefinition[];
@@ -775,6 +790,8 @@ export async function* executeNonStreamingRequest(
   retryOptions: {
     model: string;
     fallbackModel?: string;
+    fallbackChainIndex?: number;
+    activeProvider?: string;
     thinkingConfig: ThinkingConfig;
     fastMode?: boolean;
     initialConsecutive529Errors?: number;
@@ -853,6 +870,8 @@ export async function* executeNonStreamingRequest(
     {
       model: retryOptions.model,
       fallbackModel: retryOptions.fallbackModel,
+      fallbackChainIndex: retryOptions.fallbackChainIndex,
+      activeProvider: retryOptions.activeProvider,
       thinkingConfig: retryOptions.thinkingConfig,
 
       signal: retryOptions.signal,
@@ -1942,6 +1961,8 @@ async function* queryModel(
       {
         model: options.model,
         fallbackModel: options.fallbackModel,
+        fallbackChainIndex: options.fallbackChainIndex,
+        activeProvider: options.activeProvider,
         thinkingConfig,
 
         signal,
@@ -2609,6 +2630,8 @@ async function* queryModel(
         {
           model: options.model,
           fallbackModel: options.fallbackModel,
+          fallbackChainIndex: options.fallbackChainIndex,
+          activeProvider: options.activeProvider,
           thinkingConfig,
           signal,
           initialConsecutive529Errors: is529Error(streamingError) ? 1 : 0,
@@ -2700,6 +2723,8 @@ async function* queryModel(
           {
             model: options.model,
             fallbackModel: options.fallbackModel,
+            fallbackChainIndex: options.fallbackChainIndex,
+            activeProvider: options.activeProvider,
             thinkingConfig,
             signal,
           },

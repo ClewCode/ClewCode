@@ -64,7 +64,7 @@ export function useSSHSession({
     logForDebugging('[useSSHSession] wiring SSH session manager');
 
     const manager = session.createManager({
-      onMessage: sdkMessage => {
+      onMessage: (sdkMessage: unknown) => {
         if (isSessionEndMessage(sdkMessage)) {
           setIsLoading(false);
         }
@@ -82,7 +82,17 @@ export function useSSHSession({
           setMessages(prev => [...prev, converted.message]);
         }
       },
-      onPermissionRequest: (request, requestId) => {
+      onPermissionRequest: (
+        request: {
+          tool_name: string;
+          description?: string;
+          permission_suggestions?: string;
+          blocked_path?: string;
+          tool_use_id: string;
+          input: unknown;
+        },
+        requestId: string,
+      ) => {
         logForDebugging(`[useSSHSession] permission request: ${request.tool_name}`);
 
         const tool = findToolByName(toolsRef.current, request.tool_name) ?? createToolStub(request.tool_name);
@@ -142,7 +152,7 @@ export function useSSHSession({
         logForDebugging('[useSSHSession] connected');
         isConnectedRef.current = true;
       },
-      onReconnecting: (attempt, max) => {
+      onReconnecting: (attempt: number, max: number) => {
         logForDebugging(`[useSSHSession] ssh dropped, reconnecting (${attempt}/${max})`);
         isConnectedRef.current = false;
         // Surface a transient system message in the transcript so the user
@@ -176,7 +186,7 @@ export function useSSHSession({
         }
         void gracefulShutdown(1, 'other', { finalMessage: msg });
       },
-      onError: error => {
+      onError: (error: Error) => {
         logForDebugging(`[useSSHSession] error: ${error.message}`);
       },
     });

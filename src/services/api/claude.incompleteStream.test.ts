@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { createIncompleteStreamWarning } from './claude.js';
+import { assistantMessageToMessageParam, createIncompleteStreamWarning } from './claude.js';
 
 test('creates a visible API warning for a truncated streamed response', () => {
   const warning = createIncompleteStreamWarning('test-model', 'request-1');
@@ -13,4 +13,24 @@ test('creates a visible API warning for a truncated streamed response', () => {
       text: 'API Error: Connection closed mid-response. The response above may be incomplete.',
     },
   ]);
+});
+
+test('preserves reasoning_content when converting assistant history', () => {
+  const message = assistantMessageToMessageParam(
+    {
+      type: 'assistant',
+      uuid: 'assistant-1',
+      message: {
+        role: 'assistant',
+        reasoning_content: 'must round-trip verbatim',
+        content: [{ type: 'tool_use', id: 'tool-1', name: 'Read', input: { file_path: 'x' } }],
+      },
+    },
+    false,
+    false,
+  );
+
+  expect((message as typeof message & { reasoning_content?: string }).reasoning_content).toBe(
+    'must round-trip verbatim',
+  );
 });

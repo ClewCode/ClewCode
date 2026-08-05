@@ -144,7 +144,7 @@ function BridgeDisconnectDialog({ onDone }: Props): React.ReactNode {
       small: true,
     })
       .then(setQrText)
-      .catch(err => {
+      .catch((err: unknown) => {
         logForDebugging('QR code generation failed', err);
         setQrText('');
       });

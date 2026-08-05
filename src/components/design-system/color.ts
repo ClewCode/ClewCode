@@ -7,7 +7,7 @@ import { getTheme, type Theme, type ThemeName } from '../../utils/theme.js';
  * values before delegating to the ink renderer's colorize.
  */
 export function color(
-  c: keyof Theme | Color | undefined,
+  c: keyof Theme | Color | string | undefined,
   theme: ThemeName,
   type: ColorType = 'foreground',
 ): (text: string) => string {

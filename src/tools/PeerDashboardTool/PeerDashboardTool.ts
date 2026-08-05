@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { MessageResponse } from '../../components/MessageResponse.js';
 import { Text } from '../../ink.js';
-import { formatPeerTaskDashboard } from '../../peer/peerDashboard.js';
+import { collectPeerDashboard, formatPeerTaskDashboard } from '../../peer/peerDashboard.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
@@ -78,33 +78,19 @@ export const PeerDashboardTool = buildTool({
     };
   },
   async call() {
-    const dashboard = formatPeerTaskDashboard();
-    if (!dashboard) {
-      return {
-        data: {
-          success: true,
-          dashboard: '',
-          hasPeers: false,
-          peerCount: 0,
-          taskCount: 0,
-          doneCount: 0,
-        },
-      };
-    }
-
-    // Count tasks from the dashboard content
-    const peerCount = (dashboard.match(/port \d+/g) || []).length;
-    const doneCount = (dashboard.match(/☑/g) || []).length;
-    const taskCount = (dashboard.match(/[☑☐☒]/g) || []).length;
+    // Counts come from the shared model, not from scraping the rendered text.
+    const now = Date.now();
+    const { totals } = collectPeerDashboard(undefined, now);
+    const dashboard = formatPeerTaskDashboard(undefined, now);
 
     return {
       data: {
         success: true,
         dashboard,
-        hasPeers: peerCount > 0,
-        peerCount,
-        taskCount,
-        doneCount,
+        hasPeers: totals.peers > 0,
+        peerCount: totals.peers,
+        taskCount: totals.tasks,
+        doneCount: totals.done,
       },
     };
   },

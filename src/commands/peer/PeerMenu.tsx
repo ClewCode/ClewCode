@@ -28,6 +28,7 @@ const MENU_ITEMS = [
   { id: 'role', label: 'Set my role', desc: 'Set role for yourself' },
   { id: 'discover', label: 'Discover', desc: 'Scan for available peers' },
   { id: 'inbox', label: 'Inbox', desc: 'View pending messages' },
+  { id: 'dashboard', label: 'Dashboard', desc: 'Live peer health and task dashboard' },
   { id: 'peers', label: 'Peer list', desc: 'Show connected peers' },
   { id: 'close', label: 'Close', desc: 'Exit peer menu' },
 ];
@@ -143,6 +144,9 @@ function PeerMenu({ onDone }: { onDone: (result?: string, options?: any) => void
           return;
         case 'inbox':
           onDone(undefined, { display: 'skip', nextInput: '/peer inbox', submitNextInput: true });
+          return;
+        case 'dashboard':
+          onDone(undefined, { display: 'skip', nextInput: '/peer dashboard', submitNextInput: true });
           return;
         case 'peers':
           setView('peers');

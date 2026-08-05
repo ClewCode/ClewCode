@@ -115,7 +115,7 @@ export async function* handleStopHooks(
     const turnAssistantMessages = stopHookContext.messages.filter((m): m is AssistantMessage => m.type === 'assistant');
     const p = jobClassifierModule!
       .classifyAndWriteState(process.env.CLAUDE_JOB_DIR, turnAssistantMessages)
-      .catch(err => {
+      .catch((err: unknown) => {
         logForDebugging(`[job] classifier error: ${errorMessage(err)}`, {
           level: 'error',
         });

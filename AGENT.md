@@ -19,7 +19,7 @@ bun run check:ci         # Biome CI (lint + format, no autofix)
 bun run lint             # Biome lint --write
 bun run format           # Biome format --write
 bun run check            # Biome check --write
-bun x tsc --noEmit       # Typecheck only
+bun x tsc --noEmit       # Typecheck only (incremental — see below)
 bun ci                   # Lockfile integrity
 ```
 
@@ -29,6 +29,31 @@ bun run check:ci && bun x tsc --noEmit && bun test --bail
 ```
 
 Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for version cuts.
+
+### Typechecking
+
+`tsconfig.json` sets `incremental: true`, so `tsc --noEmit` caches type information in
+`tsconfig.tsbuildinfo` (gitignored) and reuses it for unchanged files. Measured on this
+repo: **~75s cold, ~18s warm**, identical error set either way. The first run after a
+`git pull` or a wide refactor pays full price; repeat runs are the fast ones.
+
+**The typecheck baseline is red (~1866 errors) and has been for a while — this is
+pre-existing, not your diff.** Before blaming a change, capture the count, and check
+whether any error actually names a file or symbol you touched:
+
+```bash
+bun x tsc --noEmit > /tmp/tsc.txt 2>&1; grep -c 'error TS' /tmp/tsc.txt
+grep -E '^src/path/you/touched' /tmp/tsc.txt
+```
+
+Redirect to a file and grep it rather than re-running `tsc` per file — a naive
+per-file loop re-typechecks the whole project each iteration and takes minutes.
+
+`tsgo` (`@typescript/native-preview`, the Go port of the compiler) runs this repo in
+~35s but reports a slightly different error set (1878 vs 1866, including codes `tsc`
+does not emit). Fine for fast feedback while editing; **not** a substitute for `tsc`
+in the gate. It is deliberately not a project dependency — invoke it with `bunx` if
+you want it.
 
 `dev` / `build` always run `prebuild-version` and define:
 `TRANSCRIPT_CLASSIFIER`, `CHICAGO_MCP`, `VOICE_MODE`, `AWAY_SUMMARY`.
@@ -163,6 +188,8 @@ Tools/commands are registered in `src/tools.ts` / `src/commands.ts`; entrypoints
 - Context-window resolution (`getContextWindowForModel` → `getModelCapability`): for non-Anthropic providers, the live `/models` value (cached by `fetchProviderModels`, read synchronously via `getCachedModelContext`) is preferred over `providers.json`'s `maxContext`; the static value is the fallback when the live cache is cold. Anthropic first-party uses its own capability cache (`refreshModelCapabilities`).
 - `adapter/`, error/usage normalizers — cross-provider shape
 - Mid-session switch: `/model`, `/provider`
+- **Fallback chain (`/model-fallback`, `src/utils/model/fallbackChain.ts`):** an ordered list of `{provider?, model, effort?}` entries in `settings.modelFallbacks`. On repeated transient capacity errors, `withRetry` consumes the next entry and throws `FallbackTriggeredError(model, nextModel, effort)`; `query.ts` swaps `currentModel`, applies the entry's effort via `effortValue`, advances its cursor, and retries. With no chain configured the legacy single `fallbackModel` path is unchanged. **Mid-retry fallback is same-provider only** — `resolveNextFallback` skips entries pinned to a different provider, because switching providers requires `ProviderManager.setSessionProvider` (process-global — see the Model scope note below). Cross-provider entries are configurable but only take effect from the next query. Do not "fix" this by calling `setSessionProvider` in the retry loop.
+- **Task-mode router (`/model-router`, `src/utils/model/router.ts`):** maps a task mode to a model/effort in `settings.modelRouter`. The task mode is inferred from the current `PermissionMode` (`plan`→`plan`; `bypassPermissions`/`auto`→`orchestrator`; `default`/`acceptEdits`→`code`; `ask`→`ask`; `dontAsk`→`debug`) — there is no separate mode UI to keep in sync. Applied in `getRuntimeMainLoopModel()`, which already receives `permissionMode`. An explicit session `/model` override (`getMainLoopModelOverride()`) always wins over routing, and routed models still pass `isModelAllowed()`.
 - **Model scope:** every `/model` path is session-scoped by default — it sets AppState's `mainLoopModelForSession`, which `onChangeAppState` bridges to `setMainLoopModelOverride()` for the query pipeline. Only the picker's `d` (set as default) writes to `userSettings`/`provider.json`; `Enter` and `s` do not. When adding a model path, do NOT call `ProviderManager.setSessionModel`/`setSessionProvider` (a process-global singleton — leaks into agents and bg tasks) and do not write provider config unless the user explicitly asked for a default.
 - **Usage/rate limits:** `/usage` is provider-aware. Anthropic path: `services/claudeAiLimits.ts` + `services/api/usage.ts` (OAuth usage endpoint). Codex/ChatGPT path: `services/codexLimits.ts` captures rate limits off live `/responses` traffic (defensive header/`rate_limits` parsing) and `services/api/codexUsage.ts` maps them to the shared `Utilization` shape rendered by `components/Settings/Usage.tsx`. Both paths also feed custom statusline scripts via `StatusLineCommandInput`: Anthropic as `rate_limits` (from `getRawUtilization()`), Codex as `codex_rate_limits` (from `getCodexUtilization()` — snapshot-only, never probes).
 
@@ -199,7 +226,7 @@ Other large surface areas: `src/agentRuntime/` (background orchestration, ultrac
 | Agent | Main session or `.clew/agents/*.md` |
 | Subagent (`Agent` tool / Explore) | Short independent work; Explore is read-only |
 | Teammate / swarm | Multi-turn named workers with mailbox/tasks |
-| LAN peer (`/peer`) | Other Clew instances on machine/LAN; `peer_spawn` inherits the current session's exact provider and model |
+| LAN peer (`/peer`) | Other Clew instances on machine/LAN; `peer_spawn` inherits the current session's exact provider and model. `/peer dashboard` is the live health/task view (`--text` for a static snapshot); `collectPeerDashboard()` in `src/peer/peerDashboard.ts` is the one model behind the Ink view, the text renderer, and the `PeerDashboard` tool — add fields there, not in a renderer |
 | Background / daemon | Queue + cron via autonomous + agentRuntime (`/bg`, `/daemon`) |
 
 Also: **plan mode** (`.clew/plans/`), **checkpoints** (20%/45%/70% + `/rewind`), **goal verification**, **Max Mode** (parallel candidates + judge).

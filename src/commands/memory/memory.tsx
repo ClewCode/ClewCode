@@ -539,7 +539,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
               `Average: ${density.avgPerDay} sessions/day`,
               '',
               density.byDay.length > 0 ? '### Activity (last 30 days)' : '',
-              ...density.byDay.map(d => `  ${d.date}: ${'█'.repeat(Math.min(d.count, 20))} ${d.count}`),
+              ...density.byDay.map(
+                (d: { date: string; count: number }) => `  ${d.date}: ${'█'.repeat(Math.min(d.count, 20))} ${d.count}`,
+              ),
             ]
               .filter(Boolean)
               .join('\n'),
@@ -612,7 +614,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
             if (!groups.length) {
               onDone('No sessions need consolidation.', { display: 'system' });
             } else {
-              const total = groups.reduce((a, g) => a + g.total, 0);
+              const total = groups.reduce((a: number, g: { total: number }) => a + g.total, 0);
               onDone(
                 `🔄 ${total} sessions ready for consolidation. Run AI summary to create digests.\n\n${previewConsolidation(cwd)}`,
                 { display: 'system' },

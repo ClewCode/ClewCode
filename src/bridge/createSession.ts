@@ -228,7 +228,7 @@ export async function getBridgeSession(
     return null;
   }
 
-  return response._data;
+  return response._data ?? null;
 }
 
 /**

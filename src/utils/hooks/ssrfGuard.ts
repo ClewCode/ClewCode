@@ -1,4 +1,4 @@
-import type { AddressFamily, LookupAddress } from 'dns';
+import type { LookupAddress } from 'dns';
 import { lookup as dnsLookup } from 'dns';
 import { isIP } from 'net';
 
@@ -193,7 +193,7 @@ function extractMappedIPv4(addr: string): string | null {
 export function ssrfGuardedLookup(
   hostname: string,
   options: object,
-  callback: (err: Error | null, address: LookupAddress | LookupAddress[], family?: AddressFamily) => void,
+  callback: (err: Error | null, address: LookupAddress | LookupAddress[], family?: 4 | 6) => void,
 ): void {
   const wantsAll = 'all' in options && options.all === true;
 
@@ -203,27 +203,27 @@ export function ssrfGuardedLookup(
   const ipVersion = isIP(hostname);
   if (ipVersion !== 0) {
     if (isBlockedAddress(hostname)) {
-      callback(ssrfError(hostname, hostname), '');
+      callback(ssrfError(hostname, hostname), []);
       return;
     }
     const family = ipVersion === 6 ? 6 : 4;
     if (wantsAll) {
       callback(null, [{ address: hostname, family }]);
     } else {
-      callback(null, hostname, family);
+      callback(null, { address: hostname, family });
     }
     return;
   }
 
   dnsLookup(hostname, { all: true }, (err, addresses) => {
     if (err) {
-      callback(err, '');
+      callback(err, []);
       return;
     }
 
     for (const { address } of addresses) {
       if (isBlockedAddress(address)) {
-        callback(ssrfError(hostname, address), '');
+        callback(ssrfError(hostname, address), []);
         return;
       }
     }
@@ -235,7 +235,7 @@ export function ssrfGuardedLookup(
           code: 'ENOTFOUND',
           hostname,
         }),
-        '',
+        [],
       );
       return;
     }
@@ -250,7 +250,7 @@ export function ssrfGuardedLookup(
         })),
       );
     } else {
-      callback(null, first.address, family);
+      callback(null, { address: first.address, family });
     }
   });
 }

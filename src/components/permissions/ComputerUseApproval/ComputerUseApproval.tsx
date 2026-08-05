@@ -130,7 +130,12 @@ function ComputerUseAppListPanel({ request, onDone }: ComputerUseApprovalProps):
   // Per-item toggles are a follow-up; for now every resolved app is granted
   // when the user accepts. `setChecked` is unused until then.
   const [checked] = useState<ReadonlySet<string>>(
-    () => new Set(request.apps.flatMap(a => (a.resolved && !a.alreadyGranted ? [a.resolved.bundleId] : []))),
+    () =>
+      new Set(
+        request.apps.flatMap((a: { resolved?: { bundleId: string }; alreadyGranted?: boolean }) =>
+          a.resolved && !a.alreadyGranted ? [a.resolved.bundleId] : [],
+        ),
+      ),
   );
 
   type FlagKey = keyof typeof DEFAULT_GRANT_FLAGS;
@@ -164,7 +169,7 @@ function ComputerUseAppListPanel({ request, onDone }: ComputerUseApprovalProps):
       return;
     }
     const now = Date.now();
-    const granted = request.apps.flatMap(a =>
+    const granted = request.apps.flatMap((a: { resolved?: { bundleId: string; displayName: string } }) =>
       a.resolved && checked.has(a.resolved.bundleId)
         ? [
             {
@@ -176,8 +181,11 @@ function ComputerUseAppListPanel({ request, onDone }: ComputerUseApprovalProps):
         : [],
     );
     const denied = request.apps
-      .filter(a => !a.resolved || !checked.has(a.resolved.bundleId))
-      .map(a => ({
+      .filter(
+        (a: { resolved?: { bundleId: string }; requestedName: string }) =>
+          !a.resolved || !checked.has(a.resolved.bundleId),
+      )
+      .map((a: { resolved?: { bundleId: string }; requestedName: string }) => ({
         bundleId: a.resolved?.bundleId ?? a.requestedName,
         reason: a.resolved ? ('user_denied' as const) : ('not_installed' as const),
       }));
@@ -195,41 +203,47 @@ function ComputerUseAppListPanel({ request, onDone }: ComputerUseApprovalProps):
         {request.reason ? <Text dimColor>{request.reason}</Text> : null}
 
         <Box flexDirection="column">
-          {request.apps.map(a => {
-            const resolved = a.resolved;
-            if (!resolved) {
-              return (
-                <Text key={a.requestedName} dimColor>
-                  {'  '}
-                  {figures.circle} {a.requestedName} <Text dimColor>(not installed)</Text>
-                </Text>
-              );
-            }
-            if (a.alreadyGranted) {
-              return (
-                <Text key={resolved.bundleId} dimColor>
-                  {'  '}
-                  {figures.tick} {resolved.displayName} <Text dimColor>(already granted)</Text>
-                </Text>
-              );
-            }
-            const sentinel = getSentinelCategory(resolved.bundleId);
-            const isChecked = checked.has(resolved.bundleId);
-            return (
-              <Box key={resolved.bundleId} flexDirection="column">
-                <Text>
-                  {'  '}
-                  {isChecked ? figures.circleFilled : figures.circle} {resolved.displayName}
-                </Text>
-                {sentinel ? (
-                  <Text bold>
-                    {'    '}
-                    {figures.warning} {SENTINEL_WARNING[sentinel]}
+          {request.apps.map(
+            (a: {
+              resolved?: { bundleId: string; displayName: string };
+              requestedName: string;
+              alreadyGranted?: boolean;
+            }) => {
+              const resolved = a.resolved;
+              if (!resolved) {
+                return (
+                  <Text key={a.requestedName} dimColor>
+                    {'  '}
+                    {figures.circle} {a.requestedName} <Text dimColor>(not installed)</Text>
                   </Text>
-                ) : null}
-              </Box>
-            );
-          })}
+                );
+              }
+              if (a.alreadyGranted) {
+                return (
+                  <Text key={resolved.bundleId} dimColor>
+                    {'  '}
+                    {figures.tick} {resolved.displayName} <Text dimColor>(already granted)</Text>
+                  </Text>
+                );
+              }
+              const sentinel = getSentinelCategory(resolved.bundleId);
+              const isChecked = checked.has(resolved.bundleId);
+              return (
+                <Box key={resolved.bundleId} flexDirection="column">
+                  <Text>
+                    {'  '}
+                    {isChecked ? figures.circleFilled : figures.circle} {resolved.displayName}
+                  </Text>
+                  {sentinel ? (
+                    <Text bold>
+                      {'    '}
+                      {figures.warning} {SENTINEL_WARNING[sentinel]}
+                    </Text>
+                  ) : null}
+                </Box>
+              );
+            },
+          )}
         </Box>
 
         {requestedFlagKeys.length > 0 ? (

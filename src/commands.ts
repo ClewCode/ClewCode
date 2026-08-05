@@ -113,6 +113,8 @@ import { isFirstPartyAnthropicBaseUrl } from './utils/model/providers.js';
 import exit from './commands/exit/index.js';
 import exportCommand from './commands/export/index.js';
 import model from './commands/model/index.js';
+import modelFallback from './commands/model-fallback/index.js';
+import modelRouter from './commands/model-router/index.js';
 import agentConfig from './commands/agent-config/index.js';
 import outputStyle from './commands/output-style/index.js';
 import skill from './commands/skill/index.js';
@@ -202,6 +204,8 @@ const COMMANDS = memoize((): Command[] => [
   indexAdmin,
   taste,
   model,
+  modelFallback,
+  modelRouter,
   loginCmd(),
   agentConfig,
   outputStyle,

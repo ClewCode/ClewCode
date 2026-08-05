@@ -13,12 +13,12 @@ export type Props = {
   /**
    * Change text color. Accepts a theme key or raw color value.
    */
-  readonly color?: keyof Theme | Color;
+  readonly color?: keyof Theme | Color | string;
 
   /**
    * Same as `color`, but for background. Accepts a theme key or raw color value.
    */
-  readonly backgroundColor?: keyof Theme | Color;
+  readonly backgroundColor?: keyof Theme | Color | string;
 
   /**
    * Dim the color using the theme's inactive color.
@@ -64,7 +64,7 @@ export type Props = {
 /**
  * Resolves a color value that may be a theme key to a raw Color.
  */
-function resolveColor(color: keyof Theme | Color | undefined, theme: Theme): Color | undefined {
+function resolveColor(color: keyof Theme | Color | string | undefined, theme: Theme): Color | undefined {
   if (!color) return undefined;
   // Check if it's a raw color (starts with rgb(, #, ansi256(, or ansi:)
   if (color.startsWith('rgb(') || color.startsWith('#') || color.startsWith('ansi256(') || color.startsWith('ansi:')) {

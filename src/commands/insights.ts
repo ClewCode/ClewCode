@@ -96,7 +96,7 @@ const collectFromRemoteHost: (hs: string, destDir: string) => Promise<{ copied: 
           }
 
           const projectsDir = join(tempDir, 'projects');
-          let projectDirents: Awaited<ReturnType<typeof readdir>>;
+          let projectDirents: import('fs').Dirent<string>[];
           try {
             projectDirents = await readdir(projectsDir, { withFileTypes: true });
           } catch {
@@ -106,7 +106,7 @@ const collectFromRemoteHost: (hs: string, destDir: string) => Promise<{ copied: 
           // Merge into destination (parallel per project directory)
           await Promise.all(
             projectDirents.map(async dirent => {
-              const projectName = dirent.name;
+              const projectName = String(dirent.name);
               const projectPath = join(projectsDir, projectName);
 
               // Skip if not a directory
@@ -122,7 +122,7 @@ const collectFromRemoteHost: (hs: string, destDir: string) => Promise<{ copied: 
               }
 
               // Copy session files (skip existing)
-              let files: Awaited<ReturnType<typeof readdir>>;
+              let files: import('fs').Dirent<string>[];
               try {
                 files = await readdir(projectPath, { withFileTypes: true });
               } catch {
@@ -130,7 +130,7 @@ const collectFromRemoteHost: (hs: string, destDir: string) => Promise<{ copied: 
               }
               await Promise.all(
                 files.map(async fileDirent => {
-                  const fileName = fileDirent.name;
+                  const fileName = String(fileDirent.name);
                   if (!fileName.endsWith('.jsonl')) return;
 
                   const srcFile = join(projectPath, fileName);
@@ -2661,14 +2661,16 @@ type LiteSessionInfo = {
 async function scanAllSessions(): Promise<LiteSessionInfo[]> {
   const projectsDir = getProjectsDir();
 
-  let dirents: Awaited<ReturnType<typeof readdir>>;
+  let dirents: import('fs').Dirent<string>[];
   try {
     dirents = await readdir(projectsDir, { withFileTypes: true });
   } catch {
     return [];
   }
 
-  const projectDirs = dirents.filter(dirent => dirent.isDirectory()).map(dirent => join(projectsDir, dirent.name));
+  const projectDirs = dirents
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => join(projectsDir, String(dirent.name)));
 
   const allSessions: LiteSessionInfo[] = [];
 

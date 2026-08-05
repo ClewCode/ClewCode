@@ -3,10 +3,9 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "baseUrl": ".",
     "ignoreDeprecations": "6.0",
     "paths": {
-      "src/*": ["src/*"]
+      "src/*": ["./src/*"]
     },
     "jsx": "react-jsx",
     "jsxImportSource": "react",
@@ -14,6 +13,9 @@
     "types": ["bun"],
     "strict": true,
     "skipLibCheck": true,
+    // Caches type information in .tsbuildinfo (gitignored) so repeat
+    // `tsc --noEmit` runs reuse unchanged files: ~75s cold → ~16s warm.
+    "incremental": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
   },

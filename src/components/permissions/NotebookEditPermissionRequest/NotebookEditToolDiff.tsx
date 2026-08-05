@@ -76,7 +76,7 @@ function NotebookEditToolDiffInner({
       }
       return '';
     }
-    const cell = notebookData.cells.find(cell => cell.id === cell_id);
+    const cell = notebookData.cells.find((cell: { id: string }) => cell.id === cell_id);
     if (!cell) {
       return '';
     }

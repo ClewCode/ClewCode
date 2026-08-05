@@ -580,11 +580,17 @@ export class StructuredIO {
           const hookResult: { source: 'hook'; decision: PermissionDecision | undefined } | undefined =
             await hookPromise.catch(() => undefined);
           return (
-            hookResult?.decision ?? {
-              behavior: 'deny' as const,
-              message: 'Tool permission request failed',
-              toolUseID,
-            }
+            hookResult?.decision ??
+            permissionPromptToolResultToPermissionDecision(
+              {
+                behavior: 'deny',
+                message: 'Tool permission request failed',
+                toolUseID,
+              },
+              tool,
+              input,
+              toolUseContext,
+            )
           );
         }
 

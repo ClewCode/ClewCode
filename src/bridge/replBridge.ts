@@ -403,7 +403,7 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
     // UUIDs cause the server to kill the WebSocket.
     if (initialMessages && previouslyFlushedUUIDs) {
       for (const msg of initialMessages) {
-        previouslyFlushedUUIDs.add(msg.uuid);
+        previouslyFlushedUUIDs.add(msg.uuid!);
       }
     }
   } else {
@@ -450,7 +450,7 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
   const initialMessageUUIDs = new Set<string>();
   if (initialMessages) {
     for (const msg of initialMessages) {
-      initialMessageUUIDs.add(msg.uuid);
+      initialMessageUUIDs.add(msg.uuid!);
     }
   }
 
@@ -793,7 +793,7 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
       return;
     }
     for (const msg of msgs) {
-      recentPostedUUIDs.add(msg.uuid);
+      recentPostedUUIDs.add(msg.uuid!);
     }
     const sdkMessages = toSDKMessages(msgs);
     const events = sdkMessages.map(sdkMsg => ({
@@ -1154,7 +1154,7 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
             // plus elevated Firestore pressure. A 0 or negative cap disables it.
             const historyCap = initialHistoryCap;
             const eligibleMessages = initialMessages.filter(
-              m => isEligibleBridgeMessage(m) && !previouslyFlushedUUIDs?.has(m.uuid),
+              m => isEligibleBridgeMessage(m) && !previouslyFlushedUUIDs?.has(m.uuid!),
             );
             const cappedMessages =
               historyCap > 0 && eligibleMessages.length > historyCap
@@ -1567,7 +1567,7 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
       //  - initialMessageUUIDs: messages sent as session creation events
       //  - recentPostedUUIDs: messages recently sent via POST
       const filtered = messages.filter(
-        m => isEligibleBridgeMessage(m) && !initialMessageUUIDs.has(m.uuid) && !recentPostedUUIDs.has(m.uuid),
+        m => isEligibleBridgeMessage(m) && !initialMessageUUIDs.has(m.uuid!) && !recentPostedUUIDs.has(m.uuid!),
       );
       if (filtered.length === 0) return;
 
@@ -1603,7 +1603,7 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
 
       // Track in the bounded ring buffer for echo filtering and dedup.
       for (const msg of filtered) {
-        recentPostedUUIDs.add(msg.uuid);
+        recentPostedUUIDs.add(msg.uuid!);
       }
 
       logForDebugging(`[bridge:repl] Sending ${filtered.length} message(s) via transport`);

@@ -1,5 +1,5 @@
-import { asSystemPrompt } from '../utils/systemPromptType.js';
 import { getMainLoopModel } from '../utils/model/model.js';
+import { asSystemPrompt } from '../utils/systemPromptType.js';
 import { queryWithModel } from './api/claude.js';
 
 const ENHANCEMENT_SYSTEM_PROMPT = `You are a prompt enhancement specialist. Your job is to improve user prompts to make them clearer, more specific, and more actionable.

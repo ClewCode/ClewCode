@@ -10,7 +10,7 @@ type LSPRequest = {
 
 type LSPResponse = {
   jsonrpc: '2.0';
-  id: number | string;
+  id: number | string | null;
   result?: unknown;
   error?: { code: number; message: string; data?: unknown };
 };
@@ -91,7 +91,7 @@ export class LuluLSPServer {
       const message = JSON.parse(payload) as LSPRequest | LSPNotification;
       this.handleMessage(message);
     } catch (_e) {
-      this.sendError(-32700, 'Parse error');
+      this.sendError(null, -32700, 'Parse error');
     }
   }
 
@@ -320,7 +320,7 @@ export class LuluLSPServer {
     this.sendMessage(response);
   }
 
-  private sendError(id: number | string, code: number, message: string): void {
+  private sendError(id: number | string | null, code: number, message: string): void {
     const response: LSPResponse = { jsonrpc: '2.0', id, error: { code, message } };
     this.sendMessage(response);
   }

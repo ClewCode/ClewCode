@@ -1233,7 +1233,7 @@ class Project {
         // persistence (session-ingress) uses a single Last-Uuid chain per
         // sessionId, so re-POSTing a UUID it already has 409s and eventually
         // exhausts retries → gracefulShutdownSync(1). See inc-4718.
-        const isNewUuid = !messageSet.has(entry.uuid);
+        const isNewUuid = !messageSet.has(entry.uuid!);
         if (isAgentSidechain || isNewUuid) {
           // Enqueue write — appendToFile handles ENOENT by creating directories
           void this.enqueueWrite(targetFile, entry);
@@ -1247,7 +1247,7 @@ class Project {
             // and --resume's buildConversationChain terminates at the dangling ref.
             // Same constraint for remote (inc-4718 above): sidechain persisting a
             // UUID the main thread hasn't written yet → 409 when main writes it.
-            messageSet.add(entry.uuid);
+            messageSet.add(entry.uuid!);
 
             if (isTranscriptMessage(entry)) {
               await this.persistToRemote(sessionId, entry);
@@ -1783,7 +1783,7 @@ function applyPreservedSegmentRelinks(messages: Map<UUID, TranscriptMessage>): v
   const entryIndex = new Map<UUID, number>();
   let i = 0;
   for (const entry of messages.values()) {
-    entryIndex.set(entry.uuid, i);
+    entryIndex.set(entry.uuid!, i);
     if (isCompactBoundaryMessage(entry)) {
       absoluteLastBoundaryIdx = i;
       const seg = entry.compactMetadata?.preservedSegment;
@@ -1806,11 +1806,11 @@ function applyPreservedSegmentRelinks(messages: Map<UUID, TranscriptMessage>): v
   const preservedUuids = new Set<UUID>();
   if (segIsLive) {
     const walkSeen = new Set<UUID>();
-    let cur = messages.get(lastSeg.tailUuid);
+    let cur = messages.get(lastSeg.tailUuid!);
     let reachedHead = false;
-    while (cur && !walkSeen.has(cur.uuid)) {
-      walkSeen.add(cur.uuid);
-      preservedUuids.add(cur.uuid);
+    while (cur && !walkSeen.has(cur.uuid!)) {
+      walkSeen.add(cur.uuid!);
+      preservedUuids.add(cur.uuid!);
       if (cur.uuid === lastSeg.headUuid) {
         reachedHead = true;
         break;
@@ -1824,9 +1824,9 @@ function applyPreservedSegmentRelinks(messages: Map<UUID, TranscriptMessage>): v
       // attachment pushed to mutableMessages but never recordTranscript'd
       // (SDK subprocess restarted before next turn's qe:420 flush).
       logEvent('tengu_relink_walk_broken', {
-        tailInTranscript: messages.has(lastSeg.tailUuid),
-        headInTranscript: messages.has(lastSeg.headUuid),
-        anchorInTranscript: messages.has(lastSeg.anchorUuid),
+        tailInTranscript: messages.has(lastSeg.tailUuid!),
+        headInTranscript: messages.has(lastSeg.headUuid!),
+        anchorInTranscript: messages.has(lastSeg.anchorUuid!),
         walkSteps: walkSeen.size,
         transcriptSize: messages.size,
       });
@@ -1835,9 +1835,9 @@ function applyPreservedSegmentRelinks(messages: Map<UUID, TranscriptMessage>): v
   }
 
   if (segIsLive) {
-    const head = messages.get(lastSeg.headUuid);
+    const head = messages.get(lastSeg.headUuid!);
     if (head) {
-      messages.set(lastSeg.headUuid, {
+      messages.set(lastSeg.headUuid!, {
         ...head,
         parentUuid: lastSeg.anchorUuid,
       });
@@ -2002,14 +2002,14 @@ export function buildConversationChain(
   const seen = new Set<UUID>();
   let currentMsg: TranscriptMessage | undefined = leafMessage;
   while (currentMsg) {
-    if (seen.has(currentMsg.uuid)) {
+    if (seen.has(currentMsg.uuid!)) {
       logError(
         new Error(`Cycle detected in parentUuid chain at message ${currentMsg.uuid}. Returning partial transcript.`),
       );
       logEvent('tengu_chain_parent_cycle', {});
       break;
     }
-    seen.add(currentMsg.uuid);
+    seen.add(currentMsg.uuid!);
     transcript.push(currentMsg);
     currentMsg = currentMsg.parentUuid ? messages.get(currentMsg.parentUuid) : undefined;
   }
@@ -2030,14 +2030,14 @@ function expandCompactBoundaryHistory(
       const logicalParent = logicalParentUuid ? messages.get(logicalParentUuid) : undefined;
       // Only expand if we have a valid logical parent. If logicalParentUuid is null/missing,
       // repairFragmentedParentChain should have fixed it before this function is called.
-      if (logicalParent && !seen.has(logicalParent.uuid)) {
+      if (logicalParent && !seen.has(logicalParent.uuid!)) {
         const prefix = expandCompactBoundaryHistory(messages, buildConversationChain(messages, logicalParent), seen);
         expanded.push(...prefix);
       }
     }
 
-    if (!seen.has(message.uuid)) {
-      seen.add(message.uuid);
+    if (!seen.has(message.uuid!)) {
+      seen.add(message.uuid!);
       expanded.push(message);
     }
   }
@@ -2096,7 +2096,7 @@ export function buildResumeConversationChain(
   // repairFragmentedParentChain replaces mutated entries with fresh objects, so
   // re-fetch the leaf from the map — the caller's reference may be the stale
   // pre-repair copy whose parentUuid would stop the walk at the leaf itself.
-  const repairedLeaf = messages.get(leafMessage.uuid) ?? leafMessage;
+  const repairedLeaf = messages.get(leafMessage.uuid!) ?? leafMessage;
   return expandCompactBoundaryHistory(messages, buildConversationChain(messages, repairedLeaf));
 }
 
@@ -2173,13 +2173,13 @@ function recoverOrphanedParallelToolResults(
     processedGroups.add(msgId);
 
     const group = siblingsByMsgId.get(msgId) ?? [asst];
-    const orphanedSiblings = group.filter(s => !seen.has(s.uuid));
+    const orphanedSiblings = group.filter(s => !seen.has(s.uuid!));
     const orphanedTRs: TranscriptMessage[] = [];
     for (const member of group) {
-      const trs = toolResultsByAsst.get(member.uuid);
+      const trs = toolResultsByAsst.get(member.uuid!);
       if (!trs) continue;
       for (const tr of trs) {
-        if (!seen.has(tr.uuid)) orphanedTRs.push(tr);
+        if (!seen.has(tr.uuid!)) orphanedTRs.push(tr);
       }
     }
     if (orphanedSiblings.length === 0 && orphanedTRs.length === 0) continue;
@@ -2191,7 +2191,7 @@ function recoverOrphanedParallelToolResults(
 
     const anchor = anchorByMsgId.get(msgId)!;
     const recovered = [...orphanedSiblings, ...orphanedTRs];
-    for (const r of recovered) seen.add(r.uuid);
+    for (const r of recovered) seen.add(r.uuid!);
     recoveredCount += recovered.length;
     inserts.set(anchor.uuid, recovered);
   }
@@ -2204,7 +2204,7 @@ function recoverOrphanedParallelToolResults(
   const result: TranscriptMessage[] = [];
   for (const m of chain) {
     result.push(m);
-    const toInsert = inserts.get(m.uuid);
+    const toInsert = inserts.get(m.uuid!);
     if (toInsert) result.push(...toInsert);
   }
   return result;
@@ -2258,7 +2258,7 @@ function buildFileHistorySnapshotChain(
   // messageId → last index in snapshots[] for O(1) update lookup
   const indexByMessageId = new Map<string, number>();
   for (const message of conversation) {
-    const snapshotMessage = fileHistorySnapshots.get(message.uuid);
+    const snapshotMessage = fileHistorySnapshots.get(message.uuid!);
     if (!snapshotMessage) {
       continue;
     }
@@ -2318,7 +2318,7 @@ export async function loadTranscriptFromFile(
     }
 
     // Find the most recent leaf message using pre-computed leaf UUIDs
-    const leafMessage = findLatestMessage(messages.values(), msg => leafUuids.has(msg.uuid));
+    const leafMessage = findLatestMessage(messages.values(), msg => leafUuids.has(msg.uuid!));
 
     if (!leafMessage) {
       throw new Error('No valid conversation chain found in JSONL file');
@@ -2329,7 +2329,7 @@ export async function loadTranscriptFromFile(
       ? buildResumeConversationChain(messages, leafMessage)
       : buildConversationChain(messages, leafMessage);
 
-    const summary = summaries.get(leafMessage.uuid);
+    const summary = summaries.get(leafMessage.uuid!);
     const customTitle = customTitles.get(leafMessage.sessionId as UUID);
     const tag = tags.get(leafMessage.sessionId as UUID);
     const sessionId = leafMessage.sessionId as UUID;
@@ -3005,7 +3005,7 @@ export async function loadFullLog(log: LogOption, opts?: { includePreCompactHist
     // Find the most recent user/assistant leaf message from the transcript
     const mostRecentLeaf = findLatestMessage(
       messages.values(),
-      msg => leafUuids.has(msg.uuid) && (msg.type === 'user' || msg.type === 'assistant'),
+      msg => leafUuids.has(msg.uuid!) && (msg.type === 'user' || msg.type === 'assistant'),
     );
     if (!mostRecentLeaf) {
       return log;
@@ -3023,7 +3023,7 @@ export async function loadFullLog(log: LogOption, opts?: { includePreCompactHist
       messages: removeExtraFields(transcript),
       firstPrompt: extractFirstPrompt(transcript),
       messageCount: countVisibleMessages(transcript),
-      summary: mostRecentLeaf ? summaries.get(mostRecentLeaf.uuid) : log.summary,
+      summary: mostRecentLeaf ? summaries.get(mostRecentLeaf.uuid!) : log.summary,
       customTitle: sessionId ? customTitles.get(sessionId) : log.customTitle,
       tag: sessionId ? tags.get(sessionId) : log.tag,
       agentName: sessionId ? agentNames.get(sessionId) : log.agentName,

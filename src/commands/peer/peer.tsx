@@ -18,14 +18,16 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import ansis from 'ansis';
 import { spawn as childSpawn } from 'child_process';
+import * as React from 'react';
 import { getProjectRoot } from '../../bootstrap/state.js';
 import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
 import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { getGlobalPeerStore } from '../../peer/PeerStore.js';
-import { formatPeerTaskDashboard, formatPeerTaskSummary } from '../../peer/peerDashboard.js';
+import { formatPeerHealth, formatPeerTaskDashboard, formatPeerTaskSummary } from '../../peer/peerDashboard.js';
 import type { PeerInfo } from '../../peer/types.js';
 import { notifyPeerFeedback } from '../../tools/peer/peerFeedback.js';
 import { errorMessage } from '../../utils/errors.js';
+import PeerDashboard from './PeerDashboard.js';
 import { formatPeerList } from './PeerList.js';
 import PeerMenu from './PeerMenu.js';
 import { type SwarmPeerResult, SwarmResult } from './swarmResult.js';
@@ -262,9 +264,11 @@ async function fetchWithRetry(
 }
 
 async function sendMessage(peerQuery: string, text: string, onDone: (msg: string) => void): Promise<void> {
+  // Declared outside the try so the catch below can name the peer it failed on.
+  let peer: PeerInfo | undefined;
   try {
     const store = getGlobalPeerStore();
-    const peer = store.findPeer(peerQuery);
+    peer = store.findPeer(peerQuery);
     if (!peer) {
       onDone(ansis.red(`✗ Peer "${peerQuery}" not found. Run /peer discover first.`));
       return;
@@ -295,9 +299,11 @@ async function sendMessage(peerQuery: string, text: string, onDone: (msg: string
 }
 
 async function sendTask(peerQuery: string, text: string, onDone: (msg: string) => void): Promise<void> {
+  // Declared outside the try so the catch below can name the peer it failed on.
+  let peer: PeerInfo | undefined;
   try {
     const store = getGlobalPeerStore();
-    const peer = store.findPeer(peerQuery);
+    peer = store.findPeer(peerQuery);
     if (!peer) {
       onDone(ansis.red(`✗ Worker "${peerQuery}" not found. Run /peer discover first.`));
       return;
@@ -401,7 +407,6 @@ async function doSwarm(options: SwarmOptions, onDone: (msg: string, opts?: any) 
     return [];
   }
 
-  const startedAt = performance.now();
   const results: SwarmPeerResult[] = [];
 
   // Fire requests to all peers in parallel
@@ -478,7 +483,7 @@ async function doSwarm(options: SwarmOptions, onDone: (msg: string, opts?: any) 
   return results;
 }
 
-async function runSwarm(rest: string, onDone: (msg: string, opts?: any) => void): Promise<void> {
+async function runSwarm(rest: string, onDone: (msg: string, opts?: any) => void): Promise<React.ReactNode> {
   const tokens = parseArgs(rest);
   if (tokens.length === 0) {
     onDone(
@@ -656,7 +661,7 @@ async function writePeerMemoryState(state: PeerMemorySyncState): Promise<void> {
   await writeFile(path, JSON.stringify(state, null, 2), 'utf-8');
 }
 
-async function runMemoryAuto(args: string, onDone: (msg: string) => void): Promise<void> {
+async function runMemoryAuto(args: string, onDone: (msg: string, opts?: any) => void): Promise<void> {
   const state = await readPeerMemoryState();
 
   // /peer memory auto → show status
@@ -866,6 +871,12 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
   }
 
   if (args === 'dashboard' || args === 'dash') {
+    return <PeerDashboard onDone={onDone} />;
+  }
+
+  // Static snapshot — for piping/copying, and for anything that can't host a
+  // live Ink view. Same data as the interactive dashboard.
+  if (args === 'dashboard --text' || args === 'dash --text' || args === 'dashboard -t' || args === 'dash -t') {
     const dash = formatPeerTaskDashboard();
     if (!dash) {
       onDone(ansis.dim('No peer activity. Share or join peers first with /peer share or /peer join.'), {
@@ -875,6 +886,11 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
     }
     const summary = formatPeerTaskSummary();
     onDone([dash, '', ansis.dim(summary)].join('\n'), { display: 'system' });
+    return;
+  }
+
+  if (args === 'health') {
+    onDone(formatPeerHealth(), { display: 'system' });
     return;
   }
 
@@ -896,8 +912,9 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
 
   if (args.startsWith('swarm') || args.startsWith('swarm ')) {
     const rest = args.slice(5).trim();
-    await runSwarm(rest, (msg, opts) => onDone(msg, { ...opts, display: 'system' }));
-    return;
+    // runSwarm returns the SwarmResult element on a real run — returning it is
+    // what renders per-peer output; dropping it left the command silent.
+    return await runSwarm(rest, (msg, opts) => onDone(msg, { ...opts, display: 'system' }));
   }
 
   // /peer inbox — show pending messages, inject into prompt on select
@@ -969,7 +986,9 @@ export const call: import('../../types/command.js').LocalJSXCommandCall = async 
         '                                    -f, --filter <pattern>',
         '                                    --dry-run',
         '  /peer inbox              View pending messages',
-        '  /peer dashboard           Show peer task dashboard with todos and results',
+        '  /peer dashboard           Open the live peer dashboard (peers, health, tasks, results)',
+        '                           Keys: arrows select peer, p pending-only, r refresh, Esc close',
+        '                           /peer dashboard --text for a static text snapshot',
         '  /peer health              Show LAN peer health, latency, and queue load',
         '  /peer spawn [options]    Spawn a new peer shell terminal window',
         '                           Options: -n, --name <name> (peer display name)',

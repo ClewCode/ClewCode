@@ -160,22 +160,24 @@ function MessageImpl({
       const isLatestBashOutput = latestBashOutputUUID === message.uuid;
       const content = (
         <Box flexDirection="column" width={containerWidth ?? '100%'}>
-          {message.message.content.map((param, index) => (
-            <UserMessage
-              key={index}
-              message={message}
-              addMargin={addMargin}
-              tools={tools}
-              progressMessagesForMessage={progressMessagesForMessage}
-              param={param}
-              style={style}
-              verbose={verbose}
-              imageIndex={imageIndices[index]!}
-              isUserContinuation={isUserContinuation}
-              lookups={lookups}
-              isTranscriptMode={isTranscriptMode}
-            />
-          ))}
+          {message.message.content.map(
+            (param: TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam, index: number) => (
+              <UserMessage
+                key={index}
+                message={message}
+                addMargin={addMargin}
+                tools={tools}
+                progressMessagesForMessage={progressMessagesForMessage}
+                param={param}
+                style={style}
+                verbose={verbose}
+                imageIndex={imageIndices[index]!}
+                isUserContinuation={isUserContinuation}
+                lookups={lookups}
+                isTranscriptMode={isTranscriptMode}
+              />
+            ),
+          )}
         </Box>
       );
       return isLatestBashOutput ? <ExpandShellOutputProvider>{content}</ExpandShellOutputProvider> : content;

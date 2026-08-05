@@ -20,6 +20,23 @@ export interface GraphEdge {
   weight: number;
 }
 
+export function getGraphStats(projectPath: string): {
+  nodeCount: number;
+  edgeCount: number;
+  byType: Record<string, number>;
+} {
+  if (!MemoryDB.isInitialized()) return { nodeCount: 0, edgeCount: 0, byType: {} };
+  try {
+    const db = MemoryDB.getInstance();
+    const decisions = db.queryMemories({ projectPath, type: 'decision' });
+    const refs = db.queryMemories({ projectPath, type: 'reference' }).filter(r => r.content.startsWith('File: '));
+    const byType: Record<string, number> = { decision: decisions.length, reference: refs.length };
+    return { nodeCount: decisions.length + refs.length, edgeCount: 0, byType };
+  } catch {
+    return { nodeCount: 0, edgeCount: 0, byType: {} };
+  }
+}
+
 export function recordSessionGraph(
   _pr: string,
   _s: string,

@@ -1064,7 +1064,7 @@ function runHeadlessStreaming(
         crumb.message.content.includes(`<${LOCAL_COMMAND_STDOUT_TAG}>`)
       ) {
         output.enqueue({
-          type: 'user',
+          type: 'user_replay',
           message: crumb.message,
           session_id: getSessionId(),
           parent_tool_use_id: null,
@@ -1684,7 +1684,7 @@ function runHeadlessStreaming(
             for (const c of batch) {
               if (c.uuid && c.uuid !== command.uuid) {
                 output.enqueue({
-                  type: 'user',
+                  type: 'user_replay',
                   message: { role: 'user', content: c.value },
                   session_id: getSessionId(),
                   parent_tool_use_id: null,

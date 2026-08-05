@@ -40,7 +40,7 @@ export function HelpV2({ onClose, commands }: Props): React.ReactNode {
 
   // We have to do this in an `if` to help treeshaking
   if ('external' === 'ant') {
-    const internalOnlyNames = new Set(INTERNAL_ONLY_COMMANDS.map(_ => _.name));
+    const internalOnlyNames = new Set(INTERNAL_ONLY_COMMANDS.map((_: Command) => _.name));
     builtinCommands = builtinCommands.filter(cmd => !internalOnlyNames.has(cmd.name));
     antOnlyCommands = commands.filter(cmd => internalOnlyNames.has(cmd.name) && !cmd.isHidden);
   }

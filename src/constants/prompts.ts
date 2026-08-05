@@ -855,7 +855,7 @@ function getFunctionResultClearingSection(model: string): string | null {
     return null;
   }
   const config = getCachedMCConfigForFRC();
-  const isModelSupported = config.supportedModels?.some(pattern => model.includes(pattern));
+  const isModelSupported = config.supportedModels?.some((pattern: string) => model.includes(pattern));
   if (!config.enabled || !config.systemPromptSuggestSummaries || !isModelSupported) {
     return null;
   }

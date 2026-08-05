@@ -53,7 +53,7 @@ Present the scraped data in a usable format (JSON, CSV, markdown table, etc.).
 **Important**: Always respect robots.txt and the website's terms of service.
 `;
 
-function parseScraplingArgs(args) {
+function parseScraplingArgs(args: string) {
   const parts = args.trim().split(/\s+/);
   const result = {
     url: '',

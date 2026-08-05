@@ -69,6 +69,7 @@ type NavigableOption<T> = {
   disabled?: boolean;
   previous?: NavigableOption<T>;
   next?: NavigableOption<T>;
+  index: number;
 };
 
 function nextEnabledOption<T>(item: NavigableOption<T> | undefined, fallback: NavigableOption<T> | undefined) {

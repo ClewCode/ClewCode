@@ -11,12 +11,12 @@ import { useTheme } from './ThemeProvider.js';
 
 // Color props that accept theme keys
 type ThemedColorProps = {
-  readonly borderColor?: keyof Theme | Color;
-  readonly borderTopColor?: keyof Theme | Color;
-  readonly borderBottomColor?: keyof Theme | Color;
-  readonly borderLeftColor?: keyof Theme | Color;
-  readonly borderRightColor?: keyof Theme | Color;
-  readonly backgroundColor?: keyof Theme | Color;
+  readonly borderColor?: keyof Theme | Color | string;
+  readonly borderTopColor?: keyof Theme | Color | string;
+  readonly borderBottomColor?: keyof Theme | Color | string;
+  readonly borderLeftColor?: keyof Theme | Color | string;
+  readonly borderRightColor?: keyof Theme | Color | string;
+  readonly backgroundColor?: keyof Theme | Color | string;
 };
 
 // Base Styles without color props (they'll be overridden)
@@ -50,7 +50,7 @@ export type Props = BaseStylesWithoutColors &
 /**
  * Resolves a color value that may be a theme key to a raw Color.
  */
-function resolveColor(color: keyof Theme | Color | undefined, theme: Theme): Color | undefined {
+function resolveColor(color: keyof Theme | Color | string | undefined, theme: Theme): Color | undefined {
   if (!color) return undefined;
   // Check if it's a raw color (starts with rgb(, #, ansi256(, or ansi:)
   if (color.startsWith('rgb(') || color.startsWith('#') || color.startsWith('ansi256(') || color.startsWith('ansi:')) {

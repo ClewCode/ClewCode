@@ -158,6 +158,12 @@ export class FallbackTriggeredError extends Error {
     public readonly originalModel: string,
     public readonly fallbackModel: string,
     public readonly fallbackEffort?: string,
+    /**
+     * Index in the fallback chain this target came from. The caller advances
+     * its cursor to this value — entries skipped for being cross-provider must
+     * not be revisited. Undefined for the legacy single-fallbackModel path.
+     */
+    public readonly fallbackIndex?: number,
   ) {
     super(`Model fallback triggered: ${originalModel} -> ${fallbackModel}`);
     this.name = 'FallbackTriggeredError';
@@ -280,7 +286,7 @@ export async function* withRetry<T>(
                 provider: getAPIProviderForStatsig(),
               });
 
-              throw new FallbackTriggeredError(options.model, next.entry.model, next.entry.effort);
+              throw new FallbackTriggeredError(options.model, next.entry.model, next.entry.effort, next.index);
             }
           }
 

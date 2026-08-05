@@ -457,12 +457,12 @@ export function BackgroundTasksDialog({ onDone, toolUseContext, initialDetailTas
             }
             onSkipAgent={
               task.status === 'running' && skipWorkflowAgent
-                ? agentId => skipWorkflowAgent(task.id, agentId, setAppState)
+                ? (agentId: string) => skipWorkflowAgent(task.id, agentId, setAppState)
                 : undefined
             }
             onRetryAgent={
               task.status === 'running' && retryWorkflowAgent
-                ? agentId => retryWorkflowAgent(task.id, agentId, setAppState)
+                ? (agentId: string) => retryWorkflowAgent(task.id, agentId, setAppState)
                 : undefined
             }
             onBack={goBackToList}

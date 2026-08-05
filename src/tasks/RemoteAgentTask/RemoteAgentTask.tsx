@@ -410,7 +410,9 @@ function extractTodoListFromLog(log: SDKMessage[]): TodoList {
   const todoListMessage = log.findLast(
     (msg): msg is SDKAssistantMessage =>
       msg.type === 'assistant' &&
-      msg.message.content.some(block => block.type === 'tool_use' && block.name === TodoWriteTool.name),
+      msg.message.content.some(
+        (block: { type: string; name?: string }) => block.type === 'tool_use' && block.name === TodoWriteTool.name,
+      ),
   );
   if (!todoListMessage) {
     return [];

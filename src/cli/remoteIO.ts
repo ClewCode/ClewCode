@@ -175,7 +175,7 @@ export class RemoteIO extends StructuredIO {
           // Clear timer to avoid repeated failures
           if (this.keepAliveTimer) {
             clearInterval(this.keepAliveTimer);
-            this.keepAliveTimer = undefined;
+            this.keepAliveTimer = null;
           }
         });
       }, keepAliveIntervalMs);

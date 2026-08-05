@@ -2,6 +2,8 @@
 import type { ToolResultBlockParam, ToolUseBlock } from '@anthropic-ai/sdk/resources/index.mjs';
 import type { CanUseToolFn } from './hooks/useCanUseTool.js';
 import { FallbackTriggeredError } from './services/api/withRetry.js';
+import { ProviderManager } from './services/ai/ProviderManager.js';
+import type { EffortLevel } from './utils/effort.js';
 import {
   calculateTokenWarningState,
   checkCompactRegret,
@@ -542,6 +544,14 @@ async function* queryLoop(
     }
 
     let attemptWithFallback = true;
+    // Position in the configured fallback chain. -1 = primary model (no
+    // fallback consumed yet); each FallbackTriggeredError advances it by one.
+    let fallbackChainIndex = -1;
+    // Effort carried over from the chain entry we fell back to. Overrides
+    // appState.effortValue for the retry so a cheaper fallback model can also
+    // run at a cheaper effort.
+    let fallbackEffortOverride: EffortLevel | undefined;
+    const activeProviderForFallback = ProviderManager.getInstance().getActiveProviderName();
 
     queryCheckpoint('query_api_loop_start');
     try {
@@ -577,7 +587,9 @@ async function* queryLoop(
               mcpTools: appState.mcp.tools,
               hasPendingMcpServers: appState.mcp.clients.some(c => c.type === 'pending'),
               queryTracking,
-              effortValue: appState.effortValue,
+              effortValue: fallbackEffortOverride ?? appState.effortValue,
+              fallbackChainIndex,
+              activeProvider: activeProviderForFallback,
               advisorModel: appState.advisorModel,
               skipCacheWrite,
               agentId: toolUseContext.agentId,
@@ -721,10 +733,25 @@ async function* queryLoop(
           }
           queryCheckpoint('query_api_streaming_end');
         } catch (innerError) {
-          if (innerError instanceof FallbackTriggeredError && fallbackModel) {
-            // Fallback was triggered - switch model and retry
-            currentModel = fallbackModel;
+          if (innerError instanceof FallbackTriggeredError && (innerError.fallbackModel || fallbackModel)) {
+            // Fallback was triggered. withRetry already picked the target: a
+            // chain entry when one is configured, else the legacy single
+            // fallbackModel. Trust its choice rather than re-resolving here,
+            // so the two paths can't disagree about which model comes next.
+            const nextModel = innerError.fallbackModel || fallbackModel!;
+            currentModel = nextModel;
             attemptWithFallback = true;
+
+            // Advance the cursor to the entry withRetry actually landed on, so
+            // the next trigger resumes after it. Incrementing by one instead
+            // would re-select an entry that was skipped for being
+            // cross-provider, looping on the same model forever.
+            if (innerError.fallbackIndex !== undefined) {
+              fallbackChainIndex = innerError.fallbackIndex;
+            }
+            if (innerError.fallbackEffort) {
+              fallbackEffortOverride = innerError.fallbackEffort as EffortLevel;
+            }
 
             // Clear assistant messages since we'll retry the entire request
             yield* yieldMissingToolResultBlocks(assistantMessages, 'Model fallback triggered');
@@ -746,7 +773,7 @@ async function* queryLoop(
             }
 
             // Update tool use context with new model
-            toolUseContext.options.mainLoopModel = fallbackModel;
+            toolUseContext.options.mainLoopModel = nextModel;
 
             // Thinking signatures are model-bound: replaying a protected-thinking
             // block (e.g. capybara) to an unprotected fallback (e.g. opus) 400s.
@@ -758,7 +785,7 @@ async function* queryLoop(
             // Log the fallback event
             logEvent('tengu_model_fallback_triggered', {
               original_model: innerError.originalModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-              fallback_model: fallbackModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+              fallback_model: nextModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
               entrypoint: 'cli' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
               queryChainId: queryChainIdForAnalytics,
               queryDepth: queryTracking.depth,

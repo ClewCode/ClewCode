@@ -1,101 +1,208 @@
 /**
- * peerDashboard — Format peer task status as a text dashboard
- * for injection into the AI's context.
+ * peerDashboard — Peer task dashboard.
+ *
+ * `collectPeerDashboard()` is the single data model: the text renderer below
+ * (used by the AI-facing PeerDashboardTool and `/peer dashboard --text`) and
+ * the interactive Ink view (`commands/peer/PeerDashboard.tsx`) both read from
+ * it, so they can never drift apart.
  */
 
-import { getGlobalPeerStore } from './PeerStore.js';
+import { getGlobalPeerStore, type PeerStore } from './PeerStore.js';
+import { formatPeerLatency, formatPeerLoad, getPeerHealth, type SwarmHealth, summarizePeers } from './peerHealth.js';
 import type { BrokerMessage, MeshTodo } from './types.js';
 
 const RESULT_PREVIEW_LENGTH = 120;
 
+/** A todo assigned to (or received from) a peer, plus its reply if one arrived. */
+export interface PeerDashboardTask {
+  id: string;
+  message: string;
+  status: MeshTodo['status'];
+  createdAt: number;
+  /** Full reply text from the broker outbox, if the peer replied. */
+  result?: string;
+}
+
+/** One peer row, with health telemetry and its tasks. */
+export interface PeerDashboardPeer {
+  id: string;
+  name: string;
+  role?: string;
+  ip: string;
+  port: number;
+  health: SwarmHealth;
+  /** Pre-formatted latency, e.g. `42ms` or `--`. */
+  latency: string;
+  /** Pre-formatted load, e.g. `idle`, `q2`, `busy+1`. */
+  load: string;
+  tasks: PeerDashboardTask[];
+}
+
+export interface PeerDashboardData {
+  peers: PeerDashboardPeer[];
+  /**
+   * Tasks whose sender is not a connected peer (peer left, or was never
+   * joined). The old dashboard dropped these silently.
+   */
+  unassigned: PeerDashboardTask[];
+  totals: {
+    peers: number;
+    healthy: number;
+    lagging: number;
+    offline: number;
+    avgLatencyMs?: number;
+    tasks: number;
+    pending: number;
+    done: number;
+    rejected: number;
+  };
+  /** Summary of state restored from a previous session, if any. */
+  restored: string | null;
+  generatedAt: number;
+}
+
+function toTask(todo: MeshTodo, replies: Map<string, BrokerMessage>): PeerDashboardTask {
+  const reply = replies.get(todo.id);
+  return {
+    id: todo.id,
+    message: todo.message,
+    status: todo.status,
+    createdAt: todo.createdAt,
+    result: reply?.text,
+  };
+}
+
+/**
+ * Snapshot every connected peer, their tasks, and the health of the mesh.
+ *
+ * `store` is injectable so tests can build an isolated, non-persisting store
+ * instead of mutating the process-global one.
+ */
+export function collectPeerDashboard(store: PeerStore = getGlobalPeerStore(), now = Date.now()): PeerDashboardData {
+  const connections = store.getConnections().filter(peer => peer.port > 0);
+  const todos = store.getTodos();
+
+  // Broker replies are keyed by the todo id they answer.
+  const replies = new Map<string, BrokerMessage>();
+  for (const msg of store.getOutbox()) {
+    if (msg.replyTo) replies.set(msg.replyTo, msg);
+  }
+
+  // Todos carry the *sender*'s name/id; match them back to a known peer by
+  // hostname, display name, or id so a renamed peer keeps its tasks.
+  const claimed = new Set<string>();
+  const peers: PeerDashboardPeer[] = connections.map(peer => {
+    const tags = store.getPeerTags(peer.id);
+    const name = tags?.displayName || peer.hostname;
+    const keys = new Set([peer.hostname.toLowerCase(), name.toLowerCase(), peer.id.toLowerCase()]);
+
+    const tasks = todos
+      .filter(todo => {
+        const from = (todo.fromName || todo.from).toLowerCase();
+        if (!keys.has(from)) return false;
+        claimed.add(todo.id);
+        return true;
+      })
+      .map(todo => toTask(todo, replies));
+
+    return {
+      id: peer.id,
+      name,
+      role: tags?.role,
+      ip: peer.ip,
+      port: peer.port,
+      health: getPeerHealth(peer, now),
+      latency: formatPeerLatency(peer),
+      load: formatPeerLoad(peer),
+      tasks,
+    };
+  });
+
+  const unassigned = todos.filter(todo => !claimed.has(todo.id)).map(todo => toTask(todo, replies));
+  const summary = summarizePeers(connections, now);
+
+  const countByStatus = (status: MeshTodo['status']) => todos.filter(todo => todo.status === status).length;
+
+  return {
+    peers,
+    unassigned,
+    totals: {
+      peers: connections.length,
+      healthy: summary.healthy,
+      lagging: summary.lagging,
+      offline: summary.offline,
+      avgLatencyMs: summary.avgLatencyMs,
+      tasks: todos.length,
+      pending: countByStatus('pending'),
+      done: countByStatus('done'),
+      rejected: countByStatus('rejected'),
+    },
+    restored: store.getRestoredSummary(),
+    generatedAt: now,
+  };
+}
+
+function statusIcon(status: MeshTodo['status']): string {
+  return status === 'done' ? '☑' : status === 'rejected' ? '☒' : '☐';
+}
+
+function renderTaskLines(tasks: PeerDashboardTask[], indent: string): string[] {
+  const lines: string[] = [];
+  for (const task of tasks) {
+    lines.push(`${indent}${statusIcon(task.status)} ${task.id.slice(0, 10)}: ${task.message} [${task.status}]`);
+    if (task.result) {
+      const preview =
+        task.result.length > RESULT_PREVIEW_LENGTH ? `${task.result.slice(0, RESULT_PREVIEW_LENGTH)}...` : task.result;
+      lines.push(`${indent}  ↳ result: "${preview}" (${task.result.length} chars)`);
+    }
+  }
+  return lines;
+}
+
 /**
  * Format the full peer task dashboard as a text block.
- * Shows each connected peer, their todos, and any results/replies.
+ * Shows each connected peer with health/latency/load, their todos, and results.
  */
-export function formatPeerTaskDashboard(): string {
-  const store = getGlobalPeerStore();
-  const peers = store.getConnections().filter(p => p.port > 0);
-  const todos = store.getTodos();
-  const outbox = store.getOutbox();
+export function formatPeerTaskDashboard(store: PeerStore = getGlobalPeerStore(), now = Date.now()): string {
+  const data = collectPeerDashboard(store, now);
 
-  if (peers.length === 0 && todos.length === 0) {
+  if (data.peers.length === 0 && data.totals.tasks === 0) {
     return '';
   }
 
-  const sections: string[] = [];
-  sections.push('─── Peer Task Dashboard ───');
-  sections.push('');
+  const sections: string[] = ['─── Peer Task Dashboard ───', ''];
 
-  const restored = store.getRestoredSummary();
-  if (restored) {
-    sections.push(`↺ ${restored}`);
-    sections.push('');
+  if (data.restored) {
+    sections.push(`↺ ${data.restored}`, '');
   }
 
-  if (peers.length === 0) {
-    sections.push('(no connected peers)');
-    sections.push('');
+  if (data.peers.length === 0) {
+    sections.push('(no connected peers)', '');
   }
 
-  // Group todos by which peer they were assigned to (the `from` field stores
-  // the hostname of the peer that the todo was sent to).
-  const todosByPeer = new Map<string, MeshTodo[]>();
-  for (const todo of todos) {
-    const key = todo.fromName || todo.from;
-    const list = todosByPeer.get(key) ?? [];
-    list.push(todo);
-    todosByPeer.set(key, list);
-  }
+  for (const peer of data.peers) {
+    const role = peer.role ? ` [${peer.role}]` : '';
+    const count = `${peer.tasks.length} task${peer.tasks.length !== 1 ? 's' : ''}`;
+    sections.push(`${peer.name}${role} (port ${peer.port}) ─ ${count}`);
+    sections.push(`  ${peer.health} · ${peer.latency} · ${peer.load} · ${peer.ip}:${peer.port}`);
 
-  // Group broker outbox replies by `replyTo` for result lookup
-  const repliesByReplyTo = new Map<string, BrokerMessage>();
-  for (const msg of outbox) {
-    if (msg.replyTo) {
-      repliesByReplyTo.set(msg.replyTo, msg);
-    }
-  }
-
-  let totalTasks = 0;
-  let doneTasks = 0;
-  let runningTasks = 0;
-
-  // Show each peer
-  for (const peer of peers) {
-    const tags = store.getPeerTags(peer.id);
-    const name = tags?.displayName || peer.hostname;
-    const peerTodos = todosByPeer.get(peer.hostname) ?? [];
-    totalTasks += peerTodos.length;
-
-    sections.push(`${name} (port ${peer.port}) ─ ${peerTodos.length} task${peerTodos.length !== 1 ? 's' : ''}`);
-
-    if (peerTodos.length === 0) {
+    if (peer.tasks.length === 0) {
       sections.push('  (no tasks)');
     } else {
-      for (const todo of peerTodos) {
-        const icon = todo.status === 'done' ? '☑' : todo.status === 'rejected' ? '☒' : '☐';
-        const statusLabel = todo.status === 'pending' ? 'pending' : todo.status === 'done' ? 'done' : 'rejected';
-
-        if (todo.status === 'done') doneTasks++;
-        if (todo.status === 'pending') runningTasks++;
-
-        sections.push(`  ${icon} ${todo.id.slice(0, 10)}: ${todo.message} [${statusLabel}]`);
-
-        // Show result if there's a reply
-        const reply = repliesByReplyTo.get(todo.id);
-        if (reply) {
-          const preview =
-            reply.text.length > RESULT_PREVIEW_LENGTH ? `${reply.text.slice(0, RESULT_PREVIEW_LENGTH)}...` : reply.text;
-          sections.push(`    \u21b3 result: "${preview}" (${reply.text.length} chars)`);
-        }
-      }
+      sections.push(...renderTaskLines(peer.tasks, '  '));
     }
 
     sections.push('');
   }
 
-  // Summary
-  const summary = `${totalTasks} task${totalTasks !== 1 ? 's' : ''} total \u00b7 ${doneTasks} done \u00b7 ${runningTasks} pending`;
-  sections.push(`\u2500\u2500\u2500 ${summary} \u2500\u2500\u2500`);
+  if (data.unassigned.length > 0) {
+    sections.push(`Unassigned ─ ${data.unassigned.length} task(s) from peers no longer connected`);
+    sections.push(...renderTaskLines(data.unassigned, '  '));
+    sections.push('');
+  }
+
+  const { tasks, done, pending } = data.totals;
+  sections.push(`─── ${tasks} task${tasks !== 1 ? 's' : ''} total · ${done} done · ${pending} pending ───`);
 
   return sections.join('\n');
 }
@@ -103,16 +210,40 @@ export function formatPeerTaskDashboard(): string {
 /**
  * Format a compact one-line summary for use in enqueued notifications.
  */
-export function formatPeerTaskSummary(): string {
-  const store = getGlobalPeerStore();
-  const peers = store.getConnections().filter(p => p.port > 0);
-  const todos = store.getTodos();
+export function formatPeerTaskSummary(store: PeerStore = getGlobalPeerStore()): string {
+  const data = collectPeerDashboard(store);
+  const { peers, tasks, done, pending } = data.totals;
 
-  if (peers.length === 0 && todos.length === 0) return '';
+  if (peers === 0 && tasks === 0) return '';
 
-  const done = todos.filter(t => t.status === 'done').length;
-  const pending = todos.filter(t => t.status === 'pending').length;
-  const total = todos.length;
+  return `[Peers: ${peers} · Tasks: ${done}/${tasks} done${pending > 0 ? ` · ${pending} pending` : ''}]`;
+}
 
-  return `[Peers: ${peers.length} \u00b7 Tasks: ${done}/${total} done${pending > 0 ? ` \u00b7 ${pending} pending` : ''}]`;
+/**
+ * Format LAN peer health as a text block — `/peer health`.
+ */
+export function formatPeerHealth(store: PeerStore = getGlobalPeerStore(), now = Date.now()): string {
+  const data = collectPeerDashboard(store, now);
+
+  if (data.peers.length === 0) {
+    return 'No connected peers. Use /peer discover and /peer join first.';
+  }
+
+  const { healthy, lagging, offline, avgLatencyMs } = data.totals;
+  const lines = [
+    'Peer Health',
+    `  ${healthy} healthy · ${lagging} lagging · ${offline} offline${
+      avgLatencyMs !== undefined ? ` · avg ${Math.round(avgLatencyMs)}ms` : ''
+    }`,
+    '',
+    `  ${'NAME'.padEnd(18)}${'ROLE'.padEnd(12)}${'HEALTH'.padEnd(9)}${'LATENCY'.padEnd(9)}${'LOAD'.padEnd(9)}ADDRESS`,
+  ];
+
+  for (const peer of data.peers) {
+    lines.push(
+      `  ${peer.name.slice(0, 17).padEnd(18)}${(peer.role ?? '-').slice(0, 11).padEnd(12)}${peer.health.padEnd(9)}${peer.latency.padEnd(9)}${peer.load.padEnd(9)}${peer.ip}:${peer.port}`,
+    );
+  }
+
+  return lines.join('\n');
 }

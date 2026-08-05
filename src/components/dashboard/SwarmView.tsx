@@ -65,7 +65,7 @@ export function SwarmView({ workspaceRoot }: SwarmViewProps): React.ReactElement
   const [selection, setSelection] = useState<Selection>({ type: 'peer', index: 0 });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const { width: termWidth = 80 } = useTerminalSize();
+  const { columns: termWidth = 80 } = useTerminalSize();
 
   // Polling: refresh swarm and workflow data
   useEffect(() => {

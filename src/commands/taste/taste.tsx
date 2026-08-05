@@ -1,6 +1,7 @@
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
 import { Box, Text } from '../../ink.js';
+import { useKeybinding } from '../../keybindings/useKeybinding.js';
 import {
   lintTaste,
   pushTaste,
@@ -78,6 +79,10 @@ function TasteView({ entries, status }: { entries: TasteEntry[]; status: string 
           </Box>
         ))}
       </Box>
+
+      <Box marginTop={1}>
+        <Text dimColor>Press Ctrl+C to close</Text>
+      </Box>
     </Box>
   );
 }
@@ -110,7 +115,11 @@ function TasteRow({ entry, index }: { entry: TasteEntry; index: number }): React
 }
 
 /** Subcommands are resolved in `call` before this mounts, so it only lists. */
-function TasteCommand(): React.ReactNode {
+function TasteCommand({ onClose }: { onClose: () => void }): React.ReactNode {
+  // Close only the TASTE overlay. Consuming the interrupt here prevents the
+  // global handler from cancelling the active agent turn.
+  useKeybinding('app:interrupt', onClose, { context: 'Global' });
+
   const [entries, setEntries] = useState<TasteEntry[] | null>(null);
 
   useEffect(() => {
@@ -133,7 +142,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
 
   switch (subcommand.toLowerCase()) {
     case '':
-      return <TasteCommand />;
+      return <TasteCommand onClose={() => onDone(undefined, { display: 'skip' })} />;
 
     case 'on':
     case 'off': {
