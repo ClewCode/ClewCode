@@ -35,7 +35,7 @@ test('preserves reasoning_content when converting assistant history', () => {
   );
 });
 
-test('does not duplicate reasoning when the content already has a thinking block', () => {
+test('keeps reasoning_content even when a thinking block is already present', () => {
   const message = assistantMessageToMessageParam(
     {
       type: 'assistant',
@@ -53,9 +53,10 @@ test('does not duplicate reasoning when the content already has a thinking block
     false,
   );
 
-  // The thinking block already carries the reasoning — a top-level
-  // reasoning_content field alongside it would send the same text twice.
-  expect((message as typeof message & { reasoning_content?: string }).reasoning_content).toBeUndefined();
+  // Some thinking-mode providers require the verbatim reasoning_content field
+  // passed back alongside the thinking block — dropping it yields a 400
+  // ("The reasoning_content in the thinking mode must be passed back to the API").
+  expect((message as typeof message & { reasoning_content?: string }).reasoning_content).toBe('stored on the message');
   expect(message.content).toEqual([
     { type: 'thinking', thinking: 'stored on the message', signature: '' },
     { type: 'text', text: 'the answer' },
