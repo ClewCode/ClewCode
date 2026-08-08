@@ -1046,8 +1046,8 @@ function runHeadlessStreaming(
       ...(hasEffort && {
         supportsEffort: true,
         supportedEffortLevels: modelSupportsMaxEffort(resolvedModel)
-          ? [...EFFORT_LEVELS]
-          : EFFORT_LEVELS.filter(l => l !== 'max'),
+          ? EFFORT_LEVELS.filter((level): level is 'low' | 'medium' | 'high' | 'max' => level !== 'xhigh')
+          : EFFORT_LEVELS.filter(l => l !== 'max' && l !== 'xhigh'),
       }),
       ...(hasAdaptiveThinking && { supportsAdaptiveThinking: true }),
       ...(hasAutoMode && { supportsAutoMode: true }),
@@ -1064,14 +1064,13 @@ function runHeadlessStreaming(
         crumb.message.content.includes(`<${LOCAL_COMMAND_STDOUT_TAG}>`)
       ) {
         output.enqueue({
-          type: 'user_replay',
+          type: 'user',
           message: crumb.message,
-          session_id: getSessionId(),
           parent_tool_use_id: null,
+          isSynthetic: true,
+          session_id: getSessionId(),
           uuid: crumb.uuid,
-          timestamp: crumb.timestamp,
-          isReplay: true,
-        } satisfies SDKUserMessageReplay);
+        } satisfies SDKUserMessage);
       }
     }
   }
@@ -1685,12 +1684,10 @@ function runHeadlessStreaming(
               if (c.uuid && c.uuid !== command.uuid) {
                 output.enqueue({
                   type: 'user_replay',
-                  message: { role: 'user', content: c.value },
+                  text: c.value,
                   session_id: getSessionId(),
-                  parent_tool_use_id: null,
                   uuid: c.uuid,
-                  isReplay: true,
-                } satisfies SDKUserMessageReplay);
+                } satisfies SDKUserMessage);
               }
             }
           }
@@ -3533,14 +3530,11 @@ function runHeadlessStreaming(
             if (options.replayUserMessages) {
               logForDebugging(`Sending acknowledgment for duplicate user message: ${message.uuid}`);
               output.enqueue({
-                type: 'user',
-                message: message.message,
+                type: 'user_replay',
+                text: typeof message.message.content === 'string' ? message.message.content : '',
                 session_id: sessionId,
-                parent_tool_use_id: null,
                 uuid: message.uuid,
-                timestamp: message.timestamp,
-                isReplay: true,
-              } as SDKUserMessageReplay);
+              } satisfies SDKUserMessageReplay);
             }
             // Historical dup = transcript already has this turn's output, so it
             // ran but its lifecycle was never closed (interrupted before ack).
