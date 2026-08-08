@@ -390,7 +390,7 @@ Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
 - **Tools**: `src/tools/<ToolName>/`, 76 tool packages extending `Tool`, registered in `src/tools.ts`
 - **Services**: `src/services/` — MCP client, autonomous queue, vec memory, session search, plugins, LSP, voice, audit log, and more
 
-Full detail, including tool inventory and service list: [AGENT.md](AGENT.md).
+Full detail, including tool inventory and service list: [AGENTS.md](AGENTS.md).
 
 ---
 
@@ -424,7 +424,7 @@ Or run the `/clew-verify` skill, which runs the full gate and a real CLI smoke t
 
 ### Release
 
-Pushing a `v*` tag triggers the GitHub Actions release and npm publish. Before tagging: bump `package.json`, update `CHANGELOG.md`, run the full gate above. See [AGENT.md § Release](AGENT.md#release) or run the `/clew-release` skill.
+Pushing a `v*` tag triggers the GitHub Actions release and npm publish. Before tagging: bump `package.json`, update `CHANGELOG.md`, run the full gate above. See [AGENTS.md § Release](AGENTS.md#release) or run the `/clew-release` skill.
 
 ---
 
@@ -434,7 +434,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 - Report bugs via [GitHub Issues](https://github.com/ClewCode/ClewCode/issues)
 - Discuss ideas in [GitHub Discussions](https://github.com/ClewCode/ClewCode/discussions)
-- Read [AGENT.md](AGENT.md) for full architecture and code conventions
+- Read [AGENTS.md](AGENTS.md) for full architecture and code conventions
 
 ---
 
