@@ -14,6 +14,7 @@
  * an external swarm, etc.).
  */
 
+import { mapWithLimit } from '../utils/semaphore.js';
 import type { DynamicSubtask, DynamicWorkflow, PlannerLlm } from './dynamicWorkflow.js';
 import { computeExecutionWaves } from './dynamicWorkflow.js';
 import {
@@ -91,11 +92,15 @@ export async function runDynamicWorkflow(params: {
   accepted: number;
   refuted: number;
   finalState?: DynamicRunState;
+  /** Subtask ids whose checkpoint write failed; they will re-run on resume. */
+  unpersisted?: string[];
 }> {
   const waves = computeExecutionWaves(params.workflow);
   const allResults: SubtaskResult[] = [];
   const resultById = new Map<string, SubtaskResult>();
   const contextCharLimit = params.contextCharLimit ?? 8000;
+  /** Subtasks that ran but whose checkpoint write failed — reported, never silent. */
+  const unpersisted: string[] = [];
 
   // Hydrate from prior state when resuming
   let runState = params.initialState;
@@ -118,10 +123,11 @@ export async function runDynamicWorkflow(params: {
     // Skip subtasks already completed (resume case)
     const todo = wave.filter(s => !resultById.has(s.id));
     if (todo.length === 0) continue;
-    const bounded = todo.slice(0, params.workflow.maxParallel);
-
-    // Save running state to disk so the progress UI can see live status
-    const runningIds = bounded.map(s => s.id);
+    // `maxParallel` bounds how many run *at once*, not how many run at all.
+    // Slicing the wave here silently dropped every subtask past the cap: waves
+    // are computed once and never revisited, and `lastCompletedWave` advances
+    // regardless, so a resume skipped them too.
+    const runningIds = todo.map(s => s.id);
     if (runState && (params as any).workspaceRoot) {
       const pendingRunState = {
         ...runState,
@@ -136,46 +142,44 @@ export async function runDynamicWorkflow(params: {
       }
     }
 
-    const settled = await Promise.all(
-      bounded.map(async subtask => {
+    const settled = await mapWithLimit(todo, params.workflow.maxParallel, async subtask => {
+      params.onSubtaskStatus?.({
+        subtaskId: subtask.id,
+        role: subtask.role,
+        title: subtask.title,
+        status: 'running',
+        waveIndex: i,
+      });
+      const start = Date.now();
+      let output: string;
+      try {
+        const context = buildSubtaskContext(subtask, resultById, contextCharLimit);
+        const result = await params.runSubtask(subtask, context);
+        output = result.output;
         params.onSubtaskStatus?.({
           subtaskId: subtask.id,
           role: subtask.role,
           title: subtask.title,
-          status: 'running',
+          status: 'completed',
           waveIndex: i,
         });
-        const start = Date.now();
-        let output: string;
-        try {
-          const context = buildSubtaskContext(subtask, resultById, contextCharLimit);
-          const result = await params.runSubtask(subtask, context);
-          output = result.output;
-          params.onSubtaskStatus?.({
-            subtaskId: subtask.id,
-            role: subtask.role,
-            title: subtask.title,
-            status: 'completed',
-            waveIndex: i,
-          });
-        } catch (err) {
-          output = `Error: ${err instanceof Error ? err.message : String(err)}`;
-          params.onSubtaskStatus?.({
-            subtaskId: subtask.id,
-            role: subtask.role,
-            title: subtask.title,
-            status: 'failed',
-            waveIndex: i,
-          });
-        }
-        const base: SubtaskResult = {
+      } catch (err) {
+        output = `Error: ${err instanceof Error ? err.message : String(err)}`;
+        params.onSubtaskStatus?.({
           subtaskId: subtask.id,
-          output,
-          durationMs: Date.now() - start,
-        };
-        return base;
-      }),
-    );
+          role: subtask.role,
+          title: subtask.title,
+          status: 'failed',
+          waveIndex: i,
+        });
+      }
+      const base: SubtaskResult = {
+        subtaskId: subtask.id,
+        output,
+        durationMs: Date.now() - start,
+      };
+      return base;
+    });
 
     // Verify each subtask that has a `verifiedBy` pointer.
     const subtaskById = new Map(params.workflow.subtasks.map(s => [s.id, s] as const));
@@ -215,7 +219,16 @@ export async function runDynamicWorkflow(params: {
             verificationReason: result.verificationReason,
             completedAt: new Date().toISOString(),
           };
-          runState = await params.persist({ runState, result: persisted, waveIndex: i });
+          // Best-effort per result: a failed write loses that one checkpoint,
+          // not the wave. Throwing here would discard finished subtask output
+          // that is already in `allResults` and cannot be recomputed cheaply.
+          try {
+            runState = await params.persist({ runState, result: persisted, waveIndex: i });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            unpersisted.push(result.subtaskId);
+            console.warn(`[dynamicWorkflowRunner] failed to persist subtask ${result.subtaskId}: ${msg}`);
+          }
         } else {
           console.warn(
             '[dynamicWorkflowRunner] persist hook provided without initialState — progress will not be persisted',
@@ -240,7 +253,19 @@ export async function runDynamicWorkflow(params: {
 
   const accepted = allResults.filter(r => r.verification === 'confirmed' || r.verification === undefined).length;
   const refuted = allResults.filter(r => r.verification === 'refuted').length;
-  return { results: allResults, waves: waves.length, accepted, refuted, finalState: runState };
+  if (unpersisted.length > 0) {
+    console.warn(
+      `[dynamicWorkflowRunner] ${unpersisted.length} subtask result(s) ran but were not checkpointed and will re-run on resume: ${unpersisted.join(', ')}`,
+    );
+  }
+  return {
+    results: allResults,
+    waves: waves.length,
+    accepted,
+    refuted,
+    finalState: runState,
+    unpersisted: unpersisted.length > 0 ? [...unpersisted] : undefined,
+  };
 }
 
 /**
