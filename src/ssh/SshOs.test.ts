@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { buildRemoteCommand, buildSshArgv, parseRemoteDirListing, SshOs } from './SshOs.js';
+import { buildRemoteCommand, buildSshArgv, controlSocketPath, parseRemoteDirListing, SshOs } from './SshOs.js';
 
 describe('buildRemoteCommand', () => {
   test('quotes the command and every argument', () => {
@@ -27,6 +27,41 @@ describe('buildSshArgv', () => {
   test('disables interactive prompts so a connection cannot hang the agent', () => {
     const argv = buildSshArgv({ host: 'user@host' }, 'ls');
     expect(argv).toContain('BatchMode=yes');
+  });
+
+  test('reuses one connection by default instead of logging in per operation', () => {
+    const argv = buildSshArgv({ host: 'user@host' }, 'ls').join(' ');
+    expect(argv).toContain('ControlMaster=auto');
+    expect(argv).toContain('ControlPersist=300');
+    expect(argv).toContain('ControlPath=');
+  });
+
+  test('connection reuse can be turned off', () => {
+    const argv = buildSshArgv({ host: 'user@host', controlPersistSeconds: 0 }, 'ls').join(' ');
+    expect(argv).not.toContain('ControlMaster');
+    expect(argv).not.toContain('ControlPath');
+  });
+});
+
+describe('controlSocketPath', () => {
+  test('stays short enough for the unix socket path limit', () => {
+    // macOS caps a socket path at 104 bytes; a raw host plus temp dir blows it.
+    const path = controlSocketPath({ host: 'deploy@very-long-hostname.internal.example.com' });
+    expect(path.length).toBeLessThan(104);
+  });
+
+  test('is stable across reconnects so an existing master is reused', () => {
+    const options = { host: 'user@host', sshArgs: ['-p', '2222'] };
+    expect(controlSocketPath(options)).toBe(controlSocketPath({ ...options }));
+  });
+
+  test('differs per host and per connection flags', () => {
+    expect(controlSocketPath({ host: 'a' })).not.toBe(controlSocketPath({ host: 'b' }));
+    expect(controlSocketPath({ host: 'a' })).not.toBe(controlSocketPath({ host: 'a', sshArgs: ['-p', '2222'] }));
+  });
+
+  test('an explicit path wins', () => {
+    expect(controlSocketPath({ host: 'a', controlPath: '/tmp/mine' })).toBe('/tmp/mine');
   });
 
   test('puts the host and remote command last, after any extra flags', () => {

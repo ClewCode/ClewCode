@@ -34,3 +34,30 @@ test('preserves reasoning_content when converting assistant history', () => {
     'must round-trip verbatim',
   );
 });
+
+test('does not duplicate reasoning when the content already has a thinking block', () => {
+  const message = assistantMessageToMessageParam(
+    {
+      type: 'assistant',
+      uuid: 'assistant-2',
+      message: {
+        role: 'assistant',
+        reasoning_content: 'stored on the message',
+        content: [
+          { type: 'thinking', thinking: 'stored on the message', signature: '' },
+          { type: 'text', text: 'the answer' },
+        ],
+      },
+    },
+    false,
+    false,
+  );
+
+  // The thinking block already carries the reasoning — a top-level
+  // reasoning_content field alongside it would send the same text twice.
+  expect((message as typeof message & { reasoning_content?: string }).reasoning_content).toBeUndefined();
+  expect(message.content).toEqual([
+    { type: 'thinking', thinking: 'stored on the message', signature: '' },
+    { type: 'text', text: 'the answer' },
+  ]);
+});

@@ -579,8 +579,16 @@ export function assistantMessageToMessageParam(
           .map(block => block.thinking)
           .join('')
       : '');
+  // normalizeMessagesForAPI prepends a thinking block when reasoning_content is
+  // set, so the message already carries its reasoning as content. Re-adding the
+  // top-level field alongside the block sends the same text twice. The field is
+  // only needed when the reasoning has nowhere else to live (e.g. a tool-call
+  // assistant that cannot contain a thinking block for some providers).
+  const hasThinkingBlock =
+    Array.isArray(message.message.content) &&
+    message.message.content.some(block => block.type === 'thinking' || block.type === 'redacted_thinking');
   const withReasoningContent = (param: MessageParam): MessageParam & { reasoning_content?: string } =>
-    reasoningContent ? { ...param, reasoning_content: reasoningContent } : param;
+    reasoningContent && !hasThinkingBlock ? { ...param, reasoning_content: reasoningContent } : param;
 
   if (addCache) {
     if (typeof message.message.content === 'string') {

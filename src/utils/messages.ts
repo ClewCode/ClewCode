@@ -2044,10 +2044,11 @@ export function normalizeMessagesForAPI(messages: Message[], tools: Tools = []):
           const toolSearchEnabled = isToolSearchEnabledOptimistic();
           const reasoningContent = (message.message as any).reasoning_content;
           const sourceContent = message.message.content;
+          const hasReasoningBlock = sourceContent.some(
+            block => block.type === 'thinking' || block.type === 'redacted_thinking',
+          );
           const content =
-            typeof reasoningContent === 'string' &&
-            reasoningContent.length > 0 &&
-            !sourceContent.some(block => block.type === 'thinking')
+            typeof reasoningContent === 'string' && reasoningContent.length > 0 && !hasReasoningBlock
               ? [
                   {
                     type: 'thinking' as const,
