@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import { parseResetTimeMs, toCodeAssistMessages, toolCallsFromParts } from './CodeAssistProvider.js';
+import {
+  fromCodeAssistResponse,
+  parseResetTimeMs,
+  toCodeAssistMessages,
+  toolCallsFromParts,
+} from './CodeAssistProvider.js';
 
 describe('parseResetTimeMs', () => {
   test('parses seconds, minutes, hours', () => {
@@ -74,6 +79,23 @@ describe('ANTIGRAVITY_OAUTH_CLIENT', () => {
     const uri = new URL(ANTIGRAVITY_REDIRECT_URI);
     expect(uri.hostname).toBe('antigravity.google');
     expect(uri.pathname).toBe('/oauth-callback');
+  });
+});
+
+describe('fromCodeAssistResponse', () => {
+  test('keeps thought parts out of content', () => {
+    const resp = fromCodeAssistResponse({
+      response: {
+        candidates: [
+          {
+            content: { parts: [{ text: 'Let me think...', thought: true }, { text: 'The answer.' }] },
+            finishReason: 'STOP',
+          },
+        ],
+      },
+    });
+
+    expect(resp.choices[0].message.content).toBe('The answer.');
   });
 });
 

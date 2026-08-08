@@ -590,7 +590,7 @@ function unwrapResponse(data: any): any {
 /**
  * Parse Code Assist API response into OpenAI-compatible format.
  */
-function fromCodeAssistResponse(raw: any) {
+export function fromCodeAssistResponse(raw: any) {
   const data = unwrapResponse(raw);
   const choices: Array<{
     index: number;
@@ -603,7 +603,12 @@ function fromCodeAssistResponse(raw: any) {
       const candidate = data.candidates[i];
       const content = candidate.content ?? {};
       const parts = content.parts ?? [];
-      const text = parts.map((p: any) => p.text ?? '').join('');
+      // Separate thought parts from plain text — reasoning must not leak into
+      // content, mirroring handleSSEStream which filters `thought: true` parts.
+      const text = parts
+        .filter((p: any) => p?.text && p.thought !== true)
+        .map((p: any) => p.text)
+        .join('');
       const toolCalls = toolCallsFromParts(parts, 0, data.responseId ?? randomUUID());
       choices.push({
         index: i,
