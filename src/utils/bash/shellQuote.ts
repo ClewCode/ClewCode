@@ -21,8 +21,12 @@ export function tryParseShellCommand(
     const tokens = typeof env === 'function' ? shellQuoteParse(cmd, env) : shellQuoteParse(cmd, env);
     return { success: true, tokens };
   } catch (error) {
-    if (error instanceof Error) {
-      logError(error);
+    // shell-quote reports malformed parameter expansions as parse failures; callers
+    // handle those through the result and the command still follows safety checks.
+    if (!(error instanceof Error) || !error.message.startsWith('Bad substitution:')) {
+      if (error instanceof Error) {
+        logError(error);
+      }
     }
     return {
       success: false,

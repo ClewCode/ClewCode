@@ -5066,10 +5066,8 @@ export function ensureToolResultPairing(
       repairedMessageCount: result.length,
       messageTypes: messageTypes.join('; ') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
     });
-    logError(
-      new Error(
-        `ensureToolResultPairing: repaired missing tool_result blocks (${messages.length} -> ${result.length} messages). Message structure: ${messageTypes.join('; ')}`,
-      ),
+    logForDebugging(
+      `ensureToolResultPairing: repaired missing tool_result blocks (${messages.length} -> ${result.length} messages). Message structure: ${messageTypes.join('; ')}`,
     );
   }
 

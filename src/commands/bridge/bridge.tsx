@@ -250,12 +250,7 @@ async function checkBridgePrerequisites(): Promise<string | null> {
   // mode (KAIROS) useReplBridge sets perpetual=true, which forces
   // initReplBridge onto the v1 path — so the prerequisite check must match.
   let useV2 = isEnvLessBridgeEnabled();
-  if (feature('KAIROS') && useV2) {
-    const { isAssistantMode } = await import('../../assistant/index.js');
-    if (isAssistantMode()) {
-      useV2 = false;
-    }
-  }
+  // Assistant mode is unavailable in this external build.
   const versionError = useV2 ? await checkEnvLessBridgeMinVersion() : checkBridgeMinVersion();
   if (versionError) {
     return versionError;

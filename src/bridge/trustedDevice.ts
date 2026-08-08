@@ -178,7 +178,7 @@ export async function enrollTrustedDevice(): Promise<void> {
         return;
       }
       readStoredToken.cache?.clear?.();
-      logForDebugging(`[trusted-device] Enrolled device_id=${response.data.device_id ?? 'unknown'}`);
+      logForDebugging(`[trusted-device] Enrolled device_id=${response._data?.device_id ?? 'unknown'}`);
     } catch (err: unknown) {
       logForDebugging(`[trusted-device] Storage write failed: ${errorMessage(err)}`);
     }

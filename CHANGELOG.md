@@ -4,9 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **AGENTS.md canonical again**: consolidated the repo guidance into a single `AGENTS.md` (refreshed build commands, typecheck baseline 1867, tests); `AGENT.md` and `CLAUDE.md` now point to it; README links updated. Parent-level `D:\Projects\Github\AGENTS.md` (stale, npm/vitest-era) deleted.
+- **AGENTS.md system prompt flow**: documented the two-layer prompt build (selection via `buildEffectiveSystemPrompt` + assembly via `getSystemPrompt`), the dynamic section registry, and the side prompts.
+
 - **Taste overlay**: `Ctrl+C` now closes the TASTE window without interrupting the active agent turn.
 
 ### Fixed
+- Prevented prompt-history lock cleanup errors from becoming unhandled rejections when the lock disappears during shutdown or stale-lock recovery.
+- Suppressed expected shell parser errors such as `Bad substitution: ${}` during Bash permission validation; malformed commands still return a failed parse result and follow the existing safety path.
+
 - **Forced `NODE_ENV=test` for `bun test` via `bunfig.toml` preload**: `bun test` only assigns `NODE_ENV=test` when the variable is unset, so a shell exporting `NODE_ENV=production` (e.g. inherited from a build step) left the codebase's `NODE_ENV === 'test'` guards disabled and made `resetStateForTests()` throw, failing the `getTranscriptPathForSession` tests. A `bunfig.toml` `[test] preload` now forces test mode before tests run, so `bun test` is deterministic regardless of the inherited environment. (`bunfig.toml`, `test-setup.ts`)
 - Preserved OpenAI-compatible `reasoning_content` across assistant tool-call round trips so thinking-mode providers no longer reject follow-up requests.
 - **`/peer health` was advertised but never implemented** — `/peer help` listed it, yet the command fell through to `Unknown: /peer health`. It now prints a health table (name, role, health, latency, load, address) with a healthy/lagging/offline summary. (`src/commands/peer/peer.tsx`, `src/peer/peerDashboard.ts`)

@@ -44,7 +44,7 @@ export type SSHSession = {
   proc: ChildProcess;
   proxy: { stop(): void };
   getStderrTail(): string;
-  // @ts-ignore
+  // @ts-expect-error
   createManager(callbacks: SSHManagerCallbacks): SSHSessionManager;
 };
 

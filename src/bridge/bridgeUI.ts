@@ -1,5 +1,5 @@
 import ansis from 'ansis';
-import { toString as qrToString } from 'qrcode';
+import qrcode from 'qrcode';
 import { BRIDGE_FAILED_INDICATOR, BRIDGE_READY_INDICATOR, BRIDGE_SPINNER_FRAMES } from '../constants/figures.js';
 import { stringWidth } from '../ink/stringWidth.js';
 import { logForDebugging } from '../utils/debug.js';
@@ -26,7 +26,10 @@ const QR_OPTIONS = {
 
 /** Generate a QR code and return its lines. */
 async function generateQr(url: string): Promise<string[]> {
-  const qr = await qrToString(url, QR_OPTIONS);
+  const qr = await (qrcode as { toString: (value: string, options: typeof QR_OPTIONS) => Promise<string> }).toString(
+    url,
+    QR_OPTIONS,
+  );
   return qr.split('\n').filter((line: string) => line.length > 0);
 }
 
