@@ -82,6 +82,29 @@ export function shellQuoteArgsPosix(args: readonly string[]): string {
 }
 
 /**
+ * Quote a directory for `cd` while keeping `~` meaningful.
+ *
+ * Plain quoting breaks the tilde: `cd '~/repo'` looks for a directory literally
+ * named `~`, because expansion does not happen inside single quotes. The home
+ * prefix is therefore translated to `$HOME` — which the shell does expand
+ * inside double quotes — and only the remainder is quoted.
+ */
+export function quoteCdTarget(cwd: string): string {
+  if (cwd === '~') {
+    return '$HOME';
+  }
+  if (cwd === '~/') {
+    return '$HOME';
+  }
+  if (cwd.startsWith('~/')) {
+    return `$HOME/${shellQuotePosix(cwd.slice(2))}`;
+  }
+  // `~user` is deliberately not handled: expanding it needs the remote's
+  // passwd database, and quoting it as a literal is the safe reading.
+  return shellQuotePosix(cwd);
+}
+
+/**
  * Prefix a command with a `cd` into `cwd`.
  *
  * SSH has no per-connection working directory — every exec starts wherever the
@@ -95,5 +118,76 @@ export function withRemoteCwd(cwd: string | undefined, command: string): string 
   if (!cwd) {
     return command;
   }
-  return `cd ${shellQuotePosix(cwd)} && ${command}`;
+  return `cd ${quoteCdTarget(cwd)} && ${command}`;
 }
+
+/** Marker wrapping the trailing `pwd`, unique per session so nested runs can't collide. */
+export function cwdMarker(sessionId: string): string {
+  return `__CLEW_CWD_${sessionId}__`;
+}
+
+/**
+ * Wrap a command so the directory it *ends* in is reported back.
+ *
+ * Prefixing `cd` only re-establishes the directory we already knew about. It
+ * cannot see a `cd` the command performs itself, so `cd build && make`
+ * followed by `make install` would run the second command back in the original
+ * directory — nothing like the shell session the model believes it has.
+ *
+ * The command therefore ends with a `pwd` fenced by a marker, which the caller
+ * parses out of stdout and strips before the model ever sees it.
+ *
+ * `;` rather than `&&` joins the marker: the directory must be reported even
+ * when the command fails, or one failing command would strand the session at a
+ * stale directory.
+ */
+export function withCwdReport(sessionId: string, command: string): string {
+  const marker = cwdMarker(sessionId);
+  return `${command}\n__clew_status=$?\nprintf '\\n%s%s%s\\n' '${marker}' "$(pwd)" '${marker}'\nexit $__clew_status`;
+}
+
+export type CwdReport = {
+  /** Output with the marker line removed. */
+  output: string;
+  /** Directory the command ended in, or undefined when no marker was found. */
+  cwd?: string;
+};
+
+/**
+ * Pull the trailing cwd marker out of command output.
+ *
+ * Scans from the end so a command that happens to echo an earlier marker
+ * (replaying a log, for instance) cannot win over the one the wrapper wrote,
+ * and the search for the opening marker is bounded — a path is not megabytes
+ * long, and an unbounded reverse scan over huge output is wasted work.
+ *
+ * Output with no marker is returned untouched: a killed or timed-out command
+ * never reaches the `printf`, and losing its output would be far worse than
+ * losing the cwd update.
+ */
+export function extractCwdReport(sessionId: string, output: string): CwdReport {
+  const marker = cwdMarker(sessionId);
+  const closing = output.lastIndexOf(marker);
+  if (closing === -1) {
+    return { output };
+  }
+  const searchFrom = Math.max(0, closing - MAX_REPORTED_CWD_LENGTH);
+  const opening = output.lastIndexOf(marker, closing - 1);
+  if (opening === -1 || opening < searchFrom) {
+    return { output };
+  }
+
+  const cwd = output.slice(opening + marker.length, closing).trim();
+  // Drop the whole line, including the newline the wrapper injected before it,
+  // so a command whose own output had no trailing newline is not left with a
+  // spurious blank line.
+  const lineStart = output.lastIndexOf('\n', opening);
+  const afterClosing = output.indexOf('\n', closing + marker.length);
+  const lineEnd = afterClosing === -1 ? output.length : afterClosing + 1;
+  const cleaned = output.slice(0, lineStart === -1 ? opening : lineStart) + output.slice(lineEnd);
+
+  return { output: cleaned, cwd: cwd || undefined };
+}
+
+/** A path is not megabytes long; bound the reverse scan for the opening marker. */
+const MAX_REPORTED_CWD_LENGTH = 4096;

@@ -11,10 +11,21 @@
  * base64-encoded so arbitrary bytes survive a text channel intact.
  */
 import { spawn } from 'child_process';
+import { createHash, randomUUID } from 'crypto';
+import { tmpdir } from 'os';
+import { join as posixJoin } from 'path/posix';
 import { collectProcessOutput } from './LocalOs.js';
 import type { ExecOptions, ExecResult, RemoteDirEntry, RemoteOs, RemoteStat } from './RemoteOs.js';
 import { assertRemoteOs, RemoteOsError } from './RemoteOs.js';
-import { resolveFor, shellQuoteArgsPosix, shellQuotePosix, type TargetPlatform, withRemoteCwd } from './remotePath.js';
+import {
+  extractCwdReport,
+  resolveFor,
+  shellQuoteArgsPosix,
+  shellQuotePosix,
+  type TargetPlatform,
+  withCwdReport,
+  withRemoteCwd,
+} from './remotePath.js';
 
 const DEFAULT_MAX_BUFFER = 10 * 1024 * 1024;
 
@@ -27,7 +38,39 @@ export type SshOsOptions = {
   sshArgs?: readonly string[];
   /** ssh binary to invoke. Overridable for tests and unusual installs. */
   sshBinary?: string;
+  /**
+   * Arguments placed before ssh's own flags, for wrapper commands —
+   * `sshpass -p secret ssh …` or `gcloud compute ssh …`, where the binary that
+   * runs is not `ssh` itself and needs its own leading arguments.
+   */
+  sshBinaryArgs?: readonly string[];
+  /**
+   * Seconds a shared connection lingers after the last command (ControlPersist).
+   * Set to 0 to disable connection reuse entirely.
+   */
+  controlPersistSeconds?: number;
+  /** Override the control socket path. Defaults to a hashed path under the temp dir. */
+  controlPath?: string;
 };
+
+const DEFAULT_CONTROL_PERSIST_SECONDS = 300;
+
+/**
+ * Path for the shared connection's control socket.
+ *
+ * A unix socket path has a hard length limit — 104 bytes on macOS — that a
+ * host name plus a temp directory reaches easily, so the identity is hashed
+ * to a short fixed width. The hash is derived only from stable inputs, so a
+ * reconnect lands on the same socket and reuses the existing master.
+ */
+export function controlSocketPath(options: SshOsOptions): string {
+  if (options.controlPath) {
+    return options.controlPath;
+  }
+  const identity = [options.host, ...(options.sshArgs ?? [])].join(' ');
+  const digest = createHash('sha256').update(identity).digest('hex').slice(0, 16);
+  return posixJoin(tmpdir(), `clew-ssh-${digest}`);
+}
 
 /**
  * Build the remote shell command for one operation.
@@ -43,11 +86,29 @@ export function buildRemoteCommand(cwd: string | undefined, command: string, arg
 
 /** Full `ssh` argv for a remote command. Exported for tests. */
 export function buildSshArgv(options: SshOsOptions, remoteCommand: string): string[] {
+  const persist = options.controlPersistSeconds ?? DEFAULT_CONTROL_PERSIST_SECONDS;
+  // Without connection reuse every operation pays a fresh TCP handshake, key
+  // exchange, and authentication — reading ten files means ten logins. The
+  // master is set up by whichever command arrives first and lingers for
+  // `ControlPersist`, so the rest ride the open channel.
+  const controlArgs =
+    persist > 0
+      ? [
+          '-o',
+          'ControlMaster=auto',
+          '-o',
+          `ControlPath=${controlSocketPath(options)}`,
+          '-o',
+          `ControlPersist=${persist}`,
+        ]
+      : [];
   return [
+    ...(options.sshBinaryArgs ?? []),
     // Never block on an interactive prompt: a hung `ssh` waiting for a password
     // or a host-key confirmation would look like a frozen agent.
     '-o',
     'BatchMode=yes',
+    ...controlArgs,
     ...(options.sshArgs ?? []),
     options.host,
     remoteCommand,
@@ -61,10 +122,13 @@ export class SshOs implements RemoteOs {
 
   private currentCwd: string;
   private disposed = false;
+  /** Distinguishes this session's cwd markers from a nested run's. */
+  private readonly sessionId: string;
 
   constructor(private readonly options: SshOsOptions) {
     this.name = `ssh:${options.host}`;
     this.currentCwd = options.cwd ?? '';
+    this.sessionId = randomUUID().replaceAll('-', '').slice(0, 12);
   }
 
   cwd(): string {
@@ -153,10 +217,14 @@ export class SshOs implements RemoteOs {
 
   async readdir(path: string): Promise<RemoteDirEntry[]> {
     const dir = shellQuotePosix(path);
-    // -A skips . and .. but keeps dotfiles; the type probe runs per entry so a
-    // name with spaces or newlines still maps to exactly one output record.
+    // Globs, not `$(ls -A)`: command substitution word-splits on whitespace, so
+    // a file named `my notes.txt` would come back as two bogus entries. `* .*`
+    // covers dotfiles; unmatched globs stay literal, hence the existence guard.
     const command =
-      `cd ${dir} && for entry in $(ls -A); do ` +
+      `cd ${dir} && for entry in * .*; do ` +
+      `[ "$entry" = "." ] && continue; ` +
+      `[ "$entry" = ".." ] && continue; ` +
+      `{ [ -e "$entry" ] || [ -L "$entry" ]; } || continue; ` +
       `printf '%s\\t%s\\t%s\\n' ` +
       `"$( [ -f "$entry" ] && echo f || echo - )" ` +
       `"$( [ -d "$entry" ] && echo d || echo - )" ` +
@@ -174,18 +242,45 @@ export class SshOs implements RemoteOs {
           .map(([key, value]) => `${key}=${shellQuotePosix(value)}`)
           .join(' ')} `
       : '';
-    const remoteCommand = withRemoteCwd(
-      options?.cwd ?? this.currentCwd,
-      `${env}${shellQuoteArgsPosix([command, ...args])}`,
-    );
-    return this.runRemote(remoteCommand, options ?? {}, { skipCwd: true });
+    // Only the session's own cwd tracks a `cd` the command performs; a caller
+    // that pinned `options.cwd` asked for that directory specifically and must
+    // not have the session dragged along behind it.
+    const tracksCwd = options?.cwd === undefined;
+    const inner = withRemoteCwd(options?.cwd ?? this.currentCwd, `${env}${shellQuoteArgsPosix([command, ...args])}`);
+    const remoteCommand = tracksCwd ? withCwdReport(this.sessionId, inner) : inner;
+
+    const result = await this.runRemote(remoteCommand, options ?? {}, { skipCwd: true });
+    if (!tracksCwd) {
+      return result;
+    }
+    const report = extractCwdReport(this.sessionId, result.stdout);
+    if (report.cwd) {
+      this.currentCwd = report.cwd;
+    }
+    return { ...result, stdout: report.output };
   }
 
   async dispose(): Promise<void> {
-    // Each operation is its own ssh process, so there is no persistent channel
-    // to tear down. Marked so a disposed instance fails loudly instead of
-    // silently opening new connections.
+    if (this.disposed) {
+      return;
+    }
     this.disposed = true;
+    const persist = this.options.controlPersistSeconds ?? DEFAULT_CONTROL_PERSIST_SECONDS;
+    if (persist <= 0) {
+      return;
+    }
+    // Ask the shared connection to exit rather than leaving it to idle out.
+    // Failure is fine: ControlPersist expires on its own, and a disposed
+    // session must not throw on the way out.
+    await new Promise<void>(resolve => {
+      const child = spawn(
+        this.options.sshBinary ?? 'ssh',
+        ['-o', `ControlPath=${controlSocketPath(this.options)}`, '-O', 'exit', this.options.host],
+        { shell: false, stdio: 'ignore' },
+      );
+      child.on('error', () => resolve());
+      child.on('close', () => resolve());
+    });
   }
 
   /** Run one already-built remote command line through the ssh client. */
