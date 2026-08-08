@@ -1,4 +1,5 @@
 import type { ChildProcess } from 'child_process';
+import { asSSHSessionManager, type SSHSessionManager, type SSHSessionManagerCallbacks } from './SSHSessionManager.js';
 
 export type SSHCreateSessionConfig = {
   host?: string;
@@ -13,20 +14,15 @@ export type SSHSessionCallbacks = {
   onProgress?: (msg: string) => void;
 };
 
-export type SSHManagerCallbacks = {
-  onMessage: (sdkMessage: unknown) => void;
-  onPermissionRequest: (
-    request: {
-      tool_name: string;
-      description?: string;
-      permission_suggestions?: string;
-      blocked_path?: string;
-      tool_use_id: string;
-      input: unknown;
-    },
-    requestId: string,
-  ) => void;
-};
+/**
+ * Callbacks accepted by {@link SSHSession.createManager}.
+ *
+ * Aliased to the manager's own definition so the two cannot drift: this file
+ * previously declared a narrower copy that omitted the lifecycle callbacks
+ * (`onConnected`, `onReconnecting`, `onDisconnected`, `onError`) the consumer
+ * has always passed.
+ */
+export type SSHManagerCallbacks = SSHSessionManagerCallbacks;
 
 export class SSHSessionError extends Error {
   constructor(message: string) {
@@ -44,7 +40,6 @@ export type SSHSession = {
   proc: ChildProcess;
   proxy: { stop(): void };
   getStderrTail(): string;
-  // @ts-ignore
   createManager(callbacks: SSHManagerCallbacks): SSHSessionManager;
 };
 
@@ -79,13 +74,19 @@ export function createLocalSSHSession(config: SSHCreateSessionConfig): SSHSessio
     proc,
     proxy: { stop() {} },
     getStderrTail: () => '',
-    createManager: () => ({
-      start() {},
-      stop() {},
-      sendMessage() {
-        return Promise.resolve(true);
-      },
-      cancelRequest() {},
-    }),
+    // A do-nothing double for the proxy/auth e2e path. It answers the same
+    // calls the real manager does — the previous version exposed
+    // start/stop/cancelRequest, which the hook never calls, so every
+    // interaction with it was a silent no-op.
+    createManager: () =>
+      asSSHSessionManager({
+        connect() {},
+        disconnect() {},
+        sendMessage() {
+          return Promise.resolve(true);
+        },
+        sendInterrupt() {},
+        respondToPermissionRequest() {},
+      }),
   };
 }
