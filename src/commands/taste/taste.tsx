@@ -191,7 +191,9 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
         return null;
       }
       onDone(
-        `Pushed ${copied.length} ${copied.length === 1 ? 'preference' : 'preferences'} from ${source} to ${target}${category ? ` [${category}]` : ''}.`,
+        `${direction === 'push' ? 'Pushed' : 'Pulled'} ${copied.length} ${
+          copied.length === 1 ? 'preference' : 'preferences'
+        } from ${source} to ${target}${category ? ` [${category}]` : ''}.`,
       );
       return null;
     }
