@@ -110,8 +110,13 @@ function getOpenAIResponseFormat(params: BetaMessageStreamParams): Record<string
  * support before sending reasoning_effort. If the specific model is
  * not in the provider registry, defaults to NOT sending it to avoid
  * 400 errors on models that don't support it.
+ *
+ * Clew's effort levels go beyond what OpenAI accepts: 'xhigh' and 'max'
+ * are valid for Claude 4.6/4.7 but OpenAI reasoning_effort only admits
+ * low|medium|high — passing them through unchanged makes the gateway
+ * reject the request with a 400. Clamp to the highest valid value.
  */
-function getOpenAIReasoningEffort(params: BetaMessageStreamParams, providerId: string): Record<string, unknown> {
+export function getOpenAIReasoningEffort(params: BetaMessageStreamParams, providerId: string): Record<string, unknown> {
   const outputConfig = (params as any).output_config as { effort?: string } | undefined;
   if (!outputConfig?.effort) return {};
 
@@ -131,7 +136,17 @@ function getOpenAIReasoningEffort(params: BetaMessageStreamParams, providerId: s
     return {};
   }
 
-  return { reasoning_effort: outputConfig.effort };
+  const effort = outputConfig.effort;
+  // OpenAI reasoning_effort is low|medium|high. Claude-only levels above
+  // 'high' (xhigh, max) clamp to 'high'; unknown values are skipped rather
+  // than forwarded, so a future level never 400s the request.
+  if (effort === 'xhigh' || effort === 'max') {
+    return { reasoning_effort: 'high' };
+  }
+  if (effort === 'low' || effort === 'medium' || effort === 'high') {
+    return { reasoning_effort: effort };
+  }
+  return {};
 }
 
 // ── Provider Adapter Interface ───────────────────────────────────────────────

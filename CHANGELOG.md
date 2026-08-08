@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - **AGENTS.md canonical again**: consolidated the repo guidance into a single `AGENTS.md` (refreshed build commands, typecheck baseline 1867, tests); `AGENT.md` and `CLAUDE.md` now point to it; README links updated. Parent-level `D:\Projects\Github\AGENTS.md` (stale, npm/vitest-era) deleted.
 - **AGENTS.md system prompt flow**: documented the two-layer prompt build (selection via `buildEffectiveSystemPrompt` + assembly via `getSystemPrompt`), the dynamic section registry, and the side prompts.
+- **fix: `/effort` clamp for OpenAI-compatible providers**: `xhigh`/`max` effort (valid for Claude 4.6/4.7) now map to `high` `reasoning_effort` instead of being forwarded as-is — OpenAI-compatible gateways (opencode, deepseek, nvidia, …) rejected them with a 400. Unknown levels are skipped instead of forwarded.
 
 - **Taste overlay**: `Ctrl+C` now closes the TASTE window without interrupting the active agent turn.
 

@@ -1,5 +1,30 @@
 import { describe, expect, test } from 'bun:test';
-import { AnthropicAdapter, normalizeOpenAIToolInputSchema } from './AnthropicAdapter.js';
+import { AnthropicAdapter, getOpenAIReasoningEffort, normalizeOpenAIToolInputSchema } from './AnthropicAdapter.js';
+
+describe('getOpenAIReasoningEffort', () => {
+  const params = (effort: string) => ({ model: 'claude-opus-4-7', output_config: { effort } }) as never;
+
+  test('clamps Claude-only levels (xhigh, max) to high for OpenAI reasoning_effort', () => {
+    expect(getOpenAIReasoningEffort(params('xhigh'), 'opencode')).toEqual({ reasoning_effort: 'high' });
+    expect(getOpenAIReasoningEffort(params('max'), 'opencode')).toEqual({ reasoning_effort: 'high' });
+  });
+
+  test('passes OpenAI-compatible levels through unchanged', () => {
+    for (const effort of ['low', 'medium', 'high']) {
+      expect(getOpenAIReasoningEffort(params(effort), 'opencode')).toEqual({
+        reasoning_effort: effort,
+      });
+    }
+  });
+
+  test('skips unknown levels rather than forwarding them', () => {
+    expect(getOpenAIReasoningEffort(params('ultra'), 'opencode')).toEqual({});
+  });
+
+  test('returns empty when no effort is configured', () => {
+    expect(getOpenAIReasoningEffort({ model: 'claude-opus-4-7', output_config: {} } as never, 'opencode')).toEqual({});
+  });
+});
 
 describe('normalizeOpenAIToolInputSchema', () => {
   test('keeps a plain object schema unchanged', () => {
