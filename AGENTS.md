@@ -302,7 +302,7 @@ Co-located `.test.ts`/`.test.tsx` with sources (under `src/` and `tests/`), run 
 
 ## Release
 
-`v*` tag → GitHub Actions release + npm publish. Before tag: run `bun run version:patch|minor|major`, update `CHANGELOG.md` `[Unreleased]`, run full gate. Use `/clew-release`.
+`v*` tag → GitHub Actions release + npm-only publish. The workflow authenticates with the repository `NPM_TOKEN` secret. Before tag: run `bun run version:patch|minor|major`, update `CHANGELOG.md` `[Unreleased]`, run full gate. Use `/clew-release`.
 
 ## Dashboard (cross-repo)
 

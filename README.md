@@ -424,7 +424,7 @@ Or run the `/clew-verify` skill, which runs the full gate and a real CLI smoke t
 
 ### Release
 
-Pushing a `v*` tag triggers the GitHub Actions release and npm publish. Before tagging: bump `package.json`, update `CHANGELOG.md`, run the full gate above. See [AGENTS.md § Release](AGENTS.md#release) or run the `/clew-release` skill.
+Pushing a `v*` tag triggers the GitHub Actions release and npm publish. Before tagging: bump `package.json`, update `CHANGELOG.md`, run the full gate above. The workflow publishes to npm only; configure the repository `NPM_TOKEN` secret for authentication. See [AGENTS.md § Release](AGENTS.md#release) or run the `/clew-release` skill.
 
 ---
 
