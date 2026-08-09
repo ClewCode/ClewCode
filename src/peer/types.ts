@@ -1,15 +1,15 @@
 /**
  * Peer System Types
  *
- * Defines the data structures for LAN swarm discovery and messaging.
+ * Defines the data structures for LAN peer discovery and messaging.
  */
 
-/** Status of a discovered swarm */
-type SwarmStatus = 'online' | 'offline';
+/** Status of a discovered peer */
+type PeerStatus = 'online' | 'offline';
 
-/** Info about a discovered swarm on the LAN */
+/** Info about a discovered peer on the LAN */
 export interface PeerInfo {
-  /** Unique swarm ID (stable across restarts, derived from hostname) */
+  /** Unique peer ID (stable across restarts, derived from hostname) */
   id: string;
   /** Machine hostname */
   hostname: string;
@@ -29,31 +29,31 @@ export interface PeerInfo {
   platform?: string;
   /** Terminal emulator */
   term?: string;
-  /** When this swarm was last seen (epoch ms) */
+  /** When this peer was last seen (epoch ms) */
   lastSeen: number;
   /** Online/offline status */
-  status: SwarmStatus;
-  /** Whether the swarm is currently executing a task */
+  status: PeerStatus;
+  /** Whether the peer is currently executing a task */
   isBusy?: boolean;
-  /** Number of tasks waiting in the swarm's queue */
+  /** Number of tasks waiting in the peer's queue */
   queueDepth?: number;
   /** Most recent HTTP liveness ping latency in milliseconds */
   latencyMs?: number;
-  /** Last liveness failure, if the swarm is unreachable */
+  /** Last liveness failure, if the peer is unreachable */
   lastConnectionError?: string;
 }
 
-/** A chat message exchanged between swarms */
+/** A chat message exchanged between peers */
 export interface MeshChatMessage {
   /** Unique message ID */
   id: string;
-  /** Sender swarm ID */
+  /** Sender peer ID */
   from: string;
   /** Sender display name (hostname or custom name) */
   fromName: string;
   /** Message text */
   text: string;
-  /** CSS/human color name for this swarm */
+  /** CSS/human color name for this peer */
   color: PeerColor;
   /** Timestamp (epoch ms) */
   timestamp: number;
@@ -65,7 +65,7 @@ export interface MeshChatMessage {
   chunkTotal?: number;
   /** Sender's role (e.g. "builder", "researcher") */
   senderRole?: string;
-  /** Sender's swarm server port */
+  /** Sender's peer server port */
   senderPort?: number;
 }
 
@@ -87,13 +87,13 @@ export interface BrokerMessage {
 /** Status of a queued or running task */
 export type MeshTaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 
-/** A task queued for execution on a swarm */
-export interface SwarmTask {
+/** A task queued for execution on a peer */
+export interface PeerTask {
   /** Unique task ID */
   id: string;
   /** Shell command to execute */
   command: string;
-  /** Sender swarm ID */
+  /** Sender peer ID */
   from: string;
   /** Sender display name */
   fromName: string;
@@ -122,11 +122,11 @@ export interface SwarmTask {
   worktreePath?: string;
 }
 
-/** A todo item assigned by a swarm */
+/** A todo item assigned by a peer */
 export interface MeshTodo {
   /** Unique todo ID */
   id: string;
-  /** Sender swarm ID */
+  /** Sender peer ID */
   from: string;
   /** Sender display name */
   fromName: string;
@@ -141,7 +141,7 @@ export interface MeshTodo {
 /** Peer colors -- distinct terminal-friendly palette */
 export type PeerColor = 'cyan' | 'green' | 'yellow' | 'magenta' | 'blue' | 'red' | 'white' | 'grey';
 
-/** All available swarm colors */
+/** All available peer colors */
 const PEER_COLORS: PeerColor[] = ['cyan', 'green', 'yellow', 'magenta', 'blue', 'red', 'white', 'grey'];
 
 /** Discovery protocol message types */
@@ -156,12 +156,12 @@ export type DiscoveryMessage =
       port: number;
       cwd: string;
       sessionId?: string;
-      /** Clew Code version string of the swarm */
+      /** Clew Code version string of the peer */
       appVersion: string;
       shell?: string;
       platform?: string;
       term?: string;
-      status: SwarmStatus;
+      status: PeerStatus;
     }
   | { type: 'clew-peer-query'; version: 1 }
   | {
@@ -178,29 +178,29 @@ export type DiscoveryMessage =
       shell?: string;
       platform?: string;
       term?: string;
-      status: SwarmStatus;
+      status: PeerStatus;
     };
 
 /** Default UDP discovery port */
 export const PEER_DISCOVERY_PORT = 42069;
 
-/** Default multicast group for swarm discovery */
+/** Default multicast group for peer discovery */
 export const PEER_MULTICAST_GROUP = '239.255.37.37';
 
 /** Heartbeat interval in ms */
 export const PEER_HEARTBEAT_INTERVAL = 30_000;
 
-/** Stale timeout in ms -- swarm is marked offline after this */
+/** Stale timeout in ms -- peer is marked offline after this */
 export const PEER_STALE_TIMEOUT = 90_000;
 
 /** Interval between HTTP liveness pings for joined connections (ms) */
 export const PEER_CONNECTION_PING_INTERVAL = 60_000;
 
-/** Timeout per HTTP ping to a swarm (ms) */
+/** Timeout per HTTP ping to a peer (ms) */
 export const PEER_PING_TIMEOUT = 5_000;
 
 /**
- * Assign a consistent color to a swarm based on their ID.
+ * Assign a consistent color to a peer based on their ID.
  */
 export function peerColorFromId(id: string): PeerColor {
   let hash = 0;

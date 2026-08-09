@@ -9,11 +9,11 @@ import {
   MAX_PERSISTED_TASKS,
   MAX_PERSISTED_TODOS,
   type PersistedPeerState,
-  type PersistedSwarmTasks,
+  type PersistedPeerTasks,
   savePeerState,
   savePeerTasksState,
 } from './peerPersistence.js';
-import type { MeshChatMessage, MeshTodo, PeerInfo, SwarmTask } from './types.js';
+import type { MeshChatMessage, MeshTodo, PeerInfo, PeerTask } from './types.js';
 
 function makePeer(id: string): PeerInfo {
   return {
@@ -50,7 +50,7 @@ function makeTodo(i: number): MeshTodo {
   } as MeshTodo;
 }
 
-function makeSwarmTask(i: number, overrides?: Partial<SwarmTask>): SwarmTask {
+function makePeerTask(i: number, overrides?: Partial<PeerTask>): PeerTask {
   return {
     id: `task_${i}`,
     command: `echo ${i}`,
@@ -137,11 +137,11 @@ describe('peerPersistence — swarm tasks', () => {
   });
 
   it('round-trips queued and terminal tasks, including dependsOn', async () => {
-    const state: PersistedSwarmTasks = {
+    const state: PersistedPeerTasks = {
       version: 1,
       tasks: [
-        makeSwarmTask(1, { status: 'completed', result: { stdout: 'ok', stderr: '', exitCode: 0 } }),
-        makeSwarmTask(2, { dependsOn: ['task_1'] }),
+        makePeerTask(1, { status: 'completed', result: { stdout: 'ok', stderr: '', exitCode: 0 } }),
+        makePeerTask(2, { dependsOn: ['task_1'] }),
       ],
     };
     await savePeerTasksState(state, tasksPath);
@@ -154,9 +154,9 @@ describe('peerPersistence — swarm tasks', () => {
   });
 
   it('caps persisted tasks, keeping the newest', async () => {
-    const state: PersistedSwarmTasks = {
+    const state: PersistedPeerTasks = {
       version: 1,
-      tasks: Array.from({ length: MAX_PERSISTED_TASKS + 25 }, (_, i) => makeSwarmTask(i)),
+      tasks: Array.from({ length: MAX_PERSISTED_TASKS + 25 }, (_, i) => makePeerTask(i)),
     };
     await savePeerTasksState(state, tasksPath);
 

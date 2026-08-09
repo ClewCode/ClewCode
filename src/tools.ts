@@ -59,22 +59,10 @@ import { PeerDiscoverTool } from './tools/PeerDiscoverTool/PeerDiscoverTool.js';
 import { PeerSendMessageTool } from './tools/PeerSendMessageTool/PeerSendMessageTool.js';
 import { PeerExecTool } from './tools/PeerExecTool/PeerExecTool.js';
 import { PeerManageTool } from './tools/PeerManageTool/PeerManageTool.js';
-import { PeerSpawnTool } from './tools/PeerSpawnTool/PeerSpawnTool.js';
-import { PeerShareTool } from './tools/PeerShareTool/PeerShareTool.js';
-import { PeerInfoTool } from './tools/PeerInfoTool/PeerInfoTool.js';
-import { PeerRunTool } from './tools/PeerRunTool/PeerRunTool.js';
-import { PeerJoinTool } from './tools/PeerJoinTool/PeerJoinTool.js';
-import { PeerSetNameTool } from './tools/PeerSetNameTool/PeerSetNameTool.js';
-import { PeerSetRoleTool } from './tools/PeerSetRoleTool/PeerSetRoleTool.js';
-import { PeerListRolesTool } from './tools/PeerListRolesTool/PeerListRolesTool.js';
-import { PeerPingTool } from './tools/PeerPingTool/PeerPingTool.js';
-import { PeerDisconnectTool } from './tools/PeerDisconnectTool/PeerDisconnectTool.js';
 import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.js';
-import { PeerSwarmTool } from './tools/PeerSwarmTool/PeerSwarmTool.js';
 import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackTool.js';
-import { PeerMemorySyncTool } from './tools/PeerMemorySyncTool/PeerMemorySyncTool.js';
 import { ContextRestoreTool } from './tools/ContextRestoreTool/ContextRestoreTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
 import { ResearchTool } from './tools/ResearchTool/ResearchTool.js';
@@ -189,10 +177,12 @@ export function getAllBaseTools(): Tools {
     AgentTool,
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     SendMessageTool,
-    // Peer surface, consolidated from 18 tools to 6. peer_manage folds the
-    // eleven single-verb admin calls; peer_exec merges peer_run + peer_swarm.
-    // The originals are still dispatched to — only the model-facing list
-    // shrank. See tools/PeerManageTool/PeerManageTool.ts.
+    // Peer surface, consolidated from 18 tools to the 7 listed below.
+    // peer_manage folds the eleven single-verb admin calls; peer_exec merges
+    // peer_run + peer_swarm. The originals are still dispatched to — only the
+    // model-facing list shrank, and each dispatcher imports its own delegates,
+    // so nothing but these 7 should be imported here.
+    // See tools/PeerManageTool/PeerManageTool.ts and PeerExecTool.ts.
     PeerDiscoverTool,
     PeerSendMessageTool,
     PeerListMessagesTool,

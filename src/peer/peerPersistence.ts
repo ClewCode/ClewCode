@@ -13,7 +13,7 @@ import { mkdir, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { logForDebugging } from '../utils/debug.js';
 import { getClewConfigHomeDir } from '../utils/envUtils.js';
-import type { MeshChatMessage, MeshTodo, PeerInfo, SwarmTask } from './types.js';
+import type { MeshChatMessage, MeshTodo, PeerInfo, PeerTask } from './types.js';
 
 export interface PersistedPeerState {
   version: 1;
@@ -106,17 +106,17 @@ export async function flushPeerStateSave(statePath = getPeerStatePath()): Promis
   if (snap) await savePeerState(snap(), statePath);
 }
 
-// ── SwarmTask persistence ──────────────────────────────────────
+// ── PeerTask persistence ──────────────────────────────────────
 //
 // Stored in a separate file from state.json (own debounce timer, own atomic
 // write) so PeerServer's task-queue saves never race with PeerStore's
 // connections/messages/todos saves to the same file.
 
-export interface PersistedSwarmTasks {
+export interface PersistedPeerTasks {
   version: 1;
   /** Queued + terminal (completed/failed/cancelled) tasks. Never 'running' —
    *  a task can't have survived a restart mid-execution. */
-  tasks: SwarmTask[];
+  tasks: PeerTask[];
 }
 
 /** Keep the file bounded — oldest terminal tasks are dropped first. */
@@ -127,10 +127,10 @@ export function getPeerTasksPath(): string {
 }
 
 /** Load persisted swarm tasks. Returns null when none exist or the file is unreadable. */
-export function loadPeerTasks(statePath = getPeerTasksPath()): PersistedSwarmTasks | null {
+export function loadPeerTasks(statePath = getPeerTasksPath()): PersistedPeerTasks | null {
   try {
     const raw = readFileSync(statePath, 'utf-8');
-    const parsed = JSON.parse(raw) as PersistedSwarmTasks;
+    const parsed = JSON.parse(raw) as PersistedPeerTasks;
     if (parsed?.version !== 1 || !Array.isArray(parsed.tasks)) return null;
     return { version: 1, tasks: parsed.tasks };
   } catch {
@@ -139,10 +139,10 @@ export function loadPeerTasks(statePath = getPeerTasksPath()): PersistedSwarmTas
 }
 
 let taskSaveTimer: ReturnType<typeof setTimeout> | null = null;
-let pendingTaskSave: (() => PersistedSwarmTasks) | null = null;
+let pendingTaskSave: (() => PersistedPeerTasks) | null = null;
 
 /** Schedule a debounced save of the swarm task queue. */
-export function schedulePeerTasksSave(snapshot: () => PersistedSwarmTasks, statePath = getPeerTasksPath()): void {
+export function schedulePeerTasksSave(snapshot: () => PersistedPeerTasks, statePath = getPeerTasksPath()): void {
   pendingTaskSave = snapshot;
   if (taskSaveTimer) return;
   taskSaveTimer = setTimeout(() => {
@@ -155,9 +155,9 @@ export function schedulePeerTasksSave(snapshot: () => PersistedSwarmTasks, state
 }
 
 /** Immediately persist swarm tasks (atomic write via temp file + rename). */
-export async function savePeerTasksState(state: PersistedSwarmTasks, statePath = getPeerTasksPath()): Promise<void> {
+export async function savePeerTasksState(state: PersistedPeerTasks, statePath = getPeerTasksPath()): Promise<void> {
   try {
-    const bounded: PersistedSwarmTasks = {
+    const bounded: PersistedPeerTasks = {
       ...state,
       tasks: state.tasks.slice(-MAX_PERSISTED_TASKS),
     };

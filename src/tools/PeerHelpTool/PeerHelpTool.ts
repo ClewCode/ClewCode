@@ -15,7 +15,8 @@ const inputSchema = lazySchema(() =>
         'chunking',
         'waiting',
         'broadcast',
-        'roles',
+        'exec',
+        'admin',
         'mistakes',
       ])
       .optional()
@@ -35,212 +36,162 @@ const outputSchema = lazySchema(() =>
   }),
 );
 
+function topic(text: string): string {
+  return text;
+}
+
 const TOPICS: Record<string, string> = {
-  overview: `
-# ════════════════════════════════════════
-# PEER-TO-PEER COMPLETE FLOW GUIDE
-# ════════════════════════════════════════
+  overview: topic(`# PEER-TO-PEER COMPLETE FLOW GUIDE
 
 ## Quick Start
-1. peer_share start → เปิดให้คนอื่นส่งหา
-2. peer_discover() → หา peers
-3. peer_send_message({ peer, message, waitResponse: true }) → ส่ง+รอตอบ
-4. 🆕 Peer replies arrive as <system-reminder> automatically — NO POLLING!
+1. peer_manage({ action: "share", value: "start" })  — start advertising yourself
+2. peer_discover({ wait: true, minPeers: 1 })        — find peers on the LAN
+3. peer_manage({ action: "list" })                   — who is up, busy, and what they do
+4. peer_send_message({ peer, message, waitResponse: true }) — send + wait for a reply
+5. New peer replies arrive as <system-reminder> automatically — NO POLLING!
 
-## Main Flows
-- discovery     — ค้นหา peers
-- messaging     — ส่ง/รับข้อความ (รับอัตโนมัติ!)
-- request-response — ถาม-ตอบ (แนะนำ)
-- chunking      — ส่ง content ยาว
-- waiting       — รับข้อความอัตโนมัติ (Event-Driven, ไม่ต้อง poll)
-- broadcast     — ส่งงานให้ทุกคน
-- roles         — จัดการชื่อ/บทบาท
-- mistakes      — ข้อผิดพลาดที่พบบ่อย
+## Tools
+  peer_manage        — admin: share, join/disconnect, ping, info, list, name/role, spawn, memory_sync
+  peer_discover      — find peers on the LAN (wait: true, minPeers)
+  peer_send_message  — one peer; waitResponse, chunk, broker modes
+  peer_list_messages — read message history (new messages arrive automatically)
+  peer_broadcast     — same AI task to ALL connected peers at once
+  peer_exec          — shell commands on one peer or fan-out to all
+  peer_help          — this guide
 
-## Tool Summary
-╔══════════════════════╤═══════════════════════════════════════╗
-║ Tool                │ ใช้เมื่อ                              ║
-╠══════════════════════╪═══════════════════════════════════════╣
-║ peer_share          │ เปิด/ปิด/เช็คสถานะ share             ║
-║ peer_discover       │ ค้นหา peers ใน LAN                   ║
-║ peer_join           │ เชื่อมต่อ peer แบบ persistent        ║
-║ peer_send_message   │ ส่งข้อความ + waitResponse ได้         ║
-║ peer_list_messages  │ อ่านข้อความที่ได้รับ (reassemble แล้ว)║
-║ peer_ping           │ เช็ค peer online                      ║
-║ peer_info           │ ดูรายละเอียด peer                     ║
-║ peer_broadcast      │ ส่งงานให้ทุกคน                        ║
-║ peer_list_roles     │ ดู roles + ชื่อ peers                 ║
-║ peer_set_name       │ ตั้งชื่อ peer                          ║
-║ peer_set_role       │ ตั้ง role peer                         ║
-║ peer_disconnect     │ ตัดการเชื่อมต่อ                       ║
-║ peer_run            │ รัน command บน peer                   ║
-║ peer_spawn          │ สร้าง peer instance ใหม่              ║
-║ peer_help           │ คู่มือนี้                               ║
-╚══════════════════════╧═══════════════════════════════════════╝
+## Main flows
+  discovery — find peers: share → discover → list/info/ping
+  messaging — send/receive messages (automatic delivery)
+  request-response — ask in ONE call (waitResponse) — recommended
+  chunking  — send long content (research reports, code)
+  waiting   — get results event-driven (never poll)
+  broadcast — same AI task to everyone
+  exec      — shell commands, priority, sequencing (dependsOn)
+  admin     — names, roles, share/join, spawn, memory_sync
+  mistakes  — pitfalls and how to avoid them`),
+  discovery: topic(`# Peer Discovery
 
-ดู topic-specific details โดยเรียก peer_help({ topic: "ชื่อหัวข้อ" })`,
+peer_manage({ action: "share", value: "start" }) → peer_discover → peer_manage list/info/ping
 
-  discovery: `
-## Peer Discovery Flow
-peer_share start → peer_discover → peer_info / peer_ping
+1. Start advertising first — peers can't find you until you share:
+   - peer_manage({ action: "share", value: "start" }) — start; returns your port
+   - peer_manage({ action: "share" }) — current status
+   - peer_manage({ action: "share", value: "stop" }) — stop
 
-1. peer_share start
-   - เปิด share ก่อน ไม่งั้นคนอื่นหาเราไม่เจอ
-   - ใช้ peer_share status เช็คว่า sharing อยู่รึเปล่า
-   - จำ port ของตัวเองไว้
+2. Find peers:
+   - peer_discover() — one scan
+   - peer_discover({ wait: true, minPeers: 1 }) — wait until at least one appears
+   - peer_discover({ minPeers: 3, waitTimeout: 60 }) — wait for 3 peers, up to 60s
 
-2. peer_discover
-   - peer_discover() — สแกนครั้งเดียว
-   - peer_discover({ wait: true, minPeers: 1 }) — รอจนเจอ peer
-   - peer_discover({ wait: true, minPeers: 3, waitTimeout: 60 }) — รอ 3 ตัว
+3. Inspect:
+   - peer_manage({ action: "info", peer: "hostname" }) — details of one peer
+   - peer_manage({ action: "list", wait: true, minPeers: 1 }) — names, roles, busy/queue status
+   - peer_manage({ action: "ping", peer: "hostname" }) — is it alive
 
-3. peer_info
-   - peer_info({ worker: "hostname" })
-   - peer_info({ worker: "hostname", wait: true }) — รอ peer
+A peer can be reached by hostname, peer ID, or port number.`),
+  messaging: topic(`# Peer messaging
 
-4. peer_ping
-   - peer_ping({ peer: "hostname" })
-   - peer_ping({ peer: "hostname", wait: true, timeout: 45 })`,
+peer_send_message({ peer: "hostname", message: "hello" })
+  → the peer sees it instantly; it is auto-injected into their AI prompt.
 
-  messaging: `
-## Peer Messaging Flow
-peer_send_message → peer_list_messages
+peer_list_messages(...) is for history only. New messages arrive automatically
+as <system-reminder> — you do NOT need to poll or wait for them.
 
-1. peer_send_message — ส่งข้อความ
-   - ต้องรู้จัก peer ก่อน (ผ่าน peer_discover หรือ peer_join)
-   - peer_send_message({ peer: "hostname", message: "hello" })
+Long payloads: { ..., chunk: true, chunkSize: 1000 } — split, then reassembled
+automatically on the receiver side (see peer_help chunking).
 
-2. peer_list_messages — อ่านข้อความ
-   - คืนข้อความที่ reassemble แล้ว (chunks ถูกรวมให้)
-   - peer_list_messages({ after: 1717000000000 }) — เฉพาะข้อความใหม่
-   - peer_list_messages({ after, wait: true, timeout: 60 }) — long-poll`,
+Durability: { ..., useBroker: true } — queued in the peer's broker store, good
+when the receiver may be offline or you want durability.`),
+  'request-response': topic(`# Request-response (recommended)
 
-  'request-response': `
-## Request-Response Flow (แนะนำที่สุด)
-peer_send_message({ ..., waitResponse: true })
-
-แบบเดิม (❌ 20+ tool calls):
-  peer_send_message → peer_list_messages(empty) → peer_list_messages(empty)
-  → peer_list_messages(got truncated) → peer_send_message("ส่งอีกที") → ...
-
-แบบใหม่ (✅ 1 tool call):
+Best practice — one blocking call, no polling:
   peer_send_message({
     peer: "agent-b",
-    message: "research topic X on 4 areas...",
-    waitResponse: true,
-    responseTimeout: 300   // รอสูงสุด 5 นาที
+    message: "research X in 4 areas...",
+    waitResponse: true,        // wait instead of send-then-poll
+    responseTimeout: 300       // up to 5 minutes
   })
-  → response.text มีคำตอบครบ ไม่ต้องเรียก peer_list_messages ซ้ำ`,
+  → the reply arrives in response.text.
 
-  chunking: `
-## Large Content Flow (Chunking)
-peer_send_message({ ..., chunk: true })
+Anti-pattern (20+ tool calls):
+  send → list(empty) → list(empty) → list(truncated) → "anyone?" → ...
 
-❌ ไม่ควร: ส่ง长篇ตรงๆ → ถูก truncate
-✅ ใช้ chunk:
-  peer_send_message({
-    peer: "agent-b",
-    message: "REPORT_5000_CHARS...",
-    chunk: true,
-    chunkSize: 1000
-  })
-  → ✓ sent 5 chunks (5000 chars total)
+Mention who you are, so the peer can reply to the right port:
+  "I am {your_name} (port {your_port}). Do X. Reply back to me."`),
+  chunking: topic(`# Chunking & heavy payloads
 
-ฝั่งรับใช้ peer_list_messages เห็นข้อความที่รวม chunks แล้ว
-ไม่ต้องมานั่งรวมเอง
+Long content gets truncated. Use chunk:
+  peer_send({ peer: "agent-b", message: "REPORT_5000_CHARS...", chunk: true, chunkSize: 1000 })
+  → sent as N chunks; receiver reassembles into one message (peer_list_messages shows it whole).
 
-✅ chunk + waitResponse:
-  peer_send_message({
-    peer: "agent-b",
-    message: "LONG_TEXT...",
-    chunk: true,
-    waitResponse: true,
-    responseTimeout: 300
-  })`,
+chunk + waitResponse together is supported and convenient.
 
-  waiting: `
-## Receiving Messages (Event-Driven — No Polling!)
+## Broker delivery
+  peer_send({ peer, message, useBroker: true, waitResponse: true })
+  → message queued in the receiver's broker store; reply polled from /broker/recv.
+  Use broker mode when the peer may be offline or for delivered-durable tasks.`),
+  waiting: topic(`# Waiting for answers — event-driven
 
-✅ New peer messages arrive as <system-reminder> automatically.
-You do NOT need to poll — peer_list_messages is for history only.
+Peer replies arrive ASYSTEM-REMINDER automatically.
 
-❌ ไม่ควร (busy polling):
-  peer_list_messages → empty → empty → empty... 10+ รอบ
+Right: use peer_manage info list with wait variants when you block on roster state.
+For a reply, prefer ONE peer_send with waitResponse: true.
 
-✅ ใช้ wait:
-  peer_list_messages({
-    after: TIMESTAMP_ล่าสุด,
-    wait: true,
-    timeout: 60
-  })
+A 10+ round polling loop (peer_list_messages every second) is the classic footgun
+— every round is latency and context wasted. Let events drive you.`),
+  broadcast: topic(`# Broadcast — same task to every peer
 
-หรือดีกว่า: ใช้ peer_send_message + waitResponse แทน`,
+  peer_broadcast({ task: "survey topic X, report findings" })
+  → returns which peers accepted and which failed.
 
-  broadcast: `
-## Broadcast Flow
-peer_broadcast({ task })
+peer_broadcast delivers an AI prompt each peer executes with its own model.
+For shell instead use peer_exec.
 
-ส่งงานให้ทุก peers พร้อมกัน:
-  peer_broadcast({ task: "search topic X" })
-  → ✓ broadcast 3/3
+Confirm your audience before broadcasting:
+  peer_manage({ action: "list" })   // roster: hostname, role, busy/queue`),
+  exec: topic(`# peer_exec — run shell commands on peers
 
-ข้อควรระวัง:
-- broadcast ส่งเป็น todo ไม่ใช่ chat message
-- ฝั่งรับต้องรอให้ peer แจ้งผลกลับมาผ่าน peer_send_message
-- peer_list_messages ไม่เห็น broadcast`,
+  one peer:    peer_exec({ peer: "builder-01", command: "bun test" })
+  fan-out:     peer_exec({ command: "git pull" })        // every connected peer
+  filtered:    peer_exec({ command: "git pull", filter: "builder" }) // hostname or role contains
 
-  roles: `
-## Peer Management Flow
-peer_set_name / peer_set_role / peer_list_roles
+Single-peer mode also supports:
+  · priority: "high" — skips the peer's task queue and runs now
+  · dependsOn: array of task IDs from earlier peer_exec on the SAME peer
+    → queues this command to start after those report "completed" (build after install)
 
-ตั้งชื่อ + role ให้ตัวเองก่อน (สำคัญ!):
-  # หา peer ID ของตัวเอง
-  peer_info({ worker: "ตัวเอง" })
-  # ตั้งชื่อและ role
-  peer_set_name({ worker: "PEER_ID", name: "clew-main" })
-  peer_set_role({ worker: "PEER_ID", role: "orchestrator" })
+Runs SHELL, not prompts — for an AI task use peer_broadcast.
+Call peer_manage({ action: "list" }) first when unsure who'll receive a fan-out.`),
+  admin: topic(`# Identity & administration (peer_manage)
 
-ตั้งชื่อ + role ให้ peers อื่น:
-  peer_set_name({ worker: "hostname", name: "builder-1" })
-  peer_set_role({ worker: "hostname", role: "researcher" })
+peer_manage is the single admin surface. Actions:
 
-ดู peers:
-  peer_list_roles()                          # ดูทั้งหมด
-  peer_list_roles({ wait: true, minPeers: 2 }) # รอจนครบ 2 ตัว
+  share        start/stop/status your own advertising (value: "start" | "stop" | "status")
+  join         connect to a peer persistently — host/port
+  disconnect   drop a connection
+  ping         is a peer alive (wait: true to block)
+  info         details for one peer
+  list         the roster — "what are my peers doing" (wait/timeout/minPeers)
+  set_name     friendly name for a peer
+  set_role     role for a peer (builder, tester, deployer, ...)
+  spawn        start a new peer instance
+  memory_sync  sync memory across the mesh (peer required)
 
-ข้อดี: เวลา peer_send_message ส่งหา peer อื่น มันจะส่ง role และ port
-ไปด้วยในข้อความ (senderRole, senderPort) ทำให้อีกฝั่งรู้ทันทีว่า
-ใครส่งมา และส่งกลับไปที่ port ไหน`,
+Name and classify yourself too — peers that know each other obraçam better:
+  peer_manage({ action: "set_name", peer: "<your-own-id>", value: "clew-main" })
+  peer_manage({ action: "set_role", peer: "<your-own-id>", value: "orchestrator" })
 
-  mistakes: `
-## Common Mistakes & How to Avoid
+Typical opening: share("start") → peer_discover → list.`),
+  mistakes: topic(`# Common mistakes & avoidance
 
-1. ส่ง message โดยยังไม่รู้จัก peer
-   → เรียก peer_discover() ก่อน หรือใช้ peer_join
-
-2. Polling peer_list_messages ใน loop
-   → ไม่ต้อง poll! ข้อความใหม่เข้า <system-reminder> อัตโนมัติ
-   → หรือใช้ peer_send_message + waitResponse
-
-3. ข้อความยาวถูกตัด
-   → ใช้ chunk: true สำหรับ content > 1000 chars
-
-4. ไม่ได้ peer_share start
-   → เช็ค peer_share status ก่อน
-
-5. ส่ง message แล้วโทร peer_list_messages ทันที
-   → ใช้ waitResponse: true ใน peer_send_message เดียว
-
-6. ใช้ peer_send_message ส่งงานแทน broadcast
-   → ใช้ peer_broadcast สำหรับส่งงานให้ทุกคน
-
-7. ไม่รู้ port ของตัวเอง
-   → peer_share status หรือ peer_share start ดู port
-
-8. สร้าง spawn peer แต่ไม่บอกว่าตัวเองคือใคร
-   → ใช้ peer_set_name + peer_set_role ตั้งชื่อตัวเองก่อน spawn
-   → peer_send_message จะส่ง role + port ไปให้อัตโนมัติ
-   → หรือบอกใน message โดยตรง: "ฉันคือ clew-main (port 59428)"`,
+1.  Sending before discovering → always peer_discover first (or peer_manage join).
+2.  Polling peer_list_messages in a loop → messages auto-arrive; use waitResponse instead.
+3.  Missing your own name when sending to a spawned peer → "I am {name} (port {port})".
+4.  No share → peers won't find you; check peer_manage share status first.
+5.  Long message truncated → chunk: true.
+6.  Confusing exec and broadcast → peer_broadcast = AI prompt; peer_exec = shell.
+7.  Fan-out to everyone but you only meant one → pass peer to peer_exec or list first.
+8.  Skipping sequencing → single-peer peer_exec supports dependsOn, priority instead of wait/retry.`),
 };
 
 export const PeerHelpTool = buildTool({

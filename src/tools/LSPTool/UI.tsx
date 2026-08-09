@@ -11,6 +11,7 @@ import { getSymbolAtPosition } from './symbolContext.js';
 
 // Lookup map for operation-specific labels
 const OPERATION_LABELS: Record<Input['operation'], { singular: string; plural: string; special?: string }> = {
+  explore: { singular: 'symbol', plural: 'symbols' },
   goToDefinition: { singular: 'definition', plural: 'definitions' },
   findReferences: { singular: 'reference', plural: 'references' },
   documentSymbol: { singular: 'symbol', plural: 'symbols' },
@@ -101,6 +102,11 @@ export function renderToolUseMessage(input: Partial<Input>, { verbose }: { verbo
   }
 
   const parts: string[] = [];
+
+  // `explore` is query-based — there is no file or position to show.
+  if (input.operation === 'explore') {
+    return `operation: "explore", query: "${input.query ?? ''}"`;
+  }
 
   // For position-based operations (goToDefinition, findReferences, hover, goToImplementation),
   // show the symbol at the position for better context

@@ -20,17 +20,16 @@ import {
 } from '../../services/lsp/manager.js';
 import type { ValidationResult } from '../../Tool.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
-import { uniq } from '../../utils/array.js';
 import { getCwd } from '../../utils/cwd.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { isENOENT, toError } from '../../utils/errors.js';
-import { execFileNoThrowWithCwd } from '../../utils/execFileNoThrow.js';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { logError } from '../../utils/log.js';
 import { expandPath } from '../../utils/path.js';
 import { checkReadPermissionForTool } from '../../utils/permissions/filesystem.js';
 import type { PermissionDecision } from '../../utils/permissions/PermissionResult.js';
+import { runExplore } from './explore.js';
 import {
   formatDocumentSymbolResult,
   formatFindReferencesResult,
@@ -41,6 +40,7 @@ import {
   formatPrepareCallHierarchyResult,
   formatWorkspaceSymbolResult,
 } from './formatters.js';
+import { filterGitIgnoredLocations, toLocation } from './locations.js';
 import { DESCRIPTION, LSP_TOOL_NAME } from './prompt.js';
 import { lspToolInputSchema } from './schemas.js';
 import { renderToolResultMessage, renderToolUseErrorMessage, renderToolUseMessage, userFacingName } from './UI.js';
@@ -101,6 +101,7 @@ const inputSchema = lazySchema(() =>
   z.strictObject({
     operation: z
       .enum([
+        'explore',
         'goToDefinition',
         'findReferences',
         'hover',
@@ -112,9 +113,16 @@ const inputSchema = lazySchema(() =>
         'outgoingCalls',
       ])
       .describe('The LSP operation to perform'),
-    filePath: z.string().describe('The absolute or relative path to the file'),
-    line: z.number().int().positive().describe('The line number (1-based, as shown in editors)'),
-    character: z.number().int().positive().describe('The character offset (1-based, as shown in editors)'),
+    // Position fields are optional here and enforced per-operation by the
+    // discriminated union in validateInput — `explore` is query-based and has no
+    // position to point at, while every other operation still requires all three.
+    filePath: z
+      .string()
+      .optional()
+      .describe('The absolute or relative path to the file (all operations except explore)'),
+    line: z.number().int().positive().optional().describe('The line number (1-based, as shown in editors)'),
+    character: z.number().int().positive().optional().describe('The character offset (1-based, as shown in editors)'),
+    query: z.string().optional().describe('Symbol names or a question (explore only)'),
   }),
 );
 type InputSchema = ReturnType<typeof inputSchema>;
@@ -123,6 +131,7 @@ const outputSchema = lazySchema(() =>
   z.object({
     operation: z
       .enum([
+        'explore',
         'goToDefinition',
         'findReferences',
         'hover',
@@ -150,6 +159,19 @@ type OutputSchema = ReturnType<typeof outputSchema>;
 export type Output = z.infer<OutputSchema>;
 export type Input = z.infer<InputSchema>;
 
+/**
+ * An input for any operation other than `explore`. Those all carry a position,
+ * which validateInput enforces via the discriminated union before `call` runs.
+ * Excluding `explore` from the operation union also keeps the switch in
+ * getMethodAndParams exhaustive.
+ */
+type PositionalInput = Omit<Input, 'operation'> & {
+  operation: Exclude<Input['operation'], 'explore'>;
+  filePath: string;
+  line: number;
+  character: number;
+};
+
 export const LSPTool = buildTool({
   name: LSP_TOOL_NAME,
   searchHint: 'code intelligence (definitions, references, symbols, hover)',
@@ -176,7 +198,9 @@ export const LSPTool = buildTool({
     return true;
   },
   getPath({ filePath }): string {
-    return expandPath(filePath);
+    // `explore` has no single target file — it reads across the project, so the
+    // permission check is scoped to the working directory.
+    return filePath === undefined ? getCwd() : expandPath(filePath);
   },
   async validateInput(input: Input): Promise<ValidationResult> {
     // First validate against the discriminated union for better type safety
@@ -189,9 +213,15 @@ export const LSPTool = buildTool({
       };
     }
 
+    // `explore` searches the workspace rather than a named file — the
+    // discriminated union above already guaranteed it carries a query.
+    if (input.operation === 'explore') {
+      return { result: true };
+    }
+
     // Validate file exists and is a regular file
     const fs = getFsImplementation();
-    const absolutePath = expandPath(input.filePath);
+    const absolutePath = expandPath(input.filePath ?? '');
 
     // SECURITY: Skip filesystem operations for UNC paths to prevent NTLM credential leaks.
     if (absolutePath.startsWith('\\\\') || absolutePath.startsWith('//')) {
@@ -240,8 +270,57 @@ export const LSPTool = buildTool({
   renderToolUseErrorMessage,
   renderToolResultMessage,
   async call(input: Input, _context) {
-    const absolutePath = expandPath(input.filePath);
     const cwd = getCwd();
+
+    // `explore` is workspace-scoped and never cached — always-fresh results are
+    // the reason it exists instead of an on-disk index.
+    if (input.operation === 'explore') {
+      const status = getInitializationStatus();
+      if (status.status === 'pending') {
+        await waitForInitialization();
+      }
+      const exploreManager = getLspServerManager();
+      if (!exploreManager) {
+        logError(new Error('LSP server manager not initialized when explore was called'));
+        return {
+          data: {
+            operation: input.operation,
+            result: 'LSP server manager not initialized. This may indicate a startup issue.',
+            filePath: cwd,
+          } satisfies Output,
+        };
+      }
+
+      try {
+        const { formatted, resultCount, fileCount } = await runExplore(input.query ?? '', cwd, exploreManager);
+
+        return {
+          data: {
+            operation: input.operation,
+            result: formatted,
+            filePath: cwd,
+            resultCount,
+            fileCount,
+          } satisfies Output,
+        };
+      } catch (error) {
+        const message = toError(error).message;
+        logError(new Error(`LSP explore failed for query "${input.query}": ${message}`));
+        return {
+          data: {
+            operation: input.operation,
+            result: `Error performing explore: ${message}`,
+            filePath: cwd,
+          } satisfies Output,
+        };
+      }
+    }
+
+    // Every remaining operation is position-based; validateInput has already
+    // enforced that filePath/line/character are present for them.
+    const positional = input as PositionalInput;
+    const filePath = positional.filePath;
+    const absolutePath = expandPath(filePath);
     const symbolCacheKey = getSymbolCacheKey(input, absolutePath, cwd);
     const cachedSymbolOutput = getCachedSymbolOutput(symbolCacheKey);
     if (cachedSymbolOutput) {
@@ -264,7 +343,7 @@ export const LSPTool = buildTool({
       const output: Output = {
         operation: input.operation,
         result: 'LSP server manager not initialized. This may indicate a startup issue.',
-        filePath: input.filePath,
+        filePath,
       };
       return {
         data: output,
@@ -272,7 +351,7 @@ export const LSPTool = buildTool({
     }
 
     // Map operation to LSP method and prepare params
-    const { method, params } = getMethodAndParams(input, absolutePath);
+    const { method, params } = getMethodAndParams(positional, absolutePath);
 
     try {
       // Ensure file is open in LSP server before making requests
@@ -286,7 +365,7 @@ export const LSPTool = buildTool({
             const output: Output = {
               operation: input.operation,
               result: `File too large for LSP analysis (${Math.ceil(stats.size / 1_000_000)}MB exceeds 10MB limit)`,
-              filePath: input.filePath,
+              filePath,
             };
             return { data: output };
           }
@@ -309,7 +388,7 @@ export const LSPTool = buildTool({
         const output: Output = {
           operation: input.operation,
           result: `No LSP server available for file type: ${path.extname(absolutePath)}`,
-          filePath: input.filePath,
+          filePath,
         };
         return {
           data: output,
@@ -325,7 +404,7 @@ export const LSPTool = buildTool({
           const output: Output = {
             operation: input.operation,
             result: 'No call hierarchy item found at this position',
-            filePath: input.filePath,
+            filePath,
             resultCount: 0,
             fileCount: 0,
           };
@@ -380,7 +459,7 @@ export const LSPTool = buildTool({
       const output: Output = {
         operation: input.operation,
         result: formatted,
-        filePath: input.filePath,
+        filePath,
         resultCount,
         fileCount,
       };
@@ -399,7 +478,7 @@ export const LSPTool = buildTool({
       const output: Output = {
         operation: input.operation,
         result: `Error performing ${input.operation}: ${errorMessage}`,
-        filePath: input.filePath,
+        filePath,
       };
       return {
         data: output,
@@ -418,7 +497,7 @@ export const LSPTool = buildTool({
 /**
  * Maps LSPTool operation to LSP method and params
  */
-function getMethodAndParams(input: Input, absolutePath: string): { method: string; params: unknown } {
+function getMethodAndParams(input: PositionalInput, absolutePath: string): { method: string; params: unknown } {
   const uri = pathToFileURL(absolutePath).href;
   // Convert from 1-based (user-friendly) to 0-based (LSP protocol)
   const position = {
@@ -524,101 +603,10 @@ function countUniqueFiles(locations: Location[]): number {
 }
 
 /**
- * Extracts a file path from a file:// URI, decoding percent-encoded characters.
- */
-function uriToFilePath(uri: string): string {
-  let filePath = uri.replace(/^file:\/\//, '');
-  // On Windows, file:///C:/path becomes /C:/path — strip the leading slash
-  if (/^\/[A-Za-z]:/.test(filePath)) {
-    filePath = filePath.slice(1);
-  }
-  try {
-    filePath = decodeURIComponent(filePath);
-  } catch {
-    // Use un-decoded path if malformed
-  }
-  return filePath;
-}
-
-/**
- * Filters out locations whose file paths are gitignored.
- * Uses `git check-ignore` with batched path arguments for efficiency.
- */
-async function filterGitIgnoredLocations<T extends Location>(locations: T[], cwd: string): Promise<T[]> {
-  if (locations.length === 0) {
-    return locations;
-  }
-
-  // Collect unique file paths from URIs
-  const uriToPath = new Map<string, string>();
-  for (const loc of locations) {
-    if (loc.uri && !uriToPath.has(loc.uri)) {
-      uriToPath.set(loc.uri, uriToFilePath(loc.uri));
-    }
-  }
-
-  const uniquePaths = uniq(uriToPath.values());
-  if (uniquePaths.length === 0) {
-    return locations;
-  }
-
-  // Batch check paths with git check-ignore
-  // Exit code 0 = at least one path is ignored, 1 = none ignored, 128 = not a git repo
-  const ignoredPaths = new Set<string>();
-  const BATCH_SIZE = 50;
-  for (let i = 0; i < uniquePaths.length; i += BATCH_SIZE) {
-    const batch = uniquePaths.slice(i, i + BATCH_SIZE);
-    const result = await execFileNoThrowWithCwd('git', ['check-ignore', ...batch], {
-      cwd,
-      preserveOutputOnError: false,
-      timeout: 5_000,
-    });
-
-    if (result.code === 0 && result.stdout) {
-      for (const line of result.stdout.split('\n')) {
-        const trimmed = line.trim();
-        if (trimmed) {
-          ignoredPaths.add(trimmed);
-        }
-      }
-    }
-  }
-
-  if (ignoredPaths.size === 0) {
-    return locations;
-  }
-
-  return locations.filter(loc => {
-    const filePath = uriToPath.get(loc.uri);
-    return !filePath || !ignoredPaths.has(filePath);
-  });
-}
-
-/**
- * Checks if item is LocationLink (has targetUri) vs Location (has uri)
- */
-function isLocationLink(item: Location | LocationLink): item is LocationLink {
-  return 'targetUri' in item;
-}
-
-/**
- * Converts LocationLink to Location format for uniform handling
- */
-function toLocation(item: Location | LocationLink): Location {
-  if (isLocationLink(item)) {
-    return {
-      uri: item.targetUri,
-      range: item.targetSelectionRange || item.targetRange,
-    };
-  }
-  return item;
-}
-
-/**
  * Formats LSP result based on operation type and extracts summary counts
  */
 function formatResult(
-  operation: Input['operation'],
+  operation: PositionalInput['operation'],
   result: unknown,
   cwd: string,
 ): { formatted: string; resultCount: number; fileCount: number } {

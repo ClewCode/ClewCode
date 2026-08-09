@@ -21,7 +21,7 @@ import { plural } from '../../utils/stringUtils.js';
  * Handles URI decoding and gracefully falls back to un-decoded path if malformed.
  * Only uses relative paths when shorter and not starting with ../../
  */
-function formatUri(uri: string | undefined, cwd?: string): string {
+export function formatUri(uri: string | undefined, cwd?: string): string {
   // Handle undefined/null URIs - this indicates malformed LSP data
   if (!uri) {
     // NOTE: This should ideally be caught earlier with proper error logging
@@ -249,7 +249,7 @@ export function formatHoverResult(result: Hover | null, _cwd?: string): string {
 /**
  * Maps SymbolKind enum to readable string
  */
-function symbolKindToString(kind: SymbolKind): string {
+export function symbolKindToString(kind: SymbolKind): string {
   const kinds: Record<SymbolKind, string> = {
     [1]: 'File',
     [2]: 'Module',
