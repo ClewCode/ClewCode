@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-08-09
+
+- **fix: stop the recap firing with no conversation, and while you are watching**: long-turn recaps now require a real user turn and assistant reply, and remain suppressed while the terminal is focused or the focus state is unknown.
+
 ## [0.8.0] - 2026-08-09
 
 - **fix: `clew --version` reported a stale version**: `main.tsx` reads `./generated/version.json` relative to `import.meta.url` at runtime — it is not inlined by the bundler — so from `dist/main.js` that resolves to `dist/generated/version.json`, and the `globalThis.MACRO` it sets overrode the value the postbuild preamble injected. `prebuild-version.mjs` only writes `src/generated/`, so the dist copy was whatever the very first build left behind: 0.6.8, 0.7.0 and 0.7.1 all reported `0.7.0`. The postbuild step now writes `dist/generated/version.json` from the same `package.json` the preamble uses.

@@ -110,7 +110,7 @@ export async function generateAwaySummary(messages: readonly Message[], signal: 
       return null;
     }
 
-    const text = cleanAwaySummary(getAssistantMessageText(response));
+    const text = cleanAwaySummary(getAssistantMessageText(response) ?? '');
     return text.length > 0 ? text : null;
   } catch (err) {
     if (err instanceof APIUserAbortError || signal.aborted) {
