@@ -61,13 +61,19 @@ export function filterToolsForAgent({
   isBuiltIn,
   isAsync = false,
   permissionMode,
+  agentType,
 }: {
   tools: Tools;
   isBuiltIn: boolean;
   isAsync?: boolean;
   permissionMode?: PermissionMode;
+  agentType?: string;
 }): Tools {
   return tools.filter(tool => {
+    // RLM exists to delegate synchronous strands; background recursion remains blocked.
+    if (agentType === 'rlm' && !isAsync && toolMatchesName(tool, AGENT_TOOL_NAME)) {
+      return true;
+    }
     // Allow MCP tools for all agents
     if (tool.name.startsWith('mcp__')) {
       return true;
@@ -106,7 +112,7 @@ export function filterToolsForAgent({
  * Handles wildcard expansion and validation in one place
  */
 export function resolveAgentTools(
-  agentDefinition: Pick<AgentDefinition, 'tools' | 'disallowedTools' | 'source' | 'permissionMode'>,
+  agentDefinition: Pick<AgentDefinition, 'agentType' | 'tools' | 'disallowedTools' | 'source' | 'permissionMode'>,
   availableTools: Tools,
   isAsync = false,
   isMainThread = false,
@@ -122,6 +128,7 @@ export function resolveAgentTools(
         isBuiltIn: source === 'built-in',
         isAsync,
         permissionMode,
+        agentType: agentDefinition.agentType,
       });
 
   // Create a set of disallowed tool names for quick lookup
