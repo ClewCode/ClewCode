@@ -47,8 +47,8 @@ describe('shouldGenerateLongTurnRecap', () => {
 
   it('falls back to the default threshold when config value is invalid', () => {
     configOverride = { recapEnabled: true, longTurnRecapThresholdMs: Number.NaN };
-    expect(shouldGenerateLongTurnRecap(120_000, [userMsg])).toBe(false); // below default 3min
-    expect(shouldGenerateLongTurnRecap(180_000, [userMsg])).toBe(true); // at default 3min (boundary inclusive)
+    expect(shouldGenerateLongTurnRecap(240_000, [userMsg])).toBe(false); // below default 5min
+    expect(shouldGenerateLongTurnRecap(300_000, [userMsg])).toBe(true); // at default 5min (boundary inclusive)
     expect(shouldGenerateLongTurnRecap(400_000, [userMsg])).toBe(true); // above default 5min
   });
 });
