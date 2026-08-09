@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Prompt suggestions now appear after the first completed turn** and no longer treat cached prompt tokens as uncached work, preventing normal long sessions from permanently suppressing suggestions.
+
+- **WebFetch no longer depends on Anthropic domain-info uptime**: when the advisory preflight service times out or is unreachable, public URL fetches continue through the existing local URL and redirect SSRF checks; explicitly blocked domains remain blocked.
+
 ## [0.8.2] - 2026-08-09
 
 - **Model/provider global defaults**: press `g` while selecting a model to save it globally, or choose “Save as global default” after selecting a provider and one of that provider’s models; session-only selection remains available.

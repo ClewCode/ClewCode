@@ -108,7 +108,7 @@ export async function tryGenerateSuggestion(
   }
 
   const assistantTurnCount = count(messages, m => m.type === 'assistant');
-  if (assistantTurnCount < 2) {
+  if (assistantTurnCount < 1) {
     logSuggestionSuppressed('early_conversation', undefined, undefined, source);
     return null;
   }
@@ -190,20 +190,28 @@ export async function executePromptSuggestion(context: REPLHookContext): Promise
   }
 }
 
-const MAX_PARENT_UNCACHED_TOKENS = 10_000;
+const MAX_PARENT_UNCACHED_TOKENS = 50_000;
 
 export function getParentCacheSuppressReason(
   lastAssistantMessage: ReturnType<typeof getLastAssistantMessage>,
 ): string | null {
   if (!lastAssistantMessage) return null;
 
-  const usage = lastAssistantMessage.message.usage;
+  const usage = (lastAssistantMessage.message.usage ?? {}) as {
+    input_tokens?: number;
+    cache_read_input_tokens?: number;
+    cache_creation_input_tokens?: number;
+    output_tokens?: number;
+  };
   const inputTokens = usage.input_tokens ?? 0;
+  const cacheReadTokens = usage.cache_read_input_tokens ?? 0;
   const cacheWriteTokens = usage.cache_creation_input_tokens ?? 0;
-  // The fork re-processes the parent's output (never cached) plus its own prompt.
+  // Only the uncached input is replayed by the fork. Counting cached tokens made
+  // normal long sessions permanently suppress suggestions after crossing 10K.
+  const uncachedInputTokens = Math.max(0, inputTokens - cacheReadTokens - cacheWriteTokens);
   const outputTokens = usage.output_tokens ?? 0;
 
-  return inputTokens + cacheWriteTokens + outputTokens > MAX_PARENT_UNCACHED_TOKENS ? 'cache_cold' : null;
+  return uncachedInputTokens + outputTokens > MAX_PARENT_UNCACHED_TOKENS ? 'cache_cold' : null;
 }
 
 const SUGGESTION_PROMPT = `[SUGGESTION MODE: Suggest what the user might naturally type next into Clew Code.]
