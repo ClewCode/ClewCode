@@ -33,6 +33,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: package.json
+          always-auth: true
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
@@ -85,6 +89,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: package.json
+          always-auth: true
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
@@ -136,9 +144,14 @@ jobs:
       - name: Update npm CLI for OIDC trusted publishing
         run: npm install -g npm@latest
 
-      - name: Publish to npm (OIDC trusted publishing)
+      - name: Publish to npm
         if: steps.npm_check.outputs.exists == 'false'
         run: npm publish --access public --provenance --registry https://registry.npmjs.org
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          NPM_CONFIG_OTP: ''
+
 
       - name: Publish to GitHub Packages
         run: |
