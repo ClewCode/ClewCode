@@ -25,9 +25,7 @@ class DomainBlockedError extends Error {
 
 class DomainCheckFailedError extends Error {
   constructor(domain: string) {
-    super(
-      `Unable to verify if domain ${domain} is safe to fetch. This may be due to network restrictions or enterprise security policies blocking claude.ai.`,
-    );
+    super(`Unable to validate WebFetch safety for ${domain}`);
     this.name = 'DomainCheckFailedError';
   }
 }
@@ -216,7 +214,14 @@ export function validateURL(url: string): boolean {
   return true;
 }
 
-type DomainCheckResult = { status: 'allowed' } | { status: 'blocked' } | { status: 'check_failed'; error: Error };
+export type DomainCheckResult =
+  | { status: 'allowed' }
+  | { status: 'blocked' }
+  | { status: 'check_failed'; error: Error };
+
+export function canFetchAfterDomainCheck(result: DomainCheckResult): boolean {
+  return result.status !== 'blocked';
+}
 
 export async function checkDomainBlocklist(domain: string): Promise<DomainCheckResult> {
   if (DOMAIN_CHECK_CACHE.has(domain)) {
@@ -436,14 +441,13 @@ export async function getURLMarkdownContent(
     const settings = getSettings_DEPRECATED();
     if (!settings.skipWebFetchPreflight) {
       const checkResult = await checkDomainBlocklist(hostname);
-      switch (checkResult.status) {
-        case 'allowed':
-          // Continue with the fetch
-          break;
-        case 'blocked':
-          throw new DomainBlockedError(hostname);
-        case 'check_failed':
-          throw new DomainCheckFailedError(hostname);
+      if (!canFetchAfterDomainCheck(checkResult)) {
+        throw new DomainBlockedError(hostname);
+      }
+      if (checkResult.status === 'check_failed') {
+        // The remote blocklist is advisory. Local URL and redirect validation
+        // still enforce the SSRF boundary when that service is unavailable.
+        logForDiagnosticsNoPII('warn', 'web_fetch_domain_check_failed', { hostname });
       }
     }
 
