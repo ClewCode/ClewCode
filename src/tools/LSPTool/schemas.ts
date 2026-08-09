@@ -105,7 +105,21 @@ export const lspToolInputSchema = lazySchema(() => {
     character: z.number().int().positive().describe('The character offset (1-based, as shown in editors)'),
   });
 
+  /**
+   * Explore operation
+   * Aggregates workspace/symbol + source + incoming calls into one bundle.
+   * Takes a query rather than a position — there is nothing to point at yet.
+   */
+  const exploreSchema = z.strictObject({
+    operation: z.literal('explore'),
+    query: z
+      .string()
+      .min(1)
+      .describe('Symbol names or a question, e.g. "setActiveMode" or "how does peer discovery start"'),
+  });
+
   return z.discriminatedUnion('operation', [
+    exploreSchema,
     goToDefinitionSchema,
     findReferencesSchema,
     hoverSchema,
@@ -128,6 +142,7 @@ export type LSPToolInput = z.infer<ReturnType<typeof lspToolInputSchema>>;
  */
 export function isValidLSPOperation(operation: string): operation is LSPToolInput['operation'] {
   return [
+    'explore',
     'goToDefinition',
     'findReferences',
     'hover',
