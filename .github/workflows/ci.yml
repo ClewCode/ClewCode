@@ -307,4 +307,16 @@ jobs:
         run: bun ci
 
       - name: Check vulnerabilities
-        run: bun audit
+        # GHSA-f88m-g3jw-g9cj (sharp <0.35.0, libvips CVEs) is ignored, not
+        # unfixed by neglect: there is no version of sharp we can reach.
+        # @xenova/transformers pins sharp ^0.32.0 and its maintained successor
+        # @huggingface/transformers@4.2.0 pins ^0.34.5 -- both below 0.35.0, so
+        # migrating would not clear it either. Bun does not support nested
+        # overrides, so the transitive copy cannot be forced.
+        #
+        # Exposure is bounded: clew uses transformers only for text embeddings
+        # (pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2') in
+        # memdir/semanticSearch.ts and memory/search.ts). The advisory is about
+        # image decoding in libvips, and clew never feeds an image through
+        # sharp. Drop this flag once any transformers release ships sharp >=0.35.
+        run: bun audit --ignore GHSA-f88m-g3jw-g9cj
