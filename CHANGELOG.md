@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Model/provider global defaults**: press `g` while selecting a model to save it globally, or choose “Save as global default” after selecting a provider and one of that provider’s models; session-only selection remains available.
+- **`/init` wording**: generated documentation now refers to `AGENTS.md`.
+
 ## [0.8.1] - 2026-08-09
 
 - **fix: stop the recap firing with no conversation, and while you are watching**: long-turn recaps now require a real user turn and assistant reply, and remain suppressed while the terminal is focused or the focus state is unknown.

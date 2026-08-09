@@ -18,6 +18,7 @@ import {
   getProviderRegistryEntry,
   normalizeProviderId,
   PROVIDER_IDS,
+  type ProviderModelInfo,
   type ProviderRegistryEntry,
 } from '../../services/ai/providerRegistry.js';
 import { validateProviderModelSelection } from '../../services/ai/providerSelection.js';
@@ -466,6 +467,9 @@ function ProviderPicker({
   setMessages?: LocalJSXCommandContext['setMessages'];
 }): React.ReactNode {
   const [provider, setProvider] = React.useState<ProviderKey | null>(null);
+  const [selectionScope, setSelectionScope] = React.useState<'session' | 'global' | null>(null);
+  const [selectedModel, setSelectedModel] = React.useState<string | null>(null);
+  const [modelOptions, setModelOptions] = React.useState<ProviderModelInfo[] | null>(null);
   const [apiKeyInput, setApiKeyInput] = React.useState('');
   const [apiKeyCursorOffset, setApiKeyCursorOffset] = React.useState(0);
   const [apiKeyError, setApiKeyError] = React.useState<string | null>(null);
@@ -504,8 +508,15 @@ function ProviderPicker({
     });
   }, []);
 
+  React.useEffect(() => {
+    if (!provider || provider === 'custom') return;
+    setModelOptions(null);
+    setSelectedModel(null);
+    void fetchProviderModels(provider).then(setModelOptions);
+  }, [provider]);
+
   async function saveProviderSelection(apiKey?: string) {
-    if (!provider) return;
+    if (!provider || !selectedModel) return;
 
     const trimmedApiKey = apiKey?.trim();
     const nextApiKeys: ProviderConfig['apiKeys'] = {
@@ -517,14 +528,13 @@ function ProviderPicker({
     }
 
     const info = getProviderInfo(provider);
-    // Preserve existing provider/model in the config file so other
-    // sessions keep using their own selection. Only the API key is
-    // persisted; the new provider+model are applied to this session
-    // via applyProviderSelectionToSession further down.
     const existingConfig = await loadConfig();
+    const isGlobal = selectionScope === 'global';
     const nextConfig: ProviderConfig = {
-      provider: existingConfig?.provider || provider,
-      model: existingConfig?.model || (currentSessionModel as string) || info.defaultModel || '',
+      provider: isGlobal ? provider : existingConfig?.provider || provider,
+      model: isGlobal
+        ? selectedModel
+        : existingConfig?.model || (currentSessionModel as string) || info.defaultModel || '',
       providerConfig: {
         ...getSerializableProviderInfo(provider),
         ...(provider === 'google' ? { googleType: googleType ?? 'direct' } : {}),
@@ -543,13 +553,17 @@ function ProviderPicker({
     const providerManager = ProviderManager.getInstance();
     providerManager.invalidateConfigCache();
 
-    const isProviderSwitching = existingConfig && existingConfig.provider !== provider;
-    const currentModel = isProviderSwitching
-      ? info.defaultModel || ''
-      : existingConfig?.model || (currentSessionModel as string) || info.defaultModel || '';
-    applyProviderSelectionToSession(setAppState, { model: currentModel, provider }, false, setMessages);
+    const currentModel = selectedModel;
+    applyProviderSelectionToSession(
+      setAppState,
+      { ...nextConfig, model: currentModel, provider },
+      isGlobal,
+      setMessages,
+    );
 
-    onDone(`Set provider to ${provider}\nModel: ${currentModel}\n(Session only)`, { display: 'system' });
+    onDone(`Set provider to ${provider}\nModel: ${currentModel}\n(${isGlobal ? 'Global default' : 'Session only'})`, {
+      display: 'system',
+    });
   }
 
   // Build expanded list: providers with multiple auth methods get separate entries
@@ -774,6 +788,72 @@ function ProviderPicker({
           },
         }),
       ),
+    );
+  }
+
+  if (provider !== 'custom' && selectedModel === null) {
+    if (modelOptions === null) {
+      return React.createElement(Text, null, `Loading models for ${info?.label ?? provider}…`);
+    }
+    const options = modelOptions.map(model => ({
+      label: model.label || model.id,
+      value: model.id,
+      description: model.tags?.join(', ') || '',
+    }));
+    return React.createElement(
+      Dialog,
+      {
+        title: info?.label ?? provider,
+        subtitle: 'Select model',
+        onCancel: () => {
+          setProvider(null);
+          setModelOptions(null);
+        },
+      },
+      React.createElement(Select, {
+        options,
+        visibleOptionCount: Math.min(12, options.length),
+        onChange: value => setSelectedModel(value as string),
+        onCancel: () => {
+          setProvider(null);
+          setModelOptions(null);
+        },
+      }),
+    );
+  }
+
+  if (selectionScope === null) {
+    const providerLabel = info?.label ?? provider;
+    return React.createElement(
+      Dialog,
+      {
+        title: providerLabel,
+        subtitle: 'Choose where to save this provider selection',
+        onCancel: () => {
+          setProvider(null);
+          setSelectionScope(null);
+        },
+      },
+      React.createElement(Select, {
+        options: [
+          {
+            label: 'Use for this session',
+            value: 'session',
+            description: 'Switch only this terminal; new sessions keep the current default',
+          },
+          {
+            label: 'Save as global default',
+            value: 'global',
+            description: 'Use this provider and its default model for new sessions',
+          },
+        ],
+        visibleOptionCount: 2,
+        onChange: value => setSelectionScope(value as 'session' | 'global'),
+        onCancel: () => {
+          setProvider(null);
+          setSelectionScope(null);
+        },
+      }),
     );
   }
 

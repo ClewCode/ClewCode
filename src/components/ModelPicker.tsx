@@ -318,12 +318,12 @@ export function ModelPicker({
         onSelect(modelSettingFor(focusedOption), applyEffort(focusedOption, false));
       }
 
-      // `d` is the only in-picker path that writes to disk.
+      // `g`/`d` are the in-picker paths that write the global default.
       if (
         !isSearchActive &&
         isStandaloneCommand &&
         onSetDefault &&
-        (input === 'd' || input === 'D') &&
+        (input === 'g' || input === 'G' || input === 'd' || input === 'D') &&
         !key.ctrl &&
         !key.meta
       ) {
@@ -454,7 +454,7 @@ export function ModelPicker({
           ) : (
             <>
               type to search · ↑/↓ navigate · tab next provider · enter to select
-              {onSetDefault ? ' · d set as default' : ''} · esc to clear
+              {onSetDefault ? ' · g save as global default' : ''} · esc to clear
             </>
           )}
         </Text>

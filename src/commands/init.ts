@@ -345,7 +345,7 @@ const command = {
         isEnvTruthy(process.env.CLEW_CODE_NEW_INIT) ||
         isEnvTruthy(process.env.CLEW_CODE_NEW_INIT))
       ? 'Initialize new AGENT.md file(s) and optional skills/hooks with codebase documentation'
-      : 'Initialize a new AGENT.md file with codebase documentation';
+      : 'Initialize a new AGENTS.md file with codebase documentation';
   },
   contentLength: 0, // Dynamic content
   progressMessage: 'analyzing your codebase',

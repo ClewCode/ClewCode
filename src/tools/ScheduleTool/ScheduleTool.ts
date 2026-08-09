@@ -83,7 +83,8 @@ export const REQUIRED_FIELDS: Record<ScheduleAction, readonly (keyof ScheduleInp
 };
 
 export function missingFieldsFor(input: ScheduleInput): string[] {
-  return REQUIRED_FIELDS[input.action].filter(field => input[field] === undefined || input[field] === '');
+  const required = REQUIRED_FIELDS[input?.action];
+  return required ? required.filter(field => input[field] === undefined || input[field] === '') : ['action'];
 }
 
 export function buildDelegateCall(input: ScheduleInput): { tool: Delegate; args: Record<string, unknown> } {
@@ -137,8 +138,19 @@ export const ScheduleTool = buildTool({
   async prompt() {
     return PROMPT;
   },
-  userFacingName() {
-    return 'Schedule';
+  userFacingName(input) {
+    switch (input?.action) {
+      case 'followup':
+        return 'Schedule follow-up';
+      case 'create':
+        return 'Schedule job';
+      case 'list':
+        return 'List schedules';
+      case 'delete':
+        return 'Delete schedule';
+      default:
+        return 'Schedule';
+    }
   },
   isEnabled() {
     return isKairosCronEnabled();
@@ -181,31 +193,34 @@ export const ScheduleTool = buildTool({
     return { behavior: 'allow' as const, updatedInput: {} };
   },
   async call(input, context) {
-    const missing = missingFieldsFor(input);
+    const nestedInput = (input as { input?: ScheduleInput } | undefined)?.input;
+    const normalizedInput = input?.action ? input : nestedInput;
+    const action = normalizedInput?.action ?? 'unknown';
+    const missing = missingFieldsFor(normalizedInput as ScheduleInput);
     if (missing.length > 0) {
       return {
         data: {
-          action: input.action,
+          action,
           ok: false,
-          result: `"${input.action}" needs: ${missing.join(', ')}. Nothing was scheduled.`,
+          result: `"${action}" needs: ${missing.join(', ')}. Nothing was scheduled.`,
         },
       };
     }
-    const { tool, args } = buildDelegateCall(input);
+    const { tool, args } = buildDelegateCall(normalizedInput as ScheduleInput);
     try {
       const validation = await tool.validateInput?.(args as never, context as never);
       if (validation?.result === false) {
-        return { data: { action: input.action, ok: false, result: validation.message } };
+        return { data: { action, ok: false, result: validation.message } };
       }
       const raw = await (tool.call as (a: unknown, c: unknown) => unknown)(args, context as ToolUseContext);
       const data = raw && typeof raw === 'object' && 'data' in raw ? (raw as { data: unknown }).data : raw;
-      return { data: { action: input.action, ok: true, result: renderDelegateResult(tool, data) } };
+      return { data: { action, ok: true, result: renderDelegateResult(tool, data) } };
     } catch (err) {
       return {
         data: {
-          action: input.action,
+          action,
           ok: false,
-          result: `schedule ${input.action} failed: ${err instanceof Error ? err.message : String(err)}`,
+          result: `schedule ${action} failed: ${err instanceof Error ? err.message : String(err)}`,
         },
       };
     }

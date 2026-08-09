@@ -27,6 +27,14 @@ describe('schedule required fields', () => {
   test('list needs nothing', () => {
     expect(missingFieldsFor(input({ action: 'list' }))).toEqual([]);
   });
+
+  test('does not throw when input is missing', () => {
+    expect(missingFieldsFor(undefined as unknown as ScheduleInput)).toEqual(['action']);
+  });
+
+  test('accepts a nested input wrapper', () => {
+    expect(missingFieldsFor({ action: 'list' })).toEqual([]);
+  });
 });
 
 describe('schedule dispatch', () => {
