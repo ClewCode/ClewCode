@@ -1,8 +1,0 @@
-fix: clamp /effort xhigh/max to high for OpenAI-compatible providers
-
-Claude 4.6/4.7 accept xhigh/max as effort levels, but OpenAI reasoning_effort
-only admits low|medium|high. getOpenAIReasoningEffort forwarded the raw string,
-so opencode/deepseek/nvidia requests 400'd on /effort xhigh or max. Clamp
-xhigh/max to high and skip unknown levels instead of forwarding them.
-
-Co-Authored-By: Clew <204852177+Clew-Code@users.noreply.github.com>
