@@ -153,13 +153,3 @@ jobs:
           NPM_CONFIG_OTP: ''
 
 
-      - name: Publish to GitHub Packages
-        run: |
-          cat > .npmrc <<'EOF'
-          @jonusnattapong:registry=https://npm.pkg.github.com
-          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-          EOF
-
-          npm publish --registry https://npm.pkg.github.com
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
