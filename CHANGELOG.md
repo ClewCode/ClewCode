@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-08-09
+
 - **Model/provider global defaults**: press `g` while selecting a model to save it globally, or choose “Save as global default” after selecting a provider and one of that provider’s models; session-only selection remains available.
 - **`/init` wording**: generated documentation now refers to `AGENTS.md`.
 
