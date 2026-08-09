@@ -30,11 +30,38 @@ function cleanAwaySummary(text: string): string {
 }
 
 /**
+ * Whether these messages contain an actual exchange worth recapping.
+ *
+ * `messages.length > 0` is not the same question. A session that has not been
+ * talked to yet still carries attachments (CLAUDE.md, directory context),
+ * meta user messages and system entries, so a bare length check let the recap
+ * fire on a session with no conversation in it — producing a "Goal: ... Next:
+ * ..." handoff for work that never happened.
+ *
+ * Requires both sides: a real user turn (not meta, not a tool_result carrier,
+ * not a compact summary) and an assistant reply to it.
+ */
+export function hasRecappableConversation(messages: readonly Message[]): boolean {
+  let hasUserTurn = false;
+  let hasAssistantReply = false;
+  for (const m of messages) {
+    if (m.type === 'user') {
+      const um = m as { isMeta?: boolean; toolUseResult?: unknown; isCompactSummary?: boolean };
+      if (!um.isMeta && !um.toolUseResult && !um.isCompactSummary) hasUserTurn = true;
+    } else if (m.type === 'assistant') {
+      hasAssistantReply = true;
+    }
+    if (hasUserTurn && hasAssistantReply) return true;
+  }
+  return false;
+}
+
+/**
  * Generates a short session recap for the "while you were away" line.
  * Returns null on abort, empty transcript, or error.
  */
 export async function generateAwaySummary(messages: readonly Message[], signal: AbortSignal): Promise<string | null> {
-  if (messages.length === 0) {
+  if (!hasRecappableConversation(messages)) {
     return null;
   }
 
