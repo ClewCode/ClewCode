@@ -12,12 +12,10 @@ import { BriefTool } from './tools/BriefTool/BriefTool.js';
 
 // Lazy loading for feature-gated or potentially absent tools
 /* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
-const getCronTools = () => [
-  require('./tools/ScheduleCronTool/CronCreateTool.js').CronCreateTool,
-  require('./tools/ScheduleCronTool/CronDeleteTool.js').CronDeleteTool,
-  require('./tools/ScheduleCronTool/CronListTool.js').CronListTool,
-  require('./tools/ScheduleFollowupTool/ScheduleFollowupTool.js').ScheduleFollowupTool,
-];
+// One Schedule tool replaces CronCreate/CronDelete/CronList/ScheduleFollowup.
+// The originals still exist and are dispatched to by action — see
+// tools/ScheduleTool/ScheduleTool.ts for why they were merged.
+const getCronTools = () => [require('./tools/ScheduleTool/ScheduleTool.js').ScheduleTool];
 const getRemoteTriggerTool = () =>
   feature('AGENT_TRIGGERS_REMOTE') ? require('./tools/RemoteTriggerTool/RemoteTriggerTool.js').RemoteTriggerTool : null;
 // Monitor tool always enabled (v2.1.98+)
@@ -59,6 +57,8 @@ import { SendMessageTool } from './tools/SendMessageTool/SendMessageTool.js';
 import { AskUserQuestionTool } from './tools/AskUserQuestionTool/AskUserQuestionTool.js';
 import { PeerDiscoverTool } from './tools/PeerDiscoverTool/PeerDiscoverTool.js';
 import { PeerSendMessageTool } from './tools/PeerSendMessageTool/PeerSendMessageTool.js';
+import { PeerExecTool } from './tools/PeerExecTool/PeerExecTool.js';
+import { PeerManageTool } from './tools/PeerManageTool/PeerManageTool.js';
 import { PeerSpawnTool } from './tools/PeerSpawnTool/PeerSpawnTool.js';
 import { PeerShareTool } from './tools/PeerShareTool/PeerShareTool.js';
 import { PeerInfoTool } from './tools/PeerInfoTool/PeerInfoTool.js';
@@ -71,7 +71,6 @@ import { PeerPingTool } from './tools/PeerPingTool/PeerPingTool.js';
 import { PeerDisconnectTool } from './tools/PeerDisconnectTool/PeerDisconnectTool.js';
 import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.js';
 import { PeerSwarmTool } from './tools/PeerSwarmTool/PeerSwarmTool.js';
-import { PeerDashboardTool } from './tools/PeerDashboardTool/PeerDashboardTool.js';
 import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackTool.js';
@@ -190,25 +189,18 @@ export function getAllBaseTools(): Tools {
     AgentTool,
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     SendMessageTool,
+    // Peer surface, consolidated from 18 tools to 6. peer_manage folds the
+    // eleven single-verb admin calls; peer_exec merges peer_run + peer_swarm.
+    // The originals are still dispatched to — only the model-facing list
+    // shrank. See tools/PeerManageTool/PeerManageTool.ts.
     PeerDiscoverTool,
     PeerSendMessageTool,
-    PeerSpawnTool,
-    PeerShareTool,
-    PeerInfoTool,
-    PeerRunTool,
-    PeerJoinTool,
-    PeerSetNameTool,
-    PeerSetRoleTool,
-    PeerListRolesTool,
-    PeerPingTool,
-    PeerDisconnectTool,
-    PeerBroadcastTool,
-    PeerSwarmTool,
-    PeerDashboardTool,
-    MemoryFeedbackTool,
     PeerListMessagesTool,
+    PeerBroadcastTool,
+    PeerExecTool,
+    PeerManageTool,
     PeerHelpTool,
-    PeerMemorySyncTool,
+    MemoryFeedbackTool,
 
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),
     ...(isAgentSwarmsEnabled() ? [SubscribePrActivityTool, UnsubscribePrActivityTool] : []),

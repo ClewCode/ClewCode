@@ -2,7 +2,7 @@
  * peerDashboard — Peer task dashboard.
  *
  * `collectPeerDashboard()` is the single data model: the text renderer below
- * (used by the AI-facing PeerDashboardTool and `/peer dashboard --text`) and
+ * (used by peer_manage({ action: 'list' }) and `/peer dashboard --text`) and
  * the interactive Ink view (`commands/peer/PeerDashboard.tsx`) both read from
  * it, so they can never drift apart.
  */

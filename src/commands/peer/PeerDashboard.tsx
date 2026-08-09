@@ -2,7 +2,7 @@
  * PeerDashboard — Live interactive dashboard for LAN peers and their tasks.
  *
  * Reads the same model as the text dashboard (`collectPeerDashboard`), so the
- * AI-facing PeerDashboardTool and this view can never report different numbers.
+ * AI-facing peer_manage({ action: "list" }) and this view can never report different numbers.
  * Refreshes on a timer; select a peer to inspect its tasks and their results.
  */
 
