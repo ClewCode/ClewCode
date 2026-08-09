@@ -31,11 +31,15 @@ const macroJson = JSON.stringify({
 // Keep this list in sync with the --feature flags in package.json's build
 // script, so dev and production agree on which features exist.
 //
-// TRANSCRIPT_CLASSIFIER is deliberately absent: it require()s prompt assets
-// under src/utils/permissions/yolo-classifier-prompts/ that this repo does not
-// ship, and the bundler resolves those requires at build time regardless of the
-// runtime USER_TYPE check — so enabling it fails the build outright.
-const FEATURES = ['CHICAGO_MCP', 'VOICE_MODE', 'AWAY_SUMMARY', 'EXTRACT_MEMORIES'];
+// TRANSCRIPT_CLASSIFIER is deliberately absent from both this list and the
+// build script: it require()s prompt assets under
+// src/utils/permissions/yolo-classifier-prompts/ that this repo does not ship,
+// and the bundler resolves those requires at build time regardless of the
+// runtime USER_TYPE check — so enabling it fails the build outright. The build
+// script used to pass `--define.TRANSCRIPT_CLASSIFIER=true`, which reads as
+// "enabled" but is ignored by feature(); that has been removed so the flag
+// list no longer claims something untrue.
+const FEATURES = ['CHICAGO_MCP', 'VOICE_MODE', 'AWAY_SUMMARY', 'EXTRACT_MEMORIES', 'AGENT_TRIGGERS'];
 
 const args = ['run', '--define', `MACRO:${macroJson}`, ...FEATURES.flatMap((f) => ['--feature', f])];
 if (isWatch) args.push('--watch');

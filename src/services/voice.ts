@@ -21,16 +21,46 @@ type AudioNapi = typeof import('audio-capture-napi');
 let audioNapi: AudioNapi | null = null;
 let audioNapiPromise: Promise<AudioNapi> | null = null;
 
+/**
+ * Stand-in used when the native audio module is absent or fails to load.
+ *
+ * `audio-capture-napi` is an optional native dependency and is marked
+ * `--external` in the build, so it is genuinely missing on plenty of installs.
+ * Every caller here already branches correctly on
+ * `isNativeAudioAvailable() === false` — falling back to arecord/SoX on Linux
+ * and macOS, and reporting a clear "native audio module could not be loaded"
+ * on Windows. Rejecting instead of returning this stub turned that handled
+ * path into an unhandled rejection, because `startRecordingSession()` is
+ * invoked as `void startRecordingSession()` in useVoice.
+ */
+const UNAVAILABLE_AUDIO_NAPI = {
+  isNativeAudioAvailable: () => false,
+  isNativeRecordingActive: () => false,
+  startNativeRecording: () => false,
+  stopNativeRecording: () => {
+    /* nothing to stop */
+  },
+} as unknown as AudioNapi;
+
 function loadAudioNapi(): Promise<AudioNapi> {
   audioNapiPromise ??= (async () => {
     const t0 = Date.now();
-    const mod = await import('audio-capture-napi');
-    // vendor/audio-capture-src/index.ts defers require(...node) until the
-    // first function call — trigger it here so timing reflects real cost.
-    mod.isNativeAudioAvailable();
-    audioNapi = mod;
-    logForDebugging(`[voice] audio-capture-napi loaded in ${Date.now() - t0}ms`);
-    return mod;
+    try {
+      const mod = await import('audio-capture-napi');
+      // vendor/audio-capture-src/index.ts defers require(...node) until the
+      // first function call — trigger it here so timing reflects real cost,
+      // and so a broken .node surfaces here rather than mid-recording.
+      mod.isNativeAudioAvailable();
+      audioNapi = mod;
+      logForDebugging(`[voice] audio-capture-napi loaded in ${Date.now() - t0}ms`);
+      return mod;
+    } catch (err) {
+      logForDebugging(`[voice] audio-capture-napi unavailable: ${err instanceof Error ? err.message : String(err)}`, {
+        level: 'warn',
+      });
+      audioNapi = UNAVAILABLE_AUDIO_NAPI;
+      return UNAVAILABLE_AUDIO_NAPI;
+    }
   })();
   return audioNapiPromise;
 }

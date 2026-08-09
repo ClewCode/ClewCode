@@ -27,11 +27,7 @@ import { SYNTHETIC_OUTPUT_TOOL_NAME } from 'src/tools/SyntheticOutputTool/Synthe
 import { ENTER_WORKTREE_TOOL_NAME } from 'src/tools/EnterWorktreeTool/constants.js';
 import { EXIT_WORKTREE_TOOL_NAME } from 'src/tools/ExitWorktreeTool/constants.js';
 import { WORKFLOW_TOOL_NAME } from 'src/tools/WorkflowTool/constants.js';
-import {
-  CRON_CREATE_TOOL_NAME,
-  CRON_DELETE_TOOL_NAME,
-  CRON_LIST_TOOL_NAME,
-} from 'src/tools/ScheduleCronTool/prompt.js';
+import { SCHEDULE_TOOL_NAME } from 'src/tools/ScheduleTool/prompt.js';
 
 export const ALL_AGENT_DISALLOWED_TOOLS = new Set([
   TASK_OUTPUT_TOOL_NAME,
@@ -81,9 +77,11 @@ export const IN_PROCESS_TEAMMATE_ALLOWED_TOOLS = new Set([
   TASK_LIST_TOOL_NAME,
   TASK_UPDATE_TOOL_NAME,
   SEND_MESSAGE_TOOL_NAME,
-  // Teammate-created crons are tagged with the creating agentId and routed to
-  // that teammate's pendingUserMessages queue (see useScheduledTasks.ts).
-  ...(feature('AGENT_TRIGGERS') ? [CRON_CREATE_TOOL_NAME, CRON_DELETE_TOOL_NAME, CRON_LIST_TOOL_NAME] : []),
+  // Teammate-created schedules are tagged with the creating agentId and routed
+  // to that teammate's pendingUserMessages queue (see useScheduledTasks.ts).
+  // The three Cron* tools were folded into one Schedule tool; this allowlist
+  // matches on the model-facing tool name, so it has to name the facade.
+  ...(feature('AGENT_TRIGGERS') ? [SCHEDULE_TOOL_NAME] : []),
 ]);
 
 /*

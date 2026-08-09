@@ -4,7 +4,7 @@ import type { CanUseToolFn } from './hooks/useCanUseTool.js';
 import { FallbackTriggeredError } from './services/api/withRetry.js';
 import { ProviderManager } from './services/ai/ProviderManager.js';
 import type { EffortLevel } from './utils/effort.js';
-import { createCompactSessionState, runCompaction } from './services/compact/v2/index.js';
+import { createCompactSessionState, runCompaction, shortfallWarning } from './services/compact/v2/index.js';
 import {
   calculateTokenWarningState,
   isAutoCompactEnabled,
@@ -364,6 +364,24 @@ async function* queryLoop(
     queryCheckpoint('query_autocompact_end');
 
     const fullSystemPrompt = asSystemPrompt(appendSystemContext(systemPrompt, systemContext));
+
+    if (compaction.shortfall) {
+      // The planner spent every reducer and still came up short — the only
+      // route from v2 to a prompt_too_long. Analytics alone would leave the
+      // person it is happening to unaware, so raise it in the REPL. `key`
+      // dedupes: the notification store replaces a same-key entry rather than
+      // stacking one per turn.
+      const warning = shortfallWarning();
+      if (warning) {
+        toolUseContext.addNotification?.({
+          key: 'compact-shortfall',
+          text: warning,
+          color: 'warning',
+          priority: 'high',
+          timeoutMs: 20_000,
+        });
+      }
+    }
 
     if (compaction.wasCompacted) {
       logEvent('tengu_auto_compact_succeeded', {

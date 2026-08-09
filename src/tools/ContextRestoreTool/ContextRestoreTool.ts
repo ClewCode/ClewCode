@@ -1,5 +1,6 @@
 import { z } from 'zod/v4';
 import { isCompactV2Enabled } from '../../services/compact/v2/enabled.js';
+import { recordRestore } from '../../services/compact/v2/health.js';
 import { buildTool, type ToolDef } from '../../Tool.js';
 import { lazySchema } from '../../utils/lazySchema.js';
 import { CONTEXT_RESTORE_TOOL_NAME, DESCRIPTION } from './prompt.js';
@@ -119,6 +120,9 @@ export const ContextRestoreTool = buildTool({
       };
     }
     state.restoredThisTurn = spent;
+    // Restore rate is the metric that replaced the compact-regret loop: a high
+    // rate means the planner is evicting things still in use.
+    recordRestore();
 
     return {
       data: {
