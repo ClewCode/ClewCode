@@ -10,6 +10,7 @@ import desktop from './commands/desktop/index.js';
 import compact from './commands/compact/index.js';
 import cd from './commands/cd/index.js';
 import codeReview from './commands/code-review/index.js';
+import delegate from './commands/delegate/index.js';
 import config from './commands/config/index.js';
 import { context, contextNonInteractive } from './commands/context/index.js';
 import cost from './commands/cost/index.js';
@@ -175,6 +176,7 @@ const COMMANDS = memoize((): Command[] => [
   clear,
   codeReview,
   color,
+  delegate,
   compact,
   config,
   copy,

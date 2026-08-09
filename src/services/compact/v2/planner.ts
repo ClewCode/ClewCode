@@ -21,15 +21,21 @@ import type { EvictionRecord } from './evictionStore.js';
 import type { ContextPressure } from './ledger.js';
 import { dedupeReducer } from './reducers/dedupe.js';
 import { dropReducer } from './reducers/drop.js';
+import { scoredToolReducer } from './reducers/scoredTool.js';
 import { snipReducer } from './reducers/snip.js';
 import { staleToolReducer } from './reducers/staleTool.js';
 import { summarizeReducer } from './reducers/summarize.js';
 import type { ReduceContext, Reducer, ReducerName } from './types.js';
 
 /** Every reducer, cheapest loss first. Order here *is* the policy. */
-export const REDUCERS: Reducer[] = [dedupeReducer, staleToolReducer, snipReducer, summarizeReducer, dropReducer].sort(
-  (a, b) => a.loss - b.loss,
-);
+export const REDUCERS: Reducer[] = [
+  dedupeReducer,
+  staleToolReducer,
+  scoredToolReducer,
+  snipReducer,
+  summarizeReducer,
+  dropReducer,
+].sort((a, b) => a.loss - b.loss);
 
 export interface PlanStep {
   reducer: Reducer;

@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **New `/delegate` command**: runs one subagent synchronously (default agent: `rlm`) and shows its result. Pass an agent type as the first token to delegate to a different agent.
+- **New `scored-tool` compact reducer**: model-guided eviction of old tool results — asks the LLM which compactable tool results are safe to forget, falling back to stale-tool recency when the model path is unavailable. Sits between `stale-tool` (0.2) and `snip` (0.35) in loss at 0.3.
+
 ## [0.8.4] - 2026-08-09
 
 - **New built-in `rlm` agent**: RLM-style recursive agent that decomposes a task into independent strands, delegates each to a spawned subagent in parallel, and synthesizes one report.

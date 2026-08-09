@@ -15,7 +15,7 @@ import type { CacheSafeParams } from '../../../utils/forkedAgent.js';
 import type { EvictionRecord, EvictionStore } from './evictionStore.js';
 import type { ContextPressure } from './ledger.js';
 
-export type ReducerName = 'dedupe' | 'stale-tool' | 'snip' | 'summarize' | 'drop';
+export type ReducerName = 'dedupe' | 'stale-tool' | 'scored-tool' | 'snip' | 'summarize' | 'drop';
 
 export interface CompactSessionState {
   agentId?: AgentId;
