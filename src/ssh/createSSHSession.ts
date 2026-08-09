@@ -72,7 +72,11 @@ export function createLocalSSHSession(config: SSHCreateSessionConfig): SSHSessio
   return {
     remoteCwd: config.cwd ?? process.cwd(),
     proc,
-    proxy: { stop() {} },
+    proxy: {
+      stop() {
+        // No remote process exists in the local test session.
+      },
+    },
     getStderrTail: () => '',
     // A do-nothing double for the proxy/auth e2e path. It answers the same
     // calls the real manager does — the previous version exposed
@@ -80,13 +84,21 @@ export function createLocalSSHSession(config: SSHCreateSessionConfig): SSHSessio
     // interaction with it was a silent no-op.
     createManager: () =>
       asSSHSessionManager({
-        connect() {},
-        disconnect() {},
+        connect() {
+          // Local test session does not connect to a remote host.
+        },
+        disconnect() {
+          // Local test session has no remote connection to close.
+        },
         sendMessage() {
           return Promise.resolve(true);
         },
-        sendInterrupt() {},
-        respondToPermissionRequest() {},
+        sendInterrupt() {
+          // Local test session has no remote interrupt target.
+        },
+        respondToPermissionRequest() {
+          // Local test session has no remote permission request.
+        },
       }),
   };
 }

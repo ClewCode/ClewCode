@@ -1,5 +1,5 @@
-import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/index.mjs';
 import { describe, expect, test } from 'bun:test';
+import type { ContentBlockParam } from '@anthropic-ai/sdk/resources/index.mjs';
 import type { Message } from '../../types/message.js';
 import { interceptResult, retargetToolResults } from './toolOrchestration.js';
 

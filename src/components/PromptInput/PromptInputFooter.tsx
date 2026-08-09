@@ -20,9 +20,8 @@ import { getFullGoalState } from '../../utils/sessionGoalState.js';
 import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
-import { PeerStatusLine } from '../PeerStatusLine.js';
-
 import { NotificationRightSlot } from '../notifications/NotificationRightSlot.js';
+import { PeerStatusLine } from '../PeerStatusLine.js';
 import { CopiedToast, Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
 import { PromptInputFooterSuggestions, type SuggestionItem } from './PromptInputFooterSuggestions.js';

@@ -1,5 +1,5 @@
-import type { ToolUseBlock } from '@anthropic-ai/sdk/resources/index.mjs';
 import { describe, expect, test } from 'bun:test';
+import type { ToolUseBlock } from '@anthropic-ai/sdk/resources/index.mjs';
 import type { AssistantMessage, Message } from '../../types/message.js';
 import { canonicalToolArgs, countTrailingRepeats, judgeRepeat, planToolCalls, toolCallKey } from './toolCallDedup.js';
 
