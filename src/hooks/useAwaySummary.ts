@@ -1,7 +1,7 @@
 import { feature } from 'bun:bundle';
 import { useEffect, useRef } from 'react';
 import { getTerminalFocusState, subscribeTerminalFocus } from '../ink/terminal-focus-state.js';
-import { generateAwaySummary } from '../services/awaySummary.js';
+import { generateAwaySummary, hasRecappableConversation } from '../services/awaySummary.js';
 import type { Message } from '../types/message.js';
 import { getGlobalConfig } from '../utils/config.js';
 import { isEnvDefinedFalsy } from '../utils/envUtils.js';
@@ -96,6 +96,9 @@ export function useAwaySummary(
       const state = getTerminalFocusState();
       if (state === 'blurred') {
         clearTimer();
+        // Don't even arm the timer on a session with nothing in it — blurring
+        // a fresh terminal should not schedule a recap.
+        if (!hasRecappableConversation(messagesRef.current)) return;
         timerRef.current = setTimeout(onBlurTimerFire, configuredDelayMs);
       } else if (state === 'focused') {
         clearTimer();
