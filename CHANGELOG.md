@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-08-09
+
 - **Prompt suggestions now appear after the first completed turn** and no longer treat cached prompt tokens as uncached work, preventing normal long sessions from permanently suppressing suggestions.
 
 - **WebFetch no longer depends on Anthropic domain-info uptime**: when the advisory preflight service times out or is unreachable, public URL fetches continue through the existing local URL and redirect SSRF checks; explicitly blocked domains remain blocked.
