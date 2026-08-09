@@ -1,15 +1,22 @@
 /**
- * /peer — Peer discovery and task assignment
+ * /peer — Discover and run tasks on other Clew machines on your LAN
  *
- * A "lead peer" discovers "worker peers" on the LAN and assigns them tasks.
+ * Peers are symmetric: there is no lead/worker distinction in the protocol. Any
+ * peer that has shared itself can be discovered, sent messages, and assigned
+ * tasks by any other. `role` is a free-form label ("builder", "researcher") set
+ * with `/peer spawn -r`, used only to filter which peers a command targets.
+ *
+ * "Swarm" is the fan-out action — `/peer swarm <cmd>` runs one command on every
+ * connected peer — not a kind of peer.
  *
  * Usage:
- *   /peer share              Become a worker (advertise on LAN + file)
+ *   /peer share              Advertise this machine on the LAN
  *   /peer share stop         Stop advertising
- *   /peer                    Open interactive peer list
- *   /peer discover           Scan for workers (non-interactive)
- *   /peer todo <peer> <task> Assign a task to a worker
- *   /peer todos              Show received tasks
+ *   /peer                    Open interactive list of discovered peers
+ *   /peer discover           Scan for peers (non-interactive)
+ *   /peer todo <peer> <task> Assign a task to one peer
+ *   /peer swarm <command>    Run one command on every connected peer
+ *   /peer todos              Show tasks assigned to this machine
  *   /peer todo done <id>     Mark task complete
  */
 

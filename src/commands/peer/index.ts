@@ -5,7 +5,7 @@ export default {
   type: 'local-jsx',
   name: 'peer',
   aliases: ['peer'],
-  description: 'Peer: Collaborate with other Clew instances on LAN and assign tasks',
+  description: 'Run tasks on other Clew machines on your LAN (not subagents)',
   argumentHint: '[share|discover|list|todo|todos|swarm|dashboard|memory sync|memory auto]',
   get immediate() {
     return shouldInferenceConfigCommandBeImmediate();

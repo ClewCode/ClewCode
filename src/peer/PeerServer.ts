@@ -25,7 +25,7 @@ import { getGlobalPeerStore } from './PeerStore.js';
 import {
   flushPeerTasksSave,
   loadPeerTasks,
-  type PersistedSwarmTasks,
+  type PersistedPeerTasks,
   schedulePeerTasksSave,
 } from './peerPersistence.js';
 import {
@@ -34,8 +34,8 @@ import {
   type MeshTaskPriority,
   type MeshTodo,
   type PeerInfo,
+  type PeerTask,
   peerColorFromId,
-  type SwarmTask,
 } from './types.js';
 
 export type PeerServerCallbacks = {
@@ -44,7 +44,7 @@ export type PeerServerCallbacks = {
   /** cwd is the task's isolated worktree path when worktree isolation is enabled. */
   onExec?: (command: string, cwd?: string) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
   /** Called when a queued task starts or completes */
-  onQueueUpdate?: (queue: SwarmTask[], currentTask: SwarmTask | null) => void;
+  onQueueUpdate?: (queue: PeerTask[], currentTask: PeerTask | null) => void;
 };
 
 type PeerServerOptions = {
@@ -97,15 +97,15 @@ export class PeerServer {
   private sseClients = new Set<ServerResponse>();
 
   // ── Queue state ──────────────────────────────────────────────
-  private taskQueue: SwarmTask[] = [];
+  private taskQueue: PeerTask[] = [];
   /** Tasks currently executing, keyed by task ID. Bounded by maxConcurrentTasks. */
   private runningTasks = new Map<
     string,
-    { task: SwarmTask; worktreePath?: string; worktreeBranch?: string; gitRoot?: string; hookBased?: boolean }
+    { task: PeerTask; worktreePath?: string; worktreeBranch?: string; gitRoot?: string; hookBased?: boolean }
   >();
   /** Bounded history of terminal (completed/failed/cancelled) tasks — used for
    *  dependsOn resolution and persisted so a restart doesn't lose visibility. */
-  private taskHistory: SwarmTask[] = [];
+  private taskHistory: PeerTask[] = [];
   private readonly maxQueueSize = 50;
   private readonly maxConcurrentTasks: number;
   private readonly isolateWorktrees: boolean;
@@ -146,7 +146,7 @@ export class PeerServer {
   }
 
   /** Snapshot queued + terminal tasks for persistence (never includes 'running'). */
-  private taskSnapshot(): PersistedSwarmTasks {
+  private taskSnapshot(): PersistedPeerTasks {
     return {
       version: 1,
       tasks: [...this.taskQueue, ...this.taskHistory],
@@ -269,7 +269,7 @@ export class PeerServer {
   }
 
   /** Currently executing tasks. */
-  private currentTasks(): SwarmTask[] {
+  private currentTasks(): PeerTask[] {
     return Array.from(this.runningTasks.values(), r => r.task);
   }
 
@@ -278,7 +278,7 @@ export class PeerServer {
    * running task (or null) for backward compatibility with single-task
    * callers; `running` lists every task executing right now.
    */
-  getTasks(): { queue: SwarmTask[]; current: SwarmTask | null; running: SwarmTask[] } {
+  getTasks(): { queue: PeerTask[]; current: PeerTask | null; running: PeerTask[] } {
     const running = this.currentTasks();
     return { queue: [...this.taskQueue], current: running[0] ?? null, running };
   }
@@ -294,7 +294,7 @@ export class PeerServer {
     };
   }
 
-  private publicTaskInfo(task: SwarmTask): Record<string, any> {
+  private publicTaskInfo(task: PeerTask): Record<string, any> {
     return {
       id: task.id,
       from: task.from,
@@ -306,7 +306,7 @@ export class PeerServer {
   }
 
   /** Push a terminal task into the bounded history and persist. */
-  private recordHistory(task: SwarmTask): void {
+  private recordHistory(task: PeerTask): void {
     this.taskHistory.push(task);
     const overflow = this.taskHistory.length - 200;
     if (overflow > 0) this.taskHistory.splice(0, overflow);
@@ -458,7 +458,7 @@ export class PeerServer {
    * completed successfully. Unknown/missing IDs fail closed — a typo'd
    * dependency blocks the task rather than letting it run immediately.
    */
-  private dependenciesMet(task: SwarmTask): boolean {
+  private dependenciesMet(task: PeerTask): boolean {
     if (!task.dependsOn || task.dependsOn.length === 0) return true;
     return task.dependsOn.every(depId => this.taskHistory.some(t => t.id === depId && t.status === 'completed'));
   }
@@ -487,7 +487,7 @@ export class PeerServer {
       return { queued: false, error: 'Queue full' };
     }
 
-    const task: SwarmTask = {
+    const task: PeerTask = {
       id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       command,
       from,
@@ -510,7 +510,7 @@ export class PeerServer {
   }
 
   /** Mark a task as running and register it in runningTasks (called before executing). */
-  private beginTask(task: SwarmTask): void {
+  private beginTask(task: PeerTask): void {
     task.status = 'running';
     task.startedAt = Date.now();
     this.runningTasks.set(task.id, { task });
@@ -520,7 +520,7 @@ export class PeerServer {
 
   /** Mark a task as completed/failed, move it to history, and try to schedule more. */
   private settleTask(
-    task: SwarmTask,
+    task: PeerTask,
     result?: { stdout: string; stderr: string; exitCode: number },
     error?: string,
   ): void {
@@ -544,7 +544,7 @@ export class PeerServer {
    * step on the same files. Falls back to the shared cwd if worktree
    * creation fails (e.g. not a git repo) rather than failing the task.
    */
-  private async execTask(task: SwarmTask): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  private async execTask(task: PeerTask): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     let worktree: { worktreePath?: string; worktreeBranch?: string; gitRoot?: string; hookBased?: boolean } = {};
 
     if (this.isolateWorktrees) {
@@ -877,7 +877,7 @@ export class PeerServer {
             }
 
             // Execute immediately (capacity was free and no dependsOn)
-            const task: SwarmTask = {
+            const task: PeerTask = {
               id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
               command,
               from,
