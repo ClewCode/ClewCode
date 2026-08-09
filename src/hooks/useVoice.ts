@@ -21,7 +21,7 @@ import {
   type VoiceStreamConnection,
 } from '../services/voiceStreamSTT.js';
 import { logForDebugging } from '../utils/debug.js';
-import { toError } from '../utils/errors.js';
+import { errorMessage, toError } from '../utils/errors.js';
 import { getSystemLocaleLanguage } from '../utils/intl.js';
 import { logError } from '../utils/log.js';
 import { getInitialSettings } from '../utils/settings/settings.js';
@@ -512,9 +512,16 @@ export function useVoice({ onTranscript, onError, enabled, focusMode }: UseVoice
   // dlopen still blocks. The first voice keypress pays the dlopen cost instead.
   useEffect(() => {
     if (enabled && !voiceModule) {
-      void import('../services/voice.js').then(mod => {
-        voiceModule = mod;
-      });
+      // .catch is required, not decorative: this is a bare `void` promise, so a
+      // load failure would surface as an unhandled rejection and take down the
+      // REPL rather than leaving voice merely unavailable.
+      void import('../services/voice.js')
+        .then(mod => {
+          voiceModule = mod;
+        })
+        .catch(err => {
+          logForDebugging(`[voice] failed to load voice module: ${errorMessage(err)}`, { level: 'warn' });
+        });
     }
   }, [enabled]);
 
@@ -574,10 +581,15 @@ export function useVoice({ onTranscript, onError, enabled, focusMode }: UseVoice
       } else {
         // Voice module is loading (async import resolves from cache as a
         // microtask). Wait for it before starting the recording session.
-        void import('../services/voice.js').then(mod => {
-          voiceModule = mod;
-          beginFocusRecording();
-        });
+        void import('../services/voice.js')
+          .then(mod => {
+            voiceModule = mod;
+            beginFocusRecording();
+          })
+          .catch(err => {
+            logForDebugging(`[voice] failed to load voice module: ${errorMessage(err)}`, { level: 'warn' });
+            onErrorRef.current?.('Voice mode is unavailable: the audio module could not be loaded.');
+          });
       }
     } else if (!isFocused) {
       // Clear the silence timeout flag on blur so the next focus
