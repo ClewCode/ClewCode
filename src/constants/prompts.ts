@@ -26,6 +26,7 @@ import { getProviderRegistryEntry } from '../services/ai/providerRegistry.js';
 import { getActiveProviderId } from '../utils/model/providers.js';
 import { getSkillToolCommands } from 'src/commands.js';
 import { SKILL_TOOL_NAME } from '../tools/SkillTool/constants.js';
+import { getActiveModeName, getModeSection } from '../modes/modes.js';
 import { getOutputStyleConfig } from './outputStyles.js';
 import type { MCPServerConnection, ConnectedMCPServer } from '../services/mcp/types.js';
 import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
@@ -475,6 +476,9 @@ export async function getSystemPrompt(
     ]),
     systemPromptSection('language', () => getLanguageSection(settings.language)),
     systemPromptSection('output_style', () => getOutputStyleSection(outputStyleConfig)),
+    // deps: the active mode name — a mid-session /mode switch must rebuild
+    // this section (and only this section) rather than serve a cached one.
+    systemPromptSection('mode', () => getModeSection(), [getActiveModeName() ?? '']),
     // When delta enabled, instructions are announced via persisted
     // mcp_instructions_delta attachments (attachments.ts) instead of this
     // per-turn recompute, which busts the prompt cache on late MCP connect.
