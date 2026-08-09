@@ -15,6 +15,7 @@ import type { CacheSafeParams } from '../../../utils/forkedAgent.js';
 import { logError } from '../../../utils/log.js';
 import { isAtNaturalBoundary, isAutoCompactEnabled, resolveAdaptiveBuffer } from '../autoCompact.js';
 import { createEvictionStore, createMemoryEvictionStore, type EvictionRecord } from './evictionStore.js';
+import { recordCompaction } from './health.js';
 import { type ContextLedger, createContextLedger, pressureLevel } from './ledger.js';
 import { applyPlan, type CompactPlan, planCompaction } from './planner.js';
 import type { CompactSessionState, ReduceContext, Reducer, ReducerName } from './types.js';
@@ -36,6 +37,11 @@ export interface RunCompactionResult {
   /** Markers to yield into the transcript. */
   boundaries: Message[];
   plan: CompactPlan;
+  /**
+   * The planner could not free what it needed. This is the only path from v2
+   * to a prompt_too_long, so callers should surface it rather than swallow it.
+   */
+  shortfall: boolean;
 }
 
 /**
@@ -88,6 +94,7 @@ export async function runCompaction(
     evicted: [],
     boundaries: [],
     plan: { steps: [], expectedYield: 0, deficit: 0, rationale: 'disabled' },
+    shortfall: false,
   };
 
   if (isEnvTruthy(process.env.DISABLE_COMPACT) || !isAutoCompactEnabled()) {
@@ -136,6 +143,16 @@ export async function runCompaction(
     const result = await applyPlan(plan, messages, makeContext);
     ledger.applyDelta(result.tokensFreed);
     state.failures = 0;
+    // Record before returning: a shortfall is the only route from v2 to a
+    // prompt_too_long, and it needs to reach the user rather than only
+    // analytics. See health.ts.
+    recordCompaction({
+      applied: result.applied,
+      tokensFreed: result.tokensFreed,
+      deficit: plan.deficit,
+      shortfall: result.shortfall,
+      rationale: plan.rationale,
+    });
     return {
       messages: result.messages,
       wasCompacted: result.tokensFreed > 0,
@@ -144,6 +161,7 @@ export async function runCompaction(
       evicted: result.evicted,
       boundaries: result.boundaries,
       plan,
+      shortfall: result.shortfall,
     };
   } catch (err) {
     logError(err);
@@ -154,6 +172,7 @@ export async function runCompaction(
 
 export { isCompactV2Enabled } from './enabled.js';
 export { createEvictionStore, createMemoryEvictionStore } from './evictionStore.js';
+export { compactHealthLine, getCompactHealth, recordRestore, shortfallWarning } from './health.js';
 export type { ContextPressure } from './ledger.js';
 export { type ContextLimits, computeLimits } from './limits.js';
 export type { CompactSessionState } from './types.js';

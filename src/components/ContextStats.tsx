@@ -7,6 +7,7 @@
 import type React from 'react';
 import { useMemo, useState } from 'react';
 import { Box, Text, useInput } from '../ink.js';
+import { compactHealthLine, shortfallWarning } from '../services/compact/v2/health.js';
 import type { LocalJSXCommandOnDone } from '../types/command.js';
 import type { ContextData } from '../utils/analyzeContext.js';
 import { formatTokens } from '../utils/format.js';
@@ -87,6 +88,11 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
   );
 
   const freeCategory = categories.find(c => c.name === 'Free space');
+  // Read at render rather than threaded through ContextData: this is
+  // display-only session state, and /context is the natural place to ask
+  // "is auto-compact actually coping?".
+  const compactHealth = compactHealthLine();
+  const shortfall = shortfallWarning();
 
   // ── Build detail sections ─────────────────────────────────
   const detailSections = useMemo((): DetailSection[] => {
@@ -234,6 +240,22 @@ export function ContextStats({ data, onClose }: Props): React.ReactNode {
           ) : null}
         </Box>
       </Box>
+
+      {/* Compaction health — how the context got to this size, and whether the
+          planner is keeping up. A shortfall means it is not. */}
+      {compactHealth ? (
+        <Box flexDirection="column" marginTop={1} marginLeft={1}>
+          <Box flexDirection="row">
+            <Text bold>Compaction</Text>
+            <Text dimColor> · {compactHealth}</Text>
+          </Box>
+          {shortfall ? (
+            <Box flexDirection="row">
+              <Text color="warning"> └ {shortfall}</Text>
+            </Box>
+          ) : null}
+        </Box>
+      ) : null}
 
       {/* Detail sections */}
       {detailRows.length > 0 ? (
