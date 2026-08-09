@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- **New `/delegate` command**: runs one subagent synchronously (default agent: `rlm`) and shows its result. Pass an agent type as the first token to delegate to a different agent.
+- **New `/delegate` command**: runs one subagent synchronously (default agent: `rlm`) and shows its result. Pass an agent type as the first token to delegate to a different agent. Renders a live progress panel while the agent runs (elapsed time, tool/token counts, latest tool activity, Esc/q to cancel) instead of sitting silent until completion.
 - **New `scored-tool` compact reducer**: model-guided eviction of old tool results — asks the LLM which compactable tool results are safe to forget, falling back to stale-tool recency when the model path is unavailable. Sits between `stale-tool` (0.2) and `snip` (0.35) in loss at 0.3.
 
 ## [0.8.4] - 2026-08-09

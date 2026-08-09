@@ -1,7 +1,12 @@
 import ansis from 'ansis';
-import { registerAsyncAgent } from '../../tasks/LocalAgentTask/LocalAgentTask.js';
+import type * as React from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Box, Text, useInput } from '../../ink.js';
+import { useAppState } from '../../state/AppState.js';
+import { killAsyncAgent, registerAsyncAgent } from '../../tasks/LocalAgentTask/LocalAgentTask.js';
 import { runAsyncAgentLifecycle } from '../../tools/AgentTool/agentToolUtils.js';
 import { RLM_AGENT } from '../../tools/AgentTool/built-in/rlmAgent.js';
+import type { AgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js';
 import { isBuiltInAgent } from '../../tools/AgentTool/loadAgentsDir.js';
 import { runAgent } from '../../tools/AgentTool/runAgent.js';
 import { assembleToolPool } from '../../tools.js';
@@ -9,6 +14,7 @@ import type { LocalJSXCommandCall, LocalJSXCommandContext, LocalJSXCommandOnDone
 import { asAgentId } from '../../types/ids.js';
 import type { Message } from '../../types/message.js';
 import type { CacheSafeParams } from '../../utils/forkedAgent.js';
+import { formatDuration } from '../../utils/format.js';
 import { createUserMessage, extractTextContent } from '../../utils/messages.js';
 import { getAgentModel } from '../../utils/model/agent.js';
 import type { ModelAlias } from '../../utils/model/aliases.js';
@@ -17,57 +23,69 @@ import { createAgentId } from '../../utils/uuid.js';
 /** Default agent type when /delegate is called without an agent argument. */
 const DEFAULT_DELEGATE_AGENT = RLM_AGENT.agentType;
 
-/** Run one agent synchronously and return the final assistant text. */
-async function runDelegatedAgent({
-  prompt,
-  agentType,
-  context,
-  onDone,
-}: {
-  prompt: string;
+/**
+ * DelegateRunner — live UI while the delegated agent runs.
+ *
+ * Rendering a component (rather than awaiting then calling onDone) is what
+ * gives /delegate a visible panel: the previous implementation sat silent
+ * until the agent finished. Progress is streamed into AppState.tasks[agentId]
+ * by the lifecycle, so the component just subscribes and paints. Esc/q aborts.
+ */
+type DelegateRunnerProps = {
   agentType: string;
+  agentDefinition: AgentDefinition;
+  prompt: string;
   context: LocalJSXCommandContext;
   onDone: LocalJSXCommandOnDone;
-}): Promise<void> {
-  if (!context.canUseTool) {
-    onDone('/delegate requires an interactive tool permission context.');
-    return;
-  }
+};
 
-  const activeAgents = context.options.agentDefinitions.activeAgents;
-  const agentDefinition = activeAgents.find(a => a.agentType === agentType) ?? RLM_AGENT;
-  const rootSetAppState = context.setAppStateForTasks ?? context.setAppState;
-  const workerPermissionContext = {
-    ...context.getAppState().toolPermissionContext,
-    mode: agentDefinition.permissionMode ?? 'acceptEdits',
-  };
-  const workerTools = assembleToolPool(workerPermissionContext, context.getAppState().mcp.tools);
+function DelegateRunner({ agentType, agentDefinition, prompt, context, onDone }: DelegateRunnerProps): React.ReactNode {
+  const [agentId, setAgentId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const doneRef = useRef(false);
 
-  const agentId = createAgentId(`delegate-${agentType}`);
-  const resolvedAgentModel = getAgentModel(
-    agentDefinition.model,
-    context.options.mainLoopModel,
-    undefined as ModelAlias | undefined,
-    context.getAppState().toolPermissionContext.mode,
-  );
-  const promptMessages: Message[] = [
-    createUserMessage({
-      content: prompt,
-    }) as unknown as Message,
-  ];
-  const abortController = new AbortController();
-  const task = registerAsyncAgent({
-    agentId: asAgentId(agentId),
-    description: `delegate ${agentType}`,
-    prompt,
-    selectedAgent: agentDefinition,
-    setAppState: rootSetAppState,
-    parentAbortController: abortController,
-    toolUseId: context.toolUseId,
+  // Live task state — progress is updated by the lifecycle on every message.
+  const task = useAppState(s => (agentId ? s.tasks[agentId] : undefined));
+
+  useInput((input, key) => {
+    if (key.escape || (key.ctrl && input.toLowerCase() === 'c')) {
+      if (agentId) {
+        killAsyncAgent(agentId, context.setAppStateForTasks ?? context.setAppState);
+      }
+    }
   });
 
-  try {
-    await runAsyncAgentLifecycle({
+  useEffect(() => {
+    const rootSetAppState = context.setAppStateForTasks ?? context.setAppState;
+    const workerPermissionContext = {
+      ...context.getAppState().toolPermissionContext,
+      mode: agentDefinition.permissionMode ?? 'acceptEdits',
+    };
+    const workerTools = assembleToolPool(workerPermissionContext, context.getAppState().mcp.tools);
+
+    const agentId = createAgentId(`delegate-${agentType}`);
+    const resolvedAgentModel = getAgentModel(
+      agentDefinition.model,
+      context.options.mainLoopModel,
+      undefined as ModelAlias | undefined,
+      context.getAppState().toolPermissionContext.mode,
+    );
+    const promptMessages: Message[] = [
+      createUserMessage({
+        content: prompt,
+      }) as unknown as Message,
+    ];
+    const task = registerAsyncAgent({
+      agentId: asAgentId(agentId),
+      description: `delegate ${agentType}`,
+      prompt,
+      selectedAgent: agentDefinition,
+      setAppState: rootSetAppState,
+      toolUseId: context.toolUseId,
+    });
+    setAgentId(task.agentId);
+
+    void runAsyncAgentLifecycle({
       taskId: task.agentId,
       abortController: task.abortController!,
       makeStream: (onCacheSafeParams: ((p: CacheSafeParams) => void) | undefined) =>
@@ -101,20 +119,63 @@ async function runDelegatedAgent({
       agentIdForCleanup: task.agentId,
       enableSummarization: true,
       getWorktreeResult: async () => ({}),
+    }).then(() => {
+      if (doneRef.current) return;
+      doneRef.current = true;
+      const latest = context.getAppState().tasks[task.agentId];
+      if (latest?.status === 'killed') {
+        onDone('delegate cancelled.', { display: 'system' });
+        return;
+      }
+      const result = latest && 'result' in latest ? latest.result : undefined;
+      const text =
+        result && typeof result === 'object' && 'content' in result
+          ? extractTextContent(result.content, '\n')
+          : 'delegate completed with no text result.';
+      onDone(text.trim(), { display: 'system' });
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    onDone(`/delegate ${agentType} failed: ${message}`);
-    return;
-  }
+  }, [agentType, agentDefinition, prompt, context, onDone]);
 
-  const latestTask = context.getAppState().tasks[task.agentId];
-  const result = latestTask && 'result' in latestTask ? latestTask.result : undefined;
-  const text =
-    result && typeof result === 'object' && 'content' in result
-      ? extractTextContent(result.content, '\n')
-      : 'delegate completed with no text result.';
-  onDone(text.trim());
+  // Tick the elapsed clock once per second.
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const startedAt = task?.startTime;
+  const elapsed = startedAt ? formatDuration(now - startedAt) : '';
+  const progress = task?.progress;
+  const lastActivity = progress?.lastActivity?.activityDescription ?? progress?.lastActivity?.toolName;
+
+  const status = task
+    ? task.status === 'failed'
+      ? `failed: ${task.error ?? 'unknown error'}`
+      : task.status
+    : 'starting';
+  const running = status === 'running' || status === 'starting';
+
+  return (
+    <Box flexDirection="column" borderTop borderColor="ansi:whiteBright" paddingTop={1}>
+      <Text color="permission">delegate · {agentType}</Text>
+      <Text dimColor wrap="truncate-end">
+        {prompt}
+      </Text>
+      <Box marginTop={1}>
+        <Text color={running ? 'green' : undefined}>
+          {running ? '⟳' : status === 'completed' ? '✓' : '✗'} {status}
+        </Text>
+        {elapsed && <Text dimColor> · {elapsed}</Text>}
+        {progress && (
+          <Text dimColor>
+            {' '}
+            · {progress.toolUseCount} tools · {progress.tokenCount.toLocaleString()} tokens
+          </Text>
+        )}
+        {lastActivity && <Text dimColor> · {lastActivity}</Text>}
+      </Box>
+      {running && <Text dimColor>Esc/q to cancel</Text>}
+    </Box>
+  );
 }
 
 export const call: LocalJSXCommandCall = async (onDone, context, rawArgs = '') => {
@@ -125,7 +186,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, rawArgs = '') =
         `A leading token that names a registered agent becomes the agent type (default ${DEFAULT_DELEGATE_AGENT}); ` +
         'everything after it is the delegated prompt. For example: /delegate "survey the provider fallback chain and report the failure paths"',
     );
-    return;
+    return undefined;
   }
 
   // Split "type prompt" on the first space; an unrecognized first token is
@@ -133,10 +194,20 @@ export const call: LocalJSXCommandCall = async (onDone, context, rawArgs = '') =
   const firstSpace = args.indexOf(' ');
   const maybeType = firstSpace === -1 ? args : args.slice(0, firstSpace);
   const rest = firstSpace === -1 ? '' : args.slice(firstSpace + 1).trim();
-  const known = context?.options?.agentDefinitions?.activeAgents?.some(a => a.agentType === maybeType) ?? false;
+  const activeAgents = context?.options?.agentDefinitions?.activeAgents ?? [];
+  const known = activeAgents.some(a => a.agentType === maybeType);
 
   const { agentType, prompt } =
     known && rest ? { agentType: maybeType, prompt: rest } : { agentType: DEFAULT_DELEGATE_AGENT, prompt: args };
 
-  await runDelegatedAgent({ prompt, agentType, context, onDone });
+  const agentDefinition = activeAgents.find(a => a.agentType === agentType) ?? RLM_AGENT;
+  return (
+    <DelegateRunner
+      agentType={agentType}
+      agentDefinition={agentDefinition}
+      prompt={prompt}
+      context={context}
+      onDone={onDone}
+    />
+  );
 };
