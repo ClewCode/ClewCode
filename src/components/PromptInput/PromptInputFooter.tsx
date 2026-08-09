@@ -22,6 +22,7 @@ import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAge
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
 import { PeerStatusLine } from '../PeerStatusLine.js';
 
+import { NotificationRightSlot } from '../notifications/NotificationRightSlot.js';
 import { CopiedToast, Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
 import { PromptInputFooterSuggestions, type SuggestionItem } from './PromptInputFooterSuggestions.js';
@@ -222,6 +223,13 @@ function PromptInputFooter({
           </Box>
         </Box>
         <Box flexShrink={1} gap={1} justifyContent="flex-end">
+          {/* Right-aligned notifications (the effort indicator) — see
+              notificationPlacement.ts. Rendered here rather than in the left
+              column so it sits with the other persistent status indicators.
+              Same fullscreen rule as CopiedToast below: in fullscreen the top
+              notification band owns this slot, so rendering it here too would
+              show the indicator twice. */}
+          {!isFullscreen && <NotificationRightSlot />}
           {/* In fullscreen the copy toast renders in the top notification band
               (top-right of the prompt); render here only for the inline footer. */}
           {!isFullscreen && <CopiedToast />}

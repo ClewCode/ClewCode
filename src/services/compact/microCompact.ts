@@ -51,7 +51,7 @@ const DUPLICATE_COMPACTABLE_TOOLS = new Set<string>([
 ]);
 
 // Helper to calculate tool result tokens
-function calculateToolResultTokens(block: ToolResultBlockParam): number {
+export function calculateToolResultTokens(block: ToolResultBlockParam): number {
   if (!block.content) {
     return 0;
   }
@@ -126,7 +126,7 @@ export type MicrocompactResult = {
  * Walk messages and collect tool_use IDs whose tool name is in
  * COMPACTABLE_TOOLS, in encounter order. Shared by both microcompact paths.
  */
-function collectCompactableToolIds(messages: Message[]): string[] {
+export function collectCompactableToolIds(messages: Message[]): string[] {
   const ids: string[] = [];
   for (const message of messages) {
     if (message.type === 'assistant' && Array.isArray(message.message.content)) {
@@ -328,7 +328,7 @@ function getDuplicateCompactSignature(toolName: string, input: unknown): string 
   return `${toolName}:${stableStringify(input ?? {})}`;
 }
 
-function collectDuplicateToolUseState(messages: Message[]): {
+export function collectDuplicateToolUseState(messages: Message[]): {
   signatureByToolUseId: Map<string, string>;
   latestToolUseIdBySignature: Map<string, string>;
 } {
@@ -355,7 +355,7 @@ function collectDuplicateToolUseState(messages: Message[]): {
   return { signatureByToolUseId, latestToolUseIdBySignature };
 }
 
-function isDuplicateClearedContent(content: ToolResultBlockParam['content']): boolean {
+export function isDuplicateClearedContent(content: ToolResultBlockParam['content']): boolean {
   return content === TIME_BASED_MC_CLEARED_MESSAGE || content === DUPLICATE_TOOL_RESULT_CLEARED_MESSAGE;
 }
 

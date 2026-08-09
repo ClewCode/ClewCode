@@ -1,13 +1,16 @@
 import { feature } from 'bun:bundle';
 import { initAutoDream } from '../services/autoDream/autoDream.js';
+// NOTE: imported statically, not via require(). services/autoDream imports
+// this module as ESM unconditionally, and in Bun a require() of a module the
+// ESM loader has already evaluated returns an empty object — which is how
+// `initExtractMemories is not a function` crashed dev-mode startup. The
+// feature() gate stays on the call site, where it still strips the call.
+import { initExtractMemories } from '../services/extractMemories/extractMemories.js';
 import { autoDistill } from '../services/longTermMemory/distill.js';
 import { initMagicDocs } from '../services/MagicDocs/magicDocs.js';
 import { initSkillImprovement } from './hooks/skillImprovement.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const extractMemoriesModule = feature('EXTRACT_MEMORIES')
-  ? (require('../services/extractMemories/extractMemories.js') as typeof import('../services/extractMemories/extractMemories.js'))
-  : null;
 const registerProtocolModule = feature('LODESTONE')
   ? (require('./deepLink/registerProtocol.js') as typeof import('./deepLink/registerProtocol.js'))
   : null;
@@ -33,7 +36,7 @@ export function startBackgroundHousekeeping(): void {
   void initMagicDocs();
   void initSkillImprovement();
   if (feature('EXTRACT_MEMORIES')) {
-    extractMemoriesModule!.initExtractMemories();
+    initExtractMemories();
   }
   initAutoDream();
   void autoDistill(getOriginalCwd());

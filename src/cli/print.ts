@@ -264,6 +264,12 @@ import { errorMessage, toError } from '../utils/errors.js';
 import { sleep } from '../utils/sleep.js';
 import { isExtractModeActive } from '../memdir/paths.js';
 
+// NOTE: imported statically, not via require(). services/autoDream imports
+// this module as ESM unconditionally, and in Bun a require() of a module the
+// ESM loader has already evaluated returns an empty object. The feature() gate
+// stays on the call site, where it still strips the call.
+import { drainPendingExtraction } from '../services/extractMemories/extractMemories.js';
+
 /* eslint-disable @typescript-eslint/no-require-imports */
 const coordinatorModeModule =
   require('../coordinator/coordinatorMode.js') as typeof import('../coordinator/coordinatorMode.js');
@@ -284,9 +290,6 @@ const cronJitterConfigModule = feature('AGENT_TRIGGERS')
   : null;
 const cronGate = feature('AGENT_TRIGGERS')
   ? (require('../tools/ScheduleCronTool/prompt.js') as typeof import('../tools/ScheduleCronTool/prompt.js'))
-  : null;
-const extractMemoriesModule = feature('EXTRACT_MEMORIES')
-  ? (require('../services/extractMemories/extractMemories.js') as typeof import('../services/extractMemories/extractMemories.js'))
   : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
@@ -822,7 +825,7 @@ export async function runHeadless(
   // the forked agent mid-flight. Gated by isExtractModeActive so the
   // tengu_slate_thimble flag controls non-interactive extraction end-to-end.
   if (feature('EXTRACT_MEMORIES') && isExtractModeActive()) {
-    await extractMemoriesModule!.drainPendingExtraction();
+    await drainPendingExtraction();
   }
 
   gracefulShutdownSync(lastMessage?.type === 'result' && lastMessage?.is_error ? 1 : 0);

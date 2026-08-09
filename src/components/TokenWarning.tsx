@@ -5,7 +5,6 @@ import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growt
 import {
   calculateTokenWarningState,
   getAutoCompactThreshold,
-  getBackgroundAutoCompactStatus,
   getEffectiveContextWindowSize,
   isAutoCompactEnabled,
 } from '../services/compact/autoCompact.js';
@@ -63,18 +62,13 @@ export function TokenWarning({ tokenUsage, model, messages }: Props): React.Reac
     showAutoCompactWarning && !reactiveOnlyMode ? autoCompactThreshold : getEffectiveContextWindowSize(model);
   const tokensLeft = Math.max(0, budget - tokenUsage);
 
-  const background = getBackgroundAutoCompactStatus();
+  // Background pre-compaction is gone: auto-compact v2 runs its cheap reducers
+  // inline (they cost no API call), so there is no long-running job to warn
+  // about or to report as "ready".
   const mode: ContextMeterMode = reactiveOnlyMode
     ? { kind: 'reactive-only' }
     : showAutoCompactWarning
-      ? {
-          kind: 'auto-compact',
-          backgroundRunning: background.running,
-          // A finished-but-unconsumed background job means the summary is
-          // already built, so the upcoming compaction will be near-instant —
-          // worth surfacing, since it changes how alarming this reads.
-          backgroundReady: !background.running && background.startedAt !== undefined,
-        }
+      ? { kind: 'auto-compact', backgroundRunning: false, backgroundReady: false }
       : { kind: 'manual' };
 
   return (

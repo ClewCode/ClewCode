@@ -4,12 +4,10 @@ import type { CanUseToolFn } from './hooks/useCanUseTool.js';
 import { FallbackTriggeredError } from './services/api/withRetry.js';
 import { ProviderManager } from './services/ai/ProviderManager.js';
 import type { EffortLevel } from './utils/effort.js';
+import { createCompactSessionState, runCompaction } from './services/compact/v2/index.js';
 import {
   calculateTokenWarningState,
-  checkCompactRegret,
   isAutoCompactEnabled,
-  logCompactRegret,
-  tickCompactRegret,
   type AutoCompactTrackingState,
 } from './services/compact/autoCompact.js';
 import { buildPostCompactMessages } from './services/compact/compact.js';
@@ -96,9 +94,6 @@ import { createBudgetTracker, checkTokenBudget } from './query/tokenBudget.js';
 import { count } from './utils/array.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const snipModule = feature('HISTORY_SNIP')
-  ? (require('./services/compact/snipCompact.js') as typeof import('./services/compact/snipCompact.js'))
-  : null;
 const taskSummaryModule = feature('BG_SESSIONS')
   ? (require('./utils/taskSummary.js') as typeof import('./utils/taskSummary.js'))
   : null;
@@ -338,126 +333,69 @@ async function* queryLoop(
       new Set(toolUseContext.options.tools.filter(t => !Number.isFinite(t.maxResultSizeChars)).map(t => t.name)),
     );
 
-    // Apply snip before microcompact (both may run — they are not mutually exclusive).
-    // snipTokensFreed is plumbed to autocompact so its threshold check reflects
-    // what snip removed; tokenCountWithEstimation alone can't see it (reads usage
-    // from the protected-tail assistant, which survives snip unchanged).
-    let snipTokensFreed = 0;
-    if (feature('HISTORY_SNIP')) {
-      queryCheckpoint('query_snip_start');
-      const snipResult = snipModule!.snipCompactIfNeeded(messagesForQuery);
-      messagesForQuery = snipResult.messages;
-      snipTokensFreed = snipResult.tokensFreed;
-      if (snipResult.boundaryMessage) {
-        yield snipResult.boundaryMessage;
-      }
-      queryCheckpoint('query_snip_end');
-    }
-
-    // Apply microcompact before autocompact
-    queryCheckpoint('query_microcompact_start');
-    const microcompactResult = await deps.microcompact(messagesForQuery, toolUseContext, querySource);
-    messagesForQuery = microcompactResult.messages;
-    queryCheckpoint('query_microcompact_end');
-
-    // Project the collapsed context view and maybe commit more collapses.
-    // Runs BEFORE autocompact so that if collapse gets us under the
-    // autocompact threshold, autocompact is a no-op and we keep granular
-    // context instead of a single summary.
-    //
-    // Nothing is yielded — the collapsed view is a read-time projection
-    // over the REPL's full history. Summary messages live in the collapse
-    // store, not the REPL array. This is what makes collapses persist
-    // across turns: projectView() replays the commit log on every entry.
-    // Within a turn, the view flows forward via state.messages at the
-    // continue site (query.ts:1192), and the next projectView() no-ops
-    // because the archived messages are already gone from its input.
-    const fullSystemPrompt = asSystemPrompt(appendSystemContext(systemPrompt, systemContext));
-
-    // #3 Feedback loop: advance the post-compact regret window one turn. Runs
-    // before autocompact so that when a compact happens this iteration,
-    // resetCompactRegretState (inside autoCompactIfNeeded) re-zeroes it after.
-    tickCompactRegret();
-
+    // ── Auto-compact ──
+    // One call replaces what used to be six independent mechanisms with their
+    // own thresholds and call sites (tool-result budget, snip, time-based and
+    // duplicate microcompact, session memory, full compact). It measures
+    // pressure once, plans the least-damaging set of reducers that covers the
+    // deficit, and applies them; everything it evicts stays restorable through
+    // the ContextRestore tool. See docs/architecture/auto-compact-v2.md.
     queryCheckpoint('query_autocompact_start');
-    const { compactionResult, consecutiveFailures } = await deps.autocompact(
-      messagesForQuery,
+    const compactState = toolUseContext.compactState ?? createCompactSessionState(toolUseContext.agentId);
+    if (!toolUseContext.compactState) {
+      toolUseContext = { ...toolUseContext, compactState };
+    }
+    // task_budget counts down by the pre-compact context window, so it has to
+    // be sampled before the reduction lands (#304930).
+    const preCompactContext = params.taskBudget ? finalContextTokensFromLastResponse(messagesForQuery) : 0;
+
+    const compaction = await runCompaction(messagesForQuery, compactState, toolUseContext.options.mainLoopModel, {
+      querySource,
       toolUseContext,
-      {
+      cacheSafeParams: {
         systemPrompt,
         userContext,
         systemContext,
         toolUseContext,
         forkContextMessages: messagesForQuery,
       },
-      querySource,
-      tracking,
-      snipTokensFreed,
-    );
+    });
+    messagesForQuery = compaction.messages;
     queryCheckpoint('query_autocompact_end');
 
-    if (compactionResult) {
-      const { preCompactTokenCount, postCompactTokenCount, truePostCompactTokenCount, compactionUsage } =
-        compactionResult;
+    const fullSystemPrompt = asSystemPrompt(appendSystemContext(systemPrompt, systemContext));
 
+    if (compaction.wasCompacted) {
       logEvent('tengu_auto_compact_succeeded', {
         originalMessageCount: messages.length,
-        compactedMessageCount:
-          compactionResult.summaryMessages.length +
-          compactionResult.attachments.length +
-          compactionResult.hookResults.length,
-        preCompactTokenCount,
-        postCompactTokenCount,
-        truePostCompactTokenCount,
-        compactionInputTokens: compactionUsage?.input_tokens,
-        compactionOutputTokens: compactionUsage?.output_tokens,
-        compactionCacheReadTokens: compactionUsage?.cache_read_input_tokens ?? 0,
-        compactionCacheCreationTokens: compactionUsage?.cache_creation_input_tokens ?? 0,
-        compactionTotalTokens: compactionUsage
-          ? compactionUsage.input_tokens +
-            (compactionUsage.cache_creation_input_tokens ?? 0) +
-            (compactionUsage.cache_read_input_tokens ?? 0) +
-            compactionUsage.output_tokens
-          : 0,
-
+        compactedMessageCount: compaction.messages.length,
+        tokensFreed: compaction.tokensFreed,
+        reducers: compaction.applied.join(',') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+        evictions: compaction.evicted.length,
         queryChainId: queryChainIdForAnalytics,
         queryDepth: queryTracking.depth,
       });
 
-      // task_budget: capture pre-compact final context window before
-      // messagesForQuery is replaced with postCompactMessages below.
-      // iterations[-1] is the authoritative final window (post server tool
-      // loops); see #304930.
       if (params.taskBudget) {
-        const preCompactContext = finalContextTokensFromLastResponse(messagesForQuery);
         taskBudgetRemaining = Math.max(0, (taskBudgetRemaining ?? params.taskBudget.total) - preCompactContext);
       }
 
-      // Reset on every compact so turnCounter/turnId reflect the MOST RECENT
-      // compact. recompactionInfo (autoCompact.ts:190) already captured the
-      // old values for turnsSincePreviousCompact/previousCompactTurnId before
-      // the call, so this reset doesn't lose those.
+      for (const boundary of compaction.boundaries) {
+        yield boundary;
+      }
+
+      // Downstream state (resume, /context, the REPL's compact indicator) reads
+      // this to know a compaction happened this turn.
       tracking = {
         compacted: true,
         turnId: deps.uuid(),
         turnCounter: 0,
         consecutiveFailures: 0,
       };
-
-      const postCompactMessages = buildPostCompactMessages(compactionResult);
-
-      for (const message of postCompactMessages) {
-        yield message;
-      }
-
-      // Continue on with the current query call using the post compact messages
-      messagesForQuery = postCompactMessages;
-    } else if (consecutiveFailures !== undefined) {
-      // Autocompact failed — propagate failure count so the circuit breaker
-      // can stop retrying on the next iteration.
+    } else if (compactState.failures > 0) {
       tracking = {
         ...(tracking ?? { compacted: false, turnId: '', turnCounter: 0 }),
-        consecutiveFailures,
+        consecutiveFailures: compactState.failures,
       };
     }
 
@@ -525,13 +463,15 @@ async function* queryLoop(
     // it predates the experiment and is already the control-arm baseline.
     const mediaRecoveryEnabled = reactiveCompact?.isReactiveCompactEnabled() ?? false;
     if (
-      !compactionResult &&
+      !compaction.wasCompacted &&
       querySource !== 'compact' &&
       querySource !== 'session_memory' &&
       !(reactiveCompact?.isReactiveCompactEnabled() && isAutoCompactEnabled())
     ) {
+      // No manual token subtraction here any more — the ledger already netted
+      // out whatever the reducers freed this turn.
       const { isAtBlockingLimit } = calculateTokenWarningState(
-        tokenCountWithEstimation(messagesForQuery) - snipTokensFreed,
+        tokenCountWithEstimation(messagesForQuery),
         toolUseContext.options.mainLoopModel,
       );
       if (isAtBlockingLimit) {
@@ -701,14 +641,6 @@ async function* queryLoop(
               if (msgToolUseBlocks.length > 0) {
                 toolUseBlocks.push(...msgToolUseBlocks);
                 needsFollowUp = true;
-                // #3 Feedback loop: detect regret (model re-referencing
-                // recently-dropped context). Measure-only phase.
-                for (const tb of msgToolUseBlocks) {
-                  const tbInput = tb.input as Record<string, unknown> | undefined;
-                  if (checkCompactRegret(tb.name, tbInput)) {
-                    logCompactRegret(tb.name, tbInput);
-                  }
-                }
               }
 
               if (streamingToolExecutor && !toolUseContext.abortController.signal.aborted) {

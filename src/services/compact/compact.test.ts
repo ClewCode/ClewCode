@@ -3,19 +3,12 @@ import type { Message } from '../../types/message.js';
 import {
   AUTOCOMPACT_BUFFER_TOKENS,
   AUTOCOMPACT_HARD_BUFFER_TOKENS,
-  COMPACT_REGRET_WINDOW_TURNS,
-  checkCompactRegret,
-  collectToolSignatures,
-  computeDroppedToolSignatures,
   estimateCompressibility,
   getAutoCompactHardThreshold,
   getAutoCompactThreshold,
   getBackgroundAutoCompactThreshold,
   getEffectiveContextWindowSize,
   isAtNaturalBoundary,
-  mergeBackgroundAutoCompactDelta,
-  resetCompactRegretState,
-  tickCompactRegret,
 } from './autoCompact.js';
 import type { CompactionResult } from './compact.js';
 import { DUPLICATE_TOOL_RESULT_CLEARED_MESSAGE, maybeDuplicateToolResultMicrocompact } from './microCompact.js';
@@ -207,158 +200,6 @@ describe('getAutoCompactHardThreshold', () => {
     const hard = getAutoCompactHardThreshold('test-model');
     expect(hard - soft).toBe(AUTOCOMPACT_HARD_BUFFER_TOKENS);
     expect(AUTOCOMPACT_HARD_BUFFER_TOKENS).toBeGreaterThan(0);
-  });
-});
-
-describe('checkCompactRegret', () => {
-  test('detects regret when tool matches dropped signature', () => {
-    const dropped = new Set<string>(['Read:src/file.ts']);
-    resetCompactRegretState(dropped);
-
-    expect(checkCompactRegret('Read', { file_path: 'src/file.ts' })).toBe(true);
-  });
-
-  test('no regret when tool does not match dropped signature', () => {
-    const dropped = new Set<string>(['Read:src/file.ts']);
-    resetCompactRegretState(dropped);
-
-    expect(checkCompactRegret('Grep', { pattern: 'foo' })).toBe(false);
-  });
-
-  test('no regret when no dropped signatures', () => {
-    resetCompactRegretState(new Set());
-    expect(checkCompactRegret('Read', { file_path: 'src/file.ts' })).toBe(false);
-  });
-
-  test('signature match is case sensitive on tool name', () => {
-    const dropped = new Set<string>(['Read:src/file.ts']);
-    resetCompactRegretState(dropped);
-
-    expect(checkCompactRegret('read', { file_path: 'src/file.ts' })).toBe(false); // case mismatch
-  });
-
-  test('a matched signature is consumed (not double-counted)', () => {
-    resetCompactRegretState(new Set<string>(['Read:src/file.ts']));
-
-    expect(checkCompactRegret('Read', { file_path: 'src/file.ts' })).toBe(true);
-    // Second reference to the same drop is not regret again
-    expect(checkCompactRegret('Read', { file_path: 'src/file.ts' })).toBe(false);
-  });
-
-  test('no regret once the observation window has expired', () => {
-    resetCompactRegretState(new Set<string>(['Read:src/file.ts']));
-
-    // Advance past the window
-    for (let i = 0; i <= COMPACT_REGRET_WINDOW_TURNS; i++) {
-      tickCompactRegret();
-    }
-
-    expect(checkCompactRegret('Read', { file_path: 'src/file.ts' })).toBe(false);
-  });
-
-  test('regret still counts on the last turn inside the window', () => {
-    resetCompactRegretState(new Set<string>(['Read:src/file.ts']));
-    for (let i = 0; i < COMPACT_REGRET_WINDOW_TURNS; i++) {
-      tickCompactRegret();
-    }
-    expect(checkCompactRegret('Read', { file_path: 'src/file.ts' })).toBe(true);
-  });
-});
-
-describe('computeDroppedToolSignatures', () => {
-  function toolUseMsg(uuid: string, name: string, input: Record<string, unknown>): Message {
-    return {
-      type: 'assistant',
-      uuid,
-      message: {
-        id: uuid,
-        content: [{ type: 'tool_use' as const, id: `${uuid}-tu`, name, input }],
-        model: 'test-model',
-        role: 'assistant' as const,
-        stop_reason: null,
-        stop_sequence: null,
-        usage: { input_tokens: 1, output_tokens: 1 },
-      },
-    };
-  }
-
-  test('kept tool calls are excluded from the dropped set', () => {
-    const all = [toolUseMsg('a1', 'Read', { file_path: 'a.ts' }), toolUseMsg('a2', 'Read', { file_path: 'b.ts' })];
-    const kept = [all[1]!]; // b.ts survives
-    const dropped = computeDroppedToolSignatures(all, kept);
-
-    expect(dropped.has('Read:a.ts')).toBe(true);
-    expect(dropped.has('Read:b.ts')).toBe(false);
-  });
-
-  test('collectToolSignatures gathers all tool_use signatures', () => {
-    const sigs = collectToolSignatures([
-      toolUseMsg('a1', 'Read', { file_path: 'a.ts' }),
-      toolUseMsg('a2', 'Bash', { command: 'ls' }),
-    ]);
-    expect(sigs).toEqual(new Set(['Read:a.ts', 'Bash:ls']));
-  });
-});
-
-describe('mergeBackgroundAutoCompactDelta', () => {
-  test('appends messages that arrived after the background compact snapshot tail', () => {
-    const result: CompactionResult = {
-      boundaryMarker: {
-        type: 'system',
-        uuid: 'boundary',
-        content: 'Conversation compacted',
-        compactMetadata: {
-          preservedSegment: {
-            headUuid: 'kept-tail',
-            anchorUuid: 'summary',
-            tailUuid: 'snapshot-tail',
-          },
-        },
-      } as CompactionResult['boundaryMarker'],
-      summaryMessages: [userMessage('summary', 'summary') as CompactionResult['summaryMessages'][number]],
-      attachments: [],
-      hookResults: [],
-      messagesToKeep: [assistantMessage('snapshot-tail', 'snapshot-tail-message', 'snapshot tail')],
-    };
-    const currentMessages: Message[] = [
-      userMessage('start', 'start'),
-      assistantMessage('snapshot-tail', 'snapshot-tail-message', 'snapshot tail'),
-      userMessage('delta-user', 'new work'),
-      assistantMessage('delta-assistant', 'delta-message', 'new answer'),
-    ];
-
-    const merged = mergeBackgroundAutoCompactDelta(result, currentMessages, 'snapshot-tail');
-
-    expect(merged?.messagesToKeep?.map(message => message.uuid)).toEqual([
-      'snapshot-tail',
-      'delta-user',
-      'delta-assistant',
-    ]);
-    const boundary = merged?.boundaryMarker as CompactionResult['boundaryMarker'] & {
-      compactMetadata?: { preservedSegment?: { tailUuid?: string } };
-    };
-    expect(boundary.compactMetadata?.preservedSegment?.tailUuid).toBe('delta-assistant');
-  });
-
-  test('rejects a background result if another compact boundary already happened after its tail', () => {
-    const result: CompactionResult = {
-      boundaryMarker: {
-        type: 'system',
-        uuid: 'boundary',
-        content: 'Conversation compacted',
-      },
-      summaryMessages: [],
-      attachments: [],
-      hookResults: [],
-      messagesToKeep: [assistantMessage('snapshot-tail', 'snapshot-tail-message', 'snapshot tail')],
-    };
-    const currentMessages: Message[] = [
-      assistantMessage('snapshot-tail', 'snapshot-tail-message', 'snapshot tail'),
-      { type: 'system', subtype: 'compact_boundary', uuid: 'new-boundary' },
-      userMessage('delta-user', 'new work'),
-    ];
-
-    expect(mergeBackgroundAutoCompactDelta(result, currentMessages, 'snapshot-tail')).toBeUndefined();
   });
 });
 

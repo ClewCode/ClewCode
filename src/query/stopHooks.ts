@@ -5,6 +5,12 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from '../services/analytics/index.js';
+// NOTE: imported statically, not via require(). services/autoDream imports
+// this module as ESM unconditionally, and in Bun a require() of a module the
+// ESM loader has already evaluated returns an empty object — which is how
+// `initExtractMemories is not a function` crashed dev-mode startup. The
+// feature() gate stays on the call site, where it still strips the call.
+import { executeExtractMemories } from '../services/extractMemories/extractMemories.js';
 import type { ToolUseContext } from '../Tool.js';
 import type { HookProgress } from '../types/hooks.js';
 import type {
@@ -41,9 +47,6 @@ import { getTaskListId, listTasks } from '../utils/tasks.js';
 import { getAgentName, getTeamName, isTeammate } from '../utils/teammate.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const extractMemoriesModule = feature('EXTRACT_MEMORIES')
-  ? (require('../services/extractMemories/extractMemories.js') as typeof import('../services/extractMemories/extractMemories.js'))
-  : null;
 const jobClassifierModule = feature('TEMPLATES')
   ? (require('../jobs/classifier.js') as typeof import('../jobs/classifier.js'))
   : null;
@@ -138,11 +141,9 @@ export async function* handleStopHooks(
       // Fire-and-forget in both interactive and non-interactive. For -p/SDK,
       // print.ts drains the in-flight promise after flushing the response
       // but before gracefulShutdownSync (see drainPendingExtraction).
-      void extractMemoriesModule!
-        .executeExtractMemories(stopHookContext, toolUseContext.appendSystemMessage)
-        .catch(err => {
-          logForDebugging(`[memory] extraction error: ${errorMessage(err)}`, { level: 'error' });
-        });
+      void executeExtractMemories(stopHookContext, toolUseContext.appendSystemMessage).catch(err => {
+        logForDebugging(`[memory] extraction error: ${errorMessage(err)}`, { level: 'error' });
+      });
     }
     if (!toolUseContext.agentId) {
       void executeAutoDream(stopHookContext, toolUseContext.appendSystemMessage).catch(err => {

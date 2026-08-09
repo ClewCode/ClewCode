@@ -76,6 +76,7 @@ import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessa
 import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackTool.js';
 import { PeerMemorySyncTool } from './tools/PeerMemorySyncTool/PeerMemorySyncTool.js';
+import { ContextRestoreTool } from './tools/ContextRestoreTool/ContextRestoreTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
 import { ResearchTool } from './tools/ResearchTool/ResearchTool.js';
 
@@ -184,6 +185,7 @@ export function getAllBaseTools(): Tools {
     // ConfigTool, TungstenTool — Anthropic-internal, removed in Clew Code
     ...(isTodoV2Enabled() ? [TaskCreateTool, TaskGetTool, TaskUpdateTool, TaskListTool] : []),
     GoalTool,
+    ContextRestoreTool,
     LSPTool,
     AgentTool,
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),

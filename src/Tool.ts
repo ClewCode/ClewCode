@@ -216,6 +216,14 @@ export type ToolUseContext = {
   updateFileHistoryState: (updater: (prev: FileHistoryState) => FileHistoryState) => void;
   updateAttributionState: (updater: (prev: AttributionState) => AttributionState) => void;
   setConversationId?: (id: UUID) => void;
+  /**
+   * Auto-compact v2 session state: turn counter, failure count, and the store
+   * of evicted context. Held here rather than in module scope so concurrently
+   * running agents don't share one compaction account (the legacy path's
+   * module-level regret/background-job globals did, incorrectly).
+   * Typed loosely to keep Tool.ts free of a compact-service import.
+   */
+  compactState?: import('./services/compact/v2/types.js').CompactSessionState;
   agentId?: AgentId; // Only set for subagents; use getSessionId() for session ID. Hooks use this to distinguish subagent calls.
   /** Parent agent's ID — set on subagent contexts so API requests can
    *  carry x-claude-code-parent-agent-id. Undefined when parent is the

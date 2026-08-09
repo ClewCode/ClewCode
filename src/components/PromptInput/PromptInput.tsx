@@ -142,6 +142,7 @@ import { shouldHideTasksFooter } from '../tasks/taskStatusUtils.js';
 import { TeamsDialog } from '../teams/TeamsDialog.js';
 import VimTextInput from '../VimTextInput.js';
 import { getModeFromInput, getValueFromInput } from './inputModes.js';
+import { NotificationRightSlot } from '../notifications/NotificationRightSlot.js';
 import { CopiedToast, FOOTER_TEMPORARY_STATUS_TIMEOUT, Notifications } from './Notifications.js';
 import PromptInputFooter from './PromptInputFooter.js';
 import type { SuggestionItem } from './PromptInputFooterSuggestions.js';
@@ -2976,9 +2977,11 @@ function PromptInput({
               isInputWrapped={isInputWrapped}
             />
           </Box>
-          {/* Copy-to-clipboard toast, top-right of the prompt (fullscreen). The
-              footer CopiedToast is suppressed in fullscreen to avoid duplication. */}
-          <Box flexShrink={0} justifyContent="flex-end">
+          {/* Right-aligned notifications and the copy-to-clipboard toast,
+              top-right of the prompt (fullscreen). The footer CopiedToast is
+              suppressed in fullscreen to avoid duplication. */}
+          <Box flexShrink={0} gap={1} justifyContent="flex-end">
+            <NotificationRightSlot />
             <CopiedToast />
           </Box>
         </Box>
