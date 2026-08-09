@@ -10,7 +10,7 @@
  * module scope finds `MACRO` on globalThis via the fallback chain.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -34,3 +34,25 @@ if (!original.startsWith('var MACRO=') && !original.startsWith('var MACRO;')) {
 } else {
   console.log('[postbuild] var MACRO already present, skipping');
 }
+
+// main.tsx reads ./generated/version.json relative to import.meta.url at
+// RUNTIME -- it is not inlined by the bundler -- so from dist/main.js that
+// resolves to dist/generated/version.json, and globalThis.MACRO.VERSION set
+// from it overrides the preamble above. prebuild-version.mjs only writes
+// src/generated/, so without this the dist copy was whatever the very first
+// build left behind: every release since reported that stale number from
+// `clew --version`. Write it here, after the bundle, from the same package.json
+// the preamble uses.
+const generatedDir = join(root, 'dist', 'generated');
+mkdirSync(generatedDir, { recursive: true });
+writeFileSync(
+  join(generatedDir, 'version.json'),
+  JSON.stringify({
+    BUILD_VERSION: pkg.version,
+    PACKAGE_URL: pkg.name,
+    FEEDBACK_CHANNEL: 'https://github.com/ClewCode/ClewCode/issues',
+    ISSUES_EXPLAINER: 'visit https://github.com/ClewCode/ClewCode/issues',
+  }),
+  'utf-8',
+);
+console.log(`[postbuild] Wrote dist/generated/version.json (version: ${pkg.version})`);
