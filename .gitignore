@@ -109,6 +109,9 @@ temp/
 .docs/
 
 scratch/
+scratchpad/
+.reference/
+tsc-release.txt
 .plan/
 .ceph/
 
