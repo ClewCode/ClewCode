@@ -206,9 +206,14 @@ export interface CompactSessionState {
   lastPlan?: CompactPlan;
   evictions: EvictionStore;
   failures: number;
+  restoredThisTurn: number;
+  /** Per-agent health tracking — replaces the module-scoped singleton. */
+  health: CompactHealth;
 }
 ```
 เก็บใน `toolUseContext` ไม่ใช่ module scope (แก้ปัญหา #4) — multi-agent ถูกต้อง และ test ไม่เปื้อนข้ามไฟล์
+
+**v0.8.5 update:** Health state ย้ายจาก module-scoped singleton มาอยู่บน `CompactSessionState.health` — ทำให้ concurrent agents ไม่ share counter กัน ฟังก์ชัน `recordCompaction`, `recordRestore`, `getCompactHealth` ทุกตัวรับ optional `CompactSessionState` param แล้ว fallback ไปใช้ module-scoped `fallbackHealth` เฉพาะ UI paths ที่ไม่มี access ถึง session state
 
 ### 3.6 จุดเรียกใน query.ts — เหลือจุดเดียว
 
@@ -223,6 +228,10 @@ messagesForQuery = compaction.messages;
 if (compaction.boundary) yield compaction.boundary;
 queryCheckpoint('query_compact_end');
 ```
+
+**v0.8.5 update:** `atBoundary` ถูก hardcode เป็น `true` ใน `runCompaction()` — boundary wait ถูกปิดแล้ว ทำให้ compact ทำงานทันทีโดยไม่ต้องรอให้ถึง natural boundary (`isAtNaturalBoundary()` ยังอยู่ใน autoCompact.ts สำหรับ backward compatibility กับ tests แต่ไม่ถูกใช้ใน main path อีกแล้ว) ทำให้ reducer ที่ไม่ต้องเรียก LLM (dedupe, stale-tool, snip) ทำงานได้ทุก turn ไม่ว่าจะอยู่กลาง tool chain หรือไม่
+
+**v0.8.5 update:** Adaptive buffer ถูกปิด — `resolveAdaptiveBuffer()` ไม่รับ parameter และ return `DEFAULT_BUFFER_TOKENS` (40k) เสมอ ทำให้ threshold คงที่predictable ต่างจากเดิมที่ compressibility ratio มีผลต่อ buffer size
 
 ---
 

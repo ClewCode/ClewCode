@@ -176,8 +176,8 @@ Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://model
     <td>SQLite-backed store with importance ranking, confidence scoring, and cross-session persistence. Auto-consolidation via Dream + Distill.</td>
   </tr>
   <tr>
-    <td><strong>76+ Tools</strong></td>
-    <td>Read, Write, Edit, Grep, Bash, Browser, MCP, LSP, git, web search, task management, peer coordination, media generation, voice input.</td>
+    <td><strong>80+ Tools</strong></td>
+    <td>Read, Write, Edit, Grep, Bash, Browser, MCP, LSP, git, web search, task management, peer coordination, media generation, voice input, and more.</td>
   </tr>
   <tr>
     <td><strong>LAN Peer Swarm</strong></td>
@@ -246,7 +246,7 @@ Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://model
 --debug                   Developer debug output
 ```
 
-Notable slash commands: `/model`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/peer`, `/mcp`, `/agent`, `/plan`, `/voice`, `/research`, `/workflow`, `/skills`, `/code-review`, `/guardian`, `/bg`, `/daemon`, `/buddy`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, `/theme`, and [many more](https://clew-docs.pages.dev/cli).
+Notable slash commands: `/model`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/peer`, `/mcp`, `/agent`, `/plan`, `/voice`, `/research`, `/workflow`, `/skills`, `/code-review`, `/guardian`, `/bg`, `/daemon`, `/buddy`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, `/theme`, `/delegate`, and [many more](https://clew-docs.pages.dev/cli).
 
 ---
 
@@ -387,7 +387,7 @@ Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
 - **REPL screen**: `src/screens/REPL.tsx` routes input to commands or the query engine
 - **Query paths**: `src/QueryEngine.ts` (streaming with tool loop) + `src/query.ts` (non-streaming for subagents, background tasks)
 - **Providers**: `src/services/ai/` — 32 providers behind one interface, normalized errors/usage
-- **Tools**: `src/tools/<ToolName>/`, 76 tool packages extending `Tool`, registered in `src/tools.ts`
+- **Tools**: `src/tools/<ToolName>/`, 80 tool packages extending `Tool`, registered in `src/tools.ts`
 - **Services**: `src/services/` — MCP client, autonomous queue, vec memory, session search, plugins, LSP, voice, audit log, and more
 
 Full detail, including tool inventory and service list: [AGENTS.md](AGENTS.md).
