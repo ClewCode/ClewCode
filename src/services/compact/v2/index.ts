@@ -15,7 +15,7 @@ import type { CacheSafeParams } from '../../../utils/forkedAgent.js';
 import { logError } from '../../../utils/log.js';
 import { isAtNaturalBoundary, isAutoCompactEnabled, resolveAdaptiveBuffer } from '../autoCompact.js';
 import { createEvictionStore, createMemoryEvictionStore, type EvictionRecord } from './evictionStore.js';
-import { recordCompaction } from './health.js';
+import { EMPTY_HEALTH, recordCompaction } from './health.js';
 import { type ContextLedger, createContextLedger, pressureLevel } from './ledger.js';
 import { applyPlan, type CompactPlan, planCompaction } from './planner.js';
 import type { CompactSessionState, ReduceContext, Reducer, ReducerName } from './types.js';
@@ -60,7 +60,7 @@ export function createCompactSessionState(agentId?: CompactSessionState['agentId
     logError(err);
     evictions = createMemoryEvictionStore();
   }
-  return { agentId, turn: 0, failures: 0, evictions, restoredThisTurn: 0 };
+  return { agentId, turn: 0, failures: 0, evictions, restoredThisTurn: 0, health: { ...EMPTY_HEALTH } };
 }
 
 const ledgers = new WeakMap<CompactSessionState, ContextLedger>();
@@ -146,13 +146,16 @@ export async function runCompaction(
     // Record before returning: a shortfall is the only route from v2 to a
     // prompt_too_long, and it needs to reach the user rather than only
     // analytics. See health.ts.
-    recordCompaction({
-      applied: result.applied,
-      tokensFreed: result.tokensFreed,
-      deficit: plan.deficit,
-      shortfall: result.shortfall,
-      rationale: plan.rationale,
-    });
+    recordCompaction(
+      {
+        applied: result.applied,
+        tokensFreed: result.tokensFreed,
+        deficit: plan.deficit,
+        shortfall: result.shortfall,
+        rationale: plan.rationale,
+      },
+      state,
+    );
     return {
       messages: result.messages,
       wasCompacted: result.tokensFreed > 0,

@@ -4,8 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-08-11
+
 - **New `/delegate` command**: runs one subagent synchronously (default agent: `rlm`) and shows its result. Pass an agent type as the first token to delegate to a different agent. Renders a live progress panel while the agent runs (elapsed time, tool/token counts, latest tool activity, Esc/q to cancel) instead of sitting silent until completion.
 - **New `scored-tool` compact reducer**: model-guided eviction of old tool results — asks the LLM which compactable tool results are safe to forget, falling back to stale-tool recency when the model path is unavailable. Sits between `stale-tool` (0.2) and `snip` (0.35) in loss at 0.3.
+- **Auto-compact v2 polish**: boundary wait disabled (compact fires immediately regardless of conversation boundary), adaptive buffer replaced with a static 40K-token buffer for consistent threshold behavior, dead `isBoundaryCompactEnabled()` code removed, and `resolveAdaptiveBuffer()` simplified to a zero-arg function.
+- **Per-agent compaction health**: shortfalls, restores, and compact counts are now scoped to each `CompactSessionState` instead of a shared module-level singleton, so concurrent agents no longer corrupt each other's health tracking.
+- **RLM agent tightened**: file-editing tools (`FileWrite`, `FileEdit`, `NotebookEdit`) are now in `disallowedTools` and `CLAUDE.md` is omitted (`omitClaudeMd: true`) — the RLM agent delegates and synthesizes only. Edge cases (all-strand failure, context-limit synthesis, recursion-boundary guard) documented in the system prompt.
+- **`isMemoryFilePath` refactor**: `compact.ts` now uses the existing `isMemoryFilePath()` utility instead of manually mapping `MEMORY_TYPE_VALUES` to expanded paths.
 
 ## [0.8.4] - 2026-08-09
 

@@ -6,17 +6,12 @@
  * — the `drop` reducer exists precisely so it should never happen — which
  * makes it the signal worth watching now that v2 is the default.
  *
- * Until this file, shortfall went to `logEvent` and nowhere else: invisible to
- * the person it is happening to, and invisible to anyone without analytics
- * access. Here it is recorded per session so the REPL can warn once and
- * /context can show it.
- *
- * Deliberately module-scoped, unlike CompactSessionState: /context and the
- * notification path do not receive the session state object, and this is
- * display-only data — a wrong read shows a stale warning, it does not
- * mis-compact anything.
+ * Health state is per-agent: stored on CompactSessionState.health so
+ * concurrent agents do not share counters. The module-scoped fallback is
+ * retained only for UI paths (ContextStats) that lack access to the session
+ * state — a stale read there shows a warning, it does not mis-compact.
  */
-import type { ReducerName } from './types.js';
+import type { CompactSessionState, ReducerName } from './types.js';
 
 export interface CompactHealth {
   /** Reducers applied on the most recent compaction. */
@@ -37,7 +32,7 @@ export interface CompactHealth {
   compactionCount: number;
 }
 
-const EMPTY: CompactHealth = {
+export const EMPTY_HEALTH: CompactHealth = {
   lastApplied: [],
   lastTokensFreed: 0,
   lastDeficit: 0,
@@ -48,37 +43,59 @@ const EMPTY: CompactHealth = {
   compactionCount: 0,
 };
 
-let health: CompactHealth = { ...EMPTY };
+/** Module-scoped fallback for UI paths without CompactSessionState. */
+let fallbackHealth: CompactHealth = { ...EMPTY_HEALTH };
 
-export function getCompactHealth(): Readonly<CompactHealth> {
-  return health;
+function healthOf(state?: CompactSessionState | null): CompactHealth {
+  return state?.health ?? fallbackHealth;
 }
 
-export function recordCompaction(result: {
-  applied: ReducerName[];
-  tokensFreed: number;
-  deficit: number;
-  shortfall: boolean;
-  rationale: string;
-}): void {
-  health = {
-    ...health,
+export function getCompactHealth(state?: CompactSessionState | null): Readonly<CompactHealth> {
+  return healthOf(state);
+}
+
+export function recordCompaction(
+  result: {
+    applied: ReducerName[];
+    tokensFreed: number;
+    deficit: number;
+    shortfall: boolean;
+    rationale: string;
+  },
+  state?: CompactSessionState,
+): void {
+  const entry: CompactHealth = {
+    ...healthOf(state),
     lastApplied: result.applied,
     lastTokensFreed: result.tokensFreed,
     lastDeficit: result.deficit,
     lastShortfall: result.shortfall,
     lastRationale: result.rationale,
-    shortfallCount: health.shortfallCount + (result.shortfall ? 1 : 0),
-    compactionCount: health.compactionCount + 1,
+    shortfallCount: healthOf(state).shortfallCount + (result.shortfall ? 1 : 0),
+    compactionCount: healthOf(state).compactionCount + 1,
   };
+  if (state) {
+    state.health = entry;
+  } else {
+    fallbackHealth = entry;
+  }
 }
 
-export function recordRestore(): void {
-  health = { ...health, restoreCount: health.restoreCount + 1 };
+export function recordRestore(state?: CompactSessionState | null): void {
+  const entry = { ...healthOf(state), restoreCount: healthOf(state).restoreCount + 1 };
+  if (state) {
+    state.health = entry;
+  } else {
+    fallbackHealth = entry;
+  }
 }
 
-export function resetCompactHealth(): void {
-  health = { ...EMPTY };
+export function resetCompactHealth(state?: CompactSessionState | null): void {
+  if (state) {
+    state.health = { ...EMPTY_HEALTH };
+  } else {
+    fallbackHealth = { ...EMPTY_HEALTH };
+  }
 }
 
 /**
@@ -88,26 +105,28 @@ export function resetCompactHealth(): void {
  * the session keeps working, it is just running closer to the ceiling than the
  * planner wanted.
  */
-export function shortfallWarning(): string | null {
-  if (!health.lastShortfall) return null;
-  const short = Math.max(0, health.lastDeficit - health.lastTokensFreed);
-  const repeated = health.shortfallCount > 1 ? ` (${health.shortfallCount}× this session)` : '';
-  return `Context is tight: compaction freed ${formatK(health.lastTokensFreed)} of the ${formatK(health.lastDeficit)} it needed, ${formatK(short)} short${repeated}. Consider /compact or starting a new session.`;
+export function shortfallWarning(state?: CompactSessionState | null): string | null {
+  const h = healthOf(state);
+  if (!h.lastShortfall) return null;
+  const short = Math.max(0, h.lastDeficit - h.lastTokensFreed);
+  const repeated = h.shortfallCount > 1 ? ` (${h.shortfallCount}× this session)` : '';
+  return `Context is tight: compaction freed ${formatK(h.lastTokensFreed)} of the ${formatK(h.lastDeficit)} it needed, ${formatK(short)} short${repeated}. Consider /compact or starting a new session.`;
 }
 
 /** One line for /context, or null when no compaction has run yet. */
-export function compactHealthLine(): string | null {
-  if (health.compactionCount === 0) return null;
+export function compactHealthLine(state?: CompactSessionState | null): string | null {
+  const h = healthOf(state);
+  if (h.compactionCount === 0) return null;
   const parts = [
-    `${health.compactionCount} compaction${health.compactionCount === 1 ? '' : 's'}`,
-    health.lastApplied.length > 0 ? `last: ${health.lastApplied.join(' + ')}` : 'last: nothing applied',
-    `freed ${formatK(health.lastTokensFreed)}`,
+    `${h.compactionCount} compaction${h.compactionCount === 1 ? '' : 's'}`,
+    h.lastApplied.length > 0 ? `last: ${h.lastApplied.join(' + ')}` : 'last: nothing applied',
+    `freed ${formatK(h.lastTokensFreed)}`,
   ];
-  if (health.restoreCount > 0) {
-    parts.push(`${health.restoreCount} restored`);
+  if (h.restoreCount > 0) {
+    parts.push(`${h.restoreCount} restored`);
   }
-  if (health.shortfallCount > 0) {
-    parts.push(`${health.shortfallCount} shortfall${health.shortfallCount === 1 ? '' : 's'}`);
+  if (h.shortfallCount > 0) {
+    parts.push(`${h.shortfallCount} shortfall${h.shortfallCount === 1 ? '' : 's'}`);
   }
   return parts.join(' · ');
 }

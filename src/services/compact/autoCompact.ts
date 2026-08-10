@@ -25,17 +25,13 @@
  */
 import type { Message } from '../../types/message.js';
 import { getGlobalConfig } from '../../utils/config.js';
-import { isEnvDefinedFalsy, isEnvTruthy } from '../../utils/envUtils.js';
-import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js';
+import { isEnvTruthy } from '../../utils/envUtils.js';
 import { roughTokenCountEstimationForBlock } from '../tokenEstimation.js';
 import {
   computeBackgroundThreshold,
   computeEffectiveWindow,
   computeLimits,
   DEFAULT_BUFFER_TOKENS,
-  MAX_ADAPTIVE_BUFFER,
-  MIN_ADAPTIVE_BUFFER,
-  selectBuffer,
   BACKGROUND_MIN_THRESHOLD_PCT as V2_BACKGROUND_MIN_THRESHOLD_PCT,
   CRITICAL_BUFFER_TOKENS as V2_CRITICAL_BUFFER_TOKENS,
   FORCE_BUFFER_TOKENS as V2_FORCE_BUFFER_TOKENS,
@@ -110,24 +106,6 @@ export function isAtNaturalBoundary(messages: Message[]): boolean {
 }
 
 /**
- * Whether summarization should wait for a natural boundary.
- *
- * Defaults ON: summarizing mid-tool-chain drops a tool_use whose tool_result
- * hasn't arrived yet, which is the main source of "the model forgot what it was
- * doing" right after a compact. Under v2 the cost of waiting is small, because
- * the cheap reducers still run mid-chain and usually cover the deficit on
- * their own.
- *
- * Opt out with CLEW_CODE_BOUNDARY_COMPACT=0 or `boundaryCompact: false`.
- */
-export function isBoundaryCompactEnabled(): boolean {
-  if (isEnvTruthy(process.env.CLEW_CODE_BOUNDARY_COMPACT)) return true;
-  if (isEnvDefinedFalsy(process.env.CLEW_CODE_BOUNDARY_COMPACT)) return false;
-  const setting = (getGlobalConfig() as Record<string, unknown>)?.boundaryCompact;
-  return typeof setting === 'boolean' ? setting : true;
-}
-
-/**
  * Estimate compressibility ratio (0..1) of a session.
  * Tool_result tokens / total tokens. Higher = more compressible.
  */
@@ -166,41 +144,19 @@ export function estimateCompressibility(messages: Message[]): number {
   return Math.min(1, toolResultTokens / totalTokens);
 }
 
-// GrowthBook feature flag for adaptive threshold tuning
-const ADAPTIVE_THRESHOLD_FEATURE = 'tengu_adaptive_compact_threshold';
-
 /**
  * Headroom buffer for this session. A tool-heavy (highly compressible) session
  * can safely run closer to the ceiling, because v2's cheap reducers will
  * reclaim plenty when it gets there; a chat-only session cannot, so it needs
  * to start reducing sooner.
  */
-export function resolveAdaptiveBuffer(messages?: Message[]): number {
-  if (!messages || messages.length === 0) {
-    return DEFAULT_BUFFER_TOKENS;
-  }
-
-  // GrowthBook is consulted for remote *tuning*, but absence of a flag does
-  // not disable the feature — an earlier `adaptiveConfig?.enabled` gate
-  // defaulted to null, so adaptive sizing never ran outside experiments.
-  const adaptiveConfig = getFeatureValue_CACHED_MAY_BE_STALE<{
-    enabled?: boolean;
-    minBuffer?: number;
-    maxBuffer?: number;
-  } | null>(ADAPTIVE_THRESHOLD_FEATURE, null);
-
-  if (adaptiveConfig?.enabled === false) {
-    return DEFAULT_BUFFER_TOKENS;
-  }
-
-  return selectBuffer(estimateCompressibility(messages), {
-    minBuffer: adaptiveConfig?.minBuffer ?? MIN_ADAPTIVE_BUFFER,
-    maxBuffer: adaptiveConfig?.maxBuffer ?? MAX_ADAPTIVE_BUFFER,
-  });
+export function resolveAdaptiveBuffer(): number {
+  // Always use static buffer — adaptive sizing disabled for predictability.
+  return DEFAULT_BUFFER_TOKENS;
 }
 
-export function getAutoCompactThreshold(model: string, messages?: Message[]): number {
-  return computeLimits(model, resolveAdaptiveBuffer(messages)).actNow;
+export function getAutoCompactThreshold(model: string): number {
+  return computeLimits(model, resolveAdaptiveBuffer()).actNow;
 }
 
 export function getBackgroundAutoCompactThreshold(model: string): number {
@@ -208,16 +164,13 @@ export function getBackgroundAutoCompactThreshold(model: string): number {
 }
 
 /** The point past which reduction happens even mid-tool-chain. */
-export function getAutoCompactHardThreshold(model: string, messages?: Message[]): number {
-  return computeLimits(model, resolveAdaptiveBuffer(messages)).actForce;
+export function getAutoCompactHardThreshold(model: string): number {
+  return computeLimits(model, resolveAdaptiveBuffer()).actForce;
 }
 
 export function calculateTokenWarningState(
   tokenUsage: number,
   model: string,
-  // Pass messages to honor the adaptive buffer. Omitting them (e.g. UI warning
-  // readouts that only know the token count) falls back to the static buffer.
-  messages?: Message[],
 ): {
   percentLeft: number;
   isAboveWarningThreshold: boolean;
@@ -225,7 +178,7 @@ export function calculateTokenWarningState(
   isAboveAutoCompactThreshold: boolean;
   isAtBlockingLimit: boolean;
 } {
-  const limits = computeLimits(model, resolveAdaptiveBuffer(messages));
+  const limits = computeLimits(model, resolveAdaptiveBuffer());
   // When auto-compact is off there is no act threshold to warn against, so the
   // bands are measured off the full usable window instead.
   const threshold = isAutoCompactEnabled() ? limits.actNow : limits.limit;

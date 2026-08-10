@@ -22,12 +22,8 @@ export function TokenWarning({ tokenUsage, model, messages }: Props): React.Reac
   // Pass messages so the readout honors the adaptive threshold rather than the
   // static buffer — otherwise the displayed percentage disagrees with the point
   // auto-compact actually fires.
-  const { percentLeft, isAboveWarningThreshold, isAboveErrorThreshold } = calculateTokenWarningState(
-    tokenUsage,
-    model,
-    messages,
-  );
-  const autoCompactThreshold = getAutoCompactThreshold(model, messages);
+  const { percentLeft, isAboveWarningThreshold, isAboveErrorThreshold } = calculateTokenWarningState(tokenUsage, model);
+  const autoCompactThreshold = getAutoCompactThreshold(model);
 
   // Use reactive hook to check if warning should be suppressed
   const suppressWarning = useCompactWarningSuppression();

@@ -13,6 +13,7 @@ import type { AgentId } from '../../../types/ids.js';
 import type { Message } from '../../../types/message.js';
 import type { CacheSafeParams } from '../../../utils/forkedAgent.js';
 import type { EvictionRecord, EvictionStore } from './evictionStore.js';
+import type { CompactHealth } from './health.js';
 import type { ContextPressure } from './ledger.js';
 
 export type ReducerName = 'dedupe' | 'stale-tool' | 'scored-tool' | 'snip' | 'summarize' | 'drop';
@@ -27,6 +28,8 @@ export interface CompactSessionState {
   evictions: EvictionStore;
   /** Tokens restored this turn, to bound ContextRestore abuse. */
   restoredThisTurn: number;
+  /** Per-agent health tracking — replaces the module-scoped singleton. */
+  health: CompactHealth;
 }
 
 export interface ReduceContext {

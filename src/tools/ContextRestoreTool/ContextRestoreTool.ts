@@ -122,7 +122,7 @@ export const ContextRestoreTool = buildTool({
     state.restoredThisTurn = spent;
     // Restore rate is the metric that replaced the compact-regret loop: a high
     // rate means the planner is evicting things still in use.
-    recordRestore();
+    recordRestore(state);
 
     return {
       data: {
