@@ -112,6 +112,8 @@ scratch/
 scratchpad/
 .reference/
 tsc-release.txt
+tsc-peer.txt
+tsc-peer*.log
 .plan/
 .ceph/
 
