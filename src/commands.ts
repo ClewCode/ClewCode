@@ -34,6 +34,7 @@ import releaseNotes from './commands/release-notes/index.js';
 import rename from './commands/rename/index.js';
 import importSession from './commands/importSession/index.js';
 import resume from './commands/resume/index.js';
+import sessions from './commands/sessions/index.js';
 import review, { ultrareview } from './commands/review.js';
 import session from './commands/session/index.js';
 import skills from './commands/skills/index.js';
@@ -226,6 +227,7 @@ const COMMANDS = memoize((): Command[] => [
   reloadPlugins,
   rename,
   resume,
+  sessions,
   importSession,
   session,
   skills,

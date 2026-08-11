@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **New `/sessions` command (alias `/catalog`)**: a fullscreen session catalog ported from the prime-agent agents view. One list unifies supervisor-managed background sessions, in-process agents dispatched by the current session, and archived transcripts on disk, grouped into Running / Idle / Inactive with a metadata header (version, model, cwd, agent counts, scope, depth). Subagents nest under the agent that spawned them and collapse into a single "N subagents running" row; `→` drills into an agent so its subagents become the top level and `←` returns to the parent scope. Search supports fuzzy tokens, `"quoted phrases"`, and `re:<pattern>`, and pulls a matching subagent's ancestors in for context. `enter` attaches a background session, opens an in-process agent, or hands an archived session to `/resume`; `space` replies to an in-process agent, `ctrl+n` starts a background session, `ctrl+r` renames, `ctrl+x` stops or removes (press twice), `ctrl+o` reveals the prompt that spawned a group of subagents. Pass `--all` to include every project directory.
+
 ## [0.8.5] - 2026-08-11
 
 - **New `/delegate` command**: runs one subagent synchronously (default agent: `rlm`) and shows its result. Pass an agent type as the first token to delegate to a different agent. Renders a live progress panel while the agent runs (elapsed time, tool/token counts, latest tool activity, Esc/q to cancel) instead of sitting silent until completion.
