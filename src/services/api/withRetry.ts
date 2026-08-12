@@ -38,10 +38,11 @@ import { extractConnectionErrorDetails } from './errorUtils.js';
 
 const abortError = () => new APIUserAbortError();
 
-const DEFAULT_MAX_RETRIES = 10;
+const DEFAULT_MAX_RETRIES = 3; // Conservative default: fail fast to avoid infinite retries
 const FLOOR_OUTPUT_TOKENS = 3000;
 const MAX_529_RETRIES = 3;
-export const BASE_DELAY_MS = 500;
+export const BASE_DELAY_MS = 1000; // Increased to 1s to prevent API hammering
+const MAX_TOTAL_RETRY_TIME_MS = 60 * 1000; // 1 minute max for all retries
 
 // Foreground query sources where the user IS blocking on the result — these
 // retry on 529. Everything else (summaries, titles, suggestions, classifiers)
@@ -185,9 +186,16 @@ export async function* withRetry<T>(
   let consecutive529Errors = options.initialConsecutive529Errors ?? 0;
   let lastError: unknown;
   let persistentAttempt = 0;
+  let totalRetryTimeMs = 0;
   for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
     if (options.signal?.aborted) {
       throw new APIUserAbortError();
+    }
+
+    // Emergency kill-switch: if we've spent over 1 minute retrying, give up
+    if (totalRetryTimeMs >= MAX_TOTAL_RETRY_TIME_MS && !isPersistentRetryEnabled()) {
+      logForDebugging(`Exhausted maximum retry time (${MAX_TOTAL_RETRY_TIME_MS}ms) after ${attempt - 1} attempts`);
+      throw new CannotRetryError(lastError, retryContext);
     }
 
     // Capture whether fast mode is active before this attempt
@@ -413,11 +421,10 @@ export async function* withRetry<T>(
           const chunk = Math.min(remaining, HEARTBEAT_INTERVAL_MS);
           await sleep(chunk, options.signal, { abortError });
           remaining -= chunk;
+          totalRetryTimeMs += chunk;
         }
-        // Clamp so the for-loop never terminates. Backoff uses the separate
-        // persistentAttempt counter which keeps growing to the 5-min cap.
-        if (attempt >= maxRetries) attempt = maxRetries;
       } else {
+        totalRetryTimeMs += delayMs;
         if (isSurfaceableRetryError(error)) {
           yield createSystemAPIErrorMessage(error, delayMs, attempt, maxRetries);
         }
@@ -438,7 +445,8 @@ function getRetryAfter(error: unknown): string | null {
   );
 }
 
-export function getRetryDelay(attempt: number, retryAfterHeader?: string | null, maxDelayMs = 32000): number {
+export function getRetryDelay(attempt: number, retryAfterHeader?: string | null, maxDelayMs = 8000): number {
+  // Always respect server-provided Retry-After header
   if (retryAfterHeader) {
     const seconds = parseInt(retryAfterHeader, 10);
     if (!Number.isNaN(seconds)) {
@@ -446,9 +454,12 @@ export function getRetryDelay(attempt: number, retryAfterHeader?: string | null,
     }
   }
 
-  const baseDelay = Math.min(BASE_DELAY_MS * 2 ** (attempt - 1), maxDelayMs);
-  const jitter = Math.random() * 0.25 * baseDelay;
-  return baseDelay + jitter;
+  // Exponential backoff with conservative cap (8s for DEFAULT_MAX_RETRIES=3)
+  // attempt 1 → 1000ms, attempt 2 → 2000ms, attempt 3 → 4000ms, attempt 4 → 8000ms
+  const baseDelay = Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), maxDelayMs);
+  // Add small jitter (0-10%) to prevent thundering herd
+  const jitter = Math.random() * 0.1 * baseDelay;
+  return Math.round(baseDelay + jitter);
 }
 
 export function parseMaxTokensContextOverflowError(error: APIError):
@@ -588,6 +599,7 @@ function shouldRetry(error: unknown): boolean {
     return false;
   }
 
+  // Immediately retry transient messages
   if (error instanceof Error && error.message.toLowerCase().includes('please wait a moment and try again')) {
     return true;
   }
@@ -598,10 +610,9 @@ function shouldRetry(error: unknown): boolean {
   if (providerError.category === 'rate_limit') return true;
   if (providerError.category === 'auth' && getProviderErrorInfo(error)) return false;
   if (providerError.category === 'network') return true;
-  // content_filter errors are never retryable — the same content will be blocked again
-  if (providerError.category === 'content_filter') return false;
-  // insufficient_balance errors are never retryable — no point retrying if out of funds
-  if (providerError.category === 'insufficient_balance') return false;
+  // Non-retryable errors - fast-fail to avoid infinite loops
+  if (providerError.category === 'content_filter') return false; // Same content will be blocked again
+  if (providerError.category === 'insufficient_balance') return false; // No funds = no retry helps
 
   if (!(error instanceof APIError)) {
     return false;
