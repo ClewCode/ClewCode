@@ -29,11 +29,7 @@ export function BackgroundTask({ task, maxActivityWidth }: Props): React.ReactNo
       // Lite-review renders its own rainbow line (title + live counts),
       // so we don't prefix the title — the rainbow already includes it.
       if (task.isRemoteReview) {
-        return (
-          <Text>
-            <RemoteSessionProgress session={task} />
-          </Text>
-        );
+        return <RemoteSessionProgress session={task} />;
       }
       const running = task.status === 'running' || task.status === 'pending';
       return (
