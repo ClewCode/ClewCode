@@ -456,7 +456,7 @@ export function getRetryDelay(attempt: number, retryAfterHeader?: string | null,
 
   // Exponential backoff with conservative cap (8s for DEFAULT_MAX_RETRIES=3)
   // attempt 1 → 1000ms, attempt 2 → 2000ms, attempt 3 → 4000ms, attempt 4 → 8000ms
-  const baseDelay = Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), maxDelayMs);
+  const baseDelay = Math.min(BASE_DELAY_MS * 2 ** (attempt - 1), maxDelayMs);
   // Add small jitter (0-10%) to prevent thundering herd
   const jitter = Math.random() * 0.1 * baseDelay;
   return Math.round(baseDelay + jitter);
