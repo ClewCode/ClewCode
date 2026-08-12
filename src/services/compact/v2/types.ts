@@ -16,7 +16,16 @@ import type { EvictionRecord, EvictionStore } from './evictionStore.js';
 import type { CompactHealth } from './health.js';
 import type { ContextPressure } from './ledger.js';
 
-export type ReducerName = 'dedupe' | 'stale-tool' | 'scored-tool' | 'snip' | 'summarize' | 'drop';
+export type ReducerName =
+  | 'dedupe'
+  | 'state-compress'
+  | 'stale-tool'
+  | 'scored-tool'
+  | 'snip'
+  | 'summarize'
+  | 'summarize-enhanced'
+  | 'intelligent-prune'
+  | 'drop';
 
 export interface CompactSessionState {
   agentId?: AgentId;

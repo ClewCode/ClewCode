@@ -21,20 +21,24 @@ import type { EvictionRecord } from './evictionStore.js';
 import type { ContextPressure } from './ledger.js';
 import { dedupeReducer } from './reducers/dedupe.js';
 import { dropReducer } from './reducers/drop.js';
+import { intelligentPruneReducer } from './reducers/intelligent-prune.js';
 import { scoredToolReducer } from './reducers/scoredTool.js';
 import { snipReducer } from './reducers/snip.js';
 import { staleToolReducer } from './reducers/staleTool.js';
+import { stateCompressorReducer } from './reducers/state-compressor.js';
 import { summarizeReducer } from './reducers/summarize.js';
 import type { ReduceContext, Reducer, ReducerName } from './types.js';
 
 /** Every reducer, cheapest loss first. Order here *is* the policy. */
 export const REDUCERS: Reducer[] = [
   dedupeReducer,
-  staleToolReducer,
-  scoredToolReducer,
-  snipReducer,
-  summarizeReducer,
-  dropReducer,
+  stateCompressorReducer, // 0.35 — cheap state compression
+  staleToolReducer, // 0.1 — tool result pruning
+  scoredToolReducer, // 0.3 — model-guided tool eviction
+  snipReducer, // 0.5 — truncate long messages
+  summarizeReducer, // 0.6 — expensive LLM summarization
+  intelligentPruneReducer, // 0.92 — targeted message pruning
+  dropReducer, // 1.0 — last resort
 ].sort((a, b) => a.loss - b.loss);
 
 export interface PlanStep {
