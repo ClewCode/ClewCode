@@ -67,6 +67,17 @@ export type ProviderConfigFile = {
 };
 
 /**
+ * Isolated execution context for subagents, background tasks, and concurrent workers.
+ * Prevents process-global state leakage.
+ */
+export interface ScopedProviderContext {
+  provider?: ProviderId;
+  model?: string;
+  apiKeys?: Partial<Record<ProviderId, string>>;
+  providerConfig?: Record<string, unknown>;
+}
+
+/**
  * In-memory migration of legacy provider IDs (e.g. gemini -> google) in a
  * loaded provider.json. Non-destructive: the file on disk is untouched, and
  * legacy apiKeys entries are copied to the canonical ID rather than removed,
@@ -147,6 +158,16 @@ export class ProviderManager {
   }
 
   /**
+   * The current session overlay, or null when none is active. Callers that
+   * temporarily switch providers (e.g. `/model openai/gpt-5.5` validating the
+   * model against its own provider) use this to restore the previous overlay
+   * when the switch turns out to be invalid.
+   */
+  getSessionProviderConfig(): Partial<ProviderConfigFile> | null {
+    return this.sessionProviderConfig;
+  }
+
+  /**
    * Reads the raw on-disk provider config (no session overlay). Use this for
    * paths that must persist to or compare against the shared file (global
    * saves), NOT for resolving the active provider for a request.
@@ -178,6 +199,43 @@ export class ProviderManager {
       ...this.sessionProviderConfig,
       apiKeys: { ...onDisk.apiKeys, ...this.sessionProviderConfig.apiKeys },
     };
+  }
+
+  /**
+   * Resolve provider configuration using an explicit scope (e.g. for subagents or background tasks)
+   * without mutating or leaking into the process-global session configuration.
+   */
+  resolveScopedProviderConfig(scope?: ScopedProviderContext): ProviderConfigFile {
+    const sessionConfig = this.getSelectedProviderConfig();
+    if (!scope) return sessionConfig;
+    return {
+      ...sessionConfig,
+      ...(scope.provider ? { provider: scope.provider } : {}),
+      ...(scope.model ? { model: scope.model } : {}),
+      ...(scope.providerConfig ? { providerConfig: { ...sessionConfig.providerConfig, ...scope.providerConfig } } : {}),
+      apiKeys: { ...sessionConfig.apiKeys, ...scope.apiKeys },
+    };
+  }
+
+  /**
+   * Get the active provider name for a specific execution scope.
+   */
+  getScopedProviderName(scope?: ScopedProviderContext): ProviderId {
+    if (scope?.provider) {
+      return normalizeProviderId(scope.provider) ?? scope.provider;
+    }
+    return this.getActiveProviderName();
+  }
+
+  /**
+   * Get an API key for a provider within a specific execution scope.
+   */
+  getScopedApiKeyForProvider(provider?: ProviderId, scope?: ScopedProviderContext): string | undefined {
+    const targetProvider = provider ?? this.getScopedProviderName(scope);
+    if (scope?.apiKeys?.[targetProvider]) {
+      return scope.apiKeys[targetProvider];
+    }
+    return this.getApiKeyForProvider(targetProvider);
   }
 
   saveSelectedProviderConfig(config: ProviderConfigFile): void {

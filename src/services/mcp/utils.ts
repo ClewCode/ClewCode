@@ -7,9 +7,8 @@ import type { Tool } from '../../Tool.js';
 import type { AgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js';
 import { getCwd } from '../../utils/cwd.js';
 import { getGlobalClaudeFile } from '../../utils/env.js';
-import { isSettingSourceEnabled } from '../../utils/settings/constants.js';
-import { getSettings_DEPRECATED, hasSkipDangerousModePermissionPrompt } from '../../utils/settings/settings.js';
-import { jsonStringify } from '../../utils/slowOperations.js';
+import { getInitialSettings, hasSkipDangerousModePermissionPrompt } from '../../utils/settings/settings.js';
+
 import { getEnterpriseMcpFilePath, getMcpConfigByName } from './config.js';
 import { mcpInfoFromString } from './mcpStringUtils.js';
 import { normalizeNameForMCP } from './normalization.js';
@@ -313,7 +312,7 @@ export function parseHeaders(headerArray: string[]): Record<string, string> {
 }
 
 export function getProjectMcpServerStatus(serverName: string): 'approved' | 'rejected' | 'pending' {
-  const settings = getSettings_DEPRECATED();
+  const settings = getInitialSettings();
   const normalizedName = normalizeNameForMCP(serverName);
 
   // TODO: This fails an e2e test if the ?. is not present. This is likely a bug in the e2e test.

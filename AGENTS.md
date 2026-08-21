@@ -84,7 +84,7 @@ per-file loop re-typechecks the whole project each iteration and takes minutes.
 |---|---|
 | `tsconfig.json` | `module: ESNext`, `moduleResolution: bundler`, `strict: true`, `jsx: react-jsx`, path alias `src/*` |
 | `biome.json` | 2-space, single quotes, 120 columns, LF, VCS-aware (uses `.gitignore`), includes `src/**/*.{ts,tsx,js}` |
-| `.mcp.json` | MCP server definitions (clew-bus, clew-peer, agora-mcp) |
+| `.mcp.json` | MCP server definitions (clew-bus, agora-mcp) |
 | `.husky/pre-commit` | Pre-commit hook — shadow pair regression guard (`scripts/check-shadow-pairs.sh src`) |
 | `.env` | API keys — never committed (in `.gitignore`) |
 
@@ -112,7 +112,7 @@ per-file loop re-typechecks the whole project each iteration and takes minutes.
 │  commands.ts            │          │                                        │
 │  built-in, skills,      │          │  ┌─ QueryEngine.ts (streaming) ────┐   │
 │  plugins, MCP, dynamic  │          │  │ tool loop, context compaction,   │   │
-│  /delegate (rlm agent)  │          │  │ checkpoints, Max Mode            │   │
+│  /delegate, /tools      │          │  │ checkpoints, Max Mode            │   │
 │                         │          │  └──────────────────────────────────┘   │
 │  plan mode              │          │  ┌─ query.ts (non-streaming) ──────┐   │
 │  checkpoints /rewind    │          │  │ one-shot ask, no tool loop,      │   │
@@ -133,21 +133,22 @@ per-file loop re-typechecks the whole project each iteration and takes minutes.
 ┌────────▼──────────┐  ┌─────────────────────────────▼────────────┐  ┌──────────────▼───────┐
 │  TOOLS            │  │  SERVICES                                │  │  TASKS               │
 │  tools.ts         │  │  mcp/ (client: stdio/SSE/HTTP/Direct)   │  │  Task.ts             │
-│  80 tool pkgs     │  │  autonomous/ (queue, cron, DA, leases)  │  │  tasks/              │
-│  I/O, web, tasks, │  │  memory/ longTermMemory/ autoDream/     │  │  Dream, InProcess    │
-│  peer (15+), MCP, │  │  compact/v2/ (reducer-based planner)    │  │  Agent (local/rem)   │
-│  agents, memory,  │  │  plugins/ (pre/post tool/bash/edit)     │  │  Shell               │
-│  media, UI, Goal, │  │  lsp/ sessionSearch/ voiceInput/        │  │                      │
+│  presets: default,│  │  autonomous/ (queue, cron, DA, leases)  │  │  tasks/              │
+│  core (8 tools),  │  │  python/ (persistent JSON-IPC REPL)     │  │  Dream, InProcess    │
+│  python (CodeAct) │  │  compact/v2/ (reducer-based planner)    │  │  Agent (local/rem)   │
+│  I/O, web, tasks, │  │  plugins/ (pre/post tool/bash/edit)     │  │  Shell               │
+│  MCP, agents      │  │  lsp/ sessionSearch/ voiceInput/        │  │                      │
+
 │  Monitor, LSP,    │  │  auditLog/ checkpoint/ goal/            │  │                      │
 │  ComputerUse, etc │  │  coordinator/ migrations/ vim/          │  │                      │
 └───────────────────┘  └──────────────────────────────────────────┘  └──────────────────────┘
 
                     AGENT EXECUTION LAYERS (pick by intent)
 
-  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌───────────┐
-  │  Agent   │  │ Subagent │  │ Teammate │  │  LAN Peer    │  │ Background│
-  │ (main)   │  │ (Explore)│  │ (swarm)  │  │  (/peer)     │  │ /daemon   │
-  └──────────┘  └──────────┘  └──────────┘  └──────────────┘  └───────────┘
+  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────┐
+  │  Agent   │  │ Subagent │  │ Teammate │  │ Background│
+  │ (main)   │  │ (Explore)│  │ (swarm)  │  │ /daemon   │
+  └──────────┘  └──────────┘  └──────────┘  └───────────┘
 ```
 
 Flow: **REPL input** → command match or **QueryEngine** → **ProviderManager** → model stream → tool calls → tools/services → UI/state.
@@ -210,7 +211,7 @@ Commands: ~105 under `src/commands/`; `src/commands.ts` is source of truth.
 | `auditLog/` | Opt-in SIEM NDJSON audit trail |
 | `lsp/` | Language server integration |
 
-Other large surface areas: `src/agentRuntime/` (background orchestration, ultracode, workflows), `src/peer/` (LAN P2P), `src/memory/` (SQLite), `src/remote/` (Bridge v2), `src/plugins/`, `src/skills/`, `src/coordinator/`, `src/tasks/`, `src/vim/`, `src/buddy/`, `src/cli/` (arg parsing), `src/assistant/` (Kairos), `src/upstreamproxy/`, `src/native-ts/`, `src/moreright/`.
+Other large surface areas: `src/agentRuntime/` (background orchestration, ultracode, workflows), `src/memory/` (SQLite), `src/remote/` (Bridge v2), `src/plugins/`, `src/skills/`, `src/coordinator/`, `src/tasks/`, `src/vim/`, `src/buddy/`, `src/cli/` (arg parsing), `src/assistant/` (Kairos), `src/upstreamproxy/`, `src/native-ts/`, `src/moreright/`.
 
 ## System prompt flow
 
@@ -245,7 +246,6 @@ Side prompts outside the system prompt: `CODING_SYSTEM_PROMPT` (`src/constants/c
 | Agent | Main session or `.clew/agents/*.md` |
 | Subagent (`Agent` tool / Explore) | Short independent work; Explore is read-only |
 | Teammate / swarm | Multi-turn named workers with mailbox |
-| LAN peer (`/peer`) | Other Clew instances on machine/LAN; `peer_spawn` inherits provider+model |
 | Background / daemon | Queue + cron via `autonomous` + `agentRuntime` (`/bg`, `/daemon`) |
 
 Also: **plan mode** (`.clew/plans/`), **checkpoints** (20%/45%/70% + `/rewind`), **goal verification**, **Max Mode** (parallel candidates + judge).

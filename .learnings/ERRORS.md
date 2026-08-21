@@ -179,3 +179,30 @@ Use sequential PowerShell statements guarded by `$LASTEXITCODE`.
 - **Notes**: Retrying with PowerShell-compatible failure guards.
 
 ---
+## [ERR-20260821-OPENCODE]
+
+**Logged**: 2026-08-21T00:00:00+07:00
+**Priority**: medium
+**Status**: pending
+**Area**: config
+
+### Summary
+OpenCode delegation could not start because the `opencode` executable is not installed or available on PATH.
+
+### Error
+```
+The term 'opencode' is not recognized as a name of a cmdlet, function, script file, or executable program.
+```
+
+### Context
+- Attempted to run the first Task/Plan facade implementation from `PLAN.md` in the Clew Code repository.
+- Command was launched from the repository root with a PTY as required by the coding-agent workflow.
+
+### Suggested Fix
+Install OpenCode and ensure its executable is available on PATH, then rerun the delegated implementation prompt.
+
+### Metadata
+- Reproducible: yes
+- Related Files: PLAN.md
+
+---

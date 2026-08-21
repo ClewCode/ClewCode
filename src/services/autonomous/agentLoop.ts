@@ -16,8 +16,6 @@
 import { existsSync, readFileSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { getGlobalDiscovery } from '../../peer/PeerDiscovery.js';
-import { getGlobalPeerServer } from '../../peer/PeerServer.js';
 import { createCronScheduler } from '../../utils/cronScheduler.js';
 import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse } from '../../utils/slowOperations.js';
@@ -97,7 +95,6 @@ let running = false;
 let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 const activeWorkers: Map<string, WorkerSession> = new Map();
 let daemonCronScheduler: ReturnType<typeof createCronScheduler> | null = null;
-let isPeerSharingActive = false;
 
 // ─── Status Persistence ───────────────────────────────────────
 
@@ -417,50 +414,6 @@ export async function startLoop(): Promise<void> {
     console.error('[Autonomous] Failed to start background cron scheduler:', err);
   }
 
-  // Start Peer sharing
-  try {
-    const discovery = getGlobalDiscovery();
-    const server = getGlobalPeerServer();
-    const myPeerId = discovery.peerId;
-
-    const peerInfo = {
-      id: myPeerId,
-      hostname: discovery.hostname,
-      ip: '127.0.0.1',
-      port: 0,
-      cwd: process.cwd(),
-      version: '',
-      lastSeen: Date.now(),
-      status: 'online' as const,
-    };
-
-    server.setCallbacks({
-      onTodo: async todo => {
-        console.log(`[Autonomous] Received Peer Todo from ${todo.fromName}: ${todo.message}`);
-        try {
-          const taskId = await addTask({
-            title: `Peer Todo from ${todo.fromName}`,
-            description: todo.message,
-            priority: 'normal',
-            projectRoot: process.cwd(),
-            tags: ['peer-todo', `from-${todo.from}`],
-          });
-          console.log(`[Autonomous] Enqueued peer todo as queue task ${taskId}`);
-        } catch (err) {
-          console.error(`[Autonomous] Failed to enqueue peer todo:`, err);
-        }
-      },
-    });
-
-    const port = await server.start(peerInfo);
-    peerInfo.port = port;
-    await discovery.startAdvertising(port, process.cwd(), undefined, undefined, server.token);
-    isPeerSharingActive = true;
-    console.log(`[Autonomous] Background peer sharing active on port ${port} as hostname "${discovery.hostname}"`);
-  } catch (err) {
-    console.error('[Autonomous] Failed to start background peer sharing:', err);
-  }
-
   // Watch task queue for live updates
   watchQueue(() => {
     // Queue changed, loop will pick up changes on next iteration
@@ -517,18 +470,6 @@ export async function stopLoop(): Promise<void> {
     console.log('[Autonomous] Stopping background cron scheduler...');
     daemonCronScheduler.stop();
     daemonCronScheduler = null;
-  }
-
-  // Stop Peer sharing
-  if (isPeerSharingActive) {
-    console.log('[Autonomous] Stopping background peer sharing...');
-    try {
-      getGlobalDiscovery().stopAdvertising();
-      getGlobalPeerServer().stop();
-    } catch {
-      // best effort
-    }
-    isPeerSharingActive = false;
   }
 
   await saveStatus();

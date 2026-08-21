@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { type FallbackEntry, resolveNextFallback } from './fallbackChain.js';
+import { type FallbackEntry, isModelDegradedOrRefusal, resolveNextFallback } from './fallbackChain.js';
 
 // resolveNextFallback is the pure decision function at the heart of the chain:
 // given a chain, a cursor, and the active provider, which entry runs next.
@@ -80,5 +80,20 @@ describe('resolveNextFallback', () => {
 
   test('returns undefined for an empty chain', () => {
     expect(resolveNextFallback([], 0, 'anthropic')).toBeUndefined();
+  });
+});
+
+describe('isModelDegradedOrRefusal', () => {
+  test('detects refusal strings', () => {
+    expect(isModelDegradedOrRefusal('I cannot fulfill this request due to policy')).toBe(true);
+    expect(isModelDegradedOrRefusal('As an AI language model, I cannot help with that')).toBe(true);
+    expect(isModelDegradedOrRefusal("I'm sorry, but I cannot assist with this")).toBe(true);
+    expect(isModelDegradedOrRefusal('Here is the code you requested')).toBe(false);
+  });
+
+  test('detects refusal objects', () => {
+    expect(isModelDegradedOrRefusal({ finish_reason: 'refusal' })).toBe(true);
+    expect(isModelDegradedOrRefusal({ error: { message: 'I cannot generate this response' } })).toBe(true);
+    expect(isModelDegradedOrRefusal({ error: { message: 'Network timeout' } })).toBe(false);
   });
 });

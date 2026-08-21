@@ -177,11 +177,7 @@ Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://model
   </tr>
   <tr>
     <td><strong>80+ Tools</strong></td>
-    <td>Read, Write, Edit, Grep, Bash, Browser, MCP, LSP, git, web search, task management, peer coordination, media generation, voice input, and more.</td>
-  </tr>
-  <tr>
-    <td><strong>LAN Peer Swarm</strong></td>
-    <td>Zero-config peer discovery over UDP multicast. Sync memory across machines, delegate tasks, broadcast shell commands with worktree isolation and dependency ordering.</td>
+    <td>Read, Write, Edit, Grep, Bash, Browser, MCP, LSP, git, web search, task management, media generation, voice input, and more.</td>
   </tr>
   <tr>
     <td><strong>MCP + Plugins + Skills</strong></td>
@@ -213,7 +209,7 @@ Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://model
   </tr>
   <tr>
     <td><strong>Multi-Agent Architecture</strong></td>
-    <td>Agents, Subagents, Teammate swarms, and LAN Peers for parallel and distributed execution. Peers spawned with <code>peer_spawn</code> inherit the current session's exact provider and model.</td>
+    <td>Agents, Subagents, and Teammate swarms for parallel and distributed execution.</td>
   </tr>
 </table>
 
@@ -241,12 +237,11 @@ Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://model
 --effort <level>          Reasoning effort (low|medium|high|max)
 --agent <agent>           Custom agent profile
 --permission-mode <mode>  default|ask|plan|auto
---peer-share              Start as a LAN worker peer
 --computer                Enable OS-level computer use (Windows only)
 --debug                   Developer debug output
 ```
 
-Notable slash commands: `/model`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/peer`, `/mcp`, `/agent`, `/plan`, `/voice`, `/research`, `/workflow`, `/skills`, `/code-review`, `/guardian`, `/bg`, `/daemon`, `/buddy`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, `/theme`, `/delegate`, `/sessions`, and [many more](https://clew-docs.pages.dev/cli).
+Notable slash commands: `/model`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/mcp`, `/agent`, `/plan`, `/voice`, `/research`, `/workflow`, `/skills`, `/code-review`, `/guardian`, `/bg`, `/daemon`, `/buddy`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, `/theme`, `/delegate`, `/sessions`, and [many more](https://clew-docs.pages.dev/cli).
 
 ---
 
@@ -343,8 +338,7 @@ Clew Code runs entirely on your machine. No code or context leaves your network 
 | [Security & Permissions](https://clew-docs.pages.dev/security-permissions) | Permission scopes, guardian system |
 | [Skills System](https://clew-docs.pages.dev/skills) | Automate repeatable workflows |
 | [Memory System](https://clew-docs.pages.dev/memory-system) | SQLite-backed long-term memory |
-| [Peer-to-Peer LAN](https://clew-docs.pages.dev/peer-to-peer) | Discover, delegate, swarm commands |
-| [Architecture](https://clew-docs.pages.dev/concepts-agents-subagents-peers) | Agents, Subagents, Peers |
+| [Architecture](https://clew-docs.pages.dev/concepts-agents-subagents) | Agents, Subagents, Teammates |
 | [Troubleshooting](https://clew-docs.pages.dev/troubleshooting) | Common issues and fixes |
 
 Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
@@ -373,12 +367,12 @@ Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
 │ MCP││LSP ││Git ││Web ││Task││ Provider │
 │    ││    ││    ││    ││    ││ Manager  │
 └────┘└────┘└────┘└────┘└────┘└──────────┘
-   │         LAN           │       │
-   ▼         ▼             ▼       ▼
-┌──────┐┌─────────┐┌──────────┐┌──────────┐
-│ vec  ││ Peer    ││ Agent    ││ Agent    │
-│Memory││ Server  ││Runtime   ││ Subagent │
-└──────┘└─────────┘└──────────┘└──────────┘
+   │                     │       │
+   ▼                     ▼       ▼
+┌──────┐┌──────────┐┌──────────┐
+│ vec  ││ Agent    ││ Agent    │
+│Memory││Runtime   ││ Subagent │
+└──────┘└──────────┘└──────────┘
 │  Autonomous task queue + cron + DA       │
 └──────────────────────────────────────────┘
 ```

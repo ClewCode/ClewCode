@@ -29,7 +29,6 @@ import { ConfigurableShortcutHint } from '../ConfigurableShortcutHint.js';
 import { IdeStatusIndicator } from '../IdeStatusIndicator.js';
 import { MemoryUsageIndicator } from '../MemoryUsageIndicator.js';
 import { shouldShowNotificationNearPrompt } from '../notifications/notificationPlacement.js';
-import { PeerIndicator } from '../PeerIndicator.js';
 import { SentryErrorBoundary } from '../SentryErrorBoundary.js';
 import { TokenWarning } from '../TokenWarning.js';
 import { SandboxPromptFooterHint } from './SandboxPromptFooterHint.js';
@@ -324,7 +323,6 @@ function NotificationContent({
             </Box>
           )
         : null}
-      <PeerIndicator />
       <MemoryUsageIndicator />
       <SandboxPromptFooterHint />
     </>

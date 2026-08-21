@@ -21,7 +21,6 @@ import { isUndercover } from '../../utils/undercover.js';
 import { CoordinatorTaskPanel, useCoordinatorTaskCount } from '../CoordinatorAgentStatus.js';
 import { DynamicWorkflowStatusLine } from '../DynamicWorkflowProgress.js';
 import { NotificationRightSlot } from '../notifications/NotificationRightSlot.js';
-import { PeerStatusLine } from '../PeerStatusLine.js';
 import { CopiedToast, Notifications } from './Notifications.js';
 import { PromptInputFooterLeftSide } from './PromptInputFooterLeftSide.js';
 import { PromptInputFooterSuggestions, type SuggestionItem } from './PromptInputFooterSuggestions.js';
@@ -238,8 +237,6 @@ function PromptInputFooter({
       </Box>
       {'external' === 'ant' && <CoordinatorTaskPanel />}
       <DynamicWorkflowStatusLine />
-
-      <PeerStatusLine />
     </>
   );
 }

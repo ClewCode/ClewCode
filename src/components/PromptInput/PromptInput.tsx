@@ -86,6 +86,7 @@ import { cacheImagePath, storeImage } from '../../utils/imageStore.js';
 import { isMacosOptionChar, MACOS_OPTION_SPECIAL_CHARS } from '../../utils/keyboardShortcuts.js';
 import { logError } from '../../utils/log.js';
 import { isOpus1mMergeEnabled, modelDisplayString } from '../../utils/model/model.js';
+import { applyProviderSwitch, providerDisplayName, resolveModelSelection } from '../../utils/model/providerSwitch.js';
 import { setAutoModeActive } from '../../utils/permissions/autoModeState.js';
 import { cyclePermissionMode, getNextPermissionMode } from '../../utils/permissions/getNextPermissionMode.js';
 import { transitionPermissionMode } from '../../utils/permissions/permissionSetup.js';
@@ -2561,16 +2562,29 @@ function PromptInput({
   // state (like notifications) changes. This prevents the inline model picker
   // from visually "jumping" when notifications arrive.
   const handleModelSelect = useCallback(
-    (model: string | null, _effort: EffortLevel | undefined) => {
+    (modelInput: string | null, _effort: EffortLevel | undefined) => {
+      // Rows are keyed `provider/model`. Strip the prefix and switch to that
+      // provider, or the bare id would be sent to whatever provider is active.
+      const resolved = modelInput ? resolveModelSelection(modelInput) : null;
+      const model = resolved ? resolved.model : modelInput;
+      const providerPatch = applyProviderSwitch({
+        targetProvider: resolved?.targetProvider,
+        model,
+        persistAsDefault: true,
+      });
       setAppState(prev => {
         return {
           ...prev,
+          ...providerPatch,
           mainLoopModel: model,
           mainLoopModelForSession: null,
         };
       });
       setShowModelPicker(false);
       let message = `Model set to ${modelDisplayString(model)}`;
+      if (providerPatch) {
+        message += ` (${providerDisplayName(resolved?.targetProvider)})`;
+      }
       if (isBilledAsExtraUsage(model, false, isOpus1mMergeEnabled())) {
         message += ' · Usage credits';
       }

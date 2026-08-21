@@ -105,9 +105,8 @@ if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
 Write-Info "Bun $(& bun --version) found"
 Write-Info 'Installing clew-code via Bun...'
 
-# --ignore-scripts skips sharp (from @xenova/transformers) install script,
-# which is only needed for image/ComputerUse features and can fail on machines
-# without native build tooling.
+# Install without lifecycle scripts so optional native integrations do not
+# block the main CLI from being installed on minimal systems.
 & bun install -g clew-code --ignore-scripts
 
 $bunGlobalBin = Get-BunGlobalBin

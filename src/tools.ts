@@ -43,7 +43,6 @@ const getWorkflowTool = () => {
 import { TaskOutputTool } from './tools/TaskOutputTool/TaskOutputTool.js';
 import { WebSearchTool } from './tools/WebSearchTool/WebSearchTool.js';
 import { WebFetchTool } from './tools/WebFetchTool/WebFetchTool.js';
-import { JsonPathTool } from './tools/JsonPathTool/JsonPathTool.js';
 import { TodoWriteTool } from './tools/TodoWriteTool/TodoWriteTool.js';
 import { ExitPlanModeV2Tool } from './tools/ExitPlanModeTool/ExitPlanModeV2Tool.js';
 import { ReadMediaFileTool } from './tools/ReadMediaFileTool/ReadMediaFileTool.js';
@@ -55,13 +54,6 @@ import { RequestShutdownTool } from './tools/RequestShutdownTool/RequestShutdown
 import { SubscribePrActivityTool, UnsubscribePrActivityTool } from './tools/PrSubscriptionTool/PrSubscriptionTool.js';
 import { SendMessageTool } from './tools/SendMessageTool/SendMessageTool.js';
 import { AskUserQuestionTool } from './tools/AskUserQuestionTool/AskUserQuestionTool.js';
-import { PeerDiscoverTool } from './tools/PeerDiscoverTool/PeerDiscoverTool.js';
-import { PeerSendMessageTool } from './tools/PeerSendMessageTool/PeerSendMessageTool.js';
-import { PeerExecTool } from './tools/PeerExecTool/PeerExecTool.js';
-import { PeerManageTool } from './tools/PeerManageTool/PeerManageTool.js';
-import { PeerBroadcastTool } from './tools/PeerBroadcastTool/PeerBroadcastTool.js';
-import { PeerListMessagesTool } from './tools/PeerListMessagesTool/PeerListMessagesTool.js';
-import { PeerHelpTool } from './tools/PeerHelpTool/PeerHelpTool.js';
 import { MemoryFeedbackTool } from './tools/MemoryFeedbackTool/MemoryFeedbackTool.js';
 import { ContextRestoreTool } from './tools/ContextRestoreTool/ContextRestoreTool.js';
 import { GoalTool } from './tools/GoalTool/GoalTool.js';
@@ -163,7 +155,6 @@ export function getAllBaseTools(): Tools {
     BrowserTool,
     // BrowserAgentTool — disabled until ready
     // MultiSearchTool, // Using official WebSearch instead
-    JsonPathTool,
     TaskStopTool,
     AskUserQuestionTool,
     SkillTool,
@@ -177,19 +168,6 @@ export function getAllBaseTools(): Tools {
     AgentTool,
     ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
     SendMessageTool,
-    // Peer surface, consolidated from 18 tools to the 7 listed below.
-    // peer_manage folds the eleven single-verb admin calls; peer_exec merges
-    // peer_run + peer_swarm. The originals are still dispatched to — only the
-    // model-facing list shrank, and each dispatcher imports its own delegates,
-    // so nothing but these 7 should be imported here.
-    // See tools/PeerManageTool/PeerManageTool.ts and PeerExecTool.ts.
-    PeerDiscoverTool,
-    PeerSendMessageTool,
-    PeerListMessagesTool,
-    PeerBroadcastTool,
-    PeerExecTool,
-    PeerManageTool,
-    PeerHelpTool,
     MemoryFeedbackTool,
 
     ...(isAgentSwarmsEnabled() ? [TeamCreateTool, TeamDeleteTool, RequestShutdownTool] : []),

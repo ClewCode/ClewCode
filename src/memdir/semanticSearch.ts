@@ -15,7 +15,6 @@
  * - Automatic invalidation on file changes (content_hash)
  */
 
-import { env, pipeline } from '@xenova/transformers';
 import { readFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { getClewConfigHomeDir } from '../utils/envUtils.js';
@@ -23,19 +22,9 @@ import { type MemoryHeader, scanMemoryFiles } from './memoryScan.js';
 import { getAutoMemPath } from './paths.js';
 import { indexMemory, needsIndexing, removeMissing, searchVectors } from './semanticIndex.js';
 
-// Configure Xenova
-env.allowLocalModels = false;
-env.useBrowserCache = false;
-// Cache models in ~/.clew/models to persist across sessions
-// Note: cacheDir type may vary by version, so we use type assertion
-try {
-  (env as any).cacheDir = join(getClewConfigHomeDir(), 'models');
-} catch {
-  // cacheDir may not be supported in all versions
-}
-
 // Singleton extractor
-let extractor: Awaited<ReturnType<typeof pipeline>> | null = null;
+type EmbeddingExtractor = (text: string, options?: unknown) => Promise<unknown>;
+let extractor: EmbeddingExtractor | null = null;
 
 /**
  * Get or create the embedding extractor pipeline.
@@ -43,7 +32,19 @@ let extractor: Awaited<ReturnType<typeof pipeline>> | null = null;
  */
 async function getExtractor() {
   if (!extractor) {
-    extractor = await pipeline('feature-extraction', 'Xenova/granite-embedding-97m-multilingual-r2', {
+    // Embeddings are optional. Keep the import dynamic so installations do not
+    // need to ship native image dependencies just to start Clew Code.
+    const moduleName = '@xenova/transformers';
+    const transformers = (await import(moduleName)) as {
+      env?: { allowLocalModels?: boolean; useBrowserCache?: boolean; cacheDir?: string };
+      pipeline: (task: string, model: string, options: { quantized: boolean }) => Promise<EmbeddingExtractor>;
+    };
+    if (transformers.env) {
+      transformers.env.allowLocalModels = false;
+      transformers.env.useBrowserCache = false;
+      transformers.env.cacheDir = join(getClewConfigHomeDir(), 'models');
+    }
+    extractor = await transformers.pipeline('feature-extraction', 'Xenova/granite-embedding-97m-multilingual-r2', {
       quantized: true,
     });
   }
@@ -57,12 +58,14 @@ async function getExtractor() {
 export async function createEmbedding(text: string): Promise<number[]> {
   const ext = await getExtractor();
   // Call pipeline with text and options (type assertion needed for complex union type)
-  const output = await ext(text, { pooling: 'mean' } as any);
+  const output = (await ext(text, { pooling: 'mean' } as any)) as
+    | { data?: ArrayLike<number> }
+    | Record<string, unknown>;
 
   // Extract data from output (handle different output types)
   let embedding: number[];
   if ('data' in output && output.data) {
-    embedding = Array.from(output.data as Float32Array) as number[];
+    embedding = Array.from((output as { data: ArrayLike<number> }).data) as number[];
   } else if (typeof output === 'object' && output !== null) {
     const values = Object.values(output).filter(v => typeof v === 'number');
     if (values.length > 0) {
@@ -198,36 +201,41 @@ export async function searchMemories(query: string, topK = 5, threshold = 0.6): 
   const memoryDir = getAutoMemPath();
   if (!memoryDir) return [];
 
-  // BUG #7: Ensure syncIndex completes before search (serialize to guarantee memory is indexed first)
-  await syncIndex(memoryDir);
-  const queryEmbed = await createEmbedding(query);
+  try {
+    // BUG #7: Ensure syncIndex completes before search (serialize to guarantee memory is indexed first)
+    await syncIndex(memoryDir);
+    const queryEmbed = await createEmbedding(query);
 
-  const vectorResults = searchVectors(queryEmbed, topK, threshold);
-  if (vectorResults.length === 0) return [];
+    const vectorResults = searchVectors(queryEmbed, topK, threshold);
+    if (vectorResults.length === 0) return [];
 
-  // Load content for preview from matched files
-  const results = await Promise.allSettled(
-    vectorResults.map(async (vr): Promise<SemanticMemoryResult | null> => {
-      try {
-        const content = await readFile(vr.filePath, 'utf-8');
-        return {
-          file: vr.filename,
-          filePath: vr.filePath,
-          type: vr.type ?? undefined,
-          description: vr.description,
-          score: vr.score,
-          content: content.slice(0, 500), // Preview
-        };
-      } catch {
-        return null;
-      }
-    }),
-  );
+    // Load content for preview from matched files
+    const results = await Promise.allSettled(
+      vectorResults.map(async (vr): Promise<SemanticMemoryResult | null> => {
+        try {
+          const content = await readFile(vr.filePath, 'utf-8');
+          return {
+            file: vr.filename,
+            filePath: vr.filePath,
+            type: vr.type ?? undefined,
+            description: vr.description,
+            score: vr.score,
+            content: content.slice(0, 500), // Preview
+          };
+        } catch {
+          return null;
+        }
+      }),
+    );
 
-  return results
-    .filter((r): r is PromiseFulfilledResult<SemanticMemoryResult | null> => r.status === 'fulfilled')
-    .map(r => r.value)
-    .filter((r): r is SemanticMemoryResult => r !== null);
+    return results
+      .filter((r): r is PromiseFulfilledResult<SemanticMemoryResult | null> => r.status === 'fulfilled')
+      .map(r => r.value)
+      .filter((r): r is SemanticMemoryResult => r !== null);
+  } catch {
+    // Semantic embeddings are optional; callers can fall back to keyword/LLM search.
+    return [];
+  }
 }
 
 /**

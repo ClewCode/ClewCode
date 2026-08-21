@@ -62,15 +62,13 @@ export type AutoCompactTrackingState = {
   consecutiveFailures?: number;
 };
 
-// These re-export v2/limits.ts so the many existing importers keep working.
-// New code should read the corresponding field off computeLimits() instead of
-// re-deriving a threshold from a raw buffer constant.
+// These export v2/limits.ts values so existing importers and internal functions work.
+export const BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT = V2_BACKGROUND_MIN_THRESHOLD_PCT;
+export const ERROR_THRESHOLD_BUFFER_TOKENS = V2_CRITICAL_BUFFER_TOKENS;
 export const AUTOCOMPACT_BUFFER_TOKENS = DEFAULT_BUFFER_TOKENS;
 export const AUTOCOMPACT_HARD_BUFFER_TOKENS = V2_FORCE_BUFFER_TOKENS;
-export const WARNING_THRESHOLD_BUFFER_TOKENS = V2_WARN_BUFFER_TOKENS;
-export const ERROR_THRESHOLD_BUFFER_TOKENS = V2_CRITICAL_BUFFER_TOKENS;
 export const MANUAL_COMPACT_BUFFER_TOKENS = V2_MANUAL_COMPACT_BUFFER_TOKENS;
-export const BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT = V2_BACKGROUND_MIN_THRESHOLD_PCT;
+export const WARNING_THRESHOLD_BUFFER_TOKENS = V2_WARN_BUFFER_TOKENS;
 
 /**
  * Check if the conversation is at a natural boundary where compacting is safe.

@@ -19,6 +19,7 @@ import { logForDebugging } from '../../../utils/debug.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../../analytics/index.js';
 import type { EvictionRecord } from './evictionStore.js';
 import type { ContextPressure } from './ledger.js';
+import { astSkeletonReducer } from './reducers/astSkeleton.js';
 import { dedupeReducer } from './reducers/dedupe.js';
 import { dropReducer } from './reducers/drop.js';
 import { intelligentPruneReducer } from './reducers/intelligent-prune.js';
@@ -34,6 +35,7 @@ export const REDUCERS: Reducer[] = [
   dedupeReducer,
   stateCompressorReducer, // 0.35 — cheap state compression
   staleToolReducer, // 0.1 — tool result pruning
+  astSkeletonReducer, // 0.22 — AST symbol skeleton extraction
   scoredToolReducer, // 0.3 — model-guided tool eviction
   snipReducer, // 0.5 — truncate long messages
   summarizeReducer, // 0.6 — expensive LLM summarization

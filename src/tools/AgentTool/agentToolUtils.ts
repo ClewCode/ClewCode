@@ -67,14 +67,10 @@ export function filterToolsForAgent({
   isBuiltIn: boolean;
   isAsync?: boolean;
   permissionMode?: PermissionMode;
-  agentType?: string;
 }): Tools {
   return tools.filter(tool => {
-    // RLM exists to delegate synchronous strands; background recursion remains blocked.
-    if (agentType === 'rlm' && !isAsync && toolMatchesName(tool, AGENT_TOOL_NAME)) {
-      return true;
-    }
     // Allow MCP tools for all agents
+
     if (tool.name.startsWith('mcp__')) {
       return true;
     }

@@ -21,6 +21,7 @@ import {
   renderModelName,
 } from '../../utils/model/model.js';
 import { isModelAllowed } from '../../utils/model/modelAllowlist.js';
+import { applyProviderSwitch, providerDisplayName, resolveModelSelection } from '../../utils/model/providerSwitch.js';
 import { addRecentModel } from '../../utils/model/recentModels.js';
 import { validateModel } from '../../utils/model/validateModel.js';
 import { setSessionModelForTranscript } from '../../utils/sessionStorage.js';
@@ -33,48 +34,6 @@ import { setSessionModelForTranscript } from '../../utils/sessionStorage.js';
  */
 function stripStaleThinkingOnModelChange(setMessages: LocalJSXCommandContext['setMessages'] | undefined): void {
   setMessages?.(stripSignatureBlocks);
-}
-
-/**
- * Split a `/model` argument into an optional provider switch and the model id.
- *
- * The provider-switch syntax is `<provider>/<model>` (e.g. `openai/gpt-5.5`),
- * but several providers — notably Cline — expose OpenRouter-style model ids that
- * ALSO contain a slash whose first segment collides with a real provider id
- * (`deepseek/deepseek-v4-flash`, `minimax/minimax-m3`). Blindly splitting those
- * strips the vendor prefix and sends a bare, invalid model id — the gateway then
- * rejects it with "invalid model format. Expected format: modelType/model".
- *
- * Disambiguation: if the CURRENT provider already exposes the full input as a
- * model id, keep it whole. Only otherwise, when the first segment is a known
- * provider id, treat it as a provider switch.
- */
-function resolveModelSelection(modelInput: string): { targetProvider?: string; model: string } {
-  /* eslint-disable @typescript-eslint/no-require-imports */
-  const { PROVIDER_IDS } = require('../../services/ai/providerRegistry.js');
-  const { getProviderModelInfo } = require('../../services/ai/providerCapabilities.js');
-  /* eslint-enable @typescript-eslint/no-require-imports */
-
-  let currentProvider: string | undefined;
-  try {
-    currentProvider = ProviderManager.getInstance().getSelectedProviderConfig(true).provider;
-  } catch {
-    // ProviderManager may not be initialized in every context — fall through
-    // to the prefix-splitting heuristic below.
-  }
-
-  // Current provider already owns this exact id (vendor-prefixed model like
-  // Cline's `deepseek/deepseek-v4-flash`) → keep it whole, do NOT strip.
-  if (currentProvider && getProviderModelInfo(currentProvider, modelInput)) {
-    return { model: modelInput };
-  }
-
-  const parts = modelInput.split('/');
-  const firstSegment = parts[0];
-  if (firstSegment && PROVIDER_IDS.includes(firstSegment)) {
-    return { targetProvider: firstSegment, model: parts.slice(1).join('/') };
-  }
-  return { model: modelInput };
 }
 
 function ModelPickerWrapper({
@@ -124,35 +83,18 @@ function ModelPickerWrapper({
       return;
     }
 
-    if (targetProvider && model !== null) {
-      // Session model is managed by AppState's mainLoopModelForSession →
-      // onChangeAppState syncs it to the query pipeline. ProviderManager is a
-      // process-global singleton — do NOT call setSessionModel/setSessionProvider
-      // here, or the change leaks into every other in-process session (agents, bg).
-      try {
-        const pm = ProviderManager.getInstance();
-        const cfg = pm.getSelectedProviderConfig(true);
-        const { getProviderRegistryEntry } = require('../../services/ai/providerRegistry.js');
-        const registryEntry = getProviderRegistryEntry(targetProvider as any);
-
-        // Only persist to config when explicitly asked (persistAsDefault)
-        if (options?.persistAsDefault) {
-          const updatedConfig = {
-            ...cfg,
-            provider: targetProvider,
-            model: model,
-            providerConfig: registryEntry,
-          };
-          pm.saveSelectedProviderConfig(updatedConfig as any);
-        }
-      } catch {
-        // Non-critical configuration update error
-      }
-    }
+    // Picking a model out of a provider's group switches to that provider —
+    // otherwise the bare model id goes to whichever provider was already active.
+    const providerPatch = applyProviderSwitch({
+      targetProvider,
+      model,
+      persistAsDefault: options?.persistAsDefault === true,
+    });
 
     if (options?.persistAsDefault) {
       setAppState(prev => ({
         ...prev,
+        ...providerPatch,
         mainLoopModel: model,
         mainLoopModelForSession: null,
       }));
@@ -173,6 +115,7 @@ function ModelPickerWrapper({
     } else {
       setAppState(prev => ({
         ...prev,
+        ...providerPatch,
         mainLoopModelForSession: model,
       }));
       if (model !== null) {
@@ -184,9 +127,10 @@ function ModelPickerWrapper({
 
     stripStaleThinkingOnModelChange(setMessages);
 
+    const providerLabel = providerPatch ? ` (${ansis.bold(providerDisplayName(targetProvider))})` : '';
     let message = options?.persistAsDefault
-      ? `Set default model to ${ansis.bold(renderModelLabel(model))}`
-      : `Set model to ${ansis.bold(renderModelLabel(model))} for this session`;
+      ? `Set default model to ${ansis.bold(renderModelLabel(model))}${providerLabel}`
+      : `Set model to ${ansis.bold(renderModelLabel(model))}${providerLabel} for this session`;
     if (effort !== undefined) {
       message += ` with ${ansis.bold(effort)} effort`;
     }
@@ -263,6 +207,13 @@ function SetModelAndClose({
         return;
       }
 
+      // `/model <provider>/<model>` switches provider as well, and it has to
+      // happen BEFORE validateModel — validation resolves against the ACTIVE
+      // provider, so validating first would check the model against the
+      // provider the user is leaving. Restored below if the model is rejected.
+      const previousOverlay = ProviderManager.getInstance().getSessionProviderConfig();
+      const providerPatch = applyProviderSwitch({ targetProvider, model, persistAsDefault: false });
+
       // Skip validation for default model
       if (!model) {
         setModel(null);
@@ -284,40 +235,50 @@ function SetModelAndClose({
         if (valid) {
           setModel(model);
         } else {
+          revertProviderSwitch();
           onDone(error || `Model '${model}' not found`, {
             display: 'system',
           });
         }
       } catch (error) {
+        revertProviderSwitch();
         onDone(`Failed to validate model: ${(error as Error).message}`, {
           display: 'system',
         });
       }
-    }
 
-    function setModel(modelValue: string | null): void {
-      // Session-only: AppState's mainLoopModelForSession syncs via
-      // onChangeAppState. Do NOT call setSessionModel/setSessionProvider on the
-      // ProviderManager singleton — that leaks the override into every in-process
-      // session (agents, bg tasks).
-
-      setAppState(prev => ({
-        ...prev,
-        mainLoopModelForSession: modelValue,
-      }));
-
-      if (modelValue !== null) {
-        addRecentModel(modelValue);
+      function revertProviderSwitch(): void {
+        if (providerPatch) {
+          ProviderManager.getInstance().setSessionProviderConfig(previousOverlay);
+        }
       }
 
-      // Persist the session model choice to transcript for resume restore
-      setSessionModelForTranscript(modelValue ?? undefined);
+      function setModel(modelValue: string | null): void {
+        // Session-only: AppState's mainLoopModelForSession (and, for a provider
+        // switch, mainLoopProviderForSession) sync via onChangeAppState. Do NOT
+        // call setSessionModel on the ProviderManager singleton — that leaks the
+        // model override into every in-process session (agents, bg tasks).
 
-      stripStaleThinkingOnModelChange(setMessages);
+        setAppState(prev => ({
+          ...prev,
+          ...providerPatch,
+          mainLoopModelForSession: modelValue,
+        }));
 
-      const message = `Set model to ${ansis.bold(renderModelLabel(modelValue))} for this session`;
+        if (modelValue !== null) {
+          addRecentModel(modelValue);
+        }
 
-      onDone(message);
+        // Persist the session model choice to transcript for resume restore
+        setSessionModelForTranscript(modelValue ?? undefined);
+
+        stripStaleThinkingOnModelChange(setMessages);
+
+        const providerLabel = providerPatch ? ` (${ansis.bold(providerDisplayName(targetProvider))})` : '';
+        const message = `Set model to ${ansis.bold(renderModelLabel(modelValue))}${providerLabel} for this session`;
+
+        onDone(message);
+      }
     }
 
     void handleModelChange();

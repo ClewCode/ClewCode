@@ -41,9 +41,8 @@ fi
 
 # ── Install clew-code ───────────────────────────────────────────────────────
 info "Installing clew-code via bun..."
-# --ignore-scripts skips sharp (from @xenova/transformers) install script,
-# which fails on Node.js <14 or missing build tools. clew imports sharp
-# dynamically — it's only needed for image/ComputerUse features.
+# Install without lifecycle scripts so optional native integrations do not
+# block the main CLI from being installed on minimal systems.
 bun install -g clew-code --ignore-scripts
 
 printf "\n${BOLD}Done!${NC} Opening a new terminal with ${BOLD}clew${NC} ready...\n"

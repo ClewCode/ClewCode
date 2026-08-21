@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Removed the Xenova Transformers/sharp install dependency**: semantic memory search now degrades gracefully when the optional embedding runtime is unavailable, so the CLI can start without native image modules.
+- **System Prompt Modernization & Prefix Cache Optimization**: Cleaned legacy boilerplate in static system prompt sections, locked immutable static blocks before `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` for 100% prompt cache hit rates, and upgraded `CODING_SYSTEM_PROMPT` to enforce codebase inspection, surgical diffs, and test verification.
+- **Subagents & Dead Code Pruning**: Removed redundant `rlm` agent, `JsonPathTool`, and `ParallelSearchReadTool`. Streamlined built-in subagent prompts (`Explore`, `Plan`, `Verification`) for fast, non-overlapping synthesis.
+- **`/model` now follows the provider you picked from**: choosing a model out of a provider's group in the picker (or running `/model openai/gpt-5.5`) switches the session to that provider instead of sending the bare model id to whatever provider was already active. Session picks go through ProviderManager's in-memory overlay — the same mechanism `/providers` uses — so `provider.json` and other terminals are untouched; only "set as default" writes to disk. The Ctrl-key model picker in the prompt input had the same bug in a worse form (it stored the raw `provider/model` string as the default model) and is fixed too. The status message now names the provider.
+- **Removed the LAN peer system**: deleted the entire peer subsystem — 19 peer tools, the `src/peer` engine, the `/peer` command, peer UI components (`PeerIndicator`, `PeerStatusLine`), and the `usePeerAutoInject`/`peerSync` hooks. Swarm/teammate and Remote Control features are preserved. The `clew-peer` MCP server entry was removed from `.mcp.json` and `AGENTS.md`/`README.md` were updated.
+
+
 ## [0.8.6] - 2026-08-12
 
 - **Ink rendering fix**: removed unnecessary `<Text>` wrapper from `RemoteSessionProgress` in `isRemoteReview` case that created component nesting conflicts.

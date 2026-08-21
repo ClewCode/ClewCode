@@ -157,7 +157,7 @@ export function formatInsightsForTASTE(result: InsightExtractionResult): string 
  */
 export async function processCompactInsights(messages: Message[]): Promise<InsightExtractionResult | null> {
   const summaryMsg = messages.find(m => m.type === 'user' && m.isCompactSummary);
-  if (!summaryMsg || summaryMsg.type !== 'user') return null;
+  if (summaryMsg?.type !== 'user') return null;
 
   const content = summaryMsg.message?.content;
   const summaryText = typeof content === 'string' ? content : '';

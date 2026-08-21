@@ -98,3 +98,38 @@ describe('session-scoped provider config overlay', () => {
     expect(providerManager.getSelectedProviderConfig()).toEqual(providerManager.getOnDiskProviderConfig());
   });
 });
+
+describe('ScopedProviderContext isolation', () => {
+  test('resolves scope overrides without modifying session overlay or on-disk state', async () => {
+    const { ProviderManager } = await import('./ProviderManager.js');
+    const pm = ProviderManager.getInstance();
+
+    const baseConfig = pm.getSelectedProviderConfig();
+
+    const scoped = pm.resolveScopedProviderConfig({
+      provider: 'anthropic',
+      model: 'claude-3-5-haiku-20241022',
+      apiKeys: { anthropic: 'test-key-haiku' },
+    });
+
+    expect(scoped.provider).toBe('anthropic');
+    expect(scoped.model).toBe('claude-3-5-haiku-20241022');
+    expect(scoped.apiKeys?.anthropic).toBe('test-key-haiku');
+
+    // Global session state remains untouched
+    expect(pm.getSelectedProviderConfig().provider).toBe(baseConfig.provider);
+  });
+
+  test('resolves scoped provider name and API key correctly', async () => {
+    const { ProviderManager } = await import('./ProviderManager.js');
+    const pm = ProviderManager.getInstance();
+
+    const scopedName = pm.getScopedProviderName({ provider: 'google' });
+    expect(scopedName).toBe('google');
+
+    const scopedKey = pm.getScopedApiKeyForProvider('google', {
+      apiKeys: { google: 'scoped-google-key' },
+    });
+    expect(scopedKey).toBe('scoped-google-key');
+  });
+});

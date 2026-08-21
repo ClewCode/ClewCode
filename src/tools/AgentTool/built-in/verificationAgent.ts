@@ -2,7 +2,6 @@ import { BASH_TOOL_NAME } from 'src/tools/BashTool/toolName.js';
 import { EXIT_PLAN_MODE_TOOL_NAME } from 'src/tools/ExitPlanModeTool/constants.js';
 import { FILE_EDIT_TOOL_NAME } from 'src/tools/FileEditTool/constants.js';
 import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
-import { NOTEBOOK_EDIT_TOOL_NAME } from 'src/tools/NotebookEditTool/constants.js';
 import { WEB_FETCH_TOOL_NAME } from 'src/tools/WebFetchTool/prompt.js';
 import { AGENT_TOOL_NAME } from '../constants.js';
 import type { BuiltInAgentDefinition } from '../loadAgentsDir.js';
@@ -136,13 +135,7 @@ export const VERIFICATION_AGENT: BuiltInAgentDefinition = {
   whenToUse: VERIFICATION_WHEN_TO_USE,
   color: 'red',
   background: true,
-  disallowedTools: [
-    AGENT_TOOL_NAME,
-    EXIT_PLAN_MODE_TOOL_NAME,
-    FILE_EDIT_TOOL_NAME,
-    FILE_WRITE_TOOL_NAME,
-    NOTEBOOK_EDIT_TOOL_NAME,
-  ],
+  disallowedTools: [AGENT_TOOL_NAME, EXIT_PLAN_MODE_TOOL_NAME, FILE_EDIT_TOOL_NAME, FILE_WRITE_TOOL_NAME],
   source: 'built-in',
   baseDir: 'built-in',
   model: 'inherit',

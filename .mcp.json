@@ -4,10 +4,6 @@
       "type": "http",
       "url": "http://127.0.0.1:7333/mcp"
     },
-    "clew-peer": {
-      "type": "http",
-      "url": "http://127.0.0.1:7334/mcp"
-    },
     "agora-mcp": {
       "command": "C:/Users/Admin/.cargo/bin/agora.exe"
     }

@@ -14,7 +14,7 @@ export type Step = {
 };
 
 export function getSteps(): Step[] {
-  const hasAgentMd = getFsImplementation().existsSync(join(getCwd(), 'AGENT.md'));
+  const hasAgentMd = getFsImplementation().existsSync(join(getCwd(), 'AGENTS.md'));
   const isWorkspaceDirEmpty = isDirEmpty(getCwd());
 
   return [
@@ -27,7 +27,7 @@ export function getSteps(): Step[] {
     },
     {
       key: 'agentmd',
-      text: 'Run /init to create a AGENT.md file with instructions for Clew',
+      text: 'Run /init to create a AGENTS.md file with instructions for Clew',
       isComplete: hasAgentMd,
       isCompletable: true,
       isEnabled: !isWorkspaceDirEmpty,

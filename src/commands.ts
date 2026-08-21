@@ -28,7 +28,6 @@ import keybindings from './commands/keybindings/index.js';
 import installGitHubApp from './commands/install-github-app/index.js';
 import installSlackApp from './commands/install-slack-app/index.js';
 import mcp from './commands/mcp/index.js';
-import swarmCmd from './commands/peer/index.js';
 import pr_comments from './commands/pr_comments/index.js';
 import releaseNotes from './commands/release-notes/index.js';
 import rename from './commands/rename/index.js';
@@ -214,7 +213,6 @@ const COMMANDS = memoize((): Command[] => [
   loginCmd(),
   agentConfig,
   outputStyle,
-  swarmCmd,
   skill,
   powerup,
   providerSelect,

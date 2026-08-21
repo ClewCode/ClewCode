@@ -20,6 +20,7 @@ export type ReducerName =
   | 'dedupe'
   | 'state-compress'
   | 'stale-tool'
+  | 'ast-skeleton'
   | 'scored-tool'
   | 'snip'
   | 'summarize'

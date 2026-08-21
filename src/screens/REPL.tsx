@@ -101,7 +101,6 @@ import {
 } from '../utils/swarm/leaderPermissionBridge.js';
 import { endInteractionSpan } from '../utils/telemetry/sessionTracing.js';
 import { useLogMessages } from '../hooks/useLogMessages.js';
-import { usePeerAutoInject } from '../hooks/usePeerAutoInject.js';
 import { useReplBridge } from '../hooks/useReplBridge.js';
 import { useRemoteBridge } from '../hooks/useRemoteBridge.js';
 import {
@@ -995,25 +994,6 @@ export function REPL({
   const editorRenderingRef = useRef(false);
   const { addNotification, removeNotification } = useNotifications();
 
-  // Wire up swarm tool feedback notifications
-  useEffect(() => {
-    import('../tools/peer/peerFeedback.js').then(({ setPeerFeedbackHandler }) => {
-      setPeerFeedbackHandler((message, key = 'swarm-feedback', priority = 'medium') => {
-        addNotification({
-          key,
-          text: `peer: ${message}`,
-          priority,
-          timeoutMs: 5000,
-        });
-      });
-    });
-    return () => {
-      import('../tools/peer/peerFeedback.js').then(({ setPeerFeedbackHandler }) => {
-        setPeerFeedbackHandler(null);
-      });
-    };
-  }, [addNotification]);
-
   // eslint-disable-next-line prefer-const
   const trySuggestBgPRIntercept = SUGGEST_BG_PR_NOOP;
 
@@ -1558,9 +1538,6 @@ export function REPL({
     }
     rawSetMessages(next);
   }, []);
-  // Wire peer events → agent conversation as system_reminder messages.
-  // Eliminates polling-based swarm_list_messages tool.
-  usePeerAutoInject(setMessages);
 
   // Show project rules as a system message in chat at startup
   useEffect(() => {

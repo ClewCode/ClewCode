@@ -1,3 +1,7 @@
+/**
+ * @deprecated Legacy Claude-CCR bridge implementation.
+ * Prefer provider-agnostic bridge architecture under `src/remote/` (Bridge v2 / Relay).
+ */
 // biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
 import { randomUUID } from 'crypto';
 import { createBridgeApiClient, BridgeFatalError, isExpiredErrorType, isSuppressible403 } from './bridgeApi.js';

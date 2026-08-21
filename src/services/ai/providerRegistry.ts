@@ -115,6 +115,17 @@ export function getProviderRegistryEntry(provider: ProviderId): ProviderRegistry
   return PROVIDER_REGISTRY[provider];
 }
 
+/**
+ * A registry entry stripped of its live `provider` instance, so it can be
+ * written to provider.json or held in a session-scoped config overlay.
+ */
+export type SerializableProviderRegistryEntry = Omit<ProviderRegistryEntry, 'provider'>;
+
+export function getSerializableProviderRegistryEntry(provider: ProviderId): SerializableProviderRegistryEntry {
+  const { provider: _instance, ...serializable } = getProviderRegistryEntry(provider);
+  return serializable;
+}
+
 export function getProviderOptions(provider: ProviderId) {
   const providerEntry = getProviderRegistryEntry(provider);
   return {

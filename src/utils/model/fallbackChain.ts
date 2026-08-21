@@ -1,5 +1,5 @@
 import type { EffortLevel } from '../effort.js';
-import { getSettings_DEPRECATED, updateSettingsForSource } from '../settings/settings.js';
+import { getInitialSettings, updateSettingsForSource } from '../settings/settings.js';
 
 export type FallbackEntry = {
   provider?: string; // omitted = active provider at trigger time
@@ -12,7 +12,7 @@ export type FallbackEntry = {
  * @returns The configured fallback chain, empty array if unset
  */
 export function getModelFallbackChain(): FallbackEntry[] {
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getInitialSettings() || {};
   return settings.modelFallbacks ?? [];
 }
 
@@ -90,4 +90,46 @@ export function resolveNextFallback(
   // used mid-retry — switching providers requires mutating a process-global
   // that leaks into concurrent subagents. They apply from the next query.
   return undefined;
+}
+
+/**
+ * Checks if a response, error, or stream chunk indicates model degradation,
+ * hard refusal, or an unrecoverable repetition loop that warrants triggering fallback.
+ */
+export function isModelDegradedOrRefusal(input: unknown): boolean {
+  if (!input) return false;
+
+  if (typeof input === 'string') {
+    const text = input.trim();
+    // Common refusal prefixes and phrases across major LLMs
+    const refusalPatterns = [
+      /^i cannot (assist|comply|fulfill|process|generate|help with)/i,
+      /^as an ai (language )?model, i (cannot|am not able)/i,
+      /^i'm sorry, but i cannot/i,
+      /^i am unable to provide/i,
+      /violates (our|the) safety (guidelines|policy)/i,
+    ];
+    for (const pattern of refusalPatterns) {
+      if (pattern.test(text)) return true;
+    }
+    return false;
+  }
+
+  if (typeof input === 'object') {
+    const obj = input as Record<string, any>;
+    // Check stop reasons / finish reasons
+    if (obj.finish_reason === 'refusal' || obj.stop_reason === 'refusal' || obj.refusal) {
+      return true;
+    }
+    // Check error codes / messages
+    if (obj.error) {
+      const msg = typeof obj.error === 'string' ? obj.error : obj.error.message || '';
+      return isModelDegradedOrRefusal(msg);
+    }
+    if (obj.message && typeof obj.message === 'string') {
+      return isModelDegradedOrRefusal(obj.message);
+    }
+  }
+
+  return false;
 }

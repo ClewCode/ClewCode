@@ -31,6 +31,9 @@ const FETCH_TIMEOUT_MS = 5000;
 const MCP_SERVERS_BETA_HEADER = 'mcp-servers-2025-12-04';
 
 /**
+ * @deprecated Legacy Claude.ai org-managed MCP server fetcher.
+ * Modern multi-provider MCP configuration should be defined in standard `.mcp.json` or settings.
+ *
  * @[MULTI_PROVIDER] Fetches MCP server configurations from Claude.ai org configs.
  * These servers are managed by the organization via Claude.ai.
  * Non-Anthropic providers (OpenAI, Google, etc.) don't use Claude.ai — returns {}.

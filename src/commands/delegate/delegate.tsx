@@ -5,7 +5,7 @@ import { Box, Text, useInput } from '../../ink.js';
 import { useAppState } from '../../state/AppState.js';
 import { killAsyncAgent, registerAsyncAgent } from '../../tasks/LocalAgentTask/LocalAgentTask.js';
 import { runAsyncAgentLifecycle } from '../../tools/AgentTool/agentToolUtils.js';
-import { RLM_AGENT } from '../../tools/AgentTool/built-in/rlmAgent.js';
+import { GENERAL_PURPOSE_AGENT } from '../../tools/AgentTool/built-in/generalPurposeAgent.js';
 import type { AgentDefinition } from '../../tools/AgentTool/loadAgentsDir.js';
 import { isBuiltInAgent } from '../../tools/AgentTool/loadAgentsDir.js';
 import { runAgent } from '../../tools/AgentTool/runAgent.js';
@@ -21,7 +21,7 @@ import type { ModelAlias } from '../../utils/model/aliases.js';
 import { createAgentId } from '../../utils/uuid.js';
 
 /** Default agent type when /delegate is called without an agent argument. */
-const DEFAULT_DELEGATE_AGENT = RLM_AGENT.agentType;
+const DEFAULT_DELEGATE_AGENT = GENERAL_PURPOSE_AGENT.agentType;
 
 /**
  * DelegateRunner — live UI while the delegated agent runs.
