@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Removed `/mode` Command & Behavioral Modes Subsystem**: Deleted the `/mode` command, `src/modes/` subsystem, settings schema fields, and the dynamic `mode` system prompt section to streamline session configuration.
 - **Auto-Compact v2 & `/compact` Command Unification**: Fixed recursion guard collision between manual `/compact` and inner summarization subagents (`compact_summarize`), added forced/manual compaction options to Auto-Compact v2 planner to execute custom instructions cleanly without falling back to legacy paths, and passed complete cache-sharing parameters to optimize prompt cache reuse.
 - **Comprehensive Dead Code & Orphaned File Cleanup**: Pruned 74 unreferenced files including legacy agent creation wizards (`src/components/agents/new-agent-creation/`), dead memory/UI components, unregistered commands, deprecated services, and unused hooks/utilities.
 - **Export Consolidation & Encapsulation**: Removed redundant default exports across tools (`TaskOutputTool`, `MonitorTool`, `FileIndex`, `MonitorPermissionRequest`, `ComputerUseDoctorSection`), deleted unused legacy `*PendingNotifications` and `submitPermissionRequest` aliases, and encapsulated internal functions/constants in `auth.ts`, `client.ts`, and `compact.ts`.

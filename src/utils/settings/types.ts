@@ -648,15 +648,6 @@ export const SettingsSchema = lazySchema(() =>
         .optional()
         .catch(undefined)
         .describe('Persisted effort level for supported models.'),
-      mode: z
-        .string()
-        .nullable()
-        .optional()
-        .catch(undefined)
-        .describe(
-          'Active behavioral mode (see /mode). Built-in names plus anything ' +
-            'defined in .clew/modes/*.md. null or absent means no mode.',
-        ),
       advisorModel: z.string().optional().describe('Advisor model for the server-side advisor tool.'),
 
       fastMode: z

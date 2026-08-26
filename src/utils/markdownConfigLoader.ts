@@ -28,8 +28,6 @@ export const CLEW_CONFIG_DIRECTORIES = [
   'commands',
   'agents',
   'output-styles',
-  // Behavioral presets switched with /mode — see src/modes/.
-  'modes',
   'skills',
   'workflows',
   ...(feature('TEMPLATES') ? (['templates'] as const) : []),

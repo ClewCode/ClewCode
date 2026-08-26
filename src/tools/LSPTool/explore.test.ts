@@ -4,20 +4,20 @@ import { extractTerms } from './explore.js';
 describe('extractTerms', () => {
   it('keeps every name in a bare list of symbols', () => {
     // Relative order between two equally identifier-shaped names is not a contract.
-    expect(extractTerms('PeerServer setActiveMode').sort()).toEqual(['PeerServer', 'setActiveMode']);
+    expect(extractTerms('PeerServer getOutputStyleConfig').sort()).toEqual(['PeerServer', 'getOutputStyleConfig']);
   });
 
   it('pulls identifiers out of a natural-language question and drops the prose', () => {
-    const terms = extractTerms('how does setActiveMode persist across sessions?');
-    expect(terms).toContain('setActiveMode');
+    const terms = extractTerms('how does getOutputStyleConfig persist across sessions?');
+    expect(terms).toContain('getOutputStyleConfig');
     expect(terms).not.toContain('how');
     expect(terms).not.toContain('does');
   });
 
   it('ranks identifier-shaped tokens above bare lowercase words', () => {
     // "persist" survives (it is not a stopword) but must not outrank the identifier.
-    const terms = extractTerms('why does getModeSection return null');
-    expect(terms[0]).toBe('getModeSection');
+    const terms = extractTerms('why does getCanonicalName return null');
+    expect(terms[0]).toBe('getCanonicalName');
   });
 
   it('recognises snake_case and PascalCase as identifiers', () => {
