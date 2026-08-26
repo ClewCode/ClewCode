@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 // Provider configuration falls back to settings.env, so a real user settings
 // file would otherwise leak API keys into these tests and hit the live API.
 mock.module('../../utils/settings/settings.js', () => ({
+  getSettings: () => ({ env: {} }),
   getSettings_DEPRECATED: () => ({ env: {} }),
 }));
 

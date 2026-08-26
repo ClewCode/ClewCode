@@ -1,27 +1,30 @@
-import { getSettings_DEPRECATED } from '../../../utils/settings/settings.js';
+import { getSettings } from '../../../utils/settings/settings.js';
 import { rateLimitErrorFromResponse } from '../errors.js';
 import type { SearchOptions, SearchProvider, SearchResponse, SearchResult } from '../types.js';
 
 interface JinaSearchResponse {
-  data?: Array<{
-    title?: string;
-    url?: string;
+  code: number;
+  status: number;
+  data: Array<{
+    title: string;
+    url: string;
+    description: string;
     content?: string;
-    description?: string;
   }>;
 }
 
 export class JinaProvider implements SearchProvider {
   name = 'jina';
-  description = 'Jina Reader search with full page content';
+  description = 'LLM-friendly search engine with reader capabilities';
   requiresApiKey = true;
   apiKeyEnvVar = 'JINA_API_KEY';
-  baseUrl = 'https://s.jina.ai';
+  baseUrl = 'https://s.jina.ai/';
   supportsPagination = false;
   maxResultsPerPage = 10;
+  rateLimit = 20; // 20 requests/minute without key
 
   async search(query: string, options?: SearchOptions): Promise<SearchResponse> {
-    const settings = getSettings_DEPRECATED();
+    const settings = getSettings();
     const apiKey = process.env.JINA_API_KEY || settings?.env?.JINA_API_KEY;
     if (!apiKey) {
       throw new Error('JINA_API_KEY not configured');

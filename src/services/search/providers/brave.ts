@@ -1,4 +1,4 @@
-import { getSettings_DEPRECATED } from '../../../utils/settings/settings.js';
+import { getSettings } from '../../../utils/settings/settings.js';
 import { rateLimitErrorFromResponse } from '../errors.js';
 import type { SearchOptions, SearchProvider, SearchResponse, SearchResult } from '../types.js';
 
@@ -23,7 +23,7 @@ export class BraveProvider implements SearchProvider {
   rateLimit = 2000; // 2000 requests/day on free tier
 
   async search(query: string, options?: SearchOptions): Promise<SearchResponse> {
-    const settings = getSettings_DEPRECATED();
+    const settings = getSettings();
     const apiKey = process.env.BRAVE_API_KEY || settings?.env?.BRAVE_API_KEY;
     if (!apiKey) {
       throw new Error('BRAVE_API_KEY not configured');

@@ -1,13 +1,13 @@
-import { getSettings_DEPRECATED } from '../../../utils/settings/settings.js';
+import { getSettings } from '../../../utils/settings/settings.js';
 import { rateLimitErrorFromResponse } from '../errors.js';
 import type { SearchOptions, SearchProvider, SearchResponse, SearchResult } from '../types.js';
 
 interface TavilySearchResponse {
-  results?: Array<{
+  results: Array<{
     title: string;
     url: string;
     content: string;
-    score: number;
+    score?: number;
   }>;
   answer?: string;
 }
@@ -17,13 +17,13 @@ export class TavilyProvider implements SearchProvider {
   description = 'AI-optimized search engine designed for LLMs';
   requiresApiKey = true;
   apiKeyEnvVar = 'TAVILY_API_KEY';
-  baseUrl = 'https://api.tavily.com';
+  baseUrl = 'https://api.tavily.com/search';
   supportsPagination = false;
-  maxResultsPerPage = 10;
-  rateLimit = 60;
+  maxResultsPerPage = 20;
+  rateLimit = 1000;
 
   async search(query: string, options?: SearchOptions): Promise<SearchResponse> {
-    const settings = getSettings_DEPRECATED();
+    const settings = getSettings();
     const apiKey = process.env.TAVILY_API_KEY || settings?.env?.TAVILY_API_KEY;
     if (!apiKey) {
       throw new Error('TAVILY_API_KEY not configured');

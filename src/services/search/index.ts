@@ -1,4 +1,4 @@
-import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
+import { getSettings } from '../../utils/settings/settings.js';
 import { SearchRateLimitError, SearchTimeoutError } from './errors.js';
 import { BraveProvider } from './providers/brave.js';
 import { DuckDuckGoProvider } from './providers/duckduckgo.js';
@@ -40,7 +40,7 @@ export function isProviderConfigured(name: string): boolean {
   if (!provider) return false;
   if (!provider.requiresApiKey) return true;
 
-  const settings = getSettings_DEPRECATED();
+  const settings = getSettings();
   const envVar = provider.apiKeyEnvVar;
   return envVar ? !!(process.env[envVar] || settings?.env?.[envVar]) : false;
 }

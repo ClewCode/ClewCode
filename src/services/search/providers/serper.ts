@@ -1,4 +1,4 @@
-import { getSettings_DEPRECATED } from '../../../utils/settings/settings.js';
+import { getSettings } from '../../../utils/settings/settings.js';
 import { rateLimitErrorFromResponse } from '../errors.js';
 import type { SearchOptions, SearchProvider, SearchResponse, SearchResult } from '../types.js';
 
@@ -28,7 +28,7 @@ export class SerperProvider implements SearchProvider {
   rateLimit = 2500; // 2500 requests/month on free tier
 
   async search(query: string, options?: SearchOptions): Promise<SearchResponse> {
-    const settings = getSettings_DEPRECATED();
+    const settings = getSettings();
     const apiKey = process.env.SERPER_API_KEY || settings?.env?.SERPER_API_KEY;
     if (!apiKey) {
       throw new Error('SERPER_API_KEY not configured');

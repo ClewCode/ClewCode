@@ -11,7 +11,7 @@ import {
   linkWorkflowToActiveGoal,
   setFullGoalState,
 } from '../../utils/sessionGoalState.js';
-import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
+import { getSettings } from '../../utils/settings/settings.js';
 
 const GOAL_TEMPLATES: Record<string, string> = {
   'fix-build': 'the project builds without errors or stop after 30 turns',
@@ -244,7 +244,7 @@ export async function call(
     first !== 'resume' &&
     !CLEAR_VERBS.has(first)
   ) {
-    const settings = getSettings_DEPRECATED();
+    const settings = getSettings();
     if (settings.disableAllHooks || settings.allowManagedHooksOnly) {
       const reason = settings.disableAllHooks ? 'disableAllHooks' : 'allowManagedHooksOnly';
       onDone(
