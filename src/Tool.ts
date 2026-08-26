@@ -94,8 +94,6 @@ export type SetToolJSXFn = (
     clearLocalJSX?: boolean;
     /** Render as a centered modal (full-screen takeover) regardless of fullscreen mode */
     centered?: boolean;
-    /** Keep the local JSX content in the main REPL surface instead of the modal slot. */
-    inline?: boolean;
   } | null,
 ) => void;
 

@@ -53,6 +53,7 @@ import { renderableSearchText } from '../utils/transcriptSearch.js';
 import { Divider } from './design-system/Divider.js';
 import type { UnseenDivider } from './FullscreenLayout.js';
 import { LogoV2 } from './LogoV2/LogoV2.js';
+import { MainAgentActivity } from './MainAgentActivity.js';
 import { StreamingMarkdown } from './Markdown.js';
 import { hasContentAfterIndex, MessageRow } from './MessageRow.js';
 import {
@@ -856,6 +857,7 @@ const MessagesImpl = ({
     <>
       {/* Logo */}
       {!hideLogo && !(renderRange && renderRange[0] > 0) && <LogoHeader agentDefinitions={agentDefinitions} />}
+      {!hideLogo && !(renderRange && renderRange[0] > 0) && <MainAgentActivity isMainWorking={isLoading} />}
 
       {/* Truncation indicator */}
       {hasTruncatedMessages && hiddenMessageCount > 0 && (

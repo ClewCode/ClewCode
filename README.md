@@ -172,6 +172,8 @@ Compaction health and shortfalls are tracked per agent. Evicted content is store
 
 Frequently used slash commands include `/model`, `/providers`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/mcp`, `/agent`, `/plan`, `/research`, `/workflow`, `/skills`, `/code-review`, `/bg`, `/daemon`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, `/theme`, and `/sessions`.
 
+The main REPL shows a compact live roster below the Clew logo so agents needing input, active work, and recent completions stay visible without opening another screen. Use `/sessions` when you need the full searchable catalog and session actions.
+
 ## Configuration
 
 Provider credentials can be entered through the setup flow or supplied as environment variables. See the [provider documentation](https://clew-docs.pages.dev/providers) for the current catalog.

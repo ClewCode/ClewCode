@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
   - Added unit test suites for basic tools (`FileReadTool`, `FileEditTool`, `GlobTool`, `GrepTool`, and task management utilities `src/utils/tasks.ts`).
   - Resolved circular dependency between `GlobTool` and `GrepTool` by directly importing `renderToolResultMessage` from UI layer.
   - Hardened quote normalization, whitespace stripping, and curly-quote preservation in `FileEditTool`.
-  - Wired full-screen `/sessions` catalog routing in REPL with custom dashboard view.
+  - Added a compact live agent roster directly below the main REPL logo, with animated Needs input, Working, and Completed sections; `/sessions` remains the detailed management view.
 
 - **Frontend Consolidation & Settings API Modernization**:
   - Re-exported `AgentValidationResult` from `validateAgent.ts` in `agents/types.ts` to eliminate duplicate type declarations.

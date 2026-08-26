@@ -765,7 +765,6 @@ async function getMessagesForSlashCommand(
                 isLocalJSXCommand: true,
                 isImmediate: command.immediate === true,
                 centered: command.name === 'agents',
-                inline: command.name === 'sessions',
               });
             })
             .catch(e => {

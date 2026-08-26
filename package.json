@@ -38,6 +38,7 @@
     "format:check": "biome format src/",
     "check": "biome check --write src/",
     "check:ci": "biome ci src/",
+    "check:circular": "node scripts/check-circular-deps.mjs",
     "ast-grep": "bun x ast-grep",
     "docs:generate": "bun run scripts/generate-docs.ts",
     "docs:watch": "bun --watch run scripts/generate-docs.ts",

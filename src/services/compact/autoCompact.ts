@@ -28,15 +28,14 @@ import { getGlobalConfig } from '../../utils/config.js';
 import { isEnvTruthy } from '../../utils/envUtils.js';
 import { roughTokenCountEstimationForBlock } from '../tokenEstimation.js';
 import {
+  CRITICAL_BUFFER_TOKENS,
   computeBackgroundThreshold,
   computeEffectiveWindow,
   computeLimits,
   DEFAULT_BUFFER_TOKENS,
-  BACKGROUND_MIN_THRESHOLD_PCT as V2_BACKGROUND_MIN_THRESHOLD_PCT,
-  CRITICAL_BUFFER_TOKENS as V2_CRITICAL_BUFFER_TOKENS,
-  FORCE_BUFFER_TOKENS as V2_FORCE_BUFFER_TOKENS,
-  MANUAL_COMPACT_BUFFER_TOKENS as V2_MANUAL_COMPACT_BUFFER_TOKENS,
-  WARN_BUFFER_TOKENS as V2_WARN_BUFFER_TOKENS,
+  FORCE_BUFFER_TOKENS,
+  MANUAL_COMPACT_BUFFER_TOKENS,
+  WARN_BUFFER_TOKENS,
 } from './v2/limits.js';
 
 // Returns the context window size minus the max output tokens for the model.
@@ -63,12 +62,14 @@ export type AutoCompactTrackingState = {
 };
 
 // These export v2/limits.ts values so existing importers and internal functions work.
-export const BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT = V2_BACKGROUND_MIN_THRESHOLD_PCT;
-export const ERROR_THRESHOLD_BUFFER_TOKENS = V2_CRITICAL_BUFFER_TOKENS;
-export const AUTOCOMPACT_BUFFER_TOKENS = DEFAULT_BUFFER_TOKENS;
-export const AUTOCOMPACT_HARD_BUFFER_TOKENS = V2_FORCE_BUFFER_TOKENS;
-export const MANUAL_COMPACT_BUFFER_TOKENS = V2_MANUAL_COMPACT_BUFFER_TOKENS;
-export const WARNING_THRESHOLD_BUFFER_TOKENS = V2_WARN_BUFFER_TOKENS;
+export {
+  BACKGROUND_MIN_THRESHOLD_PCT as BACKGROUND_AUTOCOMPACT_MIN_THRESHOLD_PCT,
+  CRITICAL_BUFFER_TOKENS as ERROR_THRESHOLD_BUFFER_TOKENS,
+  DEFAULT_BUFFER_TOKENS as AUTOCOMPACT_BUFFER_TOKENS,
+  FORCE_BUFFER_TOKENS as AUTOCOMPACT_HARD_BUFFER_TOKENS,
+  MANUAL_COMPACT_BUFFER_TOKENS,
+  WARN_BUFFER_TOKENS as WARNING_THRESHOLD_BUFFER_TOKENS,
+} from './v2/limits.js';
 
 /**
  * Check if the conversation is at a natural boundary where compacting is safe.
@@ -183,8 +184,8 @@ export function calculateTokenWarningState(
 
   return {
     percentLeft: Math.max(0, Math.round(((threshold - tokenUsage) / threshold) * 100)),
-    isAboveWarningThreshold: tokenUsage >= threshold - WARNING_THRESHOLD_BUFFER_TOKENS,
-    isAboveErrorThreshold: tokenUsage >= threshold - ERROR_THRESHOLD_BUFFER_TOKENS,
+    isAboveWarningThreshold: tokenUsage >= threshold - WARN_BUFFER_TOKENS,
+    isAboveErrorThreshold: tokenUsage >= threshold - CRITICAL_BUFFER_TOKENS,
     isAboveAutoCompactThreshold: isAutoCompactEnabled() && tokenUsage >= limits.actNow,
     isAtBlockingLimit: tokenUsage >= limits.blocking,
   };
