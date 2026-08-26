@@ -28,6 +28,7 @@ import type { TabStatusKind } from '../ink/hooks/use-tab-status.js';
 import { CostThresholdDialog } from '../components/CostThresholdDialog.js';
 import { AutonomousExecutionAccordion } from '../components/AutonomousExecutionAccordion.js';
 import { IdleReturnDialog } from '../components/IdleReturnDialog.js';
+import { SessionCatalogView } from '../components/sessionCatalog/SessionCatalogView.js';
 import * as React from 'react';
 import {
   useEffect,
@@ -869,6 +870,8 @@ export function REPL({
   const pendingSandboxRequest = useAppState(s => s.pendingSandboxRequest);
   const teamContext = useAppState(s => s.teamContext);
   const tasks = useAppState(s => s.tasks);
+  const sessionCatalogOpen = useAppState(s => s.sessionCatalogOpen === true);
+  const sessionCatalogAllProjects = useAppState(s => s.sessionCatalogAllProjects === true);
   const workerSandboxPermissions = useAppState(s => s.workerSandboxPermissions);
   const elicitation = useAppState(s => s.elicitation);
   const ultraplanPendingChoice = useAppState(s => s.ultraplanPendingChoice);
@@ -5713,6 +5716,26 @@ export function REPL({
       return <AlternateScreen mouseTracking={isMouseTrackingEnabled()}>{transcriptReturn}</AlternateScreen>;
     }
     return transcriptReturn;
+  }
+
+  if (sessionCatalogOpen) {
+    return (
+      <AlternateScreen mouseTracking={isMouseTrackingEnabled()}>
+        <SessionCatalogView
+          allProjects={sessionCatalogAllProjects}
+          onDone={result => {
+            setAppState(previous => ({
+              ...previous,
+              sessionCatalogOpen: false,
+              sessionCatalogAllProjects: false,
+            }));
+            if (result) {
+              addNotification({ key: 'session-catalog', text: result, priority: 'immediate' });
+            }
+          }}
+        />
+      </AlternateScreen>
+    );
   }
 
   // Get viewed agent task (inlined from selectors for explicit data flow).

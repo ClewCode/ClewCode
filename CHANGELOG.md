@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Basic Tools Hardening & Test Coverage**:
+  - Added unit test suites for basic tools (`FileReadTool`, `FileEditTool`, `GlobTool`, `GrepTool`, and task management utilities `src/utils/tasks.ts`).
+  - Resolved circular dependency between `GlobTool` and `GrepTool` by directly importing `renderToolResultMessage` from UI layer.
+  - Hardened quote normalization, whitespace stripping, and curly-quote preservation in `FileEditTool`.
+  - Wired full-screen `/sessions` catalog routing in REPL with custom dashboard view.
+
 - **Frontend Consolidation & Settings API Modernization**:
   - Re-exported `AgentValidationResult` from `validateAgent.ts` in `agents/types.ts` to eliminate duplicate type declarations.
   - Migrated reactive UI components (`ConsoleOAuthFlow`, `MCPServerApprovalDialog`, `MCPServerMultiselectDialog`, `HooksConfigMenu`, `SandboxSettings`) from legacy `getSettings_DEPRECATED()` to the modern, reactive `useSettings()` hook.

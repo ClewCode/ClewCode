@@ -7,7 +7,7 @@ import { TOOL_SUMMARY_MAX_LENGTH } from '../../constants/toolLimits.js';
 import { Text } from '../../ink.js';
 import { FILE_NOT_FOUND_CWD_NOTE, getDisplayPath } from '../../utils/file.js';
 import { truncate } from '../../utils/format.js';
-import { GrepTool } from '../GrepTool/GrepTool.js';
+import { renderToolResultMessage } from '../GrepTool/UI.js';
 export function userFacingName(): string {
   return 'Search';
 }
@@ -60,7 +60,7 @@ export function renderToolUseErrorMessage(
 }
 
 // Note: GlobTool reuses GrepTool's renderToolResultMessage
-export const renderToolResultMessage = GrepTool.renderToolResultMessage;
+export { renderToolResultMessage };
 export function getToolUseSummary(
   input:
     | Partial<{

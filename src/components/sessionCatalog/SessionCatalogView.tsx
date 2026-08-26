@@ -522,6 +522,12 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
   const hasMoreAbove = start > 0;
   const hasMoreBelow = start + listHeight < displayItems.length;
   const sectionCounts = countRowsBySection(rows);
+  const visibleSection = visibleItems.find(item => item.type === 'row')?.row.section;
+  const showStickySection = hasMoreAbove && visibleItems[0]?.type !== 'heading' && visibleSection;
+  const visibleSectionHeadingIndex = showStickySection
+    ? visibleItems.findIndex(item => item.type === 'heading' && item.section === visibleSection)
+    : -1;
+  const renderedItems = visibleSectionHeadingIndex > 0 ? visibleItems.slice(visibleSectionHeadingIndex) : visibleItems;
 
   const renderRow = (row: CatalogRow, isSelected: boolean): React.ReactNode => {
     const indent = '  '.repeat(row.depth);
@@ -686,11 +692,15 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
       </Box>
 
       <Box flexDirection="column" minHeight={listHeight}>
-        {hasMoreAbove ? <Text dimColor>{'  '}...</Text> : null}
+        {showStickySection ? (
+          <Text dimColor>
+            {'  '}↑ more · {sectionTitle(visibleSection)} ({sectionCounts[visibleSection]})
+          </Text>
+        ) : null}
         {rows.length === 0 ? (
           <Text dimColor>{query ? '  No sessions match your search.' : '  No sessions yet.'}</Text>
         ) : (
-          visibleItems.map((item, itemIndex) => renderItem(item, start + itemIndex))
+          renderedItems.map((item, itemIndex) => renderItem(item, start + itemIndex + visibleSectionHeadingIndex))
         )}
         {hasMoreBelow ? <Text dimColor>{'  '}...</Text> : null}
       </Box>
