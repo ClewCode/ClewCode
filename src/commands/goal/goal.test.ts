@@ -7,7 +7,27 @@ describe('/goal command handler', () => {
     setFullGoalState(null);
   });
 
-  it('reports no active goal when session goal is unset', async () => {
+  it('mounts interactive GoalManagerView when invoked with no arguments', async () => {
+    const context: any = {
+      getAppState: () => ({}),
+      setAppState: () => undefined,
+      options: { toolPermissionContext: {} },
+    };
+
+    let doneCalled = false;
+    const jsxNode = await call(
+      () => {
+        doneCalled = true;
+      },
+      context,
+      '',
+    );
+
+    expect(jsxNode).not.toBeNull();
+    expect(doneCalled).toBe(false);
+  });
+
+  it('reports no active goal when status is checked with unset goal', async () => {
     let resultMessage = '';
     const context: any = {
       getAppState: () => ({}),
@@ -20,7 +40,7 @@ describe('/goal command handler', () => {
         resultMessage = result ?? '';
       },
       context,
-      '',
+      'status',
     );
 
     expect(resultMessage).toContain('No goal set');

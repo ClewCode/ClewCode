@@ -1,3 +1,5 @@
+import React from 'react';
+import { GoalManagerView } from '../../components/goalManager/GoalManagerView.js';
 import { parseGoalBounds } from '../../services/goal/goalEvaluator.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
@@ -219,12 +221,17 @@ export async function call(
   onDone: LocalJSXCommandOnDone,
   context: ToolUseContext & LocalJSXCommandContext,
   args: string,
-): Promise<null> {
+): Promise<React.ReactNode> {
   const trimmed = args?.trim() ?? '';
   const tokens = trimmed ? trimmed.split(/\s+/) : [];
   const first = (tokens[0] || '').toLowerCase();
   const rest = tokens.slice(1).join(' ').trim();
   const appState = context.getAppState();
+
+  // ── Interactive Goal Manager TUI (when called with no args) ────────────
+  if (!trimmed) {
+    return <GoalManagerView onDone={onDone} onSetGoal={condition => call(onDone, context, condition)} />;
+  }
 
   // ── Hooks disabled gate ──────────────────────────────────────────────────
   // Goal turn tracking depends on hooks. Show a clear message rather
@@ -248,8 +255,8 @@ export async function call(
     }
   }
 
-  // ── Status: /goal, /goal status, /goal show ─────────────────────────────
-  if (!trimmed || first === 'status' || first === 'show') {
+  // ── Status: /goal status, /goal show ─────────────────────────────────────
+  if (first === 'status' || first === 'show') {
     const currentGoal = appState.sessionGoal;
     if (currentGoal) {
       const goalState = getFullGoalState();
