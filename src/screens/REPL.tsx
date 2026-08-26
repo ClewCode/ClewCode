@@ -1321,6 +1321,7 @@ export function REPL({
     isLocalJSXCommand?: boolean;
     isImmediate?: boolean;
     centered?: boolean;
+    inline?: boolean;
   } | null>(null);
 
   // Track local JSX commands separately so tools can't overwrite them.
@@ -1332,6 +1333,7 @@ export function REPL({
     showSpinner?: boolean;
     isLocalJSXCommand: true;
     centered?: boolean;
+    inline?: boolean;
   } | null>(null);
 
   // Wrapper for setToolJSX that preserves local JSX commands (like /btw).
@@ -1353,6 +1355,7 @@ export function REPL({
         isLocalJSXCommand?: boolean;
         clearLocalJSX?: boolean;
         centered?: boolean;
+        inline?: boolean;
       } | null,
     ) => {
       // If setting a local JSX command, store it in the ref
@@ -4097,6 +4100,7 @@ export function REPL({
                 jsx,
                 shouldHidePromptInput: false,
                 isLocalJSXCommand: true,
+                inline: matchingCommand.inline,
               });
             }
           };
@@ -5812,7 +5816,8 @@ export function REPL({
   // (immediate: /model, /mcp, /btw, ...) and scrollable (non-immediate:
   // /config, /theme, /diff, ...) both go here now.
   const toolJsxCentered =
-    (isFullscreenEnvEnabled() && toolJSX?.isLocalJSXCommand === true) || toolJSX?.centered === true;
+    (isFullscreenEnvEnabled() && toolJSX?.isLocalJSXCommand === true && !toolJSX.inline) || toolJSX?.centered === true;
+  const inlineToolJSX = toolJSX?.inline === true;
   const centeredModal: React.ReactNode = toolJsxCentered ? toolJSX!.jsx : null;
   const noTranscriptPeek = !!toolJSX?.centered;
 
@@ -5881,37 +5886,39 @@ export function REPL({
           }}
           scrollable={
             <>
-              <TeammateViewHeader />
-              <Messages
-                messages={displayedMessages}
-                tools={tools}
-                commands={commands}
-                verbose={verbose}
-                toolJSX={toolJSX}
-                toolUseConfirmQueue={toolUseConfirmQueue}
-                inProgressToolUseIDs={
-                  viewedTeammateTask ? (viewedTeammateTask.inProgressToolUseIDs ?? new Set()) : inProgressToolUseIDs
-                }
-                isMessageSelectorVisible={isMessageSelectorVisible}
-                conversationId={conversationId}
-                screen={screen}
-                streamingToolUses={streamingToolUses}
-                showAllInTranscript={showAllInTranscript}
-                agentDefinitions={agentDefinitions}
-                onOpenRateLimitOptions={handleOpenRateLimitOptions}
-                isLoading={isLoading}
-                streamingText={isLoading && !viewedAgentTask ? visibleStreamingText : null}
-                isBriefOnly={viewedAgentTask ? false : isBriefOnly}
-                autonomousCompact={Boolean(sessionGoal) && !viewedAgentTask}
-                unseenDivider={viewedAgentTask ? undefined : unseenDivider}
-                scrollRef={isFullscreenEnvEnabled() ? scrollRef : undefined}
-                trackStickyPrompt={isFullscreenEnvEnabled() ? true : undefined}
-                disableRenderCap={(initialMessages?.length ?? 0) > 0}
-                cursor={cursor}
-                setCursor={setCursor}
-                cursorNavRef={cursorNavRef}
-                onMessageDisplay={onMessageDisplay}
-              />
+              {!inlineToolJSX && <TeammateViewHeader />}
+              {!inlineToolJSX && (
+                <Messages
+                  messages={displayedMessages}
+                  tools={tools}
+                  commands={commands}
+                  verbose={verbose}
+                  toolJSX={toolJSX}
+                  toolUseConfirmQueue={toolUseConfirmQueue}
+                  inProgressToolUseIDs={
+                    viewedTeammateTask ? (viewedTeammateTask.inProgressToolUseIDs ?? new Set()) : inProgressToolUseIDs
+                  }
+                  isMessageSelectorVisible={isMessageSelectorVisible}
+                  conversationId={conversationId}
+                  screen={screen}
+                  streamingToolUses={streamingToolUses}
+                  showAllInTranscript={showAllInTranscript}
+                  agentDefinitions={agentDefinitions}
+                  onOpenRateLimitOptions={handleOpenRateLimitOptions}
+                  isLoading={isLoading}
+                  streamingText={isLoading && !viewedAgentTask ? visibleStreamingText : null}
+                  isBriefOnly={viewedAgentTask ? false : isBriefOnly}
+                  autonomousCompact={Boolean(sessionGoal) && !viewedAgentTask}
+                  unseenDivider={viewedAgentTask ? undefined : unseenDivider}
+                  scrollRef={isFullscreenEnvEnabled() ? scrollRef : undefined}
+                  trackStickyPrompt={isFullscreenEnvEnabled() ? true : undefined}
+                  disableRenderCap={(initialMessages?.length ?? 0) > 0}
+                  cursor={cursor}
+                  setCursor={setCursor}
+                  cursorNavRef={cursorNavRef}
+                  onMessageDisplay={onMessageDisplay}
+                />
+              )}
               <AwsAuthStatusBox />
               {/* Hide the processing placeholder while a modal is showing —
                   it would sit at the last visible transcript row right above

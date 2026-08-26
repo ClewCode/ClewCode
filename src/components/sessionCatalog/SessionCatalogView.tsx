@@ -70,9 +70,9 @@ const DELETE_CONFIRM_DURATION_MS = 2000;
 const STATUS_MESSAGE_DURATION_MS = 4500;
 const WORKING_ICON_FRAMES = ['✻', '✽', '✢', '·'] as const;
 const WORKING_ICON_INTERVAL_MS = 200;
-const NEEDS_INPUT_ROW_ICON = '●';
-const COMPLETED_ROW_ICON = '✓';
-const SEARCH_PROMPT_PLACEHOLDER = 'Search sessions';
+const IDLE_ICON_FRAMES = ['◌', '○', '◌', '○'] as const;
+const INACTIVE_ICON_FRAMES = ['·', '·', '·', '·'] as const;
+const SEARCH_PROMPT_PLACEHOLDER = 'Search agents';
 const PAGE_STEP_ROWS = 10;
 
 type ComposerMode = 'reply' | 'rename' | 'new';
@@ -490,10 +490,10 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
         void deleteRow(selectedRow);
         return;
       }
-      if (input === ' ' && !query) {
-        if (!selectedRow) return;
-        setComposerMode('reply');
-        setComposerTargetIdentity(selectedRow.identity);
+      if ((input === 'n' || (input === ' ' && !query)) && !query) {
+        if (input === ' ' && !selectedRow) return;
+        setComposerMode(input === 'n' ? 'new' : 'reply');
+        setComposerTargetIdentity(selectedRow?.identity);
         return;
       }
     },
@@ -556,8 +556,8 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
       row.section === 'running'
         ? WORKING_ICON_FRAMES[iconFrame]
         : row.section === 'idle'
-          ? NEEDS_INPUT_ROW_ICON
-          : COMPLETED_ROW_ICON;
+          ? IDLE_ICON_FRAMES[iconFrame]
+          : INACTIVE_ICON_FRAMES[iconFrame];
     const titleWidth = Math.max(
       8,
       contentWidth - indent.length - 2 - details.length - 2 - (heartbeat ? heartbeat.length + 1 : 0),
@@ -601,7 +601,7 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
       case 'heading':
         return (
           <Text key={`heading-${item.section}`} bold color={sectionColor(item.section)}>
-            {sectionTitle(item.section)} <Text dimColor>({sectionCounts[item.section]})</Text>
+            {`${sectionTitle(item.section)} (${sectionCounts[item.section]})`}
           </Text>
         );
       case 'empty':
@@ -715,8 +715,12 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
 
       <Box marginTop={1}>
         <Text dimColor wrap="truncate">
-          ↑/↓ move · enter open · → drill in · ← back · space reply · ctrl+n new · ctrl+r rename · ctrl+x stop · esc
-          close
+          › describe a task for a new session
+        </Text>
+      </Box>
+      <Box marginTop={1}>
+        <Text dimColor wrap="truncate">
+          ↑/↓ move · enter open · n new · space reply · ctrl+r rename · ctrl+x stop · esc close
         </Text>
       </Box>
     </Box>

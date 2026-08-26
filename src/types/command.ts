@@ -182,6 +182,8 @@ export type CommandBase = {
   loadedFrom?: 'commands_DEPRECATED' | 'skills' | 'plugin' | 'managed' | 'bundled' | 'mcp'; // Where the command was loaded from
   kind?: 'workflow'; // Distinguishes workflow-backed commands (badged in autocomplete)
   immediate?: boolean; // If true, command executes immediately without waiting for a stop point (bypasses queue)
+  /** Render a local JSX command in the main surface instead of the fullscreen modal slot. */
+  inline?: boolean;
   isSensitive?: boolean; // If true, args are redacted from the conversation history
   /** Defaults to `name`. Only override when the displayed name differs (e.g. plugin prefix stripping). */
   userFacingName?: () => string;

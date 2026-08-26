@@ -111,11 +111,11 @@ export function classifyCatalogRecord(record: Pick<CatalogRecord, 'live' | 'hear
 export function sectionTitle(section: SessionCatalogSection): string {
   switch (section) {
     case 'running':
-      return 'Running';
+      return 'Working';
     case 'idle':
-      return 'Idle';
+      return 'Needs input';
     case 'inactive':
-      return 'Inactive';
+      return 'Completed';
     default: {
       const _exhaustive: never = section;
       return _exhaustive;
@@ -935,7 +935,7 @@ export function getDisplayRowsForSection(rows: readonly CatalogRow[], section: S
 
 export function buildDisplayItems(rows: readonly CatalogRow[]): CatalogDisplayItem[] {
   const items: CatalogDisplayItem[] = [];
-  const sections: SessionCatalogSection[] = ['running', 'idle', 'inactive'];
+  const sections: SessionCatalogSection[] = ['idle', 'running', 'inactive'];
   for (const [index, section] of sections.entries()) {
     if (index > 0) items.push({ type: 'spacer' });
     items.push({ type: 'heading', section });
