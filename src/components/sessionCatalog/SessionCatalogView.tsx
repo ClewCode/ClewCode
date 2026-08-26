@@ -44,6 +44,7 @@ import {
   type CatalogRow,
   type CatalogScopeFrame,
   type CatalogSelectionKey,
+  countRowsBySection,
   filterCatalogSessions,
   formatCatalogCounts,
   formatHeartbeatBadge,
@@ -501,8 +502,11 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
 
   // ─── Render ─────────────────────────────────────────────────
 
-  const contentWidth = Math.max(48, Math.min(columns - 2, 120));
-  const listHeight = Math.max(6, terminalRows - 16);
+  // The agents view is a terminal dashboard, so use the available width. A
+  // fixed max-width made long session names wrap/truncate too aggressively
+  // and left the right half of wide terminals visually empty.
+  const contentWidth = Math.max(48, columns - 2);
+  const listHeight = Math.max(6, terminalRows - 18);
   const displayItems = React.useMemo(() => buildDisplayItems(rows), [rows]);
   const selectedDisplayIndex = displayItems.findIndex(
     item => item.type === 'row' && item.row.identity === selectedRow?.identity,
@@ -517,6 +521,7 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
   const visibleItems = displayItems.slice(start, start + listHeight);
   const hasMoreAbove = start > 0;
   const hasMoreBelow = start + listHeight < displayItems.length;
+  const sectionCounts = countRowsBySection(rows);
 
   const renderRow = (row: CatalogRow, isSelected: boolean): React.ReactNode => {
     const indent = '  '.repeat(row.depth);
@@ -589,8 +594,8 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
         return <Text key={`spacer-${key}`}> </Text>;
       case 'heading':
         return (
-          <Text key={`heading-${item.section}`} bold>
-            {sectionTitle(item.section)}
+          <Text key={`heading-${item.section}`} bold color={sectionColor(item.section)}>
+            {sectionTitle(item.section)} <Text dimColor>({sectionCounts[item.section]})</Text>
           </Text>
         );
       case 'empty':
@@ -628,6 +633,16 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
 
   return (
     <Box flexDirection="column" width={contentWidth}>
+      <Box flexDirection="row" justifyContent="space-between" marginBottom={1}>
+        <Box flexDirection="column">
+          <Text color="suggestion" bold>
+            CLEW CODE / AGENTS
+          </Text>
+          <Text dimColor>Live session catalog · {scopeRootSummary ? 'scoped view' : 'global view'}</Text>
+        </Box>
+        <Text dimColor>{formatCatalogCounts(rows)}</Text>
+      </Box>
+
       <Box flexDirection="column" marginBottom={1}>
         {metadata.map(([label, value]) => (
           <Box key={label} flexDirection="row">
@@ -637,7 +652,7 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
         ))}
       </Box>
 
-      <Box flexDirection="row" marginBottom={1}>
+      <Box flexDirection="row" borderStyle="single" borderColor="gray" paddingX={1} marginBottom={1}>
         <Text bold color="suggestion">
           ›{' '}
         </Text>
@@ -690,8 +705,8 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
 
       <Box marginTop={1}>
         <Text dimColor wrap="truncate">
-          enter open · → drill in · ← back · space reply · ctrl+n new · ctrl+r rename · ctrl+x stop · ctrl+o program ·
-          esc close
+          ↑/↓ move · enter open · → drill in · ← back · space reply · ctrl+n new · ctrl+r rename · ctrl+x stop · esc
+          close
         </Text>
       </Box>
     </Box>
