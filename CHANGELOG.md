@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Frontend Consolidation & Settings API Modernization**:
+  - Re-exported `AgentValidationResult` from `validateAgent.ts` in `agents/types.ts` to eliminate duplicate type declarations.
+  - Migrated reactive UI components (`ConsoleOAuthFlow`, `MCPServerApprovalDialog`, `MCPServerMultiselectDialog`, `HooksConfigMenu`, `SandboxSettings`) from legacy `getSettings_DEPRECATED()` to the modern, reactive `useSettings()` hook.
+
 - **Agent & Sub-Agent System Hardening**:
   - Added comprehensive regression and unit tests for `AgentTool`, `loadAgentsDir`, `agentToolUtils`, and `LocalAgentTask`.
   - Standardized `AgentToolResult` to enforce unified `status` (`completed | failed | blocked | canceled`), structured `evidence`, and verified `filesChanged`.

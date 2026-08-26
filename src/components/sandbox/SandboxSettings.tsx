@@ -1,10 +1,9 @@
 import type React from 'react';
+import { useSettings } from '../../hooks/useSettings.js';
 import { Box, color, Link, Text, useTheme } from '../../ink.js';
 import { useKeybindings } from '../../keybindings/useKeybinding.js';
 import type { CommandResultDisplay } from '../../types/command.js';
-import type { SandboxDependencyCheck } from '../../utils/sandbox/sandbox-adapter.js';
-import { SandboxManager } from '../../utils/sandbox/sandbox-adapter.js';
-import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
+import { type SandboxDependencyCheck, SandboxManager } from '../../utils/sandbox/sandbox-adapter.js';
 import { Select } from '../CustomSelect/select.js';
 import { Pane } from '../design-system/Pane.js';
 import { Tab, Tabs, useTabHeaderFocus } from '../design-system/Tabs.js';
@@ -24,7 +23,7 @@ export function SandboxSettings({ onComplete, depCheck }: Props): React.ReactNod
   const currentEnabled = SandboxManager.isSandboxingEnabled();
   const currentAutoAllow = SandboxManager.isAutoAllowBashIfSandboxedEnabled();
   const hasWarnings = depCheck.warnings.length > 0;
-  const settings = getSettings_DEPRECATED();
+  const settings = useSettings();
   const allowAllUnixSockets = settings.sandbox?.network?.allowAllUnixSockets;
   // Show warning if seccomp missing AND user hasn't allowed all unix sockets
   const showSocketWarning = hasWarnings && !allowAllUnixSockets;

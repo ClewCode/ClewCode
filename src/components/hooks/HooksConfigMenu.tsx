@@ -15,6 +15,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { HookEvent } from 'src/entrypoints/agentSdkTypes.js';
 import { useAppState, useAppStateStore } from 'src/state/AppState.js';
 import type { CommandResultDisplay } from '../../commands.js';
+import { useSettings } from '../../hooks/useSettings.js';
 import { useSettingsChange } from '../../hooks/useSettingsChange.js';
 import { Box, Text } from '../../ink.js';
 import { useKeybinding } from '../../keybindings/useKeybinding.js';
@@ -26,7 +27,7 @@ import {
   groupHooksByEventAndMatcher,
 } from '../../utils/hooks/hooksConfigManager.js';
 import type { IndividualHookConfig } from '../../utils/hooks/hooksSettings.js';
-import { getSettings_DEPRECATED, getSettingsForSource } from '../../utils/settings/settings.js';
+import { getSettingsForSource } from '../../utils/settings/settings.js';
 import { plural } from '../../utils/stringUtils.js';
 import { Dialog } from '../design-system/Dialog.js';
 import { SelectEventMode } from './SelectEventMode.js';
@@ -46,6 +47,7 @@ type ModeState =
   | { mode: 'view-hook'; event: HookEvent; hook: IndividualHookConfig };
 
 export function HooksConfigMenu({ toolNames, onExit }: Props): React.ReactNode {
+  const settings = useSettings();
   const [modeState, setModeState] = useState<ModeState>({
     mode: 'select-event',
   });
@@ -54,7 +56,6 @@ export function HooksConfigMenu({ toolNames, onExit }: Props): React.ReactNode {
   // so we compute it once on mount and only re-compute when policy settings change.
   // Short-circuit evaluation ensures we skip the expensive check when hooks aren't disabled.
   const [disabledByPolicy, setDisabledByPolicy] = useState(() => {
-    const settings = getSettings_DEPRECATED();
     const hooksDisabled = settings?.disableAllHooks === true;
     return hooksDisabled && getSettingsForSource('policySettings')?.disableAllHooks === true;
   });
@@ -67,7 +68,6 @@ export function HooksConfigMenu({ toolNames, onExit }: Props): React.ReactNode {
   // Update cached values when policy settings change
   useSettingsChange(source => {
     if (source === 'policySettings') {
-      const settings = getSettings_DEPRECATED();
       const hooksDisabled = settings?.disableAllHooks === true;
       setDisabledByPolicy(hooksDisabled && getSettingsForSource('policySettings')?.disableAllHooks === true);
       setRestrictedByPolicy(getSettingsForSource('policySettings')?.allowManagedHooksOnly === true);
@@ -161,7 +161,6 @@ export function HooksConfigMenu({ toolNames, onExit }: Props): React.ReactNode {
   const hookEventMetadata = getHookEventMetadata(combinedToolNames);
 
   // Check if hooks are disabled
-  const settings = getSettings_DEPRECATED();
   const hooksDisabled = settings?.disableAllHooks === true;
 
   // Count hooks per event for the event-selection view, and the total.

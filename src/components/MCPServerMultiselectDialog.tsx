@@ -2,8 +2,8 @@ import partition from 'lodash-es/partition.js';
 import type React from 'react';
 import { useCallback } from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
-import { Box, Text } from '../ink.js';
-import { getSettings_DEPRECATED, updateSettingsForSource } from '../utils/settings/settings.js';
+import { useSettings } from '../hooks/useSettings.js';
+import { updateSettingsForSource } from '../utils/settings/settings.js';
 import { ConfigurableShortcutHint } from './ConfigurableShortcutHint.js';
 import { SelectMulti } from './CustomSelect/SelectMulti.js';
 import { Byline } from './design-system/Byline.js';
@@ -17,8 +17,9 @@ type Props = {
 };
 
 export function MCPServerMultiselectDialog({ serverNames, onDone }: Props): React.ReactNode {
+  const currentSettings = useSettings();
+
   function onSubmit(selectedServers: string[]) {
-    const currentSettings = getSettings_DEPRECATED() || {};
     const enabledServers = currentSettings.enabledMcpjsonServers || [];
     const disabledServers = currentSettings.disabledMcpjsonServers || [];
 
@@ -51,7 +52,6 @@ export function MCPServerMultiselectDialog({ serverNames, onDone }: Props): Reac
 
   // Handle ESC to reject all servers
   const handleEscRejectAll = useCallback(() => {
-    const currentSettings = getSettings_DEPRECATED() || {};
     const disabledServers = currentSettings.disabledMcpjsonServers || [];
 
     const newDisabledServers = [...new Set([...disabledServers, ...serverNames])];
@@ -61,7 +61,7 @@ export function MCPServerMultiselectDialog({ serverNames, onDone }: Props): Reac
     });
 
     onDone();
-  }, [serverNames, onDone]);
+  }, [currentSettings, serverNames, onDone]);
 
   return (
     <>

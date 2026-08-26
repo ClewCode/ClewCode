@@ -3,7 +3,8 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from 'src/services/analytics/index.js';
-import { getSettings_DEPRECATED, updateSettingsForSource } from '../utils/settings/settings.js';
+import { useSettings } from '../hooks/useSettings.js';
+import { updateSettingsForSource } from '../utils/settings/settings.js';
 import { Select } from './CustomSelect/index.js';
 import { Dialog } from './design-system/Dialog.js';
 import { MCPServerDialogCopy } from './MCPServerDialogCopy.js';
@@ -14,6 +15,8 @@ type Props = {
 };
 
 export function MCPServerApprovalDialog({ serverName, onDone }: Props): React.ReactNode {
+  const currentSettings = useSettings();
+
   function onChange(value: 'yes' | 'yes_all' | 'no') {
     logEvent('tengu_mcp_dialog_choice', {
       choice: value as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -23,7 +26,6 @@ export function MCPServerApprovalDialog({ serverName, onDone }: Props): React.Re
       case 'yes':
       case 'yes_all': {
         // Get current enabled servers from settings
-        const currentSettings = getSettings_DEPRECATED() || {};
         const enabledServers = currentSettings.enabledMcpjsonServers || [];
 
         // Add server if not already enabled
@@ -43,7 +45,6 @@ export function MCPServerApprovalDialog({ serverName, onDone }: Props): React.Re
       }
       case 'no': {
         // Get current disabled servers from settings
-        const currentSettings = getSettings_DEPRECATED() || {};
         const disabledServers = currentSettings.disabledMcpjsonServers || [];
 
         // Add server if not already disabled

@@ -22,8 +22,4 @@ export type ModeState =
   | ({ mode: 'delete-confirm' } & WithAgent & WithPreviousMode)
   | { mode: 'agent-view' };
 
-export type AgentValidationResult = {
-  isValid: boolean;
-  warnings: string[];
-  errors: string[];
-};
+export type { AgentValidationResult } from './validateAgent.js';
