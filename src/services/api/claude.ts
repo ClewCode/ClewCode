@@ -627,8 +627,6 @@ export type Options = {
   extraToolSchemas?: BetaToolUnion[];
   maxOutputTokensOverride?: number;
   fallbackModel?: string;
-  /** Position in the configured fallback chain; -1 = primary model. */
-  fallbackChainIndex?: number;
   /** Active provider, so the chain can skip cross-provider entries mid-retry. */
   activeProvider?: string;
   onStreamingFallback?: () => void;
@@ -790,7 +788,6 @@ export async function* executeNonStreamingRequest(
   retryOptions: {
     model: string;
     fallbackModel?: string;
-    fallbackChainIndex?: number;
     activeProvider?: string;
     thinkingConfig: ThinkingConfig;
     fastMode?: boolean;
@@ -870,7 +867,6 @@ export async function* executeNonStreamingRequest(
     {
       model: retryOptions.model,
       fallbackModel: retryOptions.fallbackModel,
-      fallbackChainIndex: retryOptions.fallbackChainIndex,
       activeProvider: retryOptions.activeProvider,
       thinkingConfig: retryOptions.thinkingConfig,
 
@@ -1961,7 +1957,6 @@ async function* queryModel(
       {
         model: options.model,
         fallbackModel: options.fallbackModel,
-        fallbackChainIndex: options.fallbackChainIndex,
         activeProvider: options.activeProvider,
         thinkingConfig,
 
@@ -2630,7 +2625,6 @@ async function* queryModel(
         {
           model: options.model,
           fallbackModel: options.fallbackModel,
-          fallbackChainIndex: options.fallbackChainIndex,
           activeProvider: options.activeProvider,
           thinkingConfig,
           signal,
@@ -2723,7 +2717,6 @@ async function* queryModel(
           {
             model: options.model,
             fallbackModel: options.fallbackModel,
-            fallbackChainIndex: options.fallbackChainIndex,
             activeProvider: options.activeProvider,
             thinkingConfig,
             signal,

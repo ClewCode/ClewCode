@@ -186,8 +186,6 @@ Tools/commands are registered in `src/tools.ts` / `src/commands.ts`; entrypoints
 - `providerRegistry.ts` / `providerSelection.ts` — discovery & selection
 - Context-window resolution: for non-Anthropic providers, live `/models` value (cached by `fetchProviderModels`, read via `getCachedModelContext`) is preferred over the static `maxContext`. Anthropic first-party uses its own capability cache.
 - Mid-session switch: `/model`, `/provider`
-- **Fallback chain (`/model-fallback`, `src/utils/model/fallbackChain.ts`):** ordered `{provider?, model, effort?}` entries in `settings.modelFallbacks`. On repeated transient capacity errors, `withRetry` consumes the next entry and throws `FallbackTriggeredError`; `query.ts` swaps `currentModel`, applies the entry's effort, advances its cursor, retries. Mid-retry fallback is same-provider only. Cross-provider entries are configurable but only take effect from the next query.
-- **Task-mode router (`/model-router`, `src/utils/model/router.ts`):** maps task mode → model/effort in `settings.modelRouter`. Mode inferred from `PermissionMode`; applied in `getRuntimeMainLoopModel()`. An explicit `/model` override always wins.
 - **Model scope:** `/model` is session-scoped by default (AppState's `mainLoopModelForSession` → `setMainLoopModelOverride()`). Only the picker's `d` writes to `userSettings`. Do NOT call `ProviderManager.setSessionModel`/`setSessionProvider` (process-global singletons — leak into agents and bg tasks) from model paths.
 
 ### Tools / commands / services

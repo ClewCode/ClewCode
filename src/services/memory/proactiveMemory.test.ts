@@ -4,11 +4,11 @@ import { extractContextTerms, filterConflictingFacts, type MemoryFact } from './
 describe('extractContextTerms', () => {
   test('extracts file basenames and query terms', () => {
     const terms = extractContextTerms(
-      ['src/utils/model/router.ts', 'src/services/ai/ProviderManager.ts'],
+      ['src/utils/model/model.ts', 'src/services/ai/ProviderManager.ts'],
       'How to optimize memory and resolve race conditions',
     );
 
-    expect(terms).toContain('router');
+    expect(terms).toContain('model');
     expect(terms).toContain('providermanager');
     expect(terms).toContain('optimize');
     expect(terms).toContain('memory');

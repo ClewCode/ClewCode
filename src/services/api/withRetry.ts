@@ -5,9 +5,7 @@ import type { QuerySource } from 'src/constants/querySource.js';
 import type { SystemAPIErrorMessage } from 'src/types/message.js';
 import { isAwsCredentialsProviderError } from 'src/utils/aws.js';
 import { logForDebugging } from 'src/utils/debug.js';
-import { logError } from 'src/utils/log.js';
 import { createSystemAPIErrorMessage } from 'src/utils/messages.js';
-import { getModelFallbackChain, resolveNextFallback } from 'src/utils/model/fallbackChain.js';
 import { getAPIProviderForStatsig } from 'src/utils/model/providers.js';
 import { getIsNonInteractiveSession } from '../../bootstrap/state.js';
 import {
@@ -266,39 +264,14 @@ export async function* withRetry<T>(
       }
 
       // Track consecutive 529 errors
-      const isCapacityError = isTransientCapacityError(error);
-      const hasConfiguredFallbackChain = getModelFallbackChain().length > 0;
-
       if (
-        isCapacityError &&
-        (hasConfiguredFallbackChain ||
-          (is529Error(error) &&
-            // If FALLBACK_FOR_ALL_PRIMARY_MODELS is not set, fall through only if the primary model is a non-custom Opus model.
-            (process.env.FALLBACK_FOR_ALL_PRIMARY_MODELS ||
-              (!isClaudeAISubscriber() && isNonCustomOpusModel(options.model)))))
+        is529Error(error) &&
+        // If FALLBACK_FOR_ALL_PRIMARY_MODELS is not set, fall through only if the primary model is a non-custom Opus model.
+        (process.env.FALLBACK_FOR_ALL_PRIMARY_MODELS ||
+          (!isClaudeAISubscriber() && isNonCustomOpusModel(options.model)))
       ) {
         consecutive529Errors++;
         if (consecutive529Errors >= MAX_529_RETRIES) {
-          // Check if fallback chain is configured
-          if (hasConfiguredFallbackChain && options.activeProvider) {
-            const chain = getModelFallbackChain();
-            const nextIndex = (options.fallbackChainIndex ?? -1) + 1;
-            const next = resolveNextFallback(chain, nextIndex, options.activeProvider);
-            if (next?.isSameProvider) {
-              logEvent('tengu_api_chain_fallback_triggered', {
-                original_model: options.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-                fallback_model: next.entry.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-                fallback_effort: (next.entry.effort ??
-                  'unset') as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
-                chain_index: nextIndex,
-                provider: getAPIProviderForStatsig(),
-              });
-
-              throw new FallbackTriggeredError(options.model, next.entry.model, next.entry.effort, next.index);
-            }
-          }
-
-          // Legacy fallback: single hardcoded fallbackModel
           if (options.fallbackModel) {
             logEvent('tengu_api_opus_fallback_triggered', {
               original_model: options.model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,

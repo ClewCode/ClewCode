@@ -502,13 +502,6 @@ async function* queryLoop(
     }
 
     let attemptWithFallback = true;
-    // Position in the configured fallback chain. -1 = primary model (no
-    // fallback consumed yet); each FallbackTriggeredError advances it by one.
-    let fallbackChainIndex = -1;
-    // Effort carried over from the chain entry we fell back to. Overrides
-    // appState.effortValue for the retry so a cheaper fallback model can also
-    // run at a cheaper effort.
-    let fallbackEffortOverride: EffortLevel | undefined;
     const activeProviderForFallback = ProviderManager.getInstance().getActiveProviderName();
 
     queryCheckpoint('query_api_loop_start');
@@ -545,8 +538,7 @@ async function* queryLoop(
               mcpTools: appState.mcp.tools,
               hasPendingMcpServers: appState.mcp.clients.some(c => c.type === 'pending'),
               queryTracking,
-              effortValue: fallbackEffortOverride ?? appState.effortValue,
-              fallbackChainIndex,
+              effortValue: appState.effortValue,
               activeProvider: activeProviderForFallback,
               advisorModel: appState.advisorModel,
               skipCacheWrite,
@@ -691,17 +683,6 @@ async function* queryLoop(
             const nextModel = innerError.fallbackModel || fallbackModel!;
             currentModel = nextModel;
             attemptWithFallback = true;
-
-            // Advance the cursor to the entry withRetry actually landed on, so
-            // the next trigger resumes after it. Incrementing by one instead
-            // would re-select an entry that was skipped for being
-            // cross-provider, looping on the same model forever.
-            if (innerError.fallbackIndex !== undefined) {
-              fallbackChainIndex = innerError.fallbackIndex;
-            }
-            if (innerError.fallbackEffort) {
-              fallbackEffortOverride = innerError.fallbackEffort as EffortLevel;
-            }
 
             // Clear assistant messages since we'll retry the entire request
             yield* yieldMissingToolResultBlocks(assistantMessages, 'Model fallback triggered');

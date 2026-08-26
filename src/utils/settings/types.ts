@@ -308,30 +308,6 @@ export const SettingsSchema = lazySchema(() =>
         .string()
         .optional()
         .describe('Default permission mode used by Agent subagents. Omit to inherit from the parent conversation'),
-      modelFallbacks: z
-        .array(
-          z.object({
-            provider: z.string().optional().describe('Provider ID (omitted = active provider at trigger time)'),
-            model: z.string().describe('Model name or ID'),
-            effort: z.enum(EFFORT_LEVELS).optional().describe('Reasoning effort level for this fallback'),
-          }),
-        )
-        .optional()
-        .describe(
-          'Ordered fallback chain tried automatically when the primary model hits a transient/capacity error. ' +
-            'Same-provider entries retry within the current request; cross-provider entries apply starting next query.',
-        ),
-      modelRouter: z
-        .record(
-          z.enum(['code', 'ask', 'debug', 'orchestrator', 'plan']),
-          z.object({
-            provider: z.string().optional().describe('Provider ID (omitted = active provider)'),
-            model: z.string().describe('Model name or ID'),
-            effort: z.enum(EFFORT_LEVELS).optional().describe('Reasoning effort level for this mode'),
-          }),
-        )
-        .optional()
-        .describe('Per-task-mode model/effort overrides, keyed by task mode inferred from PermissionMode.'),
       // Enterprise allowlist of models
       availableModels: z
         .array(z.string())

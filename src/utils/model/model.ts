@@ -21,7 +21,6 @@ import { getAntModelOverrideConfig, resolveAntModel } from './antModels.js';
 import { isModelAllowed } from './modelAllowlist.js';
 import { getModelStrings, resolveOverriddenModel } from './modelStrings.js';
 import { getActiveProviderId, getAPIProvider, isFirstPartyAnthropicBaseUrl } from './providers.js';
-import { resolveRouterOverride } from './router.js';
 
 export type ModelShortName = string;
 export type ModelName = string;
@@ -242,16 +241,6 @@ export function getRuntimeMainLoopModel(params: {
   exceeds200kTokens?: boolean;
 }): ModelName {
   const { permissionMode, mainLoopModel, exceeds200kTokens = false } = params;
-
-  // Task-mode router: map the permission mode to a task mode and use the
-  // model configured for it. An explicit session /model override always wins —
-  // a manual choice must not be silently overridden by routing.
-  if (getMainLoopModelOverride() === undefined) {
-    const routed = resolveRouterOverride(permissionMode);
-    if (routed && isModelAllowed(routed.model)) {
-      return parseUserSpecifiedModel(routed.model);
-    }
-  }
 
   // opusplan uses Opus in plan mode without [1m] suffix.
   if (getUserSpecifiedModelSetting() === 'opusplan' && permissionMode === 'plan' && !exceeds200kTokens) {
