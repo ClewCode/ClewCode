@@ -212,6 +212,10 @@ export const agentToolResultSchema = lazySchema(() =>
     totalToolUseCount: z.number(),
     totalDurationMs: z.number(),
     totalTokens: z.number(),
+    // Execution status of the agent task
+    status: z.enum(['completed', 'failed', 'blocked', 'canceled']).default('completed'),
+    // Optional verified evidence or test outcomes
+    evidence: z.array(z.string()).optional(),
     // Structured summary of key findings, files changed, and issues
     summary: z
       .object({
@@ -316,9 +320,20 @@ export function finalizeAgentTool(
     startTime: number;
     agentType: string;
     isAsync: boolean;
+    status?: 'completed' | 'failed' | 'blocked' | 'canceled';
+    evidence?: string[];
   },
 ): AgentToolResult {
-  const { prompt, resolvedAgentModel, isBuiltInAgent, startTime, agentType, isAsync } = metadata;
+  const {
+    prompt,
+    resolvedAgentModel,
+    isBuiltInAgent,
+    startTime,
+    agentType,
+    isAsync,
+    status = 'completed',
+    evidence,
+  } = metadata;
 
   const lastAssistantMessage = getLastAssistantMessage(agentMessages);
   if (lastAssistantMessage === undefined) {
@@ -378,6 +393,8 @@ export function finalizeAgentTool(
   return {
     agentId,
     agentType,
+    status,
+    evidence,
     content,
     totalDurationMs: Date.now() - startTime,
     totalTokens,

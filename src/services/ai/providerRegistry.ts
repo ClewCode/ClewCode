@@ -39,6 +39,8 @@ export interface ProviderRegistryEntry extends ProviderCapabilityEntry {
 
 import providersConfig from './providers.json';
 
+export { providersConfig };
+
 function createProvider(key: string, entry: any): ProviderInterface {
   switch (key) {
     case 'anthropic':

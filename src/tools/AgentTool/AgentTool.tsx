@@ -1469,7 +1469,10 @@ export const AgentTool = buildTool({
             // This allows the parent agent to see partial progress even after an error
             logForDebugging(`Sync agent recovering from error with ${agentMessages.length} messages`);
           }
-          const agentResult = finalizeAgentTool(agentMessages, syncAgentId, metadata);
+          const agentResult = finalizeAgentTool(agentMessages, syncAgentId, {
+            ...metadata,
+            status: syncAgentError ? 'failed' : 'completed',
+          });
           if (feature('TRANSCRIPT_CLASSIFIER')) {
             const currentAppState = toolUseContext.getAppState();
             const handoffWarning = await classifyHandoffIfNeeded({

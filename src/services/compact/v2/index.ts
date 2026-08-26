@@ -103,7 +103,10 @@ export async function runCompaction(
     shortfall: false,
   };
 
-  if (isEnvTruthy(process.env.DISABLE_COMPACT) || !isAutoCompactEnabled()) {
+  // DISABLE_COMPACT is the all-compaction kill switch. Disabling only
+  // auto-compact must not disable an explicit `/compact` request.
+  const manualRequest = opts.manual === true || opts.force === true || Boolean(opts.customInstructions);
+  if (isEnvTruthy(process.env.DISABLE_COMPACT) || (!isAutoCompactEnabled() && !manualRequest)) {
     return empty;
   }
   // Forked summarization agents must never recurse into compaction.
@@ -182,7 +185,10 @@ export async function runCompaction(
   } catch (err) {
     logError(err);
     state.failures++;
-    return { ...empty, plan };
+    // Do not silently continue with an over-limit prompt after a reducer fails.
+    // The caller surfaces this as the same actionable shortfall warning used
+    // when all reducers are exhausted.
+    return { ...empty, plan, shortfall: true };
   }
 }
 

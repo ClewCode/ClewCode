@@ -10,7 +10,6 @@
   <a href="https://www.npmjs.com/package/clew-code"><img src="https://img.shields.io/npm/v/clew-code?style=for-the-badge&color=red" alt="npm"></a>
   <a href="https://github.com/ClewCode/ClewCode/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/ClewCode/ClewCode/ci.yml?branch=main&style=for-the-badge" alt="CI"></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=for-the-badge" alt="License"></a>
-  <a href="https://bun.sh"><img src="https://img.shields.io/badge/built%20with-Bun-ff69b4.svg?style=for-the-badge" alt="Bun"></a>
 </p>
 
 <p align="center">
@@ -27,366 +26,226 @@
 
 ---
 
-Clew Code is a terminal-native AI coding agent that lives in your repo, works with your API keys, and **doesn't phone home**. It reads your code, writes files, runs commands, and talks to any LLM you bring — Claude, GPT, Gemini, DeepSeek, local Ollama models, and 25+ other providers — all on your machine, no telemetry, no vendor lock-in.
+Clew Code is a terminal-native AI coding agent that works inside your repository. It inspects code, edits files, runs commands, uses external tools, and coordinates multi-step work through the provider and model you choose.
 
-If you want a coding assistant that feels local, fast, and doesn't ship your context to a third-party server, this is it.
+Bring your own provider: Claude, GPT, Gemini, DeepSeek, local Ollama models, OpenRouter, and many more. Clew Code does not require a hosted coding backend; prompts are sent only to services you explicitly configure, plus any web or MCP service you choose to use.
 
----
+## Contents
 
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Quick Install](#quick-install)
-- [Getting Started](#getting-started)
-- [Usage Examples](#usage-examples)
+- [Install](#install)
+- [Start here](#start-here)
+- [Choose a model](#choose-a-model)
 - [Features](#features)
-- [Use Cases](#use-cases)
-- [CLI Quick Reference](#cli-quick-reference)
+- [CLI reference](#cli-reference)
 - [Configuration](#configuration)
 - [Security](#security)
-- [Documentation](#documentation)
 - [Architecture](#architecture)
 - [Development](#development)
 - [Contributing](#contributing)
-- [Star History](#star-history)
 - [License](#license)
 
----
+## Install
 
-## Prerequisites
-
-- **Node.js** 18+ or **Bun** 1.x (recommended for development)
-- An **API key** from at least one supported provider (see [Providers docs](https://clew-docs.pages.dev/providers))
-- *Optional:* Git, Playwright (for browser automation), microphone (for voice input)
-
----
-
-## Quick Install
-
-### macOS / Linux
+### macOS and Linux
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ClewCode/ClewCode/main/scripts/install.sh | bash
 ```
 
-### Windows (PowerShell)
+### Windows PowerShell
 
 ```powershell
 irm https://raw.githubusercontent.com/ClewCode/ClewCode/main/scripts/install.ps1 | iex
 ```
 
-### npm (cross-platform)
+### npm
 
 ```bash
 npm install -g clew-code
 ```
 
-This installs two equivalent binaries: `clew` and `clewcode`.
+The package provides both `clew` and `clewcode` commands.
 
----
-
-## Getting Started
+## Start here
 
 ```bash
 cd your-project
-clew                      # Launch the REPL
-clew -p "fix the tests"   # One-shot mode
-clew --resume last        # Pick up where you left off
+clew
 ```
 
-First launch walks you through provider setup — pick a provider (Claude, OpenAI, Gemini, OpenRouter, etc.) and enter an API key. This is saved to your local config, never committed. After that, use `/model` to switch providers mid-session.
+Useful non-interactive forms:
 
----
-
-## Usage Examples
-
-### Ask questions about a codebase
-
-```
-> how does authentication work in this repo?
-> where is the retry logic for API calls defined?
+```bash
+clew -p "fix the failing tests and explain the root cause"
+clew --resume last
+clew --model openai/gpt-5.5
 ```
 
-Clew Code searches and reads files on its own — no need to paste code in.
+On first launch, configure at least one provider. Credentials are stored in local Clew configuration and should never be committed to a repository.
 
-### Make a change
+Example prompts:
 
-```
-> refactor the UserCard component to use the new Avatar component
-```
-
-It reads the relevant files, edits them, and shows a diff-style summary of what changed. Prompts for permission before writing, unless you've set an auto-approve rule.
-
-### Fix and verify
-
-```
-> fix the bug in src/utils/parser.ts where empty arrays throw
-> run the test suite and fix any failures
+```text
+> how does authentication work in this repository?
+> refactor UserCard to use the new Avatar component
+> run the tests, diagnose failures, and fix them
 ```
 
-Combines file edits with the Bash tool (`npm test` / `bun test`), looping until tests pass or it needs your input.
+Clew Code inspects relevant files, applies focused changes according to the permission mode, and can verify the result with your project’s own tools.
 
-### Slash commands
+## Choose a model
 
-```
-/help              # list all commands
-/model             # switch LLM provider/model for this session (d = save as default)
-/code-review       # review the current diff for bugs
-/debug             # structured debugging workflow
-/loop 5m /deploy-checklist   # run a command on a recurring interval
+Open the model picker:
+
+```text
+/model
 ```
 
-Run `/help` inside the REPL for the full, current list — commands grow over time via skills and plugins.
+The picker groups models by provider and refreshes live model lists for configured providers when it opens. Providers without usable credentials use the bundled registry as a fallback.
 
-### Multi-file / multi-step work
+| Action | Result |
+|---|---|
+| `Enter` | Use the selected model for this session only |
+| `d` or `g` | Save the selected provider/model as the default |
+| `/model provider/model` | Select a provider-qualified model for this session |
+| `/model default` | Clear the current session override |
+| `/model list` | List models from the active provider |
+| `/model --help` | Show command help |
 
-```
-> migrate all usages of the old Logger class to the new one across src/
-```
-
-For larger jobs, Clew Code plans the work (`/plan`, or automatically for complex asks), then executes step by step, checking in at natural checkpoints. `/rewind` restores code or conversation to any prior checkpoint if something goes wrong.
-
-### Research a codebase or topic
-
-```
-> /research "How does auth work in this repo?"
-```
-
-Searches code, docs, and the web, then compiles a dossier with source references.
-
-### Connect external tools (MCP)
-
-```
-> list open PRs assigned to me and summarize what's blocking each one
-```
-
-Wire in GitHub, Slack, a database, or any [Model Context Protocol](https://modelcontextprotocol.io) server via `/mcp`, and use it from the same session.
-
----
+Session choices do not change the shared default for other sessions. Capability labels may include context size, output limit, tools, vision, reasoning, and free-tier status when the provider exposes that metadata.
 
 ## Features
 
-<table>
-  <tr>
-    <td><strong>32+ Providers</strong></td>
-    <td>OpenAI, Anthropic, DeepSeek, Groq, Google, Google Antigravity CLI, Ollama (local), OpenGateway, and 25+ more. Switch mid-session with <code>/model</code>. No lock-in.</td>
-  </tr>
-  <tr>
-    <td><strong>Persistent Memory</strong></td>
-    <td>SQLite-backed store with importance ranking, confidence scoring, and cross-session persistence. Auto-consolidation via Dream + Distill.</td>
-  </tr>
-  <tr>
-    <td><strong>80+ Tools</strong></td>
-    <td>Read, Write, Edit, Grep, Bash, Browser, MCP, LSP, git, web search, task management, media generation, voice input, and more.</td>
-  </tr>
-  <tr>
-    <td><strong>MCP + Plugins + Skills</strong></td>
-    <td>Model Context Protocol over stdio/SSE/WebSocket. Extend with plugins, <code>SKILL.md</code> workflows, or lifecycle hooks.</td>
-  </tr>
-  <tr>
-    <td><strong>Enterprise Audit Logging</strong></td>
-    <td>SIEM-compatible NDJSON audit trail with rotation, filtering, and level-based capture. Records tool calls, file access, and command execution.</td>
-  </tr>
-  <tr>
-    <td><strong>Project Rules</strong></td>
-    <td>Auto-observed behavioral rules scoped to your repo via <code>/rule</code>. Configured in <code>.clew/rules.json</code> — Clew reads and follows them without being reminded.</td>
-  </tr>
-  <tr>
-    <td><strong>Ultracode Reasoning</strong></td>
-    <td>Max-effort reasoning mode (<code>/ultracode</code> or <code>--effort max</code>) for complex debugging, architecture design, and multi-step refactoring.</td>
-  </tr>
-  <tr>
-    <td><strong>Rewind / Undo</strong></td>
-    <td><code>/rewind</code> restores code and/or conversation to any previous checkpoint. Integrated with structured 20%/45%/70% progress snapshots.</td>
-  </tr>
-  <tr>
-    <td><strong>Cross-Repo Workspace</strong></td>
-    <td><code>/workspace link ../other-repo</code> — edit across linked projects with full context loaded from both. Bidirectional and persistent.</td>
-  </tr>
-  <tr>
-    <td><strong>Background Daemon</strong></td>
-    <td>Task queue with lease-based concurrency, cron scheduling, dead-letter retries, memory consolidation, and cross-session task persistence.</td>
-  </tr>
-  <tr>
-    <td><strong>Multi-Agent Architecture</strong></td>
-    <td>Agents, Subagents, and Teammate swarms for parallel and distributed execution.</td>
-  </tr>
-</table>
+- Multi-provider model selection with live discovery and static fallback
+- Streaming REPL with tool use, checkpoints, context compaction, and rewind
+- File reading, writing, editing, search, shell execution, Git, browser, LSP, web, and media tools
+- Persistent SQLite-backed memory across sessions
+- MCP servers, plugins, and reusable `SKILL.md` workflows
+- Project-specific rules in `.clew/rules.json`
+- Background tasks, cron scheduling, agents, subagents, and teammate swarms
+- Cross-repository workspaces with `/workspace link`
+- Optional audit logging in SIEM-friendly NDJSON format
 
----
+Common workflows:
 
-## Use Cases
-
-| Scenario | How Clew Code Helps |
-|---|---|
-| **Fix failing tests** | `clew -p "Fix the failing tests and explain what was wrong"` — reads test output, diagnoses root cause, applies fixes. |
-| **Refactor a module** | Point it at a file, describe the target structure. Uses multi-file edit tools, git status awareness, and checkpoint rollback on mistakes. |
-| **Research a codebase** | `/research "How does auth work?"` — searches code, docs, and web, then compiles a dossier with source references. |
-| **Background automation** | Run `/bg` to delegate long-running tasks (migration, lint fixes) to a background agent while you keep working in the REPL. |
-| **Cross-repo changes** | `/workspace link ../other-repo` — edit across linked projects with full context from both. |
-
----
-
-## CLI Quick Reference
-
-```
--p, --prompt <text>       One-shot prompt, then exit
--c, --continue            Continue last conversation
--r, --resume [id]         Resume a session (opens picker if no id)
---model <model>           Override model (sonnet, opus, gemini-2.5-flash, etc.)
---effort <level>          Reasoning effort (low|medium|high|max)
---agent <agent>           Custom agent profile
---permission-mode <mode>  default|ask|plan|auto
---computer                Enable OS-level computer use (Windows only)
---debug                   Developer debug output
+```text
+/plan                         Plan a multi-step change
+/code-review                  Review the current diff
+/research "How does auth work?"  Research code, docs, and web sources
+/bg                           Delegate a long-running task
+/compact                      Reduce conversation context
+/rewind                       Restore a previous checkpoint
+/mcp                          Configure MCP servers
 ```
 
-Notable slash commands: `/model`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/mcp`, `/agent`, `/plan`, `/voice`, `/research`, `/workflow`, `/skills`, `/code-review`, `/guardian`, `/bg`, `/daemon`, `/buddy`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, `/theme`, `/delegate`, `/sessions`, and [many more](https://clew-docs.pages.dev/cli).
+Run `/help` for the complete command list. Skills and plugins can add commands without changing the core CLI.
 
----
+## Automatic compaction
+
+Auto-Compact keeps long sessions inside the selected model's usable context window. Each turn measures context pressure and the reducer-based planner in `src/services/compact/v2/` selects the least-damaging combination needed to reclaim tokens.
+
+Reducers can deduplicate content, compress state, remove stale or low-value tool results, create AST skeletons for large code, snip long messages, evict restorable content, summarize at a safe conversation boundary, and drop content only as a last resort. Cheap reducers may run while a tool chain is active; LLM summarization waits for a natural boundary unless the context reaches the force threshold.
+
+Control it with:
+
+- `autoCompactEnabled` — persistent setting, enabled by default
+- `DISABLE_AUTO_COMPACT=1` — disable automatic compaction while keeping manual `/compact` available
+- `DISABLE_COMPACT=1` — disable both automatic and manual compaction
+- `/compact [instructions]` — force a manual compaction; optional instructions apply to the summarization reducer
+- `/context` — inspect the current context budget and compaction state
+
+Compaction health and shortfalls are tracked per agent. Evicted content is stored for recovery through the ContextRestore tool when a restore handle is available.
+
+## CLI reference
+
+```text
+-p, --prompt <text>       Run one prompt and exit
+-c, --continue            Continue the last conversation
+-r, --resume [id]         Resume a session; open a picker when omitted
+--model <model>           Override the model for this process
+--effort <level>          Reasoning effort: low, medium, high, or max
+--agent <agent>           Use a custom agent profile
+--permission-mode <mode>  default, ask, plan, or auto
+--computer                Enable OS-level computer use on Windows
+--debug                   Enable developer debug output
+```
+
+Frequently used slash commands include `/model`, `/providers`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/mcp`, `/agent`, `/plan`, `/research`, `/workflow`, `/skills`, `/code-review`, `/bg`, `/daemon`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, `/theme`, and `/sessions`.
 
 ## Configuration
 
-### Environment Variables
+Provider credentials can be entered through the setup flow or supplied as environment variables. See the [provider documentation](https://clew-docs.pages.dev/providers) for the current catalog.
 
-| Variable | Required | Description |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | No | Anthropic Claude models |
-| `OPENAI_API_KEY` | No | OpenAI GPT models |
-| `DEEPSEEK_API_KEY` | No | DeepSeek models |
-| `GOOGLE_API_KEY` | No | Google Gemini models |
-| `GROQ_API_KEY` | No | Groq-hosted models |
-| `TAVILY_API_KEY` | No | Web search provider (first choice) |
-| `BRAVE_API_KEY` | No | Web search fallback if Tavily fails |
-| `SERPER_API_KEY` | No | Web search fallback if Tavily and Brave fail |
-| `JINA_API_KEY` | No | Web search fallback, tried last of the keyed providers |
-| `ANTIGRAVITY_CLIENT_ID` | No | Custom Google OAuth client ID for Antigravity/google-assist |
-| `ANTIGRAVITY_CLIENT_SECRET` | No | Custom Google OAuth client secret for Antigravity/google-assist |
-| `ANTIGRAVITY_PROJECT_ID` | No | Google Cloud project ID for Antigravity/google-assist |
-| `ANTIGRAVITY_ENDPOINT` | No | Custom endpoint URL for Antigravity/google-assist |
-| `CLEW_DISABLE_TELEMETRY` | No | Disable anonymous usage stats (`1`) |
+| Variable | Purpose |
+|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic Claude models |
+| `OPENAI_API_KEY` | OpenAI models |
+| `DEEPSEEK_API_KEY` | DeepSeek models |
+| `GOOGLE_API_KEY` | Google Gemini models |
+| `GROQ_API_KEY` | Groq-hosted models |
+| `TAVILY_API_KEY` | Tavily web search |
+| `BRAVE_API_KEY` | Brave web search fallback |
+| `SERPER_API_KEY` | Serper web search fallback |
+| `JINA_API_KEY` | Jina search/fetch services |
+| `CLEW_DISABLE_TELEMETRY=1` | Disable anonymous usage statistics |
 
-All provider keys can also be set via the `/model` provider setup flow or in `.clew/settings.json` under `env`.
-
-### Session Recovery Fallback
-
-Clew Code supports resuming sessions from other rebranded or legacy variants of the CLI tool. If a session is not found in the primary `.clew` configuration home directory, the tool automatically scans and loads sessions from the following directories in your user home:
-- `.codex`
-- `.opencode`
-- `.claude`
-- `.gemini`
-- `.antigravity`
-
-### Project Rules
-
-Create `.clew/rules.json` in your repo to define auto-observed behavioral rules — Clew reads them at session start and follows them without being reminded. Manage them interactively with `/rule`. Disable temporarily with `/rule off`.
+Settings are local. Project rules live at `.clew/rules.json`:
 
 ```json
 {
   "rules": [
-    "Always use the project's existing test framework for new tests",
+    "Use the project's existing test framework",
     "Prefer named exports over default exports"
   ]
 }
 ```
 
-### Enterprise Audit Logging
-
-Audit logging is opt-in and writes newline-delimited JSON events for SIEM ingestion. When enabled, Clew records tool calls, tool results/failures, file read/write access, and Bash/PowerShell command execution/results.
-
-| Variable | Required | Description |
-|---|---|---|
-| `CLEW_AUDIT_LOG` | No | Enable audit logging when set to `1` |
-| `CLEW_AUDIT_LOG_PATH` | No | Audit log directory, relative to the project root by default (`.clew/audit`) |
-| `CLEW_AUDIT_LOG_MAX_BYTES` | No | Rotate `audit.ndjson` after this size in bytes (default: 100 MB) |
-| `CLEW_AUDIT_LOG_MAX_FILES` | No | Number of audit log files to retain, including the active file (default: 10) |
-| `CLEW_AUDIT_LOG_INCLUDE` | No | Comma-separated event allowlist, such as `tool.call,tool.result` |
-| `CLEW_AUDIT_LOG_EXCLUDE` | No | Comma-separated event blocklist |
-| `CLEW_AUDIT_LOG_MIN_LEVEL` | No | Minimum level to write: `info`, `warn`, `error`, or `audit` |
-| `CLEW_AUDIT_LOG_CONSOLE` | No | Also mirror audit summaries to stderr when set to `1` |
-| `CLEW_AUDIT_USER` | No | User identifier to include in each audit event |
-
-Example:
+### Audit logging
 
 ```bash
 CLEW_AUDIT_LOG=1 CLEW_AUDIT_LOG_PATH=.clew/audit bun run dev
 ```
 
----
+Additional controls include `CLEW_AUDIT_LOG_MAX_BYTES`, `CLEW_AUDIT_LOG_MAX_FILES`, `CLEW_AUDIT_LOG_INCLUDE`, `CLEW_AUDIT_LOG_EXCLUDE`, `CLEW_AUDIT_LOG_MIN_LEVEL`, `CLEW_AUDIT_LOG_CONSOLE`, and `CLEW_AUDIT_USER`.
 
 ## Security
 
-Clew Code runs entirely on your machine. No code or context leaves your network unless you explicitly configure a remote provider or send a web fetch.
+Clew Code executes locally, but configured model providers receive the prompts and context required for a request. Review provider policies and never place secrets in prompts or tracked files.
 
-- Prompts for permission before read, write, or terminal execution
-- Fine-tune auto-approve rules per workspace
-- Permission scopes: default, ask, plan, auto
-- Guardian system for auto-review using a secondary LLM
-
----
-
-## Documentation
-
-| Guide | Description |
-|---|---|
-| [Quick Start](https://clew-docs.pages.dev/quick-start) | Launch the CLI and start coding |
-| [Installation](https://clew-docs.pages.dev/installation) | One-liner, npm, or build from source |
-| [CLI Reference](https://clew-docs.pages.dev/cli) | Full CLI options, providers, commands |
-| [Configuration](https://clew-docs.pages.dev/configuration) | Settings files, hooks, permission modes |
-| [MCP Guide](https://clew-docs.pages.dev/mcp) | Connect external tools and APIs |
-| [Plugins](https://clew-docs.pages.dev/plugins) | Lifecycle hooks and customization |
-| [Security & Permissions](https://clew-docs.pages.dev/security-permissions) | Permission scopes, guardian system |
-| [Skills System](https://clew-docs.pages.dev/skills) | Automate repeatable workflows |
-| [Memory System](https://clew-docs.pages.dev/memory-system) | SQLite-backed long-term memory |
-| [Architecture](https://clew-docs.pages.dev/concepts-agents-subagents) | Agents, Subagents, Teammates |
-| [Troubleshooting](https://clew-docs.pages.dev/troubleshooting) | Common issues and fixes |
-
-Also available on the [GitHub Wiki](https://github.com/ClewCode/ClewCode/wiki).
-
----
+- Permission modes: `default`, `ask`, `plan`, and `auto`
+- File writes and shell commands can require confirmation
+- Workspace-scoped auto-approve rules are supported
+- Guardian can review selected automatic actions with a secondary model
+- Audit logging can record tool calls, file access, and command execution
 
 ## Architecture
 
-```
-┌─ REPL ──────────────────────────────────┐
-│  Ink + React 19               ┌──────┐ │
-│  Slash commands / skills      │Tools │ │
-│  Streaming / history          │ x76  │ │
-│  state/AppState.tsx           └──┬───┘ │
-└────────┬─────────────────────────┘     │
-         │                ▲              │
-         ▼                │              │
-┌─ QueryEngine ───────────┴──────────────┘
-│  Streaming · tool loop · compaction
-│  Checkpoints · Max Mode · /rewind
-│
-│  query.ts (non-streaming: subagents)
-└──┬────┬────┬────┬────┬────┬────┐
-   ▼    ▼    ▼    ▼    ▼    ▼    ▼
-┌────┐┌────┐┌────┐┌────┐┌────┐┌──────────┐
-│ MCP││LSP ││Git ││Web ││Task││ Provider │
-│    ││    ││    ││    ││    ││ Manager  │
-└────┘└────┘└────┘└────┘└────┘└──────────┘
-   │                     │       │
-   ▼                     ▼       ▼
-┌──────┐┌──────────┐┌──────────┐
-│ vec  ││ Agent    ││ Agent    │
-│Memory││Runtime   ││ Subagent │
-└──────┘└──────────┘└──────────┘
-│  Autonomous task queue + cron + DA       │
-└──────────────────────────────────────────┘
+```text
+REPL / Ink + React
+├── Slash commands, skills, plugins, and input routing
+├── AppState and terminal UI
+└── Query engine
+    ├── Streaming tool loop: src/QueryEngine.ts
+    ├── One-shot/background path: src/query.ts
+    ├── ProviderManager and provider adapters
+    ├── Tools: src/tools/
+    └── Services
+        ├── MCP, LSP, web, Git, voice, and audit logging
+        ├── MemoryDB: src/memory/database.ts
+        ├── Reducer-based compaction: src/services/compact/v2/
+        ├── Autonomous queue and agent runtime
+        └── Session search, checkpoints, and workspace linking
 ```
 
-- **Entry**: `src/main.tsx` → `src/replLauncher.tsx` boots the Ink/React 19 REPL
-- **REPL screen**: `src/screens/REPL.tsx` routes input to commands or the query engine
-- **Query paths**: `src/QueryEngine.ts` (streaming with tool loop) + `src/query.ts` (non-streaming for subagents, background tasks)
-- **Providers**: `src/services/ai/` — 32 providers behind one interface, normalized errors/usage
-- **Tools**: `src/tools/<ToolName>/`, 80 tool packages extending `Tool`, registered in `src/tools.ts`
-- **Services**: `src/services/` — MCP client, autonomous queue, vec memory, session search, plugins, LSP, voice, audit log, and more
+Important boundaries:
 
-Full detail, including tool inventory and service list: [AGENTS.md](AGENTS.md).
+- `src/main.tsx` and `src/replLauncher.tsx` bootstrap the CLI.
+- `src/screens/REPL.tsx` routes input to slash commands or the query engine.
+- `src/services/ai/` owns provider registration, model selection, capabilities, and adapters.
+- `src/services/compact/v2/` is the primary adaptive compaction planner; legacy summarization remains an internal fallback.
+- `src/memory/database.ts` is the canonical durable memory store.
 
----
+See [AGENTS.md](AGENTS.md) for the complete architecture and development conventions.
 
 ## Development
 
@@ -394,58 +253,40 @@ Full detail, including tool inventory and service list: [AGENTS.md](AGENTS.md).
 git clone https://github.com/ClewCode/ClewCode.git
 cd ClewCode
 bun install
-bun run dev               # Live-reload REPL (with feature flags)
-bun run dev:channels      # Dev with development channels loaded
-bun run build             # Production build to dist/
-bun run start             # Run the compiled build
-bun test                  # Full suite (vitest-compatible runner)
-bun test --bail           # Stop on first failure
-bun test path/to/file.test.ts          # Single file
-bun test -t "test name"                # By test name
-bun run check:ci          # Biome lint + format check (no autofix)
-bun run lint              # Biome lint with autofix
-bun run check             # Lint + format with autofix
-bun x tsc --noEmit         # TypeScript check only
+bun run dev
 ```
 
-### Full Pre-Push Gate
+Useful commands:
+
+```bash
+bun run dev:channels
+bun run build
+bun run start
+bun test
+bun test --bail
+bun test path/to/file.test.ts
+bun run check:ci
+bun x tsc --noEmit
+```
+
+Before pushing:
 
 ```bash
 bun run check:ci && bun x tsc --noEmit && bun test --bail
 ```
 
-Or run the `/clew-verify` skill, which runs the full gate and a real CLI smoke test — green tests alone don't prove an Ink TUI feature actually works.
-
-### Release
-
-Pushing a `v*` tag triggers the GitHub Actions release and npm publish. Before tagging: bump `package.json`, update `CHANGELOG.md`, run the full gate above. The workflow publishes to npm only; configure the repository `NPM_TOKEN` secret for authentication. See [AGENTS.md § Release](AGENTS.md#release) or run the `/clew-release` skill.
-
----
+The repository has a known TypeScript error baseline. Compare new errors against the existing baseline and inspect touched files separately.
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) before making changes.
 
-- Report bugs via [GitHub Issues](https://github.com/ClewCode/ClewCode/issues)
+- Report bugs in [GitHub Issues](https://github.com/ClewCode/ClewCode/issues)
 - Discuss ideas in [GitHub Discussions](https://github.com/ClewCode/ClewCode/discussions)
-- Read [AGENTS.md](AGENTS.md) for full architecture and code conventions
-
----
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=ClewCode%2FClewCode&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=ClewCode/ClewCode&type=date&theme=dark&legend=top-left&sealed_token=WOidmKAjTf9NlhzAYdnD299FcNzk3PFmRMroFl8z5CwNew4tB6fhqDAyJqdL3zexXKCpw_12pZ3EOxGEbHT5pMKdM4a2K40Q7Y0ox5ei_IutRqkuUMOdkQ" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=ClewCode/ClewCode&type=date&legend=top-left&sealed_token=WOidmKAjTf9NlhzAYdnD299FcNzk3PFmRMroFl8z5CwNew4tB6fhqDAyJqdL3zexXKCpw_12pZ3EOxGEbHT5pMKdM4a2K40Q7Y0ox5ei_IutRqkuUMOdkQ" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=ClewCode/ClewCode&type=date&legend=top-left&sealed_token=WOidmKAjTf9NlhzAYdnD299FcNzk3PFmRMroFl8z5CwNew4tB6fhqDAyJqdL3zexXKCpw_12pZ3EOxGEbHT5pMKdM4a2K40Q7Y0ox5ei_IutRqkuUMOdkQ" />
- </picture>
-</a>
-
----
+- Keep behavior, tests, and `[Unreleased]` in `CHANGELOG.md` synchronized
 
 ## License
 
 GPL-3.0. See [LICENSE.md](LICENSE.md).
 
-Release history in [CHANGELOG.md](CHANGELOG.md).
+Release history is tracked in [CHANGELOG.md](CHANGELOG.md).

@@ -34,4 +34,26 @@ describe('buildUnifiedModelOptions', () => {
     expect(options.some(opt => opt.value === '__NO_PREFERENCE__')).toBe(true);
     expect(options.at(-1)?.value).toBe('__CUSTOM_INPUT__');
   });
+
+  test('marks provider model ids with a free suffix as free', () => {
+    const options = buildUnifiedModelOptions({ activeProviderId: 'anthropic', initial: null });
+    const freeModel = options.find(
+      opt => !opt.type && opt.description !== 'Recently used' && opt.modelId?.endsWith(':free'),
+    );
+
+    expect(freeModel).toBeDefined();
+    expect(freeModel?.description.toLowerCase()).toContain('free');
+  });
+
+  test('includes live models fetched for non-active providers', () => {
+    const options = buildUnifiedModelOptions({
+      activeProviderId: 'anthropic',
+      initial: null,
+      fetchedModelsByProvider: {
+        openai: [{ id: 'new-model-2026', label: 'New Model 2026' }],
+      },
+    });
+
+    expect(options.some(opt => opt.providerId === 'openai' && opt.modelId === 'new-model-2026')).toBe(true);
+  });
 });

@@ -1,7 +1,7 @@
 import ansis from 'ansis';
 import capitalize from 'lodash-es/capitalize.js';
 import type * as React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useExitOnCtrlCDWithKeybindings } from 'src/hooks/useExitOnCtrlCDWithKeybindings.js';
 import { useSearchInput } from 'src/hooks/useSearchInput.js';
 import { ProviderManager } from 'src/services/ai/ProviderManager.js';
@@ -97,7 +97,9 @@ export function ModelPicker({
   const [hasToggledEffort, setHasToggledEffort] = useState(false);
   const [customModelId, setCustomModelId] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
-  const [isSearchActive, setIsSearchActive] = useState(true);
+  // Let the list own arrow keys when the picker opens. Search is activated by
+  // the first typed character so ↑/↓ never get swallowed by the search input.
+  const [isSearchActive, setIsSearchActive] = useState(false);
   // Bumped by Tab/Shift+Tab to remount Select so it re-reads defaultFocusValue.
   const [jumpToken, setJumpToken] = useState(0);
   const [jumpTarget, setJumpTarget] = useState<string | undefined>(undefined);
@@ -107,12 +109,15 @@ export function ModelPicker({
     effortValue !== undefined ? convertEffortValueToLevel(effortValue) : undefined,
   );
 
-  const fetchedModelsData = useAppState(
-    (s: { fetchedModels?: { provider: string; models: FetchedModel[]; fetchedAt: number } }) => s.fetchedModels,
-  );
+  const [fetchedModelsByProvider, setFetchedModelsByProvider] = useState<Record<string, FetchedModel[]>>({});
   const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const hasRequestedModels = useRef(false);
 
-  const { query: searchQuery, cursorOffset: searchCursorOffset } = useSearchInput({
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    cursorOffset: searchCursorOffset,
+  } = useSearchInput({
     isActive: isSearchActive,
     onExit: () => setIsSearchActive(false),
     backspaceExitsOnEmpty: false,
@@ -120,46 +125,47 @@ export function ModelPicker({
 
   const activeProviderId = useMemo(() => ProviderManager.getInstance().getActiveProviderName(), []);
 
-  // Only the active provider's models are fetched live; the rest come from the
-  // static registry, which is what makes a single cross-provider list cheap.
+  // Refresh every configured provider in parallel when the picker opens. Providers
+  // without credentials are skipped and continue using the static registry.
   useEffect(() => {
     const loadModels = async () => {
-      const currentFetched = fetchedModelsData as { provider?: string } | undefined;
-      if (currentFetched?.provider === activeProviderId) return;
-      if (!supportsModelFetching(activeProviderId as any)) return;
+      if (hasRequestedModels.current) return;
+      hasRequestedModels.current = true;
 
       setIsFetchingModels(true);
       try {
-        const models = await fetchProviderModels(activeProviderId as any);
-        if (models && models.length > 0) {
-          setAppState(prev => ({
-            ...prev,
-            fetchedModels: { provider: activeProviderId, models, fetchedAt: Date.now() },
-          }));
-        }
+        const providerManager = ProviderManager.getInstance();
+        const providers = PROVIDER_IDS.filter(
+          provider =>
+            supportsModelFetching(provider) &&
+            (provider === activeProviderId || Boolean(providerManager.getApiKeyForProvider(provider))),
+        );
+        const results = await Promise.all(
+          providers.map(async provider => ({ provider, models: await fetchProviderModels(provider) })),
+        );
+        const nextModels = Object.fromEntries(
+          results
+            .filter(result => result.models && result.models.length > 0)
+            .map(result => [result.provider, result.models]),
+        ) as Record<string, FetchedModel[]>;
+        setFetchedModelsByProvider(nextModels);
       } finally {
         setIsFetchingModels(false);
       }
     };
     loadModels();
-  }, [setAppState, fetchedModelsData, activeProviderId]);
-
-  const currentFetchedModels = useMemo(() => {
-    const data = fetchedModelsData as { provider?: string; models?: FetchedModel[] } | undefined;
-    if (!data || data.provider !== activeProviderId) return null;
-    return data.models ?? null;
-  }, [fetchedModelsData, activeProviderId]);
+  }, [activeProviderId]);
 
   const allOptions = useMemo(
     () =>
       buildUnifiedModelOptions({
-        fetchedModels: currentFetchedModels,
+        fetchedModelsByProvider,
         activeProviderId,
         initial,
         defaultOptionLabel,
         defaultOptionDescription,
       }),
-    [currentFetchedModels, activeProviderId, initial, defaultOptionLabel, defaultOptionDescription],
+    [fetchedModelsByProvider, activeProviderId, initial, defaultOptionLabel, defaultOptionDescription],
   );
 
   const optionsByValue = useMemo(() => new Map(allOptions.map(opt => [opt.value, opt])), [allOptions]);
@@ -294,15 +300,21 @@ export function ModelPicker({
 
       if (
         !isSearchActive &&
-        input.length === 1 &&
+        input.length > 0 &&
         !key.ctrl &&
         !key.meta &&
         !key.return &&
         !key.tab &&
         !key.backspace &&
-        !key.delete
+        !key.delete &&
+        !key.upArrow &&
+        !key.downArrow &&
+        !key.leftArrow &&
+        !key.rightArrow
       ) {
+        setSearchQuery(input);
         setIsSearchActive(true);
+        return;
       }
 
       // `s` is kept as an alias for Enter (session-only) so existing muscle
@@ -479,12 +491,14 @@ function noop(): void {
  */
 export function buildUnifiedModelOptions({
   fetchedModels,
+  fetchedModelsByProvider,
   activeProviderId,
   initial,
   defaultOptionLabel,
   defaultOptionDescription,
 }: {
   fetchedModels?: FetchedModel[] | null;
+  fetchedModelsByProvider?: Record<string, FetchedModel[]>;
   activeProviderId: string;
   initial?: string | null;
   defaultOptionLabel?: string;
@@ -500,13 +514,15 @@ export function buildUnifiedModelOptions({
       .filter(m => !m.supportedTypes || m.supportedTypes.includes(implementationType))
       .map(m => toProviderModelOption(providerId, m));
 
-    if (providerId !== activeProviderId || !fetchedModels || fetchedModels.length === 0) {
+    const liveModels =
+      fetchedModelsByProvider?.[providerId] ?? (providerId === activeProviderId ? fetchedModels : null);
+    if (!liveModels || liveModels.length === 0) {
       return staticModels;
     }
 
     // Live models win for the active provider, but static entries backfill:
     // some provider APIs return partial lists or are temporarily unreachable.
-    const live: ModelOption[] = fetchedModels.map(m => {
+    const live: ModelOption[] = liveModels.map(m => {
       const parts: string[] = [];
       if (m.contextWindow) parts.push(`${formatContext(m.contextWindow)} ctx`);
       if (m.supportsVision) parts.push('vision');
@@ -597,7 +613,7 @@ function toProviderModelOption(providerId: string, model: ProviderModelInfo): Mo
   if (cap.vision) parts.push('vision');
   if (cap.toolCalling && cap.toolCalling !== 'none') parts.push('tools');
   if (cap.reasoning) parts.push('reasoning');
-  if (cap.free) parts.push('free');
+  if (cap.free || /:free(?:$|[?#])/i.test(model.id) || /\bfree\b/i.test(label)) parts.push('free');
 
   const description = parts.length > 0 ? parts.join(' · ') : model.tags?.slice(0, 3).join(' · ') || model.id;
 

@@ -258,11 +258,19 @@ function SetModelAndClose({
         // switch, mainLoopProviderForSession) sync via onChangeAppState. Do NOT
         // call setSessionModel on the ProviderManager singleton — that leaks the
         // model override into every in-process session (agents, bg tasks).
+        // `/model default` also clears a provider overlay created by an earlier
+        // provider-qualified selection, so both parts of the session override
+        // return to the configured default together.
+        const resetProvider = modelValue === null && !targetProvider;
+        if (resetProvider) {
+          ProviderManager.getInstance().setSessionProviderConfig(null);
+        }
 
         setAppState(prev => ({
           ...prev,
           ...providerPatch,
           mainLoopModelForSession: modelValue,
+          ...(resetProvider ? { mainLoopProviderForSession: undefined } : {}),
         }));
 
         if (modelValue !== null) {
@@ -342,8 +350,7 @@ function ShowModelListAndClose({ onDone }: { onDone: (result: string) => void })
     const loadModels = async (): Promise<void> => {
       try {
         const { ProviderManager } = await import('../../services/ai/ProviderManager.js');
-        const { getProviderRegistryEntry } = await import('../../services/ai/providerRegistry.js');
-        const { providersConfig } = await import('../../services/ai/ModelDiscoveryService.js');
+        const { getProviderRegistryEntry, providersConfig } = await import('../../services/ai/providerRegistry.js');
 
         const pm = ProviderManager.getInstance();
         const providerId = pm.getActiveProviderName();
@@ -484,9 +491,12 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
   }
 
   if (COMMON_HELP_ARGS.includes(args)) {
-    onDone('Run /model to open the model selection menu, or /model [modelName] to set the model.', {
-      display: 'system',
-    });
+    onDone(
+      'Run /model to open the picker (Enter = this session, d/g = save as default), /model [provider/model] to switch for this session, /model default to reset, or /model list to list available models.',
+      {
+        display: 'system',
+      },
+    );
     return;
   }
 

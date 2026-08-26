@@ -24,6 +24,7 @@ import type { Message } from '../../types/message.js';
 import { createAbortController, createChildAbortController } from '../../utils/abortController.js';
 import { registerCleanup } from '../../utils/cleanupRegistry.js';
 import { getToolSearchOrReadInfo } from '../../utils/collapseReadSearch.js';
+import { releaseAllAgentLeases } from '../../utils/fileLease.js';
 import { formatDuration } from '../../utils/format.js';
 import { enqueuePendingNotification } from '../../utils/messageQueueManager.js';
 import { getAgentTranscriptPath } from '../../utils/sessionStorage.js';
@@ -337,6 +338,7 @@ export function killAsyncAgent(taskId: string, setAppState: SetAppState): void {
     };
   });
   if (killed) {
+    releaseAllAgentLeases(taskId);
     void evictTaskOutput(taskId);
   }
 }
@@ -464,6 +466,7 @@ export function completeAgentTask(result: AgentToolResult, setAppState: SetAppSt
       selectedAgent: undefined,
     };
   });
+  releaseAllAgentLeases(taskId);
   void evictTaskOutput(taskId);
   // Note: Notification is sent by AgentTool via enqueueAgentNotification
 }
@@ -488,6 +491,7 @@ export function failAgentTask(taskId: string, error: string, setAppState: SetApp
       selectedAgent: undefined,
     };
   });
+  releaseAllAgentLeases(taskId);
   void evictTaskOutput(taskId);
   // Note: Notification is sent by AgentTool via enqueueAgentNotification
 }

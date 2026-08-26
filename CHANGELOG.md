@@ -4,9 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Agent & Sub-Agent System Hardening**:
+  - Added comprehensive regression and unit tests for `AgentTool`, `loadAgentsDir`, `agentToolUtils`, and `LocalAgentTask`.
+  - Standardized `AgentToolResult` to enforce unified `status` (`completed | failed | blocked | canceled`), structured `evidence`, and verified `filesChanged`.
+  - Hardened end-to-end abort signal propagation across subagents, tool loops, and background tasks.
+  - Implemented an active in-memory `FileLeaseTracker` (`src/utils/fileLease.ts`) to prevent concurrent file write conflicts across subagents and teammates with automatic lease release on task completion/cancellation.
+
+- **Dead-code cleanup**: Removed the unreferenced `ModelDiscoveryService` implementation and the unused `context/memoryStore` database facade. The model picker now reads the shared provider registry directly.
+- **Model picker live refresh**: `/model` now fetches model lists for every configured provider whenever the picker is opened, so newly added provider models appear without restarting Clew Code.
+- **Model picker free-model discovery**: `/model` now recognizes free models from common provider metadata, zero-cost OpenRouter pricing, `:free` model IDs, and free labels instead of relying only on static registry tags.
+- **`/model` reset and help improvements**: `/model default` now clears both the session model and provider overlays, and `/model --help` documents session selection, global defaults, provider-qualified models, reset, and live model listing.
 - **Removed `/model-router` and `/model-fallback` Commands**: Cleaned the task-mode routing system and custom model fallback chain in favor of straightforward `/model` selection and core provider retry resilience.
 - **Removed `/mode` Command & Behavioral Modes Subsystem**: Deleted the `/mode` command, `src/modes/` subsystem, settings schema fields, and the dynamic `mode` system prompt section to streamline session configuration.
 - **Auto-Compact v2 & `/compact` Command Unification**: Fixed recursion guard collision between manual `/compact` and inner summarization subagents (`compact_summarize`), added forced/manual compaction options to Auto-Compact v2 planner to execute custom instructions cleanly without falling back to legacy paths, and passed complete cache-sharing parameters to optimize prompt cache reuse.
+- **Auto-Compact controls**: Fixed manual `/compact` being blocked when only automatic compaction was disabled, and surfaced reducer failures as a compaction shortfall so the user receives an actionable warning instead of a silent over-limit request.
 - **Comprehensive Dead Code & Orphaned File Cleanup**: Pruned 74 unreferenced files including legacy agent creation wizards (`src/components/agents/new-agent-creation/`), dead memory/UI components, unregistered commands, deprecated services, and unused hooks/utilities.
 - **Export Consolidation & Encapsulation**: Removed redundant default exports across tools (`TaskOutputTool`, `MonitorTool`, `FileIndex`, `MonitorPermissionRequest`, `ComputerUseDoctorSection`), deleted unused legacy `*PendingNotifications` and `submitPermissionRequest` aliases, and encapsulated internal functions/constants in `auth.ts`, `client.ts`, and `compact.ts`.
 - **Removed the Xenova Transformers/sharp install dependency**: semantic memory search now degrades gracefully when the optional embedding runtime is unavailable, so the CLI can start without native image modules.

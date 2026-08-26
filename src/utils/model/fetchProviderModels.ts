@@ -41,6 +41,20 @@ interface OpenRouterModel {
   };
 }
 
+function inferFreeModel(model: {
+  id?: string;
+  label?: string;
+  pricing?: { prompt?: number; completion?: number };
+}): boolean {
+  const id = model.id ?? '';
+  const label = model.label ?? '';
+  return (
+    /:free(?:$|[?#])/i.test(id) ||
+    /\bfree\b/i.test(label) ||
+    (model.pricing?.prompt === 0 && model.pricing?.completion === 0)
+  );
+}
+
 interface OpenRouterModelsResponse {
   data: OpenRouterModel[];
 }
@@ -118,6 +132,7 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
         id: model.id,
         label: model.id,
         description: model.owned_by ? `Owned by: ${model.owned_by}` : undefined,
+        free: inferFreeModel({ id: model.id, label: model.id }),
       }));
     }
 
@@ -135,6 +150,11 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
           label: model.name ?? model.id,
           description: model.description,
           contextWindow: model.context_length,
+          free: inferFreeModel({
+            id: model.id,
+            label: model.name ?? model.id,
+            pricing: model.pricing,
+          }),
         }))
         .filter(model => {
           // Filter out models that don't have the provider/model format
@@ -158,7 +178,7 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
           supportsVision: inputModalities.includes('image'),
           supportsReasoning: supportedParams.includes('reasoning') || supportedParams.includes('include_reasoning'),
           maxOutput: model.top_provider?.max_completion_tokens || model.max_output_tokens,
-          free: model.isFree ?? false,
+          free: model.isFree === true || inferFreeModel({ id: model.id, label: model.name }),
         };
       });
     }
@@ -204,7 +224,7 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
         supportsReasoning: fm.supportsReasoning ?? staticCap.reasoning ?? false,
         maxOutput:
           fm.maxOutput ?? (typeof staticCap.maxOutput === 'number' ? (staticCap.maxOutput as number) : undefined),
-        free: fm.free ?? staticCap.free ?? false,
+        free: fm.free || staticCap.free || inferFreeModel({ id: fm.id, label: fm.label }),
       };
     });
   } catch (error) {
