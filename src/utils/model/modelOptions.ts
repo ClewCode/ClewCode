@@ -3,7 +3,7 @@ import { getInitialMainLoopModel } from '../../bootstrap/state.js';
 import { isClaudeAISubscriber, isMaxSubscriber, isTeamPremiumSubscriber } from '../auth.js';
 import { getModelStrings } from './modelStrings.js';
 import { COST_TIER_3_15, COST_HAIKU_35, COST_HAIKU_45, formatModelPricing } from '../modelCost.js';
-import { getSettings_DEPRECATED } from '../settings/settings.js';
+import { getSettings } from '../settings/settings.js';
 import { checkOpus1mAccess, checkSonnet1mAccess } from './check1mAccess.js';
 import { getAPIProvider } from './providers.js';
 import { isModelAllowed } from './modelAllowlist.js';
@@ -506,7 +506,7 @@ export function getModelOptions(fastMode = false): ModelOption[] {
  * Always preserves the "Default" option (value: null).
  */
 function filterModelOptionsByAllowlist(options: ModelOption[]): ModelOption[] {
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getSettings() || {};
   if (!settings.availableModels) {
     return options; // No restrictions
   }

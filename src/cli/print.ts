@@ -121,7 +121,7 @@ import { runSideQuestion } from 'src/utils/sideQuestion.js';
 import { processSessionStartHooks, processSetupHooks, takeInitialUserMessage } from 'src/utils/sessionStart.js';
 import { DEFAULT_OUTPUT_STYLE_NAME, getAllOutputStyles } from 'src/constants/outputStyles.js';
 import { TEAMMATE_MESSAGE_TAG, TICK_TAG } from 'src/constants/xml.js';
-import { getSettings_DEPRECATED, getSettingsWithSources } from 'src/utils/settings/settings.js';
+import { getSettingsWithSources } from 'src/utils/settings/settings.js';
 import { settingsChangeDetector } from 'src/utils/settings/changeDetector.js';
 import { applySettingsChange } from 'src/utils/settings/applySettingsChange.js';
 import {
@@ -3855,7 +3855,7 @@ async function handleInitializeRequest(
     }
   }
 
-  const settings = getSettings_DEPRECATED();
+  const settings = getSettings();
   const outputStyle = settings?.outputStyle || DEFAULT_OUTPUT_STYLE_NAME;
   const availableOutputStyles = await getAllOutputStyles(getCwd());
 

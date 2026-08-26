@@ -38,7 +38,7 @@ import {
 } from './hooks/hooksConfigSnapshot.js';
 import { getTranscriptPathForSession, getAgentTranscriptPath } from './sessionStorage.js';
 import type { AgentId } from '../types/ids.js';
-import { getSettings_DEPRECATED, getSettingsForSource } from './settings/settings.js';
+import { getSettingsForSource } from './settings/settings.js';
 import {
   logEvent,
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -4490,7 +4490,7 @@ export async function executeStatusLineCommand(
   if (shouldAllowManagedHooksOnly()) {
     statusLine = getSettingsForSource('policySettings')?.statusLine;
   } else {
-    statusLine = getSettings_DEPRECATED()?.statusLine;
+    statusLine = getSettings()?.statusLine;
   }
 
   if (statusLine?.type !== 'command') {
@@ -4566,7 +4566,7 @@ export async function executeFileSuggestionCommand(
   if (shouldAllowManagedHooksOnly()) {
     fileSuggestion = getSettingsForSource('policySettings')?.fileSuggestion;
   } else {
-    fileSuggestion = getSettings_DEPRECATED()?.fileSuggestion;
+    fileSuggestion = getSettings()?.fileSuggestion;
   }
 
   if (fileSuggestion?.type !== 'command') {

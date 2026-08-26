@@ -1,6 +1,6 @@
 import { PROVIDER_REGISTRY } from '../../services/ai/providerRegistry.js';
 import type { PermissionMode } from '../permissions/PermissionMode.js';
-import { getSettings_DEPRECATED } from '../settings/settings.js';
+import { getSettings } from '../settings/settings.js';
 import { capitalize } from '../stringUtils.js';
 import { MODEL_ALIASES } from './aliases.js';
 import { applyBedrockRegionPrefix, getBedrockRegionPrefix } from './bedrock.js';
@@ -42,7 +42,7 @@ export function resolveSubagentDefaultModel(
  * value is disallowed by the current model allowlist.
  */
 export function getUserSpecifiedSubagentModelSetting(): string | undefined {
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getSettings() || {};
   const resolved = resolveSubagentDefaultModel(settings.subagentModel, process.env.CLEW_CODE_SUBAGENT_MODEL);
   return resolved === 'inherit' ? undefined : resolved;
 }
@@ -60,7 +60,7 @@ export function getDefaultSubagentModel(): string {
  * Returns undefined when no explicit default is configured.
  */
 export function getUserSpecifiedSubagentProvider(): string | undefined {
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getSettings() || {};
   return settings.subagentProvider || undefined;
 }
 
@@ -69,7 +69,7 @@ export function getUserSpecifiedSubagentProvider(): string | undefined {
  * Returns undefined when no explicit default is configured.
  */
 export function getUserSpecifiedSubagentPermissionMode(): string | undefined {
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getSettings() || {};
   return settings.subagentPermissionMode || undefined;
 }
 

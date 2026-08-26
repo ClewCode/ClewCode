@@ -1,6 +1,6 @@
 import { context as otelContext, propagation } from '@opentelemetry/api';
 import { isEnvTruthy } from './envUtils.js';
-import { getSettings_DEPRECATED } from './settings/settings.js';
+import { getSettings } from './settings/settings.js';
 
 /**
  * Env vars to strip from subprocess environments when running inside GitHub
@@ -111,7 +111,7 @@ export function subprocessEnv(): NodeJS.ProcessEnv {
   // These are stripped from managedEnv's filterSettingsEnv() so they don't
   // affect Clew Code's own UI, but subprocesses (Bash, MCP, LSP) should
   // still see them if configured.
-  const mergedSettingsEnv = getSettings_DEPRECATED()?.env;
+  const mergedSettingsEnv = getSettings()?.env;
   if (mergedSettingsEnv) {
     for (const key of Object.keys(mergedSettingsEnv)) {
       const upper = key.toUpperCase();

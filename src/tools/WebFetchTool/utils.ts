@@ -10,7 +10,7 @@ import { AbortError, isFetchError } from '../../utils/errors.js';
 import { getWebFetchUserAgent } from '../../utils/http.js';
 import { logError } from '../../utils/log.js';
 import { isBinaryContentType, persistBinaryContent } from '../../utils/mcpOutputStorage.js';
-import { getSettings_DEPRECATED } from '../../utils/settings/settings.js';
+import { getSettings } from '../../utils/settings/settings.js';
 import { asSystemPrompt } from '../../utils/systemPromptType.js';
 import { isPreapprovedHost } from './preapproved.js';
 import { makeSecondaryModelPrompt } from './prompt.js';
@@ -438,7 +438,7 @@ export async function getURLMarkdownContent(
     // Check if the user has opted to skip the blocklist check
     // This is for enterprise customers with restrictive security policies
     // that prevent outbound connections to claude.ai
-    const settings = getSettings_DEPRECATED();
+    const settings = getSettings();
     if (!settings.skipWebFetchPreflight) {
       const checkResult = await checkDomainBlocklist(hostname);
       if (!canFetchAfterDomainCheck(checkResult)) {
@@ -462,7 +462,7 @@ export async function getURLMarkdownContent(
       throw e;
     }
     // BUG (fail-open security boundary): any *other* exception here (e.g.
-    // getSettings_DEPRECATED() or logEvent() throwing) previously fell
+    // getSettings() or logEvent() throwing) previously fell
     // through silently and let the fetch below proceed as if the domain
     // safety check had passed. This block is the primary SSRF/blocklist
     // gate, so an unexpected error must fail closed, not open.

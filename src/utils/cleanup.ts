@@ -13,14 +13,14 @@ import { cleanupOldVersions } from './nativeInstaller/index.js';
 import { cleanupOldPastes } from './pasteStore.js';
 import { getProjectsDir } from './sessionStorage.js';
 import { getSettingsWithAllErrors } from './settings/allErrors.js';
-import { getSettings_DEPRECATED, rawSettingsContainsKey } from './settings/settings.js';
+import { getSettings, rawSettingsContainsKey } from './settings/settings.js';
 import { TOOL_RESULTS_SUBDIR } from './toolResultStorage.js';
 import { cleanupStaleAgentWorktrees } from './worktree.js';
 
 const DEFAULT_CLEANUP_PERIOD_DAYS = 30;
 
 function getCutoffDate(): Date {
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getSettings() || {};
   const cleanupPeriodDays = settings.cleanupPeriodDays ?? DEFAULT_CLEANUP_PERIOD_DAYS;
   const cleanupPeriodMs = cleanupPeriodDays * 24 * 60 * 60 * 1000;
   return new Date(Date.now() - cleanupPeriodMs);

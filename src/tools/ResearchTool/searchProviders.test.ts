@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 mock.module('../../utils/settings/settings.js', () => ({
+  getSettings: () => ({ env: {} }),
   getSettings_DEPRECATED: () => ({ env: {} }),
 }));
 

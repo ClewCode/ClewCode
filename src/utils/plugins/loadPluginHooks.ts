@@ -4,7 +4,7 @@ import { clearRegisteredPluginHooks, getRegisteredHooks, registerHookCallbacks }
 import type { LoadedPlugin } from '../../types/plugin.js';
 import { logForDebugging } from '../debug.js';
 import { settingsChangeDetector } from '../settings/changeDetector.js';
-import { getSettings_DEPRECATED, getSettingsForSource } from '../settings/settings.js';
+import { getSettingsForSource } from '../settings/settings.js';
 import type { PluginHookMatcher } from '../settings/types.js';
 import { jsonStringify } from '../slowOperations.js';
 import { clearPluginCache, loadAllPluginsCacheOnly } from './pluginLoader.js';
@@ -217,7 +217,7 @@ export function resetHotReloadState(): void {
 // Exported for testing — the listener at setupPluginHookHotReload uses this
 // for change detection; tests verify it diffs on the fields that matter.
 export function getPluginAffectingSettingsSnapshot(): string {
-  const merged = getSettings_DEPRECATED();
+  const merged = getSettings();
   const policy = getSettingsForSource('policySettings');
   // Key-sort the two Record fields so insertion order doesn't flap the hash.
   // Array fields (strictKnownMarketplaces, blockedMarketplaces) have

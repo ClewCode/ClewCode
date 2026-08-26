@@ -12,12 +12,7 @@ import { getCwd } from '../cwd.js';
 import { isEnvTruthy } from '../envUtils.js';
 import type { SettingSource } from '../settings/constants.js';
 import { SETTING_SOURCES } from '../settings/constants.js';
-import {
-  getSettings_DEPRECATED,
-  getSettingsFilePathForSource,
-  getUseAutoModeDuringPlan,
-  hasAutoModeOptIn,
-} from '../settings/settings.js';
+import { getSettingsFilePathForSource, getUseAutoModeDuringPlan, hasAutoModeOptIn } from '../settings/settings.js';
 import { type PermissionMode, permissionModeFromString } from './PermissionMode.js';
 import { applyPermissionRulesToPermissionContext } from './permissions.js';
 import { loadAllPermissionRulesFromDisk } from './permissionsLoader.js';
@@ -611,7 +606,7 @@ export function initialPermissionModeFromCLI({
   permissionModeCli: string | undefined;
   dangerouslySkipPermissions: boolean | undefined;
 }): { mode: PermissionMode; notification?: string } {
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getSettings() || {};
 
   // Check GrowthBook gate first - highest precedence
   const growthBookDisableBypassPermissionsMode = checkStatsigFeatureGate_CACHED_MAY_BE_STALE(
@@ -829,7 +824,7 @@ export async function initializeToolPermissionContext({
   const growthBookDisableBypassPermissionsMode = checkStatsigFeatureGate_CACHED_MAY_BE_STALE(
     'tengu_disable_bypass_permissions_mode',
   );
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getSettings() || {};
   const settingsDisableBypassPermissionsMode = settings.permissions?.disableBypassPermissionsMode === 'disable';
   const isBypassPermissionsModeAvailable =
     (permissionMode === 'bypassPermissions' || allowDangerouslySkipPermissions) &&
@@ -1118,7 +1113,7 @@ export function shouldDisableBypassPermissions(): Promise<boolean> {
 }
 
 function isAutoModeDisabledBySettings(): boolean {
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getSettings() || {};
   return (
     (settings as { disableAutoMode?: 'disable' }).disableAutoMode === 'disable' ||
     (settings.permissions as { disableAutoMode?: 'disable' } | undefined)?.disableAutoMode === 'disable'
@@ -1219,7 +1214,7 @@ export function isBypassPermissionsModeDisabled(): boolean {
   const growthBookDisableBypassPermissionsMode = checkStatsigFeatureGate_CACHED_MAY_BE_STALE(
     'tengu_disable_bypass_permissions_mode',
   );
-  const settings = getSettings_DEPRECATED() || {};
+  const settings = getSettings() || {};
   const settingsDisableBypassPermissionsMode = settings.permissions?.disableBypassPermissionsMode === 'disable';
 
   return growthBookDisableBypassPermissionsMode || settingsDisableBypassPermissionsMode;
@@ -1267,7 +1262,7 @@ export async function checkAndDisableBypassPermissions(currentContext: ToolPermi
 
 export function isDefaultPermissionModeAuto(): boolean {
   if (feature('TRANSCRIPT_CLASSIFIER')) {
-    const settings = getSettings_DEPRECATED() || {};
+    const settings = getSettings() || {};
     return settings.permissions?.defaultMode === 'auto';
   }
   return false;

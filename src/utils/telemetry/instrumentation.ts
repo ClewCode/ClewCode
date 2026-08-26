@@ -33,7 +33,7 @@ import { isEnvTruthy } from '../envUtils.js';
 import { errorMessage } from '../errors.js';
 import { getMTLSConfig } from '../mtls.js';
 import { getProxyUrl, shouldBypassProxy } from '../proxy.js';
-import { getSettings_DEPRECATED } from '../settings/settings.js';
+import { getSettings } from '../settings/settings.js';
 import { jsonStringify } from '../slowOperations.js';
 import { profileCheckpoint } from '../startupProfiler.js';
 import { isBetaTracingEnabled } from './betaSessionTracing.js';
@@ -673,7 +673,7 @@ function parseOtelHeadersEnvVar(): Record<string, string> {
 function getOTLPExporterConfig() {
   const proxyUrl = getProxyUrl();
   const mtlsConfig = getMTLSConfig();
-  const settings = getSettings_DEPRECATED();
+  const settings = getSettings();
 
   // Build base config
   const config: Record<string, unknown> = {};

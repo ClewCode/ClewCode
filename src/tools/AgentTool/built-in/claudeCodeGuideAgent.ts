@@ -7,7 +7,7 @@ import { WEB_FETCH_TOOL_NAME } from 'src/tools/WebFetchTool/prompt.js';
 import { WEB_SEARCH_TOOL_NAME } from 'src/tools/WebSearchTool/prompt.js';
 import { isUsing3PServices } from 'src/utils/auth.js';
 import { hasEmbeddedSearchTools } from 'src/utils/embeddedTools.js';
-import { getSettings_DEPRECATED } from 'src/utils/settings/settings.js';
+import { getSettings } from 'src/utils/settings/settings.js';
 import { jsonStringify } from '../../../utils/slowOperations.js';
 import type { AgentDefinition, BuiltInAgentDefinition } from '../loadAgentsDir.js';
 
@@ -140,7 +140,7 @@ export const CLEW_CODE_GUIDE_AGENT: BuiltInAgentDefinition = {
     }
 
     // 5. User settings
-    const settings = getSettings_DEPRECATED();
+    const settings = getSettings();
     if (Object.keys(settings).length > 0) {
       // eslint-disable-next-line no-restricted-syntax -- human-facing UI, not tool_result
       const settingsJson = jsonStringify(settings, null, 2);

@@ -2854,7 +2854,7 @@ async function run(): Promise<CommanderCommand> {
         // interceptor) and picks up any plugin-contributed env after plugin
         // init. Project settings are already loaded here:
         // applySafeConfigEnvironmentVariables in init() called
-        // getSettings_DEPRECATED at managedEnv.ts:86 which merges all enabled
+        // getSettings at managedEnv.ts:86 which merges all enabled
         // sources including projectSettings/localSettings.
         applyConfigEnvironmentVariables();
 

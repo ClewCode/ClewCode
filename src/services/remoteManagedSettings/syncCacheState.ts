@@ -74,7 +74,7 @@ export function getRemoteManagedSettingsSyncFromCache(): SettingsJson | null {
   if (cachedSettings) {
     sessionCache = cachedSettings;
     // Remote settings just became available for the first time. Any merged
-    // getSettings_DEPRECATED() result cached before this moment is missing
+    // getSettings() result cached before this moment is missing
     // the policySettings layer (the `eligible !== true` guard above returned
     // null). Flush so the next merged read re-merges with this layer visible.
     //
@@ -86,7 +86,7 @@ export function getRemoteManagedSettingsSyncFromCache(): SettingsJson | null {
     //
     // gh-23085: isBridgeEnabled() at main.tsx Commander-definition time
     // (before preAction → init() → isRemoteManagedSettingsEligible()) reached
-    // getSettings_DEPRECATED() at auth.ts:115. The try/catch in bridgeEnabled
+    // getSettings() at auth.ts:115. The try/catch in bridgeEnabled
     // swallowed the later getGlobalConfig() throw, but the merged settings
     // cache was already poisoned. See managedSettingsHeadless.int.test.ts.
     resetSettingsCache();

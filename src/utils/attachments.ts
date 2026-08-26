@@ -51,7 +51,7 @@ function getVideoPasteIds(pastedContents: Record<number, PastedContent> | undefi
   return ids.length > 0 ? ids : undefined;
 }
 import { randomUUID, type UUID } from 'crypto';
-import { getSettings_DEPRECATED } from './settings/settings.js';
+import { getSettings } from './settings/settings.js';
 import { getSnippetForTwoFileDiff } from 'src/tools/FileEditTool/utils.js';
 import type { ContentBlockParam, ImageBlockParam, Base64ImageSource } from '@anthropic-ai/sdk/resources/messages.mjs';
 import { maybeResizeAndDownsampleImageBlock } from './imageResizer.js';
@@ -1381,7 +1381,7 @@ function getCriticalSystemReminderAttachment(toolUseContext: ToolUseContext): At
 }
 
 function getOutputStyleAttachment(): Attachment[] {
-  const settings = getSettings_DEPRECATED();
+  const settings = getSettings();
   const outputStyle = settings?.outputStyle || 'default';
 
   // Only show for non-default styles

@@ -305,8 +305,8 @@ export async function bgFlagHandler(
 
   // If no explicit permission mode, read from settings.json permissions.defaultMode
   if (!permissionMode) {
-    const { getSettings_DEPRECATED } = await import('../utils/settings/settings.js');
-    const settingsMode = getSettings_DEPRECATED()?.permissions?.defaultMode;
+    const { getSettings } = await import('../utils/settings/settings.js');
+    const settingsMode = getSettings()?.permissions?.defaultMode;
     if (settingsMode && typeof settingsMode === 'string') {
       permissionMode = settingsMode;
     }

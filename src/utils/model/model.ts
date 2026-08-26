@@ -14,7 +14,7 @@ import { has1mContext, is1mContextDisabled, modelSupports1M } from '../context.j
 import { isEnvTruthy } from '../envUtils.js';
 import { formatModelPricing, getOpus46CostTier } from '../modelCost.js';
 import type { PermissionMode } from '../permissions/PermissionMode.js';
-import { getSettings_DEPRECATED } from '../settings/settings.js';
+import { getSettings } from '../settings/settings.js';
 import { capitalize } from '../stringUtils.js';
 import { isModelAlias, type ModelAlias } from './aliases.js';
 import { getAntModelOverrideConfig, resolveAntModel } from './antModels.js';
@@ -103,7 +103,7 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
   if (modelOverride !== undefined) {
     specifiedModel = modelOverride;
   } else {
-    const settings = getSettings_DEPRECATED() || {};
+    const settings = getSettings() || {};
 
     // Check environment variables — CLEW_CODE_MODEL is provider-neutral
     // and takes priority over the Anthropic-specific ANTHROPIC_MODEL

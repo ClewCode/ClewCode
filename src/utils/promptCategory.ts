@@ -1,6 +1,6 @@
 import type { QuerySource } from 'src/constants/querySource.js';
 import { DEFAULT_OUTPUT_STYLE_NAME, OUTPUT_STYLE_CONFIG } from '../constants/outputStyles.js';
-import { getSettings_DEPRECATED } from './settings/settings.js';
+import { getSettings } from './settings/settings.js';
 
 /**
  * Determines the prompt category for agent usage.
@@ -26,7 +26,7 @@ export function getQuerySourceForAgent(agentType: string | undefined, isBuiltInA
  * @returns The prompt category string or undefined for default
  */
 export function getQuerySourceForREPL(): QuerySource {
-  const settings = getSettings_DEPRECATED();
+  const settings = getSettings();
   const style = settings?.outputStyle ?? DEFAULT_OUTPUT_STYLE_NAME;
 
   if (style === DEFAULT_OUTPUT_STYLE_NAME) {
