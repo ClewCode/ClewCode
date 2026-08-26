@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Auto-Compact v2 & `/compact` Command Unification**: Fixed recursion guard collision between manual `/compact` and inner summarization subagents (`compact_summarize`), added forced/manual compaction options to Auto-Compact v2 planner to execute custom instructions cleanly without falling back to legacy paths, and passed complete cache-sharing parameters to optimize prompt cache reuse.
+- **Comprehensive Dead Code & Orphaned File Cleanup**: Pruned 74 unreferenced files including legacy agent creation wizards (`src/components/agents/new-agent-creation/`), dead memory/UI components, unregistered commands, deprecated services, and unused hooks/utilities.
+- **Export Consolidation & Encapsulation**: Removed redundant default exports across tools (`TaskOutputTool`, `MonitorTool`, `FileIndex`, `MonitorPermissionRequest`, `ComputerUseDoctorSection`), deleted unused legacy `*PendingNotifications` and `submitPermissionRequest` aliases, and encapsulated internal functions/constants in `auth.ts`, `client.ts`, and `compact.ts`.
 - **Removed the Xenova Transformers/sharp install dependency**: semantic memory search now degrades gracefully when the optional embedding runtime is unavailable, so the CLI can start without native image modules.
 - **System Prompt Modernization & Prefix Cache Optimization**: Cleaned legacy boilerplate in static system prompt sections, locked immutable static blocks before `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` for 100% prompt cache hit rates, and upgraded `CODING_SYSTEM_PROMPT` to enforce codebase inspection, surgical diffs, and test verification.
 - **Subagents & Dead Code Pruning**: Removed redundant `rlm` agent, `JsonPathTool`, and `ParallelSearchReadTool`. Streamlined built-in subagent prompts (`Explore`, `Plan`, `Verification`) for fast, non-overlapping synthesis.

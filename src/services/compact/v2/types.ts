@@ -54,6 +54,8 @@ export interface ReduceContext {
   state: CompactSessionState;
   /** False mid-tool-chain: reducers that would strand a tool_use must no-op. */
   atBoundary: boolean;
+  /** Manual compact instructions from `/compact`. Only the summarize reducer uses it. */
+  customInstructions?: string;
 }
 
 export interface ReduceOutcome {

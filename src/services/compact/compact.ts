@@ -88,15 +88,15 @@ import { groupMessagesByApiRound } from './grouping.js';
 import { selectPostCompactMessagesToKeep } from './postCompactTail.js';
 import { getCompactPrompt, getCompactUserSummaryMessage, getPartialCompactPrompt } from './prompt.js';
 
-export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5;
-export const POST_COMPACT_TOKEN_BUDGET = 50_000;
-export const POST_COMPACT_MAX_TOKENS_PER_FILE = 5_000;
+const POST_COMPACT_MAX_FILES_TO_RESTORE = 5;
+const POST_COMPACT_TOKEN_BUDGET = 50_000;
+const POST_COMPACT_MAX_TOKENS_PER_FILE = 5_000;
 // Skills can be large (verify=18.7KB, claude-api=20.1KB). Previously re-injected
 // unbounded on every compact → 5-10K tok/compact. Per-skill truncation beats
 // dropping — instructions at the top of a skill file are usually the critical
 // part. Budget sized to hold ~5 skills at the per-skill cap.
-export const POST_COMPACT_MAX_TOKENS_PER_SKILL = 5_000;
-export const POST_COMPACT_SKILLS_TOKEN_BUDGET = 25_000;
+const POST_COMPACT_MAX_TOKENS_PER_SKILL = 5_000;
+const POST_COMPACT_SKILLS_TOKEN_BUDGET = 25_000;
 const MAX_COMPACT_STREAMING_RETRIES = 2;
 
 /**
@@ -111,7 +111,7 @@ const MAX_COMPACT_STREAMING_RETRIES = 2;
  * tool_result content from tools). Assistant messages contain text, tool_use,
  * and thinking blocks but not images.
  */
-export function stripImagesFromMessages(messages: Message[]): Message[] {
+function stripImagesFromMessages(messages: Message[]): Message[] {
   return messages.map(message => {
     if (message.type !== 'user') {
       return message;
@@ -338,7 +338,7 @@ async function compactSingleChunk(
           COMPACT_MAX_OUTPUT_TOKENS,
           getMaxOutputTokensForModel(context.options.mainLoopModel),
         ),
-        querySource: 'compact',
+        querySource: 'compact_summarize',
         agents: context.options.agentDefinitions.activeAgents,
         mcpTools: [],
         effortValue: appState.effortValue,
@@ -1485,7 +1485,7 @@ async function streamCompactSummary({
           promptMessages: [summaryRequest],
           cacheSafeParams,
           canUseTool: createCompactCanUseTool(),
-          querySource: 'compact',
+          querySource: 'compact_summarize',
           forkLabel: 'compact',
           maxTurns: 1,
           skipCacheWrite: true,
@@ -1594,7 +1594,7 @@ async function streamCompactSummary({
             COMPACT_MAX_OUTPUT_TOKENS,
             getMaxOutputTokensForModel(context.options.mainLoopModel),
           ),
-          querySource: 'compact',
+          querySource: 'compact_summarize',
           agents: context.options.agentDefinitions.activeAgents,
           mcpTools: [],
           effortValue: appState.effortValue,

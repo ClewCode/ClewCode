@@ -30,4 +30,10 @@ export type ShellProvider = {
    * May perform async initialization (e.g., tmux socket setup for bash).
    */
   getEnvironmentOverrides(command: string): Promise<Record<string, string>>;
+
+  /**
+   * Optional: check if the shell snapshot/environment was initialized successfully.
+   * Used for fallback logic (e.g., bash snapshot failed on Windows -> use PowerShell).
+   */
+  isHealthy?: () => Promise<boolean> | boolean;
 };

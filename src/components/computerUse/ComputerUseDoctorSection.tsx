@@ -79,4 +79,3 @@ export function ComputerUseDoctorSection(): React.ReactNode {
     </Box>
   );
 }
-export default ComputerUseDoctorSection;

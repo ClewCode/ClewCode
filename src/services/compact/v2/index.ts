@@ -26,6 +26,12 @@ export interface RunCompactionOptions {
   cacheSafeParams?: CacheSafeParams;
   /** Overrides boundary detection; omit to derive from the message tail. */
   atBoundary?: boolean;
+  /** Manual compact instructions from `/compact`. Only the summarize reducer uses it. */
+  customInstructions?: string;
+  /** Force compaction even if under natural threshold (for manual /compact). */
+  force?: boolean;
+  /** Explicit manual invocation. */
+  manual?: boolean;
 }
 
 export interface RunCompactionResult {
@@ -101,17 +107,19 @@ export async function runCompaction(
     return empty;
   }
   // Forked summarization agents must never recurse into compaction.
-  if (opts.querySource === 'session_memory' || opts.querySource === 'compact') {
+  if (opts.querySource === 'session_memory' || opts.querySource === 'compact_summarize') {
     return empty;
   }
 
   state.turn++;
   state.restoredThisTurn = 0;
 
+  const isForced = opts.force || opts.manual || Boolean(opts.customInstructions);
   const ledger = ledgerFor(state);
   const pressure = ledger.measure(messages, model, resolveAdaptiveBuffer(messages));
   const level = pressureLevel(pressure);
-  if (level === 'none') {
+
+  if (level === 'none' && !isForced) {
     return { ...empty, plan: { steps: [], expectedYield: 0, deficit: 0, rationale: 'under threshold' } };
   }
 
@@ -120,7 +128,7 @@ export async function runCompaction(
   // tool_result has not arrived — the classic "forgot what it was doing" bug.
   // Cheap reducers are still safe there, and often enough on their own; only a
   // force-level deficit justifies summarizing mid-chain.
-  const allowCostly = atBoundary || level === 'force';
+  const allowCostly = atBoundary || level === 'force' || isForced;
 
   const makeContext = (_reducer: Reducer, target: number, msgs: Message[] = messages): ReduceContext => ({
     messages: msgs,
@@ -132,9 +140,14 @@ export async function runCompaction(
     cacheSafeParams: opts.cacheSafeParams,
     state,
     atBoundary,
+    customInstructions: opts.customInstructions,
   });
 
-  const plan = planCompaction(pressure, (r, t) => makeContext(r, t), { atBoundary, allowCostly });
+  const plan = planCompaction(pressure, (r, t) => makeContext(r, t), {
+    atBoundary,
+    allowCostly,
+    forceSummarize: isForced && Boolean(opts.customInstructions),
+  });
   if (plan.steps.length === 0) {
     return { ...empty, plan };
   }

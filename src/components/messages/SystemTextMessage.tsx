@@ -22,9 +22,7 @@ import type {
   SystemTurnDurationMessage,
   SystemThinkingMessage,
   SystemMemorySavedMessage,
-  SystemTasteLearnedMessage,
 } from '../../types/message.js';
-import { adjustTasteConfidence, removeTaste } from '../../services/taste/store.js';
 import { SystemAPIErrorMessage } from './SystemAPIErrorMessage.js';
 import { formatDuration, formatNumber, formatSecondsShort } from '../../utils/format.js';
 import { getGlobalConfig } from '../../utils/config.js';
@@ -52,10 +50,6 @@ export function SystemTextMessage({ message, addMargin, verbose, isTranscriptMod
 
   if (message.subtype === 'memory_saved') {
     return <MemorySavedMessage message={message} addMargin={addMargin} />;
-  }
-
-  if (message.subtype === 'taste_learned') {
-    return <TasteLearnedMessage message={message as SystemTasteLearnedMessage} addMargin={addMargin} />;
   }
 
   if (message.subtype === 'away_summary') {
@@ -375,101 +369,6 @@ function MemorySavedMessage({
       {writtenPaths.map(p => (
         <MemoryFileRow key={p} path={p} />
       ))}
-    </Box>
-  );
-}
-
-/**
- * A preference the extraction fork just learned, with the file it landed in and
- * a way to answer it. Confirming raises confidence to certain so the entry
- * stops being hedged in the injected block; rejecting deletes it outright,
- * because a wrong standing instruction is worse than none.
- */
-function TasteLearnedMessage({
-  message,
-  addMargin,
-}: {
-  message: SystemTasteLearnedMessage;
-  addMargin: boolean;
-}): React.ReactNode {
-  const bg = useSelectedMessageBg();
-  const [resolution, setResolution] = useState(message.resolution);
-  const [busy, setBusy] = useState(false);
-
-  const resolve = (next: 'confirmed' | 'rejected') => {
-    if (busy || resolution) return;
-    setBusy(true);
-    const action =
-      next === 'confirmed'
-        ? adjustTasteConfidence(message.scope, message.text, 1 - message.confidence, message.category)
-        : removeTaste(message.scope, message.text, message.category);
-    void action
-      .then(() => {
-        // Mutating the message keeps the answer across a transcript re-render;
-        // local state is what actually drives this instance.
-        message.resolution = next;
-        setResolution(next);
-      })
-      .finally(() => setBusy(false));
-  };
-
-  return (
-    <Box flexDirection="column" marginTop={addMargin ? 1 : 0} backgroundColor={bg}>
-      <Box flexDirection="row">
-        <Text color="remember" inverse bold>
-          {' TASTE '}
-        </Text>
-        <Text> </Text>
-        <Text color="suggestion">{resolution === 'rejected' ? 'Discarded' : 'Learned'}</Text>
-      </Box>
-      <MessageResponse>
-        <Box flexDirection="column">
-          <Box flexDirection="row">
-            <Text dimColor={resolution === 'rejected'} strikethrough={resolution === 'rejected'} wrap="wrap">
-              {message.text}
-              <Text dimColor> [Confidence {Math.round(message.confidence * 100)}%]</Text>
-              {message.category && message.category !== 'general' && (
-                <Text dimColor> [Category: {message.category}]</Text>
-              )}
-            </Text>
-          </Box>
-          <MemoryFileRow path={message.path} />
-          {!resolution && <TasteResolveRow onResolve={resolve} disabled={busy} />}
-        </Box>
-      </MessageResponse>
-    </Box>
-  );
-}
-
-function TasteResolveRow({
-  onResolve,
-  disabled,
-}: {
-  onResolve: (next: 'confirmed' | 'rejected') => void;
-  disabled: boolean;
-}): React.ReactNode {
-  const [hover, setHover] = useState<'confirmed' | 'rejected' | null>(null);
-  return (
-    <Box flexDirection="row">
-      <Box
-        onClick={() => !disabled && onResolve('confirmed')}
-        onMouseEnter={() => setHover('confirmed')}
-        onMouseLeave={() => setHover(null)}
-      >
-        <Text dimColor={hover !== 'confirmed'} underline={hover === 'confirmed'}>
-          {figures.tick} that&apos;s right
-        </Text>
-      </Box>
-      <Text dimColor> · </Text>
-      <Box
-        onClick={() => !disabled && onResolve('rejected')}
-        onMouseEnter={() => setHover('rejected')}
-        onMouseLeave={() => setHover(null)}
-      >
-        <Text dimColor={hover !== 'rejected'} underline={hover === 'rejected'}>
-          {figures.cross} forget it
-        </Text>
-      </Box>
     </Box>
   );
 }

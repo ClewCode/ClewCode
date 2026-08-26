@@ -48,6 +48,25 @@ describe('planCompaction', () => {
     const plan = planCompaction(pressure, make([]), { atBoundary: false, allowCostly: false });
     expect(plan.steps.some(s => s.reducer.costly)).toBe(false);
   });
+
+  test('forces summarize reducer when forceSummarize is set even without deficit', () => {
+    const fakeCtx = (_r: Reducer, target: number): ReduceContext => ({
+      messages: [],
+      model: 'test-model',
+      pressure: makePressure(10_000, 0),
+      target,
+      state: makeState(),
+      atBoundary: true,
+      cacheSafeParams: {} as any,
+      toolUseContext: {} as any,
+    });
+    const plan = planCompaction(makePressure(10_000, 0), fakeCtx, {
+      atBoundary: true,
+      allowCostly: true,
+      forceSummarize: true,
+    });
+    expect(plan.steps.some(s => s.reducer.name === 'summarize')).toBe(true);
+  });
 });
 
 describe('applyPlan', () => {

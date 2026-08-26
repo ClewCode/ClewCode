@@ -276,7 +276,6 @@ After your </summary>, optionally include a <memories> block capturing durable f
 Supported types:
 - [decision]   — Architecture or design decisions (e.g. "use tabs for indentation")
 - [architecture] — System structure, module layout, component relationships
-- [taste]      — Coding style preferences, conventions, patterns
 - [bug]        — Bug root causes and fixes
 - [task_progress] — What was accomplished, pending items
 - [command]    — Important CLI commands or build steps
@@ -286,7 +285,6 @@ Example:
 <memories>
 [decision] use async/await over raw promises for better readability
 [architecture] migrated to ESM module system with NodeNext resolution
-[taste] prefer tabs over spaces for indentation
 </memories>
 
 Include <memories> only when there are genuinely durable facts. It's fine to omit it entirely if the session produced nothing worth saving.`;

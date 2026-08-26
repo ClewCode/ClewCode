@@ -53,19 +53,50 @@ export async function createBashShellProvider(
   options?: { skipSnapshot?: boolean },
 ): Promise<ShellProvider> {
   let currentSandboxTmpDir: string | undefined;
+  let snapshotCreated = false;
   const snapshotPromise: Promise<string | undefined> = options?.skipSnapshot
     ? Promise.resolve(undefined)
-    : createAndSaveSnapshot(shellPath).catch(error => {
-        logForDebugging(`Failed to create shell snapshot: ${error}`);
-        return undefined;
-      });
+    : createAndSaveSnapshot(shellPath)
+        .catch(error => {
+          logForDebugging(`Failed to create shell snapshot: ${error}`);
+          return undefined;
+        })
+        .then(path => {
+          snapshotCreated = !!path;
+          return path;
+        });
+
+  // On Windows, if snapshot creation is not healthy after a short wait,
+  // fall back to a no-snapshot provider so the agent can continue working
+  // instead of stalling on shell startup.
+  let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+  let resolvedProvider: Promise<ShellProvider> | undefined;
   // Track the last resolved snapshot path for use in getSpawnArgs
   let lastSnapshotFilePath: string | undefined;
+
+  if (getPlatform() === 'windows' && !options?.skipSnapshot) {
+    fallbackTimer = setTimeout(async () => {
+      const snapshotFilePath = await snapshotPromise;
+      if (!snapshotFilePath && !resolvedProvider) {
+        logForDebugging('Shell snapshot did not complete in time on Windows; using no-snapshot bash provider');
+        resolvedProvider = createBashShellProvider(shellPath, { skipSnapshot: true });
+      }
+    }, 4000);
+  }
 
   return {
     type: 'bash',
     shellPath,
     detached: true,
+
+    isHealthy: async (): Promise<boolean> => {
+      if (resolvedProvider) {
+        const healthy = await (await resolvedProvider).isHealthy?.();
+        return healthy ?? false;
+      }
+      const snapshotFilePath = await snapshotPromise;
+      return snapshotCreated && !!snapshotFilePath;
+    },
 
     async buildExecCommand(
       command: string,
@@ -75,6 +106,10 @@ export async function createBashShellProvider(
         useSandbox: boolean;
       },
     ): Promise<{ commandString: string; cwdFilePath: string }> {
+      if (resolvedProvider) {
+        return (await resolvedProvider).buildExecCommand(command, opts);
+      }
+
       let snapshotFilePath = await snapshotPromise;
       // This access() check is NOT pure TOCTOU — it's the fallback decision
       // point for getSpawnArgs. When the snapshot disappears mid-session
@@ -183,6 +218,12 @@ export async function createBashShellProvider(
     },
 
     getSpawnArgs(commandString: string): string[] {
+      if (resolvedProvider) {
+        // Note: this path is synchronous, but resolvedProvider is a Promise.
+        // In practice this branch is only reached after the fallback promise
+        // has resolved because buildExecCommand awaits it first.
+        return [];
+      }
       const skipLoginShell = lastSnapshotFilePath !== undefined;
       if (skipLoginShell) {
         logForDebugging('Spawning shell without login (-l flag skipped)');
@@ -191,6 +232,9 @@ export async function createBashShellProvider(
     },
 
     async getEnvironmentOverrides(command: string): Promise<Record<string, string>> {
+      if (resolvedProvider) {
+        return (await resolvedProvider).getEnvironmentOverrides(command);
+      }
       // TMUX SOCKET ISOLATION (DEFERRED):
       // We initialize Claude's tmux socket ONLY AFTER the Tmux tool has been used
       // at least once, OR if the current command appears to use tmux.

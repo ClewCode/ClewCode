@@ -49,7 +49,6 @@ import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { getPlatform } from '../../utils/platform.js';
 import { PrBadge } from '../PrBadge.js';
 import { loadProjectRules, isProjectRulesDisabled } from '../../utils/projectRules.js';
-import { isTasteEnabled } from '../../services/taste/taste.js';
 
 // Dead code elimination: conditional import for proactive mode
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -505,16 +504,6 @@ function ModeIndicator({
         ? for shortcuts
       </Text>,
     );
-    // Only alongside the shortcuts hint — taste learns silently in the
-    // background, so the indicator belongs in the quiet idle footer rather
-    // than competing with mode/task state that the user is acting on.
-    if (isTasteEnabled()) {
-      parts.push(
-        <Text dimColor key="taste-status">
-          taste on
-        </Text>,
-      );
-    }
   }
 
   // Only replace the idle voice hint when there's something to say — otherwise

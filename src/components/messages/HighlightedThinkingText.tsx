@@ -5,6 +5,7 @@ import { useQueuedMessage } from '../../context/QueuedMessageContext.js';
 import { Box, Text } from '../../ink.js';
 import { formatBriefTimestamp } from '../../utils/formatBriefTimestamp.js';
 import { findThinkingTriggerPositions, getRainbowColor, isUltrathinkEnabled } from '../../utils/thinking.js';
+import { Markdown } from '../Markdown.js';
 import { MessageActionsSelectedContext } from '../messageActions.js';
 
 type Props = {
@@ -28,7 +29,7 @@ export function HighlightedThinkingText({ text, useBriefLayout, timestamp }: Pro
           <Text color={isQueued ? 'subtle' : 'briefLabelYou'}>You</Text>
           {ts ? <Text dimColor> {ts}</Text> : null}
         </Box>
-        <Text color={isQueued ? 'subtle' : 'text'}>{text}</Text>
+        <Markdown dimColor={isQueued}>{text}</Markdown>
       </Box>
     );
   }
@@ -37,11 +38,13 @@ export function HighlightedThinkingText({ text, useBriefLayout, timestamp }: Pro
 
   if (triggers.length === 0) {
     return (
-      <Text>
+      <Box flexDirection="row">
         <Text color={pointerColor}>{figures.pointer} </Text>
-        <Text color="text">{text}</Text>
+        <Box flexGrow={1}>
+          <Markdown>{text}</Markdown>
+        </Box>
         {timestamp ? <Text dimColor> {formatBriefTimestamp(timestamp)}</Text> : null}
-      </Text>
+      </Box>
     );
   }
 

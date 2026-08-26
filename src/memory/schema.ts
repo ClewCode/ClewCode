@@ -41,7 +41,6 @@ CREATE INDEX IF NOT EXISTS idx_timeline_event ON memory_timeline(event);
 
 export const MEMORY_TYPES = [
   'architecture',
-  'taste',
   'decision',
   'bug',
   'provider',

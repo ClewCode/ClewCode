@@ -2919,7 +2919,8 @@
     "label": "Cline",
     "envKey": "CLINE_API_KEY",
     "defaultBaseUrl": "https://api.cline.bot/api/v1",
-    "note": "Cline API â€” managed multi-provider AI endpoint. Updated June 2026.",
+    "modelsUrl": "https://api.cline.bot/api/v1/models",
+    "note": "Cline API — managed multi-provider AI endpoint. Updated June 2026.",
     "capabilities": {
       "chat": true,
       "streaming": "full",

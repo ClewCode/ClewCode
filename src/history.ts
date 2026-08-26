@@ -307,7 +307,11 @@ async function immediateFlushHistory(): Promise<void> {
     logForDebugging(`Failed to write prompt history: ${error}`);
   } finally {
     if (release) {
-      await release();
+      try {
+        await release();
+      } catch (error) {
+        logForDebugging(`Failed to release prompt history lock: ${error}`);
+      }
     }
   }
 }

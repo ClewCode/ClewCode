@@ -85,7 +85,7 @@ export const summarizeReducer: Reducer = {
         ctx.toolUseContext,
         ctx.cacheSafeParams,
         true, // suppress user questions — this is automatic
-        undefined, // no custom instructions
+        ctx.customInstructions, // manual `/compact` instructions, if any
         true, // isAutoCompact
         {
           isRecompactionInChain: ctx.state.turn > 0,

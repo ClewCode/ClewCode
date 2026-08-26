@@ -407,30 +407,24 @@ describe('MemoryDB', () => {
     expect(updated.importance).toBeCloseTo(0.7, 1);
   });
 
-  test('feedback preferred writes to TASTE.md', async () => {
+  test('feedback disliked decreases importance', async () => {
     const db = MemoryDB.getInstance();
     const r = db.upsertMemory({
-      key: 'test.fb_taste',
+      key: 'test.fb_disliked',
       projectPath: memDbDir,
-      type: 'taste',
-      content: 'Use tabs',
+      type: 'reference',
+      content: 'Disliked convention',
       importance: 0.5,
       confidence: 0.5,
     });
 
-    const memDir = getMemoryDirPath();
-    await mkdir(memDir, { recursive: true }).catch(() => {
-      /* noop */
-    });
-    await writeMemoryFile('TASTE.md', '# Coding Style & Preferences\n\n');
-    await initMemoryHierarchy();
-
-    const result = await applyFeedback(r.id, 'preferred', 'Always use tabs for indentation');
+    const result = await applyFeedback(r.id, 'disliked');
     expect(result.success).toBe(true);
-    expect(result.wroteToTaste).toBe(true);
+    expect(result.importanceDelta).toBe(-0.1);
+    expect(result.confidenceDelta).toBe(-0.05);
 
-    const tasteContent = await readFile(join(getMemoryDirPath(), 'TASTE.md'), 'utf8');
-    expect(tasteContent).toContain('Always use tabs for indentation');
+    const updated = db.getMemory(r.id)!;
+    expect(updated.importance).toBeCloseTo(0.4, 1);
   });
 
   test('feedback wrong decreases confidence', async () => {
@@ -455,7 +449,6 @@ describe('MemoryDB', () => {
   test('feedback signal aliases resolve correctly', () => {
     expect(resolveSignal('correct')).toBe('corrected');
     expect(resolveSignal('incorrect')).toBe('wrong');
-    expect(resolveSignal('like')).toBe('preferred');
     expect(resolveSignal('dislike')).toBe('disliked');
     expect(resolveSignal('accepted')).toBe('accepted');
     expect(resolveSignal('rejected')).toBe('rejected');
@@ -523,11 +516,11 @@ describe('MemoryDB', () => {
     expect(content).toContain('use tabs for indentation');
   });
 
-  test('compact writes preferences to TASTE.md', async () => {
-    await compactContext('[taste] prefer pnpm over npm for package management');
-    const filePath = join(getMemoryDirPath(), 'TASTE.md');
+  test('compact writes architecture to MEMORY.md', async () => {
+    await compactContext('[architecture] migrated to ESM with NodeNext resolution');
+    const filePath = join(getMemoryDirPath(), 'MEMORY.md');
     const content = await readFile(filePath, 'utf8');
-    expect(content).toContain('prefer pnpm over npm');
+    expect(content).toContain('migrated to ESM');
   });
 
   test('dry-run does not write files or DB rows', async () => {

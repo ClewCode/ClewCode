@@ -8,7 +8,6 @@
  *   memory/
  *     MEMORY.md       # Permanent project knowledge
  *     DECISIONS.md     # Architecture Decision Records
- *     TASTE.md        # Coding style & preferences
  *     checkpoint.md   # Latest session snapshot
  *     notes.md        # Scratchpad (session-scoped)
  *     tasks/          # Per-task artifacts
@@ -21,7 +20,6 @@ import { join } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
 
 const MEMORY_DIR = '.clew/memory';
-const TASKS_DIR = join(MEMORY_DIR, 'tasks');
 
 const DEFAULT_FILES: Record<string, string> = {
   'MEMORY.md': `# Project Memory
@@ -34,12 +32,6 @@ Memories are promoted from session checkpoints automatically.
 
 Key architectural decisions made during development.
 Format: YYYY-MM-DD — Decision — Rationale
-`,
-
-  'TASTE.md': `# Coding Style & Preferences
-
-Project-specific coding conventions, style preferences,
-and patterns to follow.
 `,
 };
 

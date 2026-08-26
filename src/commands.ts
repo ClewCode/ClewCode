@@ -18,7 +18,6 @@ import diff from './commands/diff/index.js';
 import doctor from './commands/doctor/index.js';
 import checkup from './commands/checkup/index.js';
 import memory, { memorySearch, indexAdmin } from './commands/memory/index.js';
-import taste from './commands/taste/index.js';
 import explorer from './commands/explorer/index.js';
 import help from './commands/help/index.js';
 import ide from './commands/ide/index.js';
@@ -206,7 +205,6 @@ const COMMANDS = memoize((): Command[] => [
   memory,
   memorySearch,
   indexAdmin,
-  taste,
   model,
   modelFallback,
   modelRouter,

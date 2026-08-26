@@ -9,8 +9,8 @@
  */
 
 import { existsSync } from 'node:fs';
-import { readdir, readFile } from 'node:fs/promises';
-import { basename, join, relative } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
 import { MemoryDB } from './database.js';
 import { writeMemoryFile } from './hierarchy.js';
@@ -288,7 +288,6 @@ export async function scanRepo(): Promise<ScanResult> {
   // ── 5. Update file hierarchy ──────────────────────────
   await writeMemoryFile('MEMORY.md', buildMemoryMd(result));
   await writeMemoryFile('DECISIONS.md', buildDecisionsMd(result));
-  await writeMemoryFile('TASTE.md', buildTasteMd(result));
 
   return result;
 }
@@ -343,27 +342,6 @@ function buildDecisionsMd(result: ScanResult): string {
     result.hasProviderSystem ? `  - Provider routing architecture` : '',
     result.hasSrcDir ? '  - Source code in src/ directory' : '',
     result.hasCliEntrypoint ? '  - CLI entrypoint detected' : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
-}
-
-function buildTasteMd(result: ScanResult): string {
-  return [
-    '# Coding Style & Preferences',
-    '',
-    'Auto-detected from repo scan.',
-    '',
-    '## Language',
-    `- ${result.language}`,
-    '',
-    '## Conventions',
-    result.hasSrcDir ? '- Source code in src/ directory' : '',
-    '- Follow existing project conventions',
-    '',
-    '## Quality',
-    result.testCommands.length > 0 ? `- Tests: ${result.testCommands[0]}` : '- Tests: not detected',
-    result.lintCommands.length > 0 ? `- Lint: ${result.lintCommands[0]}` : '',
   ]
     .filter(Boolean)
     .join('\n');

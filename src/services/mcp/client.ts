@@ -171,7 +171,7 @@ export class McpToolCallError_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS extends T
  * Per the MCP spec, servers return 404 when a session ID is no longer valid.
  * We check both signals to avoid false positives from generic 404s (wrong URL, server gone, etc.).
  */
-export function isMcpSessionExpiredError(error: Error): boolean {
+function isMcpSessionExpiredError(error: Error): boolean {
   const httpStatus = 'code' in error ? (error as Error & { code?: number }).code : undefined;
   if (httpStatus !== 404) {
     return false;
@@ -398,7 +398,7 @@ function handleRemoteAuthFailure(
  * stale token mass-401s every claude.ai connector and sticks them all in the
  * 15-min needs-auth cache.
  */
-export function createClaudeAiProxyFetch(innerFetch: FetchLike): FetchLike {
+function createClaudeAiProxyFetch(innerFetch: FetchLike): FetchLike {
   return async (url, init) => {
     const doRequest = async () => {
       await checkAndRefreshOAuthTokenIfNeeded();
@@ -531,7 +531,7 @@ const MCP_SSE_RESPONSE_MAX = 16 * 1024 * 1024;
  *
  * @param baseFetch - The fetch function to wrap
  */
-export function wrapFetchWithResponseSizeLimit(baseFetch: FetchLike): FetchLike {
+function wrapFetchWithResponseSizeLimit(baseFetch: FetchLike): FetchLike {
   return async (url: string | URL, init?: RequestInit) => {
     const method = (init?.method ?? 'GET').toUpperCase();
 
@@ -623,7 +623,7 @@ export function wrapFetchWithResponseSizeLimit(baseFetch: FetchLike): FetchLike 
   };
 }
 
-export function wrapFetchWithTimeout(baseFetch: FetchLike): FetchLike {
+function wrapFetchWithTimeout(baseFetch: FetchLike): FetchLike {
   return async (url: string | URL, init?: RequestInit) => {
     const method = (init?.method ?? 'GET').toUpperCase();
 

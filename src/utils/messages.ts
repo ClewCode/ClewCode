@@ -66,7 +66,6 @@ import type {
   SystemPermissionRetryMessage,
   SystemScheduledTaskFireMessage,
   SystemStopHookSummaryMessage,
-  SystemTasteLearnedMessage,
   SystemTurnDurationMessage,
   TombstoneMessage,
   ToolUseSummaryMessage,
@@ -4121,27 +4120,6 @@ export function createMemorySavedMessage(writtenPaths: string[]): SystemMemorySa
     type: 'system',
     subtype: 'memory_saved',
     writtenPaths,
-    timestamp: new Date().toISOString(),
-    uuid: randomUUID(),
-    isMeta: false,
-  };
-}
-
-export function createTasteLearnedMessage(entry: {
-  text: string;
-  scope: 'global' | 'project';
-  category: 'cli' | 'typescript' | 'architecture' | 'general';
-  confidence: number;
-  path: string;
-}): SystemTasteLearnedMessage {
-  return {
-    type: 'system',
-    subtype: 'taste_learned',
-    text: entry.text,
-    scope: entry.scope,
-    category: entry.category,
-    confidence: entry.confidence,
-    path: entry.path,
     timestamp: new Date().toISOString(),
     uuid: randomUUID(),
     isMeta: false,

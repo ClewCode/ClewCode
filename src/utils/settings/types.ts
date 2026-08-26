@@ -881,12 +881,6 @@ export const SettingsSchema = lazySchema(() =>
         .boolean()
         .optional()
         .describe('Enable background memory consolidation (auto-dream). When set, overrides the server-side default.'),
-      tasteEnabled: z
-        .boolean()
-        .optional()
-        .describe(
-          'Learn standing preferences about how you want replies shaped (language, tone, output form) and apply them on every turn. Stored in TASTE.md. Default: enabled when auto-memory is on.',
-        ),
       showThinkingSummaries: z
         .boolean()
         .optional()

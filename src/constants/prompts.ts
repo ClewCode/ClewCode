@@ -5,7 +5,6 @@ import { getIsGit } from '../utils/git.js';
 import { getCwd } from '../utils/cwd.js';
 import { getIsNonInteractiveSession } from '../bootstrap/state.js';
 import { loadProjectRules, formatRulesNotification, isProjectRulesDisabled } from '../utils/projectRules.js';
-import { buildTasteContext } from '../services/taste/taste.js';
 import { getCurrentWorktreeSession } from '../utils/worktree.js';
 import { getSessionStartDate } from './common.js';
 import { getInitialSettings } from '../utils/settings/settings.js';
@@ -410,7 +409,6 @@ export async function getSystemPrompt(
       `\nYou are an autonomous agent. Use the available tools to do useful work.`,
       getSystemRemindersSection(),
       await loadMemoryPrompt(),
-      await buildTasteContext(),
       envInfo,
       getLanguageSection(settings.language),
       // When delta enabled, instructions are announced via persisted
@@ -432,9 +430,6 @@ export async function getSystemPrompt(
     }),
     systemPromptSection('memory', () => loadMemoryPrompt()),
     systemPromptSection('proactive_memory', () => getProactiveMemoryContext()),
-    // Sits next to memory but is a separate section: memory is recalled when
-    // relevant, taste applies to every reply regardless of topic.
-    systemPromptSection('taste', () => buildTasteContext()),
     systemPromptSection('budgeted_memory', () => loadBudgetedMemory()),
     systemPromptSection('session_goal', () => loadGoalPrompt()),
     systemPromptSection('ant_model_override', () => getAntModelOverrideSection()),

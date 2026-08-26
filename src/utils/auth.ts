@@ -367,7 +367,7 @@ function getConfiguredAwsAuthRefresh(): string | undefined {
 /**
  * Check if the configured awsAuthRefresh comes from project settings
  */
-export function isAwsAuthRefreshFromProjectSettings(): boolean {
+function isAwsAuthRefreshFromProjectSettings(): boolean {
   const awsAuthRefresh = getConfiguredAwsAuthRefresh();
   if (!awsAuthRefresh) {
     return false;
@@ -389,7 +389,7 @@ function getConfiguredAwsCredentialExport(): string | undefined {
 /**
  * Check if the configured awsCredentialExport comes from project settings
  */
-export function isAwsCredentialExportFromProjectSettings(): boolean {
+function isAwsCredentialExportFromProjectSettings(): boolean {
   const awsCredentialExport = getConfiguredAwsCredentialExport();
   if (!awsCredentialExport) {
     return false;
@@ -766,7 +766,7 @@ function getConfiguredGcpAuthRefresh(): string | undefined {
 /**
  * Check if the configured gcpAuthRefresh comes from project settings
  */
-export function isGcpAuthRefreshFromProjectSettings(): boolean {
+function isGcpAuthRefreshFromProjectSettings(): boolean {
   const gcpAuthRefresh = getConfiguredGcpAuthRefresh();
   if (!gcpAuthRefresh) {
     return false;
@@ -786,7 +786,7 @@ const GCP_CREDENTIALS_CHECK_TIMEOUT_MS = 5_000;
  * Check if GCP credentials are currently valid by attempting to get an access token.
  * This uses the same authentication chain that the Vertex SDK uses.
  */
-export async function checkGcpCredentialsValid(): Promise<boolean> {
+async function checkGcpCredentialsValid(): Promise<boolean> {
   try {
     // Dynamically import to avoid loading google-auth-library unnecessarily
     const { GoogleAuth } = await import('google-auth-library');
@@ -1697,7 +1697,7 @@ function getConfiguredOtelHeadersHelper(): string | undefined {
 /**
  * Check if the configured otelHeadersHelper comes from project settings (projectSettings or localSettings)
  */
-export function isOtelHeadersHelperFromProjectOrLocalSettings(): boolean {
+function isOtelHeadersHelperFromProjectOrLocalSettings(): boolean {
   const otelHeadersHelper = getConfiguredOtelHeadersHelper();
   if (!otelHeadersHelper) {
     return false;

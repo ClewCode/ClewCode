@@ -1,6 +1,5 @@
 import { execFile } from 'child_process';
 import { mkdir, stat } from 'fs/promises';
-import spawn from 'nano-spawn';
 import * as os from 'os';
 import { join } from 'path';
 import { logEvent } from 'src/services/analytics/index.js';
@@ -247,16 +246,12 @@ function getUserSnapshotContent(configFile: string): string {
  */
 async function getClaudeCodeSnapshotContent(): Promise<string> {
   // Get the appropriate PATH based on platform
-  let pathValue = process.env.PATH;
+  const pathValue = process.env.PATH;
   if (getPlatform() === 'windows') {
-    // On Windows with git-bash, read the Cygwin PATH
-    const cygwinResult = await spawn('echo $PATH', {
-      shell: true,
-    });
-    if (cygwinResult.exitCode === 0 && cygwinResult.stdout) {
-      pathValue = cygwinResult.stdout.trim();
-    }
-    // Fall back to process.env.PATH if we can't get Cygwin PATH
+    // On Windows with git-bash, avoid spawning a shell (which causes fork issues on msys).
+    // Use the parent process PATH which is already inherited correctly.
+    // If we need a Unix-style PATH, the snapshot script itself runs in the user's shell
+    // and will expand $PATH there.
   }
 
   const rgIntegration = createRipgrepShellIntegration();
@@ -417,9 +412,24 @@ export const createAndSaveSnapshot = async (binShell: string): Promise<string | 
         const snapshotScript = await getSnapshotScript(binShell, shellSnapshotPath, configFileExists);
         logForDebugging(`Creating snapshot at: ${shellSnapshotPath}`);
         logForDebugging(`Execution timeout: ${SNAPSHOT_CREATION_TIMEOUT}ms`);
+
+        // On Git Bash (msys/cygwin), avoid -l (login shell) flag which re-reads .bashrc/.profile
+        // and can trigger nested fork() calls causing EACCES (errno 13) on Windows.
+        // Use non-login interactive shell instead (-i without -l) or just -c for scripts.
+        const isGitBash =
+          binShell.includes('bash') &&
+          (process.env.OSTYPE === 'msys' || process.env.OSTYPE === 'cygwin' || process.platform === 'win32');
+        const shellArgs = isGitBash ? ['-c', snapshotScript] : ['-l', '-c', snapshotScript];
+
+        // On Windows, prefer a non-login shell for snapshot creation to reduce
+        // fork/process-creation failures. Login shells can re-init environment
+        // layers that are not needed for a one-shot snapshot script.
+        const isWindows = getPlatform() === 'windows';
+        const windowsShellArgs = isWindows && !isGitBash ? ['-c', snapshotScript] : shellArgs;
+
         execFile(
           binShell,
-          ['-c', '-l', snapshotScript],
+          windowsShellArgs,
           {
             env: {
               ...((process.env.CLEW_CODE_DONT_INHERIT_ENV ? {} : subprocessEnv()) as typeof process.env),
@@ -517,6 +527,6 @@ export const createAndSaveSnapshot = async (binShell: string): Promise<string | 
         logEvent('tengu_shell_snapshot_error', {});
         resolve(undefined);
       }
-    })().then(resolve);
+    })().then(() => resolve(undefined));
   });
 };

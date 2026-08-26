@@ -7,11 +7,11 @@
  */
 
 import { existsSync } from 'node:fs';
-import { appendFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { appendFile, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
 import { MemoryDB } from './database.js';
-import { getMemoryDirPath, writeMemoryFile } from './hierarchy.js';
+import { getMemoryDirPath } from './hierarchy.js';
 import type { MemoryType } from './schema.js';
 
 export type CompactEntry = {
@@ -38,7 +38,6 @@ export type CompactResult = {
 // Types that go to markdown files
 const FILE_ROUTES: Record<string, string> = {
   decision: 'DECISIONS.md',
-  taste: 'TASTE.md',
   architecture: 'MEMORY.md',
   task_progress: 'MEMORY.md',
   command: 'MEMORY.md',
@@ -192,12 +191,7 @@ export async function compactContext(context: string, dryRun = false): Promise<C
       if (existsSync(filePath)) {
         await appendFile(filePath, lines.join(''), 'utf8');
       } else {
-        const header =
-          file === 'DECISIONS.md'
-            ? '# Architecture Decisions\n'
-            : file === 'TASTE.md'
-              ? '# Coding Style & Preferences\n'
-              : '# Project Memory\n';
+        const header = file === 'DECISIONS.md' ? '# Architecture Decisions\n' : '# Project Memory\n';
         await writeFile(filePath, header + lines.join(''), 'utf8');
       }
       result.filesUpdated.push(file);
@@ -213,7 +207,6 @@ export async function compactContext(context: string, dryRun = false): Promise<C
  * Parses tagged lines like:
  *   [decision] description
  *   [architecture] description
- *   [taste] description
  *   [bug] description
  *   [task] description
  *   [command] description
@@ -237,7 +230,7 @@ export function classifyContext(context: string): CompactEntry[] {
     const text = match[2]!.trim();
 
     // Validate type
-    const validTypes = ['decision', 'architecture', 'taste', 'bug', 'task_progress', 'command', 'note'];
+    const validTypes = ['decision', 'architecture', 'bug', 'task_progress', 'command', 'note'];
     const normalizedType = validTypes.includes(type) ? type : 'note';
 
     const key = buildKey(normalizedType, text);
@@ -249,7 +242,7 @@ export function classifyContext(context: string): CompactEntry[] {
       type: normalizedType as CompactEntry['type'],
       content: text,
       importance:
-        normalizedType === 'decision' || normalizedType === 'taste'
+        normalizedType === 'decision'
           ? 0.8
           : normalizedType === 'architecture'
             ? 0.75
@@ -319,8 +312,8 @@ export async function syncDreamToMemoryDB(memoryRoot: string): Promise<number> {
         const text = match[2]!.trim();
         if (!text) continue;
 
-        const validTypes = ['decision', 'architecture', 'taste', 'bug', 'task_progress', 'command', 'note'];
-        const normalizedType = validTypes.includes(type) ? type : 'note';
+        const validTypes = ['decision', 'architecture', 'bug', 'task_progress', 'command', 'note'] as const;
+        const normalizedType = (validTypes.includes(type as any) ? type : 'note') as MemoryType;
 
         db.upsertMemory({
           key: `dream.${slugify(text).slice(0, 60)}`,
@@ -328,7 +321,7 @@ export async function syncDreamToMemoryDB(memoryRoot: string): Promise<number> {
           type: normalizedType,
           content: text,
           importance:
-            normalizedType === 'decision' || normalizedType === 'taste'
+            normalizedType === 'decision'
               ? 0.8
               : normalizedType === 'architecture'
                 ? 0.75

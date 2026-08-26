@@ -61,6 +61,8 @@ export interface PlanOptions {
   atBoundary: boolean;
   /** False mid-tool-chain or when a fork would deadlock: no LLM reducers. */
   allowCostly: boolean;
+  /** Force summarize reducer, e.g. for manual /compact with custom instructions. */
+  forceSummarize?: boolean;
 }
 
 /**
@@ -77,33 +79,42 @@ export function planCompaction(
   opts: PlanOptions,
 ): CompactPlan {
   const deficit = pressure.deficit;
-  if (deficit <= 0) {
+  if (deficit <= 0 && !opts.forceSummarize) {
     return { steps: [], expectedYield: 0, deficit: 0, rationale: 'under target' };
   }
 
   const steps: PlanStep[] = [];
   let covered = 0;
 
-  for (const reducer of REDUCERS) {
-    if (covered >= deficit) break;
-    if (reducer.costly && !opts.allowCostly) continue;
-    // Drop is not part of the normal ladder — it is the fallback below.
-    if (reducer.name === 'drop') continue;
-
-    const remaining = deficit - covered;
-    const expected = reducer.estimate(makeContext(reducer, remaining));
-    if (expected <= 0) continue;
-
-    steps.push({ reducer, expected: Math.min(expected, remaining) });
-    covered += expected;
-  }
-
-  if (covered < deficit) {
-    const remaining = deficit - covered;
-    const expected = dropReducer.estimate(makeContext(dropReducer, remaining));
+  if (opts.forceSummarize && opts.allowCostly) {
+    const target = Math.max(deficit, 1000);
+    const expected = summarizeReducer.estimate(makeContext(summarizeReducer, target));
     if (expected > 0) {
-      steps.push({ reducer: dropReducer, expected: Math.min(expected, remaining) });
+      steps.push({ reducer: summarizeReducer, expected: Math.max(expected, deficit) });
+      covered += Math.max(expected, deficit);
+    }
+  } else {
+    for (const reducer of REDUCERS) {
+      if (covered >= deficit) break;
+      if (reducer.costly && !opts.allowCostly) continue;
+      // Drop is not part of the normal ladder — it is the fallback below.
+      if (reducer.name === 'drop') continue;
+
+      const remaining = deficit - covered;
+      const expected = reducer.estimate(makeContext(reducer, remaining));
+      if (expected <= 0) continue;
+
+      steps.push({ reducer, expected: Math.min(expected, remaining) });
       covered += expected;
+    }
+
+    if (covered < deficit) {
+      const remaining = deficit - covered;
+      const expected = dropReducer.estimate(makeContext(dropReducer, remaining));
+      if (expected > 0) {
+        steps.push({ reducer: dropReducer, expected: Math.min(expected, remaining) });
+        covered += expected;
+      }
     }
   }
 

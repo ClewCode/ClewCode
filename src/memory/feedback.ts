@@ -13,21 +13,16 @@
  * All events are recorded in memory_timeline.
  */
 
-import { existsSync } from 'node:fs';
-import { appendFile, mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
 import { MemoryDB } from './database.js';
-import { getMemoryDirPath, writeMemoryFile } from './hierarchy.js';
 
-export type FeedbackSignal = 'accepted' | 'rejected' | 'corrected' | 'preferred' | 'disliked' | 'important' | 'wrong';
+export type FeedbackSignal = 'accepted' | 'rejected' | 'corrected' | 'disliked' | 'important' | 'wrong';
 
 export type FeedbackResult = {
   success: boolean;
   message: string;
   importanceDelta: number;
   confidenceDelta: number;
-  wroteToTaste: boolean;
 };
 
 const SIGNAL_DELTAS: Record<FeedbackSignal, { importance: number; confidence: number }> = {
@@ -45,7 +40,6 @@ const CANONICAL_SIGNALS = new Set<FeedbackSignal>([
   'accepted',
   'rejected',
   'corrected',
-  'preferred',
   'disliked',
   'important',
   'wrong',
@@ -55,7 +49,6 @@ const CANONICAL_SIGNALS = new Set<FeedbackSignal>([
 const SIGNAL_ALIASES: Record<string, FeedbackSignal> = {
   correct: 'corrected',
   incorrect: 'wrong',
-  like: 'preferred',
   dislike: 'disliked',
 };
 
@@ -116,33 +109,12 @@ export async function applyFeedback(
 
   db.logEvent({ memoryId: memory.id, event: signal, note: note ?? '' });
 
-  let wroteToTaste = false;
-  if (canonical === 'preferred' && note) {
-    await appendToTaste(note);
-    wroteToTaste = true;
-  }
-
   return {
     success: true,
     message: `Feedback "${canonical}" applied to "${memoryIdOrKey}"`,
     importanceDelta: deltas.importance,
     confidenceDelta: deltas.confidence,
-    wroteToTaste,
   };
-}
-
-/**
- * Append a user preference to TASTE.md.
- */
-async function appendToTaste(preference: string): Promise<void> {
-  const memDir = getMemoryDirPath();
-  const tastePath = join(memDir, 'TASTE.md');
-  if (!existsSync(tastePath)) {
-    await mkdir(memDir, { recursive: true });
-    await writeMemoryFile('TASTE.md', '# Coding Style & Preferences\n\n');
-  }
-  const timestamp = new Date().toISOString().slice(0, 10);
-  await appendFile(tastePath, `\n- [${timestamp}] ${preference}`, 'utf8');
 }
 
 /**
@@ -157,7 +129,6 @@ export async function applyFeedbackByKey(key: string, signal: FeedbackSignal, no
       message: `Memory with key "${key}" not found`,
       importanceDelta: 0,
       confidenceDelta: 0,
-      wroteToTaste: false,
     };
   }
   return applyFeedback(memory.id, signal, note);

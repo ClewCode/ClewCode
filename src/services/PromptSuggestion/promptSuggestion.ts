@@ -3,6 +3,7 @@ import type { AppState } from '../../state/AppState.js';
 import type { Message } from '../../types/message.js';
 import { isAgentSwarmsEnabled } from '../../utils/agentSwarmsEnabled.js';
 import { count } from '../../utils/array.js';
+import { logForDebugging } from '../../utils/debug.js';
 import { isEnvDefinedFalsy, isEnvTruthy } from '../../utils/envUtils.js';
 import { toError } from '../../utils/errors.js';
 import { type CacheSafeParams, createCacheSafeParams, runForkedAgent } from '../../utils/forkedAgent.js';
@@ -12,6 +13,7 @@ import { createUserMessage, getLastAssistantMessage } from '../../utils/messages
 import { getInitialSettings } from '../../utils/settings/settings.js';
 import { isTeammate } from '../../utils/teammate.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
+import { classifyProviderError } from '../api/errors.js';
 import { currentLimits } from '../claudeAiLimits.js';
 import { isSpeculationEnabled, startSpeculation } from './speculation.js';
 
@@ -275,18 +277,30 @@ export async function generateSuggestion(
   //   - skipTranscript (client-side only)
   //   - skipCacheWrite (controls cache_control markers, not the cache key)
   //   - canUseTool (client-side permission check)
-  const result = await runForkedAgent({
-    promptMessages: [createUserMessage({ content: prompt })],
-    cacheSafeParams, // Don't override tools/thinking settings - busts cache
-    canUseTool,
-    querySource: 'prompt_suggestion',
-    forkLabel: 'prompt_suggestion',
-    overrides: {
-      abortController,
-    },
-    skipTranscript: true,
-    skipCacheWrite: true,
-  });
+  let result: Awaited<ReturnType<typeof runForkedAgent>>;
+  try {
+    result = await runForkedAgent({
+      promptMessages: [createUserMessage({ content: prompt })],
+      cacheSafeParams, // Don't override tools/thinking settings - busts cache
+      canUseTool,
+      querySource: 'prompt_suggestion',
+      forkLabel: 'prompt_suggestion',
+      overrides: {
+        abortController,
+      },
+      skipTranscript: true,
+      skipCacheWrite: true,
+    });
+  } catch (error) {
+    // Cline credits exhausted (402 insufficient_balance) is expected when the
+    // user has no balance — don't spam [ERROR] on every turn. Degrade silently
+    // to "no suggestion" instead of surfacing a fatal error.
+    if (classifyProviderError(error).category === 'insufficient_balance') {
+      logForDebugging('prompt_suggestion skipped: Cline credits exhausted (insufficient_balance)');
+      return { suggestion: null, generationRequestId: null };
+    }
+    throw error;
+  }
 
   // Check ALL messages - model may loop (try tool → denied → text in next message)
   // Also extract the requestId from the first assistant message for RL dataset joins

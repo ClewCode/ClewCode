@@ -202,7 +202,6 @@ Commands: ~105 under `src/commands/`; `src/commands.ts` is source of truth.
 | `mcp/` | MCP client (stdio/SSE/HTTP/DirectConnect) |
 | `autonomous/` | Task queue, leases, cron, dead-letter, daemon |
 | `compact/v2/` | **Reducer-based compaction** — single planner replaces 6 legacy mechanisms (dedupe → stale-tool → snip → summarize → drop), per-agent health tracking via `CompactSessionState.health` |
-| `contextCollapse/` | Context compression / collapse |
 | `longTermMemory/`, `autoDream/`, `extractMemories/` | Dream/Distill & extraction |
 | `checkpoint/`, `goal/` | Progress snapshots & goal verification |
 | `plugins/` | Pre/Post tool/bash/edit hooks |

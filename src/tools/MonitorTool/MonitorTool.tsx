@@ -362,5 +362,3 @@ export const MonitorTool: Tool<InputSchema, MonitorToolOutput> = buildTool({
     return <Text color="red">Monitor error: {result.message}</Text>;
   },
 });
-
-export default MonitorTool;

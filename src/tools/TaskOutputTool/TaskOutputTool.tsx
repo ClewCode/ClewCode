@@ -515,5 +515,3 @@ function TaskOutputResultDisplay({
     </Box>
   );
 }
-
-export default TaskOutputTool;

@@ -130,8 +130,35 @@ export async function findSuitableShell(): Promise<string> {
 
 async function getShellConfigImpl(): Promise<ShellConfig> {
   const binShell = await findSuitableShell();
-  const provider = await createBashShellProvider(binShell);
-  return { provider };
+  const isWindows = getPlatform() === 'windows';
+
+  // Try bash provider first
+  const bashProvider = await createBashShellProvider(binShell, { skipSnapshot: false });
+
+  // On Windows, check if bash snapshot was created successfully
+  // If not, fall back to PowerShell which doesn't require a snapshot
+  if (isWindows && bashProvider.isHealthy) {
+    const healthy = await bashProvider.isHealthy();
+    if (!healthy) {
+      logForDebugging('Bash snapshot unavailable on Windows, falling back to PowerShell');
+      const psPath = await getCachedPowerShellPath();
+      if (psPath) {
+        return { provider: createPowerShellProvider(psPath) };
+      }
+    }
+  }
+
+  // If explicitly requested via env, use PowerShell
+  const forcePowerShell = process.env.CLEW_CODE_FORCE_POWERSHELL === '1';
+  if (forcePowerShell && isWindows) {
+    const psPath = await getCachedPowerShellPath();
+    if (psPath) {
+      logForDebugging('CLEW_CODE_FORCE_POWERSHELL=1 set, using PowerShell provider');
+      return { provider: createPowerShellProvider(psPath) };
+    }
+  }
+
+  return { provider: bashProvider };
 }
 
 // Memoize the entire shell config so it only happens once per session

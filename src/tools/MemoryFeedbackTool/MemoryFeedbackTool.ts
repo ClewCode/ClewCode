@@ -1,8 +1,6 @@
 import { z } from 'zod/v4';
 import { ensureMemorySystem } from '../../memory/autoInit.js';
-import { MemoryDB } from '../../memory/database.js';
 import { applyFeedback } from '../../memory/feedback.js';
-import { getMemoryDbPath, initMemoryHierarchy } from '../../memory/hierarchy.js';
 import { buildTool } from '../../Tool.js';
 import { getCwd } from '../../utils/cwd.js';
 import { lazySchema } from '../../utils/lazySchema.js';
@@ -14,9 +12,9 @@ const inputSchema = lazySchema(() =>
     signal: z
       .string()
       .describe(
-        'Feedback signal: accepted, rejected, corrected, preferred, disliked, important, wrong (or alias: correct, incorrect, like, dislike)',
+        'Feedback signal: accepted, rejected, corrected, disliked, important, wrong (or alias: correct, incorrect, dislike)',
       ),
-    note: z.string().optional().describe('Optional note (e.g. what was corrected, or preference text for preferred)'),
+    note: z.string().optional().describe('Optional note (e.g. what was corrected)'),
   }),
 );
 
@@ -46,7 +44,6 @@ export const MemoryFeedbackTool = buildTool({
         message: z.string(),
         importanceDelta: z.number(),
         confidenceDelta: z.number(),
-        wroteToTaste: z.boolean(),
       }),
     )();
   },
@@ -70,7 +67,6 @@ export const MemoryFeedbackTool = buildTool({
       parts.push(`importance ${output.importanceDelta > 0 ? '+' : ''}${output.importanceDelta}`);
     if (output.confidenceDelta)
       parts.push(`confidence ${output.confidenceDelta > 0 ? '+' : ''}${output.confidenceDelta}`);
-    if (output.wroteToTaste) parts.push('saved to TASTE.md');
     return { tool_use_id: toolUseID, type: 'tool_result', content: parts.join(' · ') };
   },
   async call(input: { memoryIdOrKey: string; signal: string; note?: string }) {
@@ -80,7 +76,7 @@ export const MemoryFeedbackTool = buildTool({
       return { data: result };
     } catch (err: any) {
       return {
-        data: { success: false, message: err.message, importanceDelta: 0, confidenceDelta: 0, wroteToTaste: false },
+        data: { success: false, message: err.message, importanceDelta: 0, confidenceDelta: 0 },
       };
     }
   },

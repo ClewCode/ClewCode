@@ -6,5 +6,3 @@ import type { PermissionRequestProps } from '../PermissionRequest.js';
 export function MonitorPermissionRequest(props: PermissionRequestProps) {
   return <FallbackPermissionRequest {...props} />;
 }
-
-export default MonitorPermissionRequest;

@@ -346,8 +346,14 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
   readonly label: string;
   private client: any;
   private providerId: string;
-  /** OpenAI/OpenRouter rate-limit constantly — shorter watchdog avoids noise. */
-  readonly streamTimeoutMs = 45_000;
+  /**
+   * Per-chunk stall watchdog — if the stream sends nothing for this long,
+   * abort and retry.  Free / rate-limited models (Cline free tier, OpenRouter
+   * free endpoints) can have 30-60s+ gaps between chunks, so the old 45s
+   * default caused false stalls that looked like "frozen UI".  Raised to 90s
+   * and made configurable via CLEW_STREAM_STALL_TIMEOUT_MS.
+   */
+  readonly streamTimeoutMs = Number(process.env.CLEW_STREAM_STALL_TIMEOUT_MS) || 90_000;
 
   constructor(client: any, providerId: string, label = 'OpenAI-Compatible') {
     this.client = client;

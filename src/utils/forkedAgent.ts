@@ -26,10 +26,11 @@ import type { AgentId } from '../types/ids.js';
 import type { Message } from '../types/message.js';
 import { createChildAbortController } from './abortController.js';
 import { logForDebugging } from './debug.js';
+import { AbortError } from './errors.js';
 import { cloneFileStateCache } from './fileStateCache.js';
 import type { REPLHookContext } from './hooks/postSamplingHooks.js';
 import { createUserMessage, extractTextContent, getLastAssistantMessage } from './messages.js';
-import { createDenialTrackingState } from './permissions/denialTracking.js';
+import { createDenialTrackingState, DENIAL_LIMITS, shouldFallbackToPrompting } from './permissions/denialTracking.js';
 import { parseToolListFromCLI } from './permissions/permissionSetup.js';
 import { recordSidechainTranscript } from './sessionStorage.js';
 import type { SystemPrompt } from './systemPromptType.js';
@@ -497,7 +498,8 @@ export async function runForkedAgent({
       logForDebugging(`Forked agent [${forkLabel}] failed to record initial transcript: ${err}`),
     );
     // Track the last recorded message UUID for parent chain continuity
-    lastRecordedUuid = initialMessages.length > 0 ? initialMessages[initialMessages.length - 1]!.uuid : null;
+    const lastInitialMsg = initialMessages[initialMessages.length - 1];
+    lastRecordedUuid = lastInitialMsg?.uuid ? (lastInitialMsg.uuid as UUID) : null;
   }
 
   // Run the query loop with isolated context (cache-safe params preserved)
@@ -528,6 +530,19 @@ export async function runForkedAgent({
 
       logForDebugging(`Forked agent [${forkLabel}] received message: type=${message.type}`);
 
+      // Circuit breaker: check if forked agent has exceeded denial limits
+      const denialState = isolatedToolUseContext.localDenialTracking;
+      if (denialState && shouldFallbackToPrompting(denialState)) {
+        const hitTotal = denialState.totalDenials >= DENIAL_LIMITS.maxTotal;
+        const hitConsecutive = denialState.consecutiveDenials >= DENIAL_LIMITS.maxConsecutive;
+        const limitType = hitTotal ? 'total' : hitConsecutive ? 'consecutive' : 'unknown';
+        logForDebugging(
+          `Forked agent [${forkLabel}] circuit breaker tripped: ${limitType} denial limit exceeded (total=${denialState.totalDenials}, consecutive=${denialState.consecutiveDenials})`,
+          { level: 'error' },
+        );
+        throw new AbortError('Forked agent aborted: too many permission denials');
+      }
+
       outputMessages.push(message as Message);
       onMessage?.(message as Message);
 
@@ -538,7 +553,7 @@ export async function runForkedAgent({
           logForDebugging(`Forked agent [${forkLabel}] failed to record transcript: ${err}`),
         );
         if (msg.type !== 'progress') {
-          lastRecordedUuid = msg.uuid;
+          lastRecordedUuid = msg.uuid as UUID;
         }
       }
     }

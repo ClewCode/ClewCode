@@ -43,6 +43,8 @@ export function createPowerShellProvider(shellPath: string): ShellProvider {
     shellPath,
     detached: false,
 
+    isHealthy: () => true,
+
     async buildExecCommand(
       command: string,
       opts: {
