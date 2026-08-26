@@ -2463,3 +2463,6 @@ export async function bashCommandIsSafeAsync_DEPRECATED(
     message: 'Command passed all security checks',
   };
 }
+
+export const bashCommandIsSafe = bashCommandIsSafe_DEPRECATED;
+export const bashCommandIsSafeAsync = bashCommandIsSafeAsync_DEPRECATED;

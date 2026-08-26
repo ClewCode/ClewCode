@@ -347,6 +347,7 @@ export function splitCommand_DEPRECATED(command: string): string[] {
   const stringParts = parts.filter((part): part is string => part !== undefined && part !== '');
   return filterControlOperators(stringParts);
 }
+export const splitCommand = splitCommand_DEPRECATED;
 
 /**
  * Checks if a command is a help command (e.g., "foo --help" or "foo bar --help")
