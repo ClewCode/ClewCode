@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import { join } from 'path';
 import type React from 'react';
 import { ExportDialog } from '../../components/ExportDialog.js';
@@ -6,7 +7,6 @@ import type { LocalJSXCommandOnDone } from '../../types/command.js';
 import type { Message } from '../../types/message.js';
 import { getCwd } from '../../utils/cwd.js';
 import { renderMessagesToPlainText } from '../../utils/exportRenderer.js';
-import { writeFileSync_DEPRECATED } from '../../utils/slowOperations.js';
 
 function formatTimestamp(date: Date): string {
   const year = date.getFullYear();
@@ -67,10 +67,7 @@ export async function call(
     const finalFilename = filename.endsWith('.txt') ? filename : `${filename.replace(/\.[^.]+$/, '')}.txt`;
     const filepath = join(getCwd(), finalFilename);
     try {
-      writeFileSync_DEPRECATED(filepath, content, {
-        encoding: 'utf-8',
-        flush: true,
-      });
+      await fs.writeFile(filepath, content, 'utf-8');
       onDone(`Conversation exported to: ${filepath}`);
       return null;
     } catch (error) {

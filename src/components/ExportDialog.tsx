@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import { join } from 'path';
 import type React from 'react';
 import { useCallback, useState } from 'react';
@@ -7,7 +8,6 @@ import { setClipboard } from '../ink/termio/osc.js';
 import { Box, Text } from '../ink.js';
 import { useKeybinding } from '../keybindings/useKeybinding.js';
 import { getCwd } from '../utils/cwd.js';
-import { writeFileSync_DEPRECATED } from '../utils/slowOperations.js';
 import { ConfigurableShortcutHint } from './ConfigurableShortcutHint.js';
 import { Select } from './CustomSelect/select.js';
 import { Byline } from './design-system/Byline.js';
@@ -47,14 +47,11 @@ export function ExportDialog({ content, defaultFilename, onDone }: ExportDialogP
       setShowFilenameInput(true);
     }
   };
-  const handleFilenameSubmit = () => {
+  const handleFilenameSubmit = async () => {
     const finalFilename = filename.endsWith('.txt') ? filename : `${filename.replace(/\.[^.]+$/, '')}.txt`;
     const filepath = join(getCwd(), finalFilename);
     try {
-      writeFileSync_DEPRECATED(filepath, content, {
-        encoding: 'utf-8',
-        flush: true,
-      });
+      await fs.writeFile(filepath, content, 'utf-8');
       onDone({
         success: true,
         message: `Conversation exported to: ${filepath}`,

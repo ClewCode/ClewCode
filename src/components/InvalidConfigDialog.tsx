@@ -1,10 +1,11 @@
+import fs from 'node:fs/promises';
 import type React from 'react';
 import { Box, render, Text } from '../ink.js';
 import { KeybindingSetup } from '../keybindings/KeybindingProviderSetup.js';
 import { AppStateProvider } from '../state/AppState.js';
 import type { ConfigParseError } from '../utils/errors.js';
 import { getBaseRenderOptions } from '../utils/renderOptions.js';
-import { jsonStringify, writeFileSync_DEPRECATED } from '../utils/slowOperations.js';
+import { jsonStringify } from '../utils/slowOperations.js';
 import type { ThemeName } from '../utils/theme.js';
 import { Select } from './CustomSelect/index.js';
 import { Dialog } from './design-system/Dialog.js';
@@ -91,11 +92,12 @@ export async function showInvalidConfigDialog({ error }: InvalidConfigHandlerPro
               void resolve();
               process.exit(1);
             }}
-            onReset={() => {
-              writeFileSync_DEPRECATED(error.filePath, jsonStringify(error.defaultConfig, null, 2), {
-                flush: false,
-                encoding: 'utf8',
-              });
+            onReset={async () => {
+              try {
+                await fs.writeFile(error.filePath, jsonStringify(error.defaultConfig, null, 2), 'utf8');
+              } catch {
+                // Ignore write errors on reset
+              }
               unmount?.();
               void resolve();
               process.exit(0);

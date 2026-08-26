@@ -170,9 +170,9 @@ Compaction health and shortfalls are tracked per agent. Evicted content is store
 --debug                   Enable developer debug output
 ```
 
-Frequently used slash commands include `/model`, `/providers`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/mcp`, `/agent`, `/plan`, `/research`, `/workflow`, `/skills`, `/code-review`, `/bg`, `/daemon`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, `/theme`, and `/sessions`.
+Frequently used slash commands include `/model`, `/providers`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/mcp`, `/agent`, `/plan`, `/research`, `/workflow`, `/skills`, `/code-review`, `/bg`, `/daemon`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, and `/theme`.
 
-The main REPL shows a compact live roster below the Clew logo so agents needing input, active work, and recent completions stay visible without opening another screen. Use `/sessions` when you need the full searchable catalog and session actions.
+The footer always displays `← N agents`, counting the main conversation as the first agent. Press Left from an empty prompt to move the conversation into a Claude-style background room with Clew's mascot, live Needs input / Working / Completed groups, and a task composer. Live subagents also appear below the main REPL logo while they have activity to report; archived conversations never clutter either view.
 
 ## Configuration
 

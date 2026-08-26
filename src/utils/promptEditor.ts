@@ -5,7 +5,6 @@ import { classifyGuiEditor, getExternalEditor } from './editor.js';
 import { execSync_DEPRECATED } from './execSyncWrapper.js';
 import { getFsImplementation } from './fsOperations.js';
 import { toIDEDisplayName } from './ide.js';
-import { writeFileSync_DEPRECATED } from './slowOperations.js';
 import { generateTempFilePath } from './tempfile.js';
 
 // Map of editor command overrides (e.g., to add wait flags)
@@ -140,10 +139,7 @@ export function editPromptInEditor(
     const expandedPrompt = pastedContents ? expandPastedTextRefs(currentPrompt, pastedContents) : currentPrompt;
 
     // Write expanded prompt to temp file
-    writeFileSync_DEPRECATED(tempFile, expandedPrompt, {
-      encoding: 'utf-8',
-      flush: true,
-    });
+    fs.writeFileSync(tempFile, expandedPrompt, 'utf-8');
 
     // Delegate to editFileInEditor
     const result = editFileInEditor(tempFile);

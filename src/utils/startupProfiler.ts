@@ -19,7 +19,6 @@ import { logForDebugging } from './debug.js';
 import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { getFsImplementation } from './fsOperations.js';
 import { formatMs, formatTimelineLine, getPerformance } from './profilerBase.js';
-import { writeFileSync_DEPRECATED } from './slowOperations.js';
 
 // Module-level state - decided once at module load
 // eslint-disable-next-line custom-rules/no-process-env-top-level
@@ -123,11 +122,7 @@ export function profileReport(): void {
     const path = getStartupPerfLogPath();
     const dir = dirname(path);
     const fs = getFsImplementation();
-    fs.mkdirSync(dir);
-    writeFileSync_DEPRECATED(path, getReport(), {
-      encoding: 'utf8',
-      flush: true,
-    });
+    fs.writeFileSync(path, getReport(), 'utf8');
 
     logForDebugging('Startup profiling report:');
     logForDebugging(getReport());
