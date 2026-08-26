@@ -3,30 +3,62 @@ import { call } from './workflow.js';
 
 describe('/workflow slash command', () => {
   it('shows usage for invalid verbs', async () => {
-    const res = await call('unknown-action', {} as any);
-    expect(res.type).toBe('text');
-    if (res.type === 'text') {
-      expect(res.value).toContain('Usage:');
-      expect(res.value).toContain('/workflow show');
-    }
+    let resultMessage = '';
+    await call(
+      result => {
+        resultMessage = result ?? '';
+      },
+      {} as any,
+      'unknown-action',
+    );
+
+    expect(resultMessage).toContain('Usage:');
+    expect(resultMessage).toContain('/workflow show');
   });
 
   it('validates missing runId for show, resume, and cancel', async () => {
-    const showRes = await call('show', {} as any);
-    expect(showRes.type === 'text' && showRes.value).toBe('Usage: /workflow show <runId>');
+    let showRes = '';
+    await call(
+      res => {
+        showRes = res ?? '';
+      },
+      {} as any,
+      'show',
+    );
+    expect(showRes).toBe('Usage: /workflow show <runId>');
 
-    const resumeRes = await call('resume', {} as any);
-    expect(resumeRes.type === 'text' && resumeRes.value).toBe('Usage: /workflow resume <runId>');
+    let resumeRes = '';
+    await call(
+      res => {
+        resumeRes = res ?? '';
+      },
+      {} as any,
+      'resume',
+    );
+    expect(resumeRes).toBe('Usage: /workflow resume <runId>');
 
-    const cancelRes = await call('cancel', {} as any);
-    expect(cancelRes.type === 'text' && cancelRes.value).toBe('Usage: /workflow cancel <runId>');
+    let cancelRes = '';
+    await call(
+      res => {
+        cancelRes = res ?? '';
+      },
+      {} as any,
+      'cancel',
+    );
+    expect(cancelRes).toBe('Usage: /workflow cancel <runId>');
   });
 
-  it('lists workflow runs without crashing', async () => {
-    const res = await call('list', {} as any);
-    expect(res.type).toBe('text');
-    if (res.type === 'text') {
-      expect(res.value).toBeDefined();
-    }
+  it('mounts interactive JSX component for empty args or list', async () => {
+    let doneCalled = false;
+    const jsxNode = await call(
+      () => {
+        doneCalled = true;
+      },
+      {} as any,
+      '',
+    );
+
+    expect(jsxNode).not.toBeNull();
+    expect(doneCalled).toBe(false);
   });
 });
