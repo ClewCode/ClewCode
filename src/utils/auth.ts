@@ -36,7 +36,7 @@ import {
   getMacOsKeychainStorageServiceName,
   getUsername,
 } from './secureStorage/macOsKeychainHelpers.js';
-import { getSettingsForSource } from './settings/settings.js';
+import { getSettings, getSettingsForSource } from './settings/settings.js';
 import { sleep } from './sleep.js';
 import { jsonParse } from './slowOperations.js';
 import { clearToolSchemaCache } from './toolSchemaCache.js';

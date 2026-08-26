@@ -12,7 +12,12 @@ import { getCwd } from '../cwd.js';
 import { isEnvTruthy } from '../envUtils.js';
 import type { SettingSource } from '../settings/constants.js';
 import { SETTING_SOURCES } from '../settings/constants.js';
-import { getSettingsFilePathForSource, getUseAutoModeDuringPlan, hasAutoModeOptIn } from '../settings/settings.js';
+import {
+  getSettings,
+  getSettingsFilePathForSource,
+  getUseAutoModeDuringPlan,
+  hasAutoModeOptIn,
+} from '../settings/settings.js';
 import { type PermissionMode, permissionModeFromString } from './PermissionMode.js';
 import { applyPermissionRulesToPermissionContext } from './permissions.js';
 import { loadAllPermissionRulesFromDisk } from './permissionsLoader.js';

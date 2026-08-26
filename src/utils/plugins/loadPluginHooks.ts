@@ -4,7 +4,7 @@ import { clearRegisteredPluginHooks, getRegisteredHooks, registerHookCallbacks }
 import type { LoadedPlugin } from '../../types/plugin.js';
 import { logForDebugging } from '../debug.js';
 import { settingsChangeDetector } from '../settings/changeDetector.js';
-import { getSettingsForSource } from '../settings/settings.js';
+import { getSettings, getSettingsForSource } from '../settings/settings.js';
 import type { PluginHookMatcher } from '../settings/types.js';
 import { jsonStringify } from '../slowOperations.js';
 import { clearPluginCache, loadAllPluginsCacheOnly } from './pluginLoader.js';

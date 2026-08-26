@@ -100,7 +100,7 @@ import {
   readTranscriptForLoad,
   SKIP_PRECOMPACT_THRESHOLD,
 } from './sessionStoragePortable.js';
-import { getSettingsForSource } from './settings/settings.js';
+import { getSettings, getSettingsForSource } from './settings/settings.js';
 import { jsonParse, jsonStringify } from './slowOperations.js';
 import type { ContentReplacementRecord } from './toolResultStorage.js';
 import { validateUuid } from './uuid.js';

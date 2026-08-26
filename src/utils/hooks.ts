@@ -38,7 +38,7 @@ import {
 } from './hooks/hooksConfigSnapshot.js';
 import { getTranscriptPathForSession, getAgentTranscriptPath } from './sessionStorage.js';
 import type { AgentId } from '../types/ids.js';
-import { getSettingsForSource } from './settings/settings.js';
+import { getSettings, getSettingsForSource } from './settings/settings.js';
 import {
   logEvent,
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,

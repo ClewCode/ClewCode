@@ -6,7 +6,7 @@ import { isProviderManagedEnvVar, SAFE_ENV_VARS } from './managedEnvConstants.js
 import { clearMTLSCache } from './mtls.js';
 import { clearProxyCache, configureGlobalAgents } from './proxy.js';
 import { isSettingSourceEnabled } from './settings/constants.js';
-import { getSettingsForSource } from './settings/settings.js';
+import { getSettings, getSettingsForSource } from './settings/settings.js';
 
 /**
  * `claude ssh` remote: ANTHROPIC_UNIX_SOCKET routes auth through a -R forwarded

@@ -40,7 +40,7 @@ import { getOriginalCwd } from '../../bootstrap/state.js';
 import { getCwd } from '../cwd.js';
 import { getHeadForDir } from '../git/gitFilesystem.js';
 import type { EditableSettingSource } from '../settings/constants.js';
-import { getSettingsForSource } from '../settings/settings.js';
+import { getSettings, getSettingsForSource } from '../settings/settings.js';
 import { getPluginById } from './marketplaceManager.js';
 import { parsePluginIdentifier, settingSourceToScope } from './pluginIdentifier.js';
 import { getPluginCachePath, getVersionedCachePath } from './pluginLoader.js';
