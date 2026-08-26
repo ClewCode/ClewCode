@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 // file would otherwise leak API keys into these tests and hit the live API.
 mock.module('../../utils/settings/settings.js', () => ({
   getSettings: () => ({ env: {} }),
-  getSettings_DEPRECATED: () => ({ env: {} }),
 }));
 
 const { getConfiguredProviders, searchWithFallback, searchWithProvider } = await import('./index.js');
