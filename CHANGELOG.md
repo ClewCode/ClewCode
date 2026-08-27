@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.9.0] - 2026-08-27
 
 - **Dead code removal**: Deleted unused exports `getAutoCompactHardThreshold` / `getBackgroundAutoCompactThreshold` (`src/services/compact/autoCompact.ts`), `getNextCheckpointThreshold` + `CHECKPOINT_THRESHOLDS` (`src/services/checkpoint/checkpointWriter.ts`), and `migrateLegacyEmbeddings` / `clearLegacyEmbeddingCache` (`src/memdir/semanticSearch.ts`); removed now-orphaned `computeBackgroundThreshold` import and `unlink` import. Deleted the matching obsolete test blocks in `compact.test.ts`. No behavior change.
 
@@ -41,6 +41,8 @@ All notable changes to this project will be documented in this file.
   - **Unit Test Suite**: 21 unit tests covering all phases (store CRUD, scoring, evidence sanitization, diff analysis, confidence lifecycle, closed-loop learner).
 - **Removed the project rules system**: Deleted the `ProjectRule` tool (`src/tools/ProjectRuleTool/`), `/rule` slash command (`src/commands/rule/`), `.clew/rules.json` loading util (`src/utils/projectRules.ts`), its system-prompt section, startup chat notification, and footer rule-count indicator. Clew Code no longer reads or writes `.clew/rules.json`.
 - **Unified provider model discovery**: The provider setup wizard now uses the same registry-aware live model fetcher and response parser as `/model`, so providers with nonstandard catalog URLs (including Cline) show the same current model list instead of stale static entries.
+
+## [Unreleased]
 
 ## [0.8.7] - 2026-08-27
 
