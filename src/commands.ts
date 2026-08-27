@@ -85,6 +85,7 @@ import stickers from './commands/stickers/index.js';
 import goal from './commands/goal/index.js';
 import taste from './commands/taste/index.js';
 import { repomap } from './commands/repomap/index.js';
+import { codeSearch } from './commands/codeSearch/index.js';
 import bg from './commands/bg/index.js';
 import daemonCmd from './commands/daemon/index.js';
 import dashboard from './commands/dashboard/index.js';
@@ -192,6 +193,7 @@ const COMMANDS = memoize((): Command[] => [
   goal,
   taste,
   repomap,
+  codeSearch,
   bg,
   heapDump,
   help,
