@@ -301,7 +301,7 @@ export function getChunksByIds(ids: number[]): CodeChunkRow[] {
   const placeholders = ids.map(() => '?').join(',');
   const rows = db
     .prepare(
-      `SELECT id, file_path, start_line, end_line, name, kind, signature
+      `SELECT id, file_path AS filePath, start_line AS startLine, end_line AS endLine, name, kind, signature
        FROM code_chunks WHERE id IN (${placeholders})`,
     )
     .all(...ids) as CodeChunkRow[];

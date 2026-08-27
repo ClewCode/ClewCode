@@ -1,4 +1,6 @@
+import { getSessionId } from '../../bootstrap/state.js';
 import { formatTotalCost, getModelUsage } from '../../cost-tracker.js';
+import { getRootedLedger } from '../../services/accounting/ledger.js';
 import { currentLimits } from '../../services/claudeAiLimits.js';
 import type { LocalCommandCall } from '../../types/command.js';
 import { isClaudeAISubscriber } from '../../utils/auth.js';
@@ -8,7 +10,28 @@ function formatCost(cost: number): string {
   return `$${cost > 0.5 ? cost.toFixed(2) : cost.toFixed(4)}`;
 }
 
-export const call: LocalCommandCall = async () => {
+export const call: LocalCommandCall = async args => {
+  const argText = args?.trim().toLowerCase() || '';
+
+  // Show hierarchical agent tree cost breakdown
+  if (argText === 'tree') {
+    const rootSessionId = getSessionId();
+    const ledger = getRootedLedger();
+    const treeSummary = ledger.getTreeSummary(rootSessionId);
+
+    if (!treeSummary) {
+      return {
+        type: 'text',
+        value: `No subagent accounting recorded for session ${rootSessionId}.\nTotal session cost: ${formatTotalCost()}`,
+      };
+    }
+
+    return {
+      type: 'text',
+      value: `Rooted Agent Resource Tree Breakdown:\n\n${ledger.formatTreeReport(treeSummary)}\n\nTotal session cost: ${formatTotalCost()}`,
+    };
+  }
+
   if (isClaudeAISubscriber()) {
     let value: string;
 
