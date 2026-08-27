@@ -54,4 +54,29 @@ describe('fetchProviderModels', () => {
       apiKeySpy.mockRestore();
     }
   });
+
+  test('uses provided options.apiKey instead of ProviderManager', async () => {
+    let capturedHeaders: HeadersInit | undefined;
+
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      capturedHeaders = init?.headers;
+      return new Response(
+        JSON.stringify({
+          object: 'list',
+          data: [{ id: 'custom-live-model' }],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }) as unknown as typeof fetch;
+
+    const models = await fetchProviderModels('groq', { apiKey: 'gsk_test_123' });
+
+    expect(models).toEqual([
+      expect.objectContaining({
+        id: 'custom-live-model',
+        label: 'custom-live-model',
+      }),
+    ]);
+    expect((capturedHeaders as Record<string, string>)?.Authorization).toBe('Bearer gsk_test_123');
+  });
 });

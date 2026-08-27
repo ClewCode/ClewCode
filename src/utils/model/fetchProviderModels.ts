@@ -66,20 +66,33 @@ interface OpenRouterModelsResponse {
   data: OpenRouterModel[];
 }
 
+export type FetchProviderModelsOptions = {
+  apiKey?: string;
+  baseUrl?: string;
+};
+
 /**
  * Fetch available models from the provider's /models endpoint
  */
-export async function fetchProviderModels(provider?: ProviderId): Promise<FetchedModel[] | null> {
+export async function fetchProviderModels(
+  provider?: ProviderId,
+  options?: FetchProviderModelsOptions,
+): Promise<FetchedModel[] | null> {
   const providerManager = ProviderManager.getInstance();
   const activeProvider = provider ?? providerManager.getActiveProviderName();
 
   // Get the models URL from provider registry
   const { PROVIDER_REGISTRY } = await import('../../services/ai/providerRegistry.js');
   const registryEntry = PROVIDER_REGISTRY[activeProvider];
+  if (!registryEntry) {
+    return null;
+  }
 
   let modelsUrl: string | undefined;
 
-  if ('modelsUrl' in registryEntry && registryEntry.modelsUrl) {
+  if (options?.baseUrl) {
+    modelsUrl = `${options.baseUrl.replace(/\/+$/, '')}/models`;
+  } else if ('modelsUrl' in registryEntry && registryEntry.modelsUrl) {
     modelsUrl = registryEntry.modelsUrl;
   } else {
     // For providers without a fixed modelsUrl (e.g. custom), derive from baseUrl
@@ -93,8 +106,8 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
     return null;
   }
 
-  const apiKey = providerManager.getApiKeyForProvider(activeProvider);
-  if (!apiKey) {
+  const apiKey = options?.apiKey ?? providerManager.getApiKeyForProvider(activeProvider);
+  if (!apiKey && !registryEntry.isLocal) {
     return null;
   }
 
@@ -102,17 +115,19 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
     console.log(`[fetchProviderModels] Fetching from: ${modelsUrl}`);
 
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     };
+    if (apiKey) {
+      headers.Authorization = `Bearer ${apiKey}`;
+    }
 
     if (activeProvider === 'google') {
       // Only send x-goog-api-key for API key auth, not OAuth (subscriber)
       // Sending both Authorization: Bearer <oauth_token> and x-goog-api-key
       // causes Google's API to reject with "multiple authentication credentials".
       const config = providerManager.getSelectedProviderConfig();
-      const googleType = (config.providerConfig as any)?.googleType;
-      if (googleType !== 'subscriber') {
+      const googleType = (config?.providerConfig as any)?.googleType;
+      if (googleType !== 'subscriber' && apiKey) {
         headers['x-goog-api-key'] = apiKey;
       }
     }

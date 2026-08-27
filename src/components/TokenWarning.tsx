@@ -1,5 +1,6 @@
 import { feature } from 'bun:bundle';
 import type * as React from 'react';
+import { getSdkBetas } from '../bootstrap/state.js';
 import { Box, Text } from '../ink.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../services/analytics/growthbook.js';
 import {
@@ -9,6 +10,7 @@ import {
   isAutoCompactEnabled,
 } from '../services/compact/autoCompact.js';
 import { useCompactWarningSuppression } from '../services/compact/compactWarningHook.js';
+import { getContextWindowForModel } from '../utils/context.js';
 import { getUpgradeMessage } from '../utils/model/contextWindowUpgradeCheck.js';
 import { type ContextMeterMode, formatContextMeter } from './contextMeter.js';
 
@@ -18,12 +20,12 @@ type Props = {
   messages?: any[];
 };
 
-export function TokenWarning({ tokenUsage, model, messages }: Props): React.ReactNode {
-  // Pass messages so the readout honors the adaptive threshold rather than the
-  // static buffer — otherwise the displayed percentage disagrees with the point
-  // auto-compact actually fires.
-  const { percentLeft, isAboveWarningThreshold, isAboveErrorThreshold } = calculateTokenWarningState(tokenUsage, model);
+export function TokenWarning({ tokenUsage, model }: Props): React.ReactNode {
+  const { isAboveWarningThreshold, isAboveErrorThreshold } = calculateTokenWarningState(tokenUsage, model);
   const autoCompactThreshold = getAutoCompactThreshold(model);
+  const contextWindow = getContextWindowForModel(model, getSdkBetas());
+  const percentUsed = Math.max(0, Math.min(100, Math.round((tokenUsage / contextWindow) * 100)));
+  const triggerPercent = Math.max(0, Math.min(100, Math.round((autoCompactThreshold / contextWindow) * 100)));
 
   // Use reactive hook to check if warning should be suppressed
   const suppressWarning = useCompactWarningSuppression();
@@ -35,22 +37,12 @@ export function TokenWarning({ tokenUsage, model, messages }: Props): React.Reac
   const showAutoCompactWarning = isAutoCompactEnabled();
   const upgradeMessage = getUpgradeMessage('warning');
 
-  // Reactive-only mode: proactive autocompact never fires, so percentLeft's
-  // normal calculation (against the autocompact threshold) counts down to an
-  // event that won't happen. Recompute against the effective window so the
-  // percentage is honest.
-  let displayPercentLeft = percentLeft;
   let reactiveOnlyMode = false;
   if (feature('REACTIVE_COMPACT')) {
     if (getFeatureValue_CACHED_MAY_BE_STALE('tengu_cobalt_raccoon', false)) {
       reactiveOnlyMode = true;
     }
   }
-  if (reactiveOnlyMode) {
-    const effectiveWindow = getEffectiveContextWindowSize(model);
-    displayPercentLeft = Math.max(0, Math.round(((effectiveWindow - tokenUsage) / effectiveWindow) * 100));
-  }
-
   // Tokens remaining against whatever budget actually governs this session:
   // the (adaptive) auto-compact threshold normally, the full effective window
   // when proactive compaction is suppressed.
@@ -64,14 +56,20 @@ export function TokenWarning({ tokenUsage, model, messages }: Props): React.Reac
   const mode: ContextMeterMode = reactiveOnlyMode
     ? { kind: 'reactive-only' }
     : showAutoCompactWarning
-      ? { kind: 'auto-compact', backgroundRunning: false, backgroundReady: false }
+      ? {
+          kind: 'auto-compact',
+          backgroundRunning: false,
+          backgroundReady: false,
+          triggerPercent,
+          triggered: tokenUsage >= autoCompactThreshold,
+        }
       : { kind: 'manual' };
 
   return (
     <Box flexDirection="column" gap={0} marginTop={1}>
       <Box flexDirection="row" gap={1} alignItems="center">
         <Text bold color={isAboveErrorThreshold ? 'error' : 'warning'}>
-          {formatContextMeter({ percentLeft: displayPercentLeft, tokensLeft, mode })}
+          {formatContextMeter({ percentUsed, tokensLeft, mode })}
         </Text>
       </Box>
       {upgradeMessage ? (

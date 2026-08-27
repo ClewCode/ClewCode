@@ -35,25 +35,52 @@ describe('formatTokens', () => {
 
 describe('describeContextOutcome', () => {
   test('prefers a ready background summary over the generic message', () => {
-    expect(describeContextOutcome({ kind: 'auto-compact', backgroundReady: true, backgroundRunning: false }, 9)).toBe(
-      'summary ready',
-    );
+    expect(
+      describeContextOutcome({
+        kind: 'auto-compact',
+        backgroundReady: true,
+        backgroundRunning: false,
+        triggerPercent: 70,
+        triggered: false,
+      }),
+    ).toBe('summary ready');
   });
 
   test('reports an in-flight background summary', () => {
-    expect(describeContextOutcome({ kind: 'auto-compact', backgroundReady: false, backgroundRunning: true }, 9)).toBe(
-      'preparing summary…',
-    );
+    expect(
+      describeContextOutcome({
+        kind: 'auto-compact',
+        backgroundReady: false,
+        backgroundRunning: true,
+        triggerPercent: 70,
+        triggered: false,
+      }),
+    ).toBe('preparing summary…');
   });
 
-  test('escalates wording at the brink', () => {
-    expect(describeContextOutcome({ kind: 'auto-compact', backgroundReady: false, backgroundRunning: false }, 1)).toBe(
-      'auto-compacting now',
-    );
+  test('reports the real trigger and pending state', () => {
+    expect(
+      describeContextOutcome({
+        kind: 'auto-compact',
+        backgroundReady: false,
+        backgroundRunning: false,
+        triggerPercent: 70,
+        triggered: false,
+      }),
+    ).toBe('auto-compacts at 70%');
+    expect(
+      describeContextOutcome({
+        kind: 'auto-compact',
+        backgroundReady: false,
+        backgroundRunning: false,
+        triggerPercent: 70,
+        triggered: true,
+      }),
+    ).toBe('auto-compact pending');
   });
 
   test('tells the user what to do when auto-compact is off', () => {
-    expect(describeContextOutcome({ kind: 'manual' }, 9)).toBe('run /compact to free space');
+    expect(describeContextOutcome({ kind: 'manual' })).toBe('run /compact to free space');
   });
 });
 
@@ -61,10 +88,16 @@ describe('formatContextMeter', () => {
   test('renders usage, headroom, and outcome in one line', () => {
     expect(
       formatContextMeter({
-        percentLeft: 9,
-        tokensLeft: 9200,
-        mode: { kind: 'auto-compact', backgroundReady: false, backgroundRunning: false },
+        percentUsed: 60,
+        tokensLeft: 19_800,
+        mode: {
+          kind: 'auto-compact',
+          backgroundReady: false,
+          backgroundRunning: false,
+          triggerPercent: 70,
+          triggered: false,
+        },
       }),
-    ).toBe('Context █████████░ 91% · 9.2k left · auto-compacts at 80%');
+    ).toBe('Context ██████░░░░ 60% · 19.8k left · auto-compacts at 70%');
   });
 });

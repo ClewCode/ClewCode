@@ -2,11 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import type { Message } from '../../types/message.js';
 import {
   AUTOCOMPACT_BUFFER_TOKENS,
-  AUTOCOMPACT_HARD_BUFFER_TOKENS,
   estimateCompressibility,
-  getAutoCompactHardThreshold,
   getAutoCompactThreshold,
-  getBackgroundAutoCompactThreshold,
   getEffectiveContextWindowSize,
   isAtNaturalBoundary,
 } from './autoCompact.js';
@@ -72,21 +69,13 @@ describe('selectPostCompactMessagesToKeep', () => {
   });
 });
 
-describe('getBackgroundAutoCompactThreshold', () => {
+describe('getAutoCompactThreshold effective window headroom', () => {
   test('keeps enough foreground headroom for the next API request', () => {
     const effectiveWindow = getEffectiveContextWindowSize('test-model');
     const threshold = getAutoCompactThreshold('test-model');
 
     expect(effectiveWindow - threshold).toBe(AUTOCOMPACT_BUFFER_TOKENS);
     expect(AUTOCOMPACT_BUFFER_TOKENS).toBeGreaterThanOrEqual(40_000);
-  });
-
-  test('starts before the blocking autocompact threshold', () => {
-    const threshold = getAutoCompactThreshold('test-model');
-    const backgroundThreshold = getBackgroundAutoCompactThreshold('test-model');
-
-    expect(backgroundThreshold).toBeLessThan(threshold);
-    expect(backgroundThreshold).toBeGreaterThanOrEqual(Math.floor(threshold * 0.8));
   });
 });
 
@@ -191,15 +180,6 @@ describe('estimateCompressibility', () => {
 
   test('empty messages returns 0', () => {
     expect(estimateCompressibility([])).toBe(0);
-  });
-});
-
-describe('getAutoCompactHardThreshold', () => {
-  test('hard threshold is soft threshold plus buffer', () => {
-    const soft = getAutoCompactThreshold('test-model');
-    const hard = getAutoCompactHardThreshold('test-model');
-    expect(hard - soft).toBe(AUTOCOMPACT_HARD_BUFFER_TOKENS);
-    expect(AUTOCOMPACT_HARD_BUFFER_TOKENS).toBeGreaterThan(0);
   });
 });
 

@@ -57,4 +57,19 @@ describe('provider model discovery', () => {
       apiKeySpy.mockRestore();
     }
   });
+
+  test('passes options.apiKey to fetchLiveProviderModels and caches results', async () => {
+    globalThis.fetch = (async () => {
+      return new Response(
+        JSON.stringify({
+          object: 'list',
+          data: [{ id: 'live-groq-model' }],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }) as unknown as typeof fetch;
+
+    const models = await fetchProviderModels('groq', { apiKey: 'gsk_direct_key', forceRefresh: true });
+    expect(models.map(m => m.id)).toEqual(['live-groq-model']);
+  });
 });

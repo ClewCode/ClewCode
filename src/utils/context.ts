@@ -145,6 +145,16 @@ export function calculateContextPercentages(
   };
 }
 
+/** Calculate context percentages from the canonical full-context token estimate. */
+export function calculateContextPercentagesFromTokens(
+  tokenUsage: number | null,
+  contextWindowSize: number,
+): { used: number | null; remaining: number | null } {
+  if (tokenUsage === null) return { used: null, remaining: null };
+  const used = Math.min(100, Math.max(0, Math.round((tokenUsage / contextWindowSize) * 100)));
+  return { used, remaining: 100 - used };
+}
+
 /**
  * Returns the model's default and upper limit for max output tokens.
  */

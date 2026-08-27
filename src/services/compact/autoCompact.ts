@@ -29,7 +29,6 @@ import { isEnvTruthy } from '../../utils/envUtils.js';
 import { roughTokenCountEstimationForBlock } from '../tokenEstimation.js';
 import {
   CRITICAL_BUFFER_TOKENS,
-  computeBackgroundThreshold,
   computeEffectiveWindow,
   computeLimits,
   DEFAULT_BUFFER_TOKENS,
@@ -156,15 +155,6 @@ export function resolveAdaptiveBuffer(): number {
 
 export function getAutoCompactThreshold(model: string): number {
   return computeLimits(model, resolveAdaptiveBuffer()).actNow;
-}
-
-export function getBackgroundAutoCompactThreshold(model: string): number {
-  return computeBackgroundThreshold(computeLimits(model, DEFAULT_BUFFER_TOKENS));
-}
-
-/** The point past which reduction happens even mid-tool-chain. */
-export function getAutoCompactHardThreshold(model: string): number {
-  return computeLimits(model, resolveAdaptiveBuffer()).actForce;
 }
 
 export function calculateTokenWarningState(

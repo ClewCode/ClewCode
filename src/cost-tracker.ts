@@ -28,6 +28,7 @@ import {
   setHasUnknownModelCost,
 } from './bootstrap/state.js';
 import type { ModelUsage } from './entrypoints/agentSdkTypes.js';
+import { formatAgentTokenReport, recordAgentUsage } from './services/agentTree/agentTokenLedger.js';
 import { ProviderManager } from './services/ai/ProviderManager.js';
 import type { ProviderUsage } from './services/ai/usageTypes.js';
 import {
@@ -228,7 +229,7 @@ export function formatTotalCost(): string {
       `Total duration (API):  ${formatDuration(getTotalAPIDuration())}
 Total duration (wall): ${formatDuration(getTotalDuration())}
 Total code changes:    ${getTotalLinesAdded()} ${getTotalLinesAdded() === 1 ? 'line' : 'lines'} added, ${getTotalLinesRemoved()} ${getTotalLinesRemoved() === 1 ? 'line' : 'lines'} removed
-${modelUsageDisplay}`,
+${modelUsageDisplay}${formatAgentTokenReport()}`,
   );
 }
 
@@ -328,6 +329,20 @@ export function addToTotalSessionCost(
   getTokenCounter()?.add(outputTokens, { ...attrs, type: 'output' });
   getTokenCounter()?.add(cacheReadTokens, { ...attrs, type: 'cacheRead' });
   getTokenCounter()?.add(cacheCreateTokens, { ...attrs, type: 'cacheCreation' });
+
+  // Rooted attribution — durable per-agent JSONL; observability must not fail the request path
+  try {
+    recordAgentUsage({
+      model,
+      inputTokens,
+      outputTokens,
+      cacheReadInputTokens: cacheReadTokens,
+      cacheCreationInputTokens: cacheCreateTokens,
+      costUSD: cost,
+    });
+  } catch {
+    // ignore
+  }
 
   // Advisor usage is always in Anthropic Usage format — only track when called with Usage
   let totalCost = cost;

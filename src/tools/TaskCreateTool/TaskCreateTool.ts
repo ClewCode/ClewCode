@@ -2,7 +2,7 @@ import { z } from 'zod/v4';
 import { buildTool, type ToolDef } from '../../Tool.js';
 import { executeTaskCreatedHooks, getTaskCreatedHookMessage } from '../../utils/hooks.js';
 import { lazySchema } from '../../utils/lazySchema.js';
-import { createTask, deleteTask, getTaskListId, isTodoV2Enabled } from '../../utils/tasks.js';
+import { createTask, deleteTask, getTaskListId, isTodoV2Enabled, listTasks, updateTask } from '../../utils/tasks.js';
 import { getAgentName, getTeamName } from '../../utils/teammate.js';
 import { TASK_CREATE_TOOL_NAME } from './constants.js';
 import { DESCRIPTION, getPrompt } from './prompt.js';
@@ -10,7 +10,8 @@ import { DESCRIPTION, getPrompt } from './prompt.js';
 const inputSchema = lazySchema(() =>
   z.strictObject({
     subject: z.string().describe('A brief title for the task'),
-    description: z.string().describe('What needs to be done'),
+    description: z.string().optional().describe('What needs to be done; defaults to the subject'),
+    action: z.literal('complete').optional().describe('Compatibility shortcut: complete an existing task by subject'),
     activeForm: z
       .string()
       .optional()
@@ -25,6 +26,7 @@ const outputSchema = lazySchema(() =>
     task: z.object({
       id: z.string(),
       subject: z.string(),
+      completed: z.boolean().optional(),
     }),
   }),
 );
@@ -64,10 +66,20 @@ export const TaskCreateTool = buildTool({
   renderToolUseMessage() {
     return null;
   },
-  async call({ subject, description, activeForm, metadata }, context) {
+  async call({ subject, description, action, activeForm, metadata }, context) {
+    if (action === 'complete') {
+      const existing = (await listTasks(getTaskListId())).find(task => task.subject === subject);
+      if (existing) {
+        await updateTask(getTaskListId(), existing.id, { status: 'completed' });
+        return { data: { task: { id: existing.id, subject: existing.subject, completed: true } } };
+      }
+      throw new Error(`Cannot complete task by subject because no matching task exists: ${subject}`);
+    }
+
+    const taskDescription = description?.trim() || subject;
     const taskId = await createTask(getTaskListId(), {
       subject,
-      description,
+      description: taskDescription,
       activeForm,
       status: 'pending',
       owner: undefined,
@@ -80,7 +92,7 @@ export const TaskCreateTool = buildTool({
     const generator = executeTaskCreatedHooks(
       taskId,
       subject,
-      description,
+      taskDescription,
       getAgentName(),
       getTeamName(),
       undefined,
@@ -119,7 +131,9 @@ export const TaskCreateTool = buildTool({
     return {
       tool_use_id: toolUseID,
       type: 'tool_result',
-      content: `Task #${task.id} created successfully: ${task.subject}`,
+      content: task.completed
+        ? `Task #${task.id} completed successfully: ${task.subject}`
+        : `Task #${task.id} created successfully: ${task.subject}`,
     };
   },
 } satisfies ToolDef<InputSchema, Output>);

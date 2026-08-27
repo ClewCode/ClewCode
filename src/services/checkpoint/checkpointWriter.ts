@@ -31,8 +31,6 @@ export interface TaskCheckpoint {
   notes: string; // accumulated notes from scratchpad since last checkpoint
 }
 
-const CHECKPOINT_THRESHOLDS = [20, 45, 70];
-
 function getCheckpointsDir(): string {
   const sessionId = getSessionId();
   const cwd = getCwd();
@@ -46,19 +44,6 @@ function getCheckpointFilePath(id: string): string {
 
 function getCheckpointIndexPath(): string {
   return join(getCheckpointsDir(), 'index.json');
-}
-
-/** Determine which threshold (if any) was just crossed */
-export function getNextCheckpointThreshold(turnCount: number, maxTurns: number | undefined): number | null {
-  if (!maxTurns || maxTurns <= 0) return null;
-  const progressPercent = (turnCount / maxTurns) * 100;
-  for (const threshold of CHECKPOINT_THRESHOLDS) {
-    if (progressPercent >= threshold) {
-      // Check if this threshold was already written
-      return threshold;
-    }
-  }
-  return null;
 }
 
 /** Check if a specific threshold has already been written */

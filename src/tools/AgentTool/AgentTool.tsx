@@ -9,6 +9,7 @@ import { clearInvokedSkillsForAgent, getSdkAgentProgressSummariesEnabled } from 
 import { enhanceSystemPromptWithEnvDetails, getSystemPrompt } from '../../constants/prompts.js';
 import { isCoordinatorMode } from '../../coordinator/coordinatorMode.js';
 import { startAgentSummarization } from '../../services/AgentSummary/agentSummary.js';
+import { registerAgentSpawned, setAgentState } from '../../services/agentTree/agentSessionRegistry.js';
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js';
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -40,7 +41,7 @@ import {
 import type { TaskState } from '../../tasks/types.js';
 import { assembleToolPool } from '../../tools.js';
 import { asAgentId } from '../../types/ids.js';
-import { runWithAgentContext } from '../../utils/agentContext.js';
+import { getAgentContext, runWithAgentContext } from '../../utils/agentContext.js';
 import { isAgentSwarmsEnabled } from '../../utils/agentSwarmsEnabled.js';
 import { getCwd, runWithCwdOverride } from '../../utils/cwd.js';
 import { logForDebugging } from '../../utils/debug.js';
@@ -136,7 +137,7 @@ function getAutoBackgroundMs(): number {
 // Base input schema without multi-agent parameters
 const baseInputSchema = lazySchema(() =>
   z.object({
-    description: z.string().describe('A short (3-5 word) description of the task'),
+    description: z.string().optional().describe('A short (3-5 word) description of the task'),
     prompt: z.string().describe('The task for the agent to perform'),
     subagent_type: z.string().optional().describe('The type of specialized agent to use for this task'),
     model: z
@@ -151,6 +152,11 @@ const baseInputSchema = lazySchema(() =>
       .describe('Set to true to run this agent in the background. You will be notified when it completes.'),
   }),
 );
+
+export function deriveAgentDescription(prompt: string): string {
+  const words = prompt.trim().split(/\s+/u).filter(Boolean);
+  return words.slice(0, 5).join(' ') || 'Agent task';
+}
 
 // Full schema combining base + multi-agent params + isolation
 const fullInputSchema = lazySchema(() => {
@@ -317,6 +323,11 @@ export const AgentTool = buildTool({
   async description() {
     return 'Launch a new agent';
   },
+  backfillObservableInput(input) {
+    if (typeof input.prompt === 'string' && (typeof input.description !== 'string' || !input.description.trim())) {
+      input.description = deriveAgentDescription(input.prompt);
+    }
+  },
   get inputSchema(): InputSchema {
     return inputSchema();
   },
@@ -327,7 +338,7 @@ export const AgentTool = buildTool({
     {
       prompt,
       subagent_type,
-      description,
+      description: requestedDescription,
       model: modelParam,
       run_in_background,
       name,
@@ -342,6 +353,7 @@ export const AgentTool = buildTool({
     onProgress?,
   ) {
     const startTime = Date.now();
+    const description = requestedDescription?.trim() || deriveAgentDescription(prompt);
     const model = isCoordinatorMode() ? undefined : modelParam;
 
     // Get app state for permission mode and agent filtering
@@ -914,7 +926,14 @@ export const AgentTool = buildTool({
       // invocation time — when this `void` fires — and survives every await
       // inside. No capture/restore needed; the detached closure sees the
       // parent turn's workload automatically, isolated from its finally.
-      void runWithAgentContext(asyncAgentContext, () =>
+      // Durable session-tree entry: parentId is the SPAWNING agent (captured while parent ctx active)
+      registerAgentSpawned({
+        id: asyncAgentId,
+        parentId: getAgentContext()?.agentId ?? 'main',
+        name: selectedAgent.agentType,
+        kind: 'subagent',
+      });
+      const spawnedLifecycle = runWithAgentContext(asyncAgentContext, () =>
         wrapWithCwd(() =>
           runAsyncAgentLifecycle({
             taskId: agentBackgroundTask.agentId,
@@ -938,6 +957,10 @@ export const AgentTool = buildTool({
             getWorktreeResult: cleanupWorktreeIfNeeded,
           }),
         ),
+      );
+      void spawnedLifecycle.then(
+        () => setAgentState(asyncAgentId, 'idle'),
+        () => setAgentState(asyncAgentId, 'idle'),
       );
       const canReadOutputFile = toolUseContext.options.tools.some(
         t => toolMatchesName(t, FILE_READ_TOOL_NAME) || toolMatchesName(t, BASH_TOOL_NAME),
@@ -971,8 +994,16 @@ export const AgentTool = buildTool({
         invocationEmitted: false,
       };
 
+      // Durable session-tree entry (parentId captured while parent ctx active)
+      registerAgentSpawned({
+        id: syncAgentId,
+        parentId: getAgentContext()?.agentId ?? 'main',
+        name: selectedAgent.agentType,
+        kind: 'subagent',
+      });
       // Wrap entire sync agent execution in context for analytics attribution
       // and optionally in a worktree cwd override for filesystem isolation
+      // ponytail: completion marks idle via stale sweeper; wire explicit transition where this lifecycle settles
       return runWithAgentContext(syncAgentContext, () =>
         wrapWithCwd(async () => {
           const agentMessages: MessageType[] = [];

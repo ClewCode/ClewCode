@@ -6576,6 +6576,7 @@ export function REPL({
                     <StatusLine
                       messagesRef={messagesRef}
                       lastAssistantMessageId={getLastAssistantMessageId(messages)}
+                      messageCount={messages.length}
                       vimMode={vimMode}
                     />
                   </>

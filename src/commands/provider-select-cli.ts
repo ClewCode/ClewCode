@@ -44,9 +44,9 @@ function hasApiKey(provider: ProviderId, config: ProviderConfigFile): boolean {
   );
 }
 
-async function fetchModels(provider: ProviderId): Promise<string[]> {
+async function fetchModels(provider: ProviderId, apiKey?: string): Promise<string[]> {
   try {
-    return (await fetchProviderModels(provider)).map(model => model.id);
+    return (await fetchProviderModels(provider, { apiKey, forceRefresh: true })).map(model => model.id);
   } catch (e) {
     console.log(`⚠️  Failed to fetch models: ${e}`);
     const info = getProviderRegistryEntry(provider);
@@ -144,8 +144,20 @@ async function selectProvider(): Promise<ProviderConfigFile> {
   const provider = PROVIDER_IDS[idx] ?? PROVIDER_IDS[0] ?? DEFAULT_PROVIDER;
   const info = getProviderRegistryEntry(provider);
 
+  const apiKey = await promptForApiKey(provider);
+  const currentConfig = loadConfig();
+  const hasExistingKey = hasApiKey(provider, currentConfig);
+
+  if (!info.isLocal && !apiKey && !hasExistingKey) {
+    console.log(`❌ No API key provided for ${info.envKey}. Aborting.`);
+    process.exit(1);
+  }
+
+  const effectiveApiKey =
+    apiKey || currentConfig.apiKeys?.[provider] || (info.envKey ? process.env[info.envKey] : undefined);
+
   console.log(`\n⏳ Fetching models from ${info.label}...`);
-  const models = await fetchModels(provider);
+  const models = await fetchModels(provider, effectiveApiKey);
 
   let model: string;
   if (models.length > 0) {
@@ -167,15 +179,6 @@ async function selectProvider(): Promise<ProviderConfigFile> {
     process.exit(1);
   }
   model = validation.model ?? model;
-
-  const apiKey = await promptForApiKey(provider);
-  const currentConfig = loadConfig();
-  const hasExistingKey = hasApiKey(provider, currentConfig);
-
-  if (!info.isLocal && !apiKey && !hasExistingKey) {
-    console.log(`❌ No API key provided for ${info.envKey}. Aborting.`);
-    process.exit(1);
-  }
 
   const apiKeys = {
     ...(currentConfig.apiKeys || {}),

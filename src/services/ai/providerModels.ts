@@ -60,10 +60,22 @@ export function getCachedModelLimits(
   };
 }
 
-export async function fetchProviderModels(provider: ProviderId): Promise<ProviderModelInfo[]> {
-  const cached = MODELS_CACHE.get(provider);
-  if (cached && Date.now() - cached.timestamp < MODELS_CACHE_TTL_MS) {
-    return cached.data;
+export type ProviderModelsFetchOptions = {
+  apiKey?: string;
+  baseUrl?: string;
+  forceRefresh?: boolean;
+};
+
+export async function fetchProviderModels(
+  provider: ProviderId,
+  options?: ProviderModelsFetchOptions,
+): Promise<ProviderModelInfo[]> {
+  const isCustomKeyOrRefresh = Boolean(options?.apiKey || options?.baseUrl || options?.forceRefresh);
+  if (!isCustomKeyOrRefresh) {
+    const cached = MODELS_CACHE.get(provider);
+    if (cached && Date.now() - cached.timestamp < MODELS_CACHE_TTL_MS) {
+      return cached.data;
+    }
   }
 
   try {
@@ -71,7 +83,10 @@ export async function fetchProviderModels(provider: ProviderId): Promise<Provide
     // response parser as `/model`. ProviderManager.listModels() derives
     // `${baseUrl}/models`, which is not valid for providers such as Cline whose
     // catalog lives at the registry's explicit modelsUrl.
-    const remoteModels = await fetchLiveProviderModels(provider);
+    const remoteModels = await fetchLiveProviderModels(
+      provider,
+      options ? { apiKey: options.apiKey, baseUrl: options.baseUrl } : undefined,
+    );
 
     if (remoteModels && remoteModels.length > 0) {
       const models = remoteModels
@@ -79,14 +94,14 @@ export async function fetchProviderModels(provider: ProviderId): Promise<Provide
         .filter((model): model is ProviderModelInfo => Boolean(model));
 
       if (models.length > 0) {
-        return cacheAndReturn(provider, models);
+        return isCustomKeyOrRefresh ? models : cacheAndReturn(provider, models);
       }
     }
   } catch (_error) {
     // Fall back to registry models below.
   }
 
-  return cacheAndReturn(provider, getFallbackModels(provider));
+  return isCustomKeyOrRefresh ? getFallbackModels(provider) : cacheAndReturn(provider, getFallbackModels(provider));
 }
 
 function fetchedModelToRemotePayload(model: FetchedModel): RemoteModelPayload {

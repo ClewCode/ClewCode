@@ -15,7 +15,7 @@
  * - Automatic invalidation on file changes (content_hash)
  */
 
-import { readFile, unlink } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getClewConfigHomeDir } from '../utils/envUtils.js';
 import { type MemoryHeader, scanMemoryFiles } from './memoryScan.js';
@@ -251,49 +251,6 @@ export async function embedAllMemories(): Promise<number> {
 
   const { indexed } = await syncIndex(memoryDir);
   return indexed;
-}
-
-/**
- * Migrate legacy .embedding.json files into the sqlite-vec index.
- * Runs a full sync (which reuses valid legacy caches instead of
- * re-embedding), then deletes the legacy files.
- *
- * @returns Number of legacy files removed
- */
-export async function migrateLegacyEmbeddings(): Promise<number> {
-  const memoryDir = getAutoMemPath();
-  if (!memoryDir) return 0;
-
-  await syncIndex(memoryDir);
-  return clearLegacyEmbeddingCache();
-}
-
-/**
- * Clear legacy embedding files and reinitialize index.
- * Useful for resetting after model updates or troubleshooting.
- * Keeps the sqlite-vec index intact.
- *
- * @returns Number of legacy files cleared
- */
-export async function clearLegacyEmbeddingCache(): Promise<number> {
-  const memoryDir = getAutoMemPath();
-  if (!memoryDir) return 0;
-
-  const { readdir } = await import('fs/promises');
-  const entries = await readdir(memoryDir, { recursive: true });
-  const embedFiles = entries.filter(f => typeof f === 'string' && f.endsWith('.embedding.json'));
-
-  let count = 0;
-  for (const file of embedFiles) {
-    try {
-      await unlink(join(memoryDir, file));
-      count++;
-    } catch {
-      // Skip files that can't be deleted
-    }
-  }
-
-  return count;
 }
 
 /**

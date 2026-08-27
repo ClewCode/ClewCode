@@ -22,7 +22,7 @@ import type { ReducerName } from './types.js';
 export interface EvictionRecord {
   /** Short, model-typable handle: `ev_<hash8>`. */
   handle: string;
-  kind: 'tool_result' | 'message_range' | 'summary_source';
+  kind: 'tool_result' | 'message_range' | 'summary_source' | 'artifact';
   /** Human/model readable: 'Read src/query.ts', 'Bash: bun test'. */
   label: string;
   tokens: number;

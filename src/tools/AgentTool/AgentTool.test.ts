@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from 'bun:test';
-import { inputSchema } from './AgentTool.js';
+import { deriveAgentDescription, inputSchema } from './AgentTool.js';
 
 describe('AgentTool inputSchema validation', () => {
   test('accepts explicit parent-model inheritance', () => {
@@ -33,13 +33,19 @@ describe('AgentTool inputSchema validation', () => {
     expect(res.success).toBe(true);
   });
 
-  test('rejects missing description or prompt', () => {
+  test('accepts a missing description and derives one from the prompt', () => {
     expect(
       inputSchema().safeParse({
         prompt: 'No description provided',
       }).success,
-    ).toBe(false);
+    ).toBe(true);
+    expect(deriveAgentDescription('Inspect the provider routing and report findings')).toBe(
+      'Inspect the provider routing and',
+    );
+    expect(deriveAgentDescription('   ')).toBe('Agent task');
+  });
 
+  test('rejects a missing prompt', () => {
     expect(
       inputSchema().safeParse({
         description: 'No prompt provided',

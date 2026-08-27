@@ -36,7 +36,7 @@ import type { StatusLineCommandInput, StatusLineRateLimits } from '../types/stat
 import type { VimMode } from '../types/textInputTypes.js';
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { checkHasTrustDialogAccepted, getGlobalConfig } from '../utils/config.js';
-import { calculateContextPercentages, getContextWindowForModel } from '../utils/context.js';
+import { calculateContextPercentagesFromTokens, getContextWindowForModel } from '../utils/context.js';
 import { getCwd } from '../utils/cwd.js';
 import { logForDebugging } from '../utils/debug.js';
 import { getClaudeConfigHomeDir } from '../utils/envUtils.js';
@@ -47,7 +47,11 @@ import { getLastAssistantMessage } from '../utils/messages.js';
 import { getRuntimeMainLoopModel, type ModelName, renderModelName } from '../utils/model/model.js';
 import { getFullGoalState } from '../utils/sessionGoalState.js';
 import { getCurrentSessionTitle } from '../utils/sessionStorage.js';
-import { doesMostRecentAssistantMessageExceed200k, getCurrentUsage } from '../utils/tokens.js';
+import {
+  doesMostRecentAssistantMessageExceed200k,
+  getCurrentUsage,
+  tokenCountWithEstimation,
+} from '../utils/tokens.js';
 import { getCurrentWorktreeSession } from '../utils/worktree.js';
 import { isVimModeEnabled } from './PromptInput/utils.js';
 export function statusLineShouldDisplay(settings: ReadonlySettings): boolean {
@@ -94,7 +98,10 @@ function buildStatusLineCommandInput(
   const outputStyleName = settings?.outputStyle || DEFAULT_OUTPUT_STYLE_NAME;
   const currentUsage = getCurrentUsage(messages);
   const contextWindowSize = getContextWindowForModel(runtimeModel, getSdkBetas());
-  const contextPercentages = calculateContextPercentages(currentUsage, contextWindowSize);
+  const contextPercentages = calculateContextPercentagesFromTokens(
+    tokenCountWithEstimation(messages),
+    contextWindowSize,
+  );
   const sessionId = getSessionId();
   const sessionName = getCurrentSessionTitle(sessionId);
   const rawUtil = getRawUtilization();
@@ -179,6 +186,7 @@ function buildStatusLineCommandInput(
 type Props = {
   messagesRef: React.RefObject<Message[]>;
   lastAssistantMessageId: string | null;
+  messageCount: number;
   vimMode?: VimMode;
   rightOnly?: boolean;
   rightText?: string;
@@ -472,6 +480,7 @@ function _truncate(str: string, maxLen: number = 40): string {
 function StatusLineInner({
   messagesRef,
   lastAssistantMessageId,
+  messageCount,
   vimMode,
   rightOnly = false,
   rightText,
@@ -505,6 +514,7 @@ function StatusLineInner({
 
   const previousStateRef = useRef<{
     messageId: string | null;
+    messageCount: number;
     exceeds200kTokens: boolean;
     permissionMode: PermissionMode;
     vimMode: VimMode | undefined;
@@ -512,6 +522,7 @@ function StatusLineInner({
     provider?: string;
   }>({
     messageId: null,
+    messageCount,
     exceeds200kTokens: false,
     permissionMode,
     vimMode,
@@ -572,12 +583,14 @@ function StatusLineInner({
     const activeProvider = mainLoopProviderForSession ?? mainLoopProvider;
     if (
       lastAssistantMessageId !== previousStateRef.current.messageId ||
+      messageCount !== previousStateRef.current.messageCount ||
       permissionMode !== previousStateRef.current.permissionMode ||
       vimMode !== previousStateRef.current.vimMode ||
       mainLoopModel !== previousStateRef.current.mainLoopModel ||
       activeProvider !== previousStateRef.current.provider
     ) {
       previousStateRef.current.permissionMode = permissionMode;
+      previousStateRef.current.messageCount = messageCount;
       previousStateRef.current.vimMode = vimMode;
       previousStateRef.current.mainLoopModel = mainLoopModel;
       previousStateRef.current.provider = activeProvider;
@@ -585,6 +598,7 @@ function StatusLineInner({
     }
   }, [
     lastAssistantMessageId,
+    messageCount,
     permissionMode,
     vimMode,
     mainLoopModel,

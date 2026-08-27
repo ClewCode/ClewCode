@@ -128,10 +128,10 @@ export function DashboardComponent({ onDone }: DashboardProps): React.ReactNode 
 
   // Clamp indices when lists change
   useEffect(() => {
-    if (selectedRunIdx >= runs.length) setSelectedRunIdx(Math.max(0, runs.length - 1));
+    if (runs.length > 0 && selectedRunIdx >= runs.length) setSelectedRunIdx(runs.length - 1);
   }, [runs.length, selectedRunIdx]);
   useEffect(() => {
-    if (selectedTaskIdx >= tasks.length) setSelectedTaskIdx(Math.max(0, tasks.length - 1));
+    if (tasks.length > 0 && selectedTaskIdx >= tasks.length) setSelectedTaskIdx(tasks.length - 1);
   }, [tasks.length, selectedTaskIdx]);
 
   // Active runs counter

@@ -28,13 +28,19 @@ export function formatTokens(tokens: number): string {
 }
 
 export type ContextMeterMode =
-  | { kind: 'auto-compact'; backgroundReady: boolean; backgroundRunning: boolean }
+  | {
+      kind: 'auto-compact';
+      backgroundReady: boolean;
+      backgroundRunning: boolean;
+      triggerPercent: number;
+      triggered: boolean;
+    }
   | { kind: 'reactive-only' }
   | { kind: 'manual' };
 
 export type ContextMeterInput = {
-  /** Percent of the budget still available (0..100). */
-  percentLeft: number;
+  /** Percent of the model's raw context window currently used (0..100). */
+  percentUsed: number;
   /** Tokens still available before the trigger fires. */
   tokensLeft: number;
   mode: ContextMeterMode;
@@ -44,7 +50,7 @@ export type ContextMeterInput = {
  * Trailing clause explaining what happens at 100%, so the number is actionable
  * rather than merely alarming.
  */
-export function describeContextOutcome(mode: ContextMeterMode, percentLeft: number): string {
+export function describeContextOutcome(mode: ContextMeterMode): string {
   switch (mode.kind) {
     case 'reactive-only':
       return 'compacts when full';
@@ -53,17 +59,17 @@ export function describeContextOutcome(mode: ContextMeterMode, percentLeft: numb
     case 'auto-compact': {
       if (mode.backgroundReady) return 'summary ready';
       if (mode.backgroundRunning) return 'preparing summary…';
-      return percentLeft <= 2 ? 'auto-compacting now' : 'auto-compacts at 80%';
+      return mode.triggered ? 'auto-compact pending' : `auto-compacts at ${mode.triggerPercent}%`;
     }
   }
 }
 
 /** Full single-line label, e.g. "Context █████████░ 91% · 9.2k left · summary ready". */
-export function formatContextMeter({ percentLeft, tokensLeft, mode }: ContextMeterInput): string {
-  const percentUsed = Math.max(0, Math.min(100, 100 - percentLeft));
+export function formatContextMeter({ percentUsed, tokensLeft, mode }: ContextMeterInput): string {
+  const clampedPercentUsed = Math.max(0, Math.min(100, percentUsed));
   return [
-    `Context ${renderMeter(percentUsed)} ${percentUsed}%`,
+    `Context ${renderMeter(clampedPercentUsed)} ${clampedPercentUsed}%`,
     `${formatTokens(tokensLeft)} left`,
-    describeContextOutcome(mode, percentLeft),
+    describeContextOutcome(mode),
   ].join(' · ');
 }

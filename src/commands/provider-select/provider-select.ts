@@ -459,6 +459,12 @@ async function runProviderCommand(args: string): Promise<ProviderCommandRunResul
   };
 }
 
+function formatContext(ctx: number): string {
+  if (ctx >= 1_000_000) return `${(ctx / 1_000_000).toFixed(0)}M`;
+  if (ctx >= 1_000) return `${(ctx / 1_000).toFixed(0)}K`;
+  return String(ctx);
+}
+
 function ProviderPicker({
   onDone,
   setMessages,
@@ -470,6 +476,7 @@ function ProviderPicker({
   const [selectionScope, setSelectionScope] = React.useState<'session' | 'global' | null>(null);
   const [selectedModel, setSelectedModel] = React.useState<string | null>(null);
   const [modelOptions, setModelOptions] = React.useState<ProviderModelInfo[] | null>(null);
+  const [keyConfirmed, setKeyConfirmed] = React.useState(false);
   const [apiKeyInput, setApiKeyInput] = React.useState('');
   const [apiKeyCursorOffset, setApiKeyCursorOffset] = React.useState(0);
   const [apiKeyError, setApiKeyError] = React.useState<string | null>(null);
@@ -482,6 +489,8 @@ function ProviderPicker({
   const [openaiType, setOpenaiType] = React.useState<'direct' | 'azure' | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchCursorOffset, setSearchCursorOffset] = React.useState(0);
+  const [modelSearchQuery, setModelSearchQuery] = React.useState('');
+  const [modelSearchCursorOffset, setModelSearchCursorOffset] = React.useState(0);
   const [customName, setCustomName] = React.useState('');
   const [customBaseUrl, setCustomBaseUrl] = React.useState('');
   const [customModel, setCustomModel] = React.useState('');
@@ -510,15 +519,29 @@ function ProviderPicker({
 
   React.useEffect(() => {
     if (!provider || provider === 'custom') return;
+    const isLocalNoKey = Boolean(info?.isLocal && !info?.envKey);
+    if (!keyConfirmed && !isLocalNoKey) return;
+
     setModelOptions(null);
     setSelectedModel(null);
-    void fetchProviderModels(provider).then(setModelOptions);
-  }, [provider]);
 
-  async function saveProviderSelection(apiKey?: string) {
+    const effectiveApiKey =
+      apiKeyInput.trim() || config?.apiKeys?.[provider] || (info?.envKey ? process.env[info.envKey] : undefined);
+    const baseUrl =
+      provider === 'openai' && openaiType === 'azure' && apiKeyInput.trim() ? apiKeyInput.trim() : undefined;
+
+    void fetchProviderModels(provider, {
+      apiKey: effectiveApiKey,
+      baseUrl,
+      forceRefresh: true,
+    }).then(setModelOptions);
+  }, [provider, keyConfirmed, info?.isLocal, info?.envKey, openaiType]);
+
+  async function saveProviderSelection(apiKey?: string, scope?: 'session' | 'global') {
     if (!provider || !selectedModel) return;
 
-    const trimmedApiKey = apiKey?.trim();
+    const effectiveScope = scope ?? selectionScope ?? 'session';
+    const trimmedApiKey = apiKey?.trim() || apiKeyInput.trim();
     const nextApiKeys: ProviderConfig['apiKeys'] = {
       ...(config?.apiKeys ?? {}),
       ...(trimmedApiKey ? { [provider]: trimmedApiKey } : {}),
@@ -529,7 +552,7 @@ function ProviderPicker({
 
     const info = getProviderInfo(provider);
     const existingConfig = await loadConfig();
-    const isGlobal = selectionScope === 'global';
+    const isGlobal = effectiveScope === 'global';
     const nextConfig: ProviderConfig = {
       provider: isGlobal ? provider : existingConfig?.provider || provider,
       model: isGlobal
@@ -540,8 +563,8 @@ function ProviderPicker({
         ...(provider === 'google' ? { googleType: googleType ?? 'direct' } : {}),
         ...(provider === 'openai' ? { openaiType: openaiType ?? 'direct' } : {}),
         // Store the value from prompt if needed
-        ...(provider === 'openai' && openaiType === 'azure' && apiKey ? { baseUrl: apiKey } : {}),
-        ...(provider === 'google' && googleType === 'vertex' && apiKey ? { projectId: apiKey } : {}),
+        ...(provider === 'openai' && openaiType === 'azure' && trimmedApiKey ? { baseUrl: trimmedApiKey } : {}),
+        ...(provider === 'google' && googleType === 'vertex' && trimmedApiKey ? { projectId: trimmedApiKey } : {}),
       } as any,
       apiKeys: nextApiKeys,
     };
@@ -779,6 +802,11 @@ function ProviderPicker({
             setApiKeyError(null);
             setSearchQuery('');
             setSearchCursorOffset(0);
+            setShowChangeKey(false);
+            setKeyConfirmed(false);
+            setSelectedModel(null);
+            setModelOptions(null);
+            setSelectionScope(null);
           },
           onCancel: () => {
             setShowChangeKey(false);
@@ -788,72 +816,6 @@ function ProviderPicker({
           },
         }),
       ),
-    );
-  }
-
-  if (provider !== 'custom' && selectedModel === null) {
-    if (modelOptions === null) {
-      return React.createElement(Text, null, `Loading models for ${info?.label ?? provider}…`);
-    }
-    const options = modelOptions.map(model => ({
-      label: model.label || model.id,
-      value: model.id,
-      description: model.tags?.join(', ') || '',
-    }));
-    return React.createElement(
-      Dialog,
-      {
-        title: info?.label ?? provider,
-        subtitle: 'Select model',
-        onCancel: () => {
-          setProvider(null);
-          setModelOptions(null);
-        },
-      },
-      React.createElement(Select, {
-        options,
-        visibleOptionCount: Math.min(12, options.length),
-        onChange: value => setSelectedModel(value as string),
-        onCancel: () => {
-          setProvider(null);
-          setModelOptions(null);
-        },
-      }),
-    );
-  }
-
-  if (selectionScope === null) {
-    const providerLabel = info?.label ?? provider;
-    return React.createElement(
-      Dialog,
-      {
-        title: providerLabel,
-        subtitle: 'Choose where to save this provider selection',
-        onCancel: () => {
-          setProvider(null);
-          setSelectionScope(null);
-        },
-      },
-      React.createElement(Select, {
-        options: [
-          {
-            label: 'Use for this session',
-            value: 'session',
-            description: 'Switch only this terminal; new sessions keep the current default',
-          },
-          {
-            label: 'Save as global default',
-            value: 'global',
-            description: 'Use this provider and its default model for new sessions',
-          },
-        ],
-        visibleOptionCount: 2,
-        onChange: value => setSelectionScope(value as 'session' | 'global'),
-        onCancel: () => {
-          setProvider(null);
-          setSelectionScope(null);
-        },
-      }),
     );
   }
 
@@ -1063,7 +1025,7 @@ function ProviderPicker({
   // (e.g. "Google (API Key)", "Google Vertex AI", "OpenAI (API Key)", etc.)
   // No sub-menu needed here -- authType is set by the list selection handler above.
 
-  if (provider === 'anthropic' && anthropicType === 'oauth') {
+  if (provider === 'anthropic' && anthropicType === 'oauth' && !keyConfirmed) {
     const hasOAuthCredentials = Boolean(getClaudeAIOAuthTokens()?.accessToken);
     if (hasOAuthCredentials && !showAnthropicOAuthLogin) {
       return React.createElement(
@@ -1074,6 +1036,7 @@ function ProviderPicker({
           onCancel: () => {
             setProvider(null);
             setAnthropicType(null);
+            setKeyConfirmed(false);
           },
         },
         React.createElement(Select, {
@@ -1094,12 +1057,13 @@ function ProviderPicker({
             if (value === 'sign_in_again') {
               setShowAnthropicOAuthLogin(true);
             } else {
-              void saveProviderSelection();
+              setKeyConfirmed(true);
             }
           },
           onCancel: () => {
             setProvider(null);
             setAnthropicType(null);
+            setKeyConfirmed(false);
           },
         }),
       );
@@ -1114,13 +1078,14 @@ function ProviderPicker({
           setProvider(null);
           setAnthropicType(null);
           setShowAnthropicOAuthLogin(false);
+          setKeyConfirmed(false);
         },
       },
       React.createElement(ConsoleOAuthFlow, {
         forceLoginMethod: 'claudeai',
         onDone: () => {
           setShowAnthropicOAuthLogin(false);
-          void saveProviderSelection();
+          setKeyConfirmed(true);
         },
       }),
     );
@@ -1129,7 +1094,7 @@ function ProviderPicker({
   // Gemini Code Assist (OAuth): browser login using the Gemini CLI's public
   // client + cloud-platform scopes; tokens go to ~/.antigravity/oauth_creds.json.
   // Skip the prompt when creds already exist unless the user asks to re-login.
-  if (provider === 'google-assist') {
+  if (provider === 'google-assist' && !keyConfirmed) {
     const hasCreds = hasAntigravityOAuthCreds();
     if (hasCreds && !showCodeAssistLogin) {
       return React.createElement(
@@ -1139,6 +1104,7 @@ function ProviderPicker({
           subtitle: 'Google credentials are already configured (~/.antigravity/oauth_creds.json)',
           onCancel: () => {
             setProvider(null);
+            setKeyConfirmed(false);
           },
         },
         React.createElement(Select, {
@@ -1151,11 +1117,12 @@ function ProviderPicker({
             if (value === 'sign_in_again') {
               setShowCodeAssistLogin(true);
             } else {
-              void saveProviderSelection();
+              setKeyConfirmed(true);
             }
           },
           onCancel: () => {
             setProvider(null);
+            setKeyConfirmed(false);
           },
         }),
       );
@@ -1169,24 +1136,28 @@ function ProviderPicker({
         onCancel: () => {
           setProvider(null);
           setShowCodeAssistLogin(false);
+          setKeyConfirmed(false);
         },
       },
       React.createElement(GoogleOAuthFlow, {
         codeAssist: true,
         onDone: () => {
           setShowCodeAssistLogin(false);
-          void saveProviderSelection();
+          setKeyConfirmed(true);
         },
         onCancel: () => {
           setProvider(null);
           setShowCodeAssistLogin(false);
+          setKeyConfirmed(false);
         },
       }),
     );
   }
 
+  const isLocalNoKey = Boolean(info?.isLocal && !info?.envKey);
+
   // Show input field when: (no existing key) OR (user chose to change key)
-  if ((!hasExistingKey && !info.isLocal) || (showChangeKey && !info.isLocal)) {
+  if (!isLocalNoKey && !keyConfirmed && ((!hasExistingKey && !info?.isLocal) || (showChangeKey && !info?.isLocal))) {
     return React.createElement(
       Box,
       { flexDirection: 'column' },
@@ -1194,12 +1165,12 @@ function ProviderPicker({
         Text,
         { marginBottom: 1 },
         showChangeKey
-          ? `Enter new ${info.envKey} for ${info.label}`
+          ? `Enter new ${info?.envKey} for ${info?.label}`
           : googleType === 'vertex'
             ? `Enter Google Cloud Project ID for Vertex AI (or press Enter to use GCLOUD_PROJECT env)`
             : openaiType === 'azure'
               ? `Enter Azure OpenAI Endpoint URL (e.g. https://res-name.openai.azure.com/)`
-              : `API key required for ${info.label} (${info.envKey})`,
+              : `API key required for ${info?.label} (${info?.envKey})`,
       ),
       apiKeyError ? React.createElement(Text, { color: 'error', marginBottom: 1 }, apiKeyError) : null,
       React.createElement(TextInput, {
@@ -1212,11 +1183,14 @@ function ProviderPicker({
           const trimmed = value.trim();
           const needsKey = provider !== 'google' || googleType !== 'vertex';
 
-          if (!trimmed && needsKey) {
-            setApiKeyError(`Enter ${info.envKey} or cancel to go back.`);
+          if (!trimmed && needsKey && !process.env[info?.envKey ?? '']) {
+            setApiKeyError(`Enter ${info?.envKey} or cancel to go back.`);
             return;
           }
-          await saveProviderSelection(trimmed);
+          setApiKeyInput(trimmed);
+          setApiKeyError(null);
+          setShowChangeKey(false);
+          setKeyConfirmed(true);
         },
         onExit: () => {
           setProvider(null);
@@ -1229,8 +1203,9 @@ function ProviderPicker({
           setOpenaiType(null);
           setSearchQuery('');
           setSearchCursorOffset(0);
+          setKeyConfirmed(false);
         },
-        placeholder: `Paste ${info.envKey}`,
+        placeholder: `Paste ${info?.envKey}`,
         mask: '*',
         focus: true,
         showCursor: true,
@@ -1242,22 +1217,22 @@ function ProviderPicker({
   }
 
   // Provider has existing key - show options to use existing or change
-  if (hasExistingKey && !info.isLocal && !showChangeKey) {
+  if (!isLocalNoKey && !keyConfirmed && hasExistingKey && !info?.isLocal && !showChangeKey) {
     return React.createElement(
       Box,
       { flexDirection: 'column' },
-      React.createElement(Text, { marginBottom: 1 }, `${info.label} has an API key configured (${info.envKey})`),
+      React.createElement(Text, { marginBottom: 1 }, `${info?.label} has an API key configured (${info?.envKey})`),
       React.createElement(Select, {
         options: [
           {
             label: 'Use existing key',
             value: 'use_existing',
-            description: `Keep current ${info.envKey}`,
+            description: `Keep current ${info?.envKey}`,
           },
           {
             label: 'Change key',
             value: 'change_key',
-            description: `Enter new ${info.envKey}`,
+            description: `Enter new ${info?.envKey}`,
           },
         ],
         visibleOptionCount: 2,
@@ -1265,7 +1240,7 @@ function ProviderPicker({
           if (value === 'change_key') {
             setShowChangeKey(true);
           } else {
-            void saveProviderSelection();
+            setKeyConfirmed(true);
           }
         },
         onCancel: () => {
@@ -1274,12 +1249,173 @@ function ProviderPicker({
           setAnthropicType(null);
           setSearchQuery('');
           setSearchCursorOffset(0);
+          setKeyConfirmed(false);
         },
       }),
     );
   }
 
-  void saveProviderSelection();
+  // Model selection step (when credentials confirmed and model not chosen yet)
+  if (provider !== 'custom' && selectedModel === null) {
+    if (modelOptions === null) {
+      return React.createElement(Text, null, `Loading models for ${info?.label ?? provider}…`);
+    }
+    const query = modelSearchQuery.trim().toLowerCase();
+    const allModelOptions = modelOptions.map(model => {
+      const parts: string[] = [];
+      const cap = model.capabilities;
+      if (cap?.maxContext) {
+        const ctx = typeof cap.maxContext === 'number' ? formatContext(cap.maxContext) : 'varies';
+        parts.push(`${ctx} ctx`);
+      }
+      if (cap?.vision) parts.push('vision');
+      if (cap?.toolCalling && cap.toolCalling !== 'none') parts.push('tools');
+      if (cap?.reasoning) parts.push('reasoning');
+      if (cap?.free || /:free(?:$|[?#])/i.test(model.id) || /\bfree\b/i.test(model.label ?? '')) parts.push('free');
+      const desc = parts.length > 0 ? parts.join(' · ') : model.tags?.join(', ') || '';
+      return {
+        label: model.label || model.id,
+        value: model.id,
+        description: desc,
+      };
+    });
+
+    const filteredOptions = query
+      ? allModelOptions.filter(
+          opt =>
+            opt.label.toLowerCase().includes(query) ||
+            opt.value.toLowerCase().includes(query) ||
+            opt.description.toLowerCase().includes(query),
+        )
+      : allModelOptions;
+
+    const exactMatch = allModelOptions.some(opt => opt.value.toLowerCase() === query);
+    const options = [
+      ...filteredOptions,
+      ...(query && !exactMatch
+        ? [
+            {
+              label: `✏️  Use "${modelSearchQuery.trim()}"`,
+              value: modelSearchQuery.trim(),
+              description: 'Use custom model ID',
+            },
+          ]
+        : []),
+    ];
+
+    return React.createElement(
+      Dialog,
+      {
+        title: info?.label ?? provider,
+        subtitle: 'Select model',
+        onCancel: () => {
+          setModelSearchQuery('');
+          setModelSearchCursorOffset(0);
+          setProvider(null);
+          setModelOptions(null);
+          setKeyConfirmed(false);
+        },
+        isCancelActive: !modelSearchQuery,
+        hideInputGuide: true,
+      },
+      React.createElement(
+        Box,
+        { flexDirection: 'column' },
+        React.createElement(TextInput, {
+          value: modelSearchQuery,
+          onChange: value => {
+            setModelSearchQuery(value);
+            setModelSearchCursorOffset(value.length);
+          },
+          onSubmit: () => {
+            if (options.length > 0) {
+              setSelectedModel(options[0].value);
+              setModelSearchQuery('');
+              setModelSearchCursorOffset(0);
+            }
+          },
+          onExit: () => {
+            setModelSearchQuery('');
+            setModelSearchCursorOffset(0);
+            setProvider(null);
+            setModelOptions(null);
+            setKeyConfirmed(false);
+          },
+          placeholder: 'Search model ID or name... (type to filter)',
+          focus: true,
+          showCursor: true,
+          columns: 50,
+          cursorOffset: modelSearchCursorOffset,
+          onChangeCursorOffset: setModelSearchCursorOffset,
+        }),
+        React.createElement(Box, { marginTop: 1 }),
+        options.length === 0
+          ? React.createElement(Text, { color: 'dim' }, 'No matching models found')
+          : React.createElement(Select, {
+              options,
+              visibleOptionCount: Math.min(10, Math.max(options.length, 1)),
+              highlightText: modelSearchQuery,
+              onChange: value => {
+                setSelectedModel(value as string);
+                setModelSearchQuery('');
+                setModelSearchCursorOffset(0);
+              },
+              onCancel: () => {
+                setModelSearchQuery('');
+                setModelSearchCursorOffset(0);
+                setProvider(null);
+                setModelOptions(null);
+                setKeyConfirmed(false);
+              },
+            }),
+      ),
+    );
+  }
+
+  // Scope selection step (when model chosen and scope not chosen yet)
+  if (selectionScope === null) {
+    const providerLabel = info?.label ?? provider;
+    return React.createElement(
+      Dialog,
+      {
+        title: providerLabel,
+        subtitle: 'Choose where to save this provider selection',
+        onCancel: () => {
+          setProvider(null);
+          setSelectionScope(null);
+          setSelectedModel(null);
+          setKeyConfirmed(false);
+        },
+      },
+      React.createElement(Select, {
+        options: [
+          {
+            label: 'Use for this session',
+            value: 'session',
+            description: 'Switch only this terminal; new sessions keep the current default',
+          },
+          {
+            label: 'Save as global default',
+            value: 'global',
+            description: 'Use this provider and its default model for new sessions',
+          },
+        ],
+        visibleOptionCount: 2,
+        onChange: value => {
+          const s = value as 'session' | 'global';
+          setSelectionScope(s);
+          void saveProviderSelection(apiKeyInput.trim() || undefined, s);
+        },
+        onCancel: () => {
+          setProvider(null);
+          setSelectionScope(null);
+          setSelectedModel(null);
+          setKeyConfirmed(false);
+        },
+      }),
+    );
+  }
+
   return null;
 }
 
