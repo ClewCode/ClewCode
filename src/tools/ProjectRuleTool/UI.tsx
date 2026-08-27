@@ -6,11 +6,7 @@ import type { ThemeName } from '../../utils/theme.js';
 import type { Output } from './ProjectRuleTool.js';
 
 export function renderToolUseMessage(): React.ReactNode {
-  return (
-    <Box flexDirection="row">
-      <Text dimColor>Managing project rules...</Text>
-    </Box>
-  );
+  return <Text dimColor>Managing project rules...</Text>;
 }
 
 export function renderToolResultMessage(
