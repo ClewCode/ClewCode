@@ -136,4 +136,27 @@ describe('agentToolResultSchema validation', () => {
     const parsed = agentToolResultSchema().safeParse(sample);
     expect(parsed.success).toBe(true);
   });
+
+  it('validates AgentToolResult with failed status', () => {
+    const failedSample = {
+      agentId: 'subagent-456',
+      content: [{ type: 'text' as const, text: 'API error occurred' }],
+      totalToolUseCount: 0,
+      totalDurationMs: 500,
+      totalTokens: 100,
+      status: 'failed',
+      usage: {
+        input_tokens: 100,
+        output_tokens: 0,
+        cache_creation_input_tokens: null,
+        cache_read_input_tokens: null,
+        server_tool_use: null,
+        service_tier: null,
+        cache_creation: null,
+      },
+    };
+
+    const parsed = agentToolResultSchema().safeParse(failedSample);
+    expect(parsed.success).toBe(true);
+  });
 });

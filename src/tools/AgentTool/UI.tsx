@@ -715,7 +715,13 @@ export function renderToolUseErrorMessage(
   );
 }
 
-function calculateAgentStats(progressMessages: ProgressMessage<Progress>[]): {
+function calculateAgentStats(
+  progressMessages: ProgressMessage<Progress>[],
+  result?: {
+    param: ToolResultBlockParam;
+    output: Output;
+  },
+): {
   toolUseCount: number;
   tokens: number | null;
 } {
@@ -727,19 +733,34 @@ function calculateAgentStats(progressMessages: ProgressMessage<Progress>[]): {
     return message.type === 'user' && message.message.content.some(content => content.type === 'tool_result');
   });
 
-  const latestAssistant = progressMessages.findLast(
-    (msg): msg is ProgressMessage<AgentToolProgress> =>
-      hasProgressMessage(msg.data) && msg.data.message.type === 'assistant',
-  );
+  // If authoritative result exists, use its totalTokens
+  if (
+    result?.output &&
+    'totalTokens' in result.output &&
+    typeof result.output.totalTokens === 'number' &&
+    result.output.totalTokens > 0
+  ) {
+    return { toolUseCount, tokens: result.output.totalTokens };
+  }
 
-  let tokens = null;
-  if (latestAssistant?.data.message.type === 'assistant') {
-    const usage = latestAssistant.data.message.message.usage;
-    tokens =
-      (usage.cache_creation_input_tokens ?? 0) +
-      (usage.cache_read_input_tokens ?? 0) +
-      usage.input_tokens +
-      usage.output_tokens;
+  // Otherwise, find the latest non-zero usage across progress messages
+  let tokens: number | null = null;
+  for (let i = progressMessages.length - 1; i >= 0; i--) {
+    const msg = progressMessages[i]!;
+    if (hasProgressMessage(msg.data) && msg.data.message.type === 'assistant') {
+      const usage = msg.data.message.message.usage;
+      if (usage) {
+        const count =
+          (usage.cache_creation_input_tokens ?? 0) +
+          (usage.cache_read_input_tokens ?? 0) +
+          (usage.input_tokens ?? 0) +
+          (usage.output_tokens ?? 0);
+        if (count > 0) {
+          tokens = count;
+          break;
+        }
+      }
+    }
   }
 
   return { toolUseCount, tokens };
@@ -766,7 +787,7 @@ export function renderGroupedAgentToolUse(
 
   // Calculate stats for each agent
   const agentStats = toolUses.map(({ param, isResolved, isError, progressMessages, result }) => {
-    const stats = calculateAgentStats(progressMessages);
+    const stats = calculateAgentStats(progressMessages, result);
     const lastToolInfo = extractLastToolInfo(progressMessages, tools);
     const parsedInput = inputSchema().safeParse(param.input);
 

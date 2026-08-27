@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **AgentTool Robustness, Model Routing & Multi-Turn Accounting Fixes**:
+  - **Accurate Failure Classification**: `finalizeAgentTool` now detects `isApiErrorMessage: true` and API errors in transcript messages, properly setting status to `failed` rather than masking failed tasks as `completed`. Widened `outputSchema` to support `failed`, `blocked`, `canceled`, and `error` statuses.
+  - **Multi-Turn Token Accounting**: Fixed token count calculation to accumulate `input_tokens`, `output_tokens`, `cache_read_input_tokens`, and `cache_creation_input_tokens` across all turns in the agent's sidechain instead of only reading the final turn.
+  - **Authoritative UI Token Stats**: Upgraded `UI.tsx` to read authoritative result `totalTokens` and fall back to non-zero streaming progress usage, eliminating `0 tokens` display bug.
+  - **Provider/Model Compatibility Guard**: Added pre-flight check in `getAgentModel` to ensure `subagentModel` is compatible with the active provider or fall back to `inherit`, preventing `invalid_request` errors when a subagent model is sent to an incompatible provider.
 - **Prime-Style Layered State (L1/L2/L3) Architecture & Runtime**:
   - **Rooted Resource Accounting & Circuit Breakers (`src/services/accounting/`)**: Hierarchical token and cost tracking across recursive subagent trees with `/cost tree` reporting. Enforces circuit breakers: `maxDepth` (3), `maxChildrenPerAgent` (5), and subtree token/cost budget caps to prevent runaway token spend.
   - **RetainedArtifactStore (`src/services/artifacts/`)**: TypeScript artifact retention engine replacing Python REPL state. Retains raw test logs, search results, and diffs in L2 storage outside L1 context using compact handles (`@artifact:test_1_x7k2`) with automatic TTL and reachability GC.

@@ -95,7 +95,14 @@ export function getAgentModel(
   if (toolSpecifiedModel === 'inherit') return parentModel;
 
   const explicitSubagentModel = getUserSpecifiedSubagentModelSetting();
+  const explicitSubagentProvider = getUserSpecifiedSubagentProvider();
+  const activeProvider = getAPIProvider();
+
   if (explicitSubagentModel) {
+    if (explicitSubagentProvider && explicitSubagentProvider !== activeProvider) {
+      // Explicit subagent provider differs from active session provider; fallback to inherit
+      return parentModel;
+    }
     return parseUserSpecifiedModel(explicitSubagentModel);
   }
 

@@ -359,7 +359,39 @@ export function finalizeAgentTool(
     }
   }
 
-  const totalTokens = getTokenCountFromUsage(lastAssistantMessage.message.usage);
+  // Check if any assistant message encountered an API error or isApiErrorMessage flag
+  const hasApiError = agentMessages.some(
+    m => m.type === 'assistant' && (Boolean((m as any).isApiErrorMessage) || (m as any).errorDetails !== undefined),
+  );
+  const effectiveStatus = hasApiError ? 'failed' : status;
+
+  // Sum cumulative usage across all assistant turns in the agent's transcript
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCacheReadTokens = 0;
+  let totalCacheCreationTokens = 0;
+
+  for (const m of agentMessages) {
+    if (m.type === 'assistant' && m.message.usage) {
+      const u = m.message.usage;
+      totalInputTokens += u.input_tokens || 0;
+      totalOutputTokens += u.output_tokens || 0;
+      totalCacheReadTokens += u.cache_read_input_tokens || 0;
+      totalCacheCreationTokens += u.cache_creation_input_tokens || 0;
+    }
+  }
+
+  const totalTokens =
+    totalInputTokens + totalOutputTokens + totalCacheReadTokens + totalCacheCreationTokens ||
+    getTokenCountFromUsage(lastAssistantMessage.message.usage);
+
+  const cumulativeUsage = {
+    input_tokens: totalInputTokens,
+    output_tokens: totalOutputTokens,
+    cache_read_input_tokens: totalCacheReadTokens,
+    cache_creation_input_tokens: totalCacheCreationTokens,
+  };
+
   const totalToolUseCount = countToolUses(agentMessages);
 
   // Build structured summary from tool usage
@@ -393,14 +425,14 @@ export function finalizeAgentTool(
   return {
     agentId,
     agentType,
-    status,
+    status: effectiveStatus,
     evidence,
     content,
     totalDurationMs: Date.now() - startTime,
     totalTokens,
     totalToolUseCount,
     summary: Object.keys(summaryRecord).length > 0 ? summaryRecord : undefined,
-    usage: lastAssistantMessage.message.usage,
+    usage: cumulativeUsage,
   };
 }
 

@@ -227,7 +227,7 @@ type AgentToolInput = z.infer<ReturnType<typeof baseInputSchema>> & {
 // Output schema - multi-agent spawned schema added dynamically at runtime when enabled
 export const outputSchema = lazySchema(() => {
   const syncOutputSchema = agentToolResultSchema().extend({
-    status: z.literal('completed'),
+    status: z.enum(['completed', 'failed', 'blocked', 'canceled', 'error']).default('completed'),
     prompt: z.string(),
   });
   const asyncOutputSchema = z.object({
