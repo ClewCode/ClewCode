@@ -4,7 +4,6 @@ import { env } from '../utils/env.js';
 import { getIsGit } from '../utils/git.js';
 import { getCwd } from '../utils/cwd.js';
 import { getIsNonInteractiveSession } from '../bootstrap/state.js';
-import { loadProjectRules, formatRulesNotification, isProjectRulesDisabled } from '../utils/projectRules.js';
 import { getCurrentWorktreeSession } from '../utils/worktree.js';
 import { getSessionStartDate } from './common.js';
 import { getInitialSettings } from '../utils/settings/settings.js';
@@ -56,6 +55,7 @@ import { budgetedInject } from '../memory/budgetInjector.js';
 import { getSessionGoalSync } from '../utils/sessionGoalState.js';
 import { isUndercover } from '../utils/undercover.js';
 import { isMcpInstructionsDeltaEnabled } from '../utils/mcpInstructionsDelta.js';
+import { loadTastePrompt } from '../taste/index.js';
 
 // Dead code elimination: conditional imports for feature-gated modules
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -422,13 +422,9 @@ export async function getSystemPrompt(
 
   const dynamicSections = [
     systemPromptSection('session_guidance', () => getSessionSpecificGuidanceSection(enabledTools, skillToolCommands)),
-    systemPromptSection('project_rules', async () => {
-      const [rules, disabled] = await Promise.all([loadProjectRules(), isProjectRulesDisabled()]);
-      if (disabled || rules.length === 0) return null;
-      return `# Project Rules\n\nThe following project-specific behavioral rules have been observed and saved:\n\n${formatRulesNotification(rules)}\n\nApply these rules when working in this project. Use the ProjectRule tool to manage rules (save new observations, list all rules, or remove outdated ones).`;
-    }),
     systemPromptSection('memory', () => loadMemoryPrompt()),
     systemPromptSection('proactive_memory', () => getProactiveMemoryContext()),
+    systemPromptSection('taste', () => loadTastePrompt()),
     systemPromptSection('budgeted_memory', () => loadBudgetedMemory()),
     systemPromptSection('session_goal', () => loadGoalPrompt()),
     systemPromptSection('ant_model_override', () => getAntModelOverrideSection()),

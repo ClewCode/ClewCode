@@ -58,6 +58,7 @@ export const SETTINGS_LOCAL_JSON = 'settings.local.json';
 export const LAUNCH_JSON = 'launch.json';
 export const PROVIDER_JSON = 'provider.json';
 export const KEYBINDINGS_JSON = 'keybindings.json';
+export const TASTE_DIR = 'taste';
 
 // ── Permission patterns ────────────────────────────────────
 

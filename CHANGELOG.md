@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Taste Learning Foundation (Phase 1)**: Implemented the Taste Learning subsystem (`src/taste/`) to capture and retrieve user/project conventions and preferences:
+  - SQLite backend (`SqliteTasteStore`) for `.clew/taste/taste.db` (project scope) and `~/.clew/taste/taste.db` (global scope).
+  - Multi-dimensional ranking engine (`scorer.ts`) calculating relevance, confidence, scope weight (project > global), and recency.
+  - Compact `<clew_taste>` context compiler injection via dynamic `systemPromptSection('taste', ...)`.
+  - Added interactive `/taste` slash command (`list`, `add`, `inspect`, `disable`, `enable`, `remove`, `clear`).
+  - Added unit test suite covering store CRUD, scope overrides, rule ranking, and XML context generation.
+- **Removed the project rules system**: Deleted the `ProjectRule` tool (`src/tools/ProjectRuleTool/`), `/rule` slash command (`src/commands/rule/`), `.clew/rules.json` loading util (`src/utils/projectRules.ts`), its system-prompt section, startup chat notification, and footer rule-count indicator. Clew Code no longer reads or writes `.clew/rules.json`.
+- **Unified provider model discovery**: The provider setup wizard now uses the same registry-aware live model fetcher and response parser as `/model`, so providers with nonstandard catalog URLs (including Cline) show the same current model list instead of stale static entries.
+
 ## [0.8.7] - 2026-08-27
 
 - **Clean-install memory compaction**: `compactContext()` now creates `.clew/memory/` before writing durable Markdown files, preventing `ENOENT` failures on fresh installations and clean CI runners.

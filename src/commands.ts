@@ -41,7 +41,6 @@ import tasks from './commands/tasks/index.js';
 import teamOnboarding from './commands/team-onboarding/index.js';
 import teamDashboard from './commands/team/index.js';
 import providerSelect from './commands/provider-select/index.js';
-import ruleCmd from './commands/rule/index.js';
 import securityReview from './commands/security-review.js';
 import terminalSetup from './commands/terminalSetup/index.js';
 import usage from './commands/usage/index.js';
@@ -84,6 +83,7 @@ import sandboxToggle from './commands/sandbox-toggle/index.js';
 import chrome from './commands/chrome/index.js';
 import stickers from './commands/stickers/index.js';
 import goal from './commands/goal/index.js';
+import taste from './commands/taste/index.js';
 import bg from './commands/bg/index.js';
 import daemonCmd from './commands/daemon/index.js';
 import dashboard from './commands/dashboard/index.js';
@@ -189,6 +189,7 @@ const COMMANDS = memoize((): Command[] => [
   explorer,
   files,
   goal,
+  taste,
   heapDump,
   help,
   ide,
@@ -231,7 +232,6 @@ const COMMANDS = memoize((): Command[] => [
   ultrareview,
   ultracode,
   rewind,
-  ruleCmd,
   securityReview,
   terminalSetup,
   upgrade,
