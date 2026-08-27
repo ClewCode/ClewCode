@@ -14,6 +14,22 @@ export function renderToolResultMessage(
   _progressMessagesForMessage: ProgressMessage<ToolProgressData>[],
   _options: { theme: ThemeName },
 ): React.ReactNode {
+  if (output.rules && output.rules.length > 0 && output.message.includes('rule: 1)')) {
+    return (
+      <Box flexDirection="column">
+        {output.rules.map((rule, idx) => (
+          <Box key={idx} paddingLeft={1}>
+            <Text color="cyan">{idx + 1}. </Text>
+            <Text>{rule}</Text>
+          </Box>
+        ))}
+        <Box paddingLeft={1} marginTop={1}>
+          <Text dimColor>{output.rules.length} rule(s) active</Text>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box flexDirection="column">
       <Box flexDirection="row">
