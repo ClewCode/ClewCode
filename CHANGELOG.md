@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Aider-Style Repo Map System (`src/repomap/`)**: Extracted high-level AST structural signatures, interfaces, and exported types into a compact, token-budgeted snapshot (~1,000–1,500 tokens) with incremental `mtime` cache (`.clew/cache/repomap.json`), reducing repetitive file searches and token-heavy reads. Integrated dynamic `<repo_map>` system prompt section and added interactive `/repomap` command (`view`, `refresh`, `status`).
+- **Dynamic Tool Masking (`src/utils/toolMasking.ts`)**: Implemented mode-aware tool filtering in API request payloads (`default`, `plan`, `read-only`, `minimal`). In plan and read-only modes, destructive write and execution tools (`FileEdit`, `FileWrite`, `Bash`, etc.) are masked, saving ~3,000–5,000 tokens on every prompt payload.
+- Fixed OpenAI-compatible cached prompt tokens being counted twice in context usage, cost analytics, and auto-compact thresholds.
+
 - **Complete Taste Learning System (Phases 1 – 6)**: Implemented full Taste Learning engine (`src/taste/`) to learn and adapt to user conventions, coding styles, and workflow habits:
   - **Storage & Evidence**: Dual-scoped SQLite backend (`.clew/taste/taste.db` & `~/.clew/taste/taste.db`) with `taste_rules`, `taste_evidence`, and `taste_conflicts` tables.
   - **Evidence Collector & Sanitizer**: Automatic secret scanner/redaction and signal weight heuristic matrix (`accept`, `reject`, `revert`, `test_pass`, `build_pass`, `lint_pass`, `review_accept`).

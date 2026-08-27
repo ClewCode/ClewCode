@@ -28,6 +28,38 @@ import { getProviderCapabilityEntry, getProviderModelInfo } from '../providerCap
 /** Per-provider stream watchdog defaults (seconds). Override per adapter. */
 const DEFAULT_STREAM_TIMEOUT_MS = 30_000;
 
+type OpenAIUsage = {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  prompt_tokens_details?: { cached_tokens?: number };
+};
+
+/**
+ * Convert OpenAI usage into Clew's Anthropic-compatible, mutually exclusive
+ * token buckets. OpenAI's prompt_tokens already includes cached_tokens, while
+ * Anthropic reports uncached input and cache reads separately. Keeping the
+ * OpenAI total in input_tokens would double-count cache reads in context,
+ * cost, analytics, and auto-compact calculations.
+ */
+export function normalizeOpenAIUsageForAnthropic(usage?: OpenAIUsage | null): {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_input_tokens?: number;
+} {
+  const promptTokens = Number.isFinite(usage?.prompt_tokens) ? Math.max(0, usage?.prompt_tokens ?? 0) : 0;
+  const outputTokens = Number.isFinite(usage?.completion_tokens) ? Math.max(0, usage?.completion_tokens ?? 0) : 0;
+  const reportedCachedTokens = usage?.prompt_tokens_details?.cached_tokens;
+  const cacheReadTokens = Number.isFinite(reportedCachedTokens)
+    ? Math.min(promptTokens, Math.max(0, reportedCachedTokens ?? 0))
+    : 0;
+
+  return {
+    input_tokens: promptTokens - cacheReadTokens,
+    output_tokens: outputTokens,
+    ...(cacheReadTokens > 0 ? { cache_read_input_tokens: cacheReadTokens } : {}),
+  };
+}
+
 /**
  * Detect provider 400 errors that mean "this model can't accept image input".
  * Covers OpenRouter/OpenAI-style wording plus gateways (opengateway, opencode)
@@ -784,14 +816,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
       content,
       stop_reason: this.mapFinishReason(choice?.finish_reason),
       stop_sequence: null,
-      usage: {
-        input_tokens: openAIResponse.usage?.prompt_tokens ?? 0,
-        output_tokens: openAIResponse.usage?.completion_tokens ?? 0,
-        ...(() => {
-          const cached = openAIResponse.usage?.prompt_tokens_details?.cached_tokens;
-          return typeof cached === 'number' && cached > 0 ? { cache_read_input_tokens: cached } : {};
-        })(),
-      },
+      usage: normalizeOpenAIUsageForAnthropic(openAIResponse.usage),
     } as any;
   }
 
@@ -954,16 +979,10 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     }
 
     if (!sentMessageDelta) {
-      // Map OpenAI cached_tokens to Anthropic cache format
-      const cachedTokens = (streamUsage as any)?.prompt_tokens_details?.cached_tokens;
       yield {
         type: 'message_delta',
         delta: { stop_reason: 'end_turn' },
-        usage: {
-          input_tokens: streamUsage?.prompt_tokens ?? 0,
-          output_tokens: streamUsage?.completion_tokens ?? 0,
-          ...(typeof cachedTokens === 'number' && cachedTokens > 0 ? { cache_read_input_tokens: cachedTokens } : {}),
-        },
+        usage: normalizeOpenAIUsageForAnthropic(streamUsage),
       };
     }
     yield { type: 'message_stop' };

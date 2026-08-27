@@ -1,5 +1,47 @@
 import { describe, expect, test } from 'bun:test';
-import { AnthropicAdapter, getOpenAIReasoningEffort, normalizeOpenAIToolInputSchema } from './AnthropicAdapter.js';
+import {
+  AnthropicAdapter,
+  getOpenAIReasoningEffort,
+  normalizeOpenAIToolInputSchema,
+  normalizeOpenAIUsageForAnthropic,
+} from './AnthropicAdapter.js';
+
+describe('normalizeOpenAIUsageForAnthropic', () => {
+  test('splits cached tokens out of the OpenAI prompt total', () => {
+    expect(
+      normalizeOpenAIUsageForAnthropic({
+        prompt_tokens: 53_378,
+        completion_tokens: 704,
+        prompt_tokens_details: { cached_tokens: 52_736 },
+      }),
+    ).toEqual({
+      input_tokens: 642,
+      output_tokens: 704,
+      cache_read_input_tokens: 52_736,
+    });
+  });
+
+  test('keeps the full prompt as uncached input when no cache detail exists', () => {
+    expect(normalizeOpenAIUsageForAnthropic({ prompt_tokens: 1_200, completion_tokens: 80 })).toEqual({
+      input_tokens: 1_200,
+      output_tokens: 80,
+    });
+  });
+
+  test('clamps malformed cache counts so token buckets cannot become negative', () => {
+    expect(
+      normalizeOpenAIUsageForAnthropic({
+        prompt_tokens: 500,
+        completion_tokens: -1,
+        prompt_tokens_details: { cached_tokens: 800 },
+      }),
+    ).toEqual({
+      input_tokens: 0,
+      output_tokens: 0,
+      cache_read_input_tokens: 500,
+    });
+  });
+});
 
 describe('getOpenAIReasoningEffort', () => {
   const params = (effort: string) => ({ model: 'claude-opus-4-7', output_config: { effort } }) as never;

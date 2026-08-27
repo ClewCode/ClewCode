@@ -72,6 +72,7 @@ import { stringifyWithRedactedSecrets } from '../../utils/redactSecrets.js';
 import { sleep } from '../../utils/sleep.js';
 import { asSystemPrompt, type SystemPrompt } from '../../utils/systemPromptType.js';
 import { tokenCountFromLastAPIResponse } from '../../utils/tokens.js';
+import { filterToolsByMask, type ToolMaskingMode } from '../../utils/toolMasking.js';
 import { getDynamicConfig_BLOCKS_ON_INIT } from '../analytics/growthbook.js';
 import { currentLimits, extractQuotaStatusFromError, extractQuotaStatusFromHeaders } from '../claudeAiLimits.js';
 import { getAPIContextManagement } from '../compact/apiMicrocompact.js';
@@ -639,6 +640,7 @@ export type Options = {
   skipCacheWrite?: boolean;
   temperatureOverride?: number;
   effortValue?: EffortValue;
+  toolMaskMode?: ToolMaskingMode;
   mcpTools: Tools;
   hasPendingMcpServers?: boolean;
   queryTracking?: QueryChainTracking;
@@ -1375,6 +1377,11 @@ async function* queryModel(
     });
   } else {
     filteredTools = tools.filter(t => !toolMatchesName(t, TOOL_SEARCH_TOOL_NAME));
+  }
+
+  // Dynamic Tool Masking: filter write/exec tools in plan, read-only, or minimal modes
+  if (options.toolMaskMode && options.toolMaskMode !== 'default') {
+    filteredTools = filterToolsByMask(filteredTools, options.toolMaskMode);
   }
 
   // Add tool search beta header if enabled - required for defer_loading to be accepted
