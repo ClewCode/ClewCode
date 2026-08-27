@@ -1636,6 +1636,8 @@ export function getRateLimitTier(): string | null {
 /** Providers whose ID does not capitalize cleanly (openai -> Openai). */
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   openai: 'OpenAI',
+  chatgpt: 'ChatGPT',
+  'chatgpt-api': 'ChatGPT',
   deepseek: 'DeepSeek',
   xai: 'xAI',
   openrouter: 'OpenRouter',
@@ -1654,6 +1656,9 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
  */
 export function getSubscriptionName(): string {
   const provider = getActiveProviderId();
+  // `chatgpt` authenticates through the user's Codex/ChatGPT subscription.
+  // Keep it distinct from `chatgpt-api`, which uses an OpenAI API key.
+  if (provider === 'chatgpt') return 'ChatGPT Subscription';
   if (provider !== 'anthropic') {
     return `${PROVIDER_DISPLAY_NAMES[provider] ?? provider.charAt(0).toUpperCase() + provider.slice(1)} API`;
   }

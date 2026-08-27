@@ -25,10 +25,13 @@ import {
   queuePendingMessage,
 } from '../../tasks/LocalAgentTask/LocalAgentTask.js';
 import type { TaskState } from '../../tasks/types.js';
+import { getSubscriptionName } from '../../utils/auth.js';
 import { getCwd } from '../../utils/cwd.js';
 import { createUserMessage } from '../../utils/messages.js';
 import { renderModelSetting } from '../../utils/model/model.js';
+import { getModeColor, permissionModeSymbol, permissionModeTitle } from '../../utils/permissions/PermissionMode.js';
 import { saveCustomTitle } from '../../utils/sessionStorage.js';
+import { Clawd } from '../LogoV2/Clawd.js';
 import TextInput from '../TextInput.js';
 import { matchSearchText, parseSearchQuery } from './sessionCatalogSearch.js';
 import {
@@ -88,6 +91,10 @@ type Props = {
   onResume?: (sessionId: string) => void;
   /** Include sessions from every project directory, not just this one. */
   allProjects?: boolean;
+  /** Show only the current conversation and subagents it dispatched. */
+  currentSessionOnly?: boolean;
+  /** Whether the main conversation is currently processing a turn. */
+  mainIsWorking?: boolean;
 };
 
 function sectionColor(section: SessionCatalogSection): string | undefined {
@@ -116,11 +123,19 @@ function truncate(text: string, width: number): string {
   return text.length <= width ? text : `${text.slice(0, Math.max(0, width - 1))}…`;
 }
 
-export function SessionCatalogView({ onDone, onResume, allProjects = false }: Props): React.ReactNode {
+export function SessionCatalogView({
+  onDone,
+  onResume,
+  allProjects = false,
+  currentSessionOnly = false,
+  mainIsWorking = false,
+}: Props): React.ReactNode {
   const { columns, rows: terminalRows } = useTerminalSize();
   const setAppState = useSetAppState();
   const tasks = useAppState(state => state.tasks) as Record<string, TaskState>;
+  const permissionMode = useAppState(state => state.toolPermissionContext.mode);
   const model = useMainLoopModel();
+  const mountedAt = React.useRef(new Date().toISOString());
 
   const [live, setLive] = React.useState<CatalogSessionSummary[]>([]);
   const [saved, setSaved] = React.useState<SavedCatalogSession[]>([]);
@@ -151,18 +166,28 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
   // Transcripts are the slow half of a refresh, so they load once (and on `r`)
   // while the supervisor roster polls.
   const refreshSaved = React.useCallback(async () => {
+    if (currentSessionOnly) {
+      setSaved([]);
+      setSavedReady(true);
+      return;
+    }
     try {
       setSaved(await loadSavedCatalogSessions({ allProjects }));
     } finally {
       setSavedReady(true);
     }
-  }, [allProjects]);
+  }, [allProjects, currentSessionOnly]);
 
   React.useEffect(() => {
     void refreshSaved();
   }, [refreshSaved]);
 
   React.useEffect(() => {
+    if (currentSessionOnly) {
+      setLive([]);
+      setLiveReady(true);
+      return;
+    }
     let cancelled = false;
     const poll = async () => {
       const sessions = await loadSupervisorSessions().catch(() => [] as CatalogSessionSummary[]);
@@ -177,7 +202,7 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [currentSessionOnly]);
 
   React.useEffect(() => {
     const timer = setInterval(
@@ -199,10 +224,35 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
     return () => clearTimeout(timer);
   }, [pendingDeleteIdentity]);
 
-  const records = React.useMemo(
-    () => reconcileCatalogSessions([...live, ...localAgentTasksToSummaries(tasks, getSessionId(), getCwd())], saved),
-    [live, tasks, saved],
-  );
+  const currentSession = React.useMemo<CatalogSessionSummary | undefined>(() => {
+    if (!currentSessionOnly) return undefined;
+    const sessionId = getSessionId();
+    return {
+      id: sessionId,
+      sessionId,
+      activeSessionId: sessionId,
+      lifecycle: 'live',
+      activity: mainIsWorking ? 'working' : 'idle',
+      runtimeKind: 'top-level',
+      sessionName: 'current session',
+      summary: mainIsWorking ? 'working in this session' : 'ready for input',
+      cwd: getCwd(),
+      model,
+      messageCount: 0,
+      isStreaming: mainIsWorking,
+      created: mountedAt.current,
+      modified: mountedAt.current,
+      source: 'supervisor',
+    };
+  }, [currentSessionOnly, mainIsWorking, model]);
+
+  const records = React.useMemo(() => {
+    const current = currentSession ? [currentSession] : [];
+    return reconcileCatalogSessions(
+      [...current, ...live, ...localAgentTasksToSummaries(tasks, getSessionId(), getCwd())],
+      saved,
+    );
+  }, [currentSession, live, tasks, saved]);
   const index = React.useMemo(() => buildCatalogIndex(records), [records]);
 
   const scopeResolution = React.useMemo(
@@ -272,9 +322,13 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
         onDone(`Opened agent ${getCatalogSessionTitle(summary)}.`);
         return;
       }
+      if (currentSessionOnly && summary.sessionId === getSessionId()) {
+        onDone();
+        return;
+      }
       if (summary.source === 'supervisor') {
         setStatus({
-          text: 'Background sessions run detached. Use /sessions to manage (stop/rename) or start a new session with /bg or /sessions → ctrl+n.',
+          text: 'Background sessions run detached. Use /session to inspect the current session or /bg to start another.',
           tone: 'info',
         });
         return;
@@ -287,7 +341,7 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
       }
       onDone(`Resume this session with: /resume ${summary.sessionId}`);
     },
-    [onDone, onResume, setAppState],
+    [currentSessionOnly, onDone, onResume, setAppState],
   );
 
   const drillIntoRow = React.useCallback(
@@ -326,6 +380,10 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
         setStatus({ text: `Stopped ${getCatalogSessionTitle(summary)}.`, tone: 'info' });
         return;
       }
+      if (currentSessionOnly && summary.sessionId === getSessionId()) {
+        setStatus({ text: 'The current conversation cannot be stopped from its own agent view.', tone: 'error' });
+        return;
+      }
       if (summary.source === 'supervisor') {
         const response = summary.lifecycle === 'live' ? await stopSession(summary.id) : await removeSession(summary.id);
         setStatus(
@@ -342,7 +400,7 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
       // Archived transcripts are user data; deleting one is out of scope here.
       setStatus({ text: 'Archived transcripts can only be removed with /clear or on disk.', tone: 'error' });
     },
-    [setAppState, live],
+    [currentSessionOnly, setAppState, live],
   );
 
   const submitComposer = React.useCallback(
@@ -452,7 +510,7 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
         return;
       }
       if (key.leftArrow && !query) {
-        leaveScope();
+        if (!leaveScope() && currentSessionOnly) onDone();
         return;
       }
       if (key.ctrl && input === 'n') {
@@ -496,6 +554,11 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
         setComposerTargetIdentity(selectedRow?.identity);
         return;
       }
+      if (currentSessionOnly && input && !key.ctrl && !key.meta) {
+        setComposerMode('new');
+        setComposerText(input);
+        setComposerCursor(input.length);
+      }
     },
     { isActive: true },
   );
@@ -506,7 +569,7 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
   // fixed max-width made long session names wrap/truncate too aggressively
   // and left the right half of wide terminals visually empty.
   const contentWidth = Math.max(48, columns - 2);
-  const listHeight = Math.max(6, terminalRows - 18);
+  const listHeight = Math.max(6, terminalRows - (currentSessionOnly ? 14 : 18));
   const displayItems = React.useMemo(() => buildDisplayItems(rows), [rows]);
   const selectedDisplayIndex = displayItems.findIndex(
     item => item.type === 'row' && item.row.identity === selectedRow?.identity,
@@ -601,7 +664,9 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
       case 'heading':
         return (
           <Text key={`heading-${item.section}`} bold color={sectionColor(item.section)}>
-            {`${sectionTitle(item.section)} (${sectionCounts[item.section]})`}
+            {currentSessionOnly
+              ? sectionTitle(item.section)
+              : `${sectionTitle(item.section)} (${sectionCounts[item.section]})`}
           </Text>
         );
       case 'empty':
@@ -636,6 +701,86 @@ export function SessionCatalogView({ onDone, onResume, allProjects = false }: Pr
         : composerMode === 'reply'
           ? `reply to ${selectedRow ? getCatalogSessionTitle(selectedRow.summary) : 'agent'}`
           : '';
+
+  if (currentSessionOnly) {
+    const providerLabel = getSubscriptionName();
+    const permissionLabel =
+      permissionMode === 'default' ? 'default permissions' : `${permissionModeTitle(permissionMode).toLowerCase()} on`;
+
+    return (
+      <Box flexDirection="column" width={contentWidth}>
+        <Box flexDirection="row" marginBottom={1}>
+          <Box width={12} justifyContent="center">
+            <Clawd pose={mainIsWorking ? 'look-right' : 'default'} />
+          </Box>
+          <Box flexDirection="column" marginLeft={1}>
+            <Text>
+              <Text bold>Clew Code</Text> <Text dimColor>v{MACRO.VERSION}</Text>
+            </Text>
+            <Text dimColor>
+              {providerLabel} · {renderModelSetting(model)}
+            </Text>
+            <Text dimColor wrap="truncate">
+              {getCwd()}
+            </Text>
+            <Text>
+              <Text color="warning">{sectionCounts.idle} awaiting input</Text>
+              <Text dimColor> · </Text>
+              <Text color="success">{sectionCounts.running} working</Text>
+              <Text dimColor> · </Text>
+              <Text>{sectionCounts.inactive} completed</Text>
+            </Text>
+          </Box>
+        </Box>
+
+        <Box marginBottom={1}>
+          <Text dimColor wrap="truncate">
+            Your conversation moved to the background — enter opens it · esc returns to it · ctrl+c twice quits
+          </Text>
+        </Box>
+
+        <Box flexDirection="column" minHeight={listHeight}>
+          {showStickySection ? (
+            <Text dimColor>
+              {'  '}↑ more · {sectionTitle(visibleSection)} ({sectionCounts[visibleSection]})
+            </Text>
+          ) : null}
+          {renderedItems.map((item, itemIndex) => renderItem(item, start + itemIndex + visibleSectionHeadingIndex))}
+          {hasMoreBelow ? <Text dimColor>{'  '}...</Text> : null}
+        </Box>
+
+        {status ? (
+          <Text color={status.tone === 'error' ? 'error' : 'info'} wrap="truncate">
+            {status.text}
+          </Text>
+        ) : null}
+
+        <Box borderStyle="single" borderColor="subtle" borderLeft={false} borderRight={false} paddingX={0}>
+          <Text bold>› </Text>
+          {composerActive ? (
+            <TextInput
+              value={composerText}
+              onChange={setComposerText}
+              onSubmit={text => void submitComposer(text)}
+              columns={Math.max(10, contentWidth - 2)}
+              cursorOffset={composerCursor}
+              onChangeCursorOffset={setComposerCursor}
+              placeholder="Describe a task for a new session"
+            />
+          ) : (
+            <Text dimColor>describe a task for a new session</Text>
+          )}
+        </Box>
+
+        <Text dimColor wrap="truncate">
+          <Text color={getModeColor(permissionMode)}>
+            {permissionModeSymbol(permissionMode)} {permissionLabel}
+          </Text>{' '}
+          · enter to open · space to reply · ctrl+x to stop · ? for shortcuts
+        </Text>
+      </Box>
+    );
+  }
 
   return (
     <Box flexDirection="column" width={contentWidth}>

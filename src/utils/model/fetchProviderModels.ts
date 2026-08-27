@@ -36,23 +36,30 @@ interface OpenRouterModel {
   description?: string;
   context_length?: number;
   pricing?: {
-    prompt?: number;
-    completion?: number;
+    prompt?: number | string;
+    completion?: number | string;
   };
+  supported_parameters?: string[];
+  architecture?: { input_modalities?: string[] };
+  top_provider?: { context_length?: number; max_completion_tokens?: number };
+  max_output_tokens?: number;
 }
 
 function inferFreeModel(model: {
   id?: string;
   label?: string;
-  pricing?: { prompt?: number; completion?: number };
+  pricing?: { prompt?: number | string; completion?: number | string };
 }): boolean {
   const id = model.id ?? '';
   const label = model.label ?? '';
-  return (
-    /:free(?:$|[?#])/i.test(id) ||
-    /\bfree\b/i.test(label) ||
-    (model.pricing?.prompt === 0 && model.pricing?.completion === 0)
-  );
+  const promptPrice = model.pricing?.prompt;
+  const completionPrice = model.pricing?.completion;
+  const hasZeroPricing =
+    promptPrice !== undefined &&
+    completionPrice !== undefined &&
+    Number(promptPrice) === 0 &&
+    Number(completionPrice) === 0;
+  return /:free(?:$|[?#])/i.test(id) || /\bfree\b/i.test(label) || hasZeroPricing;
 }
 
 interface OpenRouterModelsResponse {
@@ -145,17 +152,27 @@ export async function fetchProviderModels(provider?: ProviderId): Promise<Fetche
       'architecture' in data.data[0]
     ) {
       parsedModels = data.data
-        .map((model: OpenRouterModel) => ({
-          id: model.id,
-          label: model.name ?? model.id,
-          description: model.description,
-          contextWindow: model.context_length,
-          free: inferFreeModel({
+        .map((model: OpenRouterModel) => {
+          const supportedParams = Array.isArray(model.supported_parameters) ? model.supported_parameters : [];
+          const inputModalities = Array.isArray(model.architecture?.input_modalities)
+            ? model.architecture.input_modalities
+            : [];
+          return {
             id: model.id,
             label: model.name ?? model.id,
-            pricing: model.pricing,
-          }),
-        }))
+            description: model.description,
+            contextWindow: model.top_provider?.context_length ?? model.context_length,
+            supportsTools: supportedParams.includes('tools'),
+            supportsVision: inputModalities.includes('image'),
+            supportsReasoning: supportedParams.includes('reasoning') || supportedParams.includes('include_reasoning'),
+            maxOutput: model.top_provider?.max_completion_tokens ?? model.max_output_tokens,
+            free: inferFreeModel({
+              id: model.id,
+              label: model.name ?? model.id,
+              pricing: model.pricing,
+            }),
+          };
+        })
         .filter(model => {
           // Filter out models that don't have the provider/model format
           return model.id.includes('/');

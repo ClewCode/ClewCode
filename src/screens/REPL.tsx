@@ -870,6 +870,7 @@ export function REPL({
   const pendingSandboxRequest = useAppState(s => s.pendingSandboxRequest);
   const teamContext = useAppState(s => s.teamContext);
   const tasks = useAppState(s => s.tasks);
+  const agentDashboardOpen = useAppState(s => s.agentDashboardOpen === true);
   const sessionCatalogOpen = useAppState(s => s.sessionCatalogOpen === true);
   const sessionCatalogAllProjects = useAppState(s => s.sessionCatalogAllProjects === true);
   const workerSandboxPermissions = useAppState(s => s.workerSandboxPermissions);
@@ -5716,6 +5717,18 @@ export function REPL({
       return <AlternateScreen mouseTracking={isMouseTrackingEnabled()}>{transcriptReturn}</AlternateScreen>;
     }
     return transcriptReturn;
+  }
+
+  if (agentDashboardOpen) {
+    return (
+      <AlternateScreen mouseTracking={isMouseTrackingEnabled()}>
+        <SessionCatalogView
+          currentSessionOnly
+          mainIsWorking={isLoading}
+          onDone={() => setAppState(previous => ({ ...previous, agentDashboardOpen: false }))}
+        />
+      </AlternateScreen>
+    );
   }
 
   if (sessionCatalogOpen) {

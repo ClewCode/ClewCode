@@ -2494,7 +2494,7 @@ function PromptInput({
       }
     }
     if (key.leftArrow && cursorOffset === 0 && input === '' && !isLoading) {
-      // /agents navigation removed — dashboard is deprecated.
+      setAppState(previous => ({ ...previous, agentDashboardOpen: true }));
       return;
     }
 

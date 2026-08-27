@@ -415,6 +415,8 @@ function ModeIndicator({
   // Check if any agent tasks exist (for hint text cycling)
   const runningAgentCount = Object.values(tasks).filter(t => t.type === 'local_agent' && t.status === 'running').length;
   const hasRunningAgentTasks = runningAgentCount > 0;
+  const visibleAgentCount = getVisibleAgentTasks(tasks).length;
+  const agentDashboardCount = visibleAgentCount + 1;
   // When every background task is a local agent, the compact "← N agent" badge
   // already conveys the count — suppress the redundant "N local agents" pill.
   // Mixed task sets keep the pill so the other types stay visible.
@@ -449,11 +451,13 @@ function ModeIndicator({
     parts.push(<ProactiveCountdown key="proactive" />);
   } else if (!hasTeammatePills && showHint) {
     parts.push(...hintParts);
-    // Compact running-agent badge (e.g. "← 1 agent"). Shown whenever there's
-    // at least one background agent session running. Click or type /agents to
-    // open the dashboard (Needs input / Working / Completed).
-    // Agent count badge removed — /agents is deprecated.
   }
+
+  parts.push(
+    <Text dimColor key="agent-dashboard">
+      ← {agentDashboardCount} {agentDashboardCount === 1 ? 'agent' : 'agents'}
+    </Text>,
+  );
 
   // When we have teammate pills, always render them on their own line above other parts
   if (hasTeammatePills) {

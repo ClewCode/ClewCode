@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-08-27
+
 - **Basic Tools Hardening & Test Coverage**:
   - Added unit test suites for basic tools (`FileReadTool`, `FileEditTool`, `GlobTool`, `GrepTool`, and task management utilities `src/utils/tasks.ts`).
   - Resolved circular dependency between `GlobTool` and `GrepTool` by directly importing `renderToolResultMessage` from UI layer.
@@ -22,6 +24,7 @@ All notable changes to this project will be documented in this file.
 
 - **Dead-code cleanup**: Removed the unreferenced `ModelDiscoveryService` implementation and the unused `context/memoryStore` database facade. The model picker now reads the shared provider registry directly.
 - **Model picker live refresh**: `/model` now fetches model lists for every configured provider whenever the picker is opened, so newly added provider models appear without restarting Clew Code.
+- **Cline live model discovery**: Updated Cline's removed `/api/v1/models` URL to the authenticated `/api/v1/ai/cline/models` catalog endpoint, restoring the full current model list in `/model` instead of silently falling back to stale static entries.
 - **Model picker free-model discovery**: `/model` now recognizes free models from common provider metadata, zero-cost OpenRouter pricing, `:free` model IDs, and free labels instead of relying only on static registry tags.
 - **`/model` reset and help improvements**: `/model default` now clears both the session model and provider overlays, and `/model --help` documents session selection, global defaults, provider-qualified models, reset, and live model listing.
 - **Removed `/model-router` and `/model-fallback` Commands**: Cleaned the task-mode routing system and custom model fallback chain in favor of straightforward `/model` selection and core provider retry resilience.

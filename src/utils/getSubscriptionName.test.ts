@@ -75,6 +75,13 @@ describe('getSubscriptionName', () => {
     expect(getSubscriptionName()).toBe('Google API');
   });
 
+  test('distinguishes ChatGPT subscription auth from ChatGPT API-key auth', () => {
+    activeProvider = 'chatgpt';
+    expect(getSubscriptionName()).toBe('ChatGPT Subscription');
+    activeProvider = 'chatgpt-api';
+    expect(getSubscriptionName()).toBe('ChatGPT API');
+  });
+
   // Regression: provider must be checked before subscription type. Reversing the
   // order labels OpenAI as "Claude API" whenever a Claude token is also present.
   test('does not leak the Claude plan onto a non-Anthropic provider', () => {

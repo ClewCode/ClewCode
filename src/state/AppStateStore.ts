@@ -162,6 +162,8 @@ export type AppState = DeepImmutable<{
   // replaces the REPL surface instead of rendering as a modal overlay.
   sessionCatalogOpen?: boolean;
   sessionCatalogAllProjects?: boolean;
+  /** Claude-style background room for the current conversation and its subagents. */
+  agentDashboardOpen?: boolean;
 }> & {
   // Unified task state - excluded from DeepImmutable because TaskState contains function types
   tasks: { [taskId: string]: TaskState };

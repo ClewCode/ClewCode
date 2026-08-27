@@ -1,54 +1,52 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import type { LocalAgentTaskState } from '../tasks/LocalAgentTask/LocalAgentTask.js';
 import { buildMainAgentActivityModel } from './MainAgentActivity.js';
-import type { CatalogRecord } from './sessionCatalog/sessionCatalogState.js';
-import type { CatalogSessionSummary, SessionCatalogSection } from './sessionCatalog/types.js';
 
-function record(
+function task(
   id: string,
-  section: SessionCatalogSection,
-  modified: string,
-  overrides: Partial<CatalogSessionSummary> = {},
-): CatalogRecord {
-  const live: CatalogSessionSummary = {
+  status: LocalAgentTaskState['status'],
+  startTime: number,
+  toolName?: string,
+): LocalAgentTaskState {
+  return {
     id,
-    sessionId: id,
-    lifecycle: section === 'inactive' ? 'archived' : 'live',
-    activity: section === 'running' ? 'working' : 'idle',
-    runtimeKind: 'top-level',
-    sessionName: id,
-    cwd: '/project',
-    messageCount: 0,
-    modified,
-    source: 'supervisor',
-    ...overrides,
-  };
-  return { identity: id, identityAliases: [id], live, section, searchableText: id };
+    type: 'local_agent',
+    status,
+    description: id,
+    agentId: id,
+    agentType: 'general-purpose',
+    prompt: id,
+    startTime,
+    pendingMessages: [],
+    progress: toolName ? { lastActivity: { toolName, activityDescription: id } } : undefined,
+  } as unknown as LocalAgentTaskState;
 }
 
 describe('buildMainAgentActivityModel', () => {
-  test('orders needs-input, working, then completed rows and counts the full roster', () => {
+  test('orders needs-input, working, then completed local agents', () => {
     const model = buildMainAgentActivityModel([
-      record('old completed', 'inactive', '2026-01-01T00:00:00.000Z'),
-      record('working', 'running', '2026-01-03T00:00:00.000Z'),
-      record('needs input', 'idle', '2026-01-02T00:00:00.000Z'),
-      record('new completed', 'inactive', '2026-01-04T00:00:00.000Z'),
+      task('old completed', 'completed', 1),
+      task('working', 'running', 3),
+      task('needs input', 'running', 2, 'AskUserQuestionTool'),
+      task('new completed', 'completed', 4),
     ]);
 
     expect(model.counts).toEqual({ running: 1, idle: 1, inactive: 2 });
     expect(model.rows.map(row => row.title)).toEqual(['needs input', 'working', 'new completed', 'old completed']);
   });
 
-  test('caps visible rows without changing section totals', () => {
-    const model = buildMainAgentActivityModel(
-      [
-        record('waiting', 'idle', '2026-01-03T00:00:00.000Z'),
-        record('running', 'running', '2026-01-02T00:00:00.000Z'),
-        record('done', 'inactive', '2026-01-01T00:00:00.000Z'),
-      ],
-      2,
-    );
+  test('an empty current-session task list produces an empty roster', () => {
+    expect(buildMainAgentActivityModel([])).toEqual({
+      counts: { running: 0, idle: 0, inactive: 0 },
+      rows: [],
+    });
+  });
 
-    expect(model.rows.map(row => row.title)).toEqual(['waiting', 'running']);
-    expect(model.counts.inactive).toBe(1);
+  test('does not couple the main page to global or archived session loaders', () => {
+    const source = readFileSync(new URL('./MainAgentActivity.tsx', import.meta.url), 'utf8');
+    expect(source).not.toContain('loadSavedCatalogSessions');
+    expect(source).not.toContain('loadSupervisorSessions');
+    expect(source).not.toContain('/sessions manage all');
   });
 });

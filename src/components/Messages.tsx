@@ -857,7 +857,7 @@ const MessagesImpl = ({
     <>
       {/* Logo */}
       {!hideLogo && !(renderRange && renderRange[0] > 0) && <LogoHeader agentDefinitions={agentDefinitions} />}
-      {!hideLogo && !(renderRange && renderRange[0] > 0) && <MainAgentActivity isMainWorking={isLoading} />}
+      {!hideLogo && !(renderRange && renderRange[0] > 0) && <MainAgentActivity />}
 
       {/* Truncation indicator */}
       {hasTruncatedMessages && hiddenMessageCount > 0 && (
