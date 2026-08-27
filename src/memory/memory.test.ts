@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { DOT_CLEW } from '../utils/clewPaths.js';
+import { runWithCwdOverride } from '../utils/cwd.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
 import { injectMemoryIntoPrompt } from '../utils/injectMemoryIntoPrompt.js';
 import { chunkMarkdown, estimateTokenCount } from './chunker.js';
@@ -489,6 +490,19 @@ describe('MemoryDB', () => {
     const db = MemoryDB.getInstance();
     expect(db.findByKey('decision.use_async_await_over_raw_promises')).not.toBeNull();
     expect(db.findByKey('architecture.migrated_to_esm')).not.toBeNull();
+  });
+
+  test('compact creates the memory directory on a fresh project', async () => {
+    const freshProject = join(memDbDir, 'fresh-project');
+    await rm(freshProject, { recursive: true, force: true });
+
+    try {
+      await runWithCwdOverride(freshProject, () => compactContext('[decision] initialize durable memory safely'));
+      const decisions = await readFile(join(freshProject, '.clew', 'memory', 'DECISIONS.md'), 'utf8');
+      expect(decisions).toContain('initialize durable memory safely');
+    } finally {
+      await rm(freshProject, { recursive: true, force: true });
+    }
   });
 
   test('compact is idempotent', async () => {

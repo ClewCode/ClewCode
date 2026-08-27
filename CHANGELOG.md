@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.8.7] - 2026-08-27
 
+- **Clean-install memory compaction**: `compactContext()` now creates `.clew/memory/` before writing durable Markdown files, preventing `ENOENT` failures on fresh installations and clean CI runners.
 - **Basic Tools Hardening & Test Coverage**:
   - Added unit test suites for basic tools (`FileReadTool`, `FileEditTool`, `GlobTool`, `GrepTool`, and task management utilities `src/utils/tasks.ts`).
   - Resolved circular dependency between `GlobTool` and `GrepTool` by directly importing `renderToolResultMessage` from UI layer.

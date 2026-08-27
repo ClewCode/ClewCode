@@ -7,7 +7,7 @@
  */
 
 import { existsSync } from 'node:fs';
-import { appendFile, readdir, readFile, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
 import { MemoryDB } from './database.js';
@@ -187,7 +187,9 @@ export async function compactContext(context: string, dryRun = false): Promise<C
   // Write markdown files
   if (!dryRun) {
     for (const [file, lines] of fileBuffers) {
-      const filePath = join(getMemoryDirPath(), file);
+      const memoryDir = getMemoryDirPath();
+      await mkdir(memoryDir, { recursive: true });
+      const filePath = join(memoryDir, file);
       if (existsSync(filePath)) {
         await appendFile(filePath, lines.join(''), 'utf8');
       } else {
