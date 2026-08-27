@@ -92,6 +92,8 @@ export async function syncCodeIndex(force = false): Promise<{ indexed: number; r
       const files = await collectFiles();
       let indexed = 0;
       let removedCount = 0;
+      let embedFailures = 0;
+      let embedBroken = false;
 
       // Drop chunks whose files vanished.
       removedCount += removeMissingFiles(new Set(files.keys()));
@@ -117,10 +119,20 @@ export async function syncCodeIndex(force = false): Promise<{ indexed: number; r
             keepKeys.add(`${relPath}:${sym.line}:${sym.name}`);
             if (!force && !chunkNeedsUpdate(relPath, sym, textHash)) continue;
             let embedding: number[] | null = null;
-            try {
-              embedding = await createEmbedding(text);
-            } catch {
-              // Model unavailable — index FTS-only; re-embedded on a later sync.
+            if (!embedBroken) {
+              try {
+                embedding = await createEmbedding(text);
+              } catch {
+                embedFailures++;
+                // ponytail: circuit breaker — model down means per-symbol network timeouts.
+                // After 3 failures skip embeddings for the rest of this sync (FTS still works).
+                if (embedFailures >= 3) {
+                  embedBroken = true;
+                  logForDebugging('[codeSearch] embedding model unavailable — continuing FTS-only', {
+                    level: 'debug',
+                  });
+                }
+              }
             }
             storeChunk(relPath, sym, textHash, embedding);
             indexed++;
