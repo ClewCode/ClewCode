@@ -56,7 +56,7 @@ per-file loop re-typechecks the whole project each iteration and takes minutes.
 `dev` / `build` always run `prebuild-version` and define:
 `TRANSCRIPT_CLASSIFIER`, `CHICAGO_MCP`, `VOICE_MODE`, `AWAY_SUMMARY`.
 
-## Project rules (from `.clew/rules.json`)
+## Project rules
 
 - Keep docs in sync — `AGENTS.md`, `CHANGELOG.md`, and `README.md` when behavior changes
 - Use Bun for all dev commands
@@ -222,7 +222,6 @@ Dynamic section registry (each can be `null`/feature-gated; resolved by `resolve
 | Section | Notes |
 |---|---|
 | `session_guidance` | From enabled tools + skill tool commands |
-| `project_rules` | From `.clew/rules.json` via ProjectRule tool |
 | `memory`, `taste`, `budgeted_memory` | Auto-memory / taste / budgeted memory |
 | `session_goal` | Active goal |
 | `env_info_simple` | Model/environment info; `deps: [model]` so it recomputes on `/model` switch |

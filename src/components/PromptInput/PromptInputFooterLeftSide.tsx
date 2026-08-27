@@ -48,7 +48,6 @@ import { useHasSelection, useSelection } from '../../ink/hooks/use-selection.js'
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';
 import { getPlatform } from '../../utils/platform.js';
 import { PrBadge } from '../PrBadge.js';
-import { loadProjectRules, isProjectRulesDisabled } from '../../utils/projectRules.js';
 
 // Dead code elimination: conditional import for proactive mode
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -210,16 +209,6 @@ function ModeIndicator({
   const showSpinnerTree = expandedView === 'teammates';
   const prStatus = usePrStatus(isLoading, isPrStatusEnabled());
   const hasTmuxSession = useAppState(s => 'external' === 'ant' && s.tungstenActiveSession !== undefined);
-
-  // Project rules indicator
-  const [ruleCount, setRuleCount] = useState(0);
-  const [rulesDisabled, setRulesDisabled] = useState(false);
-  useEffect(() => {
-    Promise.all([loadProjectRules(), isProjectRulesDisabled()]).then(([rules, disabled]) => {
-      setRuleCount(rules.length);
-      setRulesDisabled(disabled);
-    });
-  }, []);
 
   const nextTickAt = useSyncExternalStore(
     proactiveModule?.subscribeToProactiveChanges ?? NO_OP_SUBSCRIBE,
@@ -385,20 +374,6 @@ function ModeIndicator({
           </Link>,
         ]
       : []),
-    // Rule indicator
-    ...(rulesDisabled
-      ? [
-          <Text key="rules" dimColor>
-            0R off
-          </Text>,
-        ]
-      : ruleCount > 0
-        ? [
-            <Text key="rules" dimColor>
-              {ruleCount}R
-            </Text>,
-          ]
-        : []),
     // BackgroundTaskStatus is NOT in parts — it renders as a Box sibling so
     // its click-target Box isn't nested inside the <Text wrap="truncate">
     // wrapper (reconciler throws on Box-in-Text).

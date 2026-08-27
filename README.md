@@ -121,7 +121,6 @@ Session choices do not change the shared default for other sessions. Capability 
 - File reading, writing, editing, search, shell execution, Git, browser, LSP, web, and media tools
 - Persistent SQLite-backed memory across sessions
 - MCP servers, plugins, and reusable `SKILL.md` workflows
-- Project-specific rules in `.clew/rules.json`
 - Background tasks, cron scheduling, agents, subagents, and teammate swarms
 - Cross-repository workspaces with `/workspace link`
 - Optional audit logging in SIEM-friendly NDJSON format
@@ -191,16 +190,7 @@ Provider credentials can be entered through the setup flow or supplied as enviro
 | `JINA_API_KEY` | Jina search/fetch services |
 | `CLEW_DISABLE_TELEMETRY=1` | Disable anonymous usage statistics |
 
-Settings are local. Project rules live at `.clew/rules.json`:
-
-```json
-{
-  "rules": [
-    "Use the project's existing test framework",
-    "Prefer named exports over default exports"
-  ]
-}
-```
+Settings are local.
 
 ### Audit logging
 

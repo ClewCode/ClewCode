@@ -9,7 +9,6 @@ import {
   getTotalInputTokens,
 } from '../bootstrap/state.js';
 import { parseTokenBudget } from '../utils/tokenBudget.js';
-import { loadProjectRules, formatRulesNotification, isProjectRulesDisabled } from '../utils/projectRules.js';
 import { count } from '../utils/array.js';
 import { dirname, join, basename } from 'path';
 import { tmpdir } from 'os';
@@ -1542,18 +1541,6 @@ export function REPL({
     }
     rawSetMessages(next);
   }, []);
-
-  // Show project rules as a system message in chat at startup
-  useEffect(() => {
-    Promise.all([loadProjectRules(), isProjectRulesDisabled()]).then(([rules, disabled]) => {
-      if (!disabled && rules.length > 0) {
-        setMessages(prev => [
-          ...prev,
-          createSystemMessage(`Project rules (${rules.length}): ${formatRulesNotification(rules)}`, 'info'),
-        ]);
-      }
-    });
-  }, [setMessages]);
 
   // Capture the baseline message count alongside the placeholder text so
   // the render can hide it once displayedMessages grows past the baseline.

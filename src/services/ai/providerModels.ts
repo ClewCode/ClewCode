@@ -1,4 +1,7 @@
-import { ProviderManager } from './ProviderManager.js';
+import {
+  type FetchedModel,
+  fetchProviderModels as fetchLiveProviderModels,
+} from '../../utils/model/fetchProviderModels.js';
 import { getProviderRegistryEntry, PROVIDER_IDS, type ProviderModelInfo } from './providerRegistry.js';
 import type { ProviderId } from './providers/ProviderInterface.js';
 
@@ -11,6 +14,9 @@ type RemoteModelPayload = {
   max_output_tokens?: number;
   context_window?: number;
   contextWindow?: number;
+  supportsVision?: boolean;
+  supportsReasoning?: boolean;
+  free?: boolean;
 };
 
 const MODELS_CACHE = new Map<ProviderId, { data: ProviderModelInfo[]; timestamp: number }>();
@@ -60,14 +66,16 @@ export async function fetchProviderModels(provider: ProviderId): Promise<Provide
     return cached.data;
   }
 
-  const providerManager = ProviderManager.getInstance();
-
   try {
-    const remoteModels = await providerManager.listModels(provider);
+    // Keep every model-selection surface on the same endpoint resolution and
+    // response parser as `/model`. ProviderManager.listModels() derives
+    // `${baseUrl}/models`, which is not valid for providers such as Cline whose
+    // catalog lives at the registry's explicit modelsUrl.
+    const remoteModels = await fetchLiveProviderModels(provider);
 
-    if (remoteModels.length > 0) {
+    if (remoteModels && remoteModels.length > 0) {
       const models = remoteModels
-        .map(model => toProviderModelInfo(provider, model))
+        .map(model => toProviderModelInfo(provider, fetchedModelToRemotePayload(model)))
         .filter((model): model is ProviderModelInfo => Boolean(model));
 
       if (models.length > 0) {
@@ -79,6 +87,23 @@ export async function fetchProviderModels(provider: ProviderId): Promise<Provide
   }
 
   return cacheAndReturn(provider, getFallbackModels(provider));
+}
+
+function fetchedModelToRemotePayload(model: FetchedModel): RemoteModelPayload {
+  return {
+    id: model.id,
+    name: model.label,
+    supported_parameters: [
+      ...(model.supportsTools ? ['tools'] : []),
+      ...(model.supportsReasoning ? ['reasoning'] : []),
+    ],
+    capabilities: model.supportsTools === undefined ? undefined : { tools: model.supportsTools },
+    contextWindow: model.contextWindow,
+    max_output_tokens: model.maxOutput,
+    supportsVision: model.supportsVision,
+    supportsReasoning: model.supportsReasoning,
+    free: model.free,
+  };
 }
 
 function cacheAndReturn(provider: ProviderId, data: ProviderModelInfo[]): ProviderModelInfo[] {
@@ -157,11 +182,7 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
         if (pid === provider) continue;
         const entry = getProviderRegistryEntry(pid);
         const m = entry.models.find(mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()));
-        if (
-          m?.capabilities?.maxContext &&
-          typeof m.capabilities.maxContext === 'number' &&
-          m.capabilities.maxContext !== 'varies'
-        )
+        if (m?.capabilities?.maxContext && typeof m.capabilities.maxContext === 'number')
           return m.capabilities.maxContext;
       }
       return undefined;
@@ -182,12 +203,7 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
         if (pid === provider) continue;
         const entry = getProviderRegistryEntry(pid);
         const m = entry.models.find(mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()));
-        if (
-          m?.capabilities?.maxOutput &&
-          typeof m.capabilities.maxOutput === 'number' &&
-          m.capabilities.maxOutput !== 'varies'
-        )
-          return m.capabilities.maxOutput;
+        if (m?.capabilities?.maxOutput && typeof m.capabilities.maxOutput === 'number') return m.capabilities.maxOutput;
       }
       return undefined;
     })();
@@ -200,13 +216,13 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
     label: model.name && model.name !== id ? model.name : id,
     capabilities: {
       toolCalling: toolCalling ? 'native' : 'none',
-      vision: info.capabilities.vision,
-      imageIn: info.capabilities.imageIn ?? info.capabilities.vision,
+      vision: model.supportsVision ?? info.capabilities.vision,
+      imageIn: model.supportsVision ?? info.capabilities.imageIn ?? info.capabilities.vision,
       videoIn: info.capabilities.videoIn ?? false,
       streaming: info.capabilities.streaming,
       maxContext,
       maxOutput,
-      reasoning: info.capabilities.reasoningEffort,
+      reasoning: model.supportsReasoning ?? info.capabilities.reasoningEffort,
       supportsSystemPrompt: true,
     },
     tags: buildTags(toolCalling, model),
@@ -220,6 +236,15 @@ function buildTags(toolCalling: boolean, model: RemoteModelPayload): string[] | 
   }
   if (model.name && model.id && model.name !== model.id) {
     tags.push('api');
+  }
+  if (model.supportsVision) {
+    tags.push('vision');
+  }
+  if (model.supportsReasoning) {
+    tags.push('reasoning');
+  }
+  if (model.free) {
+    tags.push('free');
   }
   return tags.length > 0 ? tags : undefined;
 }
