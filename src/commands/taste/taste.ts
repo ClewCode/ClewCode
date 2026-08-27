@@ -23,9 +23,12 @@ export default async function tasteHandler(args: string, context: CommandContext
     for (let i = 0; i < rules.length; i++) {
       const r = rules[i]!;
       const scopeTag = r.scope.type === 'global' ? '[global]' : '[project]';
-      const statusTag = r.status === 'active' ? '✓' : r.status === 'disabled' ? '✗' : '○';
+      const statusTag =
+        r.status === 'active' ? '✓' : r.status === 'disabled' ? '✗' : r.status === 'candidate' ? '?' : '○';
       const conf = Math.round(r.confidence * 100);
-      lines.push(`${statusTag} #${i + 1} (${r.id}) ${scopeTag} [${r.category}] [conf: ${conf}%]:`);
+      lines.push(
+        `${statusTag} #${i + 1} (${r.id}) ${scopeTag} [${r.category}] [status: ${r.status}] [conf: ${conf}%]:`,
+      );
       lines.push(`   "${r.rule}"\n`);
     }
     context.log(lines.join('\n'));
@@ -47,7 +50,6 @@ export default async function tasteHandler(args: string, context: CommandContext
       ruleText = ruleText.replace('--global ', '').trim();
     }
 
-    // Generate concise ID from rule text
     const slug = ruleText
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
@@ -79,13 +81,53 @@ export default async function tasteHandler(args: string, context: CommandContext
     return;
   }
 
-  if (subCommand === 'remove' || subCommand === 'forget' || subCommand === 'delete') {
+  if (subCommand === 'evidence') {
     if (!rest) {
-      context.log('Usage: /taste remove <id>');
+      context.log('Usage: /taste evidence <id|#num>');
       return;
     }
     const all = await store.list();
-    // Support index as well as id
+    const idx = parseInt(rest, 10);
+    const targetId = !Number.isNaN(idx) && idx > 0 && idx <= all.length ? all[idx - 1]!.id : rest;
+
+    const evidenceList = await store.getEvidenceForRule(targetId);
+    if (evidenceList.length === 0) {
+      context.log(`No recorded evidence found for rule: ${targetId}`);
+      return;
+    }
+
+    const lines: string[] = [`=== Evidence Trail for ${targetId} (${evidenceList.length} items) ===\n`];
+    for (const ev of evidenceList) {
+      const sign = ev.weight >= 0 ? `+${ev.weight.toFixed(2)}` : ev.weight.toFixed(2);
+      lines.push(`• [${sign}] signal=${ev.signal} task=${ev.taskId} (${ev.timestamp.slice(0, 19).replace('T', ' ')})`);
+      if (ev.details) lines.push(`  ↳ ${ev.details}`);
+    }
+    context.log(lines.join('\n'));
+    return;
+  }
+
+  if (subCommand === 'conflicts') {
+    const conflicts = await store.getConflicts(true);
+    if (conflicts.length === 0) {
+      context.log('✓ No active taste rule conflicts detected.');
+      return;
+    }
+
+    const lines: string[] = [`=== Detected Taste Conflicts (${conflicts.length}) ===\n`];
+    for (const c of conflicts) {
+      lines.push(`⚠️ Conflict between "${c.ruleIdA}" and "${c.ruleIdB}":`);
+      lines.push(`   Reason: ${c.reason}\n`);
+    }
+    context.log(lines.join('\n'));
+    return;
+  }
+
+  if (subCommand === 'remove' || subCommand === 'forget' || subCommand === 'delete') {
+    if (!rest) {
+      context.log('Usage: /taste remove <id|#num>');
+      return;
+    }
+    const all = await store.list();
     const idx = parseInt(rest, 10);
     const targetId = !Number.isNaN(idx) && idx > 0 && idx <= all.length ? all[idx - 1]!.id : rest;
 
@@ -100,7 +142,7 @@ export default async function tasteHandler(args: string, context: CommandContext
 
   if (subCommand === 'disable') {
     if (!rest) {
-      context.log('Usage: /taste disable <id>');
+      context.log('Usage: /taste disable <id|#num>');
       return;
     }
     const all = await store.list();
@@ -118,7 +160,7 @@ export default async function tasteHandler(args: string, context: CommandContext
 
   if (subCommand === 'enable') {
     if (!rest) {
-      context.log('Usage: /taste enable <id>');
+      context.log('Usage: /taste enable <id|#num>');
       return;
     }
     const all = await store.list();
@@ -136,7 +178,7 @@ export default async function tasteHandler(args: string, context: CommandContext
 
   if (subCommand === 'inspect' || subCommand === 'show') {
     if (!rest) {
-      context.log('Usage: /taste inspect <id>');
+      context.log('Usage: /taste inspect <id|#num>');
       return;
     }
     const all = await store.list();
@@ -176,6 +218,8 @@ Last Observed: ${rule.lastObservedAt}
 Available commands:
   /taste [list]                      — List all preferences
   /taste add [--global] <rule>       — Add a new preference
+  /taste evidence <id|#num>          — View recorded evidence trail
+  /taste conflicts                   — Check for contradictory preferences
   /taste inspect <id|#num>           — View detailed metrics
   /taste disable <id|#num>           — Temporarily disable a preference
   /taste enable <id|#num>            — Re-enable a preference

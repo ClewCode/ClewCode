@@ -4,12 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- **Taste Learning Foundation (Phase 1)**: Implemented the Taste Learning subsystem (`src/taste/`) to capture and retrieve user/project conventions and preferences:
-  - SQLite backend (`SqliteTasteStore`) for `.clew/taste/taste.db` (project scope) and `~/.clew/taste/taste.db` (global scope).
-  - Multi-dimensional ranking engine (`scorer.ts`) calculating relevance, confidence, scope weight (project > global), and recency.
-  - Compact `<clew_taste>` context compiler injection via dynamic `systemPromptSection('taste', ...)`.
-  - Added interactive `/taste` slash command (`list`, `add`, `inspect`, `disable`, `enable`, `remove`, `clear`).
-  - Added unit test suite covering store CRUD, scope overrides, rule ranking, and XML context generation.
+- **Complete Taste Learning System (Phases 1 – 6)**: Implemented full Taste Learning engine (`src/taste/`) to learn and adapt to user conventions, coding styles, and workflow habits:
+  - **Storage & Evidence**: Dual-scoped SQLite backend (`.clew/taste/taste.db` & `~/.clew/taste/taste.db`) with `taste_rules`, `taste_evidence`, and `taste_conflicts` tables.
+  - **Evidence Collector & Sanitizer**: Automatic secret scanner/redaction and signal weight heuristic matrix (`accept`, `reject`, `revert`, `test_pass`, `build_pass`, `lint_pass`, `review_accept`).
+  - **Semantic Diff & Workflow Learner**: Detects export styles, explicit typing, surgical vs broad diffs, and tool invocation sequences (`search -> read -> edit`, targeted testing).
+  - **Confidence Engine & Lifecycle**: Dynamic lifecycle transitions (`candidate` 0.30–0.59 -> `weak` 0.60–0.79 -> `active` >=0.80) with conflict detection.
+  - **Context Compiler & Commands**: Injects compact `<clew_taste>` blocks; extended `/taste` command with `evidence <id>`, `conflicts`, `inspect`, `add`, `remove`, `disable`, `enable`, `clear`.
+  - **Unit Test Suite**: 21 unit tests covering all phases (store CRUD, scoring, evidence sanitization, diff analysis, confidence lifecycle, closed-loop learner).
 - **Removed the project rules system**: Deleted the `ProjectRule` tool (`src/tools/ProjectRuleTool/`), `/rule` slash command (`src/commands/rule/`), `.clew/rules.json` loading util (`src/utils/projectRules.ts`), its system-prompt section, startup chat notification, and footer rule-count indicator. Clew Code no longer reads or writes `.clew/rules.json`.
 - **Unified provider model discovery**: The provider setup wizard now uses the same registry-aware live model fetcher and response parser as `/model`, so providers with nonstandard catalog URLs (including Cline) show the same current model list instead of stale static entries.
 

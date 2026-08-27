@@ -10,9 +10,11 @@ import { DOT_CLEW, TASTE_DIR } from '../../utils/clewPaths.js';
 import { getCwd } from '../../utils/cwd.js';
 import type {
   TasteCategory,
+  TasteConflict,
+  TasteEvidence,
   TasteQuery,
   TasteRule,
-  TasteScope,
+  TasteSignal,
   TasteSource,
   TasteStatus,
   TasteStore,
@@ -34,6 +36,28 @@ interface TasteDbRow {
   created_at: string;
   updated_at: string;
   last_observed_at: string;
+}
+
+interface EvidenceDbRow {
+  id: string;
+  task_id: string;
+  rule_id: string | null;
+  signal: string;
+  weight: number;
+  before_text: string | null;
+  after_text: string | null;
+  file_path: string | null;
+  details: string | null;
+  created_at: string;
+}
+
+interface ConflictDbRow {
+  id: string;
+  rule_id_a: string;
+  rule_id_b: string;
+  reason: string;
+  detected_at: string;
+  resolved: number;
 }
 
 export class SqliteTasteStore implements TasteStore {
@@ -110,6 +134,31 @@ export class SqliteTasteStore implements TasteStore {
       CREATE INDEX IF NOT EXISTS idx_taste_rules_category ON taste_rules(category);
       CREATE INDEX IF NOT EXISTS idx_taste_rules_status ON taste_rules(status);
       CREATE INDEX IF NOT EXISTS idx_taste_rules_confidence ON taste_rules(confidence);
+
+      CREATE TABLE IF NOT EXISTS taste_evidence (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        rule_id TEXT,
+        signal TEXT NOT NULL,
+        weight REAL NOT NULL,
+        before_text TEXT,
+        after_text TEXT,
+        file_path TEXT,
+        details TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_taste_evidence_rule_id ON taste_evidence(rule_id);
+      CREATE INDEX IF NOT EXISTS idx_taste_evidence_task_id ON taste_evidence(task_id);
+
+      CREATE TABLE IF NOT EXISTS taste_conflicts (
+        id TEXT PRIMARY KEY,
+        rule_id_a TEXT NOT NULL,
+        rule_id_b TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        detected_at TEXT NOT NULL,
+        resolved INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_taste_conflicts_resolved ON taste_conflicts(resolved);
     `);
   }
 
@@ -136,7 +185,6 @@ export class SqliteTasteStore implements TasteStore {
   }
 
   async get(id: string): Promise<TasteRule | null> {
-    // Check project DB first
     try {
       const projDb = this.getProjectDb();
       const projRow = projDb.query('SELECT * FROM taste_rules WHERE id = ?').get(id) as TasteDbRow | null;
@@ -145,7 +193,6 @@ export class SqliteTasteStore implements TasteStore {
       // ignore
     }
 
-    // Fallback to global DB
     try {
       const globDb = this.getGlobalDb();
       const globRow = globDb.query('SELECT * FROM taste_rules WHERE id = ?').get(id) as TasteDbRow | null;
@@ -160,7 +207,6 @@ export class SqliteTasteStore implements TasteStore {
   async list(query?: TasteQuery): Promise<TasteRule[]> {
     const rulesMap = new Map<string, TasteRule>();
 
-    // 1. Fetch Global rules (if query allows)
     if (!query?.scopeType || query.scopeType === 'global') {
       try {
         const globDb = this.getGlobalDb();
@@ -174,7 +220,6 @@ export class SqliteTasteStore implements TasteStore {
       }
     }
 
-    // 2. Fetch Project rules (overrides global rules with matching ID)
     if (!query?.scopeType || query.scopeType === 'project') {
       try {
         const projDb = this.getProjectDb();
@@ -190,13 +235,11 @@ export class SqliteTasteStore implements TasteStore {
 
     let results = Array.from(rulesMap.values());
 
-    // Apply in-memory search filter if specified
     if (query?.search) {
       const needle = query.search.toLowerCase();
       results = results.filter(r => r.rule.toLowerCase().includes(needle) || r.id.toLowerCase().includes(needle));
     }
 
-    // Apply limit if specified
     if (query?.limit && query.limit > 0) {
       results = results.slice(0, query.limit);
     }
@@ -353,6 +396,8 @@ export class SqliteTasteStore implements TasteStore {
       try {
         const projDb = this.getProjectDb();
         projDb.run('DELETE FROM taste_rules');
+        projDb.run('DELETE FROM taste_evidence');
+        projDb.run('DELETE FROM taste_conflicts');
       } catch {
         // ignore
       }
@@ -362,10 +407,123 @@ export class SqliteTasteStore implements TasteStore {
       try {
         const globDb = this.getGlobalDb();
         globDb.run('DELETE FROM taste_rules');
+        globDb.run('DELETE FROM taste_evidence');
+        globDb.run('DELETE FROM taste_conflicts');
       } catch {
         // ignore
       }
     }
+  }
+
+  // ── Evidence Storage ──────────────────────────────────────
+
+  async addEvidence(evidence: TasteEvidence): Promise<void> {
+    const projDb = this.getProjectDb();
+    projDb
+      .query(
+        `
+      INSERT INTO taste_evidence (
+        id, task_id, rule_id, signal, weight, before_text, after_text, file_path, details, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+      )
+      .run(
+        evidence.id,
+        evidence.taskId,
+        evidence.ruleId ?? null,
+        evidence.signal,
+        evidence.weight,
+        evidence.before ?? null,
+        evidence.after ?? null,
+        evidence.filePath ?? null,
+        evidence.details ?? null,
+        evidence.timestamp,
+      );
+  }
+
+  async getEvidenceForRule(ruleId: string): Promise<TasteEvidence[]> {
+    const projDb = this.getProjectDb();
+    const rows = projDb
+      .query('SELECT * FROM taste_evidence WHERE rule_id = ? ORDER BY created_at DESC')
+      .all(ruleId) as EvidenceDbRow[];
+
+    return rows.map(r => ({
+      id: r.id,
+      taskId: r.task_id,
+      ruleId: r.rule_id ?? undefined,
+      signal: r.signal as TasteSignal,
+      weight: r.weight,
+      before: r.before_text ?? undefined,
+      after: r.after_text ?? undefined,
+      filePath: r.file_path ?? undefined,
+      details: r.details ?? undefined,
+      timestamp: r.created_at,
+    }));
+  }
+
+  async getRecentEvidence(limit = 20): Promise<TasteEvidence[]> {
+    const projDb = this.getProjectDb();
+    const rows = projDb
+      .query('SELECT * FROM taste_evidence ORDER BY created_at DESC LIMIT ?')
+      .all(limit) as EvidenceDbRow[];
+
+    return rows.map(r => ({
+      id: r.id,
+      taskId: r.task_id,
+      ruleId: r.rule_id ?? undefined,
+      signal: r.signal as TasteSignal,
+      weight: r.weight,
+      before: r.before_text ?? undefined,
+      after: r.after_text ?? undefined,
+      filePath: r.file_path ?? undefined,
+      details: r.details ?? undefined,
+      timestamp: r.created_at,
+    }));
+  }
+
+  // ── Conflict Storage ──────────────────────────────────────
+
+  async addConflict(conflict: TasteConflict): Promise<void> {
+    const projDb = this.getProjectDb();
+    projDb
+      .query(
+        `
+      INSERT OR REPLACE INTO taste_conflicts (
+        id, rule_id_a, rule_id_b, reason, detected_at, resolved
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `,
+      )
+      .run(
+        conflict.id,
+        conflict.ruleIdA,
+        conflict.ruleIdB,
+        conflict.reason,
+        conflict.detectedAt,
+        conflict.resolved ? 1 : 0,
+      );
+  }
+
+  async getConflicts(unresolvedOnly = true): Promise<TasteConflict[]> {
+    const projDb = this.getProjectDb();
+    const sql = unresolvedOnly
+      ? 'SELECT * FROM taste_conflicts WHERE resolved = 0 ORDER BY detected_at DESC'
+      : 'SELECT * FROM taste_conflicts ORDER BY detected_at DESC';
+    const rows = projDb.query(sql).all() as ConflictDbRow[];
+
+    return rows.map(r => ({
+      id: r.id,
+      ruleIdA: r.rule_id_a,
+      ruleIdB: r.rule_id_b,
+      reason: r.reason,
+      detectedAt: r.detected_at,
+      resolved: r.resolved === 1,
+    }));
+  }
+
+  async resolveConflict(conflictId: string): Promise<boolean> {
+    const projDb = this.getProjectDb();
+    const res = projDb.query('UPDATE taste_conflicts SET resolved = 1 WHERE id = ?').run(conflictId);
+    return res.changes > 0;
   }
 
   close(): void {
