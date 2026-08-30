@@ -7,6 +7,7 @@ import { logEvent } from '../services/analytics/index.js';
 import { sendNotification } from '../services/notifier.js';
 import { OpenAIDeviceFlow, OpenAIOAuthService, type OpenAIOAuthTokens } from '../services/openaiOAuth/index.js';
 import { saveGlobalConfig } from '../utils/config.js';
+import { logError } from '../utils/log.js';
 import { Select } from './CustomSelect/select.js';
 import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js';
 import { Spinner } from './Spinner.js';
@@ -297,7 +298,7 @@ export function OpenAIOAuthFlow({ onDone, onCancel }: Props): React.ReactNode {
           });
           handleSuccess(tokens);
         } catch (error) {
-          console.error('Device flow error:', error);
+          logError(error);
           setOAuthStatus({
             state: 'error',
             message: `Device login failed: ${(error as Error).message}`,

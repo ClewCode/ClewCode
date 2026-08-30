@@ -14,6 +14,7 @@ import { logEvent } from '../services/analytics/index.js';
 import { GoogleOAuthService, type GoogleOAuthTokens } from '../services/googleOAuth/index.js';
 import { sendNotification } from '../services/notifier.js';
 import { getGlobalConfig, saveGlobalConfig } from '../utils/config.js';
+import { logError } from '../utils/log.js';
 import { Select } from './CustomSelect/select.js';
 import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js';
 import { Spinner } from './Spinner.js';
@@ -462,7 +463,7 @@ export function GoogleOAuthFlow({ onDone, onCancel, codeAssist }: Props): React.
         );
         handleSuccess(tokens);
       } catch (error) {
-        console.error('OAuth error:', error);
+        logError(error);
         setOAuthStatus({
           state: 'error',
           message: `OAuth failed: ${(error as Error).message}. Try selecting 'Manual Authorization URL' instead.`,
