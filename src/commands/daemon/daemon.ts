@@ -14,8 +14,8 @@ import {
 } from '../../services/autonomous/supervisorIntegration.js';
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
-import { formatDaemonStatus } from './daemonStatus.js';
 import { parseCommandArgs } from '../../utils/parseCommandArgs.js';
+import { formatDaemonStatus } from './daemonStatus.js';
 
 export async function call(
   onDone: LocalJSXCommandOnDone,

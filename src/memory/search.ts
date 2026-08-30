@@ -1,8 +1,8 @@
 import type { Database } from 'bun:sqlite';
+import { cosineSimilarity } from '../memdir/semanticSearch.js';
 import { getMemoryDb } from './db.js';
 import { searchChunksFTS } from './store.js';
 import type { MemorySearchResult } from './types.js';
-import { cosineSimilarity } from '../memdir/semanticSearch.js';
 
 // ── Embedding cache (in-memory LRU) ──
 const embeddingCache = new Map<string, number[]>();
