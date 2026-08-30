@@ -4,7 +4,7 @@ import { randomUUID, type UUID } from 'crypto';
 import last from 'lodash-es/last.js';
 import { getSessionId, isSessionPersistenceDisabled } from 'src/bootstrap/state.js';
 import { selectableUserMessagesFilter } from 'src/components/MessageSelector.js';
-import type { PermissionMode, SDKMessage, SDKStatus, SDKUserMessageReplay } from 'src/entrypoints/sdk/coreTypes.js';
+import type { PermissionMode, SDKMessage, SDKStatus } from 'src/entrypoints/sdk/coreTypes.js';
 
 // SDK types that exist only as Zod schemas — define local aliases for type safety
 type SDKPermissionDenial = { tool_name: string; tool_use_id: string; tool_input: unknown };

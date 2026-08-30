@@ -27,11 +27,11 @@ export const DIAMOND_FILLED = '\u25c6'; // ◆ - completed/failed
 export const REFERENCE_MARK = '\u203b'; // ※ - komejirushi, away-summary recap marker
 
 // Issue flag indicator
-const FLAG_ICON = '\u2691'; // ⚑ - used for issue flag banner
+const _FLAG_ICON = '\u2691'; // ⚑ - used for issue flag banner
 
 // Blockquote indicator
 export const BLOCKQUOTE_BAR = '\u258e'; // ▎ - left one-quarter block, used as blockquote line prefix
-const HEAVY_HORIZONTAL = '\u2501'; // ━ - heavy box-drawing horizontal
+const _HEAVY_HORIZONTAL = '\u2501'; // ━ - heavy box-drawing horizontal
 
 // Bridge status indicators
 export const BRIDGE_SPINNER_FRAMES = ['\u00b7|\u00b7', '\u00b7/\u00b7', '\u00b7\u2014\u00b7', '\u00b7\\\u00b7'];
@@ -50,8 +50,8 @@ export const ANSI_SHOW_CURSOR = '\x1b[?25h';
 export const ANSI_CLEAR_SCREEN = '\x1b[2J\x1b[1;1H';
 
 // Update progress bar characters
-const LOADING_BAR_FILLED = '\u2588'; // █
-const LOADING_BAR_BODY = '\u2592'; // ▒
-const LOADING_BAR_EMPTY = '\u2591'; // ░
-const LOADING_BAR_HEAD_L = '\u2594'; // ▔
-const LOADING_BAR_HEAD_R = '\u2595'; // ▕
+const _LOADING_BAR_FILLED = '\u2588'; // █
+const _LOADING_BAR_BODY = '\u2592'; // ▒
+const _LOADING_BAR_EMPTY = '\u2591'; // ░
+const _LOADING_BAR_HEAD_L = '\u2594'; // ▔
+const _LOADING_BAR_HEAD_R = '\u2595'; // ▕

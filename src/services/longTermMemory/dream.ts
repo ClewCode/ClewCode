@@ -8,7 +8,7 @@
 import { getOriginalCwd } from '../../bootstrap/state.js';
 import { MemoryDB } from '../../memory/database.js';
 
-function getProjectPath(): string {
+function _getProjectPath(): string {
   try {
     return getOriginalCwd();
   } catch {

@@ -8,7 +8,7 @@ import type {
   PlatformAdapter,
   ScreenshotResult,
 } from './adapter.js';
-import { sanitizeGeometry, toBase64Jpeg } from './adapter.js';
+import { sanitizeGeometry } from './adapter.js';
 
 // PowerShell snippet: capture screen as JPEG base64 (scaled, JPEG quality 75)
 const SCREENSHOT_SCRIPT = `

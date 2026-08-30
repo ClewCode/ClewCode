@@ -1,7 +1,6 @@
 import { feature } from 'bun:bundle';
 import { z } from 'zod/v4';
 import { SandboxSettingsSchema } from '../../entrypoints/sandboxTypes.js';
-import { EFFORT_LEVELS } from '../effort.js';
 import { isEnvTruthy } from '../envUtils.js';
 import { lazySchema } from '../lazySchema.js';
 import { EXTERNAL_PERMISSION_MODES, PERMISSION_MODES } from '../permissions/PermissionMode.js';

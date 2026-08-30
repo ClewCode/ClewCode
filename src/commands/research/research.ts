@@ -1,5 +1,4 @@
 import { join } from 'path';
-import * as React from 'react';
 import { buildCitations } from '../../research/citations.js';
 import { extractClaimsFromText } from '../../research/claims.js';
 import { collectLocalMemory } from '../../research/collectors/localMemory.js';

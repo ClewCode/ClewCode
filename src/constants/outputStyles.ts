@@ -196,7 +196,7 @@ export async function getOutputStyleConfig(): Promise<OutputStyleConfig | null> 
   return allStyles[outputStyle] ?? null;
 }
 
-function hasCustomOutputStyle(): boolean {
+function _hasCustomOutputStyle(): boolean {
   const style = getSettings()?.outputStyle;
   return style !== undefined && style !== DEFAULT_OUTPUT_STYLE_NAME;
 }

@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { DOT_CLEW } from '../utils/clewPaths.js';
 import { getCwd } from '../utils/cwd.js';
-import type { FileSignatures, RepoMapCache } from './types.js';
+import type { RepoMapCache } from './types.js';
 
 const CACHE_VERSION = 1;
 

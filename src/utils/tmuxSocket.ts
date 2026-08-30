@@ -173,7 +173,7 @@ export async function checkTmuxAvailable(): Promise<boolean> {
  * Returns false if availability hasn't been checked yet.
  * Use checkTmuxAvailable() to perform the check.
  */
-export function isTmuxAvailable(): boolean {
+export function isTmuxSocketReady(): boolean {
   return tmuxAvailabilityChecked && tmuxAvailable;
 }
 

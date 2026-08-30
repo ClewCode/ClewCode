@@ -844,7 +844,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
     let activeIndex: number | null = null;
     const sentMessageDelta = false;
     let hasStartedThinkingBlock = false;
-    let sawFinishReason = false;
+    let _sawFinishReason = false;
     let streamUsage: { prompt_tokens?: number; completion_tokens?: number } | null = null;
 
     try {
@@ -863,7 +863,7 @@ class OpenAICompatibleAdapter implements ProviderAdapter {
           throw err;
         }
 
-        if (finishReason) sawFinishReason = true;
+        if (finishReason) _sawFinishReason = true;
 
         // Tool calls arrived as full array (non-streaming tool mode) — emit start/delta/stop
         if (finishReason === 'tool_calls' && !chunk.choices?.[0]?.delta?.tool_calls) {

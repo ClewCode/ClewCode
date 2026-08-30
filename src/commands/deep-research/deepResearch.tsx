@@ -30,7 +30,6 @@ import {
 } from '../../tools/ResearchTool/truthChecker.js';
 import type { LocalJSXCommandOnDone } from '../../types/command.js';
 import { getCwd } from '../../utils/cwd.js';
-import { getFsImplementation } from '../../utils/fsOperations.js';
 
 interface DeepResearchRunnerViewProps {
   query: string;
@@ -152,7 +151,7 @@ function DeepResearchRunnerView({ query, mode, onDone }: DeepResearchRunnerViewP
                   }));
                 }
                 return res;
-              } catch (err) {
+              } catch (_err) {
                 if (active) {
                   setState(prev => ({
                     ...prev,

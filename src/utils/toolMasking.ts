@@ -4,7 +4,7 @@
  * Saves 3,000–5,000 tokens on every request when in non-destructive modes.
  */
 
-import type { Tool, Tools } from '../Tool.js';
+import type { Tools } from '../Tool.js';
 
 export type ToolMaskingMode = 'default' | 'plan' | 'read-only' | 'minimal';
 

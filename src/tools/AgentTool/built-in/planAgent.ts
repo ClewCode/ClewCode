@@ -5,7 +5,6 @@ import { FILE_READ_TOOL_NAME } from 'src/tools/FileReadTool/prompt.js';
 import { FILE_WRITE_TOOL_NAME } from 'src/tools/FileWriteTool/prompt.js';
 import { GLOB_TOOL_NAME } from 'src/tools/GlobTool/prompt.js';
 import { GREP_TOOL_NAME } from 'src/tools/GrepTool/prompt.js';
-import { NOTEBOOK_EDIT_TOOL_NAME } from 'src/tools/NotebookEditTool/constants.js';
 import { hasEmbeddedSearchTools } from 'src/utils/embeddedTools.js';
 import { AGENT_TOOL_NAME } from '../constants.js';
 import type { BuiltInAgentDefinition } from '../loadAgentsDir.js';

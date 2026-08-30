@@ -135,7 +135,7 @@ catch(err){document.getElementById('form').style.display='block';document.getEle
 
   return new Promise<void>((resolve, reject) => {
     const server = createServer(async (req, res) => {
-      const url = new URL(req.url || '/', `http://localhost`);
+      const _url = new URL(req.url || '/', `http://localhost`);
       const parsedUrl = new URL(req.url || '/', `http://localhost`);
 
       if (parsedUrl.pathname === '/callback') {

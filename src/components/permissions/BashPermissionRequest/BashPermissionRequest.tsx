@@ -36,7 +36,7 @@ import { PermissionExplainerContent, usePermissionExplainerUI } from '../Permiss
 import type { PermissionRequestProps } from '../PermissionRequest.js';
 import { PermissionRuleExplanation } from '../PermissionRuleExplanation.js';
 import { SedEditPermissionRequest } from '../SedEditPermissionRequest/SedEditPermissionRequest.js';
-import { useShellPermissionFeedback } from '../useShellPermissionFeedback.js';
+import { handleSharedShellPermissionChoice, useShellPermissionFeedback } from '../useShellPermissionFeedback.js';
 import { logUnaryPermissionEvent } from '../utils.js';
 import { bashToolUseOptions } from './bashToolUseOptions.js';
 
@@ -395,48 +395,17 @@ function BashPermissionRequestInner({
       return;
     }
 
-    switch (value) {
-      case 'yes': {
-        const trimmedFeedback = acceptFeedback.trim();
-        logUnaryPermissionEvent('tool_use_single', toolUseConfirm, 'accept');
-        // Log accept submission with feedback context
-        logEvent('tengu_accept_submitted', {
-          toolName: toolNameForAnalytics,
-          isMcp: toolUseConfirm.tool.isMcp ?? false,
-          has_instructions: !!trimmedFeedback,
-          instructions_length: trimmedFeedback.length,
-          entered_feedback_mode: yesFeedbackModeEntered,
-        });
-        toolUseConfirm.onAllow(toolUseConfirm.input, [], trimmedFeedback || undefined);
-        onDone();
-        break;
-      }
-      case 'yes-apply-suggestions': {
-        logUnaryPermissionEvent('tool_use_single', toolUseConfirm, 'accept');
-        // Extract suggestions if present (works for both 'ask' and 'passthrough' behaviors)
-        const permissionUpdates =
-          'suggestions' in toolUseConfirm.permissionResult ? toolUseConfirm.permissionResult.suggestions || [] : [];
-        toolUseConfirm.onAllow(toolUseConfirm.input, permissionUpdates);
-        onDone();
-        break;
-      }
-      case 'no': {
-        const trimmedFeedback = rejectFeedback.trim();
-
-        // Log reject submission with feedback context
-        logEvent('tengu_reject_submitted', {
-          toolName: toolNameForAnalytics,
-          isMcp: toolUseConfirm.tool.isMcp ?? false,
-          has_instructions: !!trimmedFeedback,
-          instructions_length: trimmedFeedback.length,
-          entered_feedback_mode: noFeedbackModeEntered,
-        });
-
-        // Process rejection (with or without feedback)
-        handleReject(trimmedFeedback || undefined);
-        break;
-      }
-    }
+    handleSharedShellPermissionChoice({
+      value,
+      toolUseConfirm,
+      toolNameForAnalytics,
+      acceptFeedback,
+      rejectFeedback,
+      yesFeedbackModeEntered,
+      noFeedbackModeEntered,
+      handleReject,
+      onDone,
+    });
   }
 
   const classifierSubtitle = feature('BASH_CLASSIFIER') ? (

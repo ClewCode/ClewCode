@@ -263,14 +263,14 @@ export function isSessionEndMessage(msg: SDKMessage): boolean {
 /**
  * Check if an SDKResultMessage indicates success
  */
-function isSuccessResult(msg: SDKResultMessage): boolean {
+function _isSuccessResult(msg: SDKResultMessage): boolean {
   return msg.subtype === 'success';
 }
 
 /**
  * Extract the result text from a successful SDKResultMessage
  */
-function getResultText(msg: SDKResultMessage): string | null {
+function _getResultText(msg: SDKResultMessage): string | null {
   if (msg.subtype === 'success') {
     return msg.result;
   }

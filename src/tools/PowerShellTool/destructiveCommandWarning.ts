@@ -2,14 +2,20 @@
  * Detects potentially destructive PowerShell commands and returns a warning
  * string for display in the permission dialog. This is purely informational
  * -- it doesn't affect permission logic or auto-approval.
+ *
+ * Shell-agnostic commands (git, SQL, kubectl, terraform) come from
+ * `tools/shared/destructiveCommandPatterns.ts`. This module previously kept
+ * its own partial copy of them, which had silently fallen eight patterns
+ * behind BashTool's.
  */
 
-type DestructivePattern = {
-  pattern: RegExp;
-  warning: string;
-};
+import {
+  buildDestructiveCommandWarner,
+  type DestructivePattern,
+  SHELL_AGNOSTIC_DESTRUCTIVE_PATTERNS,
+} from '../shared/destructiveCommandPatterns.js';
 
-const DESTRUCTIVE_PATTERNS: DestructivePattern[] = [
+const POWERSHELL_DESTRUCTIVE_PATTERNS: readonly DestructivePattern[] = [
   // Remove-Item with -Recurse and/or -Force (and common aliases)
   // Anchored to statement start (^, |, ;, &, newline, {, () so `git rm --force`
   // doesn't match — \b would match `rm` after any word boundary. The `{(`
@@ -51,30 +57,6 @@ const DESTRUCTIVE_PATTERNS: DestructivePattern[] = [
     warning: 'Note: may clear a disk',
   },
 
-  // Git destructive operations (same as BashTool)
-  {
-    pattern: /\bgit\s+reset\s+--hard\b/i,
-    warning: 'Note: may discard uncommitted changes',
-  },
-  {
-    pattern: /\bgit\s+push\b[^|;&\n]*\s+(--force|--force-with-lease|-f)\b/i,
-    warning: 'Note: may overwrite remote history',
-  },
-  {
-    pattern: /\bgit\s+clean\b(?![^|;&\n]*(?:-[a-zA-Z]*n|--dry-run))[^|;&\n]*-[a-zA-Z]*f/i,
-    warning: 'Note: may permanently delete untracked files',
-  },
-  {
-    pattern: /\bgit\s+stash\s+(drop|clear)\b/i,
-    warning: 'Note: may permanently remove stashed changes',
-  },
-
-  // Database operations
-  {
-    pattern: /\b(DROP|TRUNCATE)\s+(TABLE|DATABASE|SCHEMA)\b/i,
-    warning: 'Note: may drop or truncate database objects',
-  },
-
   // System operations
   {
     pattern: /\bStop-Computer\b/i,
@@ -90,15 +72,17 @@ const DESTRUCTIVE_PATTERNS: DestructivePattern[] = [
   },
 ];
 
+// PowerShell-specific deletion syntax is tested first so `Remove-Item -Recurse`
+// reports the precise deletion warning rather than a broader shared match.
+const matchDestructiveCommand = buildDestructiveCommandWarner([
+  ...POWERSHELL_DESTRUCTIVE_PATTERNS,
+  ...SHELL_AGNOSTIC_DESTRUCTIVE_PATTERNS,
+]);
+
 /**
  * Checks if a PowerShell command matches known destructive patterns.
  * Returns a human-readable warning string, or null if no destructive pattern is detected.
  */
 export function getDestructiveCommandWarning(command: string): string | null {
-  for (const { pattern, warning } of DESTRUCTIVE_PATTERNS) {
-    if (pattern.test(command)) {
-      return warning;
-    }
-  }
-  return null;
+  return matchDestructiveCommand(command);
 }

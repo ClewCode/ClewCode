@@ -16,7 +16,7 @@ import { env } from './env.js';
 import { getClewConfigHomeDir, isEnvTruthy } from './envUtils.js';
 import { execFileNoThrow, execFileNoThrowWithCwd, execSyncWithDefaults_DEPRECATED } from './execFileNoThrow.js';
 import { getFsImplementation } from './fsOperations.js';
-import { getAncestorPidsAsync } from './genericProcessUtils.js';
+import { getAncestorPidsAsync, isProcessRunning } from './genericProcessUtils.js';
 import { isJetBrainsPluginInstalledCached } from './jetbrains.js';
 import { logError } from './log.js';
 import { getPlatform } from './platform.js';
@@ -35,15 +35,6 @@ import { errorMessage, isFetchError, isFsInaccessible } from './errors.js';
 import { checkWSLDistroMatch, WindowsToWSLConverter } from './idePathConversion.js';
 import { sleep } from './sleep.js';
 import { jsonParse } from './slowOperations.js';
-
-function isProcessRunning(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 // Returns a function that lazily fetches our process's ancestor PID chain,
 // caching within the closure's lifetime. Callers should scope this to a

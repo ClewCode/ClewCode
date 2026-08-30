@@ -3,6 +3,7 @@ import { logForDebugging } from '../../../utils/debug.js';
 import { execFileNoThrow } from '../../../utils/execFileNoThrow.js';
 import { IT2_COMMAND, isInITerm2, isIt2CliAvailable } from './detection.js';
 import { registerITermBackend } from './registry.js';
+import { createSequentialLock } from './sequentialLock.js';
 import type { CreatePaneResult, PaneBackend, PaneId } from './types.js';
 
 // Track session IDs for teammates
@@ -11,24 +12,9 @@ const teammateSessionIds: string[] = [];
 // Track whether the first pane has been used
 let firstPaneUsed = false;
 
-// Lock mechanism to prevent race conditions when spawning teammates in parallel
-let paneCreationLock: Promise<void> = Promise.resolve();
-
-/**
- * Acquires a lock for pane creation, ensuring sequential execution.
- * Returns a release function that must be called when done.
- */
-function acquirePaneCreationLock(): Promise<() => void> {
-  let release: () => void;
-  const newLock = new Promise<void>(resolve => {
-    release = resolve;
-  });
-
-  const previousLock = paneCreationLock;
-  paneCreationLock = newLock;
-
-  return previousLock.then(() => release!);
-}
+// Lock mechanism to prevent race conditions when spawning teammates in
+// parallel. Independent of TmuxBackend's lock — only one backend is ever live.
+const { acquire: acquirePaneCreationLock } = createSequentialLock();
 
 /**
  * Runs an it2 CLI command and returns the result.

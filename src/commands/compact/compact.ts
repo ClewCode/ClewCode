@@ -26,7 +26,6 @@ import { executePreCompactHooks } from '../../utils/hooks.js';
 import { logError } from '../../utils/log.js';
 import { createCompactBoundaryMessage, getMessagesAfterCompactBoundary } from '../../utils/messages.js';
 import { buildEffectiveSystemPrompt, type SystemPrompt } from '../../utils/systemPrompt.js';
-import { asSystemPrompt } from '../../utils/systemPromptType.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 // @ts-expect-error - reactiveCompact is feature-gated and may not have type declarations
@@ -153,7 +152,7 @@ export const call: LocalCommandCall = async (args, context) => {
   }
 };
 
-async function compactViaReactive(
+async function _compactViaReactive(
   messages: Message[],
   context: ToolUseContext,
   customInstructions: string,

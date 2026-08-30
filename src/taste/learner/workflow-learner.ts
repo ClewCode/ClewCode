@@ -8,7 +8,7 @@ export function analyzeWorkflowSequence(toolSequence?: string[], prompt?: string
   if (!toolSequence || toolSequence.length < 2) return [];
 
   const patterns: SemanticPattern[] = [];
-  const seq = toolSequence.join(' -> ');
+  const _seq = toolSequence.join(' -> ');
 
   // 1. Search before Edit habit
   const hasSearch = toolSequence.some(

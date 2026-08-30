@@ -282,7 +282,7 @@ Please perform deep research for the query.
       });
 
       let answer = '';
-      let eventCount = 0;
+      let _eventCount = 0;
       const synthesisMessages = [userMessage as any];
       let iterations = 0;
       const MAX_SYNTHESIS_ITERATIONS = 5;
@@ -326,7 +326,7 @@ Please perform deep research for the query.
         let currentAssistantText = '';
 
         for await (const event of queryStream) {
-          eventCount++;
+          _eventCount++;
           if (event.type === 'content_block_delta' && event.delta && event.delta.type === 'text_delta') {
             answer += event.delta.text;
             currentAssistantText += event.delta.text;

@@ -18,7 +18,6 @@ import { getPackageManager, type PackageManager } from './nativeInstaller/packag
 import { getPlatform } from './platform.js';
 import { gte, lt } from './semver.js';
 import { getInitialSettings } from './settings/settings.js';
-import { filterClaudeAliases, getShellConfigPaths, readFileLines, writeFileLines } from './shellConfig.js';
 import { sleep } from './sleep.js';
 import { jsonParse } from './slowOperations.js';
 

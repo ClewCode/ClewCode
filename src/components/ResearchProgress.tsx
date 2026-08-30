@@ -1,4 +1,3 @@
-import figures from 'figures';
 import type * as React from 'react';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { Box, Text } from '../ink.js';

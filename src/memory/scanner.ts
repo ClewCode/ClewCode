@@ -44,7 +44,7 @@ const PACKAGE_MANAGER_INDICATORS = [
   { lock: 'package-lock.json', name: 'npm' },
 ] as const;
 
-const CONFIG_INDICATORS = [
+const _CONFIG_INDICATORS = [
   { file: 'tsconfig.json', label: 'TypeScript' },
   { file: 'biome.json', label: 'Biome' },
   { file: '.eslintrc.js', label: 'ESLint' },
@@ -60,7 +60,7 @@ const CONFIG_INDICATORS = [
   { file: 'Dockerfile', label: 'Docker' },
 ] as const;
 
-const KEY_FILES = ['CHANGELOG.md', 'README.md', 'LICENSE.md', 'CONTRIBUTING.md', 'AGENTS.md', 'SECURITY.md'];
+const _KEY_FILES = ['CHANGELOG.md', 'README.md', 'LICENSE.md', 'CONTRIBUTING.md', 'AGENTS.md', 'SECURITY.md'];
 
 async function readJson(path: string): Promise<Record<string, unknown> | null> {
   try {

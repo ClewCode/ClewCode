@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { ProviderManager } from '../../services/ai/ProviderManager.js';
-import { applyProviderSwitch, providerDisplayName, resolveModelSelection } from './providerSwitch.js';
+import {
+  applyProviderSwitch,
+  mergeProviderConfig,
+  providerDisplayName,
+  resolveModelSelection,
+} from './providerSwitch.js';
 
 afterEach(() => {
   const providerManager = ProviderManager.getInstance();
@@ -70,5 +75,45 @@ describe('providerDisplayName', () => {
   test('falls back to the raw input for unknown ids', () => {
     expect(providerDisplayName('not-a-provider')).toBe('not-a-provider');
     expect(providerDisplayName(undefined)).toBe('');
+  });
+});
+
+describe('mergeProviderConfig', () => {
+  test('registry defaults apply when nothing is saved', () => {
+    expect(mergeProviderConfig({ baseUrl: 'https://api.example.com', model: 'a' }, {})).toEqual({
+      baseUrl: 'https://api.example.com',
+      model: 'a',
+    });
+  });
+
+  test('a saved value overrides the registry default', () => {
+    expect(
+      mergeProviderConfig({ baseUrl: 'https://api.example.com' }, { baseUrl: 'http://127.0.0.1:8080/v1' }),
+    ).toEqual({ baseUrl: 'http://127.0.0.1:8080/v1' });
+  });
+
+  test('a blank saved value does not erase the registry default', () => {
+    // Regression: spreading the saved config wholesale let an empty baseUrl
+    // on disk clobber a real registry endpoint, leaving requests unroutable.
+    expect(mergeProviderConfig({ baseUrl: 'https://api.example.com' }, { baseUrl: '' })).toEqual({
+      baseUrl: 'https://api.example.com',
+    });
+  });
+
+  test('null and undefined saved values are ignored too', () => {
+    expect(
+      mergeProviderConfig({ baseUrl: 'https://api.example.com', apiKey: 'k' }, { baseUrl: null, apiKey: undefined }),
+    ).toEqual({ baseUrl: 'https://api.example.com', apiKey: 'k' });
+  });
+
+  test('saved keys the registry does not know about are preserved', () => {
+    expect(mergeProviderConfig({ baseUrl: 'x' }, { customHeader: 'y' })).toEqual({ baseUrl: 'x', customHeader: 'y' });
+  });
+
+  test('falsy-but-meaningful values survive', () => {
+    expect(mergeProviderConfig({ maxRetries: 5, stream: true }, { maxRetries: 0, stream: false })).toEqual({
+      maxRetries: 0,
+      stream: false,
+    });
   });
 });

@@ -8,7 +8,7 @@ const RUNTIME_DIRS = {
   workflows: `${DOT_CLEW}/${WORKFLOWS_DIR}`,
 };
 
-const DEFAULT_BUDGET: RuntimeBudget = {
+const _DEFAULT_BUDGET: RuntimeBudget = {
   maxSteps: 40,
   maxToolCalls: 120,
   maxLlmCalls: 40,

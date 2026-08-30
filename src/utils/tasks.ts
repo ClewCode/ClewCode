@@ -794,3 +794,18 @@ export async function unassignTeammateTasks(
 }
 
 export const DEFAULT_TASKS_MODE_TASK_LIST_ID = 'tasklist';
+
+/**
+ * First task that is ready to be picked up: pending, unowned, and with every
+ * blocker already completed. A blocker that is itself missing from the list is
+ * treated as resolved, so a pruned task can't deadlock its dependents.
+ */
+export function findAvailableTask(tasks: Task[]): Task | undefined {
+  const unresolvedTaskIds = new Set(tasks.filter(t => t.status !== 'completed').map(t => t.id));
+
+  return tasks.find(task => {
+    if (task.status !== 'pending') return false;
+    if (task.owner) return false;
+    return task.blockedBy.every(id => !unresolvedTaskIds.has(id));
+  });
+}
