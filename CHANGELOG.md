@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2026-08-30
+
+### Removed
+
+- Deleted `.reference/` directory (scraped competitor docs, not used by the project).
+
 ## [Unreleased]
 
 ### Fixed
@@ -18,6 +24,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Todo task tree:** The expanded task list now renders as a compact TODO tree with Roman-numeral section headings, per-section completion counts, checkbox states, and strikethrough completed items. Tasks can opt into ordered sections with `metadata.group` and `metadata.groupOrder`; existing tasks remain compatible under the default Execution section.
+- **Agent activity placement:** The live Working / Needs input / Completed agent roster now renders below the input prompt and status footer instead of below the transcript logo.
 - **Deduplicated logic that had been copy-pasted between modules**: `skipTimeoutFlags` + `TIMEOUT_FLAG_VALUE_RE` (a security-relevant `timeout` wrapper parser duplicated byte-for-byte across `bashPermissions.ts` and `pathValidation.ts`) → `src/tools/BashTool/timeoutFlags.ts`; the Anthropic auth-header builder → `src/services/anthropicAuthHeaders.ts`; the shared accept/reject switch in the Bash and PowerShell permission dialogs → `handleSharedShellPermissionChoice`; `parseGoalChain` → `src/tools/GoalTool/goalChain.ts`; `findAvailableTask` → `src/utils/tasks.ts`; the pane-creation mutex → `createSequentialLock` (a factory, so the iTerm and tmux backends keep independent locks).
 - **Resolved four colliding `isProcessRunning` definitions** onto the canonical one in `src/utils/genericProcessUtils.ts`. Two of the removed copies lacked its `pid <= 1` guard, so a lockfile recording pid 0 or 1 was previously treated as a live process forever.
 - **Disambiguated same-named redaction and tmux helpers** that did different things: `redactSecrets` → `redactSecretFieldsInJson` (bridge debug JSON) and `redactWithScannerRules` (gitleaks rules); `isTmuxAvailable` in `tmuxSocket.ts` → `isTmuxSocketReady` (it returns cached state synchronously, unlike the two async probes); `worktree.ts` now re-exports the single async probe from `swarm/backends/detection.ts`.
