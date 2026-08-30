@@ -2,6 +2,7 @@ import type { Database } from 'bun:sqlite';
 import { getMemoryDb } from './db.js';
 import { searchChunksFTS } from './store.js';
 import type { MemorySearchResult } from './types.js';
+import { cosineSimilarity } from '../memdir/semanticSearch.js';
 
 // ── Embedding cache (in-memory LRU) ──
 const embeddingCache = new Map<string, number[]>();
@@ -29,19 +30,6 @@ async function computeEmbedding(text: string): Promise<number[] | null> {
     // Pipeline unavailable (model not downloaded, missing deps, etc.)
     return null;
   }
-}
-
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0,
-    magA = 0,
-    magB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    magA += a[i] * a[i];
-    magB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(magA) * Math.sqrt(magB);
-  return denom === 0 ? 0 : dot / denom;
 }
 
 /** Ensure embedding table exists in the DB. */

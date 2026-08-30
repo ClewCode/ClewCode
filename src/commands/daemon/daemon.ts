@@ -15,34 +15,14 @@ import {
 import type { ToolUseContext } from '../../Tool.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
 import { formatDaemonStatus } from './daemonStatus.js';
-
-function parseArgs(args: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < args.length; i++) {
-    const char = args[i]!;
-    if (char === '"' || char === "'") {
-      inQuotes = !inQuotes;
-      continue;
-    }
-    if (char === ' ' && !inQuotes) {
-      if (current.trim().length > 0) result.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  if (current.trim().length > 0) result.push(current.trim());
-  return result;
-}
+import { parseCommandArgs } from '../../utils/parseCommandArgs.js';
 
 export async function call(
   onDone: LocalJSXCommandOnDone,
   _context: ToolUseContext & LocalJSXCommandContext,
   args: string,
 ): Promise<ReactNode | null> {
-  const tokens = parseArgs(args || '');
+  const tokens = parseCommandArgs(args || '');
   const subcommand = tokens[0]?.toLowerCase();
 
   if (!subcommand) {

@@ -1,19 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-
-// Test cosine similarity directly to avoid sharp dependency issues
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  const denominator = Math.sqrt(normA) * Math.sqrt(normB);
-  return denominator === 0 ? 0 : dotProduct / denominator;
-}
+import { cosineSimilarity } from './semanticSearch.js';
 
 describe('semantic search', () => {
   it('calculates cosine similarity correctly', () => {

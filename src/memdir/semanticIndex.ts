@@ -21,6 +21,7 @@ import { createHash } from 'crypto';
 import { join } from 'path';
 import { logForDebugging } from '../utils/debug.js';
 import { getClewConfigHomeDir } from '../utils/envUtils.js';
+import { cosineSimilarity } from './semanticSearch.js';
 
 const EMBEDDING_DIM = 768;
 
@@ -253,20 +254,6 @@ function bruteForceSearch(queryEmbedding: number[], topK: number, threshold: num
     .filter(r => r.score >= threshold)
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
-}
-
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  return denom === 0 ? 0 : dot / denom;
 }
 
 /**

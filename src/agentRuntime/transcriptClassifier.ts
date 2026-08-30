@@ -27,6 +27,8 @@
  * in at >= 0.55.
  */
 
+import { escapeRegExp } from '../utils/stringUtils.js';
+
 export type ComplexityRecommendation = 'simple' | 'moderate' | 'complex';
 
 export type TranscriptContext = {
@@ -235,12 +237,8 @@ export function buildUltracodeSuggestion(result: ClassifierResult): string | nul
 }
 
 function containsWord(haystack: string, word: string): boolean {
-  const re = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
+  const re = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i');
   return re.test(haystack);
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function clamp01(n: number): number {
