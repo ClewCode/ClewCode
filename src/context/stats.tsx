@@ -1,5 +1,5 @@
 import type React from 'react';
-import { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
+import { createContext, useEffect, useMemo } from 'react';
 import { saveCurrentProjectConfig } from '../utils/config.js';
 
 export type StatsStore = {
@@ -128,32 +128,4 @@ export function StatsProvider({ store: externalStore, children }: Props): React.
   }, [store]);
 
   return <StatsContext.Provider value={store}>{children}</StatsContext.Provider>;
-}
-
-function useStats(): StatsStore {
-  const store = useContext(StatsContext);
-  if (!store) {
-    throw new Error('useStats must be used within a StatsProvider');
-  }
-  return store;
-}
-
-function useCounter(name: string): (value?: number) => void {
-  const store = useStats();
-  return useCallback((value?: number) => store.increment(name, value), [store, name]);
-}
-
-function useGauge(name: string): (value: number) => void {
-  const store = useStats();
-  return useCallback((value: number) => store.set(name, value), [store, name]);
-}
-
-function useTimer(name: string): (value: number) => void {
-  const store = useStats();
-  return useCallback((value: number) => store.observe(name, value), [store, name]);
-}
-
-function useSet(name: string): (value: string) => void {
-  const store = useStats();
-  return useCallback((value: string) => store.add(name, value), [store, name]);
 }

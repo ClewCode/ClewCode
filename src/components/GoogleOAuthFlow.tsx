@@ -47,7 +47,7 @@ type OAuthStatus =
   | { state: 'success'; tokens: GoogleOAuthTokens }
   | { state: 'error'; message: string };
 
-const PASTE_HERE_MSG = 'Paste authorization code here > ';
+const _PASTE_HERE_MSG = 'Paste authorization code here > ';
 
 function SelectMethod({
   onSelect,

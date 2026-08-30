@@ -32,8 +32,6 @@ import {
   computeEffectiveWindow,
   computeLimits,
   DEFAULT_BUFFER_TOKENS,
-  FORCE_BUFFER_TOKENS,
-  MANUAL_COMPACT_BUFFER_TOKENS,
   WARN_BUFFER_TOKENS,
 } from './v2/limits.js';
 

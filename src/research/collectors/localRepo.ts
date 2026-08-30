@@ -1,5 +1,5 @@
 import { readdir } from 'fs/promises';
-import { join, relative } from 'path';
+import { join } from 'path';
 import { getFsImplementation } from '../../utils/fsOperations.js';
 import type { ResearchSource } from '../types.js';
 

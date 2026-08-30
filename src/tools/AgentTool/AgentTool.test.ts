@@ -1,4 +1,4 @@
-import { describe, expect, it, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { deriveAgentDescription, inputSchema } from './AgentTool.js';
 
 describe('AgentTool inputSchema validation', () => {

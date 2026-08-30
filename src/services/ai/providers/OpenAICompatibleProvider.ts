@@ -1,5 +1,5 @@
 import { APIError } from '@anthropic-ai/sdk';
-import { extractRateLimitsFromHeaders, parseRetryAfter } from '../rateLimits.js';
+import { parseRetryAfter } from '../rateLimits.js';
 import { normalizeUsage } from '../usageNormalizer.js';
 import type { ProviderClient, ProviderId, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 

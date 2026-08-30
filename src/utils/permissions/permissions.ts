@@ -421,7 +421,7 @@ export const hasPermissionsToUseTool: CanUseToolFn = async (
   // This ensures that a successful tool use (even one auto-allowed by rules)
   // breaks the consecutive denial streak.
   if (result.behavior === 'allow') {
-    const appState = context.getAppState();
+    const _appState = context.getAppState();
     if (feature('TRANSCRIPT_CLASSIFIER')) {
       // Use atomic update to prevent TOCTOU race: read current state INSIDE
       // the setAppState callback to ensure we operate on the latest state (BUG #3)

@@ -26,12 +26,7 @@ export type {
 export { getProviderModelInfo } from './providerCapabilities.js';
 export type { ProviderId, ProviderInterface };
 
-import type {
-  PromptCachingSupport,
-  ProviderCapabilities,
-  ProviderCapabilityEntry,
-  ProviderModelInfo,
-} from './providerCapabilities.js';
+import type { PromptCachingSupport, ProviderCapabilityEntry } from './providerCapabilities.js';
 
 export interface ProviderRegistryEntry extends ProviderCapabilityEntry {
   provider: ProviderInterface;

@@ -3,7 +3,6 @@ import type { ToolResultBlockParam, ToolUseBlock } from '@anthropic-ai/sdk/resou
 import type { CanUseToolFn } from './hooks/useCanUseTool.js';
 import { FallbackTriggeredError } from './services/api/withRetry.js';
 import { ProviderManager } from './services/ai/ProviderManager.js';
-import type { EffortLevel } from './utils/effort.js';
 import { createCompactSessionState, runCompaction, shortfallWarning } from './services/compact/v2/index.js';
 import {
   calculateTokenWarningState,

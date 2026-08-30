@@ -153,7 +153,7 @@ export function Config({
   const mainLoopModel = useAppState(s => s.mainLoopModel);
   const verbose = useAppState(s => s.verbose);
   const thinkingEnabled = useAppState(s => s.thinkingEnabled);
-  const isFastMode = false;
+  const _isFastMode = false;
   const promptSuggestionEnabled = useAppState(s => s.promptSuggestionEnabled);
   // Show auto in the default-mode dropdown when the user has opted in OR the
   // config is fully 'enabled' — even if currently circuit-broken ('disabled'),

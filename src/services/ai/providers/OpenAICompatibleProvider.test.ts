@@ -189,7 +189,7 @@ describe('OpenAICompatibleProvider base URL env override', () => {
 describe('OpenAICompatibleProvider retry-after handling', () => {
   test('respects Retry-After header on 429 response', async () => {
     let fetchCalls = 0;
-    const delays: number[] = [];
+    const _delays: number[] = [];
     const startTime = Date.now();
 
     globalThis.fetch = (async () => {

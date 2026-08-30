@@ -120,7 +120,7 @@ export function profileReport(): void {
   if (DETAILED_PROFILING) {
     // Write to file
     const path = getStartupPerfLogPath();
-    const dir = dirname(path);
+    const _dir = dirname(path);
     const fs = getFsImplementation();
     fs.writeFileSync(path, getReport(), 'utf8');
 

@@ -4,14 +4,7 @@
  */
 
 import { EvidenceCollector } from '../evidence/collector.js';
-import type {
-  TasteConflict,
-  TasteEvidence,
-  TasteLearningInput,
-  TasteLearningResult,
-  TasteRule,
-  TasteStore,
-} from '../types.js';
+import type { TasteEvidence, TasteLearningInput, TasteLearningResult, TasteRule, TasteStore } from '../types.js';
 import { updateRuleConfidence } from './confidence.js';
 import { findConflicts } from './conflict.js';
 import { analyzeSemanticDiff, type SemanticPattern } from './diff-analyzer.js';
@@ -78,7 +71,7 @@ export class TasteLearner {
 
     // 2. Record User Action Evidence
     if (input.userAction) {
-      const isPositive = input.userAction === 'accept';
+      const _isPositive = input.userAction === 'accept';
       const ev = await this.collector.record({
         taskId: input.taskId,
         signal: input.userAction,

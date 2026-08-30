@@ -742,7 +742,7 @@ function buildProviderModelGroups(
   return Array.from(groups.values());
 }
 
-function ProviderModelGroupEntry({
+function _ProviderModelGroupEntry({
   group,
   totalProviderTokens,
   totalModelTokens,

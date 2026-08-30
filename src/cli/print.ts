@@ -1870,7 +1870,7 @@ function runHeadlessStreaming(
                 ),
               agents: currentAgents,
               orphanedPermission: cmd.orphanedPermission,
-              setSDKStatus: status => {
+              setSDKStatus: _status => {
                 output.enqueue({
                   type: 'system',
                   subtype: 'status',

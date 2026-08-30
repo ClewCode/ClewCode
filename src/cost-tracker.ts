@@ -320,7 +320,7 @@ export function addToTotalSessionCost(
   const cacheCreateTokens = isAnthropicUsage
     ? ((usage as Usage).cache_creation_input_tokens ?? 0)
     : ((usage as ProviderUsage).cacheCreationInputTokens ?? 0);
-  const speed = isAnthropicUsage ? (usage as Usage).speed : undefined;
+  const _speed = isAnthropicUsage ? (usage as Usage).speed : undefined;
 
   const attrs = { model };
 

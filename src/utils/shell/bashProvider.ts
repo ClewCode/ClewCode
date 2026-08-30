@@ -69,13 +69,13 @@ export async function createBashShellProvider(
   // On Windows, if snapshot creation is not healthy after a short wait,
   // fall back to a no-snapshot provider so the agent can continue working
   // instead of stalling on shell startup.
-  let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+  let _fallbackTimer: ReturnType<typeof setTimeout> | undefined;
   let resolvedProvider: Promise<ShellProvider> | undefined;
   // Track the last resolved snapshot path for use in getSpawnArgs
   let lastSnapshotFilePath: string | undefined;
 
   if (getPlatform() === 'windows' && !options?.skipSnapshot) {
-    fallbackTimer = setTimeout(async () => {
+    _fallbackTimer = setTimeout(async () => {
       const snapshotFilePath = await snapshotPromise;
       if (!snapshotFilePath && !resolvedProvider) {
         logForDebugging('Shell snapshot did not complete in time on Windows; using no-snapshot bash provider');

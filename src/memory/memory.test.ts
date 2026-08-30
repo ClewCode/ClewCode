@@ -283,7 +283,7 @@ import { mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { MemoryDB } from './database.js';
 import { applyFeedback, resolveSignal } from './feedback.js';
-import { getMemoryDirPath, initMemoryHierarchy, writeMemoryFile } from './hierarchy.js';
+import { getMemoryDirPath } from './hierarchy.js';
 
 const memDbDir = join(tempCwd, '.clew', 'memory-test');
 

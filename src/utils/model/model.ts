@@ -1,5 +1,4 @@
 import { getMainLoopModelOverride } from '../../bootstrap/state.js';
-import { LIGHTNING_BOLT } from '../../constants/figures.js';
 import { ProviderManager } from '../../services/ai/ProviderManager.js';
 import { resolveProviderModelInfo } from '../../services/ai/providerCapabilities.js';
 import { PROVIDER_REGISTRY } from '../../services/ai/providerRegistry.js';

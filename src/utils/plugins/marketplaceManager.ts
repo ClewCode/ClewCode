@@ -27,7 +27,7 @@ import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/gr
 import { logForDebugging } from '../debug.js';
 import { isEnvTruthy } from '../envUtils.js';
 import { ConfigParseError, errorMessage, getErrnoCode, isENOENT, isFetchError, toError } from '../errors.js';
-import { execFileNoThrow, execFileNoThrowWithCwd } from '../execFileNoThrow.js';
+import { execFileNoThrowWithCwd } from '../execFileNoThrow.js';
 import { getFsImplementation } from '../fsOperations.js';
 import { gitExe, isGitHubSshLikelyConfigured } from '../git.js';
 import { logError } from '../log.js';

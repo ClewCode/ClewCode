@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
 import {
-  type AgentDefinition,
   type BuiltInAgentDefinition,
   type CustomAgentDefinition,
   getActiveAgentsFromList,

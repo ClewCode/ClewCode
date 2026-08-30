@@ -7,7 +7,6 @@ import {
   getEffectiveContextWindowSize,
   isAtNaturalBoundary,
 } from './autoCompact.js';
-import type { CompactionResult } from './compact.js';
 import { DUPLICATE_TOOL_RESULT_CLEARED_MESSAGE, maybeDuplicateToolResultMicrocompact } from './microCompact.js';
 import { selectPostCompactMessagesToKeep } from './postCompactTail.js';
 

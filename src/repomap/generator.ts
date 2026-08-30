@@ -2,7 +2,7 @@
  * Repo Map Generator — builds structural AST map of codebase within strict token budget.
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { RepoMapCacheStore } from './cache.js';
 import { extractFileSymbols } from './extractor.js';

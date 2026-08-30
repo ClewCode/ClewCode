@@ -13,7 +13,6 @@ import {
   AccountInfoSchema,
   AgentDefinitionSchema,
   AgentInfoSchema,
-  FastModeStateSchema,
   HookEventSchema,
   HookInputSchema,
   McpServerConfigForProcessTransportSchema,

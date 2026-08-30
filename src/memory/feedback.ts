@@ -13,7 +13,6 @@
  * All events are recorded in memory_timeline.
  */
 
-import { getCwd } from '../utils/cwd.js';
 import { MemoryDB } from './database.js';
 
 export type FeedbackSignal = 'accepted' | 'rejected' | 'corrected' | 'disliked' | 'important' | 'wrong';
