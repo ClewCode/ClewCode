@@ -14,7 +14,7 @@ const SECRET_PATTERN = new RegExp(`"(${SECRET_FIELD_NAMES.join('|')})"\\s*:\\s*"
 
 const REDACT_MIN_LENGTH = 16;
 
-export function redactSecrets(s: string): string {
+export function redactSecretFieldsInJson(s: string): string {
   return s.replace(SECRET_PATTERN, (_match, field: string, value: string) => {
     if (value.length < REDACT_MIN_LENGTH) {
       return `"${field}":"[REDACTED]"`;
@@ -36,7 +36,7 @@ export function debugTruncate(s: string): string {
 /** Truncate a JSON-serializable value for debug logging. */
 export function debugBody(data: unknown): string {
   const raw = typeof data === 'string' ? data : jsonStringify(data);
-  const s = redactSecrets(raw);
+  const s = redactSecretFieldsInJson(raw);
   if (s.length <= DEBUG_MSG_LIMIT) {
     return s;
   }

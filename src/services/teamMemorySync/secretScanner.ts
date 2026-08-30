@@ -303,7 +303,7 @@ export function getSecretLabel(ruleId: string): string {
  */
 let redactRules: RegExp[] | null = null;
 
-export function redactSecrets(content: string): string {
+export function redactWithScannerRules(content: string): string {
   redactRules ??= SECRET_RULES.map(r => new RegExp(r.source, `${(r.flags ?? '').replace('g', '')}g`));
   for (const re of redactRules) {
     // Replace only the captured group, not the full match — patterns include
