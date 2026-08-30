@@ -5,6 +5,7 @@ import {
   claimTask,
   DEFAULT_TASKS_MODE_TASK_LIST_ID,
   ensureTasksDir,
+  findAvailableTask,
   getTasksDir,
   listTasks,
   type Task,
@@ -182,23 +183,6 @@ export function useTaskListWatcher({ taskListId, isLoading, onSubmitTask }: Prop
     if (isLoading) return;
     scheduleCheckRef.current();
   }, [enabled, isLoading]);
-}
-
-/**
- * Find an available task that can be worked on:
- * - Status is 'pending'
- * - No owner assigned
- * - Not blocked by any unresolved tasks
- */
-function findAvailableTask(tasks: Task[]): Task | undefined {
-  const unresolvedTaskIds = new Set(tasks.filter(t => t.status !== 'completed').map(t => t.id));
-
-  return tasks.find(task => {
-    if (task.status !== 'pending') return false;
-    if (task.owner) return false;
-    // Check all blockers are completed
-    return task.blockedBy.every(id => !unresolvedTaskIds.has(id));
-  });
 }
 
 /**

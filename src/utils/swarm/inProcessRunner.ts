@@ -71,7 +71,7 @@ import { emitTaskTerminatedSdk } from '../sdkEventQueue.js';
 import { sleep } from '../sleep.js';
 import { jsonStringify } from '../slowOperations.js';
 import { asSystemPrompt } from '../systemPromptType.js';
-import { claimTask, listTasks, type Task, updateTask } from '../tasks.js';
+import { claimTask, findAvailableTask, listTasks, type Task, updateTask } from '../tasks.js';
 import type { TeammateContext } from '../teammateContext.js';
 import { runWithTeammateContext } from '../teammateContext.js';
 import {
@@ -509,20 +509,6 @@ async function sendIdleNotification(
   const notification = createIdleNotification(agentName, options);
 
   await sendMessageToLeader(agentName, jsonStringify(notification), agentColor, teamName);
-}
-
-/**
- * Find an available task from the team's task list.
- * A task is available if it's pending, has no owner, and is not blocked.
- */
-function findAvailableTask(tasks: Task[]): Task | undefined {
-  const unresolvedTaskIds = new Set(tasks.filter(t => t.status !== 'completed').map(t => t.id));
-
-  return tasks.find(task => {
-    if (task.status !== 'pending') return false;
-    if (task.owner) return false;
-    return task.blockedBy.every(id => !unresolvedTaskIds.has(id));
-  });
 }
 
 /**

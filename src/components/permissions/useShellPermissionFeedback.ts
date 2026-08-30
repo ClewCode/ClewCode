@@ -141,3 +141,76 @@ export function useShellPermissionFeedback({
     handleFocus,
   };
 }
+
+/**
+ * Handle the three permission choices that Bash and PowerShell dialogs treat
+ * identically: plain accept, accept-with-suggestions, and reject. Both dialogs
+ * previously carried a byte-identical copy of this switch.
+ *
+ * Shell-specific choices (e.g. Bash's `yes-prefix-edited`) are handled by the
+ * caller before delegating here, so an unrecognized value is a no-op.
+ */
+export function handleSharedShellPermissionChoice({
+  value,
+  toolUseConfirm,
+  toolNameForAnalytics,
+  acceptFeedback,
+  rejectFeedback,
+  yesFeedbackModeEntered,
+  noFeedbackModeEntered,
+  handleReject,
+  onDone,
+}: {
+  value: string;
+  toolUseConfirm: ToolUseConfirm;
+  toolNameForAnalytics: AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS;
+  acceptFeedback: string;
+  rejectFeedback: string;
+  yesFeedbackModeEntered: boolean;
+  noFeedbackModeEntered: boolean;
+  handleReject: (feedback?: string) => void;
+  onDone: () => void;
+}): void {
+  switch (value) {
+    case 'yes': {
+      const trimmedFeedback = acceptFeedback.trim();
+      logUnaryPermissionEvent('tool_use_single', toolUseConfirm, 'accept');
+      // Log accept submission with feedback context
+      logEvent('tengu_accept_submitted', {
+        toolName: toolNameForAnalytics,
+        isMcp: toolUseConfirm.tool.isMcp ?? false,
+        has_instructions: !!trimmedFeedback,
+        instructions_length: trimmedFeedback.length,
+        entered_feedback_mode: yesFeedbackModeEntered,
+      });
+      toolUseConfirm.onAllow(toolUseConfirm.input, [], trimmedFeedback || undefined);
+      onDone();
+      break;
+    }
+    case 'yes-apply-suggestions': {
+      logUnaryPermissionEvent('tool_use_single', toolUseConfirm, 'accept');
+      // Extract suggestions if present (works for both 'ask' and 'passthrough' behaviors)
+      const permissionUpdates =
+        'suggestions' in toolUseConfirm.permissionResult ? toolUseConfirm.permissionResult.suggestions || [] : [];
+      toolUseConfirm.onAllow(toolUseConfirm.input, permissionUpdates);
+      onDone();
+      break;
+    }
+    case 'no': {
+      const trimmedFeedback = rejectFeedback.trim();
+
+      // Log reject submission with feedback context
+      logEvent('tengu_reject_submitted', {
+        toolName: toolNameForAnalytics,
+        isMcp: toolUseConfirm.tool.isMcp ?? false,
+        has_instructions: !!trimmedFeedback,
+        instructions_length: trimmedFeedback.length,
+        entered_feedback_mode: noFeedbackModeEntered,
+      });
+
+      // Process rejection (with or without feedback)
+      handleReject(trimmedFeedback || undefined);
+      break;
+    }
+  }
+}

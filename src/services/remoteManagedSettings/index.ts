@@ -15,12 +15,8 @@
 import { createHash } from 'crypto';
 import { open, unlink } from 'fs/promises';
 import { ofetch } from 'ofetch';
-import { getOauthConfig, OAUTH_BETA_HEADER } from '../../constants/oauth.js';
-import {
-  checkAndRefreshOAuthTokenIfNeeded,
-  getAnthropicApiKeyWithSource,
-  getClaudeAIOAuthTokens,
-} from '../../utils/auth.js';
+import { getOauthConfig } from '../../constants/oauth.js';
+import { checkAndRefreshOAuthTokenIfNeeded } from '../../utils/auth.js';
 import { registerCleanup } from '../../utils/cleanupRegistry.js';
 import { logForDebugging } from '../../utils/debug.js';
 import { classifyAxiosError, getErrnoCode } from '../../utils/errors.js';
@@ -29,6 +25,7 @@ import { type SettingsJson, SettingsSchema } from '../../utils/settings/types.js
 import { sleep } from '../../utils/sleep.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
 import { getClaudeCodeUserAgent } from '../../utils/userAgent.js';
+import { getAnthropicAuthHeaders as getRemoteSettingsAuthHeaders } from '../anthropicAuthHeaders.js';
 import { getRetryDelay } from '../api/withRetry.js';
 import { checkManagedSettingsSecurity, handleSecurityCheckResult } from './securityCheck.jsx';
 import { isRemoteManagedSettingsEligible, resetSyncCache } from './syncCache.js';
@@ -150,50 +147,6 @@ export async function waitForRemoteManagedSettingsToLoad(): Promise<void> {
   if (loadingCompletePromise) {
     await loadingCompletePromise;
   }
-}
-
-/**
- * Get auth headers for remote settings without calling getSettings()
- * This avoids circular dependencies during settings loading
- * Supports both API key and OAuth authentication
- */
-function getRemoteSettingsAuthHeaders(): {
-  headers: Record<string, string>;
-  error?: string;
-} {
-  // Try API key first (for Console users)
-  // Skip apiKeyHelper to avoid circular dependency with getSettings()
-  // Wrap in try-catch because getAnthropicApiKeyWithSource throws in CI/test environments
-  try {
-    const { key: apiKey } = getAnthropicApiKeyWithSource({
-      skipRetrievingKeyFromApiKeyHelper: true,
-    });
-    if (apiKey) {
-      return {
-        headers: {
-          'x-api-key': apiKey,
-        },
-      };
-    }
-  } catch {
-    // No API key available - continue to check OAuth
-  }
-
-  // Fall back to OAuth tokens (for Claude.ai users)
-  const oauthTokens = getClaudeAIOAuthTokens();
-  if (oauthTokens?.accessToken) {
-    return {
-      headers: {
-        Authorization: `Bearer ${oauthTokens.accessToken}`,
-        'anthropic-beta': OAUTH_BETA_HEADER,
-      },
-    };
-  }
-
-  return {
-    headers: {},
-    error: 'No authentication available',
-  };
 }
 
 /**

@@ -6,6 +6,7 @@ import { logForDebugging } from '../../utils/debug.js';
 import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { jsonParse, jsonStringify } from '../../utils/slowOperations.js';
 import { getErrnoCode } from '../errors.js';
+import { isProcessRunning } from '../genericProcessUtils.js';
 
 const LOCK_FILENAME = 'computer-use.lock';
 
@@ -47,22 +48,6 @@ async function readLock(): Promise<ComputerUseLock | undefined> {
     return isComputerUseLock(parsed) ? parsed : undefined;
   } catch {
     return undefined;
-  }
-}
-
-/**
- * Check whether a process is still running (signal 0 probe).
- *
- * Note: there is a small window for PID reuse — if the owning process
- * exits and an unrelated process is assigned the same PID, the check
- * will return true. This is extremely unlikely in practice.
- */
-function isProcessRunning(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
   }
 }
 

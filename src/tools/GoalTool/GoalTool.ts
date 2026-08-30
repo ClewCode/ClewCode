@@ -6,6 +6,7 @@ import { parseGoalBounds } from '../../services/goal/goalEvaluator.js';
 import { buildTool } from '../../Tool.js';
 import { setExecutionMode } from '../../utils/executionMode.js';
 import { type GoalState, getFullGoalState, setFullGoalState } from '../../utils/sessionGoalState.js';
+import { parseGoalChain } from './goalChain.js';
 
 const inputSchema = z.strictObject({
   action: z
@@ -24,15 +25,6 @@ const outputSchema = z.object({
   status: z.string(),
   chainRemaining: z.array(z.string()).optional(),
 });
-
-function parseGoalChain(input: string): { first: string; chain: string[] } | null {
-  const parts = input
-    .split(/\s+then\s+/i)
-    .map(p => p.trim())
-    .filter(Boolean);
-  if (parts.length < 2) return null;
-  return { first: parts[0]!, chain: parts.slice(1) };
-}
 
 const GOAL_TOOL_NAME = 'Goal';
 const MAX_GOAL_PREVIEW = 120;

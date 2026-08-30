@@ -592,10 +592,9 @@ export function parsePRReference(input: string): number | null {
   return null;
 }
 
-export async function isTmuxAvailable(): Promise<boolean> {
-  const { code } = await execFileNoThrow('tmux', ['-V']);
-  return code === 0;
-}
+// Re-exported so worktree callers keep a single import site. The probe itself
+// lives in the swarm backend detection module, which owns tmux detection.
+export { isTmuxAvailable } from './swarm/backends/detection.js';
 
 export function getTmuxInstallInstructions(): string {
   const platform = getPlatform();

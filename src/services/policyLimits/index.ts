@@ -17,7 +17,7 @@ import { readFileSync as fsReadFileSync } from 'fs';
 import { unlink, writeFile } from 'fs/promises';
 import { ofetch } from 'ofetch';
 import { join } from 'path';
-import { CLAUDE_AI_INFERENCE_SCOPE, getOauthConfig, OAUTH_BETA_HEADER } from '../../constants/oauth.js';
+import { CLAUDE_AI_INFERENCE_SCOPE, getOauthConfig } from '../../constants/oauth.js';
 import {
   checkAndRefreshOAuthTokenIfNeeded,
   getAnthropicApiKeyWithSource,
@@ -33,6 +33,7 @@ import { isEssentialTrafficOnly } from '../../utils/privacyLevel.js';
 import { sleep } from '../../utils/sleep.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
 import { getClaudeCodeUserAgent } from '../../utils/userAgent.js';
+import { getAnthropicAuthHeaders as getAuthHeaders } from '../anthropicAuthHeaders.js';
 import { getRetryDelay } from '../api/withRetry.js';
 import { type PolicyLimitsFetchResult, type PolicyLimitsResponse, PolicyLimitsResponseSchema } from './types.js';
 
@@ -198,47 +199,6 @@ export async function waitForPolicyLimitsToLoad(): Promise<void> {
   if (loadingCompletePromise) {
     await loadingCompletePromise;
   }
-}
-
-/**
- * Get auth headers for policy limits without calling getSettings()
- * Supports both API key and OAuth authentication
- */
-function getAuthHeaders(): {
-  headers: Record<string, string>;
-  error?: string;
-} {
-  // Try API key first (for Console users)
-  try {
-    const { key: apiKey } = getAnthropicApiKeyWithSource({
-      skipRetrievingKeyFromApiKeyHelper: true,
-    });
-    if (apiKey) {
-      return {
-        headers: {
-          'x-api-key': apiKey,
-        },
-      };
-    }
-  } catch {
-    // No API key available - continue to check OAuth
-  }
-
-  // Fall back to OAuth tokens (for Claude.ai users)
-  const oauthTokens = getClaudeAIOAuthTokens();
-  if (oauthTokens?.accessToken) {
-    return {
-      headers: {
-        Authorization: `Bearer ${oauthTokens.accessToken}`,
-        'anthropic-beta': OAUTH_BETA_HEADER,
-      },
-    };
-  }
-
-  return {
-    headers: {},
-    error: 'No authentication available',
-  };
 }
 
 /**

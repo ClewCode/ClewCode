@@ -13,6 +13,7 @@ import {
 } from '../constants.js';
 import { getLeaderPaneId, isInsideTmux as isInsideTmuxFromDetection, isTmuxAvailable } from './detection.js';
 import { registerTmuxBackend } from './registry.js';
+import { createSequentialLock } from './sequentialLock.js';
 import type { CreatePaneResult, PaneBackend, PaneId } from './types.js';
 
 // Track whether the first pane has been used for external swarm session
@@ -21,8 +22,9 @@ let firstPaneUsedForExternal = false;
 // Cached leader window target (session:window format) to avoid repeated queries
 let cachedLeaderWindowTarget: string | null = null;
 
-// Lock mechanism to prevent race conditions when spawning teammates in parallel
-let paneCreationLock: Promise<void> = Promise.resolve();
+// Lock mechanism to prevent race conditions when spawning teammates in
+// parallel. Independent of ITermBackend's lock — only one backend is ever live.
+const { acquire: acquirePaneCreationLock } = createSequentialLock();
 
 // Delay after pane creation to allow shell initialization (loading rc files, prompts, etc.)
 // 200ms is enough for most shell configurations including slow ones like starship/oh-my-zsh
@@ -30,22 +32,6 @@ const PANE_SHELL_INIT_DELAY_MS = 200;
 
 function waitForPaneShellReady(): Promise<void> {
   return sleep(PANE_SHELL_INIT_DELAY_MS);
-}
-
-/**
- * Acquires a lock for pane creation, ensuring sequential execution.
- * Returns a release function that must be called when done.
- */
-function acquirePaneCreationLock(): Promise<() => void> {
-  let release: () => void;
-  const newLock = new Promise<void>(resolve => {
-    release = resolve;
-  });
-
-  const previousLock = paneCreationLock;
-  paneCreationLock = newLock;
-
-  return previousLock.then(() => release!);
 }
 
 /**

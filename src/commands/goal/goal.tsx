@@ -2,6 +2,7 @@ import React from 'react';
 import { GoalManagerView } from '../../components/goalManager/GoalManagerView.js';
 import { parseGoalBounds } from '../../services/goal/goalEvaluator.js';
 import type { ToolUseContext } from '../../Tool.js';
+import { parseGoalChain } from '../../tools/GoalTool/goalChain.js';
 import type { LocalJSXCommandContext, LocalJSXCommandOnDone } from '../../types/command.js';
 import { setExecutionMode } from '../../utils/executionMode.js';
 import {
@@ -20,15 +21,6 @@ const GOAL_TEMPLATES: Record<string, string> = {
   'fix-lint': 'all lint errors are resolved or stop after 20 turns',
   'fix-typecheck': 'typecheck passes with no errors or stop after 20 turns',
 };
-
-function parseGoalChain(input: string): { first: string; chain: string[] } | null {
-  const parts = input
-    .split(/\s+then\s+/i)
-    .map(p => p.trim())
-    .filter(Boolean);
-  if (parts.length < 2) return null;
-  return { first: parts[0]!, chain: parts.slice(1) };
-}
 
 /**
  * `/goal` command — sets a session goal that is shown in the footer status line.
