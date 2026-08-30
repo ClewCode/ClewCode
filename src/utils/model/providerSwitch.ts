@@ -72,6 +72,25 @@ export type ProviderSwitchPatch = {
  * is what `getActiveProviderName()` reads first), or null when there is no
  * provider to switch to.
  */
+/**
+ * Layer the user's saved provider config over the registry defaults.
+ *
+ * The saved config wins, but only for keys that actually carry a value: the
+ * registry ships empty strings for providers with no default endpoint (e.g.
+ * `custom`), and a previously-saved blank `baseUrl`/`apiKey` must not erase a
+ * registry entry that does have one. Spreading the saved config wholesale
+ * would do exactly that.
+ */
+export function mergeProviderConfig(
+  registryEntry: Record<string, unknown>,
+  savedConfig: Record<string, unknown>,
+): Record<string, unknown> {
+  const savedOverrides = Object.fromEntries(
+    Object.entries(savedConfig).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+  );
+  return { ...registryEntry, ...savedOverrides };
+}
+
 export function applyProviderSwitch({
   targetProvider,
   model,
@@ -85,7 +104,11 @@ export function applyProviderSwitch({
   if (!providerId) return null;
 
   const providerManager = ProviderManager.getInstance();
+  const onDisk = providerManager.getOnDiskProviderConfig(true);
   const registryEntry = getSerializableProviderRegistryEntry(providerId) as unknown as Record<string, unknown>;
+  const onDiskConfig =
+    onDisk.provider === providerId && onDisk.providerConfig ? (onDisk.providerConfig as Record<string, unknown>) : {};
+  const mergedProviderConfig = mergeProviderConfig(registryEntry, onDiskConfig);
 
   if (persistAsDefault) {
     try {
@@ -97,12 +120,11 @@ export function applyProviderSwitch({
       providerManager.setSessionModel(null);
       providerManager.setSessionProviderConfig(null);
 
-      const onDisk = providerManager.getOnDiskProviderConfig(true);
       providerManager.saveSelectedProviderConfig({
         ...onDisk,
         provider: providerId,
         model: model ?? onDisk.model,
-        providerConfig: registryEntry,
+        providerConfig: mergedProviderConfig,
       });
     } catch {
       // Non-critical: provider.json write is best-effort.
@@ -113,7 +135,7 @@ export function applyProviderSwitch({
   providerManager.setSessionProviderConfig({
     provider: providerId,
     ...(model ? { model } : {}),
-    providerConfig: registryEntry,
+    providerConfig: mergedProviderConfig,
   });
 
   return { mainLoopProviderForSession: providerId };
