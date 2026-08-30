@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **`/memory timeline|stats|digest|digests|preview|consolidate` were permanently broken.** All six subcommands dynamically imported `services/longTermMemory/timeline.js` and `consolidate.js`, neither of which existed — every invocation failed with a caught `Cannot find module` and reported a misleading "Error loading …" message. `/memory graph`'s help text advertised `/memory timeline` regardless. Both modules are now implemented against MemoryDB, matching the contract `crossSession.ts` documents (session records are `note` memories keyed `session.<id>` whose body starts with `Session: `). The parser also tolerates historical records that were written double-prefixed as `Session: Session: …`.
+- **PowerShell destructive-command warnings were missing eight patterns BashTool had**, despite a comment claiming parity: `git checkout .`, `git restore .`, `git branch -D`, `git commit --amend`, `git … --no-verify`, `DELETE FROM`, `kubectl delete`, and `terraform destroy`. On Windows these ran through PowerShellTool with no warning. Shell-agnostic patterns now live in `src/tools/shared/destructiveCommandPatterns.ts` and are consumed by both tools, so they cannot drift again. Covered by a parity test.
+- **Provider config merge could be clobbered by blank saved values.** `applyProviderSwitch` spread the on-disk provider config over the registry entry wholesale, so a saved empty `baseUrl`/`apiKey` erased a real registry endpoint. Merging now ignores `undefined`/`null`/`''` from the saved config while preserving meaningful falsy values (`0`, `false`), via a new exported `mergeProviderConfig` seam.
+- **Memory redaction missed most credential formats.** `src/memory/redact.ts` guarded content on its way into the on-disk memory store with only 6 patterns, while a 37-rule gitleaks-derived scanner sat unused next door. Memory redaction now runs those rules first, so AWS/GCP/Azure/DigitalOcean/HuggingFace and other provider credentials are redacted before they reach disk.
+
+### Removed
+
+- **~2,700 lines of unreachable code**, verified against an import graph covering static imports, `await import()`, `require()` and feature-gated loads: `src/components/agents/` (7 files, never referenced), `src/commands/bridge/` (superseded by `src/bridge/`), `src/tools/ComputerUseTool/{input,index,toolDefinition}.ts` (superseded by `utils/computerUse/platform/`), `src/server/lsp.ts` + `src/server/lsp-standalone.ts` + `src/cli/lsp.ts` (closed cycle with no entry point), `src/ink/fallbackUI.ts`, and four unused hooks plus their private `useStats` helper in `src/context/stats.tsx`.
+- 42 unused imports and 43 unused local bindings across the tree.
+
+### Changed
+
+- **Deduplicated logic that had been copy-pasted between modules**: `skipTimeoutFlags` + `TIMEOUT_FLAG_VALUE_RE` (a security-relevant `timeout` wrapper parser duplicated byte-for-byte across `bashPermissions.ts` and `pathValidation.ts`) → `src/tools/BashTool/timeoutFlags.ts`; the Anthropic auth-header builder → `src/services/anthropicAuthHeaders.ts`; the shared accept/reject switch in the Bash and PowerShell permission dialogs → `handleSharedShellPermissionChoice`; `parseGoalChain` → `src/tools/GoalTool/goalChain.ts`; `findAvailableTask` → `src/utils/tasks.ts`; the pane-creation mutex → `createSequentialLock` (a factory, so the iTerm and tmux backends keep independent locks).
+- **Resolved four colliding `isProcessRunning` definitions** onto the canonical one in `src/utils/genericProcessUtils.ts`. Two of the removed copies lacked its `pid <= 1` guard, so a lockfile recording pid 0 or 1 was previously treated as a live process forever.
+- **Disambiguated same-named redaction and tmux helpers** that did different things: `redactSecrets` → `redactSecretFieldsInJson` (bridge debug JSON) and `redactWithScannerRules` (gitleaks rules); `isTmuxAvailable` in `tmuxSocket.ts` → `isTmuxSocketReady` (it returns cached state synchronously, unlike the two async probes); `worktree.ts` now re-exports the single async probe from `swarm/backends/detection.ts`.
+- Restored the missing type modules `src/components/Spinner/types.ts` (`SpinnerMode`, `RGBColor`) and `src/components/FeedbackSurvey/utils.ts` (`FeedbackSurveyResponse`, `FeedbackSurveyType`), reconstructed from usage and verified against `tsc`.
+
 ## [0.9.0] - 2026-08-27
 
 - **Dead code removal**: Deleted unused exports `getAutoCompactHardThreshold` / `getBackgroundAutoCompactThreshold` (`src/services/compact/autoCompact.ts`), `getNextCheckpointThreshold` + `CHECKPOINT_THRESHOLDS` (`src/services/checkpoint/checkpointWriter.ts`), and `migrateLegacyEmbeddings` / `clearLegacyEmbeddingCache` (`src/memdir/semanticSearch.ts`); removed now-orphaned `computeBackgroundThreshold` import and `unlink` import. Deleted the matching obsolete test blocks in `compact.test.ts`. No behavior change.
