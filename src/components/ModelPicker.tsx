@@ -115,6 +115,7 @@ export function ModelPicker({
   // Bumped by Tab/Shift+Tab to remount Select so it re-reads defaultFocusValue.
   const [jumpToken, setJumpToken] = useState(0);
   const [jumpTarget, setJumpTarget] = useState<string | undefined>(undefined);
+  const [view, setView] = useState<'models' | 'providers'>('models');
 
   const effortValue = useAppState(s => s.effortValue);
   const fastMode = useAppState(s => s.fastMode);
@@ -343,10 +344,9 @@ export function ModelPicker({
         return;
       }
 
-      // Tab jumps between provider groups instead of swapping the whole list —
-      // every provider is already on screen.
+      // Tab now toggles between Models and Providers (merged /providers into /model)
       if (key.tab) {
-        jumpProviderSection(key.shift ? -1 : 1);
+        setView(v => (v === 'models' ? 'providers' : 'models'));
         return;
       }
 
@@ -451,6 +451,58 @@ export function ModelPicker({
     );
   }
 
+  const providerPreview = (id: string): React.ReactNode => {
+    const entry = getProviderRegistryEntry(id as any);
+    const hasKey = Boolean(ProviderManager.getInstance().getApiKeyForProvider(id as any));
+    return (
+      <Box flexDirection="column">
+        <Text bold color="suggestion">
+          {entry?.label ?? id}
+        </Text>
+        <Text dimColor>{entry?.note ?? ''}</Text>
+        <Text>key: {hasKey ? 'saved' : entry?.isLocal ? 'not required' : `missing ${entry?.envKey}`}</Text>
+        <Box marginTop={1}>
+          <Markdown>{`Provider \`${id}\` — ${entry?.defaultModel ?? ''}`}</Markdown>
+        </Box>
+        <Text dimColor>Tab สลับกลับ Models · Enter เลือก</Text>
+      </Box>
+    );
+  };
+
+  const providerOptionsAll = PROVIDER_IDS.map(id => {
+    const entry = getProviderRegistryEntry(id as any);
+    const hasKey = Boolean(ProviderManager.getInstance().getApiKeyForProvider(id as any));
+    const isActive = id === activeProviderId;
+    return {
+      value: id,
+      label: entry?.label ?? id,
+      description: `${isActive ? '● current · ' : ''}${hasKey ? 'configured' : entry?.isLocal ? 'not required' : 'missing key'}`,
+      preview: providerPreview(id),
+    } as OptionWithDescription<string>;
+  });
+
+  const providerFiltered = searchQuery
+    ? providerOptionsAll.filter(
+        o =>
+          String(o.label).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          o.value.includes(searchQuery.toLowerCase()),
+      )
+    : providerOptionsAll;
+
+  const providerList = (
+    <Box flexDirection="column">
+      <Select
+        options={providerFiltered as OptionWithDescription<string>[]}
+        visibleOptionCount={12}
+        onChange={v => {
+          setSearchQuery(v);
+          setView('models');
+        }}
+        onCancel={() => setView('models')}
+      />
+    </Box>
+  );
+
   const modelList = (
     <Box flexDirection="column">
       {isStandaloneCommand && filteredOptions.length > 0 && <ModelListHeader columns={columns} />}
@@ -477,90 +529,115 @@ export function ModelPicker({
     </Box>
   );
 
-  const content = isStandaloneCommand ? (
-    <Box flexDirection="column">
-      <ModelSearchBar
-        isActive={isSearchActive}
-        query={searchQuery}
-        cursorOffset={searchCursorOffset}
-        matchCount={matchedModelCount}
-        totalCount={totalModelCount}
-        compact
-      />
-      {isFetchingModels && (
-        <Box paddingLeft={2} marginBottom={1}>
-          <Text color="subtle">Refreshing configured providers…</Text>
+  const content =
+    view === 'providers' ? (
+      <Box flexDirection="column">
+        <Text color="remember" bold>
+          Providers — Tab สลับกลับ Models
+        </Text>
+        <ModelSearchBar
+          isActive={isSearchActive}
+          query={searchQuery}
+          cursorOffset={searchCursorOffset}
+          matchCount={providerFiltered.length}
+          totalCount={providerOptionsAll.length}
+          compact
+        />
+        {providerList}
+        <Box marginTop={1}>
+          <Text dimColor>Tab: Models · ↑/↓ เลื่อน · p preview</Text>
         </Box>
-      )}
-      {sessionModel && (
-        <Box paddingLeft={2} marginBottom={1}>
-          <Text color="subtle">Session override: {modelDisplayString(sessionModel)}</Text>
-        </Box>
-      )}
-      {modelList}
-      <Box paddingLeft={2} marginTop={1}>
-        <Text>
-          Fast Mode <Text dimColor>{fastMode ? 'On' : 'Off'}</Text>
-        </Text>
       </Box>
-      <ModelPricePanel model={focusedModel} columns={columns} />
-      <Box marginTop={1}>
-        <Text color="subtle" italic={true}>
-          {exitState.pending ? (
-            <>Press {exitState.keyName} again to exit</>
-          ) : (
-            <>
-              type to search · ↑/↓ navigate · ←/→ effort · enter session
-              {onSetDefault ? ' · d default' : ''} · esc clear
-            </>
-          )}
-        </Text>
-      </Box>
-    </Box>
-  ) : (
-    <Box flexDirection="column">
-      <Box marginBottom={1} flexDirection="column">
-        <Text color="remember" bold={true}>
-          Select model
-        </Text>
-        <Text dimColor={true}>{displayHeaderText}</Text>
-        {sessionModel && (
-          <Text dimColor={true}>
-            Currently using {modelDisplayString(sessionModel)} for this session (set by plan mode). Selecting a model
-            will undo this.
+    ) : isStandaloneCommand ? (
+      <Box flexDirection="column">
+        <Box flexDirection="row" gap={1}>
+          <Text color="remember" bold>
+            Models
           </Text>
-        )}
-      </Box>
-      <ModelSearchBar
-        isActive={isSearchActive}
-        query={searchQuery}
-        cursorOffset={searchCursorOffset}
-        matchCount={matchedModelCount}
-        totalCount={totalModelCount}
-      />
-      <Box flexDirection="column" marginBottom={1}>
-        {modelList}
-        {hiddenCount > 0 && (
-          <Box paddingLeft={3}>
-            <Text dimColor={true}>and {hiddenCount} more…</Text>
+          <Text dimColor>Tab: Providers</Text>
+        </Box>
+        <ModelSearchBar
+          isActive={isSearchActive}
+          query={searchQuery}
+          cursorOffset={searchCursorOffset}
+          matchCount={matchedModelCount}
+          totalCount={totalModelCount}
+          compact
+        />
+        {isFetchingModels && (
+          <Box paddingLeft={2} marginBottom={1}>
+            <Text color="subtle">Refreshing configured providers…</Text>
           </Box>
         )}
-      </Box>
-      <Box marginBottom={1} flexDirection="column">
-        {focusedSupportsEffort ? (
-          <Text dimColor={true}>
-            <EffortLevelIndicator effort={displayEffort} /> {capitalize(displayEffort)} effort
-            {displayEffort === focusedDefaultEffort ? ' (default)' : ''} <Text color="subtle">← → to adjust</Text>
-          </Text>
-        ) : (
-          <Text color="subtle">
-            <EffortLevelIndicator effort={undefined} /> Effort not supported
-            {focusedModelName ? ` for ${focusedModelName}` : ''}
-          </Text>
+        {sessionModel && (
+          <Box paddingLeft={2} marginBottom={1}>
+            <Text color="subtle">Session override: {modelDisplayString(sessionModel)}</Text>
+          </Box>
         )}
+        {modelList}
+        <Box paddingLeft={2} marginTop={1}>
+          <Text>
+            Fast Mode <Text dimColor>{fastMode ? 'On' : 'Off'}</Text>
+          </Text>
+        </Box>
+        <ModelPricePanel model={focusedModel} columns={columns} />
+        <Box marginTop={1}>
+          <Text color="subtle" italic={true}>
+            {exitState.pending ? (
+              <>Press {exitState.keyName} again to exit</>
+            ) : (
+              <>
+                type to search · ↑/↓ navigate · ←/→ effort · enter session
+                {onSetDefault ? ' · d default' : ''} · esc clear
+              </>
+            )}
+          </Text>
+        </Box>
       </Box>
-    </Box>
-  );
+    ) : (
+      <Box flexDirection="column">
+        <Box marginBottom={1} flexDirection="column">
+          <Text color="remember" bold={true}>
+            Select model
+          </Text>
+          <Text dimColor={true}>{displayHeaderText}</Text>
+          {sessionModel && (
+            <Text dimColor={true}>
+              Currently using {modelDisplayString(sessionModel)} for this session (set by plan mode). Selecting a model
+              will undo this.
+            </Text>
+          )}
+        </Box>
+        <ModelSearchBar
+          isActive={isSearchActive}
+          query={searchQuery}
+          cursorOffset={searchCursorOffset}
+          matchCount={matchedModelCount}
+          totalCount={totalModelCount}
+        />
+        <Box flexDirection="column" marginBottom={1}>
+          {modelList}
+          {hiddenCount > 0 && (
+            <Box paddingLeft={3}>
+              <Text dimColor={true}>and {hiddenCount} more…</Text>
+            </Box>
+          )}
+        </Box>
+        <Box marginBottom={1} flexDirection="column">
+          {focusedSupportsEffort ? (
+            <Text dimColor={true}>
+              <EffortLevelIndicator effort={displayEffort} /> {capitalize(displayEffort)} effort
+              {displayEffort === focusedDefaultEffort ? ' (default)' : ''} <Text color="subtle">← → to adjust</Text>
+            </Text>
+          ) : (
+            <Text color="subtle">
+              <EffortLevelIndicator effort={undefined} /> Effort not supported
+              {focusedModelName ? ` for ${focusedModelName}` : ''}
+            </Text>
+          )}
+        </Box>
+      </Box>
+    );
 
   if (!isStandaloneCommand) {
     return content;
