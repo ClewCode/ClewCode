@@ -1,6 +1,7 @@
 import figures from 'figures';
 import * as React from 'react';
 import { useMemo, useState } from 'react';
+import { Box, Text, useAnimationFrame } from 'src/ink.js';
 import { useTerminalSize } from 'src/hooks/useTerminalSize.js';
 import { stringWidth } from 'src/ink/stringWidth.js';
 import { useAppState, useSetAppState } from 'src/state/AppState.js';
@@ -10,7 +11,6 @@ import { getPillLabel, pillNeedsCta } from 'src/tasks/pillLabel.js';
 import { type BackgroundTaskState, isBackgroundTask, type TaskState } from 'src/tasks/types.js';
 import { formatDuration, truncate } from 'src/utils/format.js';
 import { calculateHorizontalScrollWindow } from 'src/utils/horizontalScroll.js';
-import { Box, Text } from '../../ink.js';
 import {
   AGENT_COLOR_TO_THEME_COLOR,
   AGENT_COLORS,
@@ -178,17 +178,30 @@ export function BackgroundTaskStatus({
   }
 
   // Enhanced single-shell footer: show command + elapsed + spinner
-  if (runningTasks.length === 1 && runningTasks[0]!.type === 'local_bash') {
-    const shell = runningTasks[0] as Extract<BackgroundTaskState, { type: 'local_bash' }>;
-    const isRunning = shell.status === 'running' || shell.status === 'pending';
-    const elapsed = formatDuration(Date.now() - shell.startTime);
-    const cmd = truncate(shell.kind === 'monitor' ? shell.description : shell.command, 32, true);
-    const statusColor = shell.status === 'completed' ? 'success' : shell.status === 'failed' ? 'error' : undefined;
+  const showShellPill = runningTasks.length === 1 && runningTasks[0]!.type === 'local_bash';
+  const shell = showShellPill ? (runningTasks[0] as Extract<BackgroundTaskState, { type: 'local_bash' }>) : null;
+  const isRunning = shell ? shell.status === 'running' || shell.status === 'pending' : false;
+  const elapsed = shell ? formatDuration(Date.now() - shell.startTime) : '';
+  const cmd = shell ? truncate(shell.kind === 'monitor' ? shell.description : shell.command, 32, true) : '';
+  const statusColor = shell
+    ? shell.status === 'completed'
+      ? 'success'
+      : shell.status === 'failed'
+        ? 'error'
+        : undefined
+    : undefined;
+
+  const SPINNER_FRAMES = ['✶', '✸', '✹', '✺', '✹', '✷'];
+  const [, time] = useAnimationFrame(isRunning ? 50 : null);
+  const frame = Math.floor((time ?? 0) / 50) % SPINNER_FRAMES.length;
+  const spinnerGlyph = isRunning ? SPINNER_FRAMES[frame] : '';
+
+  if (showShellPill) {
     return (
       <>
         <SummaryPill selected={tasksSelected} onClick={onOpenDialog}>
           <Text color={statusColor}>
-            {isRunning ? '⠋ ' : ''}
+            {spinnerGlyph ? <>{spinnerGlyph} </> : ''}
             {shell.kind === 'monitor' ? 'monitor' : 'shell'}: {cmd} · {elapsed}
             {shell.status !== 'running' ? ` · ${shell.status}` : ''}
           </Text>

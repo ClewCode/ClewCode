@@ -36,13 +36,16 @@ function getAssistantMessageId(message: Message): string | undefined {
  *
  * This represents the full context size at the time of that API call.
  * Use tokenCountWithEstimation() when you need context size from messages.
+ *
+ * @param includeOutput — pass false to exclude output_tokens (for ctx% calc,
+ *   where we want window-fill, not throughput). Defaults true for billing.
  */
-export function getTokenCountFromUsage(usage: Usage): number {
+export function getTokenCountFromUsage(usage: Usage, includeOutput = true): number {
   return (
     usage.input_tokens +
     (usage.cache_creation_input_tokens ?? 0) +
     (usage.cache_read_input_tokens ?? 0) +
-    usage.output_tokens
+    (includeOutput ? usage.output_tokens : 0)
   );
 }
 
@@ -237,7 +240,7 @@ export function tokenCountWithEstimation(messages: readonly Message[]): number {
         }
       }
       // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-      return getTokenCountFromUsage(usage) + roughTokenCountEstimationForMessages(messages.slice(i + 1));
+      return getTokenCountFromUsage(usage, false) + roughTokenCountEstimationForMessages(messages.slice(i + 1));
     }
     i--;
   }

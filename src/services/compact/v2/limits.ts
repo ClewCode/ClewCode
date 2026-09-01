@@ -85,7 +85,9 @@ export function computeEffectiveWindow(model: string): number {
 export function computeLimits(model: string, buffer: number = DEFAULT_BUFFER_TOKENS): ContextLimits {
   const reserved = Math.min(getMaxOutputTokensForModel(model), MAX_OUTPUT_TOKENS_FOR_SUMMARY);
   const limit = computeEffectiveWindow(model);
-  // User request: auto-compact at 80% like manual /compact at 80% ctx
+  // Auto-compact at 80% — match manual /compact behavior, one big reclaim
+  // instead of incremental 70% nibbles. The planner's softTarget lands ~50%
+  // so a single compaction clears ~30% of the window in one shot.
   let actNow = Math.floor(limit * 0.8);
 
   // Test/dev override: express the act threshold as a percentage of the

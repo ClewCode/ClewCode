@@ -19,12 +19,7 @@ import { logForDebugging } from '../../../utils/debug.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../../analytics/index.js';
 import type { EvictionRecord } from './evictionStore.js';
 import type { ContextPressure } from './ledger.js';
-import { astSkeletonReducer } from './reducers/astSkeleton.js';
-import { dedupeReducer } from './reducers/dedupe.js';
 import { dropReducer } from './reducers/drop.js';
-import { snipReducer } from './reducers/snip.js';
-import { staleToolReducer } from './reducers/staleTool.js';
-import { stateCompressorReducer } from './reducers/state-compressor.js';
 import { summarizeReducer } from './reducers/summarize.js';
 import type { ReduceContext, Reducer, ReducerName } from './types.js';
 
@@ -41,12 +36,7 @@ import type { ReduceContext, Reducer, ReducerName } from './types.js';
  *   with drop/snip. No test coverage. Re-enable with a real eval if revived.
  */
 export const REDUCERS: Reducer[] = [
-  dedupeReducer,
-  stateCompressorReducer, // 0.35 — cheap state compression
-  staleToolReducer, // 0.1 — tool result pruning
-  astSkeletonReducer, // 0.22 — AST symbol skeleton extraction
-  snipReducer, // 0.5 — truncate long messages
-  summarizeReducer, // 0.6 — expensive LLM summarization
+  summarizeReducer, // 0.6 — LLM summarization (single-shot compact)
   dropReducer, // 1.0 — last resort
 ].sort((a, b) => a.loss - b.loss);
 

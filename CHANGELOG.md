@@ -10,6 +10,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-09-02
+
+### Changed
+
+- **Token efficiency:** `getTokenCountFromUsage` now takes an `includeOutput` flag (default true for billing); `tokenCountWithEstimation` passes false so ctx% and auto-compact threshold reflect **window-fill only** (input + cache tokens), not output tokens. Fixes ctx% inflating from long responses. (`src/utils/tokens.ts`)
+- **Reduced memory injection:** Budgeted memory per turn dropped from 1500 → 600 tokens (`src/constants/prompts.ts`).
+- **Earlier auto-compact:** `actNow` threshold lowered from 80% → 70% of usable window, so compaction triggers before the context is critically full (`src/services/compact/v2/limits.ts`).
+
 ## [0.9.4] - 2026-09-02
 
 ### Changed

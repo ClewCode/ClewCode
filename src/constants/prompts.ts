@@ -130,7 +130,7 @@ async function loadBudgetedMemory(): Promise<string | null> {
   try {
     await ensureMemorySystem();
     if (!MemoryDB.isInitialized()) return null;
-    const injected = await budgetedInject(1500, true);
+    const injected = await budgetedInject(600, true);
     return injected || null;
   } catch {
     return null;

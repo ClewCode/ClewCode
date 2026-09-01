@@ -279,6 +279,10 @@ Prefer TinyFish MCP for web work over built-in WebSearch/WebFetch/BrowserTool wh
 |---|---|
 | `pre-commit` | Runs `bash scripts/check-shadow-pairs.sh src` — blocks reintroduced `.ts`/`.js` shadow pairs |
 
+## RTK (Rust Token Killer) — opt-in
+
+RTK is **not bundled**. If you want output compression, install it yourself (`cargo install rtk`) and re-enable the wrap in `src/utils/Shell.ts` (set `rtkAvailable` back to `whichSync('rtk') !== null`). Default: disabled — no external shell interceptors.
+
 ## GitHub Actions (`.github/workflows/`)
 
 CI runs typecheck, lint, build, tests. Pushing a `v*` tag triggers the release workflow (GitHub Release + npm publish).

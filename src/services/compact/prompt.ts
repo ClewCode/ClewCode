@@ -65,16 +65,15 @@ ${DETAILED_ANALYSIS_INSTRUCTION_BASE}
 
 Your summary should include the following sections:
 
-1. Primary Request and Intent: Capture all of the user's explicit requests and intents in detail
-2. Key Technical Concepts: List all important technical concepts, technologies, and frameworks discussed.
-3. Files and Code Sections: Enumerate specific files and code sections examined, modified, or created. Pay special attention to the most recent messages and include full code snippets where applicable and include a summary of why this file read or edit is important.
-4. Errors and fixes: List all errors that you ran into, and how you fixed them. Pay special attention to specific user feedback that you received, especially if the user told you to do something differently.
-5. Problem Solving: Document problems solved and any ongoing troubleshooting efforts.
-6. All user messages: List ALL user messages that are not tool results. These are critical for understanding the users' feedback and changing intent.
-7. Pending Tasks: Outline any pending tasks with IDs (#), status (pending/in_progress/completed), and next step file paths that you have explicitly been asked to work on. Preserve task tracking state exactly.
-8. Current Work: Describe in detail precisely what was being worked on immediately before this summary request, paying special attention to the most recent messages from both user and assistant. Include file names and code snippets where applicable.
-9. Optional Next Step: List the next step that you will take that is related to the most recent work you were doing. IMPORTANT: ensure that this step is DIRECTLY in line with the user's most recent explicit requests, and the task you were working on immediately before this summary request. If your last task was concluded, then only list next steps if they are explicitly in line with the users request. Do not start on tangential requests or really old requests that were already completed without confirming with the user first.
-                       If there is a next step, include direct quotes from the most recent conversation showing exactly what task you were working on and where you left off. This should be verbatim to ensure there's no drift in task interpretation.
+1. Goal: What the user wants to accomplish overall
+2. Constraints & Preferences: Any constraints, preferences, or working style notes (e.g., "Typecheck fixes last", "Use bun", "Thai for interaction")
+3. Progress: High-level status (Done / In Progress / Blocked)
+4. Done: Bulleted list of completed items with checkboxes ✅, grouped by area
+5. In Progress: Current active work
+6. Blocked: Anything blocked with reason
+7. Key Decisions: Important architectural/technical choices made
+8. Next Steps: Concrete next actions
+9. Critical Context: Files, error messages, providers, counts, git log references
 
 Here's an example of how your output should be structured:
 
@@ -84,47 +83,38 @@ Here's an example of how your output should be structured:
 </analysis>
 
 <summary>
-1. Primary Request and Intent:
-   [Detailed description]
+Goal
+- [Primary goal]
 
-2. Key Technical Concepts:
-   - [Concept 1]
-   - [Concept 2]
-   - [...]
+Constraints & Preferences
+- [Constraint 1]
+- [Constraint 2]
 
-3. Files and Code Sections:
-   - [File Name 1]
-      - [Summary of why this file is important]
-      - [Summary of the changes made to this file, if any]
-      - [Important Code Snippet]
-   - [File Name 2]
-      - [Important Code Snippet]
-   - [...]
+Progress
+### Done
+- [x] [Item 1 with file references]
+- [x] [Item 2]
 
-4. Errors and fixes:
-    - [Detailed description of error 1]:
-      - [How you fixed the error]
-      - [User feedback on the error if any]
-    - [...]
+### In Progress
+- [ ] [Current work]
 
-5. Problem Solving:
-   [Description of solved problems and ongoing troubleshooting]
+### Blocked
+- [Blocker with reason]
 
-6. All user messages: 
-    - [Detailed non tool use user message]
-    - [...]
+Key Decisions
+- [Decision 1 with rationale]
+- [Decision 2]
 
-7. Pending Tasks:
-   - [Task 1]
-   - [Task 2]
-   - [...]
+Next Steps
+1. [Next step 1]
+2. [Next step 2]
 
-8. Current Work:
-   [Precise description of current work]
-
-9. Optional Next Step:
-   [Optional Next step to take]
-
+Critical Context
+- Files: [key files]
+- Error messages: [key errors]
+- Providers/Configs: [relevant config]
+- Counts: [metrics]
+- Git log: [relevant commits]
 </summary>
 </example>
 
@@ -150,15 +140,15 @@ ${DETAILED_ANALYSIS_INSTRUCTION_PARTIAL}
 
 Your summary should include the following sections:
 
-1. Primary Request and Intent: Capture the user's explicit requests and intents from the recent messages
-2. Key Technical Concepts: List important technical concepts, technologies, and frameworks discussed recently.
-3. Files and Code Sections: Enumerate specific files and code sections examined, modified, or created. Include full code snippets where applicable and include a summary of why this file read or edit is important.
-4. Errors and fixes: List errors encountered and how they were fixed.
-5. Problem Solving: Document problems solved and any ongoing troubleshooting efforts.
-6. All user messages: List ALL user messages from the recent portion that are not tool results.
-7. Pending Tasks: Outline any pending tasks from the recent messages with IDs (#), status, and next step file paths. Preserve task tracking state exactly.
-8. Current Work: Describe precisely what was being worked on immediately before this summary request.
-9. Optional Next Step: List the next step related to the most recent work. Include direct quotes from the most recent conversation.
+1. Goal: What the user wants to accomplish overall
+2. Constraints & Preferences: Any constraints, preferences, or working style notes
+3. Progress: High-level status (Done / In Progress / Blocked)
+4. Done: Bulleted list of completed items with checkboxes ✅
+5. In Progress: Current active work
+6. Blocked: Anything blocked with reason
+7. Key Decisions: Important architectural/technical choices made
+8. Next Steps: Concrete next actions
+9. Critical Context: Files, error messages, providers, counts, git log references
 
 Here's an example of how your output should be structured:
 
@@ -168,37 +158,38 @@ Here's an example of how your output should be structured:
 </analysis>
 
 <summary>
-1. Primary Request and Intent:
-   [Detailed description]
+Goal
+- [Primary goal]
 
-2. Key Technical Concepts:
-   - [Concept 1]
-   - [Concept 2]
+Constraints & Preferences
+- [Constraint 1]
+- [Constraint 2]
 
-3. Files and Code Sections:
-   - [File Name 1]
-      - [Summary of why this file is important]
-      - [Important Code Snippet]
+Progress
+### Done
+- [x] [Item 1 with file references]
+- [x] [Item 2]
 
-4. Errors and fixes:
-    - [Error description]:
-      - [How you fixed it]
+### In Progress
+- [ ] [Current work]
 
-5. Problem Solving:
-   [Description]
+### Blocked
+- [Blocker with reason]
 
-6. All user messages:
-    - [Detailed non tool use user message]
+Key Decisions
+- [Decision 1 with rationale]
+- [Decision 2]
 
-7. Pending Tasks:
-   - [Task 1]
+Next Steps
+1. [Next step 1]
+2. [Next step 2]
 
-8. Current Work:
-   [Precise description of current work]
-
-9. Optional Next Step:
-   [Optional Next step to take]
-
+Critical Context
+- Files: [key files]
+- Error messages: [key errors]
+- Providers/Configs: [relevant config]
+- Counts: [metrics]
+- Git log: [relevant commits]
 </summary>
 </example>
 
@@ -354,11 +345,11 @@ export function formatCompactSummary(summary: string): string {
   // Strip analysis section
   formattedSummary = formattedSummary.replace(/<analysis>[\s\S]*?<\/analysis>/, '');
 
-  // Extract and format summary section
+  // Extract and format summary section — no prefix: model output already
+  // starts with section headers (Goal, Progress, etc.)
   const summaryMatch = formattedSummary.match(/<summary>([\s\S]*?)<\/summary>/);
   if (summaryMatch) {
-    const content = summaryMatch[1] || '';
-    formattedSummary = formattedSummary.replace(/<summary>[\s\S]*?<\/summary>/, `Summary:\n${content.trim()}`);
+    formattedSummary = summaryMatch[1]?.trim() ?? formattedSummary;
   }
 
   // Strip <memories> block

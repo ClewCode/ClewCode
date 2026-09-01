@@ -29,12 +29,6 @@ import { createBashShellProvider } from './shell/bashProvider.js';
 import { getCachedPowerShellPath } from './shell/powershellDetection.js';
 import { createPowerShellProvider } from './shell/powershellProvider.js';
 
-// ponytail: RTK (Rust Token Killer) wraps shell commands to compress output
-// before it hits the context window, saving 60-90% tokens on common dev commands.
-import { whichSync } from './which.js';
-
-const rtkAvailable = whichSync('rtk') !== null;
-
 import type { ShellProvider, ShellType } from './shell/shellProvider.js';
 import { subprocessEnv } from './subprocessEnv.js';
 import { posixPathToWindowsPath } from './windowsPaths.js';
@@ -222,12 +216,6 @@ export async function exec(
   });
 
   let commandString = builtCommand;
-
-  // ponytail: RTK compresses command output before it enters the context window.
-  // Only wrap non-powershell commands when rtk is installed and not already prefixed.
-  if (rtkAvailable && shellType !== 'powershell' && !commandString.trimStart().startsWith('rtk ')) {
-    commandString = `rtk ${commandString}`;
-  }
 
   let cwd = pwd();
 
