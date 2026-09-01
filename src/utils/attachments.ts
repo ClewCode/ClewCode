@@ -187,11 +187,14 @@ import { isInProcessTeammate } from './teammateContext.js';
 import { removeTeammateFromTeamFile } from './swarm/teamHelpers.js';
 import { unassignTeammateTasks } from './tasks.js';
 import { getCompanionIntroAttachment } from '../buddy/prompt.js';
-
-export const TODO_REMINDER_CONFIG = {
-  TURNS_SINCE_WRITE: 3,
-  TURNS_BETWEEN_REMINDERS: 5,
-} as const;
+import {
+  TODO_REMINDER_CONFIG,
+  getTodoReminderAttachments,
+  getTaskReminderAttachments,
+  getTodoReminderTurnCounts,
+  getTaskReminderTurnCounts,
+} from './attachments/taskReminders.js';
+export { TODO_REMINDER_CONFIG };
 
 export const PLAN_MODE_ATTACHMENT_CONFIG = {
   TURNS_BETWEEN_ATTACHMENTS: 5,
@@ -847,7 +850,6 @@ export async function getAttachments(
 
   clearTimeout(timeoutId);
   // Defensive: a getter leaking [undefined] crashes .map(a => a.type) below.
-  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return [
     ...userAttachmentResults.flat(),
     ...threadAttachmentResults.flat(),
@@ -2831,202 +2833,7 @@ export function createAttachmentMessage(attachment: Attachment): AttachmentMessa
   };
 }
 
-function getTodoReminderTurnCounts(messages: Message[]): {
-  turnsSinceLastTodoWrite: number;
-  turnsSinceLastReminder: number;
-} {
-  let lastTodoWriteIndex = -1;
-  let lastReminderIndex = -1;
-  let assistantTurnsSinceWrite = 0;
-  let assistantTurnsSinceReminder = 0;
-
-  // Iterate backwards to find most recent events
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const message = messages[i];
-
-    if (message?.type === 'assistant') {
-      if (isThinkingMessage(message)) {
-        // Skip thinking messages
-        continue;
-      }
-
-      // Check for TodoWrite usage BEFORE incrementing counter
-      // (we don't want to count the TodoWrite message itself as "1 turn since write")
-      if (
-        lastTodoWriteIndex === -1 &&
-        'message' in message &&
-        Array.isArray(message.message?.content) &&
-        message.message.content.some(block => block.type === 'tool_use' && block.name === 'TodoWrite')
-      ) {
-        lastTodoWriteIndex = i;
-      }
-
-      // Count assistant turns before finding events
-      if (lastTodoWriteIndex === -1) assistantTurnsSinceWrite++;
-      if (lastReminderIndex === -1) assistantTurnsSinceReminder++;
-    } else if (
-      lastReminderIndex === -1 &&
-      message?.type === 'attachment' &&
-      message.attachment.type === 'todo_reminder'
-    ) {
-      lastReminderIndex = i;
-    }
-
-    if (lastTodoWriteIndex !== -1 && lastReminderIndex !== -1) {
-      break;
-    }
-  }
-
-  return {
-    turnsSinceLastTodoWrite: assistantTurnsSinceWrite,
-    turnsSinceLastReminder: assistantTurnsSinceReminder,
-  };
-}
-
-async function getTodoReminderAttachments(
-  messages: Message[] | undefined,
-  toolUseContext: ToolUseContext,
-): Promise<Attachment[]> {
-  // Skip if TodoWrite tool is not available
-  if (!toolUseContext.options.tools.some(t => toolMatchesName(t, TODO_WRITE_TOOL_NAME))) {
-    return [];
-  }
-
-  // When SendUserMessage is in the toolkit, it's the primary communication
-  // channel and the model is always told to use it (#20467). TodoWrite
-  // becomes a side channel — nudging the model about it conflicts with the
-  // brief workflow. The tool itself stays available; this only gates the
-  // "you haven't used it in a while" nag.
-  if (BRIEF_TOOL_NAME && toolUseContext.options.tools.some(t => toolMatchesName(t, BRIEF_TOOL_NAME))) {
-    return [];
-  }
-
-  // Skip if no messages provided
-  if (!messages || messages.length === 0) {
-    return [];
-  }
-
-  const { turnsSinceLastTodoWrite, turnsSinceLastReminder } = getTodoReminderTurnCounts(messages);
-
-  // Check if we should show a reminder
-  if (
-    turnsSinceLastTodoWrite >= TODO_REMINDER_CONFIG.TURNS_SINCE_WRITE &&
-    turnsSinceLastReminder >= TODO_REMINDER_CONFIG.TURNS_BETWEEN_REMINDERS
-  ) {
-    const todoKey = toolUseContext.agentId ?? getSessionId();
-    const appState = toolUseContext.getAppState();
-    const todos = appState.todos[todoKey] ?? [];
-    return [
-      {
-        type: 'todo_reminder',
-        content: todos,
-        itemCount: todos.length,
-      },
-    ];
-  }
-
-  return [];
-}
-
-function getTaskReminderTurnCounts(messages: Message[]): {
-  turnsSinceLastTaskManagement: number;
-  turnsSinceLastReminder: number;
-} {
-  let lastTaskManagementIndex = -1;
-  let lastReminderIndex = -1;
-  let assistantTurnsSinceTaskManagement = 0;
-  let assistantTurnsSinceReminder = 0;
-
-  // Iterate backwards to find most recent events
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const message = messages[i];
-
-    if (message?.type === 'assistant') {
-      if (isThinkingMessage(message)) {
-        // Skip thinking messages
-        continue;
-      }
-
-      // Check for TaskCreate or TaskUpdate usage BEFORE incrementing counter
-      if (
-        lastTaskManagementIndex === -1 &&
-        'message' in message &&
-        Array.isArray(message.message?.content) &&
-        message.message.content.some(
-          block =>
-            block.type === 'tool_use' && (block.name === TASK_CREATE_TOOL_NAME || block.name === TASK_UPDATE_TOOL_NAME),
-        )
-      ) {
-        lastTaskManagementIndex = i;
-      }
-
-      // Count assistant turns before finding events
-      if (lastTaskManagementIndex === -1) assistantTurnsSinceTaskManagement++;
-      if (lastReminderIndex === -1) assistantTurnsSinceReminder++;
-    } else if (
-      lastReminderIndex === -1 &&
-      message?.type === 'attachment' &&
-      message.attachment.type === 'task_reminder'
-    ) {
-      lastReminderIndex = i;
-    }
-
-    if (lastTaskManagementIndex !== -1 && lastReminderIndex !== -1) {
-      break;
-    }
-  }
-
-  return {
-    turnsSinceLastTaskManagement: assistantTurnsSinceTaskManagement,
-    turnsSinceLastReminder: assistantTurnsSinceReminder,
-  };
-}
-
-async function getTaskReminderAttachments(
-  messages: Message[] | undefined,
-  toolUseContext: ToolUseContext,
-): Promise<Attachment[]> {
-  if (!isTodoV2Enabled()) {
-    return [];
-  }
-
-  // When SendUserMessage is in the toolkit, it's the primary communication
-  // channel and the model is always told to use it (#20467). TaskUpdate
-  // becomes a side channel — nudging the model about it conflicts with the
-  // brief workflow. The tool itself stays available; this only gates the nag.
-  if (BRIEF_TOOL_NAME && toolUseContext.options.tools.some(t => toolMatchesName(t, BRIEF_TOOL_NAME))) {
-    return [];
-  }
-
-  // Skip if TaskUpdate tool is not available
-  if (!toolUseContext.options.tools.some(t => toolMatchesName(t, TASK_UPDATE_TOOL_NAME))) {
-    return [];
-  }
-
-  // Skip if no messages provided
-  if (!messages || messages.length === 0) {
-    return [];
-  }
-
-  const { turnsSinceLastTaskManagement, turnsSinceLastReminder } = getTaskReminderTurnCounts(messages);
-
-  // Check if we should show a reminder
-  if (
-    turnsSinceLastTaskManagement >= TODO_REMINDER_CONFIG.TURNS_SINCE_WRITE &&
-    turnsSinceLastReminder >= TODO_REMINDER_CONFIG.TURNS_BETWEEN_REMINDERS
-  ) {
-    const tasks = await listTasks(getTaskListId());
-    return [
-      {
-        type: 'task_reminder',
-        content: tasks,
-        itemCount: tasks.length,
-      },
-    ];
-  }
-
-  return [];
-}
+// task/todo reminder logic moved to ./attachments/taskReminders.ts - see import above
 
 /**
  * Get attachments for all unified tasks using the Task framework.
