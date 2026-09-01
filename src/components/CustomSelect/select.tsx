@@ -1,8 +1,9 @@
 import figures from 'figures';
 import React, { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { useDeclaredCursor } from '../../ink/hooks/use-declared-cursor.js';
 import { stringWidth } from '../../ink/stringWidth.js';
-import { Ansi, Box, Text } from '../../ink.js';
+import { Ansi, Box, Text, useInput } from '../../ink.js';
 import { count } from '../../utils/array.js';
 import type { PastedContent } from '../../utils/config.js';
 import type { ImageDimensions } from '../../utils/imageResizer.js';
@@ -30,6 +31,7 @@ type BaseOption<T> = {
   label: ReactNode;
   value: T;
   disabled?: boolean;
+  preview?: ReactNode;
 };
 
 export type OptionWithDescription<T = string> =
@@ -201,6 +203,18 @@ export type SelectProps<T> = {
    * Callback to remove a pasted image by its ID.
    */
   readonly onRemoveImage?: (id: number) => void;
+
+  /**
+   * Preview position relative to options. Auto picks side when wide enough.
+   * @default 'auto'
+   */
+  readonly previewPosition?: 'side' | 'bottom' | 'auto';
+
+  /**
+   * Whether preview is shown initially. Toggle with 'p'.
+   * @default true when any option has preview
+   */
+  readonly showPreviewDefault?: boolean;
 };
 
 export function Select<T>({
@@ -224,6 +238,8 @@ export function Select<T>({
   onImagePaste,
   pastedContents,
   onRemoveImage,
+  previewPosition = 'auto',
+  showPreviewDefault,
 }: SelectProps<T>): React.ReactNode {
   // Image selection mode state
   const [imagesSelected, setImagesSelected] = useState(false);
@@ -280,6 +296,21 @@ export function Select<T>({
     onFocus,
     focusValue: defaultFocusValue,
   });
+
+  const hasAnyPreview = options.some(o => o.preview !== undefined);
+  const [showPreview, setShowPreview] = useState(showPreviewDefault ?? hasAnyPreview);
+  const { columns } = useTerminalSize();
+  const focusedOption = (options.find(o => o.value === state.focusedValue) ?? null) as OptionWithDescription<T> | null;
+  const previewNode = focusedOption?.preview ?? null;
+  const isWide = columns >= 100;
+  const effectivePreviewPosition = previewPosition === 'auto' ? (isWide ? 'side' : 'bottom') : previewPosition;
+
+  useInput(
+    (input, _key) => {
+      if (input === 'p' && hasAnyPreview) setShowPreview(v => !v);
+    },
+    { isActive: hasAnyPreview && !isDisabled },
+  );
 
   useSelectInput({
     isDisabled,
@@ -702,7 +733,7 @@ export function Select<T>({
     );
   }
 
-  return (
+  const list = (
     <Box {...styles.container()}>
       {state.visibleOptions.map((option, index) => {
         if (option.type === 'section') {
@@ -834,6 +865,40 @@ export function Select<T>({
           </SelectOption>
         );
       })}
+    </Box>
+  );
+
+  if (!hasAnyPreview || !showPreview || !previewNode) {
+    return (
+      <Box flexDirection="column">
+        {list}
+        {hasAnyPreview && <Text dimColor> p: show preview</Text>}
+      </Box>
+    );
+  }
+
+  if (effectivePreviewPosition === 'side') {
+    return (
+      <Box flexDirection="row" gap={2}>
+        <Box flexDirection="column" flexShrink={0}>
+          {list}
+          <Text dimColor> p: hide preview</Text>
+        </Box>
+        <Box flexDirection="column" borderStyle="single" borderColor="dim" paddingX={1} paddingY={0} width={40}>
+          <Text dimColor>Preview</Text>
+          <Box marginTop={1}>{previewNode}</Box>
+        </Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box flexDirection="column">
+      {list}
+      <Box marginTop={1} borderStyle="single" borderColor="dim" paddingX={1} paddingY={0}>
+        <Text dimColor>Preview — p to hide</Text>
+        <Box marginTop={1}>{previewNode}</Box>
+      </Box>
     </Box>
   );
 }
