@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import { buildUnifiedModelOptions, formatModelContext, formatModelRate, getPriceMarkerIndex } from './ModelPicker.js';
+import {
+  buildUnifiedModelOptions,
+  formatModelContext,
+  formatModelRate,
+  getPriceMarkerIndex,
+  getSupportedEffortSliderLevels,
+} from './ModelPicker.js';
 
 describe('buildUnifiedModelOptions', () => {
   test('lists every provider in one grouped list', () => {
@@ -104,5 +110,26 @@ describe('buildUnifiedModelOptions', () => {
     expect(formatModelRate(0)).toBe('$0 / 1M');
     expect(getPriceMarkerIndex(0, 24)).toBe(0);
     expect(getPriceMarkerIndex(15, 24)).toBeGreaterThan(getPriceMarkerIndex(1, 24));
+  });
+});
+
+describe('getSupportedEffortSliderLevels', () => {
+  test('shows the complete rail when a model supports xhigh and max', () => {
+    expect(getSupportedEffortSliderLevels('claude-opus-4-7', true)).toEqual([
+      'low',
+      'medium',
+      'high',
+      'xhigh',
+      'max',
+      'ultracode',
+    ]);
+  });
+
+  test('limits ordinary reasoning models to low, medium, and high', () => {
+    expect(getSupportedEffortSliderLevels('gpt-5.5', true)).toEqual(['low', 'medium', 'high']);
+  });
+
+  test('hides the rail for a model that does not support reasoning effort', () => {
+    expect(getSupportedEffortSliderLevels('plain-chat-model', false)).toEqual([]);
   });
 });

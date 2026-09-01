@@ -26,12 +26,9 @@ const COMMON_HELP_ARGS = ['help', '-h', '--help'];
 // Slider constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** The 6 interactive levels shown in the slider. */
-const SLIDER_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max', 'ultracode'] as const;
-type SliderLevel = (typeof SLIDER_LEVELS)[number];
-
-/** How many of those levels belong to the "standard" track (before the ┊). */
-const STD_COUNT = 5; // low … max
+/** Every interactive level the full /effort slider can expose. */
+export const EFFORT_SLIDER_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max', 'ultracode'] as const;
+export type EffortSliderLevel = (typeof EFFORT_SLIDER_LEVELS)[number];
 
 // Purple panel animation. Keep this reasonably slow so the terminal does not flicker.
 const GLOW_INTERVAL_MS = 120;
@@ -178,7 +175,7 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-// Smooth easing for the ultracode reveal.
+// Smooth easing for the maximum-effort reveal.
 function easeOutCubic(t: number): number {
   const clamped = Math.max(0, Math.min(1, t));
   return 1 - (1 - clamped) ** 3;
@@ -188,7 +185,7 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-// Generates the expanding purple wave used only while ultracode is selected.
+// Generates the expanding purple wave used while the highlighted maximum is selected.
 // The distance math compensates for terminal cell aspect ratio, so the first
 // frame reads like a round ripple instead of a plus/cross shape. Undefined
 // means "no background for this cell".
@@ -212,7 +209,7 @@ function computeExpandingPanelColors(
   const finalRadius = Math.min(30, Math.max(18, totalWidth * 0.28));
   const radius = initialRadius + (finalRadius - initialRadius) * eased;
 
-  // Keep ultracode as a soft radial spotlight instead of flooding the whole
+  // Keep the maximum level as a soft radial spotlight instead of flooding the whole
   // panel. This reads better in terminals with coarse background cells.
   const feather = 7;
   const baseHue = 264 + Math.sin(frame * 0.04) * 3;
@@ -243,7 +240,7 @@ function computeExpandingPanelColors(
 }
 
 // Maps selected slider values to high-contrast colors
-function getSelectedColor(level: SliderLevel): string {
+function getSelectedColor(level: EffortSliderLevel): string {
   switch (level) {
     case 'low':
       return '#38bdf8'; // Cyan
@@ -263,34 +260,32 @@ function getSelectedColor(level: SliderLevel): string {
 }
 
 // Compute label alignments precisely to prevent overlaps and fit separator perfectly
-function computeLayout(cols: number) {
-  const ultraZoneWidth = Math.max(18, Math.floor(cols * 0.25));
-  const stdZoneWidth = cols - ultraZoneWidth - 1; // -1 for ┊ separator
-
+function computeLayout(cols: number, levels: readonly EffortSliderLevel[]) {
+  const hasUltraZone = levels.at(-1) === 'ultracode';
+  const ultraZoneWidth = hasUltraZone ? Math.max(18, Math.floor(cols * 0.25)) : 0;
+  const stdZoneWidth = hasUltraZone ? cols - ultraZoneWidth - 1 : cols;
+  const standardLevels = hasUltraZone ? levels.slice(0, -1) : levels;
   const labelCols: number[] = [];
-
-  // 'low' starts at 0
-  labelCols.push(0);
-
-  // Intermediate labels centered on their track positions
-  for (let i = 1; i < STD_COUNT - 1; i++) {
-    const trackPos = Math.round((i / (STD_COUNT - 1)) * (stdZoneWidth - 1));
-    const labelLen = SLIDER_LEVELS[i]!.length;
-    labelCols.push(Math.round(trackPos - labelLen / 2));
+  for (let index = 0; index < standardLevels.length; index++) {
+    const level = standardLevels[index]!;
+    if (index === 0) {
+      labelCols.push(0);
+    } else if (index === standardLevels.length - 1) {
+      labelCols.push(stdZoneWidth - level.length);
+    } else {
+      const trackPos = Math.round((index / (standardLevels.length - 1)) * (stdZoneWidth - 1));
+      labelCols.push(Math.round(trackPos - level.length / 2));
+    }
   }
-
-  // 'max' right-aligned to stdZoneWidth boundary
-  labelCols.push(stdZoneWidth - 'max'.length);
-
-  // 'ultracode' centered in the ultra zone
-  const ultraLabelCol = stdZoneWidth + 1 + Math.floor((ultraZoneWidth - 'ultracode'.length) / 2);
-  labelCols.push(ultraLabelCol);
+  if (hasUltraZone) {
+    labelCols.push(stdZoneWidth + 1 + Math.floor((ultraZoneWidth - 'ultracode'.length) / 2));
+  }
 
   return {
     stdZoneWidth,
     ultraZoneWidth,
     labelCols,
-    sepCol: stdZoneWidth,
+    sepCol: hasUltraZone ? stdZoneWidth : -1,
     totalWidth: cols,
   };
 }
@@ -299,9 +294,9 @@ function getSliderIndexForCurrentEffort(appStateEffort: EffortValue | undefined,
   const envOverride = getEffortEnvOverride();
   const effectiveValue = envOverride === null ? undefined : (envOverride ?? appStateEffort);
   const displayedLevel = effectiveValue ?? getDisplayedEffortLevel(model, appStateEffort);
-  const index = SLIDER_LEVELS.indexOf(displayedLevel as SliderLevel);
+  const index = EFFORT_SLIDER_LEVELS.indexOf(displayedLevel as EffortSliderLevel);
 
-  return index >= 0 ? index : SLIDER_LEVELS.indexOf('medium');
+  return index >= 0 ? index : EFFORT_SLIDER_LEVELS.indexOf('medium');
 }
 
 function foregroundForPanelCell(color: string | undefined, occupied: boolean): string | undefined {
@@ -387,85 +382,97 @@ function renderLineWithPanel(
   );
 }
 
-function EffortSlider({
+export function EffortSlider({
   initialIndex,
   onConfirm,
   onCancel,
+  levels = EFFORT_SLIDER_LEVELS,
+  glowAtHighest = false,
+  isActive = true,
 }: {
   initialIndex: number;
-  onConfirm: (level: SliderLevel) => void;
+  onConfirm: (level: EffortSliderLevel) => void;
   onCancel: () => void;
+  levels?: readonly EffortSliderLevel[];
+  /** Show the expanding purple spotlight when the highest supported level is selected. */
+  glowAtHighest?: boolean;
+  isActive?: boolean;
 }): React.ReactNode {
-  const [selectedIndex, setSelectedIndex] = useState(initialIndex);
+  const [selectedIndex, setSelectedIndex] = useState(() => Math.min(initialIndex, Math.max(0, levels.length - 1)));
   const { columns } = useTerminalSize();
 
   const animTime = useAnimationTimer(GLOW_INTERVAL_MS);
 
-  // Keep shared Clock alive while in ultracode mode to drive background animations
-  const selected = SLIDER_LEVELS[selectedIndex]!;
-  const isUltra = selected === 'ultracode';
-  const [ultraEnterAnimTime, setUltraEnterAnimTime] = React.useState<number | null>(isUltra ? animTime : null);
+  const selected = levels[selectedIndex] ?? levels[0] ?? 'low';
+  const isHighest = selectedIndex === levels.length - 1;
+  const showGlow = isHighest && (glowAtHighest || selected === 'ultracode');
+  const hasUltraZone = levels.at(-1) === 'ultracode';
+  const [glowEnterAnimTime, setGlowEnterAnimTime] = React.useState<number | null>(showGlow ? animTime : null);
 
   React.useEffect(() => {
-    setUltraEnterAnimTime(isUltra ? animTime : null);
-    // Only reset when entering/leaving ultracode. Including animTime would restart
+    setSelectedIndex(index => Math.min(index, Math.max(0, levels.length - 1)));
+  }, [levels.length]);
+
+  React.useEffect(() => {
+    setGlowEnterAnimTime(showGlow ? animTime : null);
+    // Only reset when entering/leaving the highlighted maximum. Including animTime would restart
     // the reveal on every animation frame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isUltra]);
+  }, [showGlow]);
 
   const clock = React.useContext(ClockContext);
   React.useEffect(() => {
-    if (!clock || !isUltra) return;
+    if (!clock || !showGlow) return;
     const unsubscribe = clock.subscribe(() => {
-      // Intentionally empty: keeping clock active during ultracode mode
+      // Intentionally empty: keeping the clock active while the maximum glows.
     }, true);
     return unsubscribe;
-  }, [clock, isUltra]);
+  }, [clock, showGlow]);
 
-  useInput((_input, key) => {
-    if (key.return) {
-      onConfirm(SLIDER_LEVELS[selectedIndex]!);
-      return;
-    }
-    if (key.escape) {
-      onCancel();
-      return;
-    }
-    if (key.leftArrow) {
-      setSelectedIndex(i => Math.max(0, i - 1));
-      return;
-    }
-    if (key.rightArrow) {
-      setSelectedIndex(i => Math.min(SLIDER_LEVELS.length - 1, i + 1));
-      return;
-    }
-  });
+  useInput(
+    (_input, key) => {
+      if (key.return) {
+        onConfirm(levels[selectedIndex]!);
+        return;
+      }
+      if (key.escape) {
+        onCancel();
+        return;
+      }
+      if (key.leftArrow) {
+        setSelectedIndex(i => Math.max(0, i - 1));
+        return;
+      }
+      if (key.rightArrow) {
+        setSelectedIndex(i => Math.min(levels.length - 1, i + 1));
+        return;
+      }
+    },
+    { isActive },
+  );
 
   const innerWidth = Math.max(50, columns - 8);
-  const layout = computeLayout(innerWidth);
+  const layout = computeLayout(innerWidth, levels);
   const { labelCols, sepCol, totalWidth } = layout;
 
-  const markerCol =
-    selectedIndex < STD_COUNT
-      ? labelCols[selectedIndex]! + Math.floor(SLIDER_LEVELS[selectedIndex]!.length / 2)
-      : labelCols[5]! + Math.floor('ultracode'.length / 2);
+  const markerCol = labelCols[selectedIndex]! + Math.floor(selected.length / 2);
 
   // 1. Faster / Smarter Line
   const fasterSmarterLine: Span[] = [];
   const smarterText = 'Smarter';
   const smarterCol = totalWidth - smarterText.length;
-  fasterSmarterLine.push({ text: 'Faster', dim: !isUltra, bold: isUltra, color: isUltra ? '#ffffff' : undefined });
+  fasterSmarterLine.push({ text: 'Faster', dim: !showGlow, bold: showGlow, color: showGlow ? '#ffffff' : undefined });
   fasterSmarterLine.push({ text: ' '.repeat(Math.max(1, smarterCol - 6)) });
   fasterSmarterLine.push({
     text: smarterText,
-    bold: isUltra,
-    color: isUltra ? '#ffffff' : undefined,
-    dim: !isUltra,
+    bold: showGlow,
+    color: showGlow ? '#ffffff' : undefined,
+    dim: !showGlow,
   });
 
   // 2. Track Line with inline ▲
   const trackChars: string[] = new Array(totalWidth).fill('─');
-  if (sepCol < totalWidth) {
+  if (sepCol >= 0 && sepCol < totalWidth) {
     trackChars[sepCol] = '┊';
   }
   if (markerCol >= 0 && markerCol < totalWidth) {
@@ -476,13 +483,13 @@ function EffortSlider({
   for (let i = 0; i < totalWidth; i++) {
     const ch = trackChars[i]!;
     const isMarker = i === markerCol;
-    const isInUltraZone = i > sepCol;
+    const isInUltraZone = hasUltraZone && i > sepCol;
     if (isMarker) {
-      trackLine.push({ text: ch, bold: true, color: isUltra ? '#ffffff' : getSelectedColor(selected) });
+      trackLine.push({ text: ch, bold: true, color: showGlow ? '#ffffff' : getSelectedColor(selected) });
     } else if (i === sepCol) {
-      trackLine.push({ text: ch, bold: isUltra, color: isUltra ? '#ffffff' : undefined, dim: !isUltra });
+      trackLine.push({ text: ch, bold: showGlow, color: showGlow ? '#ffffff' : undefined, dim: !showGlow });
     } else if (isInUltraZone) {
-      trackLine.push({ text: ch, color: isUltra ? '#c084fc' : '#7c3aed', dim: !isUltra });
+      trackLine.push({ text: ch, color: showGlow ? '#c084fc' : '#7c3aed', dim: !showGlow });
     } else {
       trackLine.push({ text: ch, dim: true });
     }
@@ -503,8 +510,8 @@ function EffortSlider({
   for (let i = 0; i < totalWidth; i++) {
     labelChars.push({ ch: ' ' });
   }
-  for (let li = 0; li < SLIDER_LEVELS.length; li++) {
-    const label = SLIDER_LEVELS[li]!;
+  for (let li = 0; li < levels.length; li++) {
+    const label = levels[li]!;
     const col = labelCols[li]!;
     const isSel = li === selectedIndex;
 
@@ -512,7 +519,7 @@ function EffortSlider({
     let isBold = isSel;
     let isDim = !isSel;
 
-    if (isUltra) {
+    if (showGlow) {
       if (isSel) {
         fgColor = '#ffffff';
         isBold = true;
@@ -555,35 +562,32 @@ function EffortSlider({
   }
 
   // 4. Subtitle Line "xhigh + workflows"
-  const ultraCol = labelCols[5]!;
-  const subtitleSpans: Span[] = [
-    { text: ' '.repeat(ultraCol) },
-    {
-      text: 'xhigh + workflows',
-      color: isUltra ? '#ffffff' : undefined,
-      bold: isUltra,
-      dim: !isUltra,
-    },
-  ];
+  const ultraCol = hasUltraZone ? labelCols[levels.length - 1]! : 0;
+  const subtitleSpans: Span[] = hasUltraZone
+    ? [
+        { text: ' '.repeat(ultraCol) },
+        { text: 'xhigh + workflows', color: showGlow ? '#ffffff' : undefined, bold: showGlow, dim: !showGlow },
+      ]
+    : [{ text: '' }];
 
-  // 5. Purple animated panel. It is only active after the cursor moves to ultracode.
-  // The first frames are a small oval around ultracode; the oval then expands into
+  // 5. Purple animated panel. In /model it follows the focused model's highest
+  // supported effort; the full /effort command still peaks at ultracode.
   // a bounded spotlight so the panel does not turn into a solid purple block.
   const revealMs = 6000;
-  const elapsedMs = ultraEnterAnimTime === null ? 0 : Math.max(0, animTime - ultraEnterAnimTime);
-  const revealProgress = isUltra ? Math.min(1, elapsedMs / revealMs) : 0;
+  const elapsedMs = glowEnterAnimTime === null ? 0 : Math.max(0, animTime - glowEnterAnimTime);
+  const revealProgress = showGlow ? Math.min(1, elapsedMs / revealMs) : 0;
   // Once the reveal has filled the panel, freeze the wave. Otherwise the
   // background keeps drifting forever and turns into noisy vertical stripes.
-  const panelAnimTime = ultraEnterAnimTime === null ? animTime : ultraEnterAnimTime + Math.min(elapsedMs, revealMs);
-  const ultraCenterX = labelCols[5]! + Math.floor('ultracode'.length / 2);
+  const panelAnimTime = glowEnterAnimTime === null ? animTime : glowEnterAnimTime + Math.min(elapsedMs, revealMs);
+  const glowCenterX = markerCol;
   const ultraCenterY = 4;
   const emptyPanelColors = React.useMemo(
     () => Array.from({ length: totalWidth }, () => undefined as string | undefined),
     [totalWidth],
   );
   const panelColorsForRow = (row: number) =>
-    isUltra
-      ? computeExpandingPanelColors(totalWidth, row, panelAnimTime, revealProgress, ultraCenterX, ultraCenterY)
+    showGlow
+      ? computeExpandingPanelColors(totalWidth, row, panelAnimTime, revealProgress, glowCenterX, ultraCenterY)
       : emptyPanelColors;
 
   // Grid lines
@@ -650,7 +654,7 @@ function EffortSliderWrapper({ onDone }: { onDone: LocalJSXCommandOnDone }): Rea
   const initialIndex = getSliderIndexForCurrentEffort(effortValue, model);
 
   const handleConfirm = useCallback(
-    (level: SliderLevel) => {
+    (level: EffortSliderLevel) => {
       const isUltra = level === 'ultracode';
       const effortLevel = isUltra ? 'xhigh' : level;
       const result = setEffortValue(effortLevel as EffortValue, isUltra);
