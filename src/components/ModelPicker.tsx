@@ -505,7 +505,7 @@ export function ModelPicker({
     <Box flexDirection="column">
       <Select
         options={providerFiltered as OptionWithDescription<string>[]}
-        visibleOptionCount={12}
+        visibleOptionCount={15}
         onChange={v => {
           setSearchQuery(v);
           setView('models');
@@ -565,14 +565,22 @@ export function ModelPicker({
       preview: <Markdown>**ultracode** — max thoroughness</Markdown>,
     },
   ];
-  const agentsOptions: OptionWithDescription<string>[] = [
-    {
-      value: 'agent-config',
-      label: 'Agent config',
-      description: 'Subagent model/provider',
-      preview: <Text>Configure subagent via /agent-config</Text>,
-    },
-  ];
+  // Agents tab — same model list as /models but for subagents
+  const agentsOptions = filteredOptions.map(o => {
+    if (o.type === 'section') return o as OptionWithDescription<string>;
+    return {
+      ...o,
+      preview: (
+        <Box flexDirection="column">
+          <Text bold>{String(o.label)}</Text>
+          <Text dimColor>Subagent</Text>
+          <Box marginTop={1}>
+            <Markdown>{`**${String(o.label)}** — for subagents\n\n${o.description || ''}`}</Markdown>
+          </Box>
+        </Box>
+      ),
+    } as OptionWithDescription<string>;
+  });
 
   const content =
     view === 'providers' ? (
