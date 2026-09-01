@@ -953,6 +953,7 @@ const MessagesImpl = ({
             isTranscriptMode={true}
             verbose={verbose}
             hideInTranscript={false}
+            isStreaming={streamingThinking.isStreaming}
           />
         </Box>
       )}
