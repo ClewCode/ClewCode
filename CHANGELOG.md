@@ -10,6 +10,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-09-01
+
+### Fixed
+
+- **Provider→model→ctx→api hardening:** `isModelIdMatch` separator-bound fixes `gpt-4` vs `gpt-4o` substring bug in 6 files (`providerModels`, `context`, `modelCapabilities`, `prompts`, `thinking`), `4-6→4-6` canonical fix, `toolToAPISchema` cache bust, `max_output` cap for 8k free models, free `500` fast-fail.
+- **Shell background:** Footer/list/detail live progress (`⠋ shell: cmd · elapsed`, tail 16KB, OSC52 copy).
+- **Log/Registry fixes:** `fileHistoryEnabled` ReferenceError, semver `[0.3.7]` bracket, `logError` import.
+
+### Changed
+
+- **Provider feature flags:** Unify `PROACTIVE→KAIROS` (35 checks), `KAIROS_*→KAIROS` (61 checks), `MCP_*→CHICAGO_MCP` (13 checks) — 52 files, 109 checks simplified.
+- **README:** Sync `ctx%`/task/mcp/shell docs, baseline `0`.
+- **Large files:** `REPL.tsx 6544→6477` via `featureFlags`+`constants` split.
+- **Memory:** Consolidate `extractMemories`+`autoDream → longTermMemory` (6 files, re-export old paths).
+
 ## [0.9.2] - 2026-09-01
 
 ### Fixed
