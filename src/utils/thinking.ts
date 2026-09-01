@@ -139,12 +139,18 @@ export function modelSupportsThinking(model: string): boolean {
         const entry = getProviderRegistryEntry(providerId as any);
         if (!entry?.capabilities?.reasoningEffort) continue;
 
-        const modelInfo = entry.models?.find(
-          m =>
-            m.id.toLowerCase() === modelLower ||
-            m.id.toLowerCase().includes(modelLower) ||
-            modelLower.includes(m.id.toLowerCase()),
-        );
+        const isMatch = (a: string, b: string) => {
+          const al = a.toLowerCase();
+          const bl = b.toLowerCase();
+          if (al === bl) return true;
+          const aBase = al.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+          const bBase = bl.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+          if (aBase === bBase) return true;
+          if (al.startsWith(bl + '-') || al.startsWith(bl + ':') || al.startsWith(bl + '/')) return true;
+          if (bl.startsWith(al + '-') || bl.startsWith(al + ':') || bl.startsWith(al + '/')) return true;
+          return false;
+        };
+        const modelInfo = entry.models?.find(m => isMatch(m.id.toLowerCase(), modelLower));
         if (modelInfo?.capabilities?.reasoning) return true;
       } catch {
         // Provider not available, skip

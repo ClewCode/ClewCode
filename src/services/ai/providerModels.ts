@@ -50,7 +50,7 @@ export function getCachedModelLimits(
   const lowerId = modelId.toLowerCase();
   const match =
     cached.data.find(m => m.id.toLowerCase() === lowerId) ??
-    cached.data.find(m => lowerId.includes(m.id.toLowerCase()) || m.id.toLowerCase().includes(lowerId));
+    cached.data.find(m => isModelIdMatch(lowerId, m.id.toLowerCase()));
   if (!match) return undefined;
   const maxContext = match.capabilities?.maxContext;
   const maxOutput = match.capabilities?.maxOutput;
@@ -126,6 +126,18 @@ function cacheAndReturn(provider: ProviderId, data: ProviderModelInfo[]): Provid
   return data;
 }
 
+function isModelIdMatch(a: string, b: string): boolean {
+  const al = a.toLowerCase();
+  const bl = b.toLowerCase();
+  if (al === bl) return true;
+  const aBase = al.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+  const bBase = bl.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+  if (aBase === bBase) return true;
+  if (al.startsWith(bl + '-') || al.startsWith(bl + ':') || al.startsWith(bl + '/')) return true;
+  if (bl.startsWith(al + '-') || bl.startsWith(al + ':') || bl.startsWith(al + '/')) return true;
+  return false;
+}
+
 function parseContextLength(raw: string): number {
   const s = raw.toLowerCase().replace(/\+$/, '').trim();
   const m = s.match(/^(\d+)(k|m)?$/);
@@ -178,9 +190,7 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
 
   // Try to get context window from API response, fall back to providers.json
   const apiMaxContext = model.max_input_tokens ?? model.context_window ?? model.contextWindow;
-  const registryModel = info.models.find(
-    m => m.id.toLowerCase() === id.toLowerCase() || id.toLowerCase().includes(m.id.toLowerCase()),
-  );
+  const registryModel = info.models.find(m => isModelIdMatch(m.id, id));
   const registryMaxContext =
     registryModel?.capabilities?.maxContext !== undefined && registryModel.capabilities.maxContext !== 'varies'
       ? registryModel.capabilities.maxContext
@@ -196,7 +206,7 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
       for (const pid of PROVIDER_IDS) {
         if (pid === provider) continue;
         const entry = getProviderRegistryEntry(pid);
-        const m = entry.models.find(mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()));
+        const m = entry.models.find(mm => isModelIdMatch(mm.id, id));
         if (m?.capabilities?.maxContext && typeof m.capabilities.maxContext === 'number')
           return m.capabilities.maxContext;
       }
@@ -217,7 +227,7 @@ function toProviderModelInfo(provider: ProviderId, model: RemoteModelPayload): P
       for (const pid of PROVIDER_IDS) {
         if (pid === provider) continue;
         const entry = getProviderRegistryEntry(pid);
-        const m = entry.models.find(mm => mm.id.toLowerCase() === lowerId || lowerId.includes(mm.id.toLowerCase()));
+        const m = entry.models.find(mm => isModelIdMatch(mm.id, id));
         if (m?.capabilities?.maxOutput && typeof m.capabilities.maxOutput === 'number') return m.capabilities.maxOutput;
       }
       return undefined;

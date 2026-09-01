@@ -593,9 +593,20 @@ function getModelCapabilitiesText(modelId: string): string | null {
   // Try exact match first
   let modelInfo = entry.models.find(m => m.id === modelId);
   if (!modelInfo) {
-    // Try canonical/substring matching
+    // Try canonical/separator-bound matching (not substring) - gpt-4 should not match gpt-4o
     const canonical = getCanonicalName(modelId);
-    modelInfo = entry.models.find(m => canonical.includes(m.id) || m.id.includes(canonical) || m.id === modelId);
+    const isMatch = (a: string, b: string) => {
+      const al = a.toLowerCase();
+      const bl = b.toLowerCase();
+      if (al === bl) return true;
+      const aBase = al.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+      const bBase = bl.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+      if (aBase === bBase) return true;
+      if (al.startsWith(bl + '-') || al.startsWith(bl + ':') || al.startsWith(bl + '/')) return true;
+      if (bl.startsWith(al + '-') || bl.startsWith(al + ':') || bl.startsWith(al + '/')) return true;
+      return false;
+    };
+    modelInfo = entry.models.find(m => isMatch(canonical, m.id) || m.id === modelId);
   }
 
   if (!modelInfo) return null;

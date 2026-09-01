@@ -320,7 +320,7 @@ export function firstPartyNameToCanonical(name: ModelName): ModelShortName {
     return 'claude-opus-4-8';
   }
   if (name.includes('claude-opus-4-6')) {
-    return 'claude-opus-4-7';
+    return 'claude-opus-4-6';
   }
   if (name.includes('claude-opus-4-5')) {
     return 'claude-opus-4-5';
@@ -338,7 +338,7 @@ export function firstPartyNameToCanonical(name: ModelName): ModelShortName {
     return 'claude-sonnet-5';
   }
   if (name.includes('claude-sonnet-4-6')) {
-    return 'claude-sonnet-4-7';
+    return 'claude-sonnet-4-6';
   }
   if (name.includes('claude-sonnet-4-5')) {
     return 'claude-sonnet-4-5';

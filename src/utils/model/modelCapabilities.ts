@@ -72,6 +72,18 @@ const loadCache = memoize(
   path => path,
 );
 
+function isModelIdMatch(a: string, b: string): boolean {
+  const al = a.toLowerCase();
+  const bl = b.toLowerCase();
+  if (al === bl) return true;
+  const aBase = al.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+  const bBase = bl.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+  if (aBase === bBase) return true;
+  if (al.startsWith(bl + '-') || al.startsWith(bl + ':') || al.startsWith(bl + '/')) return true;
+  if (bl.startsWith(al + '-') || bl.startsWith(al + ':') || bl.startsWith(al + '/')) return true;
+  return false;
+}
+
 export function getModelCapability(model: string): ModelCapability | undefined {
   // Anthropic first-party path: use cached capabilities from API
   if (isModelCapabilitiesEligible()) {
@@ -80,7 +92,7 @@ export function getModelCapability(model: string): ModelCapability | undefined {
       const m = model.toLowerCase();
       const exact = cached.find(c => c.id.toLowerCase() === m);
       if (exact) return exact;
-      return cached.find(c => m.includes(c.id.toLowerCase()));
+      return cached.find(c => isModelIdMatch(m, c.id.toLowerCase()));
     }
   }
 
@@ -97,10 +109,10 @@ export function getModelCapability(model: string): ModelCapability | undefined {
     const entry = getProviderRegistryEntry(providerId);
     if (entry) {
       const modelLower = model.toLowerCase();
-      // Try exact match first, then substring match
+      // Try exact match first, then separator-bound prefix match (not substring)
       const modelInfo =
         entry.models.find(m => m.id.toLowerCase() === modelLower) ??
-        entry.models.find(m => modelLower.includes(m.id.toLowerCase()) || m.id.toLowerCase().includes(modelLower));
+        entry.models.find(m => isModelIdMatch(modelLower, m.id.toLowerCase()));
 
       if (modelInfo?.capabilities) {
         const caps = modelInfo.capabilities;

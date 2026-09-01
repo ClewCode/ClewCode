@@ -255,13 +255,24 @@ function getContextWindowFromRegistry(model: string): number | null {
     mistral: 'mistral',
   };
 
-  // Try each provider to find matching model
+  // Try each provider to find matching model - use exact or separator-bound prefix match, not substring
+  const isMatch = (a: string, b: string) => {
+    const al = a.toLowerCase();
+    const bl = b.toLowerCase();
+    if (al === bl) return true;
+    const aBase = al.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+    const bBase = bl.replace(/[-_:]free$/, '').replace(/[:/]/g, '-');
+    if (aBase === bBase) return true;
+    if (al.startsWith(bl + '-') || al.startsWith(bl + ':') || al.startsWith(bl + '/')) return true;
+    if (bl.startsWith(al + '-') || bl.startsWith(al + ':') || bl.startsWith(al + '/')) return true;
+    return false;
+  };
   for (const [_providerKey, providerId] of Object.entries(providerIdMap)) {
     try {
       const entry = getProviderRegistryEntry(providerId as any);
       if (!entry) continue;
 
-      const modelInfo = entry.models.find(m => canonical.includes(m.id) || m.id.includes(canonical));
+      const modelInfo = entry.models.find(m => isMatch(canonical, m.id));
 
       if (modelInfo?.capabilities.maxContext) {
         const maxCtx = modelInfo.capabilities.maxContext;
@@ -296,7 +307,9 @@ function getContextWindowFromRegistry(model: string): number | null {
       const entry = getProviderRegistryEntry(providerId as any);
       if (!entry) continue;
 
-      const modelInfo = entry.models.find(m => m.id === model || m.id.endsWith(model));
+      const modelInfo = entry.models.find(
+        m => m.id === model || isMatch(m.id, model) || m.id.endsWith('/' + model) || m.id.endsWith(':' + model),
+      );
       if (modelInfo?.capabilities.maxContext && typeof modelInfo.capabilities.maxContext === 'number') {
         return modelInfo.capabilities.maxContext;
       }
