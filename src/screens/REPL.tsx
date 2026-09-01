@@ -164,56 +164,21 @@ import { useTeammateViewAutoExit } from '../hooks/useTeammateViewAutoExit.js';
 import { errorMessage } from '../utils/errors.js';
 import { isHumanTurn } from '../utils/messagePredicates.js';
 import { logError } from '../utils/log.js';
-// Dead code elimination: conditional imports
-/* eslint-disable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
-const useVoiceIntegration: typeof import('../hooks/useVoiceIntegration.js').useVoiceIntegration = feature('VOICE_MODE')
-  ? require('../hooks/useVoiceIntegration.js').useVoiceIntegration
-  : () => ({
-      stripTrailing: () => 0,
-      handleKeyEvent: () => {
-        /* noop */
-      },
-      resetAnchor: () => {
-        /* noop */
-      },
-    });
-const VoiceKeybindingHandler: typeof import('../hooks/useVoiceIntegration.js').VoiceKeybindingHandler = feature(
-  'VOICE_MODE',
-)
-  ? require('../hooks/useVoiceIntegration.js').VoiceKeybindingHandler
-  : () => null;
-// Frustration detection is ant-only (dogfooding). Conditional require so external
-// builds eliminate the module entirely (including its two O(n) useMemos that run
-// on every messages change, plus the GrowthBook fetch).
-// @ts-expect-error - Phase2: missing module stub (auto)
-const useFrustrationDetection: typeof import('../components/FeedbackSurvey/useFrustrationDetection.js').useFrustrationDetection =
-  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
-  'external' === 'ant'
-    ? require('../components/FeedbackSurvey/useFrustrationDetection.js').useFrustrationDetection
-    : () => ({
-        state: 'closed',
-        handleTranscriptSelect: () => {
-          /* noop */
-        },
-      });
-// Ant-only org warning. Conditional require so the org UUID list is
-// eliminated from external builds (one UUID is on excluded-strings).
-// @ts-expect-error - Phase2: missing module stub (auto)
-const useAntOrgWarningNotification: typeof import('../hooks/notifs/useAntOrgWarningNotification.js').useAntOrgWarningNotification =
-  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
-  'external' === 'ant'
-    ? require('../hooks/notifs/useAntOrgWarningNotification.js').useAntOrgWarningNotification
-    : () => {
-        /* noop */
-      };
-// Dead code elimination: conditional import for coordinator mode
-const getCoordinatorUserContext: (
-  mcpClients: ReadonlyArray<{ name: string }>,
-  scratchpadDir?: string,
-) => { [k: string]: string } = feature('COORDINATOR_MODE')
-  ? require('../coordinator/coordinatorMode.js').getCoordinatorUserContext
-  : () => ({});
-/* eslint-enable custom-rules/no-process-env-top-level, @typescript-eslint/no-require-imports */
+import {
+  useVoiceIntegration,
+  VoiceKeybindingHandler,
+  useFrustrationDetection,
+  useAntOrgWarningNotification,
+  getCoordinatorUserContext,
+  proactiveModule,
+  PROACTIVE_NO_OP_SUBSCRIBE,
+  PROACTIVE_FALSE,
+  SUGGEST_BG_PR_NOOP,
+  useProactive,
+  useScheduledTasks,
+  WebBrowserPanelModule,
+} from './REPL/featureFlags.js';
+import { EMPTY_MCP_CLIENTS, HISTORY_STUB, RECENT_SCROLL_REPIN_WINDOW_MS } from './REPL/constants.js';
 import useCanUseTool from '../hooks/useCanUseTool.js';
 import type { ToolPermissionContext, Tool, ToolUseContext } from '../Tool.js';
 import {
@@ -348,18 +313,6 @@ import { restoreSessionGoal } from '../utils/sessionGoalState.js';
 import { isInProcessTeammateTask, type InProcessTeammateTaskState } from '../tasks/InProcessTeammateTask/types.js';
 import { restoreRemoteAgentTasks } from '../tasks/RemoteAgentTask/RemoteAgentTask.js';
 import { useInboxPoller } from '../hooks/useInboxPoller.js';
-// Dead code elimination: conditional import for loop mode
-/* eslint-disable @typescript-eslint/no-require-imports */
-const proactiveModule = feature('PROACTIVE') || feature('KAIROS') ? require('../proactive/index.js') : null;
-const PROACTIVE_NO_OP_SUBSCRIBE = (_cb: () => void) => () => {
-  /* noop */
-};
-const PROACTIVE_FALSE = () => false;
-const SUGGEST_BG_PR_NOOP = (_p: string, _n: string): boolean => false;
-const useProactive =
-  feature('PROACTIVE') || feature('KAIROS') ? require('../proactive/useProactive.js').useProactive : null;
-const useScheduledTasks = feature('AGENT_TRIGGERS') ? require('../hooks/useScheduledTasks.js').useScheduledTasks : null;
-/* eslint-enable @typescript-eslint/no-require-imports */
 import { isAgentSwarmsEnabled } from '../utils/agentSwarmsEnabled.js';
 import { useTaskListWatcher } from '../hooks/useTaskListWatcher.js';
 import type { SandboxAskCallback, NetworkHostPattern } from '../utils/sandbox/sandbox-adapter.js';
@@ -476,12 +429,6 @@ import {
   type AutoRunIssueReason,
 } from '../utils/autoRunIssue.js';
 import type { HookProgress } from '../types/hooks.js';
-/* eslint-disable @typescript-eslint/no-require-imports */
-const WebBrowserPanelModule = feature('WEB_BROWSER_TOOL')
-  ? // @ts-expect-error - Phase2: missing module stub (auto)
-    (require('../tools/WebBrowserTool/WebBrowserPanel.js') as typeof import('../tools/WebBrowserTool/WebBrowserPanel.js'))
-  : null;
-/* eslint-enable @typescript-eslint/no-require-imports */
 import { IssueFlagBanner } from '../components/PromptInput/IssueFlagBanner.js';
 import { useIssueFlagBanner } from '../hooks/useIssueFlagBanner.js';
 import { CompanionSprite, CompanionFloatingBubble, MIN_COLS_FOR_FULL_SPRITE } from '../buddy/CompanionSprite.js';
@@ -505,24 +452,6 @@ import {
 import { setClipboard } from '../ink/termio/osc.js';
 import type { ScrollBoxHandle } from '../ink/components/ScrollBox.js';
 import { createAttachmentMessage, getQueuedCommandAttachments } from '../utils/attachments.js';
-
-// Stable empty array for hooks that accept MCPServerConnection[] — avoids
-// creating a new [] literal on every render in remote mode, which would
-// cause useEffect dependency changes and infinite re-render loops.
-const EMPTY_MCP_CLIENTS: MCPServerConnection[] = [];
-
-// Stable stub for useAssistantHistory's non-KAIROS branch — avoids a new
-// function identity each render, which would break composedOnScroll's memo.
-const HISTORY_STUB = {
-  maybeLoadOlder: (_: ScrollBoxHandle) => {
-    /* noop */
-  },
-};
-// Window after a user-initiated scroll during which type-into-empty does NOT
-// repin to bottom. Josh Rosen's workflow: Claude emits long output → scroll
-// up to read the start → start typing → before this fix, snapped to bottom.
-// https://anthropic.slack.com/archives/C07VBSHV7EV/p1773545449871739
-const RECENT_SCROLL_REPIN_WINDOW_MS = 3000;
 
 // Use LRU cache to prevent unbounded memory growth
 // 100 files should be sufficient for most coding sessions while preventing
