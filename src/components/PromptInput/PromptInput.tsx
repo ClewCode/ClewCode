@@ -376,11 +376,10 @@ function PromptInput({
   // the input bar. viewingAgentTaskId mirrors the gate on both (Spinner.tsx,
   // REPL.tsx) — teammate view falls back to SpinnerWithVerbInner which has
   // its own marginTop, so the gap stays even without ours.
-  const briefOwnsGap =
-    feature('KAIROS') || feature('KAIROS_BRIEF')
-      ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
-        useAppState(s => s.isBriefOnly) && !viewingAgentTaskId
-      : false;
+  const briefOwnsGap = feature('KAIROS')
+    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+      useAppState(s => s.isBriefOnly) && !viewingAgentTaskId
+    : false;
   const mainLoopModel_ = useAppState(s => s.mainLoopModel);
   const mainLoopModelForSession = useAppState(s => s.mainLoopModelForSession);
   const thinkingEnabled = useAppState(s => s.thinkingEnabled);

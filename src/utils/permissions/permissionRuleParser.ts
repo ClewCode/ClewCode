@@ -7,10 +7,9 @@ import type { PermissionRuleValue } from './PermissionRule.js';
 // Dead code elimination: ant-only tool names are conditionally required so
 // their strings don't leak into external builds. Static imports always bundle.
 /* eslint-disable @typescript-eslint/no-require-imports */
-const BRIEF_TOOL_NAME: string | null =
-  feature('KAIROS') || feature('KAIROS_BRIEF')
-    ? (require('../../tools/BriefTool/prompt.js') as typeof import('../../tools/BriefTool/prompt.js')).BRIEF_TOOL_NAME
-    : null;
+const BRIEF_TOOL_NAME: string | null = feature('KAIROS')
+  ? (require('../../tools/BriefTool/prompt.js') as typeof import('../../tools/BriefTool/prompt.js')).BRIEF_TOOL_NAME
+  : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 // Maps legacy tool names to their current canonical names.
@@ -21,7 +20,7 @@ const LEGACY_TOOL_NAME_ALIASES: Record<string, string> = {
   KillShell: TASK_STOP_TOOL_NAME,
   AgentOutputTool: TASK_OUTPUT_TOOL_NAME,
   BashOutputTool: TASK_OUTPUT_TOOL_NAME,
-  ...((feature('KAIROS') || feature('KAIROS_BRIEF')) && BRIEF_TOOL_NAME ? { Brief: BRIEF_TOOL_NAME } : {}),
+  ...(feature('KAIROS') && BRIEF_TOOL_NAME ? { Brief: BRIEF_TOOL_NAME } : {}),
 };
 
 export function normalizeLegacyToolName(name: string): string {

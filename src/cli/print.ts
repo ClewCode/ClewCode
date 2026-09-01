@@ -1423,11 +1423,7 @@ function runHeadlessStreaming(
       // actually pass the allowlist. Not a security boundary (the
       // handler re-runs the full gate); just avoids dead buttons.
       let capabilities: { experimental?: Record<string, unknown> } | undefined;
-      if (
-        (feature('KAIROS') || feature('KAIROS_CHANNELS')) &&
-        connection.type === 'connected' &&
-        connection.capabilities.experimental
-      ) {
+      if (feature('KAIROS') && connection.type === 'connected' && connection.capabilities.experimental) {
         const exp = { ...connection.capabilities.experimental };
         if (exp['claude/channel'] && (!isChannelsEnabled() || !isChannelAllowlisted(connection.config.pluginSource))) {
           delete exp['claude/channel'];
@@ -4097,7 +4093,7 @@ function handleChannelEnable(
       response: { subtype: 'error', request_id: requestId, error },
     });
 
-  if (!(feature('KAIROS') || feature('KAIROS_CHANNELS'))) {
+  if (!feature('KAIROS')) {
     respondError('channels feature not available in this build');
     return;
   }
@@ -4194,7 +4190,7 @@ function handleChannelEnable(
  * check.
  */
 function reregisterChannelHandlerAfterReconnect(connection: MCPServerConnection): void {
-  if (!(feature('KAIROS') || feature('KAIROS_CHANNELS'))) return;
+  if (!feature('KAIROS')) return;
   if (connection.type !== 'connected') return;
 
   const gate = gateChannelServer(connection.name, connection.capabilities, connection.config.pluginSource);

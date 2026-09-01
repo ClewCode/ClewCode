@@ -2596,7 +2596,7 @@ async function run(): Promise<CommanderCommand> {
       // the tool as enabled when computing the base-tools disallow filter.
       // Conditional require avoids leaking the tool-name string into
       // external builds.
-      if ((feature('KAIROS') || feature('KAIROS_BRIEF')) && baseTools.length > 0) {
+      if (feature('KAIROS') && baseTools.length > 0) {
         /* eslint-disable @typescript-eslint/no-require-imports */
         const { BRIEF_TOOL_NAME, LEGACY_BRIEF_TOOL_NAME } =
           require('./tools/BriefTool/prompt.js') as typeof import('./tools/BriefTool/prompt.js');
@@ -3121,7 +3121,7 @@ async function run(): Promise<CommanderCommand> {
       // briefVisibility). A persisted 'chat' after a GB kill-switch falls
       // through (entitlement fails).
       if (
-        (feature('KAIROS') || feature('KAIROS_BRIEF')) &&
+        feature('KAIROS') &&
         !getIsNonInteractiveSession() &&
         !getUserMsgOptIn() &&
         getInitialSettings().defaultView === 'chat'
@@ -3148,14 +3148,13 @@ async function run(): Promise<CommanderCommand> {
         !coordinatorModeModule?.isCoordinatorMode()
       ) {
         /* eslint-disable @typescript-eslint/no-require-imports */
-        const briefVisibility =
-          feature('KAIROS') || feature('KAIROS_BRIEF')
-            ? (
-                require('./tools/BriefTool/BriefTool.js') as typeof import('./tools/BriefTool/BriefTool.js')
-              ).isBriefEnabled()
-              ? 'Call SendUserMessage at checkpoints to mark where things stand.'
-              : 'The user will see any text you output.'
-            : 'The user will see any text you output.';
+        const briefVisibility = feature('KAIROS')
+          ? (
+              require('./tools/BriefTool/BriefTool.js') as typeof import('./tools/BriefTool/BriefTool.js')
+            ).isBriefEnabled()
+            ? 'Call SendUserMessage at checkpoints to mark where things stand.'
+            : 'The user will see any text you output.'
+          : 'The user will see any text you output.';
         /* eslint-enable @typescript-eslint/no-require-imports */
         const proactivePrompt = `\n# Proactive Mode\n\nYou are in proactive mode. Take initiative — explore, act, and make progress without waiting for instructions.\n\nStart by briefly greeting the user.\n\nYou will receive periodic <tick> prompts. These are check-ins. Do whatever seems most useful, or call Sleep if there's nothing to do. ${briefVisibility}`;
         appendSystemPrompt = appendSystemPrompt ? `${appendSystemPrompt}\n\n${proactivePrompt}` : proactivePrompt;
@@ -3921,7 +3920,7 @@ async function run(): Promise<CommanderCommand> {
       };
       // All startup opt-in paths (--tools, --brief, defaultView) have fired
       // above; initialIsBriefOnly just reads the resulting state.
-      const initialIsBriefOnly = feature('KAIROS') || feature('KAIROS_BRIEF') ? getUserMsgOptIn() : false;
+      const initialIsBriefOnly = feature('KAIROS') ? getUserMsgOptIn() : false;
       const fullRemoteControl = remoteControl || getRemoteControlAtStartup() || kairosEnabled;
       let ccrMirrorEnabled = false;
       if (feature('CCR_MIRROR') && !fullRemoteControl) {
@@ -4975,7 +4974,7 @@ async function run(): Promise<CommanderCommand> {
       ),
     );
   }
-  if (feature('KAIROS') || feature('KAIROS_BRIEF')) {
+  if (feature('KAIROS')) {
     program.addOption(new Option('--brief', 'Enable SendUserMessage tool for agent-to-user communication'));
   }
   if (feature('KAIROS')) {
@@ -6173,7 +6172,7 @@ function maybeActivateProactive(options: unknown): void {
   }
 }
 function maybeActivateBrief(options: unknown): void {
-  if (!(feature('KAIROS') || feature('KAIROS_BRIEF'))) return;
+  if (!feature('KAIROS')) return;
   const briefFlag = (
     options as {
       brief?: boolean;

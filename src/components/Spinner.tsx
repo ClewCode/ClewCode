@@ -68,17 +68,16 @@ export function SpinnerWithVerb(props: Props): React.ReactNode {
   // teammate view needs the real spinner (which shows teammate status).
   const viewingAgentTaskId = useAppState(s => s.viewingAgentTaskId);
   // Hoisted to mount-time — this component re-renders at animation framerate.
-  const briefEnvEnabled =
-    feature('KAIROS') || feature('KAIROS_BRIEF')
-      ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
-        useMemo(() => isEnvTruthy(process.env.CLEW_CODE_BRIEF), [])
-      : false;
+  const briefEnvEnabled = feature('KAIROS')
+    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+      useMemo(() => isEnvTruthy(process.env.CLEW_CODE_BRIEF), [])
+    : false;
 
   // Runtime gate mirrors isBriefEnabled() but inlined — importing from
   // BriefTool.ts would leak tool-name strings into external builds. Single
   // spinner instance → hooks stay unconditional (two subs, negligible).
   if (
-    (feature('KAIROS') || feature('KAIROS_BRIEF')) &&
+    feature('KAIROS') &&
     (getKairosActive() ||
       (getUserMsgOptIn() && (briefEnvEnabled || getFeatureValue_CACHED_MAY_BE_STALE('tengu_kairos_brief', false)))) &&
     isBriefOnly &&

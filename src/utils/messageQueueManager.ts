@@ -349,7 +349,7 @@ export function isQueuedCommandEditable(cmd: QueuedCommand): boolean {
  * sees what arrived) but stay non-editable (raw XML).
  */
 export function isQueuedCommandVisible(cmd: QueuedCommand): boolean {
-  if ((feature('KAIROS') || feature('KAIROS_CHANNELS')) && cmd.origin?.kind === 'channel') return true;
+  if (feature('KAIROS') && cmd.origin?.kind === 'channel') return true;
   return isQueuedCommandEditable(cmd);
 }
 

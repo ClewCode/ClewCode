@@ -50,10 +50,9 @@ import { VoiceModeNotice } from './VoiceModeNotice.js';
 // whole file. VoiceModeNotice uses the unsafe helper pattern but VOICE_MODE
 // is external: true so it's moot there.
 /* eslint-disable @typescript-eslint/no-require-imports */
-const ChannelsNoticeModule =
-  feature('KAIROS') || feature('KAIROS_CHANNELS')
-    ? (require('./ChannelsNotice.js') as typeof import('./ChannelsNotice.js'))
-    : null;
+const ChannelsNoticeModule = feature('KAIROS')
+  ? (require('./ChannelsNotice.js') as typeof import('./ChannelsNotice.js'))
+  : null;
 
 /* eslint-enable @typescript-eslint/no-require-imports */
 import { SandboxManager } from 'src/utils/sandbox/sandbox-adapter.js';

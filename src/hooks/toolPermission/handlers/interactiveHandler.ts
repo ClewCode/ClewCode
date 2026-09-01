@@ -295,7 +295,7 @@ function handleInteractivePermission(
   // Fire-and-forget send: if callTool fails (channel down, tool missing),
   // the subscription never fires and another racer wins. Graceful degradation
   // — the local dialog is always there as the floor.
-  if ((feature('KAIROS') || feature('KAIROS_CHANNELS')) && channelCallbacks && !ctx.tool.requiresUserInteraction?.()) {
+  if (feature('KAIROS') && channelCallbacks && !ctx.tool.requiresUserInteraction?.()) {
     const channelRequestId = shortRequestId(ctx.toolUseID);
     const allowedChannels = getAllowedChannels();
     const channelClients = filterPermissionRelayClients(

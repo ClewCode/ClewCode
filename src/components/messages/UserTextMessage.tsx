@@ -84,7 +84,7 @@ export function UserTextMessage({
   // The require() below DCEs when both flags are off. startsWith (not
   // includes) and before the includes-checks below: defense-in-depth if
   // the sanitizer were ever weakened.
-  if (feature('KAIROS_GITHUB_WEBHOOKS')) {
+  if (feature('KAIROS')) {
     if (param.text.startsWith('<github-webhook-activity>')) {
       /* eslint-disable @typescript-eslint/no-require-imports */
       // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
@@ -153,7 +153,7 @@ export function UserTextMessage({
   }
 
   // Inbound channel message (MCP server push).
-  if (feature('KAIROS') || feature('KAIROS_CHANNELS')) {
+  if (feature('KAIROS')) {
     if (param.text.includes('<channel source="')) {
       /* eslint-disable @typescript-eslint/no-require-imports */
       const { UserChannelMessage } = require('./UserChannelMessage.js') as typeof import('./UserChannelMessage.js');

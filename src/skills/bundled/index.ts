@@ -37,7 +37,7 @@ export function initBundledSkills(): void {
   registerStuckSkill();
   registerScraplingSkill();
   registerCommitSkill();
-  if (feature('KAIROS') || feature('KAIROS_DREAM')) {
+  if (feature('KAIROS') || feature('KAIROS')) {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { registerDreamSkill } = require('./dream.js');
     /* eslint-enable @typescript-eslint/no-require-imports */

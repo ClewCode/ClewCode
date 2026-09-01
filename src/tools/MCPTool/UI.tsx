@@ -49,7 +49,7 @@ export function renderToolUseMessage(
   return Object.entries(input)
     .map(([key, value]) => {
       let rendered = jsonStringify(value);
-      if (feature('MCP_RICH_OUTPUT') && !verbose && rendered.length > MAX_INPUT_VALUE_CHARS) {
+      if (feature('CHICAGO_MCP') && !verbose && rendered.length > MAX_INPUT_VALUE_CHARS) {
         rendered = `${rendered.slice(0, MAX_INPUT_VALUE_CHARS).trimEnd()}…`;
       }
       return `${key}: ${rendered}`;
@@ -147,7 +147,7 @@ export function renderToolResultMessage(
         item.type === 'text' && 'text' in item && item.text !== null && item.text !== undefined
           ? String(item.text)
           : '';
-      return feature('MCP_RICH_OUTPUT') ? (
+      return feature('CHICAGO_MCP') ? (
         <MCPTextOutput key={i} content={textContent} verbose={verbose} />
       ) : (
         <OutputLine key={i} content={textContent} verbose={verbose} />
@@ -169,7 +169,7 @@ export function renderToolResultMessage(
       </Box>
     );
   } else {
-    contentElement = feature('MCP_RICH_OUTPUT') ? (
+    contentElement = feature('CHICAGO_MCP') ? (
       <MCPTextOutput content={mcpOutput} verbose={verbose} />
     ) : (
       <OutputLine content={mcpOutput} verbose={verbose} />

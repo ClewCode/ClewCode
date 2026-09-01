@@ -99,10 +99,9 @@ const LogoHeader = React.memo(function LogoHeader({
 // Dead code elimination: conditional import for proactive mode
 /* eslint-disable @typescript-eslint/no-require-imports */
 const proactiveModule = feature('KAIROS') ? require('../proactive/index.js') : null;
-const BRIEF_TOOL_NAME: string | null =
-  feature('KAIROS') || feature('KAIROS_BRIEF')
-    ? (require('../tools/BriefTool/prompt.js') as typeof import('../tools/BriefTool/prompt.js')).BRIEF_TOOL_NAME
-    : null;
+const BRIEF_TOOL_NAME: string | null = feature('KAIROS')
+  ? (require('../tools/BriefTool/prompt.js') as typeof import('../tools/BriefTool/prompt.js')).BRIEF_TOOL_NAME
+  : null;
 const SEND_USER_FILE_TOOL_NAME: string | null = feature('KAIROS')
   ? // @ts-expect-error - Phase2: missing module stub (auto)
     (require('../tools/SendUserFileTool/prompt.js') as typeof import('../tools/SendUserFileTool/prompt.js'))

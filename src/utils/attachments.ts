@@ -146,10 +146,9 @@ import { isHumanTurn } from './messagePredicates.js';
 import { isEnvTruthy, getClewConfigHomeDir } from './envUtils.js';
 import { feature } from 'bun:bundle';
 /* eslint-disable @typescript-eslint/no-require-imports */
-const BRIEF_TOOL_NAME: string | null =
-  feature('KAIROS') || feature('KAIROS_BRIEF')
-    ? (require('../tools/BriefTool/prompt.js') as typeof import('../tools/BriefTool/prompt.js')).BRIEF_TOOL_NAME
-    : null;
+const BRIEF_TOOL_NAME: string | null = feature('KAIROS')
+  ? (require('../tools/BriefTool/prompt.js') as typeof import('../tools/BriefTool/prompt.js')).BRIEF_TOOL_NAME
+  : null;
 const sessionTranscriptModule = feature('KAIROS')
   ? // @ts-expect-error - Phase2: missing module stub (auto)
     (require('../services/sessionTranscript/sessionTranscript.js') as typeof import('../services/sessionTranscript/sessionTranscript.js'))

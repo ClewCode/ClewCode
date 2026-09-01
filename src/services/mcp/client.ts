@@ -101,7 +101,7 @@ import { callToolAsTask, clearToolTaskSupport, getToolTaskSupport, recordToolTas
 import { getLoggingSafeMcpBaseUrl } from './utils.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const fetchMcpSkillsForClient = feature('MCP_SKILLS')
+const fetchMcpSkillsForClient = feature('CHICAGO_MCP')
   ? (require('../../skills/mcpSkills.js') as typeof import('../../skills/mcpSkills.js')).fetchMcpSkillsForClient
   : null;
 
@@ -337,7 +337,7 @@ export async function clearAllMcpServerCaches(): Promise<void> {
   fetchToolsForClient.cache.clear();
   fetchResourcesForClient.cache.clear();
   fetchCommandsForClient.cache.clear();
-  if (feature('MCP_SKILLS')) {
+  if (feature('CHICAGO_MCP')) {
     fetchMcpSkillsForClient!.cache.clear();
   }
 
@@ -1576,7 +1576,7 @@ export const connectToServer = memoize(
           fetchToolsForClient.cache.delete(name);
           fetchResourcesForClient.cache.delete(name);
           fetchCommandsForClient.cache.delete(name);
-          if (feature('MCP_SKILLS')) {
+          if (feature('CHICAGO_MCP')) {
             fetchMcpSkillsForClient!.cache.delete(name);
           }
 
@@ -1867,7 +1867,7 @@ export async function clearServerCache(name: string, serverRef: ScopedMcpServerC
   clearToolTaskSupport(name);
   fetchResourcesForClient.cache.delete(name);
   fetchCommandsForClient.cache.delete(name);
-  if (feature('MCP_SKILLS')) {
+  if (feature('CHICAGO_MCP')) {
     fetchMcpSkillsForClient!.cache.delete(name);
   }
 }
@@ -2399,7 +2399,7 @@ export async function reconnectMcpServerImpl(
     const [tools, mcpCommands, mcpSkills, resources] = await Promise.all([
       fetchToolsForClient(client),
       fetchCommandsForClient(client),
-      feature('MCP_SKILLS') && supportsResources ? fetchMcpSkillsForClient!(client) : Promise.resolve([]),
+      feature('CHICAGO_MCP') && supportsResources ? fetchMcpSkillsForClient!(client) : Promise.resolve([]),
       supportsResources ? fetchResourcesForClient(client) : Promise.resolve([]),
     ]);
     const commands = [...mcpCommands, ...mcpSkills];
@@ -2578,7 +2578,7 @@ export async function getMcpToolsCommandsAndResources(
         fetchToolsForClient(client),
         fetchCommandsForClient(client),
         // Discover skills from skill:// resources
-        feature('MCP_SKILLS') && supportsResources ? fetchMcpSkillsForClient!(client) : Promise.resolve([]),
+        feature('CHICAGO_MCP') && supportsResources ? fetchMcpSkillsForClient!(client) : Promise.resolve([]),
         // Fetch resources if supported
         supportsResources ? fetchResourcesForClient(client) : Promise.resolve([]),
       ]);

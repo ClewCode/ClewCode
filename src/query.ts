@@ -991,7 +991,7 @@ async function* queryLoop(
       // Brief mode retry: if brief mode is enabled but the model produced text
       // instead of calling SendUserMessage, retry once with a nudge.
       if (
-        (feature('KAIROS') || feature('KAIROS_BRIEF')) &&
+        feature('KAIROS') &&
         toolUseContext.getAppState().kairosEnabled &&
         state.briefModeRetryCount === 0 &&
         lastMessage?.type === 'assistant' &&

@@ -204,7 +204,7 @@ export function useReplBridge(
               // Dynamic import keeps the bridge code out of non-BRIDGE_MODE builds.
               const { resolveAndPrepend } = await import('../bridge/inboundAttachments.js');
               let sanitized = fields.content;
-              if (feature('KAIROS_GITHUB_WEBHOOKS')) {
+              if (feature('KAIROS')) {
                 /* eslint-disable @typescript-eslint/no-require-imports */
                 const { sanitizeInboundWebhookContent } =
                   // @ts-expect-error - Phase2: missing module stub (auto)

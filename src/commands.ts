@@ -439,7 +439,7 @@ export function clearCommandsCache(): void {
  * separately.
  */
 export function getMcpSkillCommands(mcpCommands: readonly Command[]): readonly Command[] {
-  if (feature('MCP_SKILLS')) {
+  if (feature('CHICAGO_MCP')) {
     return mcpCommands.filter(cmd => cmd.type === 'prompt' && cmd.loadedFrom === 'mcp' && !cmd.disableModelInvocation);
   }
   return [];

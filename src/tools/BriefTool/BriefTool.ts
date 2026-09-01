@@ -81,7 +81,7 @@ const KAIROS_BRIEF_REFRESH_MS = 5 * 60 * 1000;
 export function isBriefEntitled(): boolean {
   // Positive ternary — see docs/feature-gating.md. Negative early-return
   // would not eliminate the GB gate string from external builds.
-  return feature('KAIROS') || feature('KAIROS_BRIEF')
+  return feature('KAIROS')
     ? getKairosActive() ||
         isEnvTruthy(process.env.CLEW_CODE_BRIEF) ||
         getFeatureValue_CACHED_WITH_REFRESH('tengu_kairos_brief', false, KAIROS_BRIEF_REFRESH_MS)
@@ -117,9 +117,7 @@ export function isBriefEnabled(): boolean {
   // the ternary to `false` in external builds and then dead-code the BriefTool
   // object. Composing isBriefEntitled() alone (which has its own guard) is
   // semantically equivalent but defeats constant-folding across the boundary.
-  return feature('KAIROS') || feature('KAIROS_BRIEF')
-    ? (getKairosActive() || getUserMsgOptIn()) && isBriefEntitled()
-    : false;
+  return feature('KAIROS') ? (getKairosActive() || getUserMsgOptIn()) && isBriefEntitled() : false;
 }
 
 export const BriefTool = buildTool({

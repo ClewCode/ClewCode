@@ -820,7 +820,7 @@ export const SettingsSchema = lazySchema(() =>
             'plugins may push inbound messages. Undefined falls back to the default. ' +
             'Requires channelsEnabled: true.',
         ),
-      ...(feature('KAIROS') || feature('KAIROS_BRIEF')
+      ...(feature('KAIROS')
         ? {
             defaultView: z
               .enum(['chat', 'transcript'])
