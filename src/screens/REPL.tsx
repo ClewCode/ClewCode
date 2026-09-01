@@ -2383,7 +2383,7 @@ export function REPL({
 
     // Pause proactive mode so the user gets control back.
     // It will resume when they submit their next input (see onSubmit).
-    if (feature('PROACTIVE') || feature('KAIROS')) {
+    if (feature('KAIROS')) {
       proactiveModule?.pauseProactive();
     }
 
@@ -3041,7 +3041,7 @@ export function REPL({
             // stale memoized rows remount with post-compact content.
             setConversationId(randomUUID());
             // Compaction succeeded — clear the context-blocked flag so ticks resume
-            if (feature('PROACTIVE') || feature('KAIROS')) {
+            if (feature('KAIROS')) {
               proactiveModule?.setContextBlocked(false);
             }
             // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
@@ -3076,7 +3076,7 @@ export function REPL({
           // Block ticks on API errors to prevent tick → error → tick
           // runaway loops (e.g., auth failure, rate limit, blocking limit).
           // Cleared on compact boundary (above) or successful response (below).
-          if (feature('PROACTIVE') || feature('KAIROS')) {
+          if (feature('KAIROS')) {
             if (newMessage.type === 'assistant' && 'isApiErrorMessage' in newMessage && newMessage.isApiErrorMessage) {
               proactiveModule?.setContextBlocked(true);
             } else if (newMessage.type === 'assistant') {
@@ -3224,7 +3224,7 @@ export function REPL({
           // Bump conversationId so Messages.tsx row keys change and
           // stale memoized rows remount with post-compact content.
           setConversationId(randomUUID());
-          if (feature('PROACTIVE') || feature('KAIROS')) {
+          if (feature('KAIROS')) {
             proactiveModule?.setContextBlocked(false);
           }
         }
@@ -3277,9 +3277,7 @@ export function REPL({
       const userContext = {
         ...baseUserContext,
         ...getCoordinatorUserContext(freshMcpClients, isScratchpadEnabled() ? getScratchpadDir() : undefined),
-        ...((feature('PROACTIVE') || feature('KAIROS')) &&
-        proactiveModule?.isProactiveActive() &&
-        !terminalFocusRef.current
+        ...(feature('KAIROS') && proactiveModule?.isProactiveActive() && !terminalFocusRef.current
           ? {
               terminalFocus: 'The terminal is unfocused \u2014 the user is not actively watching.',
             }
@@ -3676,7 +3674,7 @@ export function REPL({
       }
 
       // Resume loop mode if paused
-      if (feature('PROACTIVE') || feature('KAIROS')) {
+      if (feature('KAIROS')) {
         proactiveModule?.resumeProactive();
       }
 
@@ -6426,7 +6424,7 @@ export function REPL({
                       }
                       // Partial compact bypasses handleMessageFromStream — clear
                       // the context-blocked flag so proactive ticks resume.
-                      if (feature('PROACTIVE') || feature('KAIROS')) {
+                      if (feature('KAIROS')) {
                         proactiveModule?.setContextBlocked(false);
                       }
                       setConversationId(randomUUID());

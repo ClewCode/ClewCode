@@ -36,7 +36,7 @@ export const getCoordinatorUserContext: (
   ? require('../../coordinator/coordinatorMode.js').getCoordinatorUserContext
   : () => ({});
 
-export const proactiveModule = feature('PROACTIVE') || feature('KAIROS') ? require('../../proactive/index.js') : null;
+export const proactiveModule = feature('KAIROS') ? require('../../proactive/index.js') : null;
 
 export const PROACTIVE_NO_OP_SUBSCRIBE = (_cb: () => void) => () => {
   /* noop */
@@ -44,8 +44,7 @@ export const PROACTIVE_NO_OP_SUBSCRIBE = (_cb: () => void) => () => {
 export const PROACTIVE_FALSE = () => false;
 export const SUGGEST_BG_PR_NOOP = (_p: string, _n: string): boolean => false;
 
-export const useProactive =
-  feature('PROACTIVE') || feature('KAIROS') ? require('../../proactive/useProactive.js').useProactive : null;
+export const useProactive = feature('KAIROS') ? require('../../proactive/useProactive.js').useProactive : null;
 
 export const useScheduledTasks = feature('AGENT_TRIGGERS')
   ? require('../../hooks/useScheduledTasks.js').useScheduledTasks

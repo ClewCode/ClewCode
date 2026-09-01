@@ -3,11 +3,10 @@ import type { PartialCompactDirection } from '../../types/message.js';
 
 // Dead code elimination: conditional import for proactive mode
 /* eslint-disable @typescript-eslint/no-require-imports */
-const proactiveModule =
-  feature('PROACTIVE') || feature('KAIROS')
-    ? // @ts-expect-error - Phase2: missing module stub (auto)
-      (require('../../proactive/index.js') as typeof import('../../proactive/index.js'))
-    : null;
+const proactiveModule = feature('KAIROS')
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('../../proactive/index.js') as typeof import('../../proactive/index.js'))
+  : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 // Aggressive no-tools preamble. The cache-sharing fork path inherits the
@@ -409,7 +408,7 @@ ${formattedSummary}`;
     let continuation = `${baseSummary}
 Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, do not preface with "I'll continue" or similar. Pick up the last task as if the break never happened.`;
 
-    if ((feature('PROACTIVE') || feature('KAIROS')) && proactiveModule?.isProactiveActive()) {
+    if (feature('KAIROS') && proactiveModule?.isProactiveActive()) {
       continuation += `
 
 You are running in autonomous/proactive mode. This is NOT a first wake-up — you were already working autonomously before compaction. Continue your work loop: pick up where you left off based on the summary above. Do not greet the user or ask what to work on.`;

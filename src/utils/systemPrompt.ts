@@ -15,11 +15,10 @@ export { asSystemPrompt, type SystemPrompt } from './systemPromptType.js';
 // Same pattern as prompts.ts — lazy require to avoid pulling the module
 // into non-proactive builds.
 /* eslint-disable @typescript-eslint/no-require-imports */
-const proactiveModule =
-  feature('PROACTIVE') || feature('KAIROS')
-    ? // @ts-expect-error - Phase2: missing module stub (auto)
-      (require('../proactive/index.js') as typeof import('../proactive/index.js'))
-    : null;
+const proactiveModule = feature('KAIROS')
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('../proactive/index.js') as typeof import('../proactive/index.js'))
+  : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 function isProactiveActive_SAFE_TO_CALL_ANYWHERE(): boolean {
@@ -90,7 +89,7 @@ export function buildEffectiveSystemPrompt({
   // rather than replacing it. The proactive default prompt is already lean
   // (autonomous agent identity + memory + env + proactive section), and agents
   // add domain-specific behavior on top — same pattern as teammates.
-  if (agentSystemPrompt && (feature('PROACTIVE') || feature('KAIROS')) && isProactiveActive_SAFE_TO_CALL_ANYWHERE()) {
+  if (agentSystemPrompt && feature('KAIROS') && isProactiveActive_SAFE_TO_CALL_ANYWHERE()) {
     return asSystemPrompt([
       ...defaultSystemPrompt,
       `\n# Custom Agent Instructions\n${agentSystemPrompt}`,

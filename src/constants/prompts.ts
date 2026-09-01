@@ -66,7 +66,7 @@ const getCachedMCConfigForFRC = feature('CACHED_MICROCOMPACT')
       .getCachedMCConfig
   : null;
 
-const proactiveModule = feature('PROACTIVE') || feature('KAIROS') ? require('../proactive/index.js') : null;
+const proactiveModule = feature('KAIROS') ? require('../proactive/index.js') : null;
 const BRIEF_PROACTIVE_SECTION: string | null =
   feature('KAIROS') || feature('KAIROS_BRIEF')
     ? (require('../tools/BriefTool/prompt.js') as typeof import('../tools/BriefTool/prompt.js')).BRIEF_PROACTIVE_SECTION
@@ -409,7 +409,7 @@ export async function getSystemPrompt(
   const settings = getInitialSettings();
   const enabledTools = new Set(tools.map(_ => _.name));
 
-  if ((feature('PROACTIVE') || feature('KAIROS')) && proactiveModule?.isProactiveActive()) {
+  if (feature('KAIROS') && proactiveModule?.isProactiveActive()) {
     logForDebugging(`[SystemPrompt] path=simple-proactive`);
     return [
       `\nYou are an autonomous agent. Use the available tools to do useful work.`,
@@ -857,7 +857,7 @@ function getBriefSection(): string | null {
   if (!briefToolModule?.isBriefEnabled()) return null;
   // When proactive is active, getProactiveSection() already appends the
   // section inline. Skip here to avoid duplicating it in the system prompt.
-  if ((feature('PROACTIVE') || feature('KAIROS')) && proactiveModule?.isProactiveActive()) return null;
+  if (feature('KAIROS') && proactiveModule?.isProactiveActive()) return null;
   return BRIEF_PROACTIVE_SECTION;
 }
 
@@ -867,7 +867,7 @@ You are running in focus mode. The user will only see your FINAL response. Ensur
 }
 
 function getProactiveSection(): string | null {
-  if (!(feature('PROACTIVE') || feature('KAIROS'))) return null;
+  if (!feature('KAIROS')) return null;
   if (!proactiveModule?.isProactiveActive()) return null;
 
   return `# Autonomous work

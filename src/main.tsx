@@ -3138,7 +3138,7 @@ async function run(): Promise<CommanderCommand> {
       // the generic proactive prompt would tell it to call a tool it can't
       // access and conflict with delegation instructions.
       if (
-        (feature('PROACTIVE') || feature('KAIROS')) &&
+        feature('KAIROS') &&
         ((
           options as {
             proactive?: boolean;
@@ -4964,7 +4964,7 @@ async function run(): Promise<CommanderCommand> {
   if (feature('TRANSCRIPT_CLASSIFIER')) {
     program.addOption(new Option('--enable-auto-mode', 'Opt in to auto mode').hideHelp());
   }
-  if (feature('PROACTIVE') || feature('KAIROS')) {
+  if (feature('KAIROS')) {
     program.addOption(new Option('--proactive', 'Start in proactive autonomous mode'));
   }
   if (feature('UDS_INBOX')) {
@@ -6157,7 +6157,7 @@ async function logTenguInit({
 }
 function maybeActivateProactive(options: unknown): void {
   if (
-    (feature('PROACTIVE') || feature('KAIROS')) &&
+    feature('KAIROS') &&
     ((
       options as {
         proactive?: boolean;

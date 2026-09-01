@@ -106,11 +106,10 @@ import {
 } from './UI.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const proactiveModule =
-  feature('PROACTIVE') || feature('KAIROS')
-    ? // @ts-expect-error - Phase2: missing module stub (auto)
-      (require('../../proactive/index.js') as typeof import('../../proactive/index.js'))
-    : null;
+const proactiveModule = feature('KAIROS')
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('../../proactive/index.js') as typeof import('../../proactive/index.js'))
+  : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 // Progress display constants (for showing background hint)

@@ -273,15 +273,14 @@ import { drainPendingExtraction } from '../services/extractMemories/extractMemor
 /* eslint-disable @typescript-eslint/no-require-imports */
 const coordinatorModeModule =
   require('../coordinator/coordinatorMode.js') as typeof import('../coordinator/coordinatorMode.js');
-const proactiveModule =
-  feature('PROACTIVE') || feature('KAIROS')
-    ? (require('../proactive/index.js') as {
-        isProactiveActive: () => boolean;
-        isProactivePaused: () => boolean;
-        activateProactive: (source: string) => void;
-        deactivateProactive: () => void;
-      })
-    : null; // ponytail: external-only proactive module; absent from this port by design.
+const proactiveModule = feature('KAIROS')
+  ? (require('../proactive/index.js') as {
+      isProactiveActive: () => boolean;
+      isProactivePaused: () => boolean;
+      activateProactive: (source: string) => void;
+      deactivateProactive: () => void;
+    })
+  : null; // ponytail: external-only proactive module; absent from this port by design.
 const cronSchedulerModule = feature('AGENT_TRIGGERS')
   ? (require('../utils/cronScheduler.js') as typeof import('../utils/cronScheduler.js'))
   : null;
@@ -424,7 +423,7 @@ export async function runHeadless(
   // where CLEW_CODE_PROACTIVE is set but main.tsx's check didn't fire
   // (e.g. env was injected by the SDK transport after argv parsing).
   if (
-    (feature('PROACTIVE') || feature('KAIROS')) &&
+    feature('KAIROS') &&
     proactiveModule &&
     !proactiveModule.isProactiveActive() &&
     isEnvTruthy(process.env.CLEW_CODE_PROACTIVE)
@@ -1566,25 +1565,24 @@ function runHeadlessStreaming(
   // Proactive mode: schedule a tick to keep the model looping autonomously.
   // setTimeout(0) yields to the event loop so pending stdin messages
   // (interrupts, user messages) are processed before the tick fires.
-  const scheduleProactiveTick =
-    feature('PROACTIVE') || feature('KAIROS')
-      ? () => {
-          setTimeout(() => {
-            if (!proactiveModule?.isProactiveActive() || proactiveModule.isProactivePaused() || inputClosed) {
-              return;
-            }
-            const tickContent = `<${TICK_TAG}>${new Date().toLocaleTimeString()}</${TICK_TAG}>`;
-            enqueue({
-              mode: 'prompt' as const,
-              value: tickContent,
-              uuid: randomUUID(),
-              priority: 'later',
-              isMeta: true,
-            });
-            void run();
-          }, 0);
-        }
-      : undefined;
+  const scheduleProactiveTick = feature('KAIROS')
+    ? () => {
+        setTimeout(() => {
+          if (!proactiveModule?.isProactiveActive() || proactiveModule.isProactivePaused() || inputClosed) {
+            return;
+          }
+          const tickContent = `<${TICK_TAG}>${new Date().toLocaleTimeString()}</${TICK_TAG}>`;
+          enqueue({
+            mode: 'prompt' as const,
+            value: tickContent,
+            uuid: randomUUID(),
+            priority: 'later',
+            isMeta: true,
+          });
+          void run();
+        }, 0);
+      }
+    : undefined;
 
   // Abort the current operation when a 'now' priority message arrives.
   subscribeToCommandQueue(() => {
@@ -2124,11 +2122,7 @@ function runHeadlessStreaming(
     }
 
     // Proactive tick: if proactive is active and queue is empty, inject a tick
-    if (
-      (feature('PROACTIVE') || feature('KAIROS')) &&
-      proactiveModule?.isProactiveActive() &&
-      !proactiveModule.isProactivePaused()
-    ) {
+    if (feature('KAIROS') && proactiveModule?.isProactiveActive() && !proactiveModule.isProactivePaused()) {
       if (peek(isMainThread) === undefined && !inputClosed) {
         scheduleProactiveTick!();
         return;
@@ -3381,10 +3375,7 @@ function runHeadlessStreaming(
                 sendControlResponseError(message, errorMessage(e));
               }
             })();
-          } else if (
-            (feature('PROACTIVE') || feature('KAIROS')) &&
-            (message.request as { subtype: string }).subtype === 'set_proactive'
-          ) {
+          } else if (feature('KAIROS') && (message.request as { subtype: string }).subtype === 'set_proactive') {
             const req = message.request as unknown as {
               subtype: string;
               enabled: boolean;

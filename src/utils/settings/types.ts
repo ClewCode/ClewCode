@@ -746,7 +746,7 @@ export const SettingsSchema = lazySchema(() =>
               .describe('Enable AI-based classification for Bash(prompt:...) permission rules'),
           }
         : {}),
-      ...(feature('PROACTIVE') || feature('KAIROS')
+      ...(feature('KAIROS')
         ? {
             minSleepDurationMs: z
               .number()
