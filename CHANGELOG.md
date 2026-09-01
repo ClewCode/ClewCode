@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **New Clawd Poses:** Three new mascot poses — `blink` (closed eyes), `look-up` (eyes raised), and `shocked` (wide-eyed) — plus two new click animations (`BLINK`, `STARTLE`) on `AnimatedClawd`.
+
 ### Fixed
 
 - Prevented the status-line `ctx%` estimate from counting split assistant records from the same API response twice.

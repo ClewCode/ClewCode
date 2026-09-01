@@ -48,7 +48,23 @@ const LOOK_AROUND: readonly Frame[] = [
   ...hold('look-left', 0, 5),
   ...hold('default', 0, 1),
 ];
-const CLICK_ANIMATIONS: readonly (readonly Frame[])[] = [JUMP_WAVE, LOOK_AROUND];
+
+// Click animation: quick double blink.
+const BLINK: readonly Frame[] = [
+  ...hold('blink', 0, 2),
+  ...hold('default', 0, 3),
+  ...hold('blink', 0, 2),
+  ...hold('default', 0, 1),
+];
+
+// Click animation: startled — crouch, then wide-eyed stare, then glance away.
+const STARTLE: readonly Frame[] = [
+  ...hold('default', 1, 2),
+  ...hold('shocked', 0, 4),
+  ...hold('look-left', 0, 3),
+  ...hold('default', 0, 1),
+];
+const CLICK_ANIMATIONS: readonly (readonly Frame[])[] = [JUMP_WAVE, LOOK_AROUND, BLINK, STARTLE];
 const IDLE: Frame = {
   pose: 'default',
   offset: 0,

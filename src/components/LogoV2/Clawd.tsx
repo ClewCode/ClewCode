@@ -3,7 +3,7 @@ import { Box, Text } from '../../ink.js';
 import { getGlobalConfig } from '../../utils/config.js';
 import { env } from '../../utils/env.js';
 
-export type ClawdPose = 'default' | 'arms-up' | 'look-left' | 'look-right';
+export type ClawdPose = 'default' | 'arms-up' | 'look-left' | 'look-right' | 'blink' | 'look-up' | 'shocked';
 
 type Props = {
   pose?: ClawdPose;
@@ -18,8 +18,11 @@ type EyeLayout = {
   left: number;
   width: number;
   right: number;
+  /** Eye glyph; defaults to '▄' (half-block bottom = open eye) */
+  glyph?: string;
 };
 
+// Eye region is 5 cells wide: left + width + right must total 5.
 const EYE_LAYOUTS: Record<ClawdPose, EyeLayout> = {
   default: {
     left: 1,
@@ -41,6 +44,23 @@ const EYE_LAYOUTS: Record<ClawdPose, EyeLayout> = {
     width: 3,
     right: 1,
   },
+  blink: {
+    left: 1,
+    width: 3,
+    right: 1,
+    glyph: '▁',
+  },
+  'look-up': {
+    left: 1,
+    width: 3,
+    right: 1,
+    glyph: '▀',
+  },
+  shocked: {
+    left: 0,
+    width: 5,
+    right: 0,
+  },
 };
 
 function Eye({ eye, bodyColor, eyeColor }: { eye: EyeLayout; bodyColor: string; eyeColor: string }): React.ReactNode {
@@ -48,7 +68,7 @@ function Eye({ eye, bodyColor, eyeColor }: { eye: EyeLayout; bodyColor: string; 
     <>
       <Text backgroundColor={bodyColor}>{' '.repeat(eye.left)}</Text>
       <Text color={eyeColor} backgroundColor={bodyColor}>
-        {'▄'.repeat(eye.width)}
+        {(eye.glyph ?? '▄').repeat(eye.width)}
       </Text>
       <Text backgroundColor={bodyColor}>{' '.repeat(eye.right)}</Text>
     </>
