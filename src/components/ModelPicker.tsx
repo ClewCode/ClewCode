@@ -11,6 +11,7 @@ import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
   logEvent,
 } from 'src/services/analytics/index.js';
+import { EffortSlider, type EffortSliderLevel } from '../commands/effort/effort.js';
 import { Box, Text, useInput, useTerminalFocus } from '../ink.js';
 import { useKeybindings } from '../keybindings/useKeybinding.js';
 import { useAppState, useSetAppState } from '../state/AppState.js';
@@ -20,6 +21,7 @@ import {
   getDefaultEffortForModel,
   modelSupportsEffort,
   modelSupportsMaxEffort,
+  modelSupportsXhighEffort,
   resolvePickerEffortPersistence,
   toPersistableEffort,
 } from '../utils/effort.js';
@@ -227,8 +229,10 @@ export function ModelPicker({
   const focusedModel = resolveOptionModel(focusedOption, activeProviderId);
   const focusedSupportsEffort = focusedModel ? modelSupportsEffort(focusedModel) : false;
   const focusedSupportsMax = focusedModel ? modelSupportsMaxEffort(focusedModel) : false;
+  const focusedSupportsXhigh = focusedModel ? modelSupportsXhighEffort(focusedModel) : false;
   const focusedDefaultEffort = getDefaultEffortLevelForOption(focusedOption, activeProviderId);
-  const displayEffort = effort === 'max' && !focusedSupportsMax ? 'high' : effort;
+  const displayEffort =
+    (effort === 'max' && !focusedSupportsMax) || (effort === 'xhigh' && !focusedSupportsXhigh) ? 'high' : effort;
 
   const renderedOptions = filteredOptions.map(option => {
     if (option.type === 'section') return option;
@@ -352,6 +356,13 @@ export function ModelPicker({
         return;
       }
 
+      // The shared effort rail owns arrows, Enter, and Esc while its tab is active.
+      // Keep the fallback Esc path here for models that expose no effort rail.
+      if (view === 'effort') {
+        if (key.escape) setView('models');
+        return;
+      }
+
       if (
         !isSearchActive &&
         input.length > 0 &&
@@ -401,8 +412,8 @@ export function ModelPicker({
 
   useKeybindings(
     {
-      'modelPicker:decreaseEffort': () => handleCycleEffort('left'),
-      'modelPicker:increaseEffort': () => handleCycleEffort('right'),
+      'modelPicker:decreaseEffort': () => view === 'models' && handleCycleEffort('left'),
+      'modelPicker:increaseEffort': () => view === 'models' && handleCycleEffort('right'),
     },
     { context: 'ModelPicker' },
   );
@@ -541,30 +552,21 @@ export function ModelPicker({
     </Box>
   );
 
-  // Effort tab — simple levels with preview
-  const effortOptions: OptionWithDescription<string>[] = [
-    { value: 'low', label: 'low', description: 'Quick', preview: <Markdown>**low** — quick, cheap</Markdown> },
-    { value: 'medium', label: 'medium', description: 'Balanced', preview: <Markdown>**medium** — balanced</Markdown> },
-    {
-      value: 'high',
-      label: 'high',
-      description: 'Thorough',
-      preview: <Markdown>**high** — thorough + tests</Markdown>,
-    },
-    {
-      value: 'xhigh',
-      label: 'xhigh',
-      description: 'Enhanced reasoning',
-      preview: <Markdown>**xhigh** — enhanced reasoning</Markdown>,
-    },
-    { value: 'max', label: 'max', description: 'Deepest reasoning', preview: <Markdown>**max** — deepest</Markdown> },
-    {
-      value: 'ultracode',
-      label: 'ultracode',
-      description: 'xhigh + workflows',
-      preview: <Markdown>**ultracode** — max thoroughness</Markdown>,
-    },
-  ];
+  const effortLevels = getSupportedEffortSliderLevels(focusedModel, focusedOption?.capabilities?.reasoning);
+  const sliderEffort = isUltracodeEnabled() ? 'ultracode' : (displayEffort ?? focusedDefaultEffort);
+  const requestedEffortIndex = effortLevels.indexOf(sliderEffort);
+  const effortInitialIndex =
+    requestedEffortIndex >= 0 ? requestedEffortIndex : Math.max(0, effortLevels.indexOf('high'));
+
+  function handleEffortConfirm(level: EffortSliderLevel): void {
+    const ultracode = level === 'ultracode';
+    const nextEffort = ultracode ? 'xhigh' : level;
+    setEffort(nextEffort);
+    setHasToggledEffort(true);
+    setAppState(prev => ({ ...prev, effortValue: nextEffort }));
+    setUltracodeEnabled(ultracode);
+    setView('models');
+  }
   // Agents tab — same model list as /models but for subagents
   const agentsOptions = filteredOptions.map(o => {
     if (o.type === 'section') return o as OptionWithDescription<string>;
@@ -602,23 +604,29 @@ export function ModelPicker({
     ) : view === 'effort' ? (
       <Box flexDirection="column">
         <TabBar active="effort" />
-        <Select
-          options={effortOptions}
-          visibleOptionCount={6}
-          onChange={v => {
-            const { updateSettingsForSource } = require('../../utils/settings/settings.js');
-            updateSettingsForSource('userSettings', { effortLevel: v });
-            setView('models');
-          }}
-          onCancel={() => setView('models')}
-        />
+        {effortLevels.length > 0 ? (
+          <EffortSlider
+            key={`${focusedModel ?? 'unknown'}-${effortLevels.join('-')}`}
+            levels={effortLevels}
+            initialIndex={effortInitialIndex}
+            glowAtHighest={true}
+            onConfirm={handleEffortConfirm}
+            onCancel={() => setView('models')}
+          />
+        ) : (
+          <Box paddingX={2} paddingY={1} flexDirection="column">
+            <Text bold>Effort</Text>
+            <Text color="subtle">Not supported{focusedModelName ? ` by ${focusedModelName}` : ' by this model'}.</Text>
+            <Text dimColor>Esc to return</Text>
+          </Box>
+        )}
       </Box>
     ) : view === 'agents' ? (
       <Box flexDirection="column">
         <TabBar active="agents" />
         <Select
           options={agentsOptions}
-          visibleOptionCount={4}
+          visibleOptionCount={12}
           onChange={() => setView('models')}
           onCancel={() => setView('models')}
         />
@@ -717,6 +725,43 @@ export function ModelPicker({
 
 function noop(): void {
   /* noop */
+}
+
+/** Levels exposed by the /model effort rail for the focused model. */
+export function getSupportedEffortSliderLevels(
+  model: string | undefined,
+  supportsReasoning?: boolean,
+): EffortSliderLevel[] {
+  if (!model || !(supportsReasoning ?? modelSupportsEffort(model))) return [];
+
+  const levels: EffortSliderLevel[] = ['low', 'medium', 'high'];
+  const supportsXhigh = modelSupportsXhighEffort(model);
+  if (supportsXhigh) levels.push('xhigh');
+  if (modelSupportsMaxEffort(model)) levels.push('max');
+  // Ultracode sends xhigh effort and adds dynamic workflows, so it is only
+  // valid when the focused model accepts xhigh.
+  if (supportsXhigh) levels.push('ultracode');
+  return levels;
+}
+
+function isUltracodeEnabled(): boolean {
+  const state = (globalThis as { __appState?: { get?: (key: string) => unknown } }).__appState?.get?.('ultracodeState');
+  return Boolean(state && typeof state === 'object' && 'enabled' in state && state.enabled);
+}
+
+function setUltracodeEnabled(enabled: boolean): void {
+  const store = (
+    globalThis as { __appState?: { get?: (key: string) => unknown; set?: (key: string, value: unknown) => void } }
+  ).__appState;
+  const current = store?.get?.('ultracodeState');
+  const prior = current && typeof current === 'object' ? current : {};
+  store?.set?.('ultracodeState', {
+    ...prior,
+    enabled,
+    confirmedOnce: 'confirmedOnce' in prior ? Boolean(prior.confirmedOnce) : false,
+    workflowsStarted:
+      'workflowsStarted' in prior && typeof prior.workflowsStarted === 'number' ? prior.workflowsStarted : 0,
+  });
 }
 
 /**
