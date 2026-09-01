@@ -253,6 +253,7 @@ export type AppState = DeepImmutable<{
     queue: ElicitationRequestEvent[];
   };
   thinkingEnabled: boolean | undefined;
+  showThinkingPreview: boolean | undefined;
   promptSuggestionEnabled: boolean;
   sessionHooks: SessionHooksState;
   tungstenActiveSession?: {
@@ -565,6 +566,7 @@ export function getDefaultAppState(): AppState {
       queue: [],
     },
     thinkingEnabled: shouldEnableThinkingByDefault(),
+    showThinkingPreview: getSettings().showThinkingPreview ?? true,
     promptSuggestionEnabled: shouldEnablePromptSuggestion(),
     sessionHooks: new Map(),
     inbox: {

@@ -135,6 +135,7 @@ const SETTINGS_CATEGORY_MAP: Record<string, string> = {
   // AI & Behavior
   model: 'AI & Behavior',
   thinkingEnabled: 'AI & Behavior',
+  showThinkingPreview: 'AI & Behavior',
   autoCompactEnabled: 'AI & Behavior',
   recapEnabled: 'AI & Behavior',
   promptSuggestionEnabled: 'AI & Behavior',
@@ -205,6 +206,7 @@ export function Config({
   const mainLoopModel = useAppState(s => s.mainLoopModel);
   const verbose = useAppState(s => s.verbose);
   const thinkingEnabled = useAppState(s => s.thinkingEnabled);
+  const showThinkingPreview = useAppState(s => s.showThinkingPreview ?? true);
   const _isFastMode = false;
   const promptSuggestionEnabled = useAppState(s => s.promptSuggestionEnabled);
   // Show auto in the default-mode dropdown when the user has opted in OR the
@@ -245,6 +247,7 @@ export function Config({
       mainLoopModelForSession: s.mainLoopModelForSession,
       verbose: s.verbose,
       thinkingEnabled: s.thinkingEnabled,
+      showThinkingPreview: s.showThinkingPreview,
       promptSuggestionEnabled: s.promptSuggestionEnabled,
       isBriefOnly: s.isBriefOnly,
       replBridgeEnabled: s.replBridgeEnabled,
@@ -404,6 +407,18 @@ export function Config({
           alwaysThinkingEnabled: enabled ? undefined : false,
         });
         logEvent('tengu_thinking_toggled', { enabled });
+      },
+    },
+    {
+      id: 'showThinkingPreview',
+      label: 'Thinking preview',
+      value: showThinkingPreview,
+      type: 'boolean' as const,
+      onChange(enabled: boolean) {
+        setAppState(prev => ({ ...prev, showThinkingPreview: enabled }));
+        updateSettingsForSource('userSettings', {
+          showThinkingPreview: enabled ? undefined : false,
+        });
       },
     },
     {
@@ -1380,6 +1395,7 @@ export function Config({
       mainLoopModelForSession: ia.mainLoopModelForSession,
       verbose: ia.verbose,
       thinkingEnabled: ia.thinkingEnabled,
+      showThinkingPreview: ia.showThinkingPreview,
       promptSuggestionEnabled: ia.promptSuggestionEnabled,
       isBriefOnly: ia.isBriefOnly,
       replBridgeEnabled: ia.replBridgeEnabled,

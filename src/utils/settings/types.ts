@@ -619,6 +619,12 @@ export const SettingsSchema = lazySchema(() =>
           'When false, thinking is disabled. When absent or true, thinking is ' +
             'enabled automatically for supported models.',
         ),
+      showThinkingPreview: z
+        .boolean()
+        .optional()
+        .describe(
+          'Whether to display preview text of thinking blocks in chat (default: true). If false, shows only "∴ Thinking… (ctrl+o to expand)".',
+        ),
       effortLevel: z
         .enum(process.env.USER_TYPE === 'ant' ? ['low', 'medium', 'high', 'max'] : ['low', 'medium', 'high'])
         .optional()
