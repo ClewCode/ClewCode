@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file.
 
 - Deleted `.reference/` directory (scraped competitor docs, not used by the project).
 
+## [0.9.6] - 2026-09-02
+
+### Changed
+
+- **Shell task UI:** Animated braille spinner in `ShellProgress` for running tasks; `BackgroundTaskStatus` uses `useAnimationFrame` for shell pill spinner; `BackgroundTasksDialog` uses `useInput` for `x`/`f` shortcuts so they fire even when focus is lost; `ShellDetailDialog` adds `useInput` for `space`/`left`/`c`/`x` shortcuts.
+- **Shell stdin hang fix:** `exec()` now closes `stdin` immediately after spawning so child processes don't hang waiting for EOF (`src/utils/Shell.ts`).
+
 ## [Unreleased]
 
 ## [0.9.5] - 2026-09-02
