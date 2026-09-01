@@ -85,7 +85,8 @@ export function computeEffectiveWindow(model: string): number {
 export function computeLimits(model: string, buffer: number = DEFAULT_BUFFER_TOKENS): ContextLimits {
   const reserved = Math.min(getMaxOutputTokensForModel(model), MAX_OUTPUT_TOKENS_FOR_SUMMARY);
   const limit = computeEffectiveWindow(model);
-  let actNow = limit - buffer;
+  // User request: auto-compact at 80% like manual /compact at 80% ctx
+  let actNow = Math.floor(limit * 0.8);
 
   // Test/dev override: express the act threshold as a percentage of the
   // usable window. Never raises the threshold — only pulls it in earlier.

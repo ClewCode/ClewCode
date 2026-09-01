@@ -77,8 +77,8 @@ describe('getAutoCompactThreshold effective window headroom', () => {
     const effectiveWindow = getEffectiveContextWindowSize('test-model');
     const threshold = getAutoCompactThreshold('test-model');
 
-    expect(effectiveWindow - threshold).toBe(AUTOCOMPACT_BUFFER_TOKENS);
-    expect(AUTOCOMPACT_BUFFER_TOKENS).toBeGreaterThanOrEqual(40_000);
+    expect(threshold).toBe(Math.floor(effectiveWindow * 0.8));
+    expect(effectiveWindow - threshold).toBeGreaterThanOrEqual(40_000 * 0.2); // 80% leaves 20% headroom
   });
 });
 
