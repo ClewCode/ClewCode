@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-09-02
+
 ### Changed
 
 - **Auto-compact at 80%:** `computeLimits` now `actNow = floor(limit * 0.8)` for all models (was `limit - 40k`), matching manual `/compact` at 80% ctx (`src/services/compact/v2/limits.ts`).
