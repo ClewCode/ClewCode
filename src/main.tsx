@@ -1,43 +1,4 @@
-// Force TTY before anything else
-Object.defineProperty(process.stdout, 'isTTY', { value: true, writable: true, configurable: true });
-Object.defineProperty(process.stderr, 'isTTY', { value: true, writable: true, configurable: true });
-const startupArgs = process.argv.slice(2);
-let windowsInteractiveKeepAlive: ReturnType<typeof setInterval> | undefined;
-if (process.platform === 'win32' && startupArgs.length === 0) {
-  windowsInteractiveKeepAlive = setInterval(() => {
-    /* noop */
-  }, 60_000);
-}
-// Force stdin to be TTY for Ink raw mode (workaround for PowerShell)
-try {
-  Object.defineProperty(process.stdin, 'isTTY', { value: true, writable: true, configurable: true });
-  // Add missing methods for Ink compatibility
-  if (typeof process.stdin.ref !== 'function') {
-    let stdinKeepAlive: ReturnType<typeof setInterval> | undefined;
-    process.stdin.ref = () => {
-      stdinKeepAlive ??= setInterval(() => {
-        /* noop */
-      }, 60_000);
-      return process.stdin;
-    };
-    process.stdin.unref = () => {
-      if (stdinKeepAlive) {
-        clearInterval(stdinKeepAlive);
-        stdinKeepAlive = undefined;
-      }
-      if (windowsInteractiveKeepAlive) {
-        clearInterval(windowsInteractiveKeepAlive);
-        windowsInteractiveKeepAlive = undefined;
-      }
-      return process.stdin;
-    };
-  }
-  if (typeof process.stdin.setRawMode !== 'function') {
-    process.stdin.setRawMode = (_mode: boolean) => process.stdin;
-  }
-} catch (_e) {
-  /* ignore */
-}
+import { startupArgs } from './bootstrap/tty.js';
 
 const macroPkg = JSON.parse(readFileSync(new URL('./generated/version.json', import.meta.url), 'utf8')) as {
   BUILD_VERSION: string;
