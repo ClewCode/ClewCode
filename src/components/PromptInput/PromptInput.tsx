@@ -2905,25 +2905,27 @@ function PromptInput({
         </>
       ) : (
         <Box flexDirection="column" width="100%">
-          {linesAbove > 0 ? (
+          {linesAbove > 0 && (
             <Text dimColor wrap="truncate-end">
               {'── ↑ '}
               {linesAbove > 1000 ? '1000+' : linesAbove}
               {' more '}
               {'─'.repeat(Math.max(0, columns - 14 - (linesAbove > 1000 ? 5 : String(linesAbove).length)))}
             </Text>
-          ) : (
-            <Box
-              width="100%"
-              borderColor={isUltraActive() ? '#8B5CF6' : getBorderColor()}
-              borderStyle={isUltraActive() ? 'double' : 'round'}
-              borderLeft={false}
-              borderRight={false}
-              borderBottom={false}
-              borderText={buildBorderText(isUltraActive(), isLoopActive)}
-            />
           )}
-          <Box flexDirection="row" width="100%">
+          <Box
+            flexDirection="row"
+            alignItems="flex-start"
+            justifyContent="flex-start"
+            borderColor={isUltraActive() ? '#8B5CF6' : getBorderColor()}
+            borderStyle={isUltraActive() ? 'double' : 'round'}
+            borderLeft={false}
+            borderRight={false}
+            borderTop={linesAbove === 0}
+            borderBottom={linesBelow === 0}
+            width="100%"
+            borderText={linesAbove === 0 ? buildBorderText(isUltraActive(), isLoopActive) : undefined}
+          >
             <PromptInputModeIndicator
               mode={mode}
               isLoading={isLoading}
@@ -2934,22 +2936,13 @@ function PromptInput({
               {textInputElement}
             </Box>
           </Box>
-          {linesBelow > 0 ? (
+          {linesBelow > 0 && (
             <Text dimColor wrap="truncate-end">
               {'── ↓ '}
               {linesBelow > 1000 ? '1000+' : linesBelow}
               {' more '}
               {'─'.repeat(Math.max(0, columns - 14 - (linesBelow > 1000 ? 5 : String(linesBelow).length)))}
             </Text>
-          ) : (
-            <Box
-              width="100%"
-              borderColor={isUltraActive() ? '#8B5CF6' : getBorderColor()}
-              borderStyle={isUltraActive() ? 'double' : 'round'}
-              borderLeft={false}
-              borderRight={false}
-              borderTop={false}
-            />
           )}
         </Box>
       )}
