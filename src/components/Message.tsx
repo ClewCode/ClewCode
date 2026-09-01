@@ -439,9 +439,6 @@ function AssistantMessageBlock({
       }
       return <AssistantRedactedThinkingMessage addMargin={addMargin} />;
     case 'thinking': {
-      if (!isTranscriptMode && !verbose) {
-        return null;
-      }
       // In transcript mode with hidePastThinking, only show the last thinking block
       const isLastThinking = !lastThinkingBlockId || thinkingBlockId === lastThinkingBlockId;
       return (
