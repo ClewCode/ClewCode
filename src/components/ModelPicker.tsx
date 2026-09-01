@@ -115,7 +115,9 @@ export function ModelPicker({
   // Bumped by Tab/Shift+Tab to remount Select so it re-reads defaultFocusValue.
   const [jumpToken, setJumpToken] = useState(0);
   const [jumpTarget, setJumpTarget] = useState<string | undefined>(undefined);
-  const [view, setView] = useState<'models' | 'providers'>('models');
+  type Tab = 'models' | 'providers' | 'effort' | 'agents';
+  const TABS: Tab[] = ['models', 'providers', 'effort', 'agents'];
+  const [view, setView] = useState<Tab>('models');
 
   const effortValue = useAppState(s => s.effortValue);
   const fastMode = useAppState(s => s.fastMode);
@@ -344,9 +346,9 @@ export function ModelPicker({
         return;
       }
 
-      // Tab now toggles between Models and Providers (merged /providers into /model)
+      // Tab cycles through Models ↔ Providers ↔ Effort ↔ Agents
       if (key.tab) {
-        setView(v => (v === 'models' ? 'providers' : 'models'));
+        setView(v => TABS[(TABS.indexOf(v) + 1) % TABS.length]!);
         return;
       }
 
@@ -451,6 +453,16 @@ export function ModelPicker({
     );
   }
 
+  const TabBar = ({ active }: { active: Tab }) => (
+    <Box flexDirection="row" gap={1}>
+      {TABS.map(t => (
+        <Text key={t} color={t === active ? 'suggestion' : undefined} bold={t === active}>
+          {t === active ? `[${t}]` : t}
+        </Text>
+      ))}
+    </Box>
+  );
+
   const providerPreview = (id: string): React.ReactNode => {
     const entry = getProviderRegistryEntry(id as any);
     const hasKey = Boolean(ProviderManager.getInstance().getApiKeyForProvider(id as any));
@@ -529,16 +541,43 @@ export function ModelPicker({
     </Box>
   );
 
+  // Effort tab — simple levels with preview
+  const effortOptions: OptionWithDescription<string>[] = [
+    { value: 'low', label: 'low', description: 'Quick', preview: <Markdown>**low** — quick, cheap</Markdown> },
+    { value: 'medium', label: 'medium', description: 'Balanced', preview: <Markdown>**medium** — balanced</Markdown> },
+    {
+      value: 'high',
+      label: 'high',
+      description: 'Thorough',
+      preview: <Markdown>**high** — thorough + tests</Markdown>,
+    },
+    {
+      value: 'xhigh',
+      label: 'xhigh',
+      description: 'Enhanced reasoning',
+      preview: <Markdown>**xhigh** — enhanced reasoning</Markdown>,
+    },
+    { value: 'max', label: 'max', description: 'Deepest reasoning', preview: <Markdown>**max** — deepest</Markdown> },
+    {
+      value: 'ultracode',
+      label: 'ultracode',
+      description: 'xhigh + workflows',
+      preview: <Markdown>**ultracode** — max thoroughness</Markdown>,
+    },
+  ];
+  const agentsOptions: OptionWithDescription<string>[] = [
+    {
+      value: 'agent-config',
+      label: 'Agent config',
+      description: 'Subagent model/provider',
+      preview: <Text>Configure subagent via /agent-config</Text>,
+    },
+  ];
+
   const content =
     view === 'providers' ? (
       <Box flexDirection="column">
-        <Box flexDirection="row" gap={1}>
-          <Text>models</Text>
-          <Text color="suggestion" bold>
-            [providers]
-          </Text>
-          <Text dimColor>Tab สลับ</Text>
-        </Box>
+        <TabBar active="providers" />
         <ModelSearchBar
           isActive={isSearchActive}
           query={searchQuery}
@@ -552,15 +591,33 @@ export function ModelPicker({
           <Text dimColor>Tab: Models · ↑/↓ เลื่อน · p preview</Text>
         </Box>
       </Box>
+    ) : view === 'effort' ? (
+      <Box flexDirection="column">
+        <TabBar active="effort" />
+        <Select
+          options={effortOptions}
+          visibleOptionCount={6}
+          onChange={v => {
+            const { updateSettingsForSource } = require('../../utils/settings/settings.js');
+            updateSettingsForSource('userSettings', { effortLevel: v });
+            setView('models');
+          }}
+          onCancel={() => setView('models')}
+        />
+      </Box>
+    ) : view === 'agents' ? (
+      <Box flexDirection="column">
+        <TabBar active="agents" />
+        <Select
+          options={agentsOptions}
+          visibleOptionCount={4}
+          onChange={() => setView('models')}
+          onCancel={() => setView('models')}
+        />
+      </Box>
     ) : isStandaloneCommand ? (
       <Box flexDirection="column">
-        <Box flexDirection="row" gap={1}>
-          <Text color="suggestion" bold>
-            [models]
-          </Text>
-          <Text>providers</Text>
-          <Text dimColor>Tab สลับ</Text>
-        </Box>
+        <TabBar active="models" />
         <ModelSearchBar
           isActive={isSearchActive}
           query={searchQuery}
