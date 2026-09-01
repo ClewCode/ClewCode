@@ -1137,7 +1137,16 @@ function ModelListRow({
             <Text dimColor={!isFocused}>{fitColumn(reasoning, 4)}</Text>
           </>
         ))}
-      {layout.showEffort && <Text dimColor={!isFocused}>{effort ? capitalize(effort) : '—'}</Text>}
+      {layout.showEffort &&
+        (isFocused && effort ? (
+          <Box borderStyle="single" paddingX={1}>
+            <Text>
+              ← {effortLevelToSymbol(effort)} → {capitalize(effort)}
+            </Text>
+          </Box>
+        ) : (
+          <Text dimColor={!isFocused}>{effort ? capitalize(effort) : '—'}</Text>
+        ))}
     </>
   );
 }
