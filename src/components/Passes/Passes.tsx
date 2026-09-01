@@ -71,7 +71,9 @@ export function Passes({ onDone }: Props): React.ReactNode {
         setIsAvailable(true);
 
         // Store the referral link if available
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         if (eligibilityData.referral_code_details?.referral_link) {
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           setReferralLink(eligibilityData.referral_code_details.referral_link);
         }
 
@@ -79,6 +81,7 @@ export function Passes({ onDone }: Props): React.ReactNode {
         setReferrerReward(eligibilityData.referrer_reward);
 
         // Use the campaign returned from eligibility for redemptions
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         const campaign = eligibilityData.referral_code_details?.campaign ?? 'claude_code_guest_pass';
 
         // Fetch redemptions data

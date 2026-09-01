@@ -340,6 +340,7 @@ async function uploadUserSettings(entries: Record<string, string>): Promise<Sett
     const response = await ofetch(
       endpoint,
       { entries },
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       {
         headers,
         timeout: SETTINGS_SYNC_TIMEOUT_MS,

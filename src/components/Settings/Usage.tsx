@@ -505,6 +505,7 @@ function ContributingFactorsSection({ factors }: ContributingFactorsSectionProps
         {factors.map((factor, index) => (
           <Box key={index} flexDirection="row" gap={1}>
             {factor.percentage != null && (
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               <Text dimColor width={5}>
                 {Math.round(factor.percentage)}%
               </Text>

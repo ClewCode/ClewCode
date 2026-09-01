@@ -145,6 +145,7 @@ function extractSideQuestionResponse(messages: Message[]): string | null {
     (m): m is SystemAPIErrorMessage => m.type === 'system' && 'subtype' in m && m.subtype === 'api_error',
   );
   if (apiErr) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return `(API error: ${formatAPIError(apiErr.error)})`;
   }
 

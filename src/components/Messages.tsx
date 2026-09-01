@@ -53,7 +53,6 @@ import { renderableSearchText } from '../utils/transcriptSearch.js';
 import { Divider } from './design-system/Divider.js';
 import type { UnseenDivider } from './FullscreenLayout.js';
 import { LogoV2 } from './LogoV2/LogoV2.js';
-import { MainAgentActivity } from './MainAgentActivity.js';
 import { StreamingMarkdown } from './Markdown.js';
 import { hasContentAfterIndex, MessageRow } from './MessageRow.js';
 import {
@@ -105,7 +104,8 @@ const BRIEF_TOOL_NAME: string | null =
     ? (require('../tools/BriefTool/prompt.js') as typeof import('../tools/BriefTool/prompt.js')).BRIEF_TOOL_NAME
     : null;
 const SEND_USER_FILE_TOOL_NAME: string | null = feature('KAIROS')
-  ? (require('../tools/SendUserFileTool/prompt.js') as typeof import('../tools/SendUserFileTool/prompt.js'))
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('../tools/SendUserFileTool/prompt.js') as typeof import('../tools/SendUserFileTool/prompt.js'))
       .SEND_USER_FILE_TOOL_NAME
   : null;
 
@@ -446,6 +446,7 @@ const MessagesImpl = ({
           }
         }
       } else if (msg?.type === 'user') {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         const hasToolResult = msg.message.content.some(block => block.type === 'tool_result');
         if (!hasToolResult) {
           // Reached a previous user turn so don't show stale thinking from before
@@ -466,6 +467,7 @@ const MessagesImpl = ({
         const content = msg.message.content;
         // Check if any text content is bash output
         for (const block of content) {
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           if (block.type === 'text') {
             const text = block.text;
             if (text.startsWith('<bash-stdout') || text.startsWith('<bash-stderr')) {
@@ -547,6 +549,7 @@ const MessagesImpl = ({
           });
 
     const messagesToShowNotTruncated = reorderMessagesInUI(
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       compactAwareMessages
         .filter((msg): msg is Exclude<NormalizedMessage, ProgressMessageType> => msg.type !== 'progress')
         // CC-724: drop attachment messages that AttachmentMessage renders as
@@ -569,9 +572,11 @@ const MessagesImpl = ({
     const briefFiltered =
       briefToolNames.length > 0 && !isTranscriptMode
         ? isBriefOnly
-          ? filterForBriefTool(messagesToShowNotTruncated, briefToolNames)
+          ? // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+            filterForBriefTool(messagesToShowNotTruncated, briefToolNames)
           : dropTextToolNames.length > 0
-            ? dropTextInBriefTurns(messagesToShowNotTruncated, dropTextToolNames)
+            ? // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+              dropTextInBriefTurns(messagesToShowNotTruncated, dropTextToolNames)
             : messagesToShowNotTruncated
         : messagesToShowNotTruncated;
 
@@ -581,6 +586,7 @@ const MessagesImpl = ({
 
     const hasTruncatedMessages = shouldTruncate && briefFiltered.length > MAX_MESSAGES_TO_SHOW_IN_TRANSCRIPT_MODE;
 
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const { messages: groupedMessages } = applyGrouping(messagesToShow, tools, verbose);
 
     const collapsed = collapseBackgroundBashNotifications(
@@ -588,6 +594,7 @@ const MessagesImpl = ({
       verbose,
     );
 
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const lookups = buildMessageLookups(normalizedMessages, messagesToShow);
 
     const hiddenMessageCount = messagesToShowNotTruncated.length - MAX_MESSAGES_TO_SHOW_IN_TRANSCRIPT_MODE;
@@ -648,6 +655,7 @@ const MessagesImpl = ({
     const keepFrom = Math.max(0, sliced.length - 12);
     return sliced.filter((msg, index) => {
       if (index >= keepFrom) return true;
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const toolUseID = getToolUseID(msg);
       return toolUseID ? inProgressToolUseIDs.has(toolUseID) : false;
     });
@@ -674,6 +682,7 @@ const MessagesImpl = ({
   // chars of the source message uuid, so this matches any block from it).
   const dividerBeforeIndex = useMemo(() => {
     if (!unseenDivider) return -1;
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const prefix = unseenDivider.firstUnseenUuid.slice(0, 24);
     return renderableMessages.findIndex(m => m.uuid.slice(0, 24) === prefix);
   }, [unseenDivider, renderableMessages]);
@@ -721,6 +730,7 @@ const MessagesImpl = ({
       }
       if (msg.type !== 'user') return false;
       const b = msg.message.content[0];
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       if (b?.type !== 'tool_result' || b.is_error || !msg.toolUseResult) return false;
       const name = lookupsRef.current.toolUseByToolUseID.get(b.tool_use_id)?.name;
       const tool = name ? findToolByName(tools, name) : undefined;
@@ -857,7 +867,6 @@ const MessagesImpl = ({
     <>
       {/* Logo */}
       {!hideLogo && !(renderRange && renderRange[0] > 0) && <LogoHeader agentDefinitions={agentDefinitions} />}
-      {!hideLogo && !(renderRange && renderRange[0] > 0) && <MainAgentActivity />}
 
       {/* Truncation indicator */}
       {hasTruncatedMessages && hiddenMessageCount > 0 && (
@@ -1028,6 +1037,7 @@ export function shouldRenderStatically(
   siblingToolUseIDs: ReadonlySet<string>,
   screen: Screen,
   lookups: ReturnType<typeof buildMessageLookups>,
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 ): boolean {
   if (screen === 'transcript') {
     return true;

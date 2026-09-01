@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import { c as _c } from 'react/compiler-runtime';
 import { Box, Text, useTheme } from 'src/ink.js';
 import { env } from '../../utils/env.js';

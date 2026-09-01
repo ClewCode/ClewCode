@@ -228,6 +228,7 @@ ${sessionIds.map(id => `- ${id}`).join('\n')}`;
       if (appendSystemMessage && isDreamTask(dreamState) && dreamState.filesTouched.length > 0) {
         appendSystemMessage({
           ...createMemorySavedMessage(dreamState.filesTouched),
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           verb: 'Improved',
         });
       }

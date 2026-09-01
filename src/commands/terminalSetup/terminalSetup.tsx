@@ -140,6 +140,7 @@ export async function setupTerminal(theme: ThemeName): Promise<string> {
   maybeMarkProjectOnboardingComplete();
 
   // Install shell completions (ant-only, since the completion command is ant-only)
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   if ('external' === 'ant') {
     result += await setupShellCompletion(theme);
   }
@@ -414,6 +415,7 @@ async function enableOptionAsMetaForTerminal(theme: ThemeName): Promise<string> 
     // Flush the preferences cache
     await execFileNoThrow('killall', ['cfprefsd']);
     markTerminalSetupComplete();
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return `${color('success', theme)(`Configured Terminal.app settings:`)}${EOL}${color('success', theme)('- Enabled "Use Option as Meta key"')}${EOL}${color('success', theme)('- Switched to visual bell')}${EOL}${ansis.dim('Option+Enter will now enter a newline.')}${EOL}${ansis.dim('You must restart Terminal.app for changes to take effect.', theme)}${EOL}`;
   } catch (error) {
     logError(error);

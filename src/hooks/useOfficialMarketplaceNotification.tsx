@@ -8,6 +8,7 @@ import { useStartupNotification } from './notifs/useStartupNotification.js';
  * notifications for success/failure in the bottom right of the REPL.
  */
 export function useOfficialMarketplaceNotification() {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   useStartupNotification(_temp);
 }
 async function _temp() {

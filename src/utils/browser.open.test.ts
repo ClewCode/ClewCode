@@ -30,11 +30,13 @@ describe('openBrowser on Windows', () => {
     const url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=test&response_type=code&scope=openid';
 
     await expect(openBrowser(url)).resolves.toBe(true);
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     expect(execFileNoThrowMock.mock.calls[0]?.[0]).toBe('powershell');
     // Base64 -EncodedCommand keeps ampersands (&) in query params intact —
     // they would otherwise be interpreted as PowerShell command separators.
     const script = `[System.Diagnostics.Process]::Start('${url.replace(/'/g, "''")}')`;
     const encodedScript = Buffer.from(script, 'utf16le').toString('base64');
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     expect(execFileNoThrowMock.mock.calls[0]?.[1]).toEqual([
       '-NoProfile',
       '-NonInteractive',

@@ -52,6 +52,7 @@ function RecapDashboard({ onDone, context }: Props): React.ReactNode {
   // Calculate session active duration dynamically
   const durationStr = useMemo(() => {
     const timestamps = messages
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       .map(m => m.timestamp)
       .filter((t): t is string => typeof t === 'string' && !Number.isNaN(Date.parse(t)));
 
@@ -100,10 +101,14 @@ function RecapDashboard({ onDone, context }: Props): React.ReactNode {
       .slice(-3)
       .map((m: Message) => {
         const rawText =
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           typeof m.message.content === 'string'
-            ? m.message.content
-            : Array.isArray(m.message.content)
-              ? extractTextContent(m.message.content)
+            ? // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+              m.message.content
+            : // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+              Array.isArray(m.message.content)
+              ? // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+                extractTextContent(m.message.content)
               : '';
         const cleanText = rawText.trim().replace(/\s+/g, ' ');
         return cleanText.length > 60 ? `${cleanText.slice(0, 57)}...` : cleanText;

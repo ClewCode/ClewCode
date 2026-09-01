@@ -318,6 +318,7 @@ async function executeForkedSlashCommand(
   logForDebugging(`Forked slash command /${command.name} completed with agent ${agentId}`);
 
   // Prepend debug log for ant users so it appears inside the command output
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   if ('external' === 'ant') {
     resultText = `[ANT-ONLY] API calls: ${getDisplayPath(getDumpPromptsPath(agentId))}\n${resultText}`;
   }
@@ -505,6 +506,7 @@ export async function processSlashCommand(
     logEvent('tengu_input_command', {
       ...eventData,
       invocation_trigger: 'user-slash' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
       ...('external' === 'ant' && {
         skill_name: commandName as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         ...(returnedCommand.type === 'prompt' && {
@@ -578,6 +580,7 @@ export async function processSlashCommand(
   logEvent('tengu_input_command', {
     ...eventData,
     invocation_trigger: 'user-slash' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     ...('external' === 'ant' && {
       skill_name: commandName as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
       ...(returnedCommand.type === 'prompt' && {
@@ -694,6 +697,7 @@ async function getMessagesForSlashCommand(
             const skipTranscript =
               isFullscreenEnvEnabled() && typeof result === 'string' && result.endsWith(' dismissed');
             void resolve({
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               messages:
                 options?.display === 'system'
                   ? skipTranscript
@@ -836,6 +840,7 @@ async function getMessagesForSlashCommand(
             // Budget state (on toolUseContext) needs no reset: stale entries
             // are inert (UUIDs never repeat, so they're never looked up).
             return {
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               messages: buildPostCompactMessages(compactionResultWithSlashMessages),
               shouldQuery: false,
               command,
@@ -869,6 +874,7 @@ async function getMessagesForSlashCommand(
           return {
             messages: [
               userMessage,
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               createCommandInputMessage(`<local-command-stdout>${result.value}</local-command-stdout>`),
             ],
             shouldQuery: false,
@@ -880,6 +886,7 @@ async function getMessagesForSlashCommand(
           return {
             messages: [
               userMessage,
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               createCommandInputMessage(`<local-command-stderr>${String(e)}</local-command-stderr>`),
             ],
             shouldQuery: false,

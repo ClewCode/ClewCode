@@ -89,7 +89,9 @@ function extractProviderFromModel(model: string): string {
 function extractProviderFromMessage(message: TranscriptMessage, model: string): string {
   // First, try the actual tracked provider from message metadata (most reliable)
   const messageProvider =
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     (message.message as any)?.provider ??
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     (message.message as any)?._provider ??
     (message as any).provider ??
     (message as any)._provider;

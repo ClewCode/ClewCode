@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase2: missing module stub (auto)
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BrowserSession } from '../BrowserSession.js';
 

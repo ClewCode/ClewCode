@@ -12,6 +12,7 @@ describe('isNotEmptyMessage with envelope-less message types', () => {
     { type: 'system_api_error', error: 'boom', uuid: 'u1' },
     { type: 'system_file_snapshot', uuid: 'u2', files: ['a.ts'] },
     { type: 'system_local_command', uuid: 'u3', command: 'ls', output: '', exit_code: 0 },
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     { type: 'stream_event', event: 'message_start', data: {}, uuid: 'u4' },
   ];
 
@@ -32,6 +33,7 @@ describe('isNotEmptyMessage with envelope-less message types', () => {
 
 describe('hasMessageUuid', () => {
   test('rejects malformed transcript messages without a uuid', () => {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const malformed: Message = { type: 'system_api_error', error: 'boom' };
 
     expect(hasMessageUuid(malformed)).toBe(false);

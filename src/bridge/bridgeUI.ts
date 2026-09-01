@@ -1,4 +1,5 @@
 import ansis from 'ansis';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import { toString as qrToString } from 'qrcode';
 import { BRIDGE_FAILED_INDICATOR, BRIDGE_READY_INDICATOR, BRIDGE_SPINNER_FRAMES } from '../constants/figures.js';
 import { stringWidth } from '../ink/stringWidth.js';

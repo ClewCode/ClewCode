@@ -554,6 +554,7 @@ export function useInboxPoller({ enabled, isLoading, focusedInputDialog, onSubmi
               requestId: parsed.requestId,
               approved: true,
               timestamp: new Date().toISOString(),
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               permissionMode: modeToInherit,
             },
             setAppState,

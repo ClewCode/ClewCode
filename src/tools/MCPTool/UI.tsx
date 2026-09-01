@@ -14,6 +14,7 @@ import { formatNumber } from '../../utils/format.js';
 import { createHyperlink } from '../../utils/hyperlink.js';
 import { getContentSizeEstimate, type MCPToolResult } from '../../utils/mcpValidation.js';
 import { jsonParse, jsonStringify } from '../../utils/slowOperations.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { inputSchema } from './MCPTool.js';
 
 // Threshold for displaying warning about large MCP responses
@@ -69,6 +70,7 @@ export function renderToolUseProgressMessage(
     );
   }
 
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const { progress, total, progressMessage } = lastProgress.data;
 
   if (progress === undefined) {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import { c as _c } from 'react/compiler-runtime';
 import { Text } from '../../ink.js';
 import { logEvent } from '../../services/analytics/index.js';

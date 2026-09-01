@@ -5,6 +5,7 @@ import { CLEW_CONFIG_DIRECTORIES, loadMarkdownFilesForSubdir } from 'src/utils/m
 import type { SuggestionItem } from '../components/PromptInput/PromptInputFooterSuggestions.js';
 import { CHUNK_MS, FileIndex, yieldToEventLoop } from '../native-ts/file-index/index.js';
 import { logEvent } from '../services/analytics/index.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { FileSuggestionCommandInput } from '../types/fileSuggestion.js';
 import { getGlobalConfig } from '../utils/config.js';
 import { getCwd } from '../utils/cwd.js';

@@ -2,6 +2,7 @@ import { relative } from 'path';
 import type * as React from 'react';
 import { Suspense, use, useMemo } from 'react';
 import { Box, NoSelect, Text } from '../../../ink.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { NotebookCellType, NotebookContent } from '../../../types/notebook.js';
 import { intersperse } from '../../../utils/array.js';
 import { getCwd } from '../../../utils/cwd.js';

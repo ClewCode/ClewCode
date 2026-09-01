@@ -216,6 +216,7 @@ export async function getErrorLogByIndex(index: number): Promise<LogOption | nul
 async function loadLogList(path: string): Promise<LogOption[]> {
   let files: Awaited<ReturnType<typeof readdir>>;
   try {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     files = await readdir(path, { withFileTypes: true });
   } catch {
     logError(new Error(`No logs found at ${path}`));

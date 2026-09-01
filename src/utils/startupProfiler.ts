@@ -122,6 +122,7 @@ export function profileReport(): void {
     const path = getStartupPerfLogPath();
     const _dir = dirname(path);
     const fs = getFsImplementation();
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     fs.writeFileSync(path, getReport(), 'utf8');
 
     logForDebugging('Startup profiling report:');

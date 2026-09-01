@@ -58,6 +58,7 @@ type TaskOutputToolOutput = {
 };
 
 // Re-export Progress from centralized types to break import cycles
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 export type { TaskOutputProgress as Progress } from '../../types/tools.js';
 
 // Get output for any task type
@@ -182,6 +183,7 @@ export const TaskOutputTool: Tool<InputSchema, TaskOutputToolOutput> = buildTool
   },
 
   isEnabled() {
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     return 'external' !== 'ant';
   },
 

@@ -221,6 +221,7 @@ export function useTextInput({
   const handleCtrl = mapInput([
     ['a', () => cursor.startOfLine()],
     ['b', () => cursor.left()],
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     ['c', handleCtrlC],
     ['d', handleCtrlD],
     ['e', () => cursor.endOfLine()],

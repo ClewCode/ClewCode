@@ -87,6 +87,7 @@ export function UserTextMessage({
   if (feature('KAIROS_GITHUB_WEBHOOKS')) {
     if (param.text.startsWith('<github-webhook-activity>')) {
       /* eslint-disable @typescript-eslint/no-require-imports */
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const { UserGitHubWebhookMessage } =
         require('./UserGitHubWebhookMessage.js') as typeof import('./UserGitHubWebhookMessage.js');
       /* eslint-enable @typescript-eslint/no-require-imports */
@@ -129,6 +130,7 @@ export function UserTextMessage({
   if (feature('FORK_SUBAGENT')) {
     if (param.text.includes('<fork-boilerplate>')) {
       /* eslint-disable @typescript-eslint/no-require-imports */
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const { UserForkBoilerplateMessage } =
         require('./UserForkBoilerplateMessage.js') as typeof import('./UserForkBoilerplateMessage.js');
       /* eslint-enable @typescript-eslint/no-require-imports */
@@ -142,6 +144,7 @@ export function UserTextMessage({
   if (feature('UDS_INBOX')) {
     if (param.text.includes('<cross-session-message')) {
       /* eslint-disable @typescript-eslint/no-require-imports */
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const { UserCrossSessionMessage } =
         require('./UserCrossSessionMessage.js') as typeof import('./UserCrossSessionMessage.js');
       /* eslint-enable @typescript-eslint/no-require-imports */

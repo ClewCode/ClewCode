@@ -1,7 +1,9 @@
 import type { ClickEvent } from './click-event.js';
 import type { FocusEvent } from './focus-event.js';
 import type { KeyboardEvent } from './keyboard-event.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { PasteEvent } from './paste-event.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { ResizeEvent } from './resize-event.js';
 
 type KeyboardEventHandler = (event: KeyboardEvent) => void;

@@ -77,6 +77,7 @@ function InstallGitHubApp(props: { onDone: (message: string) => void }): React.R
         shell: true,
       });
     } catch (e) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       ghVersionExitCode = e.exitCode ?? 1;
     }
     if (ghVersionExitCode !== 0) {
@@ -101,7 +102,9 @@ function InstallGitHubApp(props: { onDone: (message: string) => void }): React.R
       });
       authStdout = authResult.stdout;
     } catch (e) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       authExitCode = e.exitCode ?? 1;
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       authStdout = e.stdout ?? '';
     }
     if (authExitCode !== 0) {

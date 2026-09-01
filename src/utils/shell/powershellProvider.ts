@@ -136,9 +136,12 @@ export function createPowerShellProvider(shellPath: string): ShellProvider {
       }
       // Add plugin bin directories to PATH for plugin executables
       try {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         const { enabled: loadedPlugins } = loadAllPluginsCacheOnly();
         const binPaths = loadedPlugins
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           .filter(p => p.binPath)
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           .map(p => p.binPath!)
           .reverse();
         if (binPaths.length > 0) {

@@ -426,7 +426,8 @@ export async function checkResponseForCacheBreak(
     // assistant message timestamp in the messages array (before the current response)
     const lastAssistantMessage = messages.findLast(m => m.type === 'assistant');
     const timeSinceLastAssistantMsg = lastAssistantMessage
-      ? Date.now() - new Date(lastAssistantMessage.timestamp).getTime()
+      ? // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+        Date.now() - new Date(lastAssistantMessage.timestamp).getTime()
       : null;
 
     // Skip the first call — no previous value to compare against

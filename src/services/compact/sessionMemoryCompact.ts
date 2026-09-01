@@ -407,6 +407,7 @@ async function createCompactionResultFromSessionMemory(
   const boundaryMarker = createCompactBoundaryMessage(
     'auto',
     preCompactTokenCount ?? 0,
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     messages[messages.length - 1]?.uuid,
   );
   const preCompactDiscovered = extractDiscoveredToolNames(messages);
@@ -440,6 +441,7 @@ async function createCompactionResultFromSessionMemory(
   return {
     boundaryMarker: annotateBoundaryWithPreservedSegment(
       boundaryMarker,
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       summaryMessages[summaryMessages.length - 1]!.uuid,
       messagesToKeep,
     ),

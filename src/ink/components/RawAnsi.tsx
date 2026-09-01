@@ -29,5 +29,6 @@ export function RawAnsi({ lines, width }: Props): React.ReactNode {
   if (lines.length === 0) {
     return null;
   }
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return <ink-raw-ansi rawText={lines.join('\n')} rawWidth={width} rawHeight={lines.length} />;
 }

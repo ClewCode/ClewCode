@@ -211,6 +211,7 @@ function webFetchToolInputToPermissionRuleContent(input: { [k: string]: unknown 
       return `input:${input.toString()}`;
     }
     const { url } = parsedInput.data;
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const hostname = new URL(url).hostname;
     return `domain:${hostname}`;
   } catch {

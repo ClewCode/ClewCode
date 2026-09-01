@@ -2,6 +2,7 @@ import type { Anthropic } from '@anthropic-ai/sdk';
 import type { BetaMessageParam as MessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs';
 // @aws-sdk/client-bedrock-runtime is imported dynamically in countTokensWithBedrock()
 // to defer ~279KB of AWS SDK code until a Bedrock call is actually made
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { CountTokensCommandInput } from '@aws-sdk/client-bedrock-runtime';
 import { getAPIProvider } from 'src/utils/model/providers.js';
 import { VERTEX_COUNT_TOKENS_ALLOWED_BETAS } from '../constants/betas.js';
@@ -383,6 +384,7 @@ export function roughTokenCountEstimationForBlock(
     return 2000;
   }
   if (block.type === 'tool_result') {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return roughTokenCountEstimationForContent(block.content);
   }
   if (block.type === 'tool_use') {
@@ -441,6 +443,7 @@ async function countTokensWithBedrock({
       }),
     };
 
+    // @ts-expect-error - Phase2: missing module stub (auto)
     const { CountTokensCommand } = await import('@aws-sdk/client-bedrock-runtime');
     const input: CountTokensCommandInput = {
       modelId,

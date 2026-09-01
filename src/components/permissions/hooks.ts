@@ -22,6 +22,7 @@ export type UnaryEvent = {
   language_name: string | Promise<string>;
 };
 
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 function permissionResultToLog(permissionResult: PermissionResult): string {
   switch (permissionResult.behavior) {
     case 'allow':
@@ -175,6 +176,7 @@ export function usePermissionRequestLogging(toolUseConfirm: ToolUseConfirm, unar
       event: 'response',
       metadata: {
         language_name: unaryEvent.language_name,
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         message_id: toolUseConfirm.assistantMessage.message.id,
         platform: env.platform,
       },

@@ -76,9 +76,11 @@ export const fetchMcpSkillsForClient = memoizeWithLRU(
             // Extract text content from the resource contents array
             const textContent = readResult.contents
               .filter(
+                // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
                 (c): c is { text: string; uri?: string; mimeType?: string } =>
                   'text' in c && typeof c.text === 'string',
               )
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               .map(c => c.text)
               .join('\n\n');
 

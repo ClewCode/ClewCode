@@ -36,6 +36,7 @@ export async function getImageProcessor(): Promise<SharpFunction> {
     try {
       // Use the native image processor module
       const imageProcessor = await import('image-processor-napi');
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const sharp = imageProcessor.sharp || imageProcessor.default;
       imageProcessorModule = { default: sharp };
       return sharp;

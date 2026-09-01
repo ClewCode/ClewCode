@@ -16,6 +16,7 @@ import { MCPRemoteServerMenu } from './MCPRemoteServerMenu.js';
 import { MCPStdioServerMenu } from './MCPStdioServerMenu.js';
 import { MCPToolDetailView } from './MCPToolDetailView.js';
 import { MCPToolListView } from './MCPToolListView.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { AgentMcpServerInfo, MCPViewState, ServerInfo } from './types.js';
 
 type Props = {

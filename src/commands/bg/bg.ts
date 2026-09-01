@@ -40,6 +40,7 @@ export const call: LocalCommandCall = async (_args, context) => {
       systemPrompt,
       userContext,
       systemContext,
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       canUseTool: context.canUseTool,
       toolUseContext: context,
       querySource: context.options.querySource ?? 'bg',

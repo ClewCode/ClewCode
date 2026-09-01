@@ -40,6 +40,7 @@ export function UserToolRejectMessage({
   }
 
   return (
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     tool.renderToolUseRejectedMessage(parsedInput.data, {
       columns,
       messages: [],

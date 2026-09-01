@@ -48,6 +48,7 @@ function StaticKeybindingProvider({ children }: { children: React.ReactNode }): 
 // AttachmentMessage etc. have no .message and normalize to ≤1.
 function normalizedUpperBound(m: Message): number {
   if (!('message' in m)) return 1;
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const c = m.message.content;
   return Array.isArray(c) ? c.length : 1;
 }

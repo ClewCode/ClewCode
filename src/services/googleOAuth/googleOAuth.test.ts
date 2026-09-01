@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase2: missing module stub (auto)
 import { describe, expect, test } from 'vitest';
 import { CODE_CHALLENGE_METHOD, GOOGLE_OAUTH_CONFIG } from '../../constants/googleOAuth.js';
 

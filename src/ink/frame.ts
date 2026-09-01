@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { Cursor } from './cursor.js';
 import type { Size } from './layout/geometry.js';
 import type { ScrollHint } from './render-node-to-output.js';

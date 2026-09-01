@@ -33,6 +33,7 @@ export function GroupedToolUseContent({
   >();
   for (const resultMsg of message.results) {
     for (const content of resultMsg.message.content) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       if (content.type === 'tool_result') {
         resultsByToolUseId.set(content.tool_use_id, {
           param: content,

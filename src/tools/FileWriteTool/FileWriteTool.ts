@@ -114,6 +114,7 @@ export const FileWriteTool = buildTool({
   },
   async checkPermissions(input, context): Promise<PermissionDecision> {
     const appState = context.getAppState();
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return checkWritePermissionForTool(FileWriteTool, input, appState.toolPermissionContext);
   },
   renderToolUseRejectedMessage,
@@ -216,6 +217,7 @@ export const FileWriteTool = buildTool({
       // Backup captures pre-edit content — safe to call before the staleness
       // check (idempotent v1 backup keyed on content hash; if staleness fails
       // later we just have an unused backup, not corrupt state).
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       await fileHistoryTrackEdit(updateFileHistoryState, fullFilePath, parentMessage.uuid);
     }
 

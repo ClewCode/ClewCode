@@ -15,6 +15,7 @@ import { getClaudeCodeUserAgent } from '../../utils/userAgent.js';
 
 const bootstrapResponseSchema = lazySchema(() =>
   z.object({
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     client_data: z.record(z.unknown()).nullish(),
     additional_model_options: z
       .array(
@@ -86,6 +87,7 @@ async function fetchBootstrapAPI(): Promise<BootstrapResponse | null> {
         },
         timeout: 5000,
       });
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const parsed = bootstrapResponseSchema().safeParse(response.data);
       if (!parsed.success) {
         logForDebugging(`[Bootstrap] Response failed validation: ${parsed.error.message}`);

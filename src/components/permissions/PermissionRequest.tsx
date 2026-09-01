@@ -40,9 +40,8 @@ const ReviewArtifactTool = feature('REVIEW_ARTIFACT')
   : null;
 
 const ReviewArtifactPermissionRequest = feature('REVIEW_ARTIFACT')
-  ? (
-      require('./ReviewArtifactPermissionRequest/ReviewArtifactPermissionRequest.js') as typeof import('./ReviewArtifactPermissionRequest/ReviewArtifactPermissionRequest.js')
-    ).ReviewArtifactPermissionRequest
+  ? (require('./ReviewArtifactPermissionRequest/ReviewArtifactPermissionRequest.js') as any)
+      .ReviewArtifactPermissionRequest
   : null;
 
 const WorkflowTool = feature('WORKFLOW_SCRIPTS')
@@ -51,9 +50,7 @@ const WorkflowTool = feature('WORKFLOW_SCRIPTS')
   : null;
 
 const WorkflowPermissionRequest = feature('WORKFLOW_SCRIPTS')
-  ? (
-      require('../../tools/WorkflowTool/WorkflowPermissionRequest.js') as typeof import('../../tools/WorkflowTool/WorkflowPermissionRequest.js')
-    ).WorkflowPermissionRequest
+  ? (require('../../tools/WorkflowTool/WorkflowPermissionRequest.js') as any).WorkflowPermissionRequest
   : null;
 
 const MonitorTool = feature('MONITOR_TOOL')

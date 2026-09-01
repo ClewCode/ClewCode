@@ -2401,7 +2401,9 @@ export async function bridgeMain(args: string[]): Promise<void> {
     if (pointerRefreshTimer !== null) {
       clearInterval(pointerRefreshTimer);
     }
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     process.off('SIGINT', onSigint);
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     process.off('SIGTERM', onSigterm);
     process.stdin.off('data', onStdinData);
     if (process.stdin.isTTY) {

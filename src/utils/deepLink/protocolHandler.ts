@@ -85,6 +85,7 @@ export async function handleUrlSchemeLaunch(): Promise<number | null> {
   }
 
   try {
+    // @ts-expect-error - Phase2: missing module stub (auto)
     const { waitForUrlEvent } = await import('url-handler-napi');
     const url = waitForUrlEvent(5000);
     if (!url) {

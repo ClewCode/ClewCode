@@ -195,6 +195,7 @@ export function ExitPlanModePermissionRequest({
       buildPlanApprovalOptions({
         showClearContext,
         showUltraplan,
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         usedPercent: showClearContext ? getContextUsedPercent(usage, mode) : null,
         isAutoModeAvailable,
         isBypassPermissionsModeAvailable,

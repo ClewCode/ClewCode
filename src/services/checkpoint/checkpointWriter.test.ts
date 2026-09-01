@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 let dir: string;

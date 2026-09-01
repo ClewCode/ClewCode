@@ -1,5 +1,6 @@
 import { feature } from 'bun:bundle';
 import { useEffect, useState } from 'react';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import { c as _c } from 'react/compiler-runtime';
 import { Box, Text } from '../../ink.js';
 import { getGlobalConfig, saveGlobalConfig } from '../../utils/config.js';

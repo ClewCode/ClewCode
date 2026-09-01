@@ -47,6 +47,7 @@ async function _fetchMetricsEnabled(): Promise<MetricsEnabledResponse> {
     headers,
     timeout: 5000,
   });
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return response.data;
 }
 

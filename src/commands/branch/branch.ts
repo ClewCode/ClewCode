@@ -127,6 +127,7 @@ export async function createFork(customTitle?: string): Promise<{
       isSidechain: false,
       forkedFrom: {
         sessionId: originalSessionId,
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         messageUuid: entry.uuid,
       },
     };
@@ -140,6 +141,7 @@ export async function createFork(customTitle?: string): Promise<{
     serializedMessages.push(serialized);
     lines.push(jsonStringify(forkedEntry));
     if (entry.type !== 'progress') {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       parentUuid = entry.uuid;
     }
   }

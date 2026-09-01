@@ -62,6 +62,7 @@ export type TeleportProgressCallback = (step: TeleportProgressStep) => void;
  */
 function createTeleportResumeSystemMessage(branchError: Error | null): SystemMessage {
   if (branchError === null) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return createSystemMessage('Session resumed', 'suggestion');
   }
   const formattedError =

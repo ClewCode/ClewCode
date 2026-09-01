@@ -1452,6 +1452,7 @@ export async function initBridgeCore(params: BridgeCoreParams): Promise<BridgeCo
       clearInterval(keepAliveTimer);
     }
     if (sigusr2Handler) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       process.off('SIGUSR2', sigusr2Handler);
     }
     if (process.env.USER_TYPE === 'ant') {

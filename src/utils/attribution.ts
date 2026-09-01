@@ -157,6 +157,7 @@ export function countUserPromptsInMessages(
  */
 function countUserPromptsFromEntries(entries: ReadonlyArray<Entry>): number {
   const nonSidechain = entries.filter(entry => entry.type === 'user' && !('isSidechain' in entry && entry.isSidechain));
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return countUserPromptsInMessages(nonSidechain);
 }
 

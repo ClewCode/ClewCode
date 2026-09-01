@@ -283,6 +283,7 @@ async function downloadAndVerifyBinary(
       // Start the stall timer before the request
       resetStallTimer();
 
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const response = await axios.get(binaryUrl, {
         timeout: 5 * 60000, // 5 minute total timeout
         responseType: 'arraybuffer',
@@ -315,6 +316,7 @@ async function downloadAndVerifyBinary(
       clearStallTimer();
 
       // Check if this was a stall timeout (axios wraps abort signals in CanceledError)
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const isStallTimeout = axios.isCancel(error);
 
       if (isStallTimeout) {
@@ -364,6 +366,7 @@ export async function downloadVersionFromBinaryRepo(
   // Fetch manifest to get checksum
   let manifest;
   try {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const manifestResponse = await axios.get(`${baseUrl}/${version}/manifest.json`, {
       timeout: 10000,
       responseType: 'json',

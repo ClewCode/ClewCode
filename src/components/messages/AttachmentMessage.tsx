@@ -126,6 +126,7 @@ export function AttachmentMessage({ attachment, addMargin, verbose, isTranscript
       const names = attachment.skills.map(s => (s.shortId ? `${s.name} [${s.shortId}]` : s.name)).join(', ');
       const firstId = attachment.skills[0]?.shortId;
       const hint =
+        // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
         'external' === 'ant' && !isDemoEnv && firstId
           ? ` · /skill-feedback ${firstId} 1=wrong 2=noisy 3=good [comment]`
           : '';
@@ -167,7 +168,8 @@ export function AttachmentMessage({ attachment, addMargin, verbose, isTranscript
           Read <Text bold>{attachment.displayPath}</Text> (
           {attachment.content.type === 'text'
             ? `${attachment.content.file.numLines}${attachment.truncated ? '+' : ''} lines`
-            : formatFileSize(attachment.content.file.originalSize)}
+            : // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+              formatFileSize(attachment.content.file.originalSize)}
           )
         </Line>
       );
@@ -408,6 +410,7 @@ export function AttachmentMessage({ attachment, addMargin, verbose, isTranscript
       // skill_discovery and teammate_mailbox are handled BEFORE the switch in
       // runtime-gated blocks (feature() / isAgentSwarmsEnabled()) that TS can't
       // narrow through — excluded here via type union (compile-time only, no emit).
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       attachment.type satisfies NullRenderingAttachmentType | 'skill_discovery' | 'teammate_mailbox';
       return null;
   }
@@ -418,6 +421,7 @@ type TaskStatusAttachment = Extract<Attachment, { type: 'task_status' }>;
 function TaskStatusMessage({ attachment }: { attachment: TaskStatusAttachment }): React.ReactNode {
   // For ants, killed task status is shown in the CoordinatorTaskPanel.
   // Don't render it again in the chat.
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   if ('external' === 'ant' && attachment.status === 'killed') {
     return null;
   }

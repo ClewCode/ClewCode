@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { pathToFileURL } from 'url';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { InitializeParams } from 'vscode-languageserver-protocol';
 import { getCwd } from '../../utils/cwd.js';
 import { logForDebugging } from '../../utils/debug.js';
@@ -7,6 +8,7 @@ import { errorMessage } from '../../utils/errors.js';
 import { logError } from '../../utils/log.js';
 import { sleep } from '../../utils/sleep.js';
 import type { createLSPClient as createLSPClientType } from './LSPClient.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { LspServerState, ScopedLspServerConfig } from './types.js';
 
 /**

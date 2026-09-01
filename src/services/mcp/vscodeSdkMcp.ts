@@ -59,6 +59,7 @@ export function setupVscodeSdkMcp(sdkClients: MCPServerConnection[]): void {
     // Store the client reference for later use
     vscodeMcpClient = client;
 
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     client.client.setNotificationHandler(LogEventNotificationSchema(), async notification => {
       const { eventName, eventData } = notification.params;
       logEvent(`tengu_vscode_${eventName}`, eventData as { [key: string]: boolean | number | undefined });

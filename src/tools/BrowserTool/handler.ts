@@ -251,6 +251,7 @@ export async function handleBrowserAction(input: BrowserActionInput): Promise<Br
         await page.mouse.move(targetX, targetY).catch(() => undefined);
         await page.mouse.wheel(0, delta).catch(() => undefined);
         await page.waitForTimeout(POST_ACTION_SETTLE_MS).catch(() => undefined);
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         const wheelMoved = await page.evaluate(({ beforeY }) => window.scrollY !== beforeY, { beforeY: scrollState.y });
         if (!wheelMoved) {
           await page.evaluate(

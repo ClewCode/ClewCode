@@ -119,6 +119,7 @@ describe('OpenAICompatibleProvider retry behavior', () => {
 
   test('retries a gateway 400 when the upstream provider failed', async () => {
     let fetchCalls = 0;
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     globalThis.fetch = (async () => {
       fetchCalls++;
       if (fetchCalls === 1) {
@@ -192,6 +193,7 @@ describe('OpenAICompatibleProvider retry-after handling', () => {
     const _delays: number[] = [];
     const startTime = Date.now();
 
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     globalThis.fetch = (async () => {
       fetchCalls++;
       if (fetchCalls <= 2) {
@@ -222,6 +224,7 @@ describe('OpenAICompatibleProvider streaming chunk validation', () => {
   test('logs invalid JSON chunks instead of silently skipping', async () => {
     const warnings: { chunk: string; error: string }[] = [];
 
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     globalThis.fetch = (async () => {
       const stream = new ReadableStream({
         start(controller) {

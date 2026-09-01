@@ -5,6 +5,7 @@ import { errorMessage } from '../../utils/errors.js';
 import { logError } from '../../utils/log.js';
 import { getAllLspServers } from './config.js';
 import { createLSPServerInstance, type LSPServerInstance } from './LSPServerInstance.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { ScopedLspServerConfig } from './types.js';
 /**
  * LSP Server Manager interface returned by createLSPServerManager.

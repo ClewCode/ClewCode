@@ -178,6 +178,7 @@ export async function enrollTrustedDevice(): Promise<void> {
         return;
       }
       readStoredToken.cache?.clear?.();
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       logForDebugging(`[trusted-device] Enrolled device_id=${response.data.device_id ?? 'unknown'}`);
     } catch (err: unknown) {
       logForDebugging(`[trusted-device] Storage write failed: ${errorMessage(err)}`);

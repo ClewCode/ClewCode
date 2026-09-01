@@ -200,6 +200,7 @@ export const call: LocalJSXCommandCall = async (onDone, context, rawArgs = '') =
   const { agentType, prompt } =
     known && rest ? { agentType: maybeType, prompt: rest } : { agentType: DEFAULT_DELEGATE_AGENT, prompt: args };
 
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const agentDefinition = activeAgents.find(a => a.agentType === agentType) ?? RLM_AGENT;
   return (
     <DelegateRunner

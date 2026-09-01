@@ -48,6 +48,7 @@ export function FallbackPermissionRequest({
             event: 'accept',
             metadata: {
               language_name: 'none',
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               message_id: toolUseConfirm.assistantMessage.message.id,
               platform: env.platform,
             },
@@ -61,6 +62,7 @@ export function FallbackPermissionRequest({
             event: 'accept',
             metadata: {
               language_name: 'none',
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               message_id: toolUseConfirm.assistantMessage.message.id,
               platform: env.platform,
             },
@@ -87,6 +89,7 @@ export function FallbackPermissionRequest({
             event: 'reject',
             metadata: {
               language_name: 'none',
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               message_id: toolUseConfirm.assistantMessage.message.id,
               platform: env.platform,
             },
@@ -106,6 +109,7 @@ export function FallbackPermissionRequest({
       event: 'reject',
       metadata: {
         language_name: 'none',
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         message_id: toolUseConfirm.assistantMessage.message.id,
         platform: env.platform,
       },

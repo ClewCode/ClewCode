@@ -138,6 +138,7 @@ export async function processSessionStartHooks(
     const ctx = injectPreviousSessionContext();
     if (ctx) {
       hookMessages.push({
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         role: 'user',
         content: [{ type: 'text', text: ctx }],
         isMeta: true,

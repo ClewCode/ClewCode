@@ -5,6 +5,7 @@ import {
   builtInCommandNames,
   type Command,
   type CommandResultDisplay,
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   INTERNAL_ONLY_COMMANDS,
 } from '../../commands.js';
 import { useIsInsideModal } from '../../context/modalContext.js';
@@ -39,6 +40,7 @@ export function HelpV2({ onClose, commands }: Props): React.ReactNode {
   let antOnlyCommands: Command[] = [];
 
   // We have to do this in an `if` to help treeshaking
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   if ('external' === 'ant') {
     const internalOnlyNames = new Set(INTERNAL_ONLY_COMMANDS.map((_: Command) => _.name));
     builtinCommands = builtinCommands.filter(cmd => !internalOnlyNames.has(cmd.name));
@@ -78,6 +80,7 @@ export function HelpV2({ onClose, commands }: Props): React.ReactNode {
     </Tab>,
   );
 
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   if ('external' === 'ant' && antOnlyCommands.length > 0) {
     tabs.push(
       <Tab key="ant-only" title="[ant-only]">

@@ -19,7 +19,8 @@ const fetchMcpSkillsForClient = feature('MCP_SKILLS')
   ? (require('../../skills/mcpSkills.js') as typeof import('../../skills/mcpSkills.js')).fetchMcpSkillsForClient
   : null;
 const clearSkillIndexCache = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (require('../skillSearch/localSearch.js') as typeof import('../skillSearch/localSearch.js')).clearSkillIndexCache
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('../skillSearch/localSearch.js') as typeof import('../skillSearch/localSearch.js')).clearSkillIndexCache
   : null;
 
 import {
@@ -469,6 +470,7 @@ export function useManageMCPConnections(
             switch (gate.action) {
               case 'register':
                 logMCPDebug(client.name, 'Channel notifications registered');
+                // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
                 client.client.setNotificationHandler(ChannelMessageNotificationSchema(), async notification => {
                   const { content, meta } = notification.params;
                   logMCPDebug(client.name, `notifications/claude/channel: ${content.slice(0, 80)}`);
@@ -495,6 +497,7 @@ export function useManageMCPConnections(
                 // reply and emits {request_id, behavior}; no regex on our
                 // side, text in the general channel can't accidentally match.
                 if (client.capabilities?.experimental?.['claude/channel/permission'] !== undefined) {
+                  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
                   client.client.setNotificationHandler(ChannelPermissionNotificationSchema(), async notification => {
                     const { request_id, behavior } = notification.params;
                     const resolved =

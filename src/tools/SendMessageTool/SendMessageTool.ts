@@ -704,6 +704,7 @@ export const SendMessageTool: Tool<InputSchema, SendMessageToolOutput> = buildTo
         }
         /* eslint-disable @typescript-eslint/no-require-imports */
         const { postInterClaudeMessage } =
+          // @ts-expect-error - Phase2: missing module stub (auto)
           require('../../bridge/peerSessions.js') as typeof import('../../bridge/peerSessions.js');
         /* eslint-enable @typescript-eslint/no-require-imports */
         const result = await postInterClaudeMessage(addr.target, input.message);
@@ -719,6 +720,7 @@ export const SendMessageTool: Tool<InputSchema, SendMessageToolOutput> = buildTo
       }
       if (addr.scheme === 'uds') {
         /* eslint-disable @typescript-eslint/no-require-imports */
+        // @ts-expect-error - Phase2: missing module stub (auto)
         const { sendToUdsSocket } = require('../../utils/udsClient.js') as typeof import('../../utils/udsClient.js');
         /* eslint-enable @typescript-eslint/no-require-imports */
         try {

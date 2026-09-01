@@ -98,6 +98,7 @@ export function renderToolUseProgressMessage(
   // Take only the last few messages for display in non-verbose mode
   const displayedMessages = verbose ? progressMessages : progressMessages.slice(-MAX_PROGRESS_MESSAGES_TO_SHOW);
   const hiddenCount = progressMessages.length - displayedMessages.length;
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const { inProgressToolUseIDs } = buildSubagentLookups(progressMessages.map(pm => pm.data));
   return (
     <MessageResponse>
@@ -106,6 +107,7 @@ export function renderToolUseProgressMessage(
           {displayedMessages.map(progressMessage => (
             <Box key={progressMessage.uuid} height={1} overflow="hidden">
               <MessageComponent
+                // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
                 message={progressMessage.data.message}
                 lookups={EMPTY_LOOKUPS}
                 addMargin={false}

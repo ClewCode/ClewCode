@@ -1,8 +1,11 @@
-export const DESCRIPTION = 'Update a task in the task list';
+export const DESCRIPTION =
+  'ALWAYS update task status: set in_progress when starting, completed when done. Keep exactly ONE in_progress.';
 
-export const PROMPT = `Use this tool to update a task in the task list.
+export const PROMPT = `Use this tool to update a task in the task list. ALWAYS keep task status in sync with your work.
 
 ## When to Use This Tool
+
+**ALWAYS mark tasks in_progress BEFORE starting work and completed IMMEDIATELY after finishing. Keep exactly ONE in_progress at a time.**
 
 **Mark tasks as resolved:**
 - When you have completed the work described in a task

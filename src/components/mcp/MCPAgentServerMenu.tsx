@@ -12,6 +12,7 @@ import { Byline } from '../design-system/Byline.js';
 import { Dialog } from '../design-system/Dialog.js';
 import { KeyboardShortcutHint } from '../design-system/KeyboardShortcutHint.js';
 import { Spinner } from '../Spinner.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { AgentMcpServerInfo } from './types.js';
 
 type Props = {

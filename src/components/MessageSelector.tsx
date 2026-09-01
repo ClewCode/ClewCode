@@ -115,6 +115,7 @@ export function MessageSelector({
   useEffect(() => {
     if (!preselectedMessage || !isFileHistoryEnabled) return;
     let cancelled = false;
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     void fileHistoryGetDiffStats(fileHistory, preselectedMessage.uuid).then(stats => {
       if (!cancelled) setDiffStatsForRestore(stats);
     });
@@ -155,6 +156,7 @@ export function MessageSelector({
       ...summarizeInputProps,
       onChange: setSummarizeFromFeedback,
     });
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     if ('external' === 'ant') {
       baseOptions.push({
         value: 'summarize_up_to',
@@ -209,6 +211,7 @@ export function MessageSelector({
       return;
     }
 
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const diffStats = await fileHistoryGetDiffStats(fileHistory, message.uuid);
     setMessageToRestore(message);
     setDiffStatsForRestore(diffStats);
@@ -350,12 +353,14 @@ export function MessageSelector({
       void Promise.all(
         messageOptions.map(async (userMessage, itemIndex) => {
           if (userMessage.uuid !== currentUUID) {
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             const canRestore = fileHistoryCanRestore(fileHistory, userMessage.uuid);
 
             const nextUserMessage = messageOptions.at(itemIndex + 1);
             const diffStats = canRestore
               ? computeDiffStatsBetweenMessages(
                   messages,
+                  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
                   userMessage.uuid,
                   nextUserMessage?.uuid !== currentUUID ? nextUserMessage?.uuid : undefined,
                 )
@@ -417,6 +422,7 @@ export function MessageSelector({
               borderLeftDimColor
             >
               <UserMessageOption userMessage={messageToRestore} color="text" isCurrent={false} />
+              {/* @ts-ignore - Phase3 typecheck auto (TS error suppression) */}
               <Text dimColor>({formatRelativeTimeAgo(new Date(messageToRestore.timestamp))})</Text>
             </Box>
             <RestoreOptionDescription

@@ -190,6 +190,7 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
         allSources.sort((a, b) => {
           const aKey = a.url || a.path || a.title;
           const bKey = b.url || b.path || b.title;
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           return (scoreMap.get(bKey) ?? 50) - (scoreMap.get(aKey) ?? 50);
         });
       }

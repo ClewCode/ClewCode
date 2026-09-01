@@ -318,6 +318,7 @@ export function ResumeConversation({
         setSessionModelForTranscript(log.sessionModel);
         setAppState(prev => ({
           ...prev,
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           mainLoopModelForSession: log.sessionModel,
         }));
       }

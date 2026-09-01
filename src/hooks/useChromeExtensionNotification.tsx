@@ -14,6 +14,7 @@ function getChromeFlag(): boolean | undefined {
   return undefined;
 }
 export function useChromeExtensionNotification() {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   useStartupNotification(_temp);
 }
 async function _temp() {

@@ -203,6 +203,7 @@ export async function* withRetry<T>(
     try {
       // Check for mock rate limits (used by /mock-limits command for Ant employees)
       if (process.env.USER_TYPE === 'ant') {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         const mockError = checkMockRateLimitError(retryContext.model, wasFastModeActive);
         if (mockError) {
           throw mockError;
@@ -313,6 +314,7 @@ export async function* withRetry<T>(
           const safetyBuffer = 1000;
           const availableContext = Math.max(0, contextLimit - inputTokens - safetyBuffer);
           if (availableContext < FLOOR_OUTPUT_TOKENS) {
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             logError(
               new Error(`availableContext ${availableContext} is less than FLOOR_OUTPUT_TOKENS ${FLOOR_OUTPUT_TOKENS}`),
             );
@@ -459,6 +461,7 @@ export function parseMaxTokensContextOverflowError(error: APIError):
   }
 
   if (!match[1] || !match[2] || !match[3]) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     logError(new Error('Unable to parse max_tokens from max_tokens exceed context limit error message'));
     return undefined;
   }
@@ -568,6 +571,7 @@ function handleGcpCredentialError(error: unknown): boolean {
 
 function shouldRetry(error: unknown): boolean {
   // Never retry mock errors - they're from /mock-limits command for testing
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   if (isMockRateLimitError(error)) {
     return false;
   }

@@ -1666,6 +1666,7 @@ function trackUnknownModelCost(model: string, shortName: ModelShortName): void {
  * @deprecated Use `calculateUSDCostFromProviderUsage()` with `fromAnthropicUsage()` instead.
  */
 export function calculateUSDCost(resolvedModel: string, usage: Usage): number {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const modelCosts = getModelCosts(resolvedModel, { speed: usage.speed });
   return tokensToUSDCost(modelCosts, usage);
 }

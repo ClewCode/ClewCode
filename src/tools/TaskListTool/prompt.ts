@@ -1,6 +1,6 @@
 import { isAgentSwarmsEnabled } from '../../utils/agentSwarmsEnabled.js';
 
-export const DESCRIPTION = 'List all tasks in the task list';
+export const DESCRIPTION = 'List tasks to find next work. Call after completing a task to find newly unblocked work.';
 
 export function getPrompt(): string {
   const teammateUseCase = isAgentSwarmsEnabled()

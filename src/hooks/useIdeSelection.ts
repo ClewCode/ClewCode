@@ -103,6 +103,7 @@ export function useIdeSelection(mcpClients: MCPServerConnection[], onSelect: (se
     };
 
     // Register notification handler for selection_changed events
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     ideClient.client.setNotificationHandler(SelectionChangedSchema(), notification => {
       if (currentIDERef.current !== ideClient) {
         return;

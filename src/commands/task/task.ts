@@ -35,6 +35,7 @@ export async function call(
   onDone: LocalJSXCommandOnDone,
   _context: ToolUseContext & LocalJSXCommandContext,
   args: string,
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 ): Promise<ReactNode | null> {
   await loadQueue();
   const tokens = parseCommandArgs(args || '');

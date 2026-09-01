@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase2: missing module stub (auto)
 import { afterEach, describe, expect, test } from 'vitest';
 import { AuthCodeListener } from './auth-code-listener.js';
 

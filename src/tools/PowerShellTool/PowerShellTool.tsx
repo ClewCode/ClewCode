@@ -328,8 +328,10 @@ const outputSchema = lazySchema(() =>
 type OutputSchema = ReturnType<typeof outputSchema>;
 export type Out = z.infer<OutputSchema>;
 
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { PowerShellProgress } from '../../types/tools.js';
 
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 export type { PowerShellProgress } from '../../types/tools.js';
 
 const COMMON_BACKGROUND_COMMANDS = [

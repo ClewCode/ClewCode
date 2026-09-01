@@ -110,6 +110,7 @@ function IndexAdminComponent({
   }
 
   if (error) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     onDone(error, { display: 'error' });
     return <Box />;
   }

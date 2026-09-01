@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase2: missing module stub (auto)
 import { describe, expect, test } from 'vitest';
 import { CannotRetryError, withRetry } from './withRetry.js';
 

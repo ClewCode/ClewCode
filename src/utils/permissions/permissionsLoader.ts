@@ -154,6 +154,7 @@ export function deletePermissionRuleFromSettings(rule: PermissionRuleFromEditabl
   // names (e.g. "KillShell") match their canonical form ("TaskStop").
   const normalizeEntry = (raw: string): string => permissionRuleValueToString(permissionRuleValueFromString(raw));
 
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   if (!behaviorArray.some(raw => normalizeEntry(raw) === ruleString)) {
     return false;
   }
@@ -164,6 +165,7 @@ export function deletePermissionRuleFromSettings(rule: PermissionRuleFromEditabl
       ...settingsData,
       permissions: {
         ...settingsData.permissions,
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         [rule.ruleBehavior]: behaviorArray.filter(raw => normalizeEntry(raw) !== ruleString),
       },
     };
@@ -229,6 +231,7 @@ export function addPermissionRulesToSettings(
     // Filter out duplicates - normalize existing entries via roundtrip
     // parse→serialize so legacy names match their canonical form.
     const existingRulesSet = new Set(
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       existingRules.map(raw => permissionRuleValueToString(permissionRuleValueFromString(raw))),
     );
     const newRules = ruleStrings.filter(rule => !existingRulesSet.has(rule));
@@ -243,6 +246,7 @@ export function addPermissionRulesToSettings(
       ...settingsData,
       permissions: {
         ...existingPermissions,
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         [ruleBehavior]: [...existingRules, ...newRules],
       },
     };

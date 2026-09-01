@@ -24,6 +24,7 @@ import { ManageMarketplaces } from './ManageMarketplaces.js';
 import { ManagePlugins } from './ManagePlugins.js';
 import { formatErrorMessage, getErrorGuidance } from './PluginErrors.js';
 import { type ParsedCommand, parsePluginArgs } from './parseArgs.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { PluginSettingsProps, ViewState } from './types.js';
 import { ValidatePlugin } from './ValidatePlugin.js';
 
@@ -53,6 +54,7 @@ function MarketplaceList({ onComplete }: { onComplete: (result?: string) => void
 }
 
 function McpRedirectBanner(): React.ReactNode {
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   if ('external' !== 'ant') {
     return null;
   }

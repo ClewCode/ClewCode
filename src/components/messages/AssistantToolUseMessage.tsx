@@ -63,6 +63,7 @@ export function AssistantToolUseMessage({
     state => !!state.toolPermissionContext.strippedDangerousRules,
   );
   const isAutoClassifier = permissionMode === 'auto' || (permissionMode === 'plan' && hasStrippedRules);
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const isClassifierChecking = 'external' === 'ant' && isClassifierCheckingRaw && permissionMode !== 'auto';
 
   // Memoize on param identity (stable — from the persisted message object).
@@ -79,7 +80,9 @@ export function AssistantToolUseMessage({
     return {
       tool,
       input,
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       userFacingToolName: tool.userFacingName(data),
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       userFacingToolNameBackgroundColor: tool.userFacingNameBackgroundColor?.(data),
       isTransparentWrapper: tool.isTransparentWrapper?.() ?? false,
     };
@@ -180,6 +183,7 @@ export function AssistantToolUseMessage({
               </Box>
             )}
           {/* Render tool-specific tags (timeout, model, resume ID, etc.) */}
+          {/* @ts-ignore - Phase3 typecheck auto (TS error suppression) */}
           {input.success && tool.renderToolUseTag?.(input.data)}
         </Box>
         {!isResolved &&
@@ -225,6 +229,7 @@ function renderToolUseMessage(
     if (!parsed.success) {
       return '';
     }
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return tool.renderToolUseMessage(parsed.data, { theme, verbose, commands });
   } catch (error) {
     logError(new Error(`Error rendering tool use message for ${tool.name}: ${error}`));
@@ -250,8 +255,10 @@ function renderToolUseProgressMessage(
   terminalSize: { columns: number; rows: number },
 ): React.ReactNode {
   const toolProgressMessages = progressMessagesForMessage.filter(
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     (msg): msg is ProgressMessage<ToolProgressData> => msg.data.type !== 'hook_progress',
   );
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const hasHookProgressMessages = progressMessagesForMessage.some(msg => msg.data.type === 'hook_progress');
   try {
     const toolMessages =

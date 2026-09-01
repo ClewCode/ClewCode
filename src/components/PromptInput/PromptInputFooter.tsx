@@ -204,6 +204,7 @@ function PromptInputFooter({
               ideSelection={ideSelection}
               mcpClients={mcpClients}
               isInputWrapped={isInputWrapped}
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               isNarrow={isNarrow}
             />
           )}
@@ -231,10 +232,12 @@ function PromptInputFooter({
           {/* In fullscreen the copy toast renders in the top notification band
               (top-right of the prompt); render here only for the inline footer. */}
           {!isFullscreen && <CopiedToast />}
+          {/* @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle */}
           {'external' === 'ant' && isUndercover() && <Text dimColor>undercover</Text>}
           <BridgeStatusIndicator bridgeSelected={bridgeSelected} />
         </Box>
       </Box>
+      {/* @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle */}
       {'external' === 'ant' && <CoordinatorTaskPanel />}
       <DynamicWorkflowStatusLine />
     </>

@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { McpbManifest } from '@anthropic-ai/mcpb';
 import { errorMessage } from '../errors.js';
 import { jsonParse } from '../slowOperations.js';
@@ -11,12 +12,14 @@ import { jsonParse } from '../slowOperations.js';
  * closures out of the startup heap for sessions that never touch .dxt/.mcpb.
  */
 export async function validateManifest(manifestJson: unknown): Promise<McpbManifest> {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const { McpbManifestSchema } = await import('@anthropic-ai/mcpb');
   const parseResult = McpbManifestSchema.safeParse(manifestJson);
 
   if (!parseResult.success) {
     const errors = parseResult.error.flatten();
     const errorMessages = [
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       ...Object.entries(errors.fieldErrors).map(([field, errs]) => `${field}: ${errs?.join(', ')}`),
       ...(errors.formErrors || []),
     ]

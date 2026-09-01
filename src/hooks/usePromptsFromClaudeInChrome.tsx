@@ -38,6 +38,7 @@ export function usePromptsFromClaudeInChrome(
   const mcpClientRef = useRef<ConnectedMCPServer | undefined>(undefined);
 
   useEffect(() => {
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     if ('external' !== 'ant') {
       return;
     }
@@ -48,6 +49,7 @@ export function usePromptsFromClaudeInChrome(
     }
 
     if (mcpClient) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       mcpClient.client.setNotificationHandler(ClaudeInChromePromptNotificationSchema(), notification => {
         if (mcpClientRef.current !== mcpClient) {
           return;

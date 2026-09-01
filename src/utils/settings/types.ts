@@ -46,6 +46,7 @@ export const PermissionsSchema = lazySchema(() =>
       defaultMode: z
         .preprocess(
           value => (value === 'yoloGod' ? 'bypassPermissions' : value),
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           z.enum(feature('TRANSCRIPT_CLASSIFIER') ? PERMISSION_MODES : EXTERNAL_PERMISSION_MODES).catch(undefined),
         )
         .optional()

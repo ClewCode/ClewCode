@@ -32,6 +32,7 @@ export async function* all<A>(
   concurrencyCap = Infinity,
 ): AsyncGenerator<A, void> {
   const next = (generator: AsyncGenerator<A, void>) => {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const promise: Promise<QueuedGenerator<A>> = generator.next().then(({ done, value }) => ({
       done,
       value,

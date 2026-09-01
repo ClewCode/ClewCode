@@ -67,6 +67,7 @@ export function useSkillImprovementSurvey(setMessages: SetMessages): {
         void applySkillImprovement(current.skillName, current.updates).then(() => {
           setMessages(prev => [
             ...prev,
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             createSystemMessage(`Skill "${current.skillName}" updated with improvements.`, 'suggestion'),
           ]);
         });

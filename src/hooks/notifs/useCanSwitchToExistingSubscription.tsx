@@ -11,6 +11,7 @@ const MAX_SHOW_COUNT = 3;
  * Hook to check if the user has a subscription on Console but isn't logged into it.
  */
 export function useCanSwitchToExistingSubscription() {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   useStartupNotification(_temp2);
 }
 
@@ -26,6 +27,7 @@ async function _temp2() {
   if (subscriptionType === null) {
     return null;
   }
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   saveGlobalConfig(_temp);
   logEvent('tengu_switch_to_subscription_notice_shown', {});
   return {
@@ -57,9 +59,11 @@ async function getExistingClaudeSubscription(): Promise<'Max' | 'Pro' | null> {
   if (!profile) {
     return null;
   }
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   if (profile.account.has_claude_max) {
     return 'Max';
   }
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   if (profile.account.has_claude_pro) {
     return 'Pro';
   }

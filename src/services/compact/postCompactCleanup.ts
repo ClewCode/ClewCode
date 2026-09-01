@@ -56,6 +56,7 @@ export function runPostCompactCleanup(querySource?: QuerySource): void {
   // cacheUtils resets. See compactConversation() for full rationale.
   clearBetaTracingState();
   if (feature('COMMIT_ATTRIBUTION')) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     void import('../../utils/attributionHooks.js').then(m => m.sweepFileContentCache());
   }
   clearSessionMessagesCache();

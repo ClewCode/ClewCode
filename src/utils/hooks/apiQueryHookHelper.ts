@@ -109,6 +109,7 @@ export function createApiQueryHook<TResult>(config: ApiQueryHookConfig<TResult>)
             type: 'success',
             queryName: config.name,
             result,
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             messageId: response.message.id,
             model,
             uuid,

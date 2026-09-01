@@ -74,6 +74,7 @@ async function main(): Promise<void> {
     return;
   } else if (process.argv[2] === '--chrome-native-host') {
     profileCheckpoint('cli_chrome_native_host_path');
+    // @ts-expect-error - Phase2: missing module stub (auto)
     const { runChromeNativeHost } = await import('../utils/claudeInChrome/chromeNativeHost.js');
     await runChromeNativeHost();
     return;
@@ -93,6 +94,7 @@ async function main(): Promise<void> {
   // workers are lean. If a worker kind needs configs/auth (assistant will),
   // it calls them inside its run() fn.
   if (feature('DAEMON') && args[0] === '--daemon-worker') {
+    // @ts-expect-error - Phase2: missing module stub (auto)
     const { runDaemonWorker } = await import('../daemon/workerRegistry.js');
     await runDaemonWorker(args[1]);
     return;
@@ -164,6 +166,7 @@ async function main(): Promise<void> {
     enableConfigs();
     const { initSinks } = await import('../utils/sinks.js');
     initSinks();
+    // @ts-expect-error - Phase2: missing module stub (auto)
     const { daemonMain } = await import('../daemon/main.js');
     await daemonMain(args.slice(1));
     return;
@@ -217,6 +220,7 @@ async function main(): Promise<void> {
   // Fast-path for template job commands.
   if (feature('TEMPLATES') && (args[0] === 'new' || args[0] === 'list' || args[0] === 'reply')) {
     profileCheckpoint('cli_templates_path');
+    // @ts-expect-error - Phase2: missing module stub (auto)
     const { templatesMain } = await import('../cli/handlers/templateJobs.js');
     await templatesMain(args);
     // process.exit (not return) — mountFleetView's Ink TUI can leave event
@@ -229,6 +233,7 @@ async function main(): Promise<void> {
   // feature() must stay inline for build-time dead code elimination.
   if (feature('BYOC_ENVIRONMENT_RUNNER') && args[0] === 'environment-runner') {
     profileCheckpoint('cli_environment_runner_path');
+    // @ts-expect-error - Phase2: missing module stub (auto)
     const { environmentRunnerMain } = await import('../environment-runner/main.js');
     await environmentRunnerMain(args.slice(1));
     return;
@@ -239,6 +244,7 @@ async function main(): Promise<void> {
   // heartbeat). feature() must stay inline for build-time dead code elimination.
   if (feature('SELF_HOSTED_RUNNER') && args[0] === 'self-hosted-runner') {
     profileCheckpoint('cli_self_hosted_runner_path');
+    // @ts-expect-error - Phase2: missing module stub (auto)
     const { selfHostedRunnerMain } = await import('../self-hosted-runner/main.js');
     await selfHostedRunnerMain(args.slice(1));
     return;

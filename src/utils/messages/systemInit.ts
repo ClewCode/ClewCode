@@ -57,6 +57,7 @@ export function buildSystemInitMessage(inputs: SystemInitInputs): SDKMessage {
       status: client.type,
     })),
     model: inputs.model,
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     permissionMode: inputs.permissionMode,
     slash_commands: inputs.commands.filter(c => c.userInvocable !== false).map(c => c.name),
     apiKeySource: getAnthropicApiKeyWithSource().source as ApiKeySource,

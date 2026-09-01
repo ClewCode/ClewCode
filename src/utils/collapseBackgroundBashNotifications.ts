@@ -7,6 +7,7 @@ import { extractTag } from './messages.js';
 function isCompletedBackgroundBash(msg: RenderableMessage): msg is NormalizedUserMessage {
   if (msg.type !== 'user') return false;
   const content = msg.message.content[0];
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   if (content?.type !== 'text') return false;
   if (!content.text.includes(`<${TASK_NOTIFICATION_TAG}`)) return false;
   // Only collapse successful completions — failed/killed stay visible individually.

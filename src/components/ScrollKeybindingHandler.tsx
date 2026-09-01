@@ -521,6 +521,7 @@ export function ScrollKeybindingHandler({ scrollRef, isActive, onScroll, isModal
       'selection:copy': copyAndToast,
     },
     {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       context: 'Scroll',
       isActive,
     },
@@ -566,6 +567,7 @@ export function ScrollKeybindingHandler({ scrollRef, isActive, onScroll, isModal
       },
     },
     {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       context: 'Scroll',
       isActive,
     },

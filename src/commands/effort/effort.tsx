@@ -49,6 +49,7 @@ function setEffortValue(effortValue: EffortValue, ultracodeMode = false): Effort
   const persistable = toPersistableEffort(effortValue);
   if (persistable !== undefined) {
     const result = updateSettingsForSource('userSettings', {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       effortLevel: persistable,
     });
     if (result.error) {

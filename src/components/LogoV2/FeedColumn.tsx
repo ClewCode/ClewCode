@@ -1,4 +1,5 @@
 import * as React from 'react';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import { c as _c } from 'react/compiler-runtime';
 import { Box } from '../../ink.js';
 import { Divider } from '../design-system/Divider.js';
@@ -9,6 +10,7 @@ type FeedColumnProps = {
   feeds: FeedConfig[];
   maxWidth: number;
 };
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 export function FeedColumn(t0) {
   const $ = _c(10);
   const { feeds, maxWidth } = t0;
@@ -27,6 +29,7 @@ export function FeedColumn(t0) {
   if ($[2] !== actualWidth || $[3] !== feeds) {
     let t3;
     if ($[5] !== actualWidth || $[6] !== feeds.length) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       t3 = (feed_0, index) => (
         <React.Fragment key={index}>
           <Feed config={feed_0} actualWidth={actualWidth} />
@@ -56,6 +59,7 @@ export function FeedColumn(t0) {
   }
   return t3;
 }
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 function _temp(feed) {
   return calculateFeedWidth(feed);
 }

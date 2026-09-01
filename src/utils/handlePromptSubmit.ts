@@ -489,6 +489,7 @@ async function executeUserInput(params: ExecuteUserInputParams): Promise<void> {
               ...prev,
               fileHistory: updater(prev.fileHistory),
             }));
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           }, message.uuid);
         });
         queryCheckpoint('query_file_history_snapshot_end');

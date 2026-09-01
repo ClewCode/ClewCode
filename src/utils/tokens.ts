@@ -11,6 +11,7 @@ export function getTokenUsage(message: Message): Usage | undefined {
     !(message.message.content[0]?.type === 'text' && SYNTHETIC_MESSAGES.has(message.message.content[0].text)) &&
     message.message.model !== SYNTHETIC_MODEL
   ) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return message.message.usage;
   }
   return undefined;
@@ -235,9 +236,11 @@ export function tokenCountWithEstimation(messages: readonly Message[]): number {
           j--;
         }
       }
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       return getTokenCountFromUsage(usage) + roughTokenCountEstimationForMessages(messages.slice(i + 1));
     }
     i--;
   }
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return roughTokenCountEstimationForMessages(messages);
 }

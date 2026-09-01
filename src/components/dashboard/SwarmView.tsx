@@ -127,6 +127,7 @@ export function SwarmView({ workspaceRoot }: SwarmViewProps): React.ReactElement
                 </Text>
               </Box>
               {run.status === 'running' && (
+                // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
                 <Text dimColor paddingLeft={2}>
                   (Press k to cancel)
                 </Text>

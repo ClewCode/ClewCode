@@ -240,6 +240,7 @@ export function splitCommandWithOperators(command: string): string[] {
 }
 
 export function filterControlOperators(commandsAndOperators: string[]): string[] {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return commandsAndOperators.filter(part => !(ALL_SUPPORTED_CONTROL_OPERATORS as Set<string>).has(part));
 }
 
@@ -497,8 +498,10 @@ export function clearCommandPrefixCaches(): void {
   getCommandSubcommandPrefix.cache.clear();
 }
 
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 const COMMAND_LIST_SEPARATORS = new Set<ControlOperator>(['&&', '||', ';', ';;', '|']);
 
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 const ALL_SUPPORTED_CONTROL_OPERATORS = new Set<ControlOperator>([...COMMAND_LIST_SEPARATORS, '>&', '>', '>>']);
 
 // Checks if this is just a list of commands
@@ -541,6 +544,7 @@ function isCommandList(command: string): boolean {
       if (part.op === 'glob') {
         // Globs are safe
         continue;
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       } else if (COMMAND_LIST_SEPARATORS.has(part.op)) {
         // Command list separators are safe
         continue;

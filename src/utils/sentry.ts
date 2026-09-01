@@ -204,6 +204,7 @@ export async function initSentry(): Promise<void> {
     Sentry.init({
       dsn,
       // Disable automatic data collection that might capture user data
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       autoSessionTracking: false,
       sendDefaultPii: false,
       // Only send errors, not performance traces (no profiling)

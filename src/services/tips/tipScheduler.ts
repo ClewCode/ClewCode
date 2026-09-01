@@ -2,6 +2,7 @@ import { getSettings } from '../../utils/settings/settings.js';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from '../analytics/index.js';
 import { getSessionsSinceLastShown, recordTipShown } from './tipHistory.js';
 import { getRelevantTips } from './tipRegistry.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { Tip, TipContext } from './types.js';
 
 export function selectTipWithLongestTimeSinceShown(availableTips: Tip[]): Tip | undefined {

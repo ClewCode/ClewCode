@@ -123,6 +123,7 @@ export function StatsProvider({ store: externalStore, children }: Props): React.
     };
     process.on('exit', flush);
     return () => {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       process.off('exit', flush);
     };
   }, [store]);

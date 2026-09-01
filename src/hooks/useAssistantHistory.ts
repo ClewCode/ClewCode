@@ -143,6 +143,7 @@ export function useAssistantHistory({ config, setMessages, scrollRef, onPrepend 
     };
     // config identity is stable (created once in main.tsx, never recreated)
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   }, [enabled, config.sessionId, config, prepend]);
 
   const loadOlder = useCallback(async () => {

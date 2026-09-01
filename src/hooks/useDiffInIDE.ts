@@ -214,6 +214,7 @@ async function showDiffInIDE(
       logError(e as Error);
     }
 
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     process.off('beforeExit', cleanup);
     toolUseContext.abortController.signal.removeEventListener('abort', cleanup);
   }

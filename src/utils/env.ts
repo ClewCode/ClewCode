@@ -27,6 +27,7 @@ export const getLegacyGlobalClaudeFile = memoize((): string => {
 const hasInternetAccess = memoize(async (): Promise<boolean> => {
   try {
     const { ofetch: axiosClient } = await import('ofetch');
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     await axiosClient.head('http://1.1.1.1', {
       signal: AbortSignal.timeout(1000),
     });

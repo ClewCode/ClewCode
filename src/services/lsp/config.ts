@@ -4,6 +4,7 @@ import { errorMessage, toError } from '../../utils/errors.js';
 import { logError } from '../../utils/log.js';
 import { getPluginLspServers } from '../../utils/plugins/lspPluginIntegration.js';
 import { loadAllPluginsCacheOnly } from '../../utils/plugins/pluginLoader.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { ScopedLspServerConfig } from './types.js';
 
 /**

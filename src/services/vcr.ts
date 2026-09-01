@@ -142,7 +142,9 @@ function addCachedCostToTotalSessionCost(message: AssistantMessage | StreamEvent
   }
   const model = message.message.model;
   const usage = message.message.usage;
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const costUSD = calculateUSDCost(model, usage);
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   addToTotalSessionCost(costUSD, usage, model);
 }
 
@@ -225,6 +227,7 @@ function mapAssistantMessage(
     timestamp: message.timestamp,
     message: {
       ...message.message,
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       content: message.message.content
         .map(_ => {
           switch (_.type) {

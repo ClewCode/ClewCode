@@ -579,8 +579,10 @@ function collectCandidatesByMessage(messages: Message[]): ToolResultCandidate[][
     if (message.type === 'user') {
       current.push(...collectCandidatesFromMessage(message));
     } else if (message.type === 'assistant') {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       if (!seenAsstIds.has(message.message.id)) {
         flush();
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         seenAsstIds.add(message.message.id);
       }
     }

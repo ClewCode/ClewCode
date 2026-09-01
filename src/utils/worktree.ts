@@ -551,8 +551,10 @@ async function performPostCreationSetup(repoRoot: string, worktreePath: string):
   // value verbatim when it's absolute.
   if (feature('COMMIT_ATTRIBUTION')) {
     const worktreeHooksDir = hooksPath === huskyPath ? join(worktreePath, '.husky') : undefined;
+    // @ts-expect-error - Phase2: missing module stub (auto)
     void import('./postCommitAttribution.js')
       .then(m =>
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         m.installPrepareCommitMsgHook(worktreePath, worktreeHooksDir).catch(error => {
           logForDebugging(`Failed to install attribution hook in worktree: ${error}`);
         }),

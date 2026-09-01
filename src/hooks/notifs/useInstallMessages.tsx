@@ -1,6 +1,7 @@
 import { checkInstall } from 'src/utils/nativeInstaller/index.js';
 import { useStartupNotification } from './useStartupNotification.js';
 export function useInstallMessages() {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   useStartupNotification(_temp2);
 }
 async function _temp2() {

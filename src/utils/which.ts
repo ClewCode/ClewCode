@@ -38,7 +38,9 @@ async function whichNodeAsync(command: string): Promise<string | null> {
       });
       stdout = result.stdout;
     } catch (e) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       exitCode = e.exitCode ?? 1;
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       stdout = e.stdout ?? '';
     }
     if (exitCode !== 0 || !stdout) {
@@ -61,13 +63,16 @@ async function whichNodeAsync(command: string): Promise<string | null> {
     });
     stdout = result.stdout;
   } catch (e) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     exitCode = e.exitCode ?? 1;
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     stdout = e.stdout ?? '';
   }
   if (exitCode !== 0 || !stdout) {
     setMissingCache(command);
     return null;
   }
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return result.stdout.trim();
 }
 

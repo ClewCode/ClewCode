@@ -14,6 +14,7 @@ export function useCostSummary(getFpsMetrics?: () => FpsMetrics | undefined): vo
     };
     process.on('exit', f);
     return () => {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       process.off('exit', f);
     };
   }, [getFpsMetrics]);

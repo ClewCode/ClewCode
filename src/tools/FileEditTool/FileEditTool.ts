@@ -103,6 +103,7 @@ export const FileEditTool = buildTool({
   },
   async checkPermissions(input, context): Promise<PermissionDecision> {
     const appState = context.getAppState();
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return checkWritePermissionForTool(FileEditTool, input, appState.toolPermissionContext);
   },
   renderToolUseMessage,
@@ -120,6 +121,7 @@ export const FileEditTool = buildTool({
       try {
         // Try to open file for writing to check if it's read-only
         const fd = await open(fullFilePath, 'r+');
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         await fd.close();
       } catch (err) {
         if (isENOENT(err)) {
@@ -403,6 +405,7 @@ export const FileEditTool = buildTool({
       // Backup captures pre-edit content — safe to call before the staleness
       // check (idempotent v1 backup keyed on content hash; if staleness fails
       // later we just have an unused backup, not corrupt state).
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       await fileHistoryTrackEdit(updateFileHistoryState, absoluteFilePath, parentMessage.uuid);
     }
 

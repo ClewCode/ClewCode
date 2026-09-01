@@ -29,9 +29,7 @@ const TERMINAL_CAPTURE_TOOL_NAME = feature('TERMINAL_PANEL')
       .TERMINAL_CAPTURE_TOOL_NAME
   : null;
 const OVERFLOW_TEST_TOOL_NAME = feature('OVERFLOW_TEST_TOOL')
-  ? (
-      require('../../tools/OverflowTestTool/OverflowTestTool.js') as typeof import('../../tools/OverflowTestTool/OverflowTestTool.js')
-    ).OVERFLOW_TEST_TOOL_NAME
+  ? (require('../../tools/OverflowTestTool/OverflowTestTool.js') as any).OVERFLOW_TEST_TOOL_NAME
   : null;
 const VERIFY_PLAN_EXECUTION_TOOL_NAME =
   process.env.USER_TYPE === 'ant'

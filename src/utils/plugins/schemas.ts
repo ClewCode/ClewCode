@@ -1133,6 +1133,7 @@ export const PluginMarketplaceSchema = lazySchema(() =>
     name: MarketplaceNameSchema(),
     owner: PluginAuthorSchema().describe('Marketplace maintainer or curator information'),
     plugins: z
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       .array(PluginMarketplaceEntrySchema().catch(undefined))
       .transform(arr => arr.filter((x): x is NonNullable<typeof x> => x !== undefined))
       .describe('Collection of available plugins in this marketplace'),

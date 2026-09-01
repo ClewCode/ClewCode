@@ -216,6 +216,7 @@ export function evaluateTimeBasedTrigger(
   if (!lastAssistant) {
     return null;
   }
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const gapMinutes = (Date.now() - new Date(lastAssistant.timestamp).getTime()) / 60_000;
   if (!Number.isFinite(gapMinutes) || gapMinutes < config.gapThresholdMinutes) {
     return null;

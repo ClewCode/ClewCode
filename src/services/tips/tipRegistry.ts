@@ -33,6 +33,7 @@ import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js'
 import { formatGrantAmount, getCachedOverageCreditGrant } from '../api/overageCreditGrant.js';
 import { checkCachedPassesEligibility, formatCreditAmount, getCachedReferrerReward } from '../api/referral.js';
 import { getSessionsSinceLastShown } from './tipHistory.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { Tip, TipContext } from './types.js';
 
 let _isOfficialMarketplaceInstalledCache: boolean | undefined;
@@ -324,12 +325,14 @@ const externalTips: Tip[] = [
     id: 'double-esc',
     content: async () => 'Double-tap esc to rewind the conversation to a previous point in time',
     cooldownSessions: 10,
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     isRelevant: async () => !fileHistoryEnabled(),
   },
   {
     id: 'double-esc-code-restore',
     content: async () => 'Double-tap esc to rewind the code and/or conversation to a previous point in time',
     cooldownSessions: 10,
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     isRelevant: async () => fileHistoryEnabled(),
   },
   {

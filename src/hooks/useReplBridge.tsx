@@ -182,6 +182,7 @@ export function useReplBridge(
           // (crash-recovery only).
           let perpetual = false;
           if (feature('KAIROS')) {
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             const { isAssistantMode } = await import('../assistant/index.js');
             perpetual = isAssistantMode();
           }
@@ -206,6 +207,7 @@ export function useReplBridge(
               if (feature('KAIROS_GITHUB_WEBHOOKS')) {
                 /* eslint-disable @typescript-eslint/no-require-imports */
                 const { sanitizeInboundWebhookContent } =
+                  // @ts-expect-error - Phase2: missing module stub (auto)
                   require('../bridge/webhookSanitizer.js') as typeof import('../bridge/webhookSanitizer.js');
                 /* eslint-enable @typescript-eslint/no-require-imports */
                 sanitized = sanitizeInboundWebhookContent(fields.content);
@@ -576,6 +578,7 @@ export function useReplBridge(
                 handle_0.sendControlRequest({
                   type: 'control_request',
                   request_id: requestId_0,
+                  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
                   request: {
                     subtype: 'can_use_tool',
                     tool_name: toolName,

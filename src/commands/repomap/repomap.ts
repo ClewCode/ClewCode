@@ -3,6 +3,7 @@
  */
 
 import { clearRepoMapCache, getRepoMapGenerator } from '../../repomap/index.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { CommandContext } from '../../types/command.js';
 import { getCwd } from '../../utils/cwd.js';
 

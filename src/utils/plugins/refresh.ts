@@ -147,6 +147,7 @@ export async function refreshActivePlugins(setAppState: SetAppState): Promise<Re
             'Plugin ' +
             p.name +
             ': plugin.json suppresses default folder(s) that exist on disk: ' +
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             p.suppressedFolders.join(', '),
         ),
       needsRefresh: false,

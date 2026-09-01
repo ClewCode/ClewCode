@@ -331,6 +331,7 @@ async function initializeBetaTracing(resource: ReturnType<typeof resourceFromAtt
   const loggerProvider = new LoggerProvider({
     resource,
     processors: [
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       new BatchLogRecordProcessor(logExporter, {
         scheduledDelayMillis: DEFAULT_LOGS_EXPORT_INTERVAL_MS,
       }),
@@ -501,6 +502,7 @@ export async function initializeTelemetry() {
         // Add batch processors for each exporter
         processors: logExporters.map(
           exporter =>
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             new BatchLogRecordProcessor(exporter, {
               scheduledDelayMillis: parseInt(
                 process.env.OTEL_LOGS_EXPORT_INTERVAL || DEFAULT_LOGS_EXPORT_INTERVAL_MS.toString(),

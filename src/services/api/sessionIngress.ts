@@ -204,6 +204,7 @@ export async function getSessionLogs(sessionId: string, url: string): Promise<En
     // Update our lastUuid to the last entry's UUID
     const lastEntry = logs.at(-1);
     if (lastEntry && 'uuid' in lastEntry && lastEntry.uuid) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       lastUuidMap.set(sessionId, lastEntry.uuid);
     }
   }

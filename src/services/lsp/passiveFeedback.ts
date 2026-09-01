@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'url';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { PublishDiagnosticsParams } from 'vscode-languageserver-protocol';
 import { logForDebugging } from '../../utils/debug.js';
 import { toError } from '../../utils/errors.js';

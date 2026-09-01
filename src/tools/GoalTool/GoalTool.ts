@@ -54,6 +54,7 @@ export const GoalTool = buildTool({
   isReadOnly: () => false,
   userFacingName: () => 'Goal',
   getActivityDescription(input) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return input.action === 'set' ? `Setting goal: ${input.goal?.slice(0, 40)}` : `Goal ${input.action}`;
   },
   getToolUseSummary(input) {

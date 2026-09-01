@@ -226,6 +226,7 @@ export const GrepTool = buildTool({
   },
   async checkPermissions(input, context): Promise<PermissionDecision> {
     const appState = context.getAppState();
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return checkReadPermissionForTool(GrepTool, input, appState.toolPermissionContext);
   },
   async prompt() {

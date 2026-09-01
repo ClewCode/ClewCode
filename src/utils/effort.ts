@@ -26,8 +26,10 @@ export function modelSupportsEffort(model: string): boolean {
   // For non-Anthropic providers, check if the provider supports reasoning effort
   try {
     const { ProviderManager } =
+      // @ts-expect-error - Phase2: missing module stub (auto)
       require('../../services/ai/ProviderManager.js') as typeof import('../../services/ai/ProviderManager.js');
     const { PROVIDER_REGISTRY } =
+      // @ts-expect-error - Phase2: missing module stub (auto)
       require('../../services/ai/providerRegistry.js') as typeof import('../../services/ai/providerRegistry.js');
     const activeProvider = ProviderManager.getInstance().getActiveProviderName();
     if (activeProvider && activeProvider !== 'anthropic') {

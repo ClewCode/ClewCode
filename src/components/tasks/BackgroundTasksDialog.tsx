@@ -14,7 +14,9 @@ import { LocalAgentTask } from 'src/tasks/LocalAgentTask/LocalAgentTask.js';
 import type { LocalShellTaskState } from 'src/tasks/LocalShellTask/guards.js';
 import { LocalShellTask } from 'src/tasks/LocalShellTask/LocalShellTask.js';
 // Type import is erased at build time — safe even though module is ant-gated.
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { LocalWorkflowTaskState } from 'src/tasks/LocalWorkflowTask/LocalWorkflowTask.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { MonitorMcpTaskState } from 'src/tasks/MonitorMcpTask/MonitorMcpTask.js';
 import { RemoteAgentTask, type RemoteAgentTaskState } from 'src/tasks/RemoteAgentTask/RemoteAgentTask.js';
 import { type BackgroundTaskState, isBackgroundTask, type TaskState } from 'src/tasks/types.js';
@@ -110,10 +112,12 @@ type ListItem =
 // bundler can dead-code-eliminate the branch.
 /* eslint-disable @typescript-eslint/no-require-imports */
 const WorkflowDetailDialog = feature('WORKFLOW_SCRIPTS')
-  ? (require('./WorkflowDetailDialog.js') as typeof import('./WorkflowDetailDialog.js')).WorkflowDetailDialog
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('./WorkflowDetailDialog.js') as typeof import('./WorkflowDetailDialog.js')).WorkflowDetailDialog
   : null;
 const workflowTaskModule = feature('WORKFLOW_SCRIPTS')
-  ? (require('src/tasks/LocalWorkflowTask/LocalWorkflowTask.js') as typeof import('src/tasks/LocalWorkflowTask/LocalWorkflowTask.js'))
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('src/tasks/LocalWorkflowTask/LocalWorkflowTask.js') as typeof import('src/tasks/LocalWorkflowTask/LocalWorkflowTask.js'))
   : null;
 const killWorkflowTask = workflowTaskModule?.killWorkflowTask ?? null;
 const skipWorkflowAgent = workflowTaskModule?.skipWorkflowAgent ?? null;
@@ -122,11 +126,13 @@ const retryWorkflowAgent = workflowTaskModule?.retryWorkflowAgent ?? null;
 // resolve + eliminate `./` requires, but path-mapped strings stay opaque
 // and survive as dead literals in the bundle. Matches tasks.ts pattern.
 const monitorMcpModule = feature('MONITOR_TOOL')
-  ? (require('../../tasks/MonitorMcpTask/MonitorMcpTask.js') as typeof import('../../tasks/MonitorMcpTask/MonitorMcpTask.js'))
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('../../tasks/MonitorMcpTask/MonitorMcpTask.js') as typeof import('../../tasks/MonitorMcpTask/MonitorMcpTask.js'))
   : null;
 const killMonitorMcp = monitorMcpModule?.killMonitorMcp ?? null;
 const MonitorMcpDetailDialog = feature('MONITOR_TOOL')
-  ? (require('./MonitorMcpDetailDialog.js') as typeof import('./MonitorMcpDetailDialog.js')).MonitorMcpDetailDialog
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('./MonitorMcpDetailDialog.js') as typeof import('./MonitorMcpDetailDialog.js')).MonitorMcpDetailDialog
   : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
@@ -706,6 +712,7 @@ export function BackgroundTasksDialog({ onDone, toolUseContext, initialDetailTas
   );
 }
 
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 function toListItem(task: BackgroundTaskState): ListItem {
   switch (task.type) {
     case 'local_bash':

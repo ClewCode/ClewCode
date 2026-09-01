@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   getDeclaredLinks,

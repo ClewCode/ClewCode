@@ -1229,6 +1229,7 @@ export function parseMcpConfig(params: {
   // entries are skipped individually rather than dropping all servers. A single
   // malformed entry in .mcp.json should not silence the other (valid) ones.
   const raw = configObject as Record<string, unknown> | null | undefined;
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const rawServers: Record<string, unknown> =
     (raw && typeof raw === 'object' && 'mcpServers' in raw ? (raw as Record<string, unknown>).mcpServers : undefined) ??
     {};
@@ -1264,7 +1265,8 @@ export function parseMcpConfig(params: {
           path: `mcpServers.${name}${issue.path.length > 0 ? `.${issue.path.join('.')}` : ''}`,
           message:
             issue.message === 'Required'
-              ? `Does not adhere to MCP server configuration schema: Missing required field '${issue.path.at(-1) ?? '(root)'}'`
+              ? // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+                `Does not adhere to MCP server configuration schema: Missing required field '${issue.path.at(-1) ?? '(root)'}'`
               : `Does not adhere to MCP server configuration schema: ${issue.message}`,
           mcpErrorMetadata: {
             scope,

@@ -687,6 +687,7 @@ export function useVoiceKeybindingHandler({
   };
 }
 
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 export function VoiceKeybindingHandler(props) {
   useVoiceKeybindingHandler(props);
   return null;

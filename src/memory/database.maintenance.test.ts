@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase2: missing module stub (auto)
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MemoryDB } from './database.js';
 

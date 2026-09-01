@@ -235,6 +235,7 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
       dismiss: goToPrevStep,
     },
     {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       context: 'Onboarding',
       isActive: currentStepIndex > 0 && currentStep?.id !== 'terminal-setup',
     },

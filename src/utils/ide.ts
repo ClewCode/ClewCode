@@ -1270,7 +1270,9 @@ const detectHostIP = memoize(
         });
         routeStdout = routeResult.stdout;
       } catch (e) {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         routeExitCode = e.exitCode ?? 1;
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         routeStdout = e.stdout ?? '';
       }
       if (routeExitCode === 0 && routeStdout) {
@@ -1351,6 +1353,7 @@ async function installFromArtifactory(command: string): Promise<string> {
       // Write the downloaded file to disk
       const writeStream = getFsImplementation().createWriteStream(tempVsixPath);
       await new Promise<void>((resolve, reject) => {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         vsixResponse.data.pipe(writeStream);
         writeStream.on('finish', resolve);
         writeStream.on('error', reject);

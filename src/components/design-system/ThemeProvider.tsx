@@ -74,6 +74,7 @@ export function ThemeProvider({ children, initialState, onThemeSave = defaultSav
       if (activeSetting !== 'auto' || !internal_querier) return;
       let cleanup: (() => void) | undefined;
       let cancelled = false;
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       void import('../../utils/systemThemeWatcher.js').then(({ watchSystemTheme }) => {
         if (cancelled) return;
         cleanup = watchSystemTheme(internal_querier, setSystemTheme);

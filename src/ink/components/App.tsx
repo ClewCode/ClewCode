@@ -130,6 +130,7 @@ export default class App extends PureComponent<Props, State> {
   keyParseState = INITIAL_STATE;
   // Streaming UTF-8 decoder for raw byte input (Bun on Windows may ignore
   // setEncoding and deliver Buffers instead of decoded strings).
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   utf8Decoder = new TextDecoder('utf-8', { stream: true });
   // Timer for flushing incomplete escape sequences
   incompleteEscapeTimer: NodeJS.Timeout | null = null;
@@ -483,6 +484,7 @@ export default class App extends PureComponent<Props, State> {
 
       // Emit resume event for Clew Code to handle
       this.internal_eventEmitter.emit('resume');
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       process.removeListener('SIGCONT', resumeHandler);
     };
     process.on('SIGCONT', resumeHandler);

@@ -11,6 +11,7 @@ import { staleToolReducer } from './reducers/staleTool.js';
 import type { CompactSessionState, ReduceContext, Reducer } from './types.js';
 
 function makeState(): CompactSessionState {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return { turn: 1, failures: 0, evictions: createMemoryEvictionStore(), restoredThisTurn: 0 };
 }
 

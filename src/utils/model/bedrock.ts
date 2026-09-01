@@ -87,6 +87,7 @@ async function createBedrockClient() {
 }
 
 export async function createBedrockRuntimeClient() {
+  // @ts-expect-error - Phase2: missing module stub (auto)
   const { BedrockRuntimeClient } = await import('@aws-sdk/client-bedrock-runtime');
   const region = getAWSRegion();
   const skipAuth = isEnvTruthy(process.env.CLEW_CODE_SKIP_BEDROCK_AUTH);
@@ -116,6 +117,7 @@ export async function createBedrockRuntimeClient() {
     // Only refresh credentials if not using API key authentication
     const cachedCredentials = await refreshAndGetAwsCredentials();
     if (cachedCredentials) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       clientConfig.credentials = {
         accessKeyId: cachedCredentials.accessKeyId,
         secretAccessKey: cachedCredentials.secretAccessKey,

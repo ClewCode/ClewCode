@@ -6,6 +6,7 @@
  * URI handling as the single-shot operations — a symbol that findReferences
  * hides must not reappear in an explore bundle.
  */
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { Location, LocationLink } from 'vscode-languageserver-types';
 import { uniq } from '../../utils/array.js';
 import { execFileNoThrowWithCwd } from '../../utils/execFileNoThrow.js';

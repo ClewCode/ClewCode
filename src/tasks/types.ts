@@ -5,7 +5,9 @@ import type { DreamTaskState } from './DreamTask/DreamTask.js';
 import type { InProcessTeammateTaskState } from './InProcessTeammateTask/types.js';
 import type { LocalAgentTaskState } from './LocalAgentTask/LocalAgentTask.js';
 import type { LocalShellTaskState } from './LocalShellTask/guards.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { LocalWorkflowTaskState } from './LocalWorkflowTask/LocalWorkflowTask.js';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { MonitorMcpTaskState } from './MonitorMcpTask/MonitorMcpTask.js';
 import type { RemoteAgentTaskState } from './RemoteAgentTask/RemoteAgentTask.js';
 

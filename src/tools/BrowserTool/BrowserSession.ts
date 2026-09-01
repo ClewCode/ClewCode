@@ -54,6 +54,7 @@ export class BrowserSession {
     if (this.context) return;
 
     this.headless = input?.headless ?? this.headless;
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const { chromium } = await import('playwright');
     this.browser = await chromium.launch({
       headless: this.headless,

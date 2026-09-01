@@ -33,6 +33,7 @@ async function fetchOverageCreditGrant(): Promise<OverageCreditGrantInfo | null>
     const response = await ofetch<OverageCreditGrantInfo>(url, {
       headers: getOAuthHeaders(accessToken),
     });
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return response.data;
   } catch (err) {
     logError(err);

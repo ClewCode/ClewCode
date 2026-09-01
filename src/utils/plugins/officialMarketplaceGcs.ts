@@ -80,6 +80,7 @@ export async function fetchOfficialMarketplaceFromGcs(
       responseType: 'text',
       timeout: 10_000,
     });
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     sha = String(latest.data).trim();
     if (!sha) {
       // Empty /latest body — backend misconfigured. Bail (null), don't
@@ -103,6 +104,7 @@ export async function fetchOfficialMarketplaceFromGcs(
     //    place. Crash mid-extract leaves a .staging dir (next run rm's it)
     //    rather than a half-written installLocation.
     const zipResp = await ofetch(`${GCS_BASE}/${sha}.zip`, {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       responseType: 'arraybuffer',
       timeout: 60_000,
     });

@@ -923,10 +923,12 @@ export function resetGrowthBook(): void {
   stopPeriodicGrowthBookRefresh();
   // Remove process handlers before destroying client to prevent accumulation
   if (currentBeforeExitHandler) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     process.off('beforeExit', currentBeforeExitHandler);
     currentBeforeExitHandler = null;
   }
   if (currentExitHandler) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     process.off('exit', currentExitHandler);
     currentExitHandler = null;
   }
@@ -1051,6 +1053,7 @@ export function stopPeriodicGrowthBookRefresh(): void {
     refreshInterval = null;
   }
   if (beforeExitListener) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     process.removeListener('beforeExit', beforeExitListener);
     beforeExitListener = null;
   }

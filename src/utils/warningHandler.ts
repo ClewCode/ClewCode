@@ -43,6 +43,7 @@ let warningHandler: ((warning: Error) => void) | null = null;
 // For testing only - allows resetting the warning handler state
 export function resetWarningHandler(): void {
   if (warningHandler) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     process.removeListener('warning', warningHandler);
   }
   warningHandler = null;

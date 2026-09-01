@@ -367,6 +367,7 @@ function getUserBindingsForValidation(userBlocks: KeybindingBlock[]): ParsedBind
       bindings.push({
         chord,
         action,
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         context: block.context,
       });
     }

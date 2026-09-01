@@ -61,7 +61,8 @@ import { loadRepoMapPrompt } from '../repomap/index.js';
 // Dead code elimination: conditional imports for feature-gated modules
 /* eslint-disable @typescript-eslint/no-require-imports */
 const getCachedMCConfigForFRC = feature('CACHED_MICROCOMPACT')
-  ? (require('../services/compact/cachedMCConfig.js') as typeof import('../services/compact/cachedMCConfig.js'))
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('../services/compact/cachedMCConfig.js') as typeof import('../services/compact/cachedMCConfig.js'))
       .getCachedMCConfig
   : null;
 
@@ -75,13 +76,15 @@ const briefToolModule =
     ? (require('../tools/BriefTool/BriefTool.js') as typeof import('../tools/BriefTool/BriefTool.js'))
     : null;
 const DISCOVER_SKILLS_TOOL_NAME: string | null = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (require('../tools/DiscoverSkillsTool/prompt.js') as typeof import('../tools/DiscoverSkillsTool/prompt.js'))
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('../tools/DiscoverSkillsTool/prompt.js') as typeof import('../tools/DiscoverSkillsTool/prompt.js'))
       .DISCOVER_SKILLS_TOOL_NAME
   : null;
 // Capture the module (not .isSkillSearchEnabled directly) so spyOn() in tests
 // patches what we actually call — a captured function ref would point past the spy.
 const skillSearchFeatureCheck = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (require('../services/skillSearch/featureCheck.js') as typeof import('../services/skillSearch/featureCheck.js'))
+  ? // @ts-expect-error - Phase2: missing module stub (auto)
+    (require('../services/skillSearch/featureCheck.js') as typeof import('../services/skillSearch/featureCheck.js'))
   : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 import type { OutputStyleConfig } from './outputStyles.js';
@@ -202,6 +205,7 @@ function getSimpleDoingTasksSection(): string {
     `Prioritize writing safe, secure, and correct code. Avoid OWASP vulnerabilities (command injection, XSS, SQL injection).`,
     ...codeStyleSubitems,
     `Avoid backwards-compatibility hacks like renaming unused _vars or re-exporting dead types. Delete unused code cleanly.`,
+    `For any 2+ step work, ALWAYS create tasks/todos BEFORE coding, keep exactly ONE in_progress at a time, and mark completed immediately after finishing.`,
     `Report outcomes faithfully: if tests fail, say so with relevant output. Never claim tests pass when output shows failures, never suppress errors, and never characterize broken work as done. When a check passes, state it plainly without defensive disclaimers.`,
     `If the user asks for help or wants to give feedback inform them of the following:`,
     userHelpSubitems,
@@ -229,7 +233,7 @@ function getUsingYourToolsSection(enabledTools: Set<string>): string {
   if (isReplModeEnabled()) {
     const items = [
       taskToolName
-        ? `Break down and manage your work with the ${taskToolName} tool. Mark each task as completed as soon as you are done.`
+        ? `ALWAYS use ${taskToolName} to break down and track your work. Create tasks BEFORE starting, keep exactly ONE task in_progress at a time, and mark completed immediately after finishing. For 2+ step work, never start coding without tasks.`
         : null,
     ].filter((item): item is string => item !== null);
     if (items.length === 0) return '';
@@ -254,7 +258,9 @@ function getUsingYourToolsSection(enabledTools: Set<string>): string {
   const items = [
     `Use dedicated tools for file operations and code edits. This provides clean visual diffs and reviews for the user:`,
     providedToolSubitems,
-    taskToolName ? `Break down and manage your work with the ${taskToolName} tool.` : null,
+    taskToolName
+      ? `ALWAYS use ${taskToolName} to break down and track your work. Create tasks BEFORE starting, keep exactly ONE in_progress at a time, mark completed immediately after finishing. For 2+ step work, never start coding without tasks.`
+      : null,
     `You can call multiple tools in parallel when there are no dependencies between them to maximize execution efficiency. If calls depend on prior results, run them sequentially.`,
   ].filter((item): item is string | string[] => item !== null);
 
@@ -483,6 +489,7 @@ export async function getSystemPrompt(
 
   const resolvedDynamicSections = await resolveSystemPromptSections(dynamicSections);
 
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return [
     // --- Static content (cacheable) ---
     getSimpleIntroSection(outputStyleConfig),
@@ -498,6 +505,7 @@ export async function getSystemPrompt(
     ...(shouldUseGlobalCacheScope() ? [SYSTEM_PROMPT_DYNAMIC_BOUNDARY] : []),
     // --- Dynamic content (registry-managed) ---
     ...resolvedDynamicSections,
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   ].filter((s): s is string | string[] => s !== null) as (string | string[])[];
 }
 

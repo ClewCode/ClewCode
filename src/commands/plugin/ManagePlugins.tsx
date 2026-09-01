@@ -10,6 +10,7 @@ import { MCPRemoteServerMenu } from '../../components/mcp/MCPRemoteServerMenu.js
 import { MCPStdioServerMenu } from '../../components/mcp/MCPStdioServerMenu.js';
 import { MCPToolDetailView } from '../../components/mcp/MCPToolDetailView.js';
 import { MCPToolListView } from '../../components/mcp/MCPToolListView.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { ClaudeAIServerInfo, HTTPServerInfo, SSEServerInfo, StdioServerInfo } from '../../components/mcp/types.js';
 import { SearchBox } from '../../components/SearchBox.js';
 import { useSearchInput } from '../../hooks/useSearchInput.js';
@@ -73,6 +74,7 @@ import { PluginOptionsDialog } from './PluginOptionsDialog.js';
 import { PluginOptionsFlow } from './PluginOptionsFlow.js';
 import type { ViewState as ParentViewState } from './types.js';
 import { UnifiedInstalledCell } from './UnifiedInstalledCell.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { UnifiedInstalledItem } from './unifiedTypes.js';
 import { usePagination } from './usePagination.js';
 

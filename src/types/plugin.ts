@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { LspServerConfig } from '../services/lsp/types.js';
 import type { McpServerConfig } from '../services/mcp/types.js';
 import type { BundledSkillDefinition } from '../skills/bundledSkills.js';

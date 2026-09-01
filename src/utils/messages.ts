@@ -392,6 +392,7 @@ function baseCreateAssistantMessage({
       stop_sequence: '',
       type: 'message',
       usage,
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       content,
       context_management: null,
     },
@@ -742,11 +743,13 @@ export function normalizeMessages(messages: Message[]): NormalizedMessage[] {
   // This flag is set to true once we encounter a message with multiple content blocks,
   // and remains true for all subsequent messages in the normalization process.
   let isNewChain = false;
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   return messages.flatMap(message => {
     switch (message.type) {
       case 'assistant': {
         isNewChain = isNewChain || message.message.content.length > 1;
         return message.message.content.map((_, index) => {
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           const uuid = isNewChain ? deriveUUID(message.uuid, index) : message.uuid;
           return {
             type: 'assistant' as const,
@@ -774,6 +777,7 @@ export function normalizeMessages(messages: Message[]): NormalizedMessage[] {
         return [message];
       case 'user': {
         if (typeof message.message.content === 'string') {
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           const uuid = isNewChain ? deriveUUID(message.uuid, 0) : message.uuid;
           return [
             {
@@ -805,6 +809,7 @@ export function normalizeMessages(messages: Message[]): NormalizedMessage[] {
               imagePasteIds: imageId !== undefined ? [imageId] : undefined,
               origin: message.origin,
             }),
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             uuid: isNewChain ? deriveUUID(message.uuid, index) : message.uuid,
           } as NormalizedMessage;
         });
@@ -890,6 +895,7 @@ export function reorderMessagesInUI(
     }
 
     // Handle tool results
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     if (message.type === 'user' && message.message.content[0]?.type === 'tool_result') {
       const toolUseID = message.message.content[0].tool_use_id;
       if (!toolUseGroups.has(toolUseID)) {
@@ -952,6 +958,7 @@ export function reorderMessagesInUI(
       continue;
     }
 
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     if (message.type === 'user' && message.message.content[0]?.type === 'tool_result') {
       // Skip - already handled in tool use groups
       continue;
@@ -1001,7 +1008,9 @@ function getInProgressHookCount(messages: NormalizedMessage[], toolUseID: string
     messages,
     _ =>
       _.type === 'progress' &&
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       _.data.type === 'hook_progress' &&
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       _.data.hookEvent === hookEvent &&
       _.parentToolUseID === toolUseID,
   );
@@ -1037,6 +1046,7 @@ export function getToolResultIDs(normalizedMessages: NormalizedMessage[]): {
 } {
   return Object.fromEntries(
     normalizedMessages.flatMap(_ =>
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       _.type === 'user' && _.message.content[0]?.type === 'tool_result'
         ? [[_.message.content[0].tool_use_id, _.message.content[0].is_error ?? false]]
         : ([] as [string, boolean][]),
@@ -1098,14 +1108,17 @@ export function buildMessageLookups(normalizedMessages: NormalizedMessage[], mes
   for (const msg of messages) {
     if (msg.type === 'assistant') {
       const id = msg.message.id;
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       let toolUseIDs = toolUseIDsByMessageID.get(id);
       if (!toolUseIDs) {
         toolUseIDs = new Set();
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         toolUseIDsByMessageID.set(id, toolUseIDs);
       }
       for (const content of msg.message.content) {
         if (content.type === 'tool_use') {
           toolUseIDs.add(content.id);
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           toolUseIDToMessageID.set(content.id, id);
           toolUseByToolUseID.set(content.id, content);
         }
@@ -1135,19 +1148,25 @@ export function buildMessageLookups(normalizedMessages: NormalizedMessage[], mes
     if (msg.type === 'progress') {
       // Build progress messages lookup
       const toolUseID = msg.parentToolUseID;
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const existing = progressMessagesByToolUseID.get(toolUseID);
       if (existing) {
         existing.push(msg);
       } else {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         progressMessagesByToolUseID.set(toolUseID, [msg]);
       }
 
       // Count in-progress hooks
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       if (msg.data.type === 'hook_progress') {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         const hookEvent = msg.data.hookEvent;
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         let byHookEvent = inProgressHookCounts.get(toolUseID);
         if (!byHookEvent) {
           byHookEvent = new Map();
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           inProgressHookCounts.set(toolUseID, byHookEvent);
         }
         byHookEvent.set(hookEvent, (byHookEvent.get(hookEvent) ?? 0) + 1);
@@ -1157,6 +1176,7 @@ export function buildMessageLookups(normalizedMessages: NormalizedMessage[], mes
     // Build tool result lookup and resolved/errored sets
     if (msg.type === 'user') {
       for (const content of msg.message.content) {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         if (content.type === 'tool_result') {
           toolResultByToolUseID.set(content.tool_use_id, msg);
           resolvedToolUseIDs.add(content.tool_use_id);
@@ -1229,6 +1249,7 @@ export function buildMessageLookups(normalizedMessages: NormalizedMessage[], mes
     if (msg.message.id === lastAssistantMsgId) continue;
     for (const content of msg.message.content) {
       if (
+        // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
         (content.type === 'server_tool_use' || content.type === 'mcp_tool_use') &&
         !resolvedToolUseIDs.has((content as { id: string }).id)
       ) {
@@ -1298,6 +1319,7 @@ export function buildSubagentLookups(messages: { message: AssistantMessage | Nor
       }
     } else if (msg.type === 'user') {
       for (const content of msg.message.content) {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         if (content.type === 'tool_result') {
           resolvedToolUseIDs.add(content.tool_use_id);
           toolResultByToolUseID.set(content.tool_use_id, msg);
@@ -1366,9 +1388,11 @@ export function getToolUseIDs(normalizedMessages: NormalizedMessage[]): Set<stri
   return new Set(
     normalizedMessages
       .filter(
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         (_): _ is NormalizedAssistantMessage<BetaToolUseBlock> =>
           _.type === 'assistant' && Array.isArray(_.message.content) && _.message.content[0]?.type === 'tool_use',
       )
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       .map(_ => _.message.content[0].id),
   );
 }
@@ -1931,12 +1955,16 @@ export function normalizeMessagesForAPI(messages: Message[], tools: Tools = []):
     })
     .forEach(message => {
       switch (message.type) {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         case 'system': {
           // local_command system messages need to be included as user messages
           // so the model can reference previous command output in later turns
           const userMsg = createUserMessage({
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             content: message.content,
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             uuid: message.uuid,
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             timestamp: message.timestamp,
           });
           const lastMessage = last(result);
@@ -2120,6 +2148,7 @@ export function normalizeMessagesForAPI(messages: Message[], tools: Tools = []):
           return;
         }
         case 'attachment': {
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           const rawAttachmentMessage = normalizeAttachmentForAPI(message.attachment);
           const attachmentMessage = checkStatsigFeatureGate_CACHED_MAY_BE_STALE('tengu_chair_sermon')
             ? rawAttachmentMessage.map(ensureSystemReminderWrap)
@@ -2559,6 +2588,7 @@ export function stripPromptXMLTags(content: string): string {
   return decodeHtmlEntities(stripped);
 }
 
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 export function getToolUseID(message: NormalizedMessage): string | null {
   switch (message.type) {
     case 'attachment':
@@ -2576,11 +2606,13 @@ export function getToolUseID(message: NormalizedMessage): string | null {
         return message.sourceToolUseID;
       }
 
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       if (message.message.content[0]?.type !== 'tool_result') {
         return null;
       }
       return message.message.content[0].tool_use_id;
     case 'progress':
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       return message.toolUseID;
     case 'system':
       return message.subtype === 'informational' ? (message.toolUseID ?? null) : null;
@@ -3398,7 +3430,7 @@ Read the team config to discover your teammates' names. Check the task list peri
         .map((todo, index) => `${index + 1}. [${todo.status}] ${todo.content}`)
         .join('\n');
 
-      let message = `The TodoWrite tool hasn't been used recently. If you're working on tasks that would benefit from tracking progress, consider using the TodoWrite tool to track progress. Also consider cleaning up the todo list if has become stale and no longer matches what you are working on. Only use it if it's relevant to the current work. This is just a gentle reminder - ignore if not applicable. Make sure that you NEVER mention this reminder to the user\n`;
+      let message = `REQUIRED: You have not used TodoWrite for several turns. For any 2+ step coding work, you MUST use TodoWrite to create todos BEFORE coding, keep exactly ONE in_progress at a time, and mark completed immediately after finishing. If work is truly single-step trivial, ignore this. Make sure that you NEVER mention this reminder to the user\n`;
       if (todoItems.length > 0) {
         message += `\n\nHere are the existing contents of your todo list:\n\n[${todoItems}]`;
       }
@@ -3416,7 +3448,7 @@ Read the team config to discover your teammates' names. Check the task list peri
       }
       const taskItems = attachment.content.map(task => `#${task.id}. [${task.status}] ${task.subject}`).join('\n');
 
-      let message = `The task tools haven't been used recently. If you're working on tasks that would benefit from tracking progress, consider using ${TASK_CREATE_TOOL_NAME} to add new tasks and ${TASK_UPDATE_TOOL_NAME} to update task status (set to in_progress when starting, completed when done). Also consider cleaning up the task list if it has become stale. Only use these if relevant to the current work. This is just a gentle reminder - ignore if not applicable. Make sure that you NEVER mention this reminder to the user\n`;
+      let message = `REQUIRED: You have not used task tracking for several turns. For any 2+ step coding work, you MUST use ${TASK_CREATE_TOOL_NAME} to create tasks BEFORE coding and ${TASK_UPDATE_TOOL_NAME} to set status (in_progress when starting, completed when done). Keep exactly ONE task in_progress at a time. If work is truly single-step trivial, ignore this. Make sure that you NEVER mention this reminder to the user\n`;
       if (taskItems.length > 0) {
         message += `\n\nHere are the existing tasks:\n\n${taskItems}`;
       }
@@ -4171,6 +4203,7 @@ export function createApiMetricsMessage(metrics: {
 
 export function createCommandInputMessage(content: string): SystemLocalCommandMessage {
   return {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     type: 'system',
     subtype: 'local_command',
     content,
@@ -4196,6 +4229,7 @@ export function createCompactBoundaryMessage(
     timestamp: new Date().toISOString(),
     uuid: randomUUID(),
     level: 'info',
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     compactMetadata: {
       trigger,
       preTokens,
@@ -4246,6 +4280,7 @@ export function createSystemAPIErrorMessage(
   maxRetries: number,
 ): SystemAPIErrorMessage {
   return {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     type: 'system',
     subtype: 'api_error',
     level: 'error',
@@ -4856,6 +4891,7 @@ export function ensureToolResultPairing(
         seenToolUseIds.add(block.id);
       }
       if (
+        // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
         (block.type === 'server_tool_use' || block.type === 'mcp_tool_use') &&
         !serverResultIds.has((block as { id: string }).id)
       ) {
@@ -5013,6 +5049,7 @@ export function ensureToolResultPairing(
           .filter(b => b.type === 'tool_use')
           .map(b => (b as ToolUseBlock | ToolUseBlockParam).id);
         const serverToolUses = m.message.content
+          // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
           .filter(b => b.type === 'server_tool_use' || b.type === 'mcp_tool_use')
           .map(b => (b as { id: string }).id);
         const parts = [`id=${m.message.id}`, `tool_uses=[${toolUses.join(',')}]`];

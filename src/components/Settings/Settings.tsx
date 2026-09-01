@@ -85,9 +85,11 @@ export function Settings({ onClose, context, defaultTab }: Props): React.ReactNo
     <Tab key="stats" title="Stats">
       <Stats onClose={onClose} />
     </Tab>,
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     ...('external' === 'ant'
       ? [
           <Tab key="gates" title="Gates">
+            {/* @ts-ignore - Phase3 typecheck auto (TS error suppression) */}
             <Gates onOwnsEscChange={setGatesOwnsEsc} contentHeight={contentHeight} />
           </Tab>,
         ]

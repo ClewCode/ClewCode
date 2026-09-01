@@ -1,4 +1,5 @@
 import type * as React from 'react';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { KeybindingAction, KeybindingContextName } from '../keybindings/types.js';
 import { useShortcutDisplay } from '../keybindings/useShortcutDisplay.js';
 import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js';

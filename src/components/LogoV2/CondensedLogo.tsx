@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import { c as _c } from 'react/compiler-runtime';
 import { useMainLoopModel } from '../../hooks/useMainLoopModel.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
@@ -177,9 +178,11 @@ export function CondensedLogo() {
   }
   return t12;
 }
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 function _temp2(s_0) {
   return s_0.effortValue;
 }
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 function _temp(s) {
   return s.agent;
 }

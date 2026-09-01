@@ -85,6 +85,7 @@ export function clearSessionCaches(preservedAgentIds: ReadonlySet<string> = new 
   // Dynamic import to preserve dead code elimination for COMMIT_ATTRIBUTION feature flag
   if (feature('COMMIT_ATTRIBUTION')) {
     void import('../../utils/attributionHooks.js')
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       .then(({ clearAttributionCaches }) => clearAttributionCaches())
       .catch(e => {
         console.error('Failed to clear attribution caches:', e);

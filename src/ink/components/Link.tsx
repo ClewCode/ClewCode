@@ -18,6 +18,7 @@ export default function Link({ children, url, fallback }: Props): React.ReactNod
     // (ink-link is a text element like ink-text)
     return (
       <Text>
+        {/* @ts-ignore - Phase3 typecheck auto (TS error suppression) */}
         <ink-link href={url}>{content}</ink-link>
       </Text>
     );

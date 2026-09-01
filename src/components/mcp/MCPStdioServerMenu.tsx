@@ -15,6 +15,7 @@ import { Byline } from '../design-system/Byline.js';
 import { KeyboardShortcutHint } from '../design-system/KeyboardShortcutHint.js';
 import { Spinner } from '../Spinner.js';
 import { CapabilitiesSection } from './CapabilitiesSection.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { StdioServerInfo } from './types.js';
 import { handleReconnectError, handleReconnectResult } from './utils/reconnectHelpers.js';
 

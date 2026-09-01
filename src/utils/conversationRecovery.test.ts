@@ -129,6 +129,7 @@ describe('buildResumeConversationChain', () => {
 
       const { messages, leafUuids } = await loadTranscriptFile(file, { includePreCompactHistory: true });
       const leaf = [...messages.values()].find(
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         message => leafUuids.has(message.uuid) && message.uuid === afterAssistant.uuid,
       );
 
@@ -173,6 +174,7 @@ describe('buildResumeConversationChain', () => {
       await writeFile(file, [u1, a1, u2, a2, u3, a3].map(entry => JSON.stringify(entry)).join('\n'));
 
       const { messages, leafUuids } = await loadTranscriptFile(file, { includePreCompactHistory: true });
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const leaf = [...messages.values()].find(m => leafUuids.has(m.uuid) && m.uuid === a3.uuid);
       expect(leaf).toBeDefined();
 

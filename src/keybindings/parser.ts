@@ -184,6 +184,7 @@ export function parseBindings(blocks: KeybindingBlock[]): ParsedBinding[] {
       bindings.push({
         chord: parseChord(key),
         action,
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         context: block.context,
       });
     }

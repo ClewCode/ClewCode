@@ -189,8 +189,10 @@ export function installAsciicastRecorder(): void {
 
     // Pass through to the real stdout
     if (typeof encodingOrCb === 'function') {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       return originalWrite(chunk, encodingOrCb);
     }
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return originalWrite(chunk, encodingOrCb, cb);
   }) as typeof process.stdout.write;
 

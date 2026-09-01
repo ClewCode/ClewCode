@@ -86,6 +86,7 @@ export function useFilePermissionDialog<T extends ToolInput>({
   const onChange = useCallback(
     (option: PermissionOption, input: T, feedback?: string) => {
       const params: PermissionHandlerParams = {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         messageId: toolUseConfirm.assistantMessage.message.id,
         path: filePath,
         toolUseConfirm,

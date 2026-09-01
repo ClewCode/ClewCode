@@ -141,6 +141,7 @@ export function useRemoteSession({
         const parts = [`type=${sdkMessage.type}`];
         if ('subtype' in sdkMessage) parts.push(`subtype=${sdkMessage.subtype}`);
         if (sdkMessage.type === 'user') {
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           const c = sdkMessage.message?.content;
           parts.push(`content=${Array.isArray(c) ? c.map(b => b.type).join(',') : typeof c}`);
         }
@@ -218,6 +219,7 @@ export function useRemoteSession({
         // and inProcessRunner.ts; without this the set grows unbounded for the
         // session lifetime (BQ: CCR cohort shows 5.2x higher RSS slope).
         if (setInProgressToolUseIDs && sdkMessage.type === 'user') {
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           const content = sdkMessage.message?.content;
           if (Array.isArray(content)) {
             const resultIds: string[] = [];

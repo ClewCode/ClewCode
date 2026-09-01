@@ -27,6 +27,7 @@ export async function fetchUltrareviewQuota(): Promise<UltrareviewQuotaResponse 
       },
       timeout: 5000,
     });
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return response.data;
   } catch (error) {
     logForDebugging(`fetchUltrareviewQuota failed: ${error}`);

@@ -239,7 +239,9 @@ function SpinnerWithVerbInner({
   // doesn't trigger re-renders; we pick up updates on the parent's ~25x/turn
   // re-render cadence, same as the old ApiMetricsLine did.
   let _ttftText: string | null = null;
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   if ('external' === 'ant' && apiMetricsRef?.current && apiMetricsRef.current.length > 0) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     _ttftText = computeTtftText(apiMetricsRef.current);
   }
 

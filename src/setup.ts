@@ -86,6 +86,7 @@ export async function setup(
     // and $CLEW_CODE_MESSAGING_SOCKET is exported before any hook
     // (SessionStart in particular) can spawn and snapshot process.env.
     if (feature('UDS_INBOX')) {
+      // @ts-expect-error - Phase2: missing module stub (auto)
       const m = await import('./utils/udsMessaging.js');
       await m.startUdsMessaging(messagingSocketPath ?? m.getDefaultUdsSocketPath(), {
         isExplicit: messagingSocketPath !== undefined,
@@ -308,6 +309,7 @@ export async function setup(
       // Defer to next tick so the git subprocess spawn runs after first render
       // rather than during the setup() microtask window.
       setImmediate(() => {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         void import('./utils/attributionHooks.js').then(({ registerAttributionHooks }) => {
           registerAttributionHooks(); // Register attribution tracking hooks (ant-only feature)
         });

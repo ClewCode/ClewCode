@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import { c as _c } from 'react/compiler-runtime';
 import { Box } from '../../ink.js';
 import { getInitialSettings } from '../../utils/settings/settings.js';

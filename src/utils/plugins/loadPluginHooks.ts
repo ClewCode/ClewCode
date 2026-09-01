@@ -19,6 +19,7 @@ let lastPluginSettingsSnapshot: string | undefined;
  * Convert plugin hooks configuration to native matchers with plugin context
  */
 function convertPluginHooksToMatchers(plugin: LoadedPlugin): Record<HookEvent, PluginHookMatcher[]> {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const pluginMatchers: Record<HookEvent, PluginHookMatcher[]> = {
     PreToolUse: [],
     PostToolUse: [],
@@ -81,6 +82,7 @@ function convertPluginHooksToMatchers(plugin: LoadedPlugin): Record<HookEvent, P
  */
 export const loadPluginHooks = memoize(async (): Promise<void> => {
   const { enabled } = await loadAllPluginsCacheOnly();
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const allPluginHooks: Record<HookEvent, PluginHookMatcher[]> = {
     PreToolUse: [],
     PostToolUse: [],

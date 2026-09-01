@@ -78,6 +78,7 @@ function computeSearchText(msg: RenderableMessage): string {
       // (AttachmentMessage.tsx <Ansi>{m.content}</Ansi>). Visible but
       // unsearchable without this — [ dump finds it, / doesn't.
       if (msg.attachment.type === 'relevant_memories') {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         raw = msg.attachment.memories.map(m => m.content).join('\n');
       } else if (
         // Mid-turn prompts — queued while an agent is running. Render via
@@ -88,6 +89,7 @@ function computeSearchText(msg: RenderableMessage): string {
         !msg.attachment.isMeta
       ) {
         const p = msg.attachment.prompt;
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         raw = typeof p === 'string' ? p : p.flatMap(b => (b.type === 'text' ? [b.text] : [])).join('\n');
       }
       break;

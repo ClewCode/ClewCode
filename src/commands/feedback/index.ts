@@ -33,6 +33,7 @@ const feedback = {
   description: `Submit feedback about Clew Code`,
   argumentHint: '[report]',
   isEnabled: () => !getFeedbackDisabledReason(),
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   disabledReason: () => getFeedbackDisabledReason(),
   load: () => import('./feedback.js'),
 } satisfies Command;

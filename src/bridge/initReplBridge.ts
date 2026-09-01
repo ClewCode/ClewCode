@@ -426,6 +426,7 @@ export async function initReplBridge(options?: InitBridgeOptions): Promise<ReplB
   let workerType: BridgeWorkerType = 'claude_code';
   if (feature('KAIROS')) {
     /* eslint-disable @typescript-eslint/no-require-imports */
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const { isAssistantMode } = require('../assistant/index.js') as typeof import('../assistant/index.js');
     /* eslint-enable @typescript-eslint/no-require-imports */
     if (isAssistantMode()) {

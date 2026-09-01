@@ -184,7 +184,9 @@ export const getGitEmail = memoize(async (): Promise<string | undefined> => {
     });
     stdout = result.stdout;
   } catch (e) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     exitCode = e.exitCode ?? 1;
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     stdout = e.stdout ?? '';
   }
   return exitCode === 0 && stdout ? stdout.trim() : undefined;

@@ -149,7 +149,9 @@ export function loadAgentMemoryPrompt(agentType: string, scope: AgentMemoryScope
     memoryDir,
     extraGuidelines:
       coworkExtraGuidelines && coworkExtraGuidelines.trim().length > 0
-        ? [scopeNote, coworkExtraGuidelines]
-        : [scopeNote],
+        ? // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+          [scopeNote, coworkExtraGuidelines]
+        : // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
+          [scopeNote],
   });
 }

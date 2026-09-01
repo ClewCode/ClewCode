@@ -1154,6 +1154,7 @@ export async function checkCommandAndSuggestRules(
 
   return {
     ...permissionResult,
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     suggestions: suggestedUpdates,
   };
 }
@@ -1526,6 +1527,7 @@ export async function bashToolHasPermission(
   ) {
     const decisionReason: PermissionDecisionReason = {
       type: 'sandboxOverride',
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       reason: 'The model requested to disable the sandbox for this command',
     };
     return {

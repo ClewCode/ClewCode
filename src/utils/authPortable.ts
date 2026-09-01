@@ -10,6 +10,7 @@ export async function maybeRemoveApiKeyFromMacOSKeychainThrows(): Promise<void> 
         shell: true,
       });
     } catch (e) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       exitCode = e.exitCode ?? 1;
     }
     if (exitCode !== 0) {

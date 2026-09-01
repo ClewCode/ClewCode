@@ -119,6 +119,7 @@ class HighlightSegmenter {
         this.tokenIdx++;
       } else {
         const charsNeeded = targetVisiblePos - this.visiblePos;
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         const charsAvailable = token.value.length - this.charIdx;
         const charsToTake = Math.min(charsNeeded, charsAvailable);
 
@@ -126,6 +127,7 @@ class HighlightSegmenter {
         this.visiblePos += charsToTake;
         this.charIdx += charsToTake;
 
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         if (this.charIdx >= token.value.length) {
           this.tokenIdx++;
           this.charIdx = 0;

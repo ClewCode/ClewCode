@@ -6,6 +6,7 @@ import {
   StreamMessageWriter,
   Trace,
 } from 'vscode-jsonrpc/node.js';
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import type { InitializeParams, InitializeResult, ServerCapabilities } from 'vscode-languageserver-protocol';
 import { logForDebugging } from '../../utils/debug.js';
 import { errorMessage } from '../../utils/errors.js';

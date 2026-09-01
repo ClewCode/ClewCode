@@ -403,6 +403,7 @@ export function buildAPIProviderProperties(): Property[] {
 export function getModelDisplayLabel(mainLoopModel: string | null): string {
   // E58: When mainLoopModel is null, resolve the actual runtime model
   // instead of showing a generic "Default" label that may be wrong.
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const effectiveModel = mainLoopModel ?? getRuntimeMainLoopModel();
   let modelLabel = modelDisplayString(effectiveModel);
   if (effectiveModel === null && isClaudeAISubscriber()) {

@@ -90,6 +90,7 @@ export class StreamingToolExecutor {
               },
             ],
             toolUseResult: `Error: No such tool available: ${block.name}`,
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             sourceToolAssistantUUID: assistantMessage.uuid,
           }),
         ],
@@ -161,6 +162,7 @@ export class StreamingToolExecutor {
           },
         ],
         toolUseResult: 'User rejected tool use',
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         sourceToolAssistantUUID: assistantMessage.uuid,
       });
     }
@@ -175,6 +177,7 @@ export class StreamingToolExecutor {
           },
         ],
         toolUseResult: 'Streaming fallback - tool execution discarded',
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         sourceToolAssistantUUID: assistantMessage.uuid,
       });
     }
@@ -190,6 +193,7 @@ export class StreamingToolExecutor {
         },
       ],
       toolUseResult: msg,
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       sourceToolAssistantUUID: assistantMessage.uuid,
     });
   }

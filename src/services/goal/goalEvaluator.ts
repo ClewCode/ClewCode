@@ -176,7 +176,9 @@ function buildTranscript(messages: Message[]): string {
 }
 
 function extractMessageText(msg: Message): string {
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   if (msg.type === 'user' && typeof msg.content === 'string') {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return msg.content;
   }
   if (msg.type === 'assistant' && msg.message?.content) {

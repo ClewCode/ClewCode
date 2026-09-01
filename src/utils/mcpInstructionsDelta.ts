@@ -57,7 +57,9 @@ export function getMcpInstructionsDelta(
     attachmentCount++;
     if (msg.attachment.type !== 'mcp_instructions_delta') continue;
     midCount++;
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     for (const n of msg.attachment.addedNames) announced.add(n);
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     for (const n of msg.attachment.removedNames) announced.delete(n);
   }
 

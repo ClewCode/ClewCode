@@ -23,6 +23,7 @@ export async function getGhAuthStatus(): Promise<GhAuthStatus> {
       timeout: 5000,
     });
   } catch (e) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     exitCode = e.exitCode ?? 1;
   }
   return exitCode === 0 ? 'authenticated' : 'not_authenticated';

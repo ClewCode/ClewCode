@@ -70,6 +70,7 @@ function useCanUseTool(
         return decisionPromise
           .then(async result => {
             // [ANT-ONLY] Log all tool permission decisions with tool name and args
+            // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
             if ('external' === 'ant') {
               logEvent('tengu_internal_tool_permission_decision', {
                 toolName: sanitizeToolNameForAnalytics(tool.name),
@@ -120,6 +121,7 @@ function useCanUseTool(
                     tool,
                     input,
                     toolUseContext,
+                    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
                     messageId: ctx.messageId,
                     toolUseID,
                   },

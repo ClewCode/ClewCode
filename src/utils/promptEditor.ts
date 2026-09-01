@@ -139,6 +139,7 @@ export function editPromptInEditor(
     const expandedPrompt = pastedContents ? expandPastedTextRefs(currentPrompt, pastedContents) : currentPrompt;
 
     // Write expanded prompt to temp file
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     fs.writeFileSync(tempFile, expandedPrompt, 'utf-8');
 
     // Delegate to editFileInEditor

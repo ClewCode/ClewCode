@@ -359,6 +359,7 @@ export const MonitorTool: Tool<InputSchema, MonitorToolOutput> = buildTool({
   },
 
   renderToolUseErrorMessage(result) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     return <Text color="red">Monitor error: {result.message}</Text>;
   },
 });

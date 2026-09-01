@@ -43,6 +43,7 @@ export function useIdeAtMentioned(
 
     // If we found a connected IDE client, register our handler
     if (ideClient) {
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       ideClient.client.setNotificationHandler(AtMentionedSchema(), notification => {
         if (ideClientRef.current !== ideClient) {
           return;

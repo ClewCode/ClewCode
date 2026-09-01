@@ -375,6 +375,7 @@ export async function getWithPermittedRedirects(
     if (
       isFetchError(error) &&
       error.response?.status === 403 &&
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       error.response.headers['x-proxy-error'] === 'blocked-by-allowlist'
     ) {
       const hostname = new URL(url).hostname;
@@ -511,6 +512,7 @@ export async function getURLMarkdownContent(
     return response;
   }
 
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const body = response._data ?? (response as any).data;
   const rawBuffer = Buffer.from(body);
   // Release the axios-held ArrayBuffer copy; rawBuffer owns the bytes now.

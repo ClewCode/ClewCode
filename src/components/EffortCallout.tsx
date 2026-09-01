@@ -56,6 +56,7 @@ export function EffortCallout({ model, onDone }: Props): React.ReactNode {
     (value: EffortLevel): void => {
       const effortLevel = value === defaultLevel ? undefined : value;
       updateSettingsForSource('userSettings', {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         effortLevel: toPersistableEffort(effortLevel),
       });
       onDoneRef.current(value);

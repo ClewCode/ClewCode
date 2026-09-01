@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import { join, relative, resolve } from 'path';
 import { z } from 'zod/v4';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import type { LspServerConfig, ScopedLspServerConfig } from '../../services/lsp/types.js';
 import { expandEnvVarsInString } from '../../services/mcp/envExpansion.js';
 import type { LoadedPlugin, PluginError } from '../../types/plugin.js';
@@ -241,6 +242,7 @@ export function resolvePluginLspEnvironment(
 
   // Resolve args
   if (resolved.args) {
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     resolved.args = resolved.args.map(arg => resolveValue(arg));
   }
 

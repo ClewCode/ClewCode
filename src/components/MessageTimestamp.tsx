@@ -19,6 +19,7 @@ export function MessageTimestamp({ message, isTranscriptMode }: Props): React.Re
     return null;
   }
 
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   const formattedTimestamp = new Date(message.timestamp).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',

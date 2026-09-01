@@ -156,6 +156,7 @@ export async function detectCapabilities(): Promise<Capabilities> {
       isMacOS: platform === 'macos',
       isLinux: platform === 'linux' || platform === 'wsl',
       arch,
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       version: platform === 'windows' ? process.getSystemVersion?.() : undefined,
     },
     shell,

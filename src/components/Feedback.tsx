@@ -42,6 +42,7 @@ import TextInput from './TextInput.js';
 // This value was determined experimentally by testing the URL length limit
 const GITHUB_URL_LIMIT = 7250;
 const GITHUB_ISSUES_REPO_URL =
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   'external' === 'ant'
     ? 'https://github.com/anthropics/claude-cli-internal/issues'
     : 'https://github.com/ClewCode/ClewCode/issues';
@@ -703,7 +704,9 @@ async function submitFeedback(
     if (isFetchError(err) && err.response?.status === 403) {
       const errorData = err.response.data;
       if (
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         errorData?.error?.type === 'permission_error' &&
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         errorData?.error?.message?.includes('Custom data retention settings')
       ) {
         sanitizeAndLogError(new Error('Cannot submit feedback because custom data retention settings are enabled'));

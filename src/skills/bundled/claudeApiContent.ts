@@ -1,31 +1,57 @@
 // Content for the claude-api bundled skill.
 // Each .md file is inlined as a string at build time via Bun's text loader.
 
+// @ts-expect-error - Phase2: missing module stub (auto)
 import csharpClaudeApi from './claude-api/csharp/claude-api.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import curlExamples from './claude-api/curl/examples.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import goClaudeApi from './claude-api/go/claude-api.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import javaClaudeApi from './claude-api/java/claude-api.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import phpClaudeApi from './claude-api/php/claude-api.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import pythonAgentSdkPatterns from './claude-api/python/agent-sdk/patterns.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import pythonAgentSdkReadme from './claude-api/python/agent-sdk/README.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import pythonClaudeApiBatches from './claude-api/python/claude-api/batches.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import pythonClaudeApiFilesApi from './claude-api/python/claude-api/files-api.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import pythonClaudeApiReadme from './claude-api/python/claude-api/README.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import pythonClaudeApiStreaming from './claude-api/python/claude-api/streaming.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import pythonClaudeApiToolUse from './claude-api/python/claude-api/tool-use.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import rubyClaudeApi from './claude-api/ruby/claude-api.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import skillPrompt from './claude-api/SKILL.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import sharedErrorCodes from './claude-api/shared/error-codes.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import sharedLiveSources from './claude-api/shared/live-sources.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import sharedModels from './claude-api/shared/models.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import sharedPromptCaching from './claude-api/shared/prompt-caching.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import sharedToolUseConcepts from './claude-api/shared/tool-use-concepts.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import typescriptAgentSdkPatterns from './claude-api/typescript/agent-sdk/patterns.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import typescriptAgentSdkReadme from './claude-api/typescript/agent-sdk/README.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import typescriptClaudeApiBatches from './claude-api/typescript/claude-api/batches.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import typescriptClaudeApiFilesApi from './claude-api/typescript/claude-api/files-api.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import typescriptClaudeApiReadme from './claude-api/typescript/claude-api/README.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import typescriptClaudeApiStreaming from './claude-api/typescript/claude-api/streaming.md';
+// @ts-expect-error - Phase2: missing module stub (auto)
 import typescriptClaudeApiToolUse from './claude-api/typescript/claude-api/tool-use.md';
 
 // @[MODEL LAUNCH]: Update the model IDs/names below. These are substituted into {{VAR}}

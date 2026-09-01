@@ -27,6 +27,7 @@ describe('Anthropic OAuth client', () => {
 
     expect(tokens.access_token).toBe('access-token');
     expect(raw).toHaveBeenCalledTimes(1);
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     expect(raw.mock.calls[0]?.[1]).toMatchObject({
       method: 'POST',
       body: {

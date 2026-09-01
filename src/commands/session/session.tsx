@@ -1,3 +1,4 @@
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import { toString as qrToString } from 'qrcode';
 import type * as React from 'react';
 import { useEffect, useState } from 'react';

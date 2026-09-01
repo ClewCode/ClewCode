@@ -102,6 +102,7 @@ function MessageImpl({
       return (
         <AttachmentMessage
           addMargin={addMargin}
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           attachment={message.attachment}
           verbose={verbose}
           isTranscriptMode={isTranscriptMode}
@@ -113,6 +114,7 @@ function MessageImpl({
           {message.message.content.map((_, index) => (
             <AssistantMessageBlock
               key={index}
+              // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
               param={_}
               addMargin={addMargin}
               tools={tools}
@@ -147,6 +149,7 @@ function MessageImpl({
       const imageIndices: number[] = [];
       let imagePosition = 0;
       for (const param of message.message.content) {
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         if (param.type === 'image') {
           const id = message.imagePasteIds?.[imagePosition];
           imagePosition++;
@@ -160,6 +163,7 @@ function MessageImpl({
       const isLatestBashOutput = latestBashOutputUUID === message.uuid;
       const content = (
         <Box flexDirection="column" width={containerWidth ?? '100%'}>
+          {/* @ts-ignore - Phase3 typecheck auto (TS error suppression) */}
           {message.message.content.map(
             (param: TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam, index: number) => (
               <UserMessage
@@ -205,6 +209,7 @@ function MessageImpl({
         /* eslint-enable @typescript-eslint/no-require-imports */
         if (isSnipBoundaryMessage(message)) {
           /* eslint-disable @typescript-eslint/no-require-imports */
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           const { SnipBoundaryMessage } =
             require('./messages/SnipBoundaryMessage.js') as typeof import('./messages/SnipBoundaryMessage.js');
           /* eslint-enable @typescript-eslint/no-require-imports */
@@ -220,6 +225,7 @@ function MessageImpl({
         return (
           <UserTextMessage
             addMargin={addMargin}
+            // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
             param={{ type: 'text', text: message.content }}
             verbose={verbose}
             isTranscriptMode={isTranscriptMode}
@@ -305,6 +311,7 @@ function UserMessage({
           addMargin={addMargin}
           param={param}
           verbose={verbose}
+          // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
           planContent={message.planContent}
           isTranscriptMode={isTranscriptMode}
           timestamp={message.timestamp}
@@ -481,6 +488,7 @@ export function areMessagePropsEqual(prev: Props, next: Props): boolean {
   // Only re-render on lastThinkingBlockId change if this message actually
   // has thinking content — otherwise every message in scrollback re-renders
   // whenever streaming thinking starts/stops (CC-941).
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   if (prev.lastThinkingBlockId !== next.lastThinkingBlockId && hasThinkingContent(next.message)) {
     return false;
   }

@@ -30,7 +30,7 @@ export type Output = z.infer<OutputSchema>;
 
 export const TodoWriteTool = buildTool({
   name: TODO_WRITE_TOOL_NAME,
-  searchHint: 'manage the session task checklist',
+  searchHint: 'todo task track plan checklist manage progress',
   maxResultSizeChars: 100_000,
   strict: true,
   async description() {
@@ -102,7 +102,7 @@ export const TodoWriteTool = buildTool({
     };
   },
   mapToolResultToToolResultBlockParam({ verificationNudgeNeeded }, toolUseID) {
-    const base = `Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable`;
+    const base = `Todos updated. Keep exactly ONE task in_progress at a time — set in_progress BEFORE starting work, completed IMMEDIATELY after finishing. Continue tracking progress.`;
     const nudge = verificationNudgeNeeded
       ? `\n\nNOTE: You just closed out 3+ tasks and none of them was a verification step. Before writing your final summary, spawn the verification agent (subagent_type="${VERIFICATION_AGENT_TYPE}"). You cannot self-assign PARTIAL by listing caveats in your summary \u2014 only the verifier issues a verdict.`
       : '';

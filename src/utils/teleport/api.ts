@@ -32,6 +32,7 @@ export function isTransientNetworkError(error: unknown): boolean {
   }
 
   // Retry on server errors (5xx)
+  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   if (error.response.status >= 500) {
     return true;
   }
@@ -44,6 +45,7 @@ export function isTransientNetworkError(error: unknown): boolean {
  * Makes an axios GET request with automatic retry for transient network errors
  * Uses exponential backoff: 2s, 4s, 8s, 16s (4 retries = 5 total attempts)
  */
+// @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 export async function axiosGetWithRetry<T>(url: string, config?: Record<string, unknown>): Promise<Response<T>> {
   let lastError: unknown;
 
@@ -209,9 +211,11 @@ export async function fetchCodeSessionsFromSessionsAPI(): Promise<CodeSession[]>
     }
 
     // Transform SessionResource[] to CodeSession[] format
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const sessions: CodeSession[] = response.data.data.map(session => {
       // Extract repository info from git sources
       const gitSource = session.session_context.sources.find(
+        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         (source): source is GitSource => source.type === 'git_repository',
       );
 

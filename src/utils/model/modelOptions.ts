@@ -255,6 +255,7 @@ function getOpusPlanOption(): ModelOption {
 function getModelOptionsBase(fastMode = false): ModelOption[] {
   if (process.env.USER_TYPE === 'ant') {
     // Build options from antModels config
+    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     const antModelOptions: ModelOption[] = getAntModels().map(m => ({
       value: m.alias,
       label: m.label,

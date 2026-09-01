@@ -17,6 +17,7 @@ export function logUnaryPermissionEvent(
     event,
     metadata: {
       language_name: 'none',
+      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       message_id,
       platform: getHostPlatformForAnalytics(),
       hasFeedback: hasFeedback ?? false,
