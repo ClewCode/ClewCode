@@ -2904,7 +2904,7 @@ function PromptInput({
           <Text color={swarmBanner.bgColor}>{'─'.repeat(columns)}</Text>
         </>
       ) : (
-        <Box flexDirection="column" width="100%">
+        <>
           {linesAbove > 0 && (
             <Text dimColor wrap="truncate-end">
               {'── ↑ '}
@@ -2921,10 +2921,9 @@ function PromptInput({
             borderStyle={isUltraActive() ? 'double' : 'round'}
             borderLeft={false}
             borderRight={false}
-            borderTop={linesAbove === 0}
-            borderBottom={linesBelow === 0}
+            borderBottom
             width="100%"
-            borderText={linesAbove === 0 ? buildBorderText(isUltraActive(), isLoopActive) : undefined}
+            borderText={buildBorderText(isUltraActive(), isLoopActive)}
           >
             <PromptInputModeIndicator
               mode={mode}
@@ -2944,7 +2943,7 @@ function PromptInput({
               {'─'.repeat(Math.max(0, columns - 14 - (linesBelow > 1000 ? 5 : String(linesBelow).length)))}
             </Text>
           )}
-        </Box>
+        </>
       )}
       <PromptInputFooter
         apiKeyStatus={apiKeyStatus}
