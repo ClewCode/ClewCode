@@ -199,7 +199,7 @@ Commands: ~105 under `src/commands/`; `src/commands.ts` is source of truth.
 | `ai/` | Multi-provider LLM |
 | `mcp/` | MCP client (stdio/SSE/HTTP/DirectConnect) |
 | `autonomous/` | Task queue, leases, cron, dead-letter, daemon |
-| `compact/v2/` | **Reducer-based compaction** — single planner replaces 6 legacy mechanisms (dedupe → stale-tool → snip → summarize → drop), per-agent health tracking via `CompactSessionState.health` |
+| `compact/v2/` | **Reducer-based compaction** — triggers at **80%** of usable window (`limit*0.8`, like manual `/compact` at 80% ctx), single planner replaces 6 legacy mechanisms (dedupe → stale-tool → snip → summarize → drop), per-agent health |
 | `longTermMemory/` (with `extract.ts` + `dream/` + `timeline`/`distill`/`graph`) | Unified long-term memory — `extractMemories` + `autoDream` consolidated here (0.9.3); old paths re-export then removed |
 | `memory/` (SQLite) | Canonical durable store — `frontmatter.ts` parses `--- yaml ---` for all memory records |
 | `checkpoint/`, `goal/` | Progress snapshots & goal verification |

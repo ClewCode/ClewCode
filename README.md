@@ -112,7 +112,7 @@ Open the model picker:
 /model
 ```
 
-The picker groups models by provider and refreshes live model lists for configured providers when it opens. Its compact model console shows each model's context window, Vision/Tools/Reasoning support, default effort, current-session marker, and estimated input/cache/output price while you browse. Missing capability fields fall back from the bundled registry to OpenRouter's cached model catalog; truly unknown fields remain `?`. Providers without usable credentials fall back to the bundled static registry. Select a provider-qualified model directly with:
+The picker groups models by provider and refreshes live model lists for configured providers when it opens. Its compact model console shows each model's context window, Vision/Tools/Reasoning support, default effort, current-session marker, and estimated input/cache/output price while you browse. Press `Tab` to move between Models, Providers, Effort, and Agents. The Effort tab uses a Faster → Smarter rail that only exposes levels supported by the focused model; its highest available level gets the animated purple spotlight. Missing capability fields fall back from the bundled registry to OpenRouter's cached model catalog; truly unknown fields remain `?`. Providers without usable credentials fall back to the bundled static registry. Select a provider-qualified model directly with:
 
 ```text
 /model provider/model
@@ -172,7 +172,7 @@ Run `/help` for the complete command list. Skills and plugins can add commands w
 
 ## Automatic compaction
 
-Auto-Compact keeps long sessions inside the selected model's usable context window. Each turn measures context pressure and the reducer-based planner in `src/services/compact/v2/` selects the least-damaging combination needed to reclaim tokens.
+Auto-Compact keeps long sessions inside the selected model's usable context window. It triggers at **80%** of the usable window (like manual `/compact` at 80% ctx). Each turn measures context pressure and the reducer-based planner in `src/services/compact/v2/` selects the least-damaging combination needed to reclaim tokens.
 
 Reducers can deduplicate content, compress state, remove stale or low-value tool results, create AST skeletons for large code, snip long messages, evict restorable content, summarize at a safe conversation boundary, and drop content only as a last resort. Cheap reducers may run while a tool chain is active; LLM summarization waits for a natural boundary unless the context reaches the force threshold.
 

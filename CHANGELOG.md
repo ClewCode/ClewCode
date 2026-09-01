@@ -12,7 +12,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Auto-compact at 80%:** `computeLimits` now `actNow = floor(limit * 0.8)` for all models (was `limit - 40k`), matching manual `/compact` at 80% ctx (`src/services/compact/v2/limits.ts`).
+
 - **`/model` picker:** Reworked the standalone picker into a compact terminal model console with type-to-search, aligned context/Vision/Tools/Reasoning/effort columns, a current-session marker, Fast Mode status, and a focused-model price spectrum backed by the existing provider pricing table. Live model rows backfill missing capability metadata from the registry and then OpenRouter's cached model catalog, while truly unknown fields remain `?`. Reused Settings pickers keep their original layout. (`src/components/ModelPicker.tsx`)
+- **Capability-aware `/model` Effort tab:** Replaced the separate effort list with the same Faster → Smarter rail used by `/effort`. The rail shows only levels supported by the focused model (`low/medium/high`, adding `xhigh`, `max`, and `ultracode` when valid), and moves the animated purple spotlight to that model's highest available level. Enter applies the choice to the current session. (`src/components/ModelPicker.tsx`, `src/commands/effort/effort.tsx`)
 - **Provider-wide cache observability:** Normalized cache usage from Anthropic, OpenAI/Responses-compatible, DeepSeek, and Gemini schemas; every provider now declares its prompt-cache behavior; `/cost` reports hit/miss/unsupported/unreported status, token hit rate, reporting coverage, and estimated savings for subscription and API-key sessions. `/usage` now separates true token hit rate from large-cache-miss exposure. (`src/services/ai/usageTypes.ts`, `src/services/ai/cacheMetrics.ts`, `src/commands/cost/cost.ts`, `src/components/Settings/Usage.tsx`)
 
 ## [0.9.3] - 2026-09-01
