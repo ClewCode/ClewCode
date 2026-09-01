@@ -78,6 +78,27 @@ describe('buildUnifiedModelOptions', () => {
     expect(model?.capabilities).toEqual({ context: 1_000_000, vision: true, tools: true, reasoning: true });
   });
 
+  test('uses OpenRouter as the final fallback for live-only model metadata', () => {
+    const options = buildUnifiedModelOptions({
+      activeProviderId: 'opencode',
+      initial: null,
+      fetchedModels: [{ id: 'claude-opus-4-7', label: 'Claude Opus 4.7' }],
+      openRouterCatalog: [
+        {
+          id: 'anthropic/claude-opus-4.7',
+          label: 'Claude Opus 4.7',
+          contextWindow: 1_000_000,
+          supportsVision: true,
+          supportsTools: true,
+          supportsReasoning: true,
+        },
+      ],
+    });
+    const model = options.find(option => option.providerId === 'opencode' && option.modelId === 'claude-opus-4-7');
+
+    expect(model?.capabilities).toEqual({ context: 1_000_000, vision: true, tools: true, reasoning: true });
+  });
+
   test('formats model pricing and places premium models farther along the spectrum', () => {
     expect(formatModelRate(0.12)).toBe('$0.12 / 1M');
     expect(formatModelRate(0)).toBe('$0 / 1M');

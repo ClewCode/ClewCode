@@ -112,7 +112,7 @@ Open the model picker:
 /model
 ```
 
-The picker groups models by provider and refreshes live model lists for configured providers when it opens. Its compact model console shows each model's context window, Vision/Tools/Reasoning support, default effort, current-session marker, and estimated input/cache/output price while you browse. Providers without usable credentials fall back to the bundled static registry. Select a provider-qualified model directly with:
+The picker groups models by provider and refreshes live model lists for configured providers when it opens. Its compact model console shows each model's context window, Vision/Tools/Reasoning support, default effort, current-session marker, and estimated input/cache/output price while you browse. Missing capability fields fall back from the bundled registry to OpenRouter's cached model catalog; truly unknown fields remain `?`. Providers without usable credentials fall back to the bundled static registry. Select a provider-qualified model directly with:
 
 ```text
 /model provider/model
