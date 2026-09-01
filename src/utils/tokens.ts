@@ -239,8 +239,14 @@ export function tokenCountWithEstimation(messages: readonly Message[]): number {
           j--;
         }
       }
-      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-      return getTokenCountFromUsage(usage, false) + roughTokenCountEstimationForMessages(messages.slice(i + 1));
+      return (
+        getTokenCountFromUsage(usage, false) +
+        roughTokenCountEstimationForMessages(
+          messages.slice(i + 1).filter(message => getAssistantMessageId(message) !== responseId) as Parameters<
+            typeof roughTokenCountEstimationForMessages
+          >[0],
+        )
+      );
     }
     i--;
   }

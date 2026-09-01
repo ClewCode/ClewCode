@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- Prevented the status-line `ctx%` estimate from counting split assistant records from the same API response twice.
+
+
 ## [0.9.1] - 2026-08-30
 
 ### Removed
