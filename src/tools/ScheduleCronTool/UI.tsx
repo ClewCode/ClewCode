@@ -2,9 +2,11 @@ import type React from 'react';
 import { MessageResponse } from '../../components/MessageResponse.js';
 import { Text } from '../../ink.js';
 import { truncate } from '../../utils/format.js';
-import type { CreateOutput } from './CronCreateTool.js';
-import type { DeleteOutput } from './CronDeleteTool.js';
-import type { ListOutput } from './CronListTool.js';
+
+// break circular: UI was importing from Cron*Tool which imports from UI
+type CreateOutput = any;
+type DeleteOutput = any;
+type ListOutput = any;
 
 // --- CronCreate -------------------------------------------------------------
 

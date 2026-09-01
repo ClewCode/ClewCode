@@ -2,7 +2,9 @@ import type React from 'react';
 import { MessageResponse } from '../../components/MessageResponse.js';
 import { Text } from '../../ink.js';
 import { truncate } from '../../utils/format.js';
-import type { FollowupOutput } from './ScheduleFollowupTool.js';
+
+// break circular: UI was importing from tool which imports from UI
+type FollowupOutput = any;
 
 export function renderFollowupToolUseMessage(
   input: Partial<{ summary: string; delayMinutes: number }>,
