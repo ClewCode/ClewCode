@@ -4,6 +4,7 @@ import type * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useExitOnCtrlCDWithKeybindings } from 'src/hooks/useExitOnCtrlCDWithKeybindings.js';
 import { useSearchInput } from 'src/hooks/useSearchInput.js';
+import { useTerminalSize } from 'src/hooks/useTerminalSize.js';
 import { ProviderManager } from 'src/services/ai/ProviderManager.js';
 import { getProviderRegistryEntry, PROVIDER_IDS, type ProviderModelInfo } from 'src/services/ai/providerRegistry.js';
 import {
@@ -30,10 +31,12 @@ import {
   parseUserSpecifiedModel,
 } from '../utils/model/model.js';
 import { mergeRecentModels } from '../utils/model/recentModels.js';
+import { getModelCosts } from '../utils/modelCost.js';
 import { getSettingsForSource, updateSettingsForSource } from '../utils/settings/settings.js';
 import { type OptionWithDescription, Select } from './CustomSelect/index.js';
 import { Pane } from './design-system/Pane.js';
 import { effortLevelToSymbol } from './EffortIndicator.js';
+import { Markdown } from './Markdown.js';
 import { SearchBox } from './SearchBox.js';
 
 export type Props = {
@@ -77,6 +80,7 @@ type ModelOption = {
   type?: 'text' | 'section';
   disabled?: boolean;
   hideIndex?: boolean;
+  capabilityScore?: number;
 };
 
 export function ModelPicker({
@@ -105,6 +109,8 @@ export function ModelPicker({
   const [jumpTarget, setJumpTarget] = useState<string | undefined>(undefined);
 
   const effortValue = useAppState(s => s.effortValue);
+  const fastMode = useAppState(s => s.fastMode);
+  const { columns, rows } = useTerminalSize();
   const [effort, setEffort] = useState<EffortLevel | undefined>(
     effortValue !== undefined ? convertEffortValueToLevel(effortValue) : undefined,
   );
@@ -187,7 +193,7 @@ export function ModelPicker({
       ? initialValue
       : (filteredOptions.find(isRealModelOption)?.value ?? undefined);
 
-  const visibleCount = Math.min(12, filteredOptions.length);
+  const visibleCount = Math.min(Math.max(5, rows - 15), filteredOptions.length);
   const hiddenCount = Math.max(0, filteredOptions.length - visibleCount);
 
   const effectiveFocusedValue = filteredOptions.some(opt => opt.value === focusedValue)
@@ -201,6 +207,33 @@ export function ModelPicker({
   const focusedSupportsMax = focusedModel ? modelSupportsMaxEffort(focusedModel) : false;
   const focusedDefaultEffort = getDefaultEffortLevelForOption(focusedOption, activeProviderId);
   const displayEffort = effort === 'max' && !focusedSupportsMax ? 'high' : effort;
+
+  const renderedOptions = filteredOptions.map(option => {
+    if (option.type === 'section') return option;
+    const optionModel = resolveOptionModel(option, activeProviderId);
+    const optionEffort =
+      option.value === effectiveFocusedValue
+        ? displayEffort
+        : optionModel && modelSupportsEffort(optionModel)
+          ? getDefaultEffortLevelForOption(option, activeProviderId)
+          : undefined;
+    const preview = modelPreview(option);
+    return {
+      ...option,
+      label: (
+        <ModelListRow
+          label={option.label}
+          capabilityScore={option.capabilityScore}
+          effort={optionEffort}
+          isCurrent={option.value === initialValue}
+          isFocused={option.value === effectiveFocusedValue}
+          columns={columns}
+        />
+      ),
+      description: '',
+      preview,
+    };
+  });
 
   function handleFocus(value: string): void {
     setFocusedValue(value);
@@ -399,7 +432,72 @@ export function ModelPicker({
     );
   }
 
-  const content = (
+  const modelList = (
+    <Box flexDirection="column">
+      {filteredOptions.length > 0 ? (
+        <Select
+          key={`models-${jumpToken}`}
+          isDisabled={isSearchActive}
+          defaultValue={isStandaloneCommand ? undefined : initialValue}
+          defaultFocusValue={jumpTarget ?? initialFocusValue}
+          options={(isStandaloneCommand ? renderedOptions : filteredOptions) as OptionWithDescription<string>[]}
+          onChange={handleSelect}
+          onFocus={handleFocus}
+          onCancel={onCancel ?? noop}
+          visibleOptionCount={visibleCount}
+          highlightText={isStandaloneCommand ? undefined : searchQuery}
+          hideIndexes={true}
+          showPreviewDefault={isStandaloneCommand ? false : undefined}
+        />
+      ) : (
+        <Box paddingLeft={3}>
+          <Text color="error">No matching models</Text>
+        </Box>
+      )}
+    </Box>
+  );
+
+  const content = isStandaloneCommand ? (
+    <Box flexDirection="column">
+      <ModelSearchBar
+        isActive={isSearchActive}
+        query={searchQuery}
+        cursorOffset={searchCursorOffset}
+        matchCount={matchedModelCount}
+        totalCount={totalModelCount}
+        compact
+      />
+      {isFetchingModels && (
+        <Box paddingLeft={2} marginBottom={1}>
+          <Text color="subtle">Refreshing configured providers…</Text>
+        </Box>
+      )}
+      {sessionModel && (
+        <Box paddingLeft={2} marginBottom={1}>
+          <Text color="subtle">Session override: {modelDisplayString(sessionModel)}</Text>
+        </Box>
+      )}
+      {modelList}
+      <Box paddingLeft={2} marginTop={1}>
+        <Text>
+          Fast Mode <Text dimColor>{fastMode ? 'On' : 'Off'}</Text>
+        </Text>
+      </Box>
+      <ModelPricePanel model={focusedModel} columns={columns} />
+      <Box marginTop={1}>
+        <Text color="subtle" italic={true}>
+          {exitState.pending ? (
+            <>Press {exitState.keyName} again to exit</>
+          ) : (
+            <>
+              type to search · ↑/↓ navigate · ←/→ effort · enter session
+              {onSetDefault ? ' · d default' : ''} · esc clear
+            </>
+          )}
+        </Text>
+      </Box>
+    </Box>
+  ) : (
     <Box flexDirection="column">
       <Box marginBottom={1} flexDirection="column">
         <Text color="remember" bold={true}>
@@ -421,25 +519,7 @@ export function ModelPicker({
         totalCount={totalModelCount}
       />
       <Box flexDirection="column" marginBottom={1}>
-        {filteredOptions.length > 0 ? (
-          <Select
-            key={`models-${jumpToken}`}
-            isDisabled={isSearchActive}
-            defaultValue={initialValue}
-            defaultFocusValue={jumpTarget ?? initialFocusValue}
-            options={filteredOptions as OptionWithDescription<string>[]}
-            onChange={handleSelect}
-            onFocus={handleFocus}
-            onCancel={onCancel ?? noop}
-            visibleOptionCount={visibleCount}
-            highlightText={searchQuery}
-            hideIndexes={true}
-          />
-        ) : (
-          <Box paddingLeft={3}>
-            <Text color="error">No matching models</Text>
-          </Box>
-        )}
+        {modelList}
         {hiddenCount > 0 && (
           <Box paddingLeft={3}>
             <Text dimColor={true}>and {hiddenCount} more…</Text>
@@ -459,18 +539,6 @@ export function ModelPicker({
           </Text>
         )}
       </Box>
-      {isStandaloneCommand && (
-        <Text color="subtle" italic={true}>
-          {exitState.pending ? (
-            <>Press {exitState.keyName} again to exit</>
-          ) : (
-            <>
-              type to search · ↑/↓ navigate · tab next provider · enter to select
-              {onSetDefault ? ' · g save as global default' : ''} · esc to clear
-            </>
-          )}
-        </Text>
-      )}
     </Box>
   );
 
@@ -537,6 +605,13 @@ export function buildUnifiedModelOptions({
         descriptionForModel: m.id,
         providerId,
         modelId: m.id,
+        capabilityScore: getCapabilityScore({
+          toolCalling: m.supportsTools,
+          vision: m.supportsVision,
+          reasoning: m.supportsReasoning,
+          maxContext: m.contextWindow,
+          maxOutput: m.maxOutput,
+        }),
       };
     });
     const liveIds = new Set(live.map(m => m.modelId));
@@ -566,11 +641,15 @@ export function buildUnifiedModelOptions({
   const activeEntry = getProviderRegistryEntry(activeProviderId as any);
   const activeDefaultModel =
     providerManager.getModelForProvider(activeProviderId as any) ?? activeEntry?.defaultModel ?? 'provider default';
+  const activeDefaultOption = allModels.find(
+    option => option.providerId === activeProviderId && option.modelId === activeDefaultModel,
+  );
   options.push({
     value: NO_PREFERENCE,
     label: defaultOptionLabel ?? 'Default (recommended)',
     description:
       defaultOptionDescription ?? `Use ${activeEntry?.label ?? activeProviderId} default (${activeDefaultModel})`,
+    capabilityScore: activeDefaultOption?.capabilityScore,
   });
 
   const recentValues = new Set(recentModels.map(m => m.value));
@@ -624,7 +703,35 @@ function toProviderModelOption(providerId: string, model: ProviderModelInfo): Mo
     descriptionForModel: model.id,
     providerId,
     modelId: model.id,
+    capabilityScore: getCapabilityScore({
+      toolCalling: cap.toolCalling !== 'none',
+      vision: cap.vision,
+      reasoning: cap.reasoning,
+      maxContext: cap.maxContext,
+      maxOutput: cap.maxOutput,
+    }),
   };
+}
+
+type CapabilityScoreInput = {
+  toolCalling?: boolean;
+  vision?: boolean;
+  reasoning?: boolean;
+  maxContext?: number | 'varies';
+  maxOutput?: number | 'varies';
+};
+
+/** Six cells summarize useful coding-model capabilities without inventing a quality score. */
+export function getCapabilityScore(capabilities: CapabilityScoreInput): number {
+  return Math.min(
+    6,
+    1 +
+      Number(capabilities.toolCalling === true) +
+      Number(capabilities.vision === true) +
+      Number(capabilities.reasoning === true) +
+      Number(typeof capabilities.maxContext === 'number' && capabilities.maxContext >= 200_000) +
+      Number(typeof capabilities.maxOutput === 'number' && capabilities.maxOutput >= 32_000),
+  );
 }
 
 function formatContext(ctx: number): string {
@@ -683,12 +790,14 @@ function ModelSearchBar({
   cursorOffset,
   matchCount,
   totalCount,
+  compact = false,
 }: {
   isActive: boolean;
   query: string;
   cursorOffset: number;
   matchCount: number;
   totalCount: number;
+  compact?: boolean;
 }) {
   const isTerminalFocused = useTerminalFocus();
   return (
@@ -696,7 +805,9 @@ function ModelSearchBar({
       <SearchBox
         query={query}
         cursorOffset={cursorOffset}
-        placeholder="Type to search models..."
+        placeholder={compact ? 'Type to search' : 'Type to search models...'}
+        prefix={compact ? '/' : undefined}
+        borderless={compact}
         isFocused={isActive}
         isTerminalFocused={isTerminalFocused}
       />
@@ -707,6 +818,120 @@ function ModelSearchBar({
           </Text>
         </Box>
       )}
+    </Box>
+  );
+}
+
+function ModelListRow({
+  label,
+  capabilityScore,
+  effort,
+  isCurrent,
+  isFocused,
+  columns,
+}: {
+  label: string;
+  capabilityScore?: number;
+  effort?: EffortLevel;
+  isCurrent: boolean;
+  isFocused: boolean;
+  columns: number;
+}): React.ReactNode {
+  const nameWidth = columns >= 100 ? 34 : columns >= 76 ? 27 : columns >= 58 ? 21 : 26;
+  const showMeter = columns >= 58;
+  const showEffort = columns >= 46;
+  const score = Math.max(0, Math.min(6, capabilityScore ?? 0));
+
+  return (
+    <>
+      <Text>{fitColumn(label, nameWidth)}</Text>
+      <Text color={isCurrent ? 'suggestion' : 'subtle'}>{isCurrent ? ' * ' : '   '}</Text>
+      {showMeter && (
+        <>
+          <Text color={isFocused ? 'suggestion' : undefined}>{'■'.repeat(score)}</Text>
+          <Text dimColor>{'□'.repeat(6 - score)}</Text>
+          <Text> </Text>
+        </>
+      )}
+      {showEffort && <Text dimColor={!isFocused}>{effort ? capitalize(effort) : '—'}</Text>}
+    </>
+  );
+}
+
+function fitColumn(value: string, width: number): string {
+  if (value.length <= width) return value.padEnd(width);
+  if (width <= 1) return value.slice(0, width);
+  return `${value.slice(0, width - 1)}…`;
+}
+
+function ModelPricePanel({ model, columns }: { model: string | undefined; columns: number }): React.ReactNode {
+  if (!model) return null;
+  const costs = getModelCosts(model);
+  const spectrumWidth = Math.max(20, Math.min(52, columns - 12));
+  const markerIndex = getPriceMarkerIndex(costs.inputTokens, spectrumWidth);
+
+  return (
+    <Box flexDirection="column" paddingLeft={2} marginTop={1}>
+      <Box flexDirection="row">
+        {Array.from({ length: spectrumWidth }, (_, index) => (
+          <Text
+            key={index}
+            color={index < spectrumWidth / 3 ? 'success' : index < (spectrumWidth * 2) / 3 ? 'warning' : 'claude'}
+            bold={index === markerIndex}
+          >
+            {index === markerIndex ? '●' : '─'}
+          </Text>
+        ))}
+      </Box>
+      <Box flexDirection={columns >= 66 ? 'row' : 'column'} columnGap={4} marginTop={1}>
+        <PriceCell label="Input" rate={costs.inputTokens} />
+        <PriceCell label="Cached input" rate={costs.promptCacheReadTokens} />
+        <PriceCell label="Output" rate={costs.outputTokens} />
+      </Box>
+    </Box>
+  );
+}
+
+function PriceCell({ label, rate }: { label: string; rate: number }): React.ReactNode {
+  return (
+    <Box flexDirection="column" minWidth={16}>
+      <Text dimColor>{label}</Text>
+      <Text>{formatModelRate(rate)}</Text>
+    </Box>
+  );
+}
+
+export function formatModelRate(rate: number): string {
+  const rounded = rate === 0 ? '0' : String(Number(rate.toPrecision(3)));
+  return `$${rounded} / 1M`;
+}
+
+/** Log scale keeps cheap and premium models distinguishable on the same strip. */
+export function getPriceMarkerIndex(inputRate: number, width: number): number {
+  if (width <= 1 || inputRate <= 0) return 0;
+  const minRate = 0.01;
+  const maxRate = 30;
+  const normalized =
+    (Math.log10(Math.min(maxRate, Math.max(minRate, inputRate))) - Math.log10(minRate)) /
+    (Math.log10(maxRate) - Math.log10(minRate));
+  return Math.max(0, Math.min(width - 1, Math.round(normalized * (width - 1))));
+}
+
+function modelPreview(option: ModelOption): React.ReactNode {
+  if (option.type === 'section' || !option.value) return null;
+  const caps: string[] = [];
+  if (option.description) caps.push(option.description);
+  const example = `**${option.label}**\n\n${option.description || option.modelId || option.value}\n\n\`\`\`js\n// preview with ${option.label}\nconsole.log('hello')\n\`\`\``;
+  return (
+    <Box flexDirection="column">
+      <Text bold color="suggestion">
+        {option.label}
+      </Text>
+      {option.providerId && <Text dimColor>{option.providerId}</Text>}
+      <Box marginTop={1}>
+        <Markdown>{example}</Markdown>
+      </Box>
+      <Text dimColor>↑/↓ เลื่อน · p เปิด/ปิด preview</Text>
     </Box>
   );
 }
