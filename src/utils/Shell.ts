@@ -326,6 +326,13 @@ export async function exec(
 
     const shellCommand = wrapSpawn(childProcess, abortSignal, commandTimeout, taskOutput, shouldAutoBackground);
 
+    // Close stdin pipe immediately so child processes don't hang waiting for EOF
+    try {
+      childProcess.stdin?.end();
+    } catch {
+      // Safe to ignore if stdin is already closed or not writable
+    }
+
     // Close our copy of the fd — the child has its own dup.
     // Must happen after wrapSpawn attaches 'error' listener, since the await
     // yields and the child's ENOENT 'error' event can fire in that window.

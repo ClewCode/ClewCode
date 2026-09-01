@@ -1,9 +1,9 @@
 import figures from 'figures';
 import * as React from 'react';
 import { useMemo, useState } from 'react';
-import { Box, Text, useAnimationFrame } from 'src/ink.js';
 import { useTerminalSize } from 'src/hooks/useTerminalSize.js';
 import { stringWidth } from 'src/ink/stringWidth.js';
+import { Box, Text, useAnimationFrame } from 'src/ink.js';
 import { useAppState, useSetAppState } from 'src/state/AppState.js';
 import { enterTeammateView, exitTeammateView } from 'src/state/teammateViewHelpers.js';
 import { isPanelAgentTask } from 'src/tasks/LocalAgentTask/LocalAgentTask.js';
@@ -48,6 +48,16 @@ export function BackgroundTaskStatus({
       ),
     [tasks],
   );
+
+  // ponytail: useAnimationFrame must be called unconditionally (Rules of Hooks),
+  // so compute shell-spinner state here before any early returns.
+  const showShellPill = runningTasks.length === 1 && runningTasks[0]!.type === 'local_bash';
+  const shell = showShellPill ? (runningTasks[0] as Extract<BackgroundTaskState, { type: 'local_bash' }>) : null;
+  const isRunning = shell ? shell.status === 'running' || shell.status === 'pending' : false;
+  const SPINNER_FRAMES = ['✶', '✸', '✹', '✺', '✹', '✷'];
+  const [, time] = useAnimationFrame(isRunning ? 50 : null);
+  const frame = Math.floor((time ?? 0) / 50) % SPINNER_FRAMES.length;
+  const spinnerGlyph = isRunning ? SPINNER_FRAMES[frame] : '';
 
   // Check if all tasks are in-process teammates (team mode)
   // In spinner-tree mode, don't show teammate pills (teammates appear in the spinner tree)
@@ -177,33 +187,17 @@ export function BackgroundTaskStatus({
     return null;
   }
 
-  // Enhanced single-shell footer: show command + elapsed + spinner
-  const showShellPill = runningTasks.length === 1 && runningTasks[0]!.type === 'local_bash';
-  const shell = showShellPill ? (runningTasks[0] as Extract<BackgroundTaskState, { type: 'local_bash' }>) : null;
-  const isRunning = shell ? shell.status === 'running' || shell.status === 'pending' : false;
-  const elapsed = shell ? formatDuration(Date.now() - shell.startTime) : '';
-  const cmd = shell ? truncate(shell.kind === 'monitor' ? shell.description : shell.command, 32, true) : '';
-  const statusColor = shell
-    ? shell.status === 'completed'
-      ? 'success'
-      : shell.status === 'failed'
-        ? 'error'
-        : undefined
-    : undefined;
-
-  const SPINNER_FRAMES = ['✶', '✸', '✹', '✺', '✹', '✷'];
-  const [, time] = useAnimationFrame(isRunning ? 50 : null);
-  const frame = Math.floor((time ?? 0) / 50) % SPINNER_FRAMES.length;
-  const spinnerGlyph = isRunning ? SPINNER_FRAMES[frame] : '';
-
   if (showShellPill) {
+    const elapsed = formatDuration(Date.now() - shell!.startTime);
+    const cmd = truncate(shell!.kind === 'monitor' ? shell!.description : shell!.command, 32, true);
+    const statusColor = shell!.status === 'completed' ? 'success' : shell!.status === 'failed' ? 'error' : undefined;
     return (
       <>
         <SummaryPill selected={tasksSelected} onClick={onOpenDialog}>
           <Text color={statusColor}>
             {spinnerGlyph ? <>{spinnerGlyph} </> : ''}
-            {shell.kind === 'monitor' ? 'monitor' : 'shell'}: {cmd} · {elapsed}
-            {shell.status !== 'running' ? ` · ${shell.status}` : ''}
+            {shell!.kind === 'monitor' ? 'monitor' : 'shell'}: {cmd} · {elapsed}
+            {shell!.status !== 'running' ? ` · ${shell!.status}` : ''}
           </Text>
         </SummaryPill>
         <Text dimColor> · {figures.arrowDown} to view</Text>

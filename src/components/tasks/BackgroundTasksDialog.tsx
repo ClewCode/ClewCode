@@ -28,7 +28,7 @@ import type { CommandResultDisplay } from '../../commands.js';
 import { useRegisterOverlay } from '../../context/overlayContext.js';
 import type { ExitState } from '../../hooks/useExitOnCtrlCDWithKeybindings.js';
 import type { KeyboardEvent } from '../../ink/events/keyboard-event.js';
-import { Box, Text } from '../../ink.js';
+import { Box, Text, useInput } from '../../ink.js';
 import { useKeybindings } from '../../keybindings/useKeybinding.js';
 import { useShortcutDisplay } from '../../keybindings/useShortcutDisplay.js';
 import { count } from '../../utils/array.js';
@@ -267,66 +267,6 @@ export function BackgroundTasksDialog({ onDone, toolUseContext, initialDetailTas
     { context: 'Confirmation', isActive: viewState.mode === 'list' },
   );
 
-  // Component-specific shortcuts (x=stop, f=foreground, right=zoom) shown in UI.
-  // These are task-type and status dependent, not standard dialog keybindings.
-  const handleKeyDown = (e: KeyboardEvent) => {
-    // Only handle input when in list mode
-    if (viewState.mode !== 'list') return;
-
-    if (e.key === 'left') {
-      e.preventDefault();
-      onDone('Background tasks dialog dismissed', { display: 'system' });
-      return;
-    }
-
-    // Compute current selection at the time of the key press
-    const currentSelection = allSelectableItems[selectedIndex];
-    if (!currentSelection) return; // everything below requires a selection
-
-    // Bare `x` only — a ctrl/meta modifier means this is the start of the
-    // `ctrl+x ctrl+k` (killAgents) chord, which is handled by useCancelRequest.
-    // Consuming it here (with preventDefault) would break the chord and stop
-    // the single selected task instead of all agents.
-    if (e.key === 'x' && !e.ctrl && !e.meta) {
-      e.preventDefault();
-      if (currentSelection.type === 'local_bash' && currentSelection.status === 'running') {
-        void killShellTask(currentSelection.id);
-      } else if (currentSelection.type === 'local_agent' && currentSelection.status === 'running') {
-        void killAgentTask(currentSelection.id);
-      } else if (currentSelection.type === 'in_process_teammate' && currentSelection.status === 'running') {
-        void killTeammateTask(currentSelection.id);
-      } else if (
-        currentSelection.type === 'local_workflow' &&
-        currentSelection.status === 'running' &&
-        killWorkflowTask
-      ) {
-        killWorkflowTask(currentSelection.id, setAppState);
-      } else if (currentSelection.type === 'monitor_mcp' && currentSelection.status === 'running' && killMonitorMcp) {
-        killMonitorMcp(currentSelection.id, setAppState);
-      } else if (currentSelection.type === 'dream' && currentSelection.status === 'running') {
-        void killDreamTask(currentSelection.id);
-      } else if (currentSelection.type === 'remote_agent' && currentSelection.status === 'running') {
-        if (currentSelection.task.isUltraplan) {
-          void stopUltraplan(currentSelection.id, currentSelection.task.sessionId, setAppState);
-        } else {
-          void killRemoteAgentTask(currentSelection.id);
-        }
-      }
-    }
-
-    if (e.key === 'f' && !e.ctrl && !e.meta) {
-      if (currentSelection.type === 'in_process_teammate' && currentSelection.status === 'running') {
-        e.preventDefault();
-        enterTeammateView(currentSelection.id, setAppState);
-        onDone('Viewing teammate', { display: 'system' });
-      } else if (currentSelection.type === 'leader') {
-        e.preventDefault();
-        exitTeammateView(setAppState);
-        onDone('Viewing leader', { display: 'system' });
-      }
-    }
-  };
-
   async function killShellTask(taskId: string): Promise<void> {
     await LocalShellTask.kill(taskId, setAppState);
   }
@@ -346,6 +286,89 @@ export function BackgroundTasksDialog({ onDone, toolUseContext, initialDetailTas
   async function killRemoteAgentTask(taskId: string): Promise<void> {
     await RemoteAgentTask.kill(taskId, setAppState);
   }
+
+  const stopTask = (currentSelection: ListItem) => {
+    if (currentSelection.type === 'local_bash' && currentSelection.status === 'running') {
+      void killShellTask(currentSelection.id);
+    } else if (currentSelection.type === 'local_agent' && currentSelection.status === 'running') {
+      void killAgentTask(currentSelection.id);
+    } else if (currentSelection.type === 'in_process_teammate' && currentSelection.status === 'running') {
+      void killTeammateTask(currentSelection.id);
+    } else if (
+      currentSelection.type === 'local_workflow' &&
+      currentSelection.status === 'running' &&
+      killWorkflowTask
+    ) {
+      killWorkflowTask(currentSelection.id, setAppState);
+    } else if (currentSelection.type === 'monitor_mcp' && currentSelection.status === 'running' && killMonitorMcp) {
+      killMonitorMcp(currentSelection.id, setAppState);
+    } else if (currentSelection.type === 'dream' && currentSelection.status === 'running') {
+      void killDreamTask(currentSelection.id);
+    } else if (currentSelection.type === 'remote_agent' && currentSelection.status === 'running') {
+      if (currentSelection.task.isUltraplan) {
+        void stopUltraplan(currentSelection.id, currentSelection.task.sessionId, setAppState);
+      } else {
+        void killRemoteAgentTask(currentSelection.id);
+      }
+    }
+  };
+
+  const foregroundTask = (currentSelection: ListItem) => {
+    if (currentSelection.type === 'in_process_teammate' && currentSelection.status === 'running') {
+      enterTeammateView(currentSelection.id, setAppState);
+      onDone('Viewing teammate', { display: 'system' });
+    } else if (currentSelection.type === 'leader') {
+      exitTeammateView(setAppState);
+      onDone('Viewing leader', { display: 'system' });
+    }
+  };
+
+  // Component-specific shortcuts (x=stop, f=foreground) via useInput
+  // so shortcuts work even if Box focus is lost or blurred.
+  useInput(
+    (input, key) => {
+      if (viewState.mode !== 'list') return;
+
+      if (key.leftArrow) {
+        onDone('Background tasks dialog dismissed', { display: 'system' });
+        return;
+      }
+
+      const currentSelection = allSelectableItems[selectedIndex];
+      if (!currentSelection) return;
+
+      if (input === 'x' && !key.ctrl && !key.meta) {
+        stopTask(currentSelection);
+      } else if (input === 'f' && !key.ctrl && !key.meta) {
+        foregroundTask(currentSelection);
+      }
+    },
+    { isActive: viewState.mode === 'list' },
+  );
+
+  // Component-specific shortcuts shown in UI also hooked via DOM onKeyDown for completeness.
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // Only handle input when in list mode
+    if (viewState.mode !== 'list') return;
+
+    if (e.key === 'left') {
+      e.preventDefault();
+      onDone('Background tasks dialog dismissed', { display: 'system' });
+      return;
+    }
+
+    // Compute current selection at the time of the key press
+    const currentSelection = allSelectableItems[selectedIndex];
+    if (!currentSelection) return; // everything below requires a selection
+
+    if (e.key === 'x' && !e.ctrl && !e.meta) {
+      e.preventDefault();
+      stopTask(currentSelection);
+    } else if (e.key === 'f' && !e.ctrl && !e.meta) {
+      e.preventDefault();
+      foregroundTask(currentSelection);
+    }
+  };
 
   // Wrap onDone in useEffectEvent to get a stable reference that always calls
   // the current onDone callback without causing the effect to re-fire.

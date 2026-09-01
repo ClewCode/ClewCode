@@ -4,7 +4,7 @@ import type { DeepImmutable } from 'src/types/utils.js';
 import type { CommandResultDisplay } from '../../commands.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import type { KeyboardEvent } from '../../ink/events/keyboard-event.js';
-import { Box, Text } from '../../ink.js';
+import { Box, Text, useInput } from '../../ink.js';
 import { useKeybindings } from '../../keybindings/useKeybinding.js';
 import type { LocalShellTaskState } from '../../tasks/LocalShellTask/guards.js';
 import { formatDuration, formatFileSize, truncateToWidth } from '../../utils/format.js';
@@ -75,6 +75,24 @@ export function ShellDetailDialog({ shell, onDone, onKillShell, onBack }: Props)
     },
     { context: 'Confirmation' },
   );
+
+  useInput((input, key) => {
+    if (input === ' ') {
+      onDone('Shell details dismissed', { display: 'system' });
+    } else if (key.leftArrow && onBack) {
+      onBack();
+    } else if (input === 'c' && !key.ctrl && !key.meta) {
+      // Copy command to clipboard via OSC 52 if available
+      try {
+        // eslint-disable-next-line no-console
+        console.log(`\x1b]52;c;${Buffer.from(shell.command).toString('base64')}\x07`);
+      } catch {
+        /* ignore clipboard copy failure */
+      }
+    } else if (input === 'x' && !key.ctrl && !key.meta && shell.status === 'running' && onKillShell) {
+      onKillShell();
+    }
+  });
 
   // Handle dialog-specific keys
   const handleKeyDown = (e: KeyboardEvent) => {
