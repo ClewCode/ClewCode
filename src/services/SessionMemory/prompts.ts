@@ -66,7 +66,7 @@ CRITICAL RULES FOR EDITING:
 - Do not include information that's already in the CLAUDE.md files included in the context
 - Keep each section under ~${MAX_SECTION_LENGTH} tokens/words - if a section is approaching this limit, condense it by cycling out less important details while preserving the most critical information
 - Focus on actionable, specific information that would help someone understand or recreate the work discussed in the conversation
-- IMPORTANT: Always update "Current State" to reflect the most recent work - this is critical for continuity after compaction
+- IMPORTANT: Always update "Current State" to reflect the most recent work - include task IDs and status (pending/in_progress/completed), next step with file paths, and verification results. This is critical for continuity after compaction
 
 Use the Edit tool with file_path: {{notesPath}}
 

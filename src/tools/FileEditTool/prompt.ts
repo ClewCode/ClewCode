@@ -17,6 +17,7 @@ function getDefaultEditDescription(): string {
   return `Performs exact string replacements in files.
 
 Usage:${getPreReadInstruction()}
+- For 2+ step edits, create tasks/todos BEFORE editing (ONE in_progress at a time).
 - When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: ${prefixFormat}. Everything after that is the actual file content to match. Never include any part of the line number prefix in the old_string or new_string.
 - Reading the file first is still useful for context, but it is not required before using this tool.
 - ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.

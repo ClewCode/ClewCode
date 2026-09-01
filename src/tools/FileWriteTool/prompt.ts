@@ -9,6 +9,7 @@ export function getWriteToolDescription(): string {
   return `Writes a file to the local filesystem.
 
 Usage:
+- For 2+ step writes, create tasks/todos BEFORE writing (ONE in_progress at a time).
 - This tool will overwrite the existing file if there is one at the provided path.${getPreReadInstruction()}
 - Reading an existing file first is still useful for context, but it is not required before using this tool.
 - Prefer the Edit tool for modifying existing files \u2014 it only sends the diff. Only use this tool to create new files or for complete rewrites.

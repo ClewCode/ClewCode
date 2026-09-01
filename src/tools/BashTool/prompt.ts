@@ -14,6 +14,7 @@ import { getDefaultBashTimeoutMs, getMaxBashTimeoutMs } from '../../utils/timeou
 import { getUndercoverInstructions, isUndercover } from '../../utils/undercover.js';
 import { AGENT_TOOL_NAME } from '../AgentTool/constants.js';
 import { FILE_EDIT_TOOL_NAME } from '../FileEditTool/constants.js';
+import { TASK_CREATE_TOOL_NAME } from '../TaskCreateTool/constants.js';
 import { TodoWriteTool } from '../TodoWriteTool/TodoWriteTool.js';
 import { BASH_TOOL_NAME } from './toolName.js';
 
@@ -100,7 +101,7 @@ Git Safety Protocol:
 
 Important notes:
 - NEVER run additional commands to read or explore code, besides git bash commands
-- NEVER use the ${TodoWriteTool.name} or ${AGENT_TOOL_NAME} tools
+- NEVER use the ${TodoWriteTool.name}/${TASK_CREATE_TOOL_NAME} or ${AGENT_TOOL_NAME} tools
 - DO NOT push to the remote repository unless the user explicitly asks you to do so
 - IMPORTANT: Never use git commands with the -i flag (like git rebase -i or git add -i) since they require interactive input which is not supported.
 - IMPORTANT: Do not use --no-edit with git rebase commands, as the --no-edit flag is not a valid option for git rebase.
@@ -142,7 +143,7 @@ EOF
 </example>
 
 Important:
-- DO NOT use the ${TodoWriteTool.name} or ${AGENT_TOOL_NAME} tools
+- DO NOT use the ${TodoWriteTool.name}/${TASK_CREATE_TOOL_NAME} or ${AGENT_TOOL_NAME} tools
 - Return the PR URL when you're done, so the user can see it
 
 # Other common operations
