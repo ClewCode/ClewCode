@@ -268,7 +268,7 @@ import { isExtractModeActive } from '../memdir/paths.js';
 // this module as ESM unconditionally, and in Bun a require() of a module the
 // ESM loader has already evaluated returns an empty object. The feature() gate
 // stays on the call site, where it still strips the call.
-import { drainPendingExtraction } from '../services/extractMemories/extractMemories.js';
+import { drainPendingExtraction } from '../services/longTermMemory/extract.js';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const coordinatorModeModule =

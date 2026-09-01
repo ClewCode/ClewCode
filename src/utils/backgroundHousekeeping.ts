@@ -1,12 +1,12 @@
 import { feature } from 'bun:bundle';
-import { initAutoDream } from '../services/autoDream/autoDream.js';
+import { autoDistill } from '../services/longTermMemory/distill.js';
+import { initAutoDream } from '../services/longTermMemory/dream/autoDream.js';
 // NOTE: imported statically, not via require(). services/autoDream imports
 // this module as ESM unconditionally, and in Bun a require() of a module the
 // ESM loader has already evaluated returns an empty object — which is how
 // `initExtractMemories is not a function` crashed dev-mode startup. The
 // feature() gate stays on the call site, where it still strips the call.
-import { initExtractMemories } from '../services/extractMemories/extractMemories.js';
-import { autoDistill } from '../services/longTermMemory/distill.js';
+import { initExtractMemories } from '../services/longTermMemory/extract.js';
 import { initMagicDocs } from '../services/MagicDocs/magicDocs.js';
 import { initSkillImprovement } from './hooks/skillImprovement.js';
 

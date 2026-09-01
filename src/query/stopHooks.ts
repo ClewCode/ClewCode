@@ -10,7 +10,7 @@ import {
 // ESM loader has already evaluated returns an empty object — which is how
 // `initExtractMemories is not a function` crashed dev-mode startup. The
 // feature() gate stays on the call site, where it still strips the call.
-import { executeExtractMemories } from '../services/extractMemories/extractMemories.js';
+import { executeExtractMemories } from '../services/longTermMemory/extract.js';
 import type { ToolUseContext } from '../Tool.js';
 import type { HookProgress } from '../types/hooks.js';
 import type {
@@ -55,9 +55,9 @@ const jobClassifierModule = feature('TEMPLATES')
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 import type { QuerySource } from '../constants/querySource.js';
-import { executeAutoDream } from '../services/autoDream/autoDream.js';
 // Goal evaluator is always enabled — loaded eagerly for clean imports
 import { evaluateGoal } from '../services/goal/goalEvaluator.js';
+import { executeAutoDream } from '../services/longTermMemory/dream/autoDream.js';
 import { executePromptSuggestion } from '../services/PromptSuggestion/promptSuggestion.js';
 import { isBareMode, isEnvDefinedFalsy } from '../utils/envUtils.js';
 import { setExecutionMode } from '../utils/executionMode.js';
