@@ -125,6 +125,7 @@ import rateLimitOptions from './commands/rate-limit-options/index.js';
 import loginCmd from './commands/login/index.js';
 
 import effort from './commands/effort/index.js';
+import fast from './commands/fast/index.js';
 import stats from './commands/stats/index.js';
 // insights.ts is 113KB (3200 lines, includes diffLines/html rendering). Lazy
 // shim defers the heavy module until /insights is actually invoked.
@@ -187,6 +188,7 @@ const COMMANDS = memoize((): Command[] => [
   doctor,
   checkup,
   effort,
+  fast,
   exit,
   explorer,
   files,

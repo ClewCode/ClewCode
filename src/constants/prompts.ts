@@ -426,6 +426,16 @@ export async function getSystemPrompt(
   }
 
   const dynamicSections = [
+    systemPromptSection('fast_mode', () => {
+      try {
+        const fastMode = (globalThis as any).__appState?.get?.('fastMode') ?? false;
+        return fastMode
+          ? 'Fast Mode is enabled for all providers: prioritize speed and conciseness. Be brief, avoid verbose explanations, use concise code and direct answers.'
+          : null;
+      } catch {
+        return null;
+      }
+    }, ['fastMode']),
     systemPromptSection('session_guidance', () => getSessionSpecificGuidanceSection(enabledTools, skillToolCommands)),
     systemPromptSection('memory', () => loadMemoryPrompt()),
     systemPromptSection('proactive_memory', () => getProactiveMemoryContext()),

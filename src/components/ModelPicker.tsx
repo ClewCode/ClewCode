@@ -567,23 +567,6 @@ export function ModelPicker({
     setUltracodeEnabled(ultracode);
     setView('models');
   }
-  // Agents tab — same model list as /models but for subagents
-  const agentsOptions = filteredOptions.map(o => {
-    if (o.type === 'section') return o as OptionWithDescription<string>;
-    return {
-      ...o,
-      preview: (
-        <Box flexDirection="column">
-          <Text bold>{String(o.label)}</Text>
-          <Text dimColor>Subagent</Text>
-          <Box marginTop={1}>
-            <Markdown>{`**${String(o.label)}** — for subagents\n\n${o.description || ''}`}</Markdown>
-          </Box>
-        </Box>
-      ),
-    } as OptionWithDescription<string>;
-  });
-
   const content =
     view === 'providers' ? (
       <Box flexDirection="column">
@@ -624,12 +607,18 @@ export function ModelPicker({
     ) : view === 'agents' ? (
       <Box flexDirection="column">
         <TabBar active="agents" />
-        <Select
-          options={agentsOptions}
-          visibleOptionCount={12}
-          onChange={() => setView('models')}
-          onCancel={() => setView('models')}
+        <ModelSearchBar
+          isActive={isSearchActive}
+          query={searchQuery}
+          cursorOffset={searchCursorOffset}
+          matchCount={matchedModelCount}
+          totalCount={totalModelCount}
+          compact
         />
+        {modelList}
+        <Box marginTop={1}>
+          <Text dimColor>Tab: Models · ↑/↓ · Enter เลือก subagent · p preview</Text>
+        </Box>
       </Box>
     ) : isStandaloneCommand ? (
       <Box flexDirection="column">
