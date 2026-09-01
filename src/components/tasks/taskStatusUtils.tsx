@@ -99,6 +99,7 @@ export function shouldHideTasksFooter(
   if (!showSpinnerTree) return false;
   let hasVisibleTask = false;
   for (const t of Object.values(tasks) as TaskState[]) {
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     if (!isBackgroundTask(t) || ('external' === 'ant' && isPanelAgentTask(t))) {
       continue;
     }

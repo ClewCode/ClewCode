@@ -19,7 +19,14 @@ type Props = {
   isStandalone?: boolean;
 };
 
+export type TaskDisplayGroup = {
+  title: string;
+  order: number;
+  tasks: Task[];
+};
+
 const RECENT_COMPLETED_TTL_MS = 30_000;
+const DEFAULT_GROUP_TITLE = 'Execution';
 
 function byIdAsc(a: Task, b: Task): number {
   const aNum = parseInt(a.id, 10);
@@ -28,6 +35,61 @@ function byIdAsc(a: Task, b: Task): number {
     return aNum - bNum;
   }
   return a.id.localeCompare(b.id);
+}
+
+function readGroupTitle(task: Task): string {
+  const value = task.metadata?.group;
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : DEFAULT_GROUP_TITLE;
+}
+
+function readGroupOrder(task: Task): number | undefined {
+  const value = task.metadata?.groupOrder;
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+export function buildTaskDisplayGroups(tasks: Task[]): TaskDisplayGroup[] {
+  const groups = new Map<string, TaskDisplayGroup>();
+  for (const task of tasks) {
+    const title = readGroupTitle(task);
+    const explicitOrder = readGroupOrder(task);
+    const existing = groups.get(title);
+    if (existing) {
+      if (explicitOrder !== undefined) existing.order = Math.min(existing.order, explicitOrder);
+      existing.tasks.push(task);
+      continue;
+    }
+    groups.set(title, { title, order: explicitOrder ?? Number.POSITIVE_INFINITY, tasks: [task] });
+  }
+  return [...groups.values()]
+    .map(group => ({ ...group, tasks: [...group.tasks].sort(byIdAsc) }))
+    .sort((a, b) => a.order - b.order || byIdAsc(a.tasks[0]!, b.tasks[0]!) || a.title.localeCompare(b.title));
+}
+
+export function toRomanNumeral(value: number): string {
+  const numerals: Array<[number, string]> = [
+    [1000, 'M'],
+    [900, 'CM'],
+    [500, 'D'],
+    [400, 'CD'],
+    [100, 'C'],
+    [90, 'XC'],
+    [50, 'L'],
+    [40, 'XL'],
+    [10, 'X'],
+    [9, 'IX'],
+    [5, 'V'],
+    [4, 'IV'],
+    [1, 'I'],
+  ];
+  let remaining = Math.max(1, Math.floor(value));
+  let result = '';
+  for (const [amount, numeral] of numerals) {
+    while (remaining >= amount) {
+      result += numeral;
+      remaining -= amount;
+    }
+  }
+  return result;
 }
 
 export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactNode {
@@ -232,25 +294,50 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
     hiddenSummary = ` … +${parts.join(', ')}`;
   }
 
+  const groups = buildTaskDisplayGroups(visibleTasks);
   const content = (
     <>
-      {visibleTasks.map(task => (
-        <TaskItem
-          key={task.id}
-          task={task}
-          ownerColor={task.owner ? teammateColors[task.owner] : undefined}
-          openBlockers={task.blockedBy.filter(id => unresolvedTaskIds.has(id))}
-          activity={task.owner ? teammateActivity[task.owner] : undefined}
-          ownerActive={task.owner ? activeTeammates.has(task.owner) : false}
-          columns={columns}
-          elapsedMs={
-            task.status === 'in_progress' && startTimestampsRef.current.has(task.id)
-              ? Date.now() - startTimestampsRef.current.get(task.id)!
-              : undefined
-          }
-        />
-      ))}
-      {maxDisplay > 0 && hiddenSummary && <Text dimColor>{hiddenSummary}</Text>}
+      {groups.map((group, groupIndex) => {
+        const isLastGroup = groupIndex === groups.length - 1 && !hiddenSummary;
+        const groupCompleted = count(group.tasks, task => task.status === 'completed');
+        const groupActive = group.tasks.some(task => task.status === 'in_progress');
+        const groupDone = groupCompleted === group.tasks.length;
+        const groupBranch = isLastGroup ? '└─' : '├─';
+        const childIndent = isLastGroup ? '   ' : '│  ';
+
+        return (
+          <Box key={group.title} flexDirection="column">
+            <Box>
+              <Text dimColor>{groupBranch} </Text>
+              <Text color={groupActive ? 'success' : undefined} dimColor={groupDone} bold={groupActive}>
+                {toRomanNumeral(groupIndex + 1)}. {group.title}
+              </Text>
+              <Text dimColor>
+                {' · '}
+                {groupCompleted}/{group.tasks.length}
+              </Text>
+            </Box>
+            {group.tasks.map((task, taskIndex) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                prefix={`${childIndent}${taskIndex === group.tasks.length - 1 ? '└─' : '├─'} `}
+                ownerColor={task.owner ? teammateColors[task.owner] : undefined}
+                openBlockers={task.blockedBy.filter(id => unresolvedTaskIds.has(id))}
+                activity={task.owner ? teammateActivity[task.owner] : undefined}
+                ownerActive={task.owner ? activeTeammates.has(task.owner) : false}
+                columns={columns}
+                elapsedMs={
+                  task.status === 'in_progress' && startTimestampsRef.current.has(task.id)
+                    ? Date.now() - startTimestampsRef.current.get(task.id)!
+                    : undefined
+                }
+              />
+            ))}
+          </Box>
+        );
+      })}
+      {maxDisplay > 0 && hiddenSummary && <Text dimColor>└─{hiddenSummary}</Text>}
     </>
   );
 
@@ -258,14 +345,13 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
     return (
       <Box flexDirection="column" marginTop={1} marginLeft={2}>
         <Box>
+          <Text color="success" bold>
+            TODO
+          </Text>
           <Text dimColor>
-            Tasks {completedCount}/{tasks.length}
-            {inProgressCount > 0 && (
-              <>
-                {' · '}
-                <Text color="claude">{inProgressCount} running</Text>
-              </>
-            )}
+            {' '}
+            {completedCount}/{tasks.length}
+            {inProgressCount > 0 ? ` · ${inProgressCount} running` : ''}
           </Text>
         </Box>
         {content}
@@ -273,11 +359,19 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
     );
   }
 
-  return <Box flexDirection="column">{content}</Box>;
+  return (
+    <Box flexDirection="column">
+      <Text color="success" bold>
+        TODO
+      </Text>
+      {content}
+    </Box>
+  );
 }
 
 type TaskItemProps = {
   task: Task;
+  prefix: string;
   ownerColor?: keyof Theme;
   openBlockers: string[];
   activity?: string;
@@ -298,16 +392,17 @@ function getTaskIcon(
   }
   switch (status) {
     case 'completed':
-      return { icon: '✓', color: 'success' };
+      return { icon: '☑', color: 'success' };
     case 'in_progress':
-      return { icon: '●', color: 'warning' };
+      return { icon: '☐', color: 'success' };
     case 'pending':
-      return { icon: '○', color: undefined };
+      return { icon: '☐', color: undefined };
   }
 }
 
 function TaskItem({
   task,
+  prefix,
   ownerColor,
   openBlockers,
   activity,
@@ -331,7 +426,7 @@ function TaskItem({
   const elapsedWidth = elapsedStr ? stringWidth(` (${elapsedStr})`) : 0;
   // Account for: icon(2) + indentation(~8 when nested under spinner) + owner + elapsed + safety
   // Use columns - 15 as a conservative estimate for nested layouts
-  const maxSubjectWidth = Math.max(15, columns - 15 - ownerWidth - elapsedWidth);
+  const maxSubjectWidth = Math.max(15, columns - 15 - stringWidth(prefix) - ownerWidth - elapsedWidth);
   const displaySubject = truncateToWidth(task.subject, maxSubjectWidth);
 
   // Truncate activity for narrow screens
@@ -341,8 +436,14 @@ function TaskItem({
   return (
     <Box flexDirection="column">
       <Box>
+        <Text dimColor>{prefix}</Text>
         <Text color={color}>{icon} </Text>
-        <Text bold={isInProgress} dimColor={isCompleted} color={isBlocked ? 'warning' : undefined}>
+        <Text
+          bold={isInProgress}
+          dimColor={isCompleted || (!isInProgress && !isBlocked)}
+          strikethrough={isCompleted}
+          color={isBlocked ? 'warning' : isInProgress ? 'success' : undefined}
+        >
           {displaySubject}
         </Text>
         {elapsedStr && <Text dimColor> ({elapsedStr})</Text>}
@@ -367,7 +468,7 @@ function TaskItem({
       {showActivity && displayActivity && (
         <Box>
           <Text dimColor>
-            {'  '}
+            {' '.repeat(stringWidth(prefix) + 2)}
             {displayActivity}
             {figures.ellipsis}
           </Text>

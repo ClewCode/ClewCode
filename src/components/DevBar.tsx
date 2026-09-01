@@ -5,6 +5,7 @@ import { Text, useInterval } from '../ink.js';
 
 // Show DevBar for dev builds or all ants
 function shouldShowDevBar(): boolean {
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   return 'production' === 'development' || 'external' === 'ant';
 }
 

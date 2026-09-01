@@ -16,7 +16,10 @@ const inputSchema = lazySchema(() =>
       .string()
       .optional()
       .describe('Present continuous form shown in spinner when in_progress (e.g., "Running tests")'),
-    metadata: z.record(z.string(), z.unknown()).optional().describe('Arbitrary metadata to attach to the task'),
+    metadata: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe('Task metadata. Use group and groupOrder to organize related tasks into ordered TODO sections'),
   }),
 );
 type InputSchema = ReturnType<typeof inputSchema>;

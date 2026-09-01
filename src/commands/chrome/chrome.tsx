@@ -39,6 +39,7 @@ function ClaudeInChromeMenu({
   const [showInstallHint, setShowInstallHint] = useState(false);
   const [isExtensionInstalled, setIsExtensionInstalled] = useState(installed);
 
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const isHomespace = 'external' === 'ant' && isRunningOnHomespace();
 
   const chromeClient = mcpClients.find(c => c.name === CLAUDE_IN_CHROME_MCP_SERVER_NAME);
@@ -120,6 +121,7 @@ function ClaudeInChromeMenu({
     },
   );
 
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const isDisabled = isWSL || ('external' !== 'ant' && !isClaudeAISubscriber);
 
   return (
@@ -130,13 +132,11 @@ function ClaudeInChromeMenu({
           Navigate websites, fill forms, capture screenshots, record GIFs, and debug with console logs and network
           requests.
         </Text>
-
         {isWSL && <Text color="error">Clew in Chrome is not supported in WSL at this time.</Text>}
-
+        {/* @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle */}
         {'external' !== 'ant' && !isClaudeAISubscriber && (
           <Text color="error">Clew in Chrome requires a clew.ai subscription.</Text>
         )}
-
         {!isDisabled && (
           <>
             {!isHomespace && (

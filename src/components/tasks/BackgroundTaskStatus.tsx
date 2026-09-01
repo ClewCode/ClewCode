@@ -42,6 +42,7 @@ export function BackgroundTaskStatus({
   const runningTasks = useMemo(
     () =>
       (Object.values(tasks ?? {}) as TaskState[]).filter(
+        // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
         t => isBackgroundTask(t) && !('external' === 'ant' && isPanelAgentTask(t)),
       ),
     [tasks],

@@ -26,6 +26,7 @@ export const TestingPermissionTool: Tool<InputSchema, string> = buildTool({
     return 'TestingPermission';
   },
   isEnabled() {
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     return 'production' === 'test';
   },
   isConcurrencySafe() {

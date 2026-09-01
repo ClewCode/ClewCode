@@ -588,6 +588,7 @@ export function useTypeahead({
   // subsequent tests in the shard. The subscriber still registers so
   // fileSuggestions tests that trigger a refresh directly work correctly.
   useEffect(() => {
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     if ('production' !== 'test') {
       startBackgroundCacheRefresh();
     }

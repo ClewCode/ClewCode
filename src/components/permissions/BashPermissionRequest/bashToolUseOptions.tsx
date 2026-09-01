@@ -117,6 +117,7 @@ export function bashToolUseOptions({
     // same role and having two identical-looking "don't ask again" inputs is confusing.
     const editablePrefixShown = options.some(o => o.value === 'yes-prefix-edited');
     if (
+      // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
       'external' === 'ant' &&
       !editablePrefixShown &&
       isClassifierPermissionsEnabled() &&

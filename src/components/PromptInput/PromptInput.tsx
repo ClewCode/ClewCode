@@ -355,7 +355,9 @@ function PromptInput({
   // otherwise bridge becomes an invisible selection stop.
   const bridgeFooterVisible = replBridgeConnected && (replBridgeExplicit || replBridgeReconnecting);
   // Tmux pill (ant-only) — visible when there's an active tungsten session
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const hasTungstenSession = useAppState(s => 'external' === 'ant' && s.tungstenActiveSession !== undefined);
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const tmuxFooterVisible = 'external' === 'ant' && hasTungstenSession;
   // WebBrowser pill — visible when a browser is open
   const bagelFooterVisible = useAppState(_s => false);
@@ -462,6 +464,7 @@ function PromptInput({
   // pill is absent, so the -1 sentinel would leave nothing visually selected.
   // In that case, skip -1 and treat 0 as the minimum selectable index.
   const hasBgTaskPill = useMemo(
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     () => Object.values(tasks).some(t => isBackgroundTask(t) && !('external' === 'ant' && isPanelAgentTask(t))),
     [tasks],
   );
@@ -537,6 +540,7 @@ function PromptInput({
   // pill must stay navigable whenever the panel has rows — not just when
   // something is running.
   const tasksFooterVisible =
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     (runningTaskCount > 0 || ('external' === 'ant' && coordinatorTaskCount > 0)) &&
     !shouldHideTasksFooter(tasks, showSpinnerTree);
   const teamsFooterVisible = cachedTeams.length > 0;
@@ -2263,6 +2267,7 @@ function PromptInput({
         // ↑ scrolls within the coordinator task list before leaving the pill
         if (
           tasksSelected &&
+          // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
           'external' === 'ant' &&
           coordinatorTaskCount > 0 &&
           coordinatorTaskIndex > minCoordinatorIndex
@@ -2274,6 +2279,7 @@ function PromptInput({
       },
       'footer:down': () => {
         // ↓ scrolls within the coordinator task list, never leaves the pill
+        // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
         if (tasksSelected && 'external' === 'ant' && coordinatorTaskCount > 0) {
           if (coordinatorTaskIndex < coordinatorTaskCount - 1) {
             setCoordinatorTaskIndex(prev => prev + 1);
@@ -2335,6 +2341,7 @@ function PromptInput({
             }
             break;
           case 'tmux':
+            // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
             if ('external' === 'ant') {
               setAppState(prev =>
                 prev.tungstenPanelAutoHidden

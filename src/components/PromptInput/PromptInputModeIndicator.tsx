@@ -49,6 +49,7 @@ type PromptCharProps = {
 function PromptChar({ isLoading, themeColor }: PromptCharProps): React.ReactNode {
   // Assign to original name for clarity within the function
   const teammateColor = themeColor;
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const isAnt = 'external' === 'ant';
   const color = teammateColor ?? (isAnt ? 'subtle' : undefined);
 

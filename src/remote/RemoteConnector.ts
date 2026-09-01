@@ -36,6 +36,7 @@ export class RemoteConnector {
             message?: { status: string; output?: string; error?: string };
           };
 
+          // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
           if (msg.type === 'paired') {
             this.callbacks.onConnected?.();
           } else if (msg.type === 'assistant' && msg.message) {

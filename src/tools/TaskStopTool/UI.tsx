@@ -29,6 +29,7 @@ export function renderToolResultMessage(
     verbose: boolean;
   },
 ): React.ReactNode {
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   if ('external' === 'ant') {
     return null;
   }

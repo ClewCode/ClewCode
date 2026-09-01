@@ -208,6 +208,7 @@ function ModeIndicator({
   const expandedView = useAppState(s => s.expandedView);
   const showSpinnerTree = expandedView === 'teammates';
   const prStatus = usePrStatus(isLoading, isPrStatusEnabled());
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const hasTmuxSession = useAppState(s => 'external' === 'ant' && s.tungstenActiveSession !== undefined);
 
   const nextTickAt = useSyncExternalStore(
@@ -230,6 +231,7 @@ function ModeIndicator({
   const hasNextTick = nextTickAt !== null;
   const isCoordinator = feature('COORDINATOR_MODE') ? coordinatorModule?.isCoordinatorMode() === true : false;
   const runningTaskCount = useMemo(
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     () => count(Object.values(tasks), t => isBackgroundTask(t) && !('external' === 'ant' && isPanelAgentTask(t))),
     [tasks],
   );
@@ -378,6 +380,7 @@ function ModeIndicator({
     // its click-target Box isn't nested inside the <Text wrap="truncate">
     // wrapper (reconciler throws on Box-in-Text).
     // Tmux pill (ant-only) — appears right after tasks in nav order
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     ...('external' === 'ant' && hasTmuxSession ? [<TungstenPill key="tmux" selected={tmuxSelected} />] : []),
     ...(isAgentSwarmsEnabled() && hasTeams
       ? [<TeamStatus key="teams" teamsSelected={teamsSelected} showHint={showHint && !hasBackgroundTasks} />]
@@ -398,6 +401,7 @@ function ModeIndicator({
   const allTasksAreAgents =
     hasRunningAgentTasks &&
     Object.values(tasks)
+      // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
       .filter(t => isBackgroundTask(t) && !('external' === 'ant' && isPanelAgentTask(t)))
       .every(t => t.type === 'local_agent');
 
@@ -460,6 +464,7 @@ function ModeIndicator({
   }
 
   // Add "↓ to manage tasks" hint when panel has visible rows
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const hasCoordinatorTasks = 'external' === 'ant' && getVisibleAgentTasks(tasks).length > 0;
 
   // Tasks pill renders as a Box sibling (not a parts entry) so its

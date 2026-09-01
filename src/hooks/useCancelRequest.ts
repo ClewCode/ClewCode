@@ -133,6 +133,7 @@ export function CancelRequestHandler(props: CancelRequestHandlerProps): null {
     (canCancelRunningTask || hasQueuedCommands) &&
     !isInSpecialModeWithEmptyInput &&
     !isViewingTeammate &&
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     !(isVimModeEnabled() && (vimMode === 'INSERT' || vimMode === 'VISUAL'));
 
   // Ctrl+C (app:interrupt): when viewing a teammate, stops everything and

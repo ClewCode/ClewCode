@@ -132,6 +132,7 @@ export function useAppState<T>(selector: (state: AppState) => T): T {
     const state = store.getState();
     const selected = selector(state);
 
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     if ('external' === 'ant' && state === selected) {
       throw new Error(
         `Your selector in \`useAppState(${selector.toString()})\` returned the original state, which is not allowed. You must instead return a property for optimised rendering.`,

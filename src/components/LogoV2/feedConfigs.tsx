@@ -25,6 +25,7 @@ export function createRecentActivityFeed(activities: LogOption[]): FeedConfig {
 }
 export function createWhatsNewFeed(releaseNotes: string[]): FeedConfig {
   const lines: FeedLine[] = releaseNotes.map(note => {
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     if ('external' === 'ant') {
       const match = note.match(/^(\d+\s+\w+\s+ago)\s+(.+)$/);
       if (match) {
@@ -39,10 +40,12 @@ export function createWhatsNewFeed(releaseNotes: string[]): FeedConfig {
     };
   });
   const emptyMessage =
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     'external' === 'ant'
       ? 'Unable to fetch latest claude-cli-internal commits'
       : 'Check the Clew Code changelog for updates';
   return {
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     title: 'external' === 'ant' ? "What's new [ANT-ONLY: Latest CC commits]" : "What's new",
     lines,
     footer: lines.length > 0 ? '/release-notes for more' : undefined,

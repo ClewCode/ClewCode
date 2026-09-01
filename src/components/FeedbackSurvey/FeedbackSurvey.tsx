@@ -138,6 +138,7 @@ function FeedbackSurveyThanks({
     },
   });
 
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const feedbackCommand = 'external' === 'ant' ? '/issue' : '/feedback';
   const followUpText = lastResponse === 'good' ? 'tell us what went well' : 'share what went wrong';
 

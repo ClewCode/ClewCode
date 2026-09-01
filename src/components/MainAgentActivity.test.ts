@@ -49,4 +49,15 @@ describe('buildMainAgentActivityModel', () => {
     expect(source).not.toContain('loadSupervisorSessions');
     expect(source).not.toContain('/sessions manage all');
   });
+
+  test('renders below the input footer instead of at the top of the transcript', () => {
+    const messagesSource = readFileSync(new URL('./Messages.tsx', import.meta.url), 'utf8');
+    const replSource = readFileSync(new URL('../screens/REPL.tsx', import.meta.url), 'utf8');
+    const statusLineIndex = replSource.indexOf('<StatusLine');
+    const activityIndex = replSource.indexOf('<MainAgentActivity />');
+
+    expect(messagesSource).not.toContain('<MainAgentActivity />');
+    expect(statusLineIndex).toBeGreaterThan(-1);
+    expect(activityIndex).toBeGreaterThan(statusLineIndex);
+  });
 });

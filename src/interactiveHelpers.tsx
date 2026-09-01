@@ -138,6 +138,7 @@ export async function showSetupScreens(
   devChannels?: ChannelEntry[],
 ): Promise<boolean> {
   if (
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     'production' === 'test' ||
     isEnvTruthy(false) ||
     process.env.IS_DEMO // Skip onboarding in demo mode

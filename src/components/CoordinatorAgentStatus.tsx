@@ -109,6 +109,7 @@ export function CoordinatorTaskPanel(): React.ReactNode {
 export function useCoordinatorTaskCount(): number {
   const tasks = useAppState(s => s.tasks);
   return React.useMemo(() => {
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     if ('external' !== 'ant') return 0;
     const count = getVisibleAgentTasks(tasks).length;
     return count > 0 ? count + 1 : 0;

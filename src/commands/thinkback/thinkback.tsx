@@ -34,10 +34,12 @@ const INTERNAL_MARKETPLACE_REPO = 'anthropics/claude-code-marketplace';
 const OFFICIAL_MARKETPLACE_REPO = 'anthropics/claude-plugins-official';
 
 function getMarketplaceName(): string {
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   return 'external' === 'ant' ? INTERNAL_MARKETPLACE_NAME : OFFICIAL_MARKETPLACE_NAME;
 }
 
 function getMarketplaceRepo(): string {
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   return 'external' === 'ant' ? INTERNAL_MARKETPLACE_REPO : OFFICIAL_MARKETPLACE_REPO;
 }
 

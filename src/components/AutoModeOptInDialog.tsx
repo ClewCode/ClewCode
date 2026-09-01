@@ -58,6 +58,7 @@ export function AutoModeOptInDialog({ onAccept, onDecline, declineExits }: Props
 
       <Select
         options={[
+          // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
           ...('external' !== 'ant'
             ? [
                 {

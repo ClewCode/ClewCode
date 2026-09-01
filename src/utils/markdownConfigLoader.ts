@@ -241,6 +241,7 @@ export function getProjectDirsUpToHome(subdir: ClaudeConfigDirectory, cwd: strin
       // .clew/subdir doesn't exist — check legacy .claude/subdir
     }
     // Legacy fallback: also check .claude/subdir
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     if (DOT_CLEW !== DOT_CLAUDE) {
       try {
         const legacySubdir = join(current, DOT_CLAUDE, subdir);

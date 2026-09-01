@@ -156,7 +156,9 @@ export function LogSelector({
   const exitState = useExitOnCtrlCDWithKeybindings(onCancel);
   const isTerminalFocused = useTerminalFocus();
   const isResumeWithRenameEnabled = isCustomTitleEnabled();
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const isDeepSearchEnabled = 'external' === 'ant';
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   const isAgenticSearchEnabled = 'external' === 'ant';
 
   const [currentBranch, setCurrentBranch] = React.useState<string | null>(null);

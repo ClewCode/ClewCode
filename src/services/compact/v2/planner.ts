@@ -22,24 +22,31 @@ import type { ContextPressure } from './ledger.js';
 import { astSkeletonReducer } from './reducers/astSkeleton.js';
 import { dedupeReducer } from './reducers/dedupe.js';
 import { dropReducer } from './reducers/drop.js';
-import { intelligentPruneReducer } from './reducers/intelligent-prune.js';
-import { scoredToolReducer } from './reducers/scoredTool.js';
 import { snipReducer } from './reducers/snip.js';
 import { staleToolReducer } from './reducers/staleTool.js';
 import { stateCompressorReducer } from './reducers/state-compressor.js';
 import { summarizeReducer } from './reducers/summarize.js';
 import type { ReduceContext, Reducer, ReducerName } from './types.js';
 
-/** Every reducer, cheapest loss first. Order here *is* the policy. */
+/**
+ * Every reducer, cheapest loss first. Order here *is* the policy.
+ *
+ * Disabled:
+ * - `scored-tool` (loss 0.3, costly): LLM fork to pick tool results; falls back
+ *   to stale-tool when the fork is unavailable, so it rarely adds value over
+ *   just running stale-tool. Re-enable when per-reducer analytics show it
+ *   reclaims meaningfully more than stale-tool alone.
+ * - `intelligent-prune` (loss 0.92): regex heuristic that drops whole messages
+ *   for matching "done"/"fixed" etc. Too blunt for the fidelity cost; overlaps
+ *   with drop/snip. No test coverage. Re-enable with a real eval if revived.
+ */
 export const REDUCERS: Reducer[] = [
   dedupeReducer,
   stateCompressorReducer, // 0.35 — cheap state compression
   staleToolReducer, // 0.1 — tool result pruning
   astSkeletonReducer, // 0.22 — AST symbol skeleton extraction
-  scoredToolReducer, // 0.3 — model-guided tool eviction
   snipReducer, // 0.5 — truncate long messages
   summarizeReducer, // 0.6 — expensive LLM summarization
-  intelligentPruneReducer, // 0.92 — targeted message pruning
   dropReducer, // 1.0 — last resort
 ].sort((a, b) => a.loss - b.loss);
 

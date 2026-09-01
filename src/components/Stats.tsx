@@ -327,10 +327,8 @@ function OverviewTab({
           <Ansi>{generateHeatmap(allTimeStats.dailyActivity, { terminalWidth })}</Ansi>
         </Box>
       )}
-
       {/* Date range selector */}
       <DateRangeSelector dateRange={dateRange} isLoading={isLoading} />
-
       {/* Section 1: Usage */}
       <Box flexDirection="row" gap={4} marginBottom={1}>
         <Box flexDirection="column" width={28}>
@@ -349,7 +347,6 @@ function OverviewTab({
           </Text>
         </Box>
       </Box>
-
       {/* Section 1b: Provider breakdown */}
       {Object.keys(stats.providerUsage).length > 0 && (
         <Box flexDirection="column" marginBottom={1}>
@@ -372,7 +369,6 @@ function OverviewTab({
             })}
         </Box>
       )}
-
       {/* Section 2: Activity - Row 1: Sessions | Longest session */}
       <Box flexDirection="row" gap={4}>
         <Box flexDirection="column" width={28}>
@@ -388,7 +384,6 @@ function OverviewTab({
           )}
         </Box>
       </Box>
-
       {/* Row 2: Active days | Longest streak */}
       <Box flexDirection="row" gap={4}>
         <Box flexDirection="column" width={28}>
@@ -407,7 +402,6 @@ function OverviewTab({
           </Text>
         </Box>
       </Box>
-
       {/* Row 3: Most active day | Current streak */}
       <Box flexDirection="row" gap={4}>
         <Box flexDirection="column" width={28}>
@@ -427,8 +421,8 @@ function OverviewTab({
           </Text>
         </Box>
       </Box>
-
       {/* Speculation time saved (ant-only) */}
+      {/* @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle */}
       {'external' === 'ant' && stats.totalSpeculationTimeSavedMs > 0 && (
         <Box flexDirection="row" gap={4}>
           <Box flexDirection="column" width={28}>
@@ -438,7 +432,6 @@ function OverviewTab({
           </Box>
         </Box>
       )}
-
       {/* Shot stats (ant-only) */}
       {shotStatsData && (
         <>
@@ -482,7 +475,6 @@ function OverviewTab({
           </Box>
         </>
       )}
-
       {/* Fun factoid */}
       {factoid && (
         <Box marginTop={1}>
@@ -1053,6 +1045,7 @@ function renderOverviewToAnsi(stats: ClaudeCodeStats): string[] {
   lines.push(row('Active days', activeDaysVal, 'Peak hour', peakHourVal));
 
   // Speculation time saved (ant-only)
+  // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
   if ('external' === 'ant' && stats.totalSpeculationTimeSavedMs > 0) {
     const label = 'Speculation saved:'.padEnd(COL1_LABEL_WIDTH);
     lines.push(label + h(formatDuration(stats.totalSpeculationTimeSavedMs)));

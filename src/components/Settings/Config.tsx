@@ -371,6 +371,7 @@ export function Config({
       },
     },
     // Speculation toggle (ant-only)
+    // @ts-expect-error TS2367 intentional DCE - 'external' vs 'ant' for bun:bundle
     ...('external' === 'ant'
       ? [
           {
