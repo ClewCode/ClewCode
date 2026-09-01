@@ -290,6 +290,20 @@ export async function* withRetry<T>(
         }
       }
 
+      // Free models: 500 (muse-spark contributor-free) should not retry same model endlessly
+      // 429 FreeUsageLimit is still retryable (yields retry message, tested), only 500 fast-fails
+      if (options.model.toLowerCase().includes('-free') && error instanceof APIError && error.status === 500) {
+        if (options.fallbackModel) {
+          throw new FallbackTriggeredError(options.model, options.fallbackModel);
+        }
+        // No fallback: fast-fail free model errors instead of 3 retries (user saw 500 spinner for 10s)
+        logEvent('tengu_free_model_fast_fail', {
+          model: options.model as any,
+          status: (error as any).status,
+        });
+        throw new CannotRetryError(error, retryContext);
+      }
+
       // Only retry if the error indicates we should
       const persistent = isPersistentRetryEnabled() && isTransientCapacityError(error);
       if (attempt > maxRetries && !persistent) {
