@@ -9,7 +9,11 @@ import {
   getTotalLinesRemoved,
 } from '../cost-tracker.js';
 import { getFsImplementation } from '../utils/fsOperations.js';
+import { getModelCosts } from '../utils/modelCost.js';
 import { getProjectsDir } from '../utils/sessionStorage.js';
+import { type CacheMetrics, calculateCacheMetrics } from './ai/cacheMetrics.js';
+import { getPromptCachingSupport } from './ai/providerCapabilities.js';
+import { fromGenericUsage } from './ai/usageTypes.js';
 
 export type LocalModelUsage = {
   inputTokens: number;
@@ -17,6 +21,10 @@ export type LocalModelUsage = {
   cacheReadInputTokens: number;
   cacheCreationInputTokens: number;
   costUSD: number;
+  provider?: string;
+  cacheRequestCount: number;
+  cacheReportedRequestCount: number;
+  cacheHitRequestCount: number;
 };
 
 export type LocalContributionGroup = {
@@ -33,7 +41,8 @@ export type LocalUsageAnalytics = {
     linesRemoved: number;
   } | null;
   models: Record<string, LocalModelUsage>;
-  cacheMissPercentage?: number;
+  cache: CacheMetrics | null;
+  largeCacheMissExposurePercentage?: number;
   highContextPercentage?: number;
   contributionGroups: LocalContributionGroup[];
 };
@@ -69,18 +78,70 @@ function numberValue(source: Record<string, unknown>, ...keys: string[]): number
 
 function usageFrom(message: Record<string, unknown>): Usage {
   const usage = record(message.usage) ?? {};
-  const inputTokens = numberValue(usage, 'input_tokens', 'inputTokens', 'prompt_tokens', 'promptTokens');
-  const outputTokens = numberValue(usage, 'output_tokens', 'outputTokens', 'completion_tokens', 'completionTokens');
-  const cacheReadInputTokens = numberValue(usage, 'cache_read_input_tokens', 'cacheReadInputTokens');
-  const cacheCreationInputTokens = numberValue(usage, 'cache_creation_input_tokens', 'cacheCreationInputTokens');
+  const normalized = fromGenericUsage(usage);
+  const { inputTokens, outputTokens } = normalized;
+  const cacheReadInputTokens = normalized.cacheReadInputTokens ?? 0;
+  const cacheCreationInputTokens = normalized.cacheCreationInputTokens ?? 0;
+  const cacheWasReported =
+    normalized.cacheReadInputTokens !== undefined || normalized.cacheCreationInputTokens !== undefined;
   return {
     inputTokens,
     outputTokens,
     cacheReadInputTokens,
     cacheCreationInputTokens,
     costUSD: numberValue(usage, 'costUSD', 'cost_usd', 'cost'),
+    cacheRequestCount: 1,
+    cacheReportedRequestCount: cacheWasReported ? 1 : 0,
+    cacheHitRequestCount: cacheReadInputTokens > 0 ? 1 : 0,
     totalTokens: inputTokens + outputTokens + cacheReadInputTokens + cacheCreationInputTokens,
   };
+}
+
+function providerName(item: LocalUsageRecord, message: Record<string, unknown>): string | undefined {
+  const sessionProvider = item.sessionModel?.includes('/') ? item.sessionModel.split('/')[0] : undefined;
+  if (sessionProvider) return sessionProvider;
+  const provider = message.provider ?? message._provider;
+  return typeof provider === 'string' ? provider : undefined;
+}
+
+export function summarizeLocalCache(models: Record<string, LocalModelUsage>): CacheMetrics | null {
+  const entries = Object.entries(models);
+  if (entries.length === 0) return null;
+  const totals = entries.reduce(
+    (sum, [, usage]) => ({
+      inputTokens: sum.inputTokens + usage.inputTokens,
+      cacheReadInputTokens: sum.cacheReadInputTokens + usage.cacheReadInputTokens,
+      cacheCreationInputTokens: sum.cacheCreationInputTokens + usage.cacheCreationInputTokens,
+      requestCount: sum.requestCount + usage.cacheRequestCount,
+      reportedRequestCount: sum.reportedRequestCount + usage.cacheReportedRequestCount,
+      hitRequestCount: sum.hitRequestCount + usage.cacheHitRequestCount,
+    }),
+    {
+      inputTokens: 0,
+      cacheReadInputTokens: 0,
+      cacheCreationInputTokens: 0,
+      requestCount: 0,
+      reportedRequestCount: 0,
+      hitRequestCount: 0,
+    },
+  );
+  const knownSupports = entries.map(([, usage]) => getPromptCachingSupport(usage.provider));
+  const support = knownSupports.some(value => value !== 'none') ? 'automatic' : 'none';
+  const metrics = calculateCacheMetrics({ ...totals, support });
+  const savings = entries.reduce((sum, [model, usage]) => {
+    const modelMetrics = calculateCacheMetrics({
+      support: getPromptCachingSupport(usage.provider),
+      inputTokens: usage.inputTokens,
+      cacheReadInputTokens: usage.cacheReadInputTokens,
+      cacheCreationInputTokens: usage.cacheCreationInputTokens,
+      requestCount: usage.cacheRequestCount,
+      reportedRequestCount: usage.cacheReportedRequestCount,
+      hitRequestCount: usage.cacheHitRequestCount,
+      rates: getModelCosts(model),
+    });
+    return sum + (modelMetrics.estimatedSavingsUSD ?? 0);
+  }, 0);
+  return { ...metrics, estimatedSavingsUSD: savings > 0 ? savings : null };
 }
 
 function modelName(item: LocalUsageRecord, message: Record<string, unknown>): string {
@@ -175,16 +236,25 @@ export function aggregateLocalUsageRecords(
       cacheReadInputTokens: 0,
       cacheCreationInputTokens: 0,
       costUSD: 0,
+      provider: providerName(item, message),
+      cacheRequestCount: 0,
+      cacheReportedRequestCount: 0,
+      cacheHitRequestCount: 0,
     };
     existing.inputTokens += usage.inputTokens;
     existing.outputTokens += usage.outputTokens;
     existing.cacheReadInputTokens += usage.cacheReadInputTokens;
     existing.cacheCreationInputTokens += usage.cacheCreationInputTokens;
     existing.costUSD += usage.costUSD;
+    existing.provider ??= providerName(item, message);
+    existing.cacheRequestCount += usage.cacheRequestCount;
+    existing.cacheReportedRequestCount += usage.cacheReportedRequestCount;
+    existing.cacheHitRequestCount += usage.cacheHitRequestCount;
     models[model] = existing;
   }
 
   let recentTokens = 0;
+  let recentInputTokens = 0;
   let highContextTokens = 0;
   let cacheMissTokens = 0;
   const skillTokens = new Map<string, number>();
@@ -197,8 +267,11 @@ export function aggregateLocalUsageRecords(
     if (!message) continue;
     const usage = usageFrom(message);
     recentTokens += usage.totalTokens;
+    recentInputTokens += usage.inputTokens + usage.cacheReadInputTokens + usage.cacheCreationInputTokens;
     if (usage.totalTokens > HIGH_CONTEXT_TOKENS) highContextTokens += usage.totalTokens;
-    if (usage.inputTokens + usage.cacheCreationInputTokens > CACHE_MISS_TOKENS) cacheMissTokens += usage.totalTokens;
+    if (usage.inputTokens + usage.cacheCreationInputTokens > CACHE_MISS_TOKENS) {
+      cacheMissTokens += usage.inputTokens + usage.cacheCreationInputTokens;
+    }
     const evidence = toolEvidence(message);
     for (const name of evidence.skills) skillTokens.set(name, (skillTokens.get(name) ?? 0) + usage.totalTokens);
     for (const name of evidence.plugins) pluginTokens.set(name, (pluginTokens.get(name) ?? 0) + usage.totalTokens);
@@ -231,9 +304,12 @@ export function aggregateLocalUsageRecords(
           }
         : null,
     models,
+    cache: summarizeLocalCache(models),
     ...(recentTokens > 0
       ? {
-          cacheMissPercentage: percentage(cacheMissTokens, recentTokens),
+          ...(recentInputTokens > 0
+            ? { largeCacheMissExposurePercentage: percentage(cacheMissTokens, recentInputTokens) }
+            : {}),
           highContextPercentage: percentage(highContextTokens, recentTokens),
         }
       : {}),
@@ -322,6 +398,10 @@ export async function loadLocalUsageAnalytics(
         cacheReadInputTokens: usage.cacheReadInputTokens,
         cacheCreationInputTokens: usage.cacheCreationInputTokens,
         costUSD: usage.costUSD,
+        provider: usage.provider,
+        cacheRequestCount: usage.cacheRequestCount ?? 0,
+        cacheReportedRequestCount: usage.cacheReportedRequestCount ?? 0,
+        cacheHitRequestCount: usage.cacheHitRequestCount ?? 0,
       },
     ]),
   );
@@ -336,5 +416,6 @@ export async function loadLocalUsageAnalytics(
       linesRemoved: getTotalLinesRemoved(),
     },
     models,
+    cache: summarizeLocalCache(models),
   };
 }

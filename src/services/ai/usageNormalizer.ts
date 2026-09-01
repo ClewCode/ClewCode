@@ -1,9 +1,12 @@
 import type { ProviderId } from './providers/ProviderInterface.js';
+import { fromGenericUsage } from './usageTypes.js';
 
 interface NormalizedUsage {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
+  cacheReadInputTokens?: number;
+  cacheCreationInputTokens?: number;
   costUSD?: number;
   billingModel?: string;
 }
@@ -25,20 +28,12 @@ export function normalizeUsage(raw: unknown, provider?: ProviderId): NormalizedU
 
   const usage = (raw as Record<string, unknown>).usage ?? raw;
   const maybeObj = typeof usage === 'object' ? (usage as Record<string, unknown>) : {};
-  const inputTokens =
-    normalizeTokenCount(maybeObj.input_tokens) ??
-    normalizeTokenCount(maybeObj.prompt_tokens) ??
-    normalizeTokenCount(maybeObj.promptTokens) ??
-    0;
-  const outputTokens =
-    normalizeTokenCount(maybeObj.output_tokens) ??
-    normalizeTokenCount(maybeObj.completion_tokens) ??
-    normalizeTokenCount(maybeObj.completionTokens) ??
-    0;
+  const normalized = fromGenericUsage(maybeObj);
+  const { inputTokens, outputTokens, cacheReadInputTokens, cacheCreationInputTokens } = normalized;
   const totalTokens =
     normalizeTokenCount(maybeObj.total_tokens) ??
     normalizeTokenCount(maybeObj.totalTokens) ??
-    inputTokens + outputTokens;
+    inputTokens + outputTokens + (cacheReadInputTokens ?? 0) + (cacheCreationInputTokens ?? 0);
   const costUSD =
     typeof maybeObj.cost === 'number'
       ? maybeObj.cost
@@ -50,6 +45,8 @@ export function normalizeUsage(raw: unknown, provider?: ProviderId): NormalizedU
     inputTokens,
     outputTokens,
     totalTokens,
+    ...(cacheReadInputTokens !== undefined ? { cacheReadInputTokens } : {}),
+    ...(cacheCreationInputTokens !== undefined ? { cacheCreationInputTokens } : {}),
     costUSD,
     billingModel: typeof maybeObj.model === 'string' ? maybeObj.model : provider,
   };

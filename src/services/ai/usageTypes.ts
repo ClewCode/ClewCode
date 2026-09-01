@@ -24,6 +24,17 @@ export interface ProviderUsage {
   providerMetadata?: Record<string, unknown>;
 }
 
+function finiteToken(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, Math.round(value));
+  if (typeof value === 'string' && /^\d+$/.test(value)) return Number(value);
+  return undefined;
+}
+
+function nestedRecord(source: Record<string, unknown>, key: string): Record<string, unknown> {
+  const value = source[key];
+  return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+
 // ── Conversion helpers ───────────────────────────────────────────────────────
 
 /**
@@ -33,15 +44,42 @@ export interface ProviderUsage {
 export function fromGenericUsage(usage: Record<string, unknown>): ProviderUsage {
   const get = (keys: string[]): number | undefined => {
     for (const k of keys) {
-      const v = usage[k];
-      if (typeof v === 'number' && !Number.isNaN(v)) return v;
+      const value = finiteToken(usage[k]);
+      if (value !== undefined) return value;
     }
     return undefined;
   };
+
+  const promptDetails = {
+    ...nestedRecord(usage, 'prompt_tokens_details'),
+    ...nestedRecord(usage, 'input_tokens_details'),
+    ...nestedRecord(usage, 'promptTokensDetails'),
+  };
+  const inclusiveCacheRead =
+    finiteToken(promptDetails.cached_tokens) ??
+    finiteToken(promptDetails.cachedTokens) ??
+    get(['cachedContentTokenCount', 'cached_content_token_count']);
+  const directCacheRead = get([
+    'cache_read_input_tokens',
+    'cacheReadInputTokens',
+    'prompt_cache_hit_tokens',
+    'promptCacheHitTokens',
+  ]);
+  const cacheMissInputTokens = get(['prompt_cache_miss_tokens', 'promptCacheMissTokens']);
+  const rawInputTokens = get(['input_tokens', 'inputTokens', 'prompt_tokens', 'promptTokens', 'promptTokenCount']) ?? 0;
+  const boundedInclusiveCacheRead =
+    inclusiveCacheRead !== undefined ? Math.min(rawInputTokens, inclusiveCacheRead) : undefined;
+  const cacheReadInputTokens = directCacheRead ?? boundedInclusiveCacheRead;
+  // OpenAI and Gemini include cached tokens in their prompt total. Anthropic's
+  // direct cache_read_input_tokens bucket is already mutually exclusive.
+  const inputTokens =
+    cacheMissInputTokens ??
+    (boundedInclusiveCacheRead !== undefined ? rawInputTokens - boundedInclusiveCacheRead : rawInputTokens);
+
   return {
-    inputTokens: get(['input_tokens', 'inputTokens', 'prompt_tokens', 'promptTokenCount']) ?? 0,
+    inputTokens,
     outputTokens: get(['output_tokens', 'outputTokens', 'completion_tokens', 'candidatesTokenCount']) ?? 0,
-    cacheReadInputTokens: get(['cache_read_input_tokens', 'cacheReadInputTokens', 'cachedContentTokenCount']),
+    cacheReadInputTokens,
     cacheCreationInputTokens: get(['cache_creation_input_tokens', 'cacheCreationInputTokens']),
   };
 }

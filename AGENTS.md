@@ -54,7 +54,7 @@ per-file loop re-typechecks the whole project each iteration and takes minutes.
 **not** a substitute for `tsc` in the gate. Invoke with `bunx` if you want it.
 
 `dev` / `build` always run `prebuild-version` and define:
-`TRANSCRIPT_CLASSIFIER`, `CHICAGO_MCP`, `VOICE_MODE`, `AWAY_SUMMARY`.
+`CHICAGO_MCP`, `VOICE_MODE`, `AWAY_SUMMARY`, `EXTRACT_MEMORIES`, `AGENT_TRIGGERS` (keep `FEATURES` in `scripts/bun-run.mjs` + `package.json` build in sync).
 
 ## Project rules
 
@@ -200,7 +200,8 @@ Commands: ~105 under `src/commands/`; `src/commands.ts` is source of truth.
 | `mcp/` | MCP client (stdio/SSE/HTTP/DirectConnect) |
 | `autonomous/` | Task queue, leases, cron, dead-letter, daemon |
 | `compact/v2/` | **Reducer-based compaction** — single planner replaces 6 legacy mechanisms (dedupe → stale-tool → snip → summarize → drop), per-agent health tracking via `CompactSessionState.health` |
-| `longTermMemory/`, `autoDream/`, `extractMemories/` | Dream/Distill & extraction |
+| `longTermMemory/` (with `extract.ts` + `dream/` + `timeline`/`distill`/`graph`) | Unified long-term memory — `extractMemories` + `autoDream` consolidated here (0.9.3); old paths re-export then removed |
+| `memory/` (SQLite) | Canonical durable store — `frontmatter.ts` parses `--- yaml ---` for all memory records |
 | `checkpoint/`, `goal/` | Progress snapshots & goal verification |
 | `plugins/` | Pre/Post tool/bash/edit hooks |
 | `sessionSearch/`, `SessionLifecycle/`, `SessionMemory/` | Session life & FTS5 search |
@@ -282,7 +283,7 @@ Prefer TinyFish MCP for web work over built-in WebSearch/WebFetch/BrowserTool wh
 
 CI runs typecheck, lint, build, tests. Pushing a `v*` tag triggers the release workflow (GitHub Release + npm publish).
 
-TypeScript error budget stored in `.ts-error-baseline` (current: 1867). CI fails only on regression (count > baseline), not existing debt. Update it when you fix errors.
+TypeScript error budget stored in `.ts-error-baseline` (current: **0** — was 1867, fixed 0.9.2 → 0.9.3 via Transport interface + DCE suppressions). CI fails only on regression (count > baseline), not existing debt. Update it when you fix errors.
 
 ## Tests
 
@@ -296,6 +297,10 @@ Co-located `.test.ts`/`.test.tsx` with sources (under `src/` and `tests/`), run 
 | `scripts/postbuild-inject-macro.mjs` | Post-build macro injection |
 | `scripts/bun-run.mjs` | Dev/start runner with defines |
 | `src/remote/relay-server.ts` | Relay (`bun run relay`) |
+| `src/components/CustomSelect/select.tsx` | `BaseOption.preview` + `p` toggle — side (≥100 cols) or bottom preview, live on focus |
+| `src/components/ModelPicker.tsx` | `/model` preview per model via `<Markdown>` example |
+| `src/bootstrap/tty.ts` | TTY side-effect extracted from `main.tsx` (0.9.3, 6246→6206) |
+| `src/utils/messagesConstants.ts` | `INTERRUPT`/`SYNTHETIC` constants extracted from `messages.ts` (0.9.3, 5160→5111) |
 
 ## Release
 

@@ -133,6 +133,16 @@ function SessionInfoSection({ analytics }: SessionInfoSectionProps): React.React
     rows.push({ label: 'Usage', value: parts.join(', ') });
   }
 
+  if (analytics.cache) {
+    const { status, hitRate, requestHitRate, reportingCoverage, estimatedSavingsUSD } = analytics.cache;
+    const parts: string[] = [status];
+    if (hitRate !== null) parts.push(`${(hitRate * 100).toFixed(1)}% token hit rate`);
+    if (requestHitRate !== null) parts.push(`${(requestHitRate * 100).toFixed(1)}% request hit rate`);
+    if (reportingCoverage !== null) parts.push(`${(reportingCoverage * 100).toFixed(0)}% reporting coverage`);
+    if (estimatedSavingsUSD !== null) parts.push(`~$${estimatedSavingsUSD.toFixed(4)} saved`);
+    rows.push({ label: 'Prompt cache', value: parts.join(' · ') });
+  }
+
   const labelWidth = Math.max(...rows.map(r => r.label.length));
 
   return (
@@ -155,8 +165,9 @@ type LocalContributingFactorsSectionProps = {
 };
 
 function LocalContributingFactorsSection({ analytics }: LocalContributingFactorsSectionProps): React.ReactNode {
-  const { contributionGroups, cacheMissPercentage, highContextPercentage } = analytics;
-  const hasAnyContent = contributionGroups.length > 0 || cacheMissPercentage != null || highContextPercentage != null;
+  const { contributionGroups, largeCacheMissExposurePercentage, highContextPercentage } = analytics;
+  const hasAnyContent =
+    contributionGroups.length > 0 || largeCacheMissExposurePercentage != null || highContextPercentage != null;
   if (!hasAnyContent) return null;
 
   return (
@@ -171,9 +182,9 @@ function LocalContributingFactorsSection({ analytics }: LocalContributingFactors
         </>
       )}
 
-      {cacheMissPercentage != null && cacheMissPercentage > 0 && (
+      {largeCacheMissExposurePercentage != null && largeCacheMissExposurePercentage > 0 && (
         <Box flexDirection="column">
-          <Text>{cacheMissPercentage}% of your usage hit a &gt;100k-token cache miss</Text>
+          <Text>{largeCacheMissExposurePercentage}% of input tokens came from &gt;100k-token cache misses</Text>
           <Text dimColor>
             Uncached input is expensive, and often happens when sending a message to a session that has gone idle.
             /compact before stepping away keeps the cold-start small.

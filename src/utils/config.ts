@@ -98,6 +98,10 @@ export type ProjectConfig = {
       cacheCreationInputTokens: number;
       webSearchRequests: number;
       costUSD: number;
+      provider?: string;
+      cacheRequestCount?: number;
+      cacheReportedRequestCount?: number;
+      cacheHitRequestCount?: number;
     }
   >;
   lastSessionMetrics?: Record<string, number>;

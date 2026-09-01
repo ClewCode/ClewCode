@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { buildUnifiedModelOptions } from './ModelPicker.js';
+import { buildUnifiedModelOptions, formatModelContext, formatModelRate, getPriceMarkerIndex } from './ModelPicker.js';
 
 describe('buildUnifiedModelOptions', () => {
   test('lists every provider in one grouped list', () => {
@@ -55,5 +55,33 @@ describe('buildUnifiedModelOptions', () => {
     });
 
     expect(options.some(opt => opt.providerId === 'openai' && opt.modelId === 'new-model-2026')).toBe(true);
+  });
+
+  test('carries factual context, vision, tools, and reasoning metadata into model rows', () => {
+    const options = buildUnifiedModelOptions({ activeProviderId: 'anthropic', initial: null });
+    const opus = options.find(option => option.providerId === 'anthropic' && option.modelId === 'claude-opus-4-8');
+
+    expect(opus?.capabilities).toEqual({ context: 1_000_000, vision: true, tools: true, reasoning: true });
+    expect(formatModelContext(opus?.capabilities?.context)).toBe('1M');
+    expect(formatModelContext('varies')).toBe('varies');
+    expect(formatModelContext(undefined)).toBe('?');
+  });
+
+  test('backfills registry capabilities when a live model listing only returns an id', () => {
+    const options = buildUnifiedModelOptions({
+      activeProviderId: 'openai',
+      initial: null,
+      fetchedModels: [{ id: 'gpt-5.5', label: 'GPT-5.5 live' }],
+    });
+    const model = options.find(option => option.providerId === 'openai' && option.modelId === 'gpt-5.5');
+
+    expect(model?.capabilities).toEqual({ context: 1_000_000, vision: true, tools: true, reasoning: true });
+  });
+
+  test('formats model pricing and places premium models farther along the spectrum', () => {
+    expect(formatModelRate(0.12)).toBe('$0.12 / 1M');
+    expect(formatModelRate(0)).toBe('$0 / 1M');
+    expect(getPriceMarkerIndex(0, 24)).toBe(0);
+    expect(getPriceMarkerIndex(15, 24)).toBeGreaterThan(getPriceMarkerIndex(1, 24));
   });
 });

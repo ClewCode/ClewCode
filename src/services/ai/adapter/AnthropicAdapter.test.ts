@@ -28,6 +28,16 @@ describe('normalizeOpenAIUsageForAnthropic', () => {
     });
   });
 
+  test('preserves a reported zero so cache misses are distinguishable from missing telemetry', () => {
+    expect(
+      normalizeOpenAIUsageForAnthropic({
+        prompt_tokens: 1_200,
+        completion_tokens: 80,
+        prompt_tokens_details: { cached_tokens: 0 },
+      }),
+    ).toEqual({ input_tokens: 1_200, output_tokens: 80, cache_read_input_tokens: 0 });
+  });
+
   test('clamps malformed cache counts so token buckets cannot become negative', () => {
     expect(
       normalizeOpenAIUsageForAnthropic({

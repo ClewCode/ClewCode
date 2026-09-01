@@ -23,6 +23,12 @@ export type ModelUsage = {
   contextWindow: number;
   maxOutputTokens: number;
   provider?: string;
+  /** Number of usage-bearing requests observed for this model. */
+  cacheRequestCount?: number;
+  /** Requests where the provider explicitly reported cache token fields, including zero. */
+  cacheReportedRequestCount?: number;
+  /** Reported requests that read at least one cached token. */
+  cacheHitRequestCount?: number;
 };
 
 /**

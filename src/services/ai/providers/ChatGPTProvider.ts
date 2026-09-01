@@ -16,7 +16,12 @@ import {
 } from '@opencoredev/loginwithchatgpt-core';
 import { logError } from '../../../utils/log.js';
 import { type CodexLimitsSnapshot, extractCodexLimitsFromResponse, getCodexLimits } from '../../codexLimits.js';
-import { type ProviderAdapter, registerAdapter, withStreamWatchdog } from '../adapter/AnthropicAdapter.js';
+import {
+  normalizeOpenAIUsageForAnthropic,
+  type ProviderAdapter,
+  registerAdapter,
+  withStreamWatchdog,
+} from '../adapter/AnthropicAdapter.js';
 import type { ProviderClient, ProviderInitOptions, ProviderInterface } from './ProviderInterface.js';
 
 const CODEX_AUTH_PATH = join(homedir(), '.codex', 'auth.json');
@@ -362,10 +367,7 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
       content,
       stop_reason: mapResponsesStatus(record.status),
       stop_sequence: null,
-      usage: {
-        input_tokens: record.usage?.input_tokens ?? 0,
-        output_tokens: record.usage?.output_tokens ?? 0,
-      },
+      usage: normalizeOpenAIUsageForAnthropic(record.usage),
     } as any;
   }
 
@@ -388,7 +390,7 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
     let textIndex: number | null = null;
     const toolIndexes = new Map<string, number>();
     let sawContent = false;
-    let usage: { input_tokens?: number; output_tokens?: number } | undefined;
+    let usage: Record<string, unknown> | undefined;
 
     for await (const rawEvent of stream) {
       const event = (rawEvent && typeof rawEvent === 'object' ? rawEvent : {}) as Record<string, any>;
@@ -480,7 +482,7 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
     yield {
       type: 'message_delta',
       delta: { stop_reason: 'end_turn' },
-      usage: { input_tokens: usage?.input_tokens ?? 0, output_tokens: usage?.output_tokens ?? 0 },
+      usage: normalizeOpenAIUsageForAnthropic(usage),
     };
     yield { type: 'message_stop' };
   }

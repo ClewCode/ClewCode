@@ -4,6 +4,15 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 
 describe('provider registry', () => {
+  test('every provider explicitly declares its prompt-cache behavior', async () => {
+    const { PROVIDER_IDS, PROVIDER_REGISTRY, getPromptCachingSupport } = await import('./providerRegistry.js');
+
+    for (const providerId of PROVIDER_IDS) {
+      expect(PROVIDER_REGISTRY[providerId].capabilities.promptCaching).toBeDefined();
+      expect(getPromptCachingSupport(providerId)).toBe(PROVIDER_REGISTRY[providerId].capabilities.promptCaching!);
+    }
+  });
+
   test('anthropic is a first-class registry entry', async () => {
     const { PROVIDER_IDS, PROVIDER_REGISTRY, getPromptCachingSupport } = await import('./providerRegistry.js');
 

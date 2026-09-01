@@ -112,7 +112,7 @@ Open the model picker:
 /model
 ```
 
-The picker groups models by provider and refreshes live model lists for configured providers when it opens. Providers without usable credentials fall back to the bundled static registry. Select a provider-qualified model directly with:
+The picker groups models by provider and refreshes live model lists for configured providers when it opens. Its compact model console shows each model's context window, Vision/Tools/Reasoning support, default effort, current-session marker, and estimated input/cache/output price while you browse. Providers without usable credentials fall back to the bundled static registry. Select a provider-qualified model directly with:
 
 ```text
 /model provider/model
@@ -201,6 +201,8 @@ Compaction health and shortfalls are tracked per agent. Evicted content is store
 ```
 
 Frequently used slash commands include `/model`, `/providers`, `/effort`, `/ultracode`, `/memory`, `/rule`, `/task`, `/goal`, `/compact`, `/rewind`, `/workspace`, `/mcp`, `/agent`, `/agents`, `/plan`, `/research`, `/workflow`, `/skills`, `/code-review`, `/bg`, `/daemon`, `/doctor`, `/stats`, `/cost`, `/session`, `/diff`, `/fork`, and `/theme`.
+
+`/cost` includes provider-wide prompt-cache observability for each model. It distinguishes reported hits and misses from unsupported or unreported cache telemetry, and shows token hit rate, reporting coverage, and estimated savings when pricing is known. `/usage` shows the same session cache status alongside the separate share of input tokens caused by large cache misses.
 
 The footer always displays `← N agents`, counting the main conversation as the first agent. Press `←` from an empty prompt to move the conversation into a background room with live **Needs input / Working / Completed** groups and a task composer. Live subagents appear below the main REPL logo while they have activity to report; archived conversations never clutter either view.
 

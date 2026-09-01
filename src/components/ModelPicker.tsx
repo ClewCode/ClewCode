@@ -30,6 +30,7 @@ import {
   modelDisplayString,
   parseUserSpecifiedModel,
 } from '../utils/model/model.js';
+import { fetchOpenRouterCapabilityCatalog, findOpenRouterCapabilities } from '../utils/model/openRouterCapabilities.js';
 import { mergeRecentModels } from '../utils/model/recentModels.js';
 import { getModelCosts } from '../utils/modelCost.js';
 import { getSettingsForSource, updateSettingsForSource } from '../utils/settings/settings.js';
@@ -80,7 +81,14 @@ type ModelOption = {
   type?: 'text' | 'section';
   disabled?: boolean;
   hideIndex?: boolean;
-  capabilityScore?: number;
+  capabilities?: ModelCapabilityDisplay;
+};
+
+export type ModelCapabilityDisplay = {
+  context?: number | 'varies';
+  vision?: boolean;
+  tools?: boolean;
+  reasoning?: boolean;
 };
 
 export function ModelPicker({
@@ -116,6 +124,7 @@ export function ModelPicker({
   );
 
   const [fetchedModelsByProvider, setFetchedModelsByProvider] = useState<Record<string, FetchedModel[]>>({});
+  const [openRouterCatalog, setOpenRouterCatalog] = useState<FetchedModel[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const hasRequestedModels = useRef(false);
 
@@ -146,15 +155,17 @@ export function ModelPicker({
             supportsModelFetching(provider) &&
             (provider === activeProviderId || Boolean(providerManager.getApiKeyForProvider(provider))),
         );
-        const results = await Promise.all(
-          providers.map(async provider => ({ provider, models: await fetchProviderModels(provider) })),
-        );
+        const [results, catalog] = await Promise.all([
+          Promise.all(providers.map(async provider => ({ provider, models: await fetchProviderModels(provider) }))),
+          fetchOpenRouterCapabilityCatalog(),
+        ]);
         const nextModels = Object.fromEntries(
           results
             .filter(result => result.models && result.models.length > 0)
             .map(result => [result.provider, result.models]),
         ) as Record<string, FetchedModel[]>;
         setFetchedModelsByProvider(nextModels);
+        setOpenRouterCatalog(catalog);
       } finally {
         setIsFetchingModels(false);
       }
@@ -170,8 +181,16 @@ export function ModelPicker({
         initial,
         defaultOptionLabel,
         defaultOptionDescription,
+        openRouterCatalog,
       }),
-    [fetchedModelsByProvider, activeProviderId, initial, defaultOptionLabel, defaultOptionDescription],
+    [
+      fetchedModelsByProvider,
+      activeProviderId,
+      initial,
+      defaultOptionLabel,
+      defaultOptionDescription,
+      openRouterCatalog,
+    ],
   );
 
   const optionsByValue = useMemo(() => new Map(allOptions.map(opt => [opt.value, opt])), [allOptions]);
@@ -223,7 +242,7 @@ export function ModelPicker({
       label: (
         <ModelListRow
           label={option.label}
-          capabilityScore={option.capabilityScore}
+          capabilities={option.capabilities}
           effort={optionEffort}
           isCurrent={option.value === initialValue}
           isFocused={option.value === effectiveFocusedValue}
@@ -434,6 +453,7 @@ export function ModelPicker({
 
   const modelList = (
     <Box flexDirection="column">
+      {isStandaloneCommand && filteredOptions.length > 0 && <ModelListHeader columns={columns} />}
       {filteredOptions.length > 0 ? (
         <Select
           key={`models-${jumpToken}`}
@@ -564,6 +584,7 @@ export function buildUnifiedModelOptions({
   initial,
   defaultOptionLabel,
   defaultOptionDescription,
+  openRouterCatalog = [],
 }: {
   fetchedModels?: FetchedModel[] | null;
   fetchedModelsByProvider?: Record<string, FetchedModel[]>;
@@ -571,6 +592,7 @@ export function buildUnifiedModelOptions({
   initial?: string | null;
   defaultOptionLabel?: string;
   defaultOptionDescription?: string;
+  openRouterCatalog?: FetchedModel[];
 }): ModelOption[] {
   const providerManager = ProviderManager.getInstance();
   const implementationType = providerManager.getImplementationType();
@@ -580,7 +602,7 @@ export function buildUnifiedModelOptions({
     if (!entry) return [];
     const staticModels = (entry.models ?? [])
       .filter(m => !m.supportedTypes || m.supportedTypes.includes(implementationType))
-      .map(m => toProviderModelOption(providerId, m));
+      .map(m => toProviderModelOption(providerId, m, openRouterCatalog));
 
     const liveModels =
       fetchedModelsByProvider?.[providerId] ?? (providerId === activeProviderId ? fetchedModels : null);
@@ -591,11 +613,24 @@ export function buildUnifiedModelOptions({
     // Live models win for the active provider, but static entries backfill:
     // some provider APIs return partial lists or are temporarily unreachable.
     const live: ModelOption[] = liveModels.map(m => {
+      const fallback = staticModels.find(option => option.modelId === m.id);
+      const openRouter = findOpenRouterCapabilities(m.id, openRouterCatalog);
+      const registryContext = fallback?.capabilities?.context;
+      const capabilities: ModelCapabilityDisplay = {
+        context:
+          m.contextWindow ??
+          (typeof registryContext === 'number' ? registryContext : undefined) ??
+          openRouter?.contextWindow ??
+          registryContext,
+        vision: m.supportsVision ?? fallback?.capabilities?.vision ?? openRouter?.supportsVision,
+        tools: m.supportsTools ?? fallback?.capabilities?.tools ?? openRouter?.supportsTools,
+        reasoning: m.supportsReasoning ?? fallback?.capabilities?.reasoning ?? openRouter?.supportsReasoning,
+      };
       const parts: string[] = [];
-      if (m.contextWindow) parts.push(`${formatContext(m.contextWindow)} ctx`);
-      if (m.supportsVision) parts.push('vision');
-      if (m.supportsTools) parts.push('tools');
-      if (m.supportsReasoning) parts.push('reasoning');
+      if (capabilities.context) parts.push(`${formatModelContext(capabilities.context)} ctx`);
+      if (capabilities.vision) parts.push('vision');
+      if (capabilities.tools) parts.push('tools');
+      if (capabilities.reasoning) parts.push('reasoning');
       if (m.free) parts.push('free');
       if (m.maxOutput) parts.push(`${formatContext(m.maxOutput)} out`);
       return {
@@ -605,13 +640,7 @@ export function buildUnifiedModelOptions({
         descriptionForModel: m.id,
         providerId,
         modelId: m.id,
-        capabilityScore: getCapabilityScore({
-          toolCalling: m.supportsTools,
-          vision: m.supportsVision,
-          reasoning: m.supportsReasoning,
-          maxContext: m.contextWindow,
-          maxOutput: m.maxOutput,
-        }),
+        capabilities,
       };
     });
     const liveIds = new Set(live.map(m => m.modelId));
@@ -649,7 +678,7 @@ export function buildUnifiedModelOptions({
     label: defaultOptionLabel ?? 'Default (recommended)',
     description:
       defaultOptionDescription ?? `Use ${activeEntry?.label ?? activeProviderId} default (${activeDefaultModel})`,
-    capabilityScore: activeDefaultOption?.capabilityScore,
+    capabilities: activeDefaultOption?.capabilities,
   });
 
   const recentValues = new Set(recentModels.map(m => m.value));
@@ -680,10 +709,15 @@ function sectionOption(id: string, label: string): ModelOption {
   };
 }
 
-function toProviderModelOption(providerId: string, model: ProviderModelInfo): ModelOption {
+function toProviderModelOption(
+  providerId: string,
+  model: ProviderModelInfo,
+  openRouterCatalog: readonly FetchedModel[],
+): ModelOption {
   const label = model.label ?? model.id;
   const parts: string[] = [];
   const cap = model.capabilities;
+  const openRouter = findOpenRouterCapabilities(model.id, openRouterCatalog);
 
   if (cap.maxContext) {
     const ctx = typeof cap.maxContext === 'number' ? formatContext(cap.maxContext) : 'varies';
@@ -703,41 +737,24 @@ function toProviderModelOption(providerId: string, model: ProviderModelInfo): Mo
     descriptionForModel: model.id,
     providerId,
     modelId: model.id,
-    capabilityScore: getCapabilityScore({
-      toolCalling: cap.toolCalling !== 'none',
+    capabilities: {
+      context: typeof cap.maxContext === 'number' ? cap.maxContext : (openRouter?.contextWindow ?? cap.maxContext),
       vision: cap.vision,
+      tools: cap.toolCalling !== 'none',
       reasoning: cap.reasoning,
-      maxContext: cap.maxContext,
-      maxOutput: cap.maxOutput,
-    }),
+    },
   };
-}
-
-type CapabilityScoreInput = {
-  toolCalling?: boolean;
-  vision?: boolean;
-  reasoning?: boolean;
-  maxContext?: number | 'varies';
-  maxOutput?: number | 'varies';
-};
-
-/** Six cells summarize useful coding-model capabilities without inventing a quality score. */
-export function getCapabilityScore(capabilities: CapabilityScoreInput): number {
-  return Math.min(
-    6,
-    1 +
-      Number(capabilities.toolCalling === true) +
-      Number(capabilities.vision === true) +
-      Number(capabilities.reasoning === true) +
-      Number(typeof capabilities.maxContext === 'number' && capabilities.maxContext >= 200_000) +
-      Number(typeof capabilities.maxOutput === 'number' && capabilities.maxOutput >= 32_000),
-  );
 }
 
 function formatContext(ctx: number): string {
   if (ctx >= 1_000_000) return `${(ctx / 1_000_000).toFixed(0)}M`;
   if (ctx >= 1_000) return `${(ctx / 1_000).toFixed(0)}K`;
   return String(ctx);
+}
+
+export function formatModelContext(context: number | 'varies' | undefined): string {
+  if (context === undefined) return '?';
+  return context === 'varies' ? 'varies' : formatContext(context);
 }
 
 function countRealModelOptions(options: ModelOption[]): number {
@@ -822,38 +839,122 @@ function ModelSearchBar({
   );
 }
 
+type ModelTableLayout = {
+  nameWidth: number;
+  contextWidth: number;
+  showCapabilityColumns: boolean;
+  showFullCapabilityNames: boolean;
+  showEffort: boolean;
+};
+
+function getModelTableLayout(columns: number): ModelTableLayout {
+  if (columns >= 96) {
+    return {
+      nameWidth: 32,
+      contextWidth: 8,
+      showCapabilityColumns: true,
+      showFullCapabilityNames: true,
+      showEffort: true,
+    };
+  }
+  if (columns >= 68) {
+    return {
+      nameWidth: 27,
+      contextWidth: 7,
+      showCapabilityColumns: true,
+      showFullCapabilityNames: false,
+      showEffort: true,
+    };
+  }
+  if (columns >= 52) {
+    return {
+      nameWidth: 21,
+      contextWidth: 7,
+      showCapabilityColumns: true,
+      showFullCapabilityNames: false,
+      showEffort: false,
+    };
+  }
+  return {
+    nameWidth: Math.max(12, columns - 15),
+    contextWidth: 7,
+    showCapabilityColumns: false,
+    showFullCapabilityNames: false,
+    showEffort: false,
+  };
+}
+
+function ModelListHeader({ columns }: { columns: number }): React.ReactNode {
+  const layout = getModelTableLayout(columns);
+  return (
+    <Box paddingLeft={2}>
+      <Text dimColor>{fitColumn('Model', layout.nameWidth)}</Text>
+      <Text>{'   '}</Text>
+      <Text dimColor>{fitColumn('Ctx', layout.contextWidth)}</Text>
+      {layout.showCapabilityColumns &&
+        (layout.showFullCapabilityNames ? (
+          <>
+            <Text dimColor>{fitColumn('Vision', 8)}</Text>
+            <Text dimColor>{fitColumn('Tools', 7)}</Text>
+            <Text dimColor>{fitColumn('Reason', 8)}</Text>
+          </>
+        ) : (
+          <>
+            <Text dimColor>{fitColumn('Vis', 4)}</Text>
+            <Text dimColor>{fitColumn('Tool', 5)}</Text>
+            <Text dimColor>{fitColumn('Rsn', 4)}</Text>
+          </>
+        ))}
+      {layout.showEffort && <Text dimColor>Effort</Text>}
+    </Box>
+  );
+}
+
+function capabilityMark(value: boolean | undefined): string {
+  if (value === undefined) return '?';
+  return value ? '✓' : '—';
+}
+
 function ModelListRow({
   label,
-  capabilityScore,
+  capabilities,
   effort,
   isCurrent,
   isFocused,
   columns,
 }: {
   label: string;
-  capabilityScore?: number;
+  capabilities?: ModelCapabilityDisplay;
   effort?: EffortLevel;
   isCurrent: boolean;
   isFocused: boolean;
   columns: number;
 }): React.ReactNode {
-  const nameWidth = columns >= 100 ? 34 : columns >= 76 ? 27 : columns >= 58 ? 21 : 26;
-  const showMeter = columns >= 58;
-  const showEffort = columns >= 46;
-  const score = Math.max(0, Math.min(6, capabilityScore ?? 0));
+  const layout = getModelTableLayout(columns);
+  const vision = capabilityMark(capabilities?.vision);
+  const tools = capabilityMark(capabilities?.tools);
+  const reasoning = capabilityMark(capabilities?.reasoning);
 
   return (
     <>
-      <Text>{fitColumn(label, nameWidth)}</Text>
+      <Text>{fitColumn(label, layout.nameWidth)}</Text>
       <Text color={isCurrent ? 'suggestion' : 'subtle'}>{isCurrent ? ' * ' : '   '}</Text>
-      {showMeter && (
-        <>
-          <Text color={isFocused ? 'suggestion' : undefined}>{'■'.repeat(score)}</Text>
-          <Text dimColor>{'□'.repeat(6 - score)}</Text>
-          <Text> </Text>
-        </>
-      )}
-      {showEffort && <Text dimColor={!isFocused}>{effort ? capitalize(effort) : '—'}</Text>}
+      <Text dimColor={!isFocused}>{fitColumn(formatModelContext(capabilities?.context), layout.contextWidth)}</Text>
+      {layout.showCapabilityColumns &&
+        (layout.showFullCapabilityNames ? (
+          <>
+            <Text dimColor={!isFocused}>{fitColumn(vision, 8)}</Text>
+            <Text dimColor={!isFocused}>{fitColumn(tools, 7)}</Text>
+            <Text dimColor={!isFocused}>{fitColumn(reasoning, 8)}</Text>
+          </>
+        ) : (
+          <>
+            <Text dimColor={!isFocused}>{fitColumn(vision, 4)}</Text>
+            <Text dimColor={!isFocused}>{fitColumn(tools, 5)}</Text>
+            <Text dimColor={!isFocused}>{fitColumn(reasoning, 4)}</Text>
+          </>
+        ))}
+      {layout.showEffort && <Text dimColor={!isFocused}>{effort ? capitalize(effort) : '—'}</Text>}
     </>
   );
 }
@@ -885,7 +986,7 @@ function ModelPricePanel({ model, columns }: { model: string | undefined; column
       </Box>
       <Box flexDirection={columns >= 66 ? 'row' : 'column'} columnGap={4} marginTop={1}>
         <PriceCell label="Input" rate={costs.inputTokens} />
-        <PriceCell label="Cached input" rate={costs.promptCacheReadTokens} />
+        <PriceCell label="Cache read price" rate={costs.promptCacheReadTokens} />
         <PriceCell label="Output" rate={costs.outputTokens} />
       </Box>
     </Box>

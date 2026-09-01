@@ -84,6 +84,12 @@ export function getProviderCapabilityEntry(provider: ProviderId): ProviderCapabi
   return PROVIDER_CAPABILITIES[provider];
 }
 
+/** Return the registry-declared prompt-cache behavior without instantiating providers. */
+export function getPromptCachingSupport(providerId: string | null | undefined): PromptCachingSupport {
+  if (!providerId) return 'none';
+  return PROVIDER_CAPABILITIES[providerId as ProviderId]?.capabilities.promptCaching ?? 'none';
+}
+
 export function getProviderModelInfo(provider: ProviderId, model: string): ProviderModelInfo | undefined {
   return PROVIDER_CAPABILITIES[provider]?.models.find(entry => entry.id === model);
 }

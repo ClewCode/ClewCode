@@ -23,10 +23,10 @@ export type {
   ProviderStreamingSupport,
   ToolCallingSupport,
 } from './providerCapabilities.js';
-export { getProviderModelInfo } from './providerCapabilities.js';
+export { getPromptCachingSupport, getProviderModelInfo } from './providerCapabilities.js';
 export type { ProviderId, ProviderInterface };
 
-import type { PromptCachingSupport, ProviderCapabilityEntry } from './providerCapabilities.js';
+import { getPromptCachingSupport, type ProviderCapabilityEntry } from './providerCapabilities.js';
 
 export interface ProviderRegistryEntry extends ProviderCapabilityEntry {
   provider: ProviderInterface;
@@ -133,52 +133,6 @@ export function getProviderOptions(provider: ProviderId) {
     note: providerEntry.note,
     capabilities: providerEntry.capabilities,
   };
-}
-
-/**
- * Map provider ID to its prompt caching support level.
- *
- * - `"explicit"`: Provider supports `cache_control` markers (Anthropic/Bedrock/Vertex).
- * - `"automatic"`: Provider auto-caches long prompts without markers (OpenAI-compatible).
- * - `"none"`: No prompt caching support.
- */
-const PROMPT_CACHING_MAP: Record<string, PromptCachingSupport> = {
-  anthropic: 'explicit',
-  openai: 'automatic',
-  chatgpt: 'automatic',
-  'chatgpt-api': 'automatic',
-  openrouter: 'automatic',
-  deepseek: 'automatic',
-  groq: 'automatic',
-  xai: 'automatic',
-  mistral: 'automatic',
-  together: 'automatic',
-  fireworks: 'automatic',
-  deepinfra: 'automatic',
-  perplexity: 'automatic',
-  cerebras: 'automatic',
-  opencode: 'automatic',
-  'opencode-go': 'automatic',
-  sakana: 'automatic',
-  cline: 'automatic',
-  siliconflow: 'automatic',
-  moonshot: 'automatic',
-  zhipu: 'automatic',
-  huggingface: 'automatic',
-  poe: 'automatic',
-  digitalocean: 'automatic',
-  nvidia: 'automatic',
-  opengateway: 'automatic',
-  cohere: 'automatic',
-  google: 'none',
-  'google-assist': 'none',
-  kilocode: 'none',
-  ollama: 'none',
-  custom: 'automatic',
-};
-
-export function getPromptCachingSupport(providerId: ProviderId): PromptCachingSupport {
-  return PROMPT_CACHING_MAP[providerId] ?? 'none';
 }
 
 /**

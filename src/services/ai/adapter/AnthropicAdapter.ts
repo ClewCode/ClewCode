@@ -24,14 +24,24 @@ import type { ProviderContentBlock } from '../../../types/common.js';
 // providerRegistry -> ChatGPTProvider -> adapter), so registerAdapter() ran
 // against an uninitialized adapterRegistry depending on load order.
 import { getProviderCapabilityEntry, getProviderModelInfo } from '../providerCapabilities.js';
+import { fromGenericUsage } from '../usageTypes.js';
 
 /** Per-provider stream watchdog defaults (seconds). Override per adapter. */
 const DEFAULT_STREAM_TIMEOUT_MS = 30_000;
 
 type OpenAIUsage = {
   prompt_tokens?: number;
+  input_tokens?: number;
+  inputTokens?: number;
   completion_tokens?: number;
+  output_tokens?: number;
+  outputTokens?: number;
   prompt_tokens_details?: { cached_tokens?: number };
+  input_tokens_details?: { cached_tokens?: number };
+  cacheReadInputTokens?: number;
+  cacheCreationInputTokens?: number;
+  prompt_cache_hit_tokens?: number;
+  prompt_cache_miss_tokens?: number;
 };
 
 /**
@@ -45,18 +55,19 @@ export function normalizeOpenAIUsageForAnthropic(usage?: OpenAIUsage | null): {
   input_tokens: number;
   output_tokens: number;
   cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
 } {
-  const promptTokens = Number.isFinite(usage?.prompt_tokens) ? Math.max(0, usage?.prompt_tokens ?? 0) : 0;
-  const outputTokens = Number.isFinite(usage?.completion_tokens) ? Math.max(0, usage?.completion_tokens ?? 0) : 0;
-  const reportedCachedTokens = usage?.prompt_tokens_details?.cached_tokens;
-  const cacheReadTokens = Number.isFinite(reportedCachedTokens)
-    ? Math.min(promptTokens, Math.max(0, reportedCachedTokens ?? 0))
-    : 0;
+  const normalized = usage ? fromGenericUsage(usage as Record<string, unknown>) : undefined;
 
   return {
-    input_tokens: promptTokens - cacheReadTokens,
-    output_tokens: outputTokens,
-    ...(cacheReadTokens > 0 ? { cache_read_input_tokens: cacheReadTokens } : {}),
+    input_tokens: normalized?.inputTokens ?? 0,
+    output_tokens: normalized?.outputTokens ?? 0,
+    ...(normalized?.cacheReadInputTokens !== undefined
+      ? { cache_read_input_tokens: normalized.cacheReadInputTokens }
+      : {}),
+    ...(normalized?.cacheCreationInputTokens !== undefined
+      ? { cache_creation_input_tokens: normalized.cacheCreationInputTokens }
+      : {}),
   };
 }
 

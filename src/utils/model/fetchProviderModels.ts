@@ -168,18 +168,20 @@ export async function fetchProviderModels(
     ) {
       parsedModels = data.data
         .map((model: OpenRouterModel) => {
-          const supportedParams = Array.isArray(model.supported_parameters) ? model.supported_parameters : [];
+          const supportedParams = Array.isArray(model.supported_parameters) ? model.supported_parameters : undefined;
           const inputModalities = Array.isArray(model.architecture?.input_modalities)
             ? model.architecture.input_modalities
-            : [];
+            : undefined;
           return {
             id: model.id,
             label: model.name ?? model.id,
             description: model.description,
             contextWindow: model.top_provider?.context_length ?? model.context_length,
-            supportsTools: supportedParams.includes('tools'),
-            supportsVision: inputModalities.includes('image'),
-            supportsReasoning: supportedParams.includes('reasoning') || supportedParams.includes('include_reasoning'),
+            supportsTools: supportedParams ? supportedParams.includes('tools') : undefined,
+            supportsVision: inputModalities ? inputModalities.includes('image') : undefined,
+            supportsReasoning: supportedParams
+              ? supportedParams.includes('reasoning') || supportedParams.includes('include_reasoning')
+              : undefined,
             maxOutput: model.top_provider?.max_completion_tokens ?? model.max_output_tokens,
             free: inferFreeModel({
               id: model.id,
@@ -197,18 +199,22 @@ export async function fetchProviderModels(
     // Handle generic format with data array (fallback for other providers like KiloCode/OpenCode)
     if (parsedModels === null && 'data' in data && Array.isArray(data.data)) {
       parsedModels = data.data.map((model: any) => {
-        const supportedParams: string[] = Array.isArray(model.supported_parameters) ? model.supported_parameters : [];
-        const inputModalities: string[] = Array.isArray(model.architecture?.input_modalities)
+        const supportedParams: string[] | undefined = Array.isArray(model.supported_parameters)
+          ? model.supported_parameters
+          : undefined;
+        const inputModalities: string[] | undefined = Array.isArray(model.architecture?.input_modalities)
           ? model.architecture.input_modalities
-          : [];
+          : undefined;
         return {
           id: model.id || model.name,
           label: model.name || model.id || 'Unknown',
           description: model.description,
           contextWindow: model.top_provider?.context_length || model.context_length || model.context_window,
-          supportsTools: supportedParams.includes('tools'),
-          supportsVision: inputModalities.includes('image'),
-          supportsReasoning: supportedParams.includes('reasoning') || supportedParams.includes('include_reasoning'),
+          supportsTools: supportedParams ? supportedParams.includes('tools') : undefined,
+          supportsVision: inputModalities ? inputModalities.includes('image') : undefined,
+          supportsReasoning: supportedParams
+            ? supportedParams.includes('reasoning') || supportedParams.includes('include_reasoning')
+            : undefined,
           maxOutput: model.top_provider?.max_completion_tokens || model.max_output_tokens,
           free: model.isFree === true || inferFreeModel({ id: model.id, label: model.name }),
         };

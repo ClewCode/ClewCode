@@ -57,6 +57,10 @@ describe('aggregateLocalUsageRecords', () => {
       cacheReadInputTokens: 34_400_000,
       cacheCreationInputTokens: 1_264_400,
       costUSD: 34.86,
+      provider: undefined,
+      cacheRequestCount: 2,
+      cacheReportedRequestCount: 2,
+      cacheHitRequestCount: 2,
     });
   });
 
@@ -70,7 +74,7 @@ describe('aggregateLocalUsageRecords', () => {
     );
 
     expect(result.highContextPercentage).toBe(100);
-    expect(result.cacheMissPercentage).toBe(100);
+    expect(result.largeCacheMissExposurePercentage).toBe(4);
   });
 
   test('attributes cache-miss usage to messages with >100k uncached input', () => {
@@ -93,9 +97,8 @@ describe('aggregateLocalUsageRecords', () => {
       { now: NOW },
     );
 
-    // First message (5,120,100 tokens) dwarfs the second (4,900), so it hit a
-    // cache miss on ~100% of recent token volume even though it's 1 of 2 messages.
-    expect(result.cacheMissPercentage).toBe(100);
+    // This metric is uncached input exposure, not the whole call's volume.
+    expect(result.largeCacheMissExposurePercentage).toBe(2);
   });
 
   test('attributes only direct skill, plugin, and MCP evidence and omits empty groups', () => {

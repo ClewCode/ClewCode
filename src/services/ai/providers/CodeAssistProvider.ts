@@ -573,12 +573,15 @@ export function toolCallsFromParts(parts: any[], startIndex = 0, idPrefix = rand
 }
 
 /** Map Gemini usageMetadata to OpenAI usage. */
-function toOpenAIUsage(usageMetadata: any): Record<string, number> | null {
+function toOpenAIUsage(usageMetadata: any): Record<string, unknown> | null {
   if (!usageMetadata) return null;
   return {
     prompt_tokens: usageMetadata.promptTokenCount ?? 0,
     completion_tokens: usageMetadata.candidatesTokenCount ?? 0,
     total_tokens: usageMetadata.totalTokenCount ?? 0,
+    ...(typeof usageMetadata.cachedContentTokenCount === 'number'
+      ? { prompt_tokens_details: { cached_tokens: usageMetadata.cachedContentTokenCount } }
+      : {}),
   };
 }
 

@@ -161,6 +161,10 @@ export function saveCurrentSessionCosts(fpsMetrics?: FpsMetrics): void {
           cacheCreationInputTokens: usage.cacheCreationInputTokens,
           webSearchRequests: usage.webSearchRequests,
           costUSD: usage.costUSD,
+          provider: usage.provider,
+          cacheRequestCount: usage.cacheRequestCount,
+          cacheReportedRequestCount: usage.cacheReportedRequestCount,
+          cacheHitRequestCount: usage.cacheHitRequestCount,
         },
       ]),
     ),
@@ -261,6 +265,9 @@ function addToTotalModelUsage(
     contextWindow: 0,
     maxOutputTokens: 0,
     provider: undefined,
+    cacheRequestCount: 0,
+    cacheReportedRequestCount: 0,
+    cacheHitRequestCount: 0,
   };
   // Record the provider that was used for this model. If multiple providers
   // serve the same model name, the first one wins (most common case).
@@ -279,6 +286,12 @@ function addToTotalModelUsage(
   const cacheCreateTokens = isAnthropicUsage
     ? ((usage as Usage).cache_creation_input_tokens ?? 0)
     : ((usage as ProviderUsage).cacheCreationInputTokens ?? 0);
+  const cacheReadWasReported = isAnthropicUsage
+    ? typeof (usage as Usage).cache_read_input_tokens === 'number'
+    : typeof (usage as ProviderUsage).cacheReadInputTokens === 'number';
+  const cacheCreationWasReported = isAnthropicUsage
+    ? typeof (usage as Usage).cache_creation_input_tokens === 'number'
+    : typeof (usage as ProviderUsage).cacheCreationInputTokens === 'number';
   const webSearchRequests = isAnthropicUsage
     ? ((usage as Usage).server_tool_use?.web_search_requests ?? 0)
     : ((usage as ProviderUsage).webSearchRequests ?? 0);
@@ -289,6 +302,11 @@ function addToTotalModelUsage(
   modelUsage.cacheCreationInputTokens += cacheCreateTokens;
   modelUsage.webSearchRequests += webSearchRequests;
   modelUsage.costUSD += cost;
+  modelUsage.cacheRequestCount = (modelUsage.cacheRequestCount ?? 0) + 1;
+  if (cacheReadWasReported || cacheCreationWasReported) {
+    modelUsage.cacheReportedRequestCount = (modelUsage.cacheReportedRequestCount ?? 0) + 1;
+  }
+  if (cacheReadTokens > 0) modelUsage.cacheHitRequestCount = (modelUsage.cacheHitRequestCount ?? 0) + 1;
   modelUsage.contextWindow = getContextWindowForModel(model, getSdkBetas());
   modelUsage.maxOutputTokens = getModelMaxOutputTokens(model).default;
   return modelUsage;

@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **`/model` picker:** Reworked the standalone picker into a compact terminal model console with type-to-search, aligned context/Vision/Tools/Reasoning/effort columns, a current-session marker, Fast Mode status, and a focused-model price spectrum backed by the existing provider pricing table. Live model rows backfill missing capability metadata from the registry. Reused Settings pickers keep their original layout. (`src/components/ModelPicker.tsx`)
+- **Provider-wide cache observability:** Normalized cache usage from Anthropic, OpenAI/Responses-compatible, DeepSeek, and Gemini schemas; every provider now declares its prompt-cache behavior; `/cost` reports hit/miss/unsupported/unreported status, token hit rate, reporting coverage, and estimated savings for subscription and API-key sessions. `/usage` now separates true token hit rate from large-cache-miss exposure. (`src/services/ai/usageTypes.ts`, `src/services/ai/cacheMetrics.ts`, `src/commands/cost/cost.ts`, `src/components/Settings/Usage.tsx`)
+
 ## [0.9.3] - 2026-09-01
 
 ### Fixed
