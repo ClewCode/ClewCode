@@ -125,10 +125,20 @@ export async function toolToAPISchema(
   // call — name-only keying returned a stale schema (5.4% → 51% err rate, see
   // PR#25424). MCP tools also set inputJSONSchema but each has a stable schema,
   // so including it preserves their GB-flip cache stability.
+  // Include prompt hash in cache key so task/prompt fixes (e.g., TaskCreate mention) bust cache; inputJSONSchema alone misses description changes
+  const promptHash = (() => {
+    try {
+      // tool.prompt is async, but description is sync and reflects prompt's intent for cache busting
+      const desc = (tool as any).description;
+      return typeof desc === 'string' ? `:${createHash('sha256').update(desc).digest('hex').slice(0, 8)}` : '';
+    } catch {
+      return '';
+    }
+  })();
   const cacheKey =
     'inputJSONSchema' in tool && tool.inputJSONSchema
-      ? `${tool.name}:${jsonStringify(tool.inputJSONSchema)}`
-      : tool.name;
+      ? `${tool.name}:${jsonStringify(tool.inputJSONSchema)}${promptHash}`
+      : `${tool.name}${promptHash}`;
 
   if (
     tool.name === 'computer' &&

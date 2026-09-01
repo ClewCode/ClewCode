@@ -214,6 +214,13 @@ export function getModelMaxOutputTokens(model: string): {
     defaultTokens = Math.min(defaultTokens, upperLimit);
   }
 
+  // Cap max_output to context window (small 8k models can't have 32k output)
+  const ctxWindow = getContextWindowForModel(model);
+  if (ctxWindow < upperLimit) {
+    upperLimit = Math.max(4_096, Math.floor(ctxWindow * 0.5));
+    defaultTokens = Math.min(defaultTokens, upperLimit);
+  }
+
   return { default: defaultTokens, upperLimit };
 }
 
