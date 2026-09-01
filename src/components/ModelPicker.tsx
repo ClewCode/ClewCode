@@ -588,14 +588,16 @@ export function ModelPicker({
       <Box flexDirection="column">
         <TabBar active="effort" />
         {effortLevels.length > 0 ? (
-          <EffortSlider
-            key={`${focusedModel ?? 'unknown'}-${effortLevels.join('-')}`}
-            levels={effortLevels}
-            initialIndex={effortInitialIndex}
-            glowAtHighest={true}
-            onConfirm={handleEffortConfirm}
-            onCancel={() => setView('models')}
-          />
+          <Pane color="permission">
+            <EffortSlider
+              key={`${focusedModel ?? 'unknown'}-${effortLevels.join('-')}`}
+              levels={effortLevels}
+              initialIndex={effortInitialIndex}
+              glowAtHighest={true}
+              onConfirm={handleEffortConfirm}
+              onCancel={() => setView('models')}
+            />
+          </Pane>
         ) : (
           <Box paddingX={2} paddingY={1} flexDirection="column">
             <Text bold>Effort</Text>
