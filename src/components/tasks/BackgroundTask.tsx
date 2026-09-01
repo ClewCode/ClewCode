@@ -2,7 +2,7 @@ import type * as React from 'react';
 import { Text } from 'src/ink.js';
 import type { BackgroundTaskState } from 'src/tasks/types.js';
 import type { DeepImmutable } from 'src/types/utils.js';
-import { truncate } from 'src/utils/format.js';
+import { formatDuration, truncate } from 'src/utils/format.js';
 import { toInkColor } from 'src/utils/ink.js';
 import { plural } from 'src/utils/stringUtils.js';
 import { DIAMOND_FILLED, DIAMOND_OPEN } from '../../constants/figures.js';
@@ -18,13 +18,16 @@ type Props = {
 export function BackgroundTask({ task, maxActivityWidth }: Props): React.ReactNode {
   const activityLimit = maxActivityWidth ?? 40;
   switch (task.type) {
-    case 'local_bash':
+    case 'local_bash': {
+      const elapsed = formatDuration((task.endTime ?? Date.now()) - task.startTime);
+      const cmd = truncate(task.kind === 'monitor' ? task.description : task.command, 60, true);
       return (
         <Text>
-          {truncate(task.kind === 'monitor' ? task.description : task.command, activityLimit, true)}{' '}
-          <ShellProgress shell={task} />
+          <Text dimColor>{task.kind === 'monitor' ? '◐ ' : 'shell: '}</Text>
+          {cmd} <Text dimColor>· {elapsed}</Text> <ShellProgress shell={task} />
         </Text>
       );
+    }
     case 'remote_agent': {
       // Lite-review renders its own rainbow line (title + live counts),
       // so we don't prefix the title — the rainbow already includes it.

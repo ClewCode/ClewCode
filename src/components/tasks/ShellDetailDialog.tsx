@@ -21,7 +21,7 @@ type Props = {
   onBack?: () => void;
 };
 
-const SHELL_DETAIL_TAIL_BYTES = 8192;
+const SHELL_DETAIL_TAIL_BYTES = 16384;
 
 type TaskOutputResult = {
   content: string;
@@ -84,6 +84,15 @@ export function ShellDetailDialog({ shell, onDone, onKillShell, onBack }: Props)
     } else if (e.key === 'left' && onBack) {
       e.preventDefault();
       onBack();
+    } else if (e.key === 'c' && !e.ctrl && !e.meta) {
+      e.preventDefault();
+      // Copy command to clipboard via OSC 52 if available
+      try {
+        // eslint-disable-next-line no-console
+        console.log(`\x1b]52;c;${Buffer.from(shell.command).toString('base64')}\x07`);
+      } catch {
+        /* ignore clipboard copy failure */
+      }
     } else if (e.key === 'x' && !e.ctrl && !e.meta && shell.status === 'running' && onKillShell) {
       e.preventDefault();
       onKillShell();
@@ -107,6 +116,7 @@ export function ShellDetailDialog({ shell, onDone, onKillShell, onBack }: Props)
             <Byline>
               {onBack && <KeyboardShortcutHint shortcut="←" action="go back" />}
               <KeyboardShortcutHint shortcut="Esc/Enter/Space" action="close" />
+              <KeyboardShortcutHint shortcut="c" action="copy cmd" />
               {shell.status === 'running' && onKillShell && <KeyboardShortcutHint shortcut="x" action="stop" />}
             </Byline>
           )
@@ -141,7 +151,9 @@ export function ShellDetailDialog({ shell, onDone, onKillShell, onBack }: Props)
         </Box>
 
         <Box flexDirection="column">
-          <Text bold>Output:</Text>
+          <Text bold>
+            Output: <Text dimColor>(auto-follow · {shell.status === 'running' ? 'live' : 'final'})</Text>
+          </Text>
           <Suspense fallback={<Text dimColor>Loading output…</Text>}>
             <ShellOutputContent outputPromise={deferredOutputPromise} columns={columns} />
           </Suspense>
@@ -163,10 +175,10 @@ function ShellOutputContent({ outputPromise, columns }: ShellOutputContentProps)
     return <Text dimColor>No output available</Text>;
   }
 
-  // Find last 10 line boundaries via lastIndexOf
+  // Find last 20 line boundaries via lastIndexOf (was 10, now 20 for larger view)
   const starts: number[] = [];
   let pos = content.length;
-  for (let i = 0; i < 10 && pos > 0; i++) {
+  for (let i = 0; i < 20 && pos > 0; i++) {
     const prev = content.lastIndexOf('\n', pos - 1);
     starts.push(prev + 1);
     pos = prev;
@@ -185,7 +197,7 @@ function ShellOutputContent({ outputPromise, columns }: ShellOutputContentProps)
 
   return (
     <>
-      <Box borderStyle="round" paddingX={1} flexDirection="column" height={12} maxWidth={columns - 6}>
+      <Box borderStyle="round" paddingX={1} flexDirection="column" height={18} maxWidth={columns - 6}>
         {rendered.map((line, i) => (
           <Text key={i} wrap="truncate-end">
             {line}

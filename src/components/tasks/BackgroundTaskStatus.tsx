@@ -8,6 +8,7 @@ import { enterTeammateView, exitTeammateView } from 'src/state/teammateViewHelpe
 import { isPanelAgentTask } from 'src/tasks/LocalAgentTask/LocalAgentTask.js';
 import { getPillLabel, pillNeedsCta } from 'src/tasks/pillLabel.js';
 import { type BackgroundTaskState, isBackgroundTask, type TaskState } from 'src/tasks/types.js';
+import { formatDuration, truncate } from 'src/utils/format.js';
 import { calculateHorizontalScrollWindow } from 'src/utils/horizontalScroll.js';
 import { Box, Text } from '../../ink.js';
 import {
@@ -174,6 +175,27 @@ export function BackgroundTaskStatus({
 
   if (runningTasks.length === 0) {
     return null;
+  }
+
+  // Enhanced single-shell footer: show command + elapsed + spinner
+  if (runningTasks.length === 1 && runningTasks[0]!.type === 'local_bash') {
+    const shell = runningTasks[0] as Extract<BackgroundTaskState, { type: 'local_bash' }>;
+    const isRunning = shell.status === 'running' || shell.status === 'pending';
+    const elapsed = formatDuration(Date.now() - shell.startTime);
+    const cmd = truncate(shell.kind === 'monitor' ? shell.description : shell.command, 32, true);
+    const statusColor = shell.status === 'completed' ? 'success' : shell.status === 'failed' ? 'error' : undefined;
+    return (
+      <>
+        <SummaryPill selected={tasksSelected} onClick={onOpenDialog}>
+          <Text color={statusColor}>
+            {isRunning ? '⠋ ' : ''}
+            {shell.kind === 'monitor' ? 'monitor' : 'shell'}: {cmd} · {elapsed}
+            {shell.status !== 'running' ? ` · ${shell.status}` : ''}
+          </Text>
+        </SummaryPill>
+        <Text dimColor> · {figures.arrowDown} to view</Text>
+      </>
+    );
   }
 
   return (

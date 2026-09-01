@@ -25,13 +25,24 @@ export function TaskStatusText({ status, label, suffix }: TaskStatusTextProps): 
 export function ShellProgress({ shell }: { shell: DeepImmutable<LocalShellTaskState> }): ReactNode {
   switch (shell.status) {
     case 'completed':
-      return <TaskStatusText status="completed" label="done" />;
+      return (
+        <TaskStatusText
+          status="completed"
+          label={`done${shell.result?.code !== undefined ? `:${shell.result.code}` : ''}`}
+        />
+      );
     case 'failed':
-      return <TaskStatusText status="failed" label="error" />;
+      return (
+        <TaskStatusText
+          status="failed"
+          label={`error${shell.result?.code !== undefined ? `:${shell.result.code}` : ''}`}
+        />
+      );
     case 'killed':
       return <TaskStatusText status="killed" label="stopped" />;
     case 'running':
+      return <Text dimColor>⠋ running</Text>;
     case 'pending':
-      return <TaskStatusText status="running" />;
+      return <Text dimColor>○ pending</Text>;
   }
 }
