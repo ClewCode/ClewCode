@@ -532,9 +532,13 @@ export function ModelPicker({
   const content =
     view === 'providers' ? (
       <Box flexDirection="column">
-        <Text color="remember" bold>
-          Providers — Tab สลับกลับ Models
-        </Text>
+        <Box flexDirection="row" gap={1}>
+          <Text>models</Text>
+          <Text color="suggestion" bold>
+            [providers]
+          </Text>
+          <Text dimColor>Tab สลับ</Text>
+        </Box>
         <ModelSearchBar
           isActive={isSearchActive}
           query={searchQuery}
@@ -551,10 +555,11 @@ export function ModelPicker({
     ) : isStandaloneCommand ? (
       <Box flexDirection="column">
         <Box flexDirection="row" gap={1}>
-          <Text color="remember" bold>
-            Models
+          <Text color="suggestion" bold>
+            [models]
           </Text>
-          <Text dimColor>Tab: Providers</Text>
+          <Text>providers</Text>
+          <Text dimColor>Tab สลับ</Text>
         </Box>
         <ModelSearchBar
           isActive={isSearchActive}
