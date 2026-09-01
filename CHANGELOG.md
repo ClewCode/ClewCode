@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- **New Clawd Poses:** Three new mascot poses — `blink` (closed eyes), `look-up` (eyes raised), and `shocked` (wide-eyed) — plus two new click animations (`BLINK`, `STARTLE`) on `AnimatedClawd`.
+- **New Clawd Poses:** Four new mascot poses — `blink` (closed eyes), `look-up` (eyes raised), `shocked` (wide-eyed), and `sleeping` (closed eyes + z) — plus two new click animations (`BLINK`, `STARTLE`) on `AnimatedClawd`, which now dozes off into the `sleeping` pose after 3 minutes of inactivity.
 
 ### Fixed
 

@@ -2762,6 +2762,11 @@ export function handleMessageFromStream(
         case 'thinking':
         case 'redacted_thinking':
           onSetStreamMode('thinking');
+          onStreamingThinking?.(() => ({
+            thinking: '',
+            isStreaming: true,
+            streamingEndedAt: null,
+          }));
           return;
         case 'text':
           onSetStreamMode('responding');
@@ -2822,9 +2827,16 @@ export function handleMessageFromStream(
           });
           return;
         }
-        case 'thinking_delta':
-          onUpdateLength(message.event.delta.thinking);
+        case 'thinking_delta': {
+          const deltaThinking = message.event.delta.thinking;
+          onUpdateLength(deltaThinking);
+          onStreamingThinking?.(current => ({
+            thinking: (current?.thinking ?? '') + deltaThinking,
+            isStreaming: true,
+            streamingEndedAt: null,
+          }));
           return;
+        }
         case 'signature_delta':
           // Signatures are cryptographic authentication strings, not model
           // output. Excluding them from onUpdateLength prevents them from
@@ -2834,6 +2846,15 @@ export function handleMessageFromStream(
           return;
       }
     case 'content_block_stop':
+      onStreamingThinking?.(current =>
+        current?.isStreaming
+          ? {
+              ...current,
+              isStreaming: false,
+              streamingEndedAt: Date.now(),
+            }
+          : current,
+      );
       return;
     case 'message_delta':
       onSetStreamMode('responding');

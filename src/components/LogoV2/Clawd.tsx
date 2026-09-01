@@ -3,7 +3,15 @@ import { Box, Text } from '../../ink.js';
 import { getGlobalConfig } from '../../utils/config.js';
 import { env } from '../../utils/env.js';
 
-export type ClawdPose = 'default' | 'arms-up' | 'look-left' | 'look-right' | 'blink' | 'look-up' | 'shocked';
+export type ClawdPose =
+  | 'default'
+  | 'arms-up'
+  | 'look-left'
+  | 'look-right'
+  | 'blink'
+  | 'look-up'
+  | 'shocked'
+  | 'sleeping';
 
 type Props = {
   pose?: ClawdPose;
@@ -61,6 +69,12 @@ const EYE_LAYOUTS: Record<ClawdPose, EyeLayout> = {
     width: 5,
     right: 0,
   },
+  sleeping: {
+    left: 1,
+    width: 3,
+    right: 1,
+    glyph: '▁',
+  },
 };
 
 function Eye({ eye, bodyColor, eyeColor }: { eye: EyeLayout; bodyColor: string; eyeColor: string }): React.ReactNode {
@@ -88,7 +102,7 @@ export function Clawd({ pose = 'default', showHorns, bodyColor, eyeColor }: Prop
 
   const eye = EYE_LAYOUTS[pose];
 
-  const tHorn = shouldShowHorns ? <Text color={bc}>{'  ▗   ▖  '}</Text> : null;
+  const tHorn = shouldShowHorns ? <Text color={bc}>{pose === 'sleeping' ? '  ▗   ▖  z' : '  ▗   ▖  '}</Text> : null;
 
   const tFace =
     pose === 'arms-up' ? (

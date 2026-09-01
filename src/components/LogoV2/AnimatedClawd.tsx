@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
 import { c as _c } from 'react/compiler-runtime';
 import { Box } from '../../ink.js';
+import { activityManager } from '../../utils/activityManager.js';
 import { getInitialSettings } from '../../utils/settings/settings.js';
 import { Clawd, type ClawdPose } from './Clawd.js';
 
@@ -64,6 +65,7 @@ const STARTLE: readonly Frame[] = [
   ...hold('look-left', 0, 3),
   ...hold('default', 0, 1),
 ];
+
 const CLICK_ANIMATIONS: readonly (readonly Frame[])[] = [JUMP_WAVE, LOOK_AROUND, BLINK, STARTLE];
 const IDLE: Frame = {
   pose: 'default',
@@ -72,10 +74,13 @@ const IDLE: Frame = {
 const FRAME_MS = 60;
 const incrementFrame = (i: number) => i + 1;
 const CLAWD_HEIGHT = 3;
+const IDLE_SLEEP_MS = 3 * 60 * 1000;
+const IDLE_POLL_MS = 30_000;
 
 /**
  * Clawd with click-triggered animations (crouch-jump with arms up, or
- * look-around). Container height is fixed at CLAWD_HEIGHT — same footprint
+ * look-around) and idle sleep — dozes off into the `sleeping` pose after 3
+ * minutes without user or CLI activity. Container height is fixed at CLAWD_HEIGHT — same footprint
  * as a bare `<Clawd />` — so the surrounding layout never shifts. During a
  * crouch only the feet row clips (see comment above). Click only fires when
  * mouse tracking is enabled (i.e. inside `<AlternateScreen>` / fullscreen);
@@ -129,8 +134,26 @@ function useClawdAnimation(): {
   // re-render on any settings change.
   const [reducedMotion] = useState(() => getInitialSettings().prefersReducedMotion ?? false);
   const [frameIndex, setFrameIndex] = useState(-1);
+  const [asleep, setAsleep] = useState(false);
   const sequenceRef = useRef<readonly Frame[]>(JUMP_WAVE);
+  // Sleep after 3 min of no user/CLI activity. Polling activityManager (fed by
+  // REPL keystrokes + spinner operations) instead of attaching stdin listeners.
+  const lastActiveRef = useRef(Date.now());
+  useEffect(() => {
+    const poll = setInterval(() => {
+      const { isUserActive, isCLIActive } = activityManager.getActivityStates();
+      if (isUserActive || isCLIActive) {
+        lastActiveRef.current = Date.now();
+        setAsleep(false);
+      } else if (Date.now() - lastActiveRef.current >= IDLE_SLEEP_MS) {
+        setAsleep(true);
+      }
+    }, IDLE_POLL_MS);
+    return () => clearInterval(poll);
+  }, []);
   const onClick = () => {
+    lastActiveRef.current = Date.now();
+    setAsleep(false);
     if (reducedMotion || frameIndex !== -1) return;
     sequenceRef.current = CLICK_ANIMATIONS[Math.floor(Math.random() * CLICK_ANIMATIONS.length)]!;
     setFrameIndex(0);
@@ -147,7 +170,7 @@ function useClawdAnimation(): {
   const seq = sequenceRef.current;
   const current = frameIndex >= 0 && frameIndex < seq.length ? seq[frameIndex]! : IDLE;
   return {
-    pose: current.pose,
+    pose: asleep ? 'sleeping' : current.pose,
     bounceOffset: current.offset,
     onClick,
   };
