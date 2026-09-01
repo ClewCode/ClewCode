@@ -12,6 +12,7 @@ import { countConcurrentSessions } from '../../utils/concurrentSessions.js';
 import { getGlobalConfig } from '../../utils/config.js';
 import { getEffortEnvOverride, modelSupportsEffort } from '../../utils/effort.js';
 import { env } from '../../utils/env.js';
+import { fileHistoryEnabled } from '../../utils/fileHistory.js';
 import { cacheKeys } from '../../utils/fileStateCache.js';
 import { getWorktreeCount } from '../../utils/git.js';
 import {
@@ -325,14 +326,12 @@ const externalTips: Tip[] = [
     id: 'double-esc',
     content: async () => 'Double-tap esc to rewind the conversation to a previous point in time',
     cooldownSessions: 10,
-    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     isRelevant: async () => !fileHistoryEnabled(),
   },
   {
     id: 'double-esc-code-restore',
     content: async () => 'Double-tap esc to rewind the code and/or conversation to a previous point in time',
     cooldownSessions: 10,
-    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
     isRelevant: async () => fileHistoryEnabled(),
   },
   {

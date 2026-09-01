@@ -16,44 +16,85 @@ function getNpmSemver(): typeof import('semver') {
   return _npmSemver;
 }
 
+function clean(v: string): string {
+  return v.replace(/^\[|\]$/g, '');
+}
+
 export function gt(a: string, b: string): boolean {
+  const ca = clean(a),
+    cb = clean(b);
   if (typeof Bun !== 'undefined') {
-    return Bun.semver.order(a, b) === 1;
+    try {
+      return Bun.semver.order(ca, cb) === 1;
+    } catch {
+      return getNpmSemver().gt(ca, cb, { loose: true });
+    }
   }
-  return getNpmSemver().gt(a, b, { loose: true });
+  return getNpmSemver().gt(ca, cb, { loose: true });
 }
 
 export function gte(a: string, b: string): boolean {
+  const ca = clean(a),
+    cb = clean(b);
   if (typeof Bun !== 'undefined') {
-    return Bun.semver.order(a, b) >= 0;
+    try {
+      return Bun.semver.order(ca, cb) >= 0;
+    } catch {
+      return getNpmSemver().gte(ca, cb, { loose: true });
+    }
   }
-  return getNpmSemver().gte(a, b, { loose: true });
+  return getNpmSemver().gte(ca, cb, { loose: true });
 }
 
 export function lt(a: string, b: string): boolean {
+  const ca = clean(a),
+    cb = clean(b);
   if (typeof Bun !== 'undefined') {
-    return Bun.semver.order(a, b) === -1;
+    try {
+      return Bun.semver.order(ca, cb) === -1;
+    } catch {
+      return getNpmSemver().lt(ca, cb, { loose: true });
+    }
   }
-  return getNpmSemver().lt(a, b, { loose: true });
+  return getNpmSemver().lt(ca, cb, { loose: true });
 }
 
 export function lte(a: string, b: string): boolean {
+  const ca = clean(a),
+    cb = clean(b);
   if (typeof Bun !== 'undefined') {
-    return Bun.semver.order(a, b) <= 0;
+    try {
+      return Bun.semver.order(ca, cb) <= 0;
+    } catch {
+      return getNpmSemver().lte(ca, cb, { loose: true });
+    }
   }
-  return getNpmSemver().lte(a, b, { loose: true });
+  return getNpmSemver().lte(ca, cb, { loose: true });
 }
 
 export function satisfies(version: string, range: string): boolean {
+  const cv = clean(version);
   if (typeof Bun !== 'undefined') {
-    return Bun.semver.satisfies(version, range);
+    try {
+      return Bun.semver.satisfies(cv, range);
+    } catch {
+      return getNpmSemver().satisfies(cv, range, { loose: true });
+    }
   }
-  return getNpmSemver().satisfies(version, range, { loose: true });
+  return getNpmSemver().satisfies(cv, range, { loose: true });
 }
 
 export function order(a: string, b: string): -1 | 0 | 1 {
+  // Strip brackets from changelog-style versions like "[0.3.7]" → "0.3.7"
+  const cleanA = a.replace(/^\[|\]$/g, '');
+  const cleanB = b.replace(/^\[|\]$/g, '');
   if (typeof Bun !== 'undefined') {
-    return Bun.semver.order(a, b);
+    try {
+      return Bun.semver.order(cleanA, cleanB);
+    } catch {
+      // Fallback to npm semver loose for malformed versions
+      return getNpmSemver().compare(cleanA, cleanB, { loose: true });
+    }
   }
-  return getNpmSemver().compare(a, b, { loose: true });
+  return getNpmSemver().compare(cleanA, cleanB, { loose: true });
 }
