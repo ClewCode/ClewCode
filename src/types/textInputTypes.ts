@@ -242,6 +242,10 @@ export type BaseInputState = {
   viewportCharOffset: number;
   /** Character offset in the full text where the viewport ends (text.length when no windowing). */
   viewportCharEnd: number;
+  /** Number of wrapped lines above the visible viewport window. */
+  linesAbove?: number;
+  /** Number of wrapped lines below the visible viewport window. */
+  linesBelow?: number;
 
   // For paste handling
   isPasting?: boolean;

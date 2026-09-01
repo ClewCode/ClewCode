@@ -26,7 +26,7 @@ export function useMaybeTruncateInput({
       return;
     }
 
-    if (input.length <= 10_000) {
+    if (input.length <= 100_000) {
       return;
     }
 

@@ -517,15 +517,26 @@ export function useTextInput({
       : undefined;
 
   const cursorPos = cursor.getPosition();
+  const allLines = cursor.measuredText.getWrappedText();
+  const startLine = cursor.getViewportStartLine(maxVisibleLines);
+  const endLine =
+    maxVisibleLines !== undefined && maxVisibleLines > 0
+      ? Math.min(allLines.length, startLine + maxVisibleLines)
+      : allLines.length;
+
+  const linesAbove = startLine;
+  const linesBelow = Math.max(0, allLines.length - endLine);
 
   return {
     onInput,
     renderedValue: cursor.render(cursorChar, mask, invert, ghostTextForRender, maxVisibleLines),
     offset,
     setOffset,
-    cursorLine: cursorPos.line - cursor.getViewportStartLine(maxVisibleLines),
+    cursorLine: cursorPos.line - startLine,
     cursorColumn: cursorPos.column,
     viewportCharOffset: cursor.getViewportCharOffset(maxVisibleLines),
     viewportCharEnd: cursor.getViewportCharEnd(maxVisibleLines),
+    linesAbove,
+    linesBelow,
   };
 }

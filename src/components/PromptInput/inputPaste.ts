@@ -1,7 +1,7 @@
 import { getPastedTextRefNumLines } from 'src/history.js';
 import type { PastedContent } from 'src/utils/config.js';
 
-const TRUNCATION_THRESHOLD = 10000; // Characters before we truncate
+const TRUNCATION_THRESHOLD = 100000; // Characters before we truncate
 const PREVIEW_LENGTH = 1000; // Characters to show at start and end
 
 type TruncatedMessage = {

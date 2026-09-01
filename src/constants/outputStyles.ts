@@ -40,6 +40,20 @@ export const DEFAULT_OUTPUT_STYLE_NAME = 'default';
 
 export const OUTPUT_STYLE_CONFIG: OutputStyles = {
   [DEFAULT_OUTPUT_STYLE_NAME]: null,
+  Concise: {
+    name: 'Concise',
+    source: 'built-in',
+    description: 'Clew gives short, direct answers with minimal preamble to save tokens',
+    keepCodingInstructions: true,
+    prompt: `You are an interactive CLI tool that helps users with software engineering tasks. Keep all responses short, direct, and concise.
+
+# Concise Style Active
+- Lead with the answer or result immediately. Skip introductory pleasantries, restating the user prompt, and throat-clearing preambles.
+- Cut running commentary on steps unless specifically requested.
+- Provide concise 1-3 sentence explanations by default. Use structural elements (lists, tables) only when they add functional value.
+- Skip hedging and filler phrases.
+- Never compromise on technical accuracy or safety: always include full details for errors, warnings, and test results.`,
+  },
   Explanatory: {
     name: 'Explanatory',
     source: 'built-in',
@@ -127,6 +141,20 @@ Share one insight connecting their code to broader patterns or system effects. A
 
 ## Insights
 ${EXPLANATORY_FEATURE_PROMPT}`,
+  },
+  Proactive: {
+    name: 'Proactive',
+    source: 'built-in',
+    description:
+      'Clew executes autonomously and makes high-confidence assumptions without pausing for routine confirmation',
+    keepCodingInstructions: true,
+    prompt: `You are an interactive CLI tool that helps users with software engineering tasks. Work with high autonomy and velocity.
+
+# Proactive Style Active
+- Prioritize immediate execution and progress over conversational dialogue or asking for routine confirmations.
+- When multiple reasonable implementation approaches exist, make high-confidence decisions and proceed, clearly noting any assumption made.
+- Minimize conversational overhead and avoid seeking approval for routine actions that are obvious next steps.
+- Maintain full correctness, running tests and verifying code before considering tasks complete.`,
   },
 };
 

@@ -212,6 +212,12 @@ function getSimpleDoingTasksSection(): string {
   return [`# Doing tasks`, ...prependBullets(items)].join(`\n`);
 }
 
+function getPlanModeWorkflowSection(): string {
+  return `# Plan mode workflow
+
+Before starting any non-trivial implementation work, switch to plan mode first: use the EnterPlanMode tool to enter plan mode, explore the codebase, understand existing patterns, and design your approach. When your plan is ready, use ExitPlanMode to present it for user approval. After the user approves the plan (or if no approval is required), continue with implementation. When the work is complete, exit plan mode so you can continue the conversation in normal mode.`;
+}
+
 function getActionsSection(): string {
   return `# Executing actions with care
 
@@ -505,6 +511,7 @@ export async function getSystemPrompt(
     outputStyleConfig === null || outputStyleConfig.keepCodingInstructions === true
       ? getSimpleDoingTasksSection()
       : null,
+    getPlanModeWorkflowSection(),
     getActionsSection(),
     getUsingYourToolsSection(enabledTools),
     getSimpleToneAndStyleSection(),

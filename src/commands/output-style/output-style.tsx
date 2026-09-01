@@ -1,10 +1,70 @@
-import type { LocalJSXCommandOnDone } from '../../types/command.js';
-export async function call(onDone: LocalJSXCommandOnDone): Promise<undefined> {
-  onDone(
-    '/output-style has been deprecated. Use /config to change your output style, or set it in your settings file. Changes take effect on the next session.',
-    {
-      display: 'system',
-    },
+import ansis from 'ansis';
+import * as React from 'react';
+import { OutputStylePicker } from '../../components/OutputStylePicker.js';
+import { DEFAULT_OUTPUT_STYLE_NAME, getAllOutputStyles } from '../../constants/outputStyles.js';
+import {
+  type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+  logEvent,
+} from '../../services/analytics/index.js';
+import type { LocalJSXCommandCall, LocalJSXCommandOnDone } from '../../types/command.js';
+import type { OutputStyle } from '../../utils/config.js';
+import { getCwd } from '../../utils/cwd.js';
+import { getSettings, updateSettingsForSource } from '../../utils/settings/settings.js';
+
+function OutputStylePickerCommand({ onDone }: { onDone: LocalJSXCommandOnDone }): React.ReactNode {
+  const settings = getSettings();
+  const currentStyle = (settings?.outputStyle || DEFAULT_OUTPUT_STYLE_NAME) as OutputStyle;
+
+  return (
+    <OutputStylePicker
+      initialStyle={currentStyle}
+      isStandaloneCommand={true}
+      onComplete={style => {
+        const resolvedStyle = style ?? DEFAULT_OUTPUT_STYLE_NAME;
+        updateSettingsForSource('localSettings', { outputStyle: resolvedStyle });
+        void logEvent('tengu_output_style_changed', {
+          style: resolvedStyle as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+          source: 'slash_command' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+          settings_source: 'localSettings' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+        });
+        onDone(`Preferred output style set to ${ansis.bold(resolvedStyle)}`);
+      }}
+      onCancel={() => {
+        onDone('Output style selection canceled', { display: 'system' });
+      }}
+    />
   );
 }
-//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJMb2NhbEpTWENvbW1hbmRPbkRvbmUiLCJjYWxsIiwib25Eb25lIiwiUHJvbWlzZSIsImRpc3BsYXkiXSwic291cmNlcyI6WyJvdXRwdXQtc3R5bGUudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB0eXBlIHsgTG9jYWxKU1hDb21tYW5kT25Eb25lIH0gZnJvbSAnLi4vLi4vdHlwZXMvY29tbWFuZC5qcydcblxuZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIGNhbGwob25Eb25lOiBMb2NhbEpTWENvbW1hbmRPbkRvbmUpOiBQcm9taXNlPHVuZGVmaW5lZD4ge1xuICBvbkRvbmUoXG4gICAgJy9vdXRwdXQtc3R5bGUgaGFzIGJlZW4gZGVwcmVjYXRlZC4gVXNlIC9jb25maWcgdG8gY2hhbmdlIHlvdXIgb3V0cHV0IHN0eWxlLCBvciBzZXQgaXQgaW4geW91ciBzZXR0aW5ncyBmaWxlLiBDaGFuZ2VzIHRha2UgZWZmZWN0IG9uIHRoZSBuZXh0IHNlc3Npb24uJyxcbiAgICB7IGRpc3BsYXk6ICdzeXN0ZW0nIH0sXG4gIClcbn1cbiJdLCJtYXBwaW5ncyI6IkFBQUEsY0FBY0EscUJBQXFCLFFBQVEsd0JBQXdCO0FBRW5FLE9BQU8sZUFBZUMsSUFBSUEsQ0FBQ0MsTUFBTSxFQUFFRixxQkFBcUIsQ0FBQyxFQUFFRyxPQUFPLENBQUMsU0FBUyxDQUFDLENBQUM7RUFDNUVELE1BQU0sQ0FDSix1SkFBdUosRUFDdko7SUFBRUUsT0FBTyxFQUFFO0VBQVMsQ0FDdEIsQ0FBQztBQUNIIiwiaWdub3JlTGlzdCI6W119
+
+export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
+  const trimmed = typeof args === 'string' ? args.trim() : '';
+
+  if (!trimmed) {
+    return <OutputStylePickerCommand onDone={onDone} />;
+  }
+
+  const allStyles = await getAllOutputStyles(getCwd());
+  const styleKeys = Object.keys(allStyles);
+
+  // Case-insensitive match against style keys or names
+  const matchedKey = styleKeys.find(
+    k => k.toLowerCase() === trimmed.toLowerCase() || allStyles[k]?.name.toLowerCase() === trimmed.toLowerCase(),
+  );
+
+  if (matchedKey) {
+    updateSettingsForSource('localSettings', { outputStyle: matchedKey });
+    void logEvent('tengu_output_style_changed', {
+      style: matchedKey as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      source: 'slash_command' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      settings_source: 'localSettings' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+    });
+    onDone(`Preferred output style set to ${ansis.bold(matchedKey)}`);
+    return;
+  }
+
+  const validOptions = styleKeys.join(', ');
+  onDone(
+    `Unknown output style "${trimmed}". Available styles: ${validOptions}\nUse ${ansis.bold('/output-style')} without arguments to pick interactively.`,
+    { display: 'system' },
+  );
+};

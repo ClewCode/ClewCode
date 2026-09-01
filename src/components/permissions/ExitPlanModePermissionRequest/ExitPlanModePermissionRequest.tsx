@@ -49,6 +49,7 @@ import {
 } from '../../../utils/permissions/permissionSetup.js';
 import { getPewterLedgerVariant, isPlanModeInterviewPhaseEnabled } from '../../../utils/planModeV2.js';
 import { getPlan, getPlanFilePath } from '../../../utils/plans.js';
+import { populateTasksFromPlan } from '../../../utils/planTasks.js';
 import { editFileInEditor, editPromptInEditor } from '../../../utils/promptEditor.js';
 import {
   getCurrentSessionTitle,
@@ -402,6 +403,7 @@ export function ExitPlanModePermissionRequest({
       isResumeAutoOption;
     if (value !== 'no') {
       autoNameSessionFromPlan(currentPlan, setAppState, !isKeepContextOption);
+      void populateTasksFromPlan(currentPlan).catch(logError);
     }
     if (value !== 'no' && !isKeepContextOption) {
       // Determine the permission mode based on the selected option
@@ -442,12 +444,14 @@ export function ExitPlanModePermissionRequest({
         ? `\n\nIf this plan can be broken down into multiple independent tasks, consider using the ${TEAM_CREATE_TOOL_NAME} tool to create a team and parallelize the work.`
         : '';
       const feedbackSuffix = acceptFeedback ? `\n\nUser feedback on this plan: ${acceptFeedback}` : '';
+      const planTasksHint =
+        '\n\nThe action items from your plan have been loaded into your TODO list. Keep your progress updated by using the TaskUpdate tool (in_progress, completed) as you implement each task.';
       setAppState(prev => ({
         ...prev,
         initialMessage: {
           message: {
             ...createUserMessage({
-              content: `Implement the following plan:\n\n${currentPlan}${verificationInstruction}${transcriptHint}${teamHint}${feedbackSuffix}`,
+              content: `Implement the following plan:\n\n${currentPlan}${verificationInstruction}${transcriptHint}${teamHint}${feedbackSuffix}${planTasksHint}`,
             }),
             planContent: currentPlan,
           },

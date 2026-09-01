@@ -18,6 +18,7 @@ import { findInProcessTeammateTaskId, setAwaitingPlanApproval } from '../../util
 import { lazySchema } from '../../utils/lazySchema.js';
 import { logError } from '../../utils/log.js';
 import { getPlan, getPlanFilePath, persistFileSnapshotIfRemote } from '../../utils/plans.js';
+import { populateTasksFromPlan } from '../../utils/planTasks.js';
 import { jsonStringify } from '../../utils/slowOperations.js';
 import { getAgentName, getTeamName, isPlanModeRequired, isTeammate } from '../../utils/teammate.js';
 import { writeToMailbox } from '../../utils/teammateMailbox.js';
@@ -201,6 +202,10 @@ export const ExitPlanModeV2Tool: Tool<InputSchema, Output> = buildTool({
     // `plan` (normally injected by normalizeToolInput), hence the narrowing.
     const inputPlan = 'plan' in input && typeof input.plan === 'string' ? input.plan : undefined;
     const plan = inputPlan ?? getPlan(context.agentId);
+
+    if (plan) {
+      void populateTasksFromPlan(plan).catch(e => logError(e));
+    }
 
     // Sync disk so VerifyPlanExecution / Read see the edit. Re-snapshot
     // after: the only other persistFileSnapshotIfRemote call (api.ts) runs

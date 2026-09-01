@@ -1582,16 +1582,11 @@ function PromptInput({
       }
     }
     const numLines = getPastedTextRefNumLines(text);
-    // Limit the number of lines to show in the input
-    // If the overall layout is too high then Ink will repaint
-    // the entire terminal.
-    // The actual required height is dependent on the content, this
-    // is just an estimate.
-    const maxLines = Math.min(rows - 10, 2);
 
-    // Use special handling for long pasted text (>PASTE_THRESHOLD chars)
-    // or if it exceeds the number of lines we want to show
-    if (text.length > PASTE_THRESHOLD || numLines > maxLines) {
+    // Only collapse into [Pasted text #N] placeholder if text exceeds 1000 lines
+    // or 100,000 characters. For up to 1000 lines, keep actual text in PromptInput
+    // so it displays multi-line with viewport scroll indicators (── ↑ / ── ↓).
+    if (numLines > 1000 || text.length > 100_000) {
       const pasteId = nextPasteIdRef.current++;
       const newContent: PastedContent = {
         id: pasteId,
@@ -1604,7 +1599,7 @@ function PromptInput({
       }));
       insertTextAtCursor(formatPastedTextRef(pasteId, numLines));
     } else {
-      // For shorter pastes, just insert the text normally
+      // Keep real text in the input viewport with windowing and scroll indicators
       insertTextAtCursor(text);
     }
     // E30: Pasted text starting with / must not trigger slash command suggestions.
@@ -2538,7 +2533,7 @@ function PromptInput({
   // wide chars, wrapped lines, and clamps past-end clicks to line end.
   const maxVisibleLines = isFullscreenEnvEnabled()
     ? Math.max(MIN_INPUT_VIEWPORT_LINES, Math.floor(rows / 2) - PROMPT_FOOTER_LINES)
-    : undefined;
+    : Math.max(MIN_INPUT_VIEWPORT_LINES, Math.min(15, Math.floor(rows / 2) - PROMPT_FOOTER_LINES));
   const handleInputClick = useCallback(
     (e: ClickEvent) => {
       // During history search the displayed text is historyMatch, not
@@ -2563,6 +2558,18 @@ function PromptInput({
 
   // Calculate if input has multiple lines
   const isInputWrapped = useMemo(() => input.includes('\n'), [input]);
+
+  const { linesAbove, linesBelow } = useMemo(() => {
+    if (!input || !maxVisibleLines) return { linesAbove: 0, linesBelow: 0 };
+    const c = Cursor.fromText(input, textInputColumns, cursorOffset);
+    const allLines = c.measuredText.getWrappedText();
+    const startLine = c.getViewportStartLine(maxVisibleLines);
+    const endLine = maxVisibleLines > 0 ? Math.min(allLines.length, startLine + maxVisibleLines) : allLines.length;
+    return {
+      linesAbove: startLine,
+      linesBelow: Math.max(0, allLines.length - endLine),
+    };
+  }, [input, maxVisibleLines, textInputColumns, cursorOffset]);
 
   // Memoized callbacks for model picker to prevent re-renders when unrelated
   // state (like notifications) changes. This prevents the inline model picker
@@ -2897,27 +2904,53 @@ function PromptInput({
           <Text color={swarmBanner.bgColor}>{'─'.repeat(columns)}</Text>
         </>
       ) : (
-        <Box
-          flexDirection="row"
-          alignItems="flex-start"
-          justifyContent="flex-start"
-          borderColor={isUltraActive() ? '#8B5CF6' : getBorderColor()}
-          borderStyle={isUltraActive() ? 'double' : 'round'}
-          borderLeft={false}
-          borderRight={false}
-          borderBottom
-          width="100%"
-          borderText={buildBorderText(isUltraActive(), isLoopActive)}
-        >
-          <PromptInputModeIndicator
-            mode={mode}
-            isLoading={isLoading}
-            viewingAgentName={viewingAgentName}
-            viewingAgentColor={viewingAgentColor}
-          />
-          <Box flexGrow={1} flexShrink={1} onClick={handleInputClick}>
-            {textInputElement}
+        <Box flexDirection="column" width="100%">
+          {linesAbove > 0 ? (
+            <Text dimColor wrap="truncate-end">
+              {'── ↑ '}
+              {linesAbove > 1000 ? '1000+' : linesAbove}
+              {' more '}
+              {'─'.repeat(Math.max(0, columns - 14 - (linesAbove > 1000 ? 5 : String(linesAbove).length)))}
+            </Text>
+          ) : (
+            <Box
+              width="100%"
+              borderColor={isUltraActive() ? '#8B5CF6' : getBorderColor()}
+              borderStyle={isUltraActive() ? 'double' : 'round'}
+              borderLeft={false}
+              borderRight={false}
+              borderBottom={false}
+              borderText={buildBorderText(isUltraActive(), isLoopActive)}
+            />
+          )}
+          <Box flexDirection="row" width="100%">
+            <PromptInputModeIndicator
+              mode={mode}
+              isLoading={isLoading}
+              viewingAgentName={viewingAgentName}
+              viewingAgentColor={viewingAgentColor}
+            />
+            <Box flexGrow={1} flexShrink={1} onClick={handleInputClick}>
+              {textInputElement}
+            </Box>
           </Box>
+          {linesBelow > 0 ? (
+            <Text dimColor wrap="truncate-end">
+              {'── ↓ '}
+              {linesBelow > 1000 ? '1000+' : linesBelow}
+              {' more '}
+              {'─'.repeat(Math.max(0, columns - 14 - (linesBelow > 1000 ? 5 : String(linesBelow).length)))}
+            </Text>
+          ) : (
+            <Box
+              width="100%"
+              borderColor={isUltraActive() ? '#8B5CF6' : getBorderColor()}
+              borderStyle={isUltraActive() ? 'double' : 'round'}
+              borderLeft={false}
+              borderRight={false}
+              borderTop={false}
+            />
+          )}
         </Box>
       )}
       <PromptInputFooter

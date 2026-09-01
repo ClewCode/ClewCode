@@ -82,11 +82,13 @@ type SettingBase =
   | {
       id: string;
       label: string;
+      category?: string;
     }
   | {
       id: string;
       label: React.ReactNode;
       searchText: string;
+      category?: string;
     };
 
 type Setting =
@@ -118,6 +120,56 @@ type SubMenu =
   | 'ChannelDowngrade'
   | 'Language'
   | 'EnableAutoUpdates';
+
+const CATEGORY_ORDER = ['Appearance & Tone', 'AI & Behavior', 'Permissions & Security', 'Terminal & Workflow'];
+
+const SETTINGS_CATEGORY_MAP: Record<string, string> = {
+  // Appearance & Tone
+  outputStyle: 'Appearance & Tone',
+  language: 'Appearance & Tone',
+  theme: 'Appearance & Tone',
+  defaultView: 'Appearance & Tone',
+  prefersReducedMotion: 'Appearance & Tone',
+  spinnerTipsEnabled: 'Appearance & Tone',
+
+  // AI & Behavior
+  model: 'AI & Behavior',
+  thinkingEnabled: 'AI & Behavior',
+  autoCompactEnabled: 'AI & Behavior',
+  recapEnabled: 'AI & Behavior',
+  promptSuggestionEnabled: 'AI & Behavior',
+  fileCheckpointingEnabled: 'AI & Behavior',
+  verbose: 'AI & Behavior',
+  speculationEnabled: 'AI & Behavior',
+
+  // Permissions & Security
+  defaultPermissionMode: 'Permissions & Security',
+  useAutoModeDuringPlan: 'Permissions & Security',
+  respectGitignore: 'Permissions & Security',
+  autoConnectIde: 'Permissions & Security',
+  autoInstallIdeExtension: 'Permissions & Security',
+  claudeInChromeDefaultEnabled: 'Permissions & Security',
+
+  // Terminal & Workflow
+  statusLineEnabled: 'Terminal & Workflow',
+  terminalProgressBarEnabled: 'Terminal & Workflow',
+  showTurnDuration: 'Terminal & Workflow',
+  showStatusInTerminalTab: 'Terminal & Workflow',
+  editorMode: 'Terminal & Workflow',
+  prStatusFooterEnabled: 'Terminal & Workflow',
+  diffTool: 'Terminal & Workflow',
+  notifChannel: 'Terminal & Workflow',
+  taskCompleteNotifEnabled: 'Terminal & Workflow',
+  inputNeededNotifEnabled: 'Terminal & Workflow',
+  agentPushNotifEnabled: 'Terminal & Workflow',
+  copyFullResponse: 'Terminal & Workflow',
+  copyOnSelect: 'Terminal & Workflow',
+  autoUpdatesChannel: 'Terminal & Workflow',
+  teammateMode: 'Terminal & Workflow',
+  teammateDefaultModel: 'Terminal & Workflow',
+  remoteControlAtStartup: 'Terminal & Workflow',
+};
+
 export function Config({
   onClose,
   context,
@@ -141,7 +193,7 @@ export function Config({
   const initialLanguage = React.useRef(currentLanguage);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
-  const [isSearchMode, setIsSearchMode] = useState(true);
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const isTerminalFocused = useTerminalFocus();
   const { rows } = useTerminalSize();
   // contentHeight is set by Settings.tsx (same value passed to Tabs to fix
@@ -605,7 +657,7 @@ export function Config({
     },
     {
       id: 'copyFullResponse',
-      label: 'Always copy full response (skip /copy picker)',
+      label: 'Always copy full response (skip picker)',
       value: globalConfig.copyFullResponse,
       type: 'boolean' as const,
       onChange(copyFullResponse: boolean) {
@@ -735,7 +787,7 @@ export function Config({
       : []),
     {
       id: 'outputStyle',
-      label: 'Output style',
+      label: 'Preferred output style',
       value: currentOutputStyle,
       type: 'managedEnum' as const,
       onChange: () => {
@@ -1098,16 +1150,32 @@ export function Config({
       : []),
   ];
 
+  const organizedSettingsItems = React.useMemo(() => {
+    const withCategories = settingsItems.map(s => ({
+      ...s,
+      category: s.category ?? SETTINGS_CATEGORY_MAP[s.id] ?? 'Other',
+    }));
+
+    return withCategories.sort((a, b) => {
+      const catA = CATEGORY_ORDER.indexOf(a.category);
+      const catB = CATEGORY_ORDER.indexOf(b.category);
+      const orderA = catA === -1 ? 999 : catA;
+      const orderB = catB === -1 ? 999 : catB;
+      return orderA - orderB;
+    });
+  }, [settingsItems]);
+
   // Filter settings based on search query
   const filteredSettingsItems = React.useMemo(() => {
-    if (!searchQuery) return settingsItems;
+    if (!searchQuery) return organizedSettingsItems;
     const lowerQuery = searchQuery.toLowerCase();
-    return settingsItems.filter(setting => {
+    return organizedSettingsItems.filter(setting => {
       if (setting.id.toLowerCase().includes(lowerQuery)) return true;
+      if (setting.category?.toLowerCase().includes(lowerQuery)) return true;
       const searchableText = 'searchText' in setting ? setting.searchText : setting.label;
       return searchableText.toLowerCase().includes(lowerQuery);
     });
-  }, [settingsItems, searchQuery]);
+  }, [organizedSettingsItems, searchQuery]);
 
   // Adjust selected index when filtered list shrinks, and keep the selected
   // item visible when maxVisible changes (e.g., terminal resize).
@@ -1879,11 +1947,21 @@ export function Config({
                 {filteredSettingsItems.slice(scrollOffset, scrollOffset + maxVisible).map((setting, i) => {
                   const actualIndex = scrollOffset + i;
                   const isSelected = actualIndex === selectedIndex && !headerFocused && !isSearchMode;
+                  const prevCategory = actualIndex > 0 ? filteredSettingsItems[actualIndex - 1]?.category : undefined;
+                  const showSectionHeader =
+                    !searchQuery && Boolean(setting.category && setting.category !== prevCategory);
 
                   return (
                     <React.Fragment key={setting.id}>
+                      {showSectionHeader && (
+                        <Box marginTop={actualIndex === 0 ? 0 : 1} marginBottom={0}>
+                          <Text dimColor bold>
+                            ── {setting.category} ──────────────────────────────────────
+                          </Text>
+                        </Box>
+                      )}
                       <Box>
-                        <Box width={44}>
+                        <Box width={46}>
                           <Text color={isSelected ? 'suggestion' : undefined}>
                             {isSelected ? figures.pointer : ' '} {setting.label}
                           </Text>
@@ -1891,7 +1969,12 @@ export function Config({
                         <Box key={isSelected ? 'selected' : 'unselected'}>
                           {setting.type === 'boolean' ? (
                             <>
-                              <Text color={isSelected ? 'suggestion' : undefined}>{setting.value.toString()}</Text>
+                              <Text
+                                color={isSelected ? 'suggestion' : setting.value ? 'success' : undefined}
+                                dimColor={!isSelected && !setting.value}
+                              >
+                                {setting.value ? '● true' : '○ false'}
+                              </Text>
                               {showThinkingWarning && setting.id === 'thinkingEnabled' && (
                                 <Text color="warning">
                                   {' '}
@@ -1912,10 +1995,10 @@ export function Config({
                               {permissionModeTitle(setting.value as PermissionMode)}
                             </Text>
                           ) : setting.id === 'autoUpdatesChannel' && autoUpdaterDisabledReason ? (
-                            <Box flexDirection="column">
-                              <Text color={isSelected ? 'suggestion' : undefined}>disabled</Text>
+                            <Text color={isSelected ? 'suggestion' : undefined}>
+                              disabled{' '}
                               <Text dimColor>({formatAutoUpdaterDisabledReason(autoUpdaterDisabledReason)})</Text>
-                            </Box>
+                            </Text>
                           ) : (
                             <Text color={isSelected ? 'suggestion' : undefined}>{setting.value.toString()}</Text>
                           )}

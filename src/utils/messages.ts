@@ -3552,7 +3552,9 @@ Treat this as a fresh planning session. Do not assume the existing plan is relev
         : '';
       const content = `## Exited Plan Mode
 
-You have exited plan mode. You can now make edits, run tools, and take actions.${planReference}`;
+You have exited plan mode. You can now make edits, run tools, and take actions.${planReference}
+
+The action items from your plan have been loaded into your TODO list. As you implement the plan, use the TaskUpdate tool to track progress (set status to in_progress / completed) for each task.`;
 
       return wrapMessagesInSystemReminder([createUserMessage({ content, isMeta: true })]);
     }

@@ -1,6 +1,7 @@
 import figures from 'figures';
 import * as React from 'react';
 import { AGENT_COLOR_TO_THEME_COLOR, type AgentColorName } from 'src/tools/AgentTool/agentColorManager.js';
+import { hasExitedPlanModeInSession } from '../bootstrap/state.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { stringWidth } from '../ink/stringWidth.js';
 import { Box, Text } from '../ink.js';
@@ -341,12 +342,15 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
     </>
   );
 
+  const isPlanTodo = tasks.some(t => t.metadata?.fromPlan === true) || hasExitedPlanModeInSession();
+  const todoTitle = isPlanTodo ? 'PLANS TODO' : 'TODO';
+
   if (isStandalone) {
     return (
       <Box flexDirection="column" marginTop={1} marginLeft={2}>
         <Box>
           <Text color="success" bold>
-            TODO
+            {todoTitle}
           </Text>
           <Text dimColor>
             {' '}
@@ -362,7 +366,7 @@ export function TaskListV2({ tasks, isStandalone = false }: Props): React.ReactN
   return (
     <Box flexDirection="column">
       <Text color="success" bold>
-        TODO
+        {todoTitle}
       </Text>
       {content}
     </Box>

@@ -8,6 +8,16 @@ All notable changes to this project will be documented in this file.
 
 - Deleted `.reference/` directory (scraped competitor docs, not used by the project).
 
+## [0.9.7] - 2026-09-02
+
+### Added
+
+- **PromptInput Multiline Scroll Indicators:** Dynamic top (`── ↑ N more ──`) and bottom (`── ↓ N more ──`) scroll indicators when input exceeds visible viewport; line counts capped at `1000+`; eliminated double borders and fixed `>` prompt pointer alignment.
+- **Pasted Text Direct Input:** Allowed multiline text pastes up to 1,000 lines (or 100,000 characters) to be inserted directly into `PromptInput` with viewport scrolling instead of collapsing into `[Pasted text #N]` chips.
+- **Plan Mode to TODO Auto-population:** Automatically extracts actionable checklist items and steps from approved plans into the TODO task queue with `PLANS TODO` section header.
+- **AI Custom Output Style Generator:** Interactive custom style creator in `/output-style` allowing users to describe desired tone/format, generate via LLM, review/regenerate, and save to `~/.clew/output-styles/`.
+- **Settings Screen Redesign:** Grouped `/config` settings into 4 clean ASCII categories with searchable section headers and `● true` / `○ false` indicators.
+
 ## [0.9.6] - 2026-09-02
 
 ### Changed
