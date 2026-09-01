@@ -1139,11 +1139,10 @@ function ModelListRow({
         ))}
       {layout.showEffort &&
         (isFocused && effort ? (
-          <Box borderStyle="single" paddingX={1}>
-            <Text>
-              ← {effortLevelToSymbol(effort)} → {capitalize(effort)}
-            </Text>
-          </Box>
+          <Text backgroundColor="dim" color="suggestion" bold>
+            {' '}
+            ← {effortLevelToSymbol(effort)} → {capitalize(effort)}{' '}
+          </Text>
         ) : (
           <Text dimColor={!isFocused}>{effort ? capitalize(effort) : '—'}</Text>
         ))}
