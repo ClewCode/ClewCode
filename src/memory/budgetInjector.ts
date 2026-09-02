@@ -115,12 +115,30 @@ export async function budgetedInjectDetailed(maxTokens = 2000, includeFileHierar
     });
 
     if (memories.length > 0) {
+      // Shining → Memory: boost memories matching predicted needed_context
+      let shiningFiles = new Set<string>();
+      try {
+        const { list } = await import('../shining/premonition-store.js');
+        const { policyFor } = await import('../shining/policy.js');
+        for (const p of list()) {
+          if (policyFor(p.confidence) === 'ignore') continue;
+          for (const f of p.suggestedContext || []) shiningFiles.add(f.toLowerCase());
+        }
+      } catch {}
       // Score each candidate
       for (const m of memories) {
         const recency = m.lastAccessedAt
           ? Math.max(0, 1 - (Date.now() - new Date(m.lastAccessedAt).getTime()) / (90 * 86400000))
           : 0.5;
-        const score = m.importance * 0.5 + m.confidence * 0.3 + recency * 0.2;
+        let score = m.importance * 0.5 + m.confidence * 0.3 + recency * 0.2;
+        // Boost if matches Shining's needed_context (e.g., Jenkinsfile, .env)
+        const contentLower = m.content.toLowerCase();
+        for (const f of shiningFiles) {
+          if (contentLower.includes(f.replace('.yml', '').replace('.md', '')) || f.includes(m.type)) {
+            score += 0.15;
+            break;
+          }
+        }
         allCandidates.push({ key: findKeyForId(db, m.id) ?? m.id, type: m.type, importance: m.importance, score });
       }
 

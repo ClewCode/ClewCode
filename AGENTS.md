@@ -185,6 +185,7 @@ Tools/commands are registered in `src/tools.ts` / `src/commands.ts`; entrypoints
 - `providers.json` — ~32 provider definitions (flagged via `capabilities` object; live `models[]` array per provider). Per-model `maxContext` is the static fallback for the ctx% / auto-compact limit.
 - `providerRegistry.ts` / `providerSelection.ts` — discovery & selection
 - Context-window resolution: for non-Anthropic providers, live `/models` value (cached by `fetchProviderModels`, read via `getCachedModelContext`) is preferred over the static `maxContext`. Anthropic first-party uses its own capability cache.
+- Prompt cache: `promptCaching: explicit` (Anthropic) + `automatic` (26 providers — OpenAI/OpenRouter/DeepSeek/etc.) → `cache_control` 4 breakpoints (`system+tools+user+assistant`), deterministic tool sort, `CLEW_CACHE_RETENTION=long` defaults to 1h (alias `PI_CACHE_RETENTION`)
 - Mid-session switch: `/model`, `/provider`
 - **Model scope:** `/model` is session-scoped by default (AppState's `mainLoopModelForSession` → `setMainLoopModelOverride()`). Only the picker's `d` writes to `userSettings`. Do NOT call `ProviderManager.setSessionModel`/`setSessionProvider` (process-global singletons — leak into agents and bg tasks) from model paths.
 
@@ -201,7 +202,9 @@ Commands: ~105 under `src/commands/`; `src/commands.ts` is source of truth.
 | `autonomous/` | Task queue, leases, cron, dead-letter, daemon |
 | `compact/v2/` | **Reducer-based compaction** — triggers at **80%** of usable window (`limit*0.8`, like manual `/compact` at 80% ctx), single planner replaces 6 legacy mechanisms (dedupe → stale-tool → snip → summarize → drop), per-agent health |
 | `longTermMemory/` (with `extract.ts` + `dream/` + `timeline`/`distill`/`graph`) | Unified long-term memory — `extractMemories` + `autoDream` consolidated here (0.9.3); old paths re-export then removed |
-| `memory/` (SQLite) | Canonical durable store — `frontmatter.ts` parses `--- yaml ---` for all memory records |
+| `memory/` (filesystem) | SoT: `.clew/memory/store/*.md` + `timeline.jsonl` + derived `index.json` cache — `frontmatter.ts` + `indexCache.ts` (mtime+size) |
+| `taste/` (filesystem) | SoT: `.clew/taste/rules|evidence|conflicts/*.md` — auto-learning `Signal→Evidence→Learner→Rule` (`candidate→weak→active→conflicted`), `/taste why` |
+| `shining/` (filesystem) | Anticipatory layer: `observer → predictor → scorer (Taste prior) → premonition-store (.clew/shining/premonitions/*.md)` + `policy` + `prefetch` → `ToolSearch`/`Memory`/`Todo` |
 | `checkpoint/`, `goal/` | Progress snapshots & goal verification |
 | `plugins/` | Pre/Post tool/bash/edit hooks |
 | `sessionSearch/`, `SessionLifecycle/`, `SessionMemory/` | Session life & FTS5 search |
@@ -223,7 +226,7 @@ Dynamic section registry (each can be `null`/feature-gated; resolved by `resolve
 | Section | Notes |
 |---|---|
 | `session_guidance` | From enabled tools + skill tool commands |
-| `memory`, `taste`, `budgeted_memory` | Auto-memory / taste / budgeted memory |
+| `memory`, `taste`, `shining`, `budgeted_memory` | Auto-memory / taste / **shining premonitions+prefetch** / budgeted memory |
 | `session_goal` | Active goal |
 | `env_info_simple` | Model/environment info; `deps: [model]` so it recomputes on `/model` switch |
 | `language`, `output_style` | Locale + output style config |
@@ -260,6 +263,11 @@ Prefer TinyFish MCP for web work over built-in WebSearch/WebFetch/BrowserTool wh
 | `search` | WebSearch |
 | `fetch_content` | WebFetch |
 | `run_web_automation` | BrowserTool |
+
+## Memory & Shining (filesystem SoT)
+
+- **Memory:** `.clew/memory/store/*.md` (frontmatter `id/key/type/importance/confidence`) + `timeline.jsonl` + derived `index.json` (mtime+size, `indexCache.ts`), `database.ts` is now filesystem. Cleanup: `bun run cleanup:memory-db` removes legacy `memory.db/chunks.db/taste.db`.
+- **Shining:** `.clew/shining/premonitions/*.md` (10 min TTL), `observer → predictor (heuristic + Taste prior) → scorer → premonition-store → policy (ignore/prefetch/suggest/prepare) → prefetch → <shining_premonitions>+<shining_prefetch>` injected via `systemPromptSection('shining')`; premonitions boost `ToolSearch` (don't defer predicted tools) and `budgetedInject` (+0.15) and surface `→ Suggested Todo`.
 
 ## Semantic memory index (`src/memdir/`)
 

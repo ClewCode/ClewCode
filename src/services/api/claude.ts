@@ -1413,7 +1413,27 @@ async function* queryModel(
   }
 
   const useGlobalCacheFeature = shouldUseGlobalCacheScope();
-  const willDefer = (t: Tool) => useToolSearch && (deferredToolNames.has(t.name) || shouldDeferLspTool(t));
+  // Shining → ToolSearch: preload predicted tools (don't defer)
+  let shiningPredictedTools = new Set<string>();
+  try {
+    const { list } = await import('../../shining/premonition-store.js');
+    const { policyFor } = await import('../../shining/policy.js');
+    for (const p of list()) {
+      if (policyFor(p.confidence) === 'ignore') continue;
+      if (p.kind === 'next_tool' && p.prediction) {
+        const m = p.prediction.match(/\b(Read|Write|Edit|Bash|Grep|Glob|TodoWrite|TaskCreate|Agent)\b/i);
+        if (m) shiningPredictedTools.add(m[1].toLowerCase());
+      }
+      // needed_context hint → map to tool
+      if (p.kind === 'needed_context' && p.suggestedContext?.some(f => f.includes('.test.'))) {
+        shiningPredictedTools.add('bash');
+      }
+    }
+  } catch {}
+  const willDefer = (t: Tool) => {
+    if (shiningPredictedTools.has(t.name.toLowerCase())) return false;
+    return useToolSearch && (deferredToolNames.has(t.name) || shouldDeferLspTool(t));
+  };
   // Tool definitions render before system blocks. A globally scoped system
   // block is therefore only a valid prefix when no narrower-scoped tool is
   // rendered before it. Deferred tools are stripped by the API and do not

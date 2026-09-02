@@ -1357,12 +1357,16 @@ export async function* ask({
       : {}),
   });
 
-  // Taste auto-learning: explicit preference detection (fire-and-forget)
+  // Taste + Shining auto-learning (fire-and-forget)
   try {
     const promptText = typeof prompt === 'string' ? prompt : '';
     if (promptText) {
       const { hookExplicitPreference } = await import('./taste/hooks.js');
       hookExplicitPreference(promptText);
+      const { observe } = await import('./shining/observer.js');
+      observe({ type: 'user_intent', text: promptText });
+      const { predict } = await import('./shining/predictor.js');
+      void predict({ userIntent: promptText }).catch(() => {});
     }
   } catch {}
 

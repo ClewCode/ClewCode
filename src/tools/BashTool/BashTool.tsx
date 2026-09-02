@@ -1010,13 +1010,17 @@ export const BashTool = buildTool({
       persistedOutputPath,
       persistedOutputSize,
     };
-    // Taste auto-learning: supporting outcome only
+    // Taste + Shining hooks
     if (!wasInterrupted && result.code === 0) {
       try {
         const { hookBashOutcome } = await import('../../taste/hooks.js');
         hookBashOutcome(input.command, result.code);
       } catch {}
     }
+    try {
+      const { observe } = await import('../../shining/observer.js');
+      observe({ type: 'tool_result', tool: 'bash', success: result.code === 0, detail: input.command.slice(0, 80) });
+    } catch {}
     return {
       data,
     };

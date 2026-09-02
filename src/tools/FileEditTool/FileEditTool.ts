@@ -524,13 +524,17 @@ export const FileEditTool = buildTool({
       replaceAll: replace_all,
       ...(gitDiff && { gitDiff }),
     };
-    // Taste auto-learning: user corrected before accepting
+    // Taste + Shining hooks
     if (userModified) {
       try {
         const { hookUserCorrection } = await import('../../taste/hooks.js');
         hookUserCorrection(actualOldString, actualNewString, absoluteFilePath);
       } catch {}
     }
+    try {
+      const { observe } = await import('../../shining/observer.js');
+      observe({ type: 'file_changed', path: absoluteFilePath });
+    } catch {}
     return {
       data,
     };

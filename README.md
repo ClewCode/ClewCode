@@ -87,8 +87,10 @@ Clew Code provides:
 - Streaming responses and multi-step tool use
 - Plans, tasks, checkpoints, context compaction, and `/rewind`
 - Multiple agents, background tasks, cron jobs, and daemons
-- Persistent session memory and semantic code search
-- Plugins, skills, hooks, and MCP servers
+- **Filesystem-first Memory** (`.clew/memory/store/*.md` + `index.json` cache + `timeline.jsonl`) and **Taste** (`.clew/taste/rules|evidence|conflicts`) with auto-learning (`/taste why`)
+- **The Shining** — anticipatory layer (`needed_context` / `next_tool` / `risk` premonitions → prefetch + `ToolSearch` preload)
+- Prompt cache for all providers (27 `automatic` + Anthropic `explicit`, 4 breakpoints, `CLEW_CACHE_RETENTION=long` defaults to 1h)
+- Semantic code search, plugins, skills, hooks, and MCP servers
 - Workspace linking and optional audit logs
 - Permission modes: `default`, `ask`, `plan`, and `auto`
 
@@ -129,6 +131,8 @@ Provider credentials can be configured interactively or with environment variabl
 | `JINA_API_KEY` | Jina search and fetch |
 | `CLEW_DISABLE_GATEWAY=1` | Use provider keys directly |
 | `CLEW_DISABLE_TELEMETRY=1` | Disable anonymous usage statistics |
+| `CLEW_CACHE_RETENTION=long` | Prompt cache 1h (default) — `short` for 5m, alias `PI_CACHE_RETENTION` |
+| `bun run cleanup:memory-db` | Remove legacy `memory.db`/`chunks.db`/`taste.db` SQLite caches |
 
 Settings are stored locally. See the [provider documentation](https://clew-docs.pages.dev/providers) for the current provider list.
 

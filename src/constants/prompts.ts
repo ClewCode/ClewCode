@@ -57,6 +57,7 @@ import { isUndercover } from '../utils/undercover.js';
 import { isMcpInstructionsDeltaEnabled } from '../utils/mcpInstructionsDelta.js';
 import { loadTastePrompt } from '../taste/index.js';
 import { loadRepoMapPrompt } from '../repomap/index.js';
+import { loadShiningPrompt } from '../shining/prompt.js';
 
 // Dead code elimination: conditional imports for feature-gated modules
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -446,6 +447,7 @@ export async function getSystemPrompt(
     systemPromptSection('memory', () => loadMemoryPrompt()),
     systemPromptSection('proactive_memory', () => getProactiveMemoryContext()),
     systemPromptSection('taste', () => loadTastePrompt()),
+    systemPromptSection('shining', () => loadShiningPrompt()),
     systemPromptSection('repomap', () => loadRepoMapPrompt()),
     systemPromptSection('budgeted_memory', () => loadBudgetedMemory()),
     systemPromptSection('session_goal', () => loadGoalPrompt()),
