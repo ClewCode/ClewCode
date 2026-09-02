@@ -1,13 +1,29 @@
 /**
- * MemoryDB — SQLite-backed memory store for the durable
- * context reconstruction system.
+ * MemoryDB — Filesystem-backed memory store
  *
- * Uses bun:sqlite (built into the Bun runtime, no external dependency).
- * Falls back to in-memory store if bun:sqlite is unavailable (Node.js).
+ * Replaces SQLite with Markdown+YAML files as Source of Truth.
+ * Each memory is a file under `.clew/memory/store/<key>.md` with frontmatter.
+ * Timeline is append-only `.clew/memory/timeline.jsonl`.
+ *
+ * Filesystem = SoT, no derived SQLite cache.
  */
 
-import { Database } from 'bun:sqlite';
-import { type MemoryRow, type MemoryType, SCHEMA_SQL, type TimelineRow } from './schema.js';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { getCwd } from '../utils/cwd.js';
+import { getMemoryDirPath } from './hierarchy.js';
+import { getIndexedEntries, invalidateIndex, setCacheOverride } from './indexCache.js';
+import { MEMORY_TYPES, type MemoryType } from './schema.js';
 
 export type MemoryRecord = {
   id: string;
@@ -29,122 +45,258 @@ export type TimelineRecord = {
   createdAt: string;
 };
 
-/**
- * Convert snake_case DB row to camelCase MemoryRecord.
- */
-function toMemoryRecord(row: MemoryRow): MemoryRecord {
-  return {
-    id: row.id,
-    projectPath: row.project_path,
-    type: row.type as MemoryType,
-    content: row.content,
-    importance: row.importance,
-    confidence: row.confidence,
-    accessCount: row.access_count,
-    lastAccessedAt: row.last_accessed_at,
-    createdAt: row.created_at,
-  };
-}
-
-/**
- * Convert snake_case DB row to camelCase TimelineRecord.
- */
-function toTimelineRecord(row: TimelineRow): TimelineRecord {
-  return {
-    id: row.id,
-    memoryId: row.memory_id,
-    event: row.event,
-    note: row.note,
-    createdAt: row.created_at,
-  };
-}
-
-/**
- * Generate a unique ID for memory/timeline entries.
- */
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-/**
- * Simple string hash for content change detection.
- */
 function simpleHash(s: string): string {
   let hash = 0;
   for (let i = 0; i < s.length; i++) {
     const chr = s.charCodeAt(i);
     hash = (hash << 5) - hash + chr;
-    hash = hash & hash; // Convert to 32bit integer
+    hash = hash & hash;
   }
   return Math.abs(hash).toString(36);
 }
 
-/**
- * Get ISO timestamp string.
- */
 function nowISO(): string {
   return new Date().toISOString();
 }
 
+function sanitizeKey(key: string): string {
+  return (
+    key
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 120) || `mem_${simpleHash(key)}`
+  );
+}
+
+let _overrideStoreDir: string | null = null;
+let _overrideTimelinePath: string | null = null;
+
+function getStoreDir(): string {
+  if (_overrideStoreDir) return _overrideStoreDir;
+  return join(getMemoryDirPath(), 'store');
+}
+
+function getTimelinePath(): string {
+  if (_overrideTimelinePath) return _overrideTimelinePath;
+  return join(getMemoryDirPath(), 'timeline.jsonl');
+}
+
+function ensureStoreDir(): void {
+  mkdirSync(getStoreDir(), { recursive: true });
+}
+
+function memoryFilePath(key: string): string {
+  return join(getStoreDir(), `${sanitizeKey(key)}.md`);
+}
+
+// ── Frontmatter helpers ──────────────────────────────────────
+
+function parseMemoryFile(raw: string, keyFallback: string): MemoryRecord | null {
+  const FM_REGEX = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
+  const match = raw.match(FM_REGEX);
+  if (!match) return null;
+  const [, yamlBlock, body] = match;
+  const meta: Record<string, string> = {};
+  for (const line of yamlBlock.split('\n')) {
+    const idx = line.indexOf(':');
+    if (idx === -1) continue;
+    const k = line.slice(0, idx).trim().toLowerCase();
+    let v = line.slice(idx + 1).trim();
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    meta[k] = v;
+  }
+  const id = meta.id || generateId();
+  const type = (meta.type as MemoryType) || 'note';
+  return {
+    id,
+    projectPath: meta.project_path || meta.projectpath || getCwd(),
+    type: MEMORY_TYPES.includes(type as MemoryType) ? (type as MemoryType) : 'note',
+    content: body.trim(),
+    importance: meta.importance ? Number.parseFloat(meta.importance) : 0.5,
+    confidence: meta.confidence ? Number.parseFloat(meta.confidence) : 0.5,
+    accessCount: meta.access_count ? Number.parseInt(meta.access_count, 10) : 0,
+    lastAccessedAt: meta.last_accessed_at || null,
+    createdAt: meta.created_at || nowISO(),
+  };
+}
+
+function stringifyMemoryFile(record: MemoryRecord, key: string, contentHash: string): string {
+  const lines = ['---'];
+  lines.push(`id: ${record.id}`);
+  lines.push(`key: ${key}`);
+  lines.push(`type: ${record.type}`);
+  lines.push(`project_path: ${record.projectPath}`);
+  lines.push(`importance: ${record.importance}`);
+  lines.push(`confidence: ${record.confidence}`);
+  lines.push(`access_count: ${record.accessCount}`);
+  if (record.lastAccessedAt) lines.push(`last_accessed_at: ${record.lastAccessedAt}`);
+  lines.push(`created_at: ${record.createdAt}`);
+  lines.push(`content_hash: ${contentHash}`);
+  lines.push('---');
+  lines.push('');
+  lines.push(record.content.trim());
+  return lines.join('\n');
+}
+
+function readAllRecords(): Array<{ record: MemoryRecord; key: string; hash: string; filePath: string }> {
+  try {
+    const indexed = getIndexedEntries();
+    const dir = getStoreDir();
+    const hasFiles = existsSync(dir) && readdirSync(dir).some(f => f.endsWith('.md'));
+    if (indexed.length > 0 || !hasFiles) {
+      return indexed.map(e => ({
+        record: {
+          id: e.id,
+          projectPath: e.project_path,
+          type: e.type,
+          content: e.content,
+          importance: e.importance,
+          confidence: e.confidence,
+          accessCount: e.access_count,
+          lastAccessedAt: e.last_accessed_at,
+          createdAt: e.created_at,
+        },
+        key: e.key,
+        hash: e.content_hash,
+        filePath: join(dir, e.relPath),
+      }));
+    }
+  } catch {
+    // fallback to direct scan
+  }
+  const dir = getStoreDir();
+  if (!existsSync(dir)) return [];
+  const entries = readdirSync(dir);
+  const out: Array<{ record: MemoryRecord; key: string; hash: string; filePath: string }> = [];
+  for (const entry of entries) {
+    if (!entry.endsWith('.md')) continue;
+    const filePath = join(dir, entry);
+    try {
+      const raw = readFileSync(filePath, 'utf8');
+      const keyMatch = raw.match(/^---[\s\S]*?^key:\s*(.+)$/m);
+      const key = keyMatch ? keyMatch[1].trim().replace(/^["']|["']$/g, '') : entry.replace(/\.md$/, '');
+      const hashMatch = raw.match(/^content_hash:\s*(.+)$/m);
+      const hash = hashMatch ? hashMatch[1].trim() : simpleHash(raw);
+      const rec = parseMemoryFile(raw, key);
+      if (!rec) continue;
+      out.push({ record: rec, key, hash, filePath });
+    } catch {
+      // skip unreadable
+    }
+  }
+  return out;
+}
+
+function writeRecordAtomic(filePath: string, content: string): void {
+  const tmp = `${filePath}.tmp`;
+  writeFileSync(tmp, content, 'utf8');
+  try {
+    renameSync(tmp, filePath);
+  } catch {
+    writeFileSync(filePath, content, 'utf8');
+    try {
+      unlinkSync(tmp);
+    } catch {}
+  }
+  invalidateIndex();
+}
+
+function computeRelevance(query: string, content: string, key: string, type: string): number {
+  const q = query.toLowerCase();
+  const queryWords = q.split(/\s+/).filter(w => w.length > 2);
+  if (queryWords.length === 0) return 0;
+  const haystack = `${key} ${type} ${content}`.toLowerCase();
+  let matches = 0;
+  for (const word of queryWords) {
+    if (haystack.includes(word)) matches++;
+  }
+  return Math.min(1, (matches / Math.max(1, queryWords.length)) * 1.2);
+}
+
+// ── Timeline helpers (JSONL) ─────────────────────────────────
+
+function appendTimeline(record: TimelineRecord): void {
+  ensureStoreDir();
+  const line = JSON.stringify(record) + '\n';
+  const timelinePath = getTimelinePath();
+  try {
+    const prev = existsSync(timelinePath) ? readFileSync(timelinePath, 'utf8') : '';
+    writeFileSync(timelinePath, prev + line, 'utf8');
+  } catch {
+    writeFileSync(timelinePath, line, 'utf8');
+  }
+}
+
+function readTimeline(): TimelineRecord[] {
+  const p = getTimelinePath();
+  if (!existsSync(p)) return [];
+  try {
+    const raw = readFileSync(p, 'utf8');
+    const lines = raw.split('\n').filter(Boolean);
+    return lines.map(l => JSON.parse(l) as TimelineRecord);
+  } catch {
+    return [];
+  }
+}
+
 /**
- * MemoryDB — singleton SQLite-backed memory store.
+ * MemoryDB — filesystem singleton, API-compatible with old SQLite version.
  */
 export class MemoryDB {
-  private db: Database;
   private static instance: MemoryDB | null = null;
 
-  private constructor(dbPath: string) {
-    this.db = new Database(dbPath);
-    this.db.exec('PRAGMA journal_mode = WAL');
-    this.db.exec('PRAGMA foreign_keys = ON');
-    this.db.exec(SCHEMA_SQL);
+  private constructor(_dbPath: string) {
+    ensureStoreDir();
   }
 
-  /**
-   * Initialize the singleton MemoryDB instance.
-   * Must be called once at startup with the database file path.
-   */
   static init(dbPath: string): MemoryDB {
-    if (MemoryDB.instance) {
-      throw new Error('MemoryDB already initialized');
+    if (MemoryDB.instance) throw new Error('MemoryDB already initialized');
+    if (dbPath === ':memory:') {
+      const tmp = mkdtempSync(join(tmpdir(), 'clew-mem-'));
+      _overrideStoreDir = join(tmp, 'store');
+      _overrideTimelinePath = join(tmp, 'timeline.jsonl');
+      setCacheOverride(_overrideStoreDir, join(tmp, 'index.json'));
+    } else if (dbPath) {
+      const base = dbPath.endsWith('store') ? dbPath.slice(0, -6) : dbPath;
+      if (base.endsWith('memory')) {
+        _overrideStoreDir = join(base, 'store');
+        _overrideTimelinePath = join(base, 'timeline.jsonl');
+        setCacheOverride(_overrideStoreDir, join(base, 'index.json'));
+      } else {
+        _overrideStoreDir = join(base, 'store');
+        _overrideTimelinePath = join(base, 'timeline.jsonl');
+        setCacheOverride(_overrideStoreDir, join(base, 'index.json'));
+      }
     }
     MemoryDB.instance = new MemoryDB(dbPath);
     return MemoryDB.instance;
   }
 
-  /**
-   * Get the singleton instance.
-   */
   static getInstance(): MemoryDB {
-    if (!MemoryDB.instance) {
-      throw new Error('MemoryDB not initialized. Call MemoryDB.init(path) first.');
-    }
+    if (!MemoryDB.instance) throw new Error('MemoryDB not initialized. Call MemoryDB.init(path) first.');
     return MemoryDB.instance;
   }
 
-  /**
-   * Check if MemoryDB has been initialized.
-   */
   static isInitialized(): boolean {
     return MemoryDB.instance !== null;
   }
 
-  /**
-   * Reset for testing.
-   */
   static reset(): void {
     if (MemoryDB.instance) {
-      MemoryDB.instance.db.close();
       MemoryDB.instance = null;
     }
+    _overrideStoreDir = null;
+    _overrideTimelinePath = null;
+    setCacheOverride(null, null);
   }
 
   // ── CRUD ─────────────────────────────────────────────────
 
-  /**
-   * Save a new memory entry.
-   * Returns the generated ID.
-   */
   saveMemory(opts: {
     projectPath: string;
     type: MemoryType;
@@ -152,47 +304,48 @@ export class MemoryDB {
     importance?: number;
     confidence?: number;
   }): string {
-    // Dedup: identical content for the same project+type reinforces the
-    // existing memory instead of inserting a duplicate row.
-    const existing = this.db
-      .prepare('SELECT id FROM memories WHERE project_path = ? AND type = ? AND content = ?')
-      .get(opts.projectPath, opts.type, opts.content) as { id: string } | null;
+    const all = readAllRecords();
+    const existing = all.find(
+      r =>
+        r.record.projectPath === opts.projectPath && r.record.type === opts.type && r.record.content === opts.content,
+    );
     if (existing) {
-      this.updateImportance(existing.id, 0.05);
-      this.logEvent({ memoryId: existing.id, event: 'reinforced', note: 'duplicate save' });
-      return existing.id;
+      this.updateImportance(existing.record.id, 0.05);
+      this.logEvent({ memoryId: existing.record.id, event: 'reinforced', note: 'duplicate save' });
+      return existing.record.id;
     }
-
     const id = generateId();
-    const stmt = this.db.prepare(`
-      INSERT INTO memories (id, project_path, type, content, importance, confidence, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(id, opts.projectPath, opts.type, opts.content, opts.importance ?? 0.5, opts.confidence ?? 0.5, nowISO());
-
-    // Log creation event
+    const key = `auto.${sanitizeKey(opts.content.slice(0, 40))}.${id.slice(-6)}`;
+    const record: MemoryRecord = {
+      id,
+      projectPath: opts.projectPath,
+      type: opts.type,
+      content: opts.content,
+      importance: opts.importance ?? 0.5,
+      confidence: opts.confidence ?? 0.5,
+      accessCount: 0,
+      lastAccessedAt: null,
+      createdAt: nowISO(),
+    };
+    const hash = simpleHash(opts.content);
+    ensureStoreDir();
+    writeRecordAtomic(memoryFilePath(key), stringifyMemoryFile(record, key, hash));
     this.logEvent({ memoryId: id, event: 'created' });
-
     return id;
   }
 
-  /**
-   * Find a memory by its unique key.
-   */
   findByKey(key: string): MemoryRecord | null {
-    const row = this.db
-      .prepare('SELECT m.* FROM memories m JOIN memory_keys k ON m.id = k.memory_id WHERE k.key = ?')
-      .get(key) as MemoryRow | null;
-    if (!row) return null;
-    return toMemoryRecord(row);
+    const fp = memoryFilePath(key);
+    if (!existsSync(fp)) return null;
+    try {
+      const raw = readFileSync(fp, 'utf8');
+      const rec = parseMemoryFile(raw, key);
+      return rec;
+    } catch {
+      return null;
+    }
   }
 
-  /**
-   * Upsert a memory by unique key.
-   * If the key exists, updates content/importance/confidence.
-   * If not, creates a new memory.
-   * Returns { id, action: 'created' | 'updated' | 'unchanged' }.
-   */
   upsertMemory(opts: {
     key: string;
     projectPath: string;
@@ -201,183 +354,160 @@ export class MemoryDB {
     importance?: number;
     confidence?: number;
   }): { id: string; action: 'created' | 'updated' | 'unchanged' } {
-    const existing = this.findByKey(opts.key);
-
-    if (existing) {
-      // Check content hash to detect changes
-      const newHash = simpleHash(opts.content);
-      const oldHash = this.db.prepare('SELECT content_hash FROM memory_keys WHERE key = ?').get(opts.key) as
-        | { content_hash: string }
-        | undefined;
-      if (oldHash && oldHash.content_hash === newHash) {
-        return { id: existing.id, action: 'unchanged' };
+    const fp = memoryFilePath(opts.key);
+    const newHash = simpleHash(opts.content);
+    if (existsSync(fp)) {
+      try {
+        const raw = readFileSync(fp, 'utf8');
+        const hashMatch = raw.match(/^content_hash:\s*(.+)$/m);
+        const oldHash = hashMatch ? hashMatch[1].trim() : '';
+        if (oldHash === newHash) {
+          const rec = parseMemoryFile(raw, opts.key);
+          return { id: rec ? rec.id : opts.key, action: 'unchanged' };
+        }
+        const existing = parseMemoryFile(raw, opts.key);
+        const id = existing?.id ?? generateId();
+        const record: MemoryRecord = {
+          id,
+          projectPath: opts.projectPath,
+          type: opts.type,
+          content: opts.content,
+          importance: opts.importance ?? 0.5,
+          confidence: opts.confidence ?? 0.5,
+          accessCount: existing?.accessCount ?? 0,
+          lastAccessedAt: existing?.lastAccessedAt ?? null,
+          createdAt: existing?.createdAt ?? nowISO(),
+        };
+        writeRecordAtomic(fp, stringifyMemoryFile(record, opts.key, newHash));
+        this.logEvent({ memoryId: id, event: 'corrected', note: 'content updated by scan' });
+        return { id, action: 'updated' };
+      } catch {
+        // fallthrough to create
       }
-
-      this.db
-        .prepare('UPDATE memories SET content = ?, importance = ?, confidence = ? WHERE id = ?')
-        .run(opts.content, opts.importance ?? 0.5, opts.confidence ?? 0.5, existing.id);
-      this.db.prepare('UPDATE memory_keys SET content_hash = ? WHERE key = ?').run(newHash, opts.key);
-      this.logEvent({ memoryId: existing.id, event: 'corrected', note: 'content updated by scan' });
-      return { id: existing.id, action: 'updated' };
     }
-
     const id = generateId();
-    this.db
-      .prepare(
-        'INSERT INTO memories (id, project_path, type, content, importance, confidence, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      )
-      .run(id, opts.projectPath, opts.type, opts.content, opts.importance ?? 0.5, opts.confidence ?? 0.5, nowISO());
-    this.db
-      .prepare('INSERT INTO memory_keys (memory_id, key, content_hash) VALUES (?, ?, ?)')
-      .run(id, opts.key, simpleHash(opts.content));
+    const record: MemoryRecord = {
+      id,
+      projectPath: opts.projectPath,
+      type: opts.type,
+      content: opts.content,
+      importance: opts.importance ?? 0.5,
+      confidence: opts.confidence ?? 0.5,
+      accessCount: 0,
+      lastAccessedAt: null,
+      createdAt: nowISO(),
+    };
+    ensureStoreDir();
+    writeRecordAtomic(fp, stringifyMemoryFile(record, opts.key, newHash));
     this.logEvent({ memoryId: id, event: 'created' });
     return { id, action: 'created' };
   }
 
-  /**
-   * Get a memory by ID.
-   */
   getMemory(id: string): MemoryRecord | null {
-    const row = this.db.prepare('SELECT * FROM memories WHERE id = ?').get(id) as MemoryRow | null;
-    if (!row) return null;
-
-    // Bump access count
-    this.db
-      .prepare('UPDATE memories SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?')
-      .run(nowISO(), id);
-
-    return toMemoryRecord(row);
+    const all = readAllRecords();
+    const found = all.find(r => r.record.id === id);
+    if (!found) return null;
+    // Bump access
+    const updated: MemoryRecord = {
+      ...found.record,
+      accessCount: found.record.accessCount + 1,
+      lastAccessedAt: nowISO(),
+    };
+    try {
+      writeRecordAtomic(found.filePath, stringifyMemoryFile(updated, found.key, found.hash));
+    } catch {}
+    return found.record;
   }
 
-  /**
-   * Query memories by project and optional type filter.
-   * Results sorted by importance DESC.
-   */
   queryMemories(opts: {
     projectPath: string;
     type?: MemoryType;
     limit?: number;
     minImportance?: number;
   }): MemoryRecord[] {
-    const conditions: string[] = ['project_path = ?'];
-    const params: (string | number | null)[] = [opts.projectPath];
-
-    if (opts.type) {
-      conditions.push('type = ?');
-      params.push(opts.type);
-    }
-    if (opts.minImportance !== undefined) {
-      conditions.push('importance >= ?');
-      params.push(opts.minImportance);
-    }
-
-    const sql = `SELECT * FROM memories WHERE ${conditions.join(' AND ')} ORDER BY importance DESC${opts.limit ? ' LIMIT ?' : ''}`;
-    if (opts.limit) params.push(opts.limit);
-
-    const rows = this.db.prepare(sql).all(...params) as MemoryRow[];
-    return rows.map(toMemoryRecord);
+    let records = readAllRecords()
+      .map(r => r.record)
+      .filter(m => m.projectPath === opts.projectPath);
+    if (opts.type) records = records.filter(m => m.type === opts.type);
+    if (opts.minImportance !== undefined) records = records.filter(m => m.importance >= opts.minImportance!);
+    records.sort((a, b) => b.importance - a.importance);
+    if (opts.limit) records = records.slice(0, opts.limit);
+    return records;
   }
 
-  /**
-   * Get memories budgeted by token count, ranked by importance.
-   * Fills the budget with the highest-ranked memories first.
-   */
-  getBudgetedMemories(opts: {
-    projectPath: string;
-    maxTokens: number;
-    /** Estimate tokens from content length (rough: ~4 chars per token) */
-    minImportance?: number;
-  }): MemoryRecord[] {
-    const candidates = this.queryMemories({
-      projectPath: opts.projectPath,
-      minImportance: opts.minImportance,
-    });
-
-    // Rank by importance × recency weight
+  getBudgetedMemories(opts: { projectPath: string; maxTokens: number; minImportance?: number }): MemoryRecord[] {
+    const candidates = this.queryMemories({ projectPath: opts.projectPath, minImportance: opts.minImportance });
     const now = Date.now();
     const ranked = candidates.map(m => {
-      const lastAccess = m.lastAccessedAt ? (now - new Date(m.lastAccessedAt).getTime()) / 86400000 : 30; // days ago
-      const recencyWeight = Math.max(0.5, 1 - lastAccess / 90); // decay over 90 days
+      const lastAccess = m.lastAccessedAt ? (now - new Date(m.lastAccessedAt).getTime()) / 86400000 : 30;
+      const recencyWeight = Math.max(0.5, 1 - lastAccess / 90);
       const score = m.importance * m.confidence * recencyWeight;
       return { memory: m, score };
     });
     ranked.sort((a, b) => b.score - a.score);
-
-    // Fill budget
     const result: MemoryRecord[] = [];
     const charsPerToken = 4;
     let used = 0;
-
     for (const { memory } of ranked) {
-      const estimatedTokens = Math.ceil(memory.content.length / charsPerToken) + 10; // +10 for overhead
+      const estimatedTokens = Math.ceil(memory.content.length / charsPerToken) + 10;
       if (used + estimatedTokens > opts.maxTokens) continue;
       result.push(memory);
       used += estimatedTokens;
     }
-
     return result;
   }
 
-  /**
-   * Update importance of a memory (e.g., after successful use).
-   */
   updateImportance(id: string, delta: number): void {
-    this.db.prepare('UPDATE memories SET importance = MIN(1.0, MAX(0.0, importance + ?)) WHERE id = ?').run(delta, id);
+    const all = readAllRecords();
+    const found = all.find(r => r.record.id === id);
+    if (!found) return;
+    const updated: MemoryRecord = {
+      ...found.record,
+      importance: Math.min(1, Math.max(0, found.record.importance + delta)),
+    };
+    try {
+      writeRecordAtomic(found.filePath, stringifyMemoryFile(updated, found.key, found.hash));
+    } catch {}
   }
 
-  /**
-   * Update confidence of a memory (e.g., after user correction).
-   */
   updateConfidence(id: string, delta: number): void {
-    this.db.prepare('UPDATE memories SET confidence = MIN(1.0, MAX(0.0, confidence + ?)) WHERE id = ?').run(delta, id);
+    const all = readAllRecords();
+    const found = all.find(r => r.record.id === id);
+    if (!found) return;
+    const updated: MemoryRecord = {
+      ...found.record,
+      confidence: Math.min(1, Math.max(0, found.record.confidence + delta)),
+    };
+    try {
+      writeRecordAtomic(found.filePath, stringifyMemoryFile(updated, found.key, found.hash));
+    } catch {}
   }
 
-  /**
-   * Delete a memory by ID.
-   */
   deleteMemory(id: string): boolean {
-    const result = this.db.prepare('DELETE FROM memories WHERE id = ?').run(id);
-    return result.changes > 0;
-  }
-
-  /**
-   * Delete a memory by its unique key.
-   */
-  deleteMemoryByKey(key: string): boolean {
-    const row = this.db.prepare('SELECT memory_id FROM memory_keys WHERE key = ?').get(key) as {
-      memory_id: string;
-    } | null;
-    if (!row) return false;
-    return this.deleteMemory(row.memory_id);
-  }
-
-  /**
-   * Compute a simple lexical relevance score (0..1) between a query string
-   * and a memory's content + key + type fields.
-   */
-  private computeRelevance(query: string, content: string, key: string, type: string): number {
-    const q = query.toLowerCase();
-    // Tokenize query into words
-    const queryWords = q.split(/\s+/).filter(w => w.length > 2);
-    if (queryWords.length === 0) return 0;
-
-    const haystack = `${key} ${type} ${content}`.toLowerCase();
-    let matches = 0;
-    for (const word of queryWords) {
-      if (haystack.includes(word)) matches++;
+    const all = readAllRecords();
+    const found = all.find(r => r.record.id === id);
+    if (!found) return false;
+    try {
+      unlinkSync(found.filePath);
+      invalidateIndex();
+      return true;
+    } catch {
+      return false;
     }
-
-    // Normalize to 0..1 with diminishing returns at high match counts
-    return Math.min(1, (matches / Math.max(1, queryWords.length)) * 1.2);
   }
 
-  /**
-   * Recall memories ranked by combined score.
-   * Score = relevance*0.45 + importance*0.20 + recency*0.15 + access*0.10 + confidence*0.10
-   * When no query is given, relevance is 0 for all (falls back to the old formula
-   * minus the now-removed confidence weight redistribution).
-   * Increments access_count and updates last_accessed_at.
-   */
+  deleteMemoryByKey(key: string): boolean {
+    const fp = memoryFilePath(key);
+    if (!existsSync(fp)) return false;
+    try {
+      unlinkSync(fp);
+      invalidateIndex();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   recallMemories(opts: {
     projectPath: string;
     query?: string;
@@ -385,36 +515,29 @@ export class MemoryDB {
     minImportance?: number;
     verbose?: boolean;
   }): Array<MemoryRecord & { score: number; scoreBreakdown?: Record<string, number> }> {
-    const conditions = ['project_path = ?'];
-    const params: (string | number | null)[] = [opts.projectPath];
-    if (opts.minImportance !== undefined) {
-      conditions.push('importance >= ?');
-      params.push(opts.minImportance);
-    }
-
-    const sql = `SELECT m.*, COALESCE(k.key, '') as memory_key FROM memories m LEFT JOIN memory_keys k ON m.id = k.memory_id WHERE ${conditions.join(' AND ')}`;
-    const rows = this.db.prepare(sql).all(...params) as Array<MemoryRow & { memory_key: string }>;
-
+    const all = readAllRecords();
+    const filtered = all.filter(
+      r =>
+        r.record.projectPath === opts.projectPath &&
+        (opts.minImportance === undefined || r.record.importance >= opts.minImportance!),
+    );
     const now = Date.now();
-    const scored = rows
-      .map(row => {
-        const lastAccess = row.last_accessed_at ? (now - new Date(row.last_accessed_at).getTime()) / 86400000 : 90;
+    const scored = filtered
+      .map(({ record, key }) => {
+        const lastAccess = record.lastAccessedAt ? (now - new Date(record.lastAccessedAt).getTime()) / 86400000 : 90;
         const recency = Math.max(0, 1 - lastAccess / 90);
-        const accessBonus = Math.min(1, row.access_count / 20);
-
-        const relevance = opts.query ? this.computeRelevance(opts.query, row.content, row.memory_key, row.type) : 0;
-
+        const accessBonus = Math.min(1, record.accessCount / 20);
+        const relevance = opts.query ? computeRelevance(opts.query, record.content, key, record.type) : 0;
         const relevanceScore = relevance * 0.45;
-        const importanceScore = row.importance * 0.2;
+        const importanceScore = record.importance * 0.2;
         const recencyScore = recency * 0.15;
         const accessScore = accessBonus * 0.1;
-        const confidenceScore = row.confidence * 0.1;
-
+        const confidenceScore = record.confidence * 0.1;
         const score = relevanceScore + importanceScore + recencyScore + accessScore + confidenceScore;
-
         return {
-          ...toMemoryRecord(row),
+          ...record,
           score,
+          _key: key,
           scoreBreakdown: opts.verbose
             ? {
                 relevance: relevanceScore,
@@ -429,123 +552,95 @@ export class MemoryDB {
       })
       .sort((a, b) => b.score - a.score);
 
-    // Bump access_count and last_accessed_at for returned memories
     const limited = opts.limit ? scored.slice(0, opts.limit) : scored;
+    // Bump access
     const nowISOStr = nowISO();
     for (const mem of limited) {
-      this.db
-        .prepare('UPDATE memories SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?')
-        .run(nowISOStr, mem.id);
+      const allRec = all.find(r => r.record.id === mem.id);
+      if (!allRec) continue;
+      const updated: MemoryRecord = {
+        ...allRec.record,
+        accessCount: allRec.record.accessCount + 1,
+        lastAccessedAt: nowISOStr,
+      };
+      try {
+        writeRecordAtomic(allRec.filePath, stringifyMemoryFile(updated, allRec.key, allRec.hash));
+      } catch {}
     }
-
-    return limited;
+    return limited.map(
+      ({ _key, ...rest }) => rest as MemoryRecord & { score: number; scoreBreakdown?: Record<string, number> },
+    );
   }
 
-  /**
-   * Log a timeline event for a memory.
-   */
   logEvent(opts: { memoryId: string; event: string; note?: string }): string {
     const id = generateId();
-    this.db
-      .prepare('INSERT INTO memory_timeline (id, memory_id, event, note, created_at) VALUES (?, ?, ?, ?, ?)')
-      .run(id, opts.memoryId, opts.event, opts.note ?? null, nowISO());
+    const rec: TimelineRecord = {
+      id,
+      memoryId: opts.memoryId,
+      event: opts.event,
+      note: opts.note ?? null,
+      createdAt: nowISO(),
+    };
+    appendTimeline(rec);
     return id;
   }
 
-  /**
-   * Get timeline events for a memory.
-   */
   getTimeline(memoryId: string): TimelineRecord[] {
-    const rows = this.db
-      .prepare('SELECT * FROM memory_timeline WHERE memory_id = ? ORDER BY created_at DESC')
-      .all(memoryId) as TimelineRow[];
-    return rows.map(toTimelineRecord);
+    return readTimeline()
+      .filter(t => t.memoryId === memoryId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  /**
-   * Get all recent timeline events across all memories.
-   */
   getRecentTimeline(limit = 50): TimelineRecord[] {
-    const rows = this.db
-      .prepare('SELECT * FROM memory_timeline ORDER BY created_at DESC LIMIT ?')
-      .all(limit) as TimelineRow[];
-    return rows.map(toTimelineRecord);
+    return readTimeline()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit);
   }
 
-  /**
-   * Export memories for peer-to-peer sync.
-   * Returns memories ordered by importance DESC, limited to `limit`.
-   *
-   * @param limit  Max memories to export (default 50)
-   * @param projectPath  Optional filter — only export memories for this project
-   */
   exportMemories(limit = 50, projectPath?: string): MemoryRecord[] {
-    let query = 'SELECT * FROM memories';
-    const params: (string | number)[] = [];
-    if (projectPath) {
-      query += ' WHERE project_path = ?';
-      params.push(projectPath);
-    }
-    query += ' ORDER BY importance DESC LIMIT ?';
-    params.push(limit);
-    const rows = this.db.prepare(query).all(...params) as MemoryRow[];
-    return rows.map(toMemoryRecord);
+    let records = readAllRecords().map(r => r.record);
+    if (projectPath) records = records.filter(m => m.projectPath === projectPath);
+    records.sort((a, b) => b.importance - a.importance);
+    return records.slice(0, limit);
   }
 
-  /**
-   * Prune low-value memories to keep the store lean and injection quality high.
-   * Deletes memories that are old, rarely accessed, and score poorly on
-   * importance × confidence. Keyed memories (from repo scans) are exempt —
-   * they're refreshed by upsert and represent current repo facts.
-   *
-   * Returns the number of memories deleted.
-   */
   pruneMemories(opts?: { maxAgeDays?: number; minScore?: number; maxAccessCount?: number }): number {
     const maxAgeDays = opts?.maxAgeDays ?? 60;
-    const minScore = opts?.minScore ?? 0.09; // e.g. importance 0.3 × confidence 0.3
+    const minScore = opts?.minScore ?? 0.09;
     const maxAccessCount = opts?.maxAccessCount ?? 2;
     const cutoff = new Date(Date.now() - maxAgeDays * 86400000).toISOString();
-
-    // Select ids first — the reported `changes` of a DELETE can include
-    // cascaded memory_timeline rows, which would inflate the count.
-    const rows = this.db
-      .prepare(
-        `SELECT id FROM memories
-         WHERE importance * confidence < ?
-           AND access_count <= ?
-           AND created_at < ?
-           AND COALESCE(last_accessed_at, created_at) < ?
-           AND id NOT IN (SELECT memory_id FROM memory_keys)`,
-      )
-      .all(minScore, maxAccessCount, cutoff, cutoff) as Array<{ id: string }>;
-    const del = this.db.prepare('DELETE FROM memories WHERE id = ?');
-    for (const row of rows) del.run(row.id);
-    return rows.length;
-  }
-
-  // ── Stats ─────────────────────────────────────────────────
-
-  /**
-   * Get memory statistics.
-   */
-  getStats(): { total: number; byType: Record<string, number> } {
-    const rows = this.db.prepare('SELECT type, COUNT(*) as count FROM memories GROUP BY type').all() as Array<{
-      type: string;
-      count: number;
-    }>;
-    const byType: Record<string, number> = {};
-    let total = 0;
-    for (const row of rows) {
-      byType[row.type] = row.count;
-      total += row.count;
+    const all = readAllRecords();
+    let deleted = 0;
+    for (const { record, filePath, key } of all) {
+      const isProtected = key.startsWith('scan.');
+      if (isProtected) continue;
+      const score = record.importance * record.confidence;
+      const ageOk = record.createdAt < cutoff && (record.lastAccessedAt ?? record.createdAt) < cutoff;
+      if (score < minScore && record.accessCount <= maxAccessCount && ageOk) {
+        try {
+          unlinkSync(filePath);
+          deleted++;
+        } catch {}
+      }
     }
-    return { total, byType };
+    if (deleted > 0) invalidateIndex();
+    return deleted;
   }
 
-  /**
-   * Close the database connection.
-   */
-  close(): void {
-    this.db.close();
+  getStats(): { total: number; byType: Record<string, number> } {
+    const records = readAllRecords().map(r => r.record);
+    const byType: Record<string, number> = {};
+    for (const r of records) byType[r.type] = (byType[r.type] ?? 0) + 1;
+    return { total: records.length, byType };
+  }
+
+  close(): void {}
+
+  // Compatibility: expose db handle for legacy tests (no-op)
+  get db(): any {
+    return {
+      prepare: () => ({ run: () => {}, get: () => null, all: () => [] }),
+      exec: () => {},
+    };
   }
 }

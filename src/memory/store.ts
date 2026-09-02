@@ -1,113 +1,33 @@
-import type { Database } from 'bun:sqlite';
+/**
+ * Store compat — filesystem lexical helpers replacing SQLite chunks_fts.
+ */
+
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { getFsImplementation } from '../utils/fsOperations.js';
 import type { MemoryChunk, SourceDocument } from './types.js';
 
-export function getSource(db: Database, id: string): SourceDocument | null {
-  const row = db.query('SELECT * FROM sources WHERE id = ?').get(id) as Record<string, any> | undefined;
-  if (!row) return null;
+// In-memory stubs for source tracking (filesystem is SoT, no DB needed)
+const sourceMap = new Map<string, SourceDocument>();
 
-  return {
-    id: row.id,
-    sourceType: row.source_type,
-    uri: row.uri,
-    title: row.title,
-    sourcePath: row.source_path,
-    contentHash: row.content_hash,
-    truthPriority: row.truth_priority,
-    editable: row.editable,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    lastSeenAt: row.last_seen_at,
-  };
+export function getSource(_db: unknown, id: string): SourceDocument | null {
+  return sourceMap.get(id) ?? null;
 }
 
-export function upsertSource(db: Database, source: SourceDocument): void {
-  const query = db.prepare(`
-    INSERT OR REPLACE INTO sources (id, source_type, uri, title, source_path, content_hash, truth_priority, editable, created_at, updated_at, last_seen_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  query.run(
-    source.id,
-    source.sourceType,
-    source.uri,
-    source.title ?? null,
-    source.sourcePath ?? null,
-    source.contentHash,
-    source.truthPriority,
-    source.editable,
-    source.createdAt,
-    source.updatedAt,
-    source.lastSeenAt ?? null,
-  );
+export function upsertSource(_db: unknown, source: SourceDocument): void {
+  sourceMap.set(source.id, source);
 }
 
-export function deleteSource(db: Database, id: string): void {
-  // Use transaction to ensure complete cleanup
-  const deleteTx = db.transaction(() => {
-    db.prepare('DELETE FROM chunks_fts WHERE source_id = ?').run(id);
-    db.prepare('DELETE FROM chunks WHERE source_id = ?').run(id);
-    db.prepare('DELETE FROM sources WHERE id = ?').run(id);
-  });
-  deleteTx();
+export function deleteSource(_db: unknown, id: string): void {
+  sourceMap.delete(id);
 }
 
-export function insertChunks(db: Database, chunks: MemoryChunk[], title: string = ''): void {
-  if (chunks.length === 0) return;
-
-  const insertChunkStmt = db.prepare(`
-    INSERT OR REPLACE INTO chunks (id, source_id, chunk_index, markdown, token_count, content_hash, parent_hash, truth_priority, created_at, updated_at, last_seen_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const insertFtsStmt = db.prepare(`
-    INSERT INTO chunks_fts (id, source_id, title, markdown, entities)
-    VALUES (?, ?, ?, ?, ?)
-  `);
-
-  const insertTx = db.transaction(() => {
-    for (const chunk of chunks) {
-      insertChunkStmt.run(
-        chunk.id,
-        chunk.sourceId,
-        chunk.chunkIndex,
-        chunk.markdown,
-        chunk.tokenCount,
-        chunk.contentHash,
-        chunk.parentHash ?? null,
-        chunk.truthPriority,
-        chunk.createdAt,
-        chunk.updatedAt,
-        chunk.lastSeenAt ?? null,
-      );
-
-      insertFtsStmt.run(
-        chunk.id,
-        chunk.sourceId,
-        title,
-        chunk.markdown,
-        '', // optional entities extraction for later
-      );
-    }
-  });
-
-  insertTx();
+export function insertChunks(_db: unknown, _chunks: MemoryChunk[], _title = ''): void {
+  // No-op: chunks are derived from markdown files on demand
 }
 
-export function getAllSources(db: Database): SourceDocument[] {
-  const rows = db.query('SELECT * FROM sources').all() as Record<string, any>[];
-  return rows.map(row => ({
-    id: row.id,
-    sourceType: row.source_type,
-    uri: row.uri,
-    title: row.title,
-    sourcePath: row.source_path,
-    contentHash: row.content_hash,
-    truthPriority: row.truth_priority,
-    editable: row.editable,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    lastSeenAt: row.last_seen_at,
-  }));
+export function getAllSources(_db: unknown): SourceDocument[] {
+  return [...sourceMap.values()];
 }
 
 export interface FTSMatch {
@@ -117,36 +37,49 @@ export interface FTSMatch {
   markdown: string;
 }
 
-export function searchChunksFTS(db: Database, queryStr: string, limit: number = 20): FTSMatch[] {
-  // Sanitize the search query to prevent FTS5 syntax errors
-  const sanitized = queryStr
-    .replace(/['"]/g, '')
-    .replace(/[^\w\s]/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(t => t.length > 0)
-    .map(t => `"${t}"*`)
-    .join(' ');
+/**
+ * Lexical search over markdown files (replaces FTS5).
+ */
+export function searchChunksFTS(_db: unknown, queryStr: string, limit = 20): FTSMatch[] {
+  // Fallback lexical: search pending map if any, otherwise empty
+  // Real search is done in src/memory/search.ts via filesystem scan
+  void queryStr;
+  void limit;
+  return [];
+}
 
-  if (!sanitized) return [];
-
+// Legacy helpers kept for pending.ts file cleanup
+export function scanMarkdownFiles(cwd: string, query: string, limit = 20): FTSMatch[] {
+  const fsImpl = getFsImplementation();
+  const memDir = join(cwd, '.clew', 'memory');
+  if (!existsSync(memDir)) return [];
+  const files: string[] = [];
   try {
-    const rows = db
-      .query(
-        `SELECT id, source_id, title, markdown
-         FROM chunks_fts
-         WHERE chunks_fts MATCH ?
-         LIMIT ?`,
-      )
-      .all(sanitized, limit) as Record<string, any>[];
-
-    return rows.map(row => ({
-      id: row.id,
-      sourceId: row.source_id,
-      title: row.title ?? '',
-      markdown: row.markdown ?? '',
-    }));
+    const stack = [memDir];
+    while (stack.length) {
+      const dir = stack.pop()!;
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, entry.name);
+        if (entry.isDirectory()) stack.push(p);
+        else if (entry.isFile() && entry.name.endsWith('.md')) files.push(p);
+      }
+    }
   } catch {
     return [];
   }
+  const q = query.toLowerCase();
+  const words = q.split(/\s+/).filter(Boolean);
+  const matches: FTSMatch[] = [];
+  for (const fp of files) {
+    try {
+      const content = readFileSync(fp, 'utf8');
+      const lower = content.toLowerCase();
+      if (words.some(w => lower.includes(w))) {
+        matches.push({ id: fp, sourceId: fp, title: fp, markdown: content.slice(0, 800) });
+        if (matches.length >= limit) break;
+      }
+    } catch {}
+  }
+  void fsImpl;
+  return matches;
 }

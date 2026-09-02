@@ -566,7 +566,7 @@ export function getDefaultAppState(): AppState {
       queue: [],
     },
     thinkingEnabled: shouldEnableThinkingByDefault(),
-    showThinkingPreview: getSettings().showThinkingPreview ?? true,
+    showThinkingPreview: getInitialSettings().showThinkingPreview ?? true,
     promptSuggestionEnabled: shouldEnablePromptSuggestion(),
     sessionHooks: new Map(),
     inbox: {

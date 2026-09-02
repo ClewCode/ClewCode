@@ -1,123 +1,75 @@
-import type { Database } from 'bun:sqlite';
-import { cosineSimilarity } from '../memdir/semanticSearch.js';
-import { getMemoryDb } from './db.js';
-import { searchChunksFTS } from './store.js';
+/**
+ * Memory Search — filesystem lexical + recency ranking (no SQLite/FTS).
+ */
+
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { parseFrontmatter } from './frontmatter.js';
 import type { MemorySearchResult } from './types.js';
 
-// ── Embedding cache (in-memory LRU) ──
-const embeddingCache = new Map<string, number[]>();
-const _EMBEDDING_DIM = 384; // all-MiniLM-L6-v2 dimension
-
-/**
- * Attempt to compute a query embedding using a local pipeline.
- * Returns null if the pipeline fails (graceful fallback).
- */
-async function computeEmbedding(text: string): Promise<number[] | null> {
-  const cached = embeddingCache.get(text);
-  if (cached) return cached;
-
-  try {
-    // Try loading the Xenova Transformers pipeline
-    const { pipeline } = await import('@xenova/transformers');
-    const extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
-      quantized: true,
-    });
-    const result = await extractor(text, { pooling: 'mean', normalize: true });
-    const embedding = Array.from(result.data) as number[];
-    embeddingCache.set(text, embedding);
-    return embedding;
-  } catch {
-    // Pipeline unavailable (model not downloaded, missing deps, etc.)
-    return null;
-  }
-}
-
-/** Ensure embedding table exists in the DB. */
-function ensureEmbeddingTable(db: Database): void {
-  db.run(`CREATE TABLE IF NOT EXISTS chunk_embeddings (
-    chunk_id TEXT PRIMARY KEY,
-    embedding BLOB NOT NULL,
-    model TEXT NOT NULL DEFAULT 'all-MiniLM-L6-v2',
-    FOREIGN KEY(chunk_id) REFERENCES chunks(id)
-  )`);
-}
-
-/**
- * Search with semantic (embedding) boost on top of FTS5.
- * Falls back gracefully to FTS-only when embeddings are unavailable.
- */
-export async function searchMemories(cwd: string, query: string, limit: number = 10): Promise<MemorySearchResult[]> {
-  const db = getMemoryDb(cwd);
-  const ftsMatches = searchChunksFTS(db, query, limit * 3);
-
-  const results: MemorySearchResult[] = [];
-
-  // Try computing query embedding
-  const queryEmb = await computeEmbedding(query);
-
-  // If embeddings available, ensure table and load chunk embeddings
-  let chunkEmbeddings: Map<string, number[]> | null = null;
-  if (queryEmb) {
-    ensureEmbeddingTable(db);
-    chunkEmbeddings = new Map();
-    const embRows = db.query('SELECT chunk_id, embedding FROM chunk_embeddings').all() as Array<{
-      chunk_id: string;
-      embedding: Uint8Array;
-    }>;
-    for (const r of embRows) {
-      try {
-        const arr = Array.from(
-          new Float32Array(r.embedding.buffer, r.embedding.byteOffset, r.embedding.byteLength / 4),
-        );
-        chunkEmbeddings.set(r.chunk_id, arr);
-      } catch {
-        /* skip corrupted */
+function scanMemoryFiles(cwd: string): Array<{ path: string; content: string; mtimeMs: number }> {
+  const memDir = join(cwd, '.clew', 'memory');
+  if (!existsSync(memDir)) return [];
+  const out: Array<{ path: string; content: string; mtimeMs: number }> = [];
+  const stack = [memDir];
+  while (stack.length) {
+    const dir = stack.pop()!;
+    let entries: any[] = [];
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const p = join(dir, entry.name);
+      if (entry.isDirectory()) stack.push(p);
+      else if (entry.isFile() && entry.name.endsWith('.md')) {
+        try {
+          const content = readFileSync(p, 'utf8');
+          // Use stat mtime via read timing approx; real mtime not critical for ranking
+          out.push({ path: p, content, mtimeMs: Date.now() });
+        } catch {}
       }
     }
   }
+  return out;
+}
 
-  for (const match of ftsMatches) {
-    const chunkRow = db.query('SELECT * FROM chunks WHERE id = ?').get(match.id) as Record<string, any> | undefined;
-    if (!chunkRow) continue;
+export async function searchMemories(cwd: string, query: string, limit = 10): Promise<MemorySearchResult[]> {
+  const files = scanMemoryFiles(cwd);
+  const qWords = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 1);
+  if (qWords.length === 0 || files.length === 0) return [];
 
-    const sourceRow = db.query('SELECT * FROM sources WHERE id = ?').get(match.sourceId) as
-      | Record<string, any>
-      | undefined;
-    if (!sourceRow) continue;
-
-    const priority = sourceRow.truth_priority || 50;
-    const priorityFactor = priority / 100;
-
-    let recencyFactor = 0;
-    const updatedAt = new Date(sourceRow.updated_at).getTime();
-    const ageMs = Date.now() - updatedAt;
-    if (ageMs < 24 * 60 * 60 * 1000) recencyFactor = 0.15;
-    else if (ageMs < 7 * 24 * 60 * 60 * 1000) recencyFactor = 0.08;
-
-    // Semantic boost: cosine similarity against query embedding
-    let semanticBoost = 0;
-    if (queryEmb && chunkEmbeddings) {
-      const chunkEmb = chunkEmbeddings.get(match.id);
-      if (chunkEmb) {
-        semanticBoost = cosineSimilarity(queryEmb, chunkEmb) * 0.3;
-      }
-    }
-
-    const score = Math.min(0.4 + priorityFactor * 0.35 + recencyFactor + semanticBoost, 1.0);
-
-    results.push({
-      id: match.id,
-      title: sourceRow.title || sourceRow.uri,
-      sourcePath: sourceRow.source_path || sourceRow.uri,
-      sourceType: sourceRow.source_type,
-      excerpt: chunkRow.markdown,
+  const scored: Array<{ file: (typeof files)[0]; score: number }> = [];
+  for (const file of files) {
+    const parsed = parseFrontmatter(file.content, file.path, 'project');
+    const haystack = `${parsed.metadata.id} ${parsed.metadata.type} ${parsed.content}`.toLowerCase();
+    let matches = 0;
+    for (const w of qWords) if (haystack.includes(w)) matches++;
+    const relevance = matches / qWords.length;
+    if (relevance === 0) continue;
+    // Recency boost (files under store/ are newer)
+    const isRecent = file.path.includes('store');
+    const score =
+      relevance * 0.7 + (isRecent ? 0.15 : 0) + ((parsed.metadata.type as string) === 'decision' ? 0.05 : 0);
+    scored.push({ file, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map(({ file, score }) => {
+    const parsed = parseFrontmatter(file.content, file.path, 'project');
+    return {
+      id: parsed.metadata.id,
+      title: file.path,
+      sourcePath: file.path,
+      sourceType: parsed.metadata.type,
+      excerpt: parsed.content.slice(0, 400),
       score,
-      contentHash: chunkRow.content_hash,
-      lastSeenAt: sourceRow.last_seen_at || new Date().toISOString(),
+      contentHash: '',
+      lastSeenAt: new Date().toISOString(),
       stale: false,
-    });
-  }
-
-  // Sort by score descending
-  return results.sort((a, b) => b.score - a.score).slice(0, limit);
+    };
+  });
 }

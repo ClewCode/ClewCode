@@ -1,7 +1,7 @@
 /**
  * BudgetInjector — importance-ranked memory injection into system prompt.
  *
- * Queries the SQLite MemoryDB for memories, ranks them by
+ * Queries the filesystem MemoryDB for memories, ranks them by
  * importance × confidence × recency, and fits as many as possible
  * into the given token budget.
  */
@@ -105,7 +105,7 @@ export async function budgetedInjectDetailed(maxTokens = 2000, includeFileHierar
     }
   }
 
-  // 2. Budgeted SQLite memories
+  // 2. Budgeted filesystem memories
   if (usedTokens < maxTokens) {
     const remaining = maxTokens - usedTokens;
     const memories = db.getBudgetedMemories({
@@ -186,15 +186,9 @@ export async function budgetedInjectDetailed(maxTokens = 2000, includeFileHierar
   };
 }
 
-function findKeyForId(db: MemoryDB, id: string): string | null {
-  try {
-    const row = (db as any).db.prepare('SELECT key FROM memory_keys WHERE memory_id = ?').get(id) as {
-      key: string;
-    } | null;
-    return row?.key ?? null;
-  } catch {
-    return null;
-  }
+function findKeyForId(_db: MemoryDB, id: string): string | null {
+  // Filesystem store: key is not tracked separately, use id as key
+  return id;
 }
 
 /**

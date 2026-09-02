@@ -17,7 +17,7 @@
 
 import { existsSync } from 'node:fs';
 import { MemoryDB, type MemoryRecord } from '../../memory/database.js';
-import { getMemoryDbPath } from '../../memory/hierarchy.js';
+import { getMemoryDirPath } from '../../memory/hierarchy.js';
 
 /** Content prefix that marks a `note` memory as a session record. */
 const SESSION_PREFIX = 'Session: ';
@@ -58,10 +58,9 @@ export type SessionDensity = {
  */
 function openForRead(): MemoryDB | null {
   if (MemoryDB.isInitialized()) return MemoryDB.getInstance();
-  const dbPath = getMemoryDbPath();
-  if (!existsSync(dbPath)) return null;
   try {
-    return MemoryDB.init(dbPath);
+    if (!existsSync(getMemoryDirPath())) return null;
+    return MemoryDB.init(getMemoryDirPath());
   } catch {
     return null;
   }

@@ -1010,6 +1010,13 @@ export const BashTool = buildTool({
       persistedOutputPath,
       persistedOutputSize,
     };
+    // Taste auto-learning: supporting outcome only
+    if (!wasInterrupted && result.code === 0) {
+      try {
+        const { hookBashOutcome } = await import('../../taste/hooks.js');
+        hookBashOutcome(input.command, result.code);
+      } catch {}
+    }
     return {
       data,
     };

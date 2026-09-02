@@ -1,9 +1,7 @@
 /**
  * Memory Hierarchy — manage `.clew/memory/` directory structure.
  *
- * Creates and maintains the file hierarchy for the durable
- * context reconstruction system.
- *
+ * Filesystem is Source of Truth.
  * .clew/
  *   memory/
  *     MEMORY.md       # Permanent project knowledge
@@ -11,7 +9,9 @@
  *     checkpoint.md   # Latest session snapshot
  *     notes.md        # Scratchpad (session-scoped)
  *     tasks/          # Per-task artifacts
- *     memory.db       # SQLite database
+ *     store/          # Per-memory markdown files (filesystem SoT)
+ *     timeline.jsonl  # Append-only timeline log
+ *     index.json      # Derived ephemeral index (gitignored)
  */
 
 import { existsSync } from 'node:fs';
@@ -50,10 +50,11 @@ export function getMemoryDirPath(): string {
 }
 
 /**
- * Get the path to the SQLite database.
+ * Get the path to the SQLite database (legacy compat — now unused).
+ * Filesystem store lives at .clew/memory/store/
  */
 export function getMemoryDbPath(): string {
-  return join(getMemoryDirPath(), 'memory.db');
+  return join(getMemoryDirPath(), 'store');
 }
 
 /**
@@ -64,10 +65,12 @@ export function getMemoryDbPath(): string {
 export async function initMemoryHierarchy(): Promise<void> {
   const memDir = getMemoryDirPath();
   const tasksDir = join(memDir, 'tasks');
+  const storeDir = join(memDir, 'store');
 
   // Create directories
   await mkdir(memDir, { recursive: true });
   await mkdir(tasksDir, { recursive: true });
+  await mkdir(storeDir, { recursive: true });
 
   // Create default files if missing
   for (const [filename, content] of Object.entries(DEFAULT_FILES)) {
@@ -124,5 +127,5 @@ export async function writeMemoryFile(filename: string, content: string): Promis
  * Check if the memory hierarchy is initialized.
  */
 export function isMemoryHierarchyInitialized(): boolean {
-  return existsSync(join(getMemoryDirPath(), 'memory.db'));
+  return existsSync(getMemoryDirPath());
 }

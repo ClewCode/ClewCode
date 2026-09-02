@@ -25,14 +25,23 @@ import {
   resolvePickerEffortPersistence,
   toPersistableEffort,
 } from '../utils/effort.js';
-import { type FetchedModel, fetchProviderModels, supportsModelFetching } from '../utils/model/fetchProviderModels.js';
+import {
+  type FetchedModel,
+  fetchProviderModels,
+  getAllCachedProviderModels,
+  supportsModelFetching,
+} from '../utils/model/fetchProviderModels.js';
 import {
   getDefaultMainLoopModel,
   type ModelSetting,
   modelDisplayString,
   parseUserSpecifiedModel,
 } from '../utils/model/model.js';
-import { fetchOpenRouterCapabilityCatalog, findOpenRouterCapabilities } from '../utils/model/openRouterCapabilities.js';
+import {
+  fetchOpenRouterCapabilityCatalog,
+  findOpenRouterCapabilities,
+  getCachedOpenRouterCatalog,
+} from '../utils/model/openRouterCapabilities.js';
 import { mergeRecentModels } from '../utils/model/recentModels.js';
 import { getModelCosts } from '../utils/modelCost.js';
 import { getSettingsForSource, updateSettingsForSource } from '../utils/settings/settings.js';
@@ -128,8 +137,10 @@ export function ModelPicker({
     effortValue !== undefined ? convertEffortValueToLevel(effortValue) : undefined,
   );
 
-  const [fetchedModelsByProvider, setFetchedModelsByProvider] = useState<Record<string, FetchedModel[]>>({});
-  const [openRouterCatalog, setOpenRouterCatalog] = useState<FetchedModel[]>([]);
+  const [fetchedModelsByProvider, setFetchedModelsByProvider] = useState<Record<string, FetchedModel[]>>(() =>
+    getAllCachedProviderModels(),
+  );
+  const [openRouterCatalog, setOpenRouterCatalog] = useState<FetchedModel[]>(() => getCachedOpenRouterCatalog());
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const hasRequestedModels = useRef(false);
 
@@ -169,8 +180,13 @@ export function ModelPicker({
             .filter(result => result.models && result.models.length > 0)
             .map(result => [result.provider, result.models]),
         ) as Record<string, FetchedModel[]>;
-        setFetchedModelsByProvider(nextModels);
-        setOpenRouterCatalog(catalog);
+        setFetchedModelsByProvider(prev => {
+          const prevTotal = Object.values(prev).reduce((sum, arr) => sum + arr.length, 0);
+          const nextTotal = Object.values(nextModels).reduce((sum, arr) => sum + arr.length, 0);
+          if (prevTotal === nextTotal && prevTotal > 0) return prev;
+          return nextModels;
+        });
+        setOpenRouterCatalog(prev => (prev.length === catalog.length && prev.length > 0 ? prev : catalog));
       } finally {
         setIsFetchingModels(false);
       }

@@ -1,11 +1,16 @@
-import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { ProviderManager } from '../../services/ai/ProviderManager.js';
-import { fetchProviderModels } from './fetchProviderModels.js';
+import { clearProviderModelCache, fetchProviderModels } from './fetchProviderModels.js';
 
 const originalFetch = globalThis.fetch;
 
+beforeEach(() => {
+  clearProviderModelCache();
+});
+
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  clearProviderModelCache();
 });
 
 describe('fetchProviderModels', () => {

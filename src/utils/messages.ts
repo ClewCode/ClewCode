@@ -2765,7 +2765,7 @@ export function handleMessageFromStream(
           onStreamingThinking?.(() => ({
             thinking: '',
             isStreaming: true,
-            streamingEndedAt: null,
+            streamingEndedAt: undefined,
           }));
           return;
         case 'text':
@@ -2833,7 +2833,7 @@ export function handleMessageFromStream(
           onStreamingThinking?.(current => ({
             thinking: (current?.thinking ?? '') + deltaThinking,
             isStreaming: true,
-            streamingEndedAt: null,
+            streamingEndedAt: undefined,
           }));
           return;
         }

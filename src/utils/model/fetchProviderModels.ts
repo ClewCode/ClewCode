@@ -69,7 +69,33 @@ interface OpenRouterModelsResponse {
 export type FetchProviderModelsOptions = {
   apiKey?: string;
   baseUrl?: string;
+  forceRefresh?: boolean;
 };
+
+const providerModelCache = new Map<string, { models: FetchedModel[]; timestamp: number }>();
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+export function getCachedProviderModels(provider: string): FetchedModel[] | null {
+  const entry = providerModelCache.get(provider);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) return null;
+  return entry.models;
+}
+
+export function getAllCachedProviderModels(): Record<string, FetchedModel[]> {
+  const result: Record<string, FetchedModel[]> = {};
+  const now = Date.now();
+  for (const [provider, entry] of providerModelCache.entries()) {
+    if (now - entry.timestamp <= CACHE_TTL_MS && entry.models.length > 0) {
+      result[provider] = entry.models;
+    }
+  }
+  return result;
+}
+
+export function clearProviderModelCache(): void {
+  providerModelCache.clear();
+}
 
 /**
  * Fetch available models from the provider's /models endpoint
@@ -80,6 +106,11 @@ export async function fetchProviderModels(
 ): Promise<FetchedModel[] | null> {
   const providerManager = ProviderManager.getInstance();
   const activeProvider = provider ?? providerManager.getActiveProviderName();
+
+  const cached = getCachedProviderModels(activeProvider);
+  if (cached && !options?.forceRefresh) {
+    return cached;
+  }
 
   // Get the models URL from provider registry
   const { PROVIDER_REGISTRY } = await import('../../services/ai/providerRegistry.js');
@@ -249,7 +280,7 @@ export async function fetchProviderModels(
       return undefined;
     }
 
-    return parsedModels.map(fm => {
+    const finalModels = parsedModels.map(fm => {
       const staticCap = lookupStaticCap(fm.id);
       if (!staticCap) return fm;
       // API data takes priority; static only fills gaps
@@ -265,6 +296,12 @@ export async function fetchProviderModels(
         free: fm.free || staticCap.free || inferFreeModel({ id: fm.id, label: fm.label }),
       };
     });
+
+    if (finalModels.length > 0) {
+      providerModelCache.set(activeProvider, { models: finalModels, timestamp: Date.now() });
+    }
+
+    return finalModels;
   } catch (error) {
     console.error('[fetchProviderModels] Error fetching models:', error);
     return null;

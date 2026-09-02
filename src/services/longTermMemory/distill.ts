@@ -11,6 +11,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { MemoryDB } from '../../memory/database.js';
+import { getCwd } from '../../utils/cwd.js';
 import { getClewConfigHomeDir } from '../../utils/envUtils.js';
 import { pathExists } from '../../utils/file.js';
 
@@ -172,18 +173,23 @@ function generateSkillSuggestions(patterns: Pattern[]): string[] {
  */
 function queryMemoryDBRecent(months: number): { type: string; content: string; importance: number; key: string }[] {
   if (!MemoryDB.isInitialized()) return [];
-
   try {
     const db = MemoryDB.getInstance();
     const cutoff = Date.now() - months * 30 * 24 * 60 * 60 * 1000;
-
-    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-    const stmt = db.prepare(`
-      SELECT type, content, importance, key FROM memories
-      WHERE created_at >= ? OR last_accessed_at >= ?
-      ORDER BY importance DESC LIMIT 200
-    `);
-    return stmt.all(cutoff, cutoff) as { type: string; content: string; importance: number; key: string }[];
+    const cutoffISO = new Date(cutoff).toISOString();
+    const projectPath = (() => {
+      try {
+        return getCwd();
+      } catch {
+        return process.cwd();
+      }
+    })();
+    const memories = db.queryMemories({ projectPath });
+    return memories
+      .filter(m => m.createdAt >= cutoffISO || (m.lastAccessedAt && m.lastAccessedAt >= cutoffISO))
+      .sort((a, b) => b.importance - a.importance)
+      .slice(0, 200)
+      .map(m => ({ type: m.type, content: m.content, importance: m.importance, key: m.id }));
   } catch {
     return [];
   }

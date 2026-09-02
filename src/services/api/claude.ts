@@ -364,6 +364,17 @@ export function getCacheControl({ scope, querySource }: { scope?: CacheScope; qu
  * TTLs when GrowthBook's disk cache updates mid-request.
  */
 function should1hCacheTTL(querySource?: QuerySource): boolean {
+  // Clew default: long (1h) เลย ไม่ต้องตั้ง env — ผู้ใช้ไม่ต้องใส่เอง
+  // ปิดได้ด้วย CLEW_CACHE_RETENTION=short / PI_CACHE_RETENTION=short
+  const cacheRetention = process.env.CLEW_CACHE_RETENTION ?? process.env.PI_CACHE_RETENTION;
+  if (cacheRetention) {
+    const v = cacheRetention.toLowerCase();
+    if (v === 'long' || v === '1h' || v === 'true' || v === '1') return true;
+    if (v === 'short' || v === '5m' || v === 'false' || v === '0') return false;
+  } else {
+    // ไม่มี env → default long สำหรับ Clew (ต่างจาก Pi ที่ต้อง GrowthBook)
+    return true;
+  }
   // 3P Bedrock users get 1h TTL when opted in via env var — they manage their own billing
   // No GrowthBook gating needed since 3P users don't have GrowthBook configured
   if (getAPIProvider() === 'bedrock' && isEnvTruthy(process.env.ENABLE_PROMPT_CACHING_1H_BEDROCK)) {
@@ -1425,7 +1436,7 @@ async function* queryModel(
   // Note: We pass the full `tools` list (not filteredTools) to toolToAPISchema so that
   // ToolSearchTool's prompt can list ALL available MCP tools. The filtering only affects
   // which tools are actually sent to the API, not what the model sees in tool descriptions.
-  const toolSchemas = await Promise.all(
+  let toolSchemas = await Promise.all(
     filteredTools.map(tool =>
       toolToAPISchema(tool, {
         getToolPermissionContext: options.getToolPermissionContext,
@@ -1437,6 +1448,12 @@ async function* queryModel(
       }),
     ),
   );
+  // Prompt Cache จัดเต็ม: sort tools deterministically for stable prefix → higher hit
+  toolSchemas = [...toolSchemas].sort((a, b) => {
+    const aName = (a as any).name ?? (a as any).id ?? '';
+    const bName = (b as any).name ?? (b as any).id ?? '';
+    return String(aName).localeCompare(String(bName));
+  });
 
   if (useToolSearch) {
     const includedDeferredTools = count(filteredTools, t => deferredToolNames.has(t.name));

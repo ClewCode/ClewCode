@@ -1357,6 +1357,15 @@ export async function* ask({
       : {}),
   });
 
+  // Taste auto-learning: explicit preference detection (fire-and-forget)
+  try {
+    const promptText = typeof prompt === 'string' ? prompt : '';
+    if (promptText) {
+      const { hookExplicitPreference } = await import('./taste/hooks.js');
+      hookExplicitPreference(promptText);
+    }
+  } catch {}
+
   try {
     yield* engine.submitMessage(prompt, {
       uuid: promptUuid,

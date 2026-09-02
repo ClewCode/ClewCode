@@ -219,16 +219,10 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
       }
 
       case 'reindex': {
-        // Clear chunks in SQLite
-        const db = getMemoryDb(cwd);
-        db.run('DELETE FROM chunks');
-        db.run('DELETE FROM chunks_fts');
-        db.run('DELETE FROM sources');
-
         const result = await ingestMemoryWorkspace(cwd, config);
         onDone(
           [
-            '🟢 SQLite Search Cache Wiped & Reindexed Successfully:',
+            '🟢 Memory Reindexed Successfully (filesystem):',
             `  Scanned: ${result.scannedCount} files`,
             `  Total Chunks: ${result.totalChunks} chunks`,
           ].join('\n'),
@@ -345,22 +339,26 @@ export const call: LocalJSXCommandCall = async (onDone, _context, args) => {
 
       case 'doctor': {
         const status = getMemoryWorkspaceStatus(cwd);
-        const db = getMemoryDb(cwd);
-        const sources = getAllSources(db);
         const pendingList = await listPending(cwd);
-
-        const chunksCount = db.query('SELECT COUNT(*) as c FROM chunks').get() as { c: number };
-
+        let totalMemories = 0;
+        try {
+          const { MemoryDB } = await import('../../memory/database.js');
+          const { getMemoryDirPath } = await import('../../memory/hierarchy.js');
+          const { existsSync } = await import('node:fs');
+          if (existsSync(getMemoryDirPath())) {
+            if (!MemoryDB.isInitialized()) MemoryDB.init(getMemoryDirPath());
+            totalMemories = MemoryDB.getInstance().getStats().total;
+          }
+        } catch {}
         onDone(
           [
-            'Claude Memory Diagnostics:',
+            'Claude Memory Diagnostics (filesystem):',
             `  Enabled: ${status.initialized ? 'Yes 🟢' : 'No 🔴'}`,
             `  Workspace Memory Path: \`${status.memoryDir}\``,
             `  Wiki Directory: \`${status.wikiDir}\``,
-            `  SQLite Cache Path: \`${join(status.indexDir, 'chunks.db')}\``,
+            `  Store Path: \`${join(status.memoryDir, 'store')}\``,
             `  Runs Directory: \`${status.runsDir}\``,
-            `  Active Sources: ${sources.length}`,
-            `  Indexed Chunks: ${chunksCount ? chunksCount.c : 0}`,
+            `  Memories: ${totalMemories}`,
             `  Pending Suggestions: ${pendingList.length}`,
             `  Secret Redaction: Enabled`,
           ].join('\n'),

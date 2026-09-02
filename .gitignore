@@ -12,8 +12,10 @@ bin/*
 !bin/clew.cjs
 !bin/ceph
 
-# CodeIndex cache
+# CodeIndex / Memory ephemeral cache (derived, regenerated)
 index.json
+.clew/memory/index.json
+.clew/index/chunks.db*
 
 # Logs
 *.log
@@ -137,6 +139,7 @@ src/generated/
 # Scripts
 scripts/*
 !scripts/check-shadow-pairs.sh
+!scripts/cleanup-memory-db.mjs
 ClewCode.wiki
 
 # Assets

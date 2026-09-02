@@ -1,6 +1,6 @@
 {
   "name": "clew-code",
-  "version": "0.9.7",
+  "version": "0.10.0",
   "description": "ClewCode — multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
   "type": "module",
@@ -36,6 +36,8 @@
     "lint:check": "biome lint src/",
     "format": "biome format --write src/",
     "format:check": "biome format src/",
+    "cleanup:memory-db": "node scripts/cleanup-memory-db.mjs --force",
+    "cleanup:memory-db:dry": "node scripts/cleanup-memory-db.mjs --dry-run",
     "check": "biome check --write src/",
     "check:ci": "biome ci src/",
     "check:circular": "node scripts/check-circular-deps.mjs",

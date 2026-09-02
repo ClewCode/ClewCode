@@ -137,7 +137,11 @@ export function getProviderOptions(provider: ProviderId) {
 
 /**
  * Convenience check: should we send `cache_control` markers in API requests?
+ * จัดเต็ม: ทั้ง explicit (Anthropic) และ automatic (OpenAI/OpenRouter/DeepSeek/etc.)
+ * ส่ง cache_control แบบ Anthropic-style 4 จุดให้ทุก provider ที่รองรับ
+ * google/none ยังไม่ส่ง
  */
 export function shouldUseExplicitPromptCaching(providerId: ProviderId): boolean {
-  return getPromptCachingSupport(providerId) === 'explicit';
+  const support = getPromptCachingSupport(providerId);
+  return support === 'explicit' || support === 'automatic';
 }

@@ -2,6 +2,7 @@
  * `/taste` slash command — inspect, add, disable, and manage user & project Taste preferences.
  */
 
+import { explainAll, explainRule } from '../../taste/explain.js';
 import { getTasteStore } from '../../taste/store/taste-store.js';
 import type { TasteCategory, TasteRule } from '../../taste/types.js';
 // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
@@ -177,6 +178,40 @@ export default async function tasteHandler(args: string, context: CommandContext
     return;
   }
 
+  if (subCommand === 'why') {
+    if (!rest) {
+      const out = await explainAll();
+      context.log(out);
+      return;
+    }
+    const out = await explainRule(rest);
+    context.log(out);
+    return;
+  }
+
+  if (subCommand === 'learn' || subCommand === 'collect') {
+    if (!rest) {
+      context.log('Usage: /taste learn <explicit|behavioral|outcome> <rule text>');
+      return;
+    }
+    const [kind, ...ruleParts] = rest.split(' ');
+    const ruleText = ruleParts.join(' ').trim();
+    if (!kind || !ruleText) {
+      context.log('Usage: /taste learn <explicit|behavioral|outcome> <rule text>');
+      return;
+    }
+    if (!['explicit', 'behavioral', 'outcome'].includes(kind)) {
+      context.log('kind must be explicit|behavioral|outcome');
+      return;
+    }
+    const { collectSignal } = await import('../../taste/collector.js');
+    const res = await collectSignal({ kind: kind as any, ruleText, details: `manual via /taste learn` });
+    context.log(
+      `Signal ${kind} → ${res.action}: ${res.rule ? `"${res.rule.rule}" [${res.rule.status} ${(res.rule.confidence * 100).toFixed(0)}%] evidence=${res.evidenceCount}` : 'no rule'}`,
+    );
+    return;
+  }
+
   if (subCommand === 'inspect' || subCommand === 'show') {
     if (!rest) {
       context.log('Usage: /taste inspect <id|#num>');
@@ -219,6 +254,8 @@ Last Observed: ${rule.lastObservedAt}
 Available commands:
   /taste [list]                      — List all preferences
   /taste add [--global] <rule>       — Add a new preference
+  /taste why [id|#num]               — Explain why rule exists (evidence trail)
+  /taste learn <kind> <rule>         — Collect signal (explicit|behavioral|outcome)
   /taste evidence <id|#num>          — View recorded evidence trail
   /taste conflicts                   — Check for contradictory preferences
   /taste inspect <id|#num>           — View detailed metrics

@@ -10,7 +10,30 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Hid empty and completed label-only `Thinking…` placeholders, while retaining live buffers and substantial completed previews.
+- Kept ChatGPT reasoning deltas in one live thinking block so the `∴ Thinking` text streams continuously and its spinner remains active until reasoning completes.
 - Prevented the status-line `ctx%` estimate from counting split assistant records from the same API response twice.
+
+## [0.10.0] - 2026-09-02
+
+### Added
+
+- **Filesystem-first Memory:** `MemoryDB` migrated from `bun:sqlite` to Markdown+YAML SoT under `.clew/memory/store/*.md` with frontmatter (`id/key/type/importance/confidence`), `timeline.jsonl`, and derived `index.json` ephemeral cache (mtime+size, atomic write, `getIndexedEntries`). Git-friendly, no DB corruption.
+- **Filesystem-first Taste:** `SqliteTasteStore` → `FileTasteStore` under `.clew/taste/rules|evidence|conflicts/*.md` with same philosophy, dual-scope (project/global), `taste.db` now legacy.
+- **Taste Auto-Learning:** `Signal (explicit 1.0 / behavioral 0.6 / outcome 0.2) → Evidence → Learner → Rule` with clustering (Jaccard 0.6), confidence, conflict detection, and promotion `candidate(0.45)→weak(0.65)→active(0.80)→conflicted` with 7-day windowed `aggregator` + decay. Hooks on `FileEditTool (userModified)`, `BashTool (test/build/lint)`, and `QueryEngine (explicit preference)`.
+- **Taste Explainability:** `/taste why [id|#]` and `/taste learn <kind> <rule>` with `evidenceCount`, `recentCount`, `lastReinforced`, and conflict trail.
+- **Prompt Cache — Full Coverage:** `shouldUseExplicitPromptCaching` now `explicit + automatic` (27 providers), deterministic tool sorting for stable prefix, `CLEW_CACHE_RETENTION` alias for `PI_CACHE_RETENTION`, and `CLEW_CACHE_RETENTION` defaults to `long` (1h) without env.
+- **Cleanup Script:** `scripts/cleanup-memory-db.mjs` (`bun run cleanup:memory-db` / `:dry`) removes legacy `memory.db/chunks.db/taste.db` (+ wal/shm) for both `.clew` and `.claude` legacy paths.
+
+### Changed
+
+- `promptCaching: automatic` providers now send `cache_control` 4-breakpoint markers (system+tools+user+assistant) for higher hit rate; `should1hCacheTTL` defaults to `long` for Clew.
+- `hierarchy.ts` now creates `store/` dir and `getMemoryDbPath()` points to filesystem store; `isMemoryHierarchyInitialized` checks directory existence.
+
+### Fixed
+
+- `AppStateStore` `getSettings()` → `getInitialSettings()` tsc error.
+- `claude.ts` tool sort now handles `BetaMCPToolset` without `name` field.
 
 
 ## [0.9.1] - 2026-08-30

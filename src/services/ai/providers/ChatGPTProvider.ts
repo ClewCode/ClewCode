@@ -386,6 +386,7 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
     };
 
     let activeIndex: number | null = null;
+    let activeThinkingIndex: number | null = null;
     let nextIndex = 0;
     let textIndex: number | null = null;
     const toolIndexes = new Map<string, number>();
@@ -406,7 +407,10 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
       }
 
       if (type === 'response.output_item.added' && event.item?.type === 'function_call') {
-        if (activeIndex !== null) yield { type: 'content_block_stop', index: activeIndex };
+        if (activeIndex !== null) {
+          yield { type: 'content_block_stop', index: activeIndex };
+          activeThinkingIndex = null;
+        }
         const index = nextIndex++;
         const callId = event.item.call_id ?? event.item.id ?? `call_${index}`;
         toolIndexes.set(callId, index);
@@ -438,14 +442,32 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
         continue;
       }
 
+      if (type === 'response.output_item.done' && event.item?.type === 'reasoning') {
+        if (activeThinkingIndex !== null) {
+          yield { type: 'content_block_stop', index: activeThinkingIndex };
+          activeIndex = null;
+          activeThinkingIndex = null;
+        }
+        continue;
+      }
+
       const reasoningDelta = type.includes('reasoning') && typeof event.delta === 'string' ? event.delta : undefined;
       if (reasoningDelta) {
-        if (activeIndex !== null) yield { type: 'content_block_stop', index: activeIndex };
-        const index = nextIndex++;
-        yield { type: 'content_block_start', index, content_block: { type: 'thinking', thinking: '', signature: '' } };
-        yield { type: 'content_block_delta', index, delta: { type: 'thinking_delta', thinking: reasoningDelta } };
-        yield { type: 'content_block_stop', index };
-        activeIndex = null;
+        if (activeThinkingIndex === null) {
+          if (activeIndex !== null) yield { type: 'content_block_stop', index: activeIndex };
+          activeThinkingIndex = nextIndex++;
+          yield {
+            type: 'content_block_start',
+            index: activeThinkingIndex,
+            content_block: { type: 'thinking', thinking: '', signature: '' },
+          };
+          activeIndex = activeThinkingIndex;
+        }
+        yield {
+          type: 'content_block_delta',
+          index: activeThinkingIndex,
+          delta: { type: 'thinking_delta', thinking: reasoningDelta },
+        };
         sawContent = true;
         continue;
       }
@@ -453,7 +475,10 @@ class ChatGPTResponsesAdapter implements ProviderAdapter {
       const textDelta = type.endsWith('output_text.delta') && typeof event.delta === 'string' ? event.delta : undefined;
       if (textDelta !== undefined) {
         if (textIndex === null) {
-          if (activeIndex !== null) yield { type: 'content_block_stop', index: activeIndex };
+          if (activeIndex !== null) {
+            yield { type: 'content_block_stop', index: activeIndex };
+            activeThinkingIndex = null;
+          }
           textIndex = nextIndex++;
           yield { type: 'content_block_start', index: textIndex, content_block: { type: 'text', text: '' } };
           activeIndex = textIndex;

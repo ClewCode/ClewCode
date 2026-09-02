@@ -64,6 +64,12 @@ export function findOpenRouterCapabilities(
   return catalog.find(model => normalizedModelKey(model.id) === key);
 }
 
+/** Synchronous getter for warm in-memory catalog (used by ModelPicker initial state). */
+export function getCachedOpenRouterCatalog(): FetchedModel[] {
+  if (cachedCatalog && cachedCatalog.expiresAt > Date.now()) return cachedCatalog.models;
+  return [];
+}
+
 /** Fetch once per process window; an unavailable catalog degrades to unknown metadata. */
 export async function fetchOpenRouterCapabilityCatalog(): Promise<FetchedModel[]> {
   if (cachedCatalog && cachedCatalog.expiresAt > Date.now()) return cachedCatalog.models;

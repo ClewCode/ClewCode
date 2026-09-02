@@ -21,6 +21,19 @@ type Props = {
   isStreaming?: boolean;
 };
 
+export function hasThinkingBufferContent(thinking: string): boolean {
+  return thinking.trim().length > 0;
+}
+
+export function getCollapsedThinkingPreview(thinking: string): string | null {
+  const lines = thinking.split('\n');
+  if (thinking.length < 150 && lines.length < 3) return null;
+
+  const summaryLines = lines.slice(0, 10);
+  const hasMore = lines.length > 10 || thinking.length > 1000;
+  return summaryLines.join('\n') + (hasMore ? '\n...' : '');
+}
+
 export function AssistantThinkingMessage({
   param: { thinking },
   addMargin = false,
@@ -31,10 +44,14 @@ export function AssistantThinkingMessage({
 }: Props): React.ReactNode {
   const showThinkingPreview = useAppState(s => s.showThinkingPreview ?? true);
   const [frame, setFrame] = useState(0);
+  const hasBufferContent = hasThinkingBufferContent(thinking);
 
-  useInterval(() => setFrame(f => (f + 1) % THINKING_SPINNER_FRAMES.length), isStreaming ? 120 : null);
+  useInterval(
+    () => setFrame(f => (f + 1) % THINKING_SPINNER_FRAMES.length),
+    isStreaming && hasBufferContent ? 120 : null,
+  );
 
-  if (!thinking && !isStreaming) {
+  if (!hasBufferContent) {
     return null;
   }
 
@@ -57,14 +74,9 @@ export function AssistantThinkingMessage({
       );
     }
 
-    const lines = thinking.split('\n');
-    const isLongEnough = thinking.length >= 150 || lines.length >= 3;
+    const summaryText = getCollapsedThinkingPreview(thinking);
 
-    if (isLongEnough) {
-      const summaryLines = lines.slice(0, 10);
-      const hasMore = lines.length > 10 || thinking.length > 1000;
-      const summaryText = summaryLines.join('\n') + (hasMore ? '\n...' : '');
-
+    if (summaryText) {
       return (
         <Box flexDirection="column" gap={0} marginTop={addMargin ? 1 : 0} width="100%">
           <Text dimColor italic>
@@ -77,13 +89,7 @@ export function AssistantThinkingMessage({
       );
     }
 
-    return (
-      <Box marginTop={addMargin ? 1 : 0}>
-        <Text dimColor italic>
-          {label}… <CtrlOToExpand />
-        </Text>
-      </Box>
-    );
+    return null;
   }
 
   return (
