@@ -478,34 +478,9 @@ export async function getURLMarkdownContent(
     throw new DomainCheckFailedError(failedHostname);
   }
 
-  let response;
-  try {
-    response = await getWithPermittedRedirects(upgradedUrl, abortController.signal, isPermittedRedirect);
-  } catch (err) {
-    // BUG (exfiltration): falling back to a third-party proxy (r.jina.ai) on
-    // *any* primary-fetch failure sends the full URL — including any
-    // query-string tokens/secrets in signed URLs — to an uncontrolled third
-    // party, with no logging and no opt-out. Don't do this when the primary
-    // fetch was deliberately blocked by network policy (egress proxy) or by
-    // our own domain safety check — those are decisions the fallback would
-    // silently defeat.
-    if (
-      err instanceof EgressBlockedError ||
-      err instanceof DomainBlockedError ||
-      err instanceof DomainCheckFailedError
-    ) {
-      throw err;
-    }
-    logForDiagnosticsNoPII('warn', 'web_fetch_jina_fallback_used', {
-      errorType: err instanceof Error ? err.constructor.name : typeof err,
-    });
-    try {
-      const jinaUrl = `https://r.jina.ai/${upgradedUrl}`;
-      response = await getWithPermittedRedirects(jinaUrl, abortController.signal, isPermittedRedirect);
-    } catch (_) {
-      throw err;
-    }
-  }
+  // Never relay a failed request through an implicit third-party proxy. URLs
+  // can contain signed query parameters, reset tokens, or other credentials.
+  const response = await getWithPermittedRedirects(upgradedUrl, abortController.signal, isPermittedRedirect);
 
   // Check if we got a redirect response
   if (isRedirectInfo(response)) {

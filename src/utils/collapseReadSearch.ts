@@ -32,10 +32,6 @@ import {
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const teamMemOps = feature('TEAMMEM') ? (require('./teamMemoryOps.js') as typeof import('./teamMemoryOps.js')) : null;
-const SNIP_TOOL_NAME = feature('HISTORY_SNIP')
-  ? // @ts-expect-error - Phase2: missing module stub (auto)
-    (require('../tools/SnipTool/prompt.js') as typeof import('../tools/SnipTool/prompt.js')).SNIP_TOOL_NAME
-  : null;
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 /**
@@ -51,7 +47,7 @@ export type SearchOrReadResult = {
   isMemoryWrite: boolean;
   /**
    * True for meta-operations that should be absorbed into a collapse group
-   * without incrementing any count (Snip, ToolSearch). They remain visible
+   * without incrementing any count (for example ToolSearch). They remain visible
    * in verbose mode via the groupMessages iteration.
    */
   isAbsorbedSilently: boolean;
@@ -161,13 +157,9 @@ export function getToolSearchOrReadInfo(toolName: string, toolInput: unknown, to
     };
   }
 
-  // Meta-operations absorbed silently: Snip (context cleanup) and ToolSearch
-  // (lazy tool schema loading). Neither should break a collapse group or
-  // contribute to its count, but both stay visible in verbose mode.
-  if (
-    (feature('HISTORY_SNIP') && toolName === SNIP_TOOL_NAME) ||
-    (isFullscreenEnvEnabled() && toolName === TOOL_SEARCH_TOOL_NAME)
-  ) {
+  // ToolSearch is a meta-operation: it should not break a collapse group or
+  // contribute to its count, but it stays visible in verbose mode.
+  if (isFullscreenEnvEnabled() && toolName === TOOL_SEARCH_TOOL_NAME) {
     return {
       isCollapsible: true,
       isSearch: false,

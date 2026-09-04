@@ -310,7 +310,9 @@ export class MemoryDB {
         r.record.projectPath === opts.projectPath && r.record.type === opts.type && r.record.content === opts.content,
     );
     if (existing) {
-      this.updateImportance(existing.record.id, 0.05);
+      if (!this.updateImportance(existing.record.id, 0.05)) {
+        throw new Error(`Failed to reinforce memory ${existing.record.id}`);
+      }
       this.logEvent({ memoryId: existing.record.id, event: 'reinforced', note: 'duplicate save' });
       return existing.record.id;
     }
@@ -457,30 +459,30 @@ export class MemoryDB {
     return result;
   }
 
-  updateImportance(id: string, delta: number): void {
+  updateScores(id: string, deltas: { importance?: number; confidence?: number }): boolean {
     const all = readAllRecords();
     const found = all.find(r => r.record.id === id);
-    if (!found) return;
+    if (!found) return false;
+
     const updated: MemoryRecord = {
       ...found.record,
-      importance: Math.min(1, Math.max(0, found.record.importance + delta)),
+      importance: Math.min(1, Math.max(0, found.record.importance + (deltas.importance ?? 0))),
+      confidence: Math.min(1, Math.max(0, found.record.confidence + (deltas.confidence ?? 0))),
     };
     try {
       writeRecordAtomic(found.filePath, stringifyMemoryFile(updated, found.key, found.hash));
-    } catch {}
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  updateConfidence(id: string, delta: number): void {
-    const all = readAllRecords();
-    const found = all.find(r => r.record.id === id);
-    if (!found) return;
-    const updated: MemoryRecord = {
-      ...found.record,
-      confidence: Math.min(1, Math.max(0, found.record.confidence + delta)),
-    };
-    try {
-      writeRecordAtomic(found.filePath, stringifyMemoryFile(updated, found.key, found.hash));
-    } catch {}
+  updateImportance(id: string, delta: number): boolean {
+    return this.updateScores(id, { importance: delta });
+  }
+
+  updateConfidence(id: string, delta: number): boolean {
+    return this.updateScores(id, { confidence: delta });
   }
 
   deleteMemory(id: string): boolean {

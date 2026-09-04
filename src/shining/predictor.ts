@@ -3,8 +3,8 @@
  */
 
 import { getRecentEvents } from './observer.js';
-import { rank, scorePremonition } from './scorer.js';
 import { save } from './premonition-store.js';
+import { rank, scorePremonition } from './scorer.js';
 import type { Premonition, ShiningContext } from './types.js';
 
 function id(): string {

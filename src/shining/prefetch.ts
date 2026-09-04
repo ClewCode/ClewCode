@@ -6,8 +6,8 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getCwd } from '../utils/cwd.js';
-import { list } from './premonition-store.js';
 import { policyFor } from './policy.js';
+import { list } from './premonition-store.js';
 
 export async function prefetchShiningContext(): Promise<Map<string, string>> {
   const result = new Map<string, string>();

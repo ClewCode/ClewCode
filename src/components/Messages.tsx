@@ -536,16 +536,8 @@ const MessagesImpl = ({
     // otherwise scroll to. Main-screen mode keeps the filter — pre-compact
     // rows live above the viewport in native scrollback there, and
     // re-rendering them triggers full resets.
-    // includeSnipped: UI rendering keeps snipped messages for scrollback
-    // (this PR's core goal — full history in UI, filter only for the model).
-    // Also avoids a UUID mismatch: normalizeMessages derives new UUIDs, so
-    // projectSnippedView's check against original removedUuids would fail.
     const compactAwareMessages =
-      verbose || isFullscreenEnvEnabled()
-        ? normalizedMessages
-        : getMessagesAfterCompactBoundary(normalizedMessages, {
-            includeSnipped: true,
-          });
+      verbose || isFullscreenEnvEnabled() ? normalizedMessages : getMessagesAfterCompactBoundary(normalizedMessages);
 
     const messagesToShowNotTruncated = reorderMessagesInUI(
       // @ts-expect-error - Phase3 typecheck auto (TS error suppression)

@@ -22,14 +22,8 @@ type UsePaginationResult<T> = {
   toActualIndex: (visibleIndex: number) => number;
   // Check if actual index is visible
   isOnCurrentPage: (actualIndex: number) => boolean;
-  // Navigation (kept for API compatibility)
-  goToPage: (page: number) => void;
-  nextPage: () => void;
-  prevPage: () => void;
   // Handle selection - just updates the index, scrolling is automatic
   handleSelectionChange: (newIndex: number, setSelectedIndex: (index: number) => void) => void;
-  // Page navigation - returns false for continuous scrolling (not needed)
-  handlePageNavigation: (direction: 'left' | 'right', setSelectedIndex: (index: number) => void) => boolean;
   // Scroll position info for UI display
   scrollPosition: {
     current: number;
@@ -102,19 +96,6 @@ export function usePagination<T>({
     [startIndex, endIndex],
   );
 
-  // These are mostly no-ops for continuous scrolling but kept for API compatibility
-  const goToPage = useCallback((_page: number) => {
-    // No-op - scrolling is controlled by selectedIndex
-  }, []);
-
-  const nextPage = useCallback(() => {
-    // No-op - scrolling is controlled by selectedIndex
-  }, []);
-
-  const prevPage = useCallback(() => {
-    // No-op - scrolling is controlled by selectedIndex
-  }, []);
-
   // Simple selection handler - just updates the index
   // Scrolling happens automatically via the useMemo above
   const handleSelectionChange = useCallback(
@@ -123,14 +104,6 @@ export function usePagination<T>({
       setSelectedIndex(clampedIndex);
     },
     [totalItems],
-  );
-
-  // Page navigation - disabled for continuous scrolling
-  const handlePageNavigation = useCallback(
-    (_direction: 'left' | 'right', _setSelectedIndex: (index: number) => void): boolean => {
-      return false;
-    },
-    [],
   );
 
   // Calculate page-like values for backwards compatibility
@@ -147,11 +120,7 @@ export function usePagination<T>({
     getVisibleItems,
     toActualIndex,
     isOnCurrentPage,
-    goToPage,
-    nextPage,
-    prevPage,
     handleSelectionChange,
-    handlePageNavigation,
     scrollPosition: {
       current: selectedIndex + 1,
       total: totalItems,

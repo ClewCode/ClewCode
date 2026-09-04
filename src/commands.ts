@@ -196,7 +196,6 @@ const COMMANDS = memoize((): Command[] => [
   taste,
   repomap,
   codeSearch,
-  bg,
   heapDump,
   help,
   ide,

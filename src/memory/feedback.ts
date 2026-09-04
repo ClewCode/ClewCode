@@ -102,11 +102,19 @@ export async function applyFeedback(
   }
 
   const deltas = SIGNAL_DELTAS[canonical];
-  if (deltas.importance !== 0) {
-    db.updateImportance(memory.id, deltas.importance);
-  }
-  if (deltas.confidence !== 0) {
-    db.updateConfidence(memory.id, deltas.confidence);
+  if (
+    (deltas.importance !== 0 || deltas.confidence !== 0) &&
+    !db.updateScores(memory.id, {
+      importance: deltas.importance,
+      confidence: deltas.confidence,
+    })
+  ) {
+    return {
+      success: false,
+      message: `Failed to persist feedback for "${memoryIdOrKey}"`,
+      importanceDelta: 0,
+      confidenceDelta: 0,
+    };
   }
 
   db.logEvent({ memoryId: memory.id, event: signal, note: note ?? '' });

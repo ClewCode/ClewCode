@@ -1,10 +1,9 @@
 /**
- * Cheap heuristic scorer — no LLM for obvious cases
- * Only ambiguous candidates go to LLM judge (stub)
+ * Cheap heuristic scorer.
  */
 
-import type { Premonition } from './types.js';
 import type { TasteRule } from '../taste/types.js';
+import type { Premonition } from './types.js';
 
 export function scorePremonition(p: Omit<Premonition, 'id' | 'createdAt'>, tasteRules: TasteRule[] = []): number {
   let score = 0.5;
@@ -34,9 +33,4 @@ export function scorePremonition(p: Omit<Premonition, 'id' | 'createdAt'>, taste
 
 export function rank(predictions: Premonition[]): Premonition[] {
   return [...predictions].sort((a, b) => b.confidence - a.confidence);
-}
-
-// Stub for LLM judge — only called for 0.55-0.75 ambiguous
-export async function llmJudge(_p: Premonition): Promise<number | null> {
-  return null; // no-op, keep heuristic
 }

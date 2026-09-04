@@ -130,17 +130,26 @@ export async function startMCPServer(cwd: string, debug: boolean, verbose: boole
         },
       };
 
-      // TODO: validate input types with zod
       try {
         if (!tool.isEnabled()) {
           throw new Error(`Tool ${name} is not enabled`);
         }
-        const validationResult = await tool.validateInput?.((args as never) ?? {}, toolUseContext);
+
+        const parsedInput = tool.inputSchema.safeParse(args ?? {});
+        if (!parsedInput.success) {
+          const details = parsedInput.error.issues
+            .map(issue => `${issue.path.join('.') || 'input'}: ${issue.message}`)
+            .join(', ');
+          throw new Error(`Tool ${name} input is invalid: ${details}`);
+        }
+
+        const input = parsedInput.data as never;
+        const validationResult = await tool.validateInput?.(input, toolUseContext);
         if (validationResult && !validationResult.result) {
           throw new Error(`Tool ${name} input is invalid: ${validationResult.message}`);
         }
         const finalResult = await tool.call(
-          (args ?? {}) as never,
+          input,
           toolUseContext,
           hasPermissionsToUseTool,
           createAssistantMessage({

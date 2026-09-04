@@ -1,6 +1,6 @@
-import { list } from './premonition-store.js';
 import { policyFor } from './policy.js';
 import { formatPrefetched, prefetchShiningContext } from './prefetch.js';
+import { list } from './premonition-store.js';
 
 export async function loadShiningPrompt(): Promise<string | null> {
   const premonitions = list().filter(p => policyFor(p.confidence) !== 'ignore');

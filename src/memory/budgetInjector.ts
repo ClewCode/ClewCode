@@ -116,7 +116,7 @@ export async function budgetedInjectDetailed(maxTokens = 2000, includeFileHierar
 
     if (memories.length > 0) {
       // Shining → Memory: boost memories matching predicted needed_context
-      let shiningFiles = new Set<string>();
+      const shiningFiles = new Set<string>();
       try {
         const { list } = await import('../shining/premonition-store.js');
         const { policyFor } = await import('../shining/policy.js');

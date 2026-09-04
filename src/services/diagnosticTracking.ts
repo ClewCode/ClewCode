@@ -49,17 +49,15 @@ export class DiagnosticTrackingService {
   }
 
   initialize(mcpClient: MCPServerConnection) {
-    if (this.initialized) {
-      return;
-    }
-
-    // TODO: Do not cache the connected mcpClient since it can change.
+    // The IDE connection can be replaced after reconnect. Always refresh the
+    // cached handle instead of pinning the first connection for the session.
     this.mcpClient = mcpClient;
     this.initialized = true;
   }
 
   async shutdown(): Promise<void> {
     this.initialized = false;
+    this.mcpClient = undefined;
     this.baseline.clear();
     this.rightFileDiagnosticsState.clear();
     this.lastProcessedTimestamps.clear();
@@ -287,18 +285,17 @@ export class DiagnosticTrackingService {
    * @param shouldQuery Whether a query is actually being made (not just a command)
    */
   async handleQueryStart(clients: MCPServerConnection[]): Promise<void> {
-    // Only proceed if we should query and have clients
-    if (!this.initialized) {
-      // Find the connected IDE client
-      const connectedIdeClient = getConnectedIdeClient(clients);
-
-      if (connectedIdeClient) {
-        this.initialize(connectedIdeClient);
-      }
-    } else {
-      // Reset diagnostic tracking for new query loops
-      this.reset();
+    this.reset();
+    const connectedIdeClient = getConnectedIdeClient(clients);
+    if (connectedIdeClient) {
+      this.initialize(connectedIdeClient);
+      return;
     }
+
+    // Do not retain a disconnected IDE client. A later query will bind the
+    // replacement connection once it appears in the live MCP store.
+    this.mcpClient = undefined;
+    this.initialized = false;
   }
 
   /**

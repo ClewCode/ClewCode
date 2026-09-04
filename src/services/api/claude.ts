@@ -1414,7 +1414,7 @@ async function* queryModel(
 
   const useGlobalCacheFeature = shouldUseGlobalCacheScope();
   // Shining → ToolSearch: preload predicted tools (don't defer)
-  let shiningPredictedTools = new Set<string>();
+  const shiningPredictedTools = new Set<string>();
   try {
     const { list } = await import('../../shining/premonition-store.js');
     const { policyFor } = await import('../../shining/policy.js');

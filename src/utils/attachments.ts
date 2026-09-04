@@ -612,9 +612,6 @@ export type Attachment =
       type: 'compaction_reminder';
     }
   | {
-      type: 'context_efficiency';
-    }
-  | {
       type: 'date_change';
       newDate: string;
     }
@@ -814,9 +811,6 @@ export async function getAttachments(
             Promise.resolve(getCompactionReminderAttachment(messages ?? [], toolUseContext.options.mainLoopModel)),
           ),
         ]
-      : []),
-    ...(feature('HISTORY_SNIP')
-      ? [maybe('context_efficiency', () => Promise.resolve(getContextEfficiencyAttachment(messages ?? [])))]
       : []),
   ];
 
@@ -3281,32 +3275,6 @@ export function getCompactionReminderAttachment(messages: Message[], model: stri
   }
 
   return [{ type: 'compaction_reminder' }];
-}
-
-/**
- * Context-efficiency nudge. Injected after every N tokens of growth without
- * a snip. Pacing is handled entirely by shouldNudgeForSnips — the 10k
- * interval resets on prior nudges, snip markers, snip boundaries, and
- * compact boundaries.
- */
-export function getContextEfficiencyAttachment(messages: Message[]): Attachment[] {
-  if (!feature('HISTORY_SNIP')) {
-    return [];
-  }
-  // Gate must match SnipTool.isEnabled() — don't nudge toward a tool that
-  // isn't in the tool list. Lazy require keeps this file snip-string-free.
-  const { isSnipRuntimeEnabled, shouldNudgeForSnips } =
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('../services/compact/snipCompact.js') as typeof import('../services/compact/snipCompact.js');
-  if (!isSnipRuntimeEnabled()) {
-    return [];
-  }
-
-  if (!shouldNudgeForSnips(messages)) {
-    return [];
-  }
-
-  return [{ type: 'context_efficiency' }];
 }
 
 function isFileReadDenied(filePath: string, toolPermissionContext: ToolPermissionContext): boolean {

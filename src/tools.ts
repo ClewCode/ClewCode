@@ -32,7 +32,6 @@ const getVerifyPlanExecutionTool = () =>
     : null;
 const getWorkflowTool = () => {
   if (feature('WORKFLOW_SCRIPTS')) {
-    require('./tools/WorkflowTool/bundled/index.js').initBundledWorkflows();
     return require('./tools/WorkflowTool/WorkflowTool.js').WorkflowTool;
   }
   return null;
