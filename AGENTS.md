@@ -19,7 +19,7 @@ bun run check:ci         # Biome CI + circular/type-suppression debt ratchets
 bun run lint             # Biome lint --write
 bun run format           # Biome format --write
 bun run check            # Biome check --write
-bun run check:circular   # Runtime import-cycle ratchet (baseline 337)
+bun run check:circular   # Runtime import-cycle ratchet (baseline 336)
 bun run check:circular:strict # Fail while any runtime cycle remains
 bun run check:suppressions    # @ts-expect-error ratchet (baseline 1372)
 bun run check:suppressions:strict # Fail while any suppression remains
