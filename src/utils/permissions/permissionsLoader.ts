@@ -11,7 +11,11 @@ import type {
   PermissionRuleSource,
   PermissionRuleValue,
 } from './PermissionRule.js';
-import { permissionRuleValueFromString, permissionRuleValueToString } from './permissionRuleParser.js';
+import {
+  asPermissionRuleStrings,
+  permissionRuleValueFromString,
+  permissionRuleValueToString,
+} from './permissionRuleParser.js';
 
 /**
  * Returns true if allowManagedPermissionRulesOnly is enabled in managed settings (policySettings).
@@ -145,8 +149,8 @@ export function deletePermissionRuleFromSettings(rule: PermissionRuleFromEditabl
     return false;
   }
 
-  const behaviorArray = settingsData.permissions[rule.ruleBehavior];
-  if (!behaviorArray) {
+  const behaviorArray = asPermissionRuleStrings(settingsData.permissions[rule.ruleBehavior]);
+  if (behaviorArray.length === 0) {
     return false;
   }
 
@@ -154,7 +158,6 @@ export function deletePermissionRuleFromSettings(rule: PermissionRuleFromEditabl
   // names (e.g. "KillShell") match their canonical form ("TaskStop").
   const normalizeEntry = (raw: string): string => permissionRuleValueToString(permissionRuleValueFromString(raw));
 
-  // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
   if (!behaviorArray.some(raw => normalizeEntry(raw) === ruleString)) {
     return false;
   }
@@ -165,7 +168,6 @@ export function deletePermissionRuleFromSettings(rule: PermissionRuleFromEditabl
       ...settingsData,
       permissions: {
         ...settingsData.permissions,
-        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         [rule.ruleBehavior]: behaviorArray.filter(raw => normalizeEntry(raw) !== ruleString),
       },
     };
@@ -226,12 +228,11 @@ export function addPermissionRulesToSettings(
   try {
     // Ensure permissions object exists
     const existingPermissions = settingsData.permissions || {};
-    const existingRules = existingPermissions[ruleBehavior] || [];
+    const existingRules = asPermissionRuleStrings(existingPermissions[ruleBehavior]);
 
     // Filter out duplicates - normalize existing entries via roundtrip
     // parse→serialize so legacy names match their canonical form.
     const existingRulesSet = new Set(
-      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       existingRules.map(raw => permissionRuleValueToString(permissionRuleValueFromString(raw))),
     );
     const newRules = ruleStrings.filter(rule => !existingRulesSet.has(rule));
@@ -246,7 +247,6 @@ export function addPermissionRulesToSettings(
       ...settingsData,
       permissions: {
         ...existingPermissions,
-        // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
         [ruleBehavior]: [...existingRules, ...newRules],
       },
     };

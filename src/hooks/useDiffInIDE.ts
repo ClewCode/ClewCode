@@ -1,6 +1,6 @@
 ﻿import { randomUUID } from 'crypto';
 import { basename } from 'path';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
 import type { FileEdit } from 'src/tools/FileEditTool/types.js';
 import { getEditsForPatch, getPatchForEdits } from 'src/tools/FileEditTool/utils.js';
@@ -58,7 +58,7 @@ export function useDiffInIDE({ onChange, toolUseContext, filePath, edits, editMo
 
   const ideName = getConnectedIdeName(toolUseContext.options.mcpClients) ?? 'IDE';
 
-  async function showDiff(): Promise<void> {
+  const showDiff = useCallback(async (): Promise<void> => {
     if (!shouldShowDiffInIDE) {
       return;
     }
@@ -107,17 +107,20 @@ export function useDiffInIDE({ onChange, toolUseContext, filePath, edits, editMo
       logError(error as Error);
       setHasError(true);
     }
-  }
+  }, [shouldShowDiffInIDE, filePath, edits, toolUseContext, tabName, editMode, onChange]);
 
   useEffect(() => {
+    isUnmounted.current = false;
     void showDiff();
 
-    // Set flag on unmount
     return () => {
       isUnmounted.current = true;
+      const ideClient = getConnectedIdeClient(toolUseContext.options.mcpClients);
+      if (ideClient) {
+        void closeTabInIDE(tabName, ideClient);
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showDiff]);
+  }, [showDiff, tabName, toolUseContext.options.mcpClients]);
 
   return {
     closeTabInIDE() {
@@ -177,8 +180,6 @@ export function computeEditsFromContents(
  *
  * Resolves with the new file content.
  *
- * TODO: Update auto-approval UI when IDE exits
- * TODO: Close the IDE tab when the approval prompt is unmounted
  */
 async function showDiffInIDE(
   file_path: string,
@@ -187,6 +188,8 @@ async function showDiffInIDE(
   tabName: string,
 ): Promise<{ oldContent: string; newContent: string }> {
   let isCleanedUp = false;
+  const ideClient = getConnectedIdeClient(toolUseContext.options.mcpClients);
+  const onAbort = () => void cleanup();
 
   const oldFilePath = expandPath(file_path);
   let oldContent = '';
@@ -213,17 +216,13 @@ async function showDiffInIDE(
       logError(e as Error);
     }
 
-    // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
-    process.off('beforeExit', cleanup);
-    toolUseContext.abortController.signal.removeEventListener('abort', cleanup);
+    toolUseContext.abortController.signal.removeEventListener('abort', onAbort);
   }
 
   // Cleanup if the user hits esc to cancel the tool call - or on exit
-  toolUseContext.abortController.signal.addEventListener('abort', cleanup);
-  process.on('beforeExit', cleanup);
+  toolUseContext.abortController.signal.addEventListener('abort', onAbort, { once: true });
 
   // Open the diff in the IDE
-  const ideClient = getConnectedIdeClient(toolUseContext.options.mcpClients);
   try {
     const { updatedFile } = getPatchForEdits({
       filePath: oldFilePath,
@@ -278,19 +277,19 @@ async function showDiffInIDE(
 
     // If the user saved the file then take the new contents and resolve with that.
     if (isSaveMessage(data)) {
-      void cleanup();
+      await cleanup();
       return {
         oldContent: oldContent,
         newContent: data[1].text,
       };
     } else if (isClosedMessage(data)) {
-      void cleanup();
+      await cleanup();
       return {
         oldContent: oldContent,
         newContent: updatedFile,
       };
     } else if (isRejectedMessage(data)) {
-      void cleanup();
+      await cleanup();
       return {
         oldContent: oldContent,
         newContent: oldContent,
@@ -302,14 +301,14 @@ async function showDiffInIDE(
 
     // Fail closed: an unknown response must NEVER auto-accept an edit.
     // Returning oldContent routes into the caller's reject path (no new edits).
-    void cleanup();
+    await cleanup();
     return {
       oldContent: oldContent,
       newContent: oldContent,
     };
   } catch (error) {
     logError(error as Error);
-    void cleanup();
+    await cleanup();
     throw error;
   }
 }

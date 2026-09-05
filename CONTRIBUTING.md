@@ -83,7 +83,7 @@ clew-code/
 * Follow the existing TypeScript style.
 * Keep changes focused and reviewable.
 * Add or update tests when changing behavior.
-* Update documentation when changing commands, configuration, providers, or user-facing behavior.
+* Update documentation when changing commands, configuration, providers, or user-facing behavior. Do not increase `.circular-deps-baseline` or `.ts-expect-error-baseline`; reduce them when your change removes debt.
 
 ### 2. Type Checking
 

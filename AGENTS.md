@@ -15,10 +15,14 @@ bun test                 # Full suite
 bun test --bail          # Stop on first failure
 bun test path/to/file.test.ts         # Single test file
 bun test -t "test name"               # Single test by name
-bun run check:ci         # Biome CI (lint + format, no autofix)
+bun run check:ci         # Biome CI + circular/type-suppression debt ratchets
 bun run lint             # Biome lint --write
 bun run format           # Biome format --write
 bun run check            # Biome check --write
+bun run check:circular   # Runtime import-cycle ratchet (baseline 338)
+bun run check:circular:strict # Fail while any runtime cycle remains
+bun run check:suppressions    # @ts-expect-error ratchet (baseline 1377)
+bun run check:suppressions:strict # Fail while any suppression remains
 bun x tsc --noEmit       # Typecheck only (incremental — see below)
 bun ci                   # Lockfile integrity
 ```
@@ -37,14 +41,7 @@ Prefer `/clew-verify` before push (gate + CLI smoke). Prefer `/clew-release` for
 repo: **~75s cold, ~18s warm**, identical error set either way. The first run after a
 `git pull` or a wide refactor pays full price; repeat runs are the fast ones.
 
-**The typecheck baseline is red (~1867 errors) and has been for a while — this is
-pre-existing, not your diff.** Before blaming a change, capture the count, and check
-whether any error actually names a file or symbol you touched:
-
-```bash
-bun x tsc --noEmit > /tmp/tsc.txt 2>&1; grep -c 'error TS' /tmp/tsc.txt
-grep -E '^src/path/you/touched' /tmp/tsc.txt
-```
+**`tsc --noEmit` is currently clean (0 errors).** The remaining type debt is explicit suppression, not compiler errors: `.ts-expect-error-baseline` currently ratchets **1,377** `@ts-expect-error` directives. `check:ci` fails if that number increases; lower the baseline whenever suppressions are removed.
 
 Redirect to a file and grep it rather than re-running `tsc` per file — a naive
 per-file loop re-typechecks the whole project each iteration and takes minutes.
@@ -306,6 +303,8 @@ Co-located `.test.ts`/`.test.tsx` with sources (under `src/` and `tests/`), run 
 | Script | Role |
 |---|---|
 | `scripts/prebuild-version.mjs` | Writes generated version info |
+| `scripts/check-circular-deps.mjs` | Runtime import-cycle report + baseline/strict enforcement |
+| `scripts/check-type-suppressions.mjs` | `@ts-expect-error` baseline/strict enforcement |
 | `scripts/postbuild-inject-macro.mjs` | Post-build macro injection |
 | `scripts/bun-run.mjs` | Dev/start runner with defines |
 | `src/components/CustomSelect/select.tsx` | `BaseOption.preview` + `p` toggle — side (≥100 cols) or bottom preview, live on focus |

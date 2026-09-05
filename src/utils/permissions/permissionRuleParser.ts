@@ -36,6 +36,15 @@ export function getLegacyToolNames(canonicalName: string): string[] {
 }
 
 /**
+ * Normalizes a raw settings value into persisted permission-rule strings.
+ * Lenient settings editing intentionally accepts unvalidated JSON, so callers
+ * must not assume dynamic permission buckets are arrays at runtime.
+ */
+export function asPermissionRuleStrings(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
+}
+
+/**
  * Escapes special characters in rule content for safe storage in permission rules.
  * Permission rules use the format "Tool(content)", so parentheses in content must be escaped.
  *

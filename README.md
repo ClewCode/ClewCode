@@ -183,7 +183,7 @@ Useful commands:
 bun run build
 bun run start
 bun test
-bun run check:ci
+bun run check:ci   # format/lint + circular/type-suppression regression ratchets
 bun x tsc --noEmit
 ```
 

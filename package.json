@@ -1,7 +1,7 @@
 {
   "name": "clew-code",
   "version": "0.10.0",
-  "description": "ClewCode — multi-provider AI coding agent CLI",
+  "description": "ClewCode â€” multi-provider AI coding agent CLI",
   "main": "./dist/main.js",
   "type": "module",
   "bin": {
@@ -39,8 +39,11 @@
     "cleanup:memory-db": "node scripts/cleanup-memory-db.mjs --force",
     "cleanup:memory-db:dry": "node scripts/cleanup-memory-db.mjs --dry-run",
     "check": "biome check --write src/",
-    "check:ci": "biome ci src/",
+    "check:ci": "biome ci src/ && bun run check:circular && bun run check:suppressions",
     "check:circular": "node scripts/check-circular-deps.mjs",
+    "check:circular:strict": "node scripts/check-circular-deps.mjs --strict",
+    "check:suppressions": "node scripts/check-type-suppressions.mjs",
+    "check:suppressions:strict": "node scripts/check-type-suppressions.mjs --strict",
     "ast-grep": "bun x ast-grep",
     "docs:generate": "bun run scripts/generate-docs.ts",
     "docs:watch": "bun --watch run scripts/generate-docs.ts",

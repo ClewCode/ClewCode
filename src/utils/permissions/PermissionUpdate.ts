@@ -9,7 +9,11 @@ import { jsonStringify } from '../slowOperations.js';
 import { toPosixPath } from './filesystem.js';
 import type { PermissionRuleValue } from './PermissionRule.js';
 import type { PermissionUpdate, PermissionUpdateDestination } from './PermissionUpdateSchema.js';
-import { permissionRuleValueFromString, permissionRuleValueToString } from './permissionRuleParser.js';
+import {
+  asPermissionRuleStrings,
+  permissionRuleValueFromString,
+  permissionRuleValueToString,
+} from './permissionRuleParser.js';
 import { addPermissionRulesToSettings } from './permissionsLoader.js';
 
 // Re-export for backwards compatibility
@@ -227,12 +231,11 @@ export function persistPermissionUpdate(update: PermissionUpdate): void {
       logForDebugging(`Removing ${update.rules.length} ${update.behavior} rule(s) from ${update.destination}`);
       const existingSettings = getSettingsForSource(update.destination);
       const existingPermissions = existingSettings?.permissions || {};
-      const existingRules = existingPermissions[update.behavior] || [];
+      const existingRules = asPermissionRuleStrings(existingPermissions[update.behavior]);
 
       // Convert rules to normalized strings for comparison
       // Normalize via parse→serialize roundtrip so "Bash(*)" and "Bash" match
       const rulesToRemove = new Set(update.rules.map(permissionRuleValueToString));
-      // @ts-expect-error - Phase3 typecheck auto (TS error suppression)
       const filteredRules = existingRules.filter(rule => {
         const normalized = permissionRuleValueToString(permissionRuleValueFromString(rule));
         return !rulesToRemove.has(normalized);

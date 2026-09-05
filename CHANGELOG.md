@@ -20,14 +20,18 @@ All notable changes to this project will be documented in this file.
 
 - **New Clawd Poses:** Four new mascot poses — `blink` (closed eyes), `look-up` (eyes raised), `shocked` (wide-eyed), and `sleeping` (closed eyes + z) — plus two new click animations (`BLINK`, `STARTLE`) on `AnimatedClawd`, which now dozes off into the `sleeping` pose after 3 minutes of inactivity.
 
+### Changed
+
+- Added CI debt ratchets for runtime circular imports and `@ts-expect-error` directives. The circular detector now excludes type-only imports/exports, reducing the meaningful runtime-cycle baseline from the previous noisy 1,329 report to 338; suppression debt is locked at 1,377 and both baselines may only move downward.
+
 ### Fixed
 
+- Fixed IDE diff lifecycle races: the hook now uses a stable callback instead of reopening a diff on every render, resets cancellation state for each effect run, closes the IDE tab on unmount, awaits cleanup on terminal paths, and no longer relies on a suppressed process-exit listener.
+- Hardened permission settings edits against malformed lenient JSON: dynamic allow/deny/ask buckets are normalized to string arrays before map/filter/spread operations instead of relying on `@ts-expect-error`, preventing corrupted settings from throwing at runtime.
 - Fixed `/providers key <provider> <key>` session-only mode reporting success without applying the key; session keys now take effect immediately, and `--global` / `-g` flags are stripped before key parsing so flags can never be persisted as part of a credential.
 - Fixed provider picker session/global isolation: session-only provider/model/providerConfig changes no longer rewrite shared `provider.json`.
 - Fixed Azure OpenAI configuration so the endpoint and API key are separate inputs/contracts; the endpoint is stored as provider metadata, while credentials use `AZURE_OPENAI_API_KEY` (with compatibility fallbacks). Removed the non-functional Google Vertex option from the generic Google picker because `GoogleProvider` did not consume its project/Vertex settings.
 - Fixed stale async UI updates in `SessionPreview`, `useDynamicConfig`, and provider model loading by ignoring completions after dependency changes/unmount.
-- Fixed IDE diff cleanup lifecycle: typed abort/before-exit wrappers replace the suppressed async listener mismatch, and success/reject/error paths await tab cleanup instead of fire-and-forget closing.
-- Fixed `/mcp enable|disable` to wait for all async toggles and report rejected servers instead of announcing success before reconnect/cache operations finish.
 - Fixed `ToolGateway` authorizing arbitrary `eval.*` tools that had no execution implementation; unknown tools now fail closed before dispatch.
 - Fixed Windows Bash snapshot fallback so a hung snapshot actually times out after the grace period instead of awaiting the same hung promise inside its timeout callback; no-snapshot execution now keeps valid shell spawn args.
 - Fixed `ToolGateway` workspace escape: `startsWith(root)` allowed `<root>-evil/...` siblings; now requires a full segment boundary plus `realpath` symlink confinement (case-insensitive on win32/darwin).
